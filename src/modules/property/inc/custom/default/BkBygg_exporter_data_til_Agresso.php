@@ -222,6 +222,8 @@ if (!class_exists("BkBygg_exporter_data_til_Agresso"))
 
 		public function create_order_receive_xml($param)
 		{
+			$this->voucher_type	 = $param['voucher_type'];
+
 			$Orders	 = array();
 			$Detail	 = array();
 			$i		 = 1;

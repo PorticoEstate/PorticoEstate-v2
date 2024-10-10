@@ -2,9 +2,9 @@ import '../components/time-picker';
 import '../components/time-slot-pill';
 import '../components/map-modal';
 import '../helpers/util';
-import {CreateUrlParams} from "../helpers/formatting";
+import "../components/application-cart";
 
-import {ApplicationCart} from "../components/application-cart";
+import {CreateUrlParams} from "../helpers/formatting";
 
 
 /* global direct_booking */

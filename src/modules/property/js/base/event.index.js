@@ -50,7 +50,7 @@ function onSave()
 					document.getElementById("message").innerHTML += v.msg + "<br/>";
 				});
 			}
-			oTable.fnDraw();
+			oTable.api().draw();
 		}
 	});
 }

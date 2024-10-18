@@ -85,7 +85,7 @@ function addDelegate()
 
 		$('.loading').css({"visibility": "hidden"});
 
-		oTable0.fnDraw();
+		oTable0.api().draw();
 
 	}, data, "POST", "JSON");
 }
@@ -133,7 +133,7 @@ function removeDelegate(oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable0.fnDraw();
+		oTable0.api().draw();
 
 	}, data, 'POST', 'JSON');
 }

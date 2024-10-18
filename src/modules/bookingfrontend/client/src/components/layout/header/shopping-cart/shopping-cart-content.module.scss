@@ -1,0 +1,41 @@
+@import '../../../../styles/colors';
+
+
+.shoppingBasket {
+    h2 {
+        margin:0;
+    }
+    .shoppingBasketTable{
+        --dsc-table-background: $grey-light-64;
+        --dsc-table-header-background: $grey-light-64;
+        td {
+            vertical-align: top;
+        }
+    }
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+
+}
+.eventPopperFooter {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 1rem;
+
+}
+
+.colorCircles {
+    display: flex;
+    align-items: center;
+    gap: 0.25em
+}
+
+.colorCircle {
+    margin-right: 2px;
+}
+
+.remainingCount {
+    font-size: 0.8em;
+    margin-left: 2px;
+}

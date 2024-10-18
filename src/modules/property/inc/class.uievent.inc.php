@@ -207,8 +207,6 @@ class property_uievent extends phpgwapi_uicommon_jquery
 			return $this->query();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 
 		$jqcal = createObject('phpgwapi.jqcal');
@@ -366,7 +364,7 @@ class property_uievent extends phpgwapi_uicommon_jquery
 
 
 		self::add_javascript('property', 'base', 'event.index.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query()
@@ -690,7 +688,7 @@ class property_uievent extends phpgwapi_uicommon_jquery
 			url: '$link_shedule2',
 			data:{values:values},
 			success: function(data) {
-				oTable0.fnDraw();
+				oTable0.api().draw();
 			}
 			});
 	}

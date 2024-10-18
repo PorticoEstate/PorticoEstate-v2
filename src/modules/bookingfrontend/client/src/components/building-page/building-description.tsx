@@ -1,8 +1,9 @@
+'use client'
 import {IBuilding} from "@/service/types/Building";
-import {getTranslation} from "@/app/i18n";
 import {fallbackLng} from "@/app/i18n/settings";
 import parse from 'html-react-parser';
-import CollapsibleText from "@/components/collapsable-text/collapsible-text";
+import {Accordion} from "@digdir/designsystemet-react";
+import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 
 interface BuildingDescriptionProps {
     building: IBuilding
@@ -56,8 +57,8 @@ function unescapeHTML(str: string): string {
     });
 }
 
-const BuildingDescription = async (props: BuildingDescriptionProps) => {
-    const {t, i18n} = await getTranslation();
+const BuildingDescription = (props: BuildingDescriptionProps) => {
+    const {t, i18n} = useClientTranslation();
     const descriptionJson = JSON.parse(props.building.description_json || '');
     let description = descriptionJson[i18n.language];
     if (!description) {
@@ -67,16 +68,12 @@ const BuildingDescription = async (props: BuildingDescriptionProps) => {
         return null;
     }
     return (
-        <div className={'mx-3'}>
-
-            <hr className={`my-2`}/>
-            <div>
-                <h3>
-                    {t('common.description')}
-                </h3>
-                <CollapsibleText>{parse(unescapeHTML(description))}</CollapsibleText>
-            </div>
-        </div>
+        <Accordion.Item>
+                <Accordion.Heading>
+                    <h3>{t('common.description')}</h3>
+                </Accordion.Heading>
+                <Accordion.Content>{parse(unescapeHTML(description))}</Accordion.Content>
+        </Accordion.Item>
     );
 }
 

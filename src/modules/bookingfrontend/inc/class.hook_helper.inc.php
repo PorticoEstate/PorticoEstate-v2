@@ -43,7 +43,7 @@ class bookingfrontend_hook_helper
 	{
 		$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');
 
-		if (preg_match('/bookingfrontend/', $script_path))
+		if ($script_path && preg_match('/bookingfrontend/', $script_path))
 		{
 			$this->perform_action = true;
 		}

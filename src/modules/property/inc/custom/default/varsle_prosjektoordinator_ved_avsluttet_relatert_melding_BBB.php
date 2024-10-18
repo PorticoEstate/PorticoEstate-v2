@@ -119,8 +119,7 @@ if ($_closed) // take action
 			$bcc		 = '';
 			$subject	 = "Status er endret for melding tilknyttet prosjekt {$project_info['id']}";
 			$body		 = "<H2>{$subject}</H2>";
-			//	$body .= "</br><a href='http://{$serverSettings['hostname']}{$project_info['link']}'>{$subject} - klikk her for å oppdatere status for prosjektet</a>";
-			$body		 .= "</br><a href='{$project_info['link']}'>{$subject} - klikk her for å oppdatere status for prosjektet</a>";
+			$body		.= "</br><a href='https://{$serverSettings['hostname']}{$project_info['link']}'>{$subject} - klikk her for å oppdatere status for prosjektet</a>";
 
 			try
 			{

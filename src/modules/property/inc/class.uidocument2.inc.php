@@ -272,7 +272,7 @@ class property_uidocument2 extends phpgwapi_uicommon_jquery
 			);
 		}
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query()

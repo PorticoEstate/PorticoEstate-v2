@@ -128,7 +128,7 @@ dismissNotification = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable5.fnDraw();
+		oTable5.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -154,7 +154,7 @@ dismissNotificationAll = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable5.fnDraw();
+		oTable5.api().draw();
 
 	}, data, 'POST', 'JSON');
 };

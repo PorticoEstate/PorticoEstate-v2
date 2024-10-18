@@ -128,8 +128,6 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 				return $this->query();
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('custom');
 			$function_msg	 = lang('list custom');
@@ -241,7 +239,7 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 
 			unset($parameters);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function query()
@@ -533,8 +531,6 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 
 //			$datatable = array();
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$custom = $this->bo->read_single($custom_id);
 
@@ -602,7 +598,7 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 
 			$data['datatable']['actions'][] = array();
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function query_view( $custom_id )

@@ -167,7 +167,7 @@ class rental_uiresultunit extends rental_uicommon
 		);
 
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 	/* public function add_actions(&$value)
 		  {

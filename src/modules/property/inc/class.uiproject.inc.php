@@ -704,8 +704,6 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 			return $this->query();
 		}
 		phpgwapi_jquery::load_widget('numberformat');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$jqcal = CreateObject('phpgwapi.jqcal');
 		$jqcal->add_listener('filter_start_date');
@@ -995,7 +993,7 @@ JS;
 
 
 		self::add_javascript('property', 'base', 'project.index.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query()

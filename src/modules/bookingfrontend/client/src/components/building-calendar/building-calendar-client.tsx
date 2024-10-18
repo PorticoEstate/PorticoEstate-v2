@@ -5,7 +5,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, {EventResizeDoneArg} from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
-import {IBuildingResource, IEvent, Season} from "@/service/pecalendar.types";
+import {IEvent, IShortResource, Season} from "@/service/pecalendar.types";
 import {
     DateSelectArg,
     DatesSetArg,
@@ -38,7 +38,7 @@ import EventContentList from "@/components/building-calendar/modules/event/conte
 
 interface BuildingCalendarProps {
     events: IEvent[];
-    resources: Record<string, IBuildingResource>;
+    resources: Record<string, IShortResource>;
     onDateChange: Dispatch<DatesSetArg>
     seasons: Season[];
     building: IBuilding;

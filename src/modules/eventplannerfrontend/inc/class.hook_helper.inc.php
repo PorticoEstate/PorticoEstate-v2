@@ -46,7 +46,7 @@ class eventplannerfrontend_hook_helper
 
 		$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');
 
-		if (preg_match('/eventplannerfrontend/', $script_path))
+		if ($script_path && preg_match('/eventplannerfrontend/', $script_path))
 		{
 			$this->perform_action = true;
 		}

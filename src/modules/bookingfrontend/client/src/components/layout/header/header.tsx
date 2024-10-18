@@ -4,6 +4,7 @@ import ClientPHPGWLink from "@/components/layout/header/ClientPHPGWLink";
 import HeaderMenuContent from "@/components/layout/header/header-menu-content";
 import LanguageSwitcher from "@/app/i18n/language-switcher";
 import UserMenu from "@/components/layout/header/user-menu/user-menu";
+import ShoppingCartButton from "@/components/layout/header/shopping-cart/shopping-cart-button";
 
 interface HeaderProps {
 }
@@ -25,8 +26,8 @@ const Header = async (props: HeaderProps) => {
 
                 <HeaderMenuContent>
                     <LanguageSwitcher/>
+                    <ShoppingCartButton />
                     <UserMenu/>
-
 
                 </HeaderMenuContent>
             </nav>

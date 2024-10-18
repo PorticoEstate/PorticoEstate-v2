@@ -606,6 +606,6 @@ class controller_uidocument extends phpgwapi_uicommon_jquery
 			),
 		);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 }

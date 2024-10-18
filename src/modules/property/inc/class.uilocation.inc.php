@@ -1008,9 +1008,6 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		}
 
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
-
 		$this->bo->read(array(
 			'type_id'		 => $type_id, 'lookup_tenant'	 => $lookup_tenant,
 			'lookup'		 => $lookup, 'dry_run'		 => true
@@ -1403,7 +1400,7 @@ JS;
 		$flags['app_header'] = lang('property') . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->set('flags', $flags);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function get_uicols_responsiblility_role()
@@ -1606,8 +1603,6 @@ JS;
 			}
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 		self::add_javascript('property', 'base', 'location.responsiblility_role.js');
 
 		$this->bo->get_responsible(array(
@@ -1731,7 +1726,7 @@ JS;
 								document.getElementById("message").innerHTML += v.msg + "<br/>";
 							});
 						}
-						oTable.fnDraw();
+						oTable.api().draw();
 					}, data, "POST", "JSON");
 				';
 
@@ -3244,7 +3239,6 @@ JS;
 			return $this->query_summary();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$appname		 = lang('Summary');
 		$function_msg	 = lang('List') . ' ' . lang($this->role);
@@ -3309,7 +3303,7 @@ JS;
 		$flags = Settings::getInstance()->get('flags');
 		$flags['app_header'] = lang('property') . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->set('flags', $flags);
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function get_delivery_address()

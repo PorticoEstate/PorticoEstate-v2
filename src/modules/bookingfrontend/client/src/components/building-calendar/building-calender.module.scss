@@ -48,7 +48,7 @@
         //width: 100vw;
     }
 
-    @include desktop {
+    @include tablet {
         transition: 300ms;
 
         &.closed {

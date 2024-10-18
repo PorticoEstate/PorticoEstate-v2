@@ -2,6 +2,10 @@
 
 namespace App\modules\phpgwapi\models;
 
+use App\modules\booking\models\BookingConfig;
+use App\modules\bookingfrontend\models\BookingfrontendConfig;
+use App\modules\phpgwapi\services\Config;
+use App\modules\phpgwapi\services\Settings;
 use App\traits\SerializableTrait;
 
 /**
@@ -284,6 +288,21 @@ class ServerSettings
     public $webserver_url;
 
     /**
+     * @OA\Property(ref="#/components/schemas/BookingfrontendConfig")
+     * @Expose
+     * @SerializeAs(type="object", of="App\modules\bookingfrontend\models\BookingfrontendConfig")
+     */
+    public $bookingfrontend_config;
+
+    /**
+     * @OA\Property(ref="#/components/schemas/BookingConfig")
+     * @Expose
+     * @SerializeAs(type="object", of="App\modules\booking\models\BookingConfig")
+     */
+    public $booking_config;
+
+
+    /**
      * Default values for settings from head.inc.php
      */
     private $defaults = [
@@ -292,10 +311,35 @@ class ServerSettings
         'logo_title' => 'Logo'
     ];
 
-    public function __construct(array $data = [])
+    public function __construct(array $data = [], bool $includeConfigs = false)
     {
         $this->populate($data); // Populate first to set the initial values
         $this->setDefaults();   // Then set defaults for properties that were not set in populate
+        if ($includeConfigs) {
+            $this->loadConfigs();
+        }
+    }
+
+
+    private function loadConfigs()
+    {
+        $bookingfrontendData = $this->getConfig('bookingfrontend');
+        $this->bookingfrontend_config = new BookingfrontendConfig($bookingfrontendData);
+
+        $bookingData = $this->getConfig('booking');
+        $this->booking_config = new BookingConfig($bookingData);
+    }
+    private function getConfig(string $module): array
+    {
+        $config = new Config($module);
+        return $config->read();
+    }
+
+    public static function getInstance(bool $includeConfigs = false): ServerSettings
+    {
+        $settings = Settings::getInstance();
+        $serverSettingsRaw = $settings->get('server');
+        return new ServerSettings($serverSettingsRaw, $includeConfigs);
     }
 
     private function setDefaults()

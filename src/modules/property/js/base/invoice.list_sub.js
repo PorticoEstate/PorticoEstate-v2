@@ -110,7 +110,7 @@ function onSave()
 				document.getElementById("message").innerHTML += v.msg + "<br/>";
 			});
 		}
-		oTable0.fnDraw();
+		oTable0.api().draw();
 
 	}, data, "POST", "JSON");
 }

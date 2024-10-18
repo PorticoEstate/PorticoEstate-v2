@@ -199,7 +199,7 @@ class booking_uibuilding extends booking_uicommon
 			$data['form']['toolbar']['item'][] = $filter;
 		}
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	private function _get_user_list($selected)

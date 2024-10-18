@@ -354,7 +354,7 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		self::add_javascript($this->currentapp, 'base', 'article_mapping.index.js', true);
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function get_pricing()

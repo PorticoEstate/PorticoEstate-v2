@@ -13,7 +13,7 @@ const LoadingIndicationWrapper: FC<LoadingIndicationWrapperProps> = (props) => {
     const isHardLoading = useIsHardLoading();
     const isSoftLoading = useIsSoftLoading();
     if(isHardLoading) {
-        return <div>SOmething is loading....</div>
+        return <div></div>
     }
     return <>
         {isSoftLoading &&

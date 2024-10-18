@@ -21,7 +21,7 @@
             flex: none;
             max-width: 12rem;
 
-            @include desktop {
+            @include tablet {
                 display: none;
             }
 
@@ -29,7 +29,7 @@
                 display: none;
                 max-width: 5rem;
 
-                @include desktop {
+                @include tablet {
                     display: flex;
                 }
             }

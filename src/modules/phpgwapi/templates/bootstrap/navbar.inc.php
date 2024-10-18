@@ -170,9 +170,11 @@ HTML;
 				  <ol class="breadcrumb shadow ps-2 pt-2 pb-3">
 HTML;
 		$history_url = array();
+		$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');
+
 		for ($i = 0; $i < (count($breadcrumbs) - 1); $i++)
 		{
-			if (preg_match('/\/home\//', $_SERVER['REDIRECT_URL']))
+			if ($script_path && preg_match('/\/home\//', $script_path))
 			{
 				$history_url = str_replace('?', '../?', $breadcrumbs[$i]['url']);
 			}

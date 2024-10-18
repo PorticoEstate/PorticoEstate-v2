@@ -269,9 +269,6 @@ class property_uigallery extends phpgwapi_uicommon_jquery
 			return $this->query();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
-
 		$jqcal = CreateObject('phpgwapi.jqcal');
 		$jqcal->add_listener('filter_start_date');
 		$jqcal->add_listener('filter_end_date');
@@ -389,7 +386,7 @@ class property_uigallery extends phpgwapi_uicommon_jquery
 		unset($parameters);
 		$data['datatable']['actions'][] = array();
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query()

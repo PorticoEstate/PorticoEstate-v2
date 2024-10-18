@@ -123,5 +123,5 @@ function filter_grouping(year, month, district_id, param, details)
 	}
 
 	oTable.dataTableSettings[0]['ajax']['data']['details'] = details;
-	oTable.fnDraw();
+	oTable.api().draw();
 }

@@ -7,7 +7,7 @@
         justify-content: start;
         display: flex;
 
-        @include desktop {
+        @include tablet {
             min-width: 10rem;
 
         }

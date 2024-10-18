@@ -349,7 +349,7 @@ class property_uidocument extends phpgwapi_uicommon_jquery
 			'parameters' => json_encode($parameters)
 		);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query_at_location()
@@ -718,7 +718,7 @@ class property_uidocument extends phpgwapi_uicommon_jquery
 			);
 		}
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function view_file()

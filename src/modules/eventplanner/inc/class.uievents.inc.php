@@ -182,7 +182,7 @@ class eventplanner_uievents extends phpgwapi_uicommon
 		self::add_javascript($this->currentapp, 'base', 'events.index.js');
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 

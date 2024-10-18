@@ -5,7 +5,7 @@ import React, {useState, useCallback, useRef} from 'react';
 import {DateTime, Interval} from "luxon";
 import BuildingCalendarClient from "@/components/building-calendar/building-calendar-client";
 import {fetchBuildingSchedule, fetchFreeTimeSlots} from "@/service/api/api-utils";
-import {IBuildingResource, IEvent, Season} from "@/service/pecalendar.types";
+import {IEvent, IShortResource, Season} from "@/service/pecalendar.types";
 import {DatesSetArg} from "@fullcalendar/core";
 import {Modal, Spinner} from '@digdir/designsystemet-react'
 import {IBuilding} from "@/service/types/Building";
@@ -15,7 +15,7 @@ interface CalendarWrapperProps {
     initialSchedule: IEvent[];
     initialFreeTime: any; // Replace 'any' with the correct type
     buildingId: number;
-    resources: Record<string, IBuildingResource>;
+    resources: Record<string, IShortResource>;
     seasons: Season[];
     building: IBuilding;
     initialDate: Date;

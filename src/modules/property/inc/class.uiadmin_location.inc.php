@@ -124,8 +124,6 @@
 				);
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('entity');
 			$function_msg	 = lang('list entity type');
@@ -302,7 +300,7 @@
 			unset($parameters2);
 			unset($parameters3);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function query( $data = array() )
@@ -606,8 +604,6 @@
 				));
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('attribute');
 			$function_msg	 = lang('list entity attribute group');
@@ -739,7 +735,7 @@
 
 			unset($parameters);
 			unset($parameters2);
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		function edit_attrib_group()
@@ -903,8 +899,6 @@
 				));
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('attribute');
 			$function_msg	 = lang('list entity attribute');
@@ -1034,7 +1028,7 @@
 			);
 
 			unset($parameters);
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function save_attrib()
@@ -1359,7 +1353,7 @@
 			);
 
 			unset($parameters);
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		function edit_config()

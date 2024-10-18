@@ -50,7 +50,7 @@ $spacing-names: 1, 2, 3, 4; // Corresponding class name suffixes
         }
 
         // Desktop-only classes
-        @include desktop {
+        @include tablet {
             .#{$property-name}x-#{$name}-desktop {
                 #{$property}-left: $value;
                 #{$property}-right: $value;
@@ -82,7 +82,7 @@ $spacing-names: 1, 2, 3, 4; // Corresponding class name suffixes
         }
     }
 
-    @include desktop {
+    @include tablet {
         .gap-#{$name}-desktop {
             gap: $value;
         }

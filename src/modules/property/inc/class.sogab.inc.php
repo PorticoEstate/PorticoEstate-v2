@@ -210,7 +210,11 @@ class property_sogab
 		}
 		else
 		{
-			$sql = "SELECT fm_gab_location.* FROM fm_gab_location $joinmethod $filtermethod GROUP BY gab_id,fm_gab_location.location_code,address,owner ";
+			$sql = "SELECT fm_gab_location.gab_id "
+				. ",fm_gab_location.location_code "
+				. ",fm_gab_location.address "
+				. ",fm_gab_location.owner "
+				. " FROM fm_gab_location $joinmethod $filtermethod GROUP BY gab_id,fm_gab_location.location_code,address,owner ";
 		}
 
 		$this->db->query($sql, __LINE__, __FILE__);

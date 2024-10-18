@@ -1,6 +1,6 @@
 import React, {Dispatch, FC, MutableRefObject} from 'react';
-import {Button} from "@digdir/designsystemet-react";
-import {ChevronLeftFirstIcon, ChevronLeftIcon, ChevronRightIcon, ChevronRightLastIcon} from "@navikt/aksel-icons";
+import {Badge, Button} from "@digdir/designsystemet-react";
+import {ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
 import styles from './calendar-inner-header.module.scss';
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
@@ -9,9 +9,8 @@ import FullCalendar from "@fullcalendar/react";
 import ButtonGroup from "@/components/button-group/button-group";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCalendar} from "@fortawesome/free-regular-svg-icons";
-import {faLayerGroup, faTableList} from "@fortawesome/free-solid-svg-icons";
-import {Badge} from "@/components/digdir@next/badge/badge";
-import {useEnabledResources} from "@/components/building-calendar/calendar-context";
+import {faArrowRightLong, faLayerGroup, faTableList} from "@fortawesome/free-solid-svg-icons";
+import {useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
 
 interface CalendarInnerHeaderProps {
     resourcesHidden: boolean
@@ -28,6 +27,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
     const t = useTrans();
     const {resourcesHidden, setResourcesHidden, view, calendarRef, setView} = props
     const enabledResources = useEnabledResources();
+    const tempEvents = useTempEvents();
     const c = calendarRef.current;
     if (!c) {
         return null;
@@ -37,74 +37,95 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 
     return (
         <div className={styles.innerHeader}>
-                <Button size={'sm'} icon={true} variant='tertiary'
-                        style={{}}
-                        className={`${styles.expandCollapseButton} ${resourcesHidden ? styles.closed : styles.open}`}
-                        onClick={() => setResourcesHidden(!resourcesHidden)}>
+            <Button size={'sm'} icon={true} variant='tertiary'
+                    style={{}}
+                    className={`${styles.expandCollapseButton} ${resourcesHidden ? styles.closed : styles.open}`}
+                    onClick={() => setResourcesHidden(!resourcesHidden)}>
 
-                    <ChevronLeftFirstIcon
-                        className={`${styles.expandCollapseIcon} ${resourcesHidden ? styles.closed : styles.open}`}
-                        fontSize='2.25rem'/>
-                    {props.building.name}
 
+                {props.building.name}
+                <ChevronLeftIcon
+                    className={`${styles.expandCollapseIcon} ${resourcesHidden ? styles.closed : styles.open}`}
+                    fontSize='2.25rem'/>
+            </Button>
+            <Button variant={'secondary'} size={'sm'}
+                    className={styles.mobileResourcesButton}
+                // className={'captialize'}
+                    onClick={() => setResourcesHidden(!resourcesHidden)}><FontAwesomeIcon
+                icon={faLayerGroup}/>{t('booking.select')} {t('bookingfrontend.resources')}
+                <Badge count={enabledResources.size} size={"md"} color={"danger"}></Badge>
+            </Button>
+
+            <div className={styles.datePicker}>
+                <Button size={'sm'} icon={true} variant='tertiary' style={{borderRadius: "50%"}}
+                        onClick={() => {
+                            if (c) {
+                                calendarApi.prev();
+                            }
+                        }}
+                >
+                    <ChevronLeftIcon style={{
+                        height: '100%',
+                        width: '100%'
+                    }}/>
                 </Button>
-                <Button variant={'secondary'} size={'sm'}
-                        className={styles.mobileResourcesButton}
-                    // className={'captialize'}
-                        onClick={() => setResourcesHidden(!resourcesHidden)}><FontAwesomeIcon
-                    icon={faLayerGroup}/>{t('booking.select')} {t('bookingfrontend.resources')}
-                    <Badge count={enabledResources.size} size={"md"} color={"danger"}></Badge>
+                <CalendarDatePicker currentDate={currentDate} view={c.getApi().view.type}
+                                    onDateChange={(v) => v && calendarApi.gotoDate(v)}/>
+                <Button icon={true} size={'sm'} variant='tertiary' style={{borderRadius: "50%"}}
+                        onClick={() => {
+                            if (c) {
+                                calendarApi.next();
+                            }
+                        }}
+                >
+                    <ChevronRightIcon style={{
+                        height: '100%',
+                        width: '100%'
+                    }}/>
                 </Button>
+            </div>
 
-                <div className={styles.datePicker}>
-                    <Button size={'sm'} icon={true} variant='tertiary' style={{borderRadius: "50%"}}
-                            onClick={() => {
-                                if (c) {
-                                    calendarApi.prev();
-                                }
-                            }}
-                            aria-label='Tertiary med ikon'>
-                        <ChevronLeftIcon fontSize='2.25rem'/>
-                    </Button>
-                    <CalendarDatePicker currentDate={currentDate} view={c.getApi().view.type}
-                                        onDateChange={(v) => v && calendarApi.gotoDate(v)}/>
-                    <Button icon={true} size={'sm'} variant='tertiary' style={{borderRadius: "50%"}}
-                            onClick={() => {
-                                if (c) {
-                                    calendarApi.next();
-                                }
-                            }}
-                            aria-label='Tertiary med ikon'>
-                        <ChevronRightIcon fontSize='2.25rem'/>
-                    </Button>
-                </div>
+            <ButtonGroup className={styles.modeSelectTime}>
+                <Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}
+                        className={'captialize'}
 
-                <ButtonGroup className={styles.modeSelectTime}>
-                    <Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} size={'sm'}
-                            className={'captialize'}
+                        onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
+                <Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}
+                        className={'captialize'}
 
-                            onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
-                    <Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} size={'sm'}
-                            className={'captialize'}
+                        onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
+                <Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}
+                        className={'captialize'}
 
-                            onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-                    <Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'} size={'sm'}
-                            className={'captialize'}
+                        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>
 
-                            onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>
+            </ButtonGroup>
 
-                </ButtonGroup>
+            <ButtonGroup className={styles.modeSelect}>
+                <Button variant={view !== 'listWeek' ? 'primary' : 'secondary'} color={'neutral'} aria-active={'true'}
+                        aria-current={'true'} size={'sm'}
+                        className={'captialize'} onClick={() => {
+                    props.setLastCalendarView()
+                }}><FontAwesomeIcon icon={faCalendar}/> <span
+                    className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
+                <Button variant={view === 'listWeek' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}
+                        className={'captialize'} onClick={() => {
+                    props.setView('listWeek')
+                }}><FontAwesomeIcon icon={faTableList}/> <span
+                    className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
+            </ButtonGroup>
+            <Button variant={'primary'} size={'sm'} className={styles.orderButton} onClick={() => {
+                props.setView('listWeek')
+            }}>
+                {t('bookingfrontend.to application site')}
+                {Object.values(tempEvents.tempEvents).length > 0 &&
+                    <Badge count={Object.values(tempEvents.tempEvents).length}
+                           color={'info'} size={'sm'}>
 
-                <ButtonGroup className={styles.modeSelect}>
-                    <Button variant={view !== 'listWeek' ? 'primary' : 'secondary'} size={'sm'}
-                            className={'captialize'} onClick={() => {
-                        props.setLastCalendarView()
-                    }}><FontAwesomeIcon icon={faCalendar}/> <span className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
-                    <Button variant={view === 'listWeek' ? 'primary' : 'secondary'} size={'sm'}
-                            className={'captialize'} onClick={() => {
-                        props.setView('listWeek')
-                    }}><FontAwesomeIcon icon={faTableList}/> <span className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
-                </ButtonGroup>
+                    </Badge>}
+                <FontAwesomeIcon icon={faArrowRightLong}/>
+
+            </Button>
         </div>
     );
 }

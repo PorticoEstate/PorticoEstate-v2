@@ -24,7 +24,7 @@ function onAdjust_price()
 			$("#ctrl_adjust_price_item_price").val('');
 		}
 
-		oTable0.fnDraw();
+		oTable0.api().draw();
 
 	}, '', "POST", "JSON");
 }
@@ -71,7 +71,7 @@ function removePrice(oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable0.fnDraw();
+		oTable0.api().draw();
 
 	}, data, 'POST', 'JSON');
 }

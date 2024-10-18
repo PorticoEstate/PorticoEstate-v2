@@ -1,10 +1,10 @@
 import {createContext, FC, PropsWithChildren, useContext} from 'react';
-import {IBuildingResource} from "@/service/pecalendar.types";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
+import {IShortResource} from "@/service/pecalendar.types";
 
 
 interface CalendarContextType {
-    resources: Record<string, IBuildingResource>;
+    resources: Record<string, IShortResource>;
     tempEvents: Record<string, FCallTempEvent>;
     setTempEvents: (value: (((prevState: Record<string, FCallTempEvent>) => Record<string, FCallTempEvent>) | Record<string, FCallTempEvent>)) => void
     enabledResources: Set<string>

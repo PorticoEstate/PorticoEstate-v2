@@ -44,7 +44,7 @@ var startTicket = function (oArgs, parameters)
 
 refresh_entity = function ()
 {
-	oTable0.fnDraw();
+	oTable0.api().draw();
 };
 
 var download = function (oArgs)

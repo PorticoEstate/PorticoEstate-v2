@@ -83,7 +83,7 @@ function getLocations()
 		paramsTable1['only_related'] = 0;
 	}
 	
-	oTable1.fnDraw();
+	oTable1.api().draw();
 }
 		
 function getComponents()
@@ -108,7 +108,7 @@ function getComponents()
 		$( "#location_id" ).prop( "disabled", false );
 	}
 	
-	oTable0.fnDraw();
+	oTable0.api().draw();
 }
 
 /*function setRelationsComponents2(oArgs)
@@ -138,7 +138,7 @@ function getComponents()
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 		JqueryPortico.show_message(0, result);
-		oTable0.fnDraw();
+		oTable0.api().draw();
 		
 	}, data, "POST", "JSON");
 }
@@ -177,7 +177,7 @@ function setRelationsComponents(oArgs)
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 		JqueryPortico.show_message(0, result);
-		oTable0.fnDraw();
+		oTable0.api().draw();
 		
 	}, data, "POST", "JSON");
 }
@@ -210,7 +210,7 @@ function setRelationsLocations(oArgs)
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 		JqueryPortico.show_message(1, result);
-		oTable1.fnDraw();
+		oTable1.api().draw();
 		
 	}, data, "POST", "JSON");
 }

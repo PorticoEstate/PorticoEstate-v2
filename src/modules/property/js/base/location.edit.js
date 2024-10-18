@@ -7,7 +7,7 @@ $(document).ready(function ()
 	$('#doc_type').change( function()
 	{
 		paramsTable0['doc_type'] = $(this).val();
-		oTable0.fnDraw();				
+		oTable0.api().draw();				
 	});
 
 	get_history_data = function ()

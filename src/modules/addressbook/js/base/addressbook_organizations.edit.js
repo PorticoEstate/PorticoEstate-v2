@@ -96,7 +96,7 @@ function deleteOthersData(oArgs, parameters)
     JqueryPortico.execute_ajax(requestUrl, function (result)
     {
         JqueryPortico.show_message(nTable, result);
-        oTable0.fnDraw();
+        oTable0.api().draw();
 
     }, data, 'POST', 'JSON');
 }
@@ -125,7 +125,7 @@ function addOthersData()
         $('#value').val('');
 
         JqueryPortico.show_message(nTable, result);
-        oTable0.fnDraw();
+        oTable0.api().draw();
 
     }, data, 'POST', 'JSON');
 }

@@ -263,7 +263,7 @@ class logistic_uiresource_type_requirement extends phpgwapi_uicommon_jquery
 			);
 		}
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function add()

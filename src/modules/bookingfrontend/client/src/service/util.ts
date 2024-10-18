@@ -6,7 +6,7 @@ const strBaseURL = `${typeof window === 'undefined' ? process.env.NEXT_INTERNAL_
 
 export function phpGWLink(
     strURL: string | (string | number)[],
-    oArgs: Record<string, string | number | (string | number)[]> | null = {},
+    oArgs: Record<string, string | number | boolean | (string | number)[]> | null = {},
     bAsJSON: boolean = true,
     baseURL?: string
 ): string {
@@ -36,13 +36,17 @@ export function phpGWLink(
         newURL += '?';
 
         for (const key in oArgs) {
-            if (Array.isArray(oArgs[key])) {
+            if (Array.isArray(!(oArgs) || oArgs[key])) {
                 // Handle array parameters by adding [] to the key and encoding each value
-                (oArgs[key] as (string | number)[]).forEach((value) => {
-                    newURL += `${encodeURIComponent(key)}[]=${encodeURIComponent(value)}&`;
-                });
+                if (oArgs) {
+                    (oArgs[key] as (string | number)[]).forEach((value) => {
+                        newURL += `${encodeURIComponent(key)}[]=${encodeURIComponent(value)}&`;
+                    });
+                }
             } else {
-                newURL += `${encodeURIComponent(key)}=${encodeURIComponent(oArgs[key] as string | number)}&`;
+                if (oArgs) {
+                    newURL += `${encodeURIComponent(key)}=${encodeURIComponent(oArgs[key] as string | number)}&`;
+                }
             }
         }
 

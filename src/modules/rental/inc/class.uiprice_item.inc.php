@@ -3,7 +3,7 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
 
-
+phpgw::import_class('phpgwapi.datetime');
 phpgw::import_class('rental.uicommon');
 phpgw::import_class('rental.soprice_item');
 phpgw::import_class('rental.socontract_price_item');
@@ -218,7 +218,7 @@ JS;
 		self::add_javascript('rental', 'base', 'price_item.index.js');
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 	/*
 		 * View the price item with the id given in the http variable 'id'

@@ -194,8 +194,6 @@ class property_uialarm extends phpgwapi_uicommon_jquery
 			return $this->query();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$appname		 = lang('alarm');
 		$function_msg	 = lang('list alarm');
@@ -370,7 +368,7 @@ class property_uialarm extends phpgwapi_uicommon_jquery
 		phpgwapi_jquery::load_widget('numberformat');
 
 		self::add_javascript('property', 'base', 'uialarm.index.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query_list()
@@ -504,8 +502,6 @@ class property_uialarm extends phpgwapi_uicommon_jquery
 			return $this->query_list();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$appname		 = lang('alarm');
 		$function_msg	 = lang('list alarm');
@@ -589,7 +585,7 @@ class property_uialarm extends phpgwapi_uicommon_jquery
 		phpgwapi_jquery::load_widget('core');
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function edit()

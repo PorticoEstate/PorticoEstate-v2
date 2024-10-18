@@ -10,7 +10,7 @@ function onSyncronize_party(action)
 	JqueryPortico.execute_ajax(action, function (result)
 	{
 		document.getElementById("message").innerHTML = result.message;
-		oTable.fnDraw();
+		oTable.api().draw();
 	}, '', "POST", "JSON");
 }
 
@@ -42,7 +42,7 @@ function onDelete_party(requestUrl)
 				document.getElementById("message").innerHTML = v.msg;
 			});
 		}
-		oTable.fnDraw();
+		oTable.api().draw();
 
 	}, '', "POST", "JSON");
 }
@@ -74,7 +74,7 @@ function PartyMassSync(conf)
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 		document.getElementById("message").innerHTML = result.message;
-		oTable.fnDraw();
+		oTable.api().draw();
 	}, '', "POST", "JSON");
 
 }

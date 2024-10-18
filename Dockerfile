@@ -97,8 +97,8 @@ RUN wget -O /tmp/openjdk.tar.gz https://download.oracle.com/java/21/latest/jdk-2
     && rm /tmp/openjdk.tar.gz
 
 # Set JAVA_HOME environment variable
-ENV JAVA_HOME /usr/local/java/jdk-21.0.4
-ENV PATH $JAVA_HOME/bin:$PATH
+ENV JAVA_HOME=/usr/local/java/jdk-21.0.4
+ENV PATH=$JAVA_HOME/bin:$PATH
 
 # Verify Java installation
 RUN java -version

@@ -1069,8 +1069,7 @@ HTML;
 		}
 
 		phpgwapi_jquery::load_widget('numberformat');
-		//		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		//		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
+
 		self::add_javascript('property', 'portico', 'tts.index.js', false, array('combine' => true));
 
 		$start_date	 = !empty($this->start_date) ? urldecode($this->start_date) : '';
@@ -1293,7 +1292,7 @@ HTML;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function report()

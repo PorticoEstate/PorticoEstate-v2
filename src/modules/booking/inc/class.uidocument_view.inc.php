@@ -98,7 +98,7 @@
 				)
 			);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public static function sort_by_params( $a, $b )

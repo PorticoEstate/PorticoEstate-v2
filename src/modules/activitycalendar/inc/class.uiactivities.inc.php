@@ -276,7 +276,7 @@ class activitycalendar_uiactivities extends activitycalendar_uicommon
 		$jqcal->add_listener('filter_date_change');
 
 		self::add_javascript('activitycalendar', 'activitycalendar', 'activities.index.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	/**

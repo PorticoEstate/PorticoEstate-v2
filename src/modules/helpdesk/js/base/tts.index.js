@@ -124,7 +124,7 @@ function close_ticket_with_comment(parameters)
 						if (data.status == 'ok')
 						{
 							alertify.success('You entered: ' + value);
-							oTable.fnDraw();
+							oTable.api().draw();
 						}
 						else
 						{

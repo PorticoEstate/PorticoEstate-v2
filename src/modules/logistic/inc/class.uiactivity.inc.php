@@ -233,7 +233,7 @@ class logistic_uiactivity extends phpgwapi_uicommon_jquery
 		);
 
 
-		self::render_template_xsl(array('datatable_jquery'), $data);
+		self::render_template_xsl(array('datatable2'), $data);
 	}
 
 	public function query()

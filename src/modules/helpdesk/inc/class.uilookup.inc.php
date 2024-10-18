@@ -236,7 +236,7 @@ JS;
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('helpdesk') . '::' . lang('template') . '::' . lang('list response template')]);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function email_template()
@@ -381,6 +381,6 @@ JS;
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('helpdesk') . '::' . lang('template') . '::' . lang('list email template')]);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 }

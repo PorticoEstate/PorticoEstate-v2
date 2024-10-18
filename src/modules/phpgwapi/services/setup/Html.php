@@ -162,7 +162,7 @@ class Html
 			//detect the schript path
 			$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');
 			//detect if we are in the setup
-			if (preg_match('/setup\//', $script_path))
+			if ($script_path && preg_match('/setup\//', $script_path))
 			{
 				$prefix = '../';
 			}

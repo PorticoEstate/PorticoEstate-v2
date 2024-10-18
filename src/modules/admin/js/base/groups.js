@@ -58,8 +58,8 @@ addUser = function (oArgs, parameters)
 
 	//	JqueryPortico.show_message(nTable, result);
 
-		oTable1.fnDraw();
-		oTable2.fnDraw();
+		oTable1.api().draw();
+		oTable2.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -85,8 +85,8 @@ removeUser = function (oArgs, parameters)
 
 //		JqueryPortico.show_message(nTable, result);
 
-		oTable1.fnDraw();
-		oTable2.fnDraw();
+		oTable1.api().draw();
+		oTable2.api().draw();
 
 	}, data, 'POST', 'JSON');
 };

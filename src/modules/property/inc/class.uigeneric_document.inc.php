@@ -124,8 +124,6 @@ class property_uigeneric_document extends phpgwapi_uicommon_jquery
 			return $this->query();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$categories = $this->_get_categories();
 
@@ -234,7 +232,7 @@ class property_uigeneric_document extends phpgwapi_uicommon_jquery
 			);
 		}
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	/**

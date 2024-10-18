@@ -1,5 +1,6 @@
 <?php
 
+use App\modules\bookingfrontend\controllers\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
@@ -19,6 +20,8 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('', BuildingController::class . ':index');
         $group->get('/{id}', BuildingController::class . ':show');
         $group->get('/{id}/resources', ResourceController::class . ':getResourcesByBuilding');
+        $group->get('/{id}/documents', BuildingController::class . ':getDocuments');
+        $group->get('/documents/{id}/download', BuildingController::class . ':downloadDocument');
     });
     $group->group('/resources', function (RouteCollectorProxy $group)
     {
@@ -26,6 +29,16 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/{id}', ResourceController::class . ':getResource');
     });
 });
+
+// Session group
+$app->group('/bookingfrontend', function (RouteCollectorProxy $group)
+{
+    $group->group('/applications', function (RouteCollectorProxy $group)
+    {
+        $group->get('/partials', ApplicationController::class . ':getPartials');
+        $group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
+    });
+})->add(new SessionsMiddleware($app->getContainer()));
 
 
 $app->get('/bookingfrontend/', StartPoint::class . ':bookingfrontend')->add(new SessionsMiddleware($app->getContainer()));

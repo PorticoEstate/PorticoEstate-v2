@@ -76,7 +76,7 @@ class booking_uirescategory extends booking_uicommon
 		}
 		$data['datatable']['actions'][] = array();
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 

@@ -1,11 +1,12 @@
-import {FC} from 'react';
 import BuildingCalendar from "@/components/building-calendar";
-import {fetchBuilding, useBuilding} from "@/service/api/building";
+import {fetchBuilding} from "@/service/api/building";
 import {notFound} from "next/navigation";
 import BuildingHeader from "@/components/building-page/building-header";
 import BuildingDescription from "@/components/building-page/building-description";
 import BuildingResources from "@/components/building-page/resource-list/building-resources";
 import BuildingContact from "@/components/building-page/building-contact";
+import LocalAccordionWrapper from "@/app/[lang]/(public)/building/[id]/local-accordion-wrapper";
+import BuildingPhotosWrapper from "@/components/building-page/building-photos/building-photos-wrapper";
 interface BuildingShowParams {
     id: string;
 }
@@ -57,7 +58,14 @@ const BuildingShow = async (props: BuildingShowProps) => {
         <main>
             <BuildingHeader building={building}/>
             <BuildingResources building={building}/>
-            <BuildingDescription building={building}/>
+            <hr className={`my-2 mx-3`}/>
+
+            <LocalAccordionWrapper>
+                <BuildingDescription building={building}/>
+                <BuildingPhotosWrapper building={building}/>
+                {/*<BuildingDescription building={building}/>*/}
+                {/*<BuildingDescription building={building}/>*/}
+            </LocalAccordionWrapper>
             <hr className={`my-2 mx-2`}/>
             <BuildingCalendar building_id={props.params.id}/>
             <BuildingContact building={building}/>

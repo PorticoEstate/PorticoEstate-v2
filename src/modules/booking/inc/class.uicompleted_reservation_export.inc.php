@@ -221,7 +221,7 @@ class booking_uicompleted_reservation_export extends booking_uicommon
 		$filters_to = $filters_to_array["filter_to"] ? strtotime($filters_to_array["filter_to"]) : time();
 		$data['filters'] = date("Y-m-d", $filters_to);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query() //index_json

@@ -6,16 +6,18 @@
     grid-area: filter;
 
 
-    @include desktop {
+    @include tablet {
         border: 1px solid #ccc;
         overflow-y: auto;
         //margin-bottom: 20px;
         margin-top: -0.875rem;
+        box-sizing: border-box;
         border-top: none;
         border-radius: 0;
         opacity: 1;
         transition: opacity 0.2s;
         min-width: 300px;
+        max-width: 300px;
         &.transparent {
             opacity: 0;
         }

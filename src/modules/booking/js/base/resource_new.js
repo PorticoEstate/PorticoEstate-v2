@@ -93,7 +93,7 @@ addBuilding = function ()
 		{
 			if (data.ok == true)
 			{
-				oTable0.fnDraw();
+				oTable0.api().draw();
 				$("#field_building_id").val('');
 				$("#field_building_name").val('');
 			}
@@ -119,7 +119,7 @@ removeBuilding = function ()
 		{
 			if (data.ok == true)
 			{
-				oTable0.fnDraw();
+				oTable0.api().draw();
 				$("#field_building_id").val('');
 				$("#field_building_name").val('');
 			}
@@ -209,7 +209,7 @@ addELock = function ()
 		{
 			if (data.ok == 1 || data.ok == 2)
 			{
-				oTable1.fnDraw();
+				oTable1.api().draw();
 				$("#e_lock_system_id").val('');
 				$("#e_lock_resource_id").val('');
 				$("#e_lock_name").val('');
@@ -239,7 +239,7 @@ removeELock = function ()
 		{
 			if (data.ok == true)
 			{
-				oTable1.fnDraw();
+				oTable1.api().draw();
 				$("#field_building_id").val('');
 				$("#field_building_name").val('');
 			}
@@ -268,7 +268,7 @@ add_participant_limit = function ()
 		{
 			if (data.ok == 1 || data.ok == 2)
 			{
-				oTable2.fnDraw();
+				oTable2.api().draw();
 				$("#participant_limit_from").val('');
 				$("#participant_limit_quantity").val('');
 			}

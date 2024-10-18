@@ -75,7 +75,7 @@ onclikUpdateinvestment = function ()
 				document.getElementById("message").style.color = "red";
 			});
 		}
-		oTable0.fnDraw();
+		oTable0.api().draw();
 
 	}, data, "POST", "JSON");
 }

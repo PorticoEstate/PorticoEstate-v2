@@ -99,5 +99,5 @@ $(document).ready(function ()
 function filterDataDocument(param, value)
 {
 	oTable5.dataTableSettings[5]['ajax']['data'][param] = value;
-	oTable5.fnDraw();
+	oTable5.api().draw();
 }

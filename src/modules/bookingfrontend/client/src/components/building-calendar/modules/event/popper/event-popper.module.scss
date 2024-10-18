@@ -7,14 +7,16 @@
     background-color: $grey-24;
     flex-grow: 1;
 
-    @include desktop {
-        max-width: 300px;
+    @include tablet {
+        //max-width: 300px;
         border-radius: 4px;
         padding-bottom: 1.5rem;
         padding-top: 1.5rem;
         border: 1px solid #ccc;
     }
-
+    &.withHeader {
+            padding: 1.5rem;
+    }
     //@include mobile {
     //    min-height: 100vh;
     //    max-height: 100vh;
@@ -68,6 +70,24 @@
         align-items: center;
     }
 
+
+
+    .dialogHeader {
+        background-color: $grey-24;
+        position: sticky;
+        display: flex;
+        flex-direction: row-reverse;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+        margin-bottom: 4px;
+        top: 0;
+        z-index: 1000;
+        transition: box-shadow 0.3s ease;
+        &.scrolled {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+    }
 }
 
 .resourcesList {

@@ -1250,8 +1250,6 @@ HTML;
 		}
 
 		phpgwapi_jquery::load_widget('numberformat');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 		self::add_javascript('helpdesk', 'base', 'tts.index.js');
 
 		phpgwapi_jquery::load_widget('bootstrap-multiselect');
@@ -1522,7 +1520,7 @@ JS;
 
 		Settings::getInstance()->update('flags', ['app_header' => $this->lang_app_name . ': ' . $function_msg]);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function upload_clip()

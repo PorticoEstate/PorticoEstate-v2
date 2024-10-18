@@ -245,8 +245,6 @@ class property_uipricebook extends phpgwapi_uicommon_jquery
 			return $this->query();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$jqcal = CreateObject('phpgwapi.jqcal');
 		$jqcal->add_listener('filter_start_date');
@@ -457,7 +455,7 @@ class property_uipricebook extends phpgwapi_uicommon_jquery
 		phpgwapi_jquery::load_widget('numberformat');
 
 		self::add_javascript('property', 'base', 'pricebook.index.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	private function query_group_filter()
@@ -541,8 +539,6 @@ class property_uipricebook extends phpgwapi_uicommon_jquery
 			return $this->query_group();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$appname		 = lang('pricebook');
 		$function_msg	 = lang('list agreement group');
@@ -646,7 +642,7 @@ class property_uipricebook extends phpgwapi_uicommon_jquery
 		phpgwapi_jquery::load_widget('core');
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function edit_agreement_group()
@@ -1118,8 +1114,6 @@ class property_uipricebook extends phpgwapi_uicommon_jquery
 			return $this->query_Activity();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 		phpgwapi_jquery::load_widget('select2');
 
 		$appname		 = lang('pricebook');
@@ -1278,7 +1272,7 @@ JS;
 
 		phpgwapi_js::getInstance()->add_code('', $js, true);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query_vendor($activity_id)
@@ -1362,9 +1356,6 @@ JS;
 			return $this->query_vendor($activity_id);
 		}
 
-
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$appname		 = lang('pricebook');
 		$function_msg	 = lang('list vendors per activity');
@@ -1499,7 +1490,7 @@ JS;
 
 		$this->save_sessiondata();
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function edit_activity()

@@ -189,7 +189,7 @@ class controller_uicontrol_group extends phpgwapi_uicommon_jquery
 			'parameters' => json_encode($parameters)
 		);
 
-		self::render_template_xsl(array('datatable_jquery'), $data);
+		self::render_template_xsl(array('datatable2'), $data);
 	}
 
 	/**

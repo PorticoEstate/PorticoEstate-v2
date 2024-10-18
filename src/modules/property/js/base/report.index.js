@@ -5,7 +5,7 @@ $(document).ready(function ()
 	{
 		paramsTable0['dataset_id'] = $('#list_dataset').val();
 
-		oTable0.fnDraw();		
+		oTable0.api().draw();		
 	});
 	
 });

@@ -1,8 +1,8 @@
 import {phpGWLink} from "@/service/util";
 import {useQuery} from "@tanstack/react-query";
 import {IBuilding} from "@/service/types/Building";
-import {IBuildingResource} from "@/service/pecalendar.types";
-import {IAPIQueryResponse} from "@/service/types/api.types";
+import {IAPIQueryResponse, IDocument, IDocumentCategoryQuery} from "@/service/types/api.types";
+import {IShortResource} from "@/service/pecalendar.types";
 
 
 export async function fetchBuilding(building_id: number, instance?: string): Promise<IBuilding> {
@@ -40,7 +40,7 @@ export function useBuilding(building_id: number, instance?: string) {
 }
 
 
-export async function fetchBuildingResources(building_id: number, instance?: string): Promise<IBuildingResource[]> {
+export async function fetchBuildingResources(building_id: number, instance?: string): Promise<IShortResource[]> {
     const url = phpGWLink(
         ["bookingfrontend", 'buildings', building_id, 'resources'],
         {short: 1, results: -1},
@@ -52,6 +52,17 @@ export async function fetchBuildingResources(building_id: number, instance?: str
     if (!response.ok) {
         throw new Error('Failed to fetch building data');
     }
-    const result: IAPIQueryResponse<IBuildingResource> = await response.json();
+    const result: IAPIQueryResponse<IShortResource> = await response.json();
     return result.results;
+}
+
+
+
+
+export async function fetchBuildingDocuments(buildingId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
+    const url = phpGWLink(["bookingfrontend", 'buildings', buildingId, 'documents'],
+    type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
 }

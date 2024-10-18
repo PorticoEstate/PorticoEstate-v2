@@ -207,7 +207,7 @@ Tilsynsvakt email	bookingfrontend	no	Epost til tilsynsvakt
 Tilsynsvakt name	bookingfrontend	no	Navn på tilsynsvakt
 Tilsynsvakt telephone	bookingfrontend	no	Telefonnummer til tilsynsvakt
 Time is set wrong	bookingfrontend	no	Et av klokkeslettene er feil
-To application site	bookingfrontend	no	Til søknadsside
+To application site	bookingfrontend	no	Til bestilling
 To borrow premises you must verify that you have read terms and conditions	bookingfrontend	no	For å kunne låne lokaler må du først bekrefte at du har lest de juridiske betingelser
 To cancel allocation use this link	bookingfrontend	no	For å slette tildelingen: bruk lenken
 To cancel booking use this link	bookingfrontend	no	For å slette interntildelingen: bruk lenken

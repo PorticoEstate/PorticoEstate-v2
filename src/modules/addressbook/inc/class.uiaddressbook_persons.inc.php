@@ -603,7 +603,7 @@ class addressbook_uiaddressbook_persons extends phpgwapi_uicommon
 
 
 		self::add_javascript('addressbook', 'base', 'addressbook_persons.index.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query($relaxe_acl = false)

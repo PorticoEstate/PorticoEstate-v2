@@ -77,21 +77,21 @@ function filterDataLocations(param, value)
 {
 //	oTable1.dataTableSettings[1]['ajax']['data'][param] = value;
 	paramsTable1[param] = value;
-	oTable1.fnDraw();
+	oTable1.api().draw();
 }
 
 function filterDataContracts(param, value)
 {
 //	oTable2.dataTableSettings[2]['ajax']['data'][param] = value;
 	paramsTable2[param] = value;
-	oTable2.fnDraw();
+	oTable2.api().draw();
 }
 
 function filterDataApplications(param, value)
 {
 //	oTable3.dataTableSettings[3]['ajax']['data'][param] = value;
 	paramsTable3[param] = value;
-	oTable3.fnDraw();
+	oTable3.api().draw();
 }
 
 function formatterArea(key, oData)
@@ -168,8 +168,8 @@ addUnit = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable0.fnDraw();
-		oTable1.fnDraw();
+		oTable0.api().draw();
+		oTable1.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -195,7 +195,7 @@ removeUnit = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable0.fnDraw();
+		oTable0.api().draw();
 
 	}, data, 'POST', 'JSON');
 };

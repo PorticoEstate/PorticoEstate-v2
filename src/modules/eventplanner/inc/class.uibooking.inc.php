@@ -133,7 +133,7 @@ class eventplanner_uibooking extends phpgwapi_uicommon
 		self::add_javascript($this->currentapp, 'base', 'booking.index.js');
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 	/*
 		 * Edit the price item with the id given in the http variable 'id'

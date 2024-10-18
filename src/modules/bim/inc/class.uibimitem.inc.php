@@ -167,7 +167,7 @@ class bim_uibimitem extends phpgwapi_uicommon_jquery implements uibimitem
 			'parameters' => json_encode($parameters)
 		);
 
-		self::render_template_xsl(array('datatable_jquery'), $data);
+		self::render_template_xsl(array('datatable2'), $data);
 	}
 
 	public function showBimItem()

@@ -104,7 +104,7 @@ class activitycalendar_uiorganization extends activitycalendar_uicommon
 			)
 		);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function save()
@@ -389,7 +389,7 @@ class activitycalendar_uiorganization extends activitycalendar_uicommon
 			)
 		);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function index_json()

@@ -1,9 +1,9 @@
 'use client'
-import {FC} from 'react';
+import React, {FC} from 'react';
 import {useBookingUser} from "@/service/hooks/api-hooks";
-import {Button, Divider, DropdownMenu} from "@digdir/designsystemet-react";
+import {Button, Divider, Dropdown} from "@digdir/designsystemet-react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faSignInAlt, faSignOutAlt, faUser} from "@fortawesome/free-solid-svg-icons";
+import {faChevronDown, faFutbol, faSignInAlt, faUser} from "@fortawesome/free-solid-svg-icons";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {phpGWLink} from "@/service/util";
 import Link from "next/link";
@@ -17,36 +17,47 @@ const UserMenu: FC<UserMenuProps> = (props) => {
     const {data: bookingUser, isLoading} = bookingUserQ;
 
     if (bookingUser?.is_logged_in) {
-        return (<DropdownMenu.Root
-            placement="bottom-end"
-            size="md"
-        >
-            <DropdownMenu.Trigger variant={'tertiary'} color={'accent'} size={'sm'}>
-                <FontAwesomeIcon icon={faUser}/> {bookingUser.orgnr}
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-                <DropdownMenu.Group>
-                    <DropdownMenu.Item asChild>
+        return (<Dropdown.Context>
+            <Dropdown.Trigger variant={'tertiary'} color={'accent'} size={'sm'}>
+                <FontAwesomeIcon icon={faUser}/> {bookingUser.name} <FontAwesomeIcon icon={faChevronDown}/>
+            </Dropdown.Trigger>
+            <Dropdown>
+                <Dropdown.List>
+                    <Dropdown.Item asChild>
                         <Link href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiuser.show'}, false)}
                               className={'link-text link-text-unset normal'}>
-                            {t('bookingfrontend.my page')}
+                            <FontAwesomeIcon icon={faUser}/> {t('bookingfrontend.my page')}
                         </Link>
-                    </DropdownMenu.Item>
-                </DropdownMenu.Group>
+                    </Dropdown.Item>
+                </Dropdown.List>
                 <Divider/>
-                <DropdownMenu.Group>
+                <Dropdown.List>
+                    {bookingUser.delegates?.map((delegate) => <Dropdown.Item asChild key={delegate.org_id}>
+                        <Link href={phpGWLink('bookingfrontend/', {
+                            menuaction: 'bookingfrontend.uiorganization.show',
+                            id: delegate.org_id
+                        }, false)}
+                              className={'link-text link-text-unset normal'}>
+                            <FontAwesomeIcon icon={faFutbol}/> {delegate.name}
+                        </Link>
+                    </Dropdown.Item>)}
 
-                        <DropdownMenu.Item asChild>
-                            <Link href={phpGWLink(['bookingfrontend', 'logout'])}
-                                  className="link-text link-text-unset normal">
+
+                </Dropdown.List>
+                <Divider/>
+                <Dropdown.List>
+
+                    <Dropdown.Item asChild>
+                        <Link href={phpGWLink(['bookingfrontend', 'logout'])}
+                              className="link-text link-text-unset normal">
                             {t('common.logout')}
-                            </Link>
+                        </Link>
 
-                        </DropdownMenu.Item>
+                    </Dropdown.Item>
 
-                </DropdownMenu.Group>
-            </DropdownMenu.Content>
-        </DropdownMenu.Root>);
+                </Dropdown.List>
+            </Dropdown>
+        </Dropdown.Context>);
     }
 
     return (

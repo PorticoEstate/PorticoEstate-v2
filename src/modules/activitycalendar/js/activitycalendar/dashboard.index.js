@@ -31,13 +31,13 @@ function sendMail(oArgs, parameters)
 		}, data, 'POST', 'JSON');
 	}
 
-	oTable1.fnDraw();
+	oTable1.api().draw();
 }
 
 function filterDataActivities(param, value)
 {
 	oTable1.dataTableSettings[1]['ajax']['data'][param] = value;
-	oTable1.fnDraw();
+	oTable1.api().draw();
 }
 
 $(document).ready(function ()

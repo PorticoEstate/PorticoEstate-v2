@@ -170,7 +170,7 @@ class booking_uibooking extends booking_uicommon
 		}
 		$data['filters'] = $this->export_filters;
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query()

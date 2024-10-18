@@ -279,8 +279,6 @@ class property_uiinvestment extends phpgwapi_uicommon_jquery
 			return $this->query();
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$jqcal = createObject('phpgwapi.jqcal');
 		$jqcal->add_listener('filter_start_date');
@@ -433,7 +431,7 @@ class property_uiinvestment extends phpgwapi_uicommon_jquery
 
 		phpgwapi_jquery::load_widget('numberformat');
 		self::add_javascript('property', 'base', 'investment.index.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function update_investment($values = '')

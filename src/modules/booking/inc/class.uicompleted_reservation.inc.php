@@ -297,7 +297,7 @@ JS;
 			'custom_code'	 => 'window.open("' . $this->link_to('toggle_show_all_completed_reservations') . '", "_self");',
 		);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	protected function add_current_customer_identifier_info(&$data)

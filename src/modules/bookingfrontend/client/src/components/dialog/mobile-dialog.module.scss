@@ -50,7 +50,7 @@
         transform: translateY(100%);
     }
 
-    @include desktop {
+    @include tablet {
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%) scale(0.9);
@@ -61,7 +61,7 @@
         min-height: 480px;
     }
     &.hd {
-        @include desktop {
+        @include tablet {
             width: 1024px;
             height: 960px;
         }
@@ -76,7 +76,7 @@
         transform: translateY(0);
     }
 
-    @include desktop {
+    @include tablet {
         transform: translate(-50%, -50%) scale(1);
     }
 }

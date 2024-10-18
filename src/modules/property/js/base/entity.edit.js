@@ -19,7 +19,7 @@ this.refresh_files = function ()
 
 	refresh_glider(strURL);
 
-	oTable0.fnDraw();
+	oTable0.api().draw();
 }
 
 this.showlightbox_add_inventory = function (location_id, id)
@@ -234,7 +234,7 @@ $(document).ready(function ()
 	$('#doc_type').change( function()
 	{
 		paramsTable7['doc_type'] = $(this).val();
-		oTable7.fnDraw();				
+		oTable7.api().draw();				
 	});
 
 	$("#workorder_cancel").on("submit", function (e)

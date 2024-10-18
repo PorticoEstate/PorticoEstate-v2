@@ -1,4 +1,3 @@
-import {FC} from 'react';
 import {IBuilding} from "@/service/types/Building";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faLocationDot} from "@fortawesome/free-solid-svg-icons";

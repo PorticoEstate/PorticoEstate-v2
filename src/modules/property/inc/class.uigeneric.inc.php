@@ -395,8 +395,6 @@
 				return $this->query();
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname										 = $this->location_info['name'];
 			$this->flags['app_header']	 = $this->translation->translate($this->location_info['acl_app'], array(), false, $this->location_info['acl_app']) . "::{$appname}";
@@ -544,7 +542,7 @@
 			}
 			unset($parameters);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		/**

@@ -186,7 +186,7 @@ class booking_uievent extends booking_uicommon
 		);
 		$data['datatable']['actions'][] = array();
 		$data['datatable']['new_item'] = self::link(array('menuaction' => 'booking.uievent.add'));
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query()

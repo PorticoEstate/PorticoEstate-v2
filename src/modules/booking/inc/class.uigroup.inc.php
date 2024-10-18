@@ -195,7 +195,7 @@ class booking_uigroup extends booking_uicommon
 		);
 		$data['datatable']['new_item'] = self::link(array('menuaction' => $this->module . '.uigroup.edit'));
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query()

@@ -102,7 +102,7 @@
 			function filterData(param, value)
 			{
 				oTable0.dataTableSettings[0]['ajax']['data'][param] = value;
-				oTable0.fnDraw();
+				oTable0.api().draw();
 			}
 		]]>
 

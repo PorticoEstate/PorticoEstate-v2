@@ -22,13 +22,49 @@ class ServerSettingsController
 
     /**
      * @OA\Get(
-     *     path="/phpgwapi/server-settings",
+     *     path="/api/server-settings",
      *     summary="Get server settings",
+     *     description="Retrieves the server settings, optionally including booking and bookingfrontend configurations.",
      *     tags={"Server Settings"},
+     *     @OA\Parameter(
+     *         name="include_configs",
+     *         in="query",
+     *         description="Whether to include booking and bookingfrontend configurations",
+     *         required=false,
+     *         @OA\Schema(type="boolean")
+     *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Server settings",
-     *         @OA\JsonContent(ref="#/components/schemas/ServerSettings")
+     *         description="Successful response with server settings",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="bakcground_image", type="string", nullable=true),
+     *             @OA\Property(property="logo_url", type="string"),
+     *             @OA\Property(property="logo_title", type="string"),
+     *             @OA\Property(property="site_title", type="string"),
+     *             @OA\Property(property="support_address", type="string"),
+     *             @OA\Property(property="webserver_url", type="string"),
+     *             @OA\Property(
+     *                 property="bookingfrontend_config",
+     *                 type="object",
+     *                 nullable=true,
+     *                 ref="#/components/schemas/BookingfrontendConfig"
+     *             ),
+     *             @OA\Property(
+     *                 property="booking_config",
+     *                 type="object",
+     *                 nullable=true,
+     *                 ref="#/components/schemas/BookingConfig"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="error", type="string")
+     *         )
      *     )
      * )
      */
@@ -36,9 +72,10 @@ class ServerSettingsController
     {
         try
         {
-//            $config_backend = CreateObject('phpgwapi.config', 'booking')->read();
-            $serverSettings = $this->settings->get('server');
-            $model = new ServerSettings($serverSettings);
+            $queryParams = $request->getQueryParams();
+            $includeConfigs = isset($queryParams['include_configs']) && $queryParams['include_configs'] === 'true';
+
+            $model = ServerSettings::getInstance($includeConfigs);
             $serialized = $model->serialize();
 
             $response->getBody()->write(json_encode($serialized));

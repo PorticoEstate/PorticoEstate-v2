@@ -1666,7 +1666,7 @@ JS;
 		self::add_javascript('rental', 'base', 'contract.index.js');
 		phpgwapi_jquery::load_widget('bootstrap-multiselect');
 		phpgwapi_jquery::load_widget('numberformat');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function save()

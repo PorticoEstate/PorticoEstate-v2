@@ -11,9 +11,9 @@
         "start:production": "next start"
     },
     "dependencies": {
-        "@digdir/designsystemet-css": "^1.0.0-next.32",
-        "@digdir/designsystemet-react": "^1.0.0-next.32",
-        "@digdir/designsystemet-theme": "^1.0.0-next.32",
+        "@digdir/designsystemet-css": "1.0.0-next.35",
+        "@digdir/designsystemet-react": "1.0.0-next.35",
+        "@digdir/designsystemet-theme": "1.0.0-next.35",
         "@emotion/react": "^11.13.0",
         "@emotion/styled": "^11.13.0",
         "@floating-ui/react": "^0.26.23",
@@ -38,11 +38,13 @@
         "i18next": "^23.14.0",
         "luxon": "^3.4.4",
         "next": "14.2.4",
+        "photoswipe": "^5.4.4",
         "react": "^18",
         "react-country-flag": "^3.1.0",
         "react-datepicker": "^7.3.0",
         "react-dom": "^18",
         "react-i18next": "^15.0.1",
+        "react-photoswipe-gallery": "^3.0.2",
         "react-select": "^5.8.0",
         "sass": "^1.77.6"
     },

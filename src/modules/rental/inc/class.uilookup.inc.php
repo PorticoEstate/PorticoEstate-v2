@@ -159,6 +159,6 @@ class rental_uilookup extends phpgwapi_uicommon_jquery
 
 		Settings::getInstance()->update('flags', ['app_header' => lang('rental') . ' - ' . $appname . ': ' . $function_msg]);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 }

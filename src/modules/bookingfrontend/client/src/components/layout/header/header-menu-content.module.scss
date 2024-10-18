@@ -2,7 +2,7 @@
 @import '../../../styles/colors';
 
 .sidenav {
-    @include desktop {
+    @include tablet {
         display: flex;
         .closebtn {
             display: none;
@@ -107,7 +107,7 @@
         background: $black;
     }
 
-    @include desktop {
+    @include tablet {
         display: none;
     }
 }

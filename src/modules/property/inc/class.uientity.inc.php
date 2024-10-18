@@ -1391,8 +1391,6 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			$category = $this->soadmin_entity->read_single_category($this->entity_id, $this->cat_id);
 		}
 
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 		$jqcal = CreateObject('phpgwapi.jqcal');
 		$jqcal->add_listener('filter_start_date');
@@ -1708,7 +1706,7 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$this->flags['app_header'] = lang($this->type_app[$this->type]) . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function edit($values = array(), $mode = 'edit')

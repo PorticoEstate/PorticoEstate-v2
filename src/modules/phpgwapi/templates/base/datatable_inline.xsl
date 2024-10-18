@@ -278,7 +278,7 @@
 																	for (; n &lt; numSelected; ) {
 
 														//				console.log(selected[n]);
-																		var aData = oTable<xsl:number value="$num"/>.fnGetData( selected[n] ); //complete dataset from json returned from server
+																		var aData = oTable<xsl:number value="$num"/>.api().rows(selected[n]).data()[0]; //complete dataset from json returned from server
 														//				console.log(aData);
 
 																		//delete stuff comes here
@@ -307,7 +307,7 @@
 																						.append($('<span>' + result + '</span>'))
 																						.insertAfter(message);
 
-																					oTable<xsl:number value="$num"/>.fnDraw();
+																					oTable<xsl:number value="$num"/>.api().draw();
 																				});
 																		}
 																		else if (target == 'ajax')
@@ -315,7 +315,7 @@
 																				action += "&amp;phpgw_return_as=json";
 																				JqueryPortico.execute_ajax(action, function(result){
 																					document.getElementById("message<xsl:number value="$num"/>").innerHTML += '<br/>' + result;
-																					oTable<xsl:number value="$num"/>.fnDraw();
+																					oTable<xsl:number value="$num"/>.api().draw();
 																				});
 																		}
 																		else

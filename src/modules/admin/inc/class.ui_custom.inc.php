@@ -1188,7 +1188,7 @@ class admin_ui_custom extends phpgwapi_uicommon_jquery
 		unset($parameters2);
 		self::add_javascript('admin', 'base', 'ui_custom.list_attribute_group.js');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function edit_attrib_group()

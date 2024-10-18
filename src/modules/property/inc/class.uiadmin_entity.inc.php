@@ -156,8 +156,6 @@
 				return $this->query(array('method' => $this->type));
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('entity');
 			$function_msg	 = lang('list entity type');
@@ -266,7 +264,7 @@
 
 			unset($parameters);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function query( $data = array() )
@@ -418,8 +416,6 @@
 				return $this->query(array('method' => 'category', 'entity_id' => $entity_id));
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('Entity:' . $entity['name']);
 			$function_msg	 = lang('list entity type');
@@ -631,7 +627,7 @@
 			unset($parameters3);
 			unset($parameters4);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function save()
@@ -1265,8 +1261,6 @@
 						'cat_id'	 => $cat_id
 				));
 			}
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$category	 									 = $this->bo->read_single_category($entity_id, $cat_id);
 			$appname										 = lang('attribute group');
@@ -1442,7 +1436,7 @@
 
 			unset($parameters);
 			unset($parameters2);
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		function list_attribute()
@@ -1477,8 +1471,6 @@
 				);
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('attribute');
 			$function_msg	 = lang('list entity attribute');
@@ -1661,7 +1653,7 @@
 			unset($parameters);
 			unset($parameters2);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		function edit_attrib_group()
@@ -2127,8 +2119,6 @@
 				);
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname										 = lang('attribute');
 			$function_msg									 = lang('list entity attribute');
@@ -2286,7 +2276,7 @@
 			unset($parameters);
 			unset($parameters2);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		function edit_custom_function()
@@ -2701,8 +2691,6 @@
 				);
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('checklist');
 			$function_msg	 = " ({$category['name']})";
@@ -2857,7 +2845,7 @@
 
 			
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		function list_checklist_stage()
@@ -2910,8 +2898,6 @@
 				);
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('checklist stage');
 			$function_msg	 = " ({$category['name']} / {$checklist['name']})";
@@ -3031,7 +3017,7 @@
 
 			unset($parameters);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		/**

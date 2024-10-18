@@ -206,7 +206,7 @@ abstract class booking_uidocument extends booking_uicommon
 			$data['datatable']['new_item'] = $this->get_owner_typed_link('add');
 		}
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function query()
@@ -220,7 +220,7 @@ abstract class booking_uidocument extends booking_uicommon
 			//				$document_actions = array();
 			//				if ($this->bo->allow_write($document))  $document_actions[] = $this->get_owner_typed_link('edit', array('id' => $document['id']));
 			//				if ($this->bo->allow_delete($document)) $document_actions[] = $this->get_owner_typed_link('delete', array('id' => $document['id']));
-			//				
+			//
 			//				$document['actions'] = $document_actions;
 
 			try
@@ -428,7 +428,6 @@ abstract class booking_uidocument extends booking_uicommon
 		$id = Sanitizer::get_var('id', 'int');
 
 		$document = $this->bo->read_single($id);
-
 		self::send_file($document['filename'], array('filename' => $document['name']));
 	}
 

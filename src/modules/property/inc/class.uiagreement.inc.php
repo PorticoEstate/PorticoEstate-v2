@@ -281,8 +281,6 @@
 				return $this->query();
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('agreement');
 			$function_msg	 = lang('List') . ' ' . lang($this->role);
@@ -441,7 +439,7 @@
 			unset($parameters);
 			unset($parameters2);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		private function _get_params()

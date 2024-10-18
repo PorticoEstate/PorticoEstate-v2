@@ -169,7 +169,7 @@ class logistic_uirequirement_resource_allocation extends phpgwapi_uicommon_jquer
 			),
 		);
 
-		self::render_template_xsl(array('datatable_jquery'), $data);
+		self::render_template_xsl(array('datatable2'), $data);
 	}
 
 	public function query()

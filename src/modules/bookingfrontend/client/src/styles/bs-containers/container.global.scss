@@ -59,7 +59,7 @@ $grid-breakpoints: (        // Define your breakpoints
 
 // Fluid container (always 100% width)
 .container-fluid {
-    @include desktop {
+    @include tablet {
         width: 100%;
         padding-right: $container-padding-x;
         padding-left: $container-padding-x;

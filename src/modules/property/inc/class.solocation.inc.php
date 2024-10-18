@@ -979,6 +979,9 @@ class property_solocation
 					case 'antallrom':
 						$filtermethod	 .= " {$where} antallrom = " . (int)$value;
 						break;
+					case 'street_number':
+						$filtermethod	 .= " {$where} street_number  $this->like '%{$value}%'";
+						break;
 					case 'street_name':
 						$filtermethod	 .= " {$where} fm_streetaddress.descr $this->like '%{$value}%'";
 						break;

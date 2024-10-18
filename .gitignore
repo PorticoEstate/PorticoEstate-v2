@@ -10,3 +10,5 @@
 /src/modules/bookingfrontend/js/bookingfrontend_2/node_modules/*
 compose.yml
 Dockerfile.local
+
+/public

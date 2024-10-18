@@ -607,7 +607,7 @@ JS;
 		phpgwapi_js::getInstance()->add_code('', $jscode);
 
 		self::add_javascript('rental', 'base', 'party.sync.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	/**
@@ -1375,7 +1375,7 @@ JS;
 		phpgwapi_js::getInstance()->add_code('', $jscode);
 
 		self::add_javascript('rental', 'base', 'party.sync.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function syncronize_party()

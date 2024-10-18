@@ -5,23 +5,39 @@
     grid-area: inner-header;
     //justify-content: space-between;
     align-items: center;
-    gap:0.5rem;
+    column-gap: 0.5rem;
 
     display: grid;
-    grid-template-columns:auto 20rem 1fr auto auto;
-    grid-template-rows: auto;
-    grid-template-areas: "resource-button date mode-select-time mode-select order";
 
     @include mobile {
-        display: grid;
+        row-gap: 0.5rem;
         grid-template-columns:auto 1fr;
-        grid-template-rows: auto auto;
-        grid-template-areas: "mode-select resource-button" "date date";
+        grid-template-areas: "mode-select resource-button" "date date" "order order";
         //display: none;
     }
-
+    @include tablet {
+        row-gap: 0.5rem;
+        grid-template-columns:auto 1fr;
+        grid-template-rows: auto auto;
+        grid-template-areas: "mode-select resource-button" "resource-button date";
+        //display: none;
+    }
+    @include desktop {
+        row-gap: 0rem;
+        grid-template-columns:auto auto 1fr auto auto;
+        grid-template-rows: auto;
+        grid-template-areas: "resource-button date mode-select-time mode-select order";
+        //display: none;
+    }
+    .orderButton {
+        grid-area: order;
+    }
     .datePicker {
         grid-area: date;
+        width: min-content;
+        @include mobile {
+            width: unset;
+        }
     }
 
 
@@ -68,12 +84,18 @@
 .mobileResourcesButton {
     grid-area: resource-button;
 
-    @include desktop {
+    @include tablet {
         display: none;
     }
 }
 
 .expandCollapseButton {
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 0.5rem;
     @include mobile {
         display: none;
     }
@@ -82,13 +104,14 @@
     margin-left: 0;
     width: 300px;
 
-    border: 1px solid #eee;
 
     &.open {
         transform: rotate(0deg);
         border-bottom: 0;
 
     }
+
+
     //&.open {
     //    margin-left: -0.875rem;
     //}

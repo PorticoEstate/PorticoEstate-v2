@@ -7,7 +7,6 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faLayerGroup} from "@fortawesome/free-solid-svg-icons";
 import MobileDialog from "@/components/dialog/mobile-dialog";
-import {Badge} from "@/components/digdir@next/badge/badge";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 
 export interface CalendarResourceFilterOption {
@@ -57,7 +56,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
                     checked={enabledResources.size === resourceOptions.length}
                     onChange={onToggleAll}
                     className={styles.resourceCheckbox}
-                    disabled={Object.values(tempEvents).length > 1}
+                    disabled={Object.values(tempEvents).length > 0}
                 >
                     <label
                         htmlFor={`resource-all`}
@@ -76,7 +75,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
                         checked={enabledResources.has(resource.value)}
                         onChange={() => onToggle(resource.value)}
                         className={styles.resourceCheckbox}
-                        disabled={Object.values(tempEvents).length > 1}
+                        disabled={Object.values(tempEvents).length > 0}
                     >
                         <label
                             htmlFor={`resource-${resource.value}`}

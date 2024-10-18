@@ -231,7 +231,7 @@ class registration_uipending extends phpgwapi_uicommon_jquery
 								document.getElementById("message").innerHTML += v.msg + "<br/>";
 							});
 						}
-						oTable.fnDraw();
+						oTable.api().draw();
 					}, data, "POST", "JSON");
 				';
 
@@ -244,7 +244,7 @@ class registration_uipending extends phpgwapi_uicommon_jquery
 		}
 
 
-		self::render_template_xsl(array('datatable_jquery'), $data);
+		self::render_template_xsl(array('datatable2'), $data);
 	}
 
 	public function edit()

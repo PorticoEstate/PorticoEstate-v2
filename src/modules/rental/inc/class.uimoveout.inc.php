@@ -132,7 +132,7 @@ class rental_uimoveout extends phpgwapi_uicommon
 		self::add_javascript('rental', 'base', 'moveout.index.js');
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function edit($values = array(), $mode = 'edit')

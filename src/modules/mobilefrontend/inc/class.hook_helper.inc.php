@@ -40,7 +40,7 @@ class mobilefrontend_hook_helper
 	{
 		$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');
 
-		if (preg_match('/mobilefrontend/', $script_path))
+		if ($script_path && preg_match('/mobilefrontend/', $script_path))
 		{
 			$this->perform_action = true;
 			$this->config = CreateObject('phpgwapi.config', 'mobilefrontend')->read();

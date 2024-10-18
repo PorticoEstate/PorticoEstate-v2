@@ -9,7 +9,8 @@ abstract class booking_socommon
 {
 
 	protected $db;
-	protected static $db2 = null;
+	protected $db2;
+	protected static $db2_static = null;
 	protected $db_null = 'NULL';
 	protected $userSettings;
 	protected $serverSettings;
@@ -67,11 +68,11 @@ abstract class booking_socommon
 
 	protected static function getDb2()
 	{
-		if (self::$db2 === null)
+		if (self::$db2_static === null)
 		{
-			self::$db2 = new Db2();
+			self::$db2_static = new Db2();
 		}
-		return self::$db2;
+		return self::$db2_static;
 	}
 
 	/**

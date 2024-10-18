@@ -1,4 +1,4 @@
-import {IBuildingResource, IEvent} from "@/service/pecalendar.types";
+import {IEvent, IShortResource} from "@/service/pecalendar.types";
 import {EventClickArg, EventContentArg} from "@fullcalendar/core";
 import {EventImpl} from "@fullcalendar/core/internal";
 
@@ -40,7 +40,7 @@ export interface FCallTempEvent {
     editable: boolean,
     extendedProps: {
         type: 'temporary',
-        resources: IBuildingResource[]
+        resources: IShortResource[]
     };
 }
 

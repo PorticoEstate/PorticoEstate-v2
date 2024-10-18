@@ -41,5 +41,5 @@ var newTicket = function (oArgs)
 
 refresh_entity = function ()
 {
-	oTable0.fnDraw();
+	oTable0.api().draw();
 };

@@ -31,5 +31,5 @@ function sendMail(oArgs, parameters)
 		}, data, 'POST', 'JSON');
 	}
 
-	oTable.fnDraw();
+	oTable.api().draw();
 }

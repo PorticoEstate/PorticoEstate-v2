@@ -43,7 +43,7 @@ class controller_menu
 	{
 		$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');
 
-		if (preg_match('/mobilefrontend/', $script_path))
+		if ($script_path && preg_match('/mobilefrontend/', $script_path))
 		{
 			$this->mobilefrontend = true;
 		}

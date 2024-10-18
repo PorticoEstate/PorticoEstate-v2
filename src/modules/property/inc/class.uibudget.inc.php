@@ -608,7 +608,7 @@ use App\modules\phpgwapi\services\Cache;
 			phpgwapi_jquery::load_widget('numberformat');
 
 			self::add_javascript('property', 'base', 'budget.index.js');
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function query()
@@ -778,7 +778,7 @@ use App\modules\phpgwapi\services\Cache;
 			phpgwapi_jquery::load_widget('numberformat');
 			self::add_javascript('property', 'base', 'budget.basis.js');
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function query_basis()
@@ -931,7 +931,7 @@ use App\modules\phpgwapi\services\Cache;
 			phpgwapi_jquery::load_widget('numberformat');
 			self::add_javascript('property', 'base', 'budget.obligations.js');
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function query_obligations()

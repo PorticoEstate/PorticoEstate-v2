@@ -736,7 +736,7 @@ JS;
 
 		phpgwapi_jquery::load_widget('numberformat');
 		self::add_javascript('property', 'base', 'invoice.index.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	private function get_uicols($paid = null)
@@ -2464,7 +2464,7 @@ JS;
 
 		phpgwapi_jquery::load_widget('numberformat');
 		self::add_javascript('property', 'base', 'invoice.consume.js');
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	function delete()

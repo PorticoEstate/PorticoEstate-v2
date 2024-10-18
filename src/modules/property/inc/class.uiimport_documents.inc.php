@@ -735,7 +735,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 				'actions'	 => array(array())
 			)
 		);
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	/**

@@ -95,7 +95,7 @@ $(document).ready(function ()
 				$('#document_type')[0].selectedIndex = 0;
 				$('#document_title').val('');
 				$('#ctrl_upoad_path').val('');
-				oTable1.fnDraw();
+				oTable1.api().draw();
 			}
 		});
 	});
@@ -162,7 +162,7 @@ removeDocument = function (oArgs, parameters)
 	{
 
 		JqueryPortico.show_message(nTable, result);
-		oTable1.fnDraw();
+		oTable1.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -170,13 +170,13 @@ removeDocument = function (oArgs, parameters)
 function filterDataContract(param, value)
 {
 	oTable0.dataTableSettings[0]['ajax']['data'][param] = value;
-	oTable0.fnDraw();
+	oTable0.api().draw();
 }
 
 function filterDataDocument(param, value)
 {
 	oTable1.dataTableSettings[1]['ajax']['data'][param] = value;
-	oTable1.fnDraw();
+	oTable1.api().draw();
 }
 
 function onGetSync_data(requestUrl)

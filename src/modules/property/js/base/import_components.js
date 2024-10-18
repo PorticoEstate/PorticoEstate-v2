@@ -756,7 +756,7 @@ function getLocations()
 	paramsTable0['district_id'] = $('#district_id').val();
 	paramsTable0['part_of_town_id'] = $('#part_of_town_id').val();
 			
-	oTable0.fnDraw();
+	oTable0.api().draw();
 }
 	
 var statusSend = false;

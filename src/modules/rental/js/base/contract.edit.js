@@ -46,7 +46,7 @@ function changeDate_price_item(param, value)
 
 		JqueryPortico.show_message(5, result);
 
-		oTable5.fnDraw();
+		oTable5.api().draw();
 
 	}, data, 'POST', 'JSON');
 }
@@ -76,7 +76,7 @@ function changeOne_time_price_item(param, value)
 		alert(message);
 		JqueryPortico.show_message(5, result);
 
-		oTable5.fnDraw();
+		oTable5.api().draw();
 
 	}, data, 'POST', 'JSON');
 }
@@ -455,7 +455,7 @@ $(document).ready(function ()
 				$('#document_type')[0].selectedIndex = 0;
 				$('#document_title').val('');
 				$('#ctrl_upoad_path').val('');
-				oTable8.fnDraw();
+				oTable8.api().draw();
 			}
 		});
 	});
@@ -466,19 +466,19 @@ $(document).ready(function ()
 function filterDataComposite(param, value)
 {
 	oTable2.dataTableSettings[2]['ajax']['data'][param] = value;
-	oTable2.fnDraw();
+	oTable2.api().draw();
 }
 
 function filterDataParty(param, value)
 {
 	oTable4.dataTableSettings[4]['ajax']['data'][param] = value;
-	oTable4.fnDraw();
+	oTable4.api().draw();
 }
 
 function filterDataDocument(param, value)
 {
 	oTable8.dataTableSettings[8]['ajax']['data'][param] = value;
-	oTable8.fnDraw();
+	oTable8.api().draw();
 }
 
 /******************************************************************************/
@@ -526,8 +526,8 @@ addComposite = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable1.fnDraw();
-		oTable2.fnDraw();
+		oTable1.api().draw();
+		oTable2.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -553,8 +553,8 @@ removeComposite = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable1.fnDraw();
-		oTable2.fnDraw();
+		oTable1.api().draw();
+		oTable2.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -600,8 +600,8 @@ addParty = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable3.fnDraw();
-		oTable4.fnDraw();
+		oTable3.api().draw();
+		oTable4.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -627,8 +627,8 @@ removeParty = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable3.fnDraw();
-		oTable4.fnDraw();
+		oTable3.api().draw();
+		oTable4.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -639,7 +639,7 @@ setPayer = function (requestUrl)
 	{
 
 		JqueryPortico.show_message(3, result);
-		oTable3.fnDraw();
+		oTable3.api().draw();
 
 	}, '', "POST", "JSON");
 };
@@ -684,9 +684,9 @@ addPrice = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable5.fnDraw();
-		oTable6.fnDraw();
-		oTable0.fnDraw();
+		oTable5.api().draw();
+		oTable6.api().draw();
+		oTable0.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -712,8 +712,8 @@ removePrice = function (oArgs, parameters)
 
 		JqueryPortico.show_message(nTable, result);
 
-		oTable5.fnDraw();
-		oTable0.fnDraw();
+		oTable5.api().draw();
+		oTable0.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -752,7 +752,7 @@ removeDocument = function (oArgs, parameters)
 	{
 
 		JqueryPortico.show_message(nTable, result);
-		oTable8.fnDraw();
+		oTable8.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -775,7 +775,7 @@ deleteNotification = function (oArgs, parameters)
 	JqueryPortico.execute_ajax(requestUrl, function (result)
 	{
 
-		oTable9.fnDraw();
+		oTable9.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
@@ -811,11 +811,11 @@ addNotification = function ()
 		$('#date_notification').val('');
 
 		JqueryPortico.show_message(nTable, result);
-		oTable9.fnDraw();
+		oTable9.api().draw();
 
 	}, data, 'POST', 'JSON');
 };
 this.local_OnEditedCallback_datatable_container_5 = function (oTable)
 {
-	oTable0.fnDraw();
+	oTable0.api().draw();
 };

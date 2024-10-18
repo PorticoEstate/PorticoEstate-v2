@@ -505,8 +505,8 @@ class VfsShared
 	{
 		//Reload the overriden_locks
 		$app = $this->flags['currentapp'];
-		$session_data = base64_decode(Cache::session_get($app, 'vfs_shared'));
 		$encoded_data = Cache::session_get($app, 'vfs_shared');
+		$session_data = !!$encoded_data ? base64_decode(Cache::session_get($app, 'vfs_shared')) : '';
 		if ($encoded_data && $session_data = base64_decode($encoded_data))
 		{
 			$this->override_locks = unserialize($session_data);

@@ -126,7 +126,7 @@ class helpdesk_uiemail_out extends phpgwapi_uicommon
 		self::add_javascript('helpdesk', 'base', 'email_out.index.js');
 		phpgwapi_jquery::load_widget('numberformat');
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	/*

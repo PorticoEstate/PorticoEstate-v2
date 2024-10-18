@@ -883,7 +883,7 @@ class property_sotts
 		}
 		else
 		{
-			$sql2 = "SELECT count(*) as cnt, SUM(budget) AS sum_budget, SUM(actual_cost) AS sum_actual_cost FROM ({$sql_cnt} {$filter_closed} GROUP BY fm_tts_tickets.id) as t";
+			$sql2 = "SELECT count(*) as cnt, SUM(budget) AS sum_budget, SUM(actual_cost) AS sum_actual_cost FROM ({$sql_cnt} {$filter_closed} GROUP BY budget,actual_cost, fm_tts_tickets.id) as t";
 		}
 
 		$cache_info = Cache::session_get('property', 'tts_listing_metadata');

@@ -116,8 +116,6 @@
 				return $this->query();
 			}
 
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.js');
-			self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js');
 
 			$appname		 = lang('method');
 			$function_msg	 = lang('list async method');
@@ -286,7 +284,7 @@
 			unset($parameters2);
 			unset($parameters3);
 
-			self::render_template_xsl('datatable_jquery', $data);
+			self::render_template_xsl('datatable2', $data);
 		}
 
 		public function query()

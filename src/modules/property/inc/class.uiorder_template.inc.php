@@ -170,7 +170,7 @@ class property_uiorder_template extends phpgwapi_uicommon
 			'parameters' => json_encode($parameters)
 		);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function edit($values = array(), $mode = 'edit', $error = false)

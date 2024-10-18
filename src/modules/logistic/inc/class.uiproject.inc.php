@@ -291,7 +291,7 @@ class logistic_uiproject extends phpgwapi_uicommon_jquery
 			'parameters' => json_encode($parameters)
 		);
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function project_types()
@@ -374,7 +374,7 @@ class logistic_uiproject extends phpgwapi_uicommon_jquery
 				);
 			}
 
-			self::render_template_xsl(array('datatable_jquery'), $data);
+			self::render_template_xsl(array('datatable2'), $data);
 		}
 	}
 

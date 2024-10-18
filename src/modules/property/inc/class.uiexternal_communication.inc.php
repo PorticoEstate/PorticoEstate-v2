@@ -195,7 +195,7 @@ class property_uiexternal_communication extends phpgwapi_uicommon
 		);
 
 
-		self::render_template_xsl('datatable_jquery', $data);
+		self::render_template_xsl('datatable2', $data);
 	}
 
 	public function add_deviation()

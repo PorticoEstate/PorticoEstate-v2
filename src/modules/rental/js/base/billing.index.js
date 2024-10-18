@@ -52,7 +52,7 @@ function onCommit(requestUrl)
 
 		document.getElementById('message').innerHTML = htmlString;
 
-		oTable.fnDraw();
+		oTable.api().draw();
 
 	}, '', "POST", "JSON");
 
@@ -84,7 +84,7 @@ function onDelete(requestUrl)
 			});
 		}
 
-		oTable.fnDraw();
+		oTable.api().draw();
 
 	}, '', "POST", "JSON");
 

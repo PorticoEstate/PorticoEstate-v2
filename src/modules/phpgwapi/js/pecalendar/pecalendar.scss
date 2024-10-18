@@ -603,6 +603,29 @@ $column-width: 12; // how many columns in a given timeslot
             }
         }
 
+        .event-small {
+            padding: 1px;
+            justify-content: space-between;
+            align-items: center;
+            gap: 5px;
+            .event-text {
+
+                .event-title {
+                    @include applyFontProperties('label');
+                }
+
+
+            }
+            .dots-container {
+                height: 16px;
+                width: 16px;
+                align-self: inherit;
+                i {
+                    font-size: 100%;
+                }
+            }
+        }
+
 
         //.event-small {
         //  padding-top: 0;

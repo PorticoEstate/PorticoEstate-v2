@@ -426,7 +426,7 @@ use App\modules\phpgwapi\controllers\Accounts\Accounts;
 				'config'	 => array(
 					array('disableFilter' => true),
 					array('disablePagination' => true),
-					array('order' => json_encode(array('2', 'asc')))
+					array('order' => json_encode(array(2, 'asc')))
 				)
 			);
 

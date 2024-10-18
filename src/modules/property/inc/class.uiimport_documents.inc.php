@@ -959,7 +959,7 @@ class property_uiimport_documents extends phpgwapi_uicommon_jquery
 				//					array('scrollY' => 800),
 				//					array('fixedColumns' => true),
 				//					array('fixedColumns' => json_encode(array('leftColumns' => 1))),
-				array('order' => json_encode(array('0', 'asc'))),
+				array('order' => json_encode(array(0, 'asc'))),
 				array('editor_action' => self::link(array('menuaction' => 'property.uiimport_documents.set_value')))
 			)
 		);

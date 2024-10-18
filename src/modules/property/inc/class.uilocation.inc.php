@@ -1032,9 +1032,10 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 
 				$(document).ready(function() {
 					$("#datatable-container").on("click", "tbody tr", function() {
-					var iPos = oTable.fnGetPosition( this );
-					var aData = oTable.fnGetData( iPos ); //complete dataset from json returned from server
-
+				//	var iPos = oTable.fnGetPosition( this );
+					var iPos =oTable.api().row(this).index();
+				//	var aData = oTable.fnGetData( iPos ); //complete dataset from json returned from server
+					var aData = oTable.api().rows( iPos ).data()[0];
 					if(typeof(iPos) === 'undefined')
 					{
 						return;

@@ -1,18 +1,19 @@
+'use client'
 import React, {FC} from 'react';
 import {usePopperGlobalInfo} from "@/service/api/event-info";
 import {FCallEvent} from "@/components/building-calendar/building-calendar.types";
 import styles from "@/components/building-calendar/modules/event/popper/event-popper.module.scss";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faClock} from "@fortawesome/free-regular-svg-icons";
-import {formatEventTime} from "@/service/util";
-import {faUser, faUsers, faXmark} from "@fortawesome/free-solid-svg-icons";
+import {formatEventTime, phpGWLink} from "@/service/util";
+import {faUser, faUsers} from "@fortawesome/free-solid-svg-icons";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import {Button, Tooltip} from "@digdir/designsystemet-react";
+import {Button} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import PopperContentSharedWrapper
     from "@/components/building-calendar/modules/event/popper/content/popper-content-shared-wrapper";
 import Link from "next/link";
-
+import {decode} from 'he';
 interface EventPopperContentProps {
     event: FCallEvent
     onClose: () => void;
@@ -29,6 +30,7 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
     const userCanEdit = () => {
         return popperInfo && (popperInfo.info_user_can_delete_events || (popperInfo as any).info_user_can_delete_bookings || (popperInfo as any).info_user_can_delete_allocations);
     };
+
     return (
         <PopperContentSharedWrapper onClose={props.onClose}>
 
@@ -67,7 +69,7 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
                 {/*    </a>*/}
                 {/*)}*/}
                 {popperInfo?.info_edit_link && userCanEdit() && (
-                    <Link href={popperInfo?.info_edit_link} target="_blank" rel="noopener noreferrer"
+                    <Link href={phpGWLink(decode(popperInfo?.info_edit_link))} target="_blank" rel="noopener noreferrer"
                        className={styles.actionButton}>
                         {t(`bookingfrontend.edit ${event.extendedProps.type}`)}
                     </Link>

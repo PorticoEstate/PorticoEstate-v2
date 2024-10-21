@@ -3,7 +3,6 @@ import {EventImpl} from "@fullcalendar/core/internal";
 import {FCallEvent, FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 
 const strBaseURL = `${typeof window === 'undefined' ? process.env.NEXT_INTERNAL_API_URL : (process.env.NEXT_PUBLIC_API_URL || window.location.origin)}/?click_history=165dde2af0dd4b589e3a3c8e26f0da86`;
-
 export function phpGWLink(
     strURL: string | (string | number)[],
     oArgs: Record<string, string | number | boolean | (string | number)[]> | null = {},
@@ -11,9 +10,6 @@ export function phpGWLink(
     baseURL?: string
 ): string {
     const useOldStructure = oArgs && 'menuaction' in oArgs;
-
-    if (typeof window !== 'undefined') {
-    }
 
     if (baseURL) {
         const baseURLParts = baseURL.split('/').filter((a) => a !== '' && !a.includes('http'));
@@ -23,38 +19,34 @@ export function phpGWLink(
     const urlParts = (baseURL || strBaseURL).split('?');
     let newURL = urlParts[0];
 
-    if (Array.isArray(strURL)) {
-        newURL += strURL.join('/');
-    } else {
-        newURL += strURL;
+    // Helper function to safely join URL parts without double slashes
+    function safeJoinURL(base: string, path: string): string {
+        return base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
     }
 
+    if (Array.isArray(strURL)) {
+        const path = strURL.map(s => s.toString().replace(/^\/+|\/+$/g, '')).join('/');
+        newURL = safeJoinURL(newURL, path);
+    } else {
+        newURL = safeJoinURL(newURL, strURL.toString());
+    }
 
-    // $app->get('/bookingfrontend/lang[/{lang}]', LangHelper::class . ':process')
-    //     ->addMiddleware(new SessionsMiddleware($container));
     if (useOldStructure) {
         newURL += '?';
 
         for (const key in oArgs) {
-            if (Array.isArray(!(oArgs) || oArgs[key])) {
+            if (Array.isArray(oArgs[key])) {
                 // Handle array parameters by adding [] to the key and encoding each value
-                if (oArgs) {
-                    (oArgs[key] as (string | number)[]).forEach((value) => {
-                        newURL += `${encodeURIComponent(key)}[]=${encodeURIComponent(value)}&`;
-                    });
-                }
+                (oArgs[key] as (string | number)[]).forEach((value) => {
+                    newURL += `${encodeURIComponent(key)}[]=${encodeURIComponent(value)}&`;
+                });
             } else {
-                if (oArgs) {
-                    newURL += `${encodeURIComponent(key)}=${encodeURIComponent(oArgs[key] as string | number)}&`;
-                }
+                newURL += `${encodeURIComponent(key)}=${encodeURIComponent(oArgs[key] as string | number)}&`;
             }
         }
 
-        // if (urlParts[1]) {
-        //     newURL += urlParts[1];
-        // }
         if (newURL.endsWith('&')) {
-            newURL = newURL.substring(0, newURL.length - 1)
+            newURL = newURL.substring(0, newURL.length - 1);
         }
         if (bAsJSON) {
             newURL += '&phpgw_return_as=json';
@@ -73,10 +65,9 @@ export function phpGWLink(
         }
     }
 
-    // console.log("phpGWLink", newURL);
-
     return newURL;
 }
+
 
 
 export function LuxDate(d: Date) {

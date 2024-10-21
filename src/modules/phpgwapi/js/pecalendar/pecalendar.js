@@ -1,8 +1,5 @@
 // import {DateTime as DT} from './luxon.js';
 
-if (!globalThis['DateTime']) {
-    globalThis['DateTime'] = luxon.DateTime;
-}
 if (globalThis['ko'] && 'bindingHandlers' in ko) {
     if (!ko.bindingHandlers.withAfterRender) {
         ko.bindingHandlers.withAfterRender = {
@@ -216,18 +213,19 @@ class PECalendar {
         this.instance = instance;
         this.disableInteraction = nointeraction;
         this.filterGroups = filterGroups;
+
         // Initialize the date of the instance
         if (dateString) {
             if (ko.isObservable(dateString)) {
-                dateString.subscribe((v) => this.currentDate(DateTime.fromJSDate(new Date(getDateFromSearch(v))).setLocale(luxon.Settings.defaultLocale)) )
-                this.currentDate(DateTime.fromJSDate(new Date(getDateFromSearch(dateString()))).setLocale(luxon.Settings.defaultLocale));
+                dateString.subscribe((v) => this.currentDate(luxon.DateTime.fromJSDate(new Date(getDateFromSearch(v))).setLocale(luxon.Settings.defaultLocale)) )
+                this.currentDate(luxon.DateTime.fromJSDate(new Date(getDateFromSearch(dateString()))).setLocale(luxon.Settings.defaultLocale));
 
             } else {
 
-                this.currentDate(DateTime.fromJSDate(new Date(dateString)).setLocale(luxon.Settings.defaultLocale));
+                this.currentDate(luxon.DateTime.fromJSDate(new Date(dateString)).setLocale(luxon.Settings.defaultLocale));
             }
         } else {
-            this.currentDate(DateTime.now().setLocale(luxon.Settings.defaultLocale));
+            this.currentDate(luxon.DateTime.now().setLocale(luxon.Settings.defaultLocale));
         }
 
         //
@@ -275,7 +273,7 @@ class PECalendar {
 
 
     changeDate = (data, event) => {
-        this.currentDate(DateTime.fromJSDate(GetDateFromSearch(event.target.value)));
+        this.currentDate(luxon.DateTime.fromJSDate(GetDateFromSearch(event.target.value)));
     }
 
     calendarDays = ko.computed(() => {
@@ -310,13 +308,13 @@ class PECalendar {
         const availableSlots = this.availableTimeSlots()[this.resource_id()] || [];
 
         const updatedslots = availableSlots.map(slot => {
-            const slotStart = DateTime.fromMillis(parseInt(slot.start));
-            const slotEnd = DateTime.fromMillis(parseInt(slot.end));
+            const slotStart = luxon.DateTime.fromMillis(parseInt(slot.start));
+            const slotEnd = luxon.DateTime.fromMillis(parseInt(slot.end));
             let overlap = false;
 
             allocations.forEach(allocation => {
-                const allocationStart = DateTime.fromISO(`${allocation.date}T${allocation.from}`);
-                const allocationEnd = DateTime.fromISO(`${allocation.date}T${allocation.to}`);
+                const allocationStart = luxon.DateTime.fromISO(`${allocation.date}T${allocation.from}`);
+                const allocationEnd = luxon.DateTime.fromISO(`${allocation.date}T${allocation.to}`);
 
                 if (allocationStart <= slotEnd && allocationEnd >= slotStart) {
                     overlap = true;
@@ -401,12 +399,48 @@ class PECalendar {
     });
 
 
+    mergeDateTimestamps(events) {
+        return events.map(event => {
+            if (!event.dates || event.dates.length <= 1) {
+                return event; // No need to merge if there's only one or no dates
+            }
+
+            // Sort dates by start time
+            const sortedDates = [...event.dates].sort((a, b) =>
+                a.from_.localeCompare(b.from_)
+            );
+
+            const mergedDates = sortedDates.reduce((acc, current) => {
+                if (acc.length === 0) {
+                    acc.push(current);
+                    return acc;
+                }
+
+                const last = acc[acc.length - 1];
+                const lastDate = last.from_.split(' ')[0];
+                const currentDate = current.from_.split(' ')[0];
+
+                if (lastDate === currentDate && last.to_ === current.from_) {
+                    // Merge the timestamps
+                    last.to_ = current.to_;
+                } else {
+                    acc.push(current);
+                }
+
+                return acc;
+            }, []);
+
+            return { ...event, dates: mergedDates };
+        });
+    }
+
+
     async loadBuildingData() {
         try {
             if (!this.building_id() || !this.currentDate()) {
                 return;
             }
-            const currDate = DateTime.fromJSDate(new Date());
+            const currDate = luxon.DateTime.fromJSDate(new Date());
             const maxEndDate = currDate.plus({months: this.BOOKING_MONTH_HORIZON}).endOf('month');
             const weeksToFetch = [
                 this.firstDayOfCalendar().toFormat("y-MM-dd"), // current Week
@@ -438,7 +472,9 @@ class PECalendar {
             this.calculateStartEndHours(buildingData?.schedule || [], buildingData.seasons);
             this.seasons(buildingData.seasons);
             this.availableTimeSlots(timeSlotsData);
-            this.events(buildingData?.schedule || []);
+            const eventsWithMergedDates = this.mergeDateTimestamps(buildingData?.schedule || []);
+            this.events(eventsWithMergedDates);
+            // this.events(buildingData?.schedule || []);
         } catch (error) {
             console.error('Error loading building data:', error);
         }
@@ -611,9 +647,9 @@ class PECalendar {
 
         // Iterate over each date in the input array
         for (let date of dates) {
-            // Convert date strings to DateTime objects
-            let fromDate = DateTime.fromISO(date.from_.replace(" ", "T"));
-            const toDate = DateTime.fromISO(date.to_.replace(" ", "T"));
+            // Convert date strings to luxon.DateTime objects
+            let fromDate = luxon.DateTime.fromISO(date.from_.replace(" ", "T"));
+            const toDate = luxon.DateTime.fromISO(date.to_.replace(" ", "T"));
 
             // Calculate intervals ensuring they stay within the start and end hour constraints
             while (fromDate < toDate) {
@@ -659,13 +695,13 @@ class PECalendar {
     getEventDates(event) {
         if (event?.dates && event.dates.length > 0) {
             return event.dates.map(date => ({
-                from: DateTime.fromISO(date.from_.replace(" ", "T")),
-                to: DateTime.fromISO(date.to_.replace(" ", "T"))
+                from: luxon.DateTime.fromISO(date.from_.replace(" ", "T")),
+                to: luxon.DateTime.fromISO(date.to_.replace(" ", "T"))
             }));
         } else {
-            // Construct DateTime objects for event's start and end times
-            const dateFrom = DateTime.fromISO(`${event.date}T${event.from}`);
-            const dateTo = DateTime.fromISO(`${event.date}T${event.to}`);
+            // Construct luxon.DateTime objects for event's start and end times
+            const dateFrom = luxon.DateTime.fromISO(`${event.date}T${event.from}`);
+            const dateTo = luxon.DateTime.fromISO(`${event.date}T${event.to}`);
             return [{
                 from: dateFrom,
                 to: dateTo
@@ -1004,12 +1040,12 @@ class PECalendar {
         const [startHour, startMinute] = newEvent.from.split(':').map(Number);
         const [endHour, endMinute] = newEvent.to.split(':').map(Number);
 
-        // Construct DateTime objects for start and end of the event
+        // Construct luxon.DateTime objects for start and end of the event
         const eventStart = luxon.DateTime.fromObject({hour: startHour, minute: startMinute});
         const eventEnd = luxon.DateTime.fromObject({hour: endHour, minute: endMinute});
         const eventDate = luxon.DateTime.fromISO(newEvent.date);
 
-        // Construct DateTime objects for allowed start and end hours
+        // Construct luxon.DateTime objects for allowed start and end hours
         let allowedStart = luxon.DateTime.fromObject({hour: this.startHour(), minute: 0});
         let allowedEnd = luxon.DateTime.fromObject({hour: this.endHour(), minute: 0});
         const dayOpeningHours = this.seasons().find(season => season.wday === eventDate.weekday);
@@ -1254,7 +1290,7 @@ class PECalendar {
         let newStartTime = startTime;
         let newEndTime = endTime;
 
-        // Convert times to DateTime objects for easier manipulation
+        // Convert times to luxon.DateTime objects for easier manipulation
         let currentDateTime = luxon.DateTime.fromISO(currentTime);
         let startDateTime = luxon.DateTime.fromISO(startTime);
         let endDateTime = luxon.DateTime.fromISO(endTime);
@@ -1325,9 +1361,9 @@ class PECalendar {
      * @returns {string} - Returns formatted date string
      */
     formatPillTimeInterval(event) {
-        const dateObj = DateTime.fromISO(event.date, {locale: 'nb'});
-        const fromTime = DateTime.fromISO(`${event.date}T${event.from}`, {locale: 'nb'});
-        const toTime = DateTime.fromISO(`${event.date}T${event.to}`, {locale: 'nb'});
+        const dateObj = luxon.DateTime.fromISO(event.date, {locale: 'nb'});
+        const fromTime = luxon.DateTime.fromISO(`${event.date}T${event.from}`, {locale: 'nb'});
+        const toTime = luxon.DateTime.fromISO(`${event.date}T${event.to}`, {locale: 'nb'});
 
         const formattedFromTime = fromTime.toFormat('HH:mm');
         const formattedToTime = toTime.toFormat('HH:mm');
@@ -1340,7 +1376,7 @@ class PECalendar {
      * @returns {string} - Returns formatted date string
      */
     formatPillDateInterval(event) {
-        const dateObj = DateTime.fromISO(event.date, {locale: 'nb'});
+        const dateObj = luxon.DateTime.fromISO(event.date, {locale: 'nb'});
 
         const formattedDate = FormatDateRange(dateObj);
 
@@ -1719,8 +1755,8 @@ class PECalendar {
      * @returns {boolean} - True if the time slot is within the current week, false otherwise.
      */
     isWithinCurrentCalendarRange(startTimestamp, endTimestamp) {
-        const startDate = DateTime.fromMillis(parseInt(startTimestamp));
-        const endDate = DateTime.fromMillis(parseInt(endTimestamp));
+        const startDate = luxon.DateTime.fromMillis(parseInt(startTimestamp));
+        const endDate = luxon.DateTime.fromMillis(parseInt(endTimestamp));
         const firstDay = this.firstDayOfCalendar();
         const lastDay = this.lastDayOfCalendar();
 
@@ -1774,15 +1810,15 @@ class PECalendar {
         // console.log(events);
         events.forEach(eventData => {
             const event = eventData.event;
-            const eventStart = DateTime.fromISO(`${event.date}T${event.from}`).toUTC().toFormat("yyyyMMdd'T'HHmmss'Z'");
-            const eventEnd = DateTime.fromISO(`${event.date}T${event.to}`).toUTC().toFormat("yyyyMMdd'T'HHmmss'Z'");
+            const eventStart = luxon.DateTime.fromISO(`${event.date}T${event.from}`).toUTC().toFormat("yyyyMMdd'T'HHmmss'Z'");
+            const eventEnd = luxon.DateTime.fromISO(`${event.date}T${event.to}`).toUTC().toFormat("yyyyMMdd'T'HHmmss'Z'");
             const summary = this.escapeICalText(this.getEventName(event));
             const description = this.escapeICalText(event.description || '');
             const location = this.escapeICalText(event.building_name) + ': ' + this.escapeICalText(event.resources.map(resource => resource.name).join(', '));
             const uid = event.id_string || event.id;
             const eventType = event.type.charAt(0).toUpperCase() + event.type.slice(1); // Capitalize first letter
 
-            icalContent += `BEGIN:VEVENT\nUID:${uid}@yourdomain.com\nDTSTAMP:${DateTime.now().toUTC().toFormat("yyyyMMdd'T'HHmmss'Z'")}\nDTSTART:${eventStart}\nDTEND:${eventEnd}\nSUMMARY:${summary}\nDESCRIPTION:${description}\nLOCATION:${location}\nX-EVENT-TYPE:${eventType}\nEND:VEVENT\n`;
+            icalContent += `BEGIN:VEVENT\nUID:${uid}@yourdomain.com\nDTSTAMP:${luxon.DateTime.now().toUTC().toFormat("yyyyMMdd'T'HHmmss'Z'")}\nDTSTART:${eventStart}\nDTEND:${eventEnd}\nSUMMARY:${summary}\nDESCRIPTION:${description}\nLOCATION:${location}\nX-EVENT-TYPE:${eventType}\nEND:VEVENT\n`;
         });
 
         icalContent += 'END:VCALENDAR';
@@ -2181,8 +2217,8 @@ function GetDateFromSearch(dateString) {
     // Split the date into its components
     const [day, month, year] = normalizedDateStr.split('-').map(num => parseInt(num, 10));
 
-    // Create a DateTime object
-    const dt = DateTime.local(year, month, day);
+    // Create a luxon.DateTime object
+    const dt = luxon.DateTime.local(year, month, day);
 
     return dt.toJSDate();
 }
@@ -2256,7 +2292,7 @@ function getDateFromSearch(dateString) {
     // Split the date into its components
     const [day, month, year] = normalizedDateStr.split('-').map(num => parseInt(num, 10));
 
-    // Create a DateTime object
+    // Create a luxon.DateTime object
     const dt = luxon.DateTime.local(year, month, day);
 
     return dt.toJSDate();

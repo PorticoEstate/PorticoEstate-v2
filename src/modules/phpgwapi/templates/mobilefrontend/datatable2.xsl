@@ -1102,7 +1102,7 @@
 							topStart: null,
 							topEnd: 'search',
 							bottomStart: ['pageLength'],
-							bottomEnd: ['paging'],
+							bottomEnd: ['inputPaging'],
 							bottom2Start: 'info'
 					}
 			}
@@ -1112,7 +1112,7 @@
 							topStart: 'buttons',
 							topEnd: 'search',
 							bottomStart: ['pageLength'],
-							bottomEnd: ['paging'],
+							bottomEnd: ['inputPaging'],
 							bottom2Start: 'info'
 					}
 			}
@@ -1120,10 +1120,7 @@
 			init_table = function()
 			{
 				oTable = $('#datatable-container').dataTable({
-	//			oTable = new DataTable(#datatable-container', {
-
 				paginate:		disablePagination ? false : true,
-//				pagingType:		"input",
 				searchDelay: 	1200,
 				processing:		true,
 				serverSide:		true,

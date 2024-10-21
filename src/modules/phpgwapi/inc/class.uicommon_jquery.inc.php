@@ -99,11 +99,11 @@ abstract class phpgwapi_uicommon_jquery
 
 
 		self::add_javascript('phpgwapi', 'DataTables2', 'datatables.min.js', false, array('combine' => true));
-		self::add_javascript('phpgwapi', 'DataTables2', 'plugins/input.js', false, array('combine' => true));
+		self::add_javascript('phpgwapi', 'DataTables2', 'plugins/dataTables.inputPaging.min.js', false, array('combine' => true));
 		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.jeditable.min.js', false, array('combine' => true));
 		self::add_javascript('phpgwapi', 'jquery', 'editable/jquery.dataTables.editable.js', false, array('combine' => true));
 		phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables2/datatables.min.css');
-
+		phpgwapi_css::getInstance()->add_external_file('phpgwapi/js/DataTables2/plugins/dataTables.inputPaging.min.css');
 
 		//pop up script
 		self::add_javascript('phpgwapi', 'tinybox2', 'packed.js', false, array('combine' => true));

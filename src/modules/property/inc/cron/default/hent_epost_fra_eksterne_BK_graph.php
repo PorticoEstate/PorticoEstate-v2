@@ -39,80 +39,67 @@ include_class('property', 'cron_parent', 'inc/cron/');
  * Work in progress...
  */
 
-use App\Database\Db2;
-use App\modules\phpgwapi\services\Settings;
-use App\modules\phpgwapi\controllers\Accounts\Accounts;
-
-use \jamesiarmes\PhpEws\Client;
-use \jamesiarmes\PhpEws\Request\FindItemType;
-use \jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfBaseFolderIdsType;
-use \jamesiarmes\PhpEws\Enumeration\DefaultShapeNamesType;
-use \jamesiarmes\PhpEws\Enumeration\DistinguishedFolderIdNameType;
-use \jamesiarmes\PhpEws\Enumeration\ResponseClassType;
-use \jamesiarmes\PhpEws\Type\ConstantValueType;
-use \jamesiarmes\PhpEws\Type\DistinguishedFolderIdType;
-use \jamesiarmes\PhpEws\Type\FieldURIOrConstantType;
-use \jamesiarmes\PhpEws\Type\ItemResponseShapeType;
-use \jamesiarmes\PhpEws\Type\PathToUnindexedFieldType;
-use \jamesiarmes\PhpEws\Type\RestrictionType;
-use \jamesiarmes\PhpEws\Type\IsEqualToType;
-use \jamesiarmes\PhpEws\Request\GetItemType;
-use \jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfBaseItemIdsType;
-use \jamesiarmes\PhpEws\Type\ItemIdType;
-use \jamesiarmes\PhpEws\Request\GetAttachmentType;
-use \jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfRequestAttachmentIdsType;
-use \jamesiarmes\PhpEws\Type\RequestAttachmentIdType;
-use \jamesiarmes\PhpEws\Request\UpdateItemType;
-use \jamesiarmes\PhpEws\Type\ItemChangeType;
-use \jamesiarmes\PhpEws\Type\SetItemFieldType;
-use \jamesiarmes\PhpEws\Type\MessageType;
-use \jamesiarmes\PhpEws\Type\ExchangeImpersonationType;
-use \jamesiarmes\PhpEws\Type\ConnectingSIDType;
-use \jamesiarmes\PhpEws\ArrayType\NonEmptyArrayOfItemChangeDescriptionsType;
-// Folder info
-use \jamesiarmes\PhpEws\Request\FindFolderType;
-use \jamesiarmes\PhpEws\Enumeration\ContainmentComparisonType;
-use \jamesiarmes\PhpEws\Enumeration\ContainmentModeType;
-use \jamesiarmes\PhpEws\Enumeration\FolderQueryTraversalType;
-use \jamesiarmes\PhpEws\Enumeration\UnindexedFieldURIType;
-use \jamesiarmes\PhpEws\Type\FolderResponseShapeType;
-//
-use \jamesiarmes\PhpEws\Request\MoveItemType;
-
 
 use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model;
-use Microsoft\Kiota\Authentication\Oauth\AuthorizationCodeContext;
-use Microsoft\Graph\Core\Authentication\GraphPhpLeagueAuthenticationProvider;
+use GuzzleHttp\Client;
 
 class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 {
 
-	var $items_to_move = array();
-	protected $config, $join;
+	private $graph;
+	private $config;
+	private $items_to_move = array();
 
 	public function __construct()
 	{
 		parent::__construct();
 
 		$this->function_name = get_class($this);
-		$this->sub_location	 = lang('property');
-		$this->function_msg	 = 'Hent epost fra eksterne';
-		$this->join			 =  $this->db->join;
+		$this->sub_location = lang('property');
+		$this->function_msg = 'Hent epost fra eksterne';
+		$this->join = $this->db->join;
 
 		$this->config = CreateObject('admin.soconfig', $this->location_obj->get_id('property', '.admin'));
 
-		//			$this->serverSettings['enforce_ssl'] = true;
+		$this->initializeGraph();
 	}
 
-	function execute()
+
+	private function initializeGraph()
 	{
-		$start						 = time();
+		$accessToken = $this->getAccessToken();
+		$this->graph = new Graph();
+		$this->graph->setAccessToken($accessToken);
+	}
+	private function getAccessToken()
+	{
+		$tenantId = $this->config->config_data['xPortico']['tenant_id'];
+		$clientId = $this->config->config_data['xPortico']['client_id'];
+		$clientSecret = $this->config->config_data['xPortico']['client_secret'];
+
+		$guzzle = new Client();
+		$url = "https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/token";
+		$token = json_decode($guzzle->post($url, [
+			'form_params' => [
+				'client_id' => $clientId,
+				'client_secret' => $clientSecret,
+				'scope' => 'https://graph.microsoft.com/.default',
+				'grant_type' => 'client_credentials',
+			],
+		])->getBody()->getContents());
+
+		return $token->access_token;
+	}
+
+	public function execute()
+	{
+		$start = time();
 		$this->process_messages();
-		$msg						 = 'Tidsbruk: ' . (time() - $start) . ' sekunder';
+		$msg = 'Tidsbruk: ' . (time() - $start) . ' sekunder';
 		$this->cron_log($msg, $cron);
 		echo "$msg\n";
-		$this->receipt['message'][]	 = array('msg' => $msg);
+		$this->receipt['message'][] = array('msg' => $msg);
 	}
 
 	function cron_log($receipt = '')
@@ -132,58 +119,34 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		$this->db->query($sql, __LINE__, __FILE__);
 	}
 
-	function getAccessToken()
+	private function process_messages()
 	{
+		$folderName = 'Portico_Leverador-meldinger';
+		$folderId = $this->findFolderId($folderName);
 
-		$clientId = $this->config->config_data['xPortico']['client_id'];
-		$clientSecret = $this->config->config_data['xPortico']['client_secret'];
-		$tenantId = $this->config->config_data['xPortico']['tenant_id'];
+		if (!$folderId)
+		{
+			$this->log->error("Folder '{$folderName}' not found.");
+			return;
+		}
 
-
-
-		$guzzle = new \GuzzleHttp\Client();
-		$response = $guzzle->post("https://login.microsoftonline.com/$tenantId/oauth2/v2.0/token", [
-			'form_params' => [
-				'client_id' => $clientId,
-				'client_secret' => $clientSecret,
-				'scope' => 'https://graph.microsoft.com/.default',
-				'grant_type' => 'client_credentials',
-			],
-		]);
-
-		$body = json_decode($response->getBody(), true);
-		return $body['access_token'];
-
-	}
-	public function fetchEmails()
-	{
-		$accessToken = $this->getAccessToken();
-		$graph = new Graph();
-		$graph->setAccessToken($accessToken);
-
-		$assigneeEmail = $this->config->config_data['xPortico']['mailbox'];
-
-		// Get the folder ID for 'Portico_Leverador-meldinger'
-		$folderId = $this->findFolderId($graph, $assigneeEmail, 'Portico_Leverador-meldinger');
-
-		// Get unread messages from the folder
-		$messages = $graph->createRequest("GET", "/users/$assigneeEmail/mailFolders/$folderId/messages?\$filter=isRead eq false")
-		->setReturnType(Model\Message::class)
-			->execute();
+		$messages = $this->getUnreadMessages($folderId);
 
 		foreach ($messages as $message)
 		{
-			$this->processMessage($graph, $message, $assigneeEmail);
+			$this->handleMessage($message);
 		}
+
+		$this->moveProcessedMessages();
 	}
 
-	private function findFolderId(Graph $graph, $userEmail, $folderName)
+	private function findFolderId($folderName)
 	{
-		$folders = $graph->createRequest("GET", "/users/$userEmail/mailFolders")
+		$mailFolders = $this->graph->createRequest("GET", "/me/mailFolders")
 		->setReturnType(Model\MailFolder::class)
 			->execute();
 
-		foreach ($folders as $folder)
+		foreach ($mailFolders as $folder)
 		{
 			if ($folder->getDisplayName() === $folderName)
 			{
@@ -191,140 +154,157 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 			}
 		}
 
-		throw new Exception("Folder '$folderName' not found.");
+		return null;
 	}
 
-	private function processMessage(Graph $graph, Model\Message $message, $userEmail)
+	private function getUnreadMessages($folderId)
 	{
-		$messageId = $message->getId();
-		$attachments = $message->getAttachments();
-
-		$target = $this->handleMessage($message);
-
-		if ($attachments && $target['id'])
-		{
-			$savedAttachments = $this->handleAttachments($graph, $attachments, $userEmail, $messageId);
-			$this->addAttachmentToTarget($target, $savedAttachments);
-			$this->cleanAttachmentFromTemp($savedAttachments);
-		}
-
-		$this->items_to_move[] = $messageId;
-		$this->moveMessages($graph, $userEmail, $this->items_to_move, 'ImportertTilDatabase');
-		$this->items_to_move = [];
+		return $this->graph->createRequest("GET", "/me/mailFolders/{$folderId}/messages?\$filter=isRead eq false")
+		->setReturnType(Model\Message::class)
+			->execute();
 	}
 
-	private function handleMessage(Model\Message $message)
+	private function handleMessage($message)
 	{
-		// Implement your message handling logic here
-		return ['id' => 'some_target_id'];
-	}
+		$subject = $message->getSubject();
+		$body = $message->getBody()->getContent();
 
-	private function handleAttachments(Graph $graph, $attachments, $userEmail, $messageId)
-	{
-		$savedAttachments = [];
-		foreach ($attachments as $attachment)
-		{
-			if ($attachment instanceof Model\FileAttachment)
-			{
-				$attachmentId = $attachment->getId();
-				$attachmentContent = $graph->createRequest("GET", "/users/$userEmail/messages/$messageId/attachments/$attachmentId/\$value")
-				->execute()->getBody();
-				// Save the attachment content to a file or database
-				$savedAttachments[] = $attachmentContent;
-			}
-		}
-		return $savedAttachments;
-	}
-
-	private function addAttachmentToTarget($target, $savedAttachments)
-	{
-		// Implement your logic to add attachments to the target
-	}
-
-	private function cleanAttachmentFromTemp($savedAttachments)
-	{
-		// Implement your logic to clean up temporary attachments
-	}
-
-	private function moveMessages(Graph $graph, $userEmail, $messageIds, $destinationFolderName)
-	{
-		$destinationFolderId = $this->findFolderId($graph, $userEmail, $destinationFolderName);
-
-		foreach ($messageIds as $messageId)
-		{
-			$graph->createRequest("POST", "/users/$userEmail/messages/$messageId/move")
-			->attachBody(['destinationId' => $destinationFolderId])
-				->execute();
-		}
-	}
-
-	
-	function handle_message($item3)
-	{
-		$target	 = array();
-		$subject = $item3->Subject;
-		$rool	 = $item3->Body->_;
-
-		$html2text	 = createObject('phpgwapi.html2text', $rool);
-		$body		 = $html2text->getText();
+		$target = array();
 
 		if (preg_match("/^ISS:/", $subject))
 		{
 			$ticket_id = $this->create_ticket($subject, $body);
 			if ($ticket_id)
 			{
-				$this->receipt['message'][]	 = array('msg' => "Melding #{$ticket_id} er opprettet");
-				$target['type']				 = 'fmticket';
-				$target['id']				 = $ticket_id;
+				$this->receipt['message'][] = array('msg' => "Melding #{$ticket_id} er opprettet");
+				$target['type'] = 'fmticket';
+				$target['id'] = $ticket_id;
 			}
 		}
-		else if (preg_match("/^Kvittering status:/", $subject))
+		elseif (preg_match("/^Kvittering status:/", $subject))
 		{
-			$order_id = $this->set_order_status($subject, $body, $item3->LastModifiedName);
-
+			$order_id = $this->set_order_status($subject, $body, $message->getFrom()->getEmailAddress()->getAddress());
 			if ($order_id)
 			{
-				$target['type']				 = 'workorder';
-				$target['id']				 = $order_id;
-				$this->receipt['message'][]	 = array('msg' => "Status for ordre #{$order_id} er oppdatert");
+				$target['type'] = 'workorder';
+				$target['id'] = $order_id;
+				$this->receipt['message'][] = array('msg' => "Status for ordre #{$order_id} er oppdatert");
 			}
 		}
-		else if (preg_match("/^ISS vedlegg:/", $subject))
+		elseif (preg_match("/^ISS vedlegg:/", $subject))
 		{
 			$ticket_id = $this->get_ticket($subject);
-
 			if ($ticket_id)
 			{
-				$target['type']	 = 'fmticket';
-				$target['id']	 = $ticket_id;
+				$target['type'] = 'fmticket';
+				$target['id'] = $ticket_id;
 			}
 		}
-		else if (preg_match("/\[PorticoTicket/", $subject))
+		elseif (preg_match("/\[PorticoTicket/", $subject))
 		{
 			preg_match_all("/\[[^\]]*\]/", $subject, $matches);
-			$identificator_str	 = trim($matches[0][0], "[]");
-			$identificator_arr	 = explode("::", $identificator_str);
+			$identificator_str = trim($matches[0][0], "[]");
+			$identificator_arr = explode("::", $identificator_str);
 
-			$sender		 = $item3->Sender->Mailbox->EmailAddress;
-			$ticket_id	 = $this->update_external_communication($identificator_arr, $body, $sender);
+			$sender = $message->getFrom()->getEmailAddress()->getAddress();
+			$ticket_id = $this->update_external_communication($identificator_arr, $body, $sender);
 
 			if ($ticket_id)
 			{
-				$target['type']	 = 'fmticket';
-				$target['id']	 = $ticket_id;
+				$target['type'] = 'fmticket';
+				$target['id'] = $ticket_id;
 			}
 		}
 
-		/**
-		 * Ticket created / updated
-		 */
 		if ($target)
 		{
-			$this->items_to_move[] = $item3;
+			$this->items_to_move[] = $message->getId();
+			$this->handleAttachments($message, $target);
 		}
-		return $target;
 	}
 
+	private function add_attachment_to_target($target, $attachment)
+	{
+		$bofiles = CreateObject('property.bofiles');
+
+		$file_name = str_replace(array('/', ' ', '..'), array('_', '_', '.'), $attachment['name']);
+
+		if ($file_name && $target['id'])
+		{
+			$to_file = "{$bofiles->fakebase}/{$target['type']}/{$target['id']}/{$file_name}";
+
+			if ($bofiles->vfs->file_exists(array(
+				'string' => $to_file,
+				'relatives' => array(RELATIVE_NONE)
+			)))
+			{
+				$this->receipt['error'][] = array('msg' => lang('This file already exists !'));
+			}
+			else
+			{
+				$bofiles->create_document_dir("{$target['type']}/{$target['id']}");
+				$bofiles->vfs->override_acl = 1;
+
+				if (!$bofiles->vfs->cp(array(
+					'from' => $attachment['tmp_name'],
+					'to' => $to_file,
+					'relatives' => array(RELATIVE_NONE | VFS_REAL, RELATIVE_ALL)
+				)))
+				{
+					$this->receipt['error'][] = array('msg' => lang('Failed to upload file !'));
+				}
+				else
+				{
+					$this->receipt['message'][] = array('msg' => lang('File %1 has been added', $file_name));
+				}
+				$bofiles->vfs->override_acl = 0;
+			}
+		}
+	}
+
+	private function handleAttachments($message, $target)
+	{
+		$attachments = $this->graph->createRequest("GET", "/me/messages/{$message->getId()}/attachments")
+		->setReturnType(Model\Attachment::class)
+			->execute();
+
+		foreach ($attachments as $attachment)
+		{
+			if ($attachment->getIsInline())
+			{
+				continue;
+			}
+
+			$content = $this->graph->createRequest("GET", "/me/messages/{$message->getId()}/attachments/{$attachment->getId()}/\$value")
+			->execute();
+
+			$tempFile = tempnam(sys_get_temp_dir(), "attachment");
+			file_put_contents($tempFile, $content);
+
+			$this->add_attachment_to_target($target, array(
+				'tmp_name' => $tempFile,
+				'name' => $attachment->getName()
+			));
+
+			unlink($tempFile);
+		}
+	}
+
+	private function moveProcessedMessages()
+	{
+		$destinationFolderId = $this->findFolderId('ImportertTilDatabase');
+
+		foreach ($this->items_to_move as $messageId)
+		{
+			$this->graph->createRequest("POST", "/me/messages/{$messageId}/move")
+			->attachBody(array("destinationId" => $destinationFolderId))
+				->execute();
+		}
+
+		$this->items_to_move = array();
+	}
+
+	
 	function update_external_communication($identificator_arr, $body, $sender)
 	{
 		$ticket_id	 = (int)$identificator_arr[1];
@@ -706,114 +686,12 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		}
 	}
 
-	function update_message($client, $item3)
+	/**
+	 * Set message as read
+	 */
+	
+	function update_message()
 	{
-		$message_id			 = $item3->ItemId->Id;
-		$message_change_key	 = $item3->ItemId->ChangeKey;
-
-		$request = new UpdateItemType();
-
-		$request->SendMeetingInvitationsOrCancellations	 = 'SendToNone';
-		$request->MessageDisposition					 = 'SaveOnly';
-		$request->ConflictResolution					 = 'AlwaysOverwrite';
-		$request->ItemChanges							 = array();
-
-		// Build out item change request.
-		$change						 = new ItemChangeType();
-		$change->ItemId				 = new ItemIdType();
-		$change->ItemId->Id			 = $message_id;
-		$change->ItemId->ChangeKey	 = $message_change_key;
-
-		// Build the set item field object and set the item on it.
-		$field						 = new SetItemFieldType();
-		$field->FieldURI			 = new PathToUnindexedFieldType();
-		$field->FieldURI->FieldURI	 = "message:IsRead";
-		$field->Message				 = new MessageType();
-		$field->Message->IsRead		 = true;
-
-		$change->Updates = new NonEmptyArrayOfItemChangeDescriptionsType();
-		$change->Updates->SetItemField[] = $field;
-		$request->ItemChanges[]			 = $change;
-
-		$response = $client->UpdateItem($request);
 	}
 
-	function move_message($client, $item3, $movet_to_folder_info)
-	{
-		$request = new MoveItemType();
-
-		$request->ToFolderId = new \jamesiarmes\PhpEws\Type\TargetFolderIdType();
-		$request->ToFolderId->FolderId = new \jamesiarmes\PhpEws\Type\FolderIdType();
-
-		$request->ToFolderId->FolderId->Id			 = $movet_to_folder_info['id'];
-		$request->ToFolderId->FolderId->ChangeKey	 = $movet_to_folder_info['changekey'];
-
-		$request->ItemIds = new NonEmptyArrayOfBaseItemIdsType();
-		$request->ItemIds->ItemId = new ItemIdType();
-		$request->ItemIds->ItemId->Id		 = $item3->ItemId->Id;
-		$request->ItemIds->ItemId->ChangeKey = $item3->ItemId->ChangeKey;
-
-		$response = $client->MoveItem($request);
-	}
-
-	function handle_attachments($client, $attachments, $response_message2)
-	{
-		$saved_attachments = array();
-
-		$temp_dir = sys_get_temp_dir();
-
-		// Build the request to get the attachments.
-		$request3				 = new GetAttachmentType();
-		$request3->AttachmentIds = new NonEmptyArrayOfRequestAttachmentIdsType();
-
-		// Iterate over the attachments for the message.
-		foreach ($attachments as $attachment_id)
-		{
-			$id										 = new RequestAttachmentIdType();
-			$id->Id									 = $attachment_id;
-			$request3->AttachmentIds->AttachmentId[] = $id;
-		}
-
-		$response3 = $client->GetAttachment($request3);
-
-		// Iterate over the response messages, printing any error messages or
-		// saving the attachments.
-		$attachment_response_messages = $response3->ResponseMessages
-			->GetAttachmentResponseMessage;
-		foreach ($attachment_response_messages as $attachment_response_message)
-		{
-			// Make sure the request succeeded.
-			if ($attachment_response_message->ResponseClass != ResponseClassType::SUCCESS)
-			{
-				$code	 = $response_message2->ResponseCode;
-				$message = $response_message2->MessageText;
-				$this->log->error(array(
-					'text'	=> 'Failed to search for messages with %1 : %2.',
-					'p1'	=> $code,
-					'p2'	=> $message,
-					'line'	=> __LINE__,
-					'file'	=> __FILE__
-				));
-				continue;
-			}
-
-			// Iterate over the file attachments, saving each one.
-			$attachments = $attachment_response_message->Attachments
-				->FileAttachment;
-			foreach ($attachments as $attachment)
-			{
-				$tmp_name	 = tempnam($temp_dir, "xPortico");
-				$handle		 = fopen($tmp_name, "w");
-				fwrite($handle, $attachment->Content);
-				fclose($handle);
-
-				$saved_attachments[] = array(
-					'tmp_name'	 => $tmp_name,
-					'name'		 => $attachment->Name,
-				);
-			}
-		}
-
-		return $saved_attachments;
-	}
 }

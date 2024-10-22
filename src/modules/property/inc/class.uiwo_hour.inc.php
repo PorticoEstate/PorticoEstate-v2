@@ -1368,7 +1368,8 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 
 		if ($send_order && !$to_email && !$workorder['mail_recipients'])
 		{
-			$receipt['error'][] = array('msg' => lang('No mailaddress is selected'));
+//			$receipt['error'][] = array('msg' => lang('No mailaddress is selected'));
+			Cache::message_set(lang('No mailaddress is selected'), 'error');
 		}
 
 		if ($to_email || $print || ($workorder['mail_recipients'][0] && $send_order))
@@ -1743,7 +1744,8 @@ HTML;
 			}
 			else
 			{
-				$receipt['error'][] = array('msg' => lang('SMTP server is not set! (admin section)'));
+//				$receipt['error'][] = array('msg' => lang('SMTP server is not set! (admin section)'));
+				Cache::message_set(lang('SMTP server is not set! (admin section)'), 'error');
 			}
 
 
@@ -1752,10 +1754,12 @@ HTML;
 				$_attachment_log		 = $attachment_log ? "::$attachment_log" : '';
 				$historylog				 = CreateObject('property.historylog', 'workorder');
 				$historylog->add('M', $workorder_id, "{$_to}{$_attachment_log}");
-				$receipt['message'][]	 = array('msg' => lang('Workorder %1 is sent by email to %2', $workorder_id, $_to));
+//				$receipt['message'][]	 = array('msg' => lang('Workorder %1 is sent by email to %2', $workorder_id, $_to));
+				Cache::message_set(lang('Workorder %1 is sent by email to %2', $workorder_id, $_to), 'message');
 				if ($attachment_log)
 				{
-					$receipt['message'][] = array('msg' => $attachment_log);
+//					$receipt['message'][] = array('msg' => $attachment_log);
+					Cache::message_set($attachment_log, 'message');
 				}
 
 				if (Sanitizer::get_var('notify_client_by_sms', 'bool') && $sms_client_order_notice && (isset($project['contact_phone']) && $project['contact_phone'] || Sanitizer::get_var('to_sms_phone')))
@@ -1837,9 +1841,9 @@ HTML;
 			}
 			else
 			{
-				$receipt['error'][]	 = array('msg' => lang('The recipient did not get the email:'));
-				$receipt['error'][]	 = array('msg' => lang('From') . ' ' . $from_email);
-				$receipt['error'][]	 = array('msg' => lang('To') . ' ' . $_to);
+				Cache::message_set(lang('The recipient did not get the email:') . lang('From')
+				 . ' ' . htmlspecialchars($from_email, ENT_QUOTES, 'UTF-8')
+				  . ' ,' . lang('To') . ' ' . htmlspecialchars($_to, ENT_QUOTES, 'UTF-8'), 'error');
 			}
 		}
 
@@ -1855,7 +1859,7 @@ HTML;
 			unset($email_list);
 		}
 
-		$msgbox_data = $this->bocommon->msgbox_data($receipt);
+//		$msgbox_data = $this->bocommon->msgbox_data($receipt);
 
 		$link_file_data = array(
 			'menuaction' => 'property.uiworkorder.view_file',
@@ -1990,7 +1994,7 @@ HTML;
 
 		$data = array(
 			'datatable_def'						 => $datatable_def,
-			'msgbox_data'						 => $this->phpgwapi_common->msgbox($msgbox_data),
+//			'msgbox_data'						 => $this->phpgwapi_common->msgbox($msgbox_data),
 			'lang_mail'							 => lang('E-Mail'),
 			'lang_update_email'					 => lang('Update email'),
 			'lang_update_email_statustext'		 => lang('Check to update the email-address for this vendor'),
@@ -2050,6 +2054,8 @@ HTML;
 
 
 		self::add_javascript('property', 'base', 'wo_hour.view.js');
+
+		phpgwapi_xslttemplates::getInstance()->resetInstance();
 		self::render_template_xsl(array('wo_hour', 'datatable_inline'), array(
 			'view' => $data
 		));

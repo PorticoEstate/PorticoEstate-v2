@@ -100,6 +100,11 @@ class phpgwapi_xslttemplates
 		return self::$instance;
 	}
 
+	public static function resetInstance()
+	{
+		self::$instance = null;
+	}
+
 	/**
 	 * Error hanlder
 	 *

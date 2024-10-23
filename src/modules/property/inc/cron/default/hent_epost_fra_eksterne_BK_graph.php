@@ -44,10 +44,17 @@ use Microsoft\Graph\Graph;
 use Microsoft\Graph\Model;
 use GuzzleHttp\Client;
 
+use Microsoft\Kiota\Authentication\Oauth\ClientCredentialContext;
+use Microsoft\Graph\Core\Authentication\GraphPhpLeagueAuthenticationProvider;
+use Microsoft\Graph\GraphRequestAdapter;
+use Microsoft\Graph\GraphServiceClient;
+use Microsoft\Graph\Core\GraphClientFactory;
+
 class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 {
 
-	private $graph;
+	private $graphServiceClient;
+	private $user;
 	private $config;
 	private $items_to_move = array();
 
@@ -68,16 +75,57 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 	private function initializeGraph()
 	{
-		$accessToken = $this->getAccessToken();
-		$this->graph = new Graph();
-		$this->graph->setAccessToken($accessToken);
+		//https://github.com/microsoftgraph/msgraph-sdk-php/blob/main/docs/Examples.md
+		//https://learn.microsoft.com/en-us/graph/tutorials/php?tabs=aad&tutorial-step=3
+		//https://github.com/microsoftgraph/msgraph-sdk-php/issues/1483
+		$userPrincipalName = $this->config->config_data['xPortico']['mailbox'];
+		$tokenRequestContext = $this->getAccessToken();
+
+		$authProvider = new GraphPhpLeagueAuthenticationProvider($tokenRequestContext);
+	
+		$scopes = ['User.Read', 'Mail.ReadWrite'];
+
+		// Create HTTP client with a Guzzle config to specify proxy
+		if (!empty($this->serverSettings['httpproxy_server']))
+		{
+			$guzzleConfig = [
+				"proxy" => "{$this->serverSettings['httpproxy_server']}:{$this->serverSettings['httpproxy_port']}"
+			];
+		}
+		else
+		{
+			$guzzleConfig = null;
+		}
+
+
+
+		$httpClient = GraphClientFactory::createWithConfig($guzzleConfig);
+		$requestAdapter = new GraphRequestAdapter($authProvider, $httpClient);
+
+		$this->graphServiceClient = GraphServiceClient::createWithRequestAdapter($requestAdapter);
+
+		$this->graphServiceClient = new GraphServiceClient($tokenRequestContext, $scopes);
+
+		$this->user = $this->graphServiceClient->users()->byUserId($userPrincipalName)->get()->wait();
 	}
+
 	private function getAccessToken()
 	{
 		$tenantId = $this->config->config_data['xPortico']['tenant_id'];
 		$clientId = $this->config->config_data['xPortico']['client_id'];
 		$clientSecret = $this->config->config_data['xPortico']['client_secret'];
 
+		
+		$tokenRequestContext = new ClientCredentialContext(
+			$tenantId,
+			$clientId,
+			$clientSecret
+		);
+
+		return $tokenRequestContext;
+
+
+// alternative way to get access token
 		$guzzle = new Client();
 		$url = "https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/token";
 		$token = json_decode($guzzle->post($url, [
@@ -142,7 +190,7 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 	private function findFolderId($folderName)
 	{
-		$mailFolders = $this->graph->createRequest("GET", "/me/mailFolders")
+		$mailFolders = $this->graphServiceClient->createRequest("GET", "/me/mailFolders")
 		->setReturnType(Model\MailFolder::class)
 			->execute();
 
@@ -159,7 +207,7 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 	private function getUnreadMessages($folderId)
 	{
-		return $this->graph->createRequest("GET", "/me/mailFolders/{$folderId}/messages?\$filter=isRead eq false")
+		return $this->graphServiceClient->createRequest("GET", "/me/mailFolders/{$folderId}/messages?\$filter=isRead eq false")
 		->setReturnType(Model\Message::class)
 			->execute();
 	}
@@ -264,7 +312,7 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 	private function handleAttachments($message, $target)
 	{
-		$attachments = $this->graph->createRequest("GET", "/me/messages/{$message->getId()}/attachments")
+		$attachments = $this->graphServiceClient->createRequest("GET", "/me/messages/{$message->getId()}/attachments")
 		->setReturnType(Model\Attachment::class)
 			->execute();
 
@@ -275,7 +323,7 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 				continue;
 			}
 
-			$content = $this->graph->createRequest("GET", "/me/messages/{$message->getId()}/attachments/{$attachment->getId()}/\$value")
+			$content = $this->graphServiceClient->createRequest("GET", "/me/messages/{$message->getId()}/attachments/{$attachment->getId()}/\$value")
 			->execute();
 
 			$tempFile = tempnam(sys_get_temp_dir(), "attachment");
@@ -296,7 +344,7 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 		foreach ($this->items_to_move as $messageId)
 		{
-			$this->graph->createRequest("POST", "/me/messages/{$messageId}/move")
+			$this->graphServiceClient->createRequest("POST", "/me/messages/{$messageId}/move")
 			->attachBody(array("destinationId" => $destinationFolderId))
 				->execute();
 		}

@@ -174,7 +174,7 @@ class property_bolocation
 		if (!$selected)
 		{
 			$userSettings = Settings::getInstance()->get('user');
-			$selected = isset($userSettings['preferences']['property']['location_columns_' . $this->type_id . !!$this->lookup]) ? $userSettings['preferences']['property']["location_columns_" . $this->type_id . !!$this->lookup] : array();
+			$selected = !empty($userSettings['preferences']['property']['location_columns_' . $this->type_id . !!$this->lookup]) ? $userSettings['preferences']['property']["location_columns_" . $this->type_id . !!$this->lookup] : array();
 		}
 		$filter = array('list' => ''); // translates to "list IS NULL"
 		//$columns = $this->custom->find('property', '.location.' . $type_id, 0, '', '', '', true, false, $filter);

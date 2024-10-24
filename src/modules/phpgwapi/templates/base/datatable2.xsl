@@ -1217,7 +1217,7 @@
 						{
 							$('#active_filters').html("Aktive filter: " + active_filters_html.join(', '));
 						}
-						var search_value = $('.dataTables_filter input[aria-controls="datatable-container"]').val();
+						var search_value = $('.dt-search input[aria-controls="datatable-container"]').val();
 
 						if(active_filters_html.length > 0 || search_value || column_search_is_initated)
 						{

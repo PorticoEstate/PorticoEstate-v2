@@ -28,7 +28,7 @@
 	 */
 	/**
 	 * Description
-	 * example cron : /usr/local/bin/php -q /var/www/html/phpgroupware/property/inc/cron/cron.php default sjekk_manglende_ordreregistering_BK
+	 * example cron : /usr/bin/php -q /var/www/html/src/modules/property/inc/cron/cron.php default sjekk_manglende_ordreregistering_BK
 	 * @package property
 	 */
 	include_class('property', 'cron_parent', 'inc/cron/');

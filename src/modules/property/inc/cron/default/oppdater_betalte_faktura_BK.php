@@ -28,7 +28,7 @@
 	 */
 	/**
 	 * Description
-	 * example cron : /usr/local/bin/php -q /var/www/html/phpgroupware/property/inc/cron/cron.php default oppdater_betalte_faktura_BK
+	 * example cron : /usr/bin/php -q /var/www/html/src/modules/property/inc/cron/cron.php default oppdater_betalte_faktura_BK
 	 * @package property
 	 */
 

@@ -91,13 +91,12 @@ RUN echo 'post_max_size = 20M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 8M' >> /usr/local/etc/php/php.ini
 
 # Download and install OpenJDK
-RUN wget -O /tmp/openjdk.tar.gz https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz \
-    && mkdir -p /usr/local/java \
-    && tar -xzf /tmp/openjdk.tar.gz -C /usr/local/java \
-    && rm /tmp/openjdk.tar.gz
+RUN wget -O /tmp/openjdk.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb \
+    && dpkg -i /tmp/openjdk.deb \
+    && rm /tmp/openjdk.deb
 
 # Set JAVA_HOME environment variable
-ENV JAVA_HOME=/usr/local/java/jdk-21.0.4
+ENV JAVA_HOME=/usr/lib/jvm/jdk-21
 ENV PATH=$JAVA_HOME/bin:$PATH
 
 # Verify Java installation

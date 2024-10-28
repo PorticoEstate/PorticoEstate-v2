@@ -29,32 +29,27 @@
  */
 /**
  * Description
- * example cron : /usr/local/bin/php -q /var/www/html/phpgroupware/property/inc/cron/cron.php default hent_epost_fra_eksterne_BK
+ * example cron : /usr/bin/php -q /var/www/Api/src/modules/property/inc/cron/cron.php default hent_epost_fra_eksterne_BK_graph
+
  * @package property
  */
 include_class('property', 'cron_parent', 'inc/cron/');
-
-/**
- * 
- * Work in progress...
- */
-
-
-use Microsoft\Graph\Graph;
-use Microsoft\Graph\Model;
-use GuzzleHttp\Client;
 
 use Microsoft\Kiota\Authentication\Oauth\ClientCredentialContext;
 use Microsoft\Graph\Core\Authentication\GraphPhpLeagueAuthenticationProvider;
 use Microsoft\Graph\GraphRequestAdapter;
 use Microsoft\Graph\GraphServiceClient;
 use Microsoft\Graph\Core\GraphClientFactory;
+use Microsoft\Graph\Generated\Users\Item\MailFolders\Item\Messages\MessagesRequestBuilderGetRequestConfiguration;
+use Microsoft\Graph\Generated\Models\Message;
+use Microsoft\Graph\Generated\Users\Item\Messages\Item\Move\MovePostRequestBody;
+use Microsoft\Kiota\Abstractions\ApiException;
 
 class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 {
 
 	private $graphServiceClient;
-	private $user;
+	private $userPrincipalName;
 	private $config;
 	private $items_to_move = array();
 
@@ -67,7 +62,8 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		$this->function_msg = 'Hent epost fra eksterne';
 		$this->join = $this->db->join;
 
-		$this->config = CreateObject('admin.soconfig', $this->location_obj->get_id('property', '.admin'));
+		$this->config = CreateObject('admin.soconfig', $this->location_obj->get_id('property', '.admin'))->read();
+		$this->userPrincipalName = $this->config['xPortico']['mailbox'];
 
 		$this->initializeGraph();
 	}
@@ -78,12 +74,19 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		//https://github.com/microsoftgraph/msgraph-sdk-php/blob/main/docs/Examples.md
 		//https://learn.microsoft.com/en-us/graph/tutorials/php?tabs=aad&tutorial-step=3
 		//https://github.com/microsoftgraph/msgraph-sdk-php/issues/1483
-		$userPrincipalName = $this->config->config_data['xPortico']['mailbox'];
-		$tokenRequestContext = $this->getAccessToken();
+
+		$tenantId = $this->config['xPortico']['tenant_id'];
+		$clientId = $this->config['xPortico']['client_id'];
+		$clientSecret = $this->config['xPortico']['client_secret'];
+		$this->userPrincipalName = $this->config['xPortico']['mailbox'];
+
+		$tokenRequestContext = new ClientCredentialContext(
+			$tenantId,
+			$clientId,
+			$clientSecret
+		);
 
 		$authProvider = new GraphPhpLeagueAuthenticationProvider($tokenRequestContext);
-	
-		$scopes = ['User.Read', 'Mail.ReadWrite'];
 
 		// Create HTTP client with a Guzzle config to specify proxy
 		if (!empty($this->serverSettings['httpproxy_server']))
@@ -94,58 +97,32 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		}
 		else
 		{
-			$guzzleConfig = null;
+			$guzzleConfig = array();
 		}
-
-
 
 		$httpClient = GraphClientFactory::createWithConfig($guzzleConfig);
 		$requestAdapter = new GraphRequestAdapter($authProvider, $httpClient);
-
 		$this->graphServiceClient = GraphServiceClient::createWithRequestAdapter($requestAdapter);
-
-		$this->graphServiceClient = new GraphServiceClient($tokenRequestContext, $scopes);
-
-		$this->user = $this->graphServiceClient->users()->byUserId($userPrincipalName)->get()->wait();
+		/*
+		try
+		{
+			$user = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->get()->wait();
+			_debug_array("Hello, I am {$user->getGivenName()}");
+		}
+		catch (ApiException $ex)
+		{
+			echo $ex->getError()->getMessage();
+		}
+*/
 	}
 
-	private function getAccessToken()
-	{
-		$tenantId = $this->config->config_data['xPortico']['tenant_id'];
-		$clientId = $this->config->config_data['xPortico']['client_id'];
-		$clientSecret = $this->config->config_data['xPortico']['client_secret'];
-
-		
-		$tokenRequestContext = new ClientCredentialContext(
-			$tenantId,
-			$clientId,
-			$clientSecret
-		);
-
-		return $tokenRequestContext;
-
-
-// alternative way to get access token
-		$guzzle = new Client();
-		$url = "https://login.microsoftonline.com/{$tenantId}/oauth2/v2.0/token";
-		$token = json_decode($guzzle->post($url, [
-			'form_params' => [
-				'client_id' => $clientId,
-				'client_secret' => $clientSecret,
-				'scope' => 'https://graph.microsoft.com/.default',
-				'grant_type' => 'client_credentials',
-			],
-		])->getBody()->getContents());
-
-		return $token->access_token;
-	}
 
 	public function execute()
 	{
 		$start = time();
 		$this->process_messages();
 		$msg = 'Tidsbruk: ' . (time() - $start) . ' sekunder';
-		$this->cron_log($msg, $cron);
+		$this->cron_log($msg);
 		echo "$msg\n";
 		$this->receipt['message'][] = array('msg' => $msg);
 	}
@@ -180,7 +157,7 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 		$messages = $this->getUnreadMessages($folderId);
 
-		foreach ($messages as $message)
+		foreach ($messages->getValue() as $message)
 		{
 			$this->handleMessage($message);
 		}
@@ -190,26 +167,43 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 	private function findFolderId($folderName)
 	{
-		$mailFolders = $this->graphServiceClient->createRequest("GET", "/me/mailFolders")
-		->setReturnType(Model\MailFolder::class)
-			->execute();
+		$folderId = null;
+		$folders = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->mailFolders()->get()->wait();
 
-		foreach ($mailFolders as $folder)
+		foreach ($folders->getValue() as $folder)
 		{
-			if ($folder->getDisplayName() === $folderName)
+			if ($folder->getDisplayName() == $folderName)
 			{
-				return $folder->getId();
+				$folderId = $folder->getId();
+				break;
+			}
+
+			$childFolders = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->mailFolders()->byMailFolderId($folder->getId())->childFolders()->get()->wait();
+			foreach ($childFolders->getValue() as $childFolder)
+			{
+				if ($childFolder->getDisplayName() == $folderName)
+				{
+					$folderId = $childFolder->getId();
+					break 2;
+				}
 			}
 		}
 
-		return null;
+		return $folderId;
 	}
 
 	private function getUnreadMessages($folderId)
 	{
-		return $this->graphServiceClient->createRequest("GET", "/me/mailFolders/{$folderId}/messages?\$filter=isRead eq false")
-		->setReturnType(Model\Message::class)
-			->execute();
+		$requestConfig = new MessagesRequestBuilderGetRequestConfiguration(
+			queryParameters: MessagesRequestBuilderGetRequestConfiguration::createQueryParameters(
+				select: ['subject', 'body', 'from', 'isRead']
+				//				top: 10
+			),
+			headers: ['Prefer' => 'outlook.body-content-type=text']
+		);
+		$messages = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->mailFolders()->byMailFolderId($folderId)->messages()->get($requestConfig)->wait();
+
+		return $messages;
 	}
 
 	private function handleMessage($message)
@@ -310,24 +304,30 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		}
 	}
 
+
 	private function handleAttachments($message, $target)
 	{
-		$attachments = $this->graphServiceClient->createRequest("GET", "/me/messages/{$message->getId()}/attachments")
-		->setReturnType(Model\Attachment::class)
-			->execute();
+		//https://learn.microsoft.com/en-us/graph/api/message-list-attachments?view=graph-rest-1.0&tabs=php
 
-		foreach ($attachments as $attachment)
+		$attachments = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->messages()->byMessageId($message->getId())->attachments()->get()->wait();
+		foreach ($attachments->getValue() as $attachment)
 		{
+
 			if ($attachment->getIsInline())
 			{
 				continue;
 			}
 
-			$content = $this->graphServiceClient->createRequest("GET", "/me/messages/{$message->getId()}/attachments/{$attachment->getId()}/\$value")
-			->execute();
+			// Get the attachment content
+			//https://learn.microsoft.com/en-us/graph/api/attachment-get?view=graph-rest-1.0&tabs=php
+			$content = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)
+			->messages()->byMessageId($message->getId())
+			->attachments()->byAttachmentId($attachment->getId())->get()->wait()
+			->getContentBytes()
+			->getContents();
 
 			$tempFile = tempnam(sys_get_temp_dir(), "attachment");
-			file_put_contents($tempFile, $content);
+			file_put_contents($tempFile, base64_decode($content));
 
 			$this->add_attachment_to_target($target, array(
 				'tmp_name' => $tempFile,
@@ -344,15 +344,23 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 		foreach ($this->items_to_move as $messageId)
 		{
-			$this->graphServiceClient->createRequest("POST", "/me/messages/{$messageId}/move")
-			->attachBody(array("destinationId" => $destinationFolderId))
-				->execute();
+			// Mark message as read
+			$requestBody = new Message();
+			$requestBody->setIsRead(true);
+
+			$result = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->messages()->byMessageId($messageId)->patch($requestBody)->wait();
+
+			// move message to another folder
+			$requestBody = new MovePostRequestBody();
+			$requestBody->setDestinationId($destinationFolderId);
+
+			$result = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->messages()->byMessageId($messageId)->move()->post($requestBody)->wait();
 		}
 
 		$this->items_to_move = array();
 	}
 
-	
+
 	function update_external_communication($identificator_arr, $body, $sender)
 	{
 		$ticket_id	 = (int)$identificator_arr[1];
@@ -360,7 +368,7 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 
 		if (!$msg_id)
 		{
-			return false;
+			return $ticket_id;
 		}
 		$soexternal = createObject('property.soexternal_communication');
 
@@ -685,61 +693,4 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		}
 		return $ticket_id;
 	}
-
-	function clean_attacthment_from_temp($saved_attachments)
-	{
-		foreach ($saved_attachments as $saved_attachment)
-		{
-			unlink($saved_attachment['tmp_name']);
-		}
-	}
-
-	function add_attacthment_to_target($target, $saved_attachments)
-	{
-		$target['type'];
-		$target['id'];
-
-		$bofiles = CreateObject('property.bofiles');
-		foreach ($saved_attachments as $saved_attachment)
-		{
-			$file_name = str_replace(array('/', ' ', '..'), array('_', '_', '.'), $saved_attachment['name']);
-
-			if ($file_name && $target['id'])
-			{
-				$to_file = "{$bofiles->fakebase}/{$target['type']}/{$target['id']}/{$file_name}";
-
-				if ($bofiles->vfs->file_exists(array(
-					'string'	 => $to_file,
-					'relatives'	 => array(RELATIVE_NONE)
-				)))
-				{
-					$this->receipt['error'][] = array('msg' => lang('This file already exists !'));
-				}
-				else
-				{
-					$bofiles->create_document_dir("{$target['type']}/{$target['id']}");
-					$bofiles->vfs->override_acl = 1;
-
-					if (!$bofiles->vfs->cp(array(
-						'from'		 => $saved_attachment['tmp_name'],
-						'to'		 => $to_file,
-						'relatives'	 => array(RELATIVE_NONE | VFS_REAL, RELATIVE_ALL)
-					)))
-					{
-						$this->receipt['error'][] = array('msg' => lang('Failed to upload file !'));
-					}
-					$bofiles->vfs->override_acl = 0;
-				}
-			}
-		}
-	}
-
-	/**
-	 * Set message as read
-	 */
-	
-	function update_message()
-	{
-	}
-
 }

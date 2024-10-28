@@ -91,7 +91,16 @@ class phpgwapi_ofphpgwapi extends phpgwapi_object_factory
 
 			case 'acl':
 				$account_id   = ($p1 !== '_UNDEF_') ? $p1 : null;
-				return \App\modules\phpgwapi\security\Acl::getInstance($account_id);
+				$acl = \App\modules\phpgwapi\security\Acl::getInstance();
+				if($account_id === null)
+				{
+					return $acl;
+				}
+				else
+				{
+					$acl->set_account_id($account_id);
+					return $acl;
+				}
 
 			case 'asyncservice':
 				return \App\modules\phpgwapi\services\AsyncService::getInstance();

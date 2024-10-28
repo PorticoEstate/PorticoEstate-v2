@@ -30,6 +30,8 @@ services:
         volumes:
             - .:/var/www/html
             - ./logs:/var/log/apache2
+            - /var/local/:/var/local/
+            # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
         networks:
             - internal
 

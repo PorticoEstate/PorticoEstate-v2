@@ -75,40 +75,32 @@ class import_conversion
 			return true;
 		}
 
-		$this->db->Exception_On_Error = true;
 		$received = false;
-		$received_amount = 0;
-		$receive_order_performed = false;
 
 		try
 		{
+			$order_type = $this->bocommon->socommon->get_order_type($order_id);
 
-			if (!$receive_order_performed)
+			//Altered to be send simultaneously with order sendt to Agresso after 2024-10-10
+			switch ($order_type['type'])
 			{
+				case 'workorder':
+					$received	 = createObject('property.boworkorder')->receive_order((int)$order_id, $received_amount, $Bilagsnr);
+					break;
+				case 'ticket':
+					$received	 = createObject('property.botts')->receive_order((int)$order_id, $received_amount, $Bilagsnr);
+					break;
+				default:
+					throw new Exception('Order type not supported');
+			}
 
-				$order_type = $this->bocommon->socommon->get_order_type($order_id);
-
-				//Altered to be send simultaneously with order sendt to Agresso after 2024-10-10
-				switch ($order_type['type'])
-				{
-					case 'workorder':
-						$received	 = createObject('property.boworkorder')->receive_order((int)$order_id, $received_amount, $Bilagsnr);
-						break;
-					case 'ticket':
-						$received	 = createObject('property.botts')->receive_order((int)$order_id, $received_amount, $Bilagsnr);
-						break;
-					default:
-						throw new Exception('Order type not supported');
-				}
-
-				if ($received)
-				{
-					$this->messages[] = "Ordre #{$order_id} mottatt";
-				}
-				else
-				{
-					$this->errors[] = "Ordre #{$order_id} mottak feilet";
-				}
+			if ($received)
+			{
+				$this->messages[] = "Ordre #{$order_id} mottatt";
+			}
+			else
+			{
+				$this->errors[] = "Ordre #{$order_id} mottak feilet";
 			}
 		}
 		catch (Exception $e)
@@ -119,8 +111,6 @@ class import_conversion
 			}
 			return false;
 		}
-
-		$this->db->Exception_On_Error = false;
 
 		return $received;
 	}

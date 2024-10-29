@@ -1,0 +1,127 @@
+<?php
+
+use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\controllers\Accounts\Accounts;
+
+class import_conversion
+{
+
+	protected $bocommon, $debug;
+	public $messages = array();
+	public $warnings = array();
+	public $errors	 = array();
+	public $fields	 = array(
+		'BA',
+		'Ansvar',
+		'Ansvar (T)',
+		'Art',
+		'Bilagsnr',
+		'Ordrenr',
+		'Sekvens',
+		'Beløp',
+		'Beskrivelse',
+		'Prosess',
+		'Arbeidsflytsteg',
+		'Eier av oppgave',
+		'Eier av oppgave (T)',
+		'Status arbeidsflyt / kart (T)',
+		'Lev.nr',
+		'Lev.nr (T)',
+		'Fakturanr',
+		'Periode',
+		'Bilagsdato',
+		'Forfall',
+		'Herav forfalt',
+		'Forfalt 0-30 dg'
+
+	);
+	public $filename_template;
+
+	public function __construct($location_id, $debug = false)
+	{
+		$userSettings = Settings::getInstance()->get('user');
+		$this->account		 = (int)$userSettings['account_id'];
+		if ($debug)
+		{
+			$this->debug = true;
+		}
+		$this->filename_template = 'etter_registrer_fakturamottak_ebf';
+		$this->bocommon		 = CreateObject('property.bocommon');
+	}
+
+	public function add($data)
+	{
+		$BA = trim($data[0]);
+		/**
+		 * In case there are empty rows at the end.
+		 */
+		if (empty($BA))
+		{
+			return true;
+		}
+
+		$order_id = (int)$data[5];
+		$Bilagsnr = (int)$data[4];
+		$belop = (float)str_replace(',', '.', $data[7]);
+
+		$received_amount = $belop * 0.8; //shave off 25 % tax from the top.
+
+		if ($this->debug)
+		{
+			_debug_array($order_id);
+			_debug_array($Bilagsnr);
+			_debug_array($belop);
+			_debug_array($received_amount);
+			return true;
+		}
+
+		$this->db->Exception_On_Error = true;
+		$received = false;
+		$received_amount = 0;
+		$receive_order_performed = false;
+
+		try
+		{
+
+			if (!$receive_order_performed)
+			{
+
+				$order_type = $this->bocommon->socommon->get_order_type($order_id);
+
+				//Altered to be send simultaneously with order sendt to Agresso after 2024-10-10
+				switch ($order_type['type'])
+				{
+					case 'workorder':
+						$received	 = createObject('property.boworkorder')->receive_order((int)$order_id, $received_amount, $Bilagsnr);
+						break;
+					case 'ticket':
+						$received	 = createObject('property.botts')->receive_order((int)$order_id, $received_amount, $Bilagsnr);
+						break;
+					default:
+						throw new Exception('Order type not supported');
+				}
+
+				if ($received)
+				{
+					$this->messages[] = "Ordre #{$order_id} mottatt";
+				}
+				else
+				{
+					$this->errors[] = "Ordre #{$order_id} mottak feilet";
+				}
+			}
+		}
+		catch (Exception $e)
+		{
+			if ($e)
+			{
+				$this->errors[] = $e->getMessage();
+			}
+			return false;
+		}
+
+		$this->db->Exception_On_Error = false;
+
+		return $received;
+	}
+}

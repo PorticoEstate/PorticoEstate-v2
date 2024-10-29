@@ -89,7 +89,7 @@ if (!class_exists("lag_agresso_varemottak"))
 		{
 			$values = $this->values;
 
-			$ordre_mottak_samtidig_med_ordre = strtotime('2024-10-11 00:00:00') > $values['order_sent'] ? true : false;
+			$ordre_mottak_samtidig_med_ordre = strtotime('2024-10-11 00:00:00') < $values['order_sent'] ? true : false;
 			
 			if(!empty($values['order_sent']) && $ordre_mottak_samtidig_med_ordre)
 			{

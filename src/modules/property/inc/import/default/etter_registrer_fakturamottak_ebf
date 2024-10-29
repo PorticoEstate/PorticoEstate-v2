@@ -47,6 +47,8 @@ class import_conversion
 		}
 		$this->filename_template = 'etter_registrer_fakturamottak_ebf';
 		$this->bocommon		 = CreateObject('property.bocommon');
+		//set time limit to 10 minutes
+		set_time_limit(600);
 	}
 
 	public function add($data)

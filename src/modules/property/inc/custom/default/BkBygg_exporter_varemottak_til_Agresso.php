@@ -150,7 +150,7 @@ if (!class_exists("lag_agresso_varemottak"))
 			));
 			$exporter_varemottak->create_transfer_xml($param);
 
-			$export_ok = $exporter_varemottak->transfer($this->debug);
+			$export_ok = $exporter_varemottak->transfer();
 			if ($export_ok)
 			{
 				$this->log_transfer($id, $received_amount);

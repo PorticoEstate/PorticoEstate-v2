@@ -734,7 +734,7 @@
 								delete oParams.columns;
 						}
 
-						iframe.src = sUrl+"&"+$.param(oParams) + "&export=1" + "&query=" + $('div.dataTables_filter input').val();
+						iframe.src = sUrl+"&"+$.param(oParams) + "&export=1" + "&query=" + $('.dt-search input[aria-controls="datatable-container"]').val();
 						if(confirm("This will take some time..."))
 						{
 							document.body.appendChild( iframe );
@@ -1554,7 +1554,7 @@
 				$('#democollapseBtn').addClass("show");
 			}
 
-			$('div.dataTables_filter input').focus();	
+			$('.dt-search input[aria-controls="datatable-container"]').focus();	
 		});
 
 	]]>

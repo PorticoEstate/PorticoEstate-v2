@@ -14,15 +14,15 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
     let startDateTime: DateTime;
     let endDateTime: DateTime;
 
-    if (event.dates && event.dates.length > 0) {
-        // If dates array is present, use the first date range
-        startDateTime = DateTime.fromSQL(event.dates[0].from_);
-        endDateTime = DateTime.fromSQL(event.dates[0].to_);
-    } else {
+    // if (event.dates && event.dates.length > 0) {
+    //     // If dates array is present, use the first date range
+    //     startDateTime = DateTime.fromSQL(event.dates[0].from_);
+    //     endDateTime = DateTime.fromSQL(event.dates[0].to_);
+    // } else {
         // If no dates array, use the top-level from/to/date
-        startDateTime = DateTime.fromISO(`${event.date}T${event.from}`);
-        endDateTime = DateTime.fromISO(`${event.date}T${event.to}`);
-    }
+        startDateTime = DateTime.fromSQL(event._from);
+        endDateTime = DateTime.fromSQL(event._to);
+    // }
 
     // Calculate the duration of the event in minutes
     const durationMinutes = endDateTime.diff(startDateTime, 'minutes').minutes;

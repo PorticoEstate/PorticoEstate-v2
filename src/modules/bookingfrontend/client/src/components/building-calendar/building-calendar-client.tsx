@@ -153,23 +153,43 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     const calculateAbsoluteMinMaxTimes = useCallback(() => {
         let minTime = '24:00:00';
         let maxTime = '00:00:00';
-        // Check seasons
+
+        // Helper function to extract time portion from datetime string
+        const extractTime = (dateTimeStr: string): string => {
+            // If it's already in HH:mm:ss format, return as is
+            if (/^\d{2}:\d{2}:\d{2}$/.test(dateTimeStr)) {
+                return dateTimeStr;
+            }
+
+            // Parse datetime string and return time portion
+            try {
+                const dt = DateTime.fromSQL(dateTimeStr); // Remove milliseconds if present
+                return dt.toFormat('HH:mm:ss');
+            } catch (e) {
+                console.error('Error parsing datetime:', dateTimeStr);
+                return '00:00:00';
+            }
+        };
+
+        // Check seasons (assuming seasons format hasn't changed)
         props.seasons.forEach(season => {
             if (season.from_ < minTime) minTime = season.from_;
             if (season.to_ > maxTime) maxTime = season.to_;
         });
 
-        // Check events
+        // Check events with new format
         events.forEach(event => {
-            if (event.from < minTime) minTime = event.from;
-            if (event.to > maxTime) maxTime = event.to;
+            const eventStartTime = extractTime(event._from);
+            const eventEndTime = extractTime(event._to);
+
+            if (eventStartTime < minTime) minTime = eventStartTime;
+            if (eventEndTime > maxTime) maxTime = eventEndTime;
         });
 
-
+        // Set default values if no valid times found
         setSlotMinTime(minTime === "24:00:00" ? '06:00:00' : minTime);
         setSlotMaxTime(maxTime === "00:00:00" ? '24:00:00' : maxTime);
     }, [props.seasons, events]);
-
     useEffect(() => {
         calculateAbsoluteMinMaxTimes();
     }, [calculateAbsoluteMinMaxTimes]);

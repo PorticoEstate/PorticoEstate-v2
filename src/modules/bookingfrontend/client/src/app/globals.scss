@@ -14,6 +14,7 @@ body {
 
 :root {
     background-color: $grey-light-64;
+
 }
 
 
@@ -156,6 +157,11 @@ body {
     z-index: 102 !important;
 }
 
+
+.ds-table {
+    --dsc-table-background: $grey-light-64;
+    --dsc-table-header-background: $grey-light-64;
+}
 
 :root, [data-ds-theme="light"] {
     --ds-color-accent-1: #fefdfe;

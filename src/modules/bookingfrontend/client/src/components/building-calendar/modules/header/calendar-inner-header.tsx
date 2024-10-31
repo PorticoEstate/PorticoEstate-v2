@@ -1,4 +1,4 @@
-import React, {Dispatch, FC, MutableRefObject} from 'react';
+import React, {Dispatch, FC, MutableRefObject, useEffect, useMemo} from 'react';
 import {Badge, Button} from "@digdir/designsystemet-react";
 import {ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
 import styles from './calendar-inner-header.module.scss';
@@ -11,6 +11,8 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCalendar} from "@fortawesome/free-regular-svg-icons";
 import {faArrowRightLong, faLayerGroup, faTableList} from "@fortawesome/free-solid-svg-icons";
 import {useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {phpGWLink} from "@/service/util";
+import Link from "next/link";
 
 interface CalendarInnerHeaderProps {
     resourcesHidden: boolean
@@ -27,13 +29,29 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
     const t = useTrans();
     const {resourcesHidden, setResourcesHidden, view, calendarRef, setView} = props
     const enabledResources = useEnabledResources();
-    const tempEvents = useTempEvents();
+    const {tempEvents, setTempEvents} = useTempEvents();
+
+
+    const applicationURL = useMemo(() => {
+        const params = {
+            menuaction: 'bookingfrontend.uiapplication.add',
+            building_id: props.building.id,
+            resources: [...enabledResources],
+            dates: Object.values(tempEvents).map((ev) => `${Math.floor(ev.start.getTime() / 1000)}_${Math.floor(ev.end.getTime() / 1000)}`)
+
+        }
+        return phpGWLink('bookingfrontend/', params, false);
+    }, [tempEvents, props.building, enabledResources]);
+
     const c = calendarRef.current;
+
     if (!c) {
         return null;
     }
     const calendarApi = c.getApi();
     const currentDate = calendarApi ? calendarApi.getDate() : new Date();
+
+
 
     return (
         <div className={styles.innerHeader}>
@@ -114,16 +132,16 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
                 }}><FontAwesomeIcon icon={faTableList}/> <span
                     className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
             </ButtonGroup>
-            <Button variant={'primary'} size={'sm'} className={styles.orderButton} onClick={() => {
-                props.setView('listWeek')
-            }}>
-                {t('bookingfrontend.to application site')}
-                {Object.values(tempEvents.tempEvents).length > 0 &&
-                    <Badge count={Object.values(tempEvents.tempEvents).length}
-                           color={'info'} size={'sm'}>
+            <Button variant={'primary'} asChild size={'sm'} className={styles.orderButton}>
+                <Link href={applicationURL}>
+                    {t('bookingfrontend.to application site')}
+                    {Object.values(tempEvents).length > 0 &&
+                        <Badge count={Object.values(tempEvents).length}
+                               color={'info'} size={'sm'}>
 
-                    </Badge>}
-                <FontAwesomeIcon icon={faArrowRightLong}/>
+                        </Badge>}
+                    <FontAwesomeIcon icon={faArrowRightLong}/>
+                </Link>
 
             </Button>
         </div>

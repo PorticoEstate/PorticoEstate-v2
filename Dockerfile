@@ -29,7 +29,12 @@ RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
 	# Install PECL extensions
 RUN pecl install xdebug apcu && docker-php-ext-enable xdebug apcu
 RUN pecl install redis && docker-php-ext-enable redis
-RUN pecl install imagick && docker-php-ext-enable imagick
+# RUN pecl install imagick && docker-php-ext-enable imagick
+
+
+# Temp solution to imagick broken with php >= 8.3, use imagick commit 28f27044e435a2b203e32675e942eb8de620ee58
+
+RUN ( curl -sSLf https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o - || echo 'return 1' ) | sh -s
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
@@ -73,7 +78,7 @@ RUN a2enmod proxy_http
 RUN if [ "${INSTALL_XDEBUG}" = "true" ]; then \
     echo 'xdebug.mode=debug,develop' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo 'xdebug.discover_client_host=1' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo 'xdebug.client_host=""' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo 'xdebug.client_host=host.docker.internal' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo 'xdebug.start_with_request=yes' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo 'xdebug.idekey=netbeans-xdebug' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini; \
    fi
@@ -91,15 +96,19 @@ RUN echo 'post_max_size = 20M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 8M' >> /usr/local/etc/php/php.ini
 
 # Download and install OpenJDK
-RUN wget -O /tmp/openjdk.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb \
-    && dpkg -i /tmp/openjdk.deb \
-    && rm /tmp/openjdk.deb
+#RUN wget -O /tmp/openjdk.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb \
+#    && dpkg -i /tmp/openjdk.deb \
+#    && rm /tmp/openjdk.deb
+RUN  apt install lsb-release -y \
+    && wget https://packages.microsoft.com/config/debian/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
+    && dpkg -i packages-microsoft-prod.deb
+
+RUN apt-get update && apt-get install -y msopenjdk-21
 
 # Set JAVA_HOME environment variable
-ENV JAVA_HOME=/usr/lib/jvm/jdk-21
-ENV PATH=$JAVA_HOME/bin:$PATH
-
-# Verify Java installation
+#ENV JAVA_HOME=/usr/lib/jvm/jdk-21
+#ENV PATH=$JAVA_HOME/bin:$PATH
+## Verify Java installation
 RUN java -version
 
 # Clean up

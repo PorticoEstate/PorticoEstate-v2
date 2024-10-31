@@ -320,7 +320,7 @@ class Import_fra_agresso_X205_BK extends property_cron_parent
 	protected function import($file)
 	{
 		$_file		 = basename($file);
-
+		$receive_order_performed = false;
 		$update_attachments = false;
 
 		if (preg_match('/^Portico/i', (string)$_file))

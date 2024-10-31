@@ -1,93 +1,102 @@
+'use client'
 import {FC} from 'react';
 import {Card, Heading, Paragraph} from "@digdir/designsystemet-react";
+import PageHeader from "@/components/page-header/page-header";
+import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
 interface UserPageClientProps {
 }
 
 const UserPageClient: FC<UserPageClientProps> = (props) => {
+    const t = useTrans();
+
     return (
-        <section>
-            <Card
-                asChild
-                color="neutral"
-            >
-                <a
-                    href="https://designsystemet.no"
-                    rel="noopener noreferrer"
-                    target="_blank"
+        <main>
+            <PageHeader title={t('bookingfrontend.my page')}/>
+
+            <section>
+                <Card
+                    asChild
+                    color="neutral"
                 >
-                    <Heading
-                        level={2}
-                        size="sm"
+                    <a
+                        href="https://designsystemet.no"
+                        rel="noopener noreferrer"
+                        target="_blank"
                     >
-                        Brukerdata
-                    </Heading>
-                    <Paragraph>
-                        Din personlig informasjon og faktura informasjon.
-                    </Paragraph>
-                </a>
-            </Card>
-            <Card
-                asChild
-                color="neutral"
-            >
-                <a
-                    href="https://designsystemet.no"
-                    rel="noopener noreferrer"
-                    target="_blank"
+                        <Heading
+                            level={2}
+                            size="sm"
+                        >
+                            Brukerdata
+                        </Heading>
+                        <Paragraph>
+                            Din personlig informasjon og faktura informasjon.
+                        </Paragraph>
+                    </a>
+                </Card>
+                <Card
+                    asChild
+                    color="neutral"
                 >
-                    <Heading
-                        level={2}
-                        size="sm"
+                    <a
+                        href="https://designsystemet.no"
+                        rel="noopener noreferrer"
+                        target="_blank"
                     >
-                        Søknader
-                    </Heading>
-                    <Paragraph>
-                        Oversikt over dine søknader.
-                    </Paragraph>
-                </a>
-            </Card>
-            <Card
-                asChild
-                color="neutral"
-            >
-                <a
-                    href="https://designsystemet.no"
-                    rel="noopener noreferrer"
-                    target="_blank"
+                        <Heading
+                            level={2}
+                            size="sm"
+                        >
+                            Søknader
+                        </Heading>
+                        <Paragraph>
+                            Oversikt over dine søknader.
+                        </Paragraph>
+                    </a>
+                </Card>
+                <Card
+                    asChild
+                    color="neutral"
                 >
-                    <Heading
-                        level={2}
-                        size="sm"
+                    <a
+                        href="https://designsystemet.no"
+                        rel="noopener noreferrer"
+                        target="_blank"
                     >
-                        Faktura
-                    </Heading>
-                    <Paragraph>
-                        Oversikt over dine fakturaer.
-                    </Paragraph>
-                </a>
-            </Card>
-            <Card
-                asChild
-                color="neutral"
-            >
-                <a
-                    href="https://designsystemet.no"
-                    rel="noopener noreferrer"
-                    target="_blank"
+                        <Heading
+                            level={2}
+                            size="sm"
+                        >
+                            Faktura
+                        </Heading>
+                        <Paragraph>
+                            Oversikt over dine fakturaer.
+                        </Paragraph>
+                    </a>
+                </Card>
+                <Card
+                    asChild
+                    color="neutral"
                 >
-                    <Heading
-                        level={2}
-                        size="sm"
+                    <a
+                        href="https://designsystemet.no"
+                        rel="noopener noreferrer"
+                        target="_blank"
                     >
-                        Delegater
-                    </Heading>
-                    <Paragraph>
-                        Oversikt over dine delegater.
-                    </Paragraph>
-                </a>
-            </Card>
-        </section>
+                        <Heading
+                            level={2}
+                            size="sm"
+                        >
+                            Delegater
+                        </Heading>
+                        <Paragraph>
+                            Oversikt over dine delegater.
+                        </Paragraph>
+                    </a>
+                </Card>
+            </section>
+        </main>
     );
 }
 

@@ -527,6 +527,8 @@ phpgw::import_class('booking.bocommon_authorized');
                     'resources' => $allocation_resources,
                     'season_id' => $allocation['season_id'],
                     'season_name' => $allocation['season_name'],
+                    '_from' => $allocation['from_'],
+                    '_to' => $allocation['to_'],
                     'from' => explode(" ", $allocation['from_'])[1],
                     'to' => explode(" ", $allocation['to_'])[1],
                     'date' => explode(" ", $allocation['from_'])[0],
@@ -562,6 +564,8 @@ phpgw::import_class('booking.bocommon_authorized');
                     'group_shortname'	 => $booking['group_shortname'],
                     'building_id'		 => $booking['building_id'],
                     'building_name'		 => $booking['building_name'],
+                    '_from' => $booking['from_'],
+                    '_to' => $booking['to_'],
                     'from' => explode(" ", $booking['from_'])[1],
                     'to' => explode(" ", $booking['to_'])[1],
                     'date' => explode(" ", $booking['from_'])[0],
@@ -603,6 +607,8 @@ phpgw::import_class('booking.bocommon_authorized');
                     'completed'			 => $event['completed'],
                     'access_requested'	 => $event['access_requested'],
                     'reminder'			 => $event['reminder'],
+                    '_from' => $event['from_'],
+                    '_to' => $event['to_'],
                     'is_public'			 => $event['is_public'],
                     'activity_name'		 => $event['activity_name'],
                     'resources'			 => $event_resources,
@@ -1375,7 +1381,7 @@ phpgw::import_class('booking.bocommon_authorized');
 			{
 				throw $ex;
 			}
-			
+
 			$_from	 = clone $start_date;
 			$_from->setTime(0, 0, 0);
 			$_to		 = clone $end_date;
@@ -1691,8 +1697,8 @@ phpgw::import_class('booking.bocommon_authorized');
 						$to_utc = clone $endTime;
 						$from_utc->setTimezone($DateTimeZone_utc);
 						$to_utc->setTimezone($DateTimeZone_utc);
-			
-									
+
+
 						if(!empty($simple_booking_start_date))
 						{
 							$_simple_booking_start_date = new DateTime(date('Y-m-d H:i', $resource['simple_booking_start_date']));
@@ -1817,7 +1823,7 @@ phpgw::import_class('booking.bocommon_authorized');
                       || ($event_start < $endTime AND $event_end >= $endTime)
 					)
 					{
-						
+
 						$overlap = ($event['type'] == 'block' ||  $event['status'] == 'NEWPARTIAL1') ? 2 : 1;
 						break;
 					}

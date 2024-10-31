@@ -504,7 +504,7 @@ abstract class phpgwapi_uicommon_jquery
 
 	public static function render_template_xsl($files, $data, $xsl_rootdir = '', $base = 'data')
 	{
-		
+
 		$flags = Settings::getInstance()->get('flags');
 		$flags['xslt_app'] = true;
 		Settings::getInstance()->update('flags', ['xslt_app' => true]);

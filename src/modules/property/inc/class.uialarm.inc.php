@@ -118,7 +118,7 @@ class property_uialarm extends phpgwapi_uicommon_jquery
 			'order'		 => $columns[$order[0]['column']]['data'],
 			'sort'		 => $order[0]['dir'],
 			'filter'	 => $this->filter,
-			'id'		 => '%',
+			'id'		 => '',
 			'allrows'	 => Sanitizer::get_var('length', 'int') == -1
 		);
 

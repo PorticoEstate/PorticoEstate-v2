@@ -6,11 +6,12 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 interface PageHeaderProps {
     title: string;
     icon?: IconProp;
+    className?: string
 }
 
 const PageHeader: FC<PageHeaderProps> = (props) => {
     return (
-        <section className={`${styles.buildingHeader} mx-3`}>
+        <section className={`${styles.buildingHeader} mx-3 ${props.className || ''}`}>
             <div className={styles.buildingName}>
                 <h2>
                     {props.icon && (

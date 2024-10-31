@@ -565,6 +565,9 @@
   font-weight: normal;
   font-size: 1rem;
 }
+.fc .fc-event.fc-timegrid-event-short {
+  padding: 0;
+}
 .fc .fc-list-event .fc-list-event-time {
   color: black;
   display: none;
@@ -1749,7 +1752,7 @@ a:not(.pe-btn):not(.ds-button):not([class^=fc-]).link-button--transparent {
   }
 }
 
-@media (min-width: 601px) {
+@media (min-width: 1200px) {
   .container-fluid {
     width: 100%;
     padding-right: 1rem;
@@ -2605,6 +2608,11 @@ body {
 
 .react-datepicker-popper {
   z-index: 102 !important;
+}
+
+.ds-table {
+  --dsc-table-background: $grey-light-64;
+  --dsc-table-header-background: $grey-light-64;
 }
 
 :root, [data-ds-theme=light] {

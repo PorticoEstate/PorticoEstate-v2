@@ -1051,6 +1051,117 @@ class booking_uiapplication extends booking_uicommon
 		}
 	}
 
+    /**
+     * Enhanced parameter handling for resources and dates in booking_uiapplication
+     */
+
+    private function parse_resources_parameter()
+    {
+        // Check for array format first
+        $resources_array = Sanitizer::get_var('resources', 'array');
+        if ($resources_array) {
+            return array_map('intval', $resources_array);
+        }
+
+        // Check legacy comma-separated format
+        $resources_string = Sanitizer::get_var('resource');
+        if ($resources_string && $resources_string !== 'null') {
+            return array_map('intval', explode(',', $resources_string));
+        }
+
+        // Check alternative legacy format
+        $resources_alt = Sanitizer::get_var('resources', 'string');
+        if ($resources_alt) {
+            return array_map('intval', explode(',', $resources_alt));
+        }
+
+        // Check single resource_id
+        $single_resource = Sanitizer::get_var('resource_id', 'int');
+        if ($single_resource) {
+            return array($single_resource);
+        }
+
+        return array();
+    }
+
+    private function parse_dates_parameter()
+    {
+        $timezone = !empty($this->userSettings['preferences']['common']['timezone']) ?
+            $this->userSettings['preferences']['common']['timezone'] : 'UTC';
+
+        try {
+            $DateTimeZone = new DateTimeZone($timezone);
+        } catch (Exception $ex) {
+            throw $ex;
+        }
+
+        // Check for array format first - explicitly check if it's an array
+        $dates_array = Sanitizer::get_var('dates', 'array', 'REQUEST', null);
+        if (is_array($dates_array)) {
+            $combined_dates = array();
+            foreach ($dates_array as $date_pair_str) {
+                list($start_timestamp, $end_timestamp) = explode('_', $date_pair_str);
+                $_start_time = new DateTime(date('Y-m-d H:i:s', (int)$start_timestamp));
+                $_end_time = new DateTime(date('Y-m-d H:i:s', (int)$end_timestamp));
+                $_start_time->setTimezone($DateTimeZone);
+                $_end_time->setTimezone($DateTimeZone);
+
+                $combined_dates[] = $this->_combine_dates(
+                    $_start_time->format('Y-m-d H:i:s'),
+                    $_end_time->format('Y-m-d H:i:s')
+                );
+            }
+            return $combined_dates;
+        }
+
+        // Check legacy comma-separated format - explicitly request string type
+        $dates_string = Sanitizer::get_var('dates', 'string', 'REQUEST', null);
+        if (is_string($dates_string) && !empty($dates_string)) {
+            $dates_input = explode(',', $dates_string);
+            $combined_dates = array();
+            foreach ($dates_input as $date_pair_str) {
+                list($start_timestamp, $end_timestamp) = explode('_', $date_pair_str);
+                $_start_time = new DateTime(date('Y-m-d H:i:s', (int)$start_timestamp));
+                $_end_time = new DateTime(date('Y-m-d H:i:s', (int)$end_timestamp));
+                $_start_time->setTimezone($DateTimeZone);
+                $_end_time->setTimezone($DateTimeZone);
+
+                $combined_dates[] = $this->_combine_dates(
+                    $_start_time->format('Y-m-d H:i:s'),
+                    $_end_time->format('Y-m-d H:i:s')
+                );
+            }
+            return $combined_dates;
+        }
+
+        // Check from_/to_ array format
+        $from_dates = Sanitizer::get_var('from_', 'string', 'REQUEST', null);
+        if (!is_null($from_dates)) {
+            return array_map(
+                array($this, '_combine_dates'),
+                Sanitizer::get_var('from_', 'string'),
+                Sanitizer::get_var('to_', 'string')
+            );
+        }
+
+        // Check start/end milliseconds format
+        $start_time = Sanitizer::get_var('start', 'int', 'REQUEST', null);
+        if (!is_null($start_time)) {
+            $_start_time = new DateTime(date('Y-m-d H:i:s', $start_time / 1000));
+            $_end_time = new DateTime(date('Y-m-d H:i:s', Sanitizer::get_var('end', 'int') / 1000));
+            $_start_time->setTimezone($DateTimeZone);
+            $_end_time->setTimezone($DateTimeZone);
+
+            return array_map(
+                array($this, '_combine_dates'),
+                (array)$_start_time->format('Y-m-d H:i:s'),
+                (array)$_end_time->format('Y-m-d H:i:s')
+            );
+        }
+
+        return array_map(array($this, '_combine_dates'), array(), array());
+    }
+
 	public function add()
 	{
 		$organization_number = Cache::session_get($this->module, self::ORGNR_SESSION_KEY);
@@ -1430,22 +1541,18 @@ class booking_uiapplication extends booking_uicommon
 				Cache::session_clear('phpgwapi', 'history');
 			}
 		}
-		if (Sanitizer::get_var('resource') == 'null' || !Sanitizer::get_var('resource'))
-		{
-			array_set_default($application, 'resources', array());
-		}
-		else
-		{
-			$resources = explode(",", Sanitizer::get_var('resource'));
-			if ($resources)
-			{
-				$resources_id = $resources[0];
-				$resource = $this->resource_bo->read_single($resources_id);
-				$activity_id = $resource['activity_id'];
-			}
+        $application['resources'] = $this->parse_resources_parameter();
+        if (!empty($application['resources']))
+        {
+            $first_resource = $this->resource_bo->read_single($application['resources'][0]);
+            $activity_id = isset($first_resource['activity_id']) ? $first_resource['activity_id'] : null;
+        }
 
-			array_set_default($application, 'resources', $resources);
-		}
+        // NEW CODE: Replace existing dates handling with new method
+        if (!isset($application['dates']))
+        {
+            $application['dates'] = $this->parse_dates_parameter();
+        }
 		array_set_default($application, 'building_id', $building_id);
 
 		$_building = $this->building_bo->so->read_single($building_id);
@@ -1460,64 +1567,7 @@ class booking_uiapplication extends booking_uicommon
 			$application['building_name'] = str_replace($search, $replace, $application['building_name']);
 		}
 
-		if (Sanitizer::get_var('dates', 'string'))
-		{
-			$dates_input = explode(',', Sanitizer::get_var('dates', 'string'));
-			$timezone = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
 
-			try
-			{
-				$DateTimeZone = new DateTimeZone($timezone);
-			}
-			catch (Exception $ex)
-			{
-				throw $ex;
-			}
-
-			$combined_dates = [];
-			foreach ($dates_input as $date_pair_str)
-			{
-				list($start_timestamp, $end_timestamp) = explode('_', $date_pair_str);
-				$_start_time = new DateTime(date('Y-m-d H:i:s', $start_timestamp));
-				$_end_time = new DateTime(date('Y-m-d H:i:s', $end_timestamp));
-				$_start_time->setTimezone($DateTimeZone);
-				$_end_time->setTimezone($DateTimeZone);
-
-				$combined_dates[] = $this->_combine_dates($_start_time->format('Y-m-d H:i:s'), $_end_time->format('Y-m-d H:i:s'));
-			}
-
-			$default_dates = $combined_dates;
-		}
-		else if (Sanitizer::get_var('from_', 'string'))
-		{
-			$default_dates = array_map(array($this, '_combine_dates'), Sanitizer::get_var('from_', 'string'), Sanitizer::get_var('to_', 'string'));
-		}
-		else if (Sanitizer::get_var('start', 'bool'))
-		{
-			$timezone	 = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
-
-			try
-			{
-				$DateTimeZone	 = new DateTimeZone($timezone);
-			}
-			catch (Exception $ex)
-			{
-				throw $ex;
-			}
-
-			$_start_time =  (new DateTime(date('Y-m-d H:i:s', Sanitizer::get_var('start', 'int') / 1000)));
-			$_end_time = (new DateTime(date('Y-m-d H:i:s', Sanitizer::get_var('end', 'int') / 1000)));
-			$_start_time->setTimezone($DateTimeZone);
-			$_end_time->setTimezone($DateTimeZone);
-
-			$default_dates = array_map(array($this, '_combine_dates'), (array) $_start_time->format('Y-m-d H:i:s'), (array)$_end_time->format('Y-m-d H:i:s'));
-		}
-		else
-		{
-			$default_dates = array_map(array($this, '_combine_dates'), array(), array());
-		}
-
-		array_set_default($application, 'dates', $default_dates);
 
 		$this->flash_form_errors($errors);
 

@@ -7,13 +7,19 @@ import {phpGWLink} from "@/service/util";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faArrowLeft} from "@fortawesome/free-solid-svg-icons";
 import {usePathname} from "next/navigation";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 interface InternalNavProps {
 }
 
 const InternalNav: FC<InternalNavProps> = (props) => {
     const t=useTrans();
     const pathname = usePathname()
+    const isMobile = useIsMobile();
     if(pathname.split('/').length === 2) {
+        return null;
+    }
+
+    if(pathname.split('/')[2] === 'user') {
         return null;
     }
     return (

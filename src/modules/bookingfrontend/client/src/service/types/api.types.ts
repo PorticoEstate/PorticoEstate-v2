@@ -70,6 +70,7 @@ export interface IBookingUser {
     zip_code?: string;
     city?: string;
     delegates?: IDelegate[];
+    customer_number?: string;
 }
 
 export interface IDelegate {

@@ -7,8 +7,22 @@
     justify-content: space-between;
     box-shadow: $box-shadow-large;
     background: $white;
-    padding: 1rem 2rem;
-    border-radius: $rounded-large;
+
+    padding: 0rem 0.5rem;
+    margin-bottom: 1rem;
+    min-height: 67px;
+
+
+    @include desktop {
+        min-height: unset;
+
+        margin-top: 2rem;
+        padding: 1rem 2rem;
+        border-radius: $rounded-large;
+
+
+    }
+
     //margin-bottom: 2rem;
     //margin-top: 3rem;
     //@include mobile {

@@ -1,12 +1,11 @@
-import React, { FC, useEffect, useRef, useState } from 'react';
+import React, {FC, useEffect, useMemo, useRef, useState} from 'react';
 import styles from './event-content.module.scss';
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faClock } from "@fortawesome/free-regular-svg-icons";
-import { faLayerGroup, faUser, faUsers } from "@fortawesome/free-solid-svg-icons";
-import { formatEventTime, LuxDate } from "@/service/util";
-import {FCallEvent, FCallTempEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faClock} from "@fortawesome/free-regular-svg-icons";
+import {faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import {formatEventTime} from "@/service/util";
+import {FCallTempEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import { PopperInfoType } from "@/service/api/event-info";
 import popperStyles from '../popper/event-popper.module.scss'
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
@@ -14,81 +13,143 @@ interface EventContentTempProps {
     eventInfo: FCEventContentArg<FCallTempEvent>;
 }
 
-const pxPerMinute = 0.93;
-const mainBigContentHeight = 100;
-const mediumContentHeight = 43;
+// Constants for layout calculations
+const SHORT_EVENT_HEIGHT = 46;
+const MEDIUM_EVENT_HEIGHT = 91;
+const LONG_EVENT_HEIGHT = 112;
+const HEADER_HEIGHT = 116;
+const TITLE_THRESHOLD = 60;
+
+const PX_TO_MINUTES_RATIO = 1.03448275862;
+
 const resourceItemHeight = 28;
 const resourceItemGap = 4;
+const colorCircleWidth = 16;
+const colorCircleGap = 4;
+const minSpaceForTime = 80;
+
+interface LayoutState {
+    visibleResources: number;
+    visibleCircles: number;
+    showTitle: boolean;
+    showResourceList: boolean;
+    virtualDurationMinutes: number;
+}
 
 const EventContentTemp: FC<EventContentTempProps> = (props) => {
     const {eventInfo} = props;
     const t = useTrans();
     const eventRef = useRef<HTMLDivElement>(null);
+    const [layout, setLayout] = useState<LayoutState>({
+        visibleResources: 0,
+        visibleCircles: 0,
+        showTitle: false,
+        showResourceList: false,
+        virtualDurationMinutes: 0
+    });
 
-    const [visibleResources, setVisibleResources] = useState<number>(0);
+    const eventLen = useMemo(() => {
+        if (layout.virtualDurationMinutes <= SHORT_EVENT_HEIGHT) {
+            return styles.shortEvent;
+        }
+        if (layout.virtualDurationMinutes <= MEDIUM_EVENT_HEIGHT) {
+            return styles.mediumEvent;
+        }
+        return styles.longEvent;
+    }, [layout.virtualDurationMinutes]);
 
     useEffect(() => {
         if (!['temporary'].includes(eventInfo.event.extendedProps.type)) {
             return;
         }
 
-        const calculateVisibleResources = () => {
+        const calculateLayout = () => {
             if (!eventRef.current) return;
 
-            const duration = eventInfo.event.end!.getTime() - eventInfo.event.start!.getTime();
-            const durationInMinutes = duration / (1000 * 60);
-            const eventHeight = eventRef.current.offsetHeight;
+            const containerElement = eventRef.current.closest(".fc-timegrid-event-harness") as HTMLElement;
+            if (!containerElement) return;
 
-            const availableHeight = eventHeight - mainBigContentHeight;
-            const maxVisibleResources = Math.floor(availableHeight / (resourceItemHeight + resourceItemGap));
+            const eventHeight = containerElement.offsetHeight;
+            const eventWidth = containerElement.offsetWidth;
+            const virtualDurationMinutes = Math.round(eventHeight * PX_TO_MINUTES_RATIO);
 
-            setVisibleResources(Math.max(0, maxVisibleResources));
+            // Calculate how many circles can fit based on width
+            const availableWidth = eventWidth - minSpaceForTime;
+            let maxVisibleCircles = Math.floor(availableWidth / (colorCircleWidth + colorCircleGap));
+
+            // Adjust circle count based on virtual duration
+            if (virtualDurationMinutes <= SHORT_EVENT_HEIGHT) {
+                maxVisibleCircles = Math.min(maxVisibleCircles, 3);
+            } else if (virtualDurationMinutes <= MEDIUM_EVENT_HEIGHT) {
+                maxVisibleCircles = Math.min(maxVisibleCircles, 6);
+            }
+
+            let maxVisibleResources = 0;
+            let showTitle = virtualDurationMinutes > TITLE_THRESHOLD;
+            let showResourceList = false;
+
+            if (virtualDurationMinutes > MEDIUM_EVENT_HEIGHT) {
+                const availableHeight = eventHeight - HEADER_HEIGHT;
+                maxVisibleResources = Math.floor((availableHeight + resourceItemGap) / (resourceItemHeight + resourceItemGap));
+                // Only show resource list if we can display at least one resource
+                showResourceList = maxVisibleResources > 0;
+            }
+
+
+
+            setLayout({
+                visibleResources: Math.max(0, maxVisibleResources),
+                visibleCircles: Math.max(0, maxVisibleCircles),
+                showTitle,
+                showResourceList,
+                virtualDurationMinutes
+            });
         };
 
-        calculateVisibleResources();
-        window.addEventListener('resize', calculateVisibleResources);
+        const containerElement = eventRef.current?.closest(".fc-timegrid-event-harness");
+        if (containerElement) {
+            const resizeObserver = new ResizeObserver(calculateLayout);
+            resizeObserver.observe(containerElement);
+            calculateLayout(); // Initial calculation
 
-        return () => {
-            window.removeEventListener('resize', calculateVisibleResources);
-        };
+            return () => resizeObserver.disconnect();
+        }
     }, [eventInfo]);
 
     if (!['temporary'].includes(eventInfo.event.extendedProps.type)) {
         return null;
     }
 
-    const duration = eventInfo.event.end!.getTime() - eventInfo.event.start!.getTime();
-    const durationInMinutes = duration / (1000 * 60);
     const actualTimeText = formatEventTime(eventInfo.event);
 
-    const renderColorCircles = (maxCircles: number, size: 'medium' | 'small') => {
+    const renderColorCircles = (size: 'medium' | 'small') => {
         const resources = eventInfo.event.extendedProps.resources;
         const totalResources = resources.length;
-        const circlesToShow = resources.slice(0, maxCircles);
-        const remainingCount = totalResources - maxCircles;
+        const circlesToShow = resources.slice(0, layout.visibleCircles);
+        const remainingCount = totalResources - layout.visibleCircles;
 
         return (
             <div className={styles.colorCircles}>
                 {circlesToShow.map((res, index) => (
-                    <ColourCircle resourceId={res.id} key={index} className={styles.colorCircle} size={size} />
-                ))}
-                {remainingCount === 1 && (
                     <ColourCircle
-                        resourceId={resources[maxCircles].id}
-                        key={maxCircles}
+                        resourceId={res.id}
+                        key={index}
                         className={styles.colorCircle}
                         size={size}
                     />
+                ))}
+                {remainingCount > 0 && (
+                    <span className={styles.remainingCount}>+{remainingCount}</span>
                 )}
-                {remainingCount > 1 && <span className={styles.remainingCount}>+{remainingCount}</span>}
             </div>
         );
     };
 
     const renderResourceItems = () => {
-        const totalResources = eventInfo.event.extendedProps.resources.length;
-        const resourcesToShow = eventInfo.event.extendedProps.resources.slice(0, visibleResources);
-        const remainingCount = totalResources - visibleResources;
+        const resources = eventInfo.event.extendedProps.resources;
+        const totalResources = resources.length;
+        const resourcesToShow = resources.slice(0, layout.visibleResources);
+        const remainingCount = totalResources - layout.visibleResources;
 
         return (
             <>
@@ -98,59 +159,39 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
                         <span className={popperStyles.resourceName}>{resource.name}</span>
                     </div>
                 ))}
-                {remainingCount === 1 && (
+                {remainingCount > 0 && (
                     <div className={`${popperStyles.resourceItem} ${popperStyles.gray}`}>
-                        <ColourCircle resourceId={eventInfo.event.extendedProps.resources[visibleResources].id} size={'medium'}/>
                         <span className={popperStyles.resourceName}>
-                            {eventInfo.event.extendedProps.resources[visibleResources].name}
+                            +{remainingCount} {t('bookingfrontend.more')}
                         </span>
-                    </div>
-                )}
-                {remainingCount > 1 && (
-                    <div className={`${popperStyles.resourceItem} ${popperStyles.gray}`}>
-                        <span className={popperStyles.resourceName}>+{remainingCount} {t('bookingfrontend.more')}</span>
                     </div>
                 )}
             </>
         );
     };
 
-    let content;
+    const content = (
+        <div className={`${styles.event} ${eventLen}`}>
+            <span className={`${styles.time} text-overline`}>
+                <FontAwesomeIcon className={'text-label'} icon={faClock}/>{actualTimeText}
+            </span>
 
-    if (durationInMinutes <= 45) {
-        // Short event: single line with time and up to 3 color circles (or 4 if there's just one more)
-        content = (
-            <div className={`${styles.event} ${styles.shortEvent}`}>
-                <span className={`${styles.time} text-overline`}>
-                    <FontAwesomeIcon className={'text-label'} icon={faClock}/>{actualTimeText}
-                </span>
-                {renderColorCircles(3, 'small')}
-            </div>
-        );
-    } else {
-        // Medium event: two lines, time on first line, title and up to 6 color circles (or 7 if there's just one more) on second
-        content = (
-            <div className={`${styles.event} ${durationInMinutes <= 90 ? styles.mediumEvent : styles.longEvent}`}>
-                <span className={`${styles.time} text-overline`}>
-                    <FontAwesomeIcon className={'text-label'} icon={faClock}/>{actualTimeText}
-                </span>
-                {durationInMinutes > 60 && (
-                    <div className={styles.title}>{eventInfo.event.title}</div>
-                )}
-                {durationInMinutes < 120 && (
-                        <div className={`${styles.resourceIcons} text-label`}>
-                            <FontAwesomeIcon icon={faLayerGroup}/>
-                            {renderColorCircles(6, 'medium')}
-                        </div>
-                    ) ||
-                    (<div className={popperStyles.resourcesList}>
-                        {renderResourceItems()}
-                    </div>)
-                }
+            {layout.showTitle && (
+                <div className={styles.title}>{eventInfo.event.title}</div>
+            )}
 
-            </div>
-        );
-    }
+            {!layout.showResourceList ? (
+                <div className={`${styles.resourceIcons} text-label`}>
+                    <FontAwesomeIcon icon={faLayerGroup}/>
+                    {renderColorCircles('medium')}
+                </div>
+            ) : (
+                <div className={popperStyles.resourcesList}>
+                    {renderResourceItems()}
+                </div>
+            )}
+        </div>
+    );
 
     return <div ref={eventRef} style={{maxWidth: '100%'}}>{content}</div>;
 };

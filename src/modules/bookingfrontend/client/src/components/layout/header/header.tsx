@@ -14,7 +14,7 @@ const Header = async (props: HeaderProps) => {
     const logoPath = "/phpgwapi/templates/bookingfrontend_2/styleguide/gfx";
     return (
         <>
-            <nav className={`${styles.navbar} mt-3 mb-2`}>
+            <nav className={`${styles.navbar}`}>
                 <ClientPHPGWLink strURL={'bookingfrontend/'} className={styles.logo}>
                     <img src={`${serverSettings.webserver_url}${logoPath}/logo_aktiv_kommune_horizontal.png`}
                          alt="Aktiv kommune logo"

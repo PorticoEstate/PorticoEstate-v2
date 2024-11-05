@@ -59,6 +59,14 @@ export async function fetchPartialApplications(): Promise<{list: IApplication[],
 }
 
 
+export async function fetchDeliveredApplications(): Promise<{list: IApplication[], total_sum: number}> {
+    const url = phpGWLink(['bookingfrontend', 'applications']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+
 
 export async function deletePartialApplication(id: number): Promise<void> {
     const queryClient = getQueryClient();

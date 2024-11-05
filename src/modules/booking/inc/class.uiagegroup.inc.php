@@ -32,7 +32,7 @@ class booking_uiagegroup extends booking_uicommon
 		$this->activity_bo = CreateObject('booking.boactivity');
 
 		self::set_active_menu('booking::settings::agegroup');
-		Settings::getInstance()->update('flags', 'app_header', lang('booking') . "::" . lang('agegroup'));
+		Settings::getInstance()->update('flags', ['app_header' => lang('booking') . "::" . lang('agegroup')]);
 	}
 
 	public function active()

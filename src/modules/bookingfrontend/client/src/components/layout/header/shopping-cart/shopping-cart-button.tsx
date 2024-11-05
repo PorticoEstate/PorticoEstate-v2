@@ -29,10 +29,10 @@ const ShoppingCartButton: FC<ShoppingCartButtonProps> = (props) => {
                     placement="top-right"
                     size={'sm'}
                     count={cartItems?.list?.length || undefined}
-                    style={{
-                        right: '10%',
-                        top: '16%'
-                    }}
+                    // style={{
+                    //     right: '10%',
+                    //     top: '16%'
+                    // }}
                 >
                     <FontAwesomeIcon size={'lg'} icon={faShoppingBasket}/>
                 </Badge>) || (<FontAwesomeIcon icon={faShoppingBasket}/>)}

@@ -12,6 +12,8 @@ use App\modules\phpgwapi\controllers\StartPoint;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use Slim\Routing\RouteCollectorProxy;
 
+
+
 $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
     $group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
@@ -36,6 +38,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
     $group->group('/applications', function (RouteCollectorProxy $group)
     {
         $group->get('/partials', ApplicationController::class . ':getPartials');
+        $group->get('', ApplicationController::class . ':getApplications');
         $group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
     });
 })->add(new SessionsMiddleware($app->getContainer()));
@@ -55,7 +58,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 
 
 $app->get('/bookingfrontend/lang[/{lang}]', LangHelper::class . ':process');
-$app->get('/bookingfrontend/login/', LoginHelper::class . ':organization')->add(new SessionsMiddleware($app->getContainer()));
+$app->get('/bookingfrontend/login[/{params:.*}]', LoginHelper::class . ':organization')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/bookingfrontend/logout[/{params:.*}]', LogoutHelper::class . ':process')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/bookingfrontend/client[/{params:.*}]', function ($request, $response)
 {

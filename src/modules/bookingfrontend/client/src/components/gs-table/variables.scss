@@ -1,0 +1,15 @@
+@import "../../styles/util.module";
+
+
+@mixin smallmode {
+  @include mobile {
+    @content;
+  }
+}
+
+@mixin bigmode {
+  @include tablet {
+    @content;
+  }
+}
+

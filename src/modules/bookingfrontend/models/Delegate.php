@@ -31,7 +31,7 @@ class Delegate
 
     /**
      * @OA\Property(type="string")
-     * @Exclude
+     * @Expose
      */
     public $organization_number;
 

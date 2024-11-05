@@ -158,9 +158,15 @@ body {
 }
 
 
-.ds-table {
+.ds-table, .gs-table {
     --dsc-table-background: $grey-light-64;
     --dsc-table-header-background: $grey-light-64;
+}
+
+.ds-badge[data-placement="top-right"]::before {
+    right: -3px;
+    top: -3px;
+    translate: 50% -50%;
 }
 
 :root, [data-ds-theme="light"] {

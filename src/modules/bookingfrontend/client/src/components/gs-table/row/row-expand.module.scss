@@ -1,0 +1,27 @@
+.buttonContainer {
+    grid-area: action;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.expandButton {
+    padding: 1.2rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease;
+
+    &:hover {
+        opacity: 0.7;
+    }
+}
+
+.expandableContent {
+    //grid-area: content;
+    grid-column: 1 / -1;
+    transition: all 0.2s ease;
+}

@@ -1,0 +1,32 @@
+// table-search.module.scss
+.searchContainer {
+    position: relative;
+    min-width: 250px;
+}
+
+.searchInput {
+    width: 100%;
+    padding: 0.5rem 1rem 0.5rem 2.5rem;
+    border: 1px solid var(--ds-color-neutral-border-subtle);
+    border-radius: 4px;
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+        border-color: var(--ds-color-neutral-border);
+    }
+
+    &::placeholder {
+        color: var(--ds-color-neutral-text-subtle);
+    }
+}
+
+.searchIcon {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ds-color-neutral-text-subtle);
+    pointer-events: none;
+}

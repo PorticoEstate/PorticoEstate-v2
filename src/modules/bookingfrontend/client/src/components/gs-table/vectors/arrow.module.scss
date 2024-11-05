@@ -1,0 +1,7 @@
+.arrow {
+    transition-duration: 0.2s;
+
+    &.upsideDown {
+        transform: rotate(180deg);
+    }
+}

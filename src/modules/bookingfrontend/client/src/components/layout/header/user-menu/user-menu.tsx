@@ -24,7 +24,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
             <Dropdown>
                 <Dropdown.List>
                     <Dropdown.Item asChild>
-                        <Link href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiuser.show'}, false)}
+                        <Link href={'/user'}
                               className={'link-text link-text-unset normal'}>
                             <FontAwesomeIcon icon={faUser}/> {t('bookingfrontend.my page')}
                         </Link>

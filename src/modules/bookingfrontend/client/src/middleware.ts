@@ -56,7 +56,10 @@ export function middleware(req: NextRequest): NextResponse | undefined {
     // Check if the pathname starts with a supported language and set it as preferred language
     const pathLang = languages.find((loc) => pathname.startsWith(`/${loc.key}`));
 
+
     const response = NextResponse.next();
+
+    response.headers.set('x-current-path', req.nextUrl.pathname);
 
 
     if (pathLang) {

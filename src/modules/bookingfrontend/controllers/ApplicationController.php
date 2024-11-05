@@ -10,6 +10,7 @@ use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\services\ApplicationService;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -26,10 +27,12 @@ use OpenApi\Annotations as OA;
 class ApplicationController
 {
     private $applicationService;
+    private $userSettings;
 
     public function __construct(ContainerInterface $container)
     {
         $this->applicationService = new ApplicationService();
+        $this->userSettings = Settings::getInstance()->get('user');
     }
 
     /**
@@ -69,6 +72,36 @@ class ApplicationController
             return $response->withHeader('Content-Type', 'application/json');
         } catch (Exception $e) {
             $error = "Error fetching partial applications: " . $e->getMessage();
+            return $response->withStatus(500)->withJson(['error' => $error]);
+        }
+    }
+
+    public function getApplications(Request $request, Response $response): Response
+    {
+        try {
+            $bouser = new UserHelper();
+
+            if (!$bouser->is_logged_in()) {
+                return $response->withStatus(401)->withJson(['error' => 'User not authenticated']);
+            }
+
+            $ssn = $bouser->ssn;
+            if (empty($ssn)) {
+                return $response->withStatus(400)->withJson(['error' => 'No SSN found for user']);
+            }
+
+            $applications = $this->applicationService->getApplicationsBySsn($ssn);
+            $total_sum = $this->applicationService->calculateTotalSum($applications);
+
+            $responseData = [
+                'list' => $applications,
+                'total_sum' => $total_sum
+            ];
+
+            $response->getBody()->write(json_encode($responseData));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            $error = "Error fetching applications: " . $e->getMessage();
             return $response->withStatus(500)->withJson(['error' => $error]);
         }
     }

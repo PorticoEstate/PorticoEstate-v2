@@ -235,7 +235,7 @@ class CreateAccount
 						'p1'	 => $login
 					));
 				}
-				\phpgw::redirect_link('/home/');
+				\phpgw::redirect_link('/home/', array('cd' => 'yes'));
 			}
 		}
 

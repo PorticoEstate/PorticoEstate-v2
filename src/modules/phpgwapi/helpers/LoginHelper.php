@@ -68,7 +68,7 @@ class LoginHelper
 			$process_login = new Login();
 			if ($process_login->login()) //SSO login
 			{
-				phpgw::redirect_link('/home/');
+				phpgw::redirect_link('/home/', array('cd' => 'yes'));
 			}
 		}
 
@@ -143,7 +143,7 @@ class LoginHelper
 		}
 		else
 		{
-			phpgw::redirect_link('/home/');
+			phpgw::redirect_link('/home/', array('cd' => 'yes'));
 		}
 
 		if (is_array($redirect) && count($redirect) && empty($_SESSION['skip_redirect_on_login']))

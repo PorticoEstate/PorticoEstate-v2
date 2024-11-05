@@ -18,7 +18,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata(): Promise<Metadata> {
     const serverSettings = await fetchServerSettings();
-    console.log(serverSettings);
+    // console.log(serverSettings);
     return {
         title: {
             template: `%s - ${serverSettings.site_title}`,

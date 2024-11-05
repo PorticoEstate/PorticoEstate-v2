@@ -40,6 +40,30 @@ class ApplicationService
         return $applications;
     }
 
+
+    public function getApplicationsBySsn(string $ssn): array
+    {
+        $sql = "SELECT * FROM bb_application
+            WHERE customer_ssn = :ssn
+            AND status != 'NEWPARTIAL1'
+            ORDER BY created DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':ssn' => $ssn]);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $applications = [];
+        foreach ($results as $result) {
+            $application = new Application($result);
+            $application->dates = $this->fetchDates($application->id);
+            $application->resources = $this->fetchResources($application->id);
+            $application->orders = $this->fetchOrders($application->id);
+            $applications[] = $application->serialize([], true);
+        }
+
+        return $applications;
+    }
+
     public function savePartialApplication(Application $application): int
     {
         // Start a transaction

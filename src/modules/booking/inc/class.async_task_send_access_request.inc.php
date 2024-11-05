@@ -30,7 +30,11 @@ class booking_async_task_send_access_request extends booking_async_task
 	public function get_default_times()
 	{
 		return array(
-			'min'	 => '*', 'hour'	 => '*', 'dow'	 => '*', 'day'	 => '*', 'month'	 => '*',
+			'min'	 => '*',
+			'hour'	 => '*',
+			'dow'	 => '*',
+			'day'	 => '*',
+			'month'	 => '*',
 			'year'	 => '*'
 		);
 	}
@@ -72,11 +76,19 @@ class booking_async_task_send_access_request extends booking_async_task
 			1	 => 60 * 15, // 15 minutes : request access
 			2	 => 60 * 10, // 10 minutes : get request status
 		);
-
+		$processed_reservations = array();
 		$so_resource = CreateObject('booking.soresource');
 
 		//SMS
-		$sms_service = CreateObject('sms.sms');
+		try
+		{
+			$sms_service = CreateObject('sms.sms');
+		}
+		catch (Exception $ex)
+		{
+			$this->log('sms_error', $ex->getMessage());
+			$sms_service = null;
+		}
 
 		foreach ($stages as $stage => $time_ahead)
 		{
@@ -115,31 +127,37 @@ class booking_async_task_send_access_request extends booking_async_task
 							{
 								continue;
 							}
-
 							if ($stage == 0)
 							{
+								if (!empty($processed_reservations[$reservation['id']]))
+								{
+									continue;
+								}
+
 								/**
 								 * send SMS
 								 */
 								$sms_text = "Hei {$reservation['contact_name']}\n "
 									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$reservation['from_']} - {$reservation['to_']}";
 
-								try
+								if ($sms_service)
 								{
-									$sms_res = $sms_service->websend2pv($this->account, $reservation['contact_phone'], $sms_text);
-								}
-								catch (Exception $ex)
-								{
-									//implement me
-									$this->log('sms_error', $ex->getMessage());
-								}
+									try
+									{
+										$sms_res = $sms_service->websend2pv($this->account, $reservation['contact_phone'], $sms_text);
+									}
+									catch (Exception $ex)
+									{
+										//implement me
+										$this->log('sms_error', $ex->getMessage());
+									}
 
-								if (!empty($sms_res[0][0]))
-								{
-									$comment = 'Melding om tilgang er sendt til ' . $reservation['contact_phone'];
-									$bo->add_single_comment($reservation['id'], $comment);
+									if (!empty($sms_res[0][0]))
+									{
+										$comment = 'Melding om tilgang er sendt til ' . $reservation['contact_phone'];
+										$bo->add_single_comment($reservation['id'], $comment);
+									}
 								}
-
 								/**
 								 * send email
 								 */
@@ -196,6 +214,8 @@ class booking_async_task_send_access_request extends booking_async_task
 							}
 							else if ($stage == 2)
 							{
+								$sms_text = "Hei {$reservation['contact_name']}\n "
+									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$reservation['from_']} - {$reservation['to_']}.\n ";
 								/**
 								 * Get status
 								 */
@@ -261,15 +281,22 @@ class booking_async_task_send_access_request extends booking_async_task
 											/**
 											 * send SMS
 											 */
-											$sms_text = "Hei {$reservation['contact_name']}\n "
-												. "Du har fått tilgang til {$resource['name']} i tidsrommet {$reservation['from_']} - {$reservation['to_']}.\n "
-												. "Koden for {$e_lock_name} er: {$e_loc_key}";
+
+											$sms_text .= "Koden for {$e_lock_name} er: {$e_loc_key}\n";
 
 											if ($e_lock['access_instruction'])
 											{
-												$sms_text .= "\n{$e_lock['access_instruction']}";
+												$sms_text .= "\n{$e_lock['access_instruction']}\n";
 											}
 
+											break;
+										}
+									}
+
+									if ($found_reservation)
+									{
+										if ($sms_service)
+										{
 											try
 											{
 												$sms_res = $sms_service->websend2pv($this->account, $reservation['contact_phone'], $sms_text);
@@ -284,24 +311,24 @@ class booking_async_task_send_access_request extends booking_async_task
 												$comment = 'Melding om tilgang og kode er sendt til ' . $reservation['contact_phone'];
 												$bo->add_single_comment($reservation['id'], $comment);
 											}
-
-											/**
-											 * send email
-											 */
-											if ($this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($sms_text)))
-											{
-												$comment = "Melding om tilgang og kode for {$e_lock['e_lock_system_id']}::{$e_lock['e_lock_resource_id']} er sendt til {$reservation['contact_email']}";
-												$bo->add_single_comment($reservation['id'], $comment);
-											}
-
-											$this->log('sms_tekst', $sms_text);
-
-											break;
 										}
+
+										/**
+										 * send email
+										 */
+										if ($this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($sms_text)))
+										{
+											$comment = "Melding om tilgang og kode for {$e_lock['e_lock_system_id']}::{$e_lock['e_lock_resource_id']} er sendt til {$reservation['contact_email']}";
+											$bo->add_single_comment($reservation['id'], $comment);
+										}
+
+										$this->log('sms_tekst', $sms_text);
+
 									}
+
 									unset($status);
 
-									if (!$found_reservation)
+									if (!$found_reservation && $sms_service)
 									{
 										$error_msg	 = "Fant ikke reservasjonen for {$e_lock_name} i adgangskontrollen.\n";
 										$error_msg	 .= "Du må kontakte byggansvarlig for manuell innlåsing.\n";
@@ -313,6 +340,7 @@ class booking_async_task_send_access_request extends booking_async_task
 								}
 								unset($e_lock);
 							}
+							$processed_reservations[$reservation['id']] = true;
 						}
 						unset($resource);
 					}

@@ -1,0 +1,31 @@
+// table-utility-header.module.scss
+@import '../variables';
+
+.utilityHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+
+    @include smallmode {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+.leftSection, .rightSection {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    @include smallmode {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+}
+
+.rightSection {
+    @include bigmode {
+        justify-content: flex-end;
+    }
+}

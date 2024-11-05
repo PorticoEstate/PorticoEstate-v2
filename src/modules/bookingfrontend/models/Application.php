@@ -20,6 +20,7 @@ class Application
     /**
      * @OA\Property(type="integer")
      * @Expose
+     * @Short
      */
     public $id;
 
@@ -44,24 +45,28 @@ class Application
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @Short
      */
     public $type;
 
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @Short
      */
     public $status;
 
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @Short
      */
     public $secret;
 
     /**
      * @OA\Property(type="string", format="date-time")
      * @Expose
+     * @Short
      */
     public $created;
 
@@ -74,6 +79,7 @@ class Application
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @Short
      */
     public $building_name;
 
@@ -110,12 +116,14 @@ class Application
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @Short
      */
     public $customer_ssn;
 
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @Short
      */
     public $customer_organization_number;
 
@@ -152,6 +160,7 @@ class Application
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @Short
      */
     public $contact_name;
 
@@ -177,6 +186,7 @@ class Application
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Date"))
      * @Expose
      * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\helper\Date")
+     * @Short
      */
     public $dates;
 
@@ -184,6 +194,7 @@ class Application
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Resource"))
      * @Expose
      * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Resource", short=true)
+     * @Short
      */
     public $resources;
 

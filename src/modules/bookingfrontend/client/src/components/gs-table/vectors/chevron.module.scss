@@ -1,0 +1,8 @@
+.chevron {
+    transform: rotate(180deg);
+    transition-duration: 0.2s;
+
+    &.open {
+        transform: rotate(0deg);
+    }
+}

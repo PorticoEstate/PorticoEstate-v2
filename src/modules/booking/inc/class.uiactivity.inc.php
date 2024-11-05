@@ -26,7 +26,7 @@ class booking_uiactivity extends booking_uicommon
 		$this->bo = CreateObject('booking.boactivity');
 
 		self::set_active_menu('booking::settings::activity');
-		Settings::getInstance()->update('flags', 'app_header', lang('booking') . "::" . lang('activities'));
+		Settings::getInstance()->update('flags', ['app_header' => lang('booking') . "::" . lang('activities')]);
 	}
 
 	function treeitem($children, $parent_id, $show_all)

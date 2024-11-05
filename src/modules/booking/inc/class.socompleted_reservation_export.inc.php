@@ -71,7 +71,24 @@
 			$this->config_data = CreateObject('phpgwapi.config', 'booking')->read();
 		}
 
-		protected function _get_search_to_date( &$entity )
+		protected function _get_search_from_date(&$entity)
+		{
+			$dateformat = $this->userSettings['preferences']['common']['dateformat'];
+			$from_date = isset($entity['from_']) && $entity['from_'] ? $entity['from_'] : date($dateformat);
+
+			$from_date = date('Y-m-d', phpgwapi_datetime::date_to_timestamp($from_date));
+
+			if (strtotime($from_date) > strtotime('tomorrow'))
+			{
+				$from_date = date('Y-m-d');
+			}
+
+			$from_date .= ' 00:00:00';
+
+			return $from_date;
+		}
+
+		protected function _get_search_to_date(&$entity)
 		{
 			$dateformat = $this->userSettings['preferences']['common']['dateformat'];
 			$to_date = isset($entity['to_']) && $entity['to_'] ? $entity['to_'] : date($dateformat);
@@ -87,6 +104,8 @@
 
 			return $to_date;
 		}
+
+		
 
 		protected function doValidate( $entity, booking_errorstack $errors )
 		{
@@ -274,6 +293,10 @@
 			if (is_array($entity))
 			{
 				$filters['where'] = array("%%table%%" . sprintf(".to_ <= '%s'", $this->_get_search_to_date($entity)));
+				if(!empty($entity['from_']))
+				{
+					$filters['where'][] = "%%table%%" . sprintf(".from_ >= '%s'", $this->_get_search_from_date($entity));
+				}
 				$filters['exported'] = null;
 
 				if ($entity['season_id'])
@@ -2134,6 +2157,16 @@
 					continue; //Don't export costless rows
 				}
 
+				if (!empty($test['additional_invoice_information']))
+				{
+					$additional_invoice_information = $test['additional_invoice_information']; 
+				}
+				else
+				{
+					$additional_invoice_information = '';
+				}
+				
+				
 				$type = $reservation['customer_type'];
 
 				$log_customer_name = '';
@@ -2322,7 +2355,7 @@
 					$header['line_no'] = '0000'; //Nothing here according to example file but spec. says so
 					//Topptekst til faktura, knyttet mot fagavdeling
 					$header['long_info1'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['invoice_instruction']), 0, 120), 120, ' ');
-
+					$header['long_info2'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $additional_invoice_information), 0, 120), 120, ' ');
 					//Ordrenr. UNIKT, løpenr. genereres i booking ut fra gitt serie, eks. 38000000
 					$header['order_id'] = str_pad($order_id, 9, 0, STR_PAD_LEFT);
 					$stored_header['order_id'] = str_pad($order_id, 9, 0, STR_PAD_LEFT);

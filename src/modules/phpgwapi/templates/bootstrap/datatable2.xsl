@@ -1777,7 +1777,7 @@
 				var test = $(this).val();
 				if ( !$(this).is('select') && $(this).attr('name') && test != null && test.constructor !== Array)
 				{
-//					value = $(this).val('');
+					value = $(this).val('');
 				}
 			});
 

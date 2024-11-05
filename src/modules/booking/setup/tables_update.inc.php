@@ -7536,3 +7536,33 @@ function booking_upgrade0_2_102($oProc)
 		return $currentver;
 	}
 }
+
+/**
+ * Update booking version from 0.2.103 to 0.2.104
+ * 	'additional_invoice_information'
+ */
+$test[] = '0.2.103';
+function booking_upgrade0_2_103($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$tables = array(
+		'bb_allocation',
+		'bb_event',
+	);
+
+	foreach ($tables as $table)
+	{
+		$oProc->AddColumn(
+			$table,
+			'additional_invoice_information',
+			array('type' => 'text', 'nullable' => True),
+		);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.104';
+		return $currentver;
+	}
+}

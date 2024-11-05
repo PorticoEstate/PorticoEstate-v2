@@ -5,6 +5,10 @@ LABEL maintainer="Sigurd Nes <sigurdne@gmail.com>"
 # Define build arguments
 ARG INSTALL_MSSQL=false
 ARG INSTALL_XDEBUG=false
+ARG INSTALL_ORACLE=false
+
+# Define build argument for OCI8 version
+ARG OCI8_VERSION=3.4.0
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y software-properties-common \
@@ -99,17 +103,75 @@ RUN echo 'upload_max_filesize = 8M' >> /usr/local/etc/php/php.ini
 #RUN wget -O /tmp/openjdk.deb https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.deb \
 #    && dpkg -i /tmp/openjdk.deb \
 #    && rm /tmp/openjdk.deb
-RUN  apt install lsb-release -y \
-    && wget https://packages.microsoft.com/config/debian/$(lsb_release -rs)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-    && dpkg -i packages-microsoft-prod.deb
 
-RUN apt-get update && apt-get install -y msopenjdk-21
+# insert microsoft repo if ${INSTALL_MSSQL} is not true or not set
+RUN if [ "${INSTALL_MSSQL}" != "true" ]; then \
+    wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg && \
+    echo "deb [arch=amd64] https://packages.microsoft.com/debian/$(cat /etc/debian_version | cut -d. -f1)/prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/mssql-release.list; \
+   fi
+
+RUN apt-get update && apt-get install -y msopenjdk-21 unzip
 
 # Set JAVA_HOME environment variable
 #ENV JAVA_HOME=/usr/lib/jvm/jdk-21
 #ENV PATH=$JAVA_HOME/bin:$PATH
 ## Verify Java installation
 RUN java -version
+
+# Copy all content from the host oracle directory to /tmp in the build context
+# https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html
+COPY oracle/ /tmp/
+
+# Set environment variables for Oracle support
+ENV LD_LIBRARY_PATH=/usr/local/lib/instantclient_12_2
+ENV TNS_ADMIN=/usr/local/lib/instantclient_12_2
+ENV ORACLE_BASE=/usr/local/lib/instantclient_12_2
+ENV ORACLE_HOME=/usr/local/lib/instantclient_12_2
+
+# Define build argument for PHP version
+# Get PHP version and store it in an environment variable
+RUN PHP_VERSION=$(php -r "echo phpversion();") && echo "PHP_VERSION=${PHP_VERSION}" > /env.sh
+
+# Source the environment variable and use it in subsequent instructions
+RUN . /env.sh && echo "The PHP version is ${PHP_VERSION}"
+
+# Conditionally install Oracle suppor
+RUN if [ "${INSTALL_ORACLE}" = "true" ]; then \
+    export OCI8_VERSION=${OCI8_VERSION}; \
+    export PHP_VERSION=${PHP_VERSION}; \
+    # Unzip Oracle Instant Client
+    unzip -o /tmp/instantclient-sdk-linux.x64-12.2.0.1.0.zip -d /usr/local/lib/; \
+    unzip -o /tmp/instantclient-basic-linux.x64-12.2.0.1.0.zip -d /usr/local/lib/; \
+    # Create symbolic links
+    ln -s /usr/local/lib/instantclient_12_2/libclntsh.so.12.1 /usr/local/lib/instantclient_12_2/libclntsh.so; \
+    mkdir -p /usr/local/lib/instantclient_12_2/lib/oracle/12.2; \
+    ln -s /usr/local/lib/instantclient_12_2/sdk/ /usr/local/lib/instantclient_12_2/lib/oracle/12.2/client; \
+    ln -s /usr/local/lib/instantclient_12_2 /usr/local/lib/instantclient_12_2/lib/oracle/12.2/client/lib; \
+    # Enable OCI8 extension
+	cd /tmp/; \
+	pecl download oci8; \
+    tar xzvf oci8-${OCI8_VERSION}.tgz; \
+    cd oci8-${OCI8_VERSION}; \
+    phpize; \
+    ./configure --with-oci8=shared,instantclient,/usr/local/lib/instantclient_12_2; \
+    make; \
+    make install; \
+    # Enable PDO_OCI extension
+    cd /tmp/; \
+    wget https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz; \
+    tar -xzf php-${PHP_VERSION}.tar.gz; \
+    cd php-${PHP_VERSION}/ext/pdo_oci; \
+    phpize; \
+    ./configure --with-pdo-oci=instantclient,/usr/local/lib/instantclient_12_2,12.2; \
+    make; \
+    make install; \
+    # Enable extensions in php.ini
+    echo 'extension=oci8.so' >> /usr/local/etc/php/php.ini; \
+    echo 'extension=pdo_oci.so' >> /usr/local/etc/php/php.ini; \
+    # Clean up
+    rm -rf /tmp/oci8-${OCI8_VERSION}.tgz /tmp/oci8-${OCI8_VERSION} /tmp/php-${PHP_VERSION}.tar.gz /tmp/php-${PHP_VERSION} /tmp/instantclient-sdk-linux.x64-12.2.0.1.0.zip /tmp/instantclient-basic-linux.x64-12.2.0.1.0.zip; \
+fi
+
 
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

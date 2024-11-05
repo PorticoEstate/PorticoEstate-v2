@@ -58,7 +58,8 @@ class booking_uievent extends booking_uicommon
 			'contact_name', 'contact_email', 'contact_phone',
 			'from_', 'to_', 'active', 'skip_bas', 'audience', 'reminder',
 			'is_public', 'sms_total', 'participant_limit', 'customer_internal', 'include_in_list',
-			'customer_organization_name', 'customer_organization_id'
+			'customer_organization_name', 'customer_organization_id',
+			'additional_invoice_information'
 		);
 
 		$this->display_name = lang('events');
@@ -73,6 +74,7 @@ class booking_uievent extends booking_uicommon
 		}
 		$jqcal2 = createObject('phpgwapi.jqcal2');
 		$jqcal2->add_listener('filter_from');
+		$jqcal2->add_listener('filter_to');
 
 		$data = array(
 			'datatable_name' => $this->display_name,
@@ -106,6 +108,13 @@ class booking_uievent extends booking_uicommon
 							'name' => 'from',
 							'value' => '',
 							'text' => lang('from') . ':',
+						),
+						array(
+							'type' => 'date-picker',
+							'id' => 'to',
+							'name' => 'to',
+							'value' => '',
+							'text' => lang('to') . ':',
 						),
 						//							array(
 						//								'type' => 'link',
@@ -230,6 +239,14 @@ class booking_uievent extends booking_uicommon
 		{
 			$filter_from2 = date('Y-m-d', phpgwapi_datetime::date_to_timestamp($from_date));
 			$filters['where'][] = "%%table%%" . sprintf(".from_ >= '%s 00:00:00'", Db::getInstance()->db_addslashes($filter_from2));
+		}
+		$filter_to = Sanitizer::get_var('to', 'string', 'REQUEST', null);
+		$to_date = $filter_to ? $filter_to : Sanitizer::get_var('filter_to', 'string', 'REQUEST', null);
+
+		if ($to_date)
+		{
+			$filter_to2 = date('Y-m-d', phpgwapi_datetime::date_to_timestamp($to_date));
+			$filters['where'][] = "%%table%%" . sprintf(".to_ <= '%s 23:59:59'", Db::getInstance()->db_addslashes($filter_to2));
 		}
 
 		$search = Sanitizer::get_var('search');

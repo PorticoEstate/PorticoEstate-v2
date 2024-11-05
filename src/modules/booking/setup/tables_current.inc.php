@@ -446,8 +446,8 @@
 				'cost' => array('type' => 'decimal', 'precision' => 10, 'scale' => 2, 'nullable' => True,
 					'default' => '0.0'),
 				'season_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
-				'completed' => array('type' => 'int', 'precision' => '4', 'nullable' => False,
-					'default' => 0),
+				'completed' => array('type' => 'int', 'precision' => '4', 'nullable' => False,'default' => 0),
+				'additional_invoice_information' => array('type' => 'text', 'nullable' => True),
 			),
 			'pk' => array('id'),
 			'fk' => array(
@@ -866,6 +866,7 @@
 				'sms_total' => array('type' => 'int', 'precision' => 4, 'nullable' => True),
 				'include_in_list' => array('type' => 'int', 'precision' => 4, 'nullable' => False, 'default' => '0'),
 				'participant_limit' => array('type' => 'int', 'precision' => 4, 'nullable' => True),
+				'additional_invoice_information' => array('type' => 'text', 'nullable' => True),
 			),
 			'pk' => array('id'),
 			'fk' => array(

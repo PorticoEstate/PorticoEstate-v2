@@ -33,7 +33,7 @@ use App\modules\phpgwapi\services\Settings;
 			$this->bo = CreateObject('booking.boaccount_code_set');
 			self::set_active_menu('booking::settings::account_code_sets');
 			$this->url_prefix = 'booking.uiaccount_code_set';
-			Settings::getInstance()->update('flags', 'app_header', lang('booking') . "::" . lang('Account Codes'));
+			Settings::getInstance()->update('flags', ['app_header' => lang('booking') . "::" . lang('Account Codes')]);
 		}
 
 		public function link_to( $action, $params = array() )

@@ -1,6 +1,7 @@
 ## istructions to build the image ##
 # export INSTALL_MSSQL=true
 # export INSTALL_XDEBUG=true
+# export INSTALL_ORACLE=true
 # docker compose build
 
 x-common-variables: &common-variables
@@ -21,6 +22,7 @@ services:
             args:
                 INSTALL_MSSQL: ${INSTALL_MSSQL}
                 INSTALL_XDEBUG: ${INSTALL_XDEBUG}
+                INSTALL_ORACLE: ${INSTALL_ORACLE}
         working_dir: /var/www/html
         environment:
             <<: *common-variables

@@ -138,6 +138,7 @@ class booking_uicompleted_reservation extends booking_uicommon
 		}
 
 		$jqcal2 = createObject('phpgwapi.jqcal2');
+		$jqcal2->add_listener('filter_from');
 		$jqcal2->add_listener('filter_to');
 		phpgwapi_jquery::load_widget('datepicker');
 
@@ -166,16 +167,18 @@ class booking_uicompleted_reservation extends booking_uicommon
 						),
 						array(
 							'type' => 'date-picker',
+							'id' => 'from',
+							'name' => 'from',
+							'value' => '',
+							'text' => lang('from') . ':',
+						),
+						array(
+							'type' => 'date-picker',
 							'id' => 'to',
 							'name' => 'to',
 							'value' => '',
 							'text' => lang('To') . ':',
 						),
-						//							array(
-						//								'type' => 'link',
-						//								'value' => $_SESSION['show_all_completed_reservations'] ? lang('Show only unexported') : lang('Show all'),
-						//								'href' => $this->link_to('toggle_show_all_completed_reservations'),
-						//							),
 					)
 				),
 			),
@@ -361,12 +364,20 @@ JS;
 		$filters = array();
 		foreach ($this->bo->so->get_field_defs() as $field => $params)
 		{
-			if (Sanitizer::get_var("filter_$field"))
+			if (Sanitizer::get_var("filter_{$field}"))
 			{
-				$filters[$field] = Sanitizer::get_var("filter_$field");
+				$filters[$field] = Sanitizer::get_var("filter_{$field}");
 			}
 		}
 
+		$filter_from = Sanitizer::get_var('from', 'string', 'REQUEST', null);
+		$from_date = $filter_from ? $filter_from : Sanitizer::get_var('filter_from', 'string', 'REQUEST', null);
+
+		if ($from_date)
+		{
+			$filter_from2 = date('Y-m-d', phpgwapi_datetime::date_to_timestamp($from_date));
+			$filters['where'][] = "%%table%%" . sprintf(".from_ >= '%s 00:00:00'", Db::getInstance()->db_addslashes($filter_from2));
+		}
 		$filter_to = Sanitizer::get_var('to', 'string', 'REQUEST', null);
 		$to_date = $filter_to ? $filter_to : Sanitizer::get_var('filter_to', 'string', 'REQUEST', null);
 

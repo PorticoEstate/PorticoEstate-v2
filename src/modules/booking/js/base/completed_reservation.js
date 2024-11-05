@@ -25,11 +25,6 @@ function export_completed_reservations()
 {
 	var oArgs = {
 		menuaction:'booking.uicompleted_reservation_export.add'
-//		,building_id:$('#filter_building_id').val(),
-//		building_name: $('#filter_building_name').val(),
-//		season_id:$('#filter_season_id').val(),
-//		season_name:$('#filter_season_name').val(),
-//		to_: $('#filter_to').val()
 	};
 	var requestUrl = phpGWLink('index.php', oArgs);
 
@@ -62,6 +57,12 @@ function export_completed_reservations()
 	season_name.setAttribute("value",$('#filter_season_name').val());
 	form.appendChild(season_name);
 
+	var from_ = document.createElement("input");
+	from_.setAttribute("type", "hidden");
+	from_.setAttribute("name", 'from_');
+	from_.setAttribute("value",$('#filter_from').val());
+	form.appendChild(from_);
+
 	var to_ = document.createElement("input");
 	to_.setAttribute("type", "hidden");
 	to_.setAttribute("name", 'to_');
@@ -69,9 +70,9 @@ function export_completed_reservations()
 	form.appendChild(to_);
 
 	var prevalidate = document.createElement("input");
-	to_.setAttribute("type", "hidden");
-	to_.setAttribute("name", 'prevalidate');
-	to_.setAttribute("value",1);
+	prevalidate.setAttribute("type", "hidden");
+	prevalidate.setAttribute("name", 'prevalidate');
+	prevalidate.setAttribute("value",1);
 	form.appendChild(prevalidate);
 
 	$(".mychecks:checked").each(function ()

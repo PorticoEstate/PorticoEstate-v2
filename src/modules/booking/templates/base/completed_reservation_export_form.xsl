@@ -50,7 +50,18 @@
 					<xsl:value-of select="phpgw:conditional((export/building_id and normalize-space(export/building_id)), export/building_name, php:function('lang', 'All'))"/>
 				</dd>
 			
-			
+						
+				<input id="field_from" name="from_" type="hidden" value='{export/from_}'/>
+				<xsl:if test="export/from_ and normalize-space(export/from_)">
+					<dt>
+						<label for="field_from">
+							<xsl:value-of select="php:function('lang', 'from')"/>
+						</label>
+					</dt>
+					<dd>
+						<xsl:value-of select="export/from_"/>
+					</dd>
+				</xsl:if>
 				<input id="field_to" name="to_" type="hidden" value='{export/to_}'/>
 				<xsl:if test="export/to_ and normalize-space(export/to_)">
 					<dt>
@@ -62,7 +73,8 @@
 						<xsl:value-of select="export/to_"/>
 					</dd>
 				</xsl:if>
-			
+
+			<input id="field_to" name="to_" type="hidden" value='{export/to_}'/>			
 				<input name="export_configurations[internal][type]" type="hidden" value="internal"/>
 				<dt>
 					<label for="field_account_code_set_internal_name">
@@ -104,13 +116,15 @@
 				</dd>
 			</dl>
 
-			<xsl:for-each select="export/process">
-				<input type="hidden" name="process[]">
-					<xsl:attribute name="value">
-						<xsl:value-of select="node()"/>
-					</xsl:attribute>
-				</input>
-			</xsl:for-each>
+			<xsl:if test="export/process[1] != ''">
+				<xsl:for-each select="export/process">
+					<input type="hidden" name="process[]">
+						<xsl:attribute name="value">
+							<xsl:value-of select="node()"/>
+						</xsl:attribute>
+					</input>
+				</xsl:for-each>
+			</xsl:if>
 
 			<div class="clr"/>
 
@@ -126,10 +140,14 @@
 	<script type="text/javascript">
 <![CDATA[
 $(document).ready(function () {
-	JqueryPortico.autocompleteHelper('index.php?menuaction=booking.uiaccount_code_set.index&phpgw_return_as=json&',
+
+	var oArgs = {menuaction:'booking.uiaccount_code_set.index'};
+	var sUrl = phpGWLink('index.php', oArgs);
+
+	JqueryPortico.autocompleteHelper(sUrl,
       'field_account_code_set_internal_name', 'field_account_code_set_internal_id', 'account_code_set_internal_container');
 
-	JqueryPortico.autocompleteHelper('index.php?menuaction=booking.uiaccount_code_set.index&phpgw_return_as=json&',
+	JqueryPortico.autocompleteHelper(sUrl,
        'field_account_code_set_external_name', 'field_account_code_set_external_id', 'account_code_set_external_container');
 
 });

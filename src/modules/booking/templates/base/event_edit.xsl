@@ -477,6 +477,18 @@
 								</input>
 								<input id="field_cost_orig" name="cost_orig" type="hidden" value= "{event/cost}"/>
 							</div>
+							<div class="pure-control-group">
+								<label for="field_additional_invoice_information">
+									<xsl:value-of select="php:function('lang', 'Additional Invoice Information')" />
+								</label>
+								<textarea id="field_additional_invoice_information" name="additional_invoice_information" class="pure-u-1 pure-u-sm-1-2 pure-u-md-1">
+									<xsl:attribute name="placeholder">
+										<xsl:value-of select="php:function('lang', 'Enter additional invoice information here')" />
+									</xsl:attribute>
+									<xsl:value-of select="event/additional_invoice_information"/>
+								</textarea>
+							</div>
+
 							<div class="pure-u-1">
 								<div class="heading">
 									<!--<legend>-->
@@ -702,23 +714,26 @@
 		<div class="form-buttons">
 			<input type="submit" class="pure-button pure-button-primary">
 				<xsl:attribute name="value">
-					<xsl:value-of select="php:function('lang', 'approve')"/>
+					<xsl:value-of select="php:function('lang', 'save')"/>
 				</xsl:attribute>
 			</input>
 			<xsl:if test="event/application_id != ''">
-				<a class="cancel pure-button pure-button-primary">
+				<a class="cancel pure-button">
 					<xsl:attribute name="href">
 						<xsl:value-of select="event/application_link"/>
 					</xsl:attribute>
-					<xsl:value-of select="php:function('lang', 'back')" />
+					<xsl:value-of select="php:function('lang', 'application')" />
+					#<xsl:value-of select="event/application_id"/>
 				</a>
 			</xsl:if>
-			<a class="cancel pure-button pure-button-primary">
-				<xsl:attribute name="href">
-					<xsl:value-of select="event/cancel_link"/>
-				</xsl:attribute>
-				<xsl:value-of select="php:function('lang', 'Cancel')" />
-			</a>
+			<xsl:if test="not(event/application_id) or normalize-space(event/application_id) = ''">
+				<a class="cancel pure-button">
+					<xsl:attribute name="href">
+						<xsl:value-of select="event/cancel_link"/>
+					</xsl:attribute>
+					<xsl:value-of select="php:function('lang', 'applications')" />
+				</a>
+			</xsl:if>
 		</div>
 	</form>
 	<script type="text/javascript">

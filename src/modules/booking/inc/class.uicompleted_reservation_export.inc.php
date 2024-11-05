@@ -490,7 +490,11 @@ class booking_uicompleted_reservation_export extends booking_uicommon
 		{
 			//Fill in a dummy value (so as to temporarily pass validation), this will then be
 			//automatically filled in by bo->add process later on.
-			$export['from_'] = date('Y-m-d H:i:s');
+			
+			if(empty($export['from_']))
+			{
+				$export['from_'] = date('Y-m-d H:i:s');
+			}
 
 			$errors = $this->bo->validate($export);
 			if (!$errors)

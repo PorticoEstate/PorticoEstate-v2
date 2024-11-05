@@ -10,5 +10,6 @@
 /src/modules/bookingfrontend/js/bookingfrontend_2/node_modules/*
 compose.yml
 Dockerfile.local
-
+/oracle/instantclient-basic-linux.x64-12.2.0.1.0.zip
+/oracle/instantclient-sdk-linux.x64-12.2.0.1.0.zip
 /public

@@ -767,6 +767,92 @@
 						</textarea>
 					</div>
 					<xsl:choose>
+						<xsl:when test="send_response = 1">
+							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="php:function('lang', 'notify client by sms')"/>
+								</label>
+								<input type="checkbox" name="notify_client_by_sms" value="true">
+									<xsl:attribute name="title">
+										<xsl:value-of select="value_sms_client_order_notice"/>
+									</xsl:attribute>
+								</input>
+								<input class="pure-input-1-8" type="text" name="to_sms_phone" value="{value_sms_phone}">
+									<xsl:attribute name="title">
+										<xsl:value-of select="value_sms_client_order_notice"/>
+									</xsl:attribute>
+								</input>
+							</div>
+							<div class="pure-control-group">
+								<xsl:variable name="lang_sms_text">
+									<xsl:value-of select="php:function('lang', 'sms text')"/>
+								</xsl:variable>
+
+								<label>
+									<a href="javascript:response_lookup()">
+										<xsl:attribute name="title">
+											<xsl:value-of select="$lang_sms_text"/>
+										</xsl:attribute>
+										<xsl:value-of select="$lang_sms_text"/>
+									</a>
+								</label>
+								<textarea class="pure-input-3-4" rows="{textarearows}" id="response_text" name="values[response_text]" onKeyUp="javascript: SmsCountKeyUp(804);" onKeyDown="javascript: SmsCountKeyDown(804);" wrap="virtual">
+									<xsl:attribute name="title">
+										<xsl:value-of select="$lang_sms_text"/>
+									</xsl:attribute>
+								</textarea>
+							</div>
+							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="php:function('lang', 'character left')"/>
+								</label>
+								<input type="text" readonly="readonly" size="3" maxlength="3" name="charNumberLeftOutput" id="charNumberLeftOutput" value="804">
+								</input>
+							</div>
+						</xsl:when>
+					</xsl:choose>
+
+					<xsl:if test="simple !='1'">
+						<div class="pure-control-group">
+							<label>
+								<xsl:value-of select="php:function('lang', 'external communication')"/>
+							</label>
+							<input type="hidden" id="external_communication" name="external_communication" value=""/>
+
+							<input type="button" class="pure-button pure-button-primary" name="init_external_communication" onClick="confirm_session('external_communication');">
+								<xsl:attribute name="value">
+									<xsl:value-of select="php:function('lang', 'new')"/>
+								</xsl:attribute>
+								<xsl:attribute name="title">
+									<xsl:value-of select="php:function('lang', 'external communication')"/>
+								</xsl:attribute>
+							</input>
+						</div>
+						<div class="pure-control-group">
+							<label>
+								<xsl:value-of select="php:function('lang', 'messages')"/>
+							</label>
+							<div class="pure-u-md-3-4">
+								<xsl:for-each select="datatable_def">
+									<xsl:if test="container = 'datatable-container_9'">
+										<xsl:call-template name="table_setup">
+											<xsl:with-param name="container" select ='container'/>
+											<xsl:with-param name="requestUrl" select ='requestUrl'/>
+											<xsl:with-param name="ColumnDefs" select ='ColumnDefs'/>
+											<xsl:with-param name="data" select ='data'/>
+											<xsl:with-param name="tabletools" select ='tabletools' />
+											<xsl:with-param name="config" select ='config'/>
+										</xsl:call-template>
+									</xsl:if>
+								</xsl:for-each>
+							</div>
+						</div>
+					</xsl:if>
+					</fieldset>
+				</div>
+				<div id="documents">
+					<fieldset>
+					<xsl:choose>
 						<xsl:when test="fileupload = 1">
 							<div class="pure-control-group">
 								<label>
@@ -840,88 +926,10 @@
 							</div>
 						</xsl:when>
 					</xsl:choose>
-					<xsl:choose>
-						<xsl:when test="send_response = 1">
-							<div class="pure-control-group">
-								<label>
-									<xsl:value-of select="php:function('lang', 'notify client by sms')"/>
-								</label>
-								<input type="checkbox" name="notify_client_by_sms" value="true">
-									<xsl:attribute name="title">
-										<xsl:value-of select="value_sms_client_order_notice"/>
-									</xsl:attribute>
-								</input>
-								<input  class="pure-input-1-8" type="text" name="to_sms_phone" value="{value_sms_phone}">
-									<xsl:attribute name="title">
-										<xsl:value-of select="value_sms_client_order_notice"/>
-									</xsl:attribute>
-								</input>
-							</div>
-							<div class="pure-control-group">
-								<xsl:variable name="lang_sms_text">
-									<xsl:value-of select="php:function('lang', 'sms text')"/>
-								</xsl:variable>
-
-								<label>
-									<a href="javascript:response_lookup()">
-										<xsl:attribute name="title">
-											<xsl:value-of select="$lang_sms_text"/>
-										</xsl:attribute>
-										<xsl:value-of select="$lang_sms_text"/>
-									</a>
-								</label>
-								<textarea class="pure-input-3-4" rows="{textarearows}" id="response_text" name="values[response_text]" onKeyUp="javascript: SmsCountKeyUp(804);" onKeyDown="javascript: SmsCountKeyDown(804);" wrap="virtual">
-									<xsl:attribute name="title">
-										<xsl:value-of select="$lang_sms_text"/>
-									</xsl:attribute>
-								</textarea>
-							</div>
-							<div class="pure-control-group">
-								<label>
-									<xsl:value-of select="php:function('lang', 'character left')"/>
-								</label>
-								<input type="text" readonly="readonly" size="3" maxlength="3" name="charNumberLeftOutput" id="charNumberLeftOutput" value="804">
-								</input>
-							</div>
-						</xsl:when>
-					</xsl:choose>
-
-					<xsl:if test="simple !='1'">
-						<div class="pure-control-group">
-							<label>
-								<xsl:value-of select="php:function('lang', 'external communication')"/>
-							</label>
-							<input type="hidden" id="external_communication" name="external_communication" value=""/>
-
-							<input type="button" class="pure-button pure-button-primary" name="init_external_communication" onClick="confirm_session('external_communication');">
-								<xsl:attribute name="value">
-									<xsl:value-of select="php:function('lang', 'new')"/>
-								</xsl:attribute>
-								<xsl:attribute name="title">
-									<xsl:value-of select="php:function('lang', 'external communication')"/>
-								</xsl:attribute>
-							</input>
-						</div>
-						<div class="pure-control-group">
-							<label>
-								<xsl:value-of select="php:function('lang', 'messages')"/>
-							</label>
-							<div class="pure-u-md-3-4" >
-								<xsl:for-each select="datatable_def">
-									<xsl:if test="container = 'datatable-container_9'">
-										<xsl:call-template name="table_setup">
-											<xsl:with-param name="container" select ='container'/>
-											<xsl:with-param name="requestUrl" select ='requestUrl'/>
-											<xsl:with-param name="ColumnDefs" select ='ColumnDefs'/>
-											<xsl:with-param name="data" select ='data'/>
-											<xsl:with-param name="tabletools" select ='tabletools' />
-											<xsl:with-param name="config" select ='config'/>
-										</xsl:call-template>
-									</xsl:if>
-								</xsl:for-each>
-							</div>
-						</div>
-					</xsl:if>
+					</fieldset>
+				</div>
+				<div id="order">
+					<fieldset>
 					<xsl:choose>
 						<xsl:when test="access_order = 1">
 							<xsl:choose>

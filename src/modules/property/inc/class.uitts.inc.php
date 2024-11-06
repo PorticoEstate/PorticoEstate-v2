@@ -3676,6 +3676,15 @@ JS;
 
 		$tabs			 = array();
 		$tabs['general'] = array('label' => lang('General'), 'link' => '#general');
+		if(!empty($this->bo->config->config_data['fmttsfileupload']))
+		{
+			$tabs['documents']	 = array('label' => lang('documents'), 'link' => '#documents');
+		}
+
+		if($order_read)
+		{
+			$tabs['order']	 = array('label' => lang('order'), 'link' => '#order');
+		}
 		$tabs['notify']	 = array('label' => lang('Notify'), 'link' => '#notify');
 		$tabs['history'] = array('label' => lang('History'), 'link' => '#history');
 		$active_tab		 = 'general';

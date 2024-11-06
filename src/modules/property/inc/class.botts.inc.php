@@ -1411,7 +1411,13 @@ class property_botts
 		$group_name = $this->accounts_obj->id2name($ticket['group_id']);
 
 		// build subject
-		$subject = '[' . lang('Ticket') . ' #' . $id . '] : ' . $location_code . ' ' . $this->get_category_name($ticket['cat_id']) . '; ' . $ticket['subject'];
+		$subject = '[' . lang('Ticket') . ' #' . $id . '] : ' . $location_code . ' ' . $this->get_category_name($ticket['cat_id']);
+		if($ticket['subject'])
+		{
+			$subject .= '; ' . $ticket['subject'];
+		}
+
+		$subject .= ' - ' . lang('status') . ': ' . $status_text[$ticket['status']];
 
 		//-----------from--------
 

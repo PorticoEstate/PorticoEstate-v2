@@ -103,7 +103,7 @@ class registration_soreg
 			$url = phpgw::link('/index.php', array(
 				'menuaction' => 'registration.uipending.index',
 				'domain' => $_REQUEST['logindomain']
-			), false, true);
+			), false, true, true);
 			$body = <<<HTML
 
 	New user: {$info['n_given']} {$info['n_family']} is pending approval for {$this->serverSettings['system_name']}::{$this->serverSettings['site_title']}.

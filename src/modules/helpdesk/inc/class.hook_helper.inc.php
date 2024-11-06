@@ -80,7 +80,7 @@ class helpdesk_hook_helper
 							$cd_array['domain'] = $_GET['domain'];
 						}
 
-						phpgw::redirect_link('/login.php', $cd_array);
+						phpgw::redirect_link('/', $cd_array);
 					}
 				}
 			}

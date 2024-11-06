@@ -31,6 +31,8 @@ namespace App\modules\phpgwapi\security;
 
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Hooks;
+
 
 /**
  * Login - enables common handling of the login process from different part of the system
@@ -211,6 +213,8 @@ class Login
 			if ($login)
 			{
 				Settings::getInstance()->set('hook_values', array('account_lid' => $login));
+				$hooks = new Hooks();
+				$hooks->process('auto_addaccount', array('frontend', 'helpdesk'));
 				if (strstr($login, '#') === false && $this->logindomain)
 				{
 					$login .= "#{$this->logindomain}";

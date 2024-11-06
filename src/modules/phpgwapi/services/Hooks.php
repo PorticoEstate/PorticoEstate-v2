@@ -1,6 +1,7 @@
 <?php
 
 namespace App\modules\phpgwapi\services;
+require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 
 /**
  * Allows applications to "hook" into each other

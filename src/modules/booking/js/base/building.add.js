@@ -1,7 +1,7 @@
 $(document).ready(function ()
 {
 
-//	JqueryPortico.autocompleteHelper(phpGWLink('/index.php', {menuaction: 'booking.uibuilding.properties'}, true),
+//	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.uibuilding.properties'}, true),
 //		'field_location_code_name', 'field_location_code', 'location_code_container');
 
 	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'property.bolocation.get_locations'}, true),
@@ -28,7 +28,7 @@ function populate_location_data(location_code)
 	var res = location_code.split("-");
 	var level = res.length;
 	var oArgs = {menuaction: 'property.uilocation.get_location_data', location_code: location_code};
-	var requestUrl = phpGWLink('/index.php', oArgs, true);
+	var requestUrl = phpGWLink('index.php', oArgs, true);
 
 	$.ajax({
 		type: 'POST',

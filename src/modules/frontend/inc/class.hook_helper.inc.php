@@ -73,7 +73,7 @@ class frontend_hook_helper
 					$account_id = frontend_bofrontend::create_delegate_account($account_lid, $fellesdata_user['firstname'], $fellesdata_user['lastname'], $password, $group_lid);
 					if ($account_id)
 					{
-						phpgw::redirect_link('/login.php', array());
+						phpgw::redirect_link('/', array());
 					}
 				}
 			}

@@ -38,6 +38,7 @@
 
 		public function __construct()
 		{
+			parent::__construct();
 			$this->fields = booking_article_mapping::get_fields();
 			$this->acl_location = booking_article_mapping::acl_location;
 		}

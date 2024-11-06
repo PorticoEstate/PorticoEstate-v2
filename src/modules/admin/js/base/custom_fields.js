@@ -26,7 +26,7 @@ function addApply()
 	var strField =  JSON.stringify(field);
 	
 	var xhr = new XMLHttpRequest();
-	xhr.open('PUT', phpGWLink('/index.php', {menuaction : 'admin.bo_custom_fields.add_field'}), true);
+	xhr.open('PUT', phpGWLink('index.php', {menuaction : 'admin.bo_custom_fields.add_field'}), true);
 	xhr.onreadystatechange = function()
 	{
 		if ( xhr.readyState == 4 )
@@ -219,7 +219,7 @@ function dialogCancel(dialogName)
 function disableField(id)
 {
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', phpGWLink('/index.php', {menuaction : 'admin.bo_custom_fields.toggle_field', id : id, state: 0}), true);
+	xhr.open('GET', phpGWLink('index.php', {menuaction : 'admin.bo_custom_fields.toggle_field', id : id, state: 0}), true);
 	xhr.onreadystatechange = function()
 	{
 		if ( xhr.readyState == 4 )
@@ -246,7 +246,7 @@ function editField()
 	}
 	
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', phpGWLink('/index.php', {menuaction : 'admin.bo_custom_fields.get_field', id : highlighted}), true);
+	xhr.open('GET', phpGWLink('index.php', {menuaction : 'admin.bo_custom_fields.get_field', id : highlighted}), true);
 	xhr.onreadystatechange = function()
 	{
 		if ( xhr.readyState == 4 )
@@ -313,7 +313,7 @@ function doRemove()
 {
 	var id = document.getElementById('remove_id').value;
 	var xhr = new XMLHttpRequest();
-	xhr.open('DELETE', phpGWLink('/index.php', {menuaction : 'admin.bo_custom_fields.delete_field', id : id}), true);
+	xhr.open('DELETE', phpGWLink('index.php', {menuaction : 'admin.bo_custom_fields.delete_field', id : id}), true);
 	xhr.onreadystatechange = function()
 	{
 		if ( xhr.readyState == 4 )
@@ -400,7 +400,7 @@ function removeField()
 	}
 	
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', phpGWLink('/index.php', {menuaction : 'admin.bo_custom_fields.get_field', id : highlighted}), true);
+	xhr.open('GET', phpGWLink('index.php', {menuaction : 'admin.bo_custom_fields.get_field', id : highlighted}), true);
 	xhr.onreadystatechange = function()
 	{
 		if ( xhr.readyState == 4 )
@@ -466,7 +466,7 @@ function viewField()
 	}
 	
 	var xhr = new XMLHttpRequest();
-	xhr.open('GET', phpGWLink('/index.php', {menuaction : 'admin.bo_custom_fields.get_field', id : highlighted}), true);
+	xhr.open('GET', phpGWLink('index.php', {menuaction : 'admin.bo_custom_fields.get_field', id : highlighted}), true);
 	xhr.onreadystatechange = function()
 	{
 		if ( xhr.readyState == 4 )

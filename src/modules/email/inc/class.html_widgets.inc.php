@@ -1688,7 +1688,7 @@
 				$reload_js = 
 					 '<script language="javascript">'."\r\n"
 					.' var oArgs = ' . $oArgs . "\r\n"
-					." var strURL = phpGWLink('/index.php', oArgs); \r\n"
+					." var strURL = phpGWLink('index.php', oArgs); \r\n"
 					.'window.setTimeout('."'".'window.location=strURL;'."'".','.$refresh_ms.');'."\r\n"
 					.'</script>'."\r\n";
 

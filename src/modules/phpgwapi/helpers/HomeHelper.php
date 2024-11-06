@@ -4,7 +4,6 @@ namespace App\modules\phpgwapi\helpers;
 
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
-use Slim\Routing\RouteContext;
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Hooks;
@@ -95,13 +94,7 @@ class HomeHelper
 			\phpgw::redirect_link($_GET['phpgw_forward'], $extra_vars);
 			exit;
 		}
-/*
-		$routeContext = RouteContext::fromRequest($request);
-		$route = $routeContext->getRoute();
-		$routePath = $route->getPattern();
-		$routePath_arr = explode('/', $routePath);
-		$currentApp = trim($routePath_arr[1], '[');
-*/
+
 
 		if (
 			isset($_GET['cd']) && $_GET['cd'] == 'yes'

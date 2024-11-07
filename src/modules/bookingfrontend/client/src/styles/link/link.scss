@@ -33,7 +33,7 @@
   }
 }
 
-a:not(.pe-btn):not(.ds-button):not([class^="fc-"]) {
+a:not(.pe-btn):not(.ds-button):not([class^="fc-"]):not(.ds-link) {
   &,
   &:link,
   &:visited {

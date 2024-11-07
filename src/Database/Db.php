@@ -11,7 +11,7 @@ use ReflectionProperty;
 class Db
 {
 	private static $instance = null;
-	protected $db;
+	private $db;
 	protected $isTransactionActive = false;
 	protected static $domain;
 	private $config;
@@ -561,7 +561,7 @@ class Db
 	 * @return int the next id
 	 */
 
-	final public function next_id($table = '', $key = '', $min = 0, $max = 0)
+	public function next_id($table = '', $key = '', $min = 0, $max = 0)
 	{
 
 		$where = '';

@@ -20,9 +20,9 @@ services:
             context: .
             dockerfile: Dockerfile
             args:
-                INSTALL_MSSQL: ${INSTALL_MSSQL}
-                INSTALL_XDEBUG: ${INSTALL_XDEBUG}
-                INSTALL_ORACLE: ${INSTALL_ORACLE}
+                INSTALL_MSSQL: ${INSTALL_MSSQL:-false}
+                INSTALL_XDEBUG: ${INSTALL_XDEBUG:-false}
+                INSTALL_ORACLE: ${INSTALL_ORACLE:-false}
         working_dir: /var/www/html
         environment:
             <<: *common-variables

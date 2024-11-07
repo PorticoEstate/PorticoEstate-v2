@@ -14,7 +14,7 @@ class Db
 	protected $db;
 	protected $isTransactionActive = false;
 	protected static $domain;
-	protected $config;
+	private $config;
 	protected $affected_rows = 0;
 	protected $fetch_single = false;
 	protected $pdo_fetchmode = PDO::FETCH_ASSOC;
@@ -375,9 +375,10 @@ class Db
 		return $ret;
 	}
 
-	public function metadata($table)
+	public function metadata($table, $config = null)
 	{
-		$db_type = $this->config['db_type'];
+		$config = $config ? $config : $this->config;
+		$db_type = $config['db_type'];
 
 		switch ($db_type)
 		{

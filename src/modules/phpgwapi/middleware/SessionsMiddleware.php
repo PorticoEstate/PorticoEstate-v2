@@ -134,7 +134,8 @@ class SessionsMiddleware implements MiddlewareInterface
 			else if ($second_pass)
 			{
 				$sessions->phpgw_setcookie('login_second_pass', false);
-				return $this->sendErrorResponse(['msg' => 'A valid session could not be found'], 401);
+				\phpgw::redirect_link('/login_ui');
+				//return $this->sendErrorResponse(['msg' => 'A valid session could not be found'], 401);
 			}
 			else
 			{

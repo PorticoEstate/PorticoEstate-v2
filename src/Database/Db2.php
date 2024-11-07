@@ -14,6 +14,7 @@ use PDOException;
 class Db2 extends Db
 {
 	static $db2;
+	private $config;
 
 	function __construct($dsn = null, $username = null, $password = null, $options = null)
 	{
@@ -68,4 +69,10 @@ class Db2 extends Db
 	{
 		self::$db2 = null;
 	}
+
+	public function metadata($table, $config = null)
+	{
+		return parent::metadata($table, $this->config);
+	}
+
 }

@@ -680,26 +680,22 @@
 							<xsl:apply-templates select="priority_list/options"/>
 						</select>
 					</div>
-					<xsl:choose>
-						<xsl:when test="value_order_id=''">
-							<div class="pure-control-group">
-								<label>
-									<xsl:value-of select="php:function('lang', 'status')"/>
-								</label>
-								<select id="status_id" name="values[status]" class="pure-input-3-4" >
-									<xsl:attribute name="title">
-										<xsl:value-of select="php:function('lang', 'Set the status of the ticket')"/>
-									</xsl:attribute>
-									<xsl:if test="simple ='1'">
-										<xsl:attribute name="disabled">
-											<xsl:text>disabled</xsl:text>
-										</xsl:attribute>
-									</xsl:if>
-									<xsl:apply-templates select="status_list/options"/>
-								</select>
-							</div>
-						</xsl:when>
-					</xsl:choose>
+					<div class="pure-control-group">
+						<label>
+							<xsl:value-of select="php:function('lang', 'status')"/>
+						</label>
+						<select id="status_id" name="values[status]" class="pure-input-3-4" >
+							<xsl:attribute name="title">
+								<xsl:value-of select="php:function('lang', 'Set the status of the ticket')"/>
+							</xsl:attribute>
+							<xsl:if test="simple ='1'">
+								<xsl:attribute name="disabled">
+									<xsl:text>disabled</xsl:text>
+								</xsl:attribute>
+							</xsl:if>
+							<xsl:apply-templates select="status_list/options"/>
+						</select>
+					</div>
 					<div class="pure-control-group">
 						<label>
 							<xsl:value-of select="php:function('lang', 'category')"/>
@@ -1597,18 +1593,8 @@
 										</table>
 
 									</div>
-									<div class="pure-control-group">
-										<label>
-											<xsl:value-of select="php:function('lang', 'status')"/>
-										</label>
-										<select id="status_id" name="values[status]" class="pure-input-3-4">
-											<xsl:attribute name="title">
-												<xsl:value-of select="php:function('lang', 'Set the status of the ticket')"/>
-											</xsl:attribute>
-											<xsl:apply-templates select="status_list/options"/>
-										</select>
-									</div>
-									<!--									<div class="pure-control-group">
+
+<!--									<div class="pure-control-group">
 										<label for="name">
 											<xsl:value-of select="php:function('lang', 'order received')"/>
 										</label>

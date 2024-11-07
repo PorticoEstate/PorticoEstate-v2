@@ -9,191 +9,199 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\services\Cache;
 
-class EBF_ticket_smartsheet_integration extends property_botts
+if (!class_exists("EBF_ticket_smartsheet_integration"))
 {
-	private $_config = array();
-	private $db;
-	private $custom_config;
-
-	function __construct()
+	class EBF_ticket_smartsheet_integration extends property_botts
 	{
-		parent::__construct();
-		$this->db		 = Db::getInstance();
-		$location_obj	 = new Locations();
-		$custom_config	 = CreateObject('admin.soconfig', $location_obj->get_id('property', '.ticket'));
-		$this->_config	 = $custom_config->config_data;
-		if ($this->acl_location != '.ticket')
+		private $_config = array();
+		private $db;
+		private $custom_config;
+
+		function __construct()
 		{
-			throw new Exception("'catch_ticket_export'  is intended for location = '.ticket'");
-		}
-
-		if (!isset($this->_config['smartsheet_integration']) || !$this->_config['smartsheet_integration'])
-		{
-			$this->custom_config = $custom_config;
-			$this->initiate_config();
-		}
-	}
-
-	protected function initiate_config()
-	{
-		$receipt_section = $this->custom_config->add_section(
-			array(
-				'name'	 => 'smartsheet_integration',
-				'descr'	 => 'smartsheet integration based on ticket status'
-			)
-		);
-		$receipt		 = $this->custom_config->add_attrib(
-			array(
-				'section_id' => $receipt_section['section_id'],
-				'input_type' => 'text',
-				'name'		 => 'status',
-				'descr'		 => 'Ticket status that initiate post to smartsheet'
-			)
-		);
-		$receipt		 = $this->custom_config->add_attrib(
-			array(
-				'section_id' => $receipt_section['section_id'],
-				'input_type' => 'text',
-				'name'		 => 'access_token',
-				'descr'		 => 'Access token'
-			)
-		);
-		$receipt		 = $this->custom_config->add_attrib(
-			array(
-				'section_id' => $receipt_section['section_id'],
-				'input_type' => 'text',
-				'name'		 => 'sheet_name',
-				'descr'		 => 'Sheet name'
-			)
-		);
-
-		$receipt = $this->custom_config->add_attrib(
-			array(
-				'section_id' => $receipt_section['section_id'],
-				'input_type' => 'text',
-				'name'		 => 'sheet_id',
-				'descr'		 => 'sheet id'
-			)
-		);
-		$location_obj	 = new Locations();
-
-		phpgw::redirect_link('/index.php', array(
-			'menuaction'	 => 'admin.uiconfig2.list_attrib',
-			'section_id'	 => $receipt_section['section_id'], 'location_id'	 => $location_obj->get_id('property', '.ticket')
-		));
-	}
-
-	function check_category($data)
-	{
-		$status = $this->_config['smartsheet_integration']['status'];
-
-		if ($data['status'] == $status)
-		{
-			$this->post_to_smartsheet($data);
-		}
-	}
-
-	function post_to_smartsheet($data)
-	{
-		$access_token	 = $this->_config['smartsheet_integration']['access_token'];
-		$sheet_name		 = $this->_config['smartsheet_integration']['sheet_name'];
-		$sheet_id		 = $this->_config['smartsheet_integration']['sheet_id'];
-
-		$link_data = array(
-			'menuaction' => 'property.uitts.view',
-			'id'		 => $data['id']
-		);
-
-		$hyperlink = str_replace(array("http:", "&amp;"), array("https:", "&"), phpgw::link('/index.php', $link_data, false, true));
-
-
-		$config			 = array('token' => $access_token);
-
-		$serverSettings = Settings::getInstance()->get('server');
-
-		if (!empty($serverSettings['httpproxy_server']))
-		{
-			$proxy = "{$serverSettings['httpproxy_server']}:{$serverSettings['httpproxy_port']}";
-			$config['proxy'] = array(
-				'http'	 => $proxy,
-				'https'	 => $proxy
-			);
-		}
-		//			$proxy = 'http://proxy.bergen.kommune.no:8080';
-		//
-		//			$config['proxy'] = array(
-		//					'http'	 => $proxy,
-		//					'https'	 => $proxy
-		//				);
-
-		$smartsheetClient	 = new \Smartsheet\SmartsheetClient($config);
-
-		try
-		{
-			$sheets				 = $smartsheetClient->listSheets();
-		}
-		catch (Exception $e)
-		{
-			Cache::message_set($e->getMessage(), 'error');
-			$this->historylog->add('RM', (int)$data['id'], 'Overføring til EFU feilet');
-			return;
-		}
-
-		if (!$sheet_id)
-		{
-			foreach ($sheets as $sheet_info)
+			parent::__construct();
+			$this->db		 = Db::getInstance();
+			$location_obj	 = new Locations();
+			$custom_config	 = CreateObject('admin.soconfig', $location_obj->get_id('property', '.ticket'));
+			$this->_config	 = $custom_config->config_data;
+			if ($this->acl_location != '.ticket')
 			{
-				if ($sheet_info->getname() == $sheet_name)
-				{
-					$sheet_id = $sheet_info->getid();
-				}
-				unset($sheet_info);
+				throw new Exception("'catch_ticket_export'  is intended for location = '.ticket'");
+			}
+
+			if (!isset($this->_config['smartsheet_integration']) || !$this->_config['smartsheet_integration'])
+			{
+				$this->custom_config = $custom_config;
+				$this->initiate_config();
 			}
 		}
 
-		$sheet = $smartsheetClient->getSheet($sheet_id);
-
-		$ticket = parent::read_single($data['id']);
-
-		if ($ticket['handyman_checklist_id'])
+		protected function initiate_config()
 		{
-			return;
+			$receipt_section = $this->custom_config->add_section(
+				array(
+					'name'	 => 'smartsheet_integration',
+					'descr'	 => 'smartsheet integration based on ticket status'
+				)
+			);
+			$receipt		 = $this->custom_config->add_attrib(
+				array(
+					'section_id' => $receipt_section['section_id'],
+					'input_type' => 'text',
+					'name'		 => 'status',
+					'descr'		 => 'Ticket status that initiate post to smartsheet'
+				)
+			);
+			$receipt		 = $this->custom_config->add_attrib(
+				array(
+					'section_id' => $receipt_section['section_id'],
+					'input_type' => 'text',
+					'name'		 => 'access_token',
+					'descr'		 => 'Access token'
+				)
+			);
+			$receipt		 = $this->custom_config->add_attrib(
+				array(
+					'section_id' => $receipt_section['section_id'],
+					'input_type' => 'text',
+					'name'		 => 'sheet_name',
+					'descr'		 => 'Sheet name'
+				)
+			);
+
+			$receipt = $this->custom_config->add_attrib(
+				array(
+					'section_id' => $receipt_section['section_id'],
+					'input_type' => 'text',
+					'name'		 => 'sheet_id',
+					'descr'		 => 'sheet id'
+				)
+			);
+			$location_obj	 = new Locations();
+
+			phpgw::redirect_link('/index.php', array(
+				'menuaction'	 => 'admin.uiconfig2.list_attrib',
+				'section_id'	 => $receipt_section['section_id'],
+				'location_id'	 => $location_obj->get_id('property', '.ticket')
+			));
 		}
 
-		/**
-		 * SakID
+		function check_category($data)
+		{
+			$status = $this->_config['smartsheet_integration']['status'];
+
+			if ($data['status'] == $status)
+			{
+				$this->post_to_smartsheet($data);
+			}
+		}
+
+		function post_to_smartsheet($data)
+		{
+			$access_token	 = $this->_config['smartsheet_integration']['access_token'];
+			$sheet_name		 = $this->_config['smartsheet_integration']['sheet_name'];
+			$sheet_id		 = $this->_config['smartsheet_integration']['sheet_id'];
+
+			$link_data = array(
+				'menuaction' => 'property.uitts.view',
+				'id'		 => $data['id']
+			);
+
+			$hyperlink = str_replace(array("http:", "&amp;"), array("https:", "&"), phpgw::link('/index.php', $link_data, false, true));
+
+
+			$config			 = array('token' => $access_token);
+
+			$serverSettings = Settings::getInstance()->get('server');
+
+			if (!empty($serverSettings['httpproxy_server']))
+			{
+				$proxy = "{$serverSettings['httpproxy_server']}:{$serverSettings['httpproxy_port']}";
+				$config['proxy'] = array(
+					'http'	 => $proxy,
+					'https'	 => $proxy
+				);
+			}
+			//			$proxy = 'http://proxy.bergen.kommune.no:8080';
+			//
+			//			$config['proxy'] = array(
+			//					'http'	 => $proxy,
+			//					'https'	 => $proxy
+			//				);
+
+			$smartsheetClient	 = new \Smartsheet\SmartsheetClient($config);
+
+			try
+			{
+				$sheets				 = $smartsheetClient->listSheets();
+			}
+			catch (Exception $e)
+			{
+				Cache::message_set($e->getMessage(), 'error');
+				$this->historylog->add('RM', (int)$data['id'], 'Overføring til EFU feilet');
+				return;
+			}
+
+			if (!$sheet_id)
+			{
+				foreach ($sheets as $sheet_info)
+				{
+					if ($sheet_info->getname() == $sheet_name)
+					{
+						$sheet_id = $sheet_info->getid();
+					}
+					unset($sheet_info);
+				}
+			}
+
+			$sheet = $smartsheetClient->getSheet($sheet_id);
+
+			$ticket = parent::read_single($data['id']);
+
+			if ($ticket['handyman_checklist_id'])
+			{
+				return;
+			}
+
+			/**
+			 * SakID
 			  Beskrivelse av sak/reklamasjon
 			  Type sak
 			  Beskrivelse av utførte tiltak for å utbedre
 			 Meldt til EBF
 			 Meldt EFU
 
-		 */
-		$rows									 = array();
-		$rows['SakID']							 = $data['id'];
-		$rows['Beskrivelse av sak/reklamasjon']	 = $ticket['details'];
-		$rows['Type sak']						 = 'Reklamasjon';
-		$rows['Hvor']							 = $ticket['location_code'] . ' : ' . $ticket['address'];
-		$rows['Referanse']						 = array(
-			'value'		 => 'Link til saken i Portico',
-			'hyperlink'	 => $hyperlink
-		);
-		$rows['Meldt til EBF']						 = date('Y-m-d\TH:i:sp', $ticket['timestamp']); // ISO 8601 date format
-		$rows['Meldt EFU']							 = date('Y-m-d\TH:i:sp');
+			 */
+			$rows									 = array();
+			$rows['SakID']							 = $data['id'];
+			$rows['Beskrivelse av sak/reklamasjon']	 = $ticket['details'];
+			$rows['Type sak']						 = 'Reklamasjon';
+			$rows['Hvor']							 = $ticket['location_code'] . ' : ' . $ticket['address'];
+			$rows['Referanse']						 = array(
+				'value'		 => 'Link til saken i Portico',
+				'hyperlink'	 => $hyperlink
+			);
+			$rows['Meldt til EBF']						 = date('Y-m-d\TH:i:sp', $ticket['timestamp']); // ISO 8601 date format
+			$rows['Meldt EFU']							 = date('Y-m-d\TH:i:sp');
 
-		try
-		{
-			$sheet->addRow($rows);
-			$sql = "UPDATE fm_tts_tickets SET handyman_checklist_id = 1 WHERE id = " . (int)$data['id'];
-			$this->db->query($sql, __LINE__, __FILE__);
-			$this->historylog->add('RM', (int)$data['id'], 'Saken er meldt til EFU');
-		}
-		catch (Exception $e)
-		{
-			Cache::message_set($e->getMessage(), 'error');
-			$this->historylog->add('RM', (int)$data['id'], 'Overføring til EFU feilet');
+			try
+			{
+				$sheet->addRow($rows);
+				$sql = "UPDATE fm_tts_tickets SET handyman_checklist_id = 1 WHERE id = " . (int)$data['id'];
+				$this->db->query($sql, __LINE__, __FILE__);
+				$this->historylog->add('RM', (int)$data['id'], 'Saken er meldt til EFU');
+			}
+			catch (Exception $e)
+			{
+				Cache::message_set($e->getMessage(), 'error');
+				$this->historylog->add('RM', (int)$data['id'], 'Overføring til EFU feilet');
+			}
 		}
 	}
 }
-$ticket_smartsheet = new EBF_ticket_smartsheet_integration();
-$ticket_smartsheet->check_category($data);
+
+if(!isset($transfer_action) || $transfer_action !== 'receive_order')
+{
+	$ticket_smartsheet = new EBF_ticket_smartsheet_integration();
+	$ticket_smartsheet->check_category($data);
+}

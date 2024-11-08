@@ -44,6 +44,9 @@ class synkroniser_med_boei extends property_cron_parent
 
 	var $bocommon, $db_boei, $db_boei2, $db2;
 	var $alert_messages = array();
+	private $categories_to_exclude;
+	private $exclude_loc1 = array();
+
 	function __construct()
 	{
 		parent::__construct();
@@ -92,7 +95,10 @@ class synkroniser_med_boei extends property_cron_parent
 		_debug_array($this->db_boei2->get_config());
 */
 
-
+		$this->categories_to_exclude = array(
+			-1, // -1 = "Dummy"
+			120, // 120 = "Flyktning Innleie"
+		);
 	}
 
 	function execute()
@@ -735,6 +741,17 @@ SQL;
 		}
 		//			_debug_array($valueset);
 		$this->db->insert($sql, $valueset, __LINE__, __FILE__);
+
+		$filter = implode(',', $this->categories_to_exclude);
+		$sql_exlude = "SELECT DISTINCT objekt_id FROM boei_leieobjekt WHERE formaal_id IN ({$filter}) ORDER BY objekt_id";
+		$this->db->query($sql_exlude, __LINE__, __FILE__);
+		$exclude_loc1 = array();
+		while ($this->db->next_record())
+		{
+			$exclude_loc1[] = $this->db->f('objekt_id');
+		}
+
+		$this->exclude_loc1 = $exclude_loc1;
 	}
 
 	function update_table_leietaker()
@@ -1582,6 +1599,9 @@ SQL;
 
 	function oppdater_boa_objekt()
 	{
+		$metadata = $this->db->metadata('fm_location1');
+
+
 		$sql = " SELECT boei_objekt.objekt_id,bydel_id,tjenestested,navn,boei_objekt.eier_id, kostra_id"
 			. " FROM boei_objekt JOIN fm_location1 ON boei_objekt.objekt_id = fm_location1.loc1"
 			. " WHERE boei_objekt.navn != fm_location1.loc1_name"
@@ -1605,6 +1625,34 @@ SQL;
 			if ($kostra_id != $tjenestested)
 			{
 				$this->alert_messages[] = "Objekt {$loc1} i Portico endret tjeneste fra {$kostra_id} til {$tjenestested}";
+
+				$sql_history = "SELECT * FROM fm_location1 WHERE loc1 ='{$loc1}'";
+				$this->db2->query($sql_history, __LINE__, __FILE__);
+				$this->db2->next_record();
+
+				$cols = array();
+				$vals = array();
+				foreach ($metadata as $column => $val)
+				{
+					$cols[] = $column;
+
+					if (ctype_digit($this->db2->f($column)))
+					{
+						$vals[] = $this->db2->f($column);
+					}
+					else
+					{
+						$vals[] = $this->db2->db_addslashes($this->db2->f($column, true));
+					}
+				}
+
+				$cols[]	 = 'exp_date';
+				$vals[]	 = date($this->db2->datetime_format(), time());
+
+				$cols	 = implode(",", $cols);
+				$vals	 = $this->db2->validate_insert($vals);
+				$this->db2->query("INSERT INTO fm_location1_history ($cols) VALUES ($vals)", __LINE__, __FILE__);
+
 			}
 
 			$sql2 = " UPDATE fm_location1 SET "
@@ -1615,12 +1663,12 @@ SQL;
 				. " kostra_id = " . $tjenestested
 				. " WHERE  loc1 = '" . $this->db->f('objekt_id') . "'";
 
-			/*
- * Alle kostraid’er skal ha mva/AV-kode 75
- * Bortsett fra
- * 26550 som jeg ønsker varsel på,
- * og 26555 som ikke finnes enda, men som kanskje blir opprettet på innleieboliger.
-*/
+				/*
+				* Alle kostraid’er skal ha mva/AV-kode 75
+				* Bortsett fra
+				* 26550 som jeg ønsker varsel på,
+				* og 26555 som ikke finnes enda, men som kanskje blir opprettet på innleieboliger.
+				*/
 
 
 			$this->db2->query($sql2, __LINE__, __FILE__);

@@ -17,6 +17,14 @@ class Db2 extends Db
 	private $config;
 	private $db;
 
+	/**
+	 * Db2 constructor.
+	 * @param string $dsn - Data Source Name, if given, the database connection will not be reused, typical use is integration with external systems
+	 * @param string $username
+	 * @param string $password
+	 * @param array $options
+	 * @throws Exception
+	 */
 	function __construct($dsn = null, $username = null, $password = null, $options = null)
 	{
 		$config = Db::getInstance()->get_config();
@@ -37,11 +45,12 @@ class Db2 extends Db
 			$dsn2 = $dsn;
 		}
 
+		$db = null;
 		if (is_null(self::$db2) || !is_null($dsn))
 		{
 			try
 			{
-				self::$db2 = new PDO($dsn2, $username, $password, $options);
+				$db = new PDO($dsn2, $username, $password, $options);
 			}
 			catch (PDOException $e)
 			{
@@ -49,10 +58,22 @@ class Db2 extends Db
 			}
 		}
 
-		$this->db = self::$db2;
+		if (is_null($dsn) && !is_null($db))
+		{
+			self::$db2 = $db;
+		}
+
+		if (!is_null($db))
+		{
+			$this->db = $db;
+		}
+		else
+		{
+			$this->db = self::$db2;
+		}
+
 
 		$this->set_config($config);
-		//not the paren, just this one
 //		register_shutdown_function(array(&$this, 'disconnect'));
 	}
 

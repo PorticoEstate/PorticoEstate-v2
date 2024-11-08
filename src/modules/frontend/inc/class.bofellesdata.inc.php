@@ -81,12 +81,6 @@ class frontend_bofellesdata
 			'db_name' => $config->config_data['external_db_name']
 		]);
 		
-		$db = new Db2($dsn, $config->config_data['external_db_user'], $config->config_data['external_db_password'], [
-			PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-			PDO::ATTR_EMULATE_PREPARES => false,
-			PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-		]);
-
 
 
 		try
@@ -100,7 +94,6 @@ class frontend_bofellesdata
 		catch (Exception $e)
 		{
 			Cache::message_set('Could not connect to backend-server ' . $config->config_data['external_db_host'], 'error');
-			phpgw::redirect_link('/home/');
 		}
 		$this->db = $db;
 		return $db;
@@ -396,6 +389,7 @@ class frontend_bofellesdata
 		{
 			return;
 		}
+		return;
 
 		if ($db->Type == "postgres")
 		{

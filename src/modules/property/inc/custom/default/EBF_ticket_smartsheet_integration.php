@@ -200,7 +200,7 @@ if (!class_exists("EBF_ticket_smartsheet_integration"))
 	}
 }
 
-if(!isset($transfer_action) || $transfer_action !== 'receive_order')
+if(!isset($transfer_action) && $transfer_action !== 'receive_order')
 {
 	$ticket_smartsheet = new EBF_ticket_smartsheet_integration();
 	$ticket_smartsheet->check_category($data);

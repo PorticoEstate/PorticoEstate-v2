@@ -389,7 +389,6 @@ class frontend_bofellesdata
 		{
 			return;
 		}
-		return;
 
 		if ($db->Type == "postgres")
 		{

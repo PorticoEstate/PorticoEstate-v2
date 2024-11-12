@@ -36,6 +36,7 @@ class Building
     /**
      * @ORM\Column(type="string", length=150)
      * @Expose
+     * @EscapeString(mode="default")
      * @OA\Property(
      *      description="Name of the building",
      *      type="string",

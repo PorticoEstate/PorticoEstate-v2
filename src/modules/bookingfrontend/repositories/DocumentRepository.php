@@ -26,11 +26,11 @@ class DocumentRepository
         };
     }
 
-    public function getDocumentsForBuilding(int $buildingId, array $categories = null): array
+    public function getDocumentsForOwner(int $ownerId, array $categories = null): array
     {
         $table = $this->getDBTable();
         $sql = "SELECT * FROM {$table} WHERE owner_id = :buildingId";
-        $params = [':buildingId' => $buildingId];
+        $params = [':buildingId' => $ownerId];
 
         if ($categories !== null && !empty($categories)) {
             $placeholders = [];

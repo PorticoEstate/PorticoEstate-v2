@@ -2,6 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
+use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\Resource;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -17,13 +18,14 @@ use OpenApi\Annotations as OA;
  *     description="API Endpoints for Resources"
  * )
  */
-class ResourceController
+class ResourceController extends DocumentController
 {
     private $db;
     private $userSettings;
 
     public function __construct(ContainerInterface $container)
     {
+        parent::__construct(Document::OWNER_RESOURCE);
         $this->db = Db::getInstance();
         $this->userSettings = Settings::getInstance()->get('user');
     }
@@ -102,15 +104,15 @@ class ResourceController
         $dir = $queryParams['dir'] ?? 'asc';
 
         // Validate and sanitize the sort field to prevent SQL injection
-        $allowedSortFields = ['id', 'name', 'activity_id', 'sort']; // Add more fields as needed
+        $allowedSortFields = ['id', 'name', 'activity_id', 'sort'];
         $sort = in_array($sort, $allowedSortFields) ? $sort : 'id';
-
-        // Validate sort direction
         $dir = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
 
-        $sql = "SELECT * FROM bb_resource
-                WHERE active = 1 AND (hidden_in_frontend = 0 OR hidden_in_frontend IS NULL)
-                ORDER BY $sort $dir";
+        $sql = "SELECT r.*, br.building_id
+                FROM bb_resource r
+                LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                WHERE r.active = 1 AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)
+                ORDER BY r.$sort $dir";
 
         if ($perPage > 0)
         {
@@ -182,7 +184,10 @@ class ResourceController
     {
         $resourceId = (int)$args['id'];
 
-        $sql = "SELECT * FROM bb_resource WHERE id = :id";
+        $sql = "SELECT r.*, br.building_id
+                FROM bb_resource r
+                LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                WHERE r.id = :id";
 
         try
         {
@@ -302,16 +307,16 @@ class ResourceController
         }
 
         // Validate and sanitize the sort field to prevent SQL injection
-        $allowedSortFields = ['id', 'name', 'activity_id', 'sort']; // Add more fields as needed
+        $allowedSortFields = ['id', 'name', 'activity_id', 'sort'];
         $sort = in_array($sort, $allowedSortFields) ? $sort : 'id';
-
-        // Validate sort direction
         $dir = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
 
-        $sql = "SELECT r.* FROM bb_resource r
+        $sql = "SELECT r.*, br.building_id
+                FROM bb_resource r
                 JOIN bb_building_resource br ON r.id = br.resource_id
                 WHERE br.building_id = :building_id
-                AND r.active = 1 AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)
+                AND r.active = 1
+                AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)
                 ORDER BY r.$sort $dir";
 
         if ($perPage > 0)
@@ -357,10 +362,14 @@ class ResourceController
         }
     }
 
+
     private function getTotalCount(): int
     {
-        $sql = "SELECT COUNT(*) FROM bb_resource
-                WHERE active = 1 AND (hidden_in_frontend = 0 OR hidden_in_frontend IS NULL)";
+        $sql = "SELECT COUNT(DISTINCT r.id)
+                FROM bb_resource r
+                LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                WHERE r.active = 1
+                AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchColumn();
@@ -368,10 +377,12 @@ class ResourceController
 
     private function getTotalCountByBuilding(int $buildingId): int
     {
-        $sql = "SELECT COUNT(*) FROM bb_resource r
+        $sql = "SELECT COUNT(DISTINCT r.id)
+                FROM bb_resource r
                 JOIN bb_building_resource br ON r.id = br.resource_id
                 WHERE br.building_id = :building_id
-                AND r.active = 1 AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)";
+                AND r.active = 1
+                AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':building_id', $buildingId, \PDO::PARAM_INT);
         $stmt->execute();

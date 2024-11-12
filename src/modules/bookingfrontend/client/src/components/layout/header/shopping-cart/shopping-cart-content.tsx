@@ -7,15 +7,13 @@ import {usePartialApplications} from "@/service/hooks/api-hooks";
 import styles from "./shopping-cart-content.module.scss";
 import {Badge, Button, Spinner, Table, List} from "@digdir/designsystemet-react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faArrowRightLong, faArrowUpRightFromSquare, faLayerGroup, faTrashCan} from "@fortawesome/free-solid-svg-icons";
+import {faArrowRightLong, faArrowUpRightFromSquare, faTrashCan} from "@fortawesome/free-solid-svg-icons";
 import {phpGWLink} from "@/service/util";
 import Link from "next/link";
 import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
-import {da} from "date-fns/locale";
 import {deletePartialApplication} from "@/service/api/api-utils";
-import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import {IShortResource} from "@/service/pecalendar.types";
+import ResourceCircles from "@/components/resource-circles/resource-circles";
 
 interface ShoppingCartContentProps {
     setOpen: Dispatch<boolean>;
@@ -94,45 +92,6 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
     }
 
 
-    const renderColorCircles = (resources: IShortResource[], maxCircles: number, size: 'medium' | 'small') => {
-        const totalResources = resources.length;
-        const circlesToShow = resources.slice(0, maxCircles);
-        const remainingCount = totalResources - maxCircles;
-
-        return (
-            <div className={styles.colorCircles}>
-                <FontAwesomeIcon icon={faLayerGroup}/>
-                {circlesToShow.map((res, index) => (
-                    <ColourCircle resourceId={res.id} key={index} className={styles.colorCircle} size={size}/>
-                ))}
-                {remainingCount === 1 && (
-                    <ColourCircle
-                        resourceId={resources[maxCircles].id}
-                        key={maxCircles}
-                        className={styles.colorCircle}
-                        size={size}
-                    />
-                )}
-                {remainingCount > 1 && <span className={styles.remainingCount}>+{remainingCount}</span>}
-            </div>
-        );
-    };
-    const getResources = (application: IApplication) => {
-        if (application.resources.length === 1) {
-            return <span><ColourCircle resourceId={application.resources[0].id} /> {application.resources[0].name}</span>;
-        }
-        if (expandedId === application.id) {
-            return <List.Unordered
-                style={{
-                    listStyle: 'none',
-                    padding: 0
-                }}>
-
-                {application.resources.map((res) => <List.Item key={res.id}><ColourCircle resourceId={res.id} /> {res.name}</List.Item>)}
-            </List.Unordered>
-        }
-        return <span>{renderColorCircles(application.resources, 4, 'small')}</span>
-    }
 
     console.log(basketData)
     return (
@@ -194,7 +153,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                                         {item.building_name}
                                     </Table.Cell>
                                     <Table.Cell>
-                                        {getResources(item)}
+                                        <ResourceCircles resources={item.resources} maxCircles={4} size={'small'} isExpanded={expandedId === item.id} />
                                     </Table.Cell>
                                     <Table.Cell>
 

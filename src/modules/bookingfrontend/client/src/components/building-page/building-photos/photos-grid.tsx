@@ -1,18 +1,16 @@
 'use client'
-import {IBuilding} from "@/service/types/Building";
 import {Accordion} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import 'photoswipe/dist/photoswipe.css'
 import {Gallery, Item} from 'react-photoswipe-gallery'
 import {IDocument} from "@/service/types/api.types";
 import {getDocumentLink} from "@/service/api/api-utils";
-
-interface BuildingPhotosProps {
-    building: IBuilding
+import styles from './photos-grid.module.scss';
+interface PhotosGridProps {
     photos: IDocument[];
 }
 
-const BuildingPhotos = (props: BuildingPhotosProps) => {
+const PhotosGrid = (props: PhotosGridProps) => {
     const t = useTrans();
     return (
         <Accordion.Item>
@@ -26,10 +24,9 @@ const BuildingPhotos = (props: BuildingPhotosProps) => {
                 }}>
                     <div
                         style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(3, 0fr)',
-                            gridGap: 10,
+
                         }}
+                        className={styles.photoGrid}
                     >
                         {props.photos.map(photo => {
                             const url = getDocumentLink(photo);
@@ -56,6 +53,6 @@ const BuildingPhotos = (props: BuildingPhotosProps) => {
 );
 }
 
-export default BuildingPhotos
+export default PhotosGrid
 
 

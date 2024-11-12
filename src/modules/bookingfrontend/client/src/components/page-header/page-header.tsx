@@ -11,7 +11,7 @@ interface PageHeaderProps {
 
 const PageHeader: FC<PageHeaderProps> = (props) => {
     return (
-        <section className={`${styles.buildingHeader} mx-3 ${props.className || ''}`}>
+        <section className={`${styles.buildingHeader} mx-standard ${props.className || ''}`}>
             <div className={styles.buildingName}>
                 <h2>
                     {props.icon && (

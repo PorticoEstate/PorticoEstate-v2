@@ -26,6 +26,25 @@ body {
     }
 }
 
+.ds-accordion__item {
+    border-radius: 0;
+    user-select: none;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    border-top: var(--dsc-accordion-border);
+    background-color: inherit;
+    u-summary {
+        border-radius: 0;
+    }
+    u-summary:not([aria-expanded="true"]) {
+        background-color: inherit;
+    }
+    >*:not(u-summary) {
+        background-color: white;
+    }
+}
+
 .fc-event-main {
     display: flex;
 }
@@ -169,7 +188,7 @@ body {
     translate: 50% -50%;
 }
 
-:root, [data-ds-theme="light"] {
+:root/*, [data-ds-theme="light"]*/ {
     --ds-color-accent-1: #fefdfe;
     --ds-color-accent-2: #f6f2f7;
     --ds-color-accent-3: #e9dfec;
@@ -245,8 +264,9 @@ body {
     --ds-color-brand3-13: #303030;
     --ds-color-brand3-contrast-1: #000000;
     --ds-color-brand3-contrast-2: #575757;
+    --ds-color-neutral-13: $black;
 }
-
+/*
 [data-ds-theme="dark"] {
     --ds-color-accent-1: #27142d;
     --ds-color-accent-2: #33193b;
@@ -324,7 +344,6 @@ body {
     --ds-color-brand3-contrast-1: #ffffff;
     --ds-color-brand3-contrast-2: #989898;
 }
-
 [data-ds-theme="contrast"] {
     --ds-color-accent-1: #060306;
     --ds-color-accent-2: #1c0e1f;
@@ -402,3 +421,4 @@ body {
     --ds-color-brand3-contrast-1: #ffffff;
     --ds-color-brand3-contrast-2: #989898;
 }
+*/

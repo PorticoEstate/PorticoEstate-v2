@@ -2019,6 +2019,22 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 		$project = (isset($values['project_id']) ? $boproject->read_single_mini($values['project_id']) : '');
 
+		if($project)
+		{
+			$external_project_id = $project['external_project_id'];
+
+			$external_project = execMethod('property.bogeneric.read_single', array(
+					'id'			 => $external_project_id,
+					'location_info'	 => array(
+						'type' => 'external_project'
+					)
+				));
+
+			if($external_project['eco_service_id'])
+			{
+				$values['service_id'] = $external_project['eco_service_id'];
+			}
+		}
 		if (!$this->receipt['error'])
 		{
 			if ($values['id'])

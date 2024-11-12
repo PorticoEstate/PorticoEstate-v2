@@ -43,6 +43,8 @@ interface BuildingCalendarProps {
     seasons: Season[];
     building: IBuilding;
     initialDate: DateTime;
+    initialEnabledResources: Set<string>;
+    initialResourcesHidden: boolean;
 }
 
 Settings.defaultLocale = "nb";
@@ -60,10 +62,16 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     const [popperAnchorEl, setPopperAnchorEl] = useState<HTMLElement | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [view, setView] = useState<string>(window.innerWidth < 601 ? 'timeGridDay' : 'timeGridWeek');
-    const [resourcesHidden, setSResourcesHidden] = useState<boolean>(isMobile);
-    const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!isMobile)
+    const [resourcesHidden, setSResourcesHidden] = useState<boolean>(props.initialResourcesHidden || isMobile);
+    const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!props.initialResourcesHidden && !isMobile);
     const [lastCalendarView, setLastCalendarView] = useState<string>('timeGridWeek');
     const [tempEvents, setTempEvents] = useState<Record<string, FCallTempEvent>>({});
+    const [enabledResources, setEnabledResources] = useState<Set<string>>(props.initialEnabledResources);
+
+    // const [enabledResources, setEnabledResources] = useState<Set<string>>(
+    //     new Set(resourceOptions.map(option => option.value))
+    // );
+
     const eventInfos = usePopperData(
         events.filter(e => e.type === 'event').map(e => e.id),
         events.filter(e => e.type === 'allocation').map(e => e.id),
@@ -89,9 +97,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         }));
     }, [props.resources]);
 
-    const [enabledResources, setEnabledResources] = useState<Set<string>>(
-        new Set(resourceOptions.map(option => option.value))
-    );
+
     const setResourcesHidden = (v: boolean) => {
         if(isMobile) {
             setResourcesContainerRendered(v);
@@ -327,10 +333,12 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         return <EventContent eventInfo={eventInfo as FCEventContentArg<FCallEvent>}
         />
     }
-
     return (
-        <CalendarProvider resources={props.resources} tempEvents={tempEvents} enabledResources={enabledResources}
-                          setTempEvents={setTempEvents}>
+        <CalendarProvider resources={props.resources}
+                          tempEvents={tempEvents}
+                          enabledResources={enabledResources}
+                          setTempEvents={setTempEvents}
+        >
             <div className={`${styles.calendar} ${resourcesHidden ? styles.closed : ''} `}
                 // onTransitionStart={handleBeforeTransition}
                  onTransitionEnd={handleAfterTransition}>

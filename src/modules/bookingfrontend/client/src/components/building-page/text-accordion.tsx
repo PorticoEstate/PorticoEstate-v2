@@ -1,12 +1,9 @@
-'use client'
-import {IBuilding} from "@/service/types/Building";
-import {fallbackLng} from "@/app/i18n/settings";
 import parse from 'html-react-parser';
-import {Accordion} from "@digdir/designsystemet-react";
-import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
+import GSAccordion from "@/components/gs-accordion/g-s-accordion";
 
-interface BuildingDescriptionProps {
-    building: IBuilding
+interface TextAccordionProps {
+    text: string | undefined | null;
+    title: string | undefined | null;
 }
 
 /**
@@ -57,26 +54,21 @@ function unescapeHTML(str: string): string {
     });
 }
 
-const BuildingDescription = (props: BuildingDescriptionProps) => {
-    const {t, i18n} = useClientTranslation();
-    const descriptionJson = JSON.parse(props.building.description_json || '');
-    let description = descriptionJson[i18n.language];
-    if (!description) {
-        description = descriptionJson[fallbackLng.key];
-    }
-    if (!description) {
+const TextAccordion = (props: TextAccordionProps) => {
+
+    if (!props.text) {
         return null;
     }
     return (
-        <Accordion.Item>
-                <Accordion.Heading>
-                    <h3>{t('common.description')}</h3>
-                </Accordion.Heading>
-                <Accordion.Content>{parse(unescapeHTML(description))}</Accordion.Content>
-        </Accordion.Item>
+        <GSAccordion.Item>
+                <GSAccordion.Heading>
+                    <h3>{props.title}</h3>
+                </GSAccordion.Heading>
+                <GSAccordion.Content>{parse(unescapeHTML(props.text))}</GSAccordion.Content>
+        </GSAccordion.Item>
     );
 }
 
-export default BuildingDescription
+export default TextAccordion
 
 

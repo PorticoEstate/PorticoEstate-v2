@@ -9,6 +9,8 @@ import {requireAuth} from "@/service/AuthenticationServerUtils";
 interface UserLayoutProps extends PropsWithChildren {
 }
 
+export const dynamic = 'force-dynamic'
+
 export async function generateMetadata(props: UserLayoutProps) {
     const {t} = await getTranslation();
     const headersList = headers();

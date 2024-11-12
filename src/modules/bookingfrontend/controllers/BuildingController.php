@@ -7,7 +7,6 @@ use App\modules\bookingfrontend\models\Document;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use App\modules\bookingfrontend\services\DocumentService;
 use Exception;
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
@@ -20,16 +19,16 @@ use Slim\Psr7\Stream;
  *     description="API Endpoints for Buildings"
  * )
  */
-class BuildingController
+class BuildingController extends DocumentController
 {
     private $db;
     private $userSettings;
-    private $documentService;
     public function __construct(ContainerInterface $container)
     {
+        parent::__construct(Document::OWNER_BUILDING);
+
         $this->db = Db::getInstance();
         $this->userSettings = Settings::getInstance()->get('user');
-        $this->documentService = new DocumentService(Document::OWNER_BUILDING);
     }
 
     private function getUserRoles()
@@ -138,158 +137,6 @@ class BuildingController
         } catch (Exception $e)
         {
             $error = "Error fetching building: " . $e->getMessage();
-            $response->getBody()->write(json_encode(['error' => $error]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
-
-
-    /**
-     * @OA\Get(
-     *     path="/bookingfrontend/buildings/{id}/documents",
-     *     summary="Get documents for a specific building",
-     *     tags={"Buildings"},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID of the building",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="type",
-     *         in="query",
-     *         description="Type of documents to retrieve. Can be 'images' for all image types, or specific document categories. Multiple types can be comma-separated.",
-     *         required=false,
-     *         @OA\Schema(
-     *             type="string",
-     *             example="images,regulation,price_list"
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="List of building documents",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Document"))
-     *     )
-     * )
-     */
-    public function getDocuments(Request $request, Response $response, array $args): Response
-    {
-        $buildingId = (int)$args['id'];
-        $typeParam = $request->getQueryParams()['type'] ?? null;
-
-        try {
-            $types = $this->parseDocumentTypes($typeParam);
-            $documents = $this->documentService->getDocumentsForBuilding($buildingId, $types);
-
-            $serializedDocuments = array_map(function($document) {
-                return $document->serialize();
-            }, $documents);
-
-            $response->getBody()->write(json_encode($serializedDocuments));
-            return $response->withHeader('Content-Type', 'application/json');
-        } catch (Exception $e) {
-            $error = "Error fetching building documents: " . $e->getMessage();
-            $response->getBody()->write(json_encode(['error' => $error]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
-
-    private function parseDocumentTypes(?string $typeParam): ?array
-    {
-        if ($typeParam === null) {
-            return null; // Return all document types
-        }
-
-        $types = explode(',', $typeParam);
-        $validTypes = [];
-
-        foreach ($types as $type) {
-            if ($type === 'images') {
-                $validTypes[] = Document::CATEGORY_PICTURE;
-                $validTypes[] = Document::CATEGORY_PICTURE_MAIN;
-            } elseif (in_array($type, Document::getCategories())) {
-                $validTypes[] = $type;
-            }
-        }
-
-        return !empty($validTypes) ? array_unique($validTypes) : null;
-    }
-
-
-
-    /**
-     * @OA\Get(
-     *     path="/bookingfrontend/buildings/documents/{id}/download",
-     *     summary="Download a specific document",
-     *     tags={"Buildings"},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID of the document to download",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Document file",
-     *         @OA\Header(
-     *             header="Content-Type",
-     *             description="MIME type of the document",
-     *             @OA\Schema(type="string")
-     *         ),
-     *         @OA\Header(
-     *             header="Content-Disposition",
-     *             description="Attachment with filename",
-     *             @OA\Schema(type="string")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Document not found"
-     *     )
-     * )
-     */
-    public function downloadDocument(Request $request, Response $response, array $args): Response
-    {
-        $documentId = (int)$args['id'];
-
-        try {
-            $document = $this->documentService->getDocumentById($documentId);
-
-            if (!$document) {
-                $response->getBody()->write(json_encode(['error' => 'Document not found']));
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
-            }
-
-            // Assuming the document's physical path is stored in the 'file_path' property
-            $filePath = $document->generate_filename();
-
-            if (!file_exists($filePath)) {
-                $response->getBody()->write(json_encode(['error' => 'Document file not found']));
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
-            }
-
-            $fileType = $document->getFileTypeFromExtension();
-
-            $latin1FileName = mb_convert_encoding($document->name, 'ISO-8859-1', 'UTF-8');
-            $utf8FileName = rawurlencode($document->name);
-
-            // Determine if the file should be displayed inline
-            $isDisplayable = Document::isDisplayableFileType($fileType);
-            $disposition = $isDisplayable ? 'inline' : 'attachment';
-
-            $response = $response
-                ->withHeader('Content-Type', $fileType)
-                ->withHeader('Content-Disposition', "{$disposition}; filename={$latin1FileName}")
-                ->withHeader('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
-                ->withHeader('Pragma', 'cache');
-
-            $stream = fopen($filePath, 'r');
-            return $response->withBody(new Stream($stream));
-
-        } catch (Exception $e) {
-            $error = "Error downloading document: " . $e->getMessage();
             $response->getBody()->write(json_encode(['error' => $error]));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }

@@ -47,7 +47,7 @@ const UserLayout: FC<UserLayoutProps> = (props) => {
     return (
         <div>
             {/* Show tabs for desktop, links for mobile */}
-            {isMobile && (<div className={`${styles.internalNavContainer} mx-3`}>
+            {isMobile && (<div className={`${styles.internalNavContainer} mx-standard`}>
                 <Link className={'link-text link-text-primary'} href={'/user'}>
                     <FontAwesomeIcon icon={faArrowLeft}/>
                     {t('common.back')}

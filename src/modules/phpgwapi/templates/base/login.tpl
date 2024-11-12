@@ -59,8 +59,6 @@
 				url_lost_password += '&logindomain=' + logindomain;
 				window.open(url_lost_password, '_blank');
 			}
-
-
 		</script>
 		<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.css" />
 		<script src="https://cdn.jsdelivr.net/npm/cookieconsent@3/build/cookieconsent.min.js" data-cfasync="false"></script>
@@ -159,6 +157,7 @@
 								<div class="pure-control-group">
 									<label for="passwd">{lang_password}</label>
 									<input type="password" name="passwd" id="passwd" required="required"/>
+									<p id="warning_text" style="display:none;color:red;">Caps Lock is on</p>									
 								</div>
 								<!-- END password_block -->
 								<!-- BEGIN login_check_passwd -->
@@ -239,4 +238,20 @@
 		</div>
 	</body>
 	<!-- END login_form -->
+
+	<script>
+		var passwd_input = document.getElementById("passwd");
+		var warning_text = document.getElementById("warning_text");
+		passwd_input.addEventListener("keyup", function(event)
+		{
+			if (event.getModifierState("CapsLock"))
+			{
+				warning_text.style.display = "block";
+			}
+			else
+			{
+				warning_text.style.display = "none"
+			}
+		});
+	</script>
 </html>

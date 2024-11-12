@@ -7,6 +7,7 @@ import {IApplication} from "@/service/types/api/application.types";
 import {ColumnDef} from "@/components/gs-table/table.types";
 import {createColumnHelper} from "@tanstack/table-core";
 import {DateTime} from "luxon";
+import ResourceCircles from "@/components/resource-circles/resource-circles";
 
 interface ApplicationsProps {
 }
@@ -67,15 +68,14 @@ const Applications: FC<ApplicationsProps> = (props) => {
 
         columnHelper.accessor('resources', {
             header: t('bookingfrontend.resources'),
+            meta: {
+                toStringEx: (v: IResource[]) => v.map(r => r.name)
+            },
             cell: info => {
                 const resources = info.getValue();
                 return (
                     <div className="resources-list" style={{display: 'flex', flexDirection: 'column'}}>
-                        {/*{resources.map(resource => (*/}
-                        {/*    <div key={resource.id} className="resource-item">*/}
-                        {/*        {resource.name}<br/>*/}
-                        {/*    </div>*/}
-                        {/*))}*/}
+                        <ResourceCircles resources={resources} maxCircles={4} size={'small'} expandable />
                     </div>
                 );
             },
@@ -225,13 +225,15 @@ const Applications: FC<ApplicationsProps> = (props) => {
                 // )}
                 enableRowSelection
                 enableMultiRowSelection
-                onSelectionChange={(e) => console.log(e)}
+                // onSelectionChange={(e) => console.log(e)}
                 enableSearch
-                searchPlaceholder="Search users..."
-                onSearchChange={(value) => {
-                    console.log('Search term:', value);
-                }}
+                // searchPlaceholder="Search users..."
+                // onSearchChange={(value) => {
+                //     console.log('Search term:', value);
+                // }}
                 utilityHeader={true}
+                exportFileName={"applications"}
+
                 // selectedRows={selectedRows}
                 // renderExpandedContent={(user) => (
                 //     <div className="p-4 bg-gray-50">

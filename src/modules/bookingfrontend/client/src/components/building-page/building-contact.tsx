@@ -8,7 +8,7 @@ interface BuildingContactProps {
 const BuildingContact = async (props: BuildingContactProps) => {
     const {t} = await getTranslation();
     return (
-        <div className={'mx-3'}>
+        <div className={'mx-standard'}>
             <hr className={`my-2`}/>
             <div>
                 <h3>

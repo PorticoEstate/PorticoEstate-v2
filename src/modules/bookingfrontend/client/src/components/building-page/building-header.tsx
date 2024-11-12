@@ -1,6 +1,6 @@
 import {IBuilding} from "@/service/types/Building";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faLocationDot} from "@fortawesome/free-solid-svg-icons";
+import {faBuilding} from "@fortawesome/free-solid-svg-icons";
 import styles from './building-header.module.scss';
 import {getTranslation} from "@/app/i18n";
 import MapModal from "@/components/map-modal/map-modal";
@@ -12,10 +12,10 @@ const BuildingHeader = async (props: BuildingHeaderProps) => {
     const {building} = props
     const {t} = await getTranslation()
     return (
-        <section className={`${styles.buildingHeader} mx-3`}>
+        <section className={`${styles.buildingHeader} mx-standard`}>
             <div className={styles.buildingName}>
                 <h2>
-                    <FontAwesomeIcon  style={{fontSize: '22px'}} icon={faLocationDot}/>
+                    <FontAwesomeIcon  style={{fontSize: '22px'}} icon={faBuilding}/>
                     {building.name}
                 </h2>
             </div>

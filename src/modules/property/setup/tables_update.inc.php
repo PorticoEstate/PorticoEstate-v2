@@ -11479,3 +11479,24 @@
 		}
 	}
 
+	/**
+	 * Update property version from 0.9.17.561 to 0.9.17.562
+	 * Rename column
+	 *
+	 */
+	$test[] = '0.9.17.761';
+	function property_upgrade0_9_17_761($oProc)
+	{
+		$oProc->m_odb->transaction_begin();
+
+		$oProc->AddColumn('fm_external_project', 'eco_service_id', array(
+			'type' => 'int',
+			'precision' => 4,
+			'nullable' => True
+		));
+
+		if ($oProc->m_odb->transaction_commit())
+		{
+			return	'0.9.17.762';
+		}
+	}

@@ -3,6 +3,7 @@ import {phpGWLink} from "@/service/util";
 import {IBookingUser, IDocument, IServerSettings} from "@/service/types/api.types";
 import {IApplication} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
+import {ICompletedReservation} from "@/service/types/api/invoices.types";
 
 const BOOKING_MONTH_HORIZON = 2;
 
@@ -66,6 +67,13 @@ export async function fetchDeliveredApplications(): Promise<{list: IApplication[
     return result;
 }
 
+export async function fetchInvoices(): Promise<ICompletedReservation[]> {
+    const url = phpGWLink(['bookingfrontend', 'invoices']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
 
 
 export async function deletePartialApplication(id: number): Promise<void> {
@@ -82,6 +90,6 @@ export async function deletePartialApplication(id: number): Promise<void> {
 
 
 export function getDocumentLink(doc: IDocument): string {
-    const url = phpGWLink(['bookingfrontend', 'buildings', 'documents', doc.id, 'download']);
+    const url = phpGWLink(['bookingfrontend', 'documents', doc.id, 'download']);
     return url
 }

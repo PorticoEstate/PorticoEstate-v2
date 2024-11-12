@@ -6,9 +6,11 @@ import {CellContext, createColumnHelper} from "@tanstack/table-core";
 import {ColumnDef} from "@/components/gs-table/table.types";
 import {useBookingUser} from "@/service/hooks/api-hooks";
 import {IDelegate} from "@/service/types/api.types";
-import Link from "next/link";
+import {default as NXLink} from "next/link";
 import {phpGWLink} from "@/service/util";
+import {Link} from '@digdir/designsystemet-react';
 import {Button} from "@digdir/designsystemet-react";
+import {IApplication} from "@/service/types/api/application.types";
 
 interface DelegatesProps {
 }
@@ -87,6 +89,25 @@ const Delegates: FC<DelegatesProps> = (props) => {
             id: 'name',
             accessorFn: row => row.name,
             header: 'Navn',
+            cell: (info: CellContext<IDelegate, string>) => {
+                const name = info.getValue();
+                const orgId = info.row.original.org_id;
+                return (<Link
+                    asChild
+                    color={'neutral'}
+                    // className="link-text link-text-unset normal"
+
+                >
+                    <NXLink href={phpGWLink('bookingfrontend/', {
+                        menuaction: 'bookingfrontend.uiorganization.show',
+                        id: orgId
+                    }, false)}
+                            target={'_blank'}
+                    >
+                        {name}
+                    </NXLink>
+                </Link>);
+            },
             meta: {
                 size: 2
             },
@@ -190,18 +211,19 @@ const Delegates: FC<DelegatesProps> = (props) => {
             data={delegates || []}
             columns={columns}
             enableSorting={true}
-            renderRowButton={(delegate) => (
-                <Button asChild variant="tertiary" size="sm">
-                    <Link
-                        href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiorganization.show', id: delegate.org_id}, false)}
-                        className="link-text link-text-unset normal" target={'_blank'}
-
-                    >
-                        Vis
-                    </Link>
-                </Button>
-
-            )}
+            enablePagination={false}
+            // renderRowButton={(delegate) => (
+            //     <Button asChild variant="tertiary" size="sm">
+            //         <Link
+            //             href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiorganization.show', id: delegate.org_id}, false)}
+            //             className="link-text link-text-unset normal" target={'_blank'}
+            //
+            //         >
+            //             Vis
+            //         </Link>
+            //     </Button>
+            //
+            // )}
             // enableRowSelection
             // enableMultiRowSelection
             // onSelectionChange={(e) => console.log(e)}

@@ -40,6 +40,8 @@ export interface ColumnMeta {
     size?: 0.5 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 'icon';
     hideHeader?: boolean;
     smallHideTitle?: boolean;
+    defaultHidden?: boolean;
+    toStringEx?: (value: any) => string; // Add toString function to meta
 }
 
 // Properly extending TanStack's ColumnDef
@@ -75,4 +77,15 @@ export interface TableProps<T> {
     onSearchChange?: (value: string) => void;
     defaultColumnVisibility?: VisibilityState;
     onColumnVisibilityChange?: (visibility: VisibilityState) => void;
+    pageSize?: number;
+    enablePagination?: boolean;
+    // persistSettings?: boolean; // Optional flag to enable/disable persistence
+    storageId?: string; // Optional unique identifier for localStorage and enable persistence
+    exportFileName?: string; // enables export, and sets filename
+}
+
+// Add localStorage settings interface
+export interface TableStorageSettings {
+    columnVisibility: VisibilityState;
+    pageSize: number;
 }

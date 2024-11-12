@@ -1,0 +1,10 @@
+@import "@/styles/util.module";
+.photoGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 0fr);
+    gap: 10px;
+    @include mobile {
+        display: flex;
+        flex-wrap: wrap;
+    }
+}

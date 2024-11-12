@@ -37,7 +37,7 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 		{
 			if ($sub_activity_id = Sanitizer::get_var('sub_activity_id'))
 			{
-				
+
 				$boactivity = createObject('booking.boactivity');
 				$activity_path = $boactivity->get_path($sub_activity_id);
 				$top_level_activity = $activity_path ? $activity_path[0]['id'] : -1;
@@ -114,7 +114,6 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 				$pathway[] = array(
 					'lang_home' => $lang_home,
 					'building_name' => $building['name'],
-					'building_name' => $building['name'],
 					'building_link' => $building_link,
 					'resource_name' => $resource['name'],
 				);
@@ -127,10 +126,10 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 
 			$bouser = new UserHelper();
 			$user_data = Cache::session_get($bouser->get_module(), $bouser::USERARRAY_SESSION_KEY);
-			
+
 			if($user_data['ssn'])
 			{
-				
+
 				CreateObject('booking.uiapplication')->check_booking_limit(
 					Sessions::getInstance()->get_session_id(),
 					$user_data['ssn'],	array('results' => array($resource)));

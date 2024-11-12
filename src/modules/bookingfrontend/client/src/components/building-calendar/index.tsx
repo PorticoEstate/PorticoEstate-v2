@@ -6,10 +6,11 @@ import NotFound from "next/dist/client/components/not-found-error";
 
 interface BuildingCalendarProps {
     building_id: string;
+    resource_id?: string;
 }
 
 const BuildingCalendar = async (props: BuildingCalendarProps) => {
-    const {building_id} = props;
+    const {building_id, resource_id} = props;
 
 
     const buildingId = parseInt(building_id, 10);
@@ -34,6 +35,7 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
                 resources={initialSchedule.resources}
                 seasons={initialSchedule.seasons}
                 building={building}
+                resourceId={resource_id}
             />
         );
     } catch (error) {

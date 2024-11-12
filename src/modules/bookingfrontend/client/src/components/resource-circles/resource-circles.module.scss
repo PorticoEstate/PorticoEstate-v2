@@ -1,0 +1,14 @@
+.colorCircles {
+    display: flex;
+    align-items: center;
+    gap: 0.25em
+}
+
+.colorCircle {
+    margin-right: 2px;
+}
+
+.remainingCount {
+    font-size: 0.8em;
+    margin-left: 2px;
+}

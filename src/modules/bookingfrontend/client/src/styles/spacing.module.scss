@@ -88,3 +88,13 @@ $spacing-names: 1, 2, 3, 4; // Corresponding class name suffixes
         }
     }
 }
+
+
+.mx-standard {
+    margin-left: 2rem;
+    margin-right: 2rem;
+    @include mobile{
+        margin-left: 1rem;
+        margin-right: 1rem;
+    }
+}

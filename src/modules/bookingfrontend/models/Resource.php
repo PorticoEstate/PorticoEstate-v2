@@ -244,6 +244,14 @@ class Resource
      */
     public $description_json;
 
+    /**
+     * @ORM\Column(type="integer", nullable=true)
+     * @Expose
+     * @Short
+     * @OA\Property(description="ID of the building this resource belongs to", type="integer", nullable=true)
+     */
+    public $building_id;
+
     public function __construct($data = [])
     {
         if (!empty($data))

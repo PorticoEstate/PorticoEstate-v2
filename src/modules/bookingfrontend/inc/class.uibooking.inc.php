@@ -64,7 +64,6 @@ class bookingfrontend_uibooking extends booking_uibooking
 		$end_date = Sanitizer::get_var('end_date', 'date');
 
 		$weekdays = array();
-
 		$timezone	 = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
 
 		try

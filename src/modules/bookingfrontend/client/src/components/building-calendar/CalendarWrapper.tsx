@@ -19,6 +19,7 @@ interface CalendarWrapperProps {
     seasons: Season[];
     building: IBuilding;
     initialDate: Date;
+    resourceId?: string;
 }
 
 const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
@@ -28,11 +29,16 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                                                              buildingId,
                                                              resources,
                                                              seasons,
-                                                             building
+                                                             building,
+                                                             resourceId
                                                          }) => {
     const [freeTime, setFreeTime] = useState(initialFreeTime);
     const {setLoadingState} = useLoadingContext();
     const modalRef = useRef<HTMLDialogElement>(null);
+    const initialEnabledResources = new Set<string>(
+        resourceId ? [resourceId] : Object.keys(resources)
+    );
+    const [enabledResources, setEnabledResources] = useState<Set<string>>(initialEnabledResources);
 
     const prioritizeEvents = useCallback((events: IEvent[]): IEvent[] => {
         const allocationIds = events
@@ -101,6 +107,8 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                 resources={resources}
                 seasons={seasons}
                 building={building}
+                initialEnabledResources={enabledResources}
+                initialResourcesHidden={!!resourceId}
             />
         </div>
     );

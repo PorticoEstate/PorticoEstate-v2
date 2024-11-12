@@ -2,8 +2,10 @@
 
 use App\modules\bookingfrontend\controllers\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
+use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
+use App\modules\bookingfrontend\controllers\DocumentController;
 use App\modules\bookingfrontend\controllers\ResourceController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
@@ -23,12 +25,17 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/{id}', BuildingController::class . ':show');
         $group->get('/{id}/resources', ResourceController::class . ':getResourcesByBuilding');
         $group->get('/{id}/documents', BuildingController::class . ':getDocuments');
-        $group->get('/documents/{id}/download', BuildingController::class . ':downloadDocument');
     });
     $group->group('/resources', function (RouteCollectorProxy $group)
     {
         $group->get('', ResourceController::class . ':index');
         $group->get('/{id}', ResourceController::class . ':getResource');
+        $group->get('/{id}/documents', ResourceController::class . ':getDocuments');
+
+    });
+    $group->group('/documents', function (RouteCollectorProxy $group)
+    {
+        $group->get('/{id}/download', DocumentController::class . ':downloadDocument');
     });
 });
 
@@ -41,6 +48,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('', ApplicationController::class . ':getApplications');
         $group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
     });
+    $group->get('/invoices', CompletedReservationController::class . ':getReservations');
 })->add(new SessionsMiddleware($app->getContainer()));
 
 

@@ -7,8 +7,12 @@ import {
 } from '@tanstack/react-query'
 import {FC, PropsWithChildren} from "react";
 import {getQueryClient} from "@/service/query-client";
+import {LoadingProvider} from "@/components/loading-wrapper/LoadingContext";
+import ClientTranslationProvider from "@/app/i18n/ClientTranslationProvider";
+import PrefetchWrapper from "@/components/loading-wrapper/PrefetchWrapper";
+import LoadingIndicationWrapper from "@/components/loading-wrapper/LoadingIndicationWrapper";
 
-const Providers: FC<PropsWithChildren> = ({children}) => {
+const Providers: FC<PropsWithChildren & {lang: string}> = ({children, lang}) => {
     // NOTE: Avoid useState when initializing the query client if you don't
     //       have a suspense boundary between this and the code that may
     //       suspend because React will throw away the client on the initial
@@ -16,7 +20,17 @@ const Providers: FC<PropsWithChildren> = ({children}) => {
     const queryClient = getQueryClient()
 
     return (
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+        <LoadingProvider>
+            <ClientTranslationProvider lang={lang}>
+                <QueryClientProvider client={queryClient}>
+                    <PrefetchWrapper>
+                        <LoadingIndicationWrapper>
+                            {children}
+                        </LoadingIndicationWrapper>
+                    </PrefetchWrapper>
+                </QueryClientProvider>
+            </ClientTranslationProvider>
+        </LoadingProvider>
     )
 }
 

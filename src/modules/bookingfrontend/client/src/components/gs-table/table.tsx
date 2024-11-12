@@ -4,18 +4,20 @@ import {
     getCoreRowModel,
     getSortedRowModel,
     FilterFnOption,
-    SortingState, RowSelectionState, FilterFn, getFilteredRowModel, VisibilityState
+    SortingState, RowSelectionState, FilterFn, getFilteredRowModel, VisibilityState,
+    getPaginationRowModel
 } from '@tanstack/react-table';
-import {useState, useMemo} from 'react';
+import {useState, useMemo, useEffect} from 'react';
 import styles from './table.module.scss';
-import type {ColumnDef, TableProps} from './table.types';
+import type {ColumnDef, TableProps, TableStorageSettings} from './table.types';
 import TableRow from "@/components/gs-table/row/table-row";
 import TableHeader from "@/components/gs-table/table-header";
 import TableUtilityHeader from "@/components/gs-table/subcomponents/table-utility-header";
 import {rankItem} from '@tanstack/match-sorter-utils';
 import TableSearch from "@/components/gs-table/subcomponents/table-search";
 import ColumnToggle from "@/components/gs-table/subcomponents/column-toggle";
-
+import TablePagination from "./subcomponents/table-pagination";
+import TableExport from "@/components/gs-table/subcomponents/table-export";
 
 
 // Fuzzy filter function
@@ -77,10 +79,44 @@ const globalFilterFn: FilterFnOption<any> = (row, columnId, filterValue) => {
     return false;
 };
 
+const getStorageKey = (storageId: string | undefined) => {
+    if (!storageId) return null;
+    return `table-settings-${storageId}`;
+};
+
+
+// Load settings from localStorage
+const loadStoredSettings = (storageId: string | undefined): TableStorageSettings | null => {
+    if (!storageId) return null;
+    const key = getStorageKey(storageId);
+    if (!key) return null;
+
+    try {
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : null;
+    } catch (error) {
+        console.warn('Failed to load table settings from localStorage:', error);
+        return null;
+    }
+};
+
+// Save settings to localStorage
+const saveSettings = (storageId: string | undefined, settings: TableStorageSettings) => {
+    if (!storageId) return null;
+    const key = getStorageKey(storageId);
+    if (!key) return;
+
+    try {
+        localStorage.setItem(key, JSON.stringify(settings));
+    } catch (error) {
+        console.warn('Failed to save table settings to localStorage:', error);
+    }
+};
 
 function Table<T>({
                       data,
                       columns,
+                      storageId,
                       empty,
                       enableSorting = true,
                       renderExpandedContent,
@@ -99,13 +135,56 @@ function Table<T>({
                       onSearchChange,
                       defaultColumnVisibility,
                       onColumnVisibilityChange,
+                      pageSize: defaultPageSize = 10,
+                      enablePagination = true,
+                      exportFileName
                   }: TableProps<T>) {
+
+
+    const storedSettings = loadStoredSettings(storageId);
     const [sorting, setSorting] = useState<SortingState>(defaultSort);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
     const [globalFilter, setGlobalFilter] = useState('');
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
-        defaultColumnVisibility || {}
+        storedSettings?.columnVisibility || defaultColumnVisibility || {}
     );
+    const [pageSize, setPageSize] = useState(
+        storedSettings?.pageSize || defaultPageSize
+    );
+
+    useEffect(() => {
+        if (!storedSettings?.columnVisibility) {
+            const initialVisibility = columns.reduce((acc, column) => {
+                if (column.meta?.defaultHidden && (column as any)?.accessorKey) {
+                    acc[(column as any).accessorKey as string] = false;
+                }
+                return acc;
+            }, {} as VisibilityState);
+            setColumnVisibility(initialVisibility);
+        }
+    }, [columns, storedSettings]);
+
+
+    useEffect(() => {
+        if (storageId) {
+            saveSettings(storageId, {
+                columnVisibility,
+                pageSize,
+            });
+        }
+    }, [columnVisibility, pageSize, storageId]);
+
+
+    const handleColumnVisibilityChange = (updater: VisibilityState | ((state: VisibilityState) => VisibilityState)) => {
+        const newState = typeof updater === 'function' ? updater(columnVisibility) : updater;
+        setColumnVisibility(newState);
+        onColumnVisibilityChange?.(newState);
+    };
+
+    const handlePageSizeChange = (newSize: number) => {
+        setPageSize(newSize);
+        table.setPageSize(newSize);
+    };
 
     // Add selection column if enabled
     const tableColumns = useMemo(() => {
@@ -113,8 +192,8 @@ function Table<T>({
 
         const selectionColumn: ColumnDef<T> = {
             id: 'select',
-            meta: { size: 'icon', smallHideTitle: true },
-            header: ({ table }) => (
+            meta: {size: 'icon', smallHideTitle: true},
+            header: ({table}) => (
                 enableMultiRowSelection ? (
                     <input
                         type="checkbox"
@@ -124,7 +203,7 @@ function Table<T>({
                     />
                 ) : null
             ),
-            cell: ({ row }) => (
+            cell: ({row}) => (
                 <input
                     type="checkbox"
                     checked={row.getIsSelected()}
@@ -138,7 +217,6 @@ function Table<T>({
     }, [columns, enableRowSelection, enableMultiRowSelection]);
 
 
-
     const table = useReactTable({
         data,
         columns: tableColumns,
@@ -148,14 +226,7 @@ function Table<T>({
             globalFilter,
             columnVisibility
         },
-        onColumnVisibilityChange: (updater) => {
-            const newState =
-                typeof updater === 'function'
-                    ? updater(columnVisibility)
-                    : updater;
-            setColumnVisibility(newState);
-            onColumnVisibilityChange?.(newState);
-        },
+        onColumnVisibilityChange: handleColumnVisibilityChange,
         filterFns: {
             fuzzy: fuzzyFilter,
         },
@@ -177,9 +248,15 @@ function Table<T>({
             setGlobalFilter(String(value));
             onSearchChange?.(String(value));
         },
+        initialState: {
+            pagination: {
+                pageSize,
+            },
+        },
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
     });
 
     const gridTemplateColumns = useMemo(() => {
@@ -190,7 +267,7 @@ function Table<T>({
         return visibleColumns
             .map((column) => {
                 const size = column.meta?.size || 1;
-                if(column.meta?.size === 'icon'){
+                if (column.meta?.size === 'icon') {
                     return '2.5rem';
                 }
                 return `${size}fr`;
@@ -212,11 +289,18 @@ function Table<T>({
         ),
         right: (
             <>
+                {!!exportFileName && (
+                    <TableExport
+                        table={table}
+                        fileName={exportFileName}
+                        rowSelection={selectedRows || rowSelection}
+                    />
+                )}
                 <ColumnToggle table={table} tableColumns={tableColumns} columnVisibility={columnVisibility}/>
                 {typeof utilityHeader === 'object' && utilityHeader?.right}
             </>
         ),
-    }), [utilityHeader, enableSearch, searchPlaceholder, table, tableColumns, columnVisibility]);
+    }), [enableSearch, table, searchPlaceholder, utilityHeader, exportFileName, selectedRows, rowSelection, tableColumns, columnVisibility]);
 
     console.log('gridTemplateColumns: ', gridTemplateColumns)
     return (
@@ -224,7 +308,7 @@ function Table<T>({
             {!!utilityHeader && (
                 <TableUtilityHeader {...combinedUtilityHeader} />
             )}
-            <div className={styles.table} style={{ gridTemplateColumns: gridTemplateColumns }}>
+            <div className={styles.table} style={{gridTemplateColumns: gridTemplateColumns}}>
                 <TableHeader
                     headerGroups={table.getHeaderGroups()}
                     gridTemplateColumns={gridTemplateColumns}
@@ -248,6 +332,9 @@ function Table<T>({
                     ))
                 )}
             </div>
+            {enablePagination && data.length > 0 && (
+                <TablePagination table={table} setPageSize={handlePageSizeChange}/>
+            )}
         </div>
     );
 }

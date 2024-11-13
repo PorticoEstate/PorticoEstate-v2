@@ -367,11 +367,13 @@ class property_uiinvoice extends phpgwapi_uicommon_jquery
 		if ($paid)
 		{
 			$this->flags['menu_selection'] = 'property::economy::paid';
+			
 		}
 		else
 		{
 			$this->flags['menu_selection'] = 'property::economy::invoice::invoice';
 		}
+		Settings::getInstance()->update('flags', ['menu_selection' => $this->flags['menu_selection']]);
 		//-- captura datos de URL
 		$start_date	 = $start_date ? urldecode($start_date) : '';
 		$end_date	 = $end_date ? urldecode($end_date) : '';
@@ -753,6 +755,7 @@ JS;
 				'hidden',
 				'hidden',
 				'link',
+				'varchar',
 				'link',
 				'hidden',
 				'hidden',
@@ -785,6 +788,7 @@ JS;
 				'number',
 				'',
 				'url',
+				'number',
 				'msg_box',
 				'',
 				'',
@@ -817,6 +821,7 @@ JS;
 				'voucher_id_num',
 				'voucher_id',
 				'voucher_id_lnk',
+				'external_voucher_id',
 				'voucher_date_lnk',
 				'sign_orig',
 				'num_days_orig',
@@ -849,6 +854,7 @@ JS;
 				'voucher_id',
 				'voucher_id',
 				'voucher_id',
+				'external_voucher_id',
 				'voucher_date',
 				'sign_orig',
 				'num_days',
@@ -871,6 +877,7 @@ JS;
 				'transfer_id'
 			),
 			'formatter'	 => array(
+				'',
 				'',
 				'',
 				'',
@@ -913,6 +920,7 @@ JS;
 				'dummy',
 				'dummy',
 				lang('voucher'),
+				lang('voucher') . ' 2',
 				lang('Voucher Date'),
 				'dummy',
 				'dummy',
@@ -935,6 +943,7 @@ JS;
 				lang('Transfer')
 			),
 			'className'	 => array(
+				'',
 				'',
 				'',
 				'',
@@ -1021,11 +1030,16 @@ JS;
 			'menuaction' => 'property.uiinvoice.list_sub',
 			'user_lid'	 => $this->user_lid
 		));
+		$link_sub_paid = phpgw::link('/index.php', array(
+			'menuaction' => 'property.uiinvoice.list_sub',
+			'user_lid'	 => $this->user_lid,
+			'paid'		 => true
+		));
 
-		if ($paid)
-		{
-			$link_sub .= "&paid=true";
-		}
+//		if ($paid)
+//		{
+//			$link_sub .= "&paid=true";
+//		}
 
 		$data	 = array();
 		$j		 = 0;
@@ -1067,7 +1081,14 @@ JS;
 							$data[$j]['column'][$i]['link']		 = '#';
 							if ($uicols['type'][$i] == 'url')
 							{
-								$data[$j]['column'][$i]['link'] = $link_sub . "&voucher_id=" . $invoices[$uicols['name'][$i]];
+								if($invoices['period'])
+								{
+									$data[$j]['column'][$i]['link'] = $link_sub_paid . "&voucher_id=" . $invoices[$uicols['name'][$i]];
+								}
+								else
+								{
+									$data[$j]['column'][$i]['link'] = $link_sub . "&voucher_id=" . $invoices[$uicols['name'][$i]];
+								}
 							}
 							$data[$j]['column'][$i]['target'] = '';
 						}
@@ -2231,6 +2252,7 @@ JS;
 
 		//-- ubica focus del menu derecho
 		$this->flags['menu_selection'] = 'property::economy::consume';
+		Settings::getInstance()->update('flags', ['menu_selection' => 'property::economy::consume']);
 
 		//-- captura datos de URL
 		$start_date	 = $start_date ? urldecode($start_date) : '';
@@ -2533,6 +2555,7 @@ JS;
 		}
 
 		$this->flags['menu_selection'] .= '::add';
+		Settings::getInstance()->update('flags', ['menu_selection' => $this->flags['menu_selection']]);
 
 		$receipt = Cache::session_get('add_receipt', 'session_data');
 
@@ -3268,6 +3291,7 @@ JS;
 		$type = Sanitizer::get_var('type', 'string', 'GET', 'deposition');
 
 		$this->flags['menu_selection'] = "property::economy::{$type}";
+		Settings::getInstance()->update('flags', ['menu_selection' => $this->flags['menu_selection']]);
 
 		$values = Sanitizer::get_var('values');
 

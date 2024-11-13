@@ -188,7 +188,7 @@ class property_soinvoice
 				$start_periode	 = date('Ym', $start_date);
 				$end_periode	 = date('Ym', $end_date);
 
-				$filtermethod	 .= " $where (periode >='$start_periode' AND periode <= '$end_periode')";
+				$filtermethod	 .= " $where (periode >='$start_periode' AND periode <= '$end_periode' OR periode is null)";
 				$where			 = 'AND';
 			}
 		}
@@ -227,44 +227,127 @@ class property_soinvoice
 		if ($query && !$no_q)
 		{
 			$query		 = (int)$query;
-			$querymethod = " $where ( spvend_code = {$query} OR bilagsnr = {$query})";
+			$querymethod = " $where ( spvend_code = {$query} OR bilagsnr = {$query} OR external_voucher_id = {$query})";
 		}
 
-
-		$sql	 = "SELECT bilagsnr, bilagsnr_ut, count(bilagsnr) as invoice_count, sum(belop) as belop, sum(godkjentbelop) as godkjentbelop,spvend_code,fakturadato FROM  $table $join_tables $filtermethod $querymethod GROUP BY periode, bilagsnr,bilagsnr_ut,spvend_code,fakturadato,oppsynsigndato,saksigndato,budsjettsigndato";
-		$sql2	 = "SELECT DISTINCT bilagsnr FROM  $table $join_tables $filtermethod $querymethod";
-
-		$serverSettings = Settings::getInstance()->get('server');
-
-		if ($serverSettings['db_type'] == 'postgres')
+		if ($paid)
 		{
-			$sql_count			 = 'SELECT count(bilagsnr) as cnt, sum(godkjentbelop) AS sum_amount FROM (SELECT DISTINCT bilagsnr, sum(godkjentbelop) as godkjentbelop ' . substr($sql2, strripos($sql2, 'FROM')) . ' GROUP BY bilagsnr) AS t';
-			//_debug_array($sql_count);
-			$this->db->query($sql_count, __LINE__, __FILE__);
-			$this->db->next_record();
-			$this->total_records = $this->db->f('cnt');
-			$this->sum_amount	 = $this->db->f('sum_amount');
+			$sql_base = "
+    SELECT bilagsnr, bilagsnr_ut, external_voucher_id,belop,  godkjentbelop, spvend_code, fakturadato
+    FROM %s
+    %s
+    %s
+    %s
+    GROUP BY periode, bilagsnr, bilagsnr_ut, external_voucher_id,spvend_code, fakturadato, oppsynsigndato, saksigndato, budsjettsigndato,belop,godkjentbelop
+";
+
+			$sql_union = sprintf($sql_base, 'fm_ecobilag', $join_tables, $filtermethod, $querymethod) . "
+    UNION ALL
+" . sprintf($sql_base, 'fm_ecobilagoverf', $join_tables, $filtermethod, $querymethod);
+
+			$sql2_base = "
+    SELECT DISTINCT bilagsnr, godkjentbelop
+    FROM %s
+    %s
+    %s
+    %s
+";
+
+			$sql2_union = sprintf($sql2_base, 'fm_ecobilag', $join_tables, $filtermethod, $querymethod) . "
+    UNION
+" . sprintf($sql2_base, 'fm_ecobilagoverf', $join_tables, $filtermethod, $querymethod);
+
+			$serverSettings = Settings::getInstance()->get('server');
+
+			if ($serverSettings['db_type'] == 'postgres')
+			{
+				$sql_count = "
+        SELECT count(bilagsnr) as cnt, sum(godkjentbelop) AS sum_amount
+        FROM (
+            SELECT DISTINCT bilagsnr, godkjentbelop
+            FROM (
+                $sql2_union
+            ) AS subquery
+            GROUP BY bilagsnr, godkjentbelop
+        ) AS t
+    ";
+				$this->db->query($sql_count, __LINE__, __FILE__);
+				$this->db->next_record();
+				$this->total_records = $this->db->f('cnt');
+				$this->sum_amount = $this->db->f('sum_amount');
+			}
+			else
+			{
+				$this->db->query($sql2_union, __LINE__, __FILE__);
+				$this->total_records = $this->db->num_rows();
+
+				$sql3 = "
+        SELECT sum(godkjentbelop) as sum_amount
+        FROM (
+            SELECT godkjentbelop
+            FROM fm_ecobilag
+            $join_tables
+            $filtermethod
+            $querymethod
+            UNION ALL
+            SELECT godkjentbelop
+            FROM fm_ecobilagoverf
+            $join_tables
+            $filtermethod
+            $querymethod
+        ) AS combined
+    ";
+				$this->db->query($sql3, __LINE__, __FILE__);
+				$this->db->next_record();
+				$this->sum_amount = $this->db->f('sum_amount');
+			}
+
+			if (!$allrows)
+			{
+				$this->db->limit_query($sql_union . $ordermethod, $start, __LINE__, __FILE__, $results);
+			}
+			else
+			{
+				$this->db->query($sql_union . $ordermethod, __LINE__, __FILE__);
+			}
 		}
 		else
 		{
-			$this->db->query($sql2, __LINE__, __FILE__);
-			$this->total_records = $this->db->num_rows();
 
-			$sql3				 = "SELECT sum(godkjentbelop) as sum_amount FROM $table $join_tables $filtermethod $querymethod";
-			$this->db->query($sql3, __LINE__, __FILE__);
-			$this->db->next_record();
-			$this->sum_amount	 = $this->db->f('sum_amount');
-		}
+			$sql	 = "SELECT bilagsnr, bilagsnr_ut, count(bilagsnr) as invoice_count, sum(belop) as belop, sum(godkjentbelop) as godkjentbelop,spvend_code,fakturadato FROM  $table $join_tables $filtermethod $querymethod GROUP BY periode, bilagsnr,bilagsnr_ut,spvend_code,fakturadato,oppsynsigndato,saksigndato,budsjettsigndato";
+			$sql2	 = "SELECT DISTINCT bilagsnr FROM  $table $join_tables $filtermethod $querymethod";
 
-		if (!$allrows)
-		{
-			$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__, $results);
-		}
-		else
-		{
-			$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
-		}
+			$serverSettings = Settings::getInstance()->get('server');
 
+			if ($serverSettings['db_type'] == 'postgres')
+			{
+				$sql_count			 = 'SELECT count(bilagsnr) as cnt, sum(godkjentbelop) AS sum_amount FROM (SELECT DISTINCT bilagsnr, sum(godkjentbelop) as godkjentbelop ' . substr($sql2, strripos($sql2, 'FROM')) . ' GROUP BY bilagsnr) AS t';
+				//_debug_array($sql_count);
+				$this->db->query($sql_count, __LINE__, __FILE__);
+				$this->db->next_record();
+				$this->total_records = $this->db->f('cnt');
+				$this->sum_amount	 = $this->db->f('sum_amount');
+			}
+			else
+			{
+				$this->db->query($sql2, __LINE__, __FILE__);
+				$this->total_records = $this->db->num_rows();
+
+				$sql3				 = "SELECT sum(godkjentbelop) as sum_amount FROM $table $join_tables $filtermethod $querymethod";
+				$this->db->query($sql3, __LINE__, __FILE__);
+				$this->db->next_record();
+				$this->sum_amount	 = $this->db->f('sum_amount');
+			}
+
+			if (!$allrows)
+			{
+				$this->db->limit_query($sql . $ordermethod, $start, __LINE__, __FILE__, $results);
+			}
+			else
+			{
+				$this->db->query($sql . $ordermethod, __LINE__, __FILE__);
+			}
+		}
 		$temp = array();
 		while ($this->db->next_record())
 		{
@@ -273,7 +356,8 @@ class property_soinvoice
 				'voucher_out_id'	 => $this->db->f('bilagsnr_ut'),
 				'invoice_count'		 => $this->db->f('invoice_count'),
 				'amount'			 => $this->db->f('belop'),
-				'approved_amount'	 => $this->db->f('godkjentbelop')
+				'approved_amount'	 => $this->db->f('godkjentbelop'),
+				'external_voucher_id' => $this->db->f('external_voucher_id'),
 			);
 		}
 
@@ -344,6 +428,7 @@ class property_soinvoice
 				$invoice[$i]['current_user']			 = $this->userSettings['account_lid'];
 				$invoice[$i]['voucher_id']				 = $voucher_id;
 				$invoice[$i]['voucher_out_id']			 = $invoice_temp['voucher_out_id'];
+				$invoice[$i]['external_voucher_id']		 = $invoice_temp['external_voucher_id'];
 				$invoice[$i]['invoice_count']			 = $invoice_temp['invoice_count'];
 				$invoice[$i]['vendor_id']				 = $this->db->f('spvend_code');
 				$invoice[$i]['vendor']					 = $this->db->f('org_name', true);
@@ -3114,7 +3199,6 @@ class property_soinvoice
 				'periodization'			 => $voucher_line['periodization'],
 				'periodization_start'	 => $voucher_line['periodization_start'],
 				'line_text'				 => $voucher_line['line_text'],
-				'external_voucher_id'	 => $voucher_line['external_voucher_id'],
 				'spbudact_code'			 => $voucher_line['b_account_id'],
 				'kostra_id'				 => $voucher_line['kostra_id'],
 				'mvakode'				 => $voucher_line['tax_code'],

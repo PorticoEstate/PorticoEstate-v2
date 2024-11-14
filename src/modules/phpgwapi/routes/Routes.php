@@ -118,7 +118,7 @@ $app->post('/login', function (Request $request, Response $response)
     $session_id = session_id();
 
     // Prepare the response
-    $json = json_encode(['session_id' => $session_id]);
+    $json = json_encode(['session_name' => session_name(),'session_id' => $session_id]);
     $response = $response->withHeader('Content-Type', 'application/json');
     $response->getBody()->write($json);
     return $response;

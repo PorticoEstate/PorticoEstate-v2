@@ -14,7 +14,7 @@ const PhotosAccordion = async (props: BuildingPhotosWrapperProps) => {
 
     if(!photos) return null;
     return (
-        <PhotosGrid photos={photos}></PhotosGrid>
+        <PhotosGrid photos={photos} type={props.type}></PhotosGrid>
     );
 }
 

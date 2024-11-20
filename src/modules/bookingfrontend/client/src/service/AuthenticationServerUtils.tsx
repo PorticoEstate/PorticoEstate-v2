@@ -6,6 +6,9 @@ export async function getServerSession() {
     const cookieStore = cookies();
     const sessionCookie = cookieStore.get('bookingfrontendsession');
 
+
+    console.log('Session cookie:', sessionCookie);
+
     if (!sessionCookie?.value) {
         return null;
     }
@@ -36,7 +39,7 @@ export function withAuth(Component: React.ComponentType) {
         const session = await getServerSession();
 
         if (!session?.is_logged_in) {
-            // console.log('Not logged in, redirecting to login page');
+            console.log('Not logged in, redirecting to login page');
             redirect('/');
         }
 
@@ -49,7 +52,7 @@ export async function requireAuth() {
     const session = await getServerSession();
 
     if (!session?.is_logged_in) {
-        // console.log('Not logged in, redirecting to login page');
+        console.log('Not logged in, redirecting to login page');
         redirect('/');
     }
 

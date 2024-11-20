@@ -29,6 +29,7 @@
         "@fullcalendar/luxon3": "^6.1.14",
         "@fullcalendar/react": "^6.1.14",
         "@fullcalendar/timegrid": "^6.1.14",
+        "@hookform/resolvers": "^3.9.1",
         "@next/env": "^14.2.7",
         "@tanstack/match-sorter-utils": "^8.19.4",
         "@tanstack/react-query": "^5.51.23",
@@ -47,10 +48,12 @@
         "react-country-flag": "^3.1.0",
         "react-datepicker": "^7.3.0",
         "react-dom": "^18",
+        "react-hook-form": "^7.53.2",
         "react-i18next": "^15.0.1",
         "react-photoswipe-gallery": "^3.0.2",
         "react-select": "^5.8.0",
-        "sass": "^1.77.6"
+        "sass": "^1.77.6",
+        "zod": "^3.23.8"
     },
     "devDependencies": {
         "@types/he": "^1.2.3",

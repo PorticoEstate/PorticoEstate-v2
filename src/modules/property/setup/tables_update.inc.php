@@ -11500,3 +11500,24 @@
 			return	'0.9.17.762';
 		}
 	}
+	/**
+	 * Update property version from 0.9.17.562 to 0.9.17.563
+	 * Rename column
+	 *
+	 */
+	$test[] = '0.9.17.762';
+	function property_upgrade0_9_17_762($oProc)
+	{
+		$oProc->m_odb->transaction_begin();
+
+		$oProc->AddColumn('fm_tenant', 'ssn', array(
+			'type' => 'varchar',
+			'precision' => 11,
+			'nullable' => True
+		));
+
+		if ($oProc->m_odb->transaction_commit())
+		{
+			return	'0.9.17.763';
+		}
+	}

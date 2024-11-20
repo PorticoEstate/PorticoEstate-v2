@@ -54,23 +54,30 @@ export interface IServerSettings {
     bookingfrontend_config: IBookingfrontendConfig | null;
     booking_config: IBookingConfig | null;
 }
+
 // User types
+
+export type IBookingUserBase = IBookingUser | INotAuthenticated;
+
 export interface IBookingUser {
     id?: number;
-    name?: string;
+    name: string  | null;
     ssn: string | null;
     orgnr: string | null;
     orgname: string | null;
     org_id: number | null;
-    is_logged_in: boolean;
-    homepage?: string;
-    phone?: string;
-    email?: string;
-    street?: string;
-    zip_code?: string;
-    city?: string;
+    is_logged_in: true;
+    homepage: string | null;
+    phone: string | null;
+    email: string | null;
+    street: string | null;
+    zip_code: string | null;
+    city: string | null;
     delegates?: IDelegate[];
     customer_number?: string;
+}
+export interface INotAuthenticated {
+    is_logged_in: false;
 }
 
 export interface IDelegate {

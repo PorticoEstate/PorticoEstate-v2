@@ -25,17 +25,15 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/{id}', BuildingController::class . ':show');
         $group->get('/{id}/resources', ResourceController::class . ':getResourcesByBuilding');
         $group->get('/{id}/documents', BuildingController::class . ':getDocuments');
+        $group->get('/document/{id}/download', BuildingController::class . ':downloadDocument');
     });
     $group->group('/resources', function (RouteCollectorProxy $group)
     {
         $group->get('', ResourceController::class . ':index');
         $group->get('/{id}', ResourceController::class . ':getResource');
         $group->get('/{id}/documents', ResourceController::class . ':getDocuments');
+        $group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
-    });
-    $group->group('/documents', function (RouteCollectorProxy $group)
-    {
-        $group->get('/{id}/download', DocumentController::class . ':downloadDocument');
     });
 });
 
@@ -62,6 +60,7 @@ $app->post('/bookingfrontend/index.php', StartPoint::class . ':bookingfrontend')
 $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
     $group->get('/user', BookingUserController::class . ':index');
+    $group->patch('/user', BookingUserController::class . ':update');
 })->add(new SessionsMiddleware($app->getContainer()));
 
 

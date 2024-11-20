@@ -12,7 +12,6 @@ export async function fetchBuilding(building_id: number, instance?: string): Pro
         true,
         instance
     );
-    console.log(url)
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error('Failed to fetch building data');
@@ -89,9 +88,12 @@ export async function fetchBuildingDocuments(buildingId: number | string, type_f
 export async function fetchResourceDocuments(buildingId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
     const url = phpGWLink(["bookingfrontend", 'resources', buildingId, 'documents'],
     type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
-    console.log(url)
 
     const response = await fetch(url);
     const result = await response.json();
     return result;
+}
+export function getDocumentLink(doc: IDocument, type: 'building' | 'resource'): string {
+    const url = phpGWLink(['bookingfrontend',type+'s', 'document', doc.id, 'download']);
+    return url
 }

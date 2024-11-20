@@ -2,6 +2,7 @@ import {DateTime} from "luxon";
 import {EventImpl} from "@fullcalendar/core/internal";
 import {FCallEvent, FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 
+
 export const strBaseURL = `${typeof window === 'undefined' ? process.env.NEXT_INTERNAL_API_URL : (process.env.NEXT_PUBLIC_API_URL || window.location.origin)}/?click_history=165dde2af0dd4b589e3a3c8e26f0da86`;
 export function phpGWLink(
     strURL: string | (string | number)[],

@@ -4,10 +4,11 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import 'photoswipe/dist/photoswipe.css'
 import {Gallery, Item} from 'react-photoswipe-gallery'
 import {IDocument} from "@/service/types/api.types";
-import {getDocumentLink} from "@/service/api/api-utils";
 import styles from './photos-grid.module.scss';
+import {getDocumentLink} from "@/service/api/building";
 interface PhotosGridProps {
     photos: IDocument[];
+    type: 'building' | 'resource';
 }
 
 const PhotosGrid = (props: PhotosGridProps) => {
@@ -29,7 +30,7 @@ const PhotosGrid = (props: PhotosGridProps) => {
                         className={styles.photoGrid}
                     >
                         {props.photos.map(photo => {
-                            const url = getDocumentLink(photo);
+                            const url = getDocumentLink(photo, props.type);
                             return (<Item
                                 key={photo.id}
                                 original={url}

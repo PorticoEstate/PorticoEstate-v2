@@ -82,7 +82,8 @@
 				'account_pwd' => array('type' => 'varchar', 'precision' => 115, 'nullable' => True),
 				'account_status' => array('type' => 'int', 'precision' => '4', 'nullable' => True,
 					'default' => '1'),
-				'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => True)
+				'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => True),
+				'ssn' => array('type' => 'varchar', 'precision' => '11', 'nullable' => True),
 			),
 			'pk' => array('id'),
 			'fk' => array(),

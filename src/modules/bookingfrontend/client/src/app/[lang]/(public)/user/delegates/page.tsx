@@ -4,7 +4,7 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {GSTable} from "@/components/gs-table";
 import {CellContext, createColumnHelper} from "@tanstack/table-core";
 import {ColumnDef} from "@/components/gs-table/table.types";
-import {useBookingUser} from "@/service/hooks/api-hooks";
+import {useAuthenticatedUser, useBookingUser} from "@/service/hooks/api-hooks";
 import {IDelegate} from "@/service/types/api.types";
 import {default as NXLink} from "next/link";
 import {phpGWLink} from "@/service/util";
@@ -77,7 +77,7 @@ const userData: UserData[] = [
 
 const Delegates: FC<DelegatesProps> = (props) => {
     const t = useTrans();
-    const {data: user} = useBookingUser();
+    const {data: user} = useAuthenticatedUser();
     const delegates = user?.delegates;
     const [searchTerm, setSearchTerm] = useState('');
 

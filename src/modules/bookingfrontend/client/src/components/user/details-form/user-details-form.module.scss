@@ -1,0 +1,38 @@
+.cardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.viewField {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 0.5rem;
+    border-bottom: var(--ds-border-width-default) solid var(--ds-color-neutral-border-subtle);
+    &.editing {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+.editFieldWrapper {
+    display: flex;
+    padding: 0.5rem;
+}
+.detailCategory {
+    display: flex;
+    flex-direction: column;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+
+.actionRow {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}

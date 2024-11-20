@@ -757,7 +757,7 @@ SQL;
 	function update_table_leietaker()
 	{
 		$metadata_boei	 = $this->db_boei->metadata('Leietaker');
-		//_debug_array($metadata_boei);
+//		_debug_array($metadata_boei);
 		$metadata		 = $this->db->metadata('boei_leietaker');
 		//_debug_array($metadata);
 		//die();
@@ -776,6 +776,7 @@ SQL;
 					hemmeligadresse smallint,
 					obskode character varying(12),
 					telefon character varying(12),
+					ssn character varying(11),
 					CONSTRAINT boei_leietaker_pkey PRIMARY KEY (leietaker_id)
 				);
 SQL;
@@ -784,18 +785,27 @@ SQL;
 		$this->db->query('DELETE FROM boei_leietaker', __LINE__, __FILE__);
 
 		$sql_boei	 = 'SELECT TOP 100 PERCENT Leietaker_ID, CAST(Fornavn as TEXT) AS Fornavn, CAST(Etternavn as TEXT) AS Etternavn, Kjonn_Juridisk,'
-			. ' OppsagtDato, NamssakStatusDrift_ID, NamssakStatusOkonomi_ID, hemmeligAdresse, OBSKode, Telefon1'
+			. ' OppsagtDato, NamssakStatusDrift_ID, NamssakStatusOkonomi_ID, hemmeligAdresse, OBSKode, Telefon1, Fodt_dato, Personnr'
 			. ' FROM Leietaker';
 		$this->db_boei->query($sql_boei, __LINE__, __FILE__);
 		// using stored prosedures
 		$sql		 = 'INSERT INTO boei_leietaker (leietaker_id, fornavn, etternavn, kjonn_juridisk,'
-			. ' oppsagtdato,namssakstatusdrift_id,namssakstatusokonomi_id,hemmeligadresse,obskode,telefon)'
-			. ' VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+			. ' oppsagtdato,namssakstatusdrift_id,namssakstatusokonomi_id,hemmeligadresse,obskode,telefon, ssn)'
+			. ' VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
 		$valueset	 = array();
-
 		while ($this->db_boei->next_record())
 		{
 			$telefon = $this->db_boei->f('Telefon1');
+			$Fodt_dato = $this->db_boei->f('Fodt_dato');
+			$Personnr = $this->db_boei->f('Personnr');
+
+			$ssn = null;
+			if($Personnr && $Fodt_dato)
+			{
+				$dato_arr = explode('.', $Fodt_dato);
+				$ssn = $dato_arr[0] . $dato_arr[1] . substr($dato_arr[2], 2, 2) . $Personnr;
+			}
+	
 			$valueset[] = array(
 				1	 => array(
 					'value'	 => (int)$this->db_boei->f('Leietaker_ID'),
@@ -835,6 +845,10 @@ SQL;
 				),
 				10	 => array(
 					'value'	 => ctype_digit($telefon) && strlen($telefon) == 8 ? $telefon : null,
+					'type'	 => PDO::PARAM_STR
+				),
+				11	 => array(
+					'value'	 => $ssn,
 					'type'	 => PDO::PARAM_STR
 				)
 			);
@@ -1328,7 +1342,7 @@ SQL;
 	function legg_til_leietaker_phpgw()
 	{
 		$sql = " SELECT boei_leietaker.leietaker_id, boei_leietaker.fornavn, boei_leietaker.etternavn, boei_leietaker.kjonn_juridisk,"
-			. " boei_leietaker.namssakstatusokonomi_id, boei_leietaker.namssakstatusdrift_id, boei_leietaker.obskode"
+			. " boei_leietaker.namssakstatusokonomi_id, boei_leietaker.namssakstatusdrift_id, boei_leietaker.obskode,boei_leietaker.ssn"
 			. " FROM fm_tenant RIGHT OUTER JOIN"
 			. " boei_leietaker ON fm_tenant.id = boei_leietaker.leietaker_id"
 			. " WHERE fm_tenant.id IS NULL";
@@ -1348,6 +1362,7 @@ SQL;
 				'status_drift'	 => $this->db->f('namssakstatusdrift_id'),
 				'obskode'		 => $this->db->f('obskode'),
 				'contact_phone'	 => $this->db->f('telefon'),
+				'ssn'			 => $this->db->f('ssn'),
 				'entry_date'	 => time(),
 				'owner_id'		 => 6
 			);
@@ -1358,7 +1373,7 @@ SQL;
 		$leietaker_msg = array();
 		foreach ($leietakere as $leietaker)
 		{
-			$sql2 = "INSERT INTO fm_tenant (id, first_name, last_name, category, status_eco, status_drift, obskode, contact_phone, entry_date,owner_id)"
+			$sql2 = "INSERT INTO fm_tenant (id, first_name, last_name, category, status_eco, status_drift, obskode, contact_phone, ssn, entry_date,owner_id)"
 				. "VALUES (" . $this->db->validate_insert($leietaker) . ")";
 
 			$this->db->query($sql2, __LINE__, __FILE__);
@@ -1390,6 +1405,18 @@ SQL;
 			//_debug_array($sql2);
 			$this->db2->query($sql2, __LINE__, __FILE__);
 			$i++;
+		}
+
+		$sql = "SELECT boei_leietaker.leietaker_id, boei_leietaker.ssn FROM boei_leietaker"
+		. " JOIN fm_tenant ON boei_leietaker.leietaker_id = fm_tenant.id"
+		. " WHERE boei_leietaker.ssn IS NOT NULL AND fm_tenant.ssn IS NULL";
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		while ($this->db->next_record())
+		{
+			$sql2 = "UPDATE fm_tenant SET ssn = '" . $this->db->f('ssn') . "' WHERE id = " . (int)$this->db->f('leietaker_id');
+			//_debug_array($sql2);
+			$this->db2->query($sql2, __LINE__, __FILE__);
 		}
 
 		$msg						 = $i . ' Leietakere er oppdatert med navn';

@@ -31,6 +31,7 @@ export async function generateMetadata(props: UserLayoutProps) {
 }
 
 const UserLayout= async (props: UserLayoutProps) => {
+    console.log("Here")
     await requireAuth();
     return (
         <ClientLayout>{props.children}</ClientLayout>

@@ -95,15 +95,19 @@ class Sessions
 			$this->_use_cookies = true;
 			$this->_sessionid	= \Sanitizer::get_var(session_name(), 'string', 'COOKIE');
 		}
-		else if (!empty($_GET[session_name()]))
+
+		if(!$this->_sessionid)
 		{
-			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET');
-			ini_set("session.use_trans_sid", 1);
-		}
-		else
-		{
-			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'POST');
-			ini_set("session.use_trans_sid", 1);
+			if (!empty($_GET[session_name()]))
+			{
+				$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET');
+				ini_set("session.use_trans_sid", 1);
+			}
+			else
+			{
+				$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'POST');
+				ini_set("session.use_trans_sid", 1);
+			}
 		}
 
 		//respect the config option for cookies

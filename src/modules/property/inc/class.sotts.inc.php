@@ -1215,7 +1215,7 @@ class property_sotts
 			$_address[] = "{$entity_category['name']}::{$ticket['extra']['p_num']}";
 		}
 
-		$address = $this->db->db_addslashes(implode('::', $_address));
+		$address = !empty($ticket['address']) ?  $ticket['address'] : $this->db->db_addslashes(implode('::', $_address));
 
 		unset($_address);
 

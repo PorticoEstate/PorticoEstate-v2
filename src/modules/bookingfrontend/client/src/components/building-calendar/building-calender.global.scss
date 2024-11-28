@@ -111,8 +111,21 @@ $current-time-color: #ea4335;
             display: none;
         }
 
-        .fc-list-event-graphic {
-            //display: none;
+        .fc-list-event-graphic   {
+            display: none;
+        }
+    }
+    .fc-list-day-cushion {
+        >div{
+            display: flex;
+            gap: 0.25rem;
+            //align-items: center;
+            justify-content: center;
+            &>:last-child {
+                &::after{
+                    content: '.';
+                }
+            }
         }
     }
 }

@@ -11,13 +11,11 @@ trait SerializableTrait
     private static $annotationCache = [];
 
 
-    public function serialize(array $userRoles = [], bool $short = false): ?array
+    public function serialize(array $context = []): ?array
     {
         $reflection = new \ReflectionClass($this);
         $properties = $reflection->getProperties();
-
         $defaultBehavior = $this->getClassDefaultBehavior($reflection);
-
         $serialized = [];
 
         foreach ($properties as $property)
@@ -27,38 +25,27 @@ trait SerializableTrait
             $shortAnnotation = $this->parseShortAnnotation($property);
             $serializeAsAnnotation = $this->parseSerializeAsAnnotation($property);
             $escapeStringAnnotation = $this->parseEscapeStringAnnotation($property);
+            $defaultAnnotation = $this->parseDefaultAnnotation($property);
 
             if ($excludeAnnotation)
             {
-                continue; // Skip this property
-            }
-//            _debug_array(['ref' => $reflection, 't' => $property , 'short' => $shortAnnotation, 'forSho' => $short, 'as' => $serializeAsAnnotation]);
-            if ($short && !$shortAnnotation)
-            {
-
-                continue; // Skip non-short properties when short serialization is requested
+                continue;
             }
 
             if ($exposeAnnotation || $defaultBehavior === 'expose')
             {
-                $groups = $exposeAnnotation['groups'] ?? [];
-                if (empty($groups) || array_intersect($groups, $userRoles))
+                if ($this->shouldExposeProperty($exposeAnnotation, $property, $context))
                 {
                     $property->setAccessible(true);
                     $value = $property->getValue($this);
 
-                    // Handle string sanitization based on @EscapeString annotation
                     if (is_string($value))
                     {
                         if ($escapeStringAnnotation !== null)
                         {
                             $value = $this->processStringEscaping($value, $escapeStringAnnotation);
-                        } elseif ($this->sanitizeStrings)
-                        {
-                            $value = $this->sanitizeString($value);
                         }
                     }
-
 
                     if ($serializeAsAnnotation)
                     {
@@ -70,10 +57,103 @@ trait SerializableTrait
                         $serialized[$property->getName()] = $value;
                     }
                 }
+                else if ($defaultAnnotation !== null)
+                {
+                    // Use default value when property is not exposed
+                    $serialized[$property->getName()] = $defaultAnnotation;
+                }
             }
         }
 
         return !empty($serialized) ? $serialized : null;
+    }
+
+
+    private function parseDefaultAnnotation(\ReflectionProperty $property): ?string
+    {
+        $className = $property->getDeclaringClass()->getName();
+        $propertyName = $property->getName();
+
+        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['default']))
+        {
+            $docComment = $property->getDocComment();
+            if (preg_match('/@Default\("([^"]+)"\)/', $docComment, $matches)) {
+                self::$annotationCache[$className]['properties'][$propertyName]['default'] = $matches[1];
+            } else {
+                self::$annotationCache[$className]['properties'][$propertyName]['default'] = null;
+            }
+        }
+
+        return self::$annotationCache[$className]['properties'][$propertyName]['default'];
+    }
+
+    private function shouldExposeProperty(?array $exposeAnnotation, \ReflectionProperty $property, array $context): bool
+    {
+        // If no conditions are set, expose based on roles
+        if (empty($exposeAnnotation['when']))
+        {
+            return $this->checkRoleAccess($exposeAnnotation, $context);
+        }
+
+        // Check each condition
+        foreach ($exposeAnnotation['when'] as $condition)
+        {
+            if ($this->evaluateCondition($condition, $context))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function evaluateCondition(string $condition, array $context): bool
+    {
+        // Clean any remaining whitespace/quotes
+        $condition = trim($condition, " \t\n\r\0\x0B\"'");
+
+        // Split by AND (&&) operator
+        $andConditions = explode('&&', $condition);
+
+        foreach ($andConditions as $andCondition) {
+            if (!$this->evaluateSingleCondition(trim($andCondition), $context)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function evaluateSingleCondition(string $condition, array $context): bool
+    {
+        // Split condition into field and value
+        $parts = explode('=', $condition);
+        if (count($parts) !== 2) {
+            return false;
+        }
+
+        $field = trim($parts[0]);
+        $value = trim($parts[1]);
+
+        // Handle special variables
+        if (str_starts_with($value, '$')) {
+            $contextKey = substr($value, 1);
+            $contextValue = $context[$contextKey] ?? null;
+
+            // Get actual field value
+            $actualValue = $this->$field;
+
+            // If context value is an array, check if the actual value is in it
+            if (is_array($contextValue)) {
+                return in_array($actualValue, $contextValue);
+            }
+
+            // Regular comparison for non-array values
+            return $actualValue == $contextValue;
+        }
+
+        // Regular comparison for non-context values
+        return $this->$field == $value;
     }
 
     /**
@@ -85,16 +165,20 @@ trait SerializableTrait
         $className = $property->getDeclaringClass()->getName();
         $propertyName = $property->getName();
 
-        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['escapeString'])) {
+        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['escapeString']))
+        {
             $docComment = $property->getDocComment();
 
-            if (preg_match('/@EscapeString\((.*?)\)/', $docComment, $matches)) {
+            if (preg_match('/@EscapeString\((.*?)\)/', $docComment, $matches))
+            {
                 $options = [];
 
                 // Parse options if they exist
-                if (!empty($matches[1])) {
+                if (!empty($matches[1]))
+                {
                     preg_match_all('/(\w+)\s*=\s*([^,\)]+)/', $matches[1], $optionMatches, PREG_SET_ORDER);
-                    foreach ($optionMatches as $match) {
+                    foreach ($optionMatches as $match)
+                    {
                         $optionName = trim($match[1]);
                         $optionValue = trim($match[2], '"\'');
                         $options[$optionName] = $optionValue;
@@ -102,7 +186,8 @@ trait SerializableTrait
                 }
 
                 self::$annotationCache[$className]['properties'][$propertyName]['escapeString'] = $options;
-            } else {
+            } else
+            {
                 self::$annotationCache[$className]['properties'][$propertyName]['escapeString'] = null;
             }
         }
@@ -117,7 +202,8 @@ trait SerializableTrait
     {
         $mode = $options['mode'] ?? 'default';
 
-        switch ($mode) {
+        switch ($mode)
+        {
             case 'html':
                 // Only decode HTML entities
                 return html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -153,14 +239,16 @@ trait SerializableTrait
         // Handle any remaining special character sequences
         $decoded = preg_replace_callback(
             '/&#(\d+);/',
-            function($matches) {
+            function ($matches)
+            {
                 return chr($matches[1]);
             },
             $decoded
         );
 
         // Clean up any double-encoded entities
-        if (strpos($decoded, '&amp;') !== false) {
+        if (strpos($decoded, '&amp;') !== false)
+        {
             $decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         }
 
@@ -309,20 +397,50 @@ trait SerializableTrait
         $className = $property->getDeclaringClass()->getName();
         $propertyName = $property->getName();
 
-        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['expose']))
-        {
+        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['expose'])) {
             $docComment = $property->getDocComment();
-            if (preg_match('/@Expose(\(groups=\{"(.+?)"\}\))?/', $docComment, $matches))
-            {
+
+            // Handle multi-line @Expose annotation
+            if (preg_match('/@Expose\s*\(\s*when\s*=\s*\{([^}]+)\}\s*\)/s', $docComment, $matches)) {
+                // Clean up the conditions string
+                $conditionsStr = preg_replace('/\s*\*\s*/', '', $matches[1]);
+
+                // Split conditions by comma, but preserve &&
+                $conditions = array_map(
+                    function($condition) {
+                        return trim($condition, " \t\n\r\0\x0B\"'");
+                    },
+                    preg_split('/",\s*"/', $conditionsStr)
+                );
+
                 self::$annotationCache[$className]['properties'][$propertyName]['expose'] = [
-                    'groups' => isset($matches[2]) ? explode('","', $matches[2]) : []
+                    'groups' => [],
+                    'when' => array_filter($conditions) // Remove empty conditions
                 ];
-            } else
-            {
+            } else if (strpos($docComment, '@Expose') !== false) {
+                // Simple @Expose without conditions
+                self::$annotationCache[$className]['properties'][$propertyName]['expose'] = [
+                    'groups' => [],
+                    'when' => []
+                ];
+            } else {
                 self::$annotationCache[$className]['properties'][$propertyName]['expose'] = null;
             }
         }
+
         return self::$annotationCache[$className]['properties'][$propertyName]['expose'];
+    }
+
+
+    private function checkRoleAccess(?array $exposeAnnotation, array $context): bool
+    {
+        if (empty($exposeAnnotation['groups']))
+        {
+            return true;
+        }
+
+        $userRoles = $context['roles'] ?? [];
+        return empty($userRoles) || array_intersect($exposeAnnotation['groups'], $userRoles);
     }
 
     private function parseExcludeAnnotation(\ReflectionProperty $property): bool

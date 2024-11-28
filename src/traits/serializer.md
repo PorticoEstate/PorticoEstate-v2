@@ -37,18 +37,38 @@ $shortVersion = $user->serialize([], true); // Short version with only @Short pr
 ## Core Decorators
 
 ### @Expose
-Marks a property for inclusion in serialization output.
+Marks a property for inclusion in serialization output. Can include conditions for when the property should be exposed.
 
 ```php
 /**
  * @Expose
  */
-public $propertyName;
+public $basicProperty;
 
 /**
  * @Expose(groups={"admin", "api"})
  */
 public $restrictedProperty;
+
+/**
+ * @Expose(when={
+ *   "is_public=1",
+ *   "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
+ *   "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
+ * })
+ */
+public $conditionalProperty;
+```
+
+### @Default
+Specifies a default value to use when a property is not exposed based on conditions.
+
+```php
+/**
+ * @Expose(when={"is_public=1"})
+ * @Default("PRIVATE EVENT")
+ */
+public $name;
 ```
 
 ### @Exclude
@@ -107,6 +127,54 @@ Available modes:
 - `encode`: Encode special characters for HTML output
 - `none`: No escaping performed
 
+## Conditional Exposure
+
+You can control property exposure based on object state and context:
+
+### Simple Conditions
+```php
+/**
+ * @Expose(when={"is_public=1"})
+ * @Default("PRIVATE")
+ */
+public $title;
+```
+
+### Context Variables
+```php
+/**
+ * @Expose(when={"owner_id=$user_id"})
+ */
+public $privateData;
+```
+
+### Multiple Conditions (OR)
+```php
+/**
+ * @Expose(when={
+ *   "is_public=1",
+ *   "owner_id=$user_id"
+ * })
+ */
+public $content;
+```
+
+### Combined Conditions (AND)
+```php
+/**
+ * @Expose(when={"type=personal&&owner_id=$user_id"})
+ */
+public $personalInfo;
+```
+
+### Array Context Values
+```php
+/**
+ * @Expose(when={"organization_id=$allowed_organizations"})
+ */
+public $organizationData;
+```
+
 ## String Handling
 
 ### Default Sanitization
@@ -162,78 +230,48 @@ You can control access to properties based on user roles:
 public $sensitiveData;
 
 // During serialization:
-$data = $object->serialize(['admin']); // Include admin-only properties
+$data = $object->serialize(['roles' => ['admin']]); // Include admin-only properties
 ```
 
-## Configuration Options
+## Complex Examples
 
-### Global Configuration
+### Event Model
 ```php
-class YourModel {
-    use SerializableTrait;
-
-    // Disable string sanitization for all properties
-    protected $sanitizeStrings = false;
-}
-```
-
-### Property-Level Configuration
-```php
-/**
- * @Expose
- * @Short
- * @EscapeString(mode="html")
- * @SerializeAs(type="object", of="App\Models\SubModel")
- */
-public $property;
-```
-
-## Best Practices
-
-1. **Always Mark Properties**: Explicitly mark properties with `@Expose` or `@Exclude`
-
-2. **Use Short Wisely**: Mark only essential properties with `@Short`
-
-3. **String Handling**: Use appropriate `@EscapeString` modes for different content types
-
-4. **Security**: Use `groups` for sensitive data
-
-5. **Documentation**: Include example output in property documentation
-
-## Examples
-
-### Basic Model
-```php
-class Article {
+class Event {
     use SerializableTrait;
 
     /**
-     * @Expose
-     * @Short
-     */
-    public $id;
-
-    /**
-     * @Expose
+     * @Expose(when={
+     *   "is_public=1",
+     *   "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
+     *   "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
+     * })
+     * @Default("PRIVATE EVENT")
      * @EscapeString(mode="default")
      */
-    public $title;
+    public $name;
+
+    /**
+     * @Expose(when={"is_public=1"})
+     * @Default("")
+     */
+    public $description;
 
     /**
      * @Expose
-     * @EscapeString(mode="preserve_newlines")
      */
-    public $content;
+    public $customer_identifier_type;
 
-    /**
-     * @Expose
-     * @SerializeAs(type="array", of="App\Models\Comment")
-     */
-    public $comments;
+    // Usage:
+    // $event->serialize([
+    //     'user_ssn' => '12345',
+    //     'organization_number' => ['67890', '11111'],
+    //     'roles' => ['user']
+    // ]);
 }
 ```
 
-### Complex Model
+### Order Model
 ```php
 class Order {
     use SerializableTrait;
@@ -283,35 +321,8 @@ The serializer handles several edge cases:
 - Missing properties in nested objects
 - Invalid annotations
 - Circular references (through careful object instantiation)
-
-## Extending the Serializer
-
-You can extend the functionality by:
-1. Adding new decorators
-2. Creating custom string handling modes
-3. Implementing custom type handlers
-
-Example of adding a custom decorator:
-```php
-private function parseCustomAnnotation(\ReflectionProperty $property): ?array
-{
-    // Implementation
-}
-```
-
-## Common Issues and Solutions
-
-### Double Encoding
-Problem: HTML entities appear encoded multiple times
-Solution: Use `@EscapeString(mode="html")`
-
-### Missing Data
-Problem: Properties not appearing in output
-Solution: Check `@Expose` decorator and groups configuration
-
-### Circular References
-Problem: Infinite recursion in nested objects
-Solution: Use `@SerializeAs` with careful object structure
+- Invalid conditions in @Expose(when)
+- Missing context values
 
 ## Integration Examples
 
@@ -320,15 +331,59 @@ Solution: Use `@SerializeAs` with careful object structure
 public function getUser(Request $request, Response $response): Response
 {
     $user = new User();
-    return $response->withJson($user->serialize(['api']));
+    $context = [
+        'user_id' => $request->getAttribute('user_id'),
+        'roles' => $request->getAttribute('roles')
+    ];
+    return $response->withJson($user->serialize($context));
 }
 ```
 
-### Frontend Data
+### Frontend Data with Conditions
 ```php
-public function getUserData(): array
+public function getEventData(string $userSsn, array $organizationNumbers): array
 {
-    $user = new User();
-    return $user->serialize([], true); // Short version
+    $event = new Event();
+    return $event->serialize([
+        'user_ssn' => $userSsn,
+        'organization_number' => $organizationNumbers,
+        'roles' => ['user']
+    ]);
 }
 ```
+
+## Best Practices
+
+1. **Always Mark Properties**: Explicitly mark properties with `@Expose` or `@Exclude`
+
+2. **Use Conditions Carefully**: Keep conditions simple and readable
+
+3. **Provide Defaults**: Use `@Default` for conditional properties that should have a fallback value
+
+4. **Document Context**: Document required context values for conditional exposure
+
+5. **String Handling**: Use appropriate `@EscapeString` modes for different content types
+
+6. **Security**: Use both groups and conditions for sensitive data
+
+7. **Documentation**: Include example output in property documentation
+
+## Common Issues and Solutions
+
+### Missing Properties
+Problem: Properties not appearing in output
+Solutions:
+- Check `@Expose` decorator and conditions
+- Verify context values are being passed
+- Check for typos in condition field names
+
+### Default Values Not Working
+Problem: Default values not showing up
+Solutions:
+- Ensure `@Default` annotation is properly formatted
+- Verify conditions are evaluating as expected
+- Check that the property isn't being excluded by other means
+
+### Circular References
+Problem: Infinite recursion in nested objects
+Solution: Use `@SerializeAs` with careful object structure

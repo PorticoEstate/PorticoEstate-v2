@@ -89,6 +89,10 @@
     }
 }
 
+.eventAllDay {
+    background-color: $blue-16;
+    --fc-bg-event-color: #{$blue-16};
+}
 
 .closedHours {
     --fc-bg-event-color: rgba(211, 211, 211);

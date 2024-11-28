@@ -1,4 +1,4 @@
-FROM php:8-apache
+FROM php:8.3-apache
 
 LABEL maintainer="Sigurd Nes <sigurdne@gmail.com>"
 
@@ -9,6 +9,7 @@ ARG INSTALL_ORACLE=false
 
 # Define build argument for OCI8 version
 ARG OCI8_VERSION=3.4.0
+ARG PDO_OCI_VERSION=1.1.0
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y software-properties-common \
@@ -20,6 +21,10 @@ RUN apt-get update && apt-get install -y software-properties-common \
     libaio1 locales wget \
 	libmagickwand-dev --no-install-recommends
 
+# Temp solution to imagick broken with php >= 8.3, use imagick commit 28f27044e435a2b203e32675e942eb8de620ee58
+# Download and install the install-php-extensions script
+RUN curl -sSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions \
+    && chmod +x /usr/local/bin/install-php-extensions
 
 # Configure PEAR
 RUN if [ -n "${http_proxy}" ]; then pear config-set http_proxy ${http_proxy}; fi && \
@@ -33,12 +38,7 @@ RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
 	# Install PECL extensions
 RUN pecl install xdebug apcu && docker-php-ext-enable xdebug apcu
 RUN pecl install redis && docker-php-ext-enable redis
-# RUN pecl install imagick && docker-php-ext-enable imagick
-
-
-# Temp solution to imagick broken with php >= 8.3, use imagick commit 28f27044e435a2b203e32675e942eb8de620ee58
-
-RUN ( curl -sSLf https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o - || echo 'return 1' ) | sh -s
+RUN pecl install imagick && docker-php-ext-enable imagick
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
@@ -135,10 +135,12 @@ RUN PHP_VERSION=$(php -r "echo phpversion();") && echo "PHP_VERSION=${PHP_VERSIO
 # Source the environment variable and use it in subsequent instructions
 RUN . /env.sh && echo "The PHP version is ${PHP_VERSION}"
 
+
 # Conditionally install Oracle suppor
 RUN if [ "${INSTALL_ORACLE}" = "true" ]; then \
     export OCI8_VERSION=${OCI8_VERSION}; \
     export PHP_VERSION=${PHP_VERSION}; \
+	export PDO_OCI_VERSION=${PDO_OCI_VERSION}; \
     # Unzip Oracle Instant Client
     unzip -o /tmp/instantclient-sdk-linux.x64-12.2.0.1.0.zip -d /usr/local/lib/; \
     unzip -o /tmp/instantclient-basic-linux.x64-12.2.0.1.0.zip -d /usr/local/lib/; \
@@ -158,18 +160,18 @@ RUN if [ "${INSTALL_ORACLE}" = "true" ]; then \
     make install; \
     # Enable PDO_OCI extension
     cd /tmp/; \
-    wget https://www.php.net/distributions/php-${PHP_VERSION}.tar.gz; \
-    tar -xzf php-${PHP_VERSION}.tar.gz; \
-    cd php-${PHP_VERSION}/ext/pdo_oci; \
-    phpize; \
-    ./configure --with-pdo-oci=instantclient,/usr/local/lib/instantclient_12_2,12.2; \
-    make; \
-    make install; \
-    # Enable extensions in php.ini
-    echo 'extension=oci8.so' >> /usr/local/etc/php/php.ini; \
-    echo 'extension=pdo_oci.so' >> /usr/local/etc/php/php.ini; \
-    # Clean up
-    rm -rf /tmp/oci8-${OCI8_VERSION}.tgz /tmp/oci8-${OCI8_VERSION} /tmp/php-${PHP_VERSION}.tar.gz /tmp/php-${PHP_VERSION} /tmp/instantclient-sdk-linux.x64-12.2.0.1.0.zip /tmp/instantclient-basic-linux.x64-12.2.0.1.0.zip; \
+	pecl download pdo_oci; \
+	tar xzvf pdo_oci-${PDO_OCI_VERSION}.tgz; \
+	cd pdo_oci-${PDO_OCI_VERSION}; \
+	phpize; \
+	./configure --with-pdo-oci=instantclient,/usr/local/lib/instantclient_12_2,12.2; \
+	make; \
+	make install; \
+	# Enable extensions in php.ini
+	echo 'extension=oci8.so' >> /usr/local/etc/php/php.ini; \
+	echo 'extension=pdo_oci.so' >> /usr/local/etc/php/php.ini; \
+	# Clean up
+	rm -rf /tmp/oci8-${OCI8_VERSION}.tgz /tmp/oci8-${OCI8_VERSION} /tmp/pdo_oci-${PDO_OCI_VERSION}.tgz /tmp/pdo_oci-${PDO_OCI_VERSION} /tmp/instantclient-sdk-linux.x64-12.2.0.1.0.zip /tmp/instantclient-basic-linux.x64-12.2.0.1.0.zip; \
 fi
 
 

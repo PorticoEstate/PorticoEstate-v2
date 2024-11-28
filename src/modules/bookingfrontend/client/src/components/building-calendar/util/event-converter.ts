@@ -1,28 +1,21 @@
-import {IEvent} from "@/service/pecalendar.types";
-import {DateTime} from "luxon";
+import { IEvent } from "@/service/pecalendar.types";
+import { DateTime } from "luxon";
 import styles from "@/components/building-calendar/building-calender.module.scss";
-import {FCallEvent} from "@/components/building-calendar/building-calendar.types";
+import { FCallEvent, FCallBackgroundEvent } from "@/components/building-calendar/building-calendar.types";
 
-export function FCallEventConverter(event: IEvent, enabledResources: Set<string>): FCallEvent | null {
+export function FCallEventConverter(event: IEvent, enabledResources: Set<string>): { mainEvent: FCallEvent | null, backgroundEvent: FCallBackgroundEvent | null } {
     const is_public = 'is_public' in event ? event.is_public : 1;
     const resourceColours = event.resources
-        .filter(resource => enabledResources.has(resource.id.toString()))
+        .filter(resource => enabledResources.has(resource.id.toString()));
 
     // If no enabled resources for this event, return null
-    if (resourceColours.length === 0) return null;
+    if (resourceColours.length === 0) return { mainEvent: null, backgroundEvent: null };
 
     let startDateTime: DateTime;
     let endDateTime: DateTime;
 
-    // if (event.dates && event.dates.length > 0) {
-    //     // If dates array is present, use the first date range
-    //     startDateTime = DateTime.fromSQL(event.dates[0].from_);
-    //     endDateTime = DateTime.fromSQL(event.dates[0].to_);
-    // } else {
-        // If no dates array, use the top-level from/to/date
-        startDateTime = DateTime.fromSQL(event._from);
-        endDateTime = DateTime.fromSQL(event._to);
-    // }
+    startDateTime = DateTime.fromSQL(event._from);
+    endDateTime = DateTime.fromSQL(event._to);
 
     // Calculate the duration of the event in minutes
     const durationMinutes = endDateTime.diff(startDateTime, 'minutes').minutes;
@@ -32,12 +25,16 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
         ? startDateTime.plus({ minutes: 30 })
         : endDateTime;
 
-    const ret: FCallEvent = {
+    const allDay = !startDateTime.hasSame(endDateTime, 'day');
+
+    const mainEvent: FCallEvent = {
         id: event.id,
         title: (is_public === 1 ? event.name : 'Private Event') + ` \n${event.type}`,
         start: startDateTime.toJSDate(),
-        end: displayEndDateTime.toJSDate(),
-        className: [`${styles[`event-${event.type}`]} ${styles.event}`],
+        // in all day, END is EXCLUSIVE
+        end: allDay ? displayEndDateTime.plus({days: 1}).toJSDate() : displayEndDateTime.toJSDate(),
+        allDay: allDay,
+        className: [`${styles[`event-${event.type}`]} ${styles.event} ${allDay ? styles.eventAllDay : ''}`],
         extendedProps: {
             actualStart: startDateTime.toJSDate(),
             actualEnd: endDateTime.toJSDate(),
@@ -46,6 +43,17 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
             type: event.type
         },
     };
-    // console.log(event, ret)
-    return ret;
+
+    // Create background event only for all-day events
+    const backgroundEvent: FCallBackgroundEvent | null = allDay ? {
+        start: startDateTime.toJSDate(),
+        end: displayEndDateTime.toJSDate(),
+        display: 'background',
+        classNames: `${styles.allDayEventBackground} ${styles.eventAllDay} ${styles[`event-${event.type}-background`]}`,
+        extendedProps: {
+            type: 'background'
+        }
+    } : null;
+
+    return { mainEvent, backgroundEvent };
 }

@@ -71,14 +71,14 @@ const Footer = async (props: FooterProps) => {
                 </ul>
 
             </div>
-            <div>
-                {/*User*/}
-                <h3 className={'text-body'}>
-                    {t('common.login')}
-                </h3>
-                <FooterUser />
+            {/*<div>*/}
+            {/*    /!*User*!/*/}
+            {/*    <h3 className={'text-body'}>*/}
+            {/*        {t('common.login')}*/}
+            {/*    </h3>*/}
+            {/*    <FooterUser />*/}
 
-            </div>
+            {/*</div>*/}
             </div>
         </footer>
     );

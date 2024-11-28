@@ -10,7 +10,6 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
-use OpenApi\Annotations as OA;
 
 /**
  * @OA\Tag(

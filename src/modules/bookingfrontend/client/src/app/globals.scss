@@ -24,6 +24,18 @@ body {
             background-color: $white;
         }
     }
+    &[data-size='xs'] {
+        --dsc-button-gap: var(--ds-sizing-1);
+        --dsc-button-padding-block: var(--ds-spacing-1);
+        --dsc-button-padding-inline: var(--ds-spacing-1);
+        --dsc-button-size: var(--ds-sizing-8);
+        font-size: var(--ds-body-short-sm-font-size);
+        font-weight: var(--ds-body-short-sm-font-weight);
+        letter-spacing: var(--ds-body-short-sm-letter-spacing);
+        line-height: var(--ds-body-short-sm-line-height);
+
+
+    }
 }
 
 .ds-accordion__item {

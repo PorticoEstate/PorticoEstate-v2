@@ -60,6 +60,35 @@ const UserMenu: FC<UserMenuProps> = (props) => {
         </Dropdown.Context>);
     }
 
+    if(1==1) {
+        return (<Dropdown.Context>
+            <Dropdown.Trigger variant={'tertiary'} color={'accent'} size={'sm'}>
+                        <FontAwesomeIcon icon={faSignInAlt}/> {t('common.login')}
+            </Dropdown.Trigger>
+            <Dropdown>
+                <Dropdown.List>
+                    <Dropdown.Item asChild>
+                        <Link             href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
+
+                                          className={'link-text link-text-unset normal'}>
+                            <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
+                        </Link>
+                    </Dropdown.Item>
+                    <Divider/>
+
+                    <Dropdown.Item asChild>
+                        <Link href={phpGWLink('/', {
+                            menuaction: 'booking.uiapplication.index',
+                        }, false)}
+                              className={'link-text link-text-unset normal'}>
+                            <FontAwesomeIcon icon={faSignInAlt}/> Saksbehandler
+                        </Link>
+                    </Dropdown.Item>
+                </Dropdown.List>
+            </Dropdown>
+        </Dropdown.Context>)
+    }
+
     return (
         <Link
             href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}

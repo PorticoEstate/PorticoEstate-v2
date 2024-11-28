@@ -105,7 +105,8 @@ class booking_uiapplication extends booking_uicommon
 			'agreement_requirements' => 'html',
 			'customer_organization_id' => 'string',
 			'customer_organization_name' => 'string',
-			'customer_identifier_type' => 'string'
+			'customer_identifier_type' => 'string',
+			'parent_id' => 'int',
 		);
 
 		$this->display_name = lang('application');

@@ -112,10 +112,10 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
                         className={'captialize'}
 
                         onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-                <Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}
-                        className={'captialize'}
+                {/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}*/}
+                {/*        className={'captialize'}*/}
 
-                        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>
+                {/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
 
             </ButtonGroup>
 

@@ -165,27 +165,35 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		$this->moveProcessedMessages();
 	}
 
-	private function findFolderId($folderName)
+	private function findFolderId($folderName, $parentFolderId = null)
 	{
 		$folderId = null;
-		$folders = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->mailFolders()->get()->wait();
 
+		// Get the folders at the current level
+		if ($parentFolderId === null)
+		{
+			$folders = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->mailFolders()->get()->wait();
+		}
+		else
+		{
+			$folders = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->mailFolders()->byMailFolderId($parentFolderId)->childFolders()->get()->wait();
+		}
+
+		// Iterate through the folders
 		foreach ($folders->getValue() as $folder)
 		{
-			if ($folder->getDisplayName() == $folderName)
+			$DisplayName = $folder->getDisplayName();
+			if ($DisplayName == $folderName)
 			{
 				$folderId = $folder->getId();
-				break;
+				return $folderId;
 			}
 
-			$childFolders = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)->mailFolders()->byMailFolderId($folder->getId())->childFolders()->get()->wait();
-			foreach ($childFolders->getValue() as $childFolder)
+			// Recursively search in child folders
+			$folderId = $this->findFolderId($folderName, $folder->getId());
+			if ($folderId !== null)
 			{
-				if ($childFolder->getDisplayName() == $folderName)
-				{
-					$folderId = $childFolder->getId();
-					break 2;
-				}
+				return $folderId;
 			}
 		}
 
@@ -321,10 +329,10 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 			// Get the attachment content
 			//https://learn.microsoft.com/en-us/graph/api/attachment-get?view=graph-rest-1.0&tabs=php
 			$content = $this->graphServiceClient->users()->byUserId($this->userPrincipalName)
-			->messages()->byMessageId($message->getId())
-			->attachments()->byAttachmentId($attachment->getId())->get()->wait()
-			->getContentBytes()
-			->getContents();
+				->messages()->byMessageId($message->getId())
+				->attachments()->byAttachmentId($attachment->getId())->get()->wait()
+				->getContentBytes()
+				->getContents();
 
 			$tempFile = tempnam(sys_get_temp_dir(), "attachment");
 			file_put_contents($tempFile, base64_decode($content));
@@ -373,8 +381,11 @@ class hent_epost_fra_eksterne_BK_graph extends property_cron_parent
 		$soexternal = createObject('property.soexternal_communication');
 
 		$message_arr = explode('========', $body);
+
 		$message	 = Sanitizer::clean_value($message_arr[0]);
-		if ($soexternal->add_msg($msg_id, $message, $sender))
+		$normalizedString = trim(str_replace(array("\\r\\n"), "\n", $message), "\n");
+
+		if ($soexternal->add_msg($msg_id, $normalizedString, $sender))
 		{
 			$sql		 = "SELECT assignedto"
 				. " FROM fm_tts_tickets"

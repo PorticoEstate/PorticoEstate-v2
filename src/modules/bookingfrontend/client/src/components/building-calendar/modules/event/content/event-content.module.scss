@@ -26,12 +26,68 @@
 
     &.listEvent {
         display: grid;
-        grid-template-areas: "time title resources organizer";
-        grid-template-columns: 2fr 4fr 2fr 3fr;
+        grid-template-areas: "time title resources organizer to_time";
+        grid-template-columns: 6.5rem 1fr 7rem 1fr 6.5rem;
         @include mobile {
             display: flex;
             flex-direction: column;
         }
+    }
+
+    &.allDayEvent {
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+
+        //grid-template-areas: "time title resources organizer to_time";
+        //grid-template-columns: 6.5rem 1fr 7rem 1fr 6.5rem;
+        grid-template-areas: "time";
+        grid-template-columns: 6.5rem;
+        .joined_time, .joined_date {
+            display: flex;
+            grid-area: time;
+            align-items: center;
+
+        }
+        .time, .to_time, .title, .organizer, .resourceIcons, .joined_time {
+            display: none;
+            align-items: center;
+        }
+        .titleDivider, .organizerDivider, .resourceIconsDivider {
+            display: none;
+            align-items: center;
+        }
+
+        @container (min-width: 12rem) {
+            grid-template-areas: "time resources";
+            grid-template-columns: 6.5rem auto;
+            .joined_date, .resourceIcons, .resourceIconsDivider {
+                display: flex;
+            }
+        }
+        @container (min-width: 20rem) {
+            grid-template-areas: "time title resources";
+            grid-template-columns: 6.5rem 1fr 7rem;
+            .title, .titleDivider {
+                display: flex;
+            }
+        }
+        @container (min-width: 27rem) {
+            grid-template-areas: "time title resources organizer";
+            grid-template-columns: 9rem auto 7rem auto;
+            .joined_date {
+                display: none;
+            }
+            .joined_time, .organizer, .organizerDivider {
+                display: flex;
+            }
+        }
+        //@container (min-width: 15rem) {
+        //    grid-template-areas: "time title resources organizer to_time";
+        //    grid-template-columns: 6.5rem 1fr 7rem 1fr 6.5rem;
+        //    //background-color: red;
+        //    //color: red!important;
+        //}
     }
 
     .participantLimit {
@@ -57,11 +113,22 @@
 
 
     .time {
+        grid-area: time;
         display: flex;
         gap: 0.5em;
         align-items: center;
         overflow: hidden;
         white-space: nowrap;
+    }
+
+
+    .to_time {
+        display: flex;
+        gap: 0.5em;
+        align-items: center;
+        overflow: hidden;
+        white-space: nowrap;
+        grid-area: to_time;
     }
 
     .title {
@@ -81,6 +148,7 @@
         text-overflow: ellipsis;
         overflow: hidden;
         white-space: nowrap;
+        gap: 0.5rem;
     }
 
     .orderNumber {

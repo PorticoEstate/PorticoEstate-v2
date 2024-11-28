@@ -1,6 +1,6 @@
 import {DateTime} from "luxon";
 import {phpGWLink} from "@/service/util";
-import {IBookingUser, IBookingUserBase, IDocument, IServerSettings} from "@/service/types/api.types";
+import {IBookingUser, IServerSettings} from "@/service/types/api.types";
 import {IApplication} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
@@ -44,16 +44,10 @@ export async function fetchServerSettings(): Promise<IServerSettings> {
     return result;
 }
 
-export async function fetchBookingUser(): Promise<IBookingUserBase> {
-    const url = phpGWLink(['bookingfrontend', 'user']);
-    const response = await fetch(url);
-    const result = await response.json();
-    return result;
-}
 
 export async function patchBookingUser(updateData: Partial<IBookingUser>): Promise<{
     message?: string,
-    user?: IBookingUserBase
+    user?: IBookingUser
 }> {
     const url = phpGWLink(['bookingfrontend', 'user']);
     const response = await fetch(url, {method: 'PATCH', body: JSON.stringify(updateData)});

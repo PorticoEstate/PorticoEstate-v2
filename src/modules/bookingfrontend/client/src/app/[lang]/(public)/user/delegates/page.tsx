@@ -4,13 +4,13 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {GSTable} from "@/components/gs-table";
 import {CellContext, createColumnHelper} from "@tanstack/table-core";
 import {ColumnDef} from "@/components/gs-table/table.types";
-import {useAuthenticatedUser, useBookingUser} from "@/service/hooks/api-hooks";
 import {IDelegate} from "@/service/types/api.types";
 import {default as NXLink} from "next/link";
 import {phpGWLink} from "@/service/util";
 import {Link} from '@digdir/designsystemet-react';
 import {Button} from "@digdir/designsystemet-react";
 import {IApplication} from "@/service/types/api/application.types";
+import {useBookingUser} from "@/service/hooks/api-hooks";
 
 interface DelegatesProps {
 }
@@ -77,7 +77,7 @@ const userData: UserData[] = [
 
 const Delegates: FC<DelegatesProps> = (props) => {
     const t = useTrans();
-    const {data: user} = useAuthenticatedUser();
+    const {data: user} = useBookingUser();
     const delegates = user?.delegates;
     const [searchTerm, setSearchTerm] = useState('');
 

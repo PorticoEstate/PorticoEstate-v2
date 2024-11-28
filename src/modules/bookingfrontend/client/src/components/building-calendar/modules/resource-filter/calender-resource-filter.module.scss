@@ -1,5 +1,5 @@
-@import "../../../styles/colors";
-@import "../../../styles/util.module";
+@import "../../../../styles/colors";
+@import "../../../../styles/util.module";
 
 
 .resourceToggleContainer {
@@ -36,7 +36,7 @@
 }
 
 .toggleAllContainer {
-    padding: 10px;
+    padding: 10px 8px;
     //position: sticky;
     top: 0;
     background-color: white;
@@ -60,11 +60,11 @@
     user-select: none;
     display: flex;
     align-items: center;
-    padding: 10px;
+    padding: 10px 8px;
     border-bottom: 1px solid #eee;
 
     &.active {
-        background-color: $purple-24;
+        background-color: $purple-8;
     }
 
     &:last-child {
@@ -73,15 +73,23 @@
 }
 
 .resourceCheckbox {
-    margin-right: 10px;
+    //margin-right: 10px;
     display: flex;
     flex-grow: 1;
-
+    overflow: hidden;
+    > input {
+        min-width: var(--dsc-checkbox-size);
+        margin-left: 5px;
+        margin-right: 5px;
+    }
     > label {
         flex-grow: 1;
+        overflow: hidden;
+        min-width: unset;
 
         > span {
             flex-grow: 1;
+            overflow: hidden;
         }
     }
 }
@@ -90,7 +98,25 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 0.5rem;
     cursor: pointer;
     flex-grow: 1;
+    overflow: hidden;
+    div {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        flex-grow: 1;
+        overflow: hidden;
+        span {
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+    }
+
 }
 

@@ -21,6 +21,7 @@ export interface FCallEvent {
     title: string;
     start: Date;
     end: Date;
+    allDay?: boolean;
     className: string[] | string;
     extendedProps: {
         actualStart: Date;
@@ -48,8 +49,10 @@ export interface FCallBackgroundEvent {
     start: Date;
     end: Date;
     display: 'background'
+    allDay?: boolean;
     classNames: string[] | string;
     extendedProps: {
+        closed?: boolean;
         type: 'background'
     }
 }

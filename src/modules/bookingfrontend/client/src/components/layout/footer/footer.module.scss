@@ -7,7 +7,7 @@
     padding-bottom: 1.5rem;
     .footerContent {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(3, 1fr);
         @include mobile {
             display: flex;
             flex-direction: column;

@@ -1,36 +1,65 @@
-import {QueryClient, useMutation, useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
-import {IBookingUser, IBookingUserBase} from "@/service/types/api.types";
+import {useMutation, useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
+import {IBookingUser} from "@/service/types/api.types";
 import {
-    fetchBookingUser,
     fetchDeliveredApplications,
     fetchInvoices,
     fetchPartialApplications, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
-import {redirect} from "next/navigation";
+import {phpGWLink} from "@/service/util";
 
-export function useBookingUser(): UseQueryResult<IBookingUserBase> {
-    return useQuery(
-        {
-            queryKey: ['bookingUser'],
-            queryFn: () => fetchBookingUser(), // Fetch function
-            retry: 2, // Number of retry attempts if the query fails
-            refetchOnWindowFocus: false, // Do not refetch on window focus by default
-        }
-    );
+
+export function useBookingUser() {
+    return useQuery<IBookingUser>({
+        queryKey: ['bookingUser'],
+        queryFn: async () => {
+
+            const url = phpGWLink(['bookingfrontend', 'user']);
+
+            const response = await fetch(url, {
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch user');
+            }
+
+            return response.json();
+        },
+        retry: (failureCount, error) => {
+            // Don't retry on 401
+            if (error instanceof Error && error.message.includes('401')) {
+                return false;
+            }
+            return failureCount < 3;
+        },
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+        staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+        refetchOnWindowFocus: true,
+    });
 }
 
-export function useAuthenticatedUser(): UseQueryResult<IBookingUser> {
-    const baseBookingUser = useBookingUser();
 
-    if(!baseBookingUser.isLoading && baseBookingUser?.data && !baseBookingUser.data.is_logged_in) {
-        redirect('/');
-    }
+export function useLogout() {
+    const queryClient = useQueryClient();
 
-    return baseBookingUser as UseQueryResult<IBookingUser>;
+    return useMutation({
+        mutationFn: async () => {
+            const url = phpGWLink(['bookingfrontend', 'logout']);
+            const response = await fetch(url, {
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('Logout failed');
+            }
+        },
+        onSuccess: () => {
+            queryClient.setQueryData(['bookingUser'], null);
+        },
+    });
 }
-
 
 
 export function useUpdateBookingUser() {

@@ -602,7 +602,8 @@ JS;
 			{
 				parent.document.getElementById("{$contact_id}").value = aData["email"];
 			}
-			
+			parent.JqueryPortico.onPopupClose("close");
+		
 JS;
 
 		$data = array(

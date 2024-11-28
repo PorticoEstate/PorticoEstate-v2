@@ -85,4 +85,41 @@ export function formatEventTime(event: EventImpl | FCallEvent | FCallTempEvent) 
     return actualTimeText
 }
 
+export function formatTimeStamp(timestamp: DateTime | Date, withDate?: boolean) {
+    const dt = DateTime.isDateTime(timestamp) ? timestamp : LuxDate(timestamp);
+    let format = "HH:mm";
+    if (withDate) {
+        format = "dd.LLL HH:mm";
+    }
+
+    return  dt.toFormat(format);
+}
+
+
+export function formatDateStamp(timestamp: DateTime | Date) {
+    const dt = DateTime.isDateTime(timestamp) ? timestamp : LuxDate(timestamp);
+    const format = "dd.LLL";
+
+    return  dt.toFormat(format);
+}
+
+
+export function formatDateRange(from: DateTime | Date , to: DateTime | Date, withTime?: boolean) {
+    const fromDT = DateTime.isDateTime(from) ? from : LuxDate(from);
+    const toDT = DateTime.isDateTime(to) ? to : LuxDate(to);
+    const sameMonth = fromDT.month === toDT.month;
+    let fromFormat = "dd.";
+    let toFormat = "dd.LLL";
+
+    if(!sameMonth) {
+        fromFormat = "dd.LLL";
+    }
+    if(withTime) {
+        toFormat = "dd.LLL HH:mm";
+        fromFormat = fromFormat + " HH:mm";
+    }
+
+    return  `${fromDT.toFormat(fromFormat)} - ${toDT.toFormat(toFormat)}`;
+}
+
 

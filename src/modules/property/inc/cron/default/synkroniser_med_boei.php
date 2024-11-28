@@ -1274,7 +1274,8 @@ SQL;
 				'tenant_id'			 => $this->db->f('leietaker_id'),
 				'beregnet_boa'		 => $this->db->f('beregnet_boa'),
 				'flyttenr'			 => $this->db->f('flyttenr'),
-				'tv_signal'			 => $tv_signaler[$this->db->f('tv_signal_id')]
+				'tv_signal'			 => $tv_signaler[$this->db->f('tv_signal_id')],
+				'loc4_name'			 =>	$this->db->f('etasje'),
 			);
 		}
 
@@ -1284,7 +1285,7 @@ SQL;
 		foreach ($leieobjekt_latin as $leieobjekt)
 		{
 			$sql2 = "INSERT INTO fm_location4 (location_code, loc1, loc4, loc2, loc3, category, street_id, street_number, etasje, antallrom, boareal, livslopsstd, heis, driftsstatus_id,
-                      tenant_id, beregnet_boa, flyttenr, tv_signal)"
+                      tenant_id, beregnet_boa, flyttenr, tv_signal, loc4_name)"
 				. "VALUES (" . $this->db->validate_insert($leieobjekt) . ")";
 
 			$this->db->query($sql2, __LINE__, __FILE__);
@@ -1604,6 +1605,7 @@ SQL;
 				. " tenant_id = '" . $this->db->f('leietaker_id') . "',"
 				. " category = '" . $this->db->f('formaal_id') . "',"
 				. " etasje = '" . $this->db->f('etasje') . "',"
+				. " loc4_name = '" . $this->db->f('etasje') . "',"
 				. " street_id = '" . $this->db->f('gateadresse_id') . "',"
 				. " street_number = '" . $this->db->f('gatenr') . "',"
 				. " driftsstatus_id = '" . $this->db->f('driftsstatus_id') . "',"

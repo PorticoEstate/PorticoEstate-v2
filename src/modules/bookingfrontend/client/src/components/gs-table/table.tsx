@@ -302,7 +302,6 @@ function Table<T>({
         ),
     }), [enableSearch, table, searchPlaceholder, utilityHeader, exportFileName, selectedRows, rowSelection, tableColumns, columnVisibility]);
 
-    console.log('gridTemplateColumns: ', gridTemplateColumns)
     return (
         <div className={`gs-table ${styles.tableContainer}`}>
             {!!utilityHeader && (

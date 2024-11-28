@@ -1,6 +1,6 @@
 'use client'
 import {FC, PropsWithChildren, useMemo} from "react";
-import {useAuthenticatedUser, useBookingUser} from "@/service/hooks/api-hooks";
+import {useBookingUser} from "@/service/hooks/api-hooks";
 import {usePathname, useRouter} from "next/navigation";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
@@ -15,7 +15,7 @@ import {userSubPages} from "@/app/[lang]/(public)/user/user-page-helper";
 interface UserLayoutProps extends PropsWithChildren {
 }
 const UserLayout: FC<UserLayoutProps> = (props) => {
-    const user = useAuthenticatedUser();
+    const user = useBookingUser();
     const pathname = usePathname();
     const router = useRouter();
     const path = pathname.split('/')

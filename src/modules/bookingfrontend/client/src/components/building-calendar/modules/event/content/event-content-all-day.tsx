@@ -2,18 +2,18 @@ import React, {FC} from 'react';
 import styles from './event-content.module.scss';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faClock, faUser, faLayerGroup} from "@fortawesome/free-solid-svg-icons";
-import {formatEventTime, formatTimeStamp} from "@/service/util";
+import {formatDateRange, formatEventTime, formatTimeStamp} from "@/service/util";
 import {FCallEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {usePopperGlobalInfo} from "@/service/api/event-info";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 
-interface EventContentListProps {
+interface EventContentAllDayProps {
     eventInfo: FCEventContentArg<FCallEvent>;
 }
 
-const EventContentList: FC<EventContentListProps> = ({eventInfo}) => {
+const EventContentAllDay: FC<EventContentAllDayProps> = ({eventInfo}) => {
     const t = useTrans();
     const isMobile = useIsMobile();
     const {data: infoData} = usePopperGlobalInfo(eventInfo.event.extendedProps.type, eventInfo.event.id);
@@ -39,25 +39,43 @@ const EventContentList: FC<EventContentListProps> = ({eventInfo}) => {
 
 
     return (
-        <div className={`${styles.event} ${styles.listEvent}`}>
-              <span className={`${styles.time} text-overline`}>
-                <FontAwesomeIcon className="text-label" icon={faClock}/>{formatTimeStamp(actualStart, true)}
+        <div style={{containerType: 'inline-size', width: '100%'}}>
+            <div className={`${styles.event} ${styles.allDayEvent}`}>
+              <span className={`${styles.joined_date} text-overline`}>
+                {/*<FontAwesomeIcon className="text-label" icon={faClock}/>*/}
+                  {formatDateRange(actualStart, actualEnd)}
+
               </span>
-            <div className={styles.title}>{eventInfo.event.title}</div>
-            <div className={`${styles.resourceIcons} text-label`}>
-                <FontAwesomeIcon icon={faLayerGroup}/>
-                {renderColorCircles(isMobile ? 1 : 3)}
+
+                <span className={`${styles.joined_time} text-overline`}>
+                {/*<FontAwesomeIcon className="text-label" icon={faClock}/>*/}
+                    {formatDateRange(actualStart, actualEnd, true)}
+               </span>
+                <span className={styles.titleDivider}>|</span>
+
+                <div className={styles.title}>{eventInfo.event.title}</div>
+                <span className={styles.resourceIconsDivider}>|</span>
+
+                <div className={`${styles.resourceIcons} text-label`}>
+
+                    <FontAwesomeIcon icon={faLayerGroup}/>
+                    {renderColorCircles(isMobile ? 1 : 3)}
+                </div>
+                {infoData?.organizer && (
+
+                <span className={styles.organizerDivider}>|</span>
+                )}
+
+                {infoData?.organizer && (
+                    <div className={`text-small ${styles.organizer}`}>
+                        <FontAwesomeIcon className="text-small"
+                                         icon={faUser}/> {infoData.organizer}
+                    </div>)}
+
+
             </div>
-            {infoData?.organizer || !isMobile && (
-                <div className={`text-small ${styles.organizer}`}>
-                    <FontAwesomeIcon className="text-small"
-                                     icon={faUser}/> {infoData?.organizer || t('bookingfrontend.not_available')}
-                </div>)}
-            <span className={`${styles.to_time} text-overline`}>
-                <FontAwesomeIcon className="text-label" icon={faClock}/>{formatTimeStamp(actualEnd, true)}
-              </span>
         </div>
     );
 };
 
-export default EventContentList;
+export default EventContentAllDay;

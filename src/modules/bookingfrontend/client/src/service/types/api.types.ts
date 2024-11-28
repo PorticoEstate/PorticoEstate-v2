@@ -57,7 +57,6 @@ export interface IServerSettings {
 
 // User types
 
-export type IBookingUserBase = IBookingUser | INotAuthenticated;
 
 export interface IBookingUser {
     id?: number;
@@ -76,10 +75,6 @@ export interface IBookingUser {
     delegates?: IDelegate[];
     customer_number?: string;
 }
-export interface INotAuthenticated {
-    is_logged_in: false;
-}
-
 export interface IDelegate {
     name: string;
     org_id: number;

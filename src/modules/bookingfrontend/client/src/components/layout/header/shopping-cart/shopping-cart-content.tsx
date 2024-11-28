@@ -93,7 +93,6 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
 
 
 
-    console.log(basketData)
     return (
         <PopperContentSharedWrapper onClose={() => props.setOpen(false)} header={!isMobile}>
             <div className={styles.shoppingBasket}>

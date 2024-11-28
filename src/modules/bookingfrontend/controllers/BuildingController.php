@@ -10,8 +10,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
-use OpenApi\Annotations as OA;
-use Slim\Psr7\Stream;
+use App\modules\bookingfrontend\controllers\DocumentController;
 
 /**
  * @OA\Tag(

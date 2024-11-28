@@ -226,7 +226,8 @@
 
 			$sql = "SELECT phpgw_contact.contact_id,first_name, last_name, department, comm_data AS email FROM phpgw_contact"
 				. " $this->join phpgw_contact_person ON phpgw_contact.contact_id = phpgw_contact_person.person_id"
-				. " $this->join phpgw_contact_comm ON phpgw_contact.contact_id = phpgw_contact_comm.contact_id AND comm_descr_id = 2"
+				. " $this->join phpgw_contact_comm ON phpgw_contact.contact_id = phpgw_contact_comm.contact_id"
+			//	.  "AND comm_descr_id = 2"
 				. " $this->left_join phpgw_accounts ON phpgw_accounts.person_id = phpgw_contact.contact_id"
 				. " WHERE phpgw_accounts.person_id IS NULL"
 				. " AND contact_type_id = 1"

@@ -43,11 +43,6 @@ The API will be available at [http://localhost:8088/](http://localhost:8088/)
 
 **Note:** Ensure the `xdebug.client_port` is set to `9003`.
 
-## Generate minified js for bookingfrontend
-
-1. Navigate to `src/modules/bookingfrontend/js/bookingfrontend_2`
-2. Run `npm install`
-3. Run `npm run prod` to build for production
 
 ## A bit about the principles of the new API and how it is combined with existing code
 

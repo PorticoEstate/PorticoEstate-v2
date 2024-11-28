@@ -11,6 +11,7 @@ import {LoadingProvider} from "@/components/loading-wrapper/LoadingContext";
 import ClientTranslationProvider from "@/app/i18n/ClientTranslationProvider";
 import PrefetchWrapper from "@/components/loading-wrapper/PrefetchWrapper";
 import LoadingIndicationWrapper from "@/components/loading-wrapper/LoadingIndicationWrapper";
+import {ReactQueryDevtools} from "@tanstack/react-query-devtools";
 
 const Providers: FC<PropsWithChildren & {lang: string}> = ({children, lang}) => {
     // NOTE: Avoid useState when initializing the query client if you don't
@@ -27,6 +28,7 @@ const Providers: FC<PropsWithChildren & {lang: string}> = ({children, lang}) => 
                         <LoadingIndicationWrapper>
                             {children}
                         </LoadingIndicationWrapper>
+                        <ReactQueryDevtools initialIsOpen={false} />
                     </PrefetchWrapper>
                 </QueryClientProvider>
             </ClientTranslationProvider>

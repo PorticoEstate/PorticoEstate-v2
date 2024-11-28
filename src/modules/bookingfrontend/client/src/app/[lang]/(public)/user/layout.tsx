@@ -4,7 +4,7 @@ import ClientLayout from "@/app/[lang]/(public)/user/client-layout";
 import {getTranslation} from "@/app/i18n";
 import {headers} from "next/headers";
 import {userSubPages} from "@/app/[lang]/(public)/user/user-page-helper";
-import {requireAuth} from "@/service/AuthenticationServerUtils";
+import {requireAuth} from "@/service/auth";
 
 interface UserLayoutProps extends PropsWithChildren {
 }
@@ -31,7 +31,6 @@ export async function generateMetadata(props: UserLayoutProps) {
 }
 
 const UserLayout= async (props: UserLayoutProps) => {
-    console.log("Here")
     await requireAuth();
     return (
         <ClientLayout>{props.children}</ClientLayout>

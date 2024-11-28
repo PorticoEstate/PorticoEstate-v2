@@ -1161,9 +1161,9 @@ JS;
 		if ($values && !$level)
 		{
 			$part			 = explode('-', $values[0]['id']);
-			$parent_level	 = count($part);
+			$parent_level	 = count($part) -1;
 			$_loc_arr		 = array();
-			for ($i = 0; $i < ($parent_level - 1); $i++)
+			for ($i = 0; $i < ($parent_level); $i++)
 			{
 				$_loc_arr[] = $part[$i];
 			}

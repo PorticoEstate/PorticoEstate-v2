@@ -366,8 +366,8 @@
 		'bb_application' => array(
 			'fd' => array(
 				'id' => array('type' => 'auto', 'nullable' => False),
-				'id_string' => array('type' => 'varchar', 'precision' => '20', 'nullable' => False,
-					'default' => '0'),
+				'id_string' => array('type' => 'varchar', 'precision' => '20', 'nullable' => False,	'default' => '0'),
+				'parent_id' => array('type' => 'int', 'nullable' => true, 'precision' => '4'),
 				'active' => array('type' => 'int', 'nullable' => False, 'precision' => '4', 'default' => 1),
 				'display_in_dashboard' => array('type' => 'int', 'nullable' => False, 'precision' => '4',
 					'default' => 1),

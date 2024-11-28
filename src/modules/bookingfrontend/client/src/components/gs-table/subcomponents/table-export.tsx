@@ -46,7 +46,6 @@ function TableExport<T>({table, fileName = 'exported-data', rowSelection}: Table
     const exportTooltip = useMemo(() => selectedCount > 0
         ? `Export ${selectedCount} selected row${selectedCount === 1 ? '' : 's'}`
         : 'Export all visible rows', [selectedCount])
-    console.log(selectedCount, rowSelection)
     const handleExport = () => {
         const exportColumns = table.getAllLeafColumns()
             .filter(column => column.getIsVisible() && column.id !== 'select')

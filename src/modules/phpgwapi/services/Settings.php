@@ -57,7 +57,13 @@ class Settings
 
 		if (!is_file($rootDir . '/config/header.inc.php'))
 		{
-			return [];
+			define('PHPGW_SERVER_ROOT', dirname(__DIR__, 2));
+			define('PHPGW_INCLUDE_ROOT', PHPGW_SERVER_ROOT);
+			define('PHPGW_MODULES_PATH', '/src/modules'); //Internal structure of the modules directory
+
+			$this->config_data['server']['default_lang'] = 'en';
+			$this->config_data['server']['isConnected'] = $this->db->isConnected();
+			return $this->config_data;
 		}
 
 		$settings = require $rootDir . '/config/header.inc.php';
@@ -71,6 +77,7 @@ class Settings
 
 
 		$this->config_data['server']['db_type'] = $this->db->get_config()['db_type'];
+		$this->config_data['server']['isConnected'] = $this->db->isConnected();
 
 		//		_debug_array($this->config_data);die();
 

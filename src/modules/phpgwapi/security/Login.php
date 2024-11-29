@@ -43,7 +43,7 @@ use App\modules\phpgwapi\services\Hooks;
 class Login
 {
 	private $flags;
-	private $serverSetting;
+	private $serverSettings;
 	private $sessions;
 	private $_sessionid = null;
 	private $logindomain;
@@ -51,7 +51,7 @@ class Login
 	public function __construct($settings = [])
 	{
 		$this->flags = Settings::getInstance()->get('flags');
-		$this->serverSetting = Settings::getInstance()->get('server');
+		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->logindomain = \Sanitizer::get_var('domain', 'string', 'GET');
 
 		/*
@@ -94,17 +94,17 @@ class Login
 			$this->flags['session_name'] = $settings['session_name'][$section];
 		}
 
-		if (empty($_GET['create_account']) && !empty($_POST['login']) && in_array($this->serverSetting['auth_type'],  array('remoteuser', 'azure', 'customsso')))
+		if (empty($_GET['create_account']) && !empty($_POST['login']) && in_array($this->serverSettings['auth_type'],  array('remoteuser', 'azure', 'customsso')))
 		{
-			$this->serverSetting['auth_type'] = $phpgw_remote_user_fallback;
+			$this->serverSettings['auth_type'] = $phpgw_remote_user_fallback;
 		}
 
 		if (!empty($_REQUEST['skip_remote'])) // In case a user failed logged in via SSO - get another try
 		{
-			$this->serverSetting['auth_type'] = $phpgw_remote_user_fallback;
+			$this->serverSettings['auth_type'] = $phpgw_remote_user_fallback;
 		}
 		Settings::getInstance()->set('flags', $this->flags);
-		Settings::getInstance()->set('server', $this->serverSetting);
+		Settings::getInstance()->set('server', $this->serverSettings);
 
 		$this->sessions = Sessions::getInstance();
 	}
@@ -128,7 +128,7 @@ class Login
 
 	public function login()
 	{
-		if ($this->serverSetting['auth_type'] == 'http' && isset($_SERVER['PHP_AUTH_USER']))
+		if ($this->serverSettings['auth_type'] == 'http' && isset($_SERVER['PHP_AUTH_USER']))
 		{
 			$login	 = $_SERVER['PHP_AUTH_USER'];
 			$passwd	 = $_SERVER['PHP_AUTH_PW'];
@@ -141,7 +141,7 @@ class Login
 			return $this->_sessionid;
 		}
 
-		if ($this->serverSetting['auth_type'] == 'ntlm' && isset($_SERVER['REMOTE_USER']) && empty($_REQUEST['skip_remote']))
+		if ($this->serverSettings['auth_type'] == 'ntlm' && isset($_SERVER['REMOTE_USER']) && empty($_REQUEST['skip_remote']))
 		{
 			$remote_user = explode('@', $_SERVER['REMOTE_USER']);
 			$login   = $remote_user[0]; //$_SERVER['REMOTE_USER'];
@@ -165,7 +165,7 @@ class Login
 
 		# Apache + mod_ssl style SSL certificate authentication
 		# Certificate (chain) verification occurs inside mod_ssl
-		if ($this->serverSetting['auth_type'] == 'sqlssl' && isset($_SERVER['SSL_CLIENT_S_DN']) && !isset($_GET['cd']))
+		if ($this->serverSettings['auth_type'] == 'sqlssl' && isset($_SERVER['SSL_CLIENT_S_DN']) && !isset($_GET['cd']))
 		{
 			# an X.509 subject looks like:
 			# /CN=john.doe/OU=Department/O=Company/C=xx/Email=john@comapy.tld/L=City/
@@ -203,7 +203,7 @@ class Login
 			return $this->_sessionid;
 		}
 
-		if ($this->serverSetting['auth_type'] == 'customsso' &&  empty($_REQUEST['skip_remote']))
+		if ($this->serverSettings['auth_type'] == 'customsso' &&  empty($_REQUEST['skip_remote']))
 		{
 			//Reset auth object
 			$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
@@ -229,12 +229,12 @@ class Login
 		 * OpenID Connect
 		 */
 		else if (
-			in_array($this->serverSetting['auth_type'],  array('remoteuser', 'azure'))
+			in_array($this->serverSettings['auth_type'],  array('remoteuser', 'azure'))
 			&& (isset($_SERVER['OIDC_upn']) || isset($_SERVER['REMOTE_USER']) || isset($_SERVER['OIDC_pid']))
 			&& empty($_REQUEST['skip_remote'])
 		)
 		{
-			//	print_r($this->serverSetting);
+			//	print_r($this->serverSettings);
 
 			$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
 			$login = $Auth->get_username();
@@ -258,7 +258,7 @@ class Login
 						$OIDC_groups = mb_convert_encoding(mb_convert_encoding($_SERVER["OIDC_groups"], 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1');
 						$ad_groups	= explode(",", $OIDC_groups);
 					}
-					$default_group_lid	 = !empty($this->serverSetting['default_group_lid']) ? $this->serverSetting['default_group_lid'] : 'Default';
+					$default_group_lid	 = !empty($this->serverSettings['default_group_lid']) ? $this->serverSettings['default_group_lid'] : 'Default';
 					$default_group_lid = strtolower($default_group_lid);
 					$ad_groups = array_map('strtolower', $ad_groups);
 
@@ -272,15 +272,15 @@ class Login
 			}
 			else if (!$login || empty($this->_sessionid))
 			{
-				if (!empty($this->serverSetting['auto_create_acct']))
+				if (!empty($this->serverSettings['auto_create_acct']))
 				{
 
-					if ($this->serverSetting['mapping'] == 'id')
+					if ($this->serverSettings['mapping'] == 'id')
 					{
 						// Redirection to create the new account :
 						return $this->create_account();
 					}
-					else if ($this->serverSetting['mapping'] == 'table' || $this->serverSetting['mapping'] == 'all')
+					else if ($this->serverSettings['mapping'] == 'table' || $this->serverSettings['mapping'] == 'all')
 					{
 						// Redirection to create a new mapping :
 						return $this->create_mapping();
@@ -291,7 +291,7 @@ class Login
 			return $this->_sessionid;
 		}
 
-		if (isset($_POST['login']) && $this->serverSetting['auth_type'] == 'sql')
+		if (isset($_POST['login']) && $this->serverSettings['auth_type'] == 'sql')
 		{
 
 			$login	 = \Sanitizer::get_var('login', 'string', 'POST');
@@ -306,8 +306,8 @@ class Login
 
 			$receipt = array();
 			if (
-				isset($this->serverSetting['usecookies'])
-				&& $this->serverSetting['usecookies']
+				isset($this->serverSettings['usecookies'])
+				&& $this->serverSettings['usecookies']
 			)
 			{
 				if (isset($_COOKIE['domain']) && $_COOKIE['domain'] != $this->logindomain)

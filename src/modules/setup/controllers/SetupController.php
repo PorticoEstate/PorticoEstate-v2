@@ -220,7 +220,12 @@ class SetupController
 		// Check header and authentication
 		$setup_data['stage']['header'] = $this->detection->check_header();
 
-		if ($setup_data['stage']['header'] != '10')
+		if ($setup_data['stage']['header'] == '1')
+		{
+			Header('Location: ../setup/manageheader');
+			exit;
+		}
+		else if ($setup_data['stage']['header'] != '10')
 		{
 			Header('Location: ../setup');
 			exit;

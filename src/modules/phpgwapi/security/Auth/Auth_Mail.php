@@ -47,20 +47,20 @@
 		
 		function authenticate($username, $passwd)
 		{
-			$server = $this->serverSetting['mail_server'];
+			$server = $this->serverSettings['mail_server'];
 
-			switch ( $this->serverSetting['mail_login_type'] )
+			switch ( $this->serverSettings['mail_login_type'] )
 			{
 				case 'vmailmgr':
-					$username = "{$username}@{$this->serverSetting['mail_suffix']}";
+					$username = "{$username}@{$this->serverSettings['mail_suffix']}";
 					break;
 				case 'ispman':
-					$username = "{$username}_" . preg_replace('/\./', '_', $this->serverSetting['mail_suffix']);
+					$username = "{$username}_" . preg_replace('/\./', '_', $this->serverSettings['mail_suffix']);
 					break;
 			}
 
 			$extra = '';
-			switch ( $this->serverSetting['mail_server_type'] )
+			switch ( $this->serverSettings['mail_server_type'] )
 			{
 				case 'pop3s':
  					$port = 995;
@@ -72,12 +72,12 @@
 				case 'imaps':
 					$port = 993;
 					$extra = "/ssl{$this->ssl_args}";
-	 				$mailauth = imap_open("\{{$this->serverSetting['mail_server']}:{$port}\}INBOX", $username , $passwd);
+	 				$mailauth = imap_open("\{{$this->serverSettings['mail_server']}:{$port}\}INBOX", $username , $passwd);
 					break;
 				case 'imap':
 				default:
 					$port = 143;
-					$this->serverSetting['mail_port'] = '143';
+					$this->serverSettings['mail_port'] = '143';
 			}
 
 	 		return !! @imap_open("\{{$server}{$extra}:{$port}\}INBOX", $username , $passwd);

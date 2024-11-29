@@ -17,7 +17,7 @@ use ReflectionClass;
 use ReflectionProperty;
 
 
-$serverSetting = Settings::getInstance()->get('server');
+$serverSettings = Settings::getInstance()->get('server');
 
 $flags = Settings::getInstance()->get('flags');
 
@@ -37,7 +37,7 @@ else
 /*
  * Include the db session handler if required
  */
-if ($serverSetting['sessions_type'] == 'db')
+if (isset($serverSettings['sessions_type']) && $serverSettings['sessions_type'] == 'db')
 {
 	require_once SRC_ROOT_PATH . '/security/SessionHandlerDb.php';
 }
@@ -64,7 +64,7 @@ class Sessions
 	public $reason;
 	private $_login;
 	private $_passwd;
-	private $serverSetting;
+	private $serverSettings;
 	private $Auth;
 	private $Crypto;
 	private $Log;
@@ -78,7 +78,7 @@ class Sessions
 	{
 		$this->db = Db::getInstance();
 
-		$this->serverSetting = Settings::getInstance()->get('server');
+		$this->serverSettings = Settings::getInstance()->get('server');
 
 		$this->Log = new Log();
 
@@ -89,7 +89,7 @@ class Sessions
 		$this->_phpgw_set_cookie_params();
 
 		if (
-			!empty($this->serverSetting['usecookies'])  && !\Sanitizer::get_var('api_mode', 'bool')
+			!empty($this->serverSettings['usecookies'])  && !\Sanitizer::get_var('api_mode', 'bool')
 		)
 		{
 			$this->_use_cookies = true;
@@ -115,7 +115,7 @@ class Sessions
 
 		//don't rewrite URL, as we have to do it in link - why? cos it is buggy otherwise
 		ini_set('url_rewriter.tags', '');
-		ini_set("session.gc_maxlifetime", $this->serverSetting['sessions_timeout']);
+		ini_set("session.gc_maxlifetime", isset($this->serverSettings['sessions_timeout']) ? $this->serverSettings['sessions_timeout'] : 0);
 	}
 
 	public static function getInstance()
@@ -168,9 +168,9 @@ class Sessions
 			return $this->_cookie_domain;
 		}
 
-		if (!empty($this->serverSetting['cookie_domain']))
+		if (!empty($this->serverSettings['cookie_domain']))
 		{
-			$this->_cookie_domain = $this->serverSetting['cookie_domain'];
+			$this->_cookie_domain = $this->serverSettings['cookie_domain'];
 		}
 		else
 		{
@@ -188,9 +188,9 @@ class Sessions
 		//			$secure = \Sanitizer::get_var('HTTPS', 'bool', 'SERVER');
 		$secure = false;
 
-		if (!empty($this->serverSetting['webserver_url']))
+		if (!empty($this->serverSettings['webserver_url']))
 		{
-			$webserver_url = $this->serverSetting['webserver_url'] . '/';
+			$webserver_url = $this->serverSettings['webserver_url'] . '/';
 		}
 		else
 		{
@@ -204,7 +204,7 @@ class Sessions
 
 		session_set_cookie_params(
 			array(
-				'lifetime' => $this->serverSetting['sessions_timeout'],
+				'lifetime' => isset($this->serverSettings['sessions_timeout']) ? $this->serverSettings['sessions_timeout'] : 0,
 				'path' => parse_url($webserver_url, PHP_URL_PATH),
 				'domain' => $this->_cookie_domain,
 				'secure' => $secure,
@@ -287,7 +287,7 @@ class Sessions
 		session_start();
 		$this->_sessionid = session_id();
 
-		if (!empty($this->serverSetting['usecookies']))
+		if (!empty($this->serverSettings['usecookies']))
 		{
 			$this->phpgw_setcookie('domain', $this->_account_domain);
 		}
@@ -303,7 +303,7 @@ class Sessions
 			$session_flags = 'N';
 		}
 
-		if ($session_flags == 'N' && (!empty($this->serverSetting['usecookies'])
+		if ($session_flags == 'N' && (!empty($this->serverSettings['usecookies'])
 			|| isset($_COOKIE['last_loginid'])))
 		{
 			// Create a cookie which expires in 14 days
@@ -312,11 +312,11 @@ class Sessions
 			$this->phpgw_setcookie('last_domain', $this->_account_domain, $cookie_expires);
 		}
 		/* we kill this for security reasons */
-		//		unset($this->serverSetting['default_domain']);
+		//		unset($this->serverSettings['default_domain']);
 
 		/* init the crypto object */
-		$this->_key = md5($this->_sessionid . $this->serverSetting['encryptkey']);
-		$this->_iv  = $this->serverSetting['mcrypt_iv'];
+		$this->_key = md5($this->_sessionid . $this->serverSettings['encryptkey']);
+		$this->_iv  = $this->serverSettings['mcrypt_iv'];
 
 		$this->Crypto = Crypto::getInstance(array($this->_key, $this->_iv));
 
@@ -413,9 +413,9 @@ class Sessions
 		$lid_data = explode('#', $session['session_lid']);
 		$this->_account_lid = $lid_data[0];
 
-		if (!in_array($this->serverSetting['auth_type'], array('ntlm', 'customsso'))) //Timeout make no sense for SSO
+		if (!in_array($this->serverSettings['auth_type'], array('ntlm', 'customsso'))) //Timeout make no sense for SSO
 		{
-			$timeout = time() - $this->serverSetting['sessions_timeout'];
+			$timeout = time() - $this->serverSettings['sessions_timeout'];
 			if (
 				!isset($session['session_dla'])
 				|| $session['session_dla'] <= $timeout
@@ -453,10 +453,10 @@ class Sessions
 		}
 		else
 		{
-			$this->_account_domain = $this->serverSetting['default_domain'];
+			$this->_account_domain = $this->serverSettings['default_domain'];
 		}
 
-		if (!empty($this->serverSetting['usecookies']))
+		if (!empty($this->serverSettings['usecookies']))
 		{
 			$this->phpgw_setcookie('domain', $this->_account_domain);
 		}
@@ -478,16 +478,16 @@ class Sessions
 		Settings::getInstance()->setAccountId($this->_account_id);
 
 		/* init the crypto object before appsession call below */
-		//$this->_key = md5($this->_sessionid . $this->serverSetting['encryptkey']); //Sigurd: not good for permanent data
-		$this->_key = $this->serverSetting['encryptkey'];
-		$this->_iv  = $this->serverSetting['mcrypt_iv'];
+		//$this->_key = md5($this->_sessionid . $this->serverSettings['encryptkey']); //Sigurd: not good for permanent data
+		$this->_key = $this->serverSettings['encryptkey'];
+		$this->_iv  = $this->serverSettings['mcrypt_iv'];
 
 		$this->Crypto = Crypto::getInstance(array($this->_key, $this->_iv));
 
 		$use_cache = false;
-		if (isset($this->serverSetting['cache_phpgw_info']))
+		if (isset($this->serverSettings['cache_phpgw_info']))
 		{
-			$use_cache = !!$this->serverSetting['cache_phpgw_info'];
+			$use_cache = !!$this->serverSettings['cache_phpgw_info'];
 		}
 
 		$this->read_repositories($use_cache);
@@ -587,9 +587,9 @@ class Sessions
 		}
 
 		$check_ip = false;
-		if (isset($this->serverSetting['sessions_checkip']))
+		if (isset($this->serverSettings['sessions_checkip']))
 		{
-			$check_ip = !!$this->serverSetting['sessions_checkip'];
+			$check_ip = !!$this->serverSettings['sessions_checkip'];
 		}
 
 		if ($check_ip)
@@ -736,7 +736,7 @@ class Sessions
 			session_destroy();
 			$this->phpgw_setcookie(session_name());
 		}
-		else if ($this->serverSetting['sessions_type'] == 'php')
+		else if ($this->serverSettings['sessions_type'] == 'php')
 		{
 			$sessions = $this->list_sessions(0, '', '', true);
 
@@ -789,9 +789,9 @@ class Sessions
 				':sessionid' => $sessionid
 			]);
 		}
-		if ($this->serverSetting['max_access_log_age'])
+		if ($this->serverSettings['max_access_log_age'])
 		{
-			$max_age = $now - ($this->serverSetting['max_access_log_age'] * 24 * 60 * 60);
+			$max_age = $now - ($this->serverSettings['max_access_log_age'] * 24 * 60 * 60);
 
 			$stmt = $this->db->prepare("DELETE FROM phpgw_access_log WHERE li < :max_age");
 			$stmt->execute([':max_age' => $max_age]);
@@ -901,7 +901,7 @@ class Sessions
 			'session_flags'		=> $session_flags,
 			'user_agent'		=> md5(\Sanitizer::get_var('HTTP_USER_AGENT', 'string', 'SERVER')),
 			// we need the install-id to differ between serveral installs shareing one tmp-dir
-			'session_install_id'	=> $this->serverSetting['install_id']
+			'session_install_id'	=> $this->serverSettings['install_id']
 		);
 	}
 
@@ -923,9 +923,9 @@ class Sessions
 		}
 
 		$this->_account_lid = $login;
-		//      \App\helpers\DebugArray::debug($this->serverSetting);
+		//      \App\helpers\DebugArray::debug($this->serverSettings);
 		//      die();
-		$this->_account_domain = $this->serverSetting['default_domain'];
+		$this->_account_domain = $this->serverSettings['default_domain'];
 	}
 
 	/**
@@ -939,10 +939,10 @@ class Sessions
 	protected function _login_blocked($login, $ip)
 	{
 		$blocked = false;
-		$block_time = time() - $this->serverSetting['block_time'] * 60;
+		$block_time = time() - $this->serverSettings['block_time'] * 60;
 		$ip = $this->db->db_addslashes($ip);
 
-		if (isset($this->serverSetting['sessions_checkip']) && $this->serverSetting['sessions_checkip'])
+		if (isset($this->serverSettings['sessions_checkip']) && $this->serverSettings['sessions_checkip'])
 		{
 			$sql = 'SELECT COUNT(*) AS cnt FROM phpgw_access_log'
 				. " WHERE account_id = 0 AND ip = :ip AND li > :block_time";
@@ -951,7 +951,7 @@ class Sessions
 			$stmt->execute([':ip' => $ip, ':block_time' => $block_time]);
 
 			$false_ip = $stmt->fetchColumn();
-			if ($false_ip > $this->serverSetting['num_unsuccessful_ip'])
+			if ($false_ip > $this->serverSettings['num_unsuccessful_ip'])
 			{
 				$blocked = true;
 			}
@@ -971,22 +971,22 @@ class Sessions
 
 		$false_id = $stmt->fetchColumn();
 
-		if ($false_id > $this->serverSetting['num_unsuccessful_id'])
+		if ($false_id > $this->serverSettings['num_unsuccessful_id'])
 		{
 			$blocked = true;
 		}
 
 		if (
-			$blocked && isset($this->serverSetting['admin_mails'])
-			&& $this->serverSetting['admin_mails']
+			$blocked && isset($this->serverSettings['admin_mails'])
+			&& $this->serverSettings['admin_mails']
 			// max. one mail each 5mins
-			&& $this->serverSetting['login_blocked_mail_time'] < (time() - (5 * 60))
+			&& $this->serverSettings['login_blocked_mail_time'] < (time() - (5 * 60))
 		)
 		{
 			// notify admin(s) via email
 
-			$from_name = !empty($this->serverSetting['site_title']) ? $this->serverSetting['site_title'] : $this->serverSetting['system_name'];
-			$from    = str_replace(" ", "_", $from_name) . "@{$this->serverSetting['email_domain']}";
+			$from_name = !empty($this->serverSettings['site_title']) ? $this->serverSettings['site_title'] : $this->serverSettings['system_name'];
+			$from    = str_replace(" ", "_", $from_name) . "@{$this->serverSettings['email_domain']}";
 			$subject = lang("%1: login blocked for user '%2', ip %3", $from_name, $login, $ip);
 			$body    = lang('Too many unsuccessful attempts to login: '
 				. "%1 for the user '%2', %3 for the IP %4", $false_id, $login, $false_ip, $ip);
@@ -994,7 +994,7 @@ class Sessions
 			$send = new \App\modules\phpgwapi\services\Send();
 
 			$subject = $send->encode_subject($subject);
-			$admin_mails = explode(',', $this->serverSetting['admin_mails']);
+			$admin_mails = explode(',', $this->serverSettings['admin_mails']);
 			foreach ($admin_mails as $to)
 			{
 				$send->msg(
@@ -1042,7 +1042,7 @@ class Sessions
 		)
 		{
 			$data = array();
-			switch ($this->serverSetting['sessions_type'])
+			switch ($this->serverSettings['sessions_type'])
 			{
 				case 'db':
 					$data = \SessionHandlerDb::get_list();
@@ -1153,7 +1153,7 @@ class Sessions
 			// skip invalid or anonymous sessions
 			if (
 				!isset($data['phpgw_session'])
-				|| $data['phpgw_session']['session_install_id'] != $this->serverSetting['install_id']
+				|| $data['phpgw_session']['session_install_id'] != $this->serverSettings['install_id']
 				|| !isset($data['phpgw_session']['session_flags'])
 				|| $data['phpgw_session']['session_flags'] == 'A'
 			)
@@ -1227,7 +1227,7 @@ class Sessions
 			$this->_history_id = md5($this->_login . time());
 			$history = (array)Cache::session_get('phpgwapi', 'history');
 
-			if (count($history) >= $this->serverSetting['max_history'])
+			if (count($history) >= $this->serverSettings['max_history'])
 			{
 				array_shift($history);
 				Cache::session_set('phpgwapi', 'history', $history);

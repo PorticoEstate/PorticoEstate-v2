@@ -314,7 +314,7 @@ class ErrorHandler
 
 					// Drop passwords from backtrace
 					if (
-						$arg == $this->serverSettings['header_admin_password']
+						isset($this->serverSettings['header_admin_password']) && $arg == $this->serverSettings['header_admin_password']
 						|| (isset($this->serverSettings['db_pass']) && $arg == $this->serverSettings['db_pass'])
 						|| (isset($this->userSettings['passwd']) && $arg == $this->userSettings['passwd'])
 					)

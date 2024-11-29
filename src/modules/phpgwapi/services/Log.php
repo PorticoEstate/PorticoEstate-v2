@@ -81,13 +81,13 @@ class Log
 
 	function checkprefs()
 	{
-		$serverSetting = Settings::getInstance()->get('server');
+		$serverSettings = Settings::getInstance()->get('server');
 		//validate defaults
-		if (!isset($serverSetting['log_levels']))
+		if (!isset($serverSettings['log_levels']))
 		{
-			$serverSetting['log_levels']['global_level'] = 'E';
-			$serverSetting['log_levels']['module'] = array();
-			$serverSetting['log_levels']['user'] = array();
+			$serverSettings['log_levels']['global_level'] = 'E';
+			$serverSettings['log_levels']['module'] = array();
+			$serverSettings['log_levels']['user'] = array();
 		}
 	}
 
@@ -100,27 +100,27 @@ class Log
 	function is_level($level)
 	{
 		$user = Settings::getInstance()->get('user');
-		$serverSetting = Settings::getInstance()->get('server');
+		$serverSettings = Settings::getInstance()->get('server');
 
 		$this->checkprefs();
-		if ($this->log_level_table[$serverSetting['log_levels']['global_level']] >= $this->log_level_table[$level])
+		if (isset($serverSettings['log_levels']) && $this->log_level_table[$serverSettings['log_levels']['global_level']] >= $this->log_level_table[$level])
 		{
 			return true;
 		}
 
 		if (
-			isset(Settings::getInstance()->get('flags')['currentapp'])
-			&& array_key_exists(Settings::getInstance()->get('flags')['currentapp'], (array)$serverSetting['log_levels']['module'])
-			&& $this->log_level_table[$serverSetting['log_levels']['module'][Settings::getInstance()->get('flags')['currentapp']]] >= $this->log_level_table[$level]
+			isset($serverSettings['log_levels']) && isset(Settings::getInstance()->get('flags')['currentapp'])
+			&& array_key_exists(Settings::getInstance()->get('flags')['currentapp'], (array)$serverSettings['log_levels']['module'])
+			&& $this->log_level_table[$serverSettings['log_levels']['module'][Settings::getInstance()->get('flags')['currentapp']]] >= $this->log_level_table[$level]
 		)
 		{
 			return true;
 		}
 
 		if (
-			isset($user['account_lid'])
-			&& array_key_exists($user['account_lid'], (array)$serverSetting['log_levels']['user'])
-			&& $this->log_level_table[$serverSetting['log_levels']['user'][$user['account_lid']]] >= $this->log_level_table[$level]
+			isset($serverSettings['log_levels']) && isset($user['account_lid'])
+			&& array_key_exists($user['account_lid'], (array)$serverSettings['log_levels']['user'])
+			&& $this->log_level_table[$serverSettings['log_levels']['user'][$user['account_lid']]] >= $this->log_level_table[$level]
 		)
 		{
 			return true;

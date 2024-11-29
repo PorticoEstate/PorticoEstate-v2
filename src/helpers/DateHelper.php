@@ -181,14 +181,14 @@ class DateHelper
 	 */
 	public static function gmtnow()
 	{
-		$serverSetting = Settings::getInstance()->get('server');
+		$serverSettings = Settings::getInstance()->get('server');
 
 		static $offset = null;
 		if (is_null($offset))
 		{
-			if (isset($serverSetting['tz_offset']))
+			if (isset($serverSettings['tz_offset']))
 			{
-				$offset = (int) $serverSetting['tz_offset'];
+				$offset = (int) $serverSettings['tz_offset'];
 			}
 			else
 			{

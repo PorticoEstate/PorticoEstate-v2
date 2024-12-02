@@ -2,11 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
-use App\modules\bookingfrontend\models\Application;
-use App\modules\bookingfrontend\models\helper\Date;
-use App\modules\bookingfrontend\models\Resource;
-use App\modules\bookingfrontend\models\Order;
-use App\modules\bookingfrontend\models\OrderLine;
+use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\services\ApplicationService;
 use App\modules\phpgwapi\security\Sessions;
@@ -15,7 +11,6 @@ use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
-use App\Database\Db;
 use OpenApi\Annotations as OA;
 
 /**
@@ -58,7 +53,10 @@ class ApplicationController
             $session_id = $session->get_session_id();
 
             if (empty($session_id)) {
-                return $response->withStatus(400)->withJson(['error' => 'No active session']);
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'No active session'],
+                    400
+                );
             }
             $applications = $this->applicationService->getPartialApplications($session_id);
             $total_sum = $this->applicationService->calculateTotalSum($applications);
@@ -72,7 +70,10 @@ class ApplicationController
             return $response->withHeader('Content-Type', 'application/json');
         } catch (Exception $e) {
             $error = "Error fetching partial applications: " . $e->getMessage();
-            return $response->withStatus(500)->withJson(['error' => $error]);
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $error],
+                500
+            );
         }
     }
 
@@ -82,12 +83,18 @@ class ApplicationController
             $bouser = new UserHelper();
 
             if (!$bouser->is_logged_in()) {
-                return $response->withStatus(401)->withJson(['error' => 'User not authenticated']);
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'User not authenticated'],
+                    401
+                );
             }
 
             $ssn = $bouser->ssn;
             if (empty($ssn)) {
-                return $response->withStatus(400)->withJson(['error' => 'No SSN found for user']);
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'No SSN found for user'],
+                    400
+                );
             }
 
             $applications = $this->applicationService->getApplicationsBySsn($ssn);
@@ -102,7 +109,10 @@ class ApplicationController
             return $response->withHeader('Content-Type', 'application/json');
         } catch (Exception $e) {
             $error = "Error fetching applications: " . $e->getMessage();
-            return $response->withStatus(500)->withJson(['error' => $error]);
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $error],
+                500
+            );
         }
     }
 

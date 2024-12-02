@@ -1,102 +1,39 @@
-import {FC, useEffect, useRef, useState} from 'react';
-import {arrow, autoUpdate, flip, offset, Placement, shift, useFloating} from "@floating-ui/react";
+import React, {FC, useEffect, useRef, useState} from 'react';
 import {useIsMobile} from "@/service/hooks/is-mobile";
-import ResourceInfoPopperContent
-    from "@/components/building-calendar/modules/resource-filter/resource-info-popper/resource-info-popper-content";
+import ResourceInfoModalContent
+    from "@/components/building-calendar/modules/resource-filter/resource-info-popper/resource-info-modal-content";
 import MobileDialog from "@/components/dialog/mobile-dialog";
+import styles from "@/components/building-calendar/modules/event/popper/event-popper.module.scss";
+import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
+import {Button} from "@digdir/designsystemet-react";
+import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
 interface ResourceInfoPopperProps {
     resource_id: string | null;
     resource_name: string | null;
     onClose: () => void;
-    anchor: HTMLElement | null;
-    placement: Placement;
 }
 
-const ResourceInfoPopper: FC<ResourceInfoPopperProps> = ({ resource_id, onClose, anchor, placement, resource_name }) => {
-    const isMobile = useIsMobile();
-    const [open, setOpen] = useState(Boolean(resource_id));
-    const arrowRef = useRef<HTMLDivElement | null>(null);
-    const { x, y, strategy, refs, middlewareData, update } = useFloating({
-        open,
-        placement,
-        middleware: [
-            offset(10),
-            flip(),
-            shift(),
-            arrow({ element: arrowRef })
-        ],
-        whileElementsMounted: autoUpdate
-    });
-
-    useEffect(() => {
-        setOpen(Boolean(event));
-        if (anchor) {
-            refs.setReference(anchor);
-            update();
-        }
-    }, [event, anchor, refs, update]);
-
-    useEffect(() => {
-        if (open && anchor) {
-            const handleClickOutside = (event: MouseEvent) => {
-                if (refs.floating.current && !refs.floating.current!.contains(event.target as Node)) {
-                    onClose();
-                }
-            };
-            document.addEventListener('mousedown', handleClickOutside);
-            return () => {
-                document.removeEventListener('mousedown', handleClickOutside);
-            };
-        }
-    }, [open, anchor, onClose, refs.floating]);
-
-    if (!resource_id || !anchor || !resource_name) {
+const ResourceInfoPopper: FC<ResourceInfoPopperProps> = ({resource_id, onClose, resource_name}) => {
+    // const [open, setOpen] = useState(Boolean(resource_id));
+    const t = useTrans();
+    if (!resource_id || !resource_name) {
         return null;
     }
-    const content = <ResourceInfoPopperContent resource_id={resource_id} onClose={onClose} name={resource_name} />
-
-    if (isMobile) {
-        return (
-            <MobileDialog open={open} onClose={onClose}>
-                {content}
-            </MobileDialog>
-        );
-    }
-
-    const { x: arrowX, y: arrowY } = middlewareData.arrow || {};
 
     return (
-        <>
-            {open && (
-                <div
-                    ref={refs.setFloating}
-                    className="eventPopper"
-                    style={{
-                        position: strategy,
-                        top: y ?? 0,
-                        left: x ?? 0,
-                        zIndex: 100,
-                    }}
-                >
-                    {content}
-                    <div
-                        ref={arrowRef}
-                        className="arrow"
-                        style={{
-                            position: 'absolute',
-                            top: arrowY ?? '',
-                            left: arrowX ?? '',
-                            [placement.split('-')[0]]: '-4px',
-                            width: '8px',
-                            height: '8px',
-                            background: 'inherit',
-                            transform: 'rotate(45deg)',
-                        }}
-                    />
-                </div>
-            )}
-        </>
+        <MobileDialog size={'hd'} open={true} onClose={() => {
+            // setOpen(false)
+            onClose();
+        }} title={<h3 className={styles.eventName}><ColourCircle resourceId={+resource_id}
+                                                                 size={'medium'}/> {resource_name}
+        </h3>
+        }
+
+                      footer={<Button onClick={onClose} variant="tertiary" className={'default'} size={'sm'}
+                                      style={{textTransform: 'capitalize'}}>{t('common.ok').toLowerCase()}</Button>}>
+            <ResourceInfoModalContent resource_id={resource_id} onClose={onClose} name={resource_name}/>
+        </MobileDialog>
     );
 }
 

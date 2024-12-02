@@ -5,9 +5,8 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin, {EventResizeDoneArg} from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
-import {IEvent, IShortResource, Season} from "@/service/pecalendar.types";
+import {IEvent, Season} from "@/service/pecalendar.types";
 import {
-    AllowFunc,
     DateSelectArg, DateSpanApi,
     DatesSetArg,
     EventDropArg,
@@ -15,9 +14,6 @@ import {
 } from "@fullcalendar/core";
 import styles from './building-calender.module.scss'
 import {FCallEventConverter} from "@/components/building-calendar/util/event-converter";
-import CalendarResourceFilter, {
-    CalendarResourceFilterOption
-} from "@/components/building-calendar/modules/resource-filter/calender-resource-filter";
 import EventContent from "@/components/building-calendar/modules/event/content/event-content";
 import EventPopper from "@/components/building-calendar/modules/event/popper/event-popper";
 import CalendarInnerHeader from "@/components/building-calendar/modules/header/calendar-inner-header";
@@ -28,7 +24,7 @@ import {
     FCallTempEvent, FCEventClickArg,
     FCEventContentArg
 } from "@/components/building-calendar/building-calendar.types";
-import CalendarProvider from "@/components/building-calendar/calendar-context";
+import {useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
 import EventContentTemp from "@/components/building-calendar/modules/event/content/event-content-temp";
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
@@ -37,16 +33,15 @@ import {useIsMobile} from "@/service/hooks/is-mobile";
 import EventContentList from "@/components/building-calendar/modules/event/content/event-content-list";
 import {EventImpl} from "@fullcalendar/core/internal";
 import EventContentAllDay from "@/components/building-calendar/modules/event/content/event-content-all-day";
+import {useBuilding, useBuildingResources} from "@/service/api/building";
 
 interface BuildingCalendarProps {
-    events: IEvent[];
-    resources: Record<string, IShortResource>;
+    events?: IEvent[];
     onDateChange: Dispatch<DatesSetArg>
     seasons: Season[];
     building: IBuilding;
     initialDate: DateTime;
     initialEnabledResources: Set<string>;
-    initialResourcesHidden: boolean;
 }
 
 Settings.defaultLocale = "nb";
@@ -54,6 +49,7 @@ Settings.defaultLocale = "nb";
 
 const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     const isMobile = useIsMobile();
+    const {data: building, isLoading, isStale} = useBuilding(props.building.id, undefined, props.building);
     const t = useTrans();
     const {events} = props;
     const [currentDate, setCurrentDate] = useState<DateTime>(props.initialDate);
@@ -64,22 +60,17 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     const [popperAnchorEl, setPopperAnchorEl] = useState<HTMLElement | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [view, setView] = useState<string>(window.innerWidth < 601 ? 'timeGridDay' : 'timeGridWeek');
-    const [resourcesHidden, setSResourcesHidden] = useState<boolean>(props.initialResourcesHidden || isMobile);
-    const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!props.initialResourcesHidden && !isMobile);
     const [lastCalendarView, setLastCalendarView] = useState<string>('timeGridWeek');
-    const [storedTempEvents, setStoredTempEvents] = useState<Record<string, FCallTempEvent>>({});
-    const [enabledResources, setEnabledResources] = useState<Set<string>>(props.initialEnabledResources);
     const [currentTempEvent, setCurrentTempEvent] = useState<Partial<FCallTempEvent>>();
+    const {enabledResources} = useEnabledResources();
+    const {tempEvents: storedTempEvents, setTempEvents: setStoredTempEvents} = useTempEvents();
+    const {data: resources} = useBuildingResources(props.building.id);
 
-    // const [enabledResources, setEnabledResources] = useState<Set<string>>(
-    //     new Set(resourceOptions.map(option => option.value))
-    // );
     const eventInfos = usePopperData(
-        events.filter(e => e.type === 'event').map(e => e.id),
-        events.filter(e => e.type === 'allocation').map(e => e.id),
-        events.filter(e => e.type === 'booking').map(e => e.id)
+        (events || []).filter(e => e.type === 'event').map(e => e.id),
+        (events || []).filter(e => e.type === 'allocation').map(e => e.id),
+        (events || []).filter(e => e.type === 'booking').map(e => e.id)
     );
-
 
 
     useEffect(() => {
@@ -93,24 +84,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
     }, [view, lastCalendarView]);
 
-    const resourceOptions = useMemo<CalendarResourceFilterOption[]>(() => {
-        return Object.values(props.resources).map((resource, index) => ({
-            value: resource.id.toString(),
-            label: resource.name
-        }));
-    }, [props.resources]);
 
 
-    const setResourcesHidden = (v: boolean) => {
-        if(isMobile) {
-            setResourcesContainerRendered(v);
-            setSResourcesHidden(!v)
-        }
-        if (!v) {
-            setResourcesContainerRendered(true);
-        }
-        setSResourcesHidden(v)
-    }
     const handleDateClick = (arg: { date: Date; dateStr: string; allDay: boolean; }) => {
         if (view === 'dayGridMonth') {
             const clickedDate = DateTime.fromJSDate(arg.date);
@@ -136,13 +111,13 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             editable: true,
             extendedProps: {
                 type: 'temporary',
-                resources: [...enabledResources].map(a => props.resources[a]),
+                resources: [...enabledResources],
             },
         };
         // setTempEvents(prev => ({...prev, [newEvent.id]: newEvent}))
         setCurrentTempEvent(newEvent);
         selectInfo.view.calendar.unselect(); // Clear selection
-    }, [props.resources, enabledResources]);
+    }, [resources, enabledResources]);
 
 
     const handleEventClick = useCallback((clickInfo: FCEventClickArg<FCallBaseEvent>) => {
@@ -188,9 +163,9 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         });
 
         // Check events with new format
-        events.forEach(event => {
-            const eventStartTime = extractTime(event._from);
-            const eventEndTime = extractTime(event._to);
+        (events || []).forEach(event => {
+            const eventStartTime = extractTime(event.from_);
+            const eventEndTime = extractTime(event.to_);
 
             if (eventStartTime < minTime) minTime = eventStartTime;
             if (eventEndTime > maxTime) maxTime = eventEndTime;
@@ -209,7 +184,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         const backgroundEvents: FCallBackgroundEvent[] = [];
         const today = DateTime.now();
         const startDate = currentDate.startOf('week');
-        const endDate = startDate.plus({ weeks: 4 });
+        const endDate = startDate.plus({weeks: 4});
         // Add past dates background
         if (startDate.toMillis() < today.toMillis()) {
             console.log(startDate.toJSDate(), today.toJSDate())
@@ -226,7 +201,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         }
 
         // Add closed hours for each day
-        for (let date = startDate; date < endDate; date = date.plus({ days: 1 })) {
+        for (let date = startDate; date < endDate; date = date.plus({days: 1})) {
             const dayOfWeek = date.weekday;
             const season = props.seasons.find(s => s.wday === dayOfWeek);
 
@@ -246,7 +221,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
                 // Add background event for time after closing
                 backgroundEvents.push({
                     start: new Date(date.toFormat(`yyyy-MM-dd'T${season.to_}'`)),
-                    end: new Date(date.plus({ days: 1 }).toFormat("yyyy-MM-dd'T00:00:00'")),
+                    end: new Date(date.plus({days: 1}).toFormat("yyyy-MM-dd'T00:00:00'")),
                     display: 'background',
                     classNames: styles.closedHours,
                     extendedProps: {
@@ -259,7 +234,6 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
         return backgroundEvents;
     }, [currentDate, props.seasons]);
-
 
 
     const checkEventOverlap = useCallback((span: DateSpanApi, movingEvent: EventImpl | null): boolean => {
@@ -302,7 +276,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
     const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
         if (resizeInfo.event.extendedProps?.type === 'temporary') {
-            if(currentTempEvent && resizeInfo.event.id === currentTempEvent.id) {
+            if (currentTempEvent && resizeInfo.event.id === currentTempEvent.id) {
                 setCurrentTempEvent({
                     ...currentTempEvent,
                     end: resizeInfo.event.end as Date,
@@ -338,7 +312,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     }
 
     useEffect(() => {
-        const convertedEvents = events
+        const convertedEvents = (events || [])
             .map((e) => FCallEventConverter(e, enabledResources))
             .filter(e => e.mainEvent || e.backgroundEvent);
 
@@ -356,34 +330,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         calendarRef?.current?.getApi().changeView(view)
     }, [view]);
 
-    const handleResourceToggle = (resourceId: string) => {
-        setEnabledResources(prevEnabled => {
-            const newEnabled = new Set(prevEnabled);
-            if (newEnabled.has(resourceId)) {
-                newEnabled.delete(resourceId);
-            } else {
-                newEnabled.add(resourceId);
-            }
-            return newEnabled;
-        });
-    };
 
-    const handleToggleAll = () => {
-        if (enabledResources.size === resourceOptions.length) {
-            setEnabledResources(new Set());
-        } else {
-            setEnabledResources(new Set(resourceOptions.map(option => option.value)));
-        }
-    };
-
-    const handleAfterTransition = () => {
-        if(isMobile) {
-            return;
-        }
-        if (resourcesHidden) {
-            setResourcesContainerRendered(false);
-        }
-    };
     useEffect(() => {
         if (isMobile) {
             // const newView = whichView(window.innerWidth);
@@ -397,6 +344,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     }, [isMobile]);
 
     const calendarVisEvents = useMemo(() => [...calendarEvents, ...tempEventArr, currentTempEvent].filter(Boolean) as EventInput[], [calendarEvents, tempEventArr, currentTempEvent]);
+
     // console.log([...calendarEvents, ...tempEventArr, ...renderBackgroundEvents()])
 
     function renderEventContent(eventInfo: FCEventContentArg<FCallBaseEvent>) {
@@ -409,35 +357,19 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         }
 
         if (calendarRef.current?.getApi().view.type === 'listWeek') {
-            return <EventContentList eventInfo={eventInfo as FCEventContentArg<FCallEvent>} />;
+            return <EventContentList eventInfo={eventInfo as FCEventContentArg<FCallEvent>}/>;
         }
         if (eventInfo.event.allDay) {
-            return <EventContentAllDay eventInfo={eventInfo as FCEventContentArg<FCallEvent>} />;
+            return <EventContentAllDay eventInfo={eventInfo as FCEventContentArg<FCallEvent>}/>;
         }
         return <EventContent eventInfo={eventInfo as FCEventContentArg<FCallEvent>}
         />
     }
+
     return (
-        <CalendarProvider resources={props.resources}
-                          tempEvents={storedTempEvents}
-                          enabledResources={enabledResources}
-                          setTempEvents={setStoredTempEvents}
-        >
-            <div className={`${styles.calendar} ${resourcesHidden ? styles.closed : ''} `}
-                // onTransitionStart={handleBeforeTransition}
-                 onTransitionEnd={handleAfterTransition}>
-                {/*<CalendarHeader view={view} calendarRef={calendarRef} setView={(v) => setView(v)}/>*/}
-                <CalendarResourceFilter
-                    transparent={resourcesHidden}
-                    open={resourcesContainerRendered}
-                    setOpen={setResourcesContainerRendered}
-                    resourceOptions={resourceOptions}
-                    enabledResources={enabledResources}
-                    onToggle={handleResourceToggle}
-                    onToggleAll={handleToggleAll}
-                />
-                <CalendarInnerHeader view={view} resourcesHidden={resourcesHidden}
-                                     setResourcesHidden={setResourcesHidden}  calendarRef={calendarRef}  setView={(v) => setView(v)}
+            <React.Fragment>
+                <CalendarInnerHeader view={view} calendarRef={calendarRef}
+                                     setView={(v) => setView(v)}
                                      setLastCalendarView={() => setView(lastCalendarView)} building={props.building}/>
                 <FullCalendar
                     ref={calendarRef}
@@ -516,8 +448,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
                     setPopperAnchorEl(null);
                 }}/>
 
-            </div>
-        </CalendarProvider>
+
+            </React.Fragment>
     );
 }
 

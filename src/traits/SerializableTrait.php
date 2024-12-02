@@ -34,10 +34,15 @@ trait SerializableTrait
 
             if ($exposeAnnotation || $defaultBehavior === 'expose')
             {
+                $value = $property->getValue($this);
+                // If value is null and default annotation exists, use default value
+                if ($value === null && $defaultAnnotation !== null) {
+                    $value = $defaultAnnotation;
+                }
+
                 if ($this->shouldExposeProperty($exposeAnnotation, $property, $context))
                 {
                     $property->setAccessible(true);
-                    $value = $property->getValue($this);
 
                     if (is_string($value))
                     {

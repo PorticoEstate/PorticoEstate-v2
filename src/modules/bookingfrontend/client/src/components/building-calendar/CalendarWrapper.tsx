@@ -1,26 +1,32 @@
-// File: components/CalendarWrapper.tsx
 'use client'
 
-import React, {useState, useCallback, useRef} from 'react';
+import React, {useState, useCallback, useRef, useEffect} from 'react';
 import {DateTime, Interval} from "luxon";
 import BuildingCalendarClient from "@/components/building-calendar/building-calendar-client";
-import {fetchBuildingSchedule, fetchFreeTimeSlots} from "@/service/api/api-utils";
-import {IEvent, IShortResource, Season} from "@/service/pecalendar.types";
+import {IEvent, Season} from "@/service/pecalendar.types";
 import {DatesSetArg} from "@fullcalendar/core";
-import {Modal, Spinner} from '@digdir/designsystemet-react'
 import {IBuilding} from "@/service/types/Building";
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
+import {useBuildingSchedule} from "@/service/hooks/api-hooks";
+import CalendarProvider from "@/components/building-calendar/calendar-context";
+import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
+import {useQueryClient} from "@tanstack/react-query";
+import styles from "@/components/building-calendar/building-calender.module.scss";
+import CalendarResourceFilter from "@/components/building-calendar/modules/resource-filter/calender-resource-filter";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface CalendarWrapperProps {
     initialSchedule: IEvent[];
     initialFreeTime: any; // Replace 'any' with the correct type
     buildingId: number;
-    resources: Record<string, IShortResource>;
+    resources: IResource[];
     seasons: Season[];
     building: IBuilding;
     initialDate: Date;
     resourceId?: string;
+    initialWeekSchedule: Record<string, IEvent[]>
 }
+
 
 const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                                                              initialDate,
@@ -30,15 +36,25 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                                                              resources,
                                                              seasons,
                                                              building,
-                                                             resourceId
+                                                             resourceId,
+                                                             initialWeekSchedule
                                                          }) => {
-    const [freeTime, setFreeTime] = useState(initialFreeTime);
-    const {setLoadingState} = useLoadingContext();
-    const modalRef = useRef<HTMLDialogElement>(null);
     const initialEnabledResources = new Set<string>(
-        resourceId ? [resourceId] : Object.keys(resources)
+        resourceId ? [resourceId] : resources.map(a => `${a.id}`)
     );
     const [enabledResources, setEnabledResources] = useState<Set<string>>(initialEnabledResources);
+    const {setLoadingState} = useLoadingContext();
+    const [storedTempEvents, setStoredTempEvents] = useState<Record<string, FCallTempEvent>>({});
+    const queryClient = useQueryClient();
+    const isMobile = useIsMobile();
+    const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!resourceId && !(window.innerWidth < 601));
+    const [resourcesHidden, setSResourcesHidden] = useState<boolean>(!!resourceId || window.innerWidth < 601);
+
+    useEffect(() => {
+        resources.forEach((res) => queryClient.setQueryData<IResource>(['resource', `${res.id}`], res))
+        queryClient.setQueryData(['buildingResources', `${resourceId}`], resources);
+    }, [resources, queryClient, resourceId]);
+
 
     const prioritizeEvents = useCallback((events: IEvent[]): IEvent[] => {
         const allocationIds = events
@@ -49,13 +65,19 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
             !allocationIds.includes(event.allocation_id || -1)
         );
     }, []);
-    const [schedule, setSchedule] = useState<IEvent[]>(prioritizeEvents(initialSchedule));
+    const [dates, setDates] = useState<DateTime[]>([DateTime.fromJSDate(initialDate)]);
+
+    const QCRES = useBuildingSchedule({
+        building_id: building.id,
+        weeks: dates,
+        initialWeekSchedule: initialWeekSchedule
+    });
 
     const fetchData = useCallback(async (start: DateTime, end?: DateTime) => {
         setLoadingState('building', true);
         try {
             const firstDay = start.startOf('week');
-            const lastDay = (end || DateTime.now()).endOf('week');
+            const lastDay = (end || DateTime.now()).endOf('week').plus({weeks: 1});
 
 
             // Create an interval from start to end
@@ -72,45 +94,76 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                 weeksToFetch.push(firstDay.toFormat("y-MM-dd"));
             }
 
-            const [newSchedule, newFreeTime] = await Promise.all([
-                fetchBuildingSchedule(buildingId, weeksToFetch),
-                fetchFreeTimeSlots(buildingId)
-            ]);
+            setDates(dateInterval.splitBy({weeks: 1}).map(interval =>
+                interval.start!
+            ))
 
-            setSchedule(prioritizeEvents(newSchedule.schedule || []));
-            setFreeTime(newFreeTime);
 
         } catch (error) {
             console.error('Error fetching data:', error);
-            // Handle error (e.g., show error message to user)
         } finally {
             setLoadingState('building', false);
 
         }
-    }, [buildingId, prioritizeEvents]);
+    }, [buildingId, prioritizeEvents, setLoadingState]);
 
 
     const handleDateChange = (newDate: DatesSetArg) => {
         fetchData(DateTime.fromJSDate(newDate.start), DateTime.fromJSDate(newDate.end))
-        // .then(([newSchedule, newFreeTime]) => {
-        //     setSchedule(prioritizeEvents(newSchedule.schedule || []));
-        //     setFreeTime(newFreeTime);
-        // });
     };
-    return (
-        <div>
 
-            <BuildingCalendarClient
-                initialDate={DateTime.fromJSDate(initialDate)}
-                events={schedule}
-                onDateChange={handleDateChange}
-                resources={resources}
-                seasons={seasons}
-                building={building}
-                initialEnabledResources={enabledResources}
-                initialResourcesHidden={!!resourceId}
-            />
-        </div>
+    const handleAfterTransition = () => {
+        if (isMobile) {
+            return;
+        }
+        if (resourcesHidden) {
+            setResourcesContainerRendered(false);
+        }
+    };
+
+
+    const setResourcesHidden = (v: boolean) => {
+        if (isMobile) {
+            setResourcesContainerRendered(v);
+            setSResourcesHidden(!v)
+        }
+        if (!v) {
+            setResourcesContainerRendered(true);
+        }
+        setSResourcesHidden(v)
+    }
+
+    return (
+        <CalendarProvider
+            tempEvents={storedTempEvents}
+            setTempEvents={setStoredTempEvents}
+            enabledResources={enabledResources}
+            setEnabledResources={setEnabledResources}
+            setResourcesHidden={setResourcesHidden}
+            resourcesHidden={resourcesHidden}
+            currentBuilding={buildingId}
+        >
+
+            <div className={`${styles.calendar} ${resourcesHidden ? styles.closed : ''} `}
+                // onTransitionStart={handleBeforeTransition}
+                 onTransitionEnd={handleAfterTransition}>
+                {/*<CalendarHeader view={view} calendarRef={calendarRef} setView={(v) => setView(v)}/>*/}
+                <CalendarResourceFilter
+                    transparent={resourcesHidden}
+                    open={resourcesContainerRendered}
+                    setOpen={setResourcesContainerRendered}
+                    buildingId={building.id}
+                />
+                <BuildingCalendarClient
+                    initialDate={DateTime.fromJSDate(initialDate)}
+                    events={QCRES.data}
+                    onDateChange={handleDateChange}
+                    seasons={seasons}
+                    building={building}
+                    initialEnabledResources={enabledResources}
+                />
+            </div>
+        </CalendarProvider>
     );
 };
 

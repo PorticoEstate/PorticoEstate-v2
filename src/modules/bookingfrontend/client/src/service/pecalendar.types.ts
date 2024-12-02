@@ -17,8 +17,8 @@ export interface IEvent {
     // from: string
     // to: string
     // date: string
-    _from: string;
-    _to: string;
+    from_: string;
+    to_: string;
     building_name: string
     allocation_id?: number
     group_id?: number

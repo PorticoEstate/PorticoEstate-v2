@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\controllers;
 
 use App\Database\Db;
+use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\User;
 use Psr\Container\ContainerInterface;
@@ -41,15 +42,20 @@ class BookingUserController
         $this->db = Db::getInstance();
     }
 
+
     /**
      * @OA\Get(
      *     path="/bookingfrontend/user",
-     *     summary="Get user details",
+     *     summary="Get authenticated user details",
      *     tags={"User"},
      *     @OA\Response(
      *         response=200,
      *         description="User details",
      *         @OA\JsonContent(ref="#/components/schemas/User")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="User not authenticated"
      *     )
      * )
      */
@@ -58,19 +64,45 @@ class BookingUserController
         try
         {
             $bouser = new UserHelper();
+
+            // Check if user is logged in first
+            if (!$bouser->is_logged_in())
+            {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Not authenticated'],
+                    401
+                );
+            }
+
+            // Validate SSN login and get user data
+            $external_login_info = $bouser->validate_ssn_login([], true);
+            if (empty($external_login_info))
+            {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid or expired session'],
+                    401
+                );
+            }
+
             $userModel = new User($bouser);
             $serialized = $userModel->serialize();
 
             $response->getBody()->write(json_encode($serialized));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(200);
+
         } catch (Exception $e)
         {
-            $error = "Error fetching user details: " . $e->getMessage();
-            $response->getBody()->write(json_encode(['error' => $error]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            // Log the error but don't expose internal details
+            error_log("Error in user endpoint: " . $e->getMessage());
+
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Internal server error'],
+                500
+            );
         }
     }
-
 
     /**
      * @OA\Patch(
@@ -113,10 +145,12 @@ class BookingUserController
      */
     public function update(Request $request, Response $response): Response
     {
-        try {
+        try
+        {
             $bouser = new UserHelper();
 
-            if (!$bouser->is_logged_in()) {
+            if (!$bouser->is_logged_in())
+            {
                 $response->getBody()->write(json_encode(['error' => 'User not authenticated']));
                 return $response->withHeader('Content-Type', 'application/json')
                     ->withStatus(401);
@@ -124,7 +158,8 @@ class BookingUserController
 
             // Get current user's SSN
             $userSsn = $bouser->ssn;
-            if (empty($userSsn)) {
+            if (empty($userSsn))
+            {
                 $response->getBody()->write(json_encode(['error' => 'No SSN found for user']));
                 return $response->withHeader('Content-Type', 'application/json')
                     ->withStatus(400);
@@ -132,7 +167,8 @@ class BookingUserController
 
             // Get the user ID from SSN
             $userId = $bouser->get_user_id($userSsn);
-            if (!$userId) {
+            if (!$userId)
+            {
                 $response->getBody()->write(json_encode(['error' => 'User not found']));
                 return $response->withHeader('Content-Type', 'application/json')
                     ->withStatus(404);
@@ -140,7 +176,8 @@ class BookingUserController
 
             // Get update data from request body
             $data = json_decode($request->getBody()->getContents(), true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
+            if (json_last_error() !== JSON_ERROR_NONE)
+            {
                 $response->getBody()->write(json_encode(['error' => 'Invalid JSON data']));
                 return $response->withHeader('Content-Type', 'application/json')
                     ->withStatus(400);
@@ -148,29 +185,36 @@ class BookingUserController
 
             // Only allow whitelisted fields
             $updateData = [];
-            foreach ($data as $field => $value) {
-                if (isset(self::ALLOWED_FIELDS[$field])) {
+            foreach ($data as $field => $value)
+            {
+                if (isset(self::ALLOWED_FIELDS[$field]))
+                {
                     $updateData[$field] = $value;
                 }
             }
 
-            if (empty($updateData)) {
+            if (empty($updateData))
+            {
                 $response->getBody()->write(json_encode(['error' => 'No valid fields to update']));
                 return $response->withHeader('Content-Type', 'application/json')
                     ->withStatus(400);
             }
 
             // Validate fields
-            if (isset($updateData['email'])) {
-                if (!filter_var($updateData['email'], FILTER_VALIDATE_EMAIL)) {
+            if (isset($updateData['email']))
+            {
+                if (!filter_var($updateData['email'], FILTER_VALIDATE_EMAIL))
+                {
                     $response->getBody()->write(json_encode(['error' => 'Invalid email format']));
                     return $response->withHeader('Content-Type', 'application/json')
                         ->withStatus(400);
                 }
             }
 
-            if (isset($updateData['homepage'])) {
-                if (!empty($updateData['homepage']) && !filter_var($updateData['homepage'], FILTER_VALIDATE_URL)) {
+            if (isset($updateData['homepage']))
+            {
+                if (!empty($updateData['homepage']) && !filter_var($updateData['homepage'], FILTER_VALIDATE_URL))
+                {
                     $response->getBody()->write(json_encode(['error' => 'Invalid homepage URL format']));
                     return $response->withHeader('Content-Type', 'application/json')
                         ->withStatus(400);
@@ -181,14 +225,17 @@ class BookingUserController
             $setClauses = [];
             $params = [':id' => $userId];
 
-            foreach ($updateData as $field => $value) {
-                if (isset(self::ALLOWED_FIELDS[$field])) {
+            foreach ($updateData as $field => $value)
+            {
+                if (isset(self::ALLOWED_FIELDS[$field]))
+                {
                     $setClauses[] = $field . ' = :' . $field;
                     $params[':' . $field] = $value;
                 }
             }
 
-            if (empty($setClauses)) {
+            if (empty($setClauses))
+            {
                 $response->getBody()->write(json_encode(['error' => 'No valid fields to update']));
                 return $response->withHeader('Content-Type', 'application/json')
                     ->withStatus(400);
@@ -200,7 +247,8 @@ class BookingUserController
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
 
-            if ($stmt->rowCount() === 0) {
+            if ($stmt->rowCount() === 0)
+            {
                 $response->getBody()->write(json_encode(['error' => 'User not found or no changes made']));
                 return $response->withHeader('Content-Type', 'application/json')
                     ->withStatus(404);
@@ -217,7 +265,8 @@ class BookingUserController
             return $response->withHeader('Content-Type', 'application/json')
                 ->withStatus(200);
 
-        } catch (Exception $e) {
+        } catch (Exception $e)
+        {
             $error = "Error updating user: " . $e->getMessage();
             $response->getBody()->write(json_encode(['error' => $error]));
             return $response->withHeader('Content-Type', 'application/json')

@@ -41,7 +41,7 @@ export interface FCallTempEvent {
     editable: boolean,
     extendedProps: {
         type: 'temporary',
-        resources: IShortResource[]
+        resources: (string | number)[]
     };
 }
 

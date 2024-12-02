@@ -48,10 +48,10 @@ const EventContentList: FC<EventContentListProps> = ({eventInfo}) => {
                 <FontAwesomeIcon icon={faLayerGroup}/>
                 {renderColorCircles(isMobile ? 1 : 3)}
             </div>
-            {infoData?.organizer || !isMobile && (
+            {(infoData?.organizer || !isMobile) && (
                 <div className={`text-small ${styles.organizer}`}>
                     <FontAwesomeIcon className="text-small"
-                                     icon={faUser}/> {infoData?.organizer || t('bookingfrontend.not_available')}
+                                     icon={faUser}/> {infoData?.is_public  ? infoData?.organizer || t('bookingfrontend.not_available') : t('bookingfrontend.private')}
                 </div>)}
             <span className={`${styles.to_time} text-overline`}>
                 <FontAwesomeIcon className="text-label" icon={faClock}/>{formatTimeStamp(actualEnd, true)}

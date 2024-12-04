@@ -27,6 +27,10 @@ class LoginHelper
 	public function __construct($msg_only = false)
 	{
 		$this->serverSettings = Settings::getInstance()->get('server');
+		if (!$this->serverSettings['isConnected'])
+		{
+			throw new \Exception('Not connected to the server');
+		}
 
 		$this->serverSettings['template_set'] = Settings::getInstance()->get('login_template_set');
 		$this->serverSettings['template_dir'] = PHPGW_SERVER_ROOT

@@ -8,10 +8,13 @@ import ShoppingCartButton from "@/components/layout/header/shopping-cart/shoppin
 import logo from '/public/logo_aktiv_kommune.png';
 import logo_horizontal from '/public/logo_aktiv_kommune_horizontal.png';
 import Image from "next/image";
+
+
 interface HeaderProps {
 }
 
 const Header = async (props: HeaderProps) => {
+
     return (
         <>
             <nav className={`${styles.navbar}`}>

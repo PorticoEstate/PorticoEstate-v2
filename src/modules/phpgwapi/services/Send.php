@@ -31,7 +31,7 @@ class Send
 	var $err    = array('code', 'msg', 'desc');
 	var $to_res = array();
 	var $errorInfo;
-	var $serverSetting;
+	var $serverSettings;
 	protected $userSetting;
 
 
@@ -41,7 +41,7 @@ class Send
 		$this->err['code'] = ' ';
 		$this->err['msg']  = ' ';
 		$this->err['desc'] = ' ';
-		$this->serverSetting = Settings::getInstance()->get('server');
+		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->userSetting = Settings::getInstance()->get('user');
 
 	}
@@ -52,7 +52,7 @@ class Send
 			if ($this->userSetting['fullname']) {
 				$from = $this->userSetting['fullname'] . ' <' . $this->userSetting['preferences']['email']['address'] . '>';
 			} else {
-				$from = "NoReply<NoReply@{$this->serverSetting['hostname']}>";
+				$from = "NoReply<NoReply@{$this->serverSettings['hostname']}>";
 			}
 		}
 
@@ -404,7 +404,7 @@ class Send
 	function smail($to, $subject, $message, $header)
 	{
 		$fromuser = $this->userSetting['preferences']['email']['address'];
-		$mymachine = $this->serverSetting['hostname'];
+		$mymachine = $this->serverSettings['hostname'];
 		// error code and message of failed connection
 		$errcode = '';
 		$errmsg = '';
@@ -412,12 +412,12 @@ class Send
 		$timeout = 5;
 
 		// now we try to open the socket and check, if any smtp server responds
-		$smtp_port = $this->serverSetting['smtp_port'] ? $this->serverSetting['smtp_port'] : 25;
-		$socket = fsockopen($this->serverSetting['smtp_server'], $smtp_port, $errcode, $errmsg, $timeout);
+		$smtp_port = $this->serverSettings['smtp_port'] ? $this->serverSettings['smtp_port'] : 25;
+		$socket = fsockopen($this->serverSettings['smtp_server'], $smtp_port, $errcode, $errmsg, $timeout);
 		if (!$socket) {
 			$this->err['code'] = '420';
 			$this->err['msg']  = $errcode . ':' . $errmsg;
-			$this->err['desc'] = 'Connection to ' . $this->serverSetting['smtp_server'] . ':' . $this->serverSetting['smtp_port'] . ' failed - could not open socket.';
+			$this->err['desc'] = 'Connection to ' . $this->serverSettings['smtp_server'] . ':' . $this->serverSettings['smtp_port'] . ' failed - could not open socket.';
 			return False;
 		} else {
 			$rrc = $this->socket2msg($socket);

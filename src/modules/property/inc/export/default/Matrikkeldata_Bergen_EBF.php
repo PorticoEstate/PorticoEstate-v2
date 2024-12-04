@@ -83,6 +83,135 @@ class export_conv
 
 	function get_matrikkel_info(&$values)
 	{
+		$buildingTypes = array(
+			111 => "Enebolig",
+			112 => "Enebolig med hybelleilighet, sokkelleilighet o.l.",
+			113 => "Våningshus",
+			121 => "Tomannsbolig, vertikaldelt",
+			122 => "Tomannsbolig, horisontaldelt",
+			123 => "Våningshus, tomannsbolig, vertikaldelt",
+			124 => "Våningshus, tomannsbolig, horisontaldelt",
+			131 => "Rekkehus",
+			133 => "Kjedehus inkl. atriumhus",
+			135 => "Terrassehus",
+			136 => "Andre småhus med 3 boliger eller flere",
+			141 => "Store frittliggende boligbygg på 2 etasjer",
+			142 => "Store frittliggende boligbygg på 3 og 4 etasjer",
+			143 => "Store frittliggende boligbygg på 5 etasjer eller over",
+			144 => "Store sammenbygde boligbygg på 2 etasjer",
+			145 => "Store sammenbygde boligbygg på 3 og 4 etasjer",
+			146 => "Store sammenbygde boligbygg på 5 etasjer og over",
+			151 => "Bo- og servicesenter",
+			152 => "Studenthjem/studentboliger",
+			159 => "Annen bygning for bofellesskap",
+			161 => "Fritidsbygning (hytter, sommerhus o.l.)",
+			162 => "Helårsbolig benyttet som fritidsbolig",
+			163 => "Våningshus benyttet som fritidsbolig",
+			171 => "Seterhus, sel, rorbu o.l.",
+			172 => "Skogs- og utmarkskoie, gamme",
+			181 => "Garasje, uthus, anneks knyttet til bolig",
+			182 => "Garasje, uthus, anneks knyttet til fritidsbolig",
+			183 => "Naust, båthus, sjøbu",
+			193 => "Boligbrakker",
+			199 => "Annen boligbygning (f.eks. sekundærbolig reindrift)",
+			211 => "Fabrikkbygning",
+			212 => "Verkstedbygning",
+			214 => "Bygning for renseanlegg",
+			216 => "Bygning for vannforsyning, bl.a. pumpestasjon",
+			219 => "Annen industribygning",
+			221 => "Kraftstasjon (>15 000 kVA)",
+			223 => "Transformatorstasjon (>10 000 kVA)",
+			229 => "Annen energiforsyningsbygning",
+			231 => "Lagerhall",
+			232 => "Kjøle- og fryselager",
+			233 => "Silobygning",
+			239 => "Annen lagerbygning",
+			241 => "Hus for dyr, fôrlager, strølager, frukt- og grønnsakslager, landbrukssilo, høy-/korntørke",
+			243 => "Veksthus",
+			244 => "Driftsbygning for fiske og fangst, inkl. oppdrettsanlegg",
+			245 => "Naust/redskapshus for fiske",
+			248 => "Annen fiskeri- og fangstbygning",
+			249 => "Annen landbruksbygning",
+			311 => "Kontor- og administrasjonsbygning, rådhus",
+			312 => "Bankbygning, posthus",
+			313 => "Mediebygning",
+			319 => "Annen kontorbygning",
+			321 => "Kjøpesenter, varehus",
+			322 => "Butikkbygning",
+			323 => "Bensinstasjon",
+			329 => "Annen forretningsbygning",
+			330 => "Messe- og kongressbygning",
+			411 => "Ekspedisjonsbygning, flyterminal, kontrolltårn",
+			412 => "Jernbane- og T-banestasjon",
+			415 => "Godsterminal",
+			416 => "Postterminal",
+			419 => "Annen ekspedisjons- og terminalbygning",
+			429 => "Telekommunikasjonsbygning",
+			431 => "Parkeringshus",
+			439 => "Annen garasje- hangarbygning",
+			441 => "Trafikktilsynsbygning",
+			449 => "Annen veg- og trafikktilsynsbygning",
+			511 => "Hotellbygning",
+			512 => "Motellbygning",
+			519 => "Annen hotellbygning",
+			521 => "Hospits, pensjonat",
+			522 => "Vandrerhjem, feriehjem/-koloni, turisthytte",
+			523 => "Appartement",
+			524 => "Campinghytte/utleiehytte",
+			529 => "Annen bygning for overnatting",
+			531 => "Restaurantbygning, kafébygning",
+			532 => "Sentralkjøkken, kantinebygning",
+			533 => "Gatekjøkken, kioskbygning",
+			539 => "Annen restaurantbygning",
+			611 => "Lekepark",
+			612 => "Barnehage",
+			613 => "Barneskole",
+			614 => "Ungdomsskole",
+			615 => "Kombinert barne- og ungdomsskole",
+			616 => "Videregående skole",
+			619 => "Annen skolebygning",
+			621 => "Universitets- og høgskolebygning med integrerte funksjoner, auditorium, lesesal o.a.",
+			623 => "Laboratoriebygning",
+			629 => "Annen universitets-, høgskole- og forskningsbygning",
+			641 => "Museum, kunstgalleri",
+			642 => "Bibliotek, mediatek",
+			643 => "Zoologisk og botanisk hage",
+			649 => "Annen museums- og bibliotekbygning",
+			651 => "Idrettshall",
+			652 => "Ishall",
+			653 => "Svømmehall",
+			654 => "Tribune og idrettsgarderobe",
+			655 => "Helsestudio",
+			659 => "Annen idrettsbygning",
+			661 => "Kinobygning, teaterbygning, opera/konserthus",
+			662 => "Samfunnshus, grendehus",
+			663 => "Diskotek",
+			669 => "Annet kulturhus",
+			671 => "Kirke, kapell",
+			672 => "Bedehus, menighetshus",
+			673 => "Krematorium, gravkapell, bårehus",
+			674 => "Synagoge, moské",
+			675 => "Kloster",
+			679 => "Annen bygning for religiøse aktiviteter",
+			719 => "Sykehus",
+			721 => "Sykehjem",
+			722 => "Bo- og behandlingssenter, aldershjem",
+			723 => "Rehabiliteringsinstitusjon, kurbad",
+			729 => "Annet sykehjem",
+			731 => "Klinikk, legekontor/-senter/-vakt",
+			732 => "Helse- og sosialsenter, helsestasjon",
+			739 => "Annen primærhelsebygning",
+			819 => "Fengselsbygning",
+			821 => "Politistasjon",
+			822 => "Brannstasjon, ambulansestasjon",
+			823 => "Fyrstasjon, losstasjon",
+			824 => "Stasjon for radarovervåkning av fly- og/eller skipstrafikk",
+			825 => "Tilfluktsrom/bunker",
+			829 => "Annen beredskapsbygning",
+			830 => "Monument",
+			840 => "Offentlig toalett"
+		);
+
 		$sql = "SELECT DISTINCT MATRIKKELENHET.ID, GATE.GATENAVN, ADRESSE.HUSNR, ADRESSE.BOKSTAV,
 			MATRIKKELENHET.CLASS as MATRIKKELENHET_CLASS, MATRIKKELENHET.ETABLERINGSDATO, MATRIKKELENHET.OPPGITTAREAL, BYGG.BYGNINGSNR, BYGG.CLASS as BYGG_CLASS, BYGG.BEBYGDAREAL, BYGG.ANTALLBOENHETER as BYGG_ANTALLBOENHETER, BYGG.BRUKSAREALTILBOLIG, BYGG.BRUKSAREALTILANNET, BYGG.BRUKSAREALTOTALT, BYGNINGSTYPEKODE
 			FROM MATRIKKELENHET, BYGG, BRUKSENHET, GATE, ADRESSE
@@ -157,6 +286,7 @@ class export_conv
 			$value['gardsnr']			 = $this->db->f('GARDSNR');
 			$value['bruksnr']			 = $this->db->f('BRUKSNR');
 			$value['Bygningstypekode']	 = $this->db->f('BYGNINGSTYPEKODE');
+			$value['BygningstypeTekst']	 = $buildingTypes[$value['Bygningstypekode']];
 		}
 	}
 
@@ -164,15 +294,14 @@ class export_conv
 	{
 		$db = Db::getInstance();
 
-		$sql = "SELECT DISTINCT bygningsnr,fm_location1.loc1 as objekt, loc1_name as navn, fm_owner_category.descr as eiertype, sum(boareal) as leieareal, sameie_andeler
+		$sql = "SELECT DISTINCT bygningsnr,fm_location1.loc1 as objekt, loc1_name as navn,"
+			. " fm_owner_category.descr as eiertype, sum(boareal) as leieareal, sameie_andeler, fm_location1.zip_code as postnr
 			FROM fm_location4
 			JOIN fm_location1 on fm_location4.loc1 = fm_location1.loc1
 			JOIN fm_owner ON fm_owner.id = fm_location1.owner_id
 			JOIN fm_owner_category ON fm_owner.category = fm_owner_category.id
-			-- WHERE fm_owner_category.id IN (4)
-			WHERE fm_location4.category != 99
+			WHERE fm_location4.category NOT IN (99)
 			AND bygningsnr IS NOT NULL
-			--AND bygningsnr = 300383295
 			GROUP BY bygningsnr, objekt, navn, eiertype, sameie_andeler
             ORDER BY bygningsnr";
 
@@ -201,7 +330,7 @@ class export_conv
 			$building['formaal'] = implode(', ', $categories);
 
 
-			$sql = "SELECT DISTINCT loc1, loc2, loc3  FROM fm_location4 WHERE bygningsnr = {$building['bygningsnr']}";
+			$sql = "SELECT DISTINCT loc1, loc2, loc3  FROM fm_location4 WHERE bygningsnr = {$building['bygningsnr']} AND fm_location4_category.id NOT IN (99)";
 			$db->query($sql, __LINE__, __FILE__);
 			$location_codes = array();
 			while ($db->next_record())

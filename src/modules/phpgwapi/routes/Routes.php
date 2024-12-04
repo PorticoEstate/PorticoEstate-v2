@@ -37,7 +37,7 @@ $app->get('/home/', HomeHelper::class . ':processHome')->add(new SessionsMiddlew
 
 $app->get('/swagger[/{params:.*}]', function (Request $request, Response $response)
 {
-    $json_file = __DIR__ . '/../../swagger.json';
+    $json_file = __DIR__ . '/../../../../swagger.json';
     $json = file_get_contents($json_file);
     $response = $response->withHeader('Content-Type', 'application/json');
     $response->getBody()->write($json);

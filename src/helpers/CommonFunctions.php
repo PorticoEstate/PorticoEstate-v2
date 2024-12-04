@@ -43,7 +43,14 @@ function lang($key, $m1 = '', $m2 = '', $m3 = '', $m4 = '', $m5 = '', $m6 = '', 
 
 	if (!$translation)
 	{
-		$translation = Translation::getInstance();
+		if(\App\Database\Db::getInstance()->isConnected())
+		{
+			$translation = Translation::getInstance();
+		}
+		else
+		{
+			$translation = new App\modules\phpgwapi\services\setup\SetupTranslation();
+		}
 	}
 	return $translation->translate($key, $vars);
 }

@@ -8,6 +8,7 @@ import {FCallTempEvent, FCEventContentArg} from "@/components/building-calendar/
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import popperStyles from '../popper/event-popper.module.scss'
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useResource} from "@/service/api/building";
 
 interface EventContentTempProps {
     eventInfo: FCEventContentArg<FCallTempEvent>;
@@ -96,7 +97,6 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
             }
 
 
-
             setLayout({
                 visibleResources: Math.max(0, maxVisibleResources),
                 visibleCircles: Math.max(0, maxVisibleCircles),
@@ -132,7 +132,7 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
             <div className={styles.colorCircles}>
                 {circlesToShow.map((res, index) => (
                     <ColourCircle
-                        resourceId={res.id}
+                        resourceId={+res}
                         key={index}
                         className={styles.colorCircle}
                         size={size}
@@ -154,10 +154,7 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
         return (
             <>
                 {resourcesToShow.map((resource, index) => (
-                    <div key={index} className={`${popperStyles.resourceItem} ${popperStyles.gray}`}>
-                        <ColourCircle resourceId={resource.id} size={'medium'}/>
-                        <span className={popperStyles.resourceName}>{resource.name}</span>
-                    </div>
+                    <ResourceTitle resourceId={resource} key={'circle-' + resource}/>
                 ))}
                 {remainingCount > 0 && (
                     <div className={`${popperStyles.resourceItem} ${popperStyles.gray}`}>
@@ -195,5 +192,25 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
 
     return <div ref={eventRef} style={{maxWidth: '100%'}}>{content}</div>;
 };
+
+
+interface ResourceTitleProps {
+    resourceId: string | number;
+}
+
+const ResourceTitle: FC<ResourceTitleProps> = (props) => {
+    const {data: resource} = useResource(props.resourceId);
+
+    if (!resource) {
+        return null;
+    }
+    return (
+        <div className={`${popperStyles.resourceItem} ${popperStyles.gray}`}>
+            <ColourCircle resourceId={resource.id} size={'medium'}/>
+            <span className={popperStyles.resourceName}>{resource.name}</span>
+        </div>
+    );
+}
+
 
 export default EventContentTemp;

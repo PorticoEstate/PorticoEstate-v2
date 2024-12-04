@@ -13,7 +13,7 @@ interface BuildingResourcesProps {
 }
 
 const BuildingResources = async (props: BuildingResourcesProps) => {
-    const resources = await fetchBuildingResources(props.building.id)
+    const resources = await fetchBuildingResources(props.building.id, true)
     const {t} = await getTranslation()
     return (
         <div className={'mx-standard'}>

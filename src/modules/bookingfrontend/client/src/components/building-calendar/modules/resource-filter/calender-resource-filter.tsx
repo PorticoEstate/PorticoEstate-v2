@@ -1,14 +1,15 @@
-import React, {FC, useState} from 'react';
+import React, {FC, memo, useMemo, useState} from 'react';
 import styles from './calender-resource-filter.module.scss';
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {Checkbox, Button} from "@digdir/designsystemet-react";
-import {useTempEvents} from "@/components/building-calendar/calendar-context";
+import {useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import MobileDialog from "@/components/dialog/mobile-dialog";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {InformationSquareIcon} from "@navikt/aksel-icons";
 import ResourceInfoPopper
     from "@/components/building-calendar/modules/resource-filter/resource-info-popper/resource-info-popper";
+import {useBuildingResources} from "@/service/api/building";
 
 export interface CalendarResourceFilterOption {
     value: string;
@@ -17,42 +18,55 @@ export interface CalendarResourceFilterOption {
 
 interface CalendarResourceFilterProps {
     open: boolean;
-    resourceOptions: CalendarResourceFilterOption[];
-    enabledResources: Set<string>;
-    onToggle: (resourceId: string) => void;
     transparent: boolean;
-    onToggleAll: () => void;
     setOpen: (open: boolean) => void;
+    buildingId: string | number;
 }
 
 const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
-                                                                     resourceOptions,
-                                                                     enabledResources,
-                                                                     onToggle,
-                                                                     onToggleAll,
                                                                      open,
                                                                      transparent,
-                                                                     setOpen
+                                                                     setOpen,
+                                                                     buildingId
                                                                  }) => {
     const isMobile = useIsMobile();
     const t = useTrans();
     const {tempEvents} = useTempEvents();
     const [popperResource, setPopperResource] = useState<CalendarResourceFilterOption | null>(null);
-    const [popperAnchorEl, setPopperAnchorEl] = useState<HTMLElement | null>(null);
+    const {setEnabledResources, enabledResources} = useEnabledResources();
+    const {data: resources} = useBuildingResources(buildingId)
 
+    const resourceOptions = useMemo<CalendarResourceFilterOption[]>(() => {
+        return (resources || []).map((resource, index) => ({
+            value: resource.id.toString(),
+            label: resource.name
+        }));
+    }, [resources]);
+
+    const onToggle = (resourceId: string) => {
+        setEnabledResources(prevEnabled => {
+            const newEnabled = new Set(prevEnabled);
+            if (newEnabled.has(resourceId)) {
+                newEnabled.delete(resourceId);
+            } else {
+                newEnabled.add(resourceId);
+            }
+            return newEnabled;
+        });
+    };
+
+    const onToggleAll = () => {
+        if (enabledResources.size === resourceOptions.length) {
+            setEnabledResources(new Set());
+        } else {
+            setEnabledResources(new Set(resourceOptions.map(option => option.value)));
+        }
+    };
     const content = (
         <div
             className={`${styles.resourceToggleContainer} ${!open ? styles.hidden : ''}  ${transparent ? styles.transparent : ''}`}
         >
             <div className={styles.toggleAllContainer}>
-                {/*<Button*/}
-                {/*    onClick={onToggleAll}*/}
-                {/*    className={styles.toggleAllButton}*/}
-                {/*    variant={'tertiary'}*/}
-                {/*    size={'sm'}*/}
-                {/*>*/}
-                {/*    {enabledResources.size === resourceOptions.length ? t('bookingfrontend.deselect_all') : t('common.select all')}*/}
-                {/*</Button>*/}
                 <Checkbox
                     value={'choose_all'}
                     id={`resource-all`}
@@ -91,10 +105,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
                             </div>
                             {!isMobile && (
                                 <Button variant={'tertiary'} size={'sm'} data-size="xs" onClick={(a) => {
-                                    setPopperResource(null)
-                                    setPopperAnchorEl(null)
                                     setPopperResource(resource);
-                                    setPopperAnchorEl(a.currentTarget)
                                 }}><InformationSquareIcon
                                     fontSize={'1.5rem'}/></Button>)}
                         </label>
@@ -103,11 +114,11 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
                 </div>
             ))}
             {!isMobile && (
-                <ResourceInfoPopper resource_id={popperResource?.value || null} resource_name={popperResource?.label || null} onClose={() => {
+                <ResourceInfoPopper resource_id={popperResource?.value || null}
+                                    resource_name={popperResource?.label || null} onClose={() => {
                     setPopperResource(null);
-                    setPopperAnchorEl(null);
-                }} anchor={popperAnchorEl} placement={'right-start'} />
-                )}
+                }}/>
+            )}
         </div>
     );
 
@@ -122,4 +133,4 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
     return content
 };
 
-export default CalendarResourceFilter;
+export default memo(CalendarResourceFilter);

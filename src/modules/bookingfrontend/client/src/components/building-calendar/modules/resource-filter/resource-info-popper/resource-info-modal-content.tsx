@@ -15,13 +15,13 @@ interface ResourceInfoPopperContentProps {
     name?: string;
 }
 
-const ResourceInfoPopperContent: FC<ResourceInfoPopperContentProps> = (props) => {
+const ResourceInfoModalContent: FC<ResourceInfoPopperContentProps> = (props) => {
     const resource = useResource(props.resource_id);
     const {t, i18n} = useClientTranslation();
     const description = useMemo(() => resource?.data?.description_json ? extractDescriptionText(resource.data.description_json, i18n) : null, [resource])
 
     return (
-        <PopperContentSharedWrapper onClose={props.onClose}>
+        <>
             <div className={styles.eventPopperContent}>
 
                 {resource.isLoading &&
@@ -36,40 +36,32 @@ const ResourceInfoPopperContent: FC<ResourceInfoPopperContentProps> = (props) =>
                         right: 5
                     }}><Spinner title='Laster ressurs info' size='sm'/></div>
                 }
-                <h3 className={styles.eventName}><ColourCircle resourceId={+props.resource_id}
-                                                               size={'medium'}/> {resource?.data?.name || props.name}
-                </h3>
 
                 {!resource.isLoading && (<Fragment>
                     {description && (
                         <div>
                             <h4>{t('bookingfrontend.description')}</h4>
-                            <p>{parse(unescapeHTML(description))}</p>
+                            <div>{parse(unescapeHTML(description))}</div>
                         </div>
                     )}
                     {resource.data?.opening_hours && (
                         <div>
                             <h4>{t('bookingfrontend.description')}</h4>
-                            <p>{parse(unescapeHTML(resource.data.opening_hours))}</p>
+                            <div>{parse(unescapeHTML(resource.data.opening_hours))}</div>
                         </div>
                     )}
                     {resource.data?.contact_info && (
                         <div>
                             <h4>{t('bookingfrontend.description')}</h4>
-                            <p>{parse(unescapeHTML(resource.data.contact_info))}</p>
+                            <div>{parse(unescapeHTML(resource.data.contact_info))}</div>
                         </div>
                     )}
                 </Fragment>)}
             </div>
-
-            <div className={styles.eventPopperFooter}>
-                <Button onClick={props.onClose} variant="tertiary" className={'default'} size={'sm'}
-                        style={{textTransform: 'capitalize'}}>{t('common.ok').toLowerCase()}</Button>
-            </div>
-        </PopperContentSharedWrapper>
+        </>
     );
 }
 
-export default ResourceInfoPopperContent
+export default ResourceInfoModalContent
 
 

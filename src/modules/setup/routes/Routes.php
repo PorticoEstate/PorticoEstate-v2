@@ -72,6 +72,12 @@ $app->get('/setup/ldapexport', function (Request $request, Response $response) u
 
 $app->get('/setup/', function (Request $request, Response $response) use ($phpgw_domain) {
 
+	if (!file_exists(SRC_ROOT_PATH . '/../config/header.inc.php'))
+	{
+		header('Location: ../setup/manageheader');
+		exit;	
+	}
+	
 	$last_domain = \Sanitizer::get_var('last_domain', 'string', 'COOKIE', false);
 	$domainOptions = '';
 	foreach (array_keys($phpgw_domain) as $domain) {

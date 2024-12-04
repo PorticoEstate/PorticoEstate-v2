@@ -10,13 +10,12 @@ import ButtonGroup from "@/components/button-group/button-group";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCalendar} from "@fortawesome/free-regular-svg-icons";
 import {faArrowRightLong, faLayerGroup, faTableList} from "@fortawesome/free-solid-svg-icons";
-import {useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {useEnabledResources, useResourcesHidden, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {phpGWLink} from "@/service/util";
 import Link from "next/link";
 
 interface CalendarInnerHeaderProps {
-    resourcesHidden: boolean
-    setResourcesHidden: Dispatch<boolean>
+
     setView: Dispatch<string>;
     setLastCalendarView: Dispatch<void>;
     view: string;
@@ -27,9 +26,10 @@ interface CalendarInnerHeaderProps {
 
 const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
     const t = useTrans();
-    const {resourcesHidden, setResourcesHidden, view, calendarRef, setView} = props
-    const enabledResources = useEnabledResources();
+    const {view, calendarRef, setView} = props
+    const {enabledResources} = useEnabledResources();
     const {tempEvents, setTempEvents} = useTempEvents();
+    const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
 
 
     const applicationURL = useMemo(() => {
@@ -50,7 +50,6 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
     }
     const calendarApi = c.getApi();
     const currentDate = calendarApi ? calendarApi.getDate() : new Date();
-
 
 
     return (

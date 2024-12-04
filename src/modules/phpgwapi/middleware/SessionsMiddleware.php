@@ -25,6 +25,12 @@ class SessionsMiddleware implements MiddlewareInterface
 
 	public function process(Request $request, RequestHandler $handler): Response
 	{
+		$serverSettings = Settings::getInstance()->get('server');
+		if (!$serverSettings['isConnected'])
+		{
+			throw new \Exception('Not connected to the server');
+		}
+		
 		$second_pass = Sanitizer::get_var('login_second_pass', 'bool', 'COOKIE');
 
 		$routeContext = RouteContext::fromRequest($request);

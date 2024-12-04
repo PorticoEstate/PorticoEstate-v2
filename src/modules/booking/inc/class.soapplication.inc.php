@@ -116,6 +116,24 @@
 			return null;
 		}
 
+	function validate(&$entity)
+	{
+		$errors = parent::validate($entity);
+		# Detect and prevent loop creation
+		$node_id = $entity['parent_id'];
+		while ($entity['id'] && $node_id)
+		{
+			if ($node_id == $entity['id'])
+			{
+				$errors['parent_id'] = lang('Invalid parent activity');
+				break;
+			}
+			$next = $this->read_single($node_id);
+			$node_id = $next['parent_id'];
+		}
+		return $errors;
+	}
+
 		protected function doValidate( $entity, booking_errorstack $errors )
 		{
 			$now = new DateTime('now');

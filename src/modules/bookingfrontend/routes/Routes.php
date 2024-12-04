@@ -26,6 +26,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/{id}/resources', ResourceController::class . ':getResourcesByBuilding');
         $group->get('/{id}/documents', BuildingController::class . ':getDocuments');
         $group->get('/document/{id}/download', BuildingController::class . ':downloadDocument');
+        $group->get('/{id}/schedule', BuildingController::class . ':getSchedule');
     });
     $group->group('/resources', function (RouteCollectorProxy $group)
     {
@@ -35,7 +36,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
     });
-});
+})->add(new SessionsMiddleware($app->getContainer()));
 
 // Session group
 $app->group('/bookingfrontend', function (RouteCollectorProxy $group)

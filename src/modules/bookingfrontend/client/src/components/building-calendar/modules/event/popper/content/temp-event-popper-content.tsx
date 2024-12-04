@@ -6,10 +6,11 @@ import {faClock} from "@fortawesome/free-regular-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {Button, Checkbox} from "@digdir/designsystemet-react";
-import {useAvailableResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {useCurrentBuilding, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import PopperContentSharedWrapper
     from "@/components/building-calendar/modules/event/popper/content/popper-content-shared-wrapper";
+import {useBuildingResources} from "@/service/api/building";
 
 interface TempEventPopperProps {
     event: FCallTempEvent;
@@ -17,13 +18,14 @@ interface TempEventPopperProps {
 }
 
 const TempEventPopperContent: FC<TempEventPopperProps> = (props) => {
-    const availableResources = useAvailableResources();
     const {tempEvents, setTempEvents} = useTempEvents();
+    const currentBuilding = useCurrentBuilding();
+    const {data: buildingResources} = useBuildingResources(currentBuilding);
     const t = useTrans();
 
     const event = tempEvents[props.event.id];
 
-    if (!event) {
+    if (!event || !currentBuilding || !buildingResources) {
         return;
     }
     const removeTempEvent = () => {
@@ -35,14 +37,14 @@ const TempEventPopperContent: FC<TempEventPopperProps> = (props) => {
         })
     }
     const onResourceToggle = (resourceId: number) => {
-        const enabled = event.extendedProps.resources.some(res => res.id == resourceId);
+        const enabled = event.extendedProps.resources.some(res => res == resourceId);
 
         if (enabled) {
             setTempEvents(tempEvents => {
                 const temp = {...tempEvents};
 
                 const thisEvent = {...temp[event.id], extendedProps: {...temp[event.id].extendedProps}};
-                thisEvent.extendedProps.resources = thisEvent.extendedProps.resources.filter(res => res.id !== resourceId);
+                thisEvent.extendedProps.resources = thisEvent.extendedProps.resources.filter(res => res !== resourceId);
                 temp[event.id] = thisEvent;
                 return temp;
             })
@@ -51,7 +53,7 @@ const TempEventPopperContent: FC<TempEventPopperProps> = (props) => {
                 const temp = {...tempEvents};
 
                 const thisEvent = {...temp[event.id], extendedProps: {...temp[event.id].extendedProps}};
-                thisEvent.extendedProps.resources = [...thisEvent.extendedProps.resources, availableResources[resourceId]];
+                thisEvent.extendedProps.resources = [...thisEvent.extendedProps.resources, buildingResources!.find(res => res.id == resourceId)!.id];
                 temp[event.id] = thisEvent;
                 return temp;
             })
@@ -67,12 +69,12 @@ const TempEventPopperContent: FC<TempEventPopperProps> = (props) => {
                         </span>
                 <h3 className={styles.eventName}>{event.title}</h3>
                 <div className={styles.resourcesList}>
-                    {Object.values(availableResources).map((resource, index) => (
-                        <div key={index} className={styles.resourceItem}>
+                    {buildingResources.map((resource) => (
+                        <div key={`ResourceToggle-${resource.id}`} className={styles.resourceItem}>
                             <Checkbox
                                 value={`${resource.id}`}
                                 id={`resource-${resource.id}`}
-                                checked={event.extendedProps.resources.some(res => res.id == resource.id)}
+                                checked={event.extendedProps.resources.some(res => res == resource.id)}
                                 onChange={() => onResourceToggle(resource.id)}
                                 disabled={Object.values(tempEvents).length > 1}
                             />

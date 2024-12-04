@@ -45,15 +45,15 @@
 		function authenticate($username, $passwd)
 		{
 			$domain = yp_get_default_domain();
-			if( !empty($this->serverSetting['nis_domain']) )
+			if( !empty($this->serverSettings['nis_domain']) )
 			{
-				$domain = $this->serverSetting['nis_domain'];
+				$domain = $this->serverSettings['nis_domain'];
 			}
 
 			$map = "passwd.byname";
-			if( !empty($this->serverSetting['nis_map']) )
+			if( !empty($this->serverSettings['nis_map']) )
 			{
-				$map = $this->serverSetting['nis_map'];
+				$map = $this->serverSettings['nis_map'];
 			}
 			$entry = yp_match( $domain, $map, $username );
 

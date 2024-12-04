@@ -11,6 +11,7 @@ use ReflectionProperty;
 class Db
 {
 	private static $instance = null;
+	private static $connected = null;
 	private $db;
 	protected $isTransactionActive = false;
 	protected static $domain;
@@ -39,7 +40,18 @@ class Db
 		}
 		else
 		{
-			$this->db = new PDO($dsn, $username, $password, $options);
+			try
+			{
+				$this->db = new PDO($dsn, $username, $password, $options);
+				self::$connected = true;
+			}
+			catch (PDOException $e)
+			{
+				if ($e)
+				{
+					trigger_error('Error: ' . $e->getMessage(), E_USER_ERROR);
+				}
+			}
 		}
 
 	}
@@ -49,6 +61,10 @@ class Db
 	 */
 	public function __call($method, $arguments)
 	{
+		if(!self::$connected)
+		{
+			return false;
+		}
 		return call_user_func_array(array($this->db, $method), $arguments);
 	}
 
@@ -62,6 +78,20 @@ class Db
 		return self::$instance;
 	}
 
+	/*
+	 * Check if the connection is established
+	 */
+	public function isConnected()
+	{
+		return self::$connected;
+	}
+
+	/**
+	 * Create a DSN string from a configuration array
+	 *
+	 * @param array $config
+	 * @return string DSN string
+	 */
 	public static function CreateDsn($config)
 	{
 		$dsn = '';

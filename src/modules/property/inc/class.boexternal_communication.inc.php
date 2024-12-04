@@ -434,7 +434,7 @@ HTML;
 			</thead>
 HTML;
 
-			$additional_notes = $this->read_additional_notes($id);
+			$additional_notes = array_reverse($this->read_additional_notes($id));
 
 			$i = 0;
 			foreach ($additional_notes as $value)

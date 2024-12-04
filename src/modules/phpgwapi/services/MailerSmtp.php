@@ -30,26 +30,26 @@ class MailerSmtp extends PHPMailer
 	/**
 	 * @var array
 	 */
-	protected $serverSetting;
+	protected $serverSettings;
 	/**
 	 * Constructor
 	 */
 	public function __construct()
 	{
-		$this->serverSetting = Settings::getInstance()->get('server');
+		$this->serverSettings = Settings::getInstance()->get('server');
 
 		parent::__construct(true); // enable exceptions
 		$this->IsSMTP(true);
-		$this->Host = $this->serverSetting['smtp_server'];
-		$this->Port = isset($this->serverSetting['smtp_port']) ? $this->serverSetting['smtp_port'] : 25;
-		$this->SMTPSecure = isset($this->serverSetting['smtpSecure']) ? $this->serverSetting['smtpSecure'] : '';
+		$this->Host = $this->serverSettings['smtp_server'];
+		$this->Port = isset($this->serverSettings['smtp_port']) ? $this->serverSettings['smtp_port'] : 25;
+		$this->SMTPSecure = isset($this->serverSettings['smtpSecure']) ? $this->serverSettings['smtpSecure'] : '';
 		$this->CharSet = 'utf-8';
-		$this->Timeout = isset($this->serverSetting['smtp_timeout']) && $this->serverSetting['smtp_timeout'] ? (int)$this->serverSetting['smtp_timeout'] : 10;
+		$this->Timeout = isset($this->serverSettings['smtp_timeout']) && $this->serverSettings['smtp_timeout'] ? (int)$this->serverSettings['smtp_timeout'] : 10;
 
-		if (isset($this->serverSetting['smtpAuth']) && $this->serverSetting['smtpAuth'] == 'yes') {
+		if (isset($this->serverSettings['smtpAuth']) && $this->serverSettings['smtpAuth'] == 'yes') {
 			$this->SMTPAuth	= true;
-			$this->Username = isset($this->serverSetting['smtpUser']) ? $this->serverSetting['smtpUser'] : '';
-			$this->Password =  isset($this->serverSetting['smtpPassword']) ? $this->serverSetting['smtpPassword'] : '';
+			$this->Username = isset($this->serverSettings['smtpUser']) ? $this->serverSettings['smtpUser'] : '';
+			$this->Password =  isset($this->serverSettings['smtpPassword']) ? $this->serverSettings['smtpPassword'] : '';
 		}
 
 		/*
@@ -70,8 +70,8 @@ class MailerSmtp extends PHPMailer
 		 * @type int
 		 */
 
-		if (isset($this->serverSetting['SMTPDebug'])) {
-			$this->SMTPDebug = (int)$this->serverSetting['SMTPDebug'];
+		if (isset($this->serverSettings['SMTPDebug'])) {
+			$this->SMTPDebug = (int)$this->serverSettings['SMTPDebug'];
 		}
 
 		/**
@@ -81,8 +81,8 @@ class MailerSmtp extends PHPMailer
 		 * @see SMTP::$Debugoutput
 		 */
 
-		if (isset($this->serverSetting['Debugoutput']) && $this->serverSetting['Debugoutput'] != 'echo') {
-			switch ($this->serverSetting['Debugoutput']) {
+		if (isset($this->serverSettings['Debugoutput']) && $this->serverSettings['Debugoutput'] != 'echo') {
+			switch ($this->serverSettings['Debugoutput']) {
 				case 'html':
 					$this->Debugoutput =  'html';
 					break;

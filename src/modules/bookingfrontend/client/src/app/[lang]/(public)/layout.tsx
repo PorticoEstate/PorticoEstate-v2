@@ -17,7 +17,6 @@ interface PublicLayoutProps extends PropsWithChildren {
 
 
 const PublicLayout: FC<PublicLayoutProps> = (props) => {
-
     return (
         <Providers lang={props.params.lang}>
             <Header/>

@@ -1,6 +1,6 @@
 import {DateTime} from "luxon";
-import {fetchBuildingSchedule, fetchFreeTimeSlots} from "@/service/api/api-utils";
-import {fetchBuilding} from "@/service/api/building";
+import {fetchBuildingSchedule, fetchBuildingScheduleOLD, fetchFreeTimeSlots} from "@/service/api/api-utils";
+import {fetchBuilding, fetchBuildingResources} from "@/service/api/building";
 import CalendarWrapper from "@/components/building-calendar/CalendarWrapper";
 import NotFound from "next/dist/client/components/not-found-error";
 
@@ -16,15 +16,17 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
     const buildingId = parseInt(building_id, 10);
     const initialDate = DateTime.now();
     const weeksToFetch = [
-        initialDate.startOf('week').toFormat("y-MM-dd"),
-        initialDate.startOf('week').plus({week: 1}).toFormat("y-MM-dd"),
+        initialDate.set({weekday: 1}).startOf('day').toFormat("y-MM-dd"),
+        initialDate.set({weekday: 1}).startOf('day').plus({week: 1}).toFormat("y-MM-dd"),
     ];
 
     try {
-        const [initialSchedule, initialFreeTime, building] = await Promise.all([
-            fetchBuildingSchedule(buildingId, weeksToFetch),
+        const [initialSchedule, initialFreeTime, building, initialWeekSchedule, buildingResources] = await Promise.all([
+            fetchBuildingScheduleOLD(buildingId, weeksToFetch),
             fetchFreeTimeSlots(buildingId),
-            fetchBuilding(buildingId)
+            fetchBuilding(buildingId),
+            fetchBuildingSchedule(buildingId, weeksToFetch),
+            fetchBuildingResources(buildingId)
         ]);
         return (
             <CalendarWrapper
@@ -32,10 +34,11 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
                 initialSchedule={initialSchedule.schedule || []}
                 initialFreeTime={initialFreeTime}
                 buildingId={buildingId}
-                resources={initialSchedule.resources}
+                resources={buildingResources}
                 seasons={initialSchedule.seasons}
                 building={building}
                 resourceId={resource_id}
+                initialWeekSchedule={initialWeekSchedule}
             />
         );
     } catch (error) {

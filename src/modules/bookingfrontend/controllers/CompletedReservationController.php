@@ -2,6 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
+use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\models\User;
 use App\modules\bookingfrontend\services\CompletedReservationService;
 use App\modules\bookingfrontend\helpers\UserHelper;
@@ -52,12 +53,18 @@ class CompletedReservationController
         {
             $bouser = new UserHelper();
             if (!$bouser->is_logged_in()) {
-                return $response->withStatus(401)->withJson(['error' => 'User not authenticated']);
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'User not authenticated'],
+                    401
+                );
             }
 
             $ssn = $bouser->ssn;
             if (empty($ssn)) {
-                return $response->withStatus(400)->withJson(['error' => 'No SSN found for user']);
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'No SSN found for user'],
+                    400
+                );
             }
             $userModel = new User($bouser);
 

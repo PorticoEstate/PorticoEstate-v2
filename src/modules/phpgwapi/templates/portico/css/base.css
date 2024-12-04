@@ -605,3 +605,7 @@ SPAN.expander {
 .dtr-control{
 	white-space: nowrap !important;
 }
+textarea {
+    resize: both; /* Allow resizing both horizontally and vertically */
+    overflow: auto; /* Ensure scrollbars appear when needed */
+}

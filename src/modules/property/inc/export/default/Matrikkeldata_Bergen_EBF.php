@@ -300,10 +300,8 @@ class export_conv
 			JOIN fm_location1 on fm_location4.loc1 = fm_location1.loc1
 			JOIN fm_owner ON fm_owner.id = fm_location1.owner_id
 			JOIN fm_owner_category ON fm_owner.category = fm_owner_category.id
-			-- WHERE fm_owner_category.id IN (4)
-			WHERE fm_location4.category != 99
+			WHERE fm_location4.category NOT IN (99)
 			AND bygningsnr IS NOT NULL
-			--AND bygningsnr = 300383295
 			GROUP BY bygningsnr, objekt, navn, eiertype, sameie_andeler
             ORDER BY bygningsnr";
 
@@ -332,7 +330,7 @@ class export_conv
 			$building['formaal'] = implode(', ', $categories);
 
 
-			$sql = "SELECT DISTINCT loc1, loc2, loc3  FROM fm_location4 WHERE bygningsnr = {$building['bygningsnr']}";
+			$sql = "SELECT DISTINCT loc1, loc2, loc3  FROM fm_location4 WHERE bygningsnr = {$building['bygningsnr']} AND fm_location4_category.id NOT IN (99)";
 			$db->query($sql, __LINE__, __FILE__);
 			$location_codes = array();
 			while ($db->next_record())

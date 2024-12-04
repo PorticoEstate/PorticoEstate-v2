@@ -313,3 +313,7 @@ background-color: rgb(224, 224, 224);
 {
     height: 35px !important;
 }
+textarea {
+    resize: both; /* Allow resizing both horizontally and vertically */
+    overflow: auto; /* Ensure scrollbars appear when needed */
+}

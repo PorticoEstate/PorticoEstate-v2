@@ -2253,6 +2253,7 @@ HTML;
 			if (isset($values['takeover']) && $values['takeover'])
 			{
 				$values['assignedto'] = $this->account;
+				$values['group_id'] = null;
 			}
 
 			if (!empty($values['approval']) && !empty($this->bo->config->config_data['ticket_approval_status']))
@@ -3680,6 +3681,7 @@ JS;
 		{
 			$tabs['documents']	 = array('label' => lang('documents'), 'link' => '#documents');
 		}
+		$tabs['external_communication']	 = array('label' => lang('external communication'), 'link' => '#external_communication');
 
 		if($order_read)
 		{

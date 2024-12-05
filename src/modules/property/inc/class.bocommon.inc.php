@@ -491,7 +491,7 @@
 				$data			 = $format;
 				$format			 = isset($data['format']) ? $data['format'] : '';
 				$right			 = isset($data['right']) ? $data['right'] : '';
-				$selected		 = isset($data['selected']) ? $data['selected'] : '';
+				$selected		 = isset($data['selected']) && is_array($data['selected']) ? $data['selected'][0] : (isset($data['selected']) ? $data['selected'] : '');
 				$acl_location	 = isset($data['acl_location']) ? $data['acl_location'] : '';
 				$extra			 = isset($data['extra']) ? $data['extra'] : '';
 				$default		 = isset($data['default']) ? $data['default'] : '';

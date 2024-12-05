@@ -23,6 +23,11 @@ function check_group_assignment()
 		//also reset the user_id dropdown, which is a select2.js dropdown to the first option
 		$("#user_id").val('').trigger('change');
 	}
+	else
+	{
+		// enable the group_id dropdown
+		$("#group_id").removeAttr('readonly');
+	}
 	
 
 }

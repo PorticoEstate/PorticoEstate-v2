@@ -14,7 +14,7 @@
 		protected $term_label;
 		public static $so;
 
-		public function __construct( int $id = null, int $billing_id = null, $location_id = null, int $billing_term = null, int $year = null, int $month = null )
+		public function __construct( int|null $id = null, int|null $billing_id = null, $location_id = null, int|null $billing_term = null, int|null $year = null, int|null $month = null )
 		{
 			parent::__construct($id);
 			$this->id = $id;

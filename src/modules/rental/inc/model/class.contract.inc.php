@@ -94,7 +94,7 @@ class rental_contract extends rental_model
 	 *
 	 * @param int $id the id of this composite
 	 */
-	public function __construct(int $id = null)
+	public function __construct(int|null $id = null)
 	{
 		parent::__construct($id);
 		$this->id = (int)$id;
@@ -373,7 +373,7 @@ class rental_contract extends rental_model
 		}
 	}
 
-	public function set_security_type(int $security_type = null)
+	public function set_security_type(int|null $security_type = null)
 	{
 		switch ($security_type)
 		{
@@ -669,7 +669,7 @@ class rental_contract extends rental_model
 	 * @return int with UNIX timestamp with the end date of the invoice, or
 	 * null if no such invoice was found.
 	 */
-	public function get_last_invoice_timestamp(int $timestamp = null)
+	public function get_last_invoice_timestamp(int|null $timestamp = null)
 	{
 		if (count($this->bill_timestamps) > 0) // The contract has been billed before
 		{

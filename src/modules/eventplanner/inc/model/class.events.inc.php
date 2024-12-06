@@ -37,7 +37,7 @@ class eventplanner_events extends eventplanner_application
 
 	const acl_location = '.events';
 
-	public function __construct(int $id = null)
+	public function __construct(int|null $id = null)
 	{
 		parent::__construct((int)$id);
 		$this->field_of_responsibility_name = self::acl_location;

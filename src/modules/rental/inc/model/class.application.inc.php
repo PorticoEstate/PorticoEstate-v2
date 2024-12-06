@@ -79,7 +79,7 @@ class rental_application extends phpgwapi_model
 		$identifier;
 
 
-	public function __construct(int $id = null)
+	public function __construct(int|null $id = null)
 	{
 		parent::__construct((int)$id);
 	}

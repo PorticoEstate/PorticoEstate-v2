@@ -78,7 +78,7 @@
 		 * 
 		 * @param int $id the id of this composite
 		 */
-		public function __construct( int $id = null )
+		public function __construct( int|null $id = null )
 		{
 			$this->id = (int)$id;
 		}
@@ -210,7 +210,7 @@
 			return $this->repeat_type;
 		}
 
-		public function set_repeat_type_label( int $repeat_type = null )
+		public function set_repeat_type_label(int|null $repeat_type = null )
 		{
 			switch ($repeat_type)
 			{

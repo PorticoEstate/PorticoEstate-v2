@@ -1282,19 +1282,19 @@ class egw_db
 	}
 
 	/**
-	* Escape values before sending them to the database - prevents SQL injection and SQL errors ;-)
-	*
-	* Please note that the quote function already returns necessary quotes: quote('Hello') === "'Hello'".
-	* Int and Auto types are casted to int: quote('1','int') === 1, quote('','int') === 0, quote('Hello','int') === 0
-	* Arrays of id's stored in strings: quote(array(1,2,3),'string') === "'1,2,3'"
-	*
-	* @param mixed $value the value to be escaped
-	* @param string/boolean $type=false string the type of the db-column, default False === varchar
-	* @param boolean $not_null=true is column NOT NULL, default true, else php null values are written as SQL NULL
-	* @param int $length=null length of the varchar column, to truncate it if the database requires it (eg. Postgres)
-	* @param string $glue=',' used to glue array values together for the string type
-	* @return string escaped sting
-	*/
+	 * Escape values before sending them to the database - prevents SQL injection and SQL errors ;-)
+	 *
+	 * Please note that the quote function already returns necessary quotes: quote('Hello') === "'Hello'".
+	 * Int and Auto types are casted to int: quote('1','int') === 1, quote('','int') === 0, quote('Hello','int') === 0
+	 * Arrays of id's stored in strings: quote(array(1,2,3),'string') === "'1,2,3'"
+	 *
+	 * @param mixed $value the value to be escaped
+	 * @param string/boolean $type=false string the type of the db-column, default False === varchar
+	 * @param boolean $not_null=true is column NOT NULL, default true, else php null values are written as SQL NULL
+	 * @param int|null $length=null length of the varchar column, to truncate it if the database requires it (eg. Postgres)
+	 * @param string $glue=',' used to glue array values together for the string type
+	 * @return string escaped sting
+	 */
 	function quote($value,$type=False,$not_null=true,$length=null,$glue=',')
 	{
 		if ($this->Debug) echo "<p>db::quote(".(is_null($value)?'NULL':"'$value'").",'$type','$not_null')</p>\n";

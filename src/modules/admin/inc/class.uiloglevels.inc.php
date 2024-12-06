@@ -257,7 +257,6 @@ class admin_uiloglevels
 			'lang_info'		=> lang('info'),
 			'lang_notice'	=> lang('notice'),
 			'lang_debug'	=> lang('debug'),
-			'lang_strict'	=> 'strict',
 			'lang_deprecated'	=> 'deprecated',
 			'lang_all'		=> lang('all'),
 			'F_selected'	=> '',

@@ -16,7 +16,7 @@
 		 * @param $start_date int with start of contract.
 		 * @param $end_date int with end of contract.
 		 */
-		public function __construct( int $start_date = null, int $end_date = null )
+		public function __construct(int|null $start_date = null, int|null $end_date = null )
 		{
 			if ($start_date != '')
 			{

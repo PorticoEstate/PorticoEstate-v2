@@ -47,7 +47,7 @@ class logistic_resource_type_requirement extends logistic_model
 	 *
 	 * @param int $id the id of this project
 	 */
-	public function __construct(int $id = null)
+	public function __construct(int|null $id = null)
 	{
 		$this->id = (int)$id;
 	}

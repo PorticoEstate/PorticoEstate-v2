@@ -42,16 +42,16 @@ class rental_notification extends rental_model
 	 * @param $dismissed date	The date for dismissal (workbench notification), optional
 	 */
 	public function __construct(
-		int $id = null,
-		int $account_id = null,
-		int $location_id = null,
-		int $contract_id = null,
-		int $date = null,
-		string $message = null,
+		int|null $id = null,
+		int|null $account_id = null,
+		int|null $location_id = null,
+		int|null $contract_id = null,
+		int|null $date = null,
+		string|null $message = null,
 		$recurrence = RECURRENCE_NEVER,
-		int $last_notified = null,
-		string $title = null,
-		int $originated_from = null
+		int|null $last_notified = null,
+		string|null $title = null,
+		int|null $originated_from = null
 	)
 	{
 		parent::__construct($id);

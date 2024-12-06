@@ -25,7 +25,7 @@ abstract class rental_model
 	protected $flags;
 	protected $acl;
 
-	public function __construct(int $id = null)
+	public function __construct(int|null $id = null)
 	{
 		$this->id = (int)$id;
 		$this->serverSettings = Settings::getInstance()->get('server');

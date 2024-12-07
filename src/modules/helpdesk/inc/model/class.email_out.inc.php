@@ -53,7 +53,7 @@ class helpdesk_email_out extends phpgwapi_model
 		$modified;
 
 
-	public function __construct(int $id = null)
+	public function __construct(int|null $id = null)
 	{
 		parent::__construct((int)$id);
 		$this->field_of_responsibility_name = self::acl_location;

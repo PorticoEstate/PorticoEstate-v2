@@ -807,7 +807,10 @@
 							</div>
 						</xsl:when>
 					</xsl:choose>
-
+				</fieldset>
+			</div>
+			<div id="external_communication">
+					<fieldset>
 					<xsl:if test="simple !='1'">
 						<div class="pure-control-group">
 							<label>

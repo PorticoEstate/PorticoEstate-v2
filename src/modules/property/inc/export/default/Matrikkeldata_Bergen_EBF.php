@@ -330,7 +330,7 @@ class export_conv
 			$building['formaal'] = implode(', ', $categories);
 
 
-			$sql = "SELECT DISTINCT loc1, loc2, loc3  FROM fm_location4 WHERE bygningsnr = {$building['bygningsnr']} AND fm_location4_category.id NOT IN (99)";
+			$sql = "SELECT DISTINCT loc1, loc2, loc3  FROM fm_location4 WHERE bygningsnr = {$building['bygningsnr']} AND fm_location4.category NOT IN (99)";
 			$db->query($sql, __LINE__, __FILE__);
 			$location_codes = array();
 			while ($db->next_record())

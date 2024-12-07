@@ -36,7 +36,7 @@
 	private $modelInformationColumns;// = array('authorization_value', 'author', 'changedate', 'description', 'organization', 'originatingsystem', 'preprocessor', 'valdate', 'nativeSchema');
 	private $modelInformationMapping;
 
-		public function __construct(phpgwapi_db_ & $db, int $modelId = null, BimModelInformation $modelInformation = null)
+		public function __construct(phpgwapi_db_ & $db, int|null $modelId = null, BimModelInformation $modelInformation = null)
 		{
 		$this->db = $db;
 		$db->Halt_On_Error = 'no';

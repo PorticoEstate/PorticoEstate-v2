@@ -73,7 +73,7 @@
 		 *
 		 * @see rental/inc/rental_socommon#get_query($sort_field, $ascending, $search_for, $search_type, $filters, $return_count)
 		 */
-		protected function get_query( string $sort_field, bool $ascending, string $search_for, string $search_type, array $filters, bool $return_count )
+		protected function get_query(string $sort_field, bool $ascending, string $search_for, string $search_type, array $filters, bool $return_count)
 		{
 			$clauses = array('1=1');
 
@@ -188,7 +188,7 @@
 			{
 				$filter_clauses[] = "(contract.cancelled IS NULL OR contract.cancelled = 0)";
 			}
-			else  if($filters['contract_status'] === 'cancelled')
+			else  if ($filters['contract_status'] === 'cancelled')
 			{
 				$filter_clauses[] = "(contract.cancelled > 0)";
 			}
@@ -250,78 +250,85 @@
 
 				//make sure the contracts are active
 				$filter_clauses[] = "(contract.date_end is null OR contract.date_end = 0 OR contract.date_end >= {$firstJanAdjYear})";
-				$filter_clauses[] = "contract.date_start is not null AND contract.date_start <= {$firstJanAdjYear}";
+				$filter_clauses[] = "(contract.date_start is not null AND contract.date_start <= {$firstJanAdjYear})";
 
 				$filter_clauses[] = "contract.adjustable IS true";
 				$filter_clauses[] = "contract.adjustment_interval = {$adjustment_interval}";
 			}
 
 			/*
-			 * Contract status is defined by the dates in each contract compared to the target date (default today):
-			 * - contracts under planning:
-			 * the start date is larger (in the future) than the target date, or start date is undefined
-			 * - active contracts:
-			 * the start date is smaller (in the past) than the target date, and the end date is undefined (running) or
-			 * larger (fixed) than the target date
-			 * - under dismissal:
-			 * the start date is smaller than the target date,
-			 * the end date is larger than the target date, and
-			 * the end date substracted the contract type notification period is smaller than the target date
-			 * - ended:
-			 * the end date is smaller than the target date
-			 */
+				* Contract status is defined by the dates in each contract compared to the target date (default today):
+				* - contracts under planning:
+				* the start date is larger (in the future) than the target date, or start date is undefined
+				* - active contracts:
+				* the start date is smaller (in the past) than the target date, and the end date is undefined (running) or
+				* larger (fixed) than the target date
+				* - under dismissal:
+				* the start date is smaller than the target date,
+				* the end date is larger than the target date, and
+				* the end date substracted the contract type notification period is smaller than the target date
+				* - ended:
+				* the end date is smaller than the target date
+				*/
 			if ($filters['start_date_report'])
 			{
-				$filters['contract_status'] = 'all';
-				$filter_clauses[] = "contract.date_end > {$filters['start_date_report']}";
-				$filter_clauses[] = "contract.date_start < {$filters['start_date_report']}";
+				//				$filters['contract_status'] = 'all';
+				//				$filter_clauses[] = "contract.date_end > {$filters['start_date_report']}";
+				$filter_clauses[] = "contract.date_start > {$filters['start_date_report']}";
 			}
 			if ($filters['end_date_report'])
 			{
-				$filters['contract_status'] = 'all';
+				//				$filters['contract_status'] = 'all';
 				$filter_clauses[] = "contract.date_end < {$filters['end_date_report']}";
 			}
-//_debug_array($filtes);die();
+			//_debug_array($filtes);die();
 			if (isset($filters['contract_status']) && $filters['contract_status'] != 'all')
 			{
 				if (isset($filters['status_date']) && $filters['status_date'])
 				{
 					$ts_query = $filters['status_date']; // target timestamp specified by user
 				}
+				else if (isset($filters['start_date_report']) && $filters['start_date_report'])
+				{
+					$ts_query = $filters['start_date_report']; // target timestamp specified by user
+				}
 				else
 				{
 					$ts_query = strtotime(date('Y-m-d')); // timestamp for query (today)
 				}
+
+				$ts_query_now = strtotime(date('Y-m-d')); // timestamp for query (today)
+
 				switch ($filters['contract_status'])
 				{
 					case 'under_planning':
-						$filter_clauses[] = "contract.date_start > {$ts_query} OR contract.date_start IS NULL";
+						$filter_clauses[] = "(contract.date_start > {$ts_query} OR contract.date_start IS NULL)";
 						break;
 					case 'active':
-						$filter_clauses[] = "contract.date_start <= {$ts_query} AND ( contract.date_end >= {$ts_query} OR contract.date_end IS NULL OR contract.date_end = 0)";
+						$filter_clauses[] = "(contract.date_start <= {$ts_query_now} AND ( contract.date_end >= {$ts_query_now} OR contract.date_end IS NULL OR contract.date_end = 0))";
 						break;
 					case 'under_dismissal':
-						$filter_clauses[] = "contract.date_start <= {$ts_query} AND contract.date_end >= {$ts_query} AND (contract.date_end - (type.notify_before * (24 * 60 * 60)))  <= {$ts_query}";
+						$filter_clauses[] = "(contract.date_start <= {$ts_query_now} AND contract.date_end >= {$ts_query_now} AND (contract.date_end - (type.notify_before * (24 * 60 * 60)))  <= {$ts_query_now})";
 						break;
 					case 'closing_due_date':
-						$filter_clauses[] = "contract.due_date >= {$ts_query} AND (contract.due_date - (type.notify_before_due_date * (24 * 60 * 60)))  <= {$ts_query}";
+						$filter_clauses[] = "(contract.due_date >= {$ts_query_now} AND (contract.due_date - (type.notify_before_due_date * (24 * 60 * 60)))  <= {$ts_query_now})";
 						$order = "ORDER BY contract.due_date ASC";
 						$this->sort_field = 'contract.due_date';
 						break;
 					case 'terminated_contracts':
-						$filter_clauses[] = "contract.date_end >= ({$ts_query} - (type.notify_after_termination_date * (24 * 60 * 60))) AND contract.date_end < {$ts_query}";
+						$filter_clauses[] = "(contract.date_end >= ({$ts_query_now} - (type.notify_after_termination_date * (24 * 60 * 60))) AND contract.date_end < {$ts_query_now})";
 						$order = "ORDER BY contract.date_end DESC";
 						$this->sort_field = 'contract.date_end';
 						break;
 					case 'ended':
-						$filter_clauses[] = "contract.date_end < {$ts_query}";
+						$filter_clauses[] = "contract.date_end < {$ts_query_now}";
 						break;
 				}
 			}
 
 			/*
-			 * Contracts for billing
-			 */
+				* Contracts for billing
+				*/
 			if (isset($filters['contracts_for_billing']))
 			{
 				$billing_term_id = (int)$filters['billing_term_id'];
@@ -360,9 +367,9 @@
 				$order = $order ? $order . ', ' . $specific_ordering : "ORDER BY {$specific_ordering}";
 			}
 
-			if($filters['district_id'])
+			if ($filters['district_id'])
 			{
-				if(is_array($filters['district_id']))
+				if (is_array($filters['district_id']))
 				{
 					$district_ids = $filters['district_id'];
 				}
@@ -390,13 +397,13 @@
 				// columns to retrieve
 				$columns[] = 'contract.id AS contract_id, contract.notify_on_expire, contract.notified_time';
 				$columns[] = 'contract.date_start, contract.date_end, contract.old_contract_id, contract.executive_officer,'
-					. ' contract.last_updated, contract.location_id, contract.billing_start, contract.billing_end,'
-					. ' contract.service_id, contract.responsibility_id, contract.reference, contract.customer_order_id,'
-					. ' contract.invoice_header, contract.project_id, billing.deleted, contract.account_in, contract.account_out,'
-					. ' contract.term_id, contract.security_type, contract.security_amount, contract.comment, contract.due_date,'
-					. ' contract.contract_type_id,contract.rented_area,contract.adjustable,contract.adjustment_interval,'
-					. ' contract.adjustment_share,contract.adjustment_year,override_adjustment_start,contract.publish_comment,'
-					. ' contract.cancelled, contract.cancelled_by';
+				. ' contract.last_updated, contract.location_id, contract.billing_start, contract.billing_end,'
+				. ' contract.service_id, contract.responsibility_id, contract.reference, contract.customer_order_id,'
+				. ' contract.invoice_header, contract.project_id, billing.deleted, contract.account_in, contract.account_out,'
+				. ' contract.term_id, contract.security_type, contract.security_amount, contract.comment, contract.due_date,'
+				. ' contract.contract_type_id,contract.rented_area,contract.adjustable,contract.adjustment_interval,'
+				. ' contract.adjustment_share,contract.adjustment_year,override_adjustment_start,contract.publish_comment,'
+				. ' contract.cancelled, contract.cancelled_by';
 				$columns[] = 'party.id AS party_id';
 				$columns[] = 'party.first_name, party.last_name, party.company_name, party.department, party.org_enhet_id, party.customer_id';
 				$columns[] = 'c_t.is_payer';

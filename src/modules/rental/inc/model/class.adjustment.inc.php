@@ -16,7 +16,7 @@
 		protected $adjustment_type;
 		protected $is_executed;
 
-		public function __construct( int $id = null )
+		public function __construct( int|null $id = null )
 		{
 			$adjustment_id = intval($id);
 			parent::__construct($adjustment_id);

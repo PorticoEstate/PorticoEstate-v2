@@ -370,3 +370,20 @@ function addNewValueToCustomAttribute(id, location_id, attribute_id, input_text,
                , function() { alertify.error('Cancel') });
 
 }
+
+function autoResizeTextarea(textarea) {
+	textarea.style.height = 'auto'; // Reset height
+	textarea.style.height = textarea.scrollHeight + 'px'; // Set new height
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+	var textareas = document.querySelectorAll('textarea');
+	textareas.forEach(function(textarea) {
+		textarea.addEventListener('input', function() {
+			autoResizeTextarea(textarea);
+		});
+		// Initial resize to fit content
+		autoResizeTextarea(textarea);
+	});
+});
+ 	

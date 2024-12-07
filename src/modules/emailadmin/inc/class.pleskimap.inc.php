@@ -183,7 +183,7 @@ class pleskimap extends defaultimap
 		}
 		return true;
 	}
-	
+
 	/**
 	 * call plesk's mail command line interface
 	 *
@@ -312,7 +312,7 @@ class pleskimap extends defaultimap
 	 * @param array $aliases=null array with aliases or null to not change the aliases
 	 * @param array $forwards=null array of email address to forward or null to not change
 	 * @param boolean $keepLocalCopy=null if forwarding keep a local copy or not, null = dont change
-	 * @param int $quota_kb=null mailbox quota in kb
+	 * @param int|null $quota_kb=null mailbox quota in kb
 	 * @return boolean/array array with returned values or false otherwise, error-message in $this->error
 	 */
 	function plesk_mail($action,$account,$password=null,$aliases=null,$forwards=null,$keepLocalCopy=null,$quota_kb=null)

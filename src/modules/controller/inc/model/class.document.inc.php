@@ -39,7 +39,7 @@
 		protected $type_id;
 		protected $procedure_id;
 
-		public function __construct( int $id = null )
+		public function __construct( int|null $id = null )
 		{
 			$doc_id = intval($id);
 			parent::__construct($doc_id);

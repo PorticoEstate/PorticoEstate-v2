@@ -39,7 +39,7 @@
 		protected $permission_array;
 		protected $id;
 
-		public function __construct( int $id = null)
+		public function __construct( int|null $id = null)
 		{
 			$this->id = (int)$id;
 		}

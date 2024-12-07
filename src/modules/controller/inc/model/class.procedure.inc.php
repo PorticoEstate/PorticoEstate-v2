@@ -62,7 +62,7 @@ class controller_procedure extends controller_model
 	 * 
 	 * @param int $id the id of this procedure
 	 */
-	public function __construct(int $id = null)
+	public function __construct(int|null $id = null)
 	{
 		$this->id = (int)$id;
 		$this->documents = array();

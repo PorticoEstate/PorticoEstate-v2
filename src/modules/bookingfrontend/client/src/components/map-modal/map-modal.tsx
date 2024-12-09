@@ -19,7 +19,7 @@ const MapModal: FC<MapModalProps> = (props) => {
     }, [props])
     return (
         <div>
-            <Button onClick={() => setIsOpen(true)} className={`${styles.mapModalButton} text-label default`} variant="tertiary">
+            <Button onClick={() => setIsOpen(true)} className={`${styles.mapModalButton} text-label default`} data-color={'accent'} variant="tertiary">
                 <FontAwesomeIcon icon={faMapPin} />
                 {props.street && `${props.street}, `}{props.zip}
             </Button>

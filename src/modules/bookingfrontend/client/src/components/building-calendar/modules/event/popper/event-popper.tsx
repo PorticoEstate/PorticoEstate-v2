@@ -19,7 +19,6 @@ const EventPopper: FC<EventPopperProps> = ({ event, onClose, anchor, placement }
     const [open, setOpen] = useState(Boolean(event));
     const t = useTrans();
     const arrowRef = useRef<HTMLDivElement | null>(null);
-
     const { x, y, strategy, refs, middlewareData, update } = useFloating({
         open,
         placement,

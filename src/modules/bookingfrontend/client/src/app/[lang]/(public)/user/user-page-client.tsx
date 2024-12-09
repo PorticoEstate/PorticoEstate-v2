@@ -26,7 +26,7 @@ const UserPageClient: FC<UserPageClientProps> = (props) => {
                     >
                         <Heading
                             level={2}
-                            size="sm"
+                            data-size="sm"
                         >
                             Brukerdata
                         </Heading>
@@ -46,7 +46,7 @@ const UserPageClient: FC<UserPageClientProps> = (props) => {
                     >
                         <Heading
                             level={2}
-                            size="sm"
+                            data-size="sm"
                         >
                             Søknader
                         </Heading>
@@ -66,7 +66,7 @@ const UserPageClient: FC<UserPageClientProps> = (props) => {
                     >
                         <Heading
                             level={2}
-                            size="sm"
+                            data-size="sm"
                         >
                             Faktura
                         </Heading>
@@ -86,7 +86,7 @@ const UserPageClient: FC<UserPageClientProps> = (props) => {
                     >
                         <Heading
                             level={2}
-                            size="sm"
+                            data-size="sm"
                         >
                             Delegater
                         </Heading>

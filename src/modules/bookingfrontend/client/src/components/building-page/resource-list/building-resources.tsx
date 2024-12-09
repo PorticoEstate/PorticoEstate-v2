@@ -21,7 +21,7 @@ const BuildingResources = async (props: BuildingResourcesProps) => {
             <hr className={`my-2`}/>
             <ResourceContainer>
                 {resources.map((res) =>
-                    <Button asChild key={res.id} variant={'secondary'} color={'neutral'}
+                    <Button asChild key={res.id} variant={'secondary'} data-color={'brand1'}
                             className={'default'}>
                         {/*<ClientPHPGWLink strURL={'bookingfrontend/'} oArgs={{*/}
                         {/*    menuaction: 'bookingfrontend.uiresource.show',*/}

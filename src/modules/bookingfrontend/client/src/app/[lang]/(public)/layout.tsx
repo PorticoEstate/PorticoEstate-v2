@@ -1,5 +1,5 @@
-import '@digdir/designsystemet-css';
-import '@digdir/designsystemet-theme';
+// import '@digdir/designsystemet-css';
+// import '@digdir/designsystemet-theme';
 import "@/app/globals.scss";
 import {FC, PropsWithChildren} from "react";
 import styles from './layout.module.scss'

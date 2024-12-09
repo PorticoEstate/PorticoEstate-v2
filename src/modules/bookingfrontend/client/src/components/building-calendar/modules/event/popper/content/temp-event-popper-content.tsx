@@ -1,4 +1,4 @@
-import React, {FC} from 'react';
+import React, {FC, Fragment} from 'react';
 import styles from '../event-popper.module.scss';
 import {formatEventTime} from "@/service/util";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
@@ -59,7 +59,6 @@ const TempEventPopperContent: FC<TempEventPopperProps> = (props) => {
             })
         }
     }
-
     return (
         <PopperContentSharedWrapper onClose={props.onClose}>
             <div className={styles.eventPopperContent}>
@@ -74,21 +73,24 @@ const TempEventPopperContent: FC<TempEventPopperProps> = (props) => {
                             <Checkbox
                                 value={`${resource.id}`}
                                 id={`resource-${resource.id}`}
+                                label={<Fragment>
+                                    <ColourCircle resourceId={resource.id} size={'medium'}/>
+                                    <span className={styles.resourceName}>{resource.name}</span>
+                                </Fragment>}
                                 checked={event.extendedProps.resources.some(res => res == resource.id)}
                                 onChange={() => onResourceToggle(resource.id)}
                                 disabled={Object.values(tempEvents).length > 1}
                             />
-                            <ColourCircle resourceId={resource.id} size={'medium'}/>
-                            <span className={styles.resourceName}>{resource.name}</span>
+
                         </div>
                     ))}
                 </div>
             </div>
             <div className={styles.eventPopperFooter}>
                 <Button onClick={props.onClose} variant="tertiary" className={'default'}
-                        size={'sm'}>{t('booking.close')}</Button>
+                        data-size={'sm'}>{t('booking.close')}</Button>
                 <Button onClick={removeTempEvent} variant="tertiary" className={'default'} color={"danger"}
-                        size={'sm'}>{t('common.delete')}</Button>
+                        data-size={'sm'}>{t('common.delete')}</Button>
             </div>
         </PopperContentSharedWrapper>);
 };

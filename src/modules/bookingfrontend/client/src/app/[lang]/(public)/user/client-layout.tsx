@@ -40,7 +40,7 @@ const UserLayout: FC<UserLayoutProps> = (props) => {
     }
 
     if (user.isLoading) {
-        return <Spinner title={'Loading user'}/>
+        return <Spinner aria-label={'Loading user'}/>
     }
 
 

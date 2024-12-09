@@ -108,12 +108,12 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                 </div>
                 {!isLoading && (basketData?.list.length || 0) === 0 && (<div>Du har ingenting i handlekurven</div>)}
                 {isLoading && (
-                    <Spinner title={'Laster handlekurv'}/>
+                    <Spinner aria-label={'Laster handlekurv'}/>
                 )}
                 {!isLoading && (basketData?.list.length || 0) > 0 && (
                     <Table
                         hover
-                        size="md"
+                        data-size="md"
                         zebra
                         className={styles.shoppingBasketTable}
                     >
@@ -177,10 +177,10 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                     </Table>)}
                 <div className={styles.eventPopperFooter}>
                     <Button onClick={() => props.setOpen(false)} variant="tertiary" className={'default'}
-                            size={'sm'}>{t('booking.close')}</Button>
+                            data-size={'sm'}>{t('booking.close')}</Button>
 
                     <Button variant="primary" className={'default'} asChild
-                            size={'sm'}><Link
+                            data-size={'sm'}><Link
 
                         href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiapplication.add_contact'}, false)}
                         className={'link-text link-text-unset normal'}>

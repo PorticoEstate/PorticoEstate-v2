@@ -239,10 +239,14 @@ class ManageHeader
 			case 10:
 				if (!$this->setup->auth('Header'))
 				{
-					$ret_header = $this->html->get_header('Please login', True);
-					$login_form = $this->html->login_form();
-					$ret_footer =  $this->html->get_footer();
-					return $ret_header . $login_form . $ret_footer;
+					//return to setup
+					Header('Location: ../setup');
+					exit;
+
+//					$ret_header = $this->html->get_header('Please login', True);
+//					$login_form = $this->html->login_form();
+//					$ret_footer =  $this->html->get_footer();
+//					return $ret_header . $login_form . $ret_footer;
 				}
 				$setup_data['HeaderFormMSG'] = $this->setup->lang('Edit your header.inc.php');
 				$setup_data['PageMSG'] = $this->setup->lang('Edit your existing header.inc.php');

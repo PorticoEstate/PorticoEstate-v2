@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, useEffect, useRef, useState } from 'react';
+import React, {PropsWithChildren, useCallback, useEffect, useRef, useState} from 'react';
 import styles from './mobile-dialog.module.scss';
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,7 +18,7 @@ interface DialogProps extends PropsWithChildren {
     /** Whether to confirm on close */
     confirmOnClose?: boolean;
     /** Optional footer content */
-    footer?: React.ReactNode;
+    footer?: ((attemptOnClose: () => void) => React.ReactNode) | React.ReactNode;
     /** Optional title content */
     title?: React.ReactNode;
 }
@@ -55,7 +55,7 @@ const Dialog: React.FC<DialogProps> = ({
     const isMobile = useIsMobile();
 
     // Attempt to close the dialog, with confirmation if necessary
-    const attemptClose = () => {
+    const attemptClose =useCallback( () => {
         if (confirmOnClose) {
             if (window.confirm(t('Are you sure you want to close?'))) {
                 onClose();
@@ -63,7 +63,7 @@ const Dialog: React.FC<DialogProps> = ({
         } else {
             onClose();
         }
-    };
+    }, [onClose, confirmOnClose, t]);
 
     // Toggle fullscreen mode
     const toggleFullscreen = () => {
@@ -103,7 +103,7 @@ const Dialog: React.FC<DialogProps> = ({
             }
             dialog.removeEventListener('cancel', handleCancel);
         };
-    }, [confirmOnClose]);
+    }, [attemptClose]);
 
     useEffect(() => {
         const dialog = dialogRef.current;
@@ -147,7 +147,7 @@ const Dialog: React.FC<DialogProps> = ({
                                     aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                                     onClick={toggleFullscreen}
                                     className={'default'}
-                                    size={'sm'}
+                                    data-size={'sm'}
                                 >
                                     <FontAwesomeIcon icon={isFullscreen ? faCompress : faExpand} size={'lg'} />
                                 </Button>
@@ -159,7 +159,7 @@ const Dialog: React.FC<DialogProps> = ({
                                     aria-label="Close dialog"
                                     onClick={attemptClose}
                                     className={'default'}
-                                    size={'sm'}
+                                    data-size={'sm'}
                                 >
                                     <FontAwesomeIcon icon={faXmark} size={'lg'} />
                                 </Button>
@@ -169,7 +169,7 @@ const Dialog: React.FC<DialogProps> = ({
                 )}
 
                 <div className={styles.dialogContent}  ref={contentRef}>{children}</div>
-                {footer && <div className={styles.dialogFooter}>{footer}</div>}
+                {footer && <div className={styles.dialogFooter}>{typeof footer === "function" ? footer(attemptClose) : footer}</div>}
             </div>
         </dialog>
     );

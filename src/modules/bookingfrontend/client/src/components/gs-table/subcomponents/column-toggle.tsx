@@ -65,7 +65,7 @@ function ColumnToggle<T>({ table, tableColumns, columnVisibility }: ColumnToggle
     return (
         <div className={styles.columnToggle} ref={menuRef}>
             <Button variant="tertiary"
-                    size={'sm'}
+                    data-size={'sm'}
                     color={'neutral'}
                 onClick={() => setIsOpen(!isOpen)}
                 // className={styles.toggleButton}
@@ -75,7 +75,7 @@ function ColumnToggle<T>({ table, tableColumns, columnVisibility }: ColumnToggle
                 {hiddenColumnsCount > 0 && (<Badge
                     color="info"
                     placement="top-right"
-                    size={'sm'}
+                    data-size={'sm'}
                     count={hiddenColumnsCount || undefined}
                     // style={{
                     //     right: '10%',

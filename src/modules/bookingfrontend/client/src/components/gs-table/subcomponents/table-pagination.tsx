@@ -47,7 +47,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
             <div className={styles.pageInfo}>
                 <span>Rows per page:</span>
                 <Select
-                    size="sm"
+                    data-size="sm"
                     value={pageSize.toString()}
                     onChange={(e) => {
                         setPageSize(Number(e.target.value));
@@ -67,7 +67,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
             <div className={styles.controls}>
                 <Button
                     variant="tertiary"
-                    size="sm"
+                    data-size="sm"
                     onClick={() => handlePageChange(0)}
                     disabled={!getCanPreviousPage()}
                 >
@@ -75,7 +75,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
                 </Button>
                 <Button
                     variant="tertiary"
-                    size="sm"
+                    data-size="sm"
                     onClick={() => handlePageChange(pageIndex - 1)}
                     disabled={!getCanPreviousPage()}
                 >
@@ -83,7 +83,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
                 </Button>
                 <Button
                     variant="tertiary"
-                    size="sm"
+                    data-size="sm"
                     onClick={() => handlePageChange(pageIndex + 1)}
                     disabled={!getCanNextPage()}
                 >
@@ -91,7 +91,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
                 </Button>
                 <Button
                     variant="tertiary"
-                    size="sm"
+                    data-size="sm"
                     onClick={() => handlePageChange(getPageCount() - 1)}
                     disabled={!getCanNextPage()}
                 >

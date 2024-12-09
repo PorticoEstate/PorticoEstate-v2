@@ -7,7 +7,7 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import MobileDialog from "@/components/dialog/mobile-dialog";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {InformationSquareIcon} from "@navikt/aksel-icons";
-import ResourceInfoPopper
+import ResourceInfoModal
     from "@/components/building-calendar/modules/resource-filter/resource-info-popper/resource-info-popper";
 import {useBuildingResources} from "@/service/api/building";
 
@@ -68,20 +68,19 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
         >
             <div className={styles.toggleAllContainer}>
                 <Checkbox
+                    data-size={'sm'}
                     value={'choose_all'}
                     id={`resource-all`}
                     checked={enabledResources.size === resourceOptions.length}
                     onChange={onToggleAll}
+                    label={<div className={styles.resourceLabel}>
+                        {t('common.select all')} {t('bookingfrontend.resources').toLowerCase()}
+
+                    </div>}
                     className={styles.resourceCheckbox}
                     disabled={Object.values(tempEvents).length > 0}
-                >
-                    <label
-                        htmlFor={`resource-all`}
-                        className={styles.resourceLabel}
-                    >
-                        {t('common.select all')} {t('bookingfrontend.resources').toLowerCase()}
-                    </label>
-                </Checkbox>
+                />
+
             </div>
             {resourceOptions.map(resource => (
                 <div key={resource.value}
@@ -91,11 +90,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
                         id={`resource-${resource.value}`}
                         checked={enabledResources.has(resource.value)}
                         onChange={() => onToggle(resource.value)}
-                        className={styles.resourceCheckbox}
-                        disabled={Object.values(tempEvents).length > 0}
-                    >
-                        <label
-                            htmlFor={`resource-${resource.value}`}
+                        label={<div
                             className={`${styles.resourceLabel} text-normal`}
                         >
                             <div>
@@ -104,18 +99,20 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
                                 <span>{resource.label}</span>
                             </div>
                             {!isMobile && (
-                                <Button variant={'tertiary'} size={'sm'} data-size="xs" onClick={(a) => {
+                                <Button variant={'tertiary'} data-size={'sm'} onClick={(a) => {
                                     setPopperResource(resource);
                                 }}><InformationSquareIcon
                                     fontSize={'1.5rem'}/></Button>)}
-                        </label>
-                    </Checkbox>
+                        </div>}
+                        className={styles.resourceCheckbox}
+                        disabled={Object.values(tempEvents).length > 0}
+                    />
 
                 </div>
             ))}
             {!isMobile && (
-                <ResourceInfoPopper resource_id={popperResource?.value || null}
-                                    resource_name={popperResource?.label || null} onClose={() => {
+                <ResourceInfoModal resource_id={popperResource?.value || null}
+                                   resource_name={popperResource?.label || null} onClose={() => {
                     setPopperResource(null);
                 }}/>
             )}

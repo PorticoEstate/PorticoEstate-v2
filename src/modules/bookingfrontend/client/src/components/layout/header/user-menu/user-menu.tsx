@@ -23,36 +23,42 @@ const UserMenu: FC<UserMenuProps> = (props) => {
 
     useEffect(() => {
         const clickHistory = searchparams.get('click_history');
-        if(clickHistory !== lastClickHistory) {
+        if (clickHistory !== lastClickHistory) {
             setLastClickHistory(clickHistory!);
             queryClient.invalidateQueries({queryKey: ['bookingUser']})
         }
     }, [searchparams, queryClient]);
 
     if (bookingUser?.is_logged_in) {
-        return (<Dropdown.Context>
-            <Dropdown.Trigger variant={'tertiary'} color={'accent'} size={'sm'}>
+        return (<Dropdown.TriggerContext>
+            <Dropdown.Trigger variant={'tertiary'} color={'accent'} data-size={'sm'}>
                 <FontAwesomeIcon icon={faUser}/> {bookingUser.name} <FontAwesomeIcon icon={faChevronDown}/>
             </Dropdown.Trigger>
             <Dropdown>
                 <Dropdown.List>
-                    <Dropdown.Item asChild>
-                        <Link href={'/user'}
-                              className={'link-text link-text-unset normal'}>
-                            <FontAwesomeIcon icon={faUser}/> {t('bookingfrontend.my page')}
-                        </Link>
+                    <Dropdown.Item>
+                        <Dropdown.Button asChild>
+                            <Link href={'/user'}
+                                  className={'link-text link-text-unset normal'}>
+                                <FontAwesomeIcon icon={faUser}/> {t('bookingfrontend.my page')}
+                            </Link>
+                        </Dropdown.Button>
                     </Dropdown.Item>
                 </Dropdown.List>
                 <Divider/>
                 <Dropdown.List>
-                    {bookingUser.delegates?.map((delegate) => <Dropdown.Item asChild key={delegate.org_id}>
-                        <Link href={phpGWLink('bookingfrontend/', {
-                            menuaction: 'bookingfrontend.uiorganization.show',
-                            id: delegate.org_id
-                        }, false)}
-                              className={'link-text link-text-unset normal'}>
-                            <FontAwesomeIcon icon={faFutbol}/> {delegate.name}
-                        </Link>
+                    {bookingUser.delegates?.map((delegate) => <Dropdown.Item key={delegate.org_id}>
+                        <Dropdown.Button asChild>
+
+                            <Link href={phpGWLink('bookingfrontend/', {
+                                menuaction: 'bookingfrontend.uiorganization.show',
+                                id: delegate.org_id
+                            }, false)}
+                                  className={'link-text link-text-unset normal'}>
+                                <FontAwesomeIcon icon={faFutbol}/> {delegate.name}
+                            </Link>
+                        </Dropdown.Button>
+
                     </Dropdown.Item>)}
 
 
@@ -60,57 +66,66 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                 <Divider/>
                 <Dropdown.List>
 
-                    <Dropdown.Item asChild>
-                        <Link href={phpGWLink(['bookingfrontend', 'logout'])}
-                              className="link-text link-text-unset normal">
-                            {t('common.logout')}
-                        </Link>
+                    <Dropdown.Item>
+                        <Dropdown.Button asChild>
+
+                            <Link href={phpGWLink(['bookingfrontend', 'logout'])}
+                                  className="link-text link-text-unset normal">
+                                {t('common.logout')}
+                            </Link>
+                        </Dropdown.Button>
 
                     </Dropdown.Item>
-
                 </Dropdown.List>
             </Dropdown>
-        </Dropdown.Context>);
+        </Dropdown.TriggerContext>);
     }
 
-    if(1==1) {
-        return (<Dropdown.Context>
-            <Dropdown.Trigger variant={'tertiary'} color={'accent'} size={'sm'}>
-                        <FontAwesomeIcon icon={faSignInAlt}/> {t('common.login')}
-            </Dropdown.Trigger>
-            <Dropdown>
-                <Dropdown.List>
-                    <Dropdown.Item asChild>
-                        <Link             href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
+    // if(1==1) {
+    return (<Dropdown.TriggerContext>
+        <Dropdown.Trigger variant={'tertiary'} color={'accent'} data-size={'sm'}>
+            <FontAwesomeIcon icon={faSignInAlt}/> {t('common.login')}
+        </Dropdown.Trigger>
+        <Dropdown>
+            <Dropdown.List>
+                <Dropdown.Item>
+                    <Dropdown.Button asChild>
 
-                                          className={'link-text link-text-unset normal'}>
+                        <Link
+                            href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
+
+                            className={'link-text link-text-unset normal'}>
                             <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
                         </Link>
-                    </Dropdown.Item>
-                    <Divider/>
+                    </Dropdown.Button>
+                </Dropdown.Item>
+                <Divider/>
 
-                    <Dropdown.Item asChild>
+                <Dropdown.Item>
+                    <Dropdown.Button asChild>
+
                         <Link href={phpGWLink('/', {
                             menuaction: 'booking.uiapplication.index',
                         }, false)}
                               className={'link-text link-text-unset normal'}>
                             <FontAwesomeIcon icon={faSignInAlt}/> Saksbehandler
                         </Link>
-                    </Dropdown.Item>
-                </Dropdown.List>
-            </Dropdown>
-        </Dropdown.Context>)
-    }
+                    </Dropdown.Button>
+                </Dropdown.Item>
+            </Dropdown.List>
+        </Dropdown>
+    </Dropdown.TriggerContext>)
+    // }
 
-    return (
-        <Link
-            href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
-            className={'link-text link-text-unset'}>
-            <Button variant={'tertiary'} color={'accent'} size={'sm'}>
-                <FontAwesomeIcon icon={faSignInAlt}/> {t('common.login')}
-            </Button>
-        </Link>
-    );
+    // return (
+    //     <Link
+    //         href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
+    //         className={'link-text link-text-unset'}>
+    //         <Button variant={'tertiary'} color={'accent'} data-size={'sm'}>
+    //             <FontAwesomeIcon icon={faSignInAlt}/> {t('common.login')}
+    //         </Button>
+    //     </Link>
+    // );
 }
 
 export default UserMenu

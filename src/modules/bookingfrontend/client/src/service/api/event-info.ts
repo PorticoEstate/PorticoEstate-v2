@@ -48,7 +48,6 @@ interface PopperData {
     allocation: unknown;
     booking: unknown;
 }
-
 export const usePopperData = (
     event_ids: (string | number)[],
     allocation_ids: (string | number)[],
@@ -58,7 +57,7 @@ export const usePopperData = (
 
     // Helper function to filter out cached data
     const filterCachedData = (ids: (string | number)[], queryKey: string) => {
-        return ids.filter(id => !queryClient.getQueryData([queryKey, id]));
+        return ids.filter(id => !queryClient.getQueryData([queryKey, id.toString()]));
     };
 
     // Filter out already cached ids
@@ -68,74 +67,82 @@ export const usePopperData = (
 
     // Fetch uncached data
     const fetchUncachedData = async () => {
-        const fetchEvents: Promise<unknown[] | FilteredEventInfo[]> | undefined = uncachedEventIds.length > 0 ?
-            axios.get(phpGWLink('bookingfrontend/', {
-                menuaction: 'bookingfrontend.uievent.info_json',
-                ids: uncachedEventIds.map(id => id),
-            }, true)).then(d => Object.values(d.data.events).map((e: any) => ({
-                info_user_can_delete_events: d.data.info_user_can_delete_events, ...e,
-                type: 'event'
-            }))) : undefined;
+        const fetchEvents = uncachedEventIds.length
+            ? axios
+                .get(phpGWLink('bookingfrontend/', {
+                    menuaction: 'bookingfrontend.uievent.info_json',
+                    ids: uncachedEventIds,
+                }, true))
+                .then(d => Object.values(d.data.events).map((e: any) => ({
+                    info_user_can_delete_events: d.data.info_user_can_delete_events,
+                    ...e,
+                    type: 'event',
+                })))
+            : Promise.resolve([]);
 
-        const fetchAllocations = uncachedAllocationIds.length > 0 ?
-            axios.get(phpGWLink('bookingfrontend/', {
-                menuaction: 'bookingfrontend.uiallocation.info_json',
-                ids: uncachedAllocationIds.map(id => id),
-            }, true)).then(d => Object.values(d.data.allocations).map((e: any) => ({
-                info_user_can_delete_allocations: d.data.user_can_delete_allocations, ...e,
-                type: 'allocation'
-            }))) : undefined;
+        const fetchAllocations = uncachedAllocationIds.length
+            ? axios
+                .get(phpGWLink('bookingfrontend/', {
+                    menuaction: 'bookingfrontend.uiallocation.info_json',
+                    ids: uncachedAllocationIds,
+                }, true))
+                .then(d => Object.values(d.data.allocations).map((e: any) => ({
+                    info_user_can_delete_allocations: d.data.user_can_delete_allocations,
+                    ...e,
+                    type: 'allocation',
+                })))
+            : Promise.resolve([]);
 
-
-        const fetchBookings = uncachedBookingIds.length > 0 ?
-            axios.get(phpGWLink('bookingfrontend/', {
-                menuaction: 'bookingfrontend.uibooking.info_json',
-                ids: uncachedBookingIds.map(id => id),
-            }, true)).then(d => Object.values(d.data.bookings).map((e: any) => ({
-                info_user_can_delete_bookings: d.data.user_can_delete_bookings, ...e,
-                type: 'booking'
-            }))) : undefined;
-
+        const fetchBookings = uncachedBookingIds.length
+            ? axios
+                .get(phpGWLink('bookingfrontend/', {
+                    menuaction: 'bookingfrontend.uibooking.info_json',
+                    ids: uncachedBookingIds,
+                }, true))
+                .then(d => Object.values(d.data.bookings).map((e: any) => ({
+                    info_user_can_delete_bookings: d.data.user_can_delete_bookings,
+                    ...e,
+                    type: 'booking',
+                })))
+            : Promise.resolve([]);
 
         // Execute all requests in parallel
-        const results = await Promise.all([
-            uncachedEventIds.length > 0 && fetchEvents || undefined,
-            uncachedAllocationIds.length > 0 && fetchAllocations || undefined,
-            uncachedBookingIds.length > 0 && fetchBookings || undefined
-        ]);
+        const results = await Promise.all([fetchEvents, fetchAllocations, fetchBookings]);
 
-        const resultData = results.filter(a => a).flatMap(a => a);
-        // Cache the newly fetched data
-        resultData.forEach((data: any, index) => {
-            queryClient.setQueryData([data.type + 'Info', data.id.toString()], data, {});
+        // Flatten and filter fetched data
+        const fetchedData = results.flat();
+
+        // Cache newly fetched data
+        fetchedData.forEach(data => {
+            queryClient.setQueryData([`${data.type}Info`, data.id.toString()], data);
         });
 
-        // Return all data (cached + newly fetched)
-        const returnV: PopperData = {
-            event: event_ids.reduce((acc: Record<string, FilteredEventInfo>, id) => {
-                acc[id] = queryClient.getQueryData<FilteredEventInfo>(['eventInfo', id.toString()])!;
+        // Combine cached and fetched data for return
+        return {
+            event: event_ids.reduce((acc, id) => {
+                const data = queryClient.getQueryData<FilteredEventInfo>(['eventInfo', id.toString()]);
+                if (data) acc[id] = data;
                 return acc;
-            }, {}),
-            allocation: allocation_ids.reduce((acc: Record<string, unknown>, id) => {
-                acc[id] = queryClient.getQueryData(['allocationInfo', id.toString()]);
+            }, {} as Record<string, FilteredEventInfo>),
+            allocation: allocation_ids.reduce((acc, id) => {
+                const data = queryClient.getQueryData(['allocationInfo', id.toString()]);
+                if (data) acc[id] = data;
                 return acc;
-            }, {}),
-            booking: booking_ids.reduce((acc: Record<string, unknown>, id) => {
-                acc[id] = queryClient.getQueryData(['bookingInfo', id.toString()]);
+            }, {} as Record<string, unknown>),
+            booking: booking_ids.reduce((acc, id) => {
+                const data = queryClient.getQueryData(['bookingInfo', id.toString()]);
+                if (data) acc[id] = data;
                 return acc;
-            }, {}),
+            }, {} as Record<string, unknown>),
         };
-
-        return returnV
     };
 
     return useQuery({
         queryKey: ['infos', ...event_ids, ...allocation_ids, ...booking_ids],
         queryFn: fetchUncachedData,
-        // staleTime: 1000 * 60 * 5, // 5 minutes
-        // cacheTime: 1000 * 60 * 10, // 10 minutes
     });
 };
+
 export const useEventPopperData = (event_id: (string | number)) => {
     const query = useQuery({
         queryKey: ['eventInfo', event_id],

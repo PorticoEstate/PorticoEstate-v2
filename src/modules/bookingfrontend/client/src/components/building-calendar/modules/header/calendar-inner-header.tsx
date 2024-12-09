@@ -54,7 +54,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 
     return (
         <div className={styles.innerHeader}>
-            <Button size={'sm'} icon={true} variant='tertiary'
+            <Button data-size={'sm'} icon={true} variant='tertiary'
                     style={{}}
                     className={`${styles.expandCollapseButton} ${resourcesHidden ? styles.closed : styles.open}`}
                     onClick={() => setResourcesHidden(!resourcesHidden)}>
@@ -65,16 +65,16 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
                     className={`${styles.expandCollapseIcon} ${resourcesHidden ? styles.closed : styles.open}`}
                     fontSize='2.25rem'/>
             </Button>
-            <Button variant={'secondary'} size={'sm'}
+            <Button variant={'secondary'} data-size={'sm'}
                     className={styles.mobileResourcesButton}
                 // className={'captialize'}
                     onClick={() => setResourcesHidden(!resourcesHidden)}><FontAwesomeIcon
                 icon={faLayerGroup}/>{t('booking.select')} {t('bookingfrontend.resources')}
-                <Badge count={enabledResources.size} size={"md"} color={"danger"}></Badge>
+                <Badge count={enabledResources.size} data-size={"md"} color={"danger"}></Badge>
             </Button>
 
             <div className={styles.datePicker}>
-                <Button size={'sm'} icon={true} variant='tertiary' style={{borderRadius: "50%"}}
+                <Button data-size={'sm'} icon={true} variant='tertiary' style={{borderRadius: "50%"}}
                         onClick={() => {
                             if (c) {
                                 calendarApi.prev();
@@ -88,7 +88,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
                 </Button>
                 <CalendarDatePicker currentDate={currentDate} view={c.getApi().view.type}
                                     onDateChange={(v) => v && calendarApi.gotoDate(v)}/>
-                <Button icon={true} size={'sm'} variant='tertiary' style={{borderRadius: "50%"}}
+                <Button icon={true} data-size={'sm'} variant='tertiary' style={{borderRadius: "50%"}}
                         onClick={() => {
                             if (c) {
                                 calendarApi.next();
@@ -103,11 +103,11 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
             </div>
 
             <ButtonGroup className={styles.modeSelectTime}>
-                <Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}
+                <Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} color={'neutral'} data-size={'sm'}
                         className={'captialize'}
 
                         onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
-                <Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}
+                <Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} color={'neutral'} data-size={'sm'}
                         className={'captialize'}
 
                         onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
@@ -120,23 +120,23 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 
             <ButtonGroup className={styles.modeSelect}>
                 <Button variant={view !== 'listWeek' ? 'primary' : 'secondary'} color={'neutral'} aria-active={'true'}
-                        aria-current={'true'} size={'sm'}
+                        aria-current={'true'} data-size={'sm'}
                         className={'captialize'} onClick={() => {
                     props.setLastCalendarView()
                 }}><FontAwesomeIcon icon={faCalendar}/> <span
                     className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
-                <Button variant={view === 'listWeek' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}
+                <Button variant={view === 'listWeek' ? 'primary' : 'secondary'} color={'neutral'} data-size={'sm'}
                         className={'captialize'} onClick={() => {
                     props.setView('listWeek')
                 }}><FontAwesomeIcon icon={faTableList}/> <span
                     className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
             </ButtonGroup>
-            <Button variant={'primary'} asChild size={'sm'} className={styles.orderButton}>
+            <Button variant={'primary'} asChild data-size={'sm'} className={styles.orderButton}>
                 <Link href={applicationURL}>
                     {t('bookingfrontend.to application site')}
                     {Object.values(tempEvents).length > 0 &&
                         <Badge count={Object.values(tempEvents).length}
-                               color={'info'} size={'sm'}>
+                               color={'info'} data-size={'sm'}>
 
                         </Badge>}
                     <FontAwesomeIcon icon={faArrowRightLong}/>

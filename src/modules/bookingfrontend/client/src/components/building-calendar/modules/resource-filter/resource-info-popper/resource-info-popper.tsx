@@ -22,7 +22,9 @@ const ResourceInfoPopper: FC<ResourceInfoPopperProps> = ({resource_id, onClose, 
     }
 
     return (
-        <MobileDialog size={'hd'} open={true} onClose={() => {
+        <MobileDialog size={'hd'} open={true}
+
+                      onClose={() => {
             // setOpen(false)
             onClose();
         }} title={<h3 className={styles.eventName}><ColourCircle resourceId={+resource_id}
@@ -30,7 +32,7 @@ const ResourceInfoPopper: FC<ResourceInfoPopperProps> = ({resource_id, onClose, 
         </h3>
         }
 
-                      footer={<Button onClick={onClose} variant="tertiary" className={'default'} size={'sm'}
+                      footer={<Button onClick={onClose} variant="tertiary" className={'default'} data-size={'sm'}
                                       style={{textTransform: 'capitalize'}}>{t('common.ok').toLowerCase()}</Button>}>
             <ResourceInfoModalContent resource_id={resource_id} onClose={onClose} name={resource_name}/>
         </MobileDialog>

@@ -34,6 +34,7 @@ import EventContentList from "@/components/building-calendar/modules/event/conte
 import {EventImpl} from "@fullcalendar/core/internal";
 import EventContentAllDay from "@/components/building-calendar/modules/event/content/event-content-all-day";
 import {useBuilding, useBuildingResources} from "@/service/api/building";
+import EventCrud from "@/components/building-calendar/modules/event/edit/event-crud";
 
 interface BuildingCalendarProps {
     events?: IEvent[];
@@ -56,14 +57,18 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     const [calendarEvents, setCalendarEvents] = useState<(FCallBaseEvent)[]>([]);
     const [slotMinTime, setSlotMinTime] = useState('00:00:00');
     const [slotMaxTime, setSlotMaxTime] = useState('24:00:00');
-    const [selectedEvent, setSelectedEvent] = useState<FCallEvent | FCallTempEvent | null>(null);
-    const [popperAnchorEl, setPopperAnchorEl] = useState<HTMLElement | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [view, setView] = useState<string>(window.innerWidth < 601 ? 'timeGridDay' : 'timeGridWeek');
     const [lastCalendarView, setLastCalendarView] = useState<string>('timeGridWeek');
+
+
+    const [selectedEvent, setSelectedEvent] = useState<FCallEvent | FCallTempEvent | null>(null);
+    const [popperAnchorEl, setPopperAnchorEl] = useState<HTMLElement | null>(null);
+
     const [currentTempEvent, setCurrentTempEvent] = useState<Partial<FCallTempEvent>>();
-    const {enabledResources} = useEnabledResources();
     const {tempEvents: storedTempEvents, setTempEvents: setStoredTempEvents} = useTempEvents();
+
+    const {enabledResources} = useEnabledResources();
     const {data: resources} = useBuildingResources(props.building.id);
 
     const eventInfos = usePopperData(
@@ -83,7 +88,6 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         setLastCalendarView(view)
 
     }, [view, lastCalendarView]);
-
 
 
     const handleDateClick = (arg: { date: Date; dateStr: string; allDay: boolean; }) => {
@@ -295,7 +299,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
         }
 
-    }, []);
+    }, [currentTempEvent, setStoredTempEvents]);
 
     const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
 
@@ -366,90 +370,95 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         />
     }
 
+
     return (
-            <React.Fragment>
-                <CalendarInnerHeader view={view} calendarRef={calendarRef}
-                                     setView={(v) => setView(v)}
-                                     setLastCalendarView={() => setView(lastCalendarView)} building={props.building}/>
-                <FullCalendar
-                    ref={calendarRef}
-                    plugins={[interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin]}
-                    initialView={view}
-                    slotMinTime={slotMinTime}
-                    slotMaxTime={slotMaxTime}
-                    headerToolbar={false}
-                    slotDuration={"00:30:00"}
-                    themeSystem={'bootstrap'}
-                    firstDay={1}
-                    eventClick={(clickInfo) => handleEventClick(clickInfo as any)}
-                    datesSet={(dateInfo) => {
-                        props.onDateChange(dateInfo);
-                        setCurrentDate(DateTime.fromJSDate(dateInfo.start));
-                    }}
-                    eventContent={(eventInfo: FCEventContentArg<FCallEvent | FCallTempEvent>) => renderEventContent(eventInfo)}
-                    views={{
-                        timeGrid: {
-                            slotLabelFormat: {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: false
-                            }
+        <React.Fragment>
+            <CalendarInnerHeader view={view} calendarRef={calendarRef}
+                                 setView={(v) => setView(v)}
+                                 setLastCalendarView={() => setView(lastCalendarView)} building={props.building}/>
+            <FullCalendar
+                ref={calendarRef}
+                plugins={[interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin]}
+                initialView={view}
+                slotMinTime={slotMinTime}
+                slotMaxTime={slotMaxTime}
+                headerToolbar={false}
+                slotDuration={"00:30:00"}
+                themeSystem={'bootstrap'}
+                firstDay={1}
+                eventClick={(clickInfo) => handleEventClick(clickInfo as any)}
+                datesSet={(dateInfo) => {
+                    props.onDateChange(dateInfo);
+                    setCurrentDate(DateTime.fromJSDate(dateInfo.start));
+                }}
+                eventContent={(eventInfo: FCEventContentArg<FCallEvent | FCallTempEvent>) => renderEventContent(eventInfo)}
+                views={{
+                    timeGrid: {
+                        slotLabelFormat: {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        }
+                    },
+                    list: {
+                        eventClassNames: ({event: {extendedProps}}) => {
+                            return `clickable ${
+                                extendedProps.cancelled ? 'event-cancelled' : ''
+                            }`
                         },
-                        list: {
-                            eventClassNames: ({event: {extendedProps}}) => {
-                                return `clickable ${
-                                    extendedProps.cancelled ? 'event-cancelled' : ''
-                                }`
-                            },
+                    },
+                    month: {
+                        eventTimeFormat: {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
                         },
-                        month: {
-                            eventTimeFormat: {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: false
-                            },
-                        },
-                    }}
-                    dayHeaderFormat={{weekday: 'long'}}
-                    dayHeaderContent={(args) => (
-                        <div className={styles.dayHeader}>
-                            <div>{args.date.toLocaleDateString('nb-NO', {weekday: 'long'})}</div>
-                            <div>{args.date.getDate()}</div>
-                        </div>
-                    )}
-                    weekNumbers={true}
-                    weekText="Uke "
-                    locale={DateTime.local().locale}
-                    selectable={true}
-                    height={'auto'}
-                    eventMaxStack={4}
-                    select={handleDateSelect}
-                    dateClick={handleDateClick}
-                    events={calendarVisEvents}
-                    // editable={true}
-                    // selectOverlap={(stillEvent, movingEvent) => {
-                    //     console.log(stillEvent);
-                    //     return stillEvent?.extendedProps?.type !== 'event'
-                    // }}
-                    selectAllow={checkEventOverlap}
-                    eventResize={handleEventResize}
-                    eventDrop={handleEventResize}
-                    initialDate={currentDate.toJSDate()}
-                    // style={{gridColumn: 2}}
-                />
+                    },
+                }}
+                dayHeaderFormat={{weekday: 'long'}}
+                dayHeaderContent={(args) => (
+                    <div className={styles.dayHeader}>
+                        <div>{args.date.toLocaleDateString('nb-NO', {weekday: 'long'})}</div>
+                        <div>{args.date.getDate()}</div>
+                    </div>
+                )}
+                weekNumbers={true}
+                weekText="Uke "
+                locale={DateTime.local().locale}
+                selectable={true}
+                height={'auto'}
+                eventMaxStack={4}
+                select={handleDateSelect}
+                dateClick={handleDateClick}
+                events={calendarVisEvents}
+                // editable={true}
+                // selectOverlap={(stillEvent, movingEvent) => {
+                //     console.log(stillEvent);
+                //     return stillEvent?.extendedProps?.type !== 'event'
+                // }}
+                selectAllow={checkEventOverlap}
+                eventResize={handleEventResize}
+                eventDrop={handleEventResize}
+                initialDate={currentDate.toJSDate()}
+                // style={{gridColumn: 2}}
+            />
 
-                <EventPopper
-                    event={selectedEvent}
-                    placement={
-                        popperPlacement()
-                    }
-                    anchor={popperAnchorEl} onClose={() => {
-                    setSelectedEvent(null);
-                    setPopperAnchorEl(null);
-                }}/>
+            <EventPopper
+                event={selectedEvent}
+                placement={
+                    popperPlacement()
+                }
+                anchor={popperAnchorEl} onClose={() => {
+                setSelectedEvent(null);
+                setPopperAnchorEl(null);
+            }}/>
+
+            {currentTempEvent && (
+                <EventCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempEvent={currentTempEvent}/>
+            )}
 
 
-            </React.Fragment>
+        </React.Fragment>
     );
 }
 

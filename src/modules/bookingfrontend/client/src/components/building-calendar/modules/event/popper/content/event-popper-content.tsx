@@ -76,7 +76,7 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
                 )}
             </div>
             <div className={styles.eventPopperFooter}>
-                <Button onClick={onClose} variant="tertiary" className={'default'} size={'sm'}
+                <Button onClick={onClose} variant="tertiary" className={'default'} data-size={'sm'}
                         style={{textTransform: 'capitalize'}}>{t('common.ok').toLowerCase()}</Button>
             </div>
         </PopperContentSharedWrapper>

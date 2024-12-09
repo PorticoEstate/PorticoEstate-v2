@@ -24,7 +24,7 @@ const PopperContentSharedWrapper: FC<PopperContentSharedProps> = (props) => {
                             aria-label="Close dialog"
                             onClick={() => props.onClose()}
                             className={'default'}
-                            size={'sm'}
+                            data-size={'sm'}
                         >
                             <FontAwesomeIcon icon={faXmark} size={'lg'}/>
                         </Button>

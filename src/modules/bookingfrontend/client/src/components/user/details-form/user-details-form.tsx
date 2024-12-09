@@ -364,7 +364,7 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
                         {!isEditing && (
                             <Button
                                 variant="primary"
-                                size="sm"
+                                data-size="sm"
                                 onClick={() => setIsEditing(true)}
                             >
                                 <FontAwesomeIcon icon={faPen}/>

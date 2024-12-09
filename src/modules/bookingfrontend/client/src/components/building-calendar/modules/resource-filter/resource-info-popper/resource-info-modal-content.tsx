@@ -34,7 +34,7 @@ const ResourceInfoModalContent: FC<ResourceInfoPopperContentProps> = (props) => 
                         opacity: '75%',
                         top: 5,
                         right: 5
-                    }}><Spinner title='Laster ressurs info' size='sm'/></div>
+                    }}><Spinner aria-label='Laster ressurs info'/></div>
                 }
 
                 {!resource.isLoading && (<Fragment>

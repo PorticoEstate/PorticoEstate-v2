@@ -63,7 +63,7 @@ const CollapsibleText: React.FC<CollapsibleTextProps> = ({children}) => {
             </div>
             {/* Show the toggle button only if the content overflows and isActive is true */}
             {isActive && (
-                <Button className={'default text-label'} variant={'tertiary'} size={'sm'} color={'neutral'}
+                <Button className={'default text-label'} variant={'tertiary'} data-size={'sm'} color={'neutral'}
                         onClick={toggleDescription}>
                     {descriptionExpanded ? (
                         <span>{t('bookingfrontend.show_less')}</span>

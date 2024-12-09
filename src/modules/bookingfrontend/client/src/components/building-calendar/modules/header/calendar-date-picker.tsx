@@ -58,7 +58,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
             // dateFormat={dateFormat}
             customInput={(
                 <div className={styles.datePicker}>
-                    <Button variant="tertiary" size="sm" className={styles.datePickerButton}>
+                    <Button variant="tertiary" data-size="sm" className={styles.datePickerButton}>
                         {formatSelectedDate()}
                     </Button>
                 </div>

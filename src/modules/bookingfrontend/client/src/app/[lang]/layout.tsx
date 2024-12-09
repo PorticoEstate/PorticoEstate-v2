@@ -4,7 +4,7 @@ import {languages, ILanguage} from "@/app/i18n/settings";
 import type {Metadata} from "next";
 import {Roboto, Poppins} from "next/font/google";
 import '@digdir/designsystemet-css';
-import '@digdir/designsystemet-theme';
+import '@/theme/tema-innbyggerportal.css';
 import "@/app/globals.scss";
 import {FC, PropsWithChildren} from "react";
 import {notFound} from "next/navigation";

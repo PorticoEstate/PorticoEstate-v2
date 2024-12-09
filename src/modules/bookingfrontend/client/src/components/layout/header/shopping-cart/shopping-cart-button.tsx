@@ -27,7 +27,7 @@ const ShoppingCartButton: FC<ShoppingCartButtonProps> = (props) => {
                 {(cartItems?.list?.length || 0) > 0 && (<Badge
                     color="info"
                     placement="top-right"
-                    size={'sm'}
+                    data-size={'sm'}
                     count={cartItems?.list?.length || undefined}
                     // style={{
                     //     right: '10%',

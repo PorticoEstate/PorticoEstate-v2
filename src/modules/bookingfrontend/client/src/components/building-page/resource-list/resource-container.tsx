@@ -30,7 +30,7 @@ const ResourceContainer: FC<ResourceContainerProps> = (props) => {
                 <h3>
                     {t('bookingfrontend.rental_resources')}
                 </h3>
-                {showMoreButton && ( <Button className={'default text-label'} variant={'tertiary'} size={'sm'} color={'neutral'}
+                {showMoreButton && ( <Button className={'default text-label'} variant={'tertiary'} data-size={'sm'} color={'neutral'}
                                              onClick={toggleExpand}>
                     {expanded ? (
                         <span>{t('bookingfrontend.show_less')}</span>

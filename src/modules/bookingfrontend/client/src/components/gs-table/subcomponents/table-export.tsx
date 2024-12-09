@@ -130,7 +130,7 @@ function TableExport<T>({table, fileName = 'exported-data', rowSelection}: Table
     return (
         <Button
             variant="tertiary"
-            size="sm"
+            data-size="sm"
             color={'neutral'}
             onClick={handleExport}
             title={exportTooltip}
@@ -138,7 +138,7 @@ function TableExport<T>({table, fileName = 'exported-data', rowSelection}: Table
             <Badge
                 color="info"
                 placement="top-right"
-                size="sm"
+                data-size="sm"
                 count={selectedCount || undefined}
             >
                 <FontAwesomeIcon icon={faDownload}/>

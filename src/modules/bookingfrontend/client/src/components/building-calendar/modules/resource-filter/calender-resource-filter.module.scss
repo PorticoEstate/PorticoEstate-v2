@@ -63,6 +63,11 @@
     padding: 10px 8px;
     border-bottom: 1px solid #eee;
 
+    :global(.ds-field) {
+        flex-grow: 1;
+        overflow: hidden;
+        align-items: center;
+    }
     &.active {
         background-color: $purple-8;
     }
@@ -74,6 +79,7 @@
 
 .resourceCheckbox {
     //margin-right: 10px;
+    translate: unset;
     display: flex;
     flex-grow: 1;
     overflow: hidden;
@@ -81,16 +87,6 @@
         min-width: var(--dsc-checkbox-size);
         margin-left: 5px;
         margin-right: 5px;
-    }
-    > label {
-        flex-grow: 1;
-        overflow: hidden;
-        min-width: unset;
-
-        > span {
-            flex-grow: 1;
-            overflow: hidden;
-        }
     }
 }
 
@@ -102,6 +98,11 @@
     cursor: pointer;
     flex-grow: 1;
     overflow: hidden;
+    min-width: unset;
+    > span {
+        flex-grow: 1;
+        overflow: hidden;
+    }
     div {
         display: flex;
         align-items: center;

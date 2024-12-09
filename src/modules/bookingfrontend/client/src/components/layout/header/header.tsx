@@ -16,27 +16,25 @@ interface HeaderProps {
 const Header = async (props: HeaderProps) => {
 
     return (
-        <>
-            <nav className={`${styles.navbar}`}>
-                <ClientPHPGWLink strURL={'bookingfrontend/'} className={styles.logo}>
-                    <Image src={logo_horizontal}
-                         alt="Aktiv kommune logo"
-                           width={192}
-                         className={styles.logoImg}/>
-                    <Image src={logo}
-                         alt="Aktiv kommune logo"
-                           width={80}
-                         className={`${styles.logoImg} ${styles.logoImgDesktop}`}/>
-                </ClientPHPGWLink>
-                {/*${baseUrl}*/}
-                <HeaderMenuContent>
-                    <LanguageSwitcher/>
-                    <ShoppingCartButton />
-                    <UserMenu/>
+        <nav className={`${styles.navbar}`}>
+            <ClientPHPGWLink strURL={'bookingfrontend/'} className={styles.logo}>
+                <Image src={logo_horizontal}
+                       alt="Aktiv kommune logo"
+                       width={192}
+                       className={styles.logoImg}/>
+                <Image src={logo}
+                       alt="Aktiv kommune logo"
+                       width={80}
+                       className={`${styles.logoImg} ${styles.logoImgDesktop}`}/>
+            </ClientPHPGWLink>
+            {/*${baseUrl}*/}
+            <HeaderMenuContent>
+                <LanguageSwitcher/>
+                <ShoppingCartButton/>
+                <UserMenu/>
 
-                </HeaderMenuContent>
-            </nav>
-        </>
+            </HeaderMenuContent>
+        </nav>
     );
 }
 

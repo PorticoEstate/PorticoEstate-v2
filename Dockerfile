@@ -38,7 +38,10 @@ RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
 	# Install PECL extensions
 RUN pecl install xdebug apcu && docker-php-ext-enable xdebug apcu
 RUN pecl install redis && docker-php-ext-enable redis
-RUN pecl install imagick && docker-php-ext-enable imagick
+
+# Install Imagick
+RUN install-php-extensions Imagick/imagick@28f27044e435a2b203e32675e942eb8de620ee58;
+#RUN pecl install imagick && docker-php-ext-enable imagick
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php

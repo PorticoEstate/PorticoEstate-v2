@@ -32,6 +32,7 @@ const LanguageSwitcher: React.FC = () => {
                 onClick={() => setIsOpen(true)}
                 variant={"tertiary"}
                 color={"accent"}
+                data-size={'sm'}
             >
                 <ReactCountryFlag countryCode={currentLang.countryCode} svg
                 /> <FontAwesomeIcon icon={faChevronDown} />

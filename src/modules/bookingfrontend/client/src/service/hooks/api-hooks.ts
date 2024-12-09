@@ -22,7 +22,6 @@ interface UseScheduleOptions {
 }
 
 
-
 /**
  * Custom hook to fetch and cache building schedule data by weeks
  * @param options.building_id - The ID of the building
@@ -53,7 +52,6 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
     const uncachedWeeks = keys.filter(weekStart => {
         const cacheKey = getWeekCacheKey(weekStart);
         const d = queryClient.getQueryData(cacheKey);
-        console.log("uncachedWeeks", weekStart, cacheKey, d);
         return !d;
     });
 
@@ -79,6 +77,8 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
         uncachedWeeks.forEach(weekStart => {
             const weekData: IEvent[] = scheduleData[weekStart] || [];
             const cacheKey = getWeekCacheKey(weekStart);
+            console.log("uncachedWeek", weekStart);
+
             queryClient.setQueryData(cacheKey, weekData);
         });
 
@@ -104,6 +104,15 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
     });
 };
 
+class AuthenticationError extends Error {
+    statusCode: number;
+
+    constructor(message: string = "Failed to fetch user", statusCode?: number) {
+        super(message);
+        this.name = "AuthenticationError";
+        this.statusCode = 401; // HTTP status code for "Unauthorized"
+    }
+}
 
 export function useBookingUser() {
     return useQuery<IBookingUser>({
@@ -117,14 +126,15 @@ export function useBookingUser() {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to fetch user');
+                throw new AuthenticationError('Failed to fetch user', response.status);
             }
 
             return response.json();
         },
-        retry: (failureCount, error) => {
+        retry: (failureCount, error: AuthenticationError | Error) => {
+            console.log('useBookingUser', failureCount, error);
             // Don't retry on 401
-            if (error instanceof Error && error.message.includes('401')) {
+            if (error instanceof AuthenticationError && error.statusCode === 401) {
                 return false;
             }
             return failureCount < 3;

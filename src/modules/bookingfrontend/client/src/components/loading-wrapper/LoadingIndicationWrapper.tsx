@@ -1,10 +1,11 @@
 'use client'
-import React, {FC, PropsWithChildren} from 'react';
+import React, {FC, Fragment, PropsWithChildren} from 'react';
 import {
     useIsHardLoading,
     useIsSoftLoading,
 } from "@/components/loading-wrapper/LoadingContext";
 import {Spinner} from "@digdir/designsystemet-react";
+import {useIsFetching, useQueryClient} from "@tanstack/react-query";
 
 interface LoadingIndicationWrapperProps extends PropsWithChildren {
 }
@@ -12,11 +13,13 @@ interface LoadingIndicationWrapperProps extends PropsWithChildren {
 const LoadingIndicationWrapper: FC<LoadingIndicationWrapperProps> = (props) => {
     const isHardLoading = useIsHardLoading();
     const isSoftLoading = useIsSoftLoading();
+    const isFetching = useIsFetching()
     if(isHardLoading) {
         return <div></div>
     }
-    return <>
-        {isSoftLoading &&
+    const isSoft = !!(isSoftLoading || isFetching)
+    return <Fragment>
+        {isSoft &&
             <div style={{
                 position: 'fixed',
                 zIndex: 103,
@@ -27,11 +30,11 @@ const LoadingIndicationWrapper: FC<LoadingIndicationWrapperProps> = (props) => {
                 top: 5,
                 right: 5
             }}>
-                <Spinner title='Henter kaffi' size='sm'/>
+                <Spinner aria-label='Henter kaffi'/>
             </div>
         }
         {props.children}
-    </>;
+    </Fragment>;
 }
 
 export default LoadingIndicationWrapper

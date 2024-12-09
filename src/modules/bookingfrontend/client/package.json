@@ -8,12 +8,13 @@
         "start": "next start",
         "lint": "next lint",
         "start:development": "next dev",
-        "start:production": "next start"
+        "start:production": "next start",
+        "postinstall": "patch-package"
     },
     "dependencies": {
-        "@digdir/designsystemet-css": "1.0.0-next.35",
-        "@digdir/designsystemet-react": "1.0.0-next.35",
-        "@digdir/designsystemet-theme": "1.0.0-next.35",
+        "@digdir/designsystemet-css": "1.0.0-next.39",
+        "@digdir/designsystemet-react": "1.0.0-next.39",
+        "@digdir/designsystemet-theme": "1.0.0-next.39",
         "@emotion/react": "^11.13.0",
         "@emotion/styled": "^11.13.0",
         "@floating-ui/react": "^0.26.23",
@@ -44,7 +45,9 @@
         "i18next": "^23.14.0",
         "luxon": "^3.4.4",
         "next": "14.2.4",
+        "patch-package": "^8.0.0",
         "photoswipe": "^5.4.4",
+        "postinstall-postinstall": "^2.1.0",
         "react": "^18",
         "react-country-flag": "^3.1.0",
         "react-datepicker": "^7.3.0",

@@ -189,7 +189,7 @@ class import_epostlister_lrs extends property_cron_parent
 			'AgrHRSysr'	 => 4, //HR-seksjonen-Systemforvaltning
 		);
 
-		while (($data = fgetcsv($fp, 1000, ";")) !== false && $ok == true)
+		while (($data = fgetcsv($fp, 1000,";", '"', "\\")) !== false && $ok == true)
 		{
 			$alias				 = rtrim(trim(mb_convert_encoding($data[0], "UTF-8", "UTF-16")), ' ?');
 			$name				 = rtrim(trim(mb_convert_encoding($data[1], "UTF-8", "UTF-16")), ' ?');

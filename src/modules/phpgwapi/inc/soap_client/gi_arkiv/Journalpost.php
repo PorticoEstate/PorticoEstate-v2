@@ -205,7 +205,7 @@ class Journalpost
      * @param \DateTime $journaldato
      * @return Journalpost
      */
-    public function setJournaldato(\DateTime $journaldato = null)
+    public function setJournaldato(\DateTime|null $journaldato = null)
     {
       if ($journaldato == null) {
        $this->journaldato = null;
@@ -253,7 +253,7 @@ class Journalpost
      * @param \DateTime $dokumentetsDato
      * @return Journalpost
      */
-    public function setDokumentetsDato(\DateTime $dokumentetsDato = null)
+    public function setDokumentetsDato(\DateTime|null $dokumentetsDato = null)
     {
       if ($dokumentetsDato == null) {
        $this->dokumentetsDato = null;
@@ -337,7 +337,7 @@ class Journalpost
      * @param \DateTime $forfallsdato
      * @return Journalpost
      */
-    public function setForfallsdato(\DateTime $forfallsdato = null)
+    public function setForfallsdato(\DateTime|null $forfallsdato = null)
     {
       if ($forfallsdato == null) {
        $this->forfallsdato = null;

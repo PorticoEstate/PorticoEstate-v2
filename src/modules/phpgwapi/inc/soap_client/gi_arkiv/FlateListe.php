@@ -26,7 +26,7 @@ class FlateListe
      * @param Flate[] $liste
      * @return FlateListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

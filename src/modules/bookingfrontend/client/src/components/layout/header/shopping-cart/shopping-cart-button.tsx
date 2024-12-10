@@ -16,7 +16,7 @@ const ShoppingCartButton: FC<ShoppingCartButtonProps> = (props) => {
 
 
     return (
-       <> <Button icon variant={'tertiary'} ref={popperAnchorEl} onClick={() => setOpen(true)}>
+       <> <Button variant={'tertiary'} ref={popperAnchorEl} onClick={() => setOpen(true)}>
 
             <div
                 style={{

@@ -25,7 +25,7 @@
 		 * @param TemplateHeader[] $TemplateHeader
 		 * @return ArrayOfTemplateHeader
 		 */
-		public function setTemplateHeader( array $TemplateHeader = null )
+		public function setTemplateHeader(array|null $TemplateHeader = null )
 		{
 			$this->TemplateHeader = $TemplateHeader;
 			return $this;

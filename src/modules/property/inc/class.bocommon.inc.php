@@ -1958,7 +1958,7 @@
 				{
 					$_identificator[] = $value;
 				}
-				fputcsv($fp, $_identificator, ';');
+				fputcsv($fp, $_identificator, ';', '"', "\\");
 			}
 
 			$count_uicols_name = count($name);
@@ -1972,7 +1972,7 @@
 					$header[] = $descr[$i];
 				}
 			}
-			fputcsv($fp, $header, ';');
+			fputcsv($fp, $header,';', '"', "\\");
 			unset($header);
 
 			if (is_array($list))
@@ -1987,7 +1987,7 @@
 							$row[] = preg_replace("/\r\n/", ' ', $entry[$name[$i]]);
 						}
 					}
-					fputcsv($fp, $row, ';');
+					fputcsv($fp, $row,';', '"', "\\");
 				}
 			}
 			fclose($fp);

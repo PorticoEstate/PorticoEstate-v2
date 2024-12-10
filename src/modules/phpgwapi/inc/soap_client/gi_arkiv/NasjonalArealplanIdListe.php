@@ -26,7 +26,7 @@ class NasjonalArealplanIdListe
      * @param NasjonalArealplanId[] $liste
      * @return NasjonalArealplanIdListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

@@ -115,7 +115,7 @@ class Merknad
      * @param \DateTime $merknadsdato
      * @return Merknad
      */
-    public function setMerknadsdato(\DateTime $merknadsdato = null)
+    public function setMerknadsdato(\DateTime|null $merknadsdato = null)
     {
       if ($merknadsdato == null) {
        $this->merknadsdato = null;

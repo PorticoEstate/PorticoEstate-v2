@@ -26,7 +26,7 @@ class KorrespondansepartListe
      * @param Korrespondansepart[] $liste
      * @return KorrespondansepartListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

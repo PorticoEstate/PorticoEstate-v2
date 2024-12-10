@@ -882,7 +882,7 @@ HTML;
 	 */
 	protected function getcsv($handle)
 	{
-		return fgetcsv($handle, 1000, self::DELIMITER, self::ENCLOSING);
+		return fgetcsv($handle, 1000, self::DELIMITER, self::ENCLOSING, "\\");
 	}
 
 	private function log_messages($step)

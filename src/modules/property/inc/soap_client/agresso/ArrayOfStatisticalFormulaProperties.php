@@ -25,7 +25,7 @@
 		 * @param StatisticalFormulaProperties[] $StatisticalFormulaProperties
 		 * @return ArrayOfStatisticalFormulaProperties
 		 */
-		public function setStatisticalFormulaProperties( array $StatisticalFormulaProperties = null )
+		public function setStatisticalFormulaProperties(array|null $StatisticalFormulaProperties = null )
 		{
 			$this->StatisticalFormulaProperties = $StatisticalFormulaProperties;
 			return $this;

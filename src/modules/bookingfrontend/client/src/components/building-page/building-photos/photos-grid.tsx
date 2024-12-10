@@ -1,5 +1,5 @@
 'use client'
-import {Accordion} from "@digdir/designsystemet-react";
+import {Details} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import 'photoswipe/dist/photoswipe.css'
 import {Gallery, Item} from 'react-photoswipe-gallery'
@@ -14,11 +14,11 @@ interface PhotosGridProps {
 const PhotosGrid = (props: PhotosGridProps) => {
     const t = useTrans();
     return (
-        <Accordion.Item>
-            <Accordion.Heading>
+        <Details data-color={'brand1'}>
+            <Details.Summary>
                 <h3>{t('bookingfrontend.pictures')}</h3>
-            </Accordion.Heading>
-            <Accordion.Content>
+            </Details.Summary>
+            <Details.Content>
 
                 <Gallery options={{
                     gallery: '#gallery--dynamic-zoom-level'
@@ -49,8 +49,8 @@ const PhotosGrid = (props: PhotosGridProps) => {
                         })}
                     </div>
                 </Gallery>
-            </Accordion.Content>
-        </Accordion.Item>
+            </Details.Content>
+        </Details>
 );
 }
 

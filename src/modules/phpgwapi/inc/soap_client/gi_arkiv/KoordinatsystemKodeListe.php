@@ -26,7 +26,7 @@ class KoordinatsystemKodeListe
      * @param KoordinatsystemKode[] $liste
      * @return KoordinatsystemKodeListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

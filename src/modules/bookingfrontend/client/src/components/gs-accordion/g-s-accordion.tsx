@@ -1,9 +1,8 @@
 // GSAccordion.tsx
 import React, { FC } from 'react';
-import { AccordionProps } from "@digdir/designsystemet-react";
-import { ServerAccordion, ServerAccordionItem, ServerAccordionHeading, ServerAccordionContent } from './server-accordion';
+import { DetailsProps } from "@digdir/designsystemet-react";
+import { ServerAccordionItem, ServerAccordionHeading, ServerAccordionContent } from './server-accordion';
 import {
-    ClientAccordion,
     ClientAccordionContent,
     ClientAccordionHeading,
     ClientAccordionItem
@@ -11,17 +10,17 @@ import {
 
 
 
-const GSAccordion: FC<AccordionProps> & {
-    Item: any;
+const GSAccordion: FC<DetailsProps> & {
+    // Item: any;
     Heading: any;
     Content: any;
 } = (props) => {
-    const AccordionComponent = ClientAccordion || ServerAccordion;
-    return <AccordionComponent {...props}>{props.children}</AccordionComponent>;
+    const AccordionComponent = ClientAccordionItem || ServerAccordionItem;
+    return <AccordionComponent  data-color={'brand1'} {...props}>{props.children}</AccordionComponent>;
 };
 
 // Assign dynamically loaded components as subcomponents
-GSAccordion.Item = ClientAccordionItem || ServerAccordionItem;
+// GSAccordion.Item = ClientAccordionItem || ServerAccordionItem;
 GSAccordion.Heading = ClientAccordionHeading || ServerAccordionHeading;
 GSAccordion.Content = ClientAccordionContent || ServerAccordionContent;
 

@@ -87,7 +87,7 @@ class Avskrivning
      * @param \DateTime $avskrivningsdato
      * @return Avskrivning
      */
-    public function setAvskrivningsdato(\DateTime $avskrivningsdato = null)
+    public function setAvskrivningsdato(\DateTime|null $avskrivningsdato = null)
     {
       if ($avskrivningsdato == null) {
        $this->avskrivningsdato = null;

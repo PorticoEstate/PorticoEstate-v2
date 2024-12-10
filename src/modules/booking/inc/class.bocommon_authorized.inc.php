@@ -180,7 +180,7 @@
 		 *
 		 * @param array $for_object (optional)
 		 */
-		protected function include_subject_parent_roles( array $for_object = null )
+		protected function include_subject_parent_roles(array|null $for_object = null )
 		{
 
 		}

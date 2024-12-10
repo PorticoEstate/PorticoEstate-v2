@@ -229,7 +229,7 @@ class Korrespondansepart
      * @param \DateTime $fristBesvarelse
      * @return Korrespondansepart
      */
-    public function setFristBesvarelse(\DateTime $fristBesvarelse = null)
+    public function setFristBesvarelse(\DateTime|null $fristBesvarelse = null)
     {
       if ($fristBesvarelse == null) {
        $this->fristBesvarelse = null;

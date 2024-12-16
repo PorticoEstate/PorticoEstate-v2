@@ -161,6 +161,23 @@ export const useEventPopperData = (event_id: (string | number)) => {
 
     return query;
 }
+export const fetchEventData = async (event_id: number): Promise<FilteredEventInfo | null> => {
+    const url = phpGWLink(
+        "bookingfrontend/",
+        {
+            menuaction: "bookingfrontend.uievent.info_json",
+            id: event_id,
+        },
+        true
+    );
+    const res = await axios.get(url);
+    if (res.status !== 200) return null;
+    return {
+        info_user_can_delete_events: res.data.info_user_can_delete_events,
+        ...res.data.events[event_id],
+        type: "event",
+    };
+}
 
 
 export const useAllocationPopperData = (allocation_id: (string | number)) => {

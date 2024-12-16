@@ -13,13 +13,12 @@ interface EventViewProps {
 }
 
 const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) => {
-     //TODO: Where to find translations
-     const t = useTrans();
+    //TODO: Where to find translations
+    const t = useTrans();
 
-    const whenTime = DateTime.fromJSDate(new Date(event.from_)).toFormat('dd. LLL yyyy kl HH:mm')
+    const whenTime = DateTime.fromJSDate(new Date(event.info_when.split(" ")[0])).toFormat('dd. LLL yyyy'); 
     const fromTime = DateTime.fromJSDate(new Date(event.from_)).toFormat('HH.mm');
     const toTime = DateTime.fromJSDate(new Date(event.to_)).toFormat('HH.mm');
-
     return (
         <main>
             <h2 style={{ marginBottom: '1rem' }}>{event.activity_name}</h2>
@@ -34,7 +33,7 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
             <div style={{display: 'flex'}}>
                 <Button variant='secondary'>
                     <FontAwesomeIcon icon={faUserPlus} />
-                    <Link href={`/event/${event.id}/participants`}>{t('participants_')}</Link>
+                    <Link href={`./${event.id}/participants`}>{t('participants_')}</Link>
                 </Button>
                 <Button variant='secondary' onClick={openEditing}>
                     <FontAwesomeIcon icon={faPen} />

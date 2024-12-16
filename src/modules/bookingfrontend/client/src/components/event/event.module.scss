@@ -1,3 +1,31 @@
 .controllButtonsContainer {
     display: flex;
 }
+
+.editForm {
+    div {
+        margin-bottom: 0.4rem;
+    }
+}
+
+.editTimeBlock {
+    display: flex;
+    div {
+        margin-right: 1rem;
+        width: 10rem
+    }
+}
+
+.participantInput {
+    display: flex;
+    align-items: center;
+    input {
+        width: 3rem;
+        text-align: center;
+    }
+    svg {
+        margin-right: 0.4rem;
+        margin-left: 0.4rem;
+        user-select: none;
+    }
+}

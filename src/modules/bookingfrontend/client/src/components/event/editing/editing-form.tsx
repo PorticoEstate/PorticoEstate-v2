@@ -1,13 +1,11 @@
 'use client'
 import {FC} from "react";
-import {Field, Input, Textfield} from "@digdir/designsystemet-react";
+import {Field, Textfield} from "@digdir/designsystemet-react";
 import { FilteredEventInfo } from "@/service/api/event-info";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCalendarAlt } from "@fortawesome/free-solid-svg-icons";
-import DatePicker from "react-datepicker";
 import MaxParticipantInput from "./max-participant-input";
+import DatePickerInput from "./datepicker-input";
 
 interface FormProps {
     event: FilteredEventInfo
@@ -16,6 +14,7 @@ interface FormProps {
 
 const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
     const t = useTrans();
+
     return (
         <div className={styles.editForm}>
             <Field>
@@ -26,17 +25,10 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                     onChange={(e) => updateField('activity_name', e.target.value)}
                 />
             </Field>
-            <Field>
-                <Field.Description>{t('Date_')}</Field.Description>
-                <Field.Affixes>
-                    <Field.Affix><FontAwesomeIcon icon={faCalendarAlt}/></Field.Affix>
-                    <DatePicker 
-                        selected={event.info_when} 
-                        onChange={(date: Date) => updateField('info_when', date)}
-                    />
-                </Field.Affixes>
-               
-            </Field>
+            <DatePickerInput 
+                date={event.info_when}
+                updateDate={(date: Date) => updateField('info_when', date)}
+            />
             <Field>
                 <Field.Description>{t('Time')}</Field.Description>
                 <div className={styles.editTimeBlock}>

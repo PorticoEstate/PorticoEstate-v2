@@ -6,11 +6,12 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendarAlt } from "@fortawesome/free-solid-svg-icons";
+import DatePicker from "react-datepicker";
 import MaxParticipantInput from "./max-participant-input";
 
 interface FormProps {
     event: FilteredEventInfo
-    updateField: (key: keyof FilteredEventInfo, value: number | string) => void
+    updateField: (key: keyof FilteredEventInfo, value: any) => void
 }
 
 const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
@@ -26,12 +27,12 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 />
             </Field>
             <Field>
-                 <Field.Description>{t('Date_')}</Field.Description>
+                <Field.Description>{t('Date_')}</Field.Description>
                 <Field.Affixes>
                     <Field.Affix><FontAwesomeIcon icon={faCalendarAlt}/></Field.Affix>
-                    <Input 
-                        onChange={(e) => updateField('info_when', e.target.value)} 
-                        type="date"
+                    <DatePicker 
+                        selected={event.info_when} 
+                        onChange={(date: Date) => updateField('info_when', date)}
                     />
                 </Field.Affixes>
                
@@ -58,7 +59,7 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 <Textfield label=""/>
             </Field>
             <Field>
-                 <Field.Description>{t('Resource_')}</Field.Description>
+                <Field.Description>{t('Resource_')}</Field.Description>
                 <Textfield label=""/>
             </Field>
             <Field>

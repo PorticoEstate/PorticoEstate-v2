@@ -16,7 +16,7 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
     //TODO: Where to find translations
     const t = useTrans();
 
-    const whenTime = DateTime.fromJSDate(new Date(event.info_when.split(" ")[0])).toFormat('dd. LLL yyyy'); 
+    const whenTime = DateTime.fromJSDate(event.info_when).toFormat('dd. LLL yyyy'); 
     const fromTime = DateTime.fromJSDate(new Date(event.from_)).toFormat('HH.mm');
     const toTime = DateTime.fromJSDate(new Date(event.to_)).toFormat('HH.mm');
     return (

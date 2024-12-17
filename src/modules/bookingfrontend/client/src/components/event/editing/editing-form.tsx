@@ -1,6 +1,6 @@
 'use client'
 import {FC} from "react";
-import {Field, Textfield} from "@digdir/designsystemet-react";
+import {Field, Textfield, Chip} from "@digdir/designsystemet-react";
 import { FilteredEventInfo } from "@/service/api/event-info";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
@@ -52,7 +52,11 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
             </Field>
             <Field>
                 <Field.Description>{t('Resource_')}</Field.Description>
-                <Textfield label=""/>
+                <div>
+                    { event.info_resource_info.split(', ').map((res) => (
+                        <Chip.Checkbox key={res}>{res}</Chip.Checkbox>
+                    ))} 
+                </div>
             </Field>
             <Field>
                 <Field.Description>{t('Organizer_')}</Field.Description>

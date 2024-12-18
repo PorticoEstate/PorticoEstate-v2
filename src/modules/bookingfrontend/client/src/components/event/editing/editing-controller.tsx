@@ -23,7 +23,11 @@ const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing
         <main>
             <EventEditingForm event={draft} updateField={updateField} />
             <div className={styles.controllButtonsContainer}>
-                <Button onClick={cancelEditing}>Cancel</Button>
+                <Button 
+                    variant="secondary" 
+                    onClick={cancelEditing}
+                    style={{ marginRight: '0.5rem' }}
+                >Cancel</Button>
                 <Button onClick={() => saveChanges(draft)}>Save</Button>
             </div>
         </main>

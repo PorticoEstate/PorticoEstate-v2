@@ -48,7 +48,11 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
             </Field>
             <Field>
                 <Field.Description>{t('Place_')}</Field.Description>
-                <Textfield label=""/>
+                <Textfield 
+                    label="" 
+                    value={event.building_name}
+                    readOnly={true}
+                />
             </Field>
             <Field>
                 <Field.Description>{t('Resource_')}</Field.Description>

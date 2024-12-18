@@ -4,6 +4,7 @@ import {Button} from "@digdir/designsystemet-react";
 import { FilteredEventInfo } from "@/service/api/event-info";
 import styles from '../event.module.scss';
 import EventEditingForm from "./editing-form";
+import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 
 interface EventEditingProps {
     event: FilteredEventInfo
@@ -13,6 +14,7 @@ interface EventEditingProps {
 
 const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing }: EventEditingProps) => {
     const [draft, setDraft] = useState(event);
+    const t = useTrans();
 
     const updateField = (key: keyof FilteredEventInfo, value: string | number) => {
         const copy = {...draft, [key]: value}
@@ -27,8 +29,8 @@ const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing
                     variant="secondary" 
                     onClick={cancelEditing}
                     style={{ marginRight: '0.5rem' }}
-                >Cancel</Button>
-                <Button onClick={() => saveChanges(draft)}>Save</Button>
+                >{t('bookingfrontend.cancel')}</Button>
+                <Button onClick={() => saveChanges(draft)}>{t('bookingfrontend.save')}</Button>
             </div>
         </main>
     )

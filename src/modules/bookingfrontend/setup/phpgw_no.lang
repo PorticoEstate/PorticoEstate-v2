@@ -653,3 +653,7 @@ deselect_all	bookingfrontend	no	Velg ingen
 max_participants	bookingfrontend	no	Maks {{count}} deltakere
 edit_event	bookingfrontend	no	Rediger arrangement
 month	bookingfrontend	no	Måned
+participant_registration	bookingfrontend	no	Deltakerregistrering
+save	bookingfrontend	no	Save
+view_resources	bookingfrontend	no	Vis ressurses
+actual_participants    bookingfrontend	nn	Deltakere

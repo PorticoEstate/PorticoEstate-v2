@@ -1,7 +1,5 @@
 import { FilteredEventInfo } from "@/service/api/event-info"
 import { Input } from "@digdir/designsystemet-react"
-import { faMinusCircle, faPlusCircle } from "@fortawesome/free-solid-svg-icons"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import styles from '../event.module.scss';
 import { FC } from "react"
 

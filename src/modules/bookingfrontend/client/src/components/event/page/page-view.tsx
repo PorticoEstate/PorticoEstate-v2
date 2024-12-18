@@ -15,7 +15,6 @@ interface EventViewProps {
 }
 
 const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) => {
-    //TODO: Where to find translations
     const t = useTrans();
 
     const whenTime = DateTime.fromJSDate(event.info_when).toFormat('dd. LLL yyyy'); 
@@ -25,24 +24,24 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
         <main>
             <h2 style={{ marginBottom: '1rem' }}>{event.activity_name}</h2>
             <span>#{event.id}</span>
-            <p style={{marginTop: '2rem'}}><b>Date: </b>{whenTime}</p>
+            <p style={{marginTop: '2rem'}}><b>{t('bookingfrontend.date')}: </b>{whenTime}</p>
             <p><b>Time: </b>{fromTime}-{toTime}</p>
-            <p><b>{t('place_')}: </b>{event.building_name}</p>
+            <p><b>{t('bookingfrontend.place')}: </b>{event.building_name}</p>
             <div className={styles.resourceViewBlock}>
-                <b>{t('resource_')}: </b>
+                <b>{t('bookingfrontend.resource')}: </b>
                 <ResourcesDropdown resources={event.info_resource_info.split(', ')}/>
             </div>
-            <p><b>{t('organizer_')}: </b>{event.organizer}</p>
-            <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('max_participants_')}: </b>{event.info_participant_limit}</p>
-            <p style={{marginTop: '0.6rem'}}><b>{t('participants_')}: </b>TODO: where to get the count?</p>
+            <p><b>{t('bookingfrontend.organizer')}: </b>{event.organizer}</p>
+            <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants')}: </b>{event.info_participant_limit}</p>
+            <p style={{marginTop: '0.6rem'}}><b>{t('bookingfrontend.actual_participants')}: </b>TODO: where to get the count?</p>
             <div style={{display: 'flex'}}>
                 <Button variant='secondary'>
                     <FontAwesomeIcon icon={faUserPlus} />
-                    <Link href={`./${event.id}/participants`}>{t('participants_')}</Link>
+                    <Link href={`./${event.id}/participants`}>{t('bookingfrontend.edit')}</Link>
                 </Button>
                 <Button variant='secondary' onClick={openEditing}>
                     <FontAwesomeIcon icon={faPen} />
-                    {t('edit_')}
+                    {t('bookingfrontend.participant_registration')}
                 </Button>
             </div>
         </main>

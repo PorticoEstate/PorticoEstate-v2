@@ -654,3 +654,7 @@ deselect_all	bookingfrontend	nn	Velg ingen
 max_participants	bookingfrontend	nn	Maks {{count}} deltakarar
 edit_event	bookingfrontend	nn	Rediger arrangement
 month	bookingfrontend	nn	Månad
+participant_registration	bookingfrontend	nn	Deltakerregistrering
+save	bookingfrontend	nn	Save
+view_resources	bookingfrontend	nn	Vis ressurses
+actual_participants    bookingfrontend	nn	Deltakere

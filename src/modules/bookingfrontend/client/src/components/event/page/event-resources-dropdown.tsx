@@ -2,6 +2,7 @@ import { FC, useState } from "react";
 import { Dropdown, Chip } from "@digdir/designsystemet-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 
 interface ResourcesDropdownpProps {
     resources: string[];
@@ -9,6 +10,8 @@ interface ResourcesDropdownpProps {
 
 const ResourcesDropdown: FC<ResourcesDropdownpProps> = ({ resources }: ResourcesDropdownpProps) => {
     const [open, setOpen] = useState(false);
+    const t = useTrans();
+
 
     const renderItem = (res: string) => (
         <Dropdown.Item key={res}>
@@ -19,7 +22,7 @@ const ResourcesDropdown: FC<ResourcesDropdownpProps> = ({ resources }: Resources
     return (
         <Dropdown.TriggerContext>
             <Dropdown.Trigger variant='tertiary' onClick={() => setOpen(!open)}>
-                View Resources
+                {t('bookingfrontend.view_resources')}
                 {open ? 
                     <FontAwesomeIcon icon={faCaretUp} /> 
                     : <FontAwesomeIcon icon={faCaretDown} />

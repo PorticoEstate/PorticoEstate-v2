@@ -18,7 +18,7 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
     return (
         <div className={styles.editForm}>
             <Field>
-                <Field.Description>{t('Title_')}</Field.Description>
+                <Field.Description>{t('bookingfrontend.title')}</Field.Description>
                 <Textfield
                     label=""
                     value={event.activity_name}
@@ -30,16 +30,16 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 updateDate={(date: Date) => updateField('info_when', date)}
             />
             <Field>
-                <Field.Description>{t('Time')}</Field.Description>
+                <Field.Description>Time</Field.Description>
                 <div className={styles.editTimeBlock}>
                     <Textfield
-                        prefix={t('From')} 
+                        prefix={t('bookingfrontend.from')} 
                         label="" 
                         type="time"
                         onChange={(e) => updateField('from_', e.target.value)}
                     />
                     <Textfield 
-                        prefix={t('To')} 
+                        prefix={t('bookingfrontend.to')} 
                         label="" 
                         type="time"
                         onChange={(e) => updateField('to_', e.target.value)}
@@ -47,7 +47,7 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 </div>
             </Field>
             <Field>
-                <Field.Description>{t('Place_')}</Field.Description>
+                <Field.Description>{t('bookingfrontend.place')}</Field.Description>
                 <Textfield 
                     label="" 
                     value={event.building_name}
@@ -55,7 +55,7 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 />
             </Field>
             <Field>
-                <Field.Description>{t('Resource_')}</Field.Description>
+                <Field.Description>{t('bookingfrontend.resource')}</Field.Description>
                 <div>
                     { event.info_resource_info.split(', ').map((res) => (
                         <Chip.Checkbox key={res}>{res}</Chip.Checkbox>
@@ -63,11 +63,11 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 </div>
             </Field>
             <Field>
-                <Field.Description>{t('Organizer_')}</Field.Description>
+                <Field.Description>{t('bookingfrontend.organizer')}</Field.Description>
                 <Textfield label=""/>
             </Field>
             <Field>
-                <Field.Description>{t('Max participants')}</Field.Description>
+                <Field.Description>{t('bookingfrontend.max_participants')}</Field.Description>
                 <MaxParticipantInput updateField={updateField} fieldValue={event.info_participant_limit}/>
             </Field>
         </div>

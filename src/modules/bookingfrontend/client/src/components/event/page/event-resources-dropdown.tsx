@@ -1,5 +1,7 @@
 import { FC, useState } from "react";
 import { Dropdown, Chip } from "@digdir/designsystemet-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
 
 interface ResourcesDropdownpProps {
     resources: string[];
@@ -16,9 +18,12 @@ const ResourcesDropdown: FC<ResourcesDropdownpProps> = ({ resources }: Resources
 
     return (
         <Dropdown.TriggerContext>
-            <Dropdown.Trigger onClick={() => setOpen(!open)}>
+            <Dropdown.Trigger variant='tertiary' onClick={() => setOpen(!open)}>
                 View Resources
-                {open ? <span>open</span> : <span>close</span>}
+                {open ? 
+                    <FontAwesomeIcon icon={faCaretUp} /> 
+                    : <FontAwesomeIcon icon={faCaretDown} />
+                }
             </Dropdown.Trigger>
             <Dropdown placement='bottom' open={open} onClose={() => setOpen(false)}>
                 <Dropdown.List>

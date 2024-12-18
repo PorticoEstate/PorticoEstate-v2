@@ -6,6 +6,7 @@ import { faPen, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { DateTime } from "luxon";
 import { FC } from "react";
+import styles from "../event.module.scss"
 import ResourcesDropdown from "./event-resources-dropdown";
 
 interface EventViewProps {
@@ -27,7 +28,10 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
             <p style={{marginTop: '2rem'}}><b>Date: </b>{whenTime}</p>
             <p><b>Time: </b>{fromTime}-{toTime}</p>
             <p><b>{t('place_')}: </b>{event.building_name}</p>
-            <p><b>{t('resource_')}: </b><ResourcesDropdown resources={event.info_resource_info.split(', ')}/></p>
+            <div className={styles.resourceViewBlock}>
+                <b>{t('resource_')}: </b>
+                <ResourcesDropdown resources={event.info_resource_info.split(', ')}/>
+            </div>
             <p><b>{t('organizer_')}: </b>{event.organizer}</p>
             <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('max_participants_')}: </b>{event.info_participant_limit}</p>
             <p style={{marginTop: '0.6rem'}}><b>{t('participants_')}: </b>TODO: where to get the count?</p>

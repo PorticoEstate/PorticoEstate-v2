@@ -1,3 +1,5 @@
+@import "../../styles/colors.scss";
+
 .controllButtonsContainer {
     display: flex;
 }
@@ -27,5 +29,20 @@
         margin-right: 0.4rem;
         margin-left: 0.4rem;
         user-select: none;
+    }
+}
+
+.resourceViewBlock {
+    display: flex;
+    align-items: center;
+    b {
+        margin-right: 0.1rem;
+    }
+    button {
+        text-decoration: underline;
+        color: $secondary-color;
+        &:hover {
+            background: none;
+        }
     }
 }

@@ -10,18 +10,20 @@ import 'react-datepicker/dist/react-datepicker.css'
 
 
 interface DataPickerProps {
-    date: any;
+    date: Date;
     updateDate: (date: Date) => void;
 }
 
 const DatePickerInput: FC<DataPickerProps> = ({ date, updateDate }: DataPickerProps) => {
     const t = useTrans();
-    const CustomInput = forwardRef(({ _, onClick }, ref) => (
-        <Field ref={ref} onClick={onClick}>
+    // eslint-disable-next-line react/display-name
+    const CustomInput = forwardRef<HTMLInputElement>(({ onClick }: any, ref) => (
+        <Field onClick={onClick}>
             <Field.Description>{t('bookingfrontend.date')}</Field.Description>
                 <Field.Affixes>
                     <Field.Affix><FontAwesomeIcon icon={faCalendarAlt}/></Field.Affix>
                      <Input 
+                        ref={ref}
                         value={DateTime.fromJSDate(date).toFormat('dd.MM.yyyy')}
                     />
                 </Field.Affixes>
@@ -31,8 +33,8 @@ const DatePickerInput: FC<DataPickerProps> = ({ date, updateDate }: DataPickerPr
     return (
         <DatePicker 
             selected={date} 
-            onChange={(date: Date) => updateDate(date)}
-            customInput={<CustomInput />}
+            onChange={(date: Date | null) => updateDate(date as Date)}
+            customInput={<CustomInput/>}
         />
     )
 }

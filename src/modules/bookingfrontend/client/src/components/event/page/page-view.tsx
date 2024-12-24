@@ -32,8 +32,8 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
                 <ResourcesDropdown resources={event.info_resource_info.split(', ')}/>
             </div>
             <p><b>{t('bookingfrontend.organizer')}: </b>{event.organizer}</p>
-            <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants')}: </b>{event.info_participant_limit}</p>
-            <p style={{marginTop: '0.6rem'}}><b>{t('bookingfrontend.actual_participants')}: </b>TODO: where to get the count?</p>
+            <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants_info')}: </b>{event.info_participant_limit}</p>
+            <p style={{marginTop: '0.6rem'}}><b>{t('booking.participants')}: </b>TODO: where to get the count?</p>
             <div style={{display: 'flex'}}>
                 <Button variant='secondary'>
                     <FontAwesomeIcon icon={faUserPlus} />

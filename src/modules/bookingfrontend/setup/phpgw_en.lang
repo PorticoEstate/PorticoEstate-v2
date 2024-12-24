@@ -652,9 +652,10 @@ calendar_view	bookingfrontend	en	Calendar
 list_view	bookingfrontend	en	List
 deselect_all	bookingfrontend	en	Deselect All
 max_participants	bookingfrontend	en	Max {{count}} participants
+max_participants_info	bookingfrontend	en	Max participants
 edit_event	bookingfrontend	en	Edit Event
 month	bookingfrontend	en	Month
 participant_registration	bookingfrontend	en	Participant registration
 save	bookingfrontend	en	Save
 view_resources	bookingfrontend	en	View resources
-actual_participants    bookingfrontend	nn	Deltakere
+organizer	bookingfrontend	en	Organizer

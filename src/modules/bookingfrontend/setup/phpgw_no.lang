@@ -651,9 +651,10 @@ calendar_view	bookingfrontend	no	Kalender
 list_view	bookingfrontend	no	Liste
 deselect_all	bookingfrontend	no	Velg ingen
 max_participants	bookingfrontend	no	Maks {{count}} deltakere
+max_participants_info	bookingfrontend	no	Max deltakere
 edit_event	bookingfrontend	no	Rediger arrangement
 month	bookingfrontend	no	Måned
 participant_registration	bookingfrontend	no	Deltakerregistrering
 save	bookingfrontend	no	Save
 view_resources	bookingfrontend	no	Vis ressurses
-actual_participants    bookingfrontend	nn	Deltakere
+organizer	bookingfrontend	no	Arrangør

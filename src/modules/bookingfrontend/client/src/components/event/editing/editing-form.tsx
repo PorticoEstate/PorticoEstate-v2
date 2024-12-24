@@ -67,7 +67,7 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 <Textfield label=""/>
             </Field>
             <Field>
-                <Field.Description>{t('bookingfrontend.max_participants')}</Field.Description>
+                <Field.Description>{t('bookingfrontend.max_participants_info')}</Field.Description>
                 <MaxParticipantInput updateField={updateField} fieldValue={event.info_participant_limit}/>
             </Field>
         </div>

@@ -652,9 +652,10 @@ calendar_view	bookingfrontend	nn	Kalender
 list_view	bookingfrontend	nn	Liste
 deselect_all	bookingfrontend	nn	Velg ingen
 max_participants	bookingfrontend	nn	Maks {{count}} deltakarar
+max_participants_info	bookingfrontend	nn	Max deltakarar
 edit_event	bookingfrontend	nn	Rediger arrangement
 month	bookingfrontend	nn	Månad
 participant_registration	bookingfrontend	nn	Deltakerregistrering
 save	bookingfrontend	nn	Save
 view_resources	bookingfrontend	nn	Vis ressurses
-actual_participants    bookingfrontend	nn	Deltakere
+organizer	bookingfrontend	nn	Arrangør

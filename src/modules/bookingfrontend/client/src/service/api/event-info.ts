@@ -1,7 +1,7 @@
 import {useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import axios from "axios";
-
+import { DateTime } from "luxon";
 
 export type PopperInfoType = FilteredEventInfo;
 
@@ -9,6 +9,31 @@ interface OrgInfo {
     customer_organization_id?: number;
     customer_organization_name?: string;
     org_link?: string;
+}
+
+export interface ActivityData {
+    id: number;
+    building_name: string;
+    from_: string;
+    to_: string;
+    is_public: number;
+    activity_name: string;
+    resources: number[];
+    description?: string;
+    organizer?: string;
+    homepage?: string;
+    name?: string;
+    type: "event";
+    info_resource_info: string;
+    info_org: OrgInfo;
+    // Parsed info_when field
+    info_when: Date;
+    info_participant_limit: number;
+    info_edit_link: string | null;
+    info_cancel_link: string | null;
+    info_ical_link: string;
+    info_show_link: string;
+    info_user_can_delete_events: number;
 }
 
 export interface FilteredEventInfo {
@@ -160,8 +185,10 @@ export const useEventPopperData = (event_id: (string | number)) => {
     })
 
     return query;
-}
-export const fetchEventData = async (event_id: number): Promise<FilteredEventInfo | null> => {
+};
+export const fetchEventData = async (
+    event_id: number
+): Promise<ActivityData | null> => {
     const url = phpGWLink(
         "bookingfrontend/",
         {
@@ -172,12 +199,17 @@ export const fetchEventData = async (event_id: number): Promise<FilteredEventInf
     );
     const res = await axios.get(url);
     if (res.status !== 200) return null;
+    const parsedWhenField = DateTime.fromFormat(
+        res.data.events[event_id].info_when.split(" - ")[0],
+        "dd/LL/yyyy HH:mm"
+    ).toJSDate();
     return {
         info_user_can_delete_events: res.data.info_user_can_delete_events,
         ...res.data.events[event_id],
+        info_when: parsedWhenField,
         type: "event",
     };
-}
+};
 
 
 export const useAllocationPopperData = (allocation_id: (string | number)) => {

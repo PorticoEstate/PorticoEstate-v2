@@ -1,15 +1,15 @@
 'use client'
 import {FC} from "react";
 import {Field, Textfield, Chip} from "@digdir/designsystemet-react";
-import { FilteredEventInfo } from "@/service/api/event-info";
+import { ActivityData } from "@/service/api/event-info";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
 import MaxParticipantInput from "./max-participant-input";
 import DatePickerInput from "./datepicker-input";
 
 interface FormProps {
-    event: FilteredEventInfo
-    updateField: (key: keyof FilteredEventInfo, value: any) => void
+    event: ActivityData;
+    updateField: (key: keyof ActivityData, value: any) => void;
 }
 
 const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {

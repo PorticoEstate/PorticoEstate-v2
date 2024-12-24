@@ -1,6 +1,6 @@
 "use client"
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
-import { FilteredEventInfo } from "@/service/api/event-info";
+import { ActivityData } from "@/service/api/event-info";
 import { Button, Link } from "@digdir/designsystemet-react";
 import { faPen, faUserPlus } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,7 +10,7 @@ import styles from "../event.module.scss"
 import ResourcesDropdown from "./event-resources-dropdown";
 
 interface EventViewProps {
-    event: FilteredEventInfo;
+    event: ActivityData;
     openEditing: () => void;
 }
 

@@ -1,5 +1,5 @@
 import {FC} from "react";
-import { fetchEventData, FilteredEventInfo } from "@/service/api/event-info";
+import { fetchEventData, ActivityData } from "@/service/api/event-info";
 import { notFound } from "next/navigation";
 import EventPageController from "@/components/event/page/page-controller";
 
@@ -15,7 +15,7 @@ export async function generateMetadata(props: EventProps) {
     const eventId = parseInt(props.params.id, 10);
     if (isNaN(eventId)) return notFound();
 
-    const data: FilteredEventInfo | null = await fetchEventData(eventId);
+    const data: ActivityData | null = await fetchEventData(eventId);
     if (!data) return notFound();
 
     return {
@@ -27,7 +27,7 @@ const Event: FC<EventProps> = async (props: EventProps) => {
     const eventId = parseInt(props.params.id, 10);
     if (isNaN(eventId)) return notFound();
 
-    const data: FilteredEventInfo | null = await fetchEventData(eventId);
+    const data: ActivityData | null = await fetchEventData(eventId);
     if (!data) return notFound();
 
     return <EventPageController event={data}/>

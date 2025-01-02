@@ -78,7 +78,7 @@ december	common	nn	Desember
 delete	common	nn	Slett
 domain	common	nn	Database
 domain name for mail-address, eg. %1	common	nn	Domene-navnet for E-Postadressen, %1
-done	common	nn	Avbryt
+done	common	nn	Ferdig
 e-mail	common	nn	E-Post
 email-address of the user, eg. %1	common	nn	E-Postadressen til brukeren, %1
 edit	common	nn	Rediger
@@ -349,3 +349,5 @@ column search	common	nn	Kolonnesøk
 choose language	common	nn	Byt språk
 which language do you want?	common	nn	Kva for språk ynskjer du?
 error_report_system	common	nn	Feilmelding (om systemet)
+start	common	nn	Start
+end	common	nn	Slutt

@@ -547,7 +547,7 @@
 
 "@porticoestate/design-tokens@github:PorticoEstate/digdir-design-tokens":
   version "1.0.0"
-  resolved "https://codeload.github.com/PorticoEstate/digdir-design-tokens/tar.gz/9b4ca164a6667f1636787d6f98ce5482e1919728"
+  resolved "https://codeload.github.com/PorticoEstate/digdir-design-tokens/tar.gz/a025ced3b6dfcf6f8c6671327d76b0677e326caa"
 
 "@radix-ui/react-compose-refs@1.1.0":
   version "1.1.0"

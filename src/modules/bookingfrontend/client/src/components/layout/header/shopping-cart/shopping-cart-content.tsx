@@ -1,7 +1,7 @@
 import React, {Dispatch, FC, useState} from 'react';
 import PopperContentSharedWrapper
     from "@/components/building-calendar/modules/event/popper/content/popper-content-shared-wrapper";
-import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import styles from "./shopping-cart-content.module.scss";
@@ -20,8 +20,8 @@ interface ShoppingCartContentProps {
 }
 
 
-const timeToLux = (timeStamp: string) => {
-    return DateTime.fromFormat(timeStamp, "yyyy-MM-dd HH:mm:ss");
+export const applicationTimeToLux = (timeStamp: string) => {
+    return DateTime.fromISO(timeStamp);
 
 }
 
@@ -69,8 +69,8 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
     const [expandedId, setExpandedId] = useState<number>();
     const getStartTime = (application: IApplication) => {
         if (application.dates.length === 1) {
-            const from = timeToLux(application.dates[0].from_);
-            const to = timeToLux(application.dates[0].to_);
+            const from = applicationTimeToLux(application.dates[0].from_);
+            const to = applicationTimeToLux(application.dates[0].to_);
             return formatDateRange(from, to, i18n).join(' | ');
         }
         if (expandedId === application.id) {
@@ -81,8 +81,8 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                 }}>
 
                 {application.dates.map((date) => {
-                    const from = timeToLux(date.from_);
-                    const to = timeToLux(date.to_);
+                    const from = applicationTimeToLux(date.from_);
+                    const to = applicationTimeToLux(date.to_);
 
                     return <List.Item key={date.id}>{formatDateRange(from, to, i18n).join(' | ')}</List.Item>
                 })}

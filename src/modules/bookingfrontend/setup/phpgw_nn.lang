@@ -654,3 +654,4 @@ deselect_all	bookingfrontend	nn	Velg ingen
 max_participants	bookingfrontend	nn	Maks {{count}} deltakarar
 edit_event	bookingfrontend	nn	Rediger arrangement
 month	bookingfrontend	nn	Månad
+enter_title	bookingfrontend	nn	Angi ein tittel

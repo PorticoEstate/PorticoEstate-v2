@@ -1,4 +1,5 @@
-FROM php:8.3-apache
+# Use an official PHP-FPM base image
+FROM php:8.3-fpm
 
 LABEL maintainer="Sigurd Nes <sigurdne@gmail.com>"
 
@@ -19,7 +20,22 @@ RUN apt-get update && apt-get install -y software-properties-common \
     apg \
     sudo \
     libaio1 locales wget \
-	libmagickwand-dev --no-install-recommends
+    libmagickwand-dev --no-install-recommends \
+    apache2 libapache2-mod-fcgid ssl-cert \
+	cron \
+	iputils-ping \
+	wkhtmltopdf
+
+RUN touch /etc/cron.d/cronjob && chmod 0644 /etc/cron.d/cronjob
+
+# Generate the specified locale
+RUN locale-gen --purge en_US.UTF-8
+
+# Set environment variables
+ENV LC_ALL=en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US.UTF-8
+
 
 # Download and install the install-php-extensions script
 RUN curl -sSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions \
@@ -30,12 +46,8 @@ RUN if [ -n "${http_proxy}" ]; then pear config-set http_proxy ${http_proxy}; fi
     pear config-set php_ini $PHP_INI_DIR/php.ini
 
 # Install PHP extensions
-#RUN docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
-#    && docker-php-ext-install curl intl xsl pdo_pgsql pdo_mysql gd \
-#	imap shmop soap zip mbstring ftp calendar exif
-
 RUN docker-php-ext-install curl intl xsl pdo_pgsql pdo_mysql gd \
-	shmop soap zip mbstring ftp calendar exif
+    shmop soap zip mbstring ftp calendar exif
 
 RUN install-php-extensions imap
 
@@ -46,7 +58,6 @@ RUN pecl install redis && docker-php-ext-enable redis
 # Install Imagick
 # Temp solution to imagick broken with php >= 8.3, use imagick commit 28f27044e435a2b203e32675e942eb8de620ee58
 RUN install-php-extensions imagick
-#RUN pecl install imagick && docker-php-ext-enable imagick
 
 # Install Composer
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
@@ -63,28 +74,6 @@ RUN if [ "${INSTALL_MSSQL}" = "true" ]; then \
     pecl install sqlsrv pdo_sqlsrv && \
     docker-php-ext-enable sqlsrv pdo_sqlsrv; \
     fi
-
-# Configure locales
-RUN locale-gen --purge en_US.UTF-8
-ENV LC_ALL=en_US.UTF-8
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US.UTF-8
-
-# Apache2 configuration
-ENV APACHE_RUN_USER=www-data
-ENV APACHE_RUN_GROUP=www-data
-ENV APACHE_LOG_DIR=/var/log/apache2
-ENV APP_DOCUMENT_ROOT=/var/www/html
-
-EXPOSE 80
-
-RUN apt-get update && apt-get install -y ssl-cert
-
-RUN a2enmod rewrite
-RUN a2enmod headers
-RUN a2enmod ssl
-RUN a2enmod proxy
-RUN a2enmod proxy_http
 
 # PHP configuration
 RUN if [ "${INSTALL_XDEBUG}" = "true" ]; then \
@@ -148,13 +137,60 @@ else \
 fi
 
 
-# Clean up
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 RUN mkdir -p /var/public/files
 RUN chmod 777 /var/public/files
 
-# Copy and enable Apache configuration for Next.js
+# Ensure PHP-FPM socket directory exists
+RUN mkdir -p /run/php && chown www-data:www-data /run/php
+
+# Update PHP-FPM configuration to use Unix socket
+RUN sed -i 's|^listen = .*|listen = /run/php/php8.3-fpm.sock|' /usr/local/etc/php-fpm.d/www.conf \
+    && echo 'listen.owner = www-data' >> /usr/local/etc/php-fpm.d/www.conf \
+    && echo 'listen.group = www-data' >> /usr/local/etc/php-fpm.d/www.conf \
+    && echo 'listen.mode = 0660' >> /usr/local/etc/php-fpm.d/www.conf
+
+# Alternative: Update PHP-FPM configuration to use TCP socket
+#RUN sed -i 's|^listen = .*|listen = 127.0.0.1:9000|' /usr/local/etc/php-fpm.d/www.conf
+
+# Update include directive in php-fpm.conf
+RUN sed -i 's|^include=.*|include=/usr/local/etc/php-fpm.d/*.conf|' /usr/local/etc/php-fpm.conf
+
+# Comment out conflicting listen directives
+RUN sed -i 's|^listen = .*|;listen = 127.0.0.1:9000|' /usr/local/etc/php-fpm.d/www.conf.default
+RUN sed -i 's|^listen = .*|;listen = 9000|' /usr/local/etc/php-fpm.d/zz-docker.conf
+
+# Copy PHP-FPM configuration
+COPY php-fpm.conf /etc/apache2/conf-available/php-fpm.conf
+
+# Apache2 configuration
+ENV APACHE_RUN_USER=www-data
+ENV APACHE_RUN_GROUP=www-data
+ENV APACHE_LOG_DIR=/var/log/apache2
+ENV APP_DOCUMENT_ROOT=/var/www/html
+
+EXPOSE 80
+
+
+# Enable Apache modules
+RUN a2enmod proxy_fcgi setenvif
+RUN a2enconf php-fpm
+RUN a2enmod rewrite
+RUN a2enmod headers
+RUN a2enmod ssl
+RUN a2enmod proxy
+RUN a2enmod proxy_http
+
+# Copy Apache configuration
 COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
 
-CMD ["apache2-foreground"]
+# Clean up
+RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+
+# Make entrypoint script executable
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["docker-entrypoint.sh"]

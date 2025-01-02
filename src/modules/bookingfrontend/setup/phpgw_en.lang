@@ -654,3 +654,4 @@ deselect_all	bookingfrontend	en	Deselect All
 max_participants	bookingfrontend	en	Max {{count}} participants
 edit_event	bookingfrontend	en	Edit Event
 month	bookingfrontend	en	Month
+enter_title	bookingfrontend	en	Please enter a title

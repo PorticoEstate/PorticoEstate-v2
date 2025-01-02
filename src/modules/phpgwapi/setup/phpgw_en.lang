@@ -562,3 +562,5 @@ No matching records found	common	en	No matching records found
 choose language	common	en	Choose language
 which language do you want?	common	en	Which language do you want?
 error_report_system	common	en	Error Report (regarding the system)
+start	common	en	Start
+end	common	en	End

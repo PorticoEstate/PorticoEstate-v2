@@ -28,7 +28,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
     const t = useTrans();
     const {view, calendarRef, setView} = props
     const {enabledResources} = useEnabledResources();
-    const {tempEvents, setTempEvents} = useTempEvents();
+    const {tempEvents} = useTempEvents();
     const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
 
 

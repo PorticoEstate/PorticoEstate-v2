@@ -1,7 +1,6 @@
 import React, { FC, useEffect, useState, useRef } from 'react';
 import { useFloating, autoUpdate, offset, flip, shift, arrow, Placement } from '@floating-ui/react';
 import { FCallEvent, FCallTempEvent } from "@/components/building-calendar/building-calendar.types";
-import TempEventPopperContent from "@/components/building-calendar/modules/event/popper/content/temp-event-popper-content";
 import EventPopperContent from "@/components/building-calendar/modules/event/popper/content/event-popper-content";
 import MobileDialog from "@/components/dialog/mobile-dialog";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
@@ -57,11 +56,7 @@ const EventPopper: FC<EventPopperProps> = ({ event, onClose, anchor, placement }
         return null;
     }
 
-    const content = event.extendedProps.type === 'temporary' ? (
-        <TempEventPopperContent event={event as FCallTempEvent} onClose={onClose} />
-    ) : (
-        <EventPopperContent event={event as FCallEvent} onClose={onClose} />
-    );
+    const content = <EventPopperContent event={event as FCallEvent} onClose={onClose} />
 
     if (isMobile) {
         return (

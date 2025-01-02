@@ -265,7 +265,8 @@ class property_uitts extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -335,7 +336,8 @@ HTML;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => '.ticket.external'
+				'perm'			 => 1,
+				'acl_location'	 => '.ticket.external'
 			));
 		}
 
@@ -851,7 +853,9 @@ HTML;
 		{
 			$values_combo_box[0] = $this->cats->formatted_xslt_list(array(
 				'format'	 => 'filter',
-				'selected'	 => $this->cat_id, 'globals'	 => true, 'use_acl'	 => $this->_category_acl
+				'selected'	 => $this->cat_id,
+				'globals'	 => true,
+				'use_acl'	 => $this->_category_acl
 			));
 			$default_value		 = array('cat_id' => '', 'name' => lang('no category'));
 			array_unshift($values_combo_box[0]['cat_list'], $default_value);
@@ -955,7 +959,9 @@ HTML;
 
 			$buildingpart_list = $this->bocommon->select_category_list(array(
 				'type'		 => 'building_part',
-				'selected'	 => $this->building_part, 'order'		 => 'id', 'id_in_name' => 'num',
+				'selected'	 => $this->building_part,
+				'order'		 => 'id',
+				'id_in_name' => 'num',
 				'filter'	 => $_filter_buildingpart
 			));
 
@@ -1097,7 +1103,8 @@ HTML;
 				)),
 				'download'		 => self::link(array(
 					'menuaction' => 'property.uitts.download',
-					'export'	 => true, 'allrows'	 => true
+					'export'	 => true,
+					'allrows'	 => true
 				)),
 				"columns"		 => array('onclick' => "JqueryPortico.openPopup({menuaction:'property.uitts.columns'}, {closeAction:'reload', height: 500})"),
 				'allrows'		 => true,
@@ -1347,13 +1354,29 @@ HTML;
 		$values = $this->bo->get_data_report($params);
 
 		$rand = array(
-			'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c',
-			'd', 'e', 'f'
+			'0',
+			'1',
+			'2',
+			'3',
+			'4',
+			'5',
+			'6',
+			'7',
+			'8',
+			'9',
+			'a',
+			'b',
+			'c',
+			'd',
+			'e',
+			'f'
 		);
 
 		$list_categories = $this->cats->formatted_xslt_list(array(
 			'format'	 => 'filter',
-			'selected'	 => $this->cat_id, 'globals'	 => true, 'use_acl'	 => $this->_category_acl
+			'selected'	 => $this->cat_id,
+			'globals'	 => true,
+			'use_acl'	 => $this->_category_acl
 		));
 
 		if ($type == 1)
@@ -1384,7 +1407,8 @@ HTML;
 		{
 
 			$list_status = $this->bo->filter(array(
-				'format'	 => '', 'filter'	 => $this->status_id,
+				'format'	 => '',
+				'filter'	 => $this->status_id,
 				'default'	 => 'O'
 			));
 			array_unshift($list_status, array('id' => 'O', 'name' => !empty($this->bo->config->config_data['tts_lang_open']) ? $this->bo->config->config_data['tts_lang_open'] : lang('open')));
@@ -1423,7 +1447,8 @@ HTML;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 2, 'acl_location'	 => $this->acl_location
+				'perm'			 => 2,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 		if ($this->tenant_id)
@@ -1472,7 +1497,8 @@ HTML;
 			{
 				$values['location_data'] = $bolocation->read_single($location_code, array(
 					'tenant_id'	 => $tenant_id,
-					'p_num'		 => $p_num, 'view'		 => true
+					'p_num'		 => $p_num,
+					'view'		 => true
 				));
 				$values['street_name']	 = $values['location_data']['street_name'];
 				$values['street_number'] = $values['location_data']['street_number'];
@@ -1669,7 +1695,8 @@ HTML;
 				{
 					phpgw::redirect_link('/index.php', array(
 						'menuaction' => 'property.uitts.view',
-						'id'		 => $receipt['id'], 'tab'		 => 'general'
+						'id'		 => $receipt['id'],
+						'tab'		 => 'general'
 					));
 				}
 			}
@@ -2165,7 +2192,8 @@ HTML;
 			{
 				phpgw::redirect_link('/index.php', array(
 					'menuaction'	 => 'property.uilocation.stop',
-					'perm'			 => 4, 'acl_location'	 => $this->acl_location
+					'perm'			 => 4,
+					'acl_location'	 => $this->acl_location
 				));
 			}
 
@@ -2338,7 +2366,8 @@ HTML;
 			{
 				phpgw::redirect_link('/index.php', array(
 					'menuaction' => 'property.uitts.view',
-					'id'		 => $id, 'tab'		 => 'general'
+					'id'		 => $id,
+					'tab'		 => 'general'
 				));
 			}
 		}
@@ -2747,9 +2776,11 @@ HTML;
 		if ($access_order)
 		{
 			$note_def[] = array(
-				'key'		 => 'order_text', 'label'		 => lang('order text'),
+				'key'		 => 'order_text',
+				'label'		 => lang('order text'),
 				'sortable'	 => false,
-				'resizeable' => true, 'formatter'	 => 'FormatterCenter'
+				'resizeable' => true,
+				'formatter'	 => 'FormatterCenter'
 			);
 			foreach ($additional_notes as &$note)
 			{
@@ -2760,8 +2791,11 @@ HTML;
 		if ($this->apps['frontend']['enabled'])
 		{
 			$note_def[] = array(
-				'key'		 => 'publish_note', 'label'		 => lang('publish text'),
-				'sortable'	 => false, 'resizeable' => true, 'formatter'	 => 'FormatterCenter'
+				'key'		 => 'publish_note',
+				'label'		 => lang('publish text'),
+				'sortable'	 => false,
+				'resizeable' => true,
+				'formatter'	 => 'FormatterCenter'
 			);
 			foreach ($additional_notes as &$note)
 			{
@@ -2806,24 +2840,34 @@ HTML;
 			'requestUrl' => "''",
 			'ColumnDefs' => array(
 				array(
-					'key'		 => 'sort_key', 'label'		 => '#', 'sortable'	 => true,
+					'key'		 => 'sort_key',
+					'label'		 => '#',
+					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'value_date', 'label'		 => lang('Date'), 'sortable'	 => false,
+					'key'		 => 'value_date',
+					'label'		 => lang('Date'),
+					'sortable'	 => false,
 					'resizeable' => true
 				),
 				array('key' => 'value_user', 'label' => lang('User'), 'sortable' => true, 'resizeable' => true),
 				array(
-					'key'		 => 'value_action', 'label'		 => lang('Action'), 'sortable'	 => true,
+					'key'		 => 'value_action',
+					'label'		 => lang('Action'),
+					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'value_old_value', 'label'		 => lang('old value'), 'sortable'	 => true,
+					'key'		 => 'value_old_value',
+					'label'		 => lang('old value'),
+					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'value_new_value', 'label'		 => lang('New value'), 'sortable'	 => true,
+					'key'		 => 'value_new_value',
+					'label'		 => lang('New value'),
+					'sortable'	 => true,
 					'resizeable' => true
 				)
 			),
@@ -2925,8 +2969,11 @@ HTML;
 		if (isset($ticket['order_id']) && $ticket['order_id'])
 		{
 			$attach_file_def[] = array(
-				'key'		 => 'attach_file', 'label'		 => lang('attach file'),
-				'sortable'	 => false, 'resizeable' => true, 'formatter'	 => 'FormatterCenter'
+				'key'		 => 'attach_file',
+				'label'		 => lang('attach file'),
+				'sortable'	 => false,
+				'resizeable' => true,
+				'formatter'	 => 'FormatterCenter'
 			);
 		}
 		//---file tagging
@@ -3097,11 +3144,15 @@ JS;
 			'requestUrl' => "''",
 			'ColumnDefs' => array(
 				array(
-					'key'		 => 'value_email', 'label'		 => lang('email'),
-					'sortable'	 => true, 'resizeable' => true
+					'key'		 => 'value_email',
+					'label'		 => lang('email'),
+					'sortable'	 => true,
+					'resizeable' => true
 				),
 				array(
-					'key'		 => 'value_select', 'label'		 => lang('select'), 'sortable'	 => false,
+					'key'		 => 'value_select',
+					'label'		 => lang('select'),
+					'sortable'	 => false,
 					'resizeable' => true
 				)
 			),
@@ -3118,12 +3169,15 @@ JS;
 			'requestUrl' => "''",
 			'ColumnDefs' => array(
 				array(
-					'key'		 => 'period', 'label'		 => lang('period'),
+					'key'		 => 'period',
+					'label'		 => lang('period'),
 					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'amount', 'label'		 => lang('amount'), 'sortable'	 => true,
+					'key'		 => 'amount',
+					'label'		 => lang('amount'),
+					'sortable'	 => true,
 					'resizeable' => true,
 					'formatter'	 => 'JqueryPortico.FormatterAmount2'
 				),
@@ -3141,12 +3195,15 @@ JS;
 			'requestUrl' => "''",
 			'ColumnDefs' => array(
 				array(
-					'key'		 => 'period', 'label'		 => lang('period'),
+					'key'		 => 'period',
+					'label'		 => lang('period'),
 					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'amount', 'label'		 => lang('amount'), 'sortable'	 => true,
+					'key'		 => 'amount',
+					'label'		 => lang('amount'),
+					'sortable'	 => true,
 					'resizeable' => true,
 					'formatter'	 => 'JqueryPortico.FormatterAmount2'
 				),
@@ -3168,7 +3225,9 @@ JS;
 				'count'				 => count($datatable_def),
 				'requestUrl'		 => json_encode(self::link(array(
 					'menuaction'		 => 'property.notify.update_data',
-					'location_id'		 => $location_id, 'location_item_id'	 => $id, 'action'			 => 'refresh_notify_contact',
+					'location_id'		 => $location_id,
+					'location_item_id'	 => $id,
+					'action'			 => 'refresh_notify_contact',
 					'phpgw_return_as'	 => 'json'
 				))),
 			)
@@ -3178,7 +3237,9 @@ JS;
 			'container'	 => 'datatable-container_6',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.notify.update_data',
-				'location_id'		 => $location_id, 'location_item_id'	 => $id, 'action'			 => 'refresh_notify_contact',
+				'location_id'		 => $location_id,
+				'location_item_id'	 => $id,
+				'action'			 => 'refresh_notify_contact',
 				'phpgw_return_as'	 => 'json'
 			))),
 			'ColumnDefs' => $notify_info['column_defs']['values'],
@@ -3482,7 +3543,8 @@ JS;
 			$external_message['mail_recipients'] = implode(', ', $external_message['mail_recipients']);
 			$external_message['subject_link']	 = "<a href=\"" . self::link(array(
 				'menuaction' => 'property.uiexternal_communication.edit',
-				'id'		 => $external_message['id'], 'ticket_id'	 => $id
+				'id'		 => $external_message['id'],
+				'ticket_id'	 => $id
 			)) . "\">{$external_message['subject']}</a>";
 		}
 
@@ -3506,7 +3568,9 @@ JS;
 
 		$orders_def = array(
 			array(
-				'key' => 'workorder_id', 'label' => lang('Workorder'), 'sortable' => true,
+				'key' => 'workorder_id',
+				'label' => lang('Workorder'),
+				'sortable' => true,
 				'formatter' => 'formatLinkproject'
 			),
 			array('key' => 'title', 'label' => lang('title'), 'sortable' => false),
@@ -3514,7 +3578,9 @@ JS;
 			array('key' => 'vendor_name', 'label' => lang('Vendor'), 'sortable' => false),
 			array('key' => 'status', 'label' => lang('Status'), 'sortable' => false),
 			array(
-				'key' => 'end_date', 'label' => lang('end date'), 'sortable' => false,
+				'key' => 'end_date',
+				'label' => lang('end date'),
+				'sortable' => false,
 				'className' => 'center'
 			)
 		);
@@ -3578,7 +3644,9 @@ JS;
 			'container'	 => 'datatable-container_10',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction' => 'property.uiproject.get_orders',
-				'project_id' => $project_ids, 'order_id' => $order_ids, 'phpgw_return_as' => 'json'
+				'project_id' => $project_ids,
+				'order_id' => $order_ids,
+				'phpgw_return_as' => 'json'
 			))),
 			//				'requestUrl' => "''",
 			//				'data'		 => json_encode($_order_data),
@@ -3671,19 +3739,20 @@ JS;
 		}
 
 		phpgwapi_jquery::formvalidator_generate(array(
-			'date', 'security',
+			'date',
+			'security',
 			'file'
 		));
 
 		$tabs			 = array();
 		$tabs['general'] = array('label' => lang('General'), 'link' => '#general');
-		if(!empty($this->bo->config->config_data['fmttsfileupload']))
+		if (!empty($this->bo->config->config_data['fmttsfileupload']))
 		{
 			$tabs['documents']	 = array('label' => lang('documents'), 'link' => '#documents');
 		}
-		$tabs['external_communication']	 = array('label' => lang('external communication'), 'link' => '#external_communication');
+		$tabs['external_communication_section']	 = array('label' => lang('external communication'), 'link' => '#external_communication_section');
 
-		if($order_read)
+		if ($order_read)
 		{
 			$tabs['order']	 = array('label' => lang('order'), 'link' => '#order');
 		}
@@ -3857,7 +3926,8 @@ JS;
 		if (!empty($ticket['charge_tenant']))
 		{
 			$claim = execMethod('property.sotenant_claim.read', array(
-				'ticket_id' => $id, 'status' => 'all'
+				'ticket_id' => $id,
+				'status' => 'all'
 			));
 			if ($claim)
 			{
@@ -3970,15 +4040,22 @@ JS;
 			'textarearows'					 => isset($this->userSettings['preferences']['property']['textarearows']) && $this->userSettings['preferences']['property']['textarearows'] ? $this->userSettings['preferences']['property']['textarearows'] : 6,
 			//					'order_cat_list'				=> $order_catetory,
 			'building_part_list'			 => array('options' => $this->bocommon->select_category_list(array(
-				'type'		 => 'building_part', 'selected'	 => $ticket['building_part'], 'order'		 => 'id',
-				'id_in_name' => 'num', 'filter'	 => $_filter_buildingpart
+				'type'		 => 'building_part',
+				'selected'	 => $ticket['building_part'],
+				'order'		 => 'id',
+				'id_in_name' => 'num',
+				'filter'	 => $_filter_buildingpart
 			))),
 			'order_dim1_list'				 => array('options' => $this->bocommon->select_category_list(array(
-				'type'		 => 'order_dim1', 'selected'	 => $ticket['order_dim1'], 'order'		 => 'id',
+				'type'		 => 'order_dim1',
+				'selected'	 => $ticket['order_dim1'],
+				'order'		 => 'id',
 				'id_in_name' => 'num'
 			))),
 			'tax_code_list'					 => array('options' => $this->bocommon->select_category_list(array(
-				'type'		 => 'tax', 'selected'	 => $ticket['tax_code'], 'order'		 => 'id',
+				'type'		 => 'tax',
+				'selected'	 => $ticket['tax_code'],
+				'order'		 => 'id',
 				'id_in_name' => 'num'
 			))),
 			'branch_list'					 => isset($this->userSettings['preferences']['property']['tts_branch_list']) && $this->userSettings['preferences']['property']['tts_branch_list'] == 1 ? array(
@@ -4041,7 +4118,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -5408,7 +5486,8 @@ JS;
 		{
 			$bcc = '';
 			Cache::message_set(lang('please update <a href="%1">your email address here</a>', phpgw::link('/preferences/preferences.php', array(
-				'appname'	 => 'property', 'type'		 => 'user'
+				'appname'	 => 'property',
+				'type'		 => 'user'
 			))), 'error');
 		}
 		else

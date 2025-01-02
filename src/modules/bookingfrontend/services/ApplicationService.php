@@ -34,7 +34,7 @@ class ApplicationService
             $application->dates = $this->fetchDates($application->id);
             $application->resources = $this->fetchResources($application->id);
             $application->orders = $this->fetchOrders($application->id);
-            $applications[] = $application->serialize();
+            $applications[] = $application->serialize([]);
         }
 
         return $applications;
@@ -58,69 +58,14 @@ class ApplicationService
             $application->dates = $this->fetchDates($application->id);
             $application->resources = $this->fetchResources($application->id);
             $application->orders = $this->fetchOrders($application->id);
-            $applications[] = $application->serialize([], true);
+            $applications[] = $application->serialize([]);
         }
 
         return $applications;
     }
 
-    public function savePartialApplication(Application $application): int
-    {
-        // Start a transaction
-        $this->db->beginTransaction();
 
-        try {
-            // Insert or update the main application record
-            if ($application->id) {
-                $this->updateApplication($application);
-            } else {
-                $this->insertApplication($application);
-            }
 
-            // Save related data
-            $this->saveDates($application);
-            $this->saveResources($application);
-            $this->saveOrders($application);
-
-            // Commit the transaction
-            $this->db->commit();
-
-            return $application->id;
-        } catch (\Exception $e) {
-            // Rollback the transaction on error
-            $this->db->rollBack();
-            throw $e;
-        }
-    }
-
-    private function insertApplication(Application $application): void
-    {
-        $sql = "INSERT INTO bb_application (status, session_id, /* other fields */)
-                VALUES (:status, :session_id, /* other placeholders */)";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':status' => $application->status,
-            ':session_id' => $application->session_id,
-            // Bind other fields
-        ]);
-
-        $application->id = $this->db->lastInsertId();
-    }
-
-    private function updateApplication(Application $application): void
-    {
-        $sql = "UPDATE bb_application
-                SET status = :status, /* other fields */
-                WHERE id = :id";
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':status' => $application->status,
-            ':id' => $application->id,
-            // Bind other fields
-        ]);
-    }
 
     private function fetchDates(int $application_id): array
     {
@@ -136,9 +81,12 @@ class ApplicationService
 
     private function fetchResources(int $application_id): array
     {
-        $sql = "SELECT r.* FROM bb_resource r
-                JOIN bb_application_resource ar ON r.id = ar.resource_id
-                WHERE ar.application_id = :application_id";
+        $sql = "SELECT r.*, br.building_id
+            FROM bb_resource r
+            JOIN bb_application_resource ar ON r.id = ar.resource_id
+            LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+            WHERE ar.application_id = :application_id";
+
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':application_id' => $application_id]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -183,24 +131,6 @@ class ApplicationService
         return array_map(function ($order) {
             return $order->serialize();
         }, array_values($orders));
-    }
-
-    private function saveDates(Application $application): void
-    {
-        // TODO: Implement date saving logic
-        // ...
-    }
-
-    private function saveResources(Application $application): void
-    {
-        // TODO: Implement resource saving logic
-        // ...
-    }
-
-    private function saveOrders(Application $application): void
-    {
-        // TODO: Implement order saving logic
-        // ...
     }
 
     public function calculateTotalSum(array $applications): float
@@ -276,4 +206,404 @@ class ApplicationService
             $stmt->execute([':application_id' => $application_id]);
         }
     }
+
+    /**
+     * Save a new partial application or update an existing one
+     *
+     * @param array $data Application data
+     * @return int The application ID
+     */
+    public function savePartialApplication(array $data): int
+    {
+        try {
+            $this->db->beginTransaction();
+
+            if (!empty($data['id'])) {
+                $receipt = $this->updateApplication($data);
+                $id = $data['id'];
+            } else {
+                $receipt = $this->insertApplication($data);
+                $id = $receipt['id'];
+                $this->update_id_string();
+            }
+
+            // Handle purchase orders if present
+            if (!empty($data['purchase_order']['lines'])) {
+                $data['purchase_order']['application_id'] = $id;
+                $this->savePurchaseOrder($data['purchase_order']);
+            }
+
+            // Handle resource mappings
+            if (!empty($data['resources'])) {
+                $this->saveApplicationResources($id, $data['resources']);
+            }
+
+            // Handle dates
+            if (!empty($data['dates'])) {
+                $this->saveApplicationDates($id, $data['dates']);
+            }
+
+            $this->db->commit();
+            return $id;
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Get a partial application by ID
+     *
+     * @param int $id Application ID
+     * @return array|null The application data or null if not found
+     */
+    public function getPartialApplicationById(int $id): ?array
+    {
+        $sql = "SELECT * FROM bb_application WHERE id = :id AND status = 'NEWPARTIAL1'";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$result) {
+            return null;
+        }
+
+        // Get associated resources
+        $result['resources'] = $this->fetchResources($id);
+
+        // Get associated dates
+        $result['dates'] = $this->fetchDates($id);
+
+        // Get purchase orders if any
+        $result['purchase_order'] = $this->fetchOrders($id);
+
+        return $result;
+    }
+
+    protected function generate_secret($length = 16)
+    {
+        return bin2hex(random_bytes($length));
+    }
+
+    public function update_id_string()
+    {
+        $table_name	 = "bb_application";
+        $sql		 = "UPDATE $table_name SET id_string = cast(id AS varchar)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+    }
+
+    /**
+     * Insert a new application
+     */
+    private function insertApplication(array $data): array
+    {
+        $sql = "INSERT INTO bb_application (
+        status, session_id, building_name,
+        activity_id, contact_name, contact_email, contact_phone,
+        responsible_street, responsible_zip_code, responsible_city,
+        customer_identifier_type, customer_organization_number,
+        created, modified, secret, owner_id, name
+    ) VALUES (
+        :status, :session_id, :building_name,
+        :activity_id, :contact_name, :contact_email, :contact_phone,
+        :responsible_street, :responsible_zip_code, :responsible_city,
+        :customer_identifier_type, :customer_organization_number,
+        NOW(), NOW(), :secret, :owner_id, :name
+    )";
+
+        $params = [
+            ':status' => $data['status'],
+            ':session_id' => $data['session_id'],
+            ':building_name' => $data['building_name'],
+            ':activity_id' => $data['activity_id'] ?? null,
+            ':contact_name' => $data['contact_name'],
+            ':contact_email' => $data['contact_email'],
+            ':contact_phone' => $data['contact_phone'],
+            ':responsible_street' => $data['responsible_street'],
+            ':responsible_zip_code' => $data['responsible_zip_code'],
+            ':responsible_city' => $data['responsible_city'],
+            ':customer_identifier_type' => $data['customer_identifier_type'],
+            ':customer_organization_number' => $data['customer_organization_number'],
+            ':secret' => $this->generate_secret(),
+            ':owner_id' => $data['owner_id'],
+            ':name' => $data['name']
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        return ['id' => $this->db->lastInsertId()];
+    }
+
+    /**
+     * Update an existing application
+     */
+    private function updateApplication(array $data): void
+    {
+        $sql = "UPDATE bb_application SET
+        building_name = :building_name,
+        activity_id = :activity_id,
+        contact_name = :contact_name,
+        contact_email = :contact_email,
+        contact_phone = :contact_phone,
+        responsible_street = :responsible_street,
+        responsible_zip_code = :responsible_zip_code,
+        responsible_city = :responsible_city,
+        customer_identifier_type = :customer_identifier_type,
+        customer_organization_number = :customer_organization_number,
+        name = :name,
+        modified = NOW()
+        WHERE id = :id AND session_id = :session_id";
+
+        $params = [
+            ':id' => $data['id'],
+            ':session_id' => $data['session_id'],
+            ':building_name' => $data['building_name'],
+            ':activity_id' => $data['activity_id'] ?? null,
+            ':contact_name' => $data['contact_name'],
+            ':contact_email' => $data['contact_email'],
+            ':contact_phone' => $data['contact_phone'],
+            ':responsible_street' => $data['responsible_street'],
+            ':responsible_zip_code' => $data['responsible_zip_code'],
+            ':responsible_city' => $data['responsible_city'],
+            ':customer_identifier_type' => $data['customer_identifier_type'],
+            ':customer_organization_number' => $data['customer_organization_number'],
+            ':name' => $data['name']
+        ];
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+    }
+
+    /**
+     * Save application resources
+     */
+    private function saveApplicationResources(int $applicationId, array $resources): void
+    {
+        // First delete existing resources
+        $sql = "DELETE FROM bb_application_resource WHERE application_id = :application_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $applicationId]);
+
+        // Then insert new ones
+        $sql = "INSERT INTO bb_application_resource (application_id, resource_id)
+            VALUES (:application_id, :resource_id)";
+        $stmt = $this->db->prepare($sql);
+
+        foreach ($resources as $resourceId) {
+            $stmt->execute([
+                ':application_id' => $applicationId,
+                ':resource_id' => $resourceId
+            ]);
+        }
+    }
+
+
+    /**
+     * Save application dates
+     */
+    private function saveApplicationDates(int $applicationId, array $dates): void
+    {
+        // First delete existing dates
+        $sql = "DELETE FROM bb_application_date WHERE application_id = :application_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $applicationId]);
+
+        // Then insert new ones
+        $sql = "INSERT INTO bb_application_date (application_id, from_, to_)
+            VALUES (:application_id, :from_, :to_)";
+        $stmt = $this->db->prepare($sql);
+
+        foreach ($dates as $date) {
+            $stmt->execute([
+                ':application_id' => $applicationId,
+                ':from_' => $date['from_'],
+                ':to_' => $date['to_']
+            ]);
+        }
+    }
+
+    /**
+     * Save purchase order
+     */
+    private function savePurchaseOrder(array $purchaseOrder): void
+    {
+        $sql = "INSERT INTO bb_purchase_order (
+        application_id, status, customer_id
+    ) VALUES (
+        :application_id, :status, :customer_id
+    )";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':application_id' => $purchaseOrder['application_id'],
+            ':status' => $purchaseOrder['status'] ?? 0,
+            ':customer_id' => $purchaseOrder['customer_id'] ?? -1
+        ]);
+
+        $orderId = $this->db->lastInsertId();
+
+        // Save order lines
+        foreach ($purchaseOrder['lines'] as $line) {
+            $this->savePurchaseOrderLine($orderId, $line);
+        }
+    }
+
+    /**
+     * Save purchase order line
+     */
+    private function savePurchaseOrderLine(int $orderId, array $line): void
+    {
+        $sql = "INSERT INTO bb_purchase_order_line (
+        order_id, article_mapping_id, quantity,
+        tax_code, ex_tax_price, parent_mapping_id
+    ) VALUES (
+        :order_id, :article_mapping_id, :quantity,
+        :tax_code, :ex_tax_price, :parent_mapping_id
+    )";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':order_id' => $orderId,
+            ':article_mapping_id' => $line['article_mapping_id'],
+            ':quantity' => $line['quantity'],
+            ':tax_code' => $line['tax_code'],
+            ':ex_tax_price' => $line['ex_tax_price'],
+            ':parent_mapping_id' => $line['parent_mapping_id'] ?? null
+        ]);
+    }
+
+    /**
+     * Get an application by ID
+     *
+     * @param int $id Application ID
+     * @return array|null The application data or null if not found
+     */
+    public function getApplicationById(int $id): ?array
+    {
+        $sql = "SELECT * FROM bb_application WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Patch an existing application with partial data
+     *
+     * @param array $data Partial application data
+     * @throws Exception If update fails
+     */
+    public function patchApplication(array $data): void
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Handle main application data
+            $this->patchApplicationMainData($data);
+
+            // Handle resources if present (complete replacement)
+            if (isset($data['resources'])) {
+                $this->saveApplicationResources($data['id'], $data['resources']);
+            }
+
+            // Handle dates if present (update existing, create new)
+            if (isset($data['dates'])) {
+                $this->patchApplicationDates($data['id'], $data['dates']);
+            }
+
+            $this->db->commit();
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Update main application data
+     */
+    private function patchApplicationMainData(array $data): void
+    {
+        // Build dynamic UPDATE query based on provided fields
+        $updateFields = [];
+        $params = [':id' => $data['id']];
+
+        // List of allowed fields to update
+        $allowedFields = [
+            'status', 'name', 'contact_name', 'contact_email', 'contact_phone',
+            'responsible_street', 'responsible_zip_code', 'responsible_city',
+            'customer_identifier_type', 'customer_organization_number',
+            'customer_organization_name', 'description', 'equipment'
+        ];
+
+        foreach ($data as $field => $value) {
+            if ($field !== 'id' && in_array($field, $allowedFields)) {
+                $updateFields[] = "$field = :$field";
+                $params[":$field"] = $value;
+            }
+        }
+
+//        if (!empty($updateFields)) {
+            // Add modified timestamp
+            $updateFields[] = "modified = NOW()";
+
+            $sql = "UPDATE bb_application SET " . implode(', ', $updateFields) .
+                " WHERE id = :id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+
+            if ($stmt->rowCount() === 0) {
+                throw new Exception("Application not found or no changes made");
+            }
+//        }
+    }
+
+    /**
+     * Patch application dates - update existing dates and create new ones
+     */
+    private function patchApplicationDates(int $applicationId, array $dates): void
+    {
+        // Get existing dates
+        $sql = "SELECT id, from_, to_ FROM bb_application_date WHERE application_id = :application_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $applicationId]);
+        $existingDates = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $existingDatesById = array_column($existingDates, null, 'id');
+
+        // Prepare statements
+        $updateStmt = $this->db->prepare(
+            "UPDATE bb_application_date SET from_ = :from_, to_ = :to_
+         WHERE id = :id AND application_id = :application_id"
+        );
+
+        $insertStmt = $this->db->prepare(
+            "INSERT INTO bb_application_date (application_id, from_, to_)
+         VALUES (:application_id, :from_, :to_)"
+        );
+
+        foreach ($dates as $date) {
+            if (isset($date['id'])) {
+                // Update existing date if it exists
+                if (isset($existingDatesById[$date['id']])) {
+                    $updateStmt->execute([
+                        ':id' => $date['id'],
+                        ':application_id' => $applicationId,
+                        ':from_' => $date['from_'],
+                        ':to_' => $date['to_']
+                    ]);
+                }
+            } else {
+                // Create new date
+                $insertStmt->execute([
+                    ':application_id' => $applicationId,
+                    ':from_' => $date['from_'],
+                    ':to_' => $date['to_']
+                ]);
+            }
+        }
+    }
+
+
 }

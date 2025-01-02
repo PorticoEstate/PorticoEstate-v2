@@ -28,7 +28,7 @@ const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang
                         <LoadingIndicationWrapper>
                             {children}
                         </LoadingIndicationWrapper>
-                        <ReactQueryDevtools initialIsOpen={false} />
+                        <ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'} />
                     </PrefetchWrapper>
                 </QueryProvider>
             </ClientTranslationProvider>

@@ -1,8 +1,20 @@
+@import "../../../../../styles/util.module";
+
 .eventForm {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    padding: 1.5rem;
+    //display: flex;
+    //flex-direction: column;
+    //gap: 1.5rem;
+    //padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    @include mobile {
+        grid-template-columns: 1fr;
+    }
+
+    .wide {
+        grid-column: span 2;
+    }
 
     .formGroup {
         display: flex;
@@ -11,19 +23,25 @@
     }
 
     .dateTimeGroup {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
+        display: contents;
 
-        @media (max-width: 600px) {
-            grid-template-columns: 1fr;
+        :first-child {
+            grid-column: 1;
         }
+
+        //grid-template-columns: repeat(2, 1fr);
+        //gap: 1rem;
+        //
+        //@media (max-width: 600px) {
+        //    grid-template-columns: 1fr;
+        //}
     }
 
     .resourcesHeader {
         display: flex;
         justify-content: space-between;
         align-items: center;
+
         h4 {
             margin: 0;
         }
@@ -34,11 +52,13 @@
             flex-grow: 1;
             align-items: center;
         }
+
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
 
         .selectedResourceItem {
+            border-radius: var(--ds-border-radius-lg);
             display: flex;
             align-items: center;
             gap: 0.75rem;
@@ -59,9 +79,11 @@
             flex-grow: 1;
             align-items: center;
         }
+
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+
         .resourceItem {
             user-select: none;
             display: flex;

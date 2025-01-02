@@ -39,6 +39,8 @@ export interface IApplication {
     customer_organization_name: string | null;
     customer_organization_id: number | null;
 }
+
+
 interface IApplicationDate {
     from_: string;
     to_: string;
@@ -66,4 +68,23 @@ export interface IOrderLine {
     tax_code: number;
     tax: number;
     name: string;
+}
+
+
+export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'activity_id'>{
+    dates: Array<{
+        from_: string;    // ISO date string
+        to_: string;      // ISO date string
+    }>;
+    resources: Array<number>;
+}
+export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'dates' | 'resources'>>{
+    id: number;
+    dates?: Array<{
+        id?: number;
+        from_: string;    // ISO date string
+        to_: string;      // ISO date string
+    }>;
+    resources?: Array<IShortResource | IResource>;
+
 }

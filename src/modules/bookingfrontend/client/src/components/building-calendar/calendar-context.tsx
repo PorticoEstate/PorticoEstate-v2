@@ -1,11 +1,11 @@
-import {createContext, FC, PropsWithChildren, useContext} from 'react';
+import {createContext, FC, PropsWithChildren, useContext, useMemo} from 'react';
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
-import {IShortResource} from "@/service/pecalendar.types";
+import {usePartialApplications} from "@/service/hooks/api-hooks";
+import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 
 
 interface CalendarContextType {
     tempEvents: Record<string, FCallTempEvent>;
-    setTempEvents: (value: (((prevState: Record<string, FCallTempEvent>) => Record<string, FCallTempEvent>) | Record<string, FCallTempEvent>)) => void
     setEnabledResources: (value: (((prevState: Set<string>) => Set<string>) | Set<string>)) => void
     enabledResources: Set<string>
     setResourcesHidden: (value: boolean) => void
@@ -19,7 +19,7 @@ const CalendarContext = createContext<CalendarContextType | undefined>(undefined
 
 export const useTempEvents = () => {
     const ctx = useCalendarContext();
-    return {tempEvents: ctx.tempEvents, setTempEvents: ctx.setTempEvents};
+    return {tempEvents: ctx.tempEvents};
 }
 
 export const useResourcesHidden = () => {
@@ -44,20 +44,46 @@ export const useCalendarContext = () => {
     return context;
 };
 
-interface CalendarContextProps extends CalendarContextType {
-    // resourceToIds: { [p: number]: number };
-    // resources: Record<string, IBuildingResource>;
+interface CalendarContextProps extends Omit<CalendarContextType, 'tempEvents'> {
 
 }
 
 const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) => {
+    const {data: cartItems} = usePartialApplications();
+
+    const tempEvents: Record<string, FCallTempEvent> = useMemo(() => {
+        return (cartItems?.list || []).reduce<Record<string, FCallTempEvent>>((all, curr) => {
+            if(!curr.resources.some(res => res.building_id != null && +res.building_id === +props.currentBuilding)){
+                return all;
+            }
+
+            const temp = all;
+            const dates = curr.dates;
+            dates.forEach(date => {
+                temp[date.id] = {
+                    allDay: false,
+                    editable: true,
+                    start: applicationTimeToLux(date.from_).toJSDate(),
+                    end: applicationTimeToLux(date.to_).toJSDate(),
+                    extendedProps: {resources: curr.resources.map(a => a.id), type: "temporary", applicationId: curr.id},
+                    id: `${date.id}`,
+                    title: curr.name
+                }
+            })
+
+            return temp;
+
+        }, {})
+
+    }, [cartItems?.list, props.currentBuilding])
+
+
     return (
         <CalendarContext.Provider value={{
             currentBuilding: props.currentBuilding,
             setResourcesHidden: props.setResourcesHidden,
             resourcesHidden: props.resourcesHidden,
-            setTempEvents: props.setTempEvents,
-            tempEvents: props.tempEvents,
+            tempEvents: tempEvents,
             enabledResources: props.enabledResources,
             setEnabledResources: props.setEnabledResources
         }}>

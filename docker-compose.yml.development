@@ -8,6 +8,7 @@ x-common-variables: &common-variables
     NEXT_ENV: ${NEXT_ENV:-development}
     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://slim}
+    WATCHPACK_POLLING: true
 
 volumes:
     logs:

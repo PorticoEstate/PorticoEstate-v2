@@ -8,6 +8,7 @@ import ShoppingCartButton from "@/components/layout/header/shopping-cart/shoppin
 import logo from '/public/logo_aktiv_kommune.png';
 import logo_horizontal from '/public/logo_aktiv_kommune_horizontal.png';
 import Image from "next/image";
+import ShoppingCartFab from "@/components/layout/header/shopping-cart/shopping-cart-fab";
 
 
 interface HeaderProps {
@@ -32,7 +33,7 @@ const Header = async (props: HeaderProps) => {
                 <LanguageSwitcher/>
                 <ShoppingCartButton/>
                 <UserMenu/>
-
+                <ShoppingCartFab/>
             </HeaderMenuContent>
         </nav>
     );

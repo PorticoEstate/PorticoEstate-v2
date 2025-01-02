@@ -6,7 +6,7 @@ import {
     fetchInvoices,
     fetchPartialApplications, patchBookingUser
 } from "@/service/api/api-utils";
-import {IApplication} from "@/service/types/api/application.types";
+import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
@@ -199,6 +199,8 @@ export function useUpdateBookingUser() {
     })
 }
 
+
+
 export function usePartialApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
     return useQuery(
         {
@@ -230,4 +232,135 @@ export function useInvoices(): UseQueryResult<ICompletedReservation[]> {
             refetchOnWindowFocus: false, // Do not refetch on window focus by default
         }
     );
+}
+
+
+
+export function useCreatePartialApplication() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (newApplication: Partial<NewPartialApplication>) => {
+            const url = phpGWLink(['bookingfrontend', 'applications', 'partials']);
+            const response = await fetch(url, {
+                method: 'POST',
+                body: JSON.stringify(newApplication),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to create partial application');
+            }
+
+            return response.json();
+        },
+        onSuccess: () => {
+            // Invalidate and refetch partial applications queries
+            queryClient.invalidateQueries({queryKey: ['partialApplications']});
+        },
+    });
+}
+
+export function useUpdatePartialApplication() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({id, application}: {id: number, application: IUpdatePartialApplication}) => {
+            const url = phpGWLink(['bookingfrontend', 'applications', 'partials', id]);
+            const data: Omit<IUpdatePartialApplication, 'resources'> & {resources?: number[]} = {
+                ...application,
+                resources: application.resources?.map(a => a.id)
+            }
+            const response = await fetch(url, {
+                method: 'PATCH',
+                body: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update partial application');
+            }
+
+            return response.json();
+        },
+        onMutate: async ({id, application}) => {
+            // Cancel any outgoing refetches to avoid overwriting optimistic update
+            await queryClient.cancelQueries({queryKey: ['partialApplications']});
+            console.log("update partial application", id, application);
+
+            // Snapshot current applications
+            const previousApplications = queryClient.getQueryData<{list: IApplication[], total_sum: number}>(['partialApplications']);
+
+            // Optimistically update applications list
+            if (previousApplications) {
+                queryClient.setQueryData(['partialApplications'], {
+                    ...previousApplications,
+                    list: previousApplications.list.map(app =>
+                        app.id === id ? {...app, ...application, dates: application.dates ?? app.dates} : app
+                    ),
+                });
+            }
+
+            return {previousApplications};
+        },
+        onError: (err, variables, context) => {
+            // On error, rollback to previous state
+            if (context?.previousApplications) {
+                queryClient.setQueryData(['partialApplications'], context.previousApplications);
+            }
+        },
+        onSettled: () => {
+            // Always refetch after error or success to ensure data is correct
+            queryClient.invalidateQueries({queryKey: ['partialApplications']});
+        },
+    });
+}
+export function useDeletePartialApplication() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (id:number) => {
+            const url = phpGWLink(['bookingfrontend', 'applications', id]);
+            const response = await fetch(url, {method: 'DELETE'});
+
+            if (!response.ok) {
+                throw new Error('Failed to update partial application');
+            }
+
+            return id
+        },
+        onMutate: async (id:number) => {
+            // Cancel any outgoing refetches to avoid overwriting optimistic update
+            await queryClient.cancelQueries({queryKey: ['partialApplications']});
+
+            // Snapshot current applications
+            const previousApplications = queryClient.getQueryData<{list: IApplication[], total_sum: number}>(['partialApplications']);
+
+            // Optimistically update applications list
+            if (previousApplications) {
+                queryClient.setQueryData(['partialApplications'], {
+                    ...previousApplications,
+                    list: previousApplications.list.filter(app =>
+                        app.id !== id
+                    ),
+                });
+            }
+
+            return {previousApplications};
+        },
+        onError: (err, variables, context) => {
+            // On error, rollback to previous state
+            if (context?.previousApplications) {
+                queryClient.setQueryData(['partialApplications'], context.previousApplications);
+            }
+        },
+        onSettled: () => {
+            // Always refetch after error or success to ensure data is correct
+            queryClient.invalidateQueries({queryKey: ['partialApplications']});
+        },
+    });
 }

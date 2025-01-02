@@ -104,6 +104,7 @@ class BuildingScheduleService
             'name' => $data['resource_name'],
             'activity_id' => $data['activity_id'] ?? null,
             'activity_name' => $data['activity_name'] ?? null,
+            'building_id' => $data['building_id'] ?? null,
         ];
     }
 

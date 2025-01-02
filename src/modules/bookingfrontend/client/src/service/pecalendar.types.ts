@@ -35,22 +35,13 @@ export interface IEvent {
     is_public?: number
 }
 
-export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking'>;
+export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id'>;
 
 export interface IEventDate {
     from_: string
     to_: string
     id: number
 }
-
-
-// export interface IBuilding {
-//     name: string
-//     type: 'lokale' | 'anlegg' | string;
-//     id: number
-//     menuaction: 'bookingfrontend.uiresource.show'
-// }
-
 
 
 

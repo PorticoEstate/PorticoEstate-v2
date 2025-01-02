@@ -653,3 +653,5 @@ deselect_all	bookingfrontend	no	Velg ingen
 max_participants	bookingfrontend	no	Maks {{count}} deltakere
 edit_event	bookingfrontend	no	Rediger arrangement
 month	bookingfrontend	no	Måned
+enter_title	bookingfrontend	no	Angi en tittel
+

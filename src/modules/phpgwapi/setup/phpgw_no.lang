@@ -78,7 +78,7 @@ december	common	no	Desember
 delete	common	no	Slett
 domain	common	no	Database
 domain name for mail-address, eg. %1	common	no	Domene-navnet for E-Postadressen, %1
-done	common	no	Avbryt
+done	common	no	Ferdig
 e-mail	common	no	E-Post
 email-address of the user, eg. %1	common	no	E-Postadressen til brukeren, %1
 edit	common	no	Rediger
@@ -371,3 +371,5 @@ choose language	common	no	Velg språk
 which language do you want?	common	no	Hvilket språk ønsker du?
 which language do you want?	common	no	Hvilket språk ønsker du?
 error_report_system	common	no	Feilmelding (om systemet)
+start	common	no	Start
+end	common	no	Slutt

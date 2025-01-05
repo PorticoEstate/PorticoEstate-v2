@@ -24,7 +24,9 @@ export interface ActivityData {
     homepage?: string;
     name?: string;
     type: "event";
-    info_resource_info: string;
+    info_resource_info: string[];
+    //All resources for specific building
+    info_resources_allResources: string[]
     info_org: OrgInfo;
     // Parsed info_when field
     info_when: Date;
@@ -203,9 +205,17 @@ export const fetchEventData = async (
         res.data.events[event_id].info_when.split(" - ")[0],
         "dd/LL/yyyy HH:mm"
     ).toJSDate();
+    const resourcesNames = res.data.events[event_id].info_resource_info.split(", ");
+    // TODO: Get all resources for specific building in event object
+    // Find request, add buildind id in event object
+    //
+    // Stub for all building's resources
+    const buildingResources = [...resourcesNames, "Test 1", "Test 2", "Test 3", "Long building's resource name"];
     return {
         info_user_can_delete_events: res.data.info_user_can_delete_events,
         ...res.data.events[event_id],
+        info_resource_info: resourcesNames,
+        info_resources_allResources: buildingResources,
         info_when: parsedWhenField,
         type: "event",
     };

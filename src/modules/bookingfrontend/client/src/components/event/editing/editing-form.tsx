@@ -1,12 +1,12 @@
 'use client'
-import {FC} from "react";
-import {Field, Textfield, Chip} from "@digdir/designsystemet-react";
+import { FC } from "react";
+import {Field, Textfield, Label} from "@digdir/designsystemet-react";
 import { ActivityData } from "@/service/api/event-info";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
 import MaxParticipantInput from "./max-participant-input";
 import DatePickerInput from "./datepicker-input";
-
+import ResourcesGroup from "./resources-group";
 interface FormProps {
     event: ActivityData;
     updateField: (key: keyof ActivityData, value: any) => void;
@@ -17,20 +17,17 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
 
     return (
         <div className={styles.editForm}>
-            <Field>
-                <Field.Description>{t('bookingfrontend.title')}</Field.Description>
-                <Textfield
-                    label=""
+            <Textfield
+                    label={t('bookingfrontend.title')}
                     value={event.activity_name}
                     onChange={(e) => updateField('activity_name', e.target.value)}
                 />
-            </Field>
             <DatePickerInput 
                 date={event.info_when}
                 updateDate={(date: Date) => updateField('info_when', date)}
             />
             <Field>
-                <Field.Description>Time</Field.Description>
+                <Label>Time</Label>
                 <div className={styles.editTimeBlock}>
                     <Textfield
                         prefix={t('bookingfrontend.from')} 
@@ -46,29 +43,29 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                     />
                 </div>
             </Field>
-            <Field>
-                <Field.Description>{t('bookingfrontend.place')}</Field.Description>
-                <Textfield 
-                    label="" 
+            <Textfield 
+                    label={t('bookingfrontend.place')}
                     value={event.building_name}
                     readOnly={true}
                 />
-            </Field>
             <Field>
-                <Field.Description>{t('bookingfrontend.resource')}</Field.Description>
-                <div>
-                    { event.info_resource_info.split(', ').map((res) => (
-                        <Chip.Checkbox key={res}>{res}</Chip.Checkbox>
-                    ))} 
-                </div>
+                <Label>{t('bookingfrontend.resource')}</Label>
+                <ResourcesGroup 
+                    updateField={(data: any) => updateField('info_resource_info', data)}
+                    allResources={event.info_resources_allResources}
+                    selectedResources={event.info_resource_info}
+                />
             </Field>
+            <Textfield 
+                    label={t('bookingfrontend.organizer')}
+                    onChange={(e) => updateField('organizer', e.target.value)}
+                />
             <Field>
-                <Field.Description>{t('bookingfrontend.organizer')}</Field.Description>
-                <Textfield label=""/>
-            </Field>
-            <Field>
-                <Field.Description>{t('bookingfrontend.max_participants_info')}</Field.Description>
-                <MaxParticipantInput updateField={updateField} fieldValue={event.info_participant_limit}/>
+                <Label>{t('bookingfrontend.max_participants_info')}</Label>
+                <MaxParticipantInput 
+                    updateField={updateField} 
+                    fieldValue={event.info_participant_limit}
+                />
             </Field>
         </div>
     )

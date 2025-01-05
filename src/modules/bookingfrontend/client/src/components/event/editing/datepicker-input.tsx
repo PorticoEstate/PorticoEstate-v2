@@ -8,7 +8,6 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { DateTime } from 'luxon';
 import 'react-datepicker/dist/react-datepicker.css'
 
-
 interface DataPickerProps {
     date: Date;
     updateDate: (date: Date) => void;
@@ -18,9 +17,9 @@ const DatePickerInput: FC<DataPickerProps> = ({ date, updateDate }: DataPickerPr
     const t = useTrans();
     // eslint-disable-next-line react/display-name
     const CustomInput = forwardRef<HTMLInputElement>(({ onClick }: any, ref) => (
-        <Field onClick={onClick}>
-            <Field.Description>{t('bookingfrontend.date')}</Field.Description>
-                <Field.Affixes>
+        <Field style={{marginBottom: 0}} onClick={onClick}>
+            <Field.Description style={{marginBottom: 0}}>{t('bookingfrontend.date')}</Field.Description>
+                <Field.Affixes style={{width: '21rem'}}>
                     <Field.Affix><FontAwesomeIcon icon={faCalendarAlt}/></Field.Affix>
                      <Input 
                         ref={ref}
@@ -31,11 +30,14 @@ const DatePickerInput: FC<DataPickerProps> = ({ date, updateDate }: DataPickerPr
     ));
 
     return (
-        <DatePicker 
-            selected={date} 
-            onChange={(date: Date | null) => updateDate(date as Date)}
-            customInput={<CustomInput/>}
-        />
+        <div>
+            <DatePicker 
+                selected={date} 
+                onChange={(date: Date | null) => updateDate(date as Date)}
+                customInput={<CustomInput/>}
+                withPortal
+            />
+        </div>
     )
 }
 

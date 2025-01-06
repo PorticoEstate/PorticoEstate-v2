@@ -5,7 +5,7 @@ import { ActivityData } from "@/service/api/event-info";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
 import MaxParticipantInput from "./max-participant-input";
-import DatePickerInput from "./datepicker-input";
+import DatePickerInput from "../../date-picker/datepicker-input";
 import ResourcesGroup from "./resources-group";
 interface FormProps {
     event: ActivityData;

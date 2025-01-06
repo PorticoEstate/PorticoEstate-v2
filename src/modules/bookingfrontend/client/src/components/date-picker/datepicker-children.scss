@@ -1,0 +1,13 @@
+@import "../../styles/colors.scss";
+
+.react-datepicker__children-container {
+  	width: auto !important;
+}
+.react-datepicker__header  {
+  	border-bottom: 0 !important;
+	background-color: white !important;
+}
+.react-datepicker__day--keyboard-selected {
+	background-color: $purple !important;
+	color: white !important;
+}

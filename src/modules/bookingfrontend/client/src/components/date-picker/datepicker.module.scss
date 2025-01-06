@@ -1,0 +1,47 @@
+@import "../../styles/colors.scss";
+
+.datePickerBlock {
+    padding-top: 5px;
+    > h4 {
+        text-align: left;
+        margin: 0;
+        margin-bottom: 1rem;
+        padding-left: 20px;
+        padding-right: 20px;
+    }
+    > hr {
+        margin: 0;
+    }
+}
+
+.dateTextBlock {
+	display: flex;
+	align-items: center;
+    justify-content: space-between;
+    padding-left: 20px;
+    padding-right: 20px;
+    > h2 {
+        margin: 1rem 0 !important;
+    }
+    > .yearDropdownContainer {
+        display: flex;
+        > h4 {
+            margin: 1rem 0 !important;
+        }
+    }
+}
+
+.datepickerBottom {
+    width: 100%;
+    text-align: right;
+    user-select: none;
+    color: $purple;
+    margin-right: 1rem;
+}   
+.datepickerCustomDay {
+    border-radius: 5rem !important;
+    &[aria-selected='true'] {
+        background-color: $purple;
+        color: white;
+    }
+}

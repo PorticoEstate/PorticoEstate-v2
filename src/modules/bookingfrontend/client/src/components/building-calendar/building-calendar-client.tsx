@@ -121,6 +121,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             extendedProps: {
                 type: 'temporary',
                 resources: [...enabledResources],
+                building_id: props.building.id,
             },
         };
         // setTempEvents(prev => ({...prev, [newEvent.id]: newEvent}))
@@ -498,7 +499,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             }}/>
 
             {currentTempEvent && (
-                <EventCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempEvent={currentTempEvent}/>
+                <EventCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempEvent={currentTempEvent}
+                           building_id={props.building.id} />
             )}
 
 

@@ -93,15 +93,15 @@
     "@babel/helper-validator-identifier" "^7.24.7"
     to-fast-properties "^2.0.0"
 
-"@digdir/designsystemet-css@1.0.0-next.40":
-  version "1.0.0-next.40"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-css/-/designsystemet-css-1.0.0-next.40.tgz#f7670cb555a28a6a5f66ee56d01189b2f5c85ac0"
-  integrity sha512-880SQs0hFF6J6nxjrEalgbGHtJ8SkPLX2IDl1f+Gn/WfImGniews7A0ilI7aotld81oEHnkgZTOT+721FC/TRw==
+"@digdir/designsystemet-css@1.0.0-next.44":
+  version "1.0.0-next.44"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-css/-/designsystemet-css-1.0.0-next.44.tgz#04cb339cbc56508d4a559d959d771347ebcde6fc"
+  integrity sha512-qrmClwLQdmRg6+c0oXkR7N3GXKH6IWHcluayL/M83fxjxeZhJ9x2bkuwguH5fY1hDnAy5qQFydnTdmClm0uf8g==
 
-"@digdir/designsystemet-react@1.0.0-next.40":
-  version "1.0.0-next.40"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-react/-/designsystemet-react-1.0.0-next.40.tgz#e1f6c7b89280aec274bdaffae6c252fae1ebe1be"
-  integrity sha512-MSx3wfkY5hw3QkNiNaPMJ7WOj/gFmdD3IR/sklQFcySK5XakMktAPTaJ+lAJDwAoC87ymw+BqyRUyZRl0IfcxA==
+"@digdir/designsystemet-react@1.0.0-next.44":
+  version "1.0.0-next.44"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-react/-/designsystemet-react-1.0.0-next.44.tgz#3ee378571c1e3de98c8470eb61758e3fd31ce8c8"
+  integrity sha512-2ADlRRBEs7FK2UB4JLQ9Uf5WW/kxq+yanue/ucLy3eIrt5RnqWlTsWy8GUlIDo4C+g2wox9/PN20+qVRTmwyfg==
   dependencies:
     "@floating-ui/dom" "^1.6.10"
     "@floating-ui/react" "0.26.23"
@@ -111,10 +111,10 @@
     "@u-elements/u-details" "^0.1.0"
     clsx "^2.1.1"
 
-"@digdir/designsystemet-theme@1.0.0-next.40":
-  version "1.0.0-next.40"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-theme/-/designsystemet-theme-1.0.0-next.40.tgz#fcc7c152a72d4f49a94cfdabb95cd3db30bc45d4"
-  integrity sha512-x9l9ICGlEmq63HkxRkpNo/wfKFCJdyuaYBCHQWXyJApYwkgYSuOWTey1XbXZ/eUef9h3+7CGcRVvgD1JHOk3jg==
+"@digdir/designsystemet-theme@1.0.0-next.44":
+  version "1.0.0-next.44"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-theme/-/designsystemet-theme-1.0.0-next.44.tgz#ac600e4645b19cd7233502292965706b4368d072"
+  integrity sha512-73pPR0lWZ5bv56kjkE7XawxUEPhTIxVbgRFM33gafc8x3OTdqK/tbUtAQQMDmsr/Z2Nm+w2cRbabPKeCCAf/Iw==
 
 "@emotion/babel-plugin@^11.12.0":
   version "11.12.0"

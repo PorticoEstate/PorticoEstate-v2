@@ -300,13 +300,13 @@ class ApplicationService
     private function insertApplication(array $data): array
     {
         $sql = "INSERT INTO bb_application (
-        status, session_id, building_name,
+        status, session_id, building_name,building_id,
         activity_id, contact_name, contact_email, contact_phone,
         responsible_street, responsible_zip_code, responsible_city,
         customer_identifier_type, customer_organization_number,
         created, modified, secret, owner_id, name
     ) VALUES (
-        :status, :session_id, :building_name,
+        :status, :session_id, :building_name, :building_id,
         :activity_id, :contact_name, :contact_email, :contact_phone,
         :responsible_street, :responsible_zip_code, :responsible_city,
         :customer_identifier_type, :customer_organization_number,
@@ -317,6 +317,7 @@ class ApplicationService
             ':status' => $data['status'],
             ':session_id' => $data['session_id'],
             ':building_name' => $data['building_name'],
+            ':building_id' => $data['building_id'],
             ':activity_id' => $data['activity_id'] ?? null,
             ':contact_name' => $data['contact_name'],
             ':contact_email' => $data['contact_email'],
@@ -344,6 +345,7 @@ class ApplicationService
     {
         $sql = "UPDATE bb_application SET
         building_name = :building_name,
+        building_id = :building_id,
         activity_id = :activity_id,
         contact_name = :contact_name,
         contact_email = :contact_email,
@@ -361,6 +363,7 @@ class ApplicationService
             ':id' => $data['id'],
             ':session_id' => $data['session_id'],
             ':building_name' => $data['building_name'],
+            ':building_id' => $data['building_id'],
             ':activity_id' => $data['activity_id'] ?? null,
             ':contact_name' => $data['contact_name'],
             ':contact_email' => $data['contact_email'],

@@ -116,6 +116,7 @@ const EventCrud: React.FC<EventCrudProps> = (props) => {
         if (existingEvent) {
             const updatedApplication: IUpdatePartialApplication = {
                 id: existingEvent.id,
+                building_id: +props.building_id,
             }
             if (dirtyFields.start || dirtyFields.end) {
                 updatedApplication.dates = existingEvent.dates?.map(date => {

@@ -1052,6 +1052,6 @@ class property_uiinvoice2 extends phpgwapi_uicommon_jquery
 	 */
 	protected function getcsv($handle)
 	{
-		return fgetcsv($handle, 1000, self::DELIMITER, self::ENCLOSING);
+		return fgetcsv($handle, 1000, self::DELIMITER, self::ENCLOSING, "\\");
 	}
 }

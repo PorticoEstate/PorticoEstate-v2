@@ -26,7 +26,7 @@ class SaksmappeListe
      * @param Saksmappe[] $liste
      * @return SaksmappeListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

@@ -26,7 +26,7 @@ class KlassifikasjonssystemListe
      * @param Klassifikasjonssystem[] $liste
      * @return KlassifikasjonssystemListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

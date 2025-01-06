@@ -31,7 +31,7 @@
 	* @package phpgwapi
 	* @subpackage sessions
 	*/
-	class SessionHandlerDb
+	class SessionHandlerDb implements SessionHandlerInterface
 	{
 		private function __construct()
 		{
@@ -43,7 +43,7 @@
 		 *
 		 * @internal does nothing for us
 		 */
-		public static function close()
+		public function close(): bool
 		{
 			return true;
 		}
@@ -54,7 +54,7 @@
 		 * @param string $id the session id to destroy
 		 * @return bool was the session destroyed?
 		 */
-		public static function destroy($id)
+		public function destroy($id): bool
 		{
 			$db		= \App\Database\Db::getInstance();
 
@@ -68,7 +68,7 @@
 		 *
 		 * @param int $max the maximum lifetime for a session
 		 */
-		public static function gc($max)
+		public function gc($max): int|false
 		{
 			$db	= \App\Database\Db::getInstance();
 			$timestamp = time() - (int) $max;
@@ -139,7 +139,7 @@
 		 *
 		 * @internal does nothing for us
 		 */
-		public static function open()
+		public function open (string|null $path, string|null $name): bool
 		{
 			return true;
 		}
@@ -150,7 +150,7 @@
 		 * @param string $id the id of the session to retreive
 		 * @return string user's session data as a serialized string - empty string if not found
 		 */
-		public static function read($id)
+		public function read($id): string|false
 		{
 
 			$serverSettings = App\modules\phpgwapi\services\Settings::getInstance()->get('server');
@@ -186,7 +186,7 @@
 		 * @param string $data the session data to store (serialised data)
 		 * @return bool was the session written to the database?
 		 */
-		public static function write($id, $data)
+		public function write($id, $data): bool
 		{
 			$db			= \App\Database\Db::getInstance();
 
@@ -218,10 +218,5 @@
 	// register out methods and we should be right to go now
 	session_set_save_handler
 	(
-		array('SessionHandlerDb', 'open'),
-		array('SessionHandlerDb', 'close'),
-		array('SessionHandlerDb', 'read'),
-		array('SessionHandlerDb', 'write'),
-		array('SessionHandlerDb', 'destroy'),
-		array('SessionHandlerDb', 'gc')
+		new SessionHandlerDb()
 	);

@@ -25,7 +25,7 @@
 		 * @param SearchCriteriaProperties[] $SearchCriteriaProperties
 		 * @return ArrayOfSearchCriteriaProperties
 		 */
-		public function setSearchCriteriaProperties( array $SearchCriteriaProperties = null )
+		public function setSearchCriteriaProperties(array|null $SearchCriteriaProperties = null )
 		{
 			$this->SearchCriteriaProperties = $SearchCriteriaProperties;
 			return $this;

@@ -6996,10 +6996,10 @@ SQL;
 	{
 		if ($i === 0)
 		{
-			fputcsv($csv_file, array_keys($billing_entry));
+			fputcsv($csv_file, array_keys($billing_entry), ';', '"', "\\");
 			$i = 1;
 		}
-		fputcsv($csv_file, array_values($billing_entry));
+		fputcsv($csv_file, array_values($billing_entry), ';', '"', "\\");
 
 		if (!$billing_entry['export_file_id'])
 		{

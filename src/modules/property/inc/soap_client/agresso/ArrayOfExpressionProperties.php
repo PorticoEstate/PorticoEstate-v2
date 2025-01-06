@@ -25,7 +25,7 @@
 		 * @param ExpressionProperties[] $ExpressionProperties
 		 * @return ArrayOfExpressionProperties
 		 */
-		public function setExpressionProperties( array $ExpressionProperties = null )
+		public function setExpressionProperties(array|null $ExpressionProperties = null )
 		{
 			$this->ExpressionProperties = $ExpressionProperties;
 			return $this;

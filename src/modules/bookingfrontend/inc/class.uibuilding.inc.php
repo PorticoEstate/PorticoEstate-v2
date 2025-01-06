@@ -63,9 +63,6 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 			$timeend = 22;
 		}
 
-		$timediff = $timeend - $timestart;
-		$cellwidth = 88 / ($timediff * 2);
-
 		$days = array(
 			"Mon" => "Mandag",
 			"Tue" => "Tirsdag",
@@ -146,6 +143,23 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 		{
 			$item = $bookings['results'][$key];
 		}
+
+		foreach ($list as $_day => $_resources)
+		{
+			foreach ($_resources as $_resource => $_resource_data)
+			{
+				foreach ($_resource_data as $_start_time => $_info)
+				{
+					$timestart = min($timestart, explode(':', $_start_time)[0]);
+					$timeend = max($timeend, explode(':', $_info['to_'])[0]);
+				}
+			}
+		}
+
+		//		_debug_array($bookings);
+
+		$timediff = $timeend - $timestart;
+		$cellwidth = 88 / ($timediff * 2);
 
 		$time = $timestart;
 		$html = '<html><head><title>Kalender for ' . $building['name'] . '</title>';
@@ -442,7 +456,8 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 		));
 		$building['message_link'] = self::link(array(
 			'menuaction' => 'bookingfrontend.uisystem_message.edit',
-			'building_id' => $building['id'], 'building_name' => $building['name']
+			'building_id' => $building['id'],
+			'building_name' => $building['name']
 		));
 		$building['start'] = self::link(array(
 			'menuaction' => 'bookingfrontend.uisearch.index',

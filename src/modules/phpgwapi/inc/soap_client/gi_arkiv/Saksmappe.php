@@ -235,7 +235,7 @@ class Saksmappe
      * @param \DateTime $saksdato
      * @return Saksmappe
      */
-    public function setSaksdato(\DateTime $saksdato = null)
+    public function setSaksdato(\DateTime|null $saksdato = null)
     {
       if ($saksdato == null) {
        $this->saksdato = null;
@@ -445,7 +445,7 @@ class Saksmappe
      * @param \DateTime $kassasjonsdato
      * @return Saksmappe
      */
-    public function setKassasjonsdato(\DateTime $kassasjonsdato = null)
+    public function setKassasjonsdato(\DateTime|null $kassasjonsdato = null)
     {
       if ($kassasjonsdato == null) {
        $this->kassasjonsdato = null;

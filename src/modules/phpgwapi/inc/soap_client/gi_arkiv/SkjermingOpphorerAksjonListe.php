@@ -26,7 +26,7 @@ class SkjermingOpphorerAksjonListe
      * @param SkjermingOpphorerAksjon[] $liste
      * @return SkjermingOpphorerAksjonListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

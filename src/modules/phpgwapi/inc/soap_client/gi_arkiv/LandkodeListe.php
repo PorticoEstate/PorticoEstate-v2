@@ -26,7 +26,7 @@ class LandkodeListe
      * @param Landkode[] $liste
      * @return LandkodeListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

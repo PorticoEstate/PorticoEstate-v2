@@ -329,7 +329,7 @@ class import_from_scanner
 			$fp = fopen("{$this->dir}/{$fname}", 'rb');
 
 			$row	 = 1;
-			while ($data	 = fgetcsv($fp, 8000, $this->delimiter))
+			while ($data	 = fgetcsv($fp, 8000, $this->delimiter, '"', "\\"))
 			{
 				if ($row == 2) // Ther first row is headerinfo
 				{

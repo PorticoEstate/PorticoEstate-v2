@@ -415,12 +415,18 @@ class booking_uibooking extends booking_uicommon
 		$booking['resources'] = Sanitizer::get_var('resources', 'int');
 		#The string replace is a workaround for a problem at Bergen Kommune
 
-		$booking['from_'] = str_replace('%3A', ':', Sanitizer::get_var('from_', 'string'));
-		$booking['to_'] = str_replace('%3A', ':', Sanitizer::get_var('to_', 'string'));
-		foreach ($booking['from_'] as $k => $v)
+		if(!is_array($_REQUEST['from_']))
 		{
-			$booking['from_'][$k] = pretty_timestamp($booking['from_'][$k]);
-			$booking['to_'][$k] = pretty_timestamp($booking['to_'][$k]);
+			$booking['from_'] = pretty_timestamp(str_replace('%3A', ':', Sanitizer::get_var('from_', 'string')));
+			$booking['to_'] = pretty_timestamp(str_replace('%3A', ':', Sanitizer::get_var('to_', 'string')));
+		}
+		else
+		{
+			foreach ($booking['from_'] as $k => $v)
+			{
+				$booking['from_'][$k] = pretty_timestamp($booking['from_'][$k]);
+				$booking['to_'][$k] = pretty_timestamp($booking['to_'][$k]);
+			}
 		}
 
 		$time_from = explode(" ", Sanitizer::get_var('from_', 'string'));
@@ -438,7 +444,7 @@ class booking_uibooking extends booking_uicommon
 			$booking['season_id'] = $season['id'];
 			$booking['building_id'] = $building['id'];
 			$booking['building_name'] = $building['name'];
-			array_set_default($booking, 'resources', array(get_var('resource', 'int')));
+			array_set_default($booking, 'resources', array(Sanitizer::get_var('resource', 'int')));
 			$booking['organization_id'] = $allocation['organization_id'];
 			$booking['organization_name'] = $allocation['organization_name'];
 			$noallocation = False;

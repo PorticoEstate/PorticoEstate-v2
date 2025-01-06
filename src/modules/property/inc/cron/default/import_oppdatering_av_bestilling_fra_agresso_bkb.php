@@ -229,7 +229,7 @@
 
 			$fp = fopen($file, 'rb');
 
-			while (($data = fgetcsv($fp, 1000, ";")) !== false && $ok == true)
+			while (($data = fgetcsv($fp, 1000,";", '"', "\\")) !== false && $ok == true)
 			{
 				if (preg_match('/^PENGER/i', $file_name))
 				{

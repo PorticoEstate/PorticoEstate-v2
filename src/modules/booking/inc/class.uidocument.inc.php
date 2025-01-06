@@ -42,7 +42,7 @@ abstract class booking_uidocument extends booking_uicommon
 		Settings::getInstance()->update('flags', ['app_header' => lang('booking') . "::{$this->display_name}"]);
 	}
 
-	protected function set_business_object(booking_bodocument $bo = null)
+	protected function set_business_object(booking_bodocument|null $bo = null)
 	{
 		$this->bo = is_null($bo) ? $this->create_business_object() : $bo;
 	}

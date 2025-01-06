@@ -85,7 +85,7 @@ class Skjerming
      * @param \DateTime $skjermingOpphoererDato
      * @return Skjerming
      */
-    public function setSkjermingOpphoererDato(\DateTime $skjermingOpphoererDato = null)
+    public function setSkjermingOpphoererDato(\DateTime|null $skjermingOpphoererDato = null)
     {
       if ($skjermingOpphoererDato == null) {
        $this->skjermingOpphoererDato = null;

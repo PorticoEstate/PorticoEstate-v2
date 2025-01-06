@@ -153,7 +153,7 @@
 			{
 				$addr_name_options .= "<option value=\"$field\">".phpgw::strip_html($name)."\n";
 			}
-			$csv_fields = fgetcsv($fp,8000,$_POST['fieldsep']);
+			$csv_fields = fgetcsv($fp,8000,$_POST['fieldsep'], '"', "\\");
 
 			foreach($csv_fields as $csv_idx => $csv_field)
 			{
@@ -239,7 +239,7 @@
 		case 'import':
 			@set_time_limit(0);
 			$fp=fopen($csvfile,'rb');
-			$csv_fields = fgetcsv($fp,8000,$_POST['fieldsep']);
+			$csv_fields = fgetcsv($fp,8000,$_POST['fieldsep'], '"', "\\");
 
 			$cat_id = $_POST['addr_fields']['cat_id'];
 			$access = $_POST['addr_fields']['access'];
@@ -295,9 +295,9 @@
 			}
 			$start = $_POST['start'] < 1 ? 1 : $_POST['start'];
 
-			for($i = 1; $i < $start && fgetcsv($fp,8000,$_POST['fieldsep']); ++$i); 	// overread lines before our start-record
+			for($i = 1; $i < $start && fgetcsv($fp,8000,$_POST['fieldsep'], '"', "\\"); ++$i); 	// overread lines before our start-record
 
-			for($anz = 0; $anz < $_POST['max'] && ($fields = fgetcsv($fp,8000,$_POST['fieldsep'])); ++$anz)
+			for($anz = 0; $anz < $_POST['max'] && ($fields = fgetcsv($fp,8000,$_POST['fieldsep'], '"', "\\")); ++$anz)
 			{
 				$log .= "\t</tr><tr><td>".($start+$anz)."</td>\n";
 

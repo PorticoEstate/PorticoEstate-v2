@@ -744,7 +744,6 @@ class Process
 		{
 			$this->init_process();
 		}
-		$this->oProc->m_odb->HaltOnError = 'report';
 		$this->oProc->m_bDeltaOnly = True;
 
 		if (!is_array($setup_info))

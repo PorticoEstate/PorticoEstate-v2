@@ -14,9 +14,11 @@ import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
 import {deletePartialApplication} from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
+import {PencilIcon} from "@navikt/aksel-icons";
 
 interface ShoppingCartContentProps {
     setOpen: Dispatch<boolean>;
+    setCurrentApplication: Dispatch<{ application_id: number, date_id: number, building_id: number } | undefined>;
 }
 
 
@@ -92,6 +94,10 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
     }
 
 
+    const openEdit = (item: IApplication) =>  {
+        props.setCurrentApplication({application_id: item.id, date_id: item.dates[0].id, building_id: item.building_id})
+        props.setOpen(false);
+    }
 
     return (
         <PopperContentSharedWrapper onClose={() => props.setOpen(false)} header={!isMobile}>
@@ -129,7 +135,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                                     Hva
                                 </Table.HeaderCell>
                                 <Table.HeaderCell>
-                                    Vis søknad
+                                    Rediger
                                 </Table.HeaderCell>
                                 <Table.HeaderCell>
                                     Fjern søknad
@@ -156,12 +162,10 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                                     </Table.Cell>
                                     <Table.Cell>
 
-                                        <Button variant="tertiary" asChild>
-                                            <Link
-                                                href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiapplication.show', id: item.id, secret: item.secret || ''}, false)}
-                                                className={'link-text link-text-unset normal'} target={'_blank'}>
-                                                <FontAwesomeIcon icon={faArrowUpRightFromSquare}/>
-                                            </Link>
+                                        <Button variant="tertiary" className={'link-text link-text-unset normal'} onClick={() => openEdit(item)}>
+
+                                                {/*<FontAwesomeIcon icon={faArrowUpRightFromSquare}/>*/}
+                                                <PencilIcon />
                                         </Button>
 
                                     </Table.Cell>

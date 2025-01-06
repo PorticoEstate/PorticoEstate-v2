@@ -21,6 +21,9 @@ import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/sho
 
 interface EventCrudProps {
     selectedTempEvent?: Partial<FCallTempEvent>;
+    building_id: string | number;
+    applicationId?: number;
+    date_id?: number;
     onClose: () => void;
 }
 
@@ -33,29 +36,22 @@ const eventFormSchema = z.object({
 
 type EventFormData = z.infer<typeof eventFormSchema>;
 
-const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
+const EventCrud: React.FC<EventCrudProps> = (props) => {
     const t = useTrans();
-    const currentBuilding = useCurrentBuilding();
-    const {data: building} = useBuilding(+currentBuilding);
-    const {data: buildingResources} = useBuildingResources(currentBuilding);
-    const {tempEvents} = useTempEvents();
+    const {data: building} = useBuilding(+props.building_id);
+    const {data: buildingResources} = useBuildingResources(props.building_id);
     const {data: partials} = usePartialApplications();
     const [isEditingResources, setIsEditingResources] = useState(false);
 
     const createMutation = useCreatePartialApplication();
     const deleteMutation = useDeletePartialApplication();
-    // createMutation.mutate(newApplicationData);
 
 
     const updateMutation = useUpdatePartialApplication();
-    // updateMutation.mutate({
-    //     id: applicationId,
-    //     application: updatedData
-    // });
 
 
     const existingEvent = useMemo(() => {
-        const applicationId = selectedTempEvent?.extendedProps?.applicationId;
+        const applicationId = props.applicationId || props.selectedTempEvent?.extendedProps?.applicationId;
         if (applicationId === undefined) {
             return undefined;
         }
@@ -63,24 +59,24 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
             return undefined;
         }
         return partials.list.find(a => a.id === applicationId);
-    }, [selectedTempEvent, partials]);
+    }, [props.selectedTempEvent, partials, props.applicationId]);
 
 
     const defaultStartEnd = useMemo(() => {
-        if (!existingEvent?.dates || !selectedTempEvent?.id) {
+        if (!existingEvent?.dates || !props.selectedTempEvent?.id || props.date_id === undefined) {
             return {
-                start: selectedTempEvent?.start || new Date(),
-                end: selectedTempEvent?.end || new Date()
+                start: props.selectedTempEvent?.start || new Date(),
+                end: props.selectedTempEvent?.end || new Date()
             };
         }
-
+        const dateId = props.selectedTempEvent?.id || props.date_id;
         // Find the date entry matching the selectedTempEvent's id
-        const dateEntry = existingEvent.dates.find(d => +d.id === +selectedTempEvent.id!);
+        const dateEntry = existingEvent.dates.find(d => +d.id === +dateId);
 
         if (!dateEntry) {
             return {
-                start: selectedTempEvent?.start || new Date(),
-                end: selectedTempEvent?.end || new Date()
+                start: props.selectedTempEvent?.start || new Date(),
+                end: props.selectedTempEvent?.end || new Date()
             };
         }
 
@@ -88,7 +84,7 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
             start: applicationTimeToLux(dateEntry.from_).toJSDate(),
             end: applicationTimeToLux(dateEntry.to_).toJSDate()
         };
-    }, [existingEvent, selectedTempEvent]);
+    }, [existingEvent, props.selectedTempEvent, props.date_id]);
     const {
         control,
         handleSubmit,
@@ -102,7 +98,7 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
             start: defaultStartEnd.start,
             end: defaultStartEnd.end,
             resources: existingEvent?.resources?.map((res) => res.id.toString()) ||
-                selectedTempEvent?.extendedProps?.resources?.map(String) ||
+                props.selectedTempEvent?.extendedProps?.resources?.map(String) ||
                 []
         }
     });
@@ -120,10 +116,12 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
         if (existingEvent) {
             const updatedApplication: IUpdatePartialApplication = {
                 id: existingEvent.id,
+                building_id: +props.building_id,
             }
             if (dirtyFields.start || dirtyFields.end) {
                 updatedApplication.dates = existingEvent.dates?.map(date => {
-                    if (date.id && selectedTempEvent?.id && +selectedTempEvent.id === +date.id) {
+                    const dateId = props.selectedTempEvent?.id || props.date_id;
+                    if (date.id && dateId && +dateId === +date.id) {
                         return {
                             ...date,
                             from_: data.start.toISOString(),
@@ -142,12 +140,13 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
 
 
             updateMutation.mutate({id: existingEvent.id, application: updatedApplication});
-            onClose();
+            props.onClose();
             return;
         }
 
         const newApplication: NewPartialApplication = {
             building_name: building!.name,
+            building_id: building!.id,
             dates: [
                 {
                     from_: data.start.toISOString(),
@@ -161,11 +160,11 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
         }
 
         createMutation.mutate(newApplication);
-        onClose();
+        props.onClose();
     };
 
     const handleDelete = () => {
-        if (existingEvent && selectedTempEvent?.id) {
+        if (existingEvent) {
             // TODO: fix deleting
             deleteMutation.mutate(existingEvent.id);
 
@@ -175,7 +174,7 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
             //     return newEvents;
             // });
         }
-        onClose();
+        props.onClose();
     };
 
     const toggleResource = (resourceId: string) => {
@@ -316,7 +315,7 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
         <form onSubmit={handleSubmit(onSubmit)}>
             <MobileDialog
                 open={true}
-                onClose={onClose}
+                onClose={props.onClose}
                 size={'hd'}
                 title={
                     <div className={styles.dialogHeader}>
@@ -337,7 +336,7 @@ const EventCrud: React.FC<EventCrudProps> = ({selectedTempEvent, onClose}) => {
                     <Button
                         variant="primary"
                         type="submit"
-                        disabled={!isDirty}
+                        disabled={!(isDirty || !existingEvent)}
                     >
                         {t('common.save')}
                     </Button>

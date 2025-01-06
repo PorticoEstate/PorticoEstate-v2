@@ -65,7 +65,7 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
                     editable: true,
                     start: applicationTimeToLux(date.from_).toJSDate(),
                     end: applicationTimeToLux(date.to_).toJSDate(),
-                    extendedProps: {resources: curr.resources.map(a => a.id), type: "temporary", applicationId: curr.id},
+                    extendedProps: {resources: curr.resources.map(a => a.id), type: "temporary", applicationId: curr.id, building_id: curr.building_id},
                     id: `${date.id}`,
                     title: curr.name
                 }

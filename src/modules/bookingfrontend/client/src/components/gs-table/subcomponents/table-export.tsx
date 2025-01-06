@@ -135,14 +135,15 @@ function TableExport<T>({table, fileName = 'exported-data', rowSelection}: Table
             onClick={handleExport}
             title={exportTooltip}
         >
-            <Badge
-                color="info"
-                placement="top-right"
-                data-size="sm"
-                count={selectedCount || undefined}
-            >
+            <Badge.Position placement="top-right">
+                <Badge
+                    color="info"
+                    data-size="sm"
+                    count={selectedCount || undefined}
+                />
                 <FontAwesomeIcon icon={faDownload}/>
-            </Badge>
+
+            </Badge.Position>
         </Button>
     );
 }

@@ -43,6 +43,7 @@ export interface FCallTempEvent {
         type: 'temporary',
         resources: (string | number)[],
         applicationId?: string | number;
+        building_id: string | number;
     };
 }
 

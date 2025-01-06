@@ -7588,3 +7588,25 @@ function booking_upgrade0_2_104($oProc)
 		return $currentver;
 	}
 }
+
+/**
+ * Update booking version from 0.2.105 to 0.2.106
+ * 	'additional_invoice_information'
+ */
+$test[] = '0.2.105';
+function booking_upgrade0_2_105($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn(
+		'bb_application',
+		'building_id',
+		array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+	);
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.106';
+		return $currentver;
+	}
+}

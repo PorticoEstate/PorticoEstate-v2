@@ -145,6 +145,7 @@ const EventCrud: React.FC<EventCrudProps> = (props) => {
 
         const newApplication: NewPartialApplication = {
             building_name: building!.name,
+            building_id: building!.id,
             dates: [
                 {
                     from_: data.start.toISOString(),

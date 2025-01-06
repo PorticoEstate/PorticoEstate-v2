@@ -7604,6 +7604,12 @@ function booking_upgrade0_2_105($oProc)
 		array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
 	);
 
+	// I have a table bb_application with building_name and building_id.
+	// Builing_name is a string and building_id is an integer.
+	// I want to update the building_id with the id from the table bb_building where the name is the same as the building_name in the bb_application table.
+	$sql = "UPDATE bb_application SET building_id = bb_building.id FROM bb_building WHERE bb_application.building_name = bb_building.name AND bb_building.active = 1";
+	$oProc->m_odb->query($sql, __LINE__, __FILE__);
+
 	if ($oProc->m_odb->transaction_commit())
 	{
 		$currentver = '0.2.106';

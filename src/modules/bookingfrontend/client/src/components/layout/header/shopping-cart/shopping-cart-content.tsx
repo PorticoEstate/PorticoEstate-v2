@@ -95,7 +95,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
 
 
     const openEdit = (item: IApplication) =>  {
-        props.setCurrentApplication({application_id: item.id, date_id: item.dates[0].id, building_id: 10})
+        props.setCurrentApplication({application_id: item.id, date_id: item.dates[0].id, building_id: item.building_id})
         props.setOpen(false);
     }
 

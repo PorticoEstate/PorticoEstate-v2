@@ -10,6 +10,7 @@ export interface IApplication {
     created: string;
     modified: string;
     building_name: string;
+    building_id: number;
     frontend_modified: string | null;
     owner_id: number;
     case_officer_id: number | null;
@@ -71,7 +72,7 @@ export interface IOrderLine {
 }
 
 
-export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'activity_id'>{
+export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'building_id' | 'activity_id'>{
     dates: Array<{
         from_: string;    // ISO date string
         to_: string;      // ISO date string

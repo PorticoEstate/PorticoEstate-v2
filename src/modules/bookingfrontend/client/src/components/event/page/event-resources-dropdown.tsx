@@ -1,5 +1,5 @@
 import { FC, useState } from "react";
-import { Dropdown, Chip } from "@digdir/designsystemet-react";
+import { Dropdown, Chip, Tag } from "@digdir/designsystemet-react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
@@ -14,8 +14,8 @@ const ResourcesDropdown: FC<ResourcesDropdownpProps> = ({ resources }: Resources
 
 
     const renderItem = (res: string) => (
-        <Dropdown.Item key={res}>
-            <Chip.Radio disabled={true} defaultChecked>{res}</Chip.Radio>
+        <Dropdown.Item key={res} style={{marginBottom: '0.5rem'}}>
+            <Tag data-size="md" data-color={'accent'}>{res}</Tag>
         </Dropdown.Item>
     )
 

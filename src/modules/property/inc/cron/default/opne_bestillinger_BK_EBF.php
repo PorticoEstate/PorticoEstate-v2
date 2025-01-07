@@ -71,7 +71,7 @@
 
 			$BOM = "\xEF\xBB\xBF"; // UTF-8 BOM
 			fwrite($fp, $BOM); // NEW LINE
-			fputcsv($fp, $cols, ';');
+			fputcsv($fp, $cols,';', '"', "\\");
 
 			$html = <<<HTML
 			<!DOCTYPE html>
@@ -140,7 +140,7 @@ HTML;
 HTML;
 				}
 
-				fputcsv($fp, $row, ';');
+				fputcsv($fp, $row,';', '"', "\\");
 
 				$html .= <<<HTML
 			</tr>

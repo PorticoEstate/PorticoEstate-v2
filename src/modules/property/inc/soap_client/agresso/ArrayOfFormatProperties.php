@@ -25,7 +25,7 @@
 		 * @param FormatProperties[] $FormatProperties
 		 * @return ArrayOfFormatProperties
 		 */
-		public function setFormatProperties( array $FormatProperties = null )
+		public function setFormatProperties(array|null $FormatProperties = null )
 		{
 			$this->FormatProperties = $FormatProperties;
 			return $this;

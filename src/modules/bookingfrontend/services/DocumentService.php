@@ -52,7 +52,7 @@ class DocumentService
     /**
      * Get documents for a specific owner
      */
-    public function getDocumentsForId(int $ownerId, ?array $categories = null): array
+    public function getDocumentsForId(int $ownerId, array|null $categories = null): array
     {
         return $this->documentRepository->getDocumentsForOwner($ownerId, $categories);
     }

@@ -13,7 +13,7 @@
     "target": "es2015",
     "jsx": "preserve",
       "types": [
-          "./src/theme/colors.d.ts"
+          "@porticoestate/design-tokens/colors.d.ts"
       ],
     "incremental": true,
     "plugins": [

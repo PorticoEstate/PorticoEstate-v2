@@ -190,7 +190,9 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 			'container'	 => 'datatable-container_0',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.uiwo_hour.deviation',
-				'workorder_id'		 => $workorder_id, 'hour_id'			 => $hour_id, 'phpgw_return_as'	 => 'json'
+				'workorder_id'		 => $workorder_id,
+				'hour_id'			 => $hour_id,
+				'phpgw_return_as'	 => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => array(
@@ -255,13 +257,17 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 					'entry_date'			 => $entry_date,
 					'link_edit'				 => phpgw::link('/index.php', array(
 						'menuaction'	 => 'property.uiwo_hour.edit_deviation',
-						'workorder_id'	 => $workorder_id, 'hour_id'		 => $hour_id, 'id'			 => $entry['id']
+						'workorder_id'	 => $workorder_id,
+						'hour_id'		 => $hour_id,
+						'id'			 => $entry['id']
 					)),
 					'lang_edit_statustext'	 => lang('edit the deviation'),
 					'text_edit'				 => lang('edit'),
 					'link_delete'			 => phpgw::link('/index.php', array(
 						'menuaction'	 => 'property.uiwo_hour.delete',
-						'workorder_id'	 => $workorder_id, 'hour_id'		 => $hour_id, 'deviation_id'	 => $entry['id']
+						'workorder_id'	 => $workorder_id,
+						'hour_id'		 => $hour_id,
+						'deviation_id'	 => $entry['id']
 					)),
 					'lang_delete_statustext' => lang('delete the deviation'),
 					'text_delete'			 => lang('delete')
@@ -317,7 +323,8 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 		{
 			$values			 = $this->bo->read_single_deviation(array(
 				'workorder_id'	 => $workorder_id,
-				'hour_id'		 => $hour_id, 'id'			 => $id
+				'hour_id'		 => $hour_id,
+				'id'			 => $id
 			));
 			$function_msg	 = lang('edit deviation');
 			$action			 = 'edit';
@@ -355,7 +362,8 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 			'form_action'				 => phpgw::link('/index.php', $link_data),
 			'done_action'				 => phpgw::link('/index.php', array(
 				'menuaction'	 => 'property.uiwo_hour.deviation',
-				'workorder_id'	 => $workorder_id, 'hour_id'		 => $hour_id
+				'workorder_id'	 => $workorder_id,
+				'hour_id'		 => $hour_id
 			)),
 			'lang_id'					 => lang('deviation ID'),
 			'lang_descr'				 => lang('Descr'),
@@ -456,11 +464,13 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 					'cat_per_cent'			 => $hour['cat_per_cent'],
 					'link_deviation'		 => phpgw::link('/index.php', array(
 						'menuaction'	 => 'property.uiwo_hour.deviation',
-						'workorder_id'	 => $workorder_id, 'hour_id'		 => $hour['hour_id']
+						'workorder_id'	 => $workorder_id,
+						'hour_id'		 => $hour['hour_id']
 					)),
 					'link_edit'				 => phpgw::link('/index.php', array(
 						'menuaction'	 => 'property.uiwo_hour.edit',
-						'workorder_id'	 => $workorder_id, 'hour_id'		 => $hour['hour_id']
+						'workorder_id'	 => $workorder_id,
+						'hour_id'		 => $hour['hour_id']
 					)),
 					'lang_edit_statustext'	 => lang('edit/customise this hour'),
 					'lang_delete_statustext' => lang('delete this hour'),
@@ -594,44 +604,59 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 
 		$column_def = array(
 			array(
-				'key'		 => 'post', 'label'		 => $common_data['table_header'][0]['lang_post'],
+				'key'		 => 'post',
+				'label'		 => $common_data['table_header'][0]['lang_post'],
 				'sortable'	 => true
 			),
 			array(
-				'key'		 => 'code', 'label'		 => $common_data['table_header'][0]['lang_code'],
+				'key'		 => 'code',
+				'label'		 => $common_data['table_header'][0]['lang_code'],
 				'sortable'	 => true
 			),
 			array(
-				'key'		 => 'extra_hours_descr', 'label'		 => $common_data['table_header'][0]['lang_descr'],
+				'key'		 => 'extra_hours_descr',
+				'label'		 => $common_data['table_header'][0]['lang_descr'],
 				'sortable'	 => true
 			),
 			array(
-				'key'		 => 'unit', 'label'		 => $common_data['table_header'][0]['lang_unit'],
+				'key'		 => 'unit',
+				'label'		 => $common_data['table_header'][0]['lang_unit'],
 				'sortable'	 => true
 			),
 			array(
-				'key'		 => 'quantity', 'label'		 => $common_data['table_header'][0]['lang_quantity'],
-				'sortable'	 => true, 'className'	 => 'right'
+				'key'		 => 'quantity',
+				'label'		 => $common_data['table_header'][0]['lang_quantity'],
+				'sortable'	 => true,
+				'className'	 => 'right'
 			),
 			array(
-				'key'		 => 'billperae', 'label'		 => $common_data['table_header'][0]['lang_billperae'],
-				'sortable'	 => true, 'className'	 => 'right'
+				'key'		 => 'billperae',
+				'label'		 => $common_data['table_header'][0]['lang_billperae'],
+				'sortable'	 => true,
+				'className'	 => 'right'
 			),
 			array(
-				'key'		 => 'cost', 'label'		 => $common_data['table_header'][0]['lang_cost'],
-				'sortable'	 => true, 'className'	 => 'right'
+				'key'		 => 'cost',
+				'label'		 => $common_data['table_header'][0]['lang_cost'],
+				'sortable'	 => true,
+				'className'	 => 'right'
 			),
 			array(
-				'key'		 => 'result', 'label'		 => $common_data['table_header'][0]['lang_result'],
-				'sortable'	 => true, 'className'	 => 'right'
+				'key'		 => 'result',
+				'label'		 => $common_data['table_header'][0]['lang_result'],
+				'sortable'	 => true,
+				'className'	 => 'right'
 			),
 			array(
-				'key'		 => 'wo_hour_category', 'label'		 => $common_data['table_header'][0]['lang_category'],
+				'key'		 => 'wo_hour_category',
+				'label'		 => $common_data['table_header'][0]['lang_category'],
 				'sortable'	 => true
 			),
 			array(
-				'key'		 => 'cat_per_cent', 'label'		 => $common_data['table_header'][0]['lang_per_cent'],
-				'sortable'	 => true, 'className'	 => 'center'
+				'key'		 => 'cat_per_cent',
+				'label'		 => $common_data['table_header'][0]['lang_per_cent'],
+				'sortable'	 => true,
+				'className'	 => 'center'
 			)
 		);
 
@@ -677,7 +702,8 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 			'validator'				 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
 				'date',
-				'security', 'file'
+				'security',
+				'file'
 			))
 		);
 
@@ -696,7 +722,8 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -897,21 +924,60 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 
 		$uicols = array(
 			'name'		 => array(
-				'hour_id', 'post', 'code', 'hours_descr', 'unit_name', 'billperae',
-				'quantity', 'cost', 'deviation', 'result', 'wo_hour_category', 'cat_per_cent'
+				'hour_id',
+				'post',
+				'code',
+				'hours_descr',
+				'unit_name',
+				'billperae',
+				'quantity',
+				'cost',
+				'deviation',
+				'result',
+				'wo_hour_category',
+				'cat_per_cent'
 			),
 			'input_type' => array(
-				'hidden', 'text', 'text', 'text', 'text', 'text', 'text',
-				'text', 'text', 'text', 'text', 'text'
+				'hidden',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text'
 			),
 			'descr'		 => array(
-				'', lang('Post'), lang('Code'), lang('Descr'), lang('Unit'),
-				lang('Bill per unit'), lang('Quantity'), lang('Cost'), lang('deviation'), lang('result'),
-				lang('Category'), lang('percent')
+				'',
+				lang('Post'),
+				lang('Code'),
+				lang('Descr'),
+				lang('Unit'),
+				lang('Bill per unit'),
+				lang('Quantity'),
+				lang('Cost'),
+				lang('deviation'),
+				lang('result'),
+				lang('Category'),
+				lang('percent')
 			),
 			'className'	 => array(
-				'', '', '', '', '', 'dt-right', 'dt-right', 'dt-right',
-				'dt-right', 'dt-right', '', 'dt-right'
+				'',
+				'',
+				'',
+				'',
+				'',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'',
+				'dt-right'
 			)
 		);
 
@@ -1031,21 +1097,60 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 
 		$uicols = array(
 			'name'		 => array(
-				'hour_id', 'post', 'code', 'hours_descr', 'unit_name', 'billperae',
-				'quantity', 'cost', 'deviation', 'result', 'wo_hour_category', 'cat_per_cent'
+				'hour_id',
+				'post',
+				'code',
+				'hours_descr',
+				'unit_name',
+				'billperae',
+				'quantity',
+				'cost',
+				'deviation',
+				'result',
+				'wo_hour_category',
+				'cat_per_cent'
 			),
 			'input_type' => array(
-				'hidden', 'text', 'text', 'text', 'text', 'text', 'text',
-				'text', 'text', 'text', 'text', 'text'
+				'hidden',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text'
 			),
 			'descr'		 => array(
-				'', lang('Post'), lang('Code'), lang('Descr'), lang('Unit'),
-				lang('Bill per unit'), lang('Quantity'), lang('Cost'), lang('deviation'), lang('result'),
-				lang('Category'), lang('percent')
+				'',
+				lang('Post'),
+				lang('Code'),
+				lang('Descr'),
+				lang('Unit'),
+				lang('Bill per unit'),
+				lang('Quantity'),
+				lang('Cost'),
+				lang('deviation'),
+				lang('result'),
+				lang('Category'),
+				lang('percent')
 			),
 			'className'	 => array(
-				'', '', '', '', '', 'dt-right', 'dt-right', 'dt-right',
-				'dt-right', 'dt-right', '', 'dt-right'
+				'',
+				'',
+				'',
+				'',
+				'',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'',
+				'dt-right'
 			)
 		);
 
@@ -1091,7 +1196,8 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -1368,7 +1474,7 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 
 		if ($send_order && !$to_email && !$workorder['mail_recipients'])
 		{
-//			$receipt['error'][] = array('msg' => lang('No mailaddress is selected'));
+			//			$receipt['error'][] = array('msg' => lang('No mailaddress is selected'));
 			Cache::message_set(lang('No mailaddress is selected'), 'error');
 		}
 
@@ -1401,7 +1507,8 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 					Cache::message_set(lang('order is not approved'), 'error');
 					phpgw::redirect_link('/index.php', array(
 						'menuaction'	 => 'property.uiwo_hour.view',
-						'workorder_id'	 => $workorder_id, 'from'			 => Sanitizer::get_var('from')
+						'workorder_id'	 => $workorder_id,
+						'from'			 => Sanitizer::get_var('from')
 					));
 				}
 				unset($_ok);
@@ -1413,7 +1520,8 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 					Cache::message_set(lang('order is not approved'), 'error');
 					phpgw::redirect_link('/index.php', array(
 						'menuaction'	 => 'property.uiwo_hour.view',
-						'workorder_id'	 => $workorder_id, 'from'			 => Sanitizer::get_var('from')
+						'workorder_id'	 => $workorder_id,
+						'from'			 => Sanitizer::get_var('from')
 					));
 				}
 			}
@@ -1479,7 +1587,7 @@ class property_uiwo_hour extends phpgwapi_uicommon_jquery
 			$proc->registerPHPFunctions();
 			$xsl_imported = $proc->importStyleSheet($xsl); // attach the xsl rules
 			$css	 = file_get_contents(PHPGW_SERVER_ROOT . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
-//			$css	 .= file_get_contents(PHPGW_SERVER_ROOT . "/phpgwapi/templates/pure/css/pure-extension.css");
+			//			$css	 .= file_get_contents(PHPGW_SERVER_ROOT . "/phpgwapi/templates/pure/css/pure-extension.css");
 
 			$header = <<<HTML
 <!DOCTYPE HTML>
@@ -1744,7 +1852,7 @@ HTML;
 			}
 			else
 			{
-//				$receipt['error'][] = array('msg' => lang('SMTP server is not set! (admin section)'));
+				//				$receipt['error'][] = array('msg' => lang('SMTP server is not set! (admin section)'));
 				Cache::message_set(lang('SMTP server is not set! (admin section)'), 'error');
 			}
 
@@ -1754,11 +1862,11 @@ HTML;
 				$_attachment_log		 = $attachment_log ? "::$attachment_log" : '';
 				$historylog				 = CreateObject('property.historylog', 'workorder');
 				$historylog->add('M', $workorder_id, "{$_to}{$_attachment_log}");
-//				$receipt['message'][]	 = array('msg' => lang('Workorder %1 is sent by email to %2', $workorder_id, $_to));
+				//				$receipt['message'][]	 = array('msg' => lang('Workorder %1 is sent by email to %2', $workorder_id, $_to));
 				Cache::message_set(lang('Workorder %1 is sent by email to %2', $workorder_id, $_to), 'message');
 				if ($attachment_log)
 				{
-//					$receipt['message'][] = array('msg' => $attachment_log);
+					//					$receipt['message'][] = array('msg' => $attachment_log);
 					Cache::message_set($attachment_log, 'message');
 				}
 
@@ -1842,8 +1950,8 @@ HTML;
 			else
 			{
 				Cache::message_set(lang('The recipient did not get the email:') . lang('From')
-				 . ' ' . htmlspecialchars($from_email, ENT_QUOTES, 'UTF-8')
-				  . ' ,' . lang('To') . ' ' . htmlspecialchars($_to, ENT_QUOTES, 'UTF-8'), 'error');
+					. ' ' . htmlspecialchars($from_email, ENT_QUOTES, 'UTF-8')
+					. ' ,' . lang('To') . ' ' . htmlspecialchars($_to, ENT_QUOTES, 'UTF-8'), 'error');
 			}
 		}
 
@@ -1859,7 +1967,7 @@ HTML;
 			unset($email_list);
 		}
 
-//		$msgbox_data = $this->bocommon->msgbox_data($receipt);
+		//		$msgbox_data = $this->bocommon->msgbox_data($receipt);
 
 		$link_file_data = array(
 			'menuaction' => 'property.uiworkorder.view_file',
@@ -1972,11 +2080,15 @@ HTML;
 
 		$files_def = array(
 			array(
-				'key'		 => 'file_name', 'label'		 => lang('Filename'), 'sortable'	 => false,
+				'key'		 => 'file_name',
+				'label'		 => lang('Filename'),
+				'sortable'	 => false,
 				'resizeable' => true
 			),
 			array(
-				'key'		 => 'select_file', 'label'		 => lang('select'), 'sortable'	 => false,
+				'key'		 => 'select_file',
+				'label'		 => lang('select'),
+				'sortable'	 => false,
 				'resizeable' => true
 			)
 		);
@@ -1994,7 +2106,7 @@ HTML;
 
 		$data = array(
 			'datatable_def'						 => $datatable_def,
-//			'msgbox_data'						 => $this->phpgwapi_common->msgbox($msgbox_data),
+			//			'msgbox_data'						 => $this->phpgwapi_common->msgbox($msgbox_data),
 			'lang_mail'							 => lang('E-Mail'),
 			'lang_update_email'					 => lang('Update email'),
 			'lang_update_email_statustext'		 => lang('Check to update the email-address for this vendor'),
@@ -2176,7 +2288,8 @@ HTML;
 				{
 					phpgw::redirect_link('/index.php', array(
 						'menuaction' => 'property.uiwo_hour.view',
-						'workorder_id' => $workorder_id, 'from' => Sanitizer::get_var('from')
+						'workorder_id' => $workorder_id,
+						'from' => Sanitizer::get_var('from')
 					));
 				}
 				else
@@ -2200,9 +2313,12 @@ HTML;
 			if (!$_validated)
 			{
 				//throw new Exception(lang('order %1 is not approved', $workorder_id));
-			//	Cache::message_set(lang('order %1 is not approved', $workorder_id), 'error');
-				phpgw::redirect_link('/', array('menuaction' => 'property.uiwo_hour.view',
-							'workorder_id' => $workorder_id, 'from' => Sanitizer::get_var('from')));
+				//	Cache::message_set(lang('order %1 is not approved', $workorder_id), 'error');
+				phpgw::redirect_link('/', array(
+					'menuaction' => 'property.uiwo_hour.view',
+					'workorder_id' => $workorder_id,
+					'from' => Sanitizer::get_var('from')
+				));
 			}
 		}
 
@@ -2488,7 +2604,8 @@ HTML;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 		$show_cost		 = Sanitizer::get_var('show_cost', 'bool');
@@ -2557,13 +2674,20 @@ HTML;
 				'titleFontSize'		 => 12,
 				'outerLineThickness' => 2,
 				'cols'				 => array(
-					lang('bill per unit')	 => array('justification' => 'right', 'width' => 50), lang('quantity')		 => array('justification' => 'right', 'width' => 50), lang('cost')			 => array('justification' => 'right', 'width' => 50), lang('unit')			 => array('width' => 40), lang('descr')			 => array('width' => 120)
+					lang('bill per unit')	 => array('justification' => 'right', 'width' => 50),
+					lang('quantity')		 => array('justification' => 'right', 'width' => 50),
+					lang('cost')			 => array('justification' => 'right', 'width' => 50),
+					lang('unit')			 => array('width' => 40),
+					lang('descr')			 => array('width' => 120)
 				)
 			));
 		}
 
 		$document = $pdf->ezOutput();
-		$pdf->print_pdf($document, 'tender');
+		$document_name = 'tender';
+		header('Content-type: application/pdf');
+		header('Content-Disposition: attachment; filename="' . $document_name . '.pdf"');
+		echo $document;
 	}
 
 	function prizebook()
@@ -2572,7 +2696,8 @@ HTML;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -2604,28 +2729,86 @@ HTML;
 
 		$uicols = array(
 			'input_type' => array(
-				'hidden', 'text', 'hidden', 'hidden', 'text', 'text', 'text',
-				'text', 'text', 'text', 'hidden', 'varchar', 'select', 'varchar'
+				'hidden',
+				'text',
+				'hidden',
+				'hidden',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'hidden',
+				'varchar',
+				'select',
+				'varchar'
 			),
 			'type'		 => array('', '', '', '', '', '', '', '', '', '', '', 'text', '', ''),
 			'sortable'	 => array(
-				'', true, '', '', '', '', '', true, '', '', '', 'text',
-				'', ''
+				'',
+				true,
+				'',
+				'',
+				'',
+				'',
+				'',
+				true,
+				'',
+				'',
+				'',
+				'text',
+				'',
+				''
 			),
 			'name'		 => array(
-				'activity_id', 'num', 'branch', 'vendor_id', 'descr', 'base_descr',
-				'unit_name', 'w_cost', 'm_cost', 'total_cost', 'this_index', 'quantity', 'wo_hour_cat',
+				'activity_id',
+				'num',
+				'branch',
+				'vendor_id',
+				'descr',
+				'base_descr',
+				'unit_name',
+				'w_cost',
+				'm_cost',
+				'total_cost',
+				'this_index',
+				'quantity',
+				'wo_hour_cat',
 				'cat_per_cent'
 			),
 			'formatter'	 => array('', '', '', '', '', '', '', '', '', '', '', '', '', ''),
 			'descr'		 => array(
-				'', lang('Activity Num'), lang('Branch'), lang('Vendor'),
-				lang('Description'), lang('Base'), lang('Unit'), lang('Labour cost'), lang('Material cost'),
-				lang('Total Cost'), '', lang('Quantity'), lang('category'), lang('percent')
+				'',
+				lang('Activity Num'),
+				lang('Branch'),
+				lang('Vendor'),
+				lang('Description'),
+				lang('Base'),
+				lang('Unit'),
+				lang('Labour cost'),
+				lang('Material cost'),
+				lang('Total Cost'),
+				'',
+				lang('Quantity'),
+				lang('category'),
+				lang('percent')
 			),
 			'className'	 => array(
-				'', '', '', '', '', '', '', 'rightClasss', 'rightClasss',
-				'rightClasss', '', '', '', ''
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'rightClasss',
+				'rightClasss',
+				'rightClasss',
+				'',
+				'',
+				'',
+				''
 			)
 		);
 
@@ -2649,7 +2832,8 @@ HTML;
 			'container'	 => 'datatable-container_0',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.uiwo_hour.prizebook',
-				'workorder_id'		 => $workorder_id, 'phpgw_return_as'	 => 'json'
+				'workorder_id'		 => $workorder_id,
+				'phpgw_return_as'	 => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $price_book_def
@@ -2696,21 +2880,60 @@ HTML;
 
 		$uicols_hour = array(
 			'name'		 => array(
-				'hour_id', 'post', 'code', 'hours_descr', 'unit_name', 'billperae',
-				'quantity', 'cost', 'deviation', 'result', 'wo_hour_category', 'cat_per_cent'
+				'hour_id',
+				'post',
+				'code',
+				'hours_descr',
+				'unit_name',
+				'billperae',
+				'quantity',
+				'cost',
+				'deviation',
+				'result',
+				'wo_hour_category',
+				'cat_per_cent'
 			),
 			'input_type' => array(
-				'hidden', 'text', 'text', 'text', 'text', 'text', 'text',
-				'text', 'text', 'text', 'text', 'text'
+				'hidden',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text'
 			),
 			'descr'		 => array(
-				'', lang('Post'), lang('Code'), lang('Descr'), lang('Unit'),
-				lang('Bill per unit'), lang('Quantity'), lang('Cost'), lang('deviation'), lang('result'),
-				lang('Category'), lang('percent')
+				'',
+				lang('Post'),
+				lang('Code'),
+				lang('Descr'),
+				lang('Unit'),
+				lang('Bill per unit'),
+				lang('Quantity'),
+				lang('Cost'),
+				lang('deviation'),
+				lang('result'),
+				lang('Category'),
+				lang('percent')
 			),
 			'className'	 => array(
-				'', '', '', '', '', 'dt-right', 'dt-right', 'dt-right',
-				'dt-right', 'dt-right', '', 'dt-right'
+				'',
+				'',
+				'',
+				'',
+				'',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'',
+				'dt-right'
 			)
 		);
 
@@ -2825,24 +3048,70 @@ HTML;
 
 		$uicols = array(
 			'input_type' => array(
-				'hidden', 'text', 'hidden', 'hidden', 'text', 'text', 'text',
-				'text', 'text', 'text', 'hidden', 'varchar', 'select', 'varchar'
+				'hidden',
+				'text',
+				'hidden',
+				'hidden',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'hidden',
+				'varchar',
+				'select',
+				'varchar'
 			),
 			'type'		 => array('', '', '', '', '', '', '', '', '', '', '', 'text', '', ''),
 			'name'		 => array(
-				'activity_id', 'num', 'branch', 'vendor_id', 'descr', 'base_descr',
-				'unit_name', 'w_cost', 'm_cost', 'total_cost', 'this_index', 'quantity', 'wo_hour_cat',
+				'activity_id',
+				'num',
+				'branch',
+				'vendor_id',
+				'descr',
+				'base_descr',
+				'unit_name',
+				'w_cost',
+				'm_cost',
+				'total_cost',
+				'this_index',
+				'quantity',
+				'wo_hour_cat',
 				'cat_per_cent'
 			),
 			'formatter'	 => array('', '', '', '', '', '', '', '', '', '', '', '', '', ''),
 			'descr'		 => array(
-				'', lang('Activity Num'), lang('Branch'), lang('Vendor'),
-				lang('Description'), lang('Base'), lang('Unit'), lang('Labour cost'), lang('Material cost'),
-				lang('Total Cost'), '', lang('Quantity'), lang('category'), lang('percent')
+				'',
+				lang('Activity Num'),
+				lang('Branch'),
+				lang('Vendor'),
+				lang('Description'),
+				lang('Base'),
+				lang('Unit'),
+				lang('Labour cost'),
+				lang('Material cost'),
+				lang('Total Cost'),
+				'',
+				lang('Quantity'),
+				lang('category'),
+				lang('percent')
 			),
 			'className'	 => array(
-				'', '', '', '', '', '', '', 'rightClasss', 'rightClasss',
-				'rightClasss', '', '', '', ''
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'rightClasss',
+				'rightClasss',
+				'rightClasss',
+				'',
+				'',
+				'',
+				''
 			)
 		);
 
@@ -2862,7 +3131,9 @@ HTML;
 
 		$values_combo_box	 = $this->bocommon->select_category_list(array(
 			'format'	 => 'filter',
-			'selected'	 => $this->wo_hour_cat_id, 'type'		 => 'wo_hours', 'order'		 => 'id'
+			'selected'	 => $this->wo_hour_cat_id,
+			'type'		 => 'wo_hours',
+			'order'		 => 'id'
 		));
 		$default_value		 = array('id' => '', 'name' => lang('no category'));
 		array_unshift($values_combo_box, $default_value);
@@ -2926,7 +3197,8 @@ HTML;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -2961,28 +3233,106 @@ HTML;
 
 		$uicols = array(
 			'input_type' => array(
-				'text', 'text', 'text', 'text', 'text', 'varchar', 'combo',
-				'varchar', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden',
-				'hidden', 'hidden', 'hidden'
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'varchar',
+				'combo',
+				'varchar',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden'
 			),
 			'type'		 => array('', '', '', '', '', 'text', '', '', 'text', '', '', '', ''),
 			'name'		 => array(
-				'building_part', 'code', 'hours_descr', 'unit_name', 'billperae',
-				'quantity', 'wo_hour_cat', 'cat_per_cent', 'chapter_id', 'grouping_descr', 'new_grouping',
-				'activity_id', 'activity_num', 'remark', 'ns3420_id', 'tolerance', 'cost', 'dim_d'
+				'building_part',
+				'code',
+				'hours_descr',
+				'unit_name',
+				'billperae',
+				'quantity',
+				'wo_hour_cat',
+				'cat_per_cent',
+				'chapter_id',
+				'grouping_descr',
+				'new_grouping',
+				'activity_id',
+				'activity_num',
+				'remark',
+				'ns3420_id',
+				'tolerance',
+				'cost',
+				'dim_d'
 			),
 			'formatter'	 => array(
-				'', '', '', '', '', '', '', '', '', '', '', '', '', '',
-				'', '', '', '', ''
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				''
 			),
 			'descr'		 => array(
-				lang('Building part'), lang('Code'), lang('Description'),
-				lang('Unit'), lang('Bill per unit'), lang('Quantity'), '', '', '', '', '', '',
-				'', '', '', '', '', ''
+				lang('Building part'),
+				lang('Code'),
+				lang('Description'),
+				lang('Unit'),
+				lang('Bill per unit'),
+				lang('Quantity'),
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				''
 			),
 			'className'	 => array(
-				'', '', '', '', 'rightClasss', '', '', '', '', '', '',
-				'', '', '', '', '', '', ''
+				'',
+				'',
+				'',
+				'',
+				'rightClasss',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				''
 			)
 		);
 
@@ -3006,7 +3356,9 @@ HTML;
 			'container'	 => 'datatable-container_0',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.uiwo_hour.template',
-				'workorder_id'		 => $workorder_id, 'template_id'		 => $template_id, 'phpgw_return_as'	 => 'json'
+				'workorder_id'		 => $workorder_id,
+				'template_id'		 => $template_id,
+				'phpgw_return_as'	 => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $template_def
@@ -3052,21 +3404,60 @@ HTML;
 
 		$uicols_hour = array(
 			'name'		 => array(
-				'hour_id', 'post', 'code', 'hours_descr', 'unit_name', 'billperae',
-				'quantity', 'cost', 'deviation', 'result', 'wo_hour_category', 'cat_per_cent'
+				'hour_id',
+				'post',
+				'code',
+				'hours_descr',
+				'unit_name',
+				'billperae',
+				'quantity',
+				'cost',
+				'deviation',
+				'result',
+				'wo_hour_category',
+				'cat_per_cent'
 			),
 			'input_type' => array(
-				'hidden', 'text', 'text', 'text', 'text', 'text', 'text',
-				'text', 'text', 'text', 'text', 'text'
+				'hidden',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'text'
 			),
 			'descr'		 => array(
-				'', lang('Post'), lang('Code'), lang('Descr'), lang('Unit'),
-				lang('Bill per unit'), lang('Quantity'), lang('Cost'), lang('deviation'), lang('result'),
-				lang('Category'), lang('percent')
+				'',
+				lang('Post'),
+				lang('Code'),
+				lang('Descr'),
+				lang('Unit'),
+				lang('Bill per unit'),
+				lang('Quantity'),
+				lang('Cost'),
+				lang('deviation'),
+				lang('result'),
+				lang('Category'),
+				lang('percent')
 			),
 			'className'	 => array(
-				'', '', '', '', '', 'dt-right', 'dt-right', 'dt-right',
-				'dt-right', 'dt-right', '', 'dt-right'
+				'',
+				'',
+				'',
+				'',
+				'',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'dt-right',
+				'',
+				'dt-right'
 			)
 		);
 
@@ -3190,34 +3581,114 @@ HTML;
 
 		$uicols = array(
 			'input_type' => array(
-				'text', 'text', 'text', 'text', 'text', 'varchar', 'combo',
-				'varchar', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden', 'hidden',
-				'hidden', 'hidden', 'hidden'
+				'text',
+				'text',
+				'text',
+				'text',
+				'text',
+				'varchar',
+				'combo',
+				'varchar',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden',
+				'hidden'
 			),
 			'type'		 => array('', '', '', '', '', 'text', '', '', 'text', '', '', '', ''),
 			'name'		 => array(
-				'building_part', 'code', 'hours_descr', 'unit_name', 'billperae',
-				'quantity', 'wo_hour_cat', 'cat_per_cent', 'chapter_id', 'grouping_descr', 'new_grouping',
-				'activity_id', 'activity_num', 'remark', 'ns3420_id', 'tolerance', 'cost', 'dim_d'
+				'building_part',
+				'code',
+				'hours_descr',
+				'unit_name',
+				'billperae',
+				'quantity',
+				'wo_hour_cat',
+				'cat_per_cent',
+				'chapter_id',
+				'grouping_descr',
+				'new_grouping',
+				'activity_id',
+				'activity_num',
+				'remark',
+				'ns3420_id',
+				'tolerance',
+				'cost',
+				'dim_d'
 			),
 			'formatter'	 => array(
-				'', '', '', '', '', '', '', '', '', '', '', '', '', '',
-				'', '', '', '', ''
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				''
 			),
 			'descr'		 => array(
-				lang('Building part'), lang('Code'), lang('Description'),
-				lang('Unit'), lang('Bill per unit'), lang('Quantity'), '', '', '', '', '', '',
-				'', '', '', '', '', ''
+				lang('Building part'),
+				lang('Code'),
+				lang('Description'),
+				lang('Unit'),
+				lang('Bill per unit'),
+				lang('Quantity'),
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				''
 			),
 			'className'	 => array(
-				'', '', '', '', 'rightClasss', '', '', '', '', '', '',
-				'', '', '', '', '', '', ''
+				'',
+				'',
+				'',
+				'',
+				'rightClasss',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				'',
+				''
 			)
 		);
 
 		$values_combo_box	 = $this->bocommon->select_category_list(array(
 			'format'	 => 'filter',
-			'selected'	 => $this->wo_hour_cat_id, 'type'		 => 'wo_hours', 'order'		 => 'id'
+			'selected'	 => $this->wo_hour_cat_id,
+			'type'		 => 'wo_hours',
+			'order'		 => 'id'
 		));
 		$default_value		 = array('id' => '', 'name' => lang('no category'));
 		array_unshift($values_combo_box, $default_value);
@@ -3333,7 +3804,8 @@ HTML;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 2, 'acl_location'	 => $this->acl_location
+				'perm'			 => 2,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 		$from					 = Sanitizer::get_var('from');
@@ -3409,7 +3881,8 @@ HTML;
 			'form_action'					 => phpgw::link('/index.php', $link_data),
 			'done_action'					 => phpgw::link('/index.php', array(
 				'menuaction'	 => 'property.uiwo_hour.' . $from,
-				'workorder_id'	 => $workorder_id, 'template_id'	 => $template_id
+				'workorder_id'	 => $workorder_id,
+				'template_id'	 => $template_id
 			)),
 			'lang_workorder'				 => lang('Workorder'),
 			'value_workorder_id'			 => $workorder['workorder_id'],
@@ -3472,8 +3945,11 @@ HTML;
 			'lang_new_grouping'				 => lang('New grouping'),
 			'lang_new_grouping_statustext'	 => lang('Enter a new grouping for this activity if not found in the list'),
 			'building_part_list'			 => array('options' => $this->bocommon->select_category_list(array(
-				'type'		 => 'building_part', 'selected'	 => $values['building_part_id'], 'order'		 => 'id',
-				'id_in_name' => 'num', 'filter'	 => $_filter_buildingpart
+				'type'		 => 'building_part',
+				'selected'	 => $values['building_part_id'],
+				'order'		 => 'id',
+				'id_in_name' => 'num',
+				'filter'	 => $_filter_buildingpart
 			))),
 			'ns3420_link'					 => phpgw::link('/index.php', array('menuaction' => 'property.uilookup.ns3420')),
 			'lang_ns3420'					 => lang('NS3420'),
@@ -3484,7 +3960,9 @@ HTML;
 			'lang_select_wo_hour_category'	 => lang('no category'),
 			'wo_hour_cat_list'				 => $this->bocommon->select_category_list(array(
 				'format'	 => 'select',
-				'selected'	 => $values['wo_hour_cat'], 'type'		 => 'wo_hours', 'order'		 => 'id'
+				'selected'	 => $values['wo_hour_cat'],
+				'type'		 => 'wo_hours',
+				'order'		 => 'id'
 			)),
 			'lang_cat_per_cent_statustext'	 => lang('the percentage of the category'),
 			'value_cat_per_cent'			 => $values['cat_per_cent'],
@@ -3507,7 +3985,8 @@ HTML;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 2, 'acl_location'	 => $this->acl_location
+				'perm'			 => 2,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 		$id				 = Sanitizer::get_var('id', 'int');
@@ -3635,7 +4114,9 @@ HTML;
 		$data = array(
 			'redirect'		 => $redirect ? phpgw::link('/index.php', array(
 				'menuaction' => 'property.uiinvoice.list_sub',
-				'user_lid'	 => $user_lid, 'voucher_id' => $voucher_id, 'paid'		 => $paid
+				'user_lid'	 => $user_lid,
+				'voucher_id' => $voucher_id,
+				'paid'		 => $paid
 			)) : null,
 			'msgbox_data'	 => $this->phpgwapi_common->msgbox($this->phpgwapi_common->msgbox_data($receipt)),
 			'form_action'	 => phpgw::link('/index.php', array('menuaction' => 'property.uiwo_hour.import_calculation')),

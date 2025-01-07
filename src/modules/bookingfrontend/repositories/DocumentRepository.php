@@ -26,7 +26,7 @@ class DocumentRepository
         };
     }
 
-    public function getDocumentsForOwner(int $ownerId, array $categories = null): array
+    public function getDocumentsForOwner(int $ownerId, array|null $categories = null): array
     {
         $table = $this->getDBTable();
         $sql = "SELECT * FROM {$table} WHERE owner_id = :buildingId";

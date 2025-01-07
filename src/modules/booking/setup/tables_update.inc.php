@@ -6996,10 +6996,10 @@ SQL;
 	{
 		if ($i === 0)
 		{
-			fputcsv($csv_file, array_keys($billing_entry));
+			fputcsv($csv_file, array_keys($billing_entry), ';', '"', "\\");
 			$i = 1;
 		}
-		fputcsv($csv_file, array_values($billing_entry));
+		fputcsv($csv_file, array_values($billing_entry), ';', '"', "\\");
 
 		if (!$billing_entry['export_file_id'])
 		{
@@ -7585,6 +7585,34 @@ function booking_upgrade0_2_104($oProc)
 	if ($oProc->m_odb->transaction_commit())
 	{
 		$currentver = '0.2.105';
+		return $currentver;
+	}
+}
+
+/**
+ * Update booking version from 0.2.105 to 0.2.106
+ * 	'additional_invoice_information'
+ */
+$test[] = '0.2.105';
+function booking_upgrade0_2_105($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn(
+		'bb_application',
+		'building_id',
+		array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+	);
+
+	// I have a table bb_application with building_name and building_id.
+	// Builing_name is a string and building_id is an integer.
+	// I want to update the building_id with the id from the table bb_building where the name is the same as the building_name in the bb_application table.
+	$sql = "UPDATE bb_application SET building_id = bb_building.id FROM bb_building WHERE bb_application.building_name = bb_building.name AND bb_building.active = 1";
+	$oProc->m_odb->query($sql, __LINE__, __FILE__);
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.106';
 		return $currentver;
 	}
 }

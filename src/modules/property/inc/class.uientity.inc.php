@@ -440,7 +440,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		phpgw::import_class('property.multiuploader');
 
 		$values = $this->bo->read_single(array(
-			'entity_id'	 => $entity_id, 'cat_id'	 => $cat_id,
+			'entity_id'	 => $entity_id,
+			'cat_id'	 => $cat_id,
 			'id'		 => $id
 		));
 
@@ -863,7 +864,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		if ($id)
 		{
 			$data = $this->bo->read_single(array(
-				'entity_id'	 => $this->entity_id, 'cat_id'	 => $this->cat_id,
+				'entity_id'	 => $this->entity_id,
+				'cat_id'	 => $this->cat_id,
 				'id'		 => $id
 			));
 		}
@@ -942,8 +944,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					$_id = isset($receipt['id']) && $receipt['id'] ? $receipt['id'] : $id;
 					self::message_set($this->receipt);
 					self::redirect(array(
-						'menuaction' => 'property.uientity.edit', 'id'		 => $_id,
-						'entity_id'	 => $this->entity_id, 'cat_id'	 => $this->cat_id, 'type'		 => $this->type
+						'menuaction' => 'property.uientity.edit',
+						'id'		 => $_id,
+						'entity_id'	 => $this->entity_id,
+						'cat_id'	 => $this->cat_id,
+						'type'		 => $this->type
 					));
 				}
 
@@ -952,7 +957,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			}
 			phpgw::redirect_link('/index.php', array(
 				'menuaction' => 'property.uientity.index',
-				'entity_id'	 => $this->entity_id, 'cat_id'	 => $this->cat_id, 'type'		 => $this->type
+				'entity_id'	 => $this->entity_id,
+				'cat_id'	 => $this->cat_id,
+				'type'		 => $this->type
 			));
 		}
 	}
@@ -1053,7 +1060,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 		$related = $this->bo->read_entity_to_link(array(
 			'entity_id'	 => $this->entity_id,
-			'cat_id'	 => $this->cat_id, 'id'		 => $id
+			'cat_id'	 => $this->cat_id,
+			'id'		 => $id
 		));
 
 		$values = array();
@@ -1194,7 +1202,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		$allrows = Sanitizer::get_var('length', 'int') == -1;
 
 		$values = $this->bo->read_single(array(
-			'entity_id'	 => $this->entity_id, 'cat_id'	 => $this->cat_id,
+			'entity_id'	 => $this->entity_id,
+			'cat_id'	 => $this->cat_id,
 			'type'		 => $this->type,
 			'id'		 => $id
 		));
@@ -1334,7 +1343,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -1357,7 +1367,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				{
 					phpgw::redirect_link('/index.php', array(
 						'menuaction' => 'property.uientity.index',
-						'entity_id'	 => $this->entity_id, 'cat_id'	 => $category['id'], 'type'		 => $this->type
+						'entity_id'	 => $this->entity_id,
+						'cat_id'	 => $category['id'],
+						'type'		 => $this->type
 					));
 				}
 			}
@@ -1717,7 +1729,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		if ($mode == 'edit' && (!$this->acl_add && !$this->acl_edit))
 		{
 			phpgw::redirect_link('/index.php', array(
-				'menuaction' => 'property.uientity.view', 'id'		 => $id, 'entity_id'	 => $this->entity_id,
+				'menuaction' => 'property.uientity.view',
+				'id'		 => $id,
+				'entity_id'	 => $this->entity_id,
 				'cat_id'	 => $this->cat_id,
 				'type'		 => $this->type
 			));
@@ -1773,7 +1787,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			{
 				$values['location_data'] = $bolocation->read_single($location_code, array(
 					'tenant_id'	 => $tenant_id,
-					'p_num'		 => $p_num, 'view'		 => true
+					'p_num'		 => $p_num,
+					'view'		 => true
 				));
 			}
 		}
@@ -1801,8 +1816,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		if ($id)
 		{
 			$values = $this->bo->read_single(array(
-				'entity_id'	 => $this->entity_id, 'cat_id'	 => $this->cat_id,
-				'id'		 => $id, 'view'		 => $mode == 'view'
+				'entity_id'	 => $this->entity_id,
+				'cat_id'	 => $this->cat_id,
+				'id'		 => $id,
+				'view'		 => $mode == 'view'
 			));
 		}
 		else
@@ -1978,7 +1995,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 		if ((int)$category['location_level'] > 0)
 		{
 			$tabs['location']	 = array(
-				'label'		 => lang('location'), 'link'		 => '#location',
+				'label'		 => lang('location'),
+				'link'		 => '#location',
 				'disable'	 => 0
 			);
 			$active_tab			 = $active_tab ? $active_tab : 'location';
@@ -2017,7 +2035,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			if ($_enable_controller && $id)
 			{
 				$tabs['controller']	 = array(
-					'label'		 => lang('controller'), 'link'		 => '#controller',
+					'label'		 => lang('controller'),
+					'link'		 => '#controller',
 					'function'	 => "set_tab('controller')"
 				);
 				$active_tab			 = $active_tab ? $active_tab : 'location';
@@ -2053,7 +2072,14 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					if ($group['level'] == 0 && $group['attributes'][0])
 					{
 						$_tab_name			 = str_replace(array(
-							' ', '/', '?', '.', '*', '(', ')', '[',
+							' ',
+							'/',
+							'?',
+							'.',
+							'*',
+							'(',
+							')',
+							'[',
 							']'
 						), '_', $group['name']);
 						if (isset($tabs[$_tab_name]))
@@ -2062,7 +2088,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 						}
 						$active_tab			 = $active_tab ? $active_tab : $_tab_name;
 						$tabs[$_tab_name]	 = array(
-							'label'		 => $group['name'], 'link'		 => "#{$_tab_name}",
+							'label'		 => $group['name'],
+							'link'		 => "#{$_tab_name}",
 							'disable'	 => 0
 						);
 						$group['link']		 = $_tab_name;
@@ -2202,8 +2229,10 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				$integration_src .= "&{$_config_section_data['auth_key_name']}={$response}";
 
 				$tabs[$_config_section] = array(
-					'label'		 => $_config_section_data['tab'], 'link'		 => "#{$_config_section}",
-					'disable'	 => 0, 'function'	 => "document.getElementById('{$_config_section}_content').src = '{$integration_src}';"
+					'label'		 => $_config_section_data['tab'],
+					'link'		 => "#{$_config_section}",
+					'disable'	 => 0,
+					'function'	 => "document.getElementById('{$_config_section}_content').src = '{$integration_src}';"
 				);
 			}
 		}
@@ -2232,18 +2261,22 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				$get_docs = true;
 
 				$tabs['document'] = array(
-					'label'		 => lang('document'), 'link'		 => '#document',
+					'label'		 => lang('document'),
+					'link'		 => '#document',
 					'disable'	 => 0
 				);
 
 				$cats				 = CreateObject('phpgwapi.categories', -1, 'property', '.document');
 				$cats->supress_info	 = true;
 				$categories			 = $cats->formatted_xslt_list(array(
-					'format'	 => 'filter', 'selected'	 => '',
-					'globals'	 => true, 'use_acl'	 => true
+					'format'	 => 'filter',
+					'selected'	 => '',
+					'globals'	 => true,
+					'use_acl'	 => true
 				));
 				$default_value		 = array(
-					'cat_id'	 => '', 'name'		 => lang('no document type'),
+					'cat_id'	 => '',
+					'name'		 => lang('no document type'),
 					'selected'	 => 'selected'
 				);
 				array_unshift($categories['cat_list'], $default_value);
@@ -2272,7 +2305,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 				$documents_def = array(
 					array(
-						'key'		 => 'document_name', 'label'		 => lang('name'), 'sortable'	 => false,
+						'key'		 => 'document_name',
+						'label'		 => lang('name'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true)
@@ -2282,8 +2317,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					'container'	 => 'datatable-container_7',
 					'requestUrl' => json_encode(self::link(array(
 						'menuaction'		 => 'property.uientity.get_documents',
-						'location_id'		 => $location_id, 'entity_id'			 => $this->entity_id, 'cat_id'			 => $this->cat_id,
-						'item_id'			 => $id, 'phpgw_return_as'	 => 'json'
+						'location_id'		 => $location_id,
+						'entity_id'			 => $this->entity_id,
+						'cat_id'			 => $this->cat_id,
+						'item_id'			 => $id,
+						'phpgw_return_as'	 => 'json'
 					))),
 					'data'		 => "",
 					'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
@@ -2331,11 +2369,15 @@ class property_uientity extends phpgwapi_uicommon_jquery
 
 				$file_def = array(
 					array(
-						'key'		 => 'file_link', 'label'		 => lang('Filename'), 'sortable'	 => false,
+						'key'		 => 'file_link',
+						'label'		 => lang('Filename'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'delete_file', 'label'		 => lang('Delete file'), 'sortable'	 => false,
+						'key'		 => 'delete_file',
+						'label'		 => lang('Delete file'),
+						'sortable'	 => false,
 						'resizeable' => true
 					)
 				);
@@ -2345,8 +2387,11 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					'container'	 => 'datatable-container_0',
 					'requestUrl' => json_encode(self::link(array(
 						'menuaction'		 => 'property.uientity.get_files',
-						'entity_id'			 => $this->entity_id, 'cat_id'			 => $this->cat_id, 'id'				 => $id,
-						'type'				 => $this->type, 'phpgw_return_as'	 => 'json'
+						'entity_id'			 => $this->entity_id,
+						'cat_id'			 => $this->cat_id,
+						'id'				 => $id,
+						'type'				 => $this->type,
+						'phpgw_return_as'	 => 'json'
 					))),
 					'ColumnDefs' => $file_def,
 					'config'	 => array(
@@ -2368,7 +2413,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				array('key' => 'status', 'label' => lang('status'), 'sortable' => false, 'resizeable' => true),
 				array('key' => 'user', 'label' => lang('user'), 'sortable' => true, 'resizeable' => true),
 				array(
-					'key'		 => 'entry_date', 'label'		 => lang('entry date'), 'sortable'	 => false,
+					'key'		 => 'entry_date',
+					'label'		 => lang('entry date'),
+					'sortable'	 => false,
 					'resizeable' => true
 				)
 			);
@@ -2402,7 +2449,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				'container'	 => 'datatable-container_2',
 				'requestUrl' => json_encode(self::link(array(
 					'menuaction'		 => 'property.uientity.get_related',
-					'entity_id'			 => $this->entity_id, 'cat_id'			 => $this->cat_id, 'id'				 => $id,
+					'entity_id'			 => $this->entity_id,
+					'cat_id'			 => $this->cat_id,
+					'id'				 => $id,
 					'phpgw_return_as'	 => 'json'
 				))),
 				'ColumnDefs' => $related_def,
@@ -2415,7 +2464,8 @@ class property_uientity extends phpgwapi_uicommon_jquery
 			if ($category['enable_bulk'])
 			{
 				$tabs['inventory'] = array(
-					'label'		 => lang('inventory'), 'link'		 => '#inventory',
+					'label'		 => lang('inventory'),
+					'link'		 => '#inventory',
 					'disable'	 => 0
 				);
 
@@ -2425,19 +2475,30 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					//array('key' => 'delete','label'=>lang('delete'),'sortable'=>false,'resizeable'=>true),
 					array('key' => 'unit', 'label' => lang('unit'), 'sortable' => false, 'resizeable' => true),
 					array(
-						'key'		 => 'inventory', 'label'		 => lang('count'), 'sortable'	 => false,
-						'resizeable' => true, 'className'	 => 'dt-right'
+						'key'		 => 'inventory',
+						'label'		 => lang('count'),
+						'sortable'	 => false,
+						'resizeable' => true,
+						'className'	 => 'dt-right'
 					),
 					array(
-						'key'		 => 'allocated', 'label'		 => lang('allocated'), 'sortable'	 => false,
-						'resizeable' => true, 'className'	 => 'dt-right'
+						'key'		 => 'allocated',
+						'label'		 => lang('allocated'),
+						'sortable'	 => false,
+						'resizeable' => true,
+						'className'	 => 'dt-right'
 					),
 					array(
-						'key'		 => 'bookable', 'label'		 => lang('bookable'), 'sortable'	 => false,
-						'resizeable' => true, 'className'	 => 'dt-right'
+						'key'		 => 'bookable',
+						'label'		 => lang('bookable'),
+						'sortable'	 => false,
+						'resizeable' => true,
+						'className'	 => 'dt-right'
 					),
 					array(
-						'key'		 => 'calendar', 'label'		 => lang('calendar'), 'sortable'	 => false,
+						'key'		 => 'calendar',
+						'label'		 => lang('calendar'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array('key' => 'remark', 'label' => lang('remark'), 'sortable' => false, 'resizeable' => true),
@@ -2450,7 +2511,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					'container'	 => 'datatable-container_3',
 					'requestUrl' => json_encode(self::link(array(
 						'menuaction'		 => 'property.uientity.get_inventory',
-						'id'				 => $id, 'entity_id'			 => $this->entity_id, 'cat_id'			 => $this->cat_id,
+						'id'				 => $id,
+						'entity_id'			 => $this->entity_id,
+						'cat_id'			 => $this->cat_id,
 						'type'				 => $this->type,
 						'phpgw_return_as'	 => 'json'
 					))),
@@ -2469,40 +2532,58 @@ class property_uientity extends phpgwapi_uicommon_jquery
 				$controls_def	 = array(
 					array('key' => 'serie_id', 'label' => 'serie', 'sortable' => false, 'resizeable' => true),
 					array(
-						'key'		 => 'control_id', 'label'		 => lang('controller'), 'sortable'	 => false,
+						'key'		 => 'control_id',
+						'label'		 => lang('controller'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true),
 					array(
-						'key'		 => 'assigned_to_name', 'label'		 => lang('user'), 'sortable'	 => false,
+						'key'		 => 'assigned_to_name',
+						'label'		 => lang('user'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'start_date', 'label'		 => lang('start date'), 'sortable'	 => false,
+						'key'		 => 'start_date',
+						'label'		 => lang('start date'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'repeat_type', 'label'		 => lang('repeat type'), 'sortable'	 => false,
+						'key'		 => 'repeat_type',
+						'label'		 => lang('repeat type'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'repeat_interval', 'label'		 => lang('interval'), 'sortable'	 => false,
+						'key'		 => 'repeat_interval',
+						'label'		 => lang('interval'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'controle_time', 'label'		 => lang('controle time'), 'sortable'	 => false,
+						'key'		 => 'controle_time',
+						'label'		 => lang('controle time'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'service_time', 'label'		 => lang('service time'), 'sortable'	 => false,
+						'key'		 => 'service_time',
+						'label'		 => lang('service time'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'total_time', 'label'		 => lang('total time'), 'sortable'	 => false,
+						'key'		 => 'total_time',
+						'label'		 => lang('total time'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'serie_enabled', 'label'		 => lang('enabled'), 'sortable'	 => false,
+						'key'		 => 'serie_enabled',
+						'label'		 => lang('enabled'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					//					array('key' => 'select','label'=>lang('select'),'sortable'=>false,'resizeable'=>true),
@@ -2598,7 +2679,9 @@ class property_uientity extends phpgwapi_uicommon_jquery
 					array('key' => 'status', 'label' => lang('status'), 'sortable' => false, 'resizeable' => true),
 					array('key' => 'user', 'label' => lang('user'), 'sortable' => true, 'resizeable' => true),
 					array(
-						'key'		 => 'entry_date', 'label'		 => lang('entry date'), 'sortable'	 => false,
+						'key'		 => 'entry_date',
+						'label'		 => lang('entry date'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 				);
@@ -2651,7 +2734,8 @@ JS;
 		$entity_group_name	 = '';
 		$entity_group_list	 = execMethod('property.bogeneric.get_list', array(
 			'type'		 => 'entity_group',
-			'selected'	 => $values['entity_group_id'], 'add_empty'	 => true
+			'selected'	 => $values['entity_group_id'],
+			'add_empty'	 => true
 		));
 		foreach ($entity_group_list as $entity_group)
 		{
@@ -2729,7 +2813,9 @@ JS;
 			'form_action'					 => phpgw::link('/index.php', $link_data),
 			'done_action'					 => phpgw::link('/index.php', array(
 				'menuaction' => 'property.uientity.index',
-				'entity_id'	 => $this->entity_id, 'cat_id'	 => $this->cat_id, 'type'		 => $this->type
+				'entity_id'	 => $this->entity_id,
+				'cat_id'	 => $this->cat_id,
+				'type'		 => $this->type
 			)),
 			'lang_id'						 => lang('ID'),
 			'value_id'						 => $values['id'],
@@ -2752,7 +2838,9 @@ JS;
 			'entity_group_name'				 => $entity_group_name,
 			'validator'						 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
-				'date', 'security', 'file'
+				'date',
+				'security',
+				'file'
 			)),
 			'content_images'				 => $content_images,
 			'get_files_java_url'			=> "{menuaction:'property.uientity.get_files',id:'{$id}',entity_id:{$this->entity_id},cat_id:{$this->cat_id},type:'{$this->type}',length:-1}",
@@ -2801,8 +2889,11 @@ JS;
 		}
 
 		self::render_template_xsl(array(
-			'entity', 'datatable_inline', $attribute_template,
-			'files', 'multi_upload_file_inline'
+			'entity',
+			'datatable_inline',
+			$attribute_template,
+			'files',
+			'multi_upload_file_inline'
 		), array('edit' => $data));
 	}
 
@@ -2861,7 +2952,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 8, 'acl_location'	 => $this->acl_location
+				'perm'			 => 8,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -2887,7 +2979,9 @@ JS;
 			'done_action'			 => phpgw::link('/index.php', $link_data),
 			'delete_action'			 => phpgw::link('/index.php', array(
 				'menuaction' => 'property.uientity.delete',
-				'entity_id'	 => $this->entity_id, 'cat_id'	 => $this->cat_id, 'id'		 => $id,
+				'entity_id'	 => $this->entity_id,
+				'cat_id'	 => $this->cat_id,
+				'id'		 => $id,
 				'type'		 => $this->type
 			)),
 			'lang_confirm_msg'		 => lang('do you really want to delete this entry'),
@@ -3137,7 +3231,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -3153,8 +3248,10 @@ JS;
 		if ($id)
 		{
 			$values = $this->bo->read_single(array(
-				'entity_id'	 => $this->entity_id, 'cat_id'	 => $this->cat_id,
-				'id'		 => $id, 'view'		 => true
+				'entity_id'	 => $this->entity_id,
+				'cat_id'	 => $this->cat_id,
+				'id'		 => $id,
+				'view'		 => true
 			));
 		}
 		else
@@ -3317,15 +3414,27 @@ JS;
 				'',
 				'',
 				array(
-					'xPos'				 => 50, 'xOrientation'		 => 'right',
-					'width'				 => 500, 0, 'shaded'			 => 0, 'fontSize'			 => 10, 'gridlines'			 => 0,
-					'titleFontSize'		 => 12, 'outerLineThickness' => 2, 'showHeadings'		 => 0, 'cols'				 => $table_header
+					'xPos'				 => 50,
+					'xOrientation'		 => 'right',
+					'width'				 => 500,
+					0,
+					'shaded'			 => 0,
+					'fontSize'			 => 10,
+					'gridlines'			 => 0,
+					'titleFontSize'		 => 12,
+					'outerLineThickness' => 2,
+					'showHeadings'		 => 0,
+					'cols'				 => $table_header
 				)
 			);
 		}
 
 		$document = $pdf->ezOutput();
-		$pdf->print_pdf($document, $entity['name'] . '_' . str_replace(' ', '_', $this->accounts_obj->id2name($this->account)));
+		$document_name = $entity['name'] . '_' . str_replace(' ', '_', $this->accounts_obj->id2name($this->account));
+
+		header('Content-type: application/pdf');
+		header('Content-Disposition: attachment; filename="' . $document_name . '.pdf"');
+		echo $document;
 	}
 
 	public function get_inventory()
@@ -3406,7 +3515,8 @@ JS;
 		}
 		$unit_id	 = '';
 		if ($inventory	 = $this->bo->get_inventory(array(
-			'id'			 => $id, 'location_id'	 => $location_id,
+			'id'			 => $id,
+			'location_id'	 => $location_id,
 			'inventory_id'	 => $inventory_id
 		)))
 		{

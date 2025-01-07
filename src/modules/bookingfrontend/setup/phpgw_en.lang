@@ -659,3 +659,4 @@ participant_registration	bookingfrontend	en	Participant registration
 save	bookingfrontend	en	Save
 view_resources	bookingfrontend	en	View resources
 organizer	bookingfrontend	en	Organizer
+enter_title	bookingfrontend	en	Please enter a title

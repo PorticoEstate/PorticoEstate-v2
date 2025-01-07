@@ -44,7 +44,6 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
     );
     const [enabledResources, setEnabledResources] = useState<Set<string>>(initialEnabledResources);
     const {setLoadingState} = useLoadingContext();
-    const [storedTempEvents, setStoredTempEvents] = useState<Record<string, FCallTempEvent>>({});
     const queryClient = useQueryClient();
     const isMobile = useIsMobile();
     const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!resourceId && !(window.innerWidth < 601));
@@ -135,8 +134,6 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
 
     return (
         <CalendarProvider
-            tempEvents={storedTempEvents}
-            setTempEvents={setStoredTempEvents}
             enabledResources={enabledResources}
             setEnabledResources={setEnabledResources}
             setResourcesHidden={setResourcesHidden}

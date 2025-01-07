@@ -16,7 +16,7 @@ const ShoppingCartButton: FC<ShoppingCartButtonProps> = (props) => {
 
 
     return (
-       <> <Button icon variant={'tertiary'} ref={popperAnchorEl} onClick={() => setOpen(true)}>
+        <> <Button variant={'tertiary'} ref={popperAnchorEl} onClick={() => setOpen(true)}>
 
             <div
                 style={{
@@ -24,24 +24,25 @@ const ShoppingCartButton: FC<ShoppingCartButtonProps> = (props) => {
                     gap: 'var(--ds-spacing-6)',
                 }}
             >
-                {(cartItems?.list?.length || 0) > 0 && (<Badge
-                    color="info"
-                    placement="top-right"
-                    data-size={'sm'}
-                    count={cartItems?.list?.length || undefined}
-                    // style={{
-                    //     right: '10%',
-                    //     top: '16%'
-                    // }}
-                >
+                <Badge.Position placement="top-right">
+                    {(cartItems?.list?.length || 0) > 0 && (<Badge
+                        color="info"
+                        // placement="top-right"
+                        data-size={'sm'}
+                        count={cartItems?.list?.length || undefined}
+                        // style={{
+                        //     right: '10%',
+                        //     top: '16%'
+                        // }}
+                    />)}
                     <FontAwesomeIcon size={'lg'} icon={faShoppingBasket}/>
-                </Badge>) || (<FontAwesomeIcon icon={faShoppingBasket}/>)}
+                </Badge.Position>
 
             </div>
             Handlekurv
         </Button>
-           <ShoppingCartPopper anchor={popperAnchorEl.current} open={open} setOpen={setOpen}/>
-       </>
+            <ShoppingCartPopper anchor={popperAnchorEl.current} open={open} setOpen={setOpen}/>
+        </>
     );
 }
 

@@ -26,7 +26,7 @@ class DokumentstatusListe
      * @param Dokumentstatus[] $liste
      * @return DokumentstatusListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

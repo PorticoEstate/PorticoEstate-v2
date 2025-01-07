@@ -146,6 +146,7 @@ const Dialog: React.FC<DialogProps> = ({
                                     variant="tertiary"
                                     aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
                                     onClick={toggleFullscreen}
+                                    tabIndex={-1}
                                     className={'default'}
                                     data-size={'sm'}
                                 >
@@ -159,6 +160,7 @@ const Dialog: React.FC<DialogProps> = ({
                                     aria-label="Close dialog"
                                     onClick={attemptClose}
                                     className={'default'}
+                                    tabIndex={-1}
                                     data-size={'sm'}
                                 >
                                     <FontAwesomeIcon icon={faXmark} size={'lg'} />

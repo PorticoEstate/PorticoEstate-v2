@@ -194,7 +194,7 @@
 		/**
 		 * @see bocommon_authorized
 		 */
-		protected function include_subject_parent_roles( array $for_object = null )
+		protected function include_subject_parent_roles(array|null $for_object = null )
 		{
 			$this->season_bo = CreateObject('booking.boseason');
 			$parent_roles = null;

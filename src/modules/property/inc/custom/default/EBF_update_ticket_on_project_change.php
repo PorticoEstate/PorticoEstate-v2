@@ -200,6 +200,10 @@ class update_ticket_on_project_change extends property_boproject
 			$this->botts->update_status(array('status' => 'X'), $id);
 			$this->historylog->add('C', $id, $note_closed);
 		}
+		else if (!$project_is_closed && $status == 'O')
+		{
+			$this->botts->update_status(array('status' => 'C1'), $id);
+		}
 	}
 }
 $trigger = new update_ticket_on_project_change();

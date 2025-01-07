@@ -13,7 +13,7 @@ interface ColumnToggleProps<T> {
 
 }
 
-function ColumnToggle<T>({ table, tableColumns, columnVisibility }: ColumnToggleProps<T>) {
+function ColumnToggle<T>({table, tableColumns, columnVisibility}: ColumnToggleProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -67,24 +67,25 @@ function ColumnToggle<T>({ table, tableColumns, columnVisibility }: ColumnToggle
             <Button variant="tertiary"
                     data-size={'sm'}
                     color={'neutral'}
-                onClick={() => setIsOpen(!isOpen)}
+                    onClick={() => setIsOpen(!isOpen)}
                 // className={styles.toggleButton}
-                title="Toggle columns"
+                    title="Toggle columns"
             >
+                <Badge.Position placement="top-right">
 
-                {hiddenColumnsCount > 0 && (<Badge
-                    color="info"
-                    placement="top-right"
-                    data-size={'sm'}
-                    count={hiddenColumnsCount || undefined}
-                    // style={{
-                    //     right: '10%',
-                    //     top: '16%'
-                    // }}
-                >
-                    <FontAwesomeIcon size={'lg'} icon={faSliders}/>
-                </Badge>) || <FontAwesomeIcon icon={faSliders}/>}
+                    {hiddenColumnsCount > 0 && (<Badge
+                        color="info"
+                        data-size={'sm'}
+                        count={hiddenColumnsCount || undefined}
+                        // style={{
+                        //     right: '10%',
+                        //     top: '16%'
+                        // }}
+                    >
+                    </Badge>)}
+                    <FontAwesomeIcon icon={faSliders}/>
 
+                </Badge.Position>
 
                 {/*<Badge count={hiddenColumnsCount} size={'sm'}>*/}
                 {/*    <FontAwesomeIcon icon={faSliders} />*/}

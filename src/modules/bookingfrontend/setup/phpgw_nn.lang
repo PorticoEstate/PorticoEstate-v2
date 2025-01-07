@@ -659,3 +659,4 @@ participant_registration	bookingfrontend	nn	Deltakerregistrering
 save	bookingfrontend	nn	Save
 view_resources	bookingfrontend	nn	Vis ressurses
 organizer	bookingfrontend	nn	Arrangør
+enter_title	bookingfrontend	nn	Angi ein tittel

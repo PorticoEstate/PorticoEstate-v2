@@ -246,7 +246,7 @@ class import_filer_til_braarkiv_BK extends property_cron_parent
 
 			foreach ($this->file_map as $row)
 			{
-				fputcsv($fp, $row, ';');
+				fputcsv($fp, $row,';', '"', "\\");
 			}
 			fclose($fp);
 

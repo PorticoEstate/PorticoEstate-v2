@@ -28,7 +28,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
     const t = useTrans();
     const {view, calendarRef, setView} = props
     const {enabledResources} = useEnabledResources();
-    const {tempEvents, setTempEvents} = useTempEvents();
+    const {tempEvents} = useTempEvents();
     const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
 
 
@@ -103,15 +103,15 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
             </div>
 
             <ButtonGroup className={styles.modeSelectTime}>
-                <Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} color={'neutral'} data-size={'sm'}
+                <Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} data-color={'brand1'} data-size={'sm'}
                         className={'captialize'}
 
                         onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
-                <Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} color={'neutral'} data-size={'sm'}
+                <Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}
                         className={'captialize'}
 
                         onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-                {/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'} color={'neutral'} size={'sm'}*/}
+                {/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
                 {/*        className={'captialize'}*/}
 
                 {/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
@@ -119,13 +119,13 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
             </ButtonGroup>
 
             <ButtonGroup className={styles.modeSelect}>
-                <Button variant={view !== 'listWeek' ? 'primary' : 'secondary'} color={'neutral'} aria-active={'true'}
+                <Button variant={view !== 'listWeek' ? 'primary' : 'secondary'}  data-color={'brand1'} aria-active={'true'}
                         aria-current={'true'} data-size={'sm'}
                         className={'captialize'} onClick={() => {
                     props.setLastCalendarView()
                 }}><FontAwesomeIcon icon={faCalendar}/> <span
                     className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
-                <Button variant={view === 'listWeek' ? 'primary' : 'secondary'} color={'neutral'} data-size={'sm'}
+                <Button variant={view === 'listWeek' ? 'primary' : 'secondary'} data-color={'brand1'} data-size={'sm'}
                         className={'captialize'} onClick={() => {
                     props.setView('listWeek')
                 }}><FontAwesomeIcon icon={faTableList}/> <span

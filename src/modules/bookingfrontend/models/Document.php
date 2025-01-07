@@ -67,7 +67,7 @@ class Document
     public $owner_type;
 
 
-    public function __construct(array $data, string $owner_type = null)
+    public function __construct(array $data, string|null $owner_type = null)
     {
         $this->id = $data['id'] ?? null;
         $this->name = $data['name'] ?? '';

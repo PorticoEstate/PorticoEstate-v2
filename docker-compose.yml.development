@@ -1,0 +1,60 @@
+## istructions to build the image ##
+# export INSTALL_MSSQL=true
+# export INSTALL_XDEBUG=true
+# export INSTALL_ORACLE=true
+# docker compose build
+
+x-common-variables: &common-variables
+    NEXT_ENV: ${NEXT_ENV:-development}
+    NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
+    NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://slim}
+    WATCHPACK_POLLING: true
+
+volumes:
+    logs:
+        driver: local
+services:
+    slim:
+        container_name: portico_api
+     #   image: sigurdne/portico_estate_webserver:latest
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                INSTALL_MSSQL: ${INSTALL_MSSQL:-false}
+                INSTALL_XDEBUG: ${INSTALL_XDEBUG:-false}
+                INSTALL_ORACLE: ${INSTALL_ORACLE:-false}
+        working_dir: /var/www/html
+        environment:
+            <<: *common-variables
+            docker: "true"
+        ports:
+            - "8088:80"
+        volumes:
+            - .:/var/www/html
+            - ./logs:/var/log/apache2
+            - /var/local/:/var/local/
+            # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
+        networks:
+            - internal
+
+    nextjs:
+        build:
+            context: ./src/modules/bookingfrontend/client
+            dockerfile: Dockerfile.nextjs
+            args:
+                - NEXT_ENV=${NEXT_ENV:-development}
+            target: builder
+        command: ["npm", "run", "start:${NEXT_ENV:-development}"]
+        volumes:
+            - ./src/modules/bookingfrontend/client:/app
+            - /app/node_modules
+            - /app/.next
+        environment:
+            <<: *common-variables
+        networks:
+            - internal
+
+networks:
+    internal:
+        driver: bridge

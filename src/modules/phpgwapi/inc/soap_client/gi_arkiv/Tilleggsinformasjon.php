@@ -155,7 +155,7 @@ class Tilleggsinformasjon
      * @param \DateTime $oppbevaresTilDato
      * @return Tilleggsinformasjon
      */
-    public function setOppbevaresTilDato(\DateTime $oppbevaresTilDato = null)
+    public function setOppbevaresTilDato(\DateTime|null $oppbevaresTilDato = null)
     {
       if ($oppbevaresTilDato == null) {
        $this->oppbevaresTilDato = null;
@@ -221,7 +221,7 @@ class Tilleggsinformasjon
      * @param \DateTime $registrertDato
      * @return Tilleggsinformasjon
      */
-    public function setRegistrertDato(\DateTime $registrertDato = null)
+    public function setRegistrertDato(\DateTime|null $registrertDato = null)
     {
       if ($registrertDato == null) {
        $this->registrertDato = null;

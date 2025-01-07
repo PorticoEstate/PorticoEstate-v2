@@ -1,7 +1,7 @@
 import React, {Dispatch, FC, useState} from 'react';
 import PopperContentSharedWrapper
     from "@/components/building-calendar/modules/event/popper/content/popper-content-shared-wrapper";
-import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import styles from "./shopping-cart-content.module.scss";
@@ -14,14 +14,16 @@ import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
 import {deletePartialApplication} from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
+import {PencilIcon} from "@navikt/aksel-icons";
 
 interface ShoppingCartContentProps {
     setOpen: Dispatch<boolean>;
+    setCurrentApplication: Dispatch<{ application_id: number, date_id: number, building_id: number } | undefined>;
 }
 
 
-const timeToLux = (timeStamp: string) => {
-    return DateTime.fromFormat(timeStamp, "yyyy-MM-dd HH:mm:ss");
+export const applicationTimeToLux = (timeStamp: string) => {
+    return DateTime.fromISO(timeStamp);
 
 }
 
@@ -69,8 +71,8 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
     const [expandedId, setExpandedId] = useState<number>();
     const getStartTime = (application: IApplication) => {
         if (application.dates.length === 1) {
-            const from = timeToLux(application.dates[0].from_);
-            const to = timeToLux(application.dates[0].to_);
+            const from = applicationTimeToLux(application.dates[0].from_);
+            const to = applicationTimeToLux(application.dates[0].to_);
             return formatDateRange(from, to, i18n).join(' | ');
         }
         if (expandedId === application.id) {
@@ -81,8 +83,8 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                 }}>
 
                 {application.dates.map((date) => {
-                    const from = timeToLux(date.from_);
-                    const to = timeToLux(date.to_);
+                    const from = applicationTimeToLux(date.from_);
+                    const to = applicationTimeToLux(date.to_);
 
                     return <List.Item key={date.id}>{formatDateRange(from, to, i18n).join(' | ')}</List.Item>
                 })}
@@ -92,6 +94,10 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
     }
 
 
+    const openEdit = (item: IApplication) =>  {
+        props.setCurrentApplication({application_id: item.id, date_id: item.dates[0].id, building_id: item.building_id})
+        props.setOpen(false);
+    }
 
     return (
         <PopperContentSharedWrapper onClose={() => props.setOpen(false)} header={!isMobile}>
@@ -129,7 +135,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                                     Hva
                                 </Table.HeaderCell>
                                 <Table.HeaderCell>
-                                    Vis søknad
+                                    Rediger
                                 </Table.HeaderCell>
                                 <Table.HeaderCell>
                                     Fjern søknad
@@ -156,12 +162,10 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                                     </Table.Cell>
                                     <Table.Cell>
 
-                                        <Button variant="tertiary" asChild>
-                                            <Link
-                                                href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiapplication.show', id: item.id, secret: item.secret || ''}, false)}
-                                                className={'link-text link-text-unset normal'} target={'_blank'}>
-                                                <FontAwesomeIcon icon={faArrowUpRightFromSquare}/>
-                                            </Link>
+                                        <Button variant="tertiary" className={'link-text link-text-unset normal'} onClick={() => openEdit(item)}>
+
+                                                {/*<FontAwesomeIcon icon={faArrowUpRightFromSquare}/>*/}
+                                                <PencilIcon />
                                         </Button>
 
                                     </Table.Cell>

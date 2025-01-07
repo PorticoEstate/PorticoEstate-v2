@@ -46,24 +46,29 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                     </Dropdown.Item>
                 </Dropdown.List>
                 <Divider/>
-                <Dropdown.List>
-                    {bookingUser.delegates?.map((delegate) => <Dropdown.Item key={delegate.org_id}>
-                        <Dropdown.Button asChild>
+                {!!bookingUser.delegates && bookingUser.delegates.length > 0 && (
+                    <>
+                        <Dropdown.List>
+                            {bookingUser.delegates?.map((delegate) => <Dropdown.Item key={delegate.org_id}>
+                                <Dropdown.Button asChild>
 
-                            <Link href={phpGWLink('bookingfrontend/', {
-                                menuaction: 'bookingfrontend.uiorganization.show',
-                                id: delegate.org_id
-                            }, false)}
-                                  className={'link-text link-text-unset normal'}>
-                                <FontAwesomeIcon icon={faFutbol}/> {delegate.name}
-                            </Link>
-                        </Dropdown.Button>
+                                    <Link href={phpGWLink('bookingfrontend/', {
+                                        menuaction: 'bookingfrontend.uiorganization.show',
+                                        id: delegate.org_id
+                                    }, false)}
+                                          className={'link-text link-text-unset normal'}>
+                                        <FontAwesomeIcon icon={faFutbol}/> {delegate.name}
+                                    </Link>
+                                </Dropdown.Button>
 
-                    </Dropdown.Item>)}
+                            </Dropdown.Item>)}
 
 
-                </Dropdown.List>
-                <Divider/>
+                        </Dropdown.List>
+                        <Divider/>
+                    </>
+                )}
+
                 <Dropdown.List>
 
                     <Dropdown.Item>

@@ -60,7 +60,7 @@ class rental_uimakepdf extends rental_uicommon
 	 * @param $editable whether or not the contract should be editable in the view
 	 * @param $contract_id the id of the contract to show
 	 */
-	public function viewedit($editable, $contract_id, $contract = null, $location_id = null, $notification = null, string $message = null, string $error = null)
+	public function viewedit($editable, $contract_id, $contract = null, $location_id = null, $notification = null, string|null $message = null, string|null $error = null)
 	{
 
 		$cancel_link = self::link(array('menuaction' => 'rental.uicontract.index', 'populate_form' => 'yes'));

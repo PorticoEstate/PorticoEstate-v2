@@ -11,7 +11,8 @@ trait SerializableTrait
     private static $annotationCache = [];
 
 
-    public function serialize(array $context = []): ?array
+
+    public function serialize(array $context = [], bool $short = false): ?array
     {
         $reflection = new \ReflectionClass($this);
         $properties = $reflection->getProperties();
@@ -26,15 +27,23 @@ trait SerializableTrait
             $serializeAsAnnotation = $this->parseSerializeAsAnnotation($property);
             $escapeStringAnnotation = $this->parseEscapeStringAnnotation($property);
             $defaultAnnotation = $this->parseDefaultAnnotation($property);
+            $timestampAnnotation = $this->parseTimestampAnnotation($property);
 
             if ($excludeAnnotation)
             {
                 continue;
             }
 
+            if ($short && !$shortAnnotation)
+            {
+                continue; // Skip non-short properties when short serialization is requested
+            }
+
             if ($exposeAnnotation || $defaultBehavior === 'expose')
             {
+                $property->setAccessible(true);
                 $value = $property->getValue($this);
+
                 // If value is null and default annotation exists, use default value
                 if ($value === null && $defaultAnnotation !== null) {
                     $value = $defaultAnnotation;
@@ -42,8 +51,6 @@ trait SerializableTrait
 
                 if ($this->shouldExposeProperty($exposeAnnotation, $property, $context))
                 {
-                    $property->setAccessible(true);
-
                     if (is_string($value))
                     {
                         if ($escapeStringAnnotation !== null)
@@ -55,6 +62,10 @@ trait SerializableTrait
                     if ($serializeAsAnnotation)
                     {
                         $value = $this->serializeAs($value, $serializeAsAnnotation);
+                    }
+                    else if ($timestampAnnotation && $value !== null)
+                    {
+                        $value = $this->formatTimestamp($value, $timestampAnnotation);
                     }
 
                     if ($value !== null)
@@ -72,7 +83,6 @@ trait SerializableTrait
 
         return !empty($serialized) ? $serialized : null;
     }
-
 
     private function parseDefaultAnnotation(\ReflectionProperty $property): ?string
     {
@@ -497,4 +507,77 @@ trait SerializableTrait
         }
         return self::$annotationCache[$className]['properties'][$propertyName]['serializeAs'];
     }
+
+    /**
+     * Parse @Timestamp annotation
+     * @return array|null Returns format settings if annotation is present, null otherwise
+     */
+    private function parseTimestampAnnotation(\ReflectionProperty $property): ?array
+    {
+        $className = $property->getDeclaringClass()->getName();
+        $propertyName = $property->getName();
+
+        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['timestamp']))
+        {
+            $docComment = $property->getDocComment();
+            if (preg_match('/@Timestamp(?:\((.*?)\))?/', $docComment, $matches))
+            {
+                $options = [];
+
+                // Parse options if they exist
+                if (!empty($matches[1]))
+                {
+                    preg_match_all('/(\w+)\s*=\s*"([^"]+)"/', $matches[1], $optionMatches, PREG_SET_ORDER);
+                    foreach ($optionMatches as $match)
+                    {
+                        $optionName = trim($match[1]);
+                        $optionValue = trim($match[2]);
+                        $options[$optionName] = $optionValue;
+                    }
+                } else {
+                    $options['format'] = 'c';
+                }
+
+                self::$annotationCache[$className]['properties'][$propertyName]['timestamp'] = $options;
+            }
+            else
+            {
+                self::$annotationCache[$className]['properties'][$propertyName]['timestamp'] = null;
+            }
+        }
+
+        return self::$annotationCache[$className]['properties'][$propertyName]['timestamp'];
+    }
+
+    /**
+     * Format a timestamp according to specified options
+     */
+    private function formatTimestamp($value, array $options = []): string
+    {
+        // Get format from options or use ISO 8601 as default
+        $format = $options['format'] ?? 'c';
+
+        // Handle different timestamp formats
+        if (is_numeric($value)) {
+            // Unix timestamp
+            $date = new \DateTime();
+            $date->setTimestamp($value);
+            return $date->format($format);
+        }
+
+        if ($value === 'now') {
+            return (new \DateTime())->format($format);
+        }
+
+        try {
+            // Try to parse the date string
+            $date = new \DateTime($value);
+            return $date->format($format);
+        } catch (\Exception $e) {
+            // If parsing fails, return original value
+            return $value;
+        }
+    }
+
+
 }

@@ -35,6 +35,8 @@ import {EventImpl} from "@fullcalendar/core/internal";
 import EventContentAllDay from "@/components/building-calendar/modules/event/content/event-content-all-day";
 import {useBuilding, useBuildingResources} from "@/service/api/building";
 import EventCrud from "@/components/building-calendar/modules/event/edit/event-crud";
+import {usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
+import {IUpdatePartialApplication} from "@/service/types/api/application.types";
 
 interface BuildingCalendarProps {
     events?: IEvent[];
@@ -60,13 +62,16 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     const calendarRef = useRef<FullCalendar | null>(null);
     const [view, setView] = useState<string>(window.innerWidth < 601 ? 'timeGridDay' : 'timeGridWeek');
     const [lastCalendarView, setLastCalendarView] = useState<string>('timeGridWeek');
+    const {data: partials} = usePartialApplications();
+
+    const updateMutation = useUpdatePartialApplication();
 
 
     const [selectedEvent, setSelectedEvent] = useState<FCallEvent | FCallTempEvent | null>(null);
     const [popperAnchorEl, setPopperAnchorEl] = useState<HTMLElement | null>(null);
 
     const [currentTempEvent, setCurrentTempEvent] = useState<Partial<FCallTempEvent>>();
-    const {tempEvents: storedTempEvents, setTempEvents: setStoredTempEvents} = useTempEvents();
+    const {tempEvents: storedTempEvents} = useTempEvents();
 
     const {enabledResources} = useEnabledResources();
     const {data: resources} = useBuildingResources(props.building.id);
@@ -116,6 +121,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             extendedProps: {
                 type: 'temporary',
                 resources: [...enabledResources],
+                building_id: props.building.id,
             },
         };
         // setTempEvents(prev => ({...prev, [newEvent.id]: newEvent}))
@@ -133,8 +139,12 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
         // Check if the event is a valid, interactive event
         if ('id' in clickInfo.event && clickInfo.event.id) {
-            setSelectedEvent(clickInfo.event);
-            setPopperAnchorEl(clickInfo.el);
+            if(clickInfo.event.extendedProps.type === 'temporary') {
+                setCurrentTempEvent(clickInfo.event as FCallTempEvent);
+            } else {
+                setSelectedEvent(clickInfo.event);
+                setPopperAnchorEl(clickInfo.el);
+            }
         }
     }, []);
 
@@ -279,27 +289,62 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     }, []);
 
     const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
-        if (resizeInfo.event.extendedProps?.type === 'temporary') {
-            if (currentTempEvent && resizeInfo.event.id === currentTempEvent.id) {
-                setCurrentTempEvent({
-                    ...currentTempEvent,
-                    end: resizeInfo.event.end as Date,
-                    start: resizeInfo.event.start as Date
-                });
+        const newEnd = resizeInfo.event.end;
+        const newStart = resizeInfo.event.start;
+        if(!newEnd || !newStart) {
+            console.log("No new date")
+            return;
+        }
+        if (resizeInfo.event.extendedProps?.type === 'temporary' && 'applicationId' in resizeInfo.event.extendedProps) {
+            const eventId = resizeInfo.event.extendedProps.applicationId;
+            const dateId = resizeInfo.event.id;
+            console.log(partials?.list);
+            const existingEvent = partials?.list.find(app => +app.id === +eventId);
+
+            if(!eventId || !dateId || !existingEvent) {
+                console.log("missing data", eventId, dateId, existingEvent)
+
                 return;
             }
-            setStoredTempEvents(prev => ({
-                ...prev,
-                [resizeInfo.event.id]: {
-                    ...prev[resizeInfo.event.id],
-                    start: resizeInfo.event.start as Date,
-                    end: resizeInfo.event.end as Date
+
+            const updatedApplication: IUpdatePartialApplication = {
+                id: eventId,
+            }
+            // if(existingEvent.dates.length > 1) {
+            updatedApplication.dates = existingEvent.dates.map(date => {
+                if (date.id && date && +dateId === +date.id) {
+                    return {
+                        ...date,
+                        from_: newStart.toISOString(),
+                        to_: newEnd.toISOString()
+                    }
                 }
-            }))
+                return date
+            })
+
+            updateMutation.mutate({id: existingEvent.id, application: updatedApplication});
+            // onClose();
+            // return;
+            // if (currentTempEvent && resizeInfo.event.id === currentTempEvent.id) {
+            //     setCurrentTempEvent({
+            //         ...currentTempEvent,
+            //         end: resizeInfo.event.end as Date,
+            //         start: resizeInfo.event.start as Date
+            //     });
+            //     return;
+            // }
+            // setStoredTempEvents(prev => ({
+            //     ...prev,
+            //     [resizeInfo.event.id]: {
+            //         ...prev[resizeInfo.event.id],
+            //         start: resizeInfo.event.start as Date,
+            //         end: resizeInfo.event.end as Date
+            //     }
+            // }))
 
         }
 
-    }, [currentTempEvent, setStoredTempEvents]);
+    }, [partials?.list, updateMutation]);
 
     const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
 
@@ -454,7 +499,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             }}/>
 
             {currentTempEvent && (
-                <EventCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempEvent={currentTempEvent}/>
+                <EventCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempEvent={currentTempEvent}
+                           building_id={props.building.id} />
             )}
 
 

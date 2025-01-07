@@ -16,7 +16,7 @@
 		protected $area_gros;
 		protected $area_net;
 
-		public function __construct( string $location_code, string $gab_id, $level = -1, array $names = null )
+		public function __construct( string $location_code, string $gab_id, $level = -1, array|null $names = null )
 		{
 			$this->location_code = $location_code;
 			$this->gab_id = $gab_id;

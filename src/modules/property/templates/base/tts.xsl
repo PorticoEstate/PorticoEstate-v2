@@ -809,7 +809,7 @@
 					</xsl:choose>
 				</fieldset>
 			</div>
-			<div id="external_communication">
+			<div id="external_communication_section">
 					<fieldset>
 					<xsl:if test="simple !='1'">
 						<div class="pure-control-group">

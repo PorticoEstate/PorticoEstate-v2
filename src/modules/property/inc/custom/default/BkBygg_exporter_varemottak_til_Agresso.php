@@ -95,6 +95,12 @@ if (!class_exists("lag_agresso_varemottak"))
 			{
 				return false;
 			}
+
+			if(in_array($values['order_id'], array(45081070, 45081078)))
+			{
+				return false;
+			}
+
 			//		_debug_array($values);die();
 
 			/*

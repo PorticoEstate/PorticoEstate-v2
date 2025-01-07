@@ -1,6 +1,5 @@
 import {FC, useMemo} from 'react';
 import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import {DateTime} from "luxon";
 import {Button} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";

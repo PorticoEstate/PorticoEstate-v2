@@ -26,7 +26,7 @@ class FormatListe
      * @param Format[] $liste
      * @return FormatListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

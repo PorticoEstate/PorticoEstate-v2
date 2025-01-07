@@ -345,7 +345,8 @@ class property_uiinvoice extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 		//-- captura datos de URL
@@ -367,7 +368,6 @@ class property_uiinvoice extends phpgwapi_uicommon_jquery
 		if ($paid)
 		{
 			$this->flags['menu_selection'] = 'property::economy::paid';
-			
 		}
 		else
 		{
@@ -647,14 +647,16 @@ JS;
 		$inputFilters = array(
 			array('id' => 'workorder_id', 'label' => lang('Workorder ID'), 'type' => 'text'),
 			array(
-				'id'	 => '', 'label'	 => "<a href=\"#\" onClick=\"JqueryPortico.openPopup({menuaction:'property.uilookup.vendor'})\">" . lang('Vendor') . "</a>",
+				'id'	 => '',
+				'label'	 => "<a href=\"#\" onClick=\"JqueryPortico.openPopup({menuaction:'property.uilookup.vendor'})\">" . lang('Vendor') . "</a>",
 				'type'	 => 'link'
 			),
 			array('id' => 'vendor_id', 'label' => lang('Vendor'), 'type' => 'text'),
 			array('id' => 'vendor_name', 'label' => '', 'type' => 'hidden'),
 			array('id' => 'invoice_id', 'label' => lang('invoice number'), 'type' => 'text'),
 			array(
-				'id'	 => '', 'label'	 => "<a href=\"#\" onClick=\"JqueryPortico.openPopup({menuaction:'property.uilocation.index', lookup:'1', type_id:'1', lookup_name:'0'})\">" . lang('property') . "</a>",
+				'id'	 => '',
+				'label'	 => "<a href=\"#\" onClick=\"JqueryPortico.openPopup({menuaction:'property.uilocation.index', lookup:'1', type_id:'1', lookup_name:'0'})\">" . lang('property') . "</a>",
 				'type'	 => 'link'
 			),
 			array('id' => 'loc1', 'label' => lang('property'), 'type' => 'text'),
@@ -1036,10 +1038,10 @@ JS;
 			'paid'		 => true
 		));
 
-//		if ($paid)
-//		{
-//			$link_sub .= "&paid=true";
-//		}
+		//		if ($paid)
+		//		{
+		//			$link_sub .= "&paid=true";
+		//		}
 
 		$data	 = array();
 		$j		 = 0;
@@ -1081,7 +1083,7 @@ JS;
 							$data[$j]['column'][$i]['link']		 = '#';
 							if ($uicols['type'][$i] == 'url')
 							{
-								if($invoices['period'])
+								if ($invoices['period'])
 								{
 									$data[$j]['column'][$i]['link'] = $link_sub_paid . "&voucher_id=" . $invoices[$uicols['name'][$i]];
 								}
@@ -1349,73 +1351,122 @@ JS;
 
 		$uicols = array(
 			array(
-				'key'		 => 'workorder', 'label'		 => lang('Workorder'), 'className'	 => 'center',
-				'sortable'	 => true, 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'external_project_id', 'label'		 => lang('external project'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'close_order', 'label'		 => lang('Close order'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'change_tenant', 'label'		 => lang('Charge tenant'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'invoice_id', 'label'		 => lang('Invoice Id'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'budget_Account', 'label'		 => lang('Budget account'), 'className'	 => 'center',
-				'sortable'	 => true, 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'sum', 'label'		 => lang('Sum'), 'className'	 => 'right', 'sortable'	 => true,
-				'sort_field' => 'belop', 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'approved_amount', 'label'		 => lang('approved amount'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'currency', 'label'		 => lang('currency'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
-			),
-			array(
-				'key'		 => 'dim_A', 'label'		 => lang('Dim A'), 'className'	 => 'center', 'sortable'	 => true,
+				'key'		 => 'workorder',
+				'label'		 => lang('Workorder'),
+				'className'	 => 'center',
+				'sortable'	 => true,
 				'hidden'	 => false
 			),
 			array(
-				'key'		 => 'dim_B', 'label'		 => lang('Dim B'), 'className'	 => 'center', 'sortable'	 => false,
+				'key'		 => 'external_project_id',
+				'label'		 => lang('external project'),
+				'className'	 => 'center',
+				'sortable'	 => false,
 				'hidden'	 => false
 			),
 			array(
-				'key'		 => 'dim_D', 'label'		 => lang('Dim D'), 'className'	 => 'center', 'sortable'	 => false,
+				'key'		 => 'close_order',
+				'label'		 => lang('Close order'),
+				'className'	 => 'center',
+				'sortable'	 => false,
 				'hidden'	 => false
 			),
 			array(
-				'key'		 => 'Tax_code', 'label'		 => lang('Tax code'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
+				'key'		 => 'change_tenant',
+				'label'		 => lang('Charge tenant'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
 			),
 			array(
-				'key'		 => 'Remark', 'label'		 => lang('Remark'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
+				'key'		 => 'invoice_id',
+				'label'		 => lang('Invoice Id'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
 			),
 			array(
-				'key'		 => 'external_ref', 'label'		 => lang('external ref'), 'className'	 => 'center',
-				'sortable'	 => false, 'hidden'	 => false
+				'key'		 => 'budget_Account',
+				'label'		 => lang('Budget account'),
+				'className'	 => 'center',
+				'sortable'	 => true,
+				'hidden'	 => false
 			),
 			array(
-				'key'	 => 'counter', 'hidden' => true
+				'key'		 => 'sum',
+				'label'		 => lang('Sum'),
+				'className'	 => 'right',
+				'sortable'	 => true,
+				'sort_field' => 'belop',
+				'hidden'	 => false
 			),
 			array(
-				'key'	 => 'id', 'hidden' => true
+				'key'		 => 'approved_amount',
+				'label'		 => lang('approved amount'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
 			),
 			array(
-				'key'	 => '_external_ref', 'hidden' => true
+				'key'		 => 'currency',
+				'label'		 => lang('currency'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
+			),
+			array(
+				'key'		 => 'dim_A',
+				'label'		 => lang('Dim A'),
+				'className'	 => 'center',
+				'sortable'	 => true,
+				'hidden'	 => false
+			),
+			array(
+				'key'		 => 'dim_B',
+				'label'		 => lang('Dim B'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
+			),
+			array(
+				'key'		 => 'dim_D',
+				'label'		 => lang('Dim D'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
+			),
+			array(
+				'key'		 => 'Tax_code',
+				'label'		 => lang('Tax code'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
+			),
+			array(
+				'key'		 => 'Remark',
+				'label'		 => lang('Remark'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
+			),
+			array(
+				'key'		 => 'external_ref',
+				'label'		 => lang('external ref'),
+				'className'	 => 'center',
+				'sortable'	 => false,
+				'hidden'	 => false
+			),
+			array(
+				'key'	 => 'counter',
+				'hidden' => true
+			),
+			array(
+				'key'	 => 'id',
+				'hidden' => true
+			),
+			array(
+				'key'	 => '_external_ref',
+				'hidden' => true
 			)
 		);
 
@@ -1627,77 +1678,140 @@ JS;
 
 		$uicols = array(
 			array(
-				'col_name'	 => 'workorder', 'label'		 => lang('Workorder'), 'className'	 => 'centerClasss',
-				'sortable'	 => true, 'sort_field' => 'pmwrkord_code', 'visible'	 => true
-			),
-			array(
-				'col_name'	 => 'external_project_id', 'label'		 => lang('external project'),
+				'col_name'	 => 'workorder',
+				'label'		 => lang('Workorder'),
 				'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'sortable'	 => true,
+				'sort_field' => 'pmwrkord_code',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'close_order', 'label'		 => lang('Close order'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'external_project_id',
+				'label'		 => lang('external project'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'change_tenant', 'label'		 => lang('Charge tenant'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'close_order',
+				'label'		 => lang('Close order'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'invoice_id', 'label'		 => lang('Invoice Id'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'change_tenant',
+				'label'		 => lang('Charge tenant'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'budget_Account', 'label'		 => lang('Budget account'), 'className'	 => 'centerClasss',
-				'sortable'	 => true, 'sort_field' => 'spbudact_code', 'visible'	 => true
+				'col_name'	 => 'invoice_id',
+				'label'		 => lang('Invoice Id'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'sum', 'label'		 => lang('Sum'), 'className'	 => 'rightClasss',
-				'sortable'	 => true, 'sort_field' => 'belop', 'visible'	 => true
+				'col_name'	 => 'budget_Account',
+				'label'		 => lang('Budget account'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => true,
+				'sort_field' => 'spbudact_code',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'approved_amount', 'label'		 => lang('approved amount'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'sum',
+				'label'		 => lang('Sum'),
+				'className'	 => 'rightClasss',
+				'sortable'	 => true,
+				'sort_field' => 'belop',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'currency', 'label'		 => lang('currency'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'approved_amount',
+				'label'		 => lang('approved amount'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'dim_A', 'label'		 => lang('Dim A'), 'className'	 => 'centerClasss',
-				'sortable'	 => true, 'sort_field' => 'dima', 'visible'	 => true
+				'col_name'	 => 'currency',
+				'label'		 => lang('currency'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'dim_B', 'label'		 => lang('Dim B'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'dim_A',
+				'label'		 => lang('Dim A'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => true,
+				'sort_field' => 'dima',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'dim_D', 'label'		 => lang('Dim D'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'dim_B',
+				'label'		 => lang('Dim B'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'Tax_code', 'label'		 => lang('Tax code'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'dim_D',
+				'label'		 => lang('Dim D'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'Remark', 'label'		 => lang('Remark'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'Tax_code',
+				'label'		 => lang('Tax code'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'external_ref', 'label'		 => lang('external ref'), 'className'	 => 'centerClasss',
-				'sortable'	 => false, 'sort_field' => '', 'visible'	 => true
+				'col_name'	 => 'Remark',
+				'label'		 => lang('Remark'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'counter', 'visible'	 => false
+				'col_name'	 => 'external_ref',
+				'label'		 => lang('external ref'),
+				'className'	 => 'centerClasss',
+				'sortable'	 => false,
+				'sort_field' => '',
+				'visible'	 => true
 			),
 			array(
-				'col_name'	 => 'id', 'visible'	 => false
+				'col_name'	 => 'counter',
+				'visible'	 => false
 			),
 			array(
-				'col_name'	 => 'workorder_id', 'visible'	 => false
+				'col_name'	 => 'id',
+				'visible'	 => false
 			),
 			array(
-				'col_name'	 => '_external_ref', 'visible'	 => false
+				'col_name'	 => 'workorder_id',
+				'visible'	 => false
+			),
+			array(
+				'col_name'	 => '_external_ref',
+				'visible'	 => false
 			)
 		);
 
@@ -2176,13 +2290,17 @@ JS;
 		$data = array(
 			'redirect'				 => $redirect ? phpgw::link('/index.php', array(
 				'menuaction' => 'property.uiinvoice.list_sub',
-				'user_lid'	 => $user_lid, 'voucher_id' => $voucher_id, 'paid'		 => $paid
+				'user_lid'	 => $user_lid,
+				'voucher_id' => $voucher_id,
+				'paid'		 => $paid
 			)) : null,
 			'msgbox_data'			 => $this->phpgwapi_common->msgbox($msgbox_data),
 			'from_name'				 => $this->userSettings['fullname'],
 			'form_action'			 => phpgw::link('/index.php', array(
 				'menuaction' => 'property.uiinvoice.edit',
-				'id'		 => $id, 'user_lid'	 => $user_lid, 'voucher_id' => $voucher_id
+				'id'		 => $id,
+				'user_lid'	 => $user_lid,
+				'voucher_id' => $voucher_id
 			)),
 			'approve_list'			 => $approve_list,
 			'approved_list'			 => $approved_list,
@@ -2199,7 +2317,9 @@ JS;
 			'tabs'					 => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
 			'validator'				 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
-				'date', 'security', 'file'
+				'date',
+				'security',
+				'file'
 			))
 		);
 
@@ -2380,17 +2500,29 @@ JS;
 			'input_type' => array('varchar', 'varchar', 'varchar', 'link', 'varchar', 'varchar'),
 			'type'		 => array('text', 'text', 'text', 'url', 'text', 'text'),
 			'col_name'	 => array(
-				'district_id', 'period', 'account_class', 'consume', 'refund',
+				'district_id',
+				'period',
+				'account_class',
+				'consume',
+				'refund',
 				'paid'
 			),
 			'name'		 => array(
-				'district_id', 'period', 'account_class', 'consume', 'refund',
+				'district_id',
+				'period',
+				'account_class',
+				'consume',
+				'refund',
 				'paid'
 			),
 			'formatter'	 => array('', '', '', 'formatLinkIndexInvoice', '', ''),
 			'descr'		 => array(
-				lang('District'), lang('Period'), lang('Budget account'),
-				lang('Consume'), lang('refund') . ' (' . lang('tax') . ')', lang('paid')
+				lang('District'),
+				lang('Period'),
+				lang('Budget account'),
+				lang('Consume'),
+				lang('refund') . ' (' . lang('tax') . ')',
+				lang('paid')
 			),
 			'className'	 => array('center', 'center', 'center', 'right', 'right', 'center')
 		);
@@ -2418,13 +2550,15 @@ JS;
 		$inputFilters = array(
 			array('id' => 'workorder_id', 'label' => lang('Workorder ID'), 'type' => 'text'),
 			array(
-				'id'	 => '', 'label'	 => "<a href=\"#\" onClick=\"JqueryPortico.openPopup({menuaction:'property.uilookup.vendor'})\">" . lang('Vendor') . "</a>",
+				'id'	 => '',
+				'label'	 => "<a href=\"#\" onClick=\"JqueryPortico.openPopup({menuaction:'property.uilookup.vendor'})\">" . lang('Vendor') . "</a>",
 				'type'	 => 'link'
 			),
 			array('id' => 'vendor_id', 'label' => lang('Vendor'), 'type' => 'text'),
 			array('id' => 'vendor_name', 'label' => '', 'type' => 'hidden'),
 			array(
-				'id'	 => '', 'label'	 => "<a href=\"#\" onClick=\"JqueryPortico.openPopup({menuaction:'property.uilocation.index', lookup:'1', type_id:'1', lookup_name:'0'})\">" . lang('property') . "</a>",
+				'id'	 => '',
+				'label'	 => "<a href=\"#\" onClick=\"JqueryPortico.openPopup({menuaction:'property.uilocation.index', lookup:'1', type_id:'1', lookup_name:'0'})\">" . lang('property') . "</a>",
 				'type'	 => 'link'
 			),
 			array('id' => 'loc1', 'label' => lang('property'), 'type' => 'text'),
@@ -2505,7 +2639,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 8, 'acl_location'	 => $this->acl_location
+				'perm'			 => 8,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -2550,7 +2685,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 2, 'acl_location'	 => $this->acl_location
+				'perm'			 => 2,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -2893,7 +3029,9 @@ JS;
 			'tabs'								 => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
 			'validator'							 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
-				'date', 'security', 'file'
+				'date',
+				'security',
+				'file'
 			))
 		);
 
@@ -2915,7 +3053,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -3069,9 +3208,17 @@ JS;
 			'',
 			'',
 			array(
-				'xPos'				 => 70, 'xOrientation'		 => 'right',
-				'width'				 => 400, 0, 'shaded'			 => 0, 'fontSize'			 => 8, 'gridlines'			 => 0,
-				'titleFontSize'		 => 12, 'outerLineThickness' => 0, 'showHeadings'		 => 0, 'cols'				 => array(
+				'xPos'				 => 70,
+				'xOrientation'		 => 'right',
+				'width'				 => 400,
+				0,
+				'shaded'			 => 0,
+				'fontSize'			 => 8,
+				'gridlines'			 => 0,
+				'titleFontSize'		 => 12,
+				'outerLineThickness' => 0,
+				'showHeadings'		 => 0,
+				'cols'				 => array(
 					'text'	 => array('justification' => 'left', 'width' => 100),
 					'value'	 => array('justification' => 'left', 'width' => 200)
 				)
@@ -3099,15 +3246,25 @@ JS;
 				'',
 				'',
 				array(
-					'xPos'				 => 70, 'xOrientation'		 => 'right',
-					'width'				 => 500, 0, 'shaded'			 => 0, 'fontSize'			 => 8, 'gridlines'			 => EZ_GRIDLINE_ALL,
-					'titleFontSize'		 => 12, 'outerLineThickness' => 2, 'cols'				 => $table_header
+					'xPos'				 => 70,
+					'xOrientation'		 => 'right',
+					'width'				 => 500,
+					0,
+					'shaded'			 => 0,
+					'fontSize'			 => 8,
+					'gridlines'			 => EZ_GRIDLINE_ALL,
+					'titleFontSize'		 => 12,
+					'outerLineThickness' => 2,
+					'cols'				 => $table_header
 				)
 			);
 		}
 
 		$document = $pdf->ezOutput();
-		$pdf->print_pdf($document, 'receipt_' . $voucher_id);
+		$document_name = 'receipt_' . $voucher_id . '.pdf';
+		header('Content-type: application/pdf');
+		header('Content-Disposition: attachment; filename="' . $document_name . '.pdf"');
+		echo $document;
 	}
 
 	function debug($values)
@@ -3182,8 +3339,14 @@ JS;
 		);
 
 		$header = array(
-			'Bestilling', 'Fakt. Nr', 'Konto', 'Objekt', 'Fag/Timer/Matr',
-			'MVA', 'Tjeneste', 'Beløp [kr]'
+			'Bestilling',
+			'Fakt. Nr',
+			'Konto',
+			'Objekt',
+			'Fag/Timer/Matr',
+			'MVA',
+			'Tjeneste',
+			'Beløp [kr]'
 		);
 
 		for ($i = 0; $i < count($header); $i++)
@@ -3262,13 +3425,18 @@ JS;
 			case 'workorder':
 				phpgw::redirect_link('/index.php', array(
 					'menuaction' => 'property.uiworkorder.edit',
-					'id'		 => $order_id, 'tab'		 => 'budget', 'nonavbar'	 => $nonavbar, 'lean'		 => $lean
+					'id'		 => $order_id,
+					'tab'		 => 'budget',
+					'nonavbar'	 => $nonavbar,
+					'lean'		 => $lean
 				));
 				break;
 			case 's_agreement':
 				phpgw::redirect_link('/index.php', array(
 					'menuaction' => 'property.uis_agreement.view',
-					'id'		 => $order_id, 'nonavbar'	 => $nonavbar, 'lean'		 => $lean
+					'id'		 => $order_id,
+					'nonavbar'	 => $nonavbar,
+					'lean'		 => $lean
 				));
 				break;
 			default:
@@ -3502,7 +3670,8 @@ JS;
 			'from_name'				 => $this->userSettings['fullname'],
 			'form_action'			 => phpgw::link('/index.php', array(
 				'menuaction' => 'property.uiinvoice.forward',
-				'user_lid'	 => $user_lid, 'voucher_id' => $voucher_id
+				'user_lid'	 => $user_lid,
+				'voucher_id' => $voucher_id
 			)),
 			'approve_list'			 => $approve_list,
 			'approved_list'			 => $approved_list,

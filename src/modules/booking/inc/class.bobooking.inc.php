@@ -322,7 +322,7 @@ phpgw::import_class('booking.bocommon_authorized');
 		/**
 		 * @see bocommon_authorized
 		 */
-		protected function include_subject_parent_roles( array $for_object = null )
+		protected function include_subject_parent_roles( array|null $for_object = null )
 		{
 			$parent_roles	 = null;
 			$parent_season	 = null;

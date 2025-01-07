@@ -26,7 +26,7 @@ class SkjermingListe
      * @param Skjerming[] $liste
      * @return SkjermingListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

@@ -430,7 +430,7 @@ class rental_party extends rental_model
 		);
 	}
 
-	public function serialize(rental_contract $contract = null)
+	public function serialize(rental_contract|null $contract = null)
 	{
 		$is_payer = '';
 		if (isset($contract) && $contract->get_payer_id() == $this->id)

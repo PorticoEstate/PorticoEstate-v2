@@ -6,6 +6,7 @@ use App\Database\Db;
 use PDO;
 use Exception;
 use PDOException;
+use App\Database\FakePDOOCI;
 
 /**
  * Class Db2  - A non-singleton version of the Db class
@@ -54,7 +55,19 @@ class Db2 extends Db
 			}
 			catch (PDOException $e)
 			{
-				throw new Exception($e->getMessage());
+				//check 'oci' in dsn
+				if (strpos($dsn2, 'oci') !== false)
+				{
+					// try to connect with FakePDOOCI
+					if (!$db = new FakePDOOCI($dsn2, $username, $password))
+					{
+						throw new Exception('Error: ' . $e->getMessage());
+					}
+				}
+				else
+				{
+					throw new Exception($e->getMessage());
+				}
 			}
 		}
 
@@ -74,7 +87,7 @@ class Db2 extends Db
 
 
 		$this->set_config($config);
-//		register_shutdown_function(array(&$this, 'disconnect'));
+		//		register_shutdown_function(array(&$this, 'disconnect'));
 	}
 
 	public function set_config($config)

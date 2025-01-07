@@ -47,7 +47,7 @@ class addressbook_boXport
 		$fp = fopen($tsvfile, 'r');
 		if ($contacts->type == 'csv')
 		{
-			while ($data = fgetcsv($fp, 8000, ','))
+			while ($data = fgetcsv($fp, 8000,',', '"', "\\"))
 			{
 				$num = count($data);
 				$row++;

@@ -26,7 +26,7 @@ class JournalnummerListe
      * @param Journalnummer[] $liste
      * @return JournalnummerListe
      */
-    public function setListe(array $liste = null)
+    public function setListe(array|null $liste = null)
     {
       $this->liste = $liste;
       return $this;

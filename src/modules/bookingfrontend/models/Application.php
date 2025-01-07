@@ -84,6 +84,13 @@ class Application
     public $building_name;
 
     /**
+     * @OA\Property(type="integer")
+     * @Expose
+     * @Short
+     */
+    public $building_id;
+
+    /**
      * @OA\Property(type="string", format="date-time")
      * @Expose
      */

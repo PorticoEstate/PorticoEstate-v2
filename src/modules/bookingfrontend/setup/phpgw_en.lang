@@ -660,3 +660,9 @@ save	bookingfrontend	en	Save
 view_resources	bookingfrontend	en	View resources
 organizer	bookingfrontend	en	Organizer
 enter_title	bookingfrontend	en	Please enter a title
+enter_number_of_participant bookingfrontend en Enter number of participants
+enter_the_mobile_number_of_recipient  bookingfrontend en Enter mobile number for receipt
+register_unregister_pre-register  bookingfrontend en Select action: Register/Unregister/Pre-register
+pre_register bookingfrontend en Pre-register
+unregister  bookingfrontend en Unregister
+register  bookingfrontend en  Register

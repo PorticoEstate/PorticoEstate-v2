@@ -9,20 +9,20 @@ interface AddParticipantsHeaderProps {
 }
 
 const AddParticipantsHeader: FC<AddParticipantsHeaderProps> = ({ activityName, maxParticipants, numberOfParticipants }: AddParticipantsHeaderProps) => {
-    const { t } = useTrans();
+    const t = useTrans();
 
     return (
         <>
             <h2>{activityName}</h2>
-            <h3>
-                {t('bookingfrontend.max_participants_info')}: 
+            <p>
+                <b>{t('bookingfrontend.max_participants_info')}</b>: 
                 {maxParticipants}
-            </h3>
-            <h3>
-                {t('booking.participants')}:
+            </p>
+            <p>
+                <b>{t('booking.participants')}</b>: 
                 {numberOfParticipants}
-            </h3>
-            <div>
+            </p>
+            <div style={{marginBottom: '0.7rem'}}>
                 <h2>{t('bookingfrontend.participant_registration')}</h2>
                 <ol>
                     <li>{t('bookingfrontend.enter_number_of_participant')}</li>

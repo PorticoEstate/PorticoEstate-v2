@@ -2,7 +2,6 @@
 import EventEditing from "@/components/event/editing/editing-controller";
 import { ActivityData } from "@/service/api/event-info";
 import { FC, useState } from "react";
-import { DateTime } from 'luxon';
 import EventView from "./page-view";
 
 interface EventPageProps {

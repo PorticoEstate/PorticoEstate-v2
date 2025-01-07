@@ -4,32 +4,31 @@ import { FC } from "react";
 import styles from '../event.module.scss';
 
 interface ResourcesGroupProps {
-    allResources: string[];
-    selectedResources: string[];
-    updateField: (selectedResources: string[]) => void;
+    allResources: Map<number, string>;
+    selectedResources: Map<number, string>;
+    updateField: (selectedResources: Map<number, string>) => void;
 }
 
-
 const ResourcesGroup: FC<ResourcesGroupProps> = ({ allResources, selectedResources, updateField }: ResourcesGroupProps) => {
-    const onChange = (resourceName: string) => {
-        const updated = selectedResources.includes(resourceName) ? 
-            selectedResources.filter((res) => res !== resourceName)
-            : [...selectedResources, resourceName];
-        updateField(updated);
+    const onChange = (id: number, name: string) => {
+        const copy = new Map(selectedResources);
+        if (selectedResources.has(id)) copy.delete(id);
+        else copy.set(id, name);
+        updateField(copy);
     }
 
     return (
         <div className={styles.editResources}>
-            { allResources.map((res) => (
+            { Array.from(allResources).map(([id, name]) => (
                 <Chip.Checkbox 
-                    key={res}
-                    value={res}
-                    id={res}
-                    asChild
-                    onClick={() => onChange(res)} 
-                    checked={selectedResources.includes(res)}
+                    key={id}
+                    value={name}
+                    id={id}
+                    asChild 
+                    onClick={() => onChange(id, name)} 
+                    checked={selectedResources.has(id)}
                 >
-                    <label htmlFor={res}>{res}</label>
+                    <label htmlFor={id}>{name}</label>
                 </Chip.Checkbox> 
             ))}
         </div>

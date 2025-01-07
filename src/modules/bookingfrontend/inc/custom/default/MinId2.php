@@ -33,6 +33,7 @@
  * @package phpgroupware
  * @subpackage bookingfrontend
  */
+
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
@@ -183,12 +184,12 @@ class bookingfrontend_external_user extends UserHelper
 			. "SELECT bb_organization.id as org_id, bb_organization.customer_ssn, bb_organization.organization_number, bb_organization.name AS organization_name"
 			. " FROM bb_delegate"
 			. " JOIN  bb_organization ON bb_delegate.organization_id = bb_organization.id"
-			. " WHERE bb_delegate.active = 1 AND bb_delegate.ssn = '{$ssn}'"
+			. " WHERE bb_delegate.active = 1 AND bb_organization.active = 1 AND bb_delegate.ssn = '{$ssn}'"
 			. " UNION"
 			// Personal organizations
 			. " SELECT bb_organization.id as org_id, customer_ssn, organization_number, name AS organization_name"
 			. " FROM bb_organization"
-			. " WHERE (customer_ssn = '{$fodselsnr}' AND customer_identifier_type = 'ssn')"
+			. " WHERE bb_organization.active = 1 AND (customer_ssn = '{$fodselsnr}' AND customer_identifier_type = 'ssn')"
 			. " OR organization_number IN ('" . implode("','", $orgs_validate) . "')"
 			. " UNION"
 			// Role from official registers

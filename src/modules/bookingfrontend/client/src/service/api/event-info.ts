@@ -33,6 +33,7 @@ export interface ActivityData {
     // Parsed info_when field
     info_when: Date;
     info_participant_limit: number;
+    number_of_participants: number;
     info_edit_link: string | null;
     info_cancel_link: string | null;
     info_ical_link: string;

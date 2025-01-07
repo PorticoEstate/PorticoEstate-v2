@@ -2,6 +2,7 @@ import {useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import axios from "axios";
 import { DateTime } from "luxon";
+import { fetchBuildingResources } from "./building";
 
 export type PopperInfoType = FilteredEventInfo;
 
@@ -14,6 +15,7 @@ interface OrgInfo {
 export interface ActivityData {
     id: number;
     building_name: string;
+    building_id: number;
     from_: string;
     to_: string;
     is_public: number;
@@ -41,6 +43,7 @@ export interface ActivityData {
 export interface FilteredEventInfo {
     id: number;
     building_name: string;
+    building_id: number;
     from_: string;
     to_: string;
     is_public: number;
@@ -201,30 +204,24 @@ export const fetchEventData = async (
     );
     const res = await axios.get(url);
     if (res.status !== 200) return null;
+    const event = res.data.events[event_id];
     const parsedWhenField = DateTime.fromFormat(
-        res.data.events[event_id].info_when.split(" - ")[0],
+        event.info_when.split(" - ")[0],
         "dd/LL/yyyy HH:mm"
     ).toJSDate();
     
-    const resourcesNames = res.data.events[event_id].info_resource_info.split(", ");
-    const resourcesIds = res.data.events[event_id].resource_ids;
+    const resourcesNames = event.info_resource_info.split(", ");
+    const resourcesIds = event.resource_ids;
     const gatheredMap = new Map()
     for (let i = 0; i < resourcesIds.length; i++) {
         gatheredMap.set(resourcesIds[i], resourcesNames[i]);
     }
-    // TODO: Get all resources for specific building in event object
-    // Find request, add buildind id in event object
-    //
-    // Stub for all building's resources
-    const buildingResources = new Map(gatheredMap);
-    buildingResources.set(10000001, 'Test 1');
-    buildingResources.set(10000002, 'Test 2');
-    buildingResources.set(10000003, 'Test 3');
+    const buildingResources = await fetchBuildingResources(event.building_id)
     return {
         info_user_can_delete_events: res.data.info_user_can_delete_events,
         ...res.data.events[event_id],
         info_resource_info: gatheredMap,
-        info_resources_allResources: buildingResources,
+        info_resources_allResources: new Map(buildingResources.map(({id, name}) => [id, name])),
         info_when: parsedWhenField,
         type: "event",
     };

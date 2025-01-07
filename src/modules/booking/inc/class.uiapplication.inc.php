@@ -2002,7 +2002,7 @@ class booking_uiapplication extends booking_uicommon
 			{
 				$partial2[$field] = 'dummy';
 			}
-			$dummyfields_int = array('activity_id', 'owner_id');
+			$dummyfields_int = array('activity_id', 'owner_id', 'building_id');
 			foreach ($dummyfields_int as $field)
 			{
 				$partial2[$field] = 1;

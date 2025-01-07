@@ -11,6 +11,12 @@ import './datepicker-children.scss'
 import 'react-datepicker/dist/react-datepicker.css'
 import YearDropdown from "./year-dropdown";
 
+interface CustomHeaderProps {
+    date: Date,
+    changeYear: (year: number) => void;
+    decreaseMonth: () => void;
+    increaseMonth: () => void;
+}
 interface DataPickerProps {
     date: Date;
     updateDate: (date: Date) => void;
@@ -39,7 +45,7 @@ const DatePickerInput: FC<DataPickerProps> = ({ date, updateDate }: DataPickerPr
         changeYear,
         decreaseMonth,
         increaseMonth,
-    }) => {
+    }: CustomHeaderProps) => {
         const dateTime = DateTime.fromJSDate(date);
         return (
             <div className={styles.datePickerBlock}>

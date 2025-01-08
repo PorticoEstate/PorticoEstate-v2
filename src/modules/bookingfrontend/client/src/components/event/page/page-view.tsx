@@ -18,8 +18,9 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
     const t = useTrans();
 
     const whenTime = DateTime.fromJSDate(event.info_when).toFormat('dd. LLL yyyy'); 
-    const fromTime = DateTime.fromJSDate(new Date(event.from_)).toFormat('HH.mm');
-    const toTime = DateTime.fromJSDate(new Date(event.to_)).toFormat('HH.mm');
+    const fromTime = DateTime.fromJSDate(event.from_).toFormat('HH.mm');
+    const toTime = DateTime.fromJSDate(event.to_).toFormat('HH.mm');
+
     return (
         <main style={{padding: '0px 5px'}}>
             <h2 style={{ marginBottom: '1rem' }}>{event.activity_name}</h2>

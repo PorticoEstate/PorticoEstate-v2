@@ -16,8 +16,8 @@ export interface ActivityData {
     id: number;
     building_name: string;
     building_id: number;
-    from_: string;
-    to_: string;
+    from_: Date;
+    to_: Date;
     is_public: number;
     activity_name: string;
     resources: number[];
@@ -205,15 +205,19 @@ export const fetchEventData = async (
     );
     const res = await axios.get(url);
     if (res.status !== 200) return null;
+
     const event = res.data.events[event_id];
-    const parsedWhenField = DateTime.fromFormat(
+
+    const fromTime = DateTime.fromSQL(event.from_).toJSDate();
+    const toTime = DateTime.fromSQL(event.to_).toJSDate();
+    const whenTime = DateTime.fromFormat(
         event.info_when.split(" - ")[0],
         "dd/LL/yyyy HH:mm"
     ).toJSDate();
     
     const resourcesNames = event.info_resource_info.split(", ");
     const resourcesIds = event.resource_ids;
-    const gatheredMap = new Map()
+    const gatheredMap = new Map();
     for (let i = 0; i < resourcesIds.length; i++) {
         gatheredMap.set(resourcesIds[i], resourcesNames[i]);
     }
@@ -221,9 +225,11 @@ export const fetchEventData = async (
     return {
         info_user_can_delete_events: res.data.info_user_can_delete_events,
         ...res.data.events[event_id],
+        from_: fromTime,
+        to_: toTime,
         info_resource_info: gatheredMap,
         info_resources_allResources: new Map(buildingResources.map(({id, name}) => [id, name])),
-        info_when: parsedWhenField,
+        info_when: whenTime,
         type: "event",
     };
 };

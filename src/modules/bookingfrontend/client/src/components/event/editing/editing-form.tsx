@@ -4,6 +4,7 @@ import {Field, Textfield, Label} from "@digdir/designsystemet-react";
 import { ActivityData } from "@/service/api/event-info";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
+import { DateTime } from "luxon";
 import MaxParticipantInput from "./max-participant-input";
 import DatePickerInput from "../../date-picker/datepicker-input";
 import ResourcesGroup from "./resources-group";
@@ -29,17 +30,20 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
             <Field>
                 <Label>Time</Label>
                 <div className={styles.editTimeBlock}>
+                    {/* TODO: Optimize parsing date from input.time */}
                     <Textfield
                         prefix={t('bookingfrontend.from')} 
                         label="" 
                         type="time"
-                        onChange={(e) => updateField('from_', e.target.value)}
+                        value={DateTime.fromJSDate(event.from_).toFormat('HH:mm')}
+                        onChange={(e) => updateField('from_', DateTime.fromFormat(e.target.value, 'HH:mm').toJSDate())}
                     />
                     <Textfield 
                         prefix={t('bookingfrontend.to')} 
                         label="" 
                         type="time"
-                        onChange={(e) => updateField('to_', e.target.value)}
+                        value={DateTime.fromJSDate(event.to_).toFormat('HH:mm')}
+                        onChange={(e) => updateField('to_', DateTime.fromFormat(e.target.value, 'HH:mm').toJSDate())}
                     />
                 </div>
             </Field>

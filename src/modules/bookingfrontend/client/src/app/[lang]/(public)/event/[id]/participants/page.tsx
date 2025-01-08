@@ -12,7 +12,6 @@ interface EventProps {
     params: ResourceParams;
 }
 
-
 const AddParticipant: FC<EventProps> = async (props: EventProps) => {
     const eventId = parseInt(props.params.id, 10);
     if (isNaN(eventId)) return notFound();
@@ -21,8 +20,8 @@ const AddParticipant: FC<EventProps> = async (props: EventProps) => {
     if (!data) return notFound();
 
     return (
-        <main>
-               <AddParticipantsHeader
+        <main style={{padding: '0px 5px'}}>
+            <AddParticipantsHeader
                 activityName={data.activity_name}
                 maxParticipants={data.info_participant_limit}
                 numberOfParticipants={data.number_of_participants}

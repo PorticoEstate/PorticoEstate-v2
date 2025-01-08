@@ -2,6 +2,7 @@
 import { Chip } from "@digdir/designsystemet-react";
 import { FC } from "react";
 import styles from '../event.module.scss';
+import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 
 interface ResourcesGroupProps {
     allResources: Map<number, string>;
@@ -28,7 +29,10 @@ const ResourcesGroup: FC<ResourcesGroupProps> = ({ allResources, selectedResourc
                     onClick={() => onChange(id, name)} 
                     checked={selectedResources.has(id)}
                 >
-                    <label htmlFor={id + ''}>{name}</label>
+                    <div>
+                        <ColourCircle size="medium" resourceId={id}/>
+                        <label htmlFor={id + ''}>{name}</label>
+                    </div>
                 </Chip.Checkbox> 
             ))}
         </div>

@@ -14,7 +14,7 @@ interface FormProps {
 
 const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
     const t = useTrans();
-
+    
     return (
         <div className={styles.editForm}>
             <Textfield
@@ -59,6 +59,7 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
             <Textfield 
                     label={t('bookingfrontend.organizer')}
                     onChange={(e) => updateField('organizer', e.target.value)}
+                    value={event.organizer}
                 />
             <Field>
                 <Label>{t('bookingfrontend.max_participants_info')}</Label>

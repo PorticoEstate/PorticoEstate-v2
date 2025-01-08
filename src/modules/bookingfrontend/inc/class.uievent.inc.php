@@ -854,6 +854,7 @@ class bookingfrontend_uievent extends booking_uievent
 			'id',
 			'building_name',
 			'building_id',
+			'organizer',
 			'from_',
 			'to_',
 			'is_public',

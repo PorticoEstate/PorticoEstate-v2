@@ -26,7 +26,13 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
             <span>#{event.id}</span>
             <p style={{marginTop: '2rem'}}><b>{t('bookingfrontend.date')}: </b>{whenTime}</p>
             <p><b>Time: </b>{fromTime}-{toTime}</p>
-            <p><b>{t('bookingfrontend.place')}: </b>{event.building_name}</p>
+            <p>
+                <b>{t('bookingfrontend.place')}: </b>
+                <Link 
+                    href={`../building/${event.building_id}`}
+                >{event.building_name}
+                </Link> 
+            </p>
             <div className={styles.resourceViewBlock}>
                 <b>{t('bookingfrontend.resource')}: </b>
                 <ResourcesDropdown resources={event.info_resource_info}/>

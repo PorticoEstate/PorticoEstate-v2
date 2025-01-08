@@ -20,7 +20,8 @@ class booking_uiasync_settings extends booking_uicommon
 		'booking_async_task_delete_participants_enabled',
 		'booking_async_task_delete_expired_blocks_enabled',
 		'booking_async_task_delete_access_log_enabled',
-		'booking_async_task_anonyminizer_enabled'
+		'booking_async_task_anonyminizer_enabled',
+		'booking_async_task_clean_up_old_posts_enabled'
 	);
 
 	public function __construct()
@@ -47,6 +48,7 @@ class booking_uiasync_settings extends booking_uicommon
 			$settings['booking_async_task_delete_expired_blocks_enabled'] = Sanitizer::get_var('booking_async_task_delete_expired_blocks_enabled', 'bool', 'POST');
 			$settings['booking_async_task_delete_access_log_enabled'] = Sanitizer::get_var('booking_async_task_delete_access_log_enabled', 'bool', 'POST');
 			$settings['booking_async_task_anonyminizer_enabled'] = Sanitizer::get_var('booking_async_task_anonyminizer_enabled', 'bool', 'POST');
+			$settings['booking_async_task_clean_up_old_posts_enabled'] = Sanitizer::get_var('booking_async_task_clean_up_old_posts_enabled', 'bool', 'POST');
 			$this->bo->update($settings);
 		}
 

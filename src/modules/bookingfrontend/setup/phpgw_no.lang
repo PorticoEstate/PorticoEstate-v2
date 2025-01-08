@@ -659,9 +659,9 @@ save	bookingfrontend	no	Save
 view_resources	bookingfrontend	no	Vis ressurses
 organizer	bookingfrontend	no	Arrangør
 enter_title	bookingfrontend	no	Angi en tittel
-enter_number_of_participant bookingfrontend no  Legg inn antall deltakere 
-enter_the_mobile_number_of_recipient  bookingfrontend no  Legg inn mobilnummeret til mottaker av kvittering
-register_unregister_pre-register  bookingfrontend no  Velg handling påmeld/avmeld/forhåndspåmeld
-pre_register bookingfrontend no Påmeld
-unregister  bookingfrontend no Avmeld
-register  bookingfrontend no  Forhåndspåmeld
+enter_number_of_participant	bookingfrontend	no	Legg inn antall deltakere 
+enter_the_mobile_number_of_recipient	bookingfrontend	no	Legg inn mobilnummeret til mottaker av kvittering
+register_unregister_pre-register	bookingfrontend	no	Velg handling påmeld/avmeld/forhåndspåmeld
+pre_register	bookingfrontend	no	Påmeld
+unregister	bookingfrontend	no	Avmeld
+register	bookingfrontend	no	Forhåndspåmeld

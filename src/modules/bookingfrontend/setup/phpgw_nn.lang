@@ -660,9 +660,9 @@ save	bookingfrontend	nn	Save
 view_resources	bookingfrontend	nn	Vis ressurses
 organizer	bookingfrontend	nn	Arrangør
 enter_title	bookingfrontend	nn	Angi ein tittel
-enter_number_of_participant bookingfrontend nn  Legg inn antall deltakere 
-enter_the_mobile_number_of_recipient  bookingfrontend nn  Legg inn mobilnummeret til mottaker av kvittering
-register_unregister_pre-register  bookingfrontend nn  Velg handling påmeld/avmeld/forhåndspåmeld
-pre_register bookingfrontend nn Påmeld
-unregister  bookingfrontend nn Avmeld
-register  bookingfrontend nn  Forhåndspåmeld
+enter_number_of_participant	bookingfrontend	nn	Legg inn antall deltakere 
+enter_the_mobile_number_of_recipient	bookingfrontend	nn	Legg inn mobilnummeret til mottaker av kvittering
+register_unregister_pre-register	bookingfrontend	nn	Velg handling påmeld/avmeld/forhåndspåmeld
+pre_register	bookingfrontend	nn	Påmeld
+unregister	bookingfrontend	nn	Avmeld
+register	bookingfrontend	nn	Forhåndspåmeld

@@ -5,10 +5,11 @@
 }
 
 .editForm {
-    padding-left: 0.3rem;
+    padding: 0 0.3rem;
     > div {
         margin-bottom: 0.6rem;
-        width: 21rem;
+        max-width: 400px;
+        min-width: 285px;
         > label {
             color: var(--ds-color-neutral-text-subtle);
             font-family: '__Roboto_ba5676', '__Roboto_Fallback_ba5676';
@@ -25,9 +26,7 @@
         width: 10rem
     }
 }
-.react-datepicker__input-container {
-    margin-bottom: 0;
-}
+
 .participantInput {
     display: flex;
     align-items: center;

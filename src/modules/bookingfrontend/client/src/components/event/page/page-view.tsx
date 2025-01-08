@@ -21,7 +21,7 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
     const fromTime = DateTime.fromJSDate(new Date(event.from_)).toFormat('HH.mm');
     const toTime = DateTime.fromJSDate(new Date(event.to_)).toFormat('HH.mm');
     return (
-        <main>
+        <main style={{padding: '0px 5px'}}>
             <h2 style={{ marginBottom: '1rem' }}>{event.activity_name}</h2>
             <span>#{event.id}</span>
             <p style={{marginTop: '2rem'}}><b>{t('bookingfrontend.date')}: </b>{whenTime}</p>

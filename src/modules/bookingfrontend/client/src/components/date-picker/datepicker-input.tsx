@@ -30,7 +30,7 @@ const DatePickerInput: FC<DataPickerProps> = ({ date, updateDate }: DataPickerPr
     const CustomInput = forwardRef<HTMLInputElement>(({ onClick }: any, ref) => (
         <Field style={{marginBottom: 0}} onClick={() => onClick()}>
             <Field.Description style={{marginBottom: 0}}>{t('bookingfrontend.date')}</Field.Description>
-            <Field.Affixes style={{width: '21rem'}}>
+            <Field.Affixes>
                 <Field.Affix><FontAwesomeIcon icon={faCalendarAlt}/></Field.Affix>
                 <Input 
                     ref={ref}

@@ -439,7 +439,7 @@ Short description. For public events, activities and training under the directio
 To borrow premises you must verify that you have read terms and conditions	booking	nn	For å kunne låne lokaler må du bekrefte at du har lest dei juridiske betingelsane
 In order to send the invoice we need information about either customer organization number or norwegian social security number	booking	nn	For å kunne sende faktura treng vi opplysningar om organisasjonsnr. eller fødselsnr. Interne fra BK oppgir ressursnr. Organisasjonsnr. finn du her: www.brreg.no
 Event type	booking	nn	Arrangementstype
-Private event	booking	nn	Privat arrangement
+Private event	booking	nn	Arrangement
 Public event	booking	nn	Offentleg arrangement
 customer_ssn contains an invalid Norwegian social security number (11 digits)	booking	nn	Fødselsnummer er ugyldig (11 siffer)
 show only unexported	booking	nn	Vis bare ikkje-eksporterte

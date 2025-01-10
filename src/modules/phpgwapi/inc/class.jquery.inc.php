@@ -74,7 +74,7 @@ class phpgwapi_jquery
 			$_jquery_core = 'jquery-3.7.1';
 		}
 
-		$_jquery_ui	 = 'jquery-ui-1.13.2';
+		$_jquery_ui	 = 'jquery-ui-1.14.1';
 		$_type		 = '.min'; // save some download
 
 		if (Settings::getInstance()->get('flags')['currentapp'] == 'bookingfrontend')
@@ -257,7 +257,7 @@ class phpgwapi_jquery
 					//				"js/{$_jquery_core}{$_type}",
 					'bootstrap-multiselect' => array("js/bootstrap-multiselect.min")
 				);
-				if (! in_array($userSettings['preferences']['common']['template_set'] ,array('bootstrap', 'bookingfrontend', 'mobilefrontend')))
+				if (! in_array($userSettings['preferences']['common']['template_set'], array('bootstrap', 'bookingfrontend', 'mobilefrontend')))
 				{
 					$load['popper']					 = array("popper2.min");
 					$load['bootstrap5']				 = array("vendor/twbs/bootstrap/dist/js/bootstrap.min");
@@ -269,8 +269,8 @@ class phpgwapi_jquery
 				else
 				{
 					unset($load['bootstrap-multiselect']); //to be inserted last
-		//			$load['popper']					 = array("popper2.min");
-		//			$load['bootstrap5']				 = array("vendor/twbs/bootstrap/dist/js/bootstrap.min");
+					//			$load['popper']					 = array("popper2.min");
+					//			$load['bootstrap5']				 = array("vendor/twbs/bootstrap/dist/js/bootstrap.min");
 
 					$load['bootstrap-multiselect']	 = array("js/bootstrap-multiselect.min");
 
@@ -334,7 +334,7 @@ class phpgwapi_jquery
 				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/timepicker/css/jquery.timepicker.min.css");
 
 				break;
-			case 'core'://nothing to load
+			case 'core': //nothing to load
 				break;
 			default:
 				$err = "Unsupported jQuery widget '%1' supplied to phpgwapi_jquery::load_widget()";

@@ -184,6 +184,20 @@ class Application
     public $contact_phone;
 
     /**
+     * @OA\Property(
+     *     type="array",
+     *     @OA\Items(
+     *         type="object",
+     *         @OA\Property(property="agegroup_id", type="integer"),
+     *         @OA\Property(property="male", type="integer"),
+     *         @OA\Property(property="female", type="integer")
+     *     )
+     * )
+     * @Expose
+     */
+    public $agegroups;
+
+    /**
      * @OA\Property(type="array", @OA\Items(type="integer"))
      * @Expose
      */

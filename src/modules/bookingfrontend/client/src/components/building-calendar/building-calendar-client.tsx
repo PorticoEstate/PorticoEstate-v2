@@ -37,6 +37,7 @@ import {useBuilding, useBuildingResources} from "@/service/api/building";
 import EventCrud from "@/components/building-calendar/modules/event/edit/event-crud";
 import {usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
 import {IUpdatePartialApplication} from "@/service/types/api/application.types";
+import DebugInfo from "@/components/building-calendar/util/debug-info/debug-info";
 
 interface BuildingCalendarProps {
     events?: IEvent[];
@@ -392,6 +393,23 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         }
     }, [isMobile]);
 
+    const generateBusinessHours = useCallback(() => {
+        return props.seasons.map(season => ({
+            daysOfWeek: [season.wday === 7 ? 0 : season.wday], // Convert Sunday from 7 to 0
+            startTime: season.from_,
+            endTime: season.to_
+        }));
+    }, [props.seasons]);
+
+    const generateEventConstraint = useCallback(() => {
+        return {
+            businessHours: generateBusinessHours(),
+            startTime: slotMinTime,
+            endTime: slotMaxTime
+        };
+    }, [generateBusinessHours, slotMinTime, slotMaxTime]);
+
+
     const calendarVisEvents = useMemo(() => [...calendarEvents, ...tempEventArr, currentTempEvent].filter(Boolean) as EventInput[], [calendarEvents, tempEventArr, currentTempEvent]);
 
     // console.log([...calendarEvents, ...tempEventArr, ...renderBackgroundEvents()])
@@ -418,6 +436,12 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
     return (
         <React.Fragment>
+            <DebugInfo
+                currentDate={currentDate}
+                seasons={props.seasons}
+                view={view}
+                enabledResources={enabledResources}
+            />
             <CalendarInnerHeader view={view} calendarRef={calendarRef}
                                  setView={(v) => setView(v)}
                                  setLastCalendarView={() => setView(lastCalendarView)} building={props.building}/>
@@ -430,6 +454,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
                 headerToolbar={false}
                 slotDuration={"00:30:00"}
                 themeSystem={'bootstrap'}
+
                 firstDay={1}
                 eventClick={(clickInfo) => handleEventClick(clickInfo as any)}
                 datesSet={(dateInfo) => {
@@ -485,6 +510,15 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
                 eventResize={handleEventResize}
                 eventDrop={handleEventResize}
                 initialDate={currentDate.toJSDate()}
+                businessHours={generateBusinessHours()}
+                eventConstraint={generateEventConstraint()}
+                selectConstraint={generateEventConstraint()}
+
+                // selectConstraint={{
+                //     startTime: slotMinTime,
+                //     endTime: slotMaxTime,
+                //     daysOfWeek: props.seasons.map(season => (season.wday === 7 ? 0 : season.wday))
+                // }}
                 // style={{gridColumn: 2}}
             />
 
@@ -509,3 +543,6 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 }
 
 export default BuildingCalendarClient;
+
+
+

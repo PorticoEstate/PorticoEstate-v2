@@ -275,7 +275,7 @@ export function useUpdatePartialApplication() {
     return useMutation({
         mutationFn: async ({id, application}: {id: number, application: IUpdatePartialApplication}) => {
             const url = phpGWLink(['bookingfrontend', 'applications', 'partials', id]);
-            const data: Omit<IUpdatePartialApplication, 'resources'> & {resources?: number[]} = {
+            const data: Omit<IUpdatePartialApplication, 'resources' | 'agegroups'> & {resources?: number[], agegroups?: any[]} = {
                 ...application,
                 resources: application.resources?.map(a => a.id),
                 agegroups: application.agegroups?.map(a => ({agegroup_id: a.id, male: a.male, female: a.female}))

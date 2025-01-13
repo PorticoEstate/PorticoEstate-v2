@@ -1,6 +1,7 @@
 import {keepPreviousData, useMutation, useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
 import {IBookingUser} from "@/service/types/api.types";
 import {
+    fetchBuildingAgeGroups, fetchBuildingAudience,
     fetchBuildingSchedule,
     fetchDeliveredApplications,
     fetchInvoices,
@@ -12,6 +13,7 @@ import {phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useEffect} from "react";
+import {IAgeGroup, IAudience} from "@/service/types/Building";
 
 
 interface UseScheduleOptions {
@@ -242,9 +244,13 @@ export function useCreatePartialApplication() {
     return useMutation({
         mutationFn: async (newApplication: Partial<NewPartialApplication>) => {
             const url = phpGWLink(['bookingfrontend', 'applications', 'partials']);
+            const data = {
+                ...newApplication,
+                agegroups: newApplication.agegroups?.map(a => ({agegroup_id: a.id, male: a.male, female: a.female}))
+            }
             const response = await fetch(url, {
                 method: 'POST',
-                body: JSON.stringify(newApplication),
+                body: JSON.stringify(data),
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -271,7 +277,8 @@ export function useUpdatePartialApplication() {
             const url = phpGWLink(['bookingfrontend', 'applications', 'partials', id]);
             const data: Omit<IUpdatePartialApplication, 'resources'> & {resources?: number[]} = {
                 ...application,
-                resources: application.resources?.map(a => a.id)
+                resources: application.resources?.map(a => a.id),
+                agegroups: application.agegroups?.map(a => ({agegroup_id: a.id, male: a.male, female: a.female}))
             }
             const response = await fetch(url, {
                 method: 'PATCH',
@@ -363,4 +370,29 @@ export function useDeletePartialApplication() {
             queryClient.invalidateQueries({queryKey: ['partialApplications']});
         },
     });
+}
+
+
+
+export function useBuildingAgeGroups(building_id: number): UseQueryResult<IAgeGroup[]> {
+    return useQuery(
+        {
+            queryKey: ['building_agegroups', building_id],
+            queryFn: () => fetchBuildingAgeGroups(building_id), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+        }
+    );
+}
+
+
+export function useBuildingAudience(building_id: number): UseQueryResult<IAudience[]> {
+    return useQuery(
+        {
+            queryKey: ['building_audience', building_id],
+            queryFn: () => fetchBuildingAudience(building_id), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+        }
+    );
 }

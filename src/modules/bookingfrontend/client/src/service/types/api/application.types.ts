@@ -39,6 +39,7 @@ export interface IApplication {
     external_archive_key: string | null;
     customer_organization_name: string | null;
     customer_organization_id: number | null;
+    agegroups: IApplicationAgeGroup[];
 }
 
 
@@ -71,6 +72,15 @@ export interface IOrderLine {
     name: string;
 }
 
+interface IApplicationAgeGroup {
+    id: number;
+    name: string;
+    description: string | null;
+    sort: number;
+    male: number;
+    female: number;
+}
+
 
 export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'building_id' | 'activity_id'>{
     dates: Array<{
@@ -78,6 +88,9 @@ export interface NewPartialApplication extends Pick<IApplication, 'name' | 'buil
         to_: string;      // ISO date string
     }>;
     resources: Array<number>;
+    agegroups?: IApplicationAgeGroup[];
+    audience?: number[];
+
 }
 export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'dates' | 'resources'>>{
     id: number;
@@ -87,5 +100,5 @@ export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'd
         to_: string;      // ISO date string
     }>;
     resources?: Array<IShortResource | IResource>;
-
+    agegroups?: IApplicationAgeGroup[];
 }

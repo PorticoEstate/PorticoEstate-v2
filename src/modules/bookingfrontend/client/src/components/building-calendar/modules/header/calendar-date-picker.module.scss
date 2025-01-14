@@ -66,7 +66,59 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             margin-top: 0.5rem;
             padding: 1rem;
+            // Add inside the :global block, within .react-datepicker
+            &__time-container {
+                border-left: 2px solid var(--dsc-card-border-color);
+                width: 160px; // Wider to accommodate two columns
+                margin-left: 1rem;
+                padding-left: 1rem;
 
+                .time-columns {
+                    display: flex;
+                    gap: 0.5rem;
+
+                    .time-column {
+                        flex: 1;
+
+                        &-header {
+                            text-align: center;
+                            padding: 0.5rem;
+                            color: var(--dsc-button-color);
+                            font-size: 0.875rem;
+                        }
+
+                        &-list {
+                            height: 200px !important;
+                            overflow-y: auto;
+                            padding: 0;
+                            margin: 0;
+                            list-style: none;
+
+                            &-item {
+                                padding: 0.5rem;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                height: 2.5rem;
+                                cursor: pointer;
+
+                                &:hover {
+                                    background: var(--dsc-button-background--hover);
+                                }
+
+                                &--selected {
+                                    background: var(--ds-color-base-default) !important;
+                                    color: var(--ds-color-contrast-default) !important;
+
+                                    &:hover {
+                                        background: var(--ds-color-base-hover) !important;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             &__header {
                 background: none;
                 border-bottom: none;

@@ -1,0 +1,32 @@
+.debugContainer {
+    background-color: #f3f4f6;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.debugHeader {
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.debugGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.seasonsList {
+    font-size: 0.75rem;
+}
+
+.seasonHeader {
+    font-weight: bold;
+    margin-bottom: 0.25rem;
+}
+
+.debugInfo {
+    margin-bottom: 0.25rem;
+}

@@ -74,3 +74,22 @@ export interface IBuilding {
     /** Description in JSON format */
     description_json?: string; // JSON object, can use a more specific type if needed
 }
+
+
+export interface IAgeGroup {
+    id: number;
+    name: string;
+    description: string | undefined;
+    active: number;
+    sort: number;
+    activity_id: number;
+}
+
+export interface IAudience {
+    id: number;
+    name: string;
+    description: string | null;
+    active: number;
+    sort: number;
+    activity_id: number;
+}

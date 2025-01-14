@@ -655,7 +655,29 @@ $asyncservice->set_timer(
 	)
 );
 
+/**
+ * The cleanup of old posts
+ */
+$asyncservice->set_timer(
+	array('day' => "*/1"),
+	'booking_async_task_clean_up_old_posts',
+	'booking.async_task.doRun',
+	array(
+		'task_class' => "booking.async_task_clean_up_old_posts"
+	)
+);
 
+/**
+ * The cleanup of old posts
+ */
+$asyncservice->set_timer(
+	array('day' => "*/1"),
+	'booking_async_task_clean_up_old_posts',
+	'booking.async_task.doRun',
+	array(
+		'task_class' => "booking.async_task_clean_up_old_posts"
+	)
+);
 if (in_array($serverSettings['db_type'], array('mssql', 'mssqlnative')))
 {
 	$db->query('SET identity_insert bb_article_category ON', __LINE__, __FILE__);

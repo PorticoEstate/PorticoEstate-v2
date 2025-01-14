@@ -817,6 +817,9 @@ class bookingfrontend_uievent extends booking_uievent
 			$event['info_when'] = $this->info_format_event_time($event['from_'], $event['to_']);
 			$event['info_participant_limit'] = $this->info_calculate_participant_limit($event, $config);
 
+			$number_of_participants = createObject('booking.boparticipant')->get_number_of_participants('event', $event['id']);
+			$event['number_of_participants'] = $number_of_participants;
+
 			// Add resource_ids to the event info
 			$event['resource_ids'] = isset($event['resources']) ? array_map('intval', $event['resources']) : [];
 

@@ -53,7 +53,7 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 
     const tempEvents: Record<string, FCallTempEvent> = useMemo(() => {
         return (cartItems?.list || []).reduce<Record<string, FCallTempEvent>>((all, curr) => {
-            if(!curr.resources.some(res => res.building_id != null && +res.building_id === +props.currentBuilding)){
+            if(!curr.resources?.some(res => res.building_id != null && +res.building_id === +props.currentBuilding)){
                 return all;
             }
 
@@ -65,7 +65,7 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
                     editable: true,
                     start: applicationTimeToLux(date.from_).toJSDate(),
                     end: applicationTimeToLux(date.to_).toJSDate(),
-                    extendedProps: {resources: curr.resources.map(a => a.id), type: "temporary", applicationId: curr.id},
+                    extendedProps: {resources: curr.resources.map(a => a.id), type: "temporary", applicationId: curr.id, building_id: curr.building_id},
                     id: `${date.id}`,
                     title: curr.name
                 }

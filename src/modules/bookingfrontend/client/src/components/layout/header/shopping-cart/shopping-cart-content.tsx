@@ -14,9 +14,11 @@ import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
 import {deletePartialApplication} from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
+import {PencilIcon} from "@navikt/aksel-icons";
 
 interface ShoppingCartContentProps {
     setOpen: Dispatch<boolean>;
+    setCurrentApplication: Dispatch<{ application_id: number, date_id: number, building_id: number } | undefined>;
 }
 
 
@@ -68,7 +70,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
 
     const [expandedId, setExpandedId] = useState<number>();
     const getStartTime = (application: IApplication) => {
-        if (application.dates.length === 1) {
+        if ((application.dates?.length || 0) === 1) {
             const from = applicationTimeToLux(application.dates[0].from_);
             const to = applicationTimeToLux(application.dates[0].to_);
             return formatDateRange(from, to, i18n).join(' | ');
@@ -80,7 +82,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                     padding: 0
                 }}>
 
-                {application.dates.map((date) => {
+                {application.dates?.map((date) => {
                     const from = applicationTimeToLux(date.from_);
                     const to = applicationTimeToLux(date.to_);
 
@@ -88,10 +90,14 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                 })}
             </List.Unordered>
         }
-        return <span><Badge count={application.dates.length} color={'neutral'}/> Flere tidspunkt</span>
+        return <span><Badge count={application.dates?.length || 0} color={'neutral'}/> Flere tidspunkt</span>
     }
 
 
+    const openEdit = (item: IApplication) =>  {
+        props.setCurrentApplication({application_id: item.id, date_id: item.dates[0].id, building_id: item.building_id})
+        props.setOpen(false);
+    }
 
     return (
         <PopperContentSharedWrapper onClose={() => props.setOpen(false)} header={!isMobile}>
@@ -129,7 +135,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                                     Hva
                                 </Table.HeaderCell>
                                 <Table.HeaderCell>
-                                    Vis søknad
+                                    Rediger
                                 </Table.HeaderCell>
                                 <Table.HeaderCell>
                                     Fjern søknad
@@ -152,16 +158,14 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                                         {item.building_name}
                                     </Table.Cell>
                                     <Table.Cell>
-                                        <ResourceCircles resources={item.resources} maxCircles={4} size={'small'} isExpanded={expandedId === item.id} />
+                                        <ResourceCircles resources={item.resources || []} maxCircles={4} size={'small'} isExpanded={expandedId === item.id} />
                                     </Table.Cell>
                                     <Table.Cell>
 
-                                        <Button variant="tertiary" asChild>
-                                            <Link
-                                                href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiapplication.show', id: item.id, secret: item.secret || ''}, false)}
-                                                className={'link-text link-text-unset normal'} target={'_blank'}>
-                                                <FontAwesomeIcon icon={faArrowUpRightFromSquare}/>
-                                            </Link>
+                                        <Button variant="tertiary" className={'link-text link-text-unset normal'} onClick={() => openEdit(item)}>
+
+                                                {/*<FontAwesomeIcon icon={faArrowUpRightFromSquare}/>*/}
+                                                <PencilIcon />
                                         </Button>
 
                                     </Table.Cell>

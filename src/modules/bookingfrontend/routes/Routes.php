@@ -27,7 +27,10 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/{id}/documents', BuildingController::class . ':getDocuments');
         $group->get('/document/{id}/download', BuildingController::class . ':downloadDocument');
         $group->get('/{id}/schedule', BuildingController::class . ':getSchedule');
+        $group->get('/{id}/agegroups', BuildingController::class . ':getAgeGroups');
+        $group->get('/{id}/audience', BuildingController::class . ':getAudience');
     });
+
     $group->group('/resources', function (RouteCollectorProxy $group)
     {
         $group->get('', ResourceController::class . ':index');

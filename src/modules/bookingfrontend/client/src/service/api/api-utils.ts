@@ -6,6 +6,7 @@ import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent} from "@/service/pecalendar.types";
 import {cookies} from "next/headers";
+import {IAgeGroup, IAudience} from "@/service/types/Building";
 
 
 
@@ -124,6 +125,18 @@ export async function fetchDeliveredApplications(): Promise<{ list: IApplication
 
 export async function fetchInvoices(): Promise<ICompletedReservation[]> {
     const url = phpGWLink(['bookingfrontend', 'invoices']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+export async function fetchBuildingAgeGroups(building_id: number): Promise<IAgeGroup[]> {
+    const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'agegroups']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+export async function fetchBuildingAudience(building_id: number): Promise<IAudience[]> {
+    const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'audience']);
     const response = await fetch(url);
     const result = await response.json();
     return result;

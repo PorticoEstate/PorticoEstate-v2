@@ -1,8 +1,8 @@
 import React, {FC} from 'react';
 import styles from './event-content.module.scss';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faClock, faUser, faLayerGroup} from "@fortawesome/free-solid-svg-icons";
-import {formatDateRange, formatEventTime, formatTimeStamp} from "@/service/util";
+import {faUser, faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import {formatDateRange} from "@/service/util";
 import {FCallEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {usePopperGlobalInfo} from "@/service/api/event-info";

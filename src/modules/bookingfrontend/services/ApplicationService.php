@@ -34,11 +34,14 @@ class ApplicationService
             $application->dates = $this->fetchDates($application->id);
             $application->resources = $this->fetchResources($application->id);
             $application->orders = $this->fetchOrders($application->id);
+            $application->agegroups = $this->fetchAgeGroups($application->id);
+            $application->audience = $this->fetchTargetAudience($application->id);
             $applications[] = $application->serialize([]);
         }
 
         return $applications;
     }
+
 
 
     public function getApplicationsBySsn(string $ssn): array
@@ -58,6 +61,8 @@ class ApplicationService
             $application->dates = $this->fetchDates($application->id);
             $application->resources = $this->fetchResources($application->id);
             $application->orders = $this->fetchOrders($application->id);
+            $application->agegroups = $this->fetchAgeGroups($application->id);
+            $application->audience = $this->fetchTargetAudience($application->id);
             $applications[] = $application->serialize([]);
         }
 
@@ -218,6 +223,7 @@ class ApplicationService
         try {
             $this->db->beginTransaction();
 
+            // Save main application data
             if (!empty($data['id'])) {
                 $receipt = $this->updateApplication($data);
                 $id = $data['id'];
@@ -227,18 +233,26 @@ class ApplicationService
                 $this->update_id_string();
             }
 
-            // Handle purchase orders if present
+            // Save age groups if present
+            if (!empty($data['agegroups'])) {
+                $this->saveApplicationAgeGroups($id, $data['agegroups']);
+            }
+
+            // Save target audience if present
+            if (!empty($data['audience'])) {
+                $this->saveApplicationTargetAudience($id, $data['audience']);
+            }
+
+            // Handle other related data...
             if (!empty($data['purchase_order']['lines'])) {
                 $data['purchase_order']['application_id'] = $id;
                 $this->savePurchaseOrder($data['purchase_order']);
             }
 
-            // Handle resource mappings
             if (!empty($data['resources'])) {
                 $this->saveApplicationResources($id, $data['resources']);
             }
 
-            // Handle dates
             if (!empty($data['dates'])) {
                 $this->saveApplicationDates($id, $data['dates']);
             }
@@ -275,6 +289,12 @@ class ApplicationService
         // Get associated dates
         $result['dates'] = $this->fetchDates($id);
 
+        // Get age groups
+        $result['agegroups'] = $this->fetchAgeGroups($id);
+
+        // Get target audience
+        $result['audience'] = $this->fetchTargetAudience($id);
+
         // Get purchase orders if any
         $result['purchase_order'] = $this->fetchOrders($id);
 
@@ -300,13 +320,13 @@ class ApplicationService
     private function insertApplication(array $data): array
     {
         $sql = "INSERT INTO bb_application (
-        status, session_id, building_name,
+        status, session_id, building_name,building_id,
         activity_id, contact_name, contact_email, contact_phone,
         responsible_street, responsible_zip_code, responsible_city,
         customer_identifier_type, customer_organization_number,
         created, modified, secret, owner_id, name
     ) VALUES (
-        :status, :session_id, :building_name,
+        :status, :session_id, :building_name, :building_id,
         :activity_id, :contact_name, :contact_email, :contact_phone,
         :responsible_street, :responsible_zip_code, :responsible_city,
         :customer_identifier_type, :customer_organization_number,
@@ -317,6 +337,7 @@ class ApplicationService
             ':status' => $data['status'],
             ':session_id' => $data['session_id'],
             ':building_name' => $data['building_name'],
+            ':building_id' => $data['building_id'],
             ':activity_id' => $data['activity_id'] ?? null,
             ':contact_name' => $data['contact_name'],
             ':contact_email' => $data['contact_email'],
@@ -344,6 +365,7 @@ class ApplicationService
     {
         $sql = "UPDATE bb_application SET
         building_name = :building_name,
+        building_id = :building_id,
         activity_id = :activity_id,
         contact_name = :contact_name,
         contact_email = :contact_email,
@@ -361,6 +383,7 @@ class ApplicationService
             ':id' => $data['id'],
             ':session_id' => $data['session_id'],
             ':building_name' => $data['building_name'],
+            ':building_id' => $data['building_id'],
             ':activity_id' => $data['activity_id'] ?? null,
             ':contact_name' => $data['contact_name'],
             ':contact_email' => $data['contact_email'],
@@ -474,6 +497,92 @@ class ApplicationService
             ':parent_mapping_id' => $line['parent_mapping_id'] ?? null
         ]);
     }
+
+    private function fetchAgeGroups(int $application_id): array
+    {
+        $sql = "SELECT ag.*, aag.male, aag.female
+                FROM bb_application_agegroup aag
+                JOIN bb_agegroup ag ON aag.agegroup_id = ag.id
+                WHERE aag.application_id = :application_id
+                ORDER BY ag.sort";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $application_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function fetchTargetAudience(int $application_id): array
+    {
+        $sql = "SELECT ta.id
+                FROM bb_application_targetaudience ata
+                JOIN bb_targetaudience ta ON ata.targetaudience_id = ta.id
+                WHERE ata.application_id = :application_id
+                ORDER BY ta.sort";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $application_id]);
+        return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'id');
+    }
+
+    public function saveApplicationAgeGroups(int $application_id, array $agegroups): void
+    {
+//        $this->db->beginTransaction();
+        try {
+            // Delete existing age groups
+            $sql = "DELETE FROM bb_application_agegroup WHERE application_id = :application_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':application_id' => $application_id]);
+
+            // Insert new age groups
+            $sql = "INSERT INTO bb_application_agegroup
+                    (application_id, agegroup_id, male, female)
+                    VALUES (:application_id, :agegroup_id, :male, :female)";
+            $stmt = $this->db->prepare($sql);
+
+            foreach ($agegroups as $agegroup) {
+                $stmt->execute([
+                    ':application_id' => $application_id,
+                    ':agegroup_id' => $agegroup['agegroup_id'],
+                    ':male' => $agegroup['male'],
+                    ':female' => $agegroup['female']
+                ]);
+            }
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function saveApplicationTargetAudience(int $application_id, array $audience_ids): void
+    {
+//        $this->db->beginTransaction();
+        try {
+            // Delete existing target audience
+            $sql = "DELETE FROM bb_application_targetaudience
+                    WHERE application_id = :application_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':application_id' => $application_id]);
+
+            // Insert new target audience
+            $sql = "INSERT INTO bb_application_targetaudience
+                    (application_id, targetaudience_id)
+                    VALUES (:application_id, :targetaudience_id)";
+            $stmt = $this->db->prepare($sql);
+
+            foreach ($audience_ids as $audience_id) {
+                $stmt->execute([
+                    ':application_id' => $application_id,
+                    ':targetaudience_id' => $audience_id
+                ]);
+            }
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
 
     /**
      * Get an application by ID

@@ -1,8 +1,9 @@
-import React, {Dispatch, FC, useEffect, useRef} from 'react';
+import React, {Dispatch, FC, useEffect, useRef, useState} from 'react';
 import {arrow, autoUpdate, flip, offset, shift, useFloating} from "@floating-ui/react";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import ShoppingCartContent from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import MobileDialog from "@/components/dialog/mobile-dialog";
+import EventCrud from "@/components/building-calendar/modules/event/edit/event-crud";
 
 interface ShoppingCartPopperProps {
     anchor: HTMLButtonElement | null;
@@ -12,6 +13,11 @@ interface ShoppingCartPopperProps {
 
 const placement = 'bottom-end';
 const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
+    const [currentApplication, setCurrentApplication] = useState<{
+        application_id: number,
+        date_id: number,
+        building_id: number
+    }>();
     const arrowRef = useRef<HTMLDivElement | null>(null);
     const isMobile = useIsMobile();
 
@@ -52,14 +58,20 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
 
     const {x: arrowX, y: arrowY} = middlewareData.arrow || {};
 
-    const content = <ShoppingCartContent setOpen={props.setOpen}/>
+    const content = <ShoppingCartContent setOpen={props.setOpen} setCurrentApplication={setCurrentApplication}/>
 
 
     if (isMobile) {
         return (
-            <MobileDialog open={props.open} onClose={() => props.setOpen(false)}>
-                {content}
-            </MobileDialog>
+            <>
+                <MobileDialog open={props.open} onClose={() => props.setOpen(false)}>
+                    {content}
+                </MobileDialog>
+                {currentApplication && (
+                    <EventCrud onClose={() => setCurrentApplication(undefined)} applicationId={currentApplication.application_id} date_id={currentApplication.date_id}
+                               building_id={currentApplication.building_id} />
+                )}
+            </>
         );
     }
 
@@ -76,7 +88,6 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
                         zIndex: 100,
                     }}
                 >
-
                     {content}
                     <div
                         ref={arrowRef}
@@ -93,6 +104,10 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
                         }}
                     />
                 </div>
+            )}
+            {currentApplication && (
+                <EventCrud onClose={() => setCurrentApplication(undefined)} applicationId={currentApplication.application_id} date_id={currentApplication.date_id}
+                           building_id={currentApplication.building_id} />
             )}
         </>
     );

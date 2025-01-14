@@ -21,9 +21,10 @@
 
 .editTimeBlock {
     display: flex;
+    width: 100%;
+    gap: 1rem;
     div {
-        margin-right: 1rem;
-        width: 10rem
+        width: 100%;
     }
 }
 

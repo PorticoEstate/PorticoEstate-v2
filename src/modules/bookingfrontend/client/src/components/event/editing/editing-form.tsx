@@ -1,6 +1,6 @@
 'use client'
 import { FC } from "react";
-import {Field, Textfield, Label} from "@digdir/designsystemet-react";
+import { Field, Label, Input, Textfield } from "@digdir/designsystemet-react";
 import { ActivityData } from "@/service/api/event-info";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
@@ -19,16 +19,16 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
     return (
         <div className={styles.editForm}>
             <Textfield
-                    label={t('bookingfrontend.title')}
-                    value={event.activity_name}
-                    onChange={(e) => updateField('activity_name', e.target.value)}
-                />
+                label={t('bookingfrontend.title')}
+                value={event.activity_name}
+                onChange={(e) => updateField('activity_name', e.target.value)}
+            />
             <DatePickerInput 
                 date={event.info_when}
                 updateDate={(date: Date) => updateField('info_when', date)}
             />
             <Field>
-                <Label>Time</Label>
+                <span className={styles.inputLabel}>Time</span>
                 <div className={styles.editTimeBlock}>
                     {/* TODO: Optimize parsing date from input.time */}
                     <Textfield
@@ -47,13 +47,15 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                     />
                 </div>
             </Field>
-            <Textfield 
-                    label={t('bookingfrontend.place')}
+            <Field>
+                <span className={styles.inputLabel}>{t('bookingfrontend.place')}</span>
+                <Input
                     value={event.building_name}
                     readOnly={true}
                 />
-            <Field>
-                <Label>{t('bookingfrontend.resource')}</Label>
+            </Field>
+            <Field style={{gap: '0'}}>
+                <span className={styles.inputLabel}>{t('bookingfrontend.resource')}</span>
                 <ResourcesGroup 
                     updateField={(data: any) => updateField('info_resource_info', data)}
                     allResources={event.info_resources_allResources}

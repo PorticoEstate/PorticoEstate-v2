@@ -6,16 +6,17 @@
 
 .editForm {
     padding: 0 0.3rem;
+    .inputLabel {
+        width: 100%;
+        margin-bottom: 0.3rem;
+        margin-top: 0;
+        font-weight: 500;
+        cursor: default;
+    }
     > div {
         margin-bottom: 0.6rem;
         max-width: 400px;
         min-width: 285px;
-        > label {
-            color: var(--ds-color-neutral-text-subtle);
-            font-family: '__Roboto_ba5676', '__Roboto_Fallback_ba5676';
-            font-style: normal;
-            font-weight: 400;
-        }
     }
 }
 
@@ -63,7 +64,8 @@
     }
     label {
         margin-right: 0.5rem;
-        padding: 4px 0px;
+        margin-bottom: 0.5rem;
+        padding: 5px 4px;
         input {
             border-radius: 4px;
             border-width: 2px;

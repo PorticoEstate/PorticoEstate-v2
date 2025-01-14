@@ -3,7 +3,7 @@ import { FC, forwardRef, useRef } from "react";
 import DatePicker from "react-datepicker";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCalendarAlt, faChevronLeft, faChevronRight, faPen } from "@fortawesome/free-solid-svg-icons";
-import { Field, Input } from "@digdir/designsystemet-react";
+import { Field, Input, Label } from "@digdir/designsystemet-react";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { DateTime } from 'luxon';
 import styles from './datepicker.module.scss';
@@ -29,7 +29,7 @@ const DatePickerInput: FC<DataPickerProps> = ({ date, updateDate }: DataPickerPr
     // eslint-disable-next-line react/display-name
     const CustomInput = forwardRef<HTMLInputElement>(({ onClick }: any, ref) => (
         <Field style={{marginBottom: 0}} onClick={() => onClick()}>
-            <Field.Description style={{marginBottom: 0}}>{t('bookingfrontend.date')}</Field.Description>
+            <Label style={{marginBottom: 0}}>{t('bookingfrontend.date')}</Label>
             <Field.Affixes>
                 <Field.Affix><FontAwesomeIcon icon={faCalendarAlt}/></Field.Affix>
                 <Input 

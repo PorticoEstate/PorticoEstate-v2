@@ -177,7 +177,8 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 		ExecMethod('property.bofiles.get_file', Sanitizer::get_var('file_id', 'int'));
@@ -585,7 +586,9 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 
 		$values_combo_box[4] = $this->bocommon->select_category_list(array(
 			'format'	 => 'filter',
-			'selected'	 => $this->wo_hour_cat_id, 'type'		 => 'wo_hours', 'order'		 => 'id'
+			'selected'	 => $this->wo_hour_cat_id,
+			'type'		 => 'wo_hours',
+			'order'		 => 'id'
 		));
 		$default_value		 = array('id' => '', 'name' => lang('no hour category'));
 		array_unshift($values_combo_box[4], $default_value);
@@ -664,7 +667,8 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uiproject.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -1432,9 +1436,9 @@ JS;
 				if (isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])
 				{
 					$historylog = CreateObject('property.historylog', 'project');
-					
+
 					$send = CreateObject('phpgwapi.send');
-					
+
 
 					$from_name						 = $this->userSettings['fullname'];
 					$from_email						 = $this->userSettings['preferences']['common']['email'];
@@ -1606,7 +1610,8 @@ JS;
 			$active_tab = Sanitizer::get_var('active_tab');
 
 			self::redirect(array(
-				'menuaction' => 'property.uiproject.edit', 'id'		 => $id,
+				'menuaction' => 'property.uiproject.edit',
+				'id'		 => $id,
 				'active_tab' => $active_tab
 			));
 		}
@@ -1728,7 +1733,8 @@ JS;
 			{
 				$values['location_data'] = $bolocation->read_single($location_code, array(
 					'tenant_id'	 => $tenant_id,
-					'p_num'		 => $p_num, 'view'		 => true
+					'p_num'		 => $p_num,
+					'view'		 => true
 				));
 			}
 
@@ -2048,21 +2054,32 @@ JS;
 				array('key' => 'year', 'label' => lang('year'), 'sortable' => true, 'value_footer' => lang('Sum')),
 				array('key' => 'entry_date', 'label' => lang('entry date'), 'sortable' => false),
 				array(
-					'key'			 => 'amount_in', 'label'			 => lang('amount in'), 'sortable'		 => false,
-					'className'		 => 'right', 'formatter'		 => 'JqueryPortico.FormatterAmount0',
+					'key'			 => 'amount_in',
+					'label'			 => lang('amount in'),
+					'sortable'		 => false,
+					'className'		 => 'right',
+					'formatter'		 => 'JqueryPortico.FormatterAmount0',
 					'value_footer'	 => number_format((float)$s_amount_in, 0, $this->decimal_separator, '.')
 				),
 				array(
-					'key'		 => 'from_project', 'label'		 => lang('from project'), 'sortable'	 => true,
-					'className'	 => 'right', 'formatter'	 => 'project_link'
+					'key'		 => 'from_project',
+					'label'		 => lang('from project'),
+					'sortable'	 => true,
+					'className'	 => 'right',
+					'formatter'	 => 'project_link'
 				),
 				array(
-					'key'			 => 'amount_out', 'label'			 => lang('amount out'), 'sortable'		 => false,
-					'className'		 => 'right', 'formatter'		 => 'JqueryPortico.FormatterAmount0',
+					'key'			 => 'amount_out',
+					'label'			 => lang('amount out'),
+					'sortable'		 => false,
+					'className'		 => 'right',
+					'formatter'		 => 'JqueryPortico.FormatterAmount0',
 					'value_footer'	 => number_format((float)$s_amount_out, 0, $this->decimal_separator, '.')
 				),
 				array(
-					'key'		 => 'to_project', 'label'		 => lang('to project'), 'sortable'	 => true,
+					'key'		 => 'to_project',
+					'label'		 => lang('to project'),
+					'sortable'	 => true,
 					'formatter'	 => 'project_link'
 				),
 				array('key' => 'remark', 'label' => lang('remark'), 'sortable' => true)
@@ -2074,54 +2091,84 @@ JS;
 				array('key' => 'year', 'label' => lang('year'), 'sortable' => true, 'value_footer' => lang('Sum')),
 				array('key' => 'month', 'label' => lang('month'), 'sortable' => false),
 				array(
-					'key'			 => 'budget', 'label'			 => lang('budget'), 'sortable'		 => false,
+					'key'			 => 'budget',
+					'label'			 => lang('budget'),
+					'sortable'		 => false,
 					'className'		 => 'right',
-					'formatter'		 => 'JqueryPortico.FormatterAmount0', 'value_footer'	 => number_format((float)$s_budget, 0, $this->decimal_separator, '.')
+					'formatter'		 => 'JqueryPortico.FormatterAmount0',
+					'value_footer'	 => number_format((float)$s_budget, 0, $this->decimal_separator, '.')
 				),
 				array(
-					'key'			 => 'sum_oblications', 'label'			 => lang('sum orders'), 'sortable'		 => false,
-					'className'		 => 'right', 'formatter'		 => 'JqueryPortico.FormatterAmount0',
+					'key'			 => 'sum_oblications',
+					'label'			 => lang('sum orders'),
+					'sortable'		 => false,
+					'className'		 => 'right',
+					'formatter'		 => 'JqueryPortico.FormatterAmount0',
 					'value_footer'	 => number_format((float)$sum_oblications, 0, $this->decimal_separator, '.')
 				),
 				array(
-					'key'			 => 'actual_cost', 'label'			 => lang('actual cost'), 'sortable'		 => false,
-					'className'		 => 'right', 'formatter'		 => 'JqueryPortico.FormatterAmount0',
+					'key'			 => 'actual_cost',
+					'label'			 => lang('actual cost'),
+					'sortable'		 => false,
+					'className'		 => 'right',
+					'formatter'		 => 'JqueryPortico.FormatterAmount0',
 					'value_footer'	 => number_format((float)$s_actual_cost, 0, $this->decimal_separator, '.')
 				),
 				array(
-					'key'			 => 'diff', 'label'			 => lang('difference'), 'sortable'		 => false,
+					'key'			 => 'diff',
+					'label'			 => lang('difference'),
+					'sortable'		 => false,
 					'className'		 => 'right',
-					'formatter'		 => 'JqueryPortico.FormatterAmount0', 'value_footer'	 => number_format((float)$s_diff, 0, $this->decimal_separator, '.')
+					'formatter'		 => 'JqueryPortico.FormatterAmount0',
+					'value_footer'	 => number_format((float)$s_diff, 0, $this->decimal_separator, '.')
 				),
 				array(
-					'key'			 => 'deviation_period', 'label'			 => lang('deviation'), 'sortable'		 => false,
-					'className'		 => 'right', 'formatter'		 => 'JqueryPortico.FormatterAmount0',
+					'key'			 => 'deviation_period',
+					'label'			 => lang('deviation'),
+					'sortable'		 => false,
+					'className'		 => 'right',
+					'formatter'		 => 'JqueryPortico.FormatterAmount0',
 					'value_footer'	 => number_format((float)$s_deviation, 0, $this->decimal_separator, '.')
 				),
 				array(
-					'key'		 => 'deviation_acc', 'label'		 => lang('deviation') . '::' . lang('accumulated'),
-					'sortable'	 => false, 'className'	 => 'right', 'formatter'	 => 'JqueryPortico.FormatterAmount0'
+					'key'		 => 'deviation_acc',
+					'label'		 => lang('deviation') . '::' . lang('accumulated'),
+					'sortable'	 => false,
+					'className'	 => 'right',
+					'formatter'	 => 'JqueryPortico.FormatterAmount0'
 				),
 				array(
-					'key'		 => 'deviation_percent_period', 'label'		 => lang('deviation') . '::' . lang('percent'),
-					'sortable'	 => false, 'className'	 => 'right', 'formatter'	 => 'JqueryPortico.FormatterAmount2'
+					'key'		 => 'deviation_percent_period',
+					'label'		 => lang('deviation') . '::' . lang('percent'),
+					'sortable'	 => false,
+					'className'	 => 'right',
+					'formatter'	 => 'JqueryPortico.FormatterAmount2'
 				),
 				array(
-					'key'		 => 'deviation_percent_acc', 'label'		 => lang('percent') . '::' . lang('accumulated'),
-					'sortable'	 => false, 'className'	 => 'right', 'formatter'	 => 'JqueryPortico.FormatterAmount2'
+					'key'		 => 'deviation_percent_acc',
+					'label'		 => lang('percent') . '::' . lang('accumulated'),
+					'sortable'	 => false,
+					'className'	 => 'right',
+					'formatter'	 => 'JqueryPortico.FormatterAmount2'
 				),
 				array(
-					'key'		 => 'closed', 'label'		 => lang('closed'), 'sortable'	 => false,
+					'key'		 => 'closed',
+					'label'		 => lang('closed'),
+					'sortable'	 => false,
 					'className'	 => 'center',
 					'formatter'	 => 'JqueryPortico.FormatterClosed'
 				),
 				array(
-					'key'		 => 'active', 'label'		 => lang('active'), 'sortable'	 => false,
+					'key'		 => 'active',
+					'label'		 => lang('active'),
+					'sortable'	 => false,
 					'className'	 => 'center',
 					'formatter'	 => 'JqueryPortico.FormatterActive'
 				),
 				array(
-					'key'		 => 'delete_year', 'label'		 => lang('Delete'), 'sortable'	 => false,
+					'key'		 => 'delete_year',
+					'label'		 => lang('Delete'),
+					'sortable'	 => false,
 					'className'	 => 'center'
 				)
 			);
@@ -2198,39 +2245,57 @@ JS;
 
 		$orders_def = array(
 			array(
-				'key'			 => 'workorder_id', 'label'			 => lang('Workorder'), 'sortable'		 => true,
-				'formatter'		 => 'formatLink', 'value_footer'	 => lang('Sum')
+				'key'			 => 'workorder_id',
+				'label'			 => lang('Workorder'),
+				'sortable'		 => true,
+				'formatter'		 => 'formatLink',
+				'value_footer'	 => lang('Sum')
 			),
 			array('key' => 'year', 'label' => lang('year'), 'sortable' => true),
 			array('key' => 'title', 'label' => lang('title'), 'sortable' => true),
 			array(
-				'key'		 => 'b_account_id', 'label'		 => lang('Budget account'), 'sortable'	 => true,
+				'key'		 => 'b_account_id',
+				'label'		 => lang('Budget account'),
+				'sortable'	 => true,
 				'className'	 => 'right'
 			),
 			array(
-				'key'		 => 'budget', 'label'		 => lang('budget'), 'sortable'	 => true,
+				'key'		 => 'budget',
+				'label'		 => lang('budget'),
+				'sortable'	 => true,
 				'className'	 => 'right',
 				'formatter'	 => 'JqueryPortico.FormatterAmount0',
 				'value_footer'	 => number_format((float)$_order_budget, 0, $this->decimal_separator, '.')
 			),
 			array(
-				'key'		 => 'cost', 'label'		 => lang('cost'), 'sortable'	 => true, 'className'	 => 'right',
+				'key'		 => 'cost',
+				'label'		 => lang('cost'),
+				'sortable'	 => true,
+				'className'	 => 'right',
 				'formatter'	 => 'JqueryPortico.FormatterAmount0',
 				'value_footer'	 => number_format((float)$_order_cost, 0, $this->decimal_separator, '.')
 			),
 			array('key' => 'addition_percentage', 'label' => '%', 'sortable' => true, 'className' => 'right'),
 			array(
-				'key'		 => 'obligation', 'label'		 => lang('sum orders'), 'sortable'	 => true,
-				'className'	 => 'right', 'formatter'	 => 'JqueryPortico.FormatterAmount0',
+				'key'		 => 'obligation',
+				'label'		 => lang('sum orders'),
+				'sortable'	 => true,
+				'className'	 => 'right',
+				'formatter'	 => 'JqueryPortico.FormatterAmount0',
 				'value_footer'	 => number_format((float)$_order_obligation, 0, $this->decimal_separator, '.')
 			),
 			array(
-				'key'		 => 'actual_cost', 'label'		 => lang('actual cost'), 'sortable'	 => true,
-				'className'	 => 'right', 'formatter'	 => 'JqueryPortico.FormatterAmount0',
+				'key'		 => 'actual_cost',
+				'label'		 => lang('actual cost'),
+				'sortable'	 => true,
+				'className'	 => 'right',
+				'formatter'	 => 'JqueryPortico.FormatterAmount0',
 				'value_footer'	 => number_format((float)$_order_actual_cost, 0, $this->decimal_separator, '.')
 			),
 			array(
-				'key'		 => 'diff', 'label'		 => lang('difference'), 'sortable'	 => true,
+				'key'		 => 'diff',
+				'label'		 => lang('difference'),
+				'sortable'	 => true,
 				'className'	 => 'right',
 				'formatter'	 => 'JqueryPortico.FormatterAmount0',
 				'value_footer'	 => number_format((float)$_order_diff, 0, $this->decimal_separator, '.')
@@ -2238,7 +2303,9 @@ JS;
 			array('key' => 'vendor_name', 'label' => lang('Vendor'), 'sortable' => true),
 			array('key' => 'status', 'label' => lang('Status'), 'sortable' => true),
 			array(
-				'key'		 => 'send_order', 'label'		 => lang('send workorder'), 'sortable'	 => false,
+				'key'		 => 'send_order',
+				'label'		 => lang('send workorder'),
+				'sortable'	 => false,
 				'className'	 => 'center'
 			)
 		);
@@ -2262,26 +2329,40 @@ JS;
 
 		$invoice_def = array(
 			array(
-				'key' => 'workorder_id', 'label' => lang('Workorder'), 'sortable' => true,
-				'formatter' => 'formatLink', 'value_footer' => lang('Sum')
+				'key' => 'workorder_id',
+				'label' => lang('Workorder'),
+				'sortable' => true,
+				'formatter' => 'formatLink',
+				'value_footer' => lang('Sum')
 			),
 			array(
-				'key' => 'voucher_id', 'label' => lang('bilagsnr'), 'sortable' => true,
+				'key' => 'voucher_id',
+				'label' => lang('bilagsnr'),
+				'sortable' => true,
 				'formatter' => $_formatter_voucher_link
 			),
 			//				array('key' => 'voucher_out_id', 'hidden' => true),
 			array('key' => 'invoice_id', 'label' => lang('invoice number'), 'sortable' => false),
 			array('key' => 'vendor', 'label' => lang('vendor'), 'sortable' => false),
 			array(
-				'key' => 'amount_ex_tax', 'label' => lang('ex tax'), 'sortable' => true, 'className' => 'right',
+				'key' => 'amount_ex_tax',
+				'label' => lang('ex tax'),
+				'sortable' => true,
+				'className' => 'right',
 				'formatter' => 'JqueryPortico.FormatterAmount2'
 			),
 			array(
-				'key' => 'amount_tax', 'label' => lang('tax'), 'sortable' => true, 'className' => 'right',
+				'key' => 'amount_tax',
+				'label' => lang('tax'),
+				'sortable' => true,
+				'className' => 'right',
 				'formatter' => 'JqueryPortico.FormatterAmount2'
 			),
 			array(
-				'key' => 'amount', 'label' => lang('amount'), 'sortable' => true, 'className' => 'right',
+				'key' => 'amount',
+				'label' => lang('amount'),
+				'sortable' => true,
+				'className' => 'right',
 				'formatter' => 'JqueryPortico.FormatterAmount2'
 			),
 			//				array('key' => 'approved_amount', 'label' => lang('approved amount'), 'sortable' => false,
@@ -2289,7 +2370,8 @@ JS;
 			array('key' => 'period', 'label' => lang('period'), 'sortable' => true),
 			array('key' => 'periodization', 'label' => lang('periodization'), 'sortable' => false),
 			array(
-				'key' => 'periodization_start', 'label' => lang('periodization start'),
+				'key' => 'periodization_start',
+				'label' => lang('periodization start'),
 				'sortable' => false
 			),
 			array('key' => 'currency', 'label' => lang('currency'), 'sortable' => false),
@@ -2338,7 +2420,9 @@ JS;
 				'count'				 => count($datatable_def), //3
 				'requestUrl'		 => json_encode(self::link(array(
 					'menuaction'		 => 'property.notify.update_data',
-					'location_id'		 => $location_id, 'location_item_id'	 => $id, 'action'			 => 'refresh_notify_contact',
+					'location_id'		 => $location_id,
+					'location_item_id'	 => $id,
+					'action'			 => 'refresh_notify_contact',
 					'phpgw_return_as'	 => 'json'
 				))),
 			)
@@ -2348,7 +2432,9 @@ JS;
 			'container'	 => 'datatable-container_3',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.notify.update_data',
-				'location_id'		 => $location_id, 'location_item_id'	 => $id, 'action'			 => 'refresh_notify_contact',
+				'location_id'		 => $location_id,
+				'location_item_id'	 => $id,
+				'action'			 => 'refresh_notify_contact',
 				'phpgw_return_as'	 => 'json'
 			))),
 			'ColumnDefs' => $notify_info['column_defs']['values'],
@@ -2573,7 +2659,8 @@ JS;
 			'container'	 => 'datatable-container_5',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.uiproject.get_files',
-				'id'				 => $id, 'phpgw_return_as'	 => 'json'
+				'id'				 => $id,
+				'phpgw_return_as'	 => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $files_def,
@@ -2639,7 +2726,9 @@ JS;
 			array('key' => 'title', 'label' => lang('title'), 'sortable' => false),
 			array('key' => 'status', 'label' => lang('status'), 'sortable' => false),
 			array(
-				'key'		 => 'select', 'label'		 => lang('select'), 'className'	 => 'center',
+				'key'		 => 'select',
+				'label'		 => lang('select'),
+				'className'	 => 'center',
 				'sortable'	 => false
 			)
 		);
@@ -2749,6 +2838,29 @@ JS;
 			);
 		}
 		$msgbox_data = $this->bocommon->msgbox_data($this->receipt);
+
+		if (!empty($values['location_data']['location_code']))
+		{
+			$location_exceptions = $bolocation->get_location_exception($values['location_data']['location_code']);
+
+			foreach ($location_exceptions as $location_exception)
+			{
+				$message = $location_exception['severity'];
+				if ($location_exception['category'])
+				{
+					$message .= "/{$location_exception['category']}";
+				}
+				if ($location_exception['category_text'])
+				{
+					$message .= ": {$location_exception['category_text']}";
+				}
+				if ($location_exception['location_descr'])
+				{
+					$message .= "<br/> {$location_exception['location_descr']}";
+				}
+				Cache::message_set($message, $location_exception['alert_vendor'] == 1 ? 'error' : 'message');
+			}
+		}
 
 		$project_type_id = isset($values['project_type_id']) && $values['project_type_id'] ? $values['project_type_id'] : $this->userSettings['preferences']['property']['default_project_type'];
 		$active_tab		 = Sanitizer::get_var('active_tab', 'string', 'REQUEST', 'location');
@@ -2916,7 +3028,9 @@ JS;
 			'decimal_separator'					 => $this->decimal_separator,
 			'validator'							 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
-				'date', 'security', 'file'
+				'date',
+				'security',
+				'file'
 			)),
 			'multiple_uploader'					 => true,
 			'multi_upload_action' => phpgw::link('/index.php', array('menuaction' => 'property.uiproject.handle_multi_upload_file',	'id' => $id)),
@@ -3155,7 +3269,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => ACL_EDIT, 'acl_location'	 => $this->acl_location
+				'perm'			 => ACL_EDIT,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -3286,19 +3401,26 @@ JS;
 					array('key' => 'title', 'label' => lang('title'), 'sortable' => true),
 					array('key' => 'status', 'label' => lang('status'), 'sortable' => true),
 					array(
-						'key'		 => 'num_open', 'label'		 => lang('open'), 'sortable'	 => true,
+						'key'		 => 'num_open',
+						'label'		 => lang('open'),
+						'sortable'	 => true,
 						'className'	 => 'right',
 						'formatter'	 => 'JqueryPortico.FormatterAmount0'
 					),
 					array('key' => 'project_type', 'label' => lang('project type'), 'sortable' => true),
 					array('key' => 'budget', 'label' => lang('budget'), 'sortable' => false),
 					array(
-						'key'		 => 'obligation', 'label'		 => lang('obligation'), 'sortable'	 => true,
-						'className'	 => 'right', 'formatter'	 => 'JqueryPortico.FormatterAmount0'
+						'key'		 => 'obligation',
+						'label'		 => lang('obligation'),
+						'sortable'	 => true,
+						'className'	 => 'right',
+						'formatter'	 => 'JqueryPortico.FormatterAmount0'
 					),
 					array('key' => 'new_budget', 'label' => lang('new'), 'sortable' => false),
 					array(
-						'key'		 => 'select', 'label'		 => lang('select'), 'sortable'	 => false,
+						'key'		 => 'select',
+						'label'		 => lang('select'),
+						'sortable'	 => false,
 						'className'	 => 'center',
 						'formatter'	 => 'myFormatterCheck'
 					)
@@ -3323,17 +3445,25 @@ JS;
 					array('key' => 'b_account_id', 'label' => lang('budget account'), 'sortable' => true),
 					array('key' => 'budget', 'label' => lang('budget'), 'sortable' => false),
 					array(
-						'key'		 => 'obligation', 'label'		 => lang('obligation'), 'sortable'	 => true,
-						'className'	 => 'right', 'formatter'	 => 'JqueryPortico.FormatterAmount0'
+						'key'		 => 'obligation',
+						'label'		 => lang('obligation'),
+						'sortable'	 => true,
+						'className'	 => 'right',
+						'formatter'	 => 'JqueryPortico.FormatterAmount0'
 					),
 					array('key' => 'continuous', 'label' => lang('continuous'), 'sortable' => true),
 					array('key' => 'new_budget', 'label' => lang('new'), 'sortable' => false),
 					array(
-						'key'		 => 'actual_cost', 'label'		 => $lang_actual_cost, 'sortable'	 => true,
-						'className'	 => 'right', 'formatter'	 => 'JqueryPortico.FormatterAmount0'
+						'key'		 => 'actual_cost',
+						'label'		 => $lang_actual_cost,
+						'sortable'	 => true,
+						'className'	 => 'right',
+						'formatter'	 => 'JqueryPortico.FormatterAmount0'
 					),
 					array(
-						'key'		 => 'select', 'label'		 => lang('select'), 'sortable'	 => false,
+						'key'		 => 'select',
+						'label'		 => lang('select'),
+						'sortable'	 => false,
 						'className'	 => 'center',
 						'formatter'	 => 'myFormatterCheck'
 					)
@@ -3443,7 +3573,8 @@ JS;
 			'type_list'				 => array('options' => $type_array),
 			'user_list'				 => array('options' => $user_list),
 			'ecodimb_list'			 => array('options' => $this->bocommon->select_category_list(array(
-				'type'		 => 'dimb', 'selected'	 => $ecodimb
+				'type'		 => 'dimb',
+				'selected'	 => $ecodimb
 			))),
 			'start_date'			 => $start_date,
 			'end_date'				 => $end_date,

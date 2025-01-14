@@ -23,16 +23,16 @@ const ResourcesGroup: FC<ResourcesGroupProps> = ({ allResources, selectedResourc
             { Array.from(allResources).map(([id, name]) => (
                 <Chip.Checkbox 
                     key={id}
-                    value={name}
-                    id={id + ''}
-                    asChild 
+                    asChild
+                    value={String(id)}
+                    id={`resource-${id}`}
                     onClick={() => onChange(id, name)} 
                     checked={selectedResources.has(id)}
-                >
-                    <div>
+                >   
+                    <label htmlFor={`resource-${id}`}>
                         <ColourCircle size="medium" resourceId={id}/>
-                        <label htmlFor={id + ''}>{name}</label>
-                    </div>
+                        <span>{name}</span>
+                    </label>
                 </Chip.Checkbox> 
             ))}
         </div>

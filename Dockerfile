@@ -170,5 +170,4 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Set entrypoint
-## build test
 ENTRYPOINT ["docker-entrypoint.sh"]

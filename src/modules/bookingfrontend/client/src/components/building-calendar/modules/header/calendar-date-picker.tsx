@@ -1,38 +1,110 @@
-import {FC, useMemo} from 'react';
+// CalendarDatePicker.tsx
+import { FC } from 'react';
 import DatePicker from "react-datepicker";
-import {DateTime} from "luxon";
-import {Button} from "@digdir/designsystemet-react";
-import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import styles from './calendar-date-picker.module.scss'
+import { ChevronLeftIcon, ChevronRightIcon } from "@navikt/aksel-icons";
+import {Button, Select} from "@digdir/designsystemet-react";
+import styles from './calendar-date-picker.module.scss';
+import { DateTime } from "luxon";
 
 interface CalendarDatePickerProps {
     currentDate: Date;
     view: string;
     onDateChange: (date: Date | null) => void;
-    // onViewChange: (view: string) => void;
 }
 
+interface CustomHeaderProps {
+    date: Date;
+    changeYear: (year: number) => void;
+    changeMonth: (month: number) => void;
+    decreaseMonth: () => void;
+    increaseMonth: () => void;
+    prevMonthButtonDisabled: boolean;
+    nextMonthButtonDisabled: boolean;
+    decreaseYear?: () => void;
+    increaseYear?: () => void;
+    prevYearButtonDisabled?: boolean;
+    nextYearButtonDisabled?: boolean;
+}
 
-const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
-    const trans = useTrans();
-    const {currentDate, view, onDateChange} = props;
+const CustomHeader: FC<CustomHeaderProps> = ({
+                                                 date,
+                                                 changeYear,
+                                                 changeMonth,
+                                                 decreaseMonth,
+                                                 increaseMonth,
+                                                 prevMonthButtonDisabled,
+                                                 nextMonthButtonDisabled
+                                             }) => (
+    <div className={styles.header}>
+        <Button
+            onClick={decreaseMonth}
+            disabled={prevMonthButtonDisabled}
+            className={styles.navButton}
+            data-size="sm"
+            variant="tertiary"
+            icon={true}
+            style={{ borderRadius: "50%" }}
+        >
+            <ChevronLeftIcon style={{
+                height: '100%',
+                width: '100%'
+            }}/>
+        </Button>
 
-    // const dateFormat = useMemo(() => {
-    //     switch (view) {
-    //         case 'timeGridDay':
-    //             return "d. MMMM yyyy";
-    //         case 'timeGridWeek':
-    //         case 'listWeek':
-    //             const weekStart = DateTime.fromJSDate(currentDate).startOf('week');
-    //             const weekEnd = DateTime.fromJSDate(currentDate).endOf('week');
-    //             // console.log(weekStart.toFormat('d'), weekEnd.toFormat('d'))
-    //             // return `${weekStart.toFormat('d')} - ${weekEnd.toFormat('d')} ${weekEnd.toFormat('MMMM yyyy')}`;
-    //         case 'dayGridMonth':
-    //             return "MMMM yyyy";
-    //         default:
-    //             return undefined;
-    //     }
-    // }, [view])
+        <div className={styles.selects}>
+            <Select
+                className={styles.select}
+                value={date.getMonth()}
+                onChange={({ target: { value } }) => changeMonth(parseInt(value, 10))}
+            >
+                {Array.from({ length: 12 }, (_, i) => i).map((month) => (
+                    <Select.Option key={month} value={month}>
+                        {new Date(date.getFullYear(), month).toLocaleString('nb', {
+                            month: 'short',
+                        })}
+                    </Select.Option>
+                ))}
+            </Select>
+            <Select
+                className={styles.select}
+                value={date.getFullYear()}
+                onChange={({ target: { value } }) => changeYear(parseInt(value, 10))}
+            >
+                {Array.from(
+                    { length: 12 },
+                    (_, i) => date.getFullYear() - 5 + i
+                ).map((year) => (
+                    <Select.Option key={year} value={year}>
+                        {year}
+                    </Select.Option>
+                ))}
+            </Select>
+
+
+        </div>
+
+        <Button
+            onClick={increaseMonth}
+            disabled={nextMonthButtonDisabled}
+            className={styles.navButton}
+            data-size="sm"
+            variant="tertiary"
+            icon={true}
+            style={{ borderRadius: "50%" }}
+        >
+            <ChevronRightIcon style={{
+                height: '100%',
+                width: '100%'
+            }}/>
+        </Button>
+    </div>
+);
+
+const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
+                                                             currentDate,
+                                                             view,
+                                                             onDateChange
+                                                         }) => {
     const formatSelectedDate = (showYear?: boolean) => {
         const luxonDate = DateTime.fromJSDate(currentDate).setLocale('nb');
         switch (view) {
@@ -49,28 +121,36 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
                 return luxonDate.toFormat(`d'.' MMMM ${showYear ? ' yyyy' : ''}`);
         }
     };
-    // console.log({showWeekPicker: view === 'timeGridWeek' || 'listWeek', showMonthYearPicker: view === 'dayGridMonth'})
+
     return (
-        <DatePicker
-            selected={currentDate}
-            onChange={onDateChange}
-            // dateFormat={dateFormat}
-            customInput={(
-                <div className={styles.datePicker}>
-                    <Button variant="tertiary" data-size="sm" className={styles.datePickerButton}>
-                        {formatSelectedDate()}
-                    </Button>
-                </div>
-
-            )}
-            todayButton={trans('common.today')}
-            showMonthYearPicker={view === 'dayGridMonth'}
-            showWeekNumbers={true}
-            showWeekPicker={view === 'timeGridWeek' || view === 'listWeek'}
-        />
+        <div className={styles.datePicker}>
+            <DatePicker
+                selected={currentDate}
+                onChange={onDateChange}
+                showMonthYearPicker={view === 'dayGridMonth'}
+                showWeekNumbers={true}
+                showWeekPicker={view === 'timeGridWeek' || view === 'listWeek'}
+                renderCustomHeader={(props) => <CustomHeader {...props} />}
+                calendarClassName={styles.calendar}
+                wrapperClassName={styles.wrapper}
+                popperClassName={styles.popper}
+                monthsShown={1}
+                showFourColumnMonthYearPicker={false}
+                shouldCloseOnSelect={true}
+                customInput={(
+                    <div className={styles.datePicker}>
+                        <Button
+                            variant="tertiary"
+                            data-size="sm"
+                            className={styles.datePickerButton}
+                        >
+                            {formatSelectedDate()}
+                        </Button>
+                    </div>
+                )}
+            />
+        </div>
     );
-}
+};
 
-export default CalendarDatePicker
-
-
+export default CalendarDatePicker;

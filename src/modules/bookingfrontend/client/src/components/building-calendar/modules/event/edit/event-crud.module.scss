@@ -132,4 +132,15 @@
         font-size: 0.875rem;
         margin-top: 0.25rem;
     }
+    .ageGroupsGrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+
+        .ageGroupInput {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+    }
 }

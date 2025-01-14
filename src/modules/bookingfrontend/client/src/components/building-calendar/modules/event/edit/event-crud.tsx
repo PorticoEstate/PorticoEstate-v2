@@ -1,5 +1,16 @@
 import React, {Fragment, useMemo, useState} from 'react';
-import {Badge, Button, Checkbox, Chip, Tag, Textfield} from '@digdir/designsystemet-react';
+import {
+    Badge,
+    Button,
+    Checkbox,
+    Chip,
+    Field,
+    Label,
+    Select, Spinner,
+    Tag,
+    Textfield,
+    ValidationMessage
+} from '@digdir/designsystemet-react';
 import {DateTime} from 'luxon';
 import MobileDialog from '@/components/dialog/mobile-dialog';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
@@ -12,11 +23,13 @@ import {useForm, Controller} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {
+    useBuildingAgeGroups,
+    useBuildingAudience,
     useCreatePartialApplication, useDeletePartialApplication,
     usePartialApplications,
     useUpdatePartialApplication
 } from "@/service/hooks/api-hooks";
-import {NewPartialApplication, IUpdatePartialApplication} from "@/service/types/api/application.types";
+import {NewPartialApplication, IUpdatePartialApplication, IApplication} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 
 interface EventCrudProps {
@@ -27,39 +40,77 @@ interface EventCrudProps {
     onClose: () => void;
 }
 
+interface EventCrudInnerProps extends EventCrudProps {
+    building?: IBuilding;
+    buildingResources?: IResource[];
+    partials?: { list: IApplication[], total_sum: number };
+    audience?: IAudience[];
+    agegroups?: IAgeGroup[];
+    existingEvent?: IApplication;
+}
+
 const eventFormSchema = z.object({
     title: z.string().min(1, 'Title is required'),
     start: z.date(),
     end: z.date(),
-    resources: z.array(z.string()).min(1, 'At least one resource must be selected')
+    resources: z.array(z.string()).min(1, 'At least one resource must be selected'),
+    // Add validation for audience and agegroups
+    audience: z.array(z.number()),
+    agegroups: z.array(z.object({
+        id: z.number(),
+        male: z.number().min(0),
+        female: z.literal(0), // Since we're only using male counts
+        name: z.string(),
+        description: z.string().nullable(),
+        sort: z.number()
+    }))
 });
+
 
 type EventFormData = z.infer<typeof eventFormSchema>;
 
-const EventCrud: React.FC<EventCrudProps> = (props) => {
-    const t = useTrans();
-    const {data: building} = useBuilding(+props.building_id);
-    const {data: buildingResources} = useBuildingResources(props.building_id);
-    const {data: partials} = usePartialApplications();
-    const [isEditingResources, setIsEditingResources] = useState(false);
+import {FC} from 'react';
+import {IAgeGroup, IAudience, IBuilding} from "@/service/types/Building";
 
-    const createMutation = useCreatePartialApplication();
-    const deleteMutation = useDeletePartialApplication();
+interface EventCrudProps {
+}
 
+const EventCrudWrapper: FC<EventCrudProps> = (props) => {
 
-    const updateMutation = useUpdatePartialApplication();
-
-
+    const {data: building, isLoading: buildingLoading} = useBuilding(+props.building_id);
+    const {data: buildingResources, isLoading: buildingResourcesLoading} = useBuildingResources(props.building_id);
+    const {data: partials, isLoading: partialsLoading} = usePartialApplications();
+    const {data: audience, isLoading: audienceLoading} = useBuildingAudience(+props.building_id);
+    const {data: agegroups, isLoading: agegroupsLoading} = useBuildingAgeGroups(+props.building_id);
     const existingEvent = useMemo(() => {
         const applicationId = props.applicationId || props.selectedTempEvent?.extendedProps?.applicationId;
         if (applicationId === undefined) {
+            return null;
+        }
+        if (!partials) {
             return undefined;
         }
-        if (!partials || partials.list.length === 0) {
-            return undefined;
-        }
-        return partials.list.find(a => a.id === applicationId);
+        return partials.list.find(a => a.id === applicationId) || null;
     }, [props.selectedTempEvent, partials, props.applicationId]);
+
+    if (buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingEvent === undefined) {
+        return null
+    }
+    return (
+        <EventCrud agegroups={agegroups} building={building} existingEvent={existingEvent || undefined}
+                   audience={audience} buildingResources={buildingResources}
+                   partials={partials} {...props}></EventCrud>
+    );
+}
+
+
+const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
+    const {building, buildingResources, audience, agegroups, partials, existingEvent} = props;
+    const t = useTrans();
+    const [isEditingResources, setIsEditingResources] = useState(false);
+    const createMutation = useCreatePartialApplication();
+    const deleteMutation = useDeletePartialApplication();
+    const updateMutation = useUpdatePartialApplication();
 
 
     const defaultStartEnd = useMemo(() => {
@@ -90,6 +141,7 @@ const EventCrud: React.FC<EventCrudProps> = (props) => {
         handleSubmit,
         watch,
         setValue,
+        getValues,
         formState: {errors, isDirty, dirtyFields}
     } = useForm<EventFormData>({
         resolver: zodResolver(eventFormSchema),
@@ -99,10 +151,23 @@ const EventCrud: React.FC<EventCrudProps> = (props) => {
             end: defaultStartEnd.end,
             resources: existingEvent?.resources?.map((res) => res.id.toString()) ||
                 props.selectedTempEvent?.extendedProps?.resources?.map(String) ||
-                []
+                [],
+            audience: existingEvent?.audience || undefined,
+            agegroups: agegroups?.map(ag => {
+                // const existing = existingEvent?.agegroups.fin
+                return ({
+                    id: ag.id,
+                    male: existingEvent?.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
+                    female: 0,
+                    name: ag.name,
+                    description: ag.description,
+                    sort: ag.sort,
+                });
+            }) || []
         }
     });
 
+    console.log(getValues());
     const selectedResources = watch('resources');
 
     const formatDateForInput = (date: Date) => {
@@ -134,8 +199,17 @@ const EventCrud: React.FC<EventCrudProps> = (props) => {
             if (dirtyFields.resources) {
                 updatedApplication.resources = buildingResources.filter(res => data.resources.some(selected => (+selected === res.id)))
             }
-            if(dirtyFields.title) {
+            if (dirtyFields.title) {
                 updatedApplication.name = data.title
+            }
+            if (dirtyFields.audience) {
+                updatedApplication.audience = data.audience;
+            }
+            if (dirtyFields.agegroups) {
+                updatedApplication.agegroups = data.agegroups.map(ag => ({
+                    ...ag,
+                    female: 0 // Since we're only tracking male numbers
+                }));
             }
 
 
@@ -153,6 +227,11 @@ const EventCrud: React.FC<EventCrudProps> = (props) => {
                     to_: data.end.toISOString()
                 }
             ],
+            audience: data.audience,
+            agegroups: data.agegroups.map(ag => ({
+                ...ag,
+                female: 0 // Since we're only tracking male numbers
+            })),
             name: data.title,
             resources: data.resources.map(res => (+res)),
             activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1
@@ -405,10 +484,105 @@ const EventCrud: React.FC<EventCrudProps> = (props) => {
                             <span className={styles.error}>{errors.resources.message}</span>
                         )}
                     </div>
+                    <div className={`${styles.formGroup}`}>
+                        <div className={styles.resourcesHeader}>
+                            <h4>{t('bookingfrontend.target audience')}</h4>
+                        </div>
+                        <Controller
+                            name="audience"
+                            control={control}
+                            defaultValue={existingEvent?.audience || []}
+                            render={({field}) => (
+                                <Field>
+                                    <Select
+                                        required
+                                        {...field}
+                                        value={field.value?.[0]}
+                                        onChange={(event) => field.onChange([(Number(event.target.value))])}
+                                        aria-invalid={!!errors.audience}
+                                    >
+                                        <Select.Option value="" disabled selected={!field.value?.[0]}>
+                                            {t('bookingfrontend.choose target audience')}
+                                        </Select.Option>
+                                        {audience?.map(item => (
+                                            <Select.Option key={item.id} value={item.id}>
+                                                {item.name}
+                                            </Select.Option>
+                                        ))}
+                                    </Select>
+                                    {errors.audience && (
+                                        <ValidationMessage>
+                                            {errors.audience.message}
+                                        </ValidationMessage>
+                                    )}
+                                </Field>
+                            )}
+                        />
+                    </div>
+
+                    <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+                        <div className={styles.resourcesHeader}>
+                            <h4>{t('bookingfrontend.estimated number of participants')}</h4>
+                        </div>
+
+                        {agegroups?.map((agegroup, index) => (
+                            <Fragment key={agegroup.id}>
+                                {/* Visible male count input */}
+                                <Controller
+                                    name={`agegroups.${index}.male`}
+                                    control={control}
+                                    defaultValue={existingEvent?.agegroups?.find(ag => ag.id === agegroup.id)?.male || 0}
+                                    render={({field}) => (
+                                        <Textfield
+                                            type="number"
+                                            label={agegroup.name}
+                                            {...field}
+                                            value={field.value}
+                                            min={0}
+                                            description={agegroup.description}
+                                            onChange={(e) => field.onChange(Number(e.target.value))}
+                                            error={errors.agegroups?.[index]?.male?.message}
+                                        />
+                                    )}
+                                />
+                                {/* Hidden fields for other required data */}
+                                <Controller
+                                    name={`agegroups.${index}.id`}
+                                    control={control}
+                                    defaultValue={agegroup.id}
+                                    render={({field}) => <input type="hidden" {...field} />}
+                                />
+                                <Controller
+                                    name={`agegroups.${index}.female`}
+                                    control={control}
+                                    defaultValue={0}
+                                    render={({field}) => <input type="hidden" {...field} />}
+                                />
+                                <Controller
+                                    name={`agegroups.${index}.name`}
+                                    control={control}
+                                    defaultValue={agegroup.name}
+                                    render={({field}) => <input type="hidden" {...field} />}
+                                />
+                                <Controller
+                                    name={`agegroups.${index}.description`}
+                                    control={control}
+                                    defaultValue={agegroup.description || ''}
+                                    render={({field}) => <input type="hidden" {...field} value={field.value || ''} />}
+                                />
+                                <Controller
+                                    name={`agegroups.${index}.sort`}
+                                    control={control}
+                                    defaultValue={agegroup.sort}
+                                    render={({field}) => <input type="hidden" {...field} />}
+                                />
+                            </Fragment>
+                        ))}
+                    </div>
                 </section>
             </MobileDialog>
         </form>
     );
 };
 
-export default EventCrud;
+export default EventCrudWrapper;

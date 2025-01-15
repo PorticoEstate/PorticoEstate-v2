@@ -7,6 +7,7 @@ use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
 use App\modules\bookingfrontend\controllers\DocumentController;
 use App\modules\bookingfrontend\controllers\ResourceController;
+use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
 use App\modules\bookingfrontend\helpers\LogoutHelper;
@@ -51,6 +52,14 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->patch('/partials/{id}', ApplicationController::class . ':patchApplication');
     });
     $group->get('/invoices', CompletedReservationController::class . ':getReservations');
+})->add(new SessionsMiddleware($app->getContainer()));
+
+$app->group('/bookingfrontend', function (RouteCollectorProxy $group)
+{
+    $group->group('/events', function (RouteCollectorProxy $group)
+    {
+        $group->patch('/{id}', EventController::class, ':updateEvent');
+    });
 })->add(new SessionsMiddleware($app->getContainer()));
 
 

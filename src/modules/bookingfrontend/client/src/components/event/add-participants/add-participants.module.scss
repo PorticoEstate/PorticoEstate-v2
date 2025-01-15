@@ -1,0 +1,26 @@
+.addParticipantsContainer {
+    max-width: 400px;
+    min-width: 300px;
+    padding: 0px 5px;
+}
+
+.addParticipantsInputs {
+    > div:first-child {
+        margin-bottom: 0.7rem;
+    }
+}
+.addParticipantsButtons {
+    display: flex;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    > button:not(:last-of-type) {
+        margin-right: 0.5rem;
+    }
+}
+
+.addParticipantsHeader {
+    padding: 0px 5px;
+    > .addParticipantsHeaderInfo {
+        margin-bottom: 0.7rem;
+    }
+}

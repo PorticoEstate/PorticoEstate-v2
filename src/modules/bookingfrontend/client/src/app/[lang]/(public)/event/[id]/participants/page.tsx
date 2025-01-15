@@ -20,7 +20,7 @@ const AddParticipant: FC<EventProps> = async (props: EventProps) => {
     if (!data) return notFound();
 
     return (
-        <main style={{padding: '0px 5px'}}>
+        <main>
             <AddParticipantsHeader
                 activityName={data.activity_name}
                 maxParticipants={data.info_participant_limit}

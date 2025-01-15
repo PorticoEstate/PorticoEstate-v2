@@ -42,12 +42,13 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
             <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants_info')}: </b>{event.info_participant_limit}</p>
             <p style={{marginTop: '0.6rem'}}><b>{t('booking.participants')}: </b>{event.number_of_participants}</p>
             <div style={{display: 'flex'}}>
-                <Button style={{marginRight: '0.5rem'}} variant='secondary'>
-                    <FontAwesomeIcon icon={faUserPlus} />
+                <Button asChild style={{marginRight: '0.5rem'}} variant='secondary'>
                     <Link 
                         style={{textDecoration: 'none'}}
                         href={`./${event.id}/participants`}
-                        >{t('bookingfrontend.edit')}
+                    >
+                        <FontAwesomeIcon icon={faUserPlus} />
+                        {t('bookingfrontend.edit')}
                     </Link>
                 </Button>
                 <Button variant='secondary' onClick={openEditing}>

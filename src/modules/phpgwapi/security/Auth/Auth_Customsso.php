@@ -68,7 +68,6 @@ class Auth extends Auth_
 		$authenticated = !!$stmt->fetch();
 
 		return $authenticated;
-
 	}
 	/* php ping function
 		*/
@@ -81,7 +80,7 @@ class Auth extends Auth_
 
 	public function get_username(): string
 	{
-		$headers = getallheaders();
+		$headers = array_change_key_case(getallheaders(), CASE_LOWER);
 		$ssn = !empty($headers['uid']) ? $headers['uid'] : false;
 		$ssn = !empty($_SERVER['HTTP_UID']) ? $_SERVER['HTTP_UID'] : $ssn;
 		$upn = !empty($headers['upn']) ? $headers['upn'] : false;

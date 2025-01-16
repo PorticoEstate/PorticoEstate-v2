@@ -46,6 +46,12 @@ class Db2 extends Db
 			$dsn2 = $dsn;
 		}
 
+		// Add TrustServerCertificate=yes to the DSN
+		if (strpos($dsn2, 'sqlsrv') !== false)
+		{
+			$dsn2 .= ';TrustServerCertificate=yes';
+		}
+
 		$db = null;
 		if (is_null(self::$db2) || !is_null($dsn))
 		{

@@ -10,6 +10,7 @@ ARG INSTALL_ORACLE=false
 
 
 # Download and install the install-php-extensions script
+# https://github.com/mlocati/docker-php-extension-installer
 RUN curl -sSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions \
     && chmod +x /usr/local/bin/install-php-extensions
 
@@ -59,11 +60,10 @@ RUN docker-php-ext-install curl intl xsl pdo_pgsql pdo_mysql gd \
 RUN install-php-extensions imap
 
 # Install PECL extensions
-RUN pecl install xdebug apcu && docker-php-ext-enable xdebug apcu
+RUN pecl install apcu && docker-php-ext-enable apcu
 RUN pecl install redis && docker-php-ext-enable redis
 
 # Install Imagick
-# Temp solution to imagick broken with php >= 8.3, use imagick commit 28f27044e435a2b203e32675e942eb8de620ee58
 RUN install-php-extensions imagick
 
 # Install Composer
@@ -72,18 +72,12 @@ RUN php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
 
 # Conditionally install MSSQL support
 RUN if [ "${INSTALL_MSSQL}" = "true" ]; then \
-    wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg && \
-    echo "deb [arch=amd64] https://packages.microsoft.com/debian/$(cat /etc/debian_version | cut -d. -f1)/prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/mssql-release.list && \
-    apt-get update && \
-    ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
-    ACCEPT_EULA=Y apt-get install -y mssql-tools18 && \
-    apt-get install -y unixodbc unixodbc-dev && \
-    pecl install sqlsrv pdo_sqlsrv && \
-    docker-php-ext-enable sqlsrv pdo_sqlsrv; \
-    fi
+     install-php-extensions sqlsrv pdo_sqlsrv;\
+fi
 
 # PHP configuration
 RUN if [ "${INSTALL_XDEBUG}" = "true" ]; then \
+    pecl install xdebug && docker-php-ext-enable xdebug; \
     echo 'xdebug.mode=debug,develop' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo 'xdebug.discover_client_host=1' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
     && echo 'xdebug.client_host=host.docker.internal' >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
@@ -103,12 +97,7 @@ RUN echo 'error_reporting = E_ALL & ~E_NOTICE' >> /usr/local/etc/php/php.ini
 RUN echo 'post_max_size = 20M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 8M' >> /usr/local/etc/php/php.ini
 
-# insert microsoft repo if ${INSTALL_MSSQL} is not true or not set
-RUN if [ "${INSTALL_MSSQL}" != "true" ]; then \
-    wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg && \
-    echo "deb [arch=amd64] https://packages.microsoft.com/debian/$(cat /etc/debian_version | cut -d. -f1)/prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/mssql-release.list; \
-   fi
-
+# Install Java
 RUN apt-get update && apt-get install -y msopenjdk-21 unzip
 
 ## Verify Java installation
@@ -121,7 +110,7 @@ RUN chmod 777 /var/public/files
 RUN mkdir -p /run/php && chown www-data:www-data /run/php
 
 # Update PHP-FPM configuration to use Unix socket
-RUN sed -i 's|^listen = .*|listen = /run/php/php8.3-fpm.sock|' /usr/local/etc/php-fpm.d/www.conf \
+RUN sed -i 's|^listen = .*|listen = /run/php/php-fpm.sock|' /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.owner = www-data' >> /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.group = www-data' >> /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.mode = 0660' >> /usr/local/etc/php-fpm.d/www.conf

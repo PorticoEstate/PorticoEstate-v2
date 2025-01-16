@@ -12,7 +12,7 @@ use Exception;
 class EventController
 {
 
-    private $service;
+    private EventService $service;
 
     public function __construct()
     {

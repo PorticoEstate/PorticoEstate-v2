@@ -30,7 +30,9 @@ fi
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y software-properties-common \
-    apt-utils libcurl4-openssl-dev libicu-dev libxslt-dev libpq-dev zlib1g-dev libpng-dev libc-client-dev libkrb5-dev libzip-dev libonig-dev \
+    apt-utils libcurl4-openssl-dev libicu-dev libxslt-dev libpq-dev \
+    zlib1g-dev libpng-dev libfreetype-dev libjpeg62-turbo-dev \ 
+    libc-client-dev libkrb5-dev libzip-dev libonig-dev \
     git \
     less vim-tiny \
     apg \
@@ -54,7 +56,8 @@ ENV LANGUAGE=en_US.UTF-8
 
 
 # Install PHP extensions
-RUN docker-php-ext-install curl intl xsl pdo_pgsql pdo_mysql gd \
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
+RUN docker-php-ext-install -j$(nproc) curl intl xsl pdo_pgsql pdo_mysql gd \
     shmop soap zip mbstring ftp calendar exif
 
 RUN install-php-extensions imap
@@ -62,6 +65,23 @@ RUN install-php-extensions imap
 # Install PECL extensions
 RUN pecl install apcu && docker-php-ext-enable apcu
 RUN pecl install redis && docker-php-ext-enable redis
+
+# Add APCu configuration
+RUN echo "apc.shm_size=128M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
+    && echo "apc.enabled=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
+    && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini
+
+
+# Install OPcache
+RUN docker-php-ext-install opcache
+
+# Add OPcache configuration
+RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
+    && echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
+    && echo "opcache.interned_strings_buffer=8" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
+    && echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
+    && echo "opcache.revalidate_freq=2" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
+    && echo "opcache.fast_shutdown=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini
 
 # Install Imagick
 RUN install-php-extensions imagick
@@ -98,6 +118,9 @@ RUN echo 'post_max_size = 20M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 8M' >> /usr/local/etc/php/php.ini
 
 # Install Java
+RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg && \
+    echo "deb [arch=amd64] https://packages.microsoft.com/debian/$(cat /etc/debian_version | cut -d. -f1)/prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/mssql-release.list
+
 RUN apt-get update && apt-get install -y msopenjdk-21 unzip
 
 ## Verify Java installation

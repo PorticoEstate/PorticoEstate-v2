@@ -110,7 +110,7 @@ class sms_sms__
 	protected $global_lock	 = false;
 	var $apps_config, $feat_command_path, $gateway_module_get, $gateway_module_send, $gateway_number, $web_title,
 		$email_service, $email_footer, $reserved_codes, $db, $db2, $init, $like, $dateformat, $datetimeformat, $time_format, $account,
-		$userSettings,$serverSettings, $phpgwapi_common;
+		$userSettings, $serverSettings, $phpgwapi_common;
 
 	function __construct()
 	{
@@ -728,7 +728,9 @@ class sms_sms__
 	{
 		$datetime_now = $this->datetime_now();
 		$ok = false;
-		$sql = "SELECT command_exec,command_type FROM phpgw_sms_featcommand WHERE command_code='$command_code'";
+		$sql = "SELECT command_exec, command_type 
+        FROM phpgw_sms_featcommand 
+        WHERE LOWER(command_code) = LOWER('{$command_code}')";
 		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$command_exec = $this->db->f('command_exec');
@@ -918,7 +920,7 @@ class sms_sms__
 			$sms_datetime = $this->datetime_now();
 		}
 
-		$target_code	 = Sanitizer::clean_value($target_code);
+		$target_code	 = mb_strtoupper(Sanitizer::clean_value($target_code));
 		$message		 = Sanitizer::clean_value($message);
 
 		$ok = false;

@@ -45,9 +45,11 @@ class OpcacheController
 			\phpgw::redirect('/admin/admin/opcache/');
 		}
 
-
-		$phpgwapi_common = new \phpgwapi_common();
-		$phpgwapi_common->phpgw_header(true);
+		if (Sanitizer::get_var('click_history', 'get', 'bool'))
+		{
+			$phpgwapi_common = new \phpgwapi_common();
+			$phpgwapi_common->phpgw_header(true);
+		}
 
 		require_once $vendordir . '/amnuts/opcache-gui/index.php';
 		return $response;

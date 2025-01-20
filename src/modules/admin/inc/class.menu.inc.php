@@ -329,10 +329,7 @@ class admin_menu
 		{
 			$menus['admin']['opcache_monitor'] = array(
 				'text'	=> $translation->translate('opcache monitor', array(), true),
-				'url'	=> phpgw::link(
-					'/index.php',
-					array('menuaction' => 'admin.uiopcache.index')
-				),
+				'url'	=> phpgw::link('/admin/admin/opcache/'),
 			);
 		}
 

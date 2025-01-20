@@ -12,8 +12,8 @@ const MaxParticipantInput: FC<ParticipantInputProps> = ({ updateField, fieldValu
     const handler = (action: 'plus' | 'minus') => {
         if (action === 'minus' && fieldValue <= 1) return;
         return action === 'plus' ? 
-        updateField('info_participant_limit', fieldValue + 1)
-        : updateField('info_participant_limit', fieldValue - 1)
+        updateField('participant_limit', fieldValue + 1)
+        : updateField('participant_limit', fieldValue - 1)
     }
     return (
         <div className={styles.participantInput}>

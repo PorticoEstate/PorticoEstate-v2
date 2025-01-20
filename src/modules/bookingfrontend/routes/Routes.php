@@ -58,6 +58,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
     $group->group('/events', function (RouteCollectorProxy $group)
     {
+        $group->get('/{id}', EventController::class . ':getEventById');
         $group->patch('/{id}', EventController::class . ':updateEvent');
     });
 })->add(new SessionsMiddleware($app->getContainer()));

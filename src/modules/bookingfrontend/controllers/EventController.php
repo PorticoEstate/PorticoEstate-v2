@@ -19,6 +19,31 @@ class EventController
         $this->service = new EventService();
     }
 
+    public function getEventById(Request $request, Response $response, array $args)
+    {
+        $id = (int)$args['id'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        try {
+            $data = $this->service->getEventById($id);
+
+            $response->getBody()->write(json_encode($data));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
     public function updateEvent (Request $request, Response $response, array $args)
     {
         $id = (int)$args['id'];
@@ -64,6 +89,5 @@ class EventController
                 500
             );
         }
-        
     }
 }

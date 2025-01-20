@@ -20,12 +20,12 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
         <div className={styles.editForm}>
             <Textfield
                 label={t('bookingfrontend.title')}
-                value={event.activity_name}
-                onChange={(e) => updateField('activity_name', e.target.value)}
+                value={event.name}
+                onChange={(e) => updateField('name', e.target.value)}
             />
             <DatePickerInput 
-                date={event.info_when}
-                updateDate={(date: Date) => updateField('info_when', date)}
+                date={event.from_}
+                updateDate={(date: Date) => updateField('from_', date)}
             />
             <Field>
                 <span className={styles.inputLabel}>Time</span>
@@ -57,9 +57,9 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
             <Field style={{gap: '0'}}>
                 <span className={styles.inputLabel}>{t('bookingfrontend.resource')}</span>
                 <ResourcesGroup 
-                    updateField={(data: any) => updateField('info_resource_info', data)}
-                    allResources={event.info_resources_allResources}
-                    selectedResources={event.info_resource_info}
+                    updateField={(data: any) => updateField('resources', data)}
+                    buildingResources={event.buildingResources}
+                    selectedResources={event.resources}
                 />
             </Field>
             <Textfield 
@@ -71,7 +71,7 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 <Label>{t('bookingfrontend.max_participants_info')}</Label>
                 <MaxParticipantInput 
                     updateField={updateField} 
-                    fieldValue={event.info_participant_limit}
+                    fieldValue={event.participant_limit}
                 />
             </Field>
         </div>

@@ -5,12 +5,12 @@ import styles from '../event.module.scss';
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 
 interface ResourcesGroupProps {
-    allResources: Map<number, string>;
+    buildingResources: Map<number, string>;
     selectedResources: Map<number, string>;
     updateField: (selectedResources: Map<number, string>) => void;
 }
 
-const ResourcesGroup: FC<ResourcesGroupProps> = ({ allResources, selectedResources, updateField }: ResourcesGroupProps) => {
+const ResourcesGroup: FC<ResourcesGroupProps> = ({ buildingResources, selectedResources, updateField }: ResourcesGroupProps) => {
     const onChange = (id: number, name: string) => {
         const copy = new Map(selectedResources);
         if (selectedResources.has(id)) copy.delete(id);
@@ -20,7 +20,7 @@ const ResourcesGroup: FC<ResourcesGroupProps> = ({ allResources, selectedResourc
 
     return (
         <div className={styles.editResources}>
-            { Array.from(allResources).map(([id, name]) => (
+            { Array.from(buildingResources).map(([id, name]) => (
                 <Chip.Checkbox 
                     key={id}
                     asChild

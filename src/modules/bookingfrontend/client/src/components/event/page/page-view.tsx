@@ -17,15 +17,15 @@ interface EventViewProps {
 const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) => {
     const t = useTrans();
 
-    const whenTime = DateTime.fromJSDate(event.info_when).toFormat('dd. LLL yyyy'); 
+    const date = DateTime.fromJSDate(event.from_).toFormat('dd. LLL yyyy'); 
     const fromTime = DateTime.fromJSDate(event.from_).toFormat('HH.mm');
     const toTime = DateTime.fromJSDate(event.to_).toFormat('HH.mm');
 
     return (
         <main style={{padding: '0px 5px'}}>
-            <h2 style={{ marginBottom: '1rem' }}>{event.activity_name}</h2>
+            <h2 style={{ marginBottom: '1rem' }}>{event.name}</h2>
             <span>#{event.id}</span>
-            <p style={{marginTop: '2rem'}}><b>{t('bookingfrontend.date')}: </b>{whenTime}</p>
+            <p style={{marginTop: '2rem'}}><b>{t('bookingfrontend.date')}: </b>{date}</p>
             <p><b>Time: </b>{fromTime}-{toTime}</p>
             <p>
                 <b>{t('bookingfrontend.place')}: </b>
@@ -36,10 +36,10 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
             </p>
             <div className={styles.resourceViewBlock}>
                 <b>{t('bookingfrontend.resource')}: </b>
-                <ResourcesDropdown resources={event.info_resource_info}/>
+                <ResourcesDropdown resources={event.resources}/>
             </div>
             <p><b>{t('bookingfrontend.organizer')}: </b>{event.organizer}</p>
-            <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants_info')}: </b>{event.info_participant_limit}</p>
+            <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants_info')}: </b>{event.participant_limit}</p>
             <p style={{marginTop: '0.6rem'}}><b>{t('booking.participants')}: </b>{event.number_of_participants}</p>
             <div style={{display: 'flex'}}>
                 <Button asChild style={{marginRight: '0.5rem'}} variant='secondary'>

@@ -35,7 +35,7 @@ class EventService
         if (!$shouldUpdate) { return null; }
 
         //Create set-pairs for sql update
-        $params = [':id' => $data['id']];
+        $params = [':id' => $existingEvent['id']];
         $updateFields = [];
 
         foreach ($data as $field => $value) {
@@ -51,57 +51,66 @@ class EventService
         $stmt->execute($params);
     }
 
-    private function saveNewResourcesList (array $data) 
+    private function saveNewResourcesList (array $data, array $existingEvent) 
     {
         if (!$data['resource_ids']) return null;
         //Check if this a diff between existing resource array and new res array
-        $sql = 
-            "SELECT ARRAY_AGG(res.event_id) as event_resources from bb_event_resource res
-            where res.event_id = :event_id";
+        $sql =
+        "SELECT array_to_json(ARRAY_AGG(resource_id)) as event_resources from bb_event_resource
+        WHERE event_id = :event_id";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':event_id' => $data['id']]);
-        $resources_ids = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (count($resources_ids) == count($data['resource_ids'])) {
-            return;
-        }
+        $stmt->execute([':event_id' => $existingEvent['id']]);
+        $resources_ids = json_decode($stmt->fetch()['event_resources']);
 
-        $insertSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES ";
-        foreach ($data as $newResource) {
-            if (!$resources_ids[$newResource]) {
-                $insertSql .= '(' . $data['id'] . ', ' . $newResource . '),';
+        //Delete removed resources
+        $to_delete = [];
+        foreach($resources_ids as $resource_id) {
+            if (!in_array($resource_id, $data['resource_ids'])) {
+                array_push($to_delete, $resource_id);
             }
         }
-        $insertStmt = $this->db->prepare(rtrim($insertSql, ','));
-        $insertStmt->execute();
+        if (count($to_delete) > 0) {
+            $deleteSql = 
+            "DELETE FROM bb_event_resource 
+            WHERE resource_id IN (" . implode(', ', $to_delete) . ")";
+            $insertStmt = $this->db->prepare($deleteSql);
+            $insertStmt->execute();
+        }
+
+        //Set new resources
+        $insertSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES ";
+        $should_insert = false;
+        foreach ($data['resource_ids'] as $newResource) {
+            if (!in_array($newResource, $resources_ids)) {
+                $should_insert = true;
+                $insertSql .= '(' . $existingEvent['id'] . ', ' . $newResource . '),';
+            }
+        }
+        if ($should_insert) {
+            $insertStmt = $this->db->prepare(rtrim($insertSql, ','));
+            $insertStmt->execute();
+        }
     }
 
     private function saveNewDates (array $data, array $existingEvent)
     {
-        if ($existingEvent['from_'] && $existingEvent['to_']) {
-            return null;
-        }
-        // Check if this a diff between existing dates and new dates
-        if ($data['from_'] == $existingEvent['from_'] && $data['to_'] == $existingEvent['to_']) {
-            return null;
-        }
-        
-        // Create set pairs for sql update
         $params = ['event_id' => $existingEvent['id']];
         $sql = "UPDATE bb_event_date SET ";
-        if ($data['from_']) {
-            $sql .= "from_ = :from";
+        if ($data['from_'] && $data['from_'] !== $existingEvent['from_']) {
+            $sql .= 'from_ = :from, ';
             $params[':from'] = $data['from_'];
         }
-        if ($data['to_']) {
-            $sql .= "to_ = :to";
+        if ($data['to_'] && $data['to_'] !== $existingEvent['to_']) {
+            $sql .= 'to_ = :to ';
             $params[':to'] = $data['to_'];
         }
-        $sql .= " Where id = :event_id";
-
+       
+        if (!$params[':from'] && !$params[':to']) return; 
+    
+        $sql .= "WHERE event_id = :event_id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
     }
-
 
     public function getPartialEventObjectById (int $id)
     {
@@ -118,7 +127,7 @@ class EventService
             $this->db->beginTransaction();
             
             $this->patchEventMainData($data, $existingEvent);
-            $this->saveNewResourcesList($data);
+            $this->saveNewResourcesList($data, $existingEvent);
             $this->saveNewDates($data, $existingEvent);
 
             $this->db->commit();
@@ -129,5 +138,29 @@ class EventService
             var_dump($e);
             throw $e;
         }
+    }
+    
+    public function getEventById($id) {
+        $sql = "SELECT ev.id, ev.name, act.name as activity_name, 
+        ev.organizer, ev.from_, ev.to_, ev.building_id, 
+        ev.building_name, ev.participant_limit,
+        (
+            SELECT jsonb_object_agg(res.id, res.name) from bb_event_resource as evres
+            JOIN bb_resource as res
+            ON res.id = evres.resource_id
+            WHERE evres.event_id = ev.id
+        ) as resources,
+        (
+            SELECT count(id) from bb_participant
+            WHERE reservation_id = ev.id
+        ) as number_of_participant
+        FROM public.bb_event ev
+        JOIN bb_activity act
+        ON ev.activity_id = act.id
+        WHERE ev.id = :id
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 }

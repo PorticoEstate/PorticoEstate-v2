@@ -18,27 +18,13 @@ export interface ActivityData {
     building_id: number;
     from_: Date;
     to_: Date;
-    is_public: number;
     activity_name: string;
-    resources: number[];
-    description?: string;
     organizer?: string;
-    homepage?: string;
     name?: string;
-    type: "event";
-    info_resource_info: Map<number, string>;
-    //All resources for specific building
-    info_resources_allResources: Map<number, string>;
-    info_org: OrgInfo;
-    // Parsed info_when field
-    info_when: Date;
-    info_participant_limit: number;
+    resources: Map<number, string>;
+    buildingResources: Map<number, string>;
+    participant_limit: number;
     number_of_participants: number;
-    info_edit_link: string | null;
-    info_cancel_link: string | null;
-    info_ical_link: string;
-    info_show_link: string;
-    info_user_can_delete_events: number;
 }
 
 export interface FilteredEventInfo {
@@ -195,44 +181,43 @@ export const useEventPopperData = (event_id: (string | number)) => {
 export const fetchEventData = async (
     event_id: number
 ): Promise<ActivityData | null> => {
-    const url = phpGWLink(
-        "bookingfrontend/",
-        {
-            menuaction: "bookingfrontend.uievent.info_json",
-            id: event_id,
-        },
-        true
-    );
+    const url = phpGWLink(['bookingfrontend', 'events', event_id])
     const res = await axios.get(url);
+
     if (res.status !== 200) return null;
 
-    const event = res.data.events[event_id];
-
-    const fromTime = DateTime.fromSQL(event.from_).toJSDate();
-    const toTime = DateTime.fromSQL(event.to_).toJSDate();
-    const whenTime = DateTime.fromFormat(
-        event.info_when.split(" - ")[0],
-        "dd/LL/yyyy HH:mm"
-    ).toJSDate();
+    const event = res.data;
     
-    const resourcesNames = event.info_resource_info.split(", ");
-    const resourcesIds = event.resource_ids;
-    const gatheredMap = new Map();
-    for (let i = 0; i < resourcesIds.length; i++) {
-        gatheredMap.set(resourcesIds[i], resourcesNames[i]);
-    }
-    const buildingResources = await fetchBuildingResources(event.building_id)
+    const resources = Object.entries(JSON.parse(event.resources));
+    const buildingResources = await fetchBuildingResources(event.building_id);
     return {
-        info_user_can_delete_events: res.data.info_user_can_delete_events,
-        ...res.data.events[event_id],
-        from_: fromTime,
-        to_: toTime,
-        info_resource_info: gatheredMap,
-        info_resources_allResources: new Map(buildingResources.map(({id, name}) => [id, name])),
-        info_when: whenTime,
-        type: "event",
+        ...event,
+        to_: new Date(event.to_),
+        from_: new Date(event.from_),
+        resources: new Map(
+            resources.map(([ id, name ]) => [parseInt(id), name])
+        ),
+        buildingResources: new Map(
+            buildingResources.map(({ id, name }) => [id, name])
+        ),
     };
 };
+
+export const editEvent = async (id: number, data: Partial<ActivityData>) => {
+    const url = phpGWLink(['bookingfrontend', 'events', id]);
+    const response = await fetch(url, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update event");
+    }
+
+    return response.json();
+}
 
 
 export const useAllocationPopperData = (allocation_id: (string | number)) => {

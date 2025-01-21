@@ -4743,13 +4743,13 @@ JS;
 
 		$lang_status_code	 = lang('status code');
 		$lang_to			 = lang('to');
-		$code_help			 = "Send: {$gateway_codeword} STATUS {$ticket['order_id']} <{$lang_status_code}> {$lang_to} {$gateway_number}\n\n"
+		$code_help			 = "Send: {$gateway_codeword} STATUS {$ticket['order_id']} [{$lang_status_code}] {$lang_to} {$gateway_number}\n\n"
 			. $lang_status_code
 			. ":\n\n 1 => " . lang('performed')
 			. "\n 2 => " . lang('No access')
 			. "\n 3 => I arbeid";
 		$data				 = array(
-			array('col1' => "<C:showimage:{$filename} 90>", 'col2' => $code_help)
+			array('col1' => "", 'col2' => $code_help)
 		);
 
 		$pdf->ezTable($data, array('col1' => '', 'col2' => ''), '', array(

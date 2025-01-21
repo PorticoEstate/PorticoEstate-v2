@@ -22,12 +22,12 @@ const AddParticipant: FC<EventProps> = async (props: EventProps) => {
     return (
         <main>
             <AddParticipantsHeader
-                activityName={data.activity_name}
-                maxParticipants={data.info_participant_limit}
+                activityName={data.name}
+                maxParticipants={data.participant_limit}
                 numberOfParticipants={data.number_of_participants}
             />
             <ParticipantForm 
-                maxParticipants={data.info_participant_limit}
+                maxParticipants={data.participant_limit}
             /> 
         </main>
     )

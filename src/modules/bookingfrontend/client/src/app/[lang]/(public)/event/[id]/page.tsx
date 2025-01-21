@@ -19,7 +19,7 @@ export async function generateMetadata(props: EventProps) {
     if (!data) return notFound();
 
     return {
-        title: data.activity_name
+        title: data.name
     }
 }
 

@@ -19,6 +19,8 @@ export interface ActivityData {
     from_: Date;
     to_: Date;
     activity_name: string;
+    is_public: boolean;
+    type: 'event';
     organizer?: string;
     name?: string;
     resources: Map<number, string>;
@@ -188,14 +190,13 @@ export const fetchEventData = async (
 
     const event = res.data;
     
-    const resources = Object.entries(JSON.parse(event.resources));
     const buildingResources = await fetchBuildingResources(event.building_id);
     return {
         ...event,
         to_: new Date(event.to_),
         from_: new Date(event.from_),
         resources: new Map(
-            resources.map(([ id, name ]) => [parseInt(id), name])
+            event.resources.map(({ id, name }: any) => [parseInt(id), name])
         ),
         buildingResources: new Map(
             buildingResources.map(({ id, name }) => [id, name])

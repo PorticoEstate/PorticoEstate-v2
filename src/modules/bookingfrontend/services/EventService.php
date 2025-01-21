@@ -3,16 +3,21 @@
 namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
+use App\modules\bookingfrontend\models\Event;
+use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\helpers\UserHelper;
 use Exception;
 use PDO;
 
 class EventService
 {
     private $db;
+    private $bouser;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
+        $this->bouser = new UserHelper();
     }
 
     private function patchEventMainData(array $data, array $existingEvent)
@@ -140,8 +145,9 @@ class EventService
         }
     }
     
-    public function getEventById($id) {
-        $sql = "SELECT ev.id, ev.name, act.name as activity_name, 
+    public function getEventById($id) 
+    {
+        $sql = "SELECT ev.id, ev.is_public, ev.name, act.name as activity_name, 
         ev.organizer, ev.from_, ev.to_, ev.building_id, 
         ev.building_name, ev.participant_limit,
         (
@@ -161,6 +167,18 @@ class EventService
         ";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $entity = new Event($data);
+        $resources = [];
+        foreach (json_decode($data['resources'], true) as $id => $name) {
+            $resourceEntity = new Resource(array('id' => $id, 'name' => $name));
+            array_push($resources, $resourceEntity);
+        }
+        $entity->resources = $resources;
+    
+        $userOrgs = $this->bouser->organizations ? array_column($this->bouser->organizations, 'orgnr') : null;
+
+        return $entity->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
     }
 }

@@ -4738,6 +4738,8 @@ JS;
 		$filename = $this->serverSettings['temp_dir'] . '/' . md5($code_text) . '.png';
 		QRcode::png($code_text, $filename);
 		$pdf->ezSetDy(-20);
+		$pdf->ezImage($filename, $pad = 0, $width = 0, $resize = '', $just = 'left', $border = '');
+		$pdf->ezSetDy(90);
 
 		$lang_status_code	 = lang('status code');
 		$lang_to			 = lang('to');
@@ -4756,7 +4758,7 @@ JS;
 			'xPos'			 => 'left',
 			'xOrientation'	 => 'right',
 			'width'			 => 500,
-			'gridlines'		 => EZ_GRIDLINE_ALL,
+			'gridlines'		 => EZ_GRIDLINE_COLUMNS,
 			'cols'			 => array(
 				'col1'	 => array('width' => 150, 'justification' => 'left'),
 				'col2'	 => array('width' => 350, 'justification' => 'left'),
@@ -4769,12 +4771,11 @@ JS;
 
 		if (isset($this->bo->config->config_data['order_footer_header']) && $this->bo->config->config_data['order_footer_header'])
 		{
-			if (!$content)
-			{
-				$pdf->ezSetDy(-100);
-			}
-			$pdf->ezText($this->bo->config->config_data['order_footer_header'], 12);
-			$pdf->ezText(htmlspecialchars($this->bo->config->config_data['order_footer']), 10);
+
+			$pdf->ezSetDy(-20);
+
+			//			$pdf->ezText($this->bo->config->config_data['order_footer_header'], 12);
+			$pdf->ezText($this->bo->config->config_data['order_footer_header'] . "\n" . htmlspecialchars($this->bo->config->config_data['order_footer']), 10);
 		}
 
 		$document = $pdf->ezOutput();

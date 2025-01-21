@@ -2520,16 +2520,28 @@ HTML;
 		{
 			$sms_location_id = $this->locations->get_id('sms', 'run');
 			$config_sms		 = CreateObject('admin.soconfig', $sms_location_id);
+			$gateway_number		 = $config_sms->config_data['common']['gateway_number'];
+			$gateway_codeword	 = $config_sms->config_data['common']['gateway_codeword'];
 			phpgw::import_class('phpgwapi.phpqrcode');
-			$code_text		 = "SMSTO:{$config_sms->config_data['common']['gateway_number']}: STATUS {$workorder_id} ";
+			$code_text		 = "SMSTO:{$gateway_number}: STATUS {$workorder_id} ";
 			$filename		 = $this->serverSettings['temp_dir'] . '/' . md5($code_text) . '.png';
 			QRcode::png($code_text, $filename);
 			$pdf->ezSetDy(-20);
-			//		$pdf->ezImage($filename,$pad = 0,$width = 0,$resize = '',$just = 'left',$border = '');
-			//		$pdf->ezText(lang('status code') .': 1 => ' . lang('performed'). ', 2 => ' . lang('No access') . ', 3 => I arbeid',10);
+			$pdf->ezImage($filename, $pad = 0, $width = 0, $resize = '', $just = 'left', $border = '');
+			$pdf->ezSetDy(90);
+			//	$pdf->ezText(lang('status code') . ': 1 => ' . lang('performed') . ', 2 => ' . lang('No access') . ', 3 => I arbeid', 10);
+			$lang_status_code	 = lang('status code');
+			$lang_to			 = lang('to');
+
+			$code_help			 = "Send: {$gateway_codeword} STATUS {$workorder_id} [{$lang_status_code}] {$lang_to} {$gateway_number}\n\n"
+				. $lang_status_code
+				. ":\n\n 1 => " . lang('performed')
+				. "\n 2 => " . lang('No access')
+				. "\n 3 => I arbeid";
+
 
 			$data = array(
-				array('col1' => "<C:showimage:{$filename} 90>", 'col2' => "\n" . lang('status code') . ":\n\n 1 => " . lang('performed') . "\n 2 => " . lang('No access') . "\n 3 => I arbeid")
+				array('col1' => "", 'col2' => $code_help)
 			);
 
 
@@ -2539,7 +2551,7 @@ HTML;
 				'xPos'			 => 'left',
 				'xOrientation'	 => 'right',
 				'width'			 => 500,
-				'gridlines'		 => EZ_GRIDLINE_ALL,
+				'gridlines'		 => EZ_GRIDLINE_COLUMNS,
 				'cols'			 => array(
 					'col1'	 => array('width' => 150, 'justification' => 'left'),
 					'col2'	 => array('width' => 350, 'justification' => 'left'),
@@ -2569,16 +2581,10 @@ HTML;
 
 		if (isset($this->config->config_data['order_footer_header']) && $this->config->config_data['order_footer_header'])
 		{
-			if ($content)
-			{
-				$pdf->ezSetDy(-10);
-			}
-			else
-			{
-				$pdf->ezSetDy(-80);
-			}
-			$pdf->ezText($this->config->config_data['order_footer_header'], 12);
-			$pdf->ezText(htmlspecialchars($this->config->config_data['order_footer']), 10);
+			$pdf->ezSetDy(-20);
+
+			//			$pdf->ezText($this->config->config_data['order_footer_header'], 12);
+			$pdf->ezText($this->config->config_data['order_footer_header'] . "\n" . htmlspecialchars($this->config->config_data['order_footer']), 10);
 		}
 
 		if ($preview)

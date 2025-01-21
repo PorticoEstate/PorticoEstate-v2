@@ -1,4 +1,5 @@
 import {IShortResource} from "@/service/pecalendar.types";
+import {IDocument} from "@/service/types/api.types";
 
 export interface IApplication {
     id: number;
@@ -31,6 +32,7 @@ export interface IApplication {
     dates: IApplicationDate[];
     resources: IShortResource[];
     orders: IOrder[];
+    documents: IDocument[];
     responsible_street: string;
     responsible_zip_code: string;
     responsible_city: string;

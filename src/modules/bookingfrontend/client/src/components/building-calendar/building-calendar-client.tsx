@@ -105,8 +105,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         }
     };
 
-    const handleDateSelect = useCallback((selectInfo: DateSelectArg) => {
-        if (selectInfo.view.type === 'dayGridMonth') {
+    const handleDateSelect = useCallback((selectInfo?: Partial<DateSelectArg>) => {
+        if (selectInfo?.view?.type === 'dayGridMonth') {
             return;
         }
         // console.log(enabledResources, props.resources);
@@ -115,9 +115,9 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         const newEvent: FCallTempEvent = {
             id: `temp-${Date.now()}`,
             title,
-            start: selectInfo.start,
-            end: selectInfo.end,
-            allDay: selectInfo.allDay,
+            start: selectInfo?.start,
+            end: selectInfo?.end,
+            allDay: selectInfo?.allDay ?? false,
             editable: true,
             extendedProps: {
                 type: 'temporary',
@@ -127,8 +127,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         };
         // setTempEvents(prev => ({...prev, [newEvent.id]: newEvent}))
         setCurrentTempEvent(newEvent);
-        selectInfo.view.calendar.unselect(); // Clear selection
-    }, [resources, enabledResources]);
+        selectInfo?.view?.calendar.unselect(); // Clear selection
+    }, [t, enabledResources, props.building.id]);
 
 
     const handleEventClick = useCallback((clickInfo: FCEventClickArg<FCallBaseEvent>) => {
@@ -140,7 +140,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
         // Check if the event is a valid, interactive event
         if ('id' in clickInfo.event && clickInfo.event.id) {
-            if(clickInfo.event.extendedProps.type === 'temporary') {
+            if (clickInfo.event.extendedProps.type === 'temporary') {
                 setCurrentTempEvent(clickInfo.event as FCallTempEvent);
             } else {
                 setSelectedEvent(clickInfo.event);
@@ -292,7 +292,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
         const newEnd = resizeInfo.event.end;
         const newStart = resizeInfo.event.start;
-        if(!newEnd || !newStart) {
+        if (!newEnd || !newStart) {
             console.log("No new date")
             return;
         }
@@ -302,7 +302,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             console.log(partials?.list);
             const existingEvent = partials?.list.find(app => +app.id === +eventId);
 
-            if(!eventId || !dateId || !existingEvent) {
+            if (!eventId || !dateId || !existingEvent) {
                 console.log("missing data", eventId, dateId, existingEvent)
 
                 return;
@@ -444,7 +444,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             />
             <CalendarInnerHeader view={view} calendarRef={calendarRef}
                                  setView={(v) => setView(v)}
-                                 setLastCalendarView={() => setView(lastCalendarView)} building={props.building}/>
+                                 setLastCalendarView={() => setView(lastCalendarView)} building={props.building}
+                                 createNew={() => handleDateSelect()}/>
             <FullCalendar
                 ref={calendarRef}
                 plugins={[interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin]}
@@ -534,7 +535,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
             {currentTempEvent && (
                 <EventCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempEvent={currentTempEvent}
-                           building_id={props.building.id} />
+                           building_id={props.building.id}/>
             )}
 
 

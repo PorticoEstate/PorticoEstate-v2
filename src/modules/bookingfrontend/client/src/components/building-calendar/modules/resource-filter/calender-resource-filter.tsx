@@ -78,7 +78,6 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 
                     </div>}
                     className={styles.resourceCheckbox}
-                    // disabled={Object.values(tempEvents).length > 0}
                 />
 
             </div>
@@ -105,7 +104,6 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
                                     fontSize={'1.5rem'}/></Button>)}
                         </div>}
                         className={styles.resourceCheckbox}
-                        // disabled={Object.values(tempEvents).length > 0}
                     />
 
                 </div>

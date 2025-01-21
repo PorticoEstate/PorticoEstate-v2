@@ -4,6 +4,7 @@ import {languages} from "@/app/i18n/settings";
 import type {Metadata} from "next";
 import {Roboto, Poppins} from "next/font/google";
 import '@digdir/designsystemet-css';
+// import '@digdir/designsystemet-theme';
 import '@porticoestate/design-tokens';
 import "@/app/globals.scss";
 import "react-datepicker/dist/react-datepicker.css";

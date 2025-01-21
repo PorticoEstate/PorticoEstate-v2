@@ -1,11 +1,8 @@
 import React, {Fragment, useMemo, useState} from 'react';
 import {
-    Badge,
     Button,
-    Checkbox,
-    Chip,
+    Chip, Details,
     Field,
-    Label,
     Select, Spinner,
     Tag,
     Textfield,
@@ -14,20 +11,18 @@ import {
 import {DateTime} from 'luxon';
 import MobileDialog from '@/components/dialog/mobile-dialog';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import {useCurrentBuilding, useTempEvents} from '@/components/building-calendar/calendar-context';
 import {useBuilding, useBuildingResources} from '@/service/api/building';
 import {FCallTempEvent} from '@/components/building-calendar/building-calendar.types';
 import ColourCircle from '@/components/building-calendar/modules/colour-circle/colour-circle';
 import styles from './event-crud.module.scss';
 import {useForm, Controller} from 'react-hook-form';
-import {z} from 'zod';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {
     useBuildingAgeGroups,
     useBuildingAudience,
-    useCreatePartialApplication, useDeletePartialApplication,
+    useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
     usePartialApplications,
-    useUpdatePartialApplication
+    useUpdatePartialApplication, useUploadApplicationDocument
 } from "@/service/hooks/api-hooks";
 import {NewPartialApplication, IUpdatePartialApplication, IApplication} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
@@ -49,39 +44,25 @@ interface EventCrudInnerProps extends EventCrudProps {
     existingEvent?: IApplication;
 }
 
-const eventFormSchema = z.object({
-    title: z.string().min(1, 'Title is required'),
-    start: z.date(),
-    end: z.date(),
-    resources: z.array(z.string()).min(1, 'At least one resource must be selected'),
-    // Add validation for audience and agegroups
-    audience: z.array(z.number()),
-    agegroups: z.array(z.object({
-        id: z.number(),
-        male: z.number().min(0),
-        female: z.literal(0), // Since we're only using male counts
-        name: z.string(),
-        description: z.string().nullable(),
-        sort: z.number()
-    }))
-});
-
-
-type EventFormData = z.infer<typeof eventFormSchema>;
 
 import {FC} from 'react';
 import {IAgeGroup, IAudience, IBuilding} from "@/service/types/Building";
+import {EventFormData, eventFormSchema} from "@/components/building-calendar/modules/event/edit/event-form";
 
 interface EventCrudProps {
 }
 
 const EventCrudWrapper: FC<EventCrudProps> = (props) => {
 
+
     const {data: building, isLoading: buildingLoading} = useBuilding(+props.building_id);
     const {data: buildingResources, isLoading: buildingResourcesLoading} = useBuildingResources(props.building_id);
     const {data: partials, isLoading: partialsLoading} = usePartialApplications();
     const {data: audience, isLoading: audienceLoading} = useBuildingAudience(+props.building_id);
     const {data: agegroups, isLoading: agegroupsLoading} = useBuildingAgeGroups(+props.building_id);
+    const t = useTrans();
+
+
     const existingEvent = useMemo(() => {
         const applicationId = props.applicationId || props.selectedTempEvent?.extendedProps?.applicationId;
         if (applicationId === undefined) {
@@ -105,12 +86,16 @@ const EventCrudWrapper: FC<EventCrudProps> = (props) => {
 
 
 const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
+    const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
+    const [isUploadingFiles, setIsUploadingFiles] = useState(false);
     const {building, buildingResources, audience, agegroups, partials, existingEvent} = props;
     const t = useTrans();
     const [isEditingResources, setIsEditingResources] = useState(false);
     const createMutation = useCreatePartialApplication();
     const deleteMutation = useDeletePartialApplication();
     const updateMutation = useUpdatePartialApplication();
+    const uploadDocumentMutation = useUploadApplicationDocument();
+    const deleteDocumentMutation = useDeleteApplicationDocument();
 
 
     const defaultStartEnd = useMemo(() => {
@@ -149,6 +134,9 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
             title: existingEvent?.name ?? '',
             start: defaultStartEnd.start,
             end: defaultStartEnd.end,
+            homepage: existingEvent?.homepage || '',
+            description: existingEvent?.description || '',
+            equipment: existingEvent?.equipment || '',
             resources: existingEvent?.resources?.map((res) => res.id.toString()) ||
                 props.selectedTempEvent?.extendedProps?.resources?.map(String) ||
                 [],
@@ -174,7 +162,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
         return DateTime.fromJSDate(date).toFormat('yyyy-MM-dd\'T\'HH:mm');
     };
 
-    const onSubmit = (data: EventFormData) => {
+    const onSubmit = async (data: EventFormData) => {
         if (!building || !buildingResources) {
             return;
         }
@@ -199,21 +187,28 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
             if (dirtyFields.resources) {
                 updatedApplication.resources = buildingResources.filter(res => data.resources.some(selected => (+selected === res.id)))
             }
-            if (dirtyFields.title) {
-                updatedApplication.name = data.title
-            }
-            if (dirtyFields.audience) {
-                updatedApplication.audience = data.audience;
-            }
             if (dirtyFields.agegroups) {
                 updatedApplication.agegroups = data.agegroups.map(ag => ({
                     ...ag,
                     female: 0 // Since we're only tracking male numbers
                 }));
             }
+            const checkFields: (keyof typeof dirtyFields)[] = [
+                'title',
+                'audience',
+                'homepage',
+                'description',
+                'equipment',
+            ]
+            for (const checkField of checkFields) {
+                if (dirtyFields[checkField]) {
+                    (updatedApplication as any)[checkField] = data[checkField];
+                }
+            }
 
 
-            updateMutation.mutate({id: existingEvent.id, application: updatedApplication});
+            const result = await updateMutation.mutateAsync({id: existingEvent.id, application: updatedApplication});
+
             props.onClose();
             return;
         }
@@ -238,7 +233,20 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
 
         }
 
-        createMutation.mutate(newApplication);
+        const result = await createMutation.mutateAsync(newApplication);
+        if (filesToUpload && filesToUpload.length > 0) {
+            setIsUploadingFiles(true);
+            const formData = new FormData();
+            Array.from(filesToUpload).forEach(file => {
+                formData.append('files[]', file);
+            });
+
+            await uploadDocumentMutation.mutateAsync({
+                id: result.id,
+                files: formData
+            });
+            setIsUploadingFiles(false);
+        }
         props.onClose();
     };
 
@@ -390,6 +398,9 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
         );
     };
 
+
+    console.log(errors)
+
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
             <MobileDialog
@@ -430,7 +441,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                                 <Textfield
                                     label={t('bookingfrontend.title')}
                                     {...field}
-                                    error={errors.title?.message}
+                                    error={errors.title?.message ? t(errors.title.message): undefined}
                                     placeholder={t('bookingfrontend.enter_title')}
                                 />
                             )}
@@ -480,8 +491,8 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
 
                     <div className={`${styles.formGroup} ${styles.wide}`}>
                         {renderResourceList()}
-                        {errors.resources && (
-                            <span className={styles.error}>{errors.resources.message}</span>
+                        {errors.resources?.message && (
+                            <span className={styles.error}>{t(errors.resources.message)}</span>
                         )}
                     </div>
                     <div className={`${styles.formGroup}`}>
@@ -521,8 +532,11 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                     </div>
 
                     <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
-                        <div className={styles.resourcesHeader}>
+                        <div className={styles.resourcesHeader} style={{flexDirection: 'column', alignItems: 'flex-start'}}>
                             <h4>{t('bookingfrontend.estimated number of participants')}</h4>
+                            {errors.agegroups?.['root']?.message && (
+                                <span className={styles.error}>{t(errors.agegroups?.['root']?.message)}</span>
+                            )}
                         </div>
 
                         {agegroups?.map((agegroup, index) => (
@@ -541,7 +555,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                                             min={0}
                                             description={agegroup.description}
                                             onChange={(e) => field.onChange(Number(e.target.value))}
-                                            error={errors.agegroups?.[index]?.male?.message}
+                                            error={errors.agegroups?.[0]?.message ? t(errors.agegroups?.[0]?.message) : undefined}
                                         />
                                     )}
                                 />
@@ -568,7 +582,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                                     name={`agegroups.${index}.description`}
                                     control={control}
                                     defaultValue={agegroup.description || ''}
-                                    render={({field}) => <input type="hidden" {...field} value={field.value || ''} />}
+                                    render={({field}) => <input type="hidden" {...field} value={field.value || ''}/>}
                                 />
                                 <Controller
                                     name={`agegroups.${index}.sort`}
@@ -578,7 +592,141 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                                 />
                             </Fragment>
                         ))}
+
+
                     </div>
+
+                    <div className={`${styles.formGroup} ${styles.wide}`}>
+                        <Details data-color={'neutral'}>
+                            <Details.Summary>
+                                Tilleggsinformasjon (valgfritt) TODO: Translation!
+                            </Details.Summary>
+                            <Details.Content style={{backgroundColor: "inherit"}} className={styles.eventForm}>
+                                <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+                                    <Controller
+                                        name="homepage"
+                                        control={control}
+                                        render={({field}) => (
+                                            <Textfield
+                                                label={t('bookingfrontend.homepage')}
+                                                {...field}
+                                                error={errors.homepage?.message}
+                                                placeholder={t('bookingfrontend.event/activity homepage')}
+                                            />
+                                        )}
+                                    />
+                                </div>
+                                <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+                                    <Controller
+                                        name="description"
+                                        control={control}
+                                        render={({field}) => (
+                                            <Textfield
+                                                label={t('bookingfrontend.description')}
+                                                {...field}
+                                                multiline={true}
+                                                rows={3}
+                                                error={errors.description?.message}
+                                                placeholder={t('bookingfrontend.event/activity description')}
+                                            />
+                                        )}
+                                    />
+                                </div>
+                                <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+                                    <Controller
+                                        name="equipment"
+                                        control={control}
+                                        render={({field}) => (
+                                            <Textfield
+                                                label={t('bookingfrontend.equipment text')}
+                                                {...field}
+                                                multiline={true}
+                                                rows={3}
+                                                error={errors.equipment?.message}
+                                                placeholder={t('bookingfrontend.equipment text')}
+                                            />
+                                        )}
+                                    />
+                                </div>
+                                <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+                                    <div className={styles.resourcesHeader}>
+                                        <h4>{t('bookingfrontend.documents')}</h4>
+                                    </div>
+
+                                    {existingEvent ? (
+                                        // Show existing documents and direct upload for existing applications
+                                        <>
+                                            {existingEvent.documents?.length > 0 && (
+                                                <div className={styles.documentsList}>
+                                                    {existingEvent.documents.map(doc => (
+                                                        <div key={doc.id} className={styles.documentItem}>
+                                                            <span>{doc.name}</span>
+                                                            <Button
+                                                                variant="tertiary"
+                                                                data-color={'danger'}
+                                                                // color="danger"
+                                                                data-size={'sm'}
+                                                                onClick={() => deleteDocumentMutation.mutate(doc.id)}
+                                                                loading={deleteDocumentMutation.isPending}
+                                                            >
+                                                                {t('common.delete')}
+                                                            </Button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            <input
+                                                type="file"
+                                                multiple
+                                                value={""}
+                                                onChange={(e) => {
+                                                    if (e.target.files && existingEvent.id) {
+                                                        const formData = new FormData();
+                                                        Array.from(e.target.files).forEach(file => {
+                                                            formData.append('files[]', file);
+                                                        });
+
+                                                        uploadDocumentMutation.mutate({
+                                                            id: existingEvent.id,
+                                                            files: formData
+                                                        });
+                                                    }
+                                                }}
+                                            />
+                                            {uploadDocumentMutation.isPending && (
+                                                <Spinner aria-label={t('common.uploading')}/>
+                                            )}
+                                        </>
+                                    ) : (
+                                        // For new applications, just store the files to be uploaded after creation
+                                        <>
+                                            <input
+                                                type="file"
+                                                multiple
+                                                onChange={(e) => setFilesToUpload(e.target.files)}
+                                            />
+                                            {filesToUpload && (
+                                                <div className={styles.selectedFiles}>
+                                                    {Array.from(filesToUpload).map((file, index) => (
+                                                        <div key={index} className={styles.selectedFileItem}>
+                                                            {file.name}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {isUploadingFiles && (
+                                                <Spinner aria-label={t('common.uploading')}/>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+
+                            </Details.Content>
+                        </Details>
+                    </div>
+
+
                 </section>
             </MobileDialog>
         </form>

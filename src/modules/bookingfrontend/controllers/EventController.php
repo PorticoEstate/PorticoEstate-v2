@@ -32,7 +32,12 @@ class EventController
 
         try {
             $data = $this->service->getEventById($id);
-
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Event not found'],
+                    404
+                );
+            }
             $response->getBody()->write(json_encode($data));
             return $response->withStatus(200)
                 ->withHeader('Content-Type', 'application/json');
@@ -44,7 +49,7 @@ class EventController
         }
     }
 
-    public function updateEvent (Request $request, Response $response, array $args)
+    public function updateEvent(Request $request, Response $response, array $args)
     {
         $id = (int)$args['id'];
         $session = Sessions::getInstance();

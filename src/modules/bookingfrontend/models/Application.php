@@ -227,6 +227,13 @@ class Application
     public $orders;
 
     /**
+     * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Document"))
+     * @Expose
+     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Document")
+     */
+    public $documents;
+
+    /**
      * @OA\Property(type="string")
      * @Expose
      */

@@ -67,4 +67,41 @@ class DocumentRepository
 
         return new Document($result, $this->owner_type);
     }
+
+    public function createDocument(array $data): int
+    {
+        $sql = "INSERT INTO bb_document_{$this->owner_type}
+            (name, description, category, owner_id)
+            VALUES (:name, :description, :category, :owner_id)";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':name' => $data['name'],
+            ':description' => $data['description'],
+            ':category' => $data['category'],
+            ':owner_id' => $data['owner_id']
+        ]);
+
+        return $this->db->lastInsertId();
+    }
+
+    public function deleteDocument(int $documentId): void
+    {
+        $document = $this->getDocumentById($documentId);
+        if (!$document) {
+            throw new Exception('Document not found');
+        }
+
+        // Delete physical file
+        $filepath = $document->generate_filename();
+        if (file_exists($filepath)) {
+            unlink($filepath);
+        }
+
+        // Delete database record
+        $sql = "DELETE FROM bb_document_{$this->owner_type} WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $documentId]);
+    }
+
 }

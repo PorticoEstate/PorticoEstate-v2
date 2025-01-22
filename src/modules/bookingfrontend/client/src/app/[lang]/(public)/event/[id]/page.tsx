@@ -29,8 +29,12 @@ const Event: FC<EventProps> = async (props: EventProps) => {
 
     const data: ActivityData | null = await fetchEventData(eventId);
     if (!data) return notFound();
-
-    return <EventPageController event={data}/>
+    return (
+        <EventPageController 
+            privateAccess={data.name !== 'PRIVATE EVENT'}
+            event={data}
+        />
+    )
 }
 
 export default Event

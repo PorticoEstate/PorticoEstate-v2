@@ -6,14 +6,15 @@ import EventView from "./page-view";
 
 interface EventPageProps {
     event: ActivityData;
+    privateAccess: boolean
 }
 
-const EventPageController: FC<EventPageProps> = ({ event }: EventPageProps) => {
+const EventPageController: FC<EventPageProps> = ({ event, privateAccess }: EventPageProps) => {
     const [isEditing, setEditingMode] = useState(false);
     const [eventState, setEventState] = useState(event);
     const cancelEditing = () => setEditingMode(false);
     const openEditing = () => setEditingMode(true);
-    
+
     const saveChanges = (newEventObject: ActivityData) => {
         const updatedData: any = {};
         for (const field in newEventObject) {
@@ -31,6 +32,12 @@ const EventPageController: FC<EventPageProps> = ({ event }: EventPageProps) => {
         editEvent(event.id, updatedData);
         cancelEditing();
     }
+    if (!privateAccess) {
+        <EventView 
+            event={eventState}
+            privateAccess={privateAccess}
+        />;
+    }
 
     return isEditing ? 
         <EventEditing 
@@ -41,6 +48,7 @@ const EventPageController: FC<EventPageProps> = ({ event }: EventPageProps) => {
         <EventView 
             event={eventState} 
             openEditing={openEditing}
+            privateAccess={privateAccess}
         />;
 }
 

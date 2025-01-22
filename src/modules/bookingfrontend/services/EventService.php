@@ -37,7 +37,9 @@ class EventService
                 $shouldUpdate = true;
             }
         }
-        if (!$shouldUpdate) { return null; }
+        if (!$shouldUpdate) {
+            return null;
+        }
 
         //Create set-pairs for sql update
         $params = [':id' => $existingEvent['id']];
@@ -51,17 +53,17 @@ class EventService
         }
 
         $sql = "UPDATE bb_event SET " . implode(', ', $updateFields) .
-        " WHERE id = :id";
+            " WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
     }
 
-    private function saveNewResourcesList (array $data, array $existingEvent) 
+    private function saveNewResourcesList(array $data, array $existingEvent)
     {
         if (!$data['resource_ids']) return null;
         //Check if this a diff between existing resource array and new res array
         $sql =
-        "SELECT array_to_json(ARRAY_AGG(resource_id)) as event_resources from bb_event_resource
+            "SELECT array_to_json(ARRAY_AGG(resource_id)) as event_resources from bb_event_resource
         WHERE event_id = :event_id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':event_id' => $existingEvent['id']]);
@@ -69,7 +71,7 @@ class EventService
 
         //Delete removed resources
         $to_delete = [];
-        foreach($resources_ids as $resource_id) {
+        foreach ($resources_ids as $resource_id) {
             if (!in_array($resource_id, $data['resource_ids'])) {
                 array_push($to_delete, $resource_id);
             }
@@ -97,7 +99,7 @@ class EventService
         }
     }
 
-    private function saveNewDates (array $data, array $existingEvent)
+    private function saveNewDates(array $data, array $existingEvent)
     {
         $params = ['event_id' => $existingEvent['id']];
         $sql = "UPDATE bb_event_date SET ";
@@ -109,15 +111,15 @@ class EventService
             $sql .= 'to_ = :to ';
             $params[':to'] = $data['to_'];
         }
-       
-        if (!$params[':from'] && !$params[':to']) return; 
-    
+
+        if (!$params[':from'] && !$params[':to']) return;
+
         $sql .= "WHERE event_id = :event_id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
     }
 
-    public function getPartialEventObjectById (int $id)
+    public function getPartialEventObjectById(int $id)
     {
         $fields = ['id', 'name', 'organizer', 'from_', 'to_', 'participant_limit'];
         $sql = "SELECT " . implode(', ', $fields) . " FROM bb_event WHERE id = :id";
@@ -127,39 +129,32 @@ class EventService
     }
 
     public function updateEvent(array $data, array $existingEvent)
-    {  
+    {
         try {
             $this->db->beginTransaction();
-            
+
             $this->patchEventMainData($data, $existingEvent);
             $this->saveNewResourcesList($data, $existingEvent);
             $this->saveNewDates($data, $existingEvent);
 
             $this->db->commit();
             return $existingEvent['id'];
-
         } catch (Exception $e) {
             $this->db->rollBack();
             var_dump($e);
             throw $e;
         }
     }
-    
-    public function getEventById($id) 
+
+    public function getEventById($id)
     {
-        $sql = "SELECT ev.id, ev.is_public, ev.name, act.name as activity_name, 
-        ev.organizer, ev.from_, ev.to_, ev.building_id, 
-        ev.building_name, ev.participant_limit,
+        $sql = "SELECT ev.*, act.name as activity_name, 
         (
             SELECT jsonb_object_agg(res.id, res.name) from bb_event_resource as evres
             JOIN bb_resource as res
             ON res.id = evres.resource_id
             WHERE evres.event_id = ev.id
-        ) as resources,
-        (
-            SELECT count(id) from bb_participant
-            WHERE reservation_id = ev.id
-        ) as number_of_participant
+        ) as resources
         FROM public.bb_event ev
         JOIN bb_activity act
         ON ev.activity_id = act.id
@@ -177,8 +172,12 @@ class EventService
         }
         $entity->resources = $resources;
     
-        $userOrgs = $this->bouser->organizations ? array_column($this->bouser->organizations, 'orgnr') : null;
+        $userOrgs = $this->bouser->organizations 
+            ? array_column($this->bouser->organizations, 'orgnr') 
+            : null;
 
-        return $entity->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
+        return $entity->serialize(
+            ['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]
+        );
     }
 }

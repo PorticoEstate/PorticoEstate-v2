@@ -7,7 +7,7 @@ import EventEditingForm from "./editing-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 
 interface EventEditingProps {
-    event: ActivityData
+    event: ActivityData;
     saveChanges: (newEventObject: ActivityData) => void;
     cancelEditing: () => void;
 }

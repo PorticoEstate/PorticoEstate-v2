@@ -11,10 +11,36 @@ import ResourcesDropdown from "./event-resources-dropdown";
 
 interface EventViewProps {
     event: ActivityData;
-    openEditing: () => void;
+    privateAccess: boolean;
+    openEditing?: () => void;
 }
 
-const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) => {
+const PrivateEventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) => {
+    const t = useTrans();
+    return (
+        <>
+            <p><b>{t('bookingfrontend.organizer')}: </b>{event.organizer}</p>
+            <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants_info')}: </b>{event.participant_limit}</p>
+            <div style={{display: 'flex'}}>
+                <Button asChild style={{marginRight: '0.5rem'}} variant='secondary'>
+                    <Link 
+                        style={{textDecoration: 'none'}}
+                        href={`./${event.id}/participants`}
+                    >
+                        <FontAwesomeIcon icon={faUserPlus} />
+                        {t('bookingfrontend.edit')}
+                    </Link>
+                </Button>
+                <Button variant='secondary' onClick={openEditing}>
+                    <FontAwesomeIcon icon={faPen} />
+                    {t('bookingfrontend.participant_registration')}
+                </Button>
+            </div>
+        </>
+    )
+}
+
+const EventView: FC<EventViewProps> = ({ event, openEditing, privateAccess }: EventViewProps) => {
     const t = useTrans();
 
     const date = DateTime.fromJSDate(event.from_).toFormat('dd. LLL yyyy'); 
@@ -38,24 +64,7 @@ const EventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) =
                 <b>{t('bookingfrontend.resource')}: </b>
                 <ResourcesDropdown resources={event.resources}/>
             </div>
-            <p><b>{t('bookingfrontend.organizer')}: </b>{event.organizer}</p>
-            <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants_info')}: </b>{event.participant_limit}</p>
-            <p style={{marginTop: '0.6rem'}}><b>{t('booking.participants')}: </b>{event.number_of_participants}</p>
-            <div style={{display: 'flex'}}>
-                <Button asChild style={{marginRight: '0.5rem'}} variant='secondary'>
-                    <Link 
-                        style={{textDecoration: 'none'}}
-                        href={`./${event.id}/participants`}
-                    >
-                        <FontAwesomeIcon icon={faUserPlus} />
-                        {t('bookingfrontend.edit')}
-                    </Link>
-                </Button>
-                <Button variant='secondary' onClick={openEditing}>
-                    <FontAwesomeIcon icon={faPen} />
-                    {t('bookingfrontend.participant_registration')}
-                </Button>
-            </div>
+            { privateAccess ? <PrivateEventView event={event} openEditing={openEditing} /> : null }
         </main>
     );
 }

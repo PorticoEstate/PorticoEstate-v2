@@ -14,19 +14,31 @@ interface OrgInfo {
 
 export interface ActivityData {
     id: number;
-    building_name: string;
-    building_id: number;
+    active: number;
     from_: Date;
     to_: Date;
-    activity_name: string;
+    completed: boolean;
+    building_id: number;
+    building_name: string;
+    skip_bas: number;
+    type: 'event',
+    activity_id: number;
+    reminder: number;
     is_public: boolean;
-    type: 'event';
-    organizer?: string;
-    name?: string;
     resources: Map<number, string>;
     buildingResources: Map<number, string>;
-    participant_limit: number;
-    number_of_participants: number;
+
+    name: string | 'PRIVATE EVENT';
+    organizer?: string;
+    homepage?: string;
+    equipment?: string;
+    description?: string;
+    contact_name?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    participant_limit?: number;
+    customer_organization_id?: number;
+    customer_organization_name?: string 
 }
 
 export interface FilteredEventInfo {

@@ -41,7 +41,7 @@ namespace App\modules\phpgwapi\services;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Log;
 use Exception;
-use Redis;
+use \Redis;
 
 /**
  * Shared memory handler class
@@ -120,7 +120,7 @@ class RedisCache
 		}
 		catch (Exception $e)
 		{
-			$msg = $e->getMessage();
+			$msg = 'Redis: ' . $e->getMessage();
 			\App\modules\phpgwapi\services\Cache::message_set($msg, 'error');
 			self::$error_connect = true;
 

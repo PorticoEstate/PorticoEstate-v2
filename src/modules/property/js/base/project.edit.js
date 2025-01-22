@@ -690,6 +690,8 @@ window.on_location_updated = function (location_code)
 
 window.get_location_exception = function (location_code)
 {
+    //delete div where role=alert, not the $("#message")
+    $("div[role=alert]").remove();
 
 	var oArgs = {menuaction: 'property.uilocation.get_location_exception', location_code: location_code};
 	var requestUrl = phpGWLink('index.php', oArgs, true);

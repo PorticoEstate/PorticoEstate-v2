@@ -28,7 +28,6 @@ import {useEnabledResources, useTempEvents} from "@/components/building-calendar
 import EventContentTemp from "@/components/building-calendar/modules/event/content/event-content-temp";
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import {Placement} from "@floating-ui/utils";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import EventContentList from "@/components/building-calendar/modules/event/content/event-content-list";
 import {EventImpl} from "@fullcalendar/core/internal";
@@ -349,17 +348,25 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
     const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
 
-    const popperPlacement = (): Placement => {
+    const popperPlacement = useMemo(() => {
         switch (calendarRef.current?.getApi().view.type) {
             case 'timeGridDay':
                 return 'bottom-start';
             case 'listWeek':
                 return 'bottom-start';
             default:
+                const el = popperAnchorEl;
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    const screenWidth = window.innerWidth;
+                    const elementRightPosition = rect.right;
+
+                    // Check if element is more than 60% to the right of the screen
+                    return (elementRightPosition / screenWidth > 0.6) ? 'left-start' : 'right-start';
+                }
                 return 'right-start';
         }
-
-    }
+    }, [calendarRef.current?.getApi().view.type, popperAnchorEl]);
 
     useEffect(() => {
         const convertedEvents = (events || [])
@@ -526,7 +533,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             <EventPopper
                 event={selectedEvent}
                 placement={
-                    popperPlacement()
+                    popperPlacement
                 }
                 anchor={popperAnchorEl} onClose={() => {
                 setSelectedEvent(null);

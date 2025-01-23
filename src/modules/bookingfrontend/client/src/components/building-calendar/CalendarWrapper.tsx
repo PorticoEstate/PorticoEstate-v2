@@ -24,7 +24,7 @@ interface CalendarWrapperProps {
     building: IBuilding;
     initialDate: Date;
     resourceId?: string;
-    initialWeekSchedule: Record<string, IEvent[]>
+    initialWeekSchedule?: Record<string, IEvent[]>
 }
 
 
@@ -69,7 +69,7 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
     const QCRES = useBuildingSchedule({
         building_id: building.id,
         weeks: dates,
-        initialWeekSchedule: initialWeekSchedule
+        // initialWeekSchedule: initialWeekSchedule
     });
 
     const fetchData = useCallback(async (start: DateTime, end?: DateTime) => {

@@ -5,7 +5,6 @@ import {IApplication} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent} from "@/service/pecalendar.types";
-import {cookies} from "next/headers";
 import {IAgeGroup, IAudience} from "@/service/types/Building";
 
 
@@ -64,7 +63,7 @@ export async function fetchBuildingSchedule(building_id: number, dates: string[]
 
     const response = await fetch(url, FetchAuthOptions());
     const result = await response.json();
-    console.log("fetchBuildingSchedule", result);
+    // console.log("fetchBuildingSchedule", result);
     return result;
 }
 

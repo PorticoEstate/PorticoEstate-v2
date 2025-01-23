@@ -14,7 +14,9 @@ use Exception;
 class RedisController
 {
 	private $redis = null;
+	private static $error_connect = null;
 	private $serverSettings;
+	private $errormsg;
 
 	public function __construct()
 	{
@@ -90,7 +92,6 @@ class RedisController
 			$msg = 'Redis host not configured';
 			\App\modules\phpgwapi\services\Cache::message_set($msg, 'error');
 			self::$error_connect = true;
-			//		$this->log_this($msg, __LINE__);
 			return;
 		}
 
@@ -99,7 +100,6 @@ class RedisController
 			$msg = "Redis: max number of databases is 16";
 			\App\modules\phpgwapi\services\Cache::message_set($msg, 'error');
 			self::$error_connect = true;
-			//		$this->log_this($msg, __LINE__);
 			return;
 		}
 
@@ -109,15 +109,12 @@ class RedisController
 			$ping = $this->redis->ping();
 			$this->redis->select($redis_database);
 			self::$error_connect = empty($ping);
-			self::$is_connected = !!$ping;
 		}
 		catch (Exception $e)
 		{
 			$msg = 'Redis: ' . $e->getMessage();
 			\App\modules\phpgwapi\services\Cache::message_set($msg, 'error');
 			self::$error_connect = true;
-
-			//		$this->log_this($msg, __LINE__);
 		}
 	}
 

@@ -13,10 +13,7 @@ use Exception;
 
 class RedisController
 {
-	private $phpgwapi_common;
 	private $redis = null;
-	private static $error_connect = null;
-	private static $is_connected = null;
 	private $serverSettings;
 
 	public function __construct()

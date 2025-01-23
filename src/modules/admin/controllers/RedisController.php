@@ -13,10 +13,7 @@ use Exception;
 
 class RedisController
 {
-	private $phpgwapi_common;
 	private $redis = null;
-	private static $error_connect = null;
-	private static $is_connected = null;
 	private $serverSettings;
 
 	public function __construct()
@@ -44,6 +41,12 @@ class RedisController
 	{
 		$phpgwapi_common = new \phpgwapi_common();
 		$phpgwapi_common->phpgw_header(true);
+
+		if (!$this->redis)
+		{
+			$response->getBody()->write('Redis is not enabled or not connected');
+			return $response;
+		}
 
 		// Fetch memory usage
 		$memoryUsage = $this->redis->info('memory')['used_memory'];

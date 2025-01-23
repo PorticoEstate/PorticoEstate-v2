@@ -45,6 +45,12 @@ class RedisController
 		$phpgwapi_common = new \phpgwapi_common();
 		$phpgwapi_common->phpgw_header(true);
 
+		if (!$this->redis)
+		{
+			$response->getBody()->write('Redis is not enabled or not connected');
+			return $response;
+		}
+
 		// Fetch memory usage
 		$memoryUsage = $this->redis->info('memory')['used_memory'];
 

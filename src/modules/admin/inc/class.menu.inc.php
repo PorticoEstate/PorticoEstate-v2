@@ -332,6 +332,13 @@ class admin_menu
 				'url'	=> phpgw::link('/admin/admin/opcache/'),
 			);
 		}
+		if ($is_admin)
+		{
+			$menus['admin']['redis_monitor'] = array(
+				'text'	=> $translation->translate('redis monitor', array(), true),
+				'url'	=> phpgw::link('/admin/admin/redis/'),
+			);
+		}
 
 
 		if (!$is_admin && !$local_admin)

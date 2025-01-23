@@ -63,12 +63,38 @@ class RedisController
 		// Get the oldest key in the connected database
 		$oldestKey = $this->getOldestKey();
 
-		// Create the response body
-		$responseBody = "Memory Usage: " . round($memoryUsage / (1024 * 1024), 1) . " M bytes<br>";
-		$responseBody .= "Connected Clients: " . $clients;
-		$responseBody .= "<br>Number of keys in the connected database: " . $keys;
-		$responseBody .= "<br>Oldest key in the connected database: " . $oldestKey['key'];
-		$responseBody .= "<br>Idle time of the oldest key: " . $oldestKey['idle_time'] . " seconds";
+		// Fetch keyspace hits and misses
+		$keyspaceHits = $this->redis->info('stats')['keyspace_hits'];
+		$keyspaceMisses = $this->redis->info('stats')['keyspace_misses'];
+
+		// Calculate hit and miss rates
+		$totalRequests = $keyspaceHits + $keyspaceMisses;
+		$hitRate = $totalRequests > 0 ? ($keyspaceHits / $totalRequests) * 100 : 0;
+		$missRate = $totalRequests > 0 ? ($keyspaceMisses / $totalRequests) * 100 : 0;
+
+		// Get Redis connection details
+		$redisHost = $this->serverSettings['redis_host'];
+		$redisPort = 6379;
+		$redisDatabase = $this->serverSettings['redis_database'];
+
+		// Create the response body as a table
+		$responseBody = "<h1>Redis Cache Info</h1>";
+		$responseBody .= "<table class=\"pure-table pure-table-bordered pure-table-striped \" style='width:100%;'>";
+		$responseBody .= "<tr><th style='text-align: left;'>Metric</th><th style='text-align: left;'>Value</th></tr>";
+		$responseBody .= "<tr><td>Redis Host</td><td>" . $redisHost . "</td></tr>";
+		$responseBody .= "<tr><td>Redis Port</td><td>" . $redisPort . "</td></tr>";
+		$responseBody .= "<tr><td>Selected Database</td><td>" . $redisDatabase . "</td></tr>";
+		$responseBody .= "<tr><td>Memory Usage</td><td>" . round($memoryUsage / (1024 * 1024), 1) . " MB</td></tr>";
+		$responseBody .= "<tr><td>Connected Clients</td><td>" . $clients . "</td></tr>";
+		$responseBody .= "<tr><td>Number of Keys</td><td>" . $keys . "</td></tr>";
+		$responseBody .= "<tr><td>Oldest Key</td><td>" . $oldestKey['key'] . "</td></tr>";
+		$responseBody .= "<tr><td>Idle Time of Oldest Key</td><td>" . $oldestKey['idle_time'] . " seconds</td></tr>";
+		$responseBody .= "<tr><td>Keyspace Hits</td><td>" . $keyspaceHits . "</td></tr>";
+		$responseBody .= "<tr><td>Keyspace Misses</td><td>" . $keyspaceMisses . "</td></tr>";
+		$responseBody .= "<tr><td>Hit Rate</td><td>" . round($hitRate, 2) . "%</td></tr>";
+		$responseBody .= "<tr><td>Miss Rate</td><td>" . round($missRate, 2) . "%</td></tr>";
+		$responseBody .= "</table>";
+
 
 		// Write the response body to the response
 		$response->getBody()->write($responseBody);

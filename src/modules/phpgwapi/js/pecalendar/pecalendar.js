@@ -1,5 +1,12 @@
 // import {DateTime as DT} from './luxon.js';
+const timezone = "Europe/Oslo"; // Change this to your desired timezone
+const DateTime = {
+    fromJSDate: (...a) => luxon.DateTime.fromJSDate(...a).setZone(timezone),
+    fromMillis:(...a) => luxon.DateTime.fromMillis(...a).setZone(timezone),
+    fromISO:(...a) => luxon.DateTime.fromISO(...a).setZone(timezone),
+}
 
+luxon.Settings.defaultZoneName = timezone; // Change to your desired timezone
 if (globalThis['ko'] && 'bindingHandlers' in ko) {
     if (!ko.bindingHandlers.withAfterRender) {
         ko.bindingHandlers.withAfterRender = {
@@ -36,6 +43,7 @@ if (globalThis['ko'] && 'bindingHandlers' in ko) {
 
 
 class PECalendar {
+
     BOOKING_MONTH_HORIZON = 2;
     /**
      * @type {KnockoutObservable<number>} - The ID of the building.
@@ -216,6 +224,7 @@ class PECalendar {
         // resource_id=416;
         // building_id=130;
         luxon.Settings.defaultLocale = getCookie("selected_lang") || 'no';
+        // luxon.Settings.defaultZoneName = "America/Denver";
         this.instance = instance;
         this.disableInteraction = nointeraction;
         this.filterGroups = filterGroups;
@@ -223,15 +232,15 @@ class PECalendar {
         // Initialize the date of the instance
         if (dateString) {
             if (ko.isObservable(dateString)) {
-                dateString.subscribe((v) => this.currentDate(luxon.DateTime.fromJSDate(new Date(getDateFromSearch(v))).setLocale(luxon.Settings.defaultLocale)) )
-                this.currentDate(luxon.DateTime.fromJSDate(new Date(getDateFromSearch(dateString()))).setLocale(luxon.Settings.defaultLocale));
+                dateString.subscribe((v) => this.currentDate(luxon.DateTime.fromJSDate(new Date(getDateFromSearch(v)))) )
+                this.currentDate(luxon.DateTime.fromJSDate(new Date(getDateFromSearch(dateString()))));
 
             } else {
 
-                this.currentDate(luxon.DateTime.fromJSDate(new Date(dateString)).setLocale(luxon.Settings.defaultLocale));
+                this.currentDate(luxon.DateTime.fromJSDate(new Date(dateString)));
             }
         } else {
-            this.currentDate(luxon.DateTime.now().setLocale(luxon.Settings.defaultLocale));
+            this.currentDate(luxon.DateTime.now());
         }
 
         //
@@ -409,10 +418,10 @@ class PECalendar {
             let urlFreeTime = phpGWLink('bookingfrontend/', {
                 menuaction: 'bookingfrontend.uibooking.get_freetime',
                 building_id: this.building_id(),
+                resource_id: this.resource_id(),
                 start_date: currDate.toFormat('dd/LL-yyyy'),
                 end_date: maxEndDate.toFormat('dd/LL-yyyy')
             }, true, this.instance);
-
             const [timeSlotsData, buildingData] = await Promise.all([
                 fetch(urlFreeTime).then(res => res.json()),
                 fetch(urlBuildingSchedule).then(async res => (await res.json())?.ResultSet?.Result?.results)
@@ -681,8 +690,8 @@ class PECalendar {
         const availableSlots = this.availableTimeSlots()[this.resource_id()] || [];
 
         const updatedslots = availableSlots.map(slot => {
-            const slotStart = luxon.DateTime.fromMillis(parseInt(slot.start));
-            const slotEnd = luxon.DateTime.fromMillis(parseInt(slot.end));
+            const slotStart = slot.start_iso ? luxon.DateTime.fromISO(slot.start_iso) : luxon.DateTime.fromMillis(+slot.start);
+            const slotEnd = slot.end_iso ? luxon.DateTime.fromISO(slot.end_iso) : luxon.DateTime.fromMillis(+slot.end);
             let overlap = false;
             const overlappingEvents = [];
 
@@ -1459,13 +1468,15 @@ class PECalendar {
 
     /**
      * Formats the given date range into a formatted html string.
-     * @param {number} startTimestamp - The start Unix timestamp.
-     * @param {number} endTimestamp - The end Unix timestamp.
+     * @param {IFreeTimeSlot} data - timebasesobject.
      * @returns {string} - Formatted time range string.
      */
-    generateDate(startTimestamp, endTimestamp) {
-        const startTime = new Date(parseInt(startTimestamp));
-        const endTime = new Date(parseInt(endTimestamp));
+    generateDate(data) {
+        const startTime = data.start_iso ? DateTime.fromISO(data.start_iso) : DateTime.fromMillis(parseInt(data.start))
+        const endTime = data.end_iso ? DateTime.fromISO(data.end_iso) : DateTime.fromMillis(parseInt(data.end))
+
+        // console.log(startTimestamp);
+        // console.log(endTimestamp);
 
 
         return GenerateDateTime(startTime, endTime);
@@ -2218,7 +2229,7 @@ if (globalThis['ko']) {
                         <!-- Date and time section -->
                         <div class="time-slot-date-time">
                             <div class="time-slot-date-container"
-                                 data-bind="html: $parent.generateDate($data.start, $data.end)"></div>
+                                 data-bind="html: $parent.generateDate($data)"></div>
 
                         </div>
 

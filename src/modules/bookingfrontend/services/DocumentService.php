@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\services;
 
 use App\modules\bookingfrontend\repositories\DocumentRepository;
 use App\modules\bookingfrontend\models\Document;
+use Psr\Http\Message\UploadedFileInterface;
 
 class DocumentService
 {
@@ -80,4 +81,33 @@ class DocumentService
     {
         return $this->ownerType;
     }
+
+
+
+    /**
+     * Create a new document
+     */
+    public function createDocument(array $data): int
+    {
+        return $this->documentRepository->createDocument($data);
+    }
+
+
+
+    public function saveDocumentFile(int $documentId, UploadedFileInterface $file): void
+    {
+        $document = $this->getDocumentById($documentId);
+        if (!$document) {
+            throw new Exception('Document not found');
+        }
+
+        $targetPath = $document->generate_filename();
+        $file->moveTo($targetPath);
+    }
+
+    public function deleteDocument(int $documentId): void
+    {
+        $this->documentRepository->deleteDocument($documentId);
+    }
+
 }

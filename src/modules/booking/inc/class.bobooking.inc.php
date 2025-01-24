@@ -1720,6 +1720,8 @@ phpgw::import_class('booking.bocommon_authorized');
 								'start'				 => $StartTime->getTimestamp() . '000',
 								'end'				 => $endTime->getTimestamp() . '000',
 								'overlap'			 => $overlap,
+                                'start_iso'          => $StartTime->format('c'),
+                                'end_iso'            => $endTime->format('c'),
 								'applicationLink'	 => [
 									'menuaction'	 => 'bookingfrontend.uiapplication.add',
 									'resource_id'	 => $resource['id'],

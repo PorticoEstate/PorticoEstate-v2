@@ -6,8 +6,7 @@ import DescriptionAccordion from "@/components/building-page/description-accordi
 import BuildingResources from "@/components/building-page/resource-list/building-resources";
 import BuildingContact from "@/components/building-page/building-contact";
 import PhotosAccordion from "@/components/building-page/building-photos/photos-accordion";
-import GSAccordion from "@/components/gs-accordion/g-s-accordion";
-import {Button} from "@digdir/designsystemet-react";
+
 interface BuildingShowParams {
     id: string;
 }

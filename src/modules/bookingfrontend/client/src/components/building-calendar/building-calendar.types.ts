@@ -35,8 +35,8 @@ export interface FCallEvent {
 export interface FCallTempEvent {
     id: string;
     title: string;
-    start: Date;
-    end: Date;
+    start?: Date;
+    end?: Date;
     allDay: boolean
     editable: boolean,
     extendedProps: {

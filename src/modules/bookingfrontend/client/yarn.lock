@@ -93,15 +93,15 @@
     "@babel/helper-validator-identifier" "^7.24.7"
     to-fast-properties "^2.0.0"
 
-"@digdir/designsystemet-css@1.0.0-next.44":
-  version "1.0.0-next.44"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-css/-/designsystemet-css-1.0.0-next.44.tgz#04cb339cbc56508d4a559d959d771347ebcde6fc"
-  integrity sha512-qrmClwLQdmRg6+c0oXkR7N3GXKH6IWHcluayL/M83fxjxeZhJ9x2bkuwguH5fY1hDnAy5qQFydnTdmClm0uf8g==
+"@digdir/designsystemet-css@1.0.0-next.47":
+  version "1.0.0-next.47"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-css/-/designsystemet-css-1.0.0-next.47.tgz#7c74e21e81aeb53391822b5f13c2cfcef0d84f45"
+  integrity sha512-baf/z4LBHaOo5cQso6ACqwwzsQQDVdS6WQsSRKHlyyQJOvZPznmQ3RHO4aR/I57ACw5CWzdrciISrOLj2eGsUw==
 
-"@digdir/designsystemet-react@1.0.0-next.44":
-  version "1.0.0-next.44"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-react/-/designsystemet-react-1.0.0-next.44.tgz#3ee378571c1e3de98c8470eb61758e3fd31ce8c8"
-  integrity sha512-2ADlRRBEs7FK2UB4JLQ9Uf5WW/kxq+yanue/ucLy3eIrt5RnqWlTsWy8GUlIDo4C+g2wox9/PN20+qVRTmwyfg==
+"@digdir/designsystemet-react@1.0.0-next.47":
+  version "1.0.0-next.47"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-react/-/designsystemet-react-1.0.0-next.47.tgz#e9e41390a36c5e34e63d02060cc5219d8f96c512"
+  integrity sha512-iSj0l5AqH8evZ3huIAx0OiXE9nkoQWagVpr7v9dEQj1DolZF+tfRjrxjUOuJK+9wxloBJthELA49+b6gkl1wVQ==
   dependencies:
     "@floating-ui/dom" "^1.6.10"
     "@floating-ui/react" "0.26.23"
@@ -111,10 +111,10 @@
     "@u-elements/u-details" "^0.1.0"
     clsx "^2.1.1"
 
-"@digdir/designsystemet-theme@1.0.0-next.44":
-  version "1.0.0-next.44"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-theme/-/designsystemet-theme-1.0.0-next.44.tgz#ac600e4645b19cd7233502292965706b4368d072"
-  integrity sha512-73pPR0lWZ5bv56kjkE7XawxUEPhTIxVbgRFM33gafc8x3OTdqK/tbUtAQQMDmsr/Z2Nm+w2cRbabPKeCCAf/Iw==
+"@digdir/designsystemet-theme@1.0.0-next.47":
+  version "1.0.0-next.47"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-theme/-/designsystemet-theme-1.0.0-next.47.tgz#39669ea59a9d3cad39860aa7e067eab2bb0aef57"
+  integrity sha512-a2MIevIRrQN0JGZ+wZ5n5xd6kBi4uH2VE5q1cMdIw+1mN6pr/1U2R4BK/a9lFr9QqJgKHDY0nK3A2jBWvDauiQ==
 
 "@emotion/babel-plugin@^11.12.0":
   version "11.12.0"
@@ -547,7 +547,7 @@
 
 "@porticoestate/design-tokens@github:PorticoEstate/digdir-design-tokens":
   version "1.0.0"
-  resolved "https://codeload.github.com/PorticoEstate/digdir-design-tokens/tar.gz/a025ced3b6dfcf6f8c6671327d76b0677e326caa"
+  resolved "https://codeload.github.com/PorticoEstate/digdir-design-tokens/tar.gz/5b619c3bc42e168e6d968e783310a15d1385cc7c"
 
 "@radix-ui/react-compose-refs@1.1.0":
   version "1.1.0"

@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\services;
 
 use App\modules\bookingfrontend\models\Application;
+use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\helper\Date;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\models\Order;
@@ -13,10 +14,12 @@ use PDO;
 class ApplicationService
 {
     private $db;
+    private $documentService;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
+        $this->documentService = new DocumentService(Document::OWNER_APPLICATION);
     }
 
     public function getPartialApplications(string $session_id): array
@@ -36,13 +39,18 @@ class ApplicationService
             $application->orders = $this->fetchOrders($application->id);
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
+            $application->documents = $this->fetchDocuments($application->id);
             $applications[] = $application->serialize([]);
         }
 
         return $applications;
     }
 
-
+    private function fetchDocuments(int $application_id): array
+    {
+        $documents = $this->documentService->getDocumentsForId($application_id);
+        return $documents;
+    }
 
     public function getApplicationsBySsn(string $ssn): array
     {
@@ -63,6 +71,7 @@ class ApplicationService
             $application->orders = $this->fetchOrders($application->id);
             $application->agegroups = $this->fetchAgeGroups($application->id);
             $application->audience = $this->fetchTargetAudience($application->id);
+            $application->documents = $this->fetchDocuments($application->id);
             $applications[] = $application->serialize([]);
         }
 
@@ -149,15 +158,15 @@ class ApplicationService
         return round($total_sum, 2);
     }
 
-    public function deletePartial(int $id, string $session_id): bool
+    public function deletePartial(int $id): bool
     {
         try {
             $this->db->beginTransaction();
 
             // Verify the application exists and belongs to the current session
-            $sql = "SELECT id FROM bb_application WHERE id = :id AND session_id = :session_id AND status = 'NEWPARTIAL1'";
+            $sql = "SELECT id FROM bb_application WHERE id = :id AND status = 'NEWPARTIAL1'";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([':id' => $id, ':session_id' => $session_id]);
+            $stmt->execute([':id' => $id]);
 
             if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
                 throw new Exception("Application not found or not owned by the current session");
@@ -187,6 +196,12 @@ class ApplicationService
 
     private function deleteAssociatedData(int $application_id): void
     {
+
+
+        $documents = $this->documentService->getDocumentsForId($application_id);
+        foreach ($documents as $document) {
+            $this->documentService->deleteDocument($document->id);
+        }
         // Order matters here due to foreign key constraints
         $tables = [
             'bb_purchase_order_line',

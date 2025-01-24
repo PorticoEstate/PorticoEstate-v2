@@ -29,13 +29,13 @@ const UserLayout: FC<UserLayoutProps> = (props) => {
     }, [user])
 
 
-    // if (!user.data?.is_logged_in && !user.isLoading) {
-    //     router.push('/')
-    //     return;
-    // }
+    if (!user.data?.is_logged_in && !user.isLoading) {
+        router.push('/')
+        return;
+    }
 
     if (path.length === 3 && path[2] === 'user' && !isMobile) {
-        router.push('/user' + links[0].relativePath)
+        router.replace('/user' + links[0].relativePath)
         return;
     }
 

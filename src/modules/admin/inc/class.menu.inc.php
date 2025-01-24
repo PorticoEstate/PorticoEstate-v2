@@ -331,6 +331,14 @@ class admin_menu
 				'text'	=> $translation->translate('opcache monitor', array(), true),
 				'url'	=> phpgw::link('/admin/admin/opcache/'),
 			);
+			$menus['admin']['redis_monitor'] = array(
+				'text'	=> $translation->translate('redis monitor', array(), true),
+				'url'	=> phpgw::link('/admin/admin/redis/'),
+			);
+			$menus['admin']['apcu_monitor'] = array(
+				'text'	=> $translation->translate('apcu monitor', array(), true),
+				'url'	=> phpgw::link('/admin/admin/apcu/'),
+			);
 		}
 
 

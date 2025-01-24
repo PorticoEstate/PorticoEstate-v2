@@ -40,6 +40,7 @@
 namespace App\modules\phpgwapi\services;
 
 use App\modules\phpgwapi\services\RedisCache;
+use App\modules\phpgwapi\services\ApcuCache;
 use App\modules\phpgwapi\services\Shm;
 
 use DirectoryIterator;
@@ -331,7 +332,13 @@ class Cache
 		{
 			self::$phpgwapi_redis->clear_cache();
 		}
-		else if (Shm::is_enabled())
+
+		if (ApcuCache::is_enabled())
+		{
+			ApcuCache::clear_cache();
+		}
+
+		if (Shm::is_enabled())
 		{
 			Shm::clear_cache();
 		}
@@ -351,12 +358,19 @@ class Cache
 
 		if (self::_redis_enabled())
 		{
-			return self::$phpgwapi_redis->delete_key($key);
+			self::$phpgwapi_redis->delete_key($key);
 		}
-		else if (Shm::is_enabled())
+
+		if (ApcuCache::is_enabled())
 		{
-			return self::_shm_clear($key);
+			ApcuCache::delete_key($key);
 		}
+
+		if (Shm::is_enabled())
+		{
+			self::_shm_clear($key);
+		}
+
 		return self::_file_clear($key);
 	}
 
@@ -374,10 +388,6 @@ class Cache
 		if (self::_redis_enabled())
 		{
 			$value = self::$phpgwapi_redis->get_value($key);
-		}
-		else if (Shm::is_enabled())
-		{
-			$value = self::_shm_get($key);
 		}
 		else
 		{
@@ -423,10 +433,6 @@ class Cache
 			return self::$phpgwapi_redis->store_value($key, $value);
 		}
 
-		if (Shm::is_enabled())
-		{
-			return self::_shm_set($key, $value);
-		}
 		return self::_file_set($key, $value);
 	}
 
@@ -636,6 +642,11 @@ class Cache
 			return self::$phpgwapi_redis->delete_key($key);
 		}
 
+		if (ApcuCache::is_enabled())
+		{
+			return ApcuCache::delete_key($key);
+		}
+
 		if (Shm::is_enabled())
 		{
 			return self::_shm_clear($key);
@@ -660,6 +671,10 @@ class Cache
 		if (self::_redis_enabled())
 		{
 			$value = self::$phpgwapi_redis->get_value($key);
+		}
+		else if (ApcuCache::is_enabled())
+		{
+			$value = ApcuCache::get_value($key);
 		}
 		else if (Shm::is_enabled())
 		{
@@ -716,6 +731,11 @@ class Cache
 		if (self::_redis_enabled())
 		{
 			return self::$phpgwapi_redis->store_value($key, $value);
+		}
+
+		if (ApcuCache::is_enabled())
+		{
+			return ApcuCache::store_value($key, $value);
 		}
 
 		if (Shm::is_enabled())

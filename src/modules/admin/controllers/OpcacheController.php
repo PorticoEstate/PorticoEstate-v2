@@ -30,19 +30,34 @@ class OpcacheController
 
 	public function showOpcacheGui(Request $request, Response $response, array $args): Response
 	{
+		$refresh = false;
 		$vendordir = dirname(PHPGW_SERVER_ROOT, 2) . '/vendor';
 		if (Sanitizer::get_var('reset', 'get', 'int') == 1)
 		{
 			opcache_reset();
-			\phpgw::redirect('/admin/admin/opcache/');
+			$refresh = true;
 		}
-
 
 		$filename = Sanitizer::get_var('invalidate', 'get', 'string');
 		if ($filename)
 		{
 			opcache_invalidate($filename, true);
-			\phpgw::redirect('/admin/admin/opcache/');
+			$refresh = true;
+		}
+
+		if ($refresh)
+		{
+			// Refresh the current page using HTTP_REFERER
+			if (isset($_SERVER['HTTP_REFERER']))
+			{
+				header("Location: " . $_SERVER['HTTP_REFERER']);
+				exit;
+			}
+			else
+			{
+				// Fallback to a default URL if HTTP_REFERER is not set
+				\phpgw::redirect('/admin/admin/opcache/');
+			}
 		}
 
 		if (Sanitizer::get_var('click_history', 'get', 'bool'))

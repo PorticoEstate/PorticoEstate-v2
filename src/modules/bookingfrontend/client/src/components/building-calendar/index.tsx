@@ -1,5 +1,5 @@
 import {DateTime} from "luxon";
-import {fetchBuildingSchedule, fetchBuildingScheduleOLD, fetchFreeTimeSlots} from "@/service/api/api-utils";
+import {fetchBuildingScheduleOLD, fetchFreeTimeSlots} from "@/service/api/api-utils";
 import {fetchBuilding, fetchBuildingResources} from "@/service/api/building";
 import CalendarWrapper from "@/components/building-calendar/CalendarWrapper";
 import NotFound from "next/dist/client/components/not-found-error";
@@ -21,11 +21,10 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
     ];
 
     try {
-        const [initialSchedule, initialFreeTime, building, initialWeekSchedule, buildingResources] = await Promise.all([
+        const [initialSchedule, initialFreeTime, building, buildingResources] = await Promise.all([
             fetchBuildingScheduleOLD(buildingId, weeksToFetch),
             fetchFreeTimeSlots(buildingId),
             fetchBuilding(buildingId),
-            fetchBuildingSchedule(buildingId, weeksToFetch),
             fetchBuildingResources(buildingId)
         ]);
         return (
@@ -38,7 +37,6 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
                 seasons={initialSchedule.seasons}
                 building={building}
                 resourceId={resource_id}
-                initialWeekSchedule={initialWeekSchedule}
             />
         );
     } catch (error) {

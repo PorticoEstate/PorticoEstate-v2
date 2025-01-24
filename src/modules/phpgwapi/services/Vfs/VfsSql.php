@@ -50,7 +50,7 @@ define('VFS_SQL_UPDATE', 4);
 class Vfs extends VfsShared
 {
 	var $file_actions;
-	var $acl_default, $db, $db2, $fileoperation,$log;
+	var $acl_default, $db, $db2, $fileoperation, $log;
 
 	/**
 	 * constructor, sets up variables
@@ -3362,7 +3362,7 @@ class Vfs extends VfsShared
 		$params = array_merge($params, $extraSql['params']);
 
 		$stmt->execute($params);
-		
+
 		if ($row = $stmt->fetch(PDO::FETCH_ASSOC))
 		{
 			return true;
@@ -3569,8 +3569,12 @@ class Vfs extends VfsShared
 			$params[':mime_type'] = $data['mime_type'];
 		}
 
-		$sql .= " ORDER BY :orderby";
-		$params[':orderby'] = $data['orderby'];
+		if (!empty($data['orderby']))
+		{
+			$sql .= " ORDER BY {$data['orderby']}";
+		}
+
+		//	$params[':orderby'] = $data['orderby'];
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute($params);

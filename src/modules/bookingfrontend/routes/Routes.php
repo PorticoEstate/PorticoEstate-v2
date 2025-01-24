@@ -52,6 +52,10 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('', ApplicationController::class . ':getApplications');
         $group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
         $group->patch('/partials/{id}', ApplicationController::class . ':patchApplication');
+        $group->post('/{id}/documents', ApplicationController::class . ':uploadDocument');
+        $group->delete('/document/{id}', ApplicationController::class . ':deleteDocument');
+        $group->get('/document/{id}/download', ApplicationController::class . ':downloadDocument');
+
     });
     $group->get('/invoices', CompletedReservationController::class . ':getReservations');
 })->add(new SessionsMiddleware($app->getContainer()));

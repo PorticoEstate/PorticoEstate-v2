@@ -3,7 +3,7 @@ import {arrow, autoUpdate, flip, offset, shift, useFloating} from "@floating-ui/
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import ShoppingCartContent from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import MobileDialog from "@/components/dialog/mobile-dialog";
-import EventCrud from "@/components/building-calendar/modules/event/edit/event-crud";
+import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 
 interface ShoppingCartPopperProps {
     anchor: HTMLButtonElement | null;
@@ -68,7 +68,7 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
                     {content}
                 </MobileDialog>
                 {currentApplication && (
-                    <EventCrud onClose={() => setCurrentApplication(undefined)} applicationId={currentApplication.application_id} date_id={currentApplication.date_id}
+                    <ApplicationCrud onClose={() => setCurrentApplication(undefined)} applicationId={currentApplication.application_id} date_id={currentApplication.date_id}
                                building_id={currentApplication.building_id} />
                 )}
             </>
@@ -106,7 +106,7 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
                 </div>
             )}
             {currentApplication && (
-                <EventCrud onClose={() => setCurrentApplication(undefined)} applicationId={currentApplication.application_id} date_id={currentApplication.date_id}
+                <ApplicationCrud onClose={() => setCurrentApplication(undefined)} applicationId={currentApplication.application_id} date_id={currentApplication.date_id}
                            building_id={currentApplication.building_id} />
             )}
         </>

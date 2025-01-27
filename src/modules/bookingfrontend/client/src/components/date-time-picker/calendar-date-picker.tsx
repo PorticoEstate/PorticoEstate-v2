@@ -1,4 +1,4 @@
-import {FC} from 'react';
+import {FC, useEffect, useRef} from 'react';
 import DatePicker from "react-datepicker";
 import {ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
 import {Button, Select} from "@digdir/designsystemet-react";
@@ -31,62 +31,87 @@ interface CustomHeaderProps {
 
 interface TimePickerProps {
     date: Date;
-    onChange: (date: Date) => void;
+    onChangeDate: (date: Date) => void;
     intervals?: number;
 }
 
-const TimePicker: FC<TimePickerProps> = ({date, onChange, intervals = 1}) => {
-    const hours = Array.from({length: 24}, (_, i) => i);
-    const minutes = Array.from({length: 60 / intervals}, (_, i) => i * intervals);
+const TimePicker: FC<TimePickerProps> = ({ date, onChangeDate, intervals = 30 }) => {
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const minutes = Array.from({ length: 60 / intervals }, (_, i) => i * intervals);
+
+    const hoursListRef = useRef<HTMLDivElement>(null);
+    const minutesListRef = useRef<HTMLDivElement>(null);
 
     const selectedHour = date.getHours();
     const selectedMinute = date.getMinutes();
 
+    useEffect(() => {
+        // Scroll to selected hour
+        if (hoursListRef.current) {
+            const hourElement = hoursListRef.current.querySelector(`[data-hour="${selectedHour}"]`);
+            if (hourElement) {
+                hourElement.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        }
+
+        // Scroll to selected minute
+        if (minutesListRef.current) {
+            const minuteElement = minutesListRef.current.querySelector(`[data-minute="${selectedMinute}"]`);
+            if (minuteElement) {
+                minuteElement.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }
+        }
+    }, [selectedHour, selectedMinute]);
+
     const handleHourClick = (hour: number) => {
         const newDate = new Date(date);
         newDate.setHours(hour);
-        onChange(newDate);
+        onChangeDate(newDate);
     };
 
     const handleMinuteClick = (minute: number) => {
         const newDate = new Date(date);
         newDate.setMinutes(minute);
-        onChange(newDate);
+        onChangeDate(newDate);
     };
 
     return (
-        <div className="time-columns">
-            <div className="time-column">
-                <div className="time-column-header">Time</div>
-                <ul className="time-column-list">
-                    {hours.map(hour => (
-                        <li
-                            key={hour}
-                            className={`time-column-list-item ${
-                                hour === selectedHour ? 'time-column-list-item--selected' : ''
-                            }`}
-                            onClick={() => handleHourClick(hour)}
-                        >
-                            {hour.toString().padStart(2, '0')}
-                        </li>
-                    ))}
-                </ul>
-            </div>
-            <div className="time-column">
-                <div className="time-column-header">Minutt</div>
-                <ul className="time-column-list">
-                    {minutes.map(minute => (
-                        <li
-                            key={minute}
-                            className={`time-column-list-item ${
-                                minute === selectedMinute ? 'time-column-list-item--selected' : ''
-                            }`}
-                            onClick={() => handleMinuteClick(minute)}
-                        >
-                            {minute.toString().padStart(2, '0')}
-                        </li>
-                    ))}
-                </ul>
+        <div className={styles.timeInput}>
+            <div className={styles.timeColumns}>
+                <div className={styles.timeColumn}>
+                    <div className={styles.timeColumnHeader}>Timer</div>
+                    <div className={styles.timeColumnList} ref={hoursListRef}>
+                        {hours.map(hour => (
+                            <div
+                                key={hour}
+                                data-hour={hour}
+                                className={`${styles.timeColumnListItem} ${
+                                    hour === selectedHour ? styles.timeColumnListItemSelected : ''
+                                }`}
+                                onClick={() => handleHourClick(hour)}
+                            >
+                                {hour.toString().padStart(2, '0')}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div className={styles.timeColumn}>
+                    <div className={styles.timeColumnHeader}>Minutter</div>
+                    <div className={styles.timeColumnList} ref={minutesListRef}>
+                        {minutes.map(minute => (
+                            <div
+                                key={minute}
+                                data-minute={minute}
+                                className={`${styles.timeColumnListItem} ${
+                                    minute === selectedMinute ? styles.timeColumnListItemSelected : ''
+                                }`}
+                                onClick={() => handleMinuteClick(minute)}
+                            >
+                                {minute.toString().padStart(2, '0')}
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -167,6 +192,7 @@ const CustomHeader: FC<CustomHeaderProps> = ({
     </div>
 );
 
+
 const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
                                                              currentDate,
                                                              view,
@@ -208,12 +234,16 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
                 wrapperClassName={styles.wrapper}
                 popperClassName={styles.popper}
                 monthsShown={1}
-                // showTimeSelect={showTimeSelect}
-                showFourColumnMonthYearPicker={false}
                 shouldCloseOnSelect={false}
-                // customTimeInput={<ExampleCustomTimeInput />}
-
                 dateFormat={dateFormat}
+                showTimeInput={showTimeSelect}
+                // showTimeSelectOnly
+                // timeIntervals={timeIntervals}
+                customTimeInput={
+                        <TimePicker onChangeDate={(e) => {
+                            onDateChange(e)
+                        }} date={currentDate} intervals={timeIntervals} />
+                }
                 customInput={(
                     <div className={styles.datePicker}>
                         <Button

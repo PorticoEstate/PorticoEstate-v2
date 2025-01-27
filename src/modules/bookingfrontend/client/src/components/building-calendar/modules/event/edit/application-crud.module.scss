@@ -25,7 +25,7 @@
     .dateTimeGroup {
         display: contents;
 
-        :first-child {
+        >:first-child {
             grid-column: 1;
         }
 

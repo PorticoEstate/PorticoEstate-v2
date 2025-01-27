@@ -7,7 +7,6 @@ import '@digdir/designsystemet-css';
 // import '@digdir/designsystemet-theme';
 import '@porticoestate/design-tokens';
 import "@/app/globals.scss";
-import "react-datepicker/dist/react-datepicker.css";
 import {FC, PropsWithChildren} from "react";
 import {fetchServerSettings} from "@/service/api/api-utils";
 

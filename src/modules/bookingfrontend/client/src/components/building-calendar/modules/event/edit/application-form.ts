@@ -1,6 +1,6 @@
 import {z} from "zod";
 
-export const eventFormSchema = z.object({
+export const applicationFormSchema = z.object({
     title: z.string().min(1, ('bookingfrontend.enter_title')),
     start: z.date(),
     end: z.date(),
@@ -24,4 +24,4 @@ export const eventFormSchema = z.object({
         }
     )
 });
-export type EventFormData = z.infer<typeof eventFormSchema>;
+export type ApplicationFormData = z.infer<typeof applicationFormSchema>;

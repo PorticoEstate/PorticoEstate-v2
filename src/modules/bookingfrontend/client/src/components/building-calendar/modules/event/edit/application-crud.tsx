@@ -1,4 +1,4 @@
-import React, {Fragment, useMemo, useState} from 'react';
+import React, {Fragment, useMemo, useState, FC} from 'react';
 import {
     Button,
     Chip, Details,
@@ -14,7 +14,7 @@ import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {useBuilding, useBuildingResources} from '@/service/api/building';
 import {FCallTempEvent} from '@/components/building-calendar/building-calendar.types';
 import ColourCircle from '@/components/building-calendar/modules/colour-circle/colour-circle';
-import styles from './event-crud.module.scss';
+import styles from './application-crud.module.scss';
 import {useForm, Controller} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {
@@ -26,33 +26,31 @@ import {
 } from "@/service/hooks/api-hooks";
 import {NewPartialApplication, IUpdatePartialApplication, IApplication} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
+import {IAgeGroup, IAudience, IBuilding} from "@/service/types/Building";
+import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
+import {ApplicationFormData, applicationFormSchema} from './application-form';
 
-interface EventCrudProps {
-    selectedTempEvent?: Partial<FCallTempEvent>;
+interface ApplicationCrudProps {
+    selectedTempApplication?: Partial<FCallTempEvent>;
     building_id: string | number;
     applicationId?: number;
     date_id?: number;
     onClose: () => void;
 }
 
-interface EventCrudInnerProps extends EventCrudProps {
+interface ApplicationCrudInnerProps extends ApplicationCrudProps {
     building?: IBuilding;
     buildingResources?: IResource[];
     partials?: { list: IApplication[], total_sum: number };
     audience?: IAudience[];
     agegroups?: IAgeGroup[];
-    existingEvent?: IApplication;
+    existingApplication?: IApplication;
 }
 
 
-import {FC} from 'react';
-import {IAgeGroup, IAudience, IBuilding} from "@/service/types/Building";
-import {EventFormData, eventFormSchema} from "@/components/building-calendar/modules/event/edit/event-form";
 
-interface EventCrudProps {
-}
 
-const EventCrudWrapper: FC<EventCrudProps> = (props) => {
+const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 
 
     const {data: building, isLoading: buildingLoading} = useBuilding(+props.building_id);
@@ -63,8 +61,8 @@ const EventCrudWrapper: FC<EventCrudProps> = (props) => {
     const t = useTrans();
 
 
-    const existingEvent = useMemo(() => {
-        const applicationId = props.applicationId || props.selectedTempEvent?.extendedProps?.applicationId;
+    const existingApplication = useMemo(() => {
+        const applicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
         if (applicationId === undefined) {
             return null;
         }
@@ -72,23 +70,23 @@ const EventCrudWrapper: FC<EventCrudProps> = (props) => {
             return undefined;
         }
         return partials.list.find(a => a.id === applicationId) || null;
-    }, [props.selectedTempEvent, partials, props.applicationId]);
+    }, [props.selectedTempApplication, partials, props.applicationId]);
 
-    if (buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingEvent === undefined) {
+    if (buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
         return null
     }
     return (
-        <EventCrud agegroups={agegroups} building={building} existingEvent={existingEvent || undefined}
+        <ApplicationCrud agegroups={agegroups} building={building} existingApplication={existingApplication || undefined}
                    audience={audience} buildingResources={buildingResources}
-                   partials={partials} {...props}></EventCrud>
+                   partials={partials} {...props}></ApplicationCrud>
     );
 }
 
 
-const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
+const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
     const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-    const {building, buildingResources, audience, agegroups, partials, existingEvent} = props;
+    const {building, buildingResources, audience, agegroups, partials, existingApplication} = props;
     const t = useTrans();
     const [isEditingResources, setIsEditingResources] = useState(false);
     const createMutation = useCreatePartialApplication();
@@ -99,20 +97,20 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
 
 
     const defaultStartEnd = useMemo(() => {
-        if (!existingEvent?.dates || !props.selectedTempEvent?.id || props.date_id === undefined) {
+        if (!existingApplication?.dates || !props.selectedTempApplication?.id || props.date_id === undefined) {
             return {
-                start: props.selectedTempEvent?.start || new Date(),
-                end: props.selectedTempEvent?.end || new Date()
+                start: props.selectedTempApplication?.start || new Date(),
+                end: props.selectedTempApplication?.end || new Date()
             };
         }
-        const dateId = props.selectedTempEvent?.id || props.date_id;
+        const dateId = props.selectedTempApplication?.id || props.date_id;
         // Find the date entry matching the selectedTempEvent's id
-        const dateEntry = existingEvent.dates.find(d => +d.id === +dateId);
+        const dateEntry = existingApplication.dates.find(d => +d.id === +dateId);
 
         if (!dateEntry) {
             return {
-                start: props.selectedTempEvent?.start || new Date(),
-                end: props.selectedTempEvent?.end || new Date()
+                start: props.selectedTempApplication?.start || new Date(),
+                end: props.selectedTempApplication?.end || new Date()
             };
         }
 
@@ -120,7 +118,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
             start: applicationTimeToLux(dateEntry.from_).toJSDate(),
             end: applicationTimeToLux(dateEntry.to_).toJSDate()
         };
-    }, [existingEvent, props.selectedTempEvent, props.date_id]);
+    }, [existingApplication, props.selectedTempApplication, props.date_id]);
     const {
         control,
         handleSubmit,
@@ -128,24 +126,24 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
         setValue,
         getValues,
         formState: {errors, isDirty, dirtyFields}
-    } = useForm<EventFormData>({
-        resolver: zodResolver(eventFormSchema),
+    } = useForm<ApplicationFormData>({
+        resolver: zodResolver(applicationFormSchema),
         defaultValues: {
-            title: existingEvent?.name ?? '',
+            title: existingApplication?.name ?? '',
             start: defaultStartEnd.start,
             end: defaultStartEnd.end,
-            homepage: existingEvent?.homepage || '',
-            description: existingEvent?.description || '',
-            equipment: existingEvent?.equipment || '',
-            resources: existingEvent?.resources?.map((res) => res.id.toString()) ||
-                props.selectedTempEvent?.extendedProps?.resources?.map(String) ||
+            homepage: existingApplication?.homepage || '',
+            description: existingApplication?.description || '',
+            equipment: existingApplication?.equipment || '',
+            resources: existingApplication?.resources?.map((res) => res.id.toString()) ||
+                props.selectedTempApplication?.extendedProps?.resources?.map(String) ||
                 [],
-            audience: existingEvent?.audience || undefined,
+            audience: existingApplication?.audience || undefined,
             agegroups: agegroups?.map(ag => {
                 // const existing = existingEvent?.agegroups.fin
                 return ({
                     id: ag.id,
-                    male: existingEvent?.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
+                    male: existingApplication?.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
                     female: 0,
                     name: ag.name,
                     description: ag.description,
@@ -155,25 +153,24 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
         }
     });
 
-    console.log(getValues());
     const selectedResources = watch('resources');
 
     const formatDateForInput = (date: Date) => {
         return DateTime.fromJSDate(date).toFormat('yyyy-MM-dd\'T\'HH:mm');
     };
 
-    const onSubmit = async (data: EventFormData) => {
+    const onSubmit = async (data: ApplicationFormData) => {
         if (!building || !buildingResources) {
             return;
         }
-        if (existingEvent) {
+        if (existingApplication) {
             const updatedApplication: IUpdatePartialApplication = {
-                id: existingEvent.id,
+                id: existingApplication.id,
                 building_id: +props.building_id,
             }
             if (dirtyFields.start || dirtyFields.end) {
-                updatedApplication.dates = existingEvent.dates?.map(date => {
-                    const dateId = props.selectedTempEvent?.id || props.date_id;
+                updatedApplication.dates = existingApplication.dates?.map(date => {
+                    const dateId = props.selectedTempApplication?.id || props.date_id;
                     if (date.id && dateId && +dateId === +date.id) {
                         return {
                             ...date,
@@ -207,7 +204,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
             }
 
 
-            const result = await updateMutation.mutateAsync({id: existingEvent.id, application: updatedApplication});
+            const result = await updateMutation.mutateAsync({id: existingApplication.id, application: updatedApplication});
 
             props.onClose();
             return;
@@ -251,9 +248,9 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
     };
 
     const handleDelete = () => {
-        if (existingEvent) {
+        if (existingApplication) {
             // TODO: fix deleting
-            deleteMutation.mutate(existingEvent.id);
+            deleteMutation.mutate(existingApplication.id);
 
             // setTempEvents(prev => {
             //     const newEvents = {...prev};
@@ -399,7 +396,6 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
     };
 
 
-    console.log(errors)
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -409,11 +405,11 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                 size={'hd'}
                 title={
                     <div className={styles.dialogHeader}>
-                        <h3>{existingEvent ? t('bookingfrontend.edit application') : t('bookingfrontend.new application')}</h3>
+                        <h3>{existingApplication ? t('bookingfrontend.edit application') : t('bookingfrontend.new application')}</h3>
                     </div>
                 }
                 footer={<Fragment>
-                    {existingEvent && (
+                    {existingApplication && (
                         <Button
                             variant="tertiary"
                             color="danger"
@@ -426,7 +422,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                     <Button
                         variant="primary"
                         type="submit"
-                        disabled={!(isDirty || !existingEvent)}
+                        disabled={!(isDirty || !existingApplication)}
                     >
                         {t('common.save')}
                     </Button>
@@ -456,12 +452,15 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                                 render={({field: {value, onChange, ...field}}) => (
                                     <>
                                         <label>{t('common.start')}</label>
-                                        <input
-                                            type="datetime-local"
-                                            {...field}
-                                            value={formatDateForInput(value)}
-                                            onChange={e => onChange(new Date(e.target.value))}
-                                        />
+                                        {/*<input*/}
+                                        {/*    type="datetime-local"*/}
+                                        {/*    {...field}*/}
+                                        {/*    value={formatDateForInput(value)}*/}
+                                        {/*    onChange={e => onChange(new Date(e.target.value))}*/}
+                                        {/*/>*/}
+                                        <CalendarDatePicker currentDate={value} view={'timeGridDay'} showTimeSelect onDateChange={onChange} />
+
+
                                         {errors.start &&
                                             <span className={styles.error}>{errors.start.message}</span>}
                                     </>
@@ -502,7 +501,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                         <Controller
                             name="audience"
                             control={control}
-                            defaultValue={existingEvent?.audience || []}
+                            defaultValue={existingApplication?.audience || []}
                             render={({field}) => (
                                 <Field>
                                     <Select
@@ -545,7 +544,7 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                                 <Controller
                                     name={`agegroups.${index}.male`}
                                     control={control}
-                                    defaultValue={existingEvent?.agegroups?.find(ag => ag.id === agegroup.id)?.male || 0}
+                                    defaultValue={existingApplication?.agegroups?.find(ag => ag.id === agegroup.id)?.male || 0}
                                     render={({field}) => (
                                         <Textfield
                                             type="number"
@@ -653,12 +652,12 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                                         <h4>{t('bookingfrontend.documents')}</h4>
                                     </div>
 
-                                    {existingEvent ? (
+                                    {existingApplication ? (
                                         // Show existing documents and direct upload for existing applications
                                         <>
-                                            {existingEvent.documents?.length > 0 && (
+                                            {existingApplication.documents?.length > 0 && (
                                                 <div className={styles.documentsList}>
-                                                    {existingEvent.documents.map(doc => (
+                                                    {existingApplication.documents.map(doc => (
                                                         <div key={doc.id} className={styles.documentItem}>
                                                             <span>{doc.name}</span>
                                                             <Button
@@ -681,14 +680,14 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
                                                 multiple
                                                 value={""}
                                                 onChange={(e) => {
-                                                    if (e.target.files && existingEvent.id) {
+                                                    if (e.target.files && existingApplication.id) {
                                                         const formData = new FormData();
                                                         Array.from(e.target.files).forEach(file => {
                                                             formData.append('files[]', file);
                                                         });
 
                                                         uploadDocumentMutation.mutate({
-                                                            id: existingEvent.id,
+                                                            id: existingApplication.id,
                                                             files: formData
                                                         });
                                                     }
@@ -733,4 +732,4 @@ const EventCrud: React.FC<EventCrudInnerProps> = (props) => {
     );
 };
 
-export default EventCrudWrapper;
+export default ApplicationCrudWrapper;

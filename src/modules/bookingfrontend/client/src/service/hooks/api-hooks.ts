@@ -148,26 +148,62 @@ export function useBookingUser() {
 }
 
 
+export function useLogin() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async () => {
+            const url = phpGWLink(['bookingfrontend', 'auth', 'login']);
+            const response = await fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('Login failed');
+            }
+
+            return response.json();
+        },
+        onSuccess: () => {
+            // Refetch user data after successful login
+            queryClient.invalidateQueries({queryKey: ['bookingUser']});
+        },
+    });
+}
+
+// Update the existing useLogout hook
 export function useLogout() {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async () => {
-            const url = phpGWLink(['bookingfrontend', 'logout']);
+            const url = phpGWLink(['bookingfrontend', 'auth', 'logout']);
             const response = await fetch(url, {
+                method: 'POST',
                 credentials: 'include',
             });
 
             if (!response.ok) {
                 throw new Error('Logout failed');
             }
+
+            const data = await response.json();
+
+            // Handle external logout if provided
+            if (data.external_logout_url) {
+                window.location.href = data.external_logout_url;
+                return;
+            }
+
+            return data;
         },
         onSuccess: () => {
+            // Clear user data after successful logout
             queryClient.setQueryData(['bookingUser'], null);
         },
     });
 }
-
 
 export function useUpdateBookingUser() {
     const queryClient = useQueryClient();

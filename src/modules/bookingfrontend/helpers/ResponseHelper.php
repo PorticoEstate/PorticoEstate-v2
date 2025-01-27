@@ -9,15 +9,16 @@ class ResponseHelper
     /**
      * Send an error response
      *
-     * @param array $error
+     * @param array $data
      * @param int $statusCode
+     * @param Response|null $baseResponse
      *
      * @return Response
      */
-    public static function sendErrorResponse($error, $statusCode = 401): Response
+    public static function sendErrorResponse($data, $statusCode = 401, ?Response $baseResponse = null): Response
     {
-        $response = new \Slim\Psr7\Response();
-        $response->getBody()->write(json_encode($error));
+        $response = $baseResponse ?? new \Slim\Psr7\Response();
+        $response->getBody()->write(json_encode($data));
         return $response
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($statusCode);

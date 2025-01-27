@@ -1,4 +1,13 @@
 <?php
+$client_origin = isset($_SERVER['HTTP_ORIGIN']) ? $_SERVER['HTTP_ORIGIN'] : '*';
+
+// Set the Access-Control-Allow-Origin dynamically
+header("Access-Control-Allow-Origin: $client_origin");
+header("Access-Control-Allow-Headers: Content-Type");
+
+
+
+
 
 use Slim\Factory\AppFactory;
 use DI\ContainerBuilder;

@@ -5,7 +5,7 @@ use App\modules\bookingfrontend\controllers\BuildingController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
-use App\modules\bookingfrontend\controllers\DocumentController;
+use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\ResourceController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
@@ -72,6 +72,11 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
     $group->get('/user', BookingUserController::class . ':index');
     $group->patch('/user', BookingUserController::class . ':update');
+})->add(new SessionsMiddleware($app->getContainer()));
+
+$app->group('/bookingfrontend/auth', function (RouteCollectorProxy $group) {
+    $group->post('/login', LoginController::class . ':login');
+    $group->post('/logout', LoginController::class . ':logout');
 })->add(new SessionsMiddleware($app->getContainer()));
 
 

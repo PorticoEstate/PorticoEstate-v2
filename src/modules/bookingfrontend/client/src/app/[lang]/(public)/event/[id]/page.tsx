@@ -1,7 +1,6 @@
 import {FC} from "react";
-import { fetchEventData, ActivityData } from "@/service/api/event-info";
 import { notFound } from "next/navigation";
-import EventPageController from "@/components/event/page/page-controller";
+import EventPageWrapper from "@/components/event/page/page-wrapper";
 
 interface ResourceParams {
     id: string;
@@ -15,11 +14,8 @@ export async function generateMetadata(props: EventProps) {
     const eventId = parseInt(props.params.id, 10);
     if (isNaN(eventId)) return notFound();
 
-    const data: ActivityData | null = await fetchEventData(eventId);
-    if (!data) return notFound();
-
     return {
-        title: data.name
+        id: eventId
     }
 }
 
@@ -27,14 +23,7 @@ const Event: FC<EventProps> = async (props: EventProps) => {
     const eventId = parseInt(props.params.id, 10);
     if (isNaN(eventId)) return notFound();
 
-    const data: ActivityData | null = await fetchEventData(eventId);
-    if (!data) return notFound();
-    return (
-        <EventPageController 
-            privateAccess={data.name !== 'PRIVATE EVENT'}
-            event={data}
-        />
-    )
+    return <EventPageWrapper eventId={eventId}/>
 }
 
 export default Event

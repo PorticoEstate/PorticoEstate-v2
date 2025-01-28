@@ -2,7 +2,7 @@ import {useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import axios from "axios";
 import { DateTime } from "luxon";
-import { fetchBuildingResources } from "./building";
+import { fetchBuildingResources, useBuildingResources } from "./building";
 
 export type PopperInfoType = FilteredEventInfo;
 
@@ -174,46 +174,27 @@ export const usePopperData = (
     });
 };
 
-export const useEventPopperData = (event_id: (string | number)) => {
-    const query = useQuery({
-        queryKey: ['eventInfo', event_id],
-        queryFn: () => {
-            const url = phpGWLink('bookingfrontend/', {
-                menuaction: 'bookingfrontend.uievent.info_json',
-                id: event_id,
-            }, true)
-
-            return axios.get(url).then<FilteredEventInfo>(d => ({
-                info_user_can_delete_events: d.data.info_user_can_delete_events, ...d.data.events[event_id],
-                type: 'event'
-            })) ;
+export const useEventData = (eventId: (string | number)) => { 
+    return useQuery({
+        queryKey: ['eventInfo', eventId],
+        queryFn: async () => {
+            const url = phpGWLink(['bookingfrontend', 'events', eventId]);
+            const res = await fetch(url);
+            const data = await res.json();
+            const buildingResources = await fetchBuildingResources(data.building_id);
+            return {
+                ...data,
+                to_: new Date(data.to_),
+                from_: new Date(data.from_),
+                resources: new Map(
+                    data.resources.map(({ id, name }: any) => [parseInt(id), name])
+                ),
+                buildingResources: new Map(
+                    buildingResources.map(({ id, name }) => [id, name])
+                ),
+            };
         }
-    })
-
-    return query;
-};
-export const fetchEventData = async (
-    event_id: number
-): Promise<ActivityData | null> => {
-    const url = phpGWLink(['bookingfrontend', 'events', event_id])
-    const res = await axios.get(url);
-
-    if (res.status !== 200) return null;
-
-    const event = res.data;
-    
-    const buildingResources = await fetchBuildingResources(event.building_id);
-    return {
-        ...event,
-        to_: new Date(event.to_),
-        from_: new Date(event.from_),
-        resources: new Map(
-            event.resources.map(({ id, name }: any) => [parseInt(id), name])
-        ),
-        buildingResources: new Map(
-            buildingResources.map(({ id, name }) => [id, name])
-        ),
-    };
+    });
 };
 
 export const editEvent = async (id: number, data: Partial<ActivityData>) => {

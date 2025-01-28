@@ -187,6 +187,7 @@ export const useEventData = (eventId: (string | number)) => {
                 ...data,
                 to_: new Date(data.to_),
                 from_: new Date(data.from_),
+                participant_limit: data.participant_limit || 0,
                 resources: new Map(
                     data.resources.map(({ id, name }: any) => [parseInt(id), name])
                 ),

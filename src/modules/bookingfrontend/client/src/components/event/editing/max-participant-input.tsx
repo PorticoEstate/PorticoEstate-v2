@@ -10,10 +10,10 @@ interface ParticipantInputProps {
 
 const MaxParticipantInput: FC<ParticipantInputProps> = ({ updateField, fieldValue }: ParticipantInputProps) => {
     const handler = (action: 'plus' | 'minus') => {
-        if (action === 'minus' && fieldValue <= 1) return;
+        if (action === 'minus' && fieldValue <= 0) return;
         return action === 'plus' ? 
-        updateField('participant_limit', fieldValue + 1)
-        : updateField('participant_limit', fieldValue - 1)
+            updateField('participant_limit', fieldValue + 1)
+            : updateField('participant_limit', fieldValue - 1)
     }
     return (
         <div className={styles.participantInput}>

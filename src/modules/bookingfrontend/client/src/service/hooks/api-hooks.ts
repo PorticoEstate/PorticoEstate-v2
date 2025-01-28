@@ -1,4 +1,11 @@
-import {keepPreviousData, useMutation, useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
+import {
+    keepPreviousData,
+    skipToken,
+    useMutation,
+    useQuery,
+    useQueryClient,
+    UseQueryResult
+} from "@tanstack/react-query";
 import {IBookingUser} from "@/service/types/api.types";
 import {
     fetchBuildingAgeGroups, fetchBuildingAudience,
@@ -416,24 +423,26 @@ export function useDeletePartialApplication() {
 }
 
 
-export function useBuildingAgeGroups(building_id: number): UseQueryResult<IAgeGroup[]> {
+export function useBuildingAgeGroups(building_id?: number): UseQueryResult<IAgeGroup[]> {
     return useQuery(
         {
             queryKey: ['building_agegroups', building_id],
-            queryFn: () => fetchBuildingAgeGroups(building_id), // Fetch function
+            queryFn: building_id === undefined ? skipToken : () => fetchBuildingAgeGroups(building_id), // Fetch function
             retry: 2, // Number of retry attempts if the query fails
+            enabled: building_id !== undefined,
             refetchOnWindowFocus: false, // Do not refetch on window focus by default
         }
     );
 }
 
 
-export function useBuildingAudience(building_id: number): UseQueryResult<IAudience[]> {
+export function useBuildingAudience(building_id?: number): UseQueryResult<IAudience[]> {
     return useQuery(
         {
             queryKey: ['building_audience', building_id],
-            queryFn: () => fetchBuildingAudience(building_id), // Fetch function
+            queryFn: building_id === undefined ? skipToken : () => fetchBuildingAudience(building_id), // Fetch function
             retry: 2, // Number of retry attempts if the query fails
+            enabled: building_id !== undefined,
             refetchOnWindowFocus: false, // Do not refetch on window focus by default
         }
     );

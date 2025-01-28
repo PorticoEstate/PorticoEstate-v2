@@ -540,10 +540,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
                 setPopperAnchorEl(null);
             }}/>
 
-            {currentTempEvent && (
                 <ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
                            building_id={props.building.id}/>
-            )}
 
 
         </React.Fragment>

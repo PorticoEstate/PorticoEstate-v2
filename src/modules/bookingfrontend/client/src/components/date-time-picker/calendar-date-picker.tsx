@@ -1,7 +1,7 @@
-import {FC, useEffect, useRef} from 'react';
+import React, {FC, useEffect, useRef} from 'react';
 import DatePicker from "react-datepicker";
-import {ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
-import {Button, Select} from "@digdir/designsystemet-react";
+import {CalendarIcon, ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
+import {Button, Field, Input, Label, Select} from "@digdir/designsystemet-react";
 import styles from './calendar-date-picker.module.scss';
 import {DateTime} from "luxon";
 
@@ -245,15 +245,21 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
                         }} date={currentDate} intervals={timeIntervals} />
                 }
                 customInput={(
-                    <div className={styles.datePicker}>
-                        <Button
-                            variant="tertiary"
-                            data-size="sm"
-                            className={styles.datePickerButton}
-                        >
-                            {formatSelectedDate()}
-                        </Button>
-                    </div>
+                    <Field>
+                        <Field.Affixes>
+                            <Field.Affix><CalendarIcon title="a11y-title" fontSize="1.5rem" /></Field.Affix>
+                            <Input className={"dateView"} onChange={() => {}} value={formatSelectedDate()}/>
+                        </Field.Affixes>
+                    </Field>
+                    // <div className={styles.datePicker}>
+                    //     <Button
+                    //         variant="tertiary"
+                    //         data-size="sm"
+                    //         className={styles.datePickerButton}
+                    //     >
+                    //         {formatSelectedDate()}
+                    //     </Button>
+                    // </div>
                 )}
             />
         </div>

@@ -121,13 +121,25 @@ class EventService
 
     public function getPartialEventObjectById(int $id)
     {
-        $fields = ['id', 'name', 'organizer', 'from_', 'to_', 'participant_limit'];
+        $fields = ['id', 'customer_ssn', 'customer_organization_number'];
         $sql = "SELECT " . implode(', ', $fields) . " FROM bb_event WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-
+    public function checkEventOwnerShip(array $existingEvent)
+    {
+        $ownerSsn = $existingEvent['customer_ssn'];
+        $ownerOrgNum = $existingEvent['customer_organization_number'];
+        $ssn = $this->bouser->ssn;
+        $userOrgs = $this->bouser->organizations 
+            ? array_column($this->bouser->organizations, 'orgnr') 
+            : [];
+        return 
+            $ssn === $ownerSsn || 
+            in_array($ownerOrgNum, $userOrgs);
+        
+    }
     public function updateEvent(array $data, array $existingEvent)
     {
         try {

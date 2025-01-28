@@ -76,6 +76,14 @@ class EventController
             );
         }
 
+        $access = $this->service->checkEventOwnerShip($existingEvent);
+        if (!$access) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Forbidden'],
+                403
+            );
+        }
+    
         try {
             $id = $this->service->updateEvent($newData, $existingEvent);
 

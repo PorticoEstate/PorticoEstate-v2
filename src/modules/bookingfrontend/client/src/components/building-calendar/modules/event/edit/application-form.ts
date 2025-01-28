@@ -13,7 +13,7 @@ export const applicationFormSchema = z.object({
     agegroups: z.array(z.object({
         id: z.number(),
         male: z.number().min(0),
-        female: z.literal(0), // Still tracking only male counts
+        female: z.number().default(0), // Still tracking only male counts
         name: z.string(),
         description: z.string().nullable(),
         sort: z.number()

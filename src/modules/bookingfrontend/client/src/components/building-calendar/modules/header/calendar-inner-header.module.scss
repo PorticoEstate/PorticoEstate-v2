@@ -34,7 +34,7 @@
     }
     .datePicker {
         grid-area: date;
-        width: min-content;
+        //width: min-content;
         @include mobile {
             width: unset;
         }

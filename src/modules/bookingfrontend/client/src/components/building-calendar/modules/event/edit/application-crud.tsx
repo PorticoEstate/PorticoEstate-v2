@@ -45,21 +45,29 @@ interface ApplicationCrudInnerProps extends ApplicationCrudProps {
     audience?: IAudience[];
     agegroups?: IAgeGroup[];
     existingApplication?: IApplication;
+    onSubmitSuccess?: (data: ApplicationFormData) => void;
+    lastSubmittedData?: Partial<ApplicationFormData> | null;
 }
 
-
-
-
 const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
+    const [lastSubmittedData, setLastSubmittedData] = useState<Partial<ApplicationFormData> | null>(null);
 
+    // Only fetch if we have a building_id
+    const building_id = props.building_id || props.selectedTempApplication?.extendedProps?.building_id;
 
-    const {data: building, isLoading: buildingLoading} = useBuilding(+props.building_id);
-    const {data: buildingResources, isLoading: buildingResourcesLoading} = useBuildingResources(props.building_id);
+    const {data: building, isLoading: buildingLoading} = useBuilding(
+        building_id ? +building_id : undefined
+    );
+    const {data: buildingResources, isLoading: buildingResourcesLoading} = useBuildingResources(
+        building_id
+    );
     const {data: partials, isLoading: partialsLoading} = usePartialApplications();
-    const {data: audience, isLoading: audienceLoading} = useBuildingAudience(+props.building_id);
-    const {data: agegroups, isLoading: agegroupsLoading} = useBuildingAgeGroups(+props.building_id);
-    const t = useTrans();
-
+    const {data: audience, isLoading: audienceLoading} = useBuildingAudience(
+        building_id ? +building_id : undefined
+    );
+    const {data: agegroups, isLoading: agegroupsLoading} = useBuildingAgeGroups(
+        building_id ? +building_id : undefined
+    );
 
     const existingApplication = useMemo(() => {
         const applicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
@@ -72,16 +80,39 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
         return partials.list.find(a => a.id === applicationId) || null;
     }, [props.selectedTempApplication, partials, props.applicationId]);
 
-    if (buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
-        return null
+    // Don't show loading state if we don't have a building_id
+    if (!building_id) {
+        return null;
     }
+
+    if (buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
+        return null;
+    }
+
+    const isOpen = props.selectedTempApplication !== undefined || props.applicationId !== undefined;
+
+    if(!isOpen) {
+        return null;
+    }
+
+    console.log(lastSubmittedData);
+
     return (
-        <ApplicationCrud agegroups={agegroups} building={building} existingApplication={existingApplication || undefined}
-                   audience={audience} buildingResources={buildingResources}
-                   partials={partials} {...props}></ApplicationCrud>
+        <div style={{ display: isOpen ? 'block' : 'none' }}>
+            <ApplicationCrud
+                agegroups={agegroups}
+                building={building}
+                existingApplication={existingApplication || undefined}
+                audience={audience}
+                buildingResources={buildingResources}
+                partials={partials}
+                lastSubmittedData={lastSubmittedData}
+                onSubmitSuccess={(data) => setLastSubmittedData(data)}
+                {...props}
+            />
+        </div>
     );
 }
-
 
 const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
@@ -94,7 +125,6 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const updateMutation = useUpdatePartialApplication();
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
-
 
     const defaultStartEnd = useMemo(() => {
         if (!existingApplication?.dates || !props.selectedTempApplication?.id || props.date_id === undefined) {
@@ -119,6 +149,54 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
             end: applicationTimeToLux(dateEntry.to_).toJSDate()
         };
     }, [existingApplication, props.selectedTempApplication, props.date_id]);
+
+    const defaultValues = useMemo(() => {
+        if (existingApplication) {
+            return {
+                title: existingApplication.name,
+                start: defaultStartEnd.start,
+                end: defaultStartEnd.end,
+                homepage: existingApplication.homepage || '',
+                description: existingApplication.description || '',
+                equipment: existingApplication.equipment || '',
+                resources: existingApplication.resources?.map((res) => res.id.toString()) ||
+                    props.selectedTempApplication?.extendedProps?.resources?.map(String) ||
+                    [],
+                audience: existingApplication.audience || undefined,
+                agegroups: agegroups?.map(ag => ({
+                    id: ag.id,
+                    male: existingApplication.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
+                    female: 0,
+                    name: ag.name,
+                    description: ag.description,
+                    sort: ag.sort,
+                })) || []
+            };
+        }
+
+        // Use lastSubmittedData if available, otherwise use default empty values
+        return {
+            title: props.lastSubmittedData?.title ?? '',
+            start: defaultStartEnd.start,
+            end: defaultStartEnd.end,
+            homepage: props.lastSubmittedData?.homepage ?? '',
+            description: props.lastSubmittedData?.description ?? '',
+            equipment: props.lastSubmittedData?.equipment ?? '',
+            resources: props.selectedTempApplication?.extendedProps?.resources?.map(String) ??
+                [],
+            audience: props.lastSubmittedData?.audience ?? undefined,
+            agegroups: agegroups?.map(ag => ({
+                id: ag.id,
+                male: props.lastSubmittedData?.agegroups?.find(eag => eag.id === ag.id)?.male ?? 0,
+                female: 0,
+                name: ag.name,
+                description: ag.description,
+                sort: ag.sort,
+            })) || []
+        };
+    }, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication]);
+
+
     const {
         control,
         handleSubmit,
@@ -128,29 +206,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
         formState: {errors, isDirty, dirtyFields}
     } = useForm<ApplicationFormData>({
         resolver: zodResolver(applicationFormSchema),
-        defaultValues: {
-            title: existingApplication?.name ?? '',
-            start: defaultStartEnd.start,
-            end: defaultStartEnd.end,
-            homepage: existingApplication?.homepage || '',
-            description: existingApplication?.description || '',
-            equipment: existingApplication?.equipment || '',
-            resources: existingApplication?.resources?.map((res) => res.id.toString()) ||
-                props.selectedTempApplication?.extendedProps?.resources?.map(String) ||
-                [],
-            audience: existingApplication?.audience || undefined,
-            agegroups: agegroups?.map(ag => {
-                // const existing = existingEvent?.agegroups.fin
-                return ({
-                    id: ag.id,
-                    male: existingApplication?.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
-                    female: 0,
-                    name: ag.name,
-                    description: ag.description,
-                    sort: ag.sort,
-                });
-            }) || []
-        }
+        defaultValues: defaultValues
     });
 
     const selectedResources = watch('resources');
@@ -204,8 +260,12 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
             }
 
 
-            const result = await updateMutation.mutateAsync({id: existingApplication.id, application: updatedApplication});
+            const result = await updateMutation.mutateAsync({
+                id: existingApplication.id,
+                application: updatedApplication
+            });
 
+            props.onSubmitSuccess?.(data);
             props.onClose();
             return;
         }
@@ -244,6 +304,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
             });
             setIsUploadingFiles(false);
         }
+        props.onSubmitSuccess?.(data);
         props.onClose();
     };
 
@@ -396,7 +457,6 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     };
 
 
-
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
             <MobileDialog
@@ -437,7 +497,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                 <Textfield
                                     label={t('bookingfrontend.title')}
                                     {...field}
-                                    error={errors.title?.message ? t(errors.title.message): undefined}
+                                    error={errors.title?.message ? t(errors.title.message) : undefined}
                                     placeholder={t('bookingfrontend.enter_title')}
                                 />
                             )}
@@ -458,7 +518,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                         {/*    value={formatDateForInput(value)}*/}
                                         {/*    onChange={e => onChange(new Date(e.target.value))}*/}
                                         {/*/>*/}
-                                        <CalendarDatePicker currentDate={value} view={'timeGridDay'} showTimeSelect onDateChange={onChange} />
+                                        <CalendarDatePicker currentDate={value} view={'timeGridDay'} showTimeSelect
+                                                            onDateChange={onChange}/>
 
 
                                         {errors.start &&
@@ -474,12 +535,15 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                 render={({field: {value, onChange, ...field}}) => (
                                     <>
                                         <label>{t('common.end')}</label>
-                                        <input
-                                            type="datetime-local"
-                                            {...field}
-                                            value={formatDateForInput(value)}
-                                            onChange={e => onChange(new Date(e.target.value))}
-                                        />
+                                        {/*<input*/}
+                                        {/*    type="datetime-local"*/}
+                                        {/*    {...field}*/}
+                                        {/*    value={formatDateForInput(value)}*/}
+                                        {/*    onChange={e => onChange(new Date(e.target.value))}*/}
+                                        {/*/>*/}
+                                        <CalendarDatePicker currentDate={value} view={'timeGridDay'} showTimeSelect
+                                                            onDateChange={onChange} />
+
                                         {errors.end &&
                                             <span className={styles.error}>{errors.end.message}</span>}
                                     </>
@@ -531,7 +595,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                     </div>
 
                     <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
-                        <div className={styles.resourcesHeader} style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+                        <div className={styles.resourcesHeader}
+                             style={{flexDirection: 'column', alignItems: 'flex-start'}}>
                             <h4>{t('bookingfrontend.estimated number of participants')}</h4>
                             {errors.agegroups?.['root']?.message && (
                                 <span className={styles.error}>{t(errors.agegroups?.['root']?.message)}</span>

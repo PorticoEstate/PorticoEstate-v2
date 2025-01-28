@@ -163,6 +163,7 @@ class EventService
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
         $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$data) return false;
 
         $entity = new Event($data);
         $resources = [];

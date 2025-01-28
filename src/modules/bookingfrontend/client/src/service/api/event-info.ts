@@ -177,6 +177,7 @@ export const usePopperData = (
 export const useEventData = (eventId: (string | number)) => { 
     return useQuery({
         queryKey: ['eventInfo', eventId],
+        retry: 2,
         queryFn: async () => {
             const url = phpGWLink(['bookingfrontend', 'events', eventId]);
             const res = await fetch(url);

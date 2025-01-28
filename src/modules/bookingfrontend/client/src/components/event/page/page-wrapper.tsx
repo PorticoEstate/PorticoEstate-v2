@@ -1,5 +1,6 @@
 'use client'
 import { FC } from "react";
+import {Spinner} from "@digdir/designsystemet-react";
 import { useEventData } from "@/service/api/event-info";
 import EventPageController from "./page-controller";
 
@@ -12,8 +13,10 @@ const EventPageWrapper: FC<EventPageWrapper> = ({ eventId }: EventPageWrapper) =
     if (!isLoading && eventInfo) {
         const access = eventInfo.name !== 'PRIVATE EVENT';
         return <EventPageController event={eventInfo} privateAccess={access}/>
+    } else if (!isLoading && !eventInfo) {
+        return null;
     }
-    return <h1>Loading...</h1>
+    return <Spinner aria-label='Laster event info'/>
 }
 
 export default EventPageWrapper;

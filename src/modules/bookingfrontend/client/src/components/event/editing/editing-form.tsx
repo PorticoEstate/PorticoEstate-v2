@@ -6,8 +6,8 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import styles from '../event.module.scss';
 import { DateTime } from "luxon";
 import MaxParticipantInput from "./max-participant-input";
-import DatePickerInput from "../../date-picker/datepicker-input";
 import ResourcesGroup from "./resources-group";
+import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 interface FormProps {
     event: ActivityData;
     updateField: (key: keyof ActivityData, value: any) => void;
@@ -23,29 +23,25 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 value={event.name}
                 onChange={(e) => updateField('name', e.target.value)}
             />
-            <DatePickerInput 
-                date={event.from_}
-                updateDate={(date: Date) => updateField('from_', date)}
-            />
             <Field>
-                <span className={styles.inputLabel}>Time</span>
-                <div className={styles.editTimeBlock}>
-                    {/* TODO: Optimize parsing date from input.time */}
-                    <Textfield
-                        prefix={t('bookingfrontend.from')} 
-                        label="" 
-                        type="time"
-                        value={DateTime.fromJSDate(event.from_).toFormat('HH:mm')}
-                        onChange={(e) => updateField('from_', DateTime.fromFormat(e.target.value, 'HH:mm').toJSDate())}
-                    />
-                    <Textfield 
-                        prefix={t('bookingfrontend.to')} 
-                        label="" 
-                        type="time"
-                        value={DateTime.fromJSDate(event.to_).toFormat('HH:mm')}
-                        onChange={(e) => updateField('to_', DateTime.fromFormat(e.target.value, 'HH:mm').toJSDate())}
-                    />
-                </div>
+                <span className={styles.inputLabel}>From</span>
+                <CalendarDatePicker 
+                    showTimeSelect
+                    timeIntervals={5}
+                    onDateChange={(date) => updateField('from_', date)}
+                    currentDate={event.from_}
+                    view="timeGridDay"
+                />
+            </Field>
+            <Field>
+                <span className={styles.inputLabel}>To</span>
+                <CalendarDatePicker 
+                    showTimeSelect
+                    timeIntervals={5}
+                    onDateChange={(date) => updateField('to_', date)}
+                    currentDate={event.to_}
+                    view="timeGridDay"
+                />
             </Field>
             <Field>
                 <span className={styles.inputLabel}>{t('bookingfrontend.place')}</span>
@@ -71,7 +67,7 @@ const EventEditingForm: FC<FormProps> = ({ event, updateField }: FormProps) => {
                 <Label>{t('bookingfrontend.max_participants_info')}</Label>
                 <MaxParticipantInput 
                     updateField={updateField} 
-                    fieldValue={event.participant_limit}
+                    fieldValue={event.participant_limit as number}
                 />
             </Field>
         </div>

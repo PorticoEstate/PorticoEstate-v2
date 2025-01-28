@@ -146,4 +146,31 @@ class DocumentController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
     }
+
+    public function deleteDocument(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $documentId = (int)$args['id'];
+
+            $document = $this->documentService->getDocumentById($documentId);
+            if (!$document) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Document not found'],
+                    404
+                );
+            }
+
+            // Delete the document and its file
+            $this->documentService->deleteDocument($documentId);
+
+            return $response->withStatus(204);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error deleting document: " . $e->getMessage()],
+                500
+            );
+        }
+    }
+
 }

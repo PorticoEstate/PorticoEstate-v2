@@ -4,10 +4,10 @@
  *
  * To rebuild or modify this file with the latest versions of the included
  * software please visit:
- *   https://datatables.net/download/#dt/jszip-3.10.1/pdfmake-0.2.7/dt-2.1.8/af-2.7.0/b-3.1.2/b-colvis-3.1.2/b-html5-3.1.2/fc-5.0.3/fh-4.0.1/kt-2.12.1/r-3.0.3/rg-1.5.0/rr-1.5.0/sc-2.4.3/sb-1.8.1/sp-2.3.3/sl-2.1.0/sr-1.4.1
+ *   https://datatables.net/download/#dt/jszip-3.10.1/pdfmake-0.2.7/dt-2.2.1/af-2.7.0/b-3.2.0/b-colvis-3.2.0/b-html5-3.2.0/b-print-3.2.0/cr-2.0.4/date-1.5.5/fc-5.0.4/fh-4.0.1/kt-2.12.1/r-3.0.3/rg-1.5.1/rr-1.5.0/sc-2.4.3/sb-1.8.1/sp-2.3.3/sl-3.0.0/sr-1.4.1
  *
  * Included libraries:
- *   JSZip 3.10.1, pdfmake 0.2.7, DataTables 2.1.8, AutoFill 2.7.0, Buttons 3.1.2, Column visibility 3.1.2, HTML5 export 3.1.2, FixedColumns 5.0.3, FixedHeader 4.0.1, KeyTable 2.12.1, Responsive 3.0.3, RowGroup 1.5.0, RowReorder 1.5.0, Scroller 2.4.3, SearchBuilder 1.8.1, SearchPanes 2.3.3, Select 2.1.0, StateRestore 1.4.1
+ *   JSZip 3.10.1, pdfmake 0.2.7, DataTables 2.2.1, AutoFill 2.7.0, Buttons 3.2.0, Column visibility 3.2.0, HTML5 export 3.2.0, Print view 3.2.0, ColReorder 2.0.4, DateTime 1.5.5, FixedColumns 5.0.4, FixedHeader 4.0.1, KeyTable 2.12.1, Responsive 3.0.3, RowGroup 1.5.1, RowReorder 1.5.0, Scroller 2.4.3, SearchBuilder 1.8.1, SearchPanes 2.3.3, Select 3.0.0, StateRestore 1.4.1
  */
 
 @charset "UTF-8";
@@ -42,6 +42,9 @@ table.dataTable tr.dt-hasChild td.dt-control:before {
   border-left: 5px solid transparent;
   border-bottom: 0px solid transparent;
   border-right: 5px solid transparent;
+}
+table.dataTable tfoot:empty {
+  display: none;
 }
 
 html.dark table.dataTable td.dt-control:before,
@@ -251,6 +254,11 @@ table.dataTable th,
 table.dataTable td {
   box-sizing: border-box;
 }
+table.dataTable th.dt-type-numeric, table.dataTable th.dt-type-date,
+table.dataTable td.dt-type-numeric,
+table.dataTable td.dt-type-date {
+  text-align: right;
+}
 table.dataTable th.dt-left,
 table.dataTable td.dt-left {
   text-align: left;
@@ -275,11 +283,6 @@ table.dataTable th.dt-empty,
 table.dataTable td.dt-empty {
   text-align: center;
   vertical-align: top;
-}
-table.dataTable th.dt-type-numeric, table.dataTable th.dt-type-date,
-table.dataTable td.dt-type-numeric,
-table.dataTable td.dt-type-date {
-  text-align: right;
 }
 table.dataTable thead th,
 table.dataTable thead td,
@@ -336,6 +339,14 @@ table.dataTable tbody td.dt-body-justify {
 table.dataTable tbody th.dt-body-nowrap,
 table.dataTable tbody td.dt-body-nowrap {
   white-space: nowrap;
+}
+
+:root {
+  --dt-row-hover-alpha: 0.035;
+  --dt-row-stripe-alpha: 0.023;
+  --dt-column-ordering-alpha: 0.019;
+  --dt-row-selected-stripe-alpha: 0.923;
+  --dt-row-selected-column-ordering-alpha: 0.919;
 }
 
 /*
@@ -415,15 +426,15 @@ table.dataTable.cell-border > tbody > tr:first-child > * {
 }
 table.dataTable.stripe > tbody > tr:nth-child(odd) > *, table.dataTable.display > tbody > tr:nth-child(odd) > * {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.023);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-stripe), 0.023);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-stripe), var(--dt-row-stripe-alpha));
 }
 table.dataTable.stripe > tbody > tr:nth-child(odd).selected > *, table.dataTable.display > tbody > tr:nth-child(odd).selected > * {
   box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.923);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.923);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), var(--dt-row-selected-stripe-alpha));
 }
 table.dataTable.hover > tbody > tr:hover > *, table.dataTable.display > tbody > tr:hover > * {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.035);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-hover), 0.035);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-hover), var(--dt-row-hover-alpha));
 }
 table.dataTable.hover > tbody > tr.selected:hover > *, table.dataTable.display > tbody > tr.selected:hover > * {
   box-shadow: inset 0 0 0 9999px #0d6efd !important;
@@ -435,7 +446,7 @@ table.dataTable.order-column > tbody tr > .sorting_3, table.dataTable.display > 
 table.dataTable.display > tbody tr > .sorting_2,
 table.dataTable.display > tbody tr > .sorting_3 {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.019);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), 0.019);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), var(--dt-column-ordering-alpha));
 }
 table.dataTable.order-column > tbody tr.selected > .sorting_1,
 table.dataTable.order-column > tbody tr.selected > .sorting_2,
@@ -443,79 +454,55 @@ table.dataTable.order-column > tbody tr.selected > .sorting_3, table.dataTable.d
 table.dataTable.display > tbody tr.selected > .sorting_2,
 table.dataTable.display > tbody tr.selected > .sorting_3 {
   box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.919);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.919);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), var(--dt-row-selected-column-ordering-alpha));
 }
 table.dataTable.display > tbody > tr:nth-child(odd) > .sorting_1, table.dataTable.order-column.stripe > tbody > tr:nth-child(odd) > .sorting_1 {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.054);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), 0.054);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), calc(var(--dt-row-stripe-alpha) + var(--dt-column-ordering-alpha)));
 }
 table.dataTable.display > tbody > tr:nth-child(odd) > .sorting_2, table.dataTable.order-column.stripe > tbody > tr:nth-child(odd) > .sorting_2 {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.047);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), 0.047);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), calc(var(--dt-row-stripe-alpha) + var(--dt-column-ordering-alpha) - 0.007));
 }
 table.dataTable.display > tbody > tr:nth-child(odd) > .sorting_3, table.dataTable.order-column.stripe > tbody > tr:nth-child(odd) > .sorting_3 {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.039);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), 0.039);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), calc(var(--dt-row-stripe-alpha) + var(--dt-column-ordering-alpha) - 0.015));
 }
 table.dataTable.display > tbody > tr:nth-child(odd).selected > .sorting_1, table.dataTable.order-column.stripe > tbody > tr:nth-child(odd).selected > .sorting_1 {
   box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.954);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.954);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), calc(var(--dt-row-selected-stripe-alpha) + var(--dt-column-ordering-alpha)));
 }
 table.dataTable.display > tbody > tr:nth-child(odd).selected > .sorting_2, table.dataTable.order-column.stripe > tbody > tr:nth-child(odd).selected > .sorting_2 {
   box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.947);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.947);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), calc(var(--dt-row-selected-stripe-alpha) + var(--dt-column-ordering-alpha) - 0.007));
 }
 table.dataTable.display > tbody > tr:nth-child(odd).selected > .sorting_3, table.dataTable.order-column.stripe > tbody > tr:nth-child(odd).selected > .sorting_3 {
   box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.939);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.939);
-}
-table.dataTable.display > tbody > tr.even > .sorting_1, table.dataTable.order-column.stripe > tbody > tr.even > .sorting_1 {
-  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.019);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), 0.019);
-}
-table.dataTable.display > tbody > tr.even > .sorting_2, table.dataTable.order-column.stripe > tbody > tr.even > .sorting_2 {
-  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.011);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), 0.011);
-}
-table.dataTable.display > tbody > tr.even > .sorting_3, table.dataTable.order-column.stripe > tbody > tr.even > .sorting_3 {
-  box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.003);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-column-ordering), 0.003);
-}
-table.dataTable.display > tbody > tr.even.selected > .sorting_1, table.dataTable.order-column.stripe > tbody > tr.even.selected > .sorting_1 {
-  box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.919);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.919);
-}
-table.dataTable.display > tbody > tr.even.selected > .sorting_2, table.dataTable.order-column.stripe > tbody > tr.even.selected > .sorting_2 {
-  box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.911);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.911);
-}
-table.dataTable.display > tbody > tr.even.selected > .sorting_3, table.dataTable.order-column.stripe > tbody > tr.even.selected > .sorting_3 {
-  box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.903);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.903);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), calc(var(--dt-row-selected-stripe-alpha) + var(--dt-column-ordering-alpha) - 0.015));
 }
 table.dataTable.display tbody tr:hover > .sorting_1, table.dataTable.order-column.hover tbody tr:hover > .sorting_1 {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.082);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-hover), 0.082);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-hover), calc(var(--dt-row-stripe-alpha) + var(--dt-column-ordering-alpha) + var(--dt-row-hover-alpha)));
 }
 table.dataTable.display tbody tr:hover > .sorting_2, table.dataTable.order-column.hover tbody tr:hover > .sorting_2 {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.074);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-hover), 0.074);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-hover), calc(var(--dt-row-stripe-alpha) + var(--dt-column-ordering-alpha) + var(--dt-row-hover-alpha) - 0.007));
 }
 table.dataTable.display tbody tr:hover > .sorting_3, table.dataTable.order-column.hover tbody tr:hover > .sorting_3 {
   box-shadow: inset 0 0 0 9999px rgba(0, 0, 0, 0.062);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-hover), 0.062);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-hover), calc(var(--dt-row-stripe-alpha) + var(--dt-column-ordering-alpha) + var(--dt-row-hover-alpha) - 0.015));
 }
 table.dataTable.display tbody tr:hover.selected > .sorting_1, table.dataTable.order-column.hover tbody tr:hover.selected > .sorting_1 {
   box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.982);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.982);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), calc(var(--dt-row-selected-stripe-alpha) + var(--dt-column-ordering-alpha)));
 }
 table.dataTable.display tbody tr:hover.selected > .sorting_2, table.dataTable.order-column.hover tbody tr:hover.selected > .sorting_2 {
   box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.974);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.974);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), calc(var(--dt-row-selected-stripe-alpha) + var(--dt-column-ordering-alpha) + var(--dt-row-hover-alpha) - 0.007));
 }
 table.dataTable.display tbody tr:hover.selected > .sorting_3, table.dataTable.order-column.hover tbody tr:hover.selected > .sorting_3 {
   box-shadow: inset 0 0 0 9999px rgba(13, 110, 253, 0.962);
-  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), 0.962);
+  box-shadow: inset 0 0 0 9999px rgba(var(--dt-row-selected), calc(var(--dt-row-selected-stripe-alpha) + var(--dt-column-ordering-alpha) + var(--dt-row-hover-alpha) - 0.015));
 }
 table.dataTable.compact thead th,
 table.dataTable.compact thead td,
@@ -1105,8 +1092,10 @@ div.dt-button-collection .dt-button {
   left: 0;
   right: 0;
   width: 100%;
-  display: block;
+  display: flex;
   float: none;
+  justify-content: space-between;
+  align-items: center;
   background: none;
   margin: 0;
   padding: 0.5em 1em;
@@ -1195,10 +1184,6 @@ div.dt-button-collection.fixed > :last-child {
 }
 div.dt-button-collection.two-column > :last-child, div.dt-button-collection.three-column > :last-child, div.dt-button-collection.four-column > :last-child {
   display: block !important;
-  -webkit-column-gap: 8px;
-  -moz-column-gap: 8px;
-  -ms-column-gap: 8px;
-  -o-column-gap: 8px;
   column-gap: 8px;
 }
 div.dt-button-collection.two-column > :last-child > *, div.dt-button-collection.three-column > :last-child > *, div.dt-button-collection.four-column > :last-child > * {
@@ -1356,6 +1341,363 @@ html.dark div.dt-button-collection {
   box-shadow: 3px 4px 10px 1px rgba(0, 0, 0, 0.8);
 }
 
+
+body.dtcr-dragging {
+  overflow-x: hidden;
+}
+
+table.dtcr-cloned.dataTable {
+  position: absolute !important;
+  background-color: rgba(255, 255, 255, 0.7);
+  z-index: 202;
+  border-radius: 4px;
+}
+
+table.dataTable tbody tr td.dtcr-moving {
+  background-color: rgba(127, 127, 127, 0.15);
+}
+table.dataTable tbody tr td.dtcr-moving-first {
+  border-left: 1px solid #0259C4;
+}
+table.dataTable tbody tr td.dtcr-moving-last {
+  border-right: 1px solid #0259C4;
+}
+
+html.dark table.dtcr-cloned.dataTable {
+  background-color: rgba(33, 33, 33, 0.9);
+}
+
+
+div.dt-datetime {
+  position: absolute;
+  background-color: white;
+  z-index: 2050;
+  border: 1px solid #ccc;
+  box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.5);
+  padding: 6px 20px;
+  width: 275px;
+  border-radius: 5px;
+}
+div.dt-datetime.inline {
+  position: relative;
+  box-shadow: none;
+}
+div.dt-datetime div.dt-datetime-title {
+  text-align: center;
+  padding: 5px 0px 3px;
+}
+div.dt-datetime div.dt-datetime-buttons {
+  text-align: center;
+}
+div.dt-datetime div.dt-datetime-buttons a {
+  display: inline-block;
+  padding: 0 0.5em 0.5em 0.5em;
+  margin: 0;
+  font-size: 0.9em;
+}
+div.dt-datetime div.dt-datetime-buttons a:hover {
+  text-decoration: underline;
+}
+div.dt-datetime table {
+  border-spacing: 0;
+  margin: 12px 0;
+  width: 100%;
+}
+div.dt-datetime table.dt-datetime-table-nospace {
+  margin-top: -12px;
+}
+div.dt-datetime table th {
+  font-size: 0.8em;
+  color: #777;
+  font-weight: normal;
+  width: 14.285714286%;
+  padding: 0 0 4px 0;
+  text-align: center;
+}
+div.dt-datetime table td {
+  font-size: 0.9em;
+  color: #444;
+  padding: 0;
+}
+div.dt-datetime table td.selectable {
+  text-align: center;
+  background: #f5f5f5;
+}
+div.dt-datetime table td.selectable.disabled {
+  color: #aaa;
+  background: white;
+}
+div.dt-datetime table td.selectable.disabled button:hover {
+  color: #aaa;
+  background: white;
+}
+div.dt-datetime table td.selectable.now {
+  background-color: #ddd;
+}
+div.dt-datetime table td.selectable.now button {
+  font-weight: bold;
+}
+div.dt-datetime table td.selectable.selected button {
+  background: #4E6CA3;
+  color: white;
+  border-radius: 2px;
+}
+div.dt-datetime table td.selectable button:hover {
+  background: #ff8000;
+  color: white;
+  border-radius: 2px;
+}
+div.dt-datetime table td.dt-datetime-week {
+  font-size: 0.7em;
+}
+div.dt-datetime table button {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  background: transparent;
+  font-size: inherit;
+  color: inherit;
+  text-align: center;
+  padding: 4px 0;
+  cursor: pointer;
+  margin: 0;
+}
+div.dt-datetime table button span {
+  display: inline-block;
+  min-width: 14px;
+  text-align: right;
+}
+div.dt-datetime table.weekNumber th {
+  width: 12.5%;
+}
+div.dt-datetime div.dt-datetime-calendar table {
+  margin-top: 0;
+}
+div.dt-datetime div.dt-datetime-label {
+  position: relative;
+  display: inline-block;
+  height: 30px;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+div.dt-datetime div.dt-datetime-label:hover {
+  border: 1px solid #ddd;
+  border-radius: 2px;
+  background-color: #f5f5f5;
+}
+div.dt-datetime div.dt-datetime-label select {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+div.dt-datetime.horizontal {
+  width: 550px;
+}
+div.dt-datetime.horizontal div.dt-datetime-date,
+div.dt-datetime.horizontal div.dt-datetime-time {
+  width: 48%;
+}
+div.dt-datetime.horizontal div.dt-datetime-time {
+  margin-left: 4%;
+}
+div.dt-datetime div.dt-datetime-date {
+  position: relative;
+  float: left;
+  width: 100%;
+}
+div.dt-datetime div.dt-datetime-time {
+  position: relative;
+  float: left;
+  width: 100%;
+  text-align: center;
+}
+div.dt-datetime div.dt-datetime-time > span {
+  vertical-align: middle;
+}
+div.dt-datetime div.dt-datetime-time th {
+  text-align: left;
+}
+div.dt-datetime div.dt-datetime-time div.dt-datetime-timeblock {
+  display: inline-block;
+  vertical-align: middle;
+}
+div.dt-datetime div.dt-datetime-iconLeft,
+div.dt-datetime div.dt-datetime-iconRight {
+  width: 30px;
+  height: 30px;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.3;
+  overflow: hidden;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+}
+div.dt-datetime div.dt-datetime-iconLeft:hover,
+div.dt-datetime div.dt-datetime-iconRight:hover {
+  border: 1px solid #ccc;
+  border-radius: 2px;
+  background-color: #f0f0f0;
+  opacity: 0.6;
+}
+div.dt-datetime div.dt-datetime-iconLeft button,
+div.dt-datetime div.dt-datetime-iconRight button {
+  border: none;
+  background: transparent;
+  text-indent: 30px;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+}
+div.dt-datetime div.dt-datetime-iconLeft {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+}
+div.dt-datetime div.dt-datetime-iconLeft button {
+  position: relative;
+  z-index: 1;
+}
+div.dt-datetime div.dt-datetime-iconLeft:after {
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  display: block;
+  content: "";
+  border-top: 7px solid transparent;
+  border-right: 7px solid black;
+  border-bottom: 7px solid transparent;
+}
+div.dt-datetime div.dt-datetime-iconRight {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+}
+div.dt-datetime div.dt-datetime-iconRight button {
+  position: relative;
+  z-index: 1;
+}
+div.dt-datetime div.dt-datetime-iconRight:after {
+  position: absolute;
+  top: 7px;
+  left: 12px;
+  display: block;
+  content: "";
+  border-top: 7px solid transparent;
+  border-left: 7px solid black;
+  border-bottom: 7px solid transparent;
+}
+
+div.dt-datetime-error {
+  clear: both;
+  padding: 0 1em;
+  max-width: 240px;
+  font-size: 11px;
+  line-height: 1.25em;
+  text-align: center;
+  color: #b11f1f;
+}
+
+html.dark input.dt-datetime,
+:root[data-theme=dark] input.dt-datetime,
+:root[data-bs-theme=dark] input.dt-datetime {
+  color-scheme: dark;
+}
+html.dark div.dt-datetime,
+:root[data-theme=dark] div.dt-datetime,
+:root[data-bs-theme=dark] div.dt-datetime {
+  border: 1px solid #595b5e;
+  background-color: #212529;
+  box-shadow: 3px 4px 10px 1px rgba(0, 0, 0, 0.8);
+}
+html.dark div.dt-datetime table th,
+:root[data-theme=dark] div.dt-datetime table th,
+:root[data-bs-theme=dark] div.dt-datetime table th {
+  color: #ccc;
+}
+html.dark div.dt-datetime table td,
+:root[data-theme=dark] div.dt-datetime table td,
+:root[data-bs-theme=dark] div.dt-datetime table td {
+  color: #eee;
+}
+html.dark div.dt-datetime table td.selectable,
+:root[data-theme=dark] div.dt-datetime table td.selectable,
+:root[data-bs-theme=dark] div.dt-datetime table td.selectable {
+  background: #373c41;
+}
+html.dark div.dt-datetime table td.selectable.disabled,
+:root[data-theme=dark] div.dt-datetime table td.selectable.disabled,
+:root[data-bs-theme=dark] div.dt-datetime table td.selectable.disabled {
+  color: #aaa;
+  background: #171b1f;
+}
+html.dark div.dt-datetime table td.selectable.disabled button:hover,
+:root[data-theme=dark] div.dt-datetime table td.selectable.disabled button:hover,
+:root[data-bs-theme=dark] div.dt-datetime table td.selectable.disabled button:hover {
+  color: #aaa;
+  background: #171b1f;
+}
+html.dark div.dt-datetime table td.selectable.now,
+:root[data-theme=dark] div.dt-datetime table td.selectable.now,
+:root[data-bs-theme=dark] div.dt-datetime table td.selectable.now {
+  background: #4b5055;
+}
+html.dark div.dt-datetime table td.selectable.selected button,
+:root[data-theme=dark] div.dt-datetime table td.selectable.selected button,
+:root[data-bs-theme=dark] div.dt-datetime table td.selectable.selected button {
+  background: #6ea8fe;
+  color: black;
+}
+html.dark div.dt-datetime table td.selectable button:hover,
+:root[data-theme=dark] div.dt-datetime table td.selectable button:hover,
+:root[data-bs-theme=dark] div.dt-datetime table td.selectable button:hover {
+  background: #ff8000;
+  color: black;
+}
+html.dark div.dt-datetime div.dt-datetime-label:hover,
+:root[data-theme=dark] div.dt-datetime div.dt-datetime-label:hover,
+:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-label:hover {
+  border: 1px solid transparent;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+html.dark div.dt-datetime div.dt-datetime-iconLeft:hover,
+html.dark div.dt-datetime div.dt-datetime-iconRight:hover,
+html.dark div.dt-datetime div.dt-datetime-iconUp:hover,
+html.dark div.dt-datetime div.dt-datetime-iconDown:hover,
+:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconLeft:hover,
+:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconRight:hover,
+:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconUp:hover,
+:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconDown:hover,
+:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconLeft:hover,
+:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconRight:hover,
+:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconUp:hover,
+:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconDown:hover {
+  border: 1px solid transparent;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+html.dark div.dt-datetime div.dt-datetime-iconLeft:after,
+:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconLeft:after,
+:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconLeft:after {
+  border-right-color: white;
+}
+html.dark div.dt-datetime div.dt-datetime-iconRight:after,
+:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconRight:after,
+:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconRight:after {
+  border-left-color: white;
+}
+html.dark div.dt-datetime select,
+:root[data-theme=dark] div.dt-datetime select,
+:root[data-bs-theme=dark] div.dt-datetime select {
+  color-scheme: dark;
+}
+html.dark div.dt-datetime-error,
+:root[data-theme=dark] div.dt-datetime-error,
+:root[data-bs-theme=dark] div.dt-datetime-error {
+  color: #b11f1f;
+}
 
 table.dataTable thead tr > .dtfc-fixed-start,
 table.dataTable thead tr > .dtfc-fixed-end,

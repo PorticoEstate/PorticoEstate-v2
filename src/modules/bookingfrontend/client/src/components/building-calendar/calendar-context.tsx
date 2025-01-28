@@ -53,7 +53,7 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 
     const tempEvents: Record<string, FCallTempEvent> = useMemo(() => {
         return (cartItems?.list || []).reduce<Record<string, FCallTempEvent>>((all, curr) => {
-            if(!curr.resources.some(res => res.building_id != null && +res.building_id === +props.currentBuilding)){
+            if(!curr.resources?.some(res => res.building_id != null && +res.building_id === +props.currentBuilding)){
                 return all;
             }
 

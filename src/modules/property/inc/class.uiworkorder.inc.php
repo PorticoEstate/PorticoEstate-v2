@@ -2019,18 +2019,18 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 
 		$project = (isset($values['project_id']) ? $boproject->read_single_mini($values['project_id']) : '');
 
-		if($project)
+		if ($project)
 		{
 			$external_project_id = $project['external_project_id'];
 
 			$external_project = execMethod('property.bogeneric.read_single', array(
-					'id'			 => $external_project_id,
-					'location_info'	 => array(
-						'type' => 'external_project'
-					)
-				));
+				'id'			 => $external_project_id,
+				'location_info'	 => array(
+					'type' => 'external_project'
+				)
+			));
 
-			if($external_project['eco_service_id'])
+			if ($external_project['eco_service_id'])
 			{
 				$values['service_id'] = $external_project['eco_service_id'];
 			}
@@ -2274,8 +2274,10 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 		else
 		{
 			$b_account_list = execMethod('property.bogeneric.get_list', array(
-				'type'		 => 'budget_account', 'selected'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
-				'add_empty'	 => true, 'filter'	 => array('active' => 1)
+				'type'		 => 'budget_account',
+				'selected'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
+				'add_empty'	 => true,
+				'filter'	 => array('active' => 1)
 			));
 		}
 
@@ -2578,7 +2580,8 @@ JS;
 			'container'	 => 'datatable-container_1',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.uiworkorder.get_files',
-				'id'				 => $id, 'phpgw_return_as'	 => 'json'
+				'id'				 => $id,
+				'phpgw_return_as'	 => 'json'
 			))),
 			'data'		 => json_encode(array()),
 			'ColumnDefs' => $files_def,
@@ -3275,11 +3278,16 @@ JS;
 					$_filter_buildingpart = array("filter_{$filter_key}" => 1);
 				}
 				$building_part_list	 = array('options' => $this->bocommon->select_category_list(array(
-					'type'		 => 'building_part', 'selected'	 => $values['building_part'], 'order'		 => 'id',
-					'id_in_name' => 'num', 'filter'	 => $_filter_buildingpart
+					'type'		 => 'building_part',
+					'selected'	 => $values['building_part'],
+					'order'		 => 'id',
+					'id_in_name' => 'num',
+					'filter'	 => $_filter_buildingpart
 				)));
 				$order_dim1_list	 = array('options' => $this->bocommon->select_category_list(array(
-					'type'		 => 'order_dim1', 'selected'	 => $values['order_dim1'], 'order'		 => 'id',
+					'type'		 => 'order_dim1',
+					'selected'	 => $values['order_dim1'],
+					'order'		 => 'id',
 					'id_in_name' => 'num'
 				)));
 			}
@@ -3467,6 +3475,29 @@ JS;
 				array('order' => json_encode(array(1, 'asc'))),
 			)
 		);
+
+		if (!empty($_location_data['location_code']))
+		{
+			$location_exceptions = $bolocation->get_location_exception($_location_data['location_code']);
+
+			foreach ($location_exceptions as $location_exception)
+			{
+				$message = $location_exception['severity'];
+				if ($location_exception['category'])
+				{
+					$message .= "/{$location_exception['category']}";
+				}
+				if ($location_exception['category_text'])
+				{
+					$message .= ": {$location_exception['category_text']}";
+				}
+				if ($location_exception['location_descr'])
+				{
+					$message .= "<br/> {$location_exception['location_descr']}";
+				}
+				Cache::message_set($message, $location_exception['alert_vendor'] == 1 ? 'error' : 'message');
+			}
+		}
 
 		$delivery_address = $values['delivery_address'] ? $values['delivery_address'] : $project['delivery_address'];
 
@@ -4068,8 +4099,10 @@ JS;
 		else
 		{
 			$b_account_list = execMethod('property.bogeneric.get_list', array(
-				'type'		 => 'budget_account', 'selected'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
-				'add_empty'	 => true, 'filter'	 => array('active' => 1)
+				'type'		 => 'budget_account',
+				'selected'	 => $values['b_account_id'] ? $values['b_account_id'] : $project['b_account_id'],
+				'add_empty'	 => true,
+				'filter'	 => array('active' => 1)
 			));
 		}
 
@@ -4142,7 +4175,9 @@ JS;
 			'value_service_id'			 => $values['service_id'],
 			'value_service_name'		 => $this->_get_eco_service_name($values['service_id']),
 			'tax_code_list'				 => array('options' => $this->bocommon->select_category_list(array(
-				'type'		 => 'tax', 'selected'	 => $values['tax_code'], 'order'		 => 'id',
+				'type'		 => 'tax',
+				'selected'	 => $values['tax_code'],
+				'order'		 => 'id',
 				'id_in_name' => 'num'
 			))),
 			'contract_list'				 => array('options' => $this->get_vendor_contract($values['vendor_id'], $values['contract_id'])),

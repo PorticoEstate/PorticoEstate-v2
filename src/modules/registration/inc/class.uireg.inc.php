@@ -55,7 +55,6 @@ class registration_uireg
 		$this->config			 = $this->bo->config;
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->phpgwapi_common = new \phpgwapi_common();
-
 	}
 
 	function set_header_footer_blocks()
@@ -71,7 +70,7 @@ class registration_uireg
 	{
 		if (!empty($this->config['debug']))
 		{
-			$headers = getallheaders();
+			$headers = array_change_key_case(getallheaders(), CASE_LOWER);
 			_debug_array($headers);
 		}
 		if (!$sub)
@@ -141,7 +140,8 @@ class registration_uireg
 		}
 
 		$this->template->set_var('form_action', phpgw::link('/registration/', array(
-			'menuaction'	 => 'registration.boreg.step1', 'logindomain'	 => $_REQUEST['logindomain']
+			'menuaction'	 => 'registration.boreg.step1',
+			'logindomain'	 => $_REQUEST['logindomain']
 		)));
 		$this->template->set_var('lang_username', lang('Username'));
 		$this->template->set_var('lang_submit', lang('Submit'));
@@ -284,7 +284,8 @@ HTML;
 		}
 
 		$this->template->set_var('form_action', phpgw::link('/registration/', array(
-			'menuaction'	 => 'registration.boreg.step2', 'logindomain'	 => $_REQUEST['logindomain']
+			'menuaction'	 => 'registration.boreg.step2',
+			'logindomain'	 => $_REQUEST['logindomain']
 		)));
 		$this->template->set_var('lang_password', lang('Password'));
 		$this->template->set_var('lang_reenter_password', lang('Re-enter password'));
@@ -369,7 +370,8 @@ HTML;
 		}
 
 		$this->template->set_var('form_action', phpgw::link('/registration/', array(
-			'menuaction'	 => 'registration.boreg.lostpw1', 'logindomain'	 => $_REQUEST['logindomain']
+			'menuaction'	 => 'registration.boreg.lostpw1',
+			'logindomain'	 => $_REQUEST['logindomain']
 		)));
 		$this->template->set_var('input_type', $input_type);
 		$this->template->set_var('lang_explain', lang('After you enter your username, instructions to change your password will be sent to you by e-mail to the address you gave when you registered.'));
@@ -398,7 +400,8 @@ HTML;
 		}
 
 		$this->template->set_var('form_action', phpgw::link('/registration/', array(
-			'menuaction'	 => 'registration.boreg.lostpw3', 'logindomain'	 => $_REQUEST['logindomain']
+			'menuaction'	 => 'registration.boreg.lostpw3',
+			'logindomain'	 => $_REQUEST['logindomain']
 		)));
 		$this->template->set_var('value_username', $lid);
 		$this->template->set_var('lang_changepassword', lang("Change password for user"));
@@ -617,7 +620,8 @@ HTML;
 			/* ($this->config['activate_account'] == 'immediately') */
 			phpgw::redirect_link('/registration/', array(
 				'menuaction'	 => 'registration.boreg.step4',
-				'reg_id'		 => $reg_id, 'logindomain'	 => $_REQUEST['logindomain']
+				'reg_id'		 => $reg_id,
+				'logindomain'	 => $_REQUEST['logindomain']
 			));
 		}
 	}

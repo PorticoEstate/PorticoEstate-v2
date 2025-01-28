@@ -19,7 +19,6 @@ class booking_async_task
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->flags = Settings::getInstance()->get('flags');
-		
 	}
 
 	public function doRun($task_args)
@@ -41,6 +40,7 @@ class booking_async_task
 			'booking.async_task_delete_participants',
 			'booking.async_task_delete_expired_blocks',
 			'booking.async_task_delete_access_log',
+			'booking.async_task_clean_up_old_posts',
 			'booking.async_task_anonyminizer'
 		);
 	}
@@ -66,7 +66,11 @@ class booking_async_task
 	{
 		/* array('min' => '1', 'hour'  => '0', 'dow'  => '*', 'day'  => '*', 'month' => '*', 'year' => '*'), */
 		return array(
-			'min' => '*', 'hour' => '*', 'dow' => '*', 'day' => '*', 'month' => '*',
+			'min' => '*',
+			'hour' => '*',
+			'dow' => '*',
+			'day' => '*',
+			'month' => '*',
 			'year' => '*'
 		);
 	}

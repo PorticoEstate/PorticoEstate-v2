@@ -6,6 +6,7 @@ use App\Database\Db;
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\User;
+use App\modules\phpgwapi\security\Sessions;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -64,6 +65,27 @@ class BookingUserController
         try
         {
             $bouser = new UserHelper();
+
+
+            if (!$bouser->is_logged_in()) {
+//                $sessions = Sessions::getInstance();
+//                $sessionId = $sessions->get_session_id();
+//                $verified = $sessions->verify();
+
+                return ResponseHelper::sendErrorResponse([
+                    'error' => 'Not authenticated',
+//                    'debug' => [
+//                        'session_present' => !!$sessions->get_session_id(),
+//                        'session_verified' => $sessions->verify(),
+//                        'session_id' => $sessions->get_session_id(),
+//                        'orgnr' => $bouser->orgnr,
+//                        'ssn' => $bouser->ssn,
+//                        'org_id' => $bouser->org_id,
+//                        'orgname' => $bouser->orgname
+//                    ]
+                ], 401);
+            }
+
 
             // Check if user is logged in first
             if (!$bouser->is_logged_in())

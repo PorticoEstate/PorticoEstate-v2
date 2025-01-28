@@ -22,46 +22,46 @@ class Application
      * @Expose
      * @Short
      */
-    public $id;
+    public int $id;
 
     /**
      * @OA\Property(type="string")
      * @Expose
      */
-    public $id_string;
+    public string $id_string;
 
     /**
      * @OA\Property(type="integer")
      * @Expose
      */
-    public $active;
+    public int $active;
 
     /**
      * @OA\Property(type="integer")
      * @Expose
      */
-    public $display_in_dashboard;
+    public int $display_in_dashboard;
 
     /**
      * @OA\Property(type="string")
      * @Expose
      * @Short
      */
-    public $type;
+    public string $type;
 
     /**
      * @OA\Property(type="string")
      * @Expose
      * @Short
      */
-    public $status;
+    public string $status;
 
     /**
      * @OA\Property(type="string")
      * @Expose
      * @Short
      */
-    public $secret;
+    public string $secret;
 
     /**
      * @OA\Property(type="string", format="date-time")
@@ -184,6 +184,20 @@ class Application
     public $contact_phone;
 
     /**
+     * @OA\Property(
+     *     type="array",
+     *     @OA\Items(
+     *         type="object",
+     *         @OA\Property(property="agegroup_id", type="integer"),
+     *         @OA\Property(property="male", type="integer"),
+     *         @OA\Property(property="female", type="integer")
+     *     )
+     * )
+     * @Expose
+     */
+    public $agegroups;
+
+    /**
      * @OA\Property(type="array", @OA\Items(type="integer"))
      * @Expose
      */
@@ -211,6 +225,13 @@ class Application
      * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Order")
      */
     public $orders;
+
+    /**
+     * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Document"))
+     * @Expose
+     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Document")
+     */
+    public array $documents;
 
     /**
      * @OA\Property(type="string")

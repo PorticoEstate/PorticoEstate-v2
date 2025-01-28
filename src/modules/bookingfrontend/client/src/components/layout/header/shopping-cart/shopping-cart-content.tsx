@@ -70,7 +70,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
 
     const [expandedId, setExpandedId] = useState<number>();
     const getStartTime = (application: IApplication) => {
-        if (application.dates.length === 1) {
+        if ((application.dates?.length || 0) === 1) {
             const from = applicationTimeToLux(application.dates[0].from_);
             const to = applicationTimeToLux(application.dates[0].to_);
             return formatDateRange(from, to, i18n).join(' | ');
@@ -82,7 +82,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                     padding: 0
                 }}>
 
-                {application.dates.map((date) => {
+                {application.dates?.map((date) => {
                     const from = applicationTimeToLux(date.from_);
                     const to = applicationTimeToLux(date.to_);
 
@@ -90,7 +90,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                 })}
             </List.Unordered>
         }
-        return <span><Badge count={application.dates.length} color={'neutral'}/> Flere tidspunkt</span>
+        return <span><Badge count={application.dates?.length || 0} color={'neutral'}/> Flere tidspunkt</span>
     }
 
 
@@ -158,7 +158,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                                         {item.building_name}
                                     </Table.Cell>
                                     <Table.Cell>
-                                        <ResourceCircles resources={item.resources} maxCircles={4} size={'small'} isExpanded={expandedId === item.id} />
+                                        <ResourceCircles resources={item.resources || []} maxCircles={4} size={'small'} isExpanded={expandedId === item.id} />
                                     </Table.Cell>
                                     <Table.Cell>
 

@@ -1,6 +1,7 @@
 import {keepPreviousData, useMutation, useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
 import {IBookingUser} from "@/service/types/api.types";
 import {
+    fetchBuildingAgeGroups, fetchBuildingAudience,
     fetchBuildingSchedule,
     fetchDeliveredApplications,
     fetchInvoices,
@@ -12,6 +13,7 @@ import {phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useEffect} from "react";
+import {IAgeGroup, IAudience} from "@/service/types/Building";
 
 
 interface UseScheduleOptions {
@@ -132,7 +134,6 @@ export function useBookingUser() {
             return response.json();
         },
         retry: (failureCount, error: AuthenticationError | Error) => {
-            console.log('useBookingUser', failureCount, error);
             // Don't retry on 401
             if (error instanceof AuthenticationError && error.statusCode === 401) {
                 return false;
@@ -147,26 +148,62 @@ export function useBookingUser() {
 }
 
 
+export function useLogin() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async () => {
+            const url = phpGWLink(['bookingfrontend', 'auth', 'login']);
+            const response = await fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('Login failed');
+            }
+
+            return response.json();
+        },
+        onSuccess: () => {
+            // Refetch user data after successful login
+            queryClient.invalidateQueries({queryKey: ['bookingUser']});
+        },
+    });
+}
+
+// Update the existing useLogout hook
 export function useLogout() {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async () => {
-            const url = phpGWLink(['bookingfrontend', 'logout']);
+            const url = phpGWLink(['bookingfrontend', 'auth', 'logout']);
             const response = await fetch(url, {
+                method: 'POST',
                 credentials: 'include',
             });
 
             if (!response.ok) {
                 throw new Error('Logout failed');
             }
+
+            const data = await response.json();
+
+            // Handle external logout if provided
+            if (data.external_logout_url) {
+                window.location.href = data.external_logout_url;
+                return;
+            }
+
+            return data;
         },
         onSuccess: () => {
+            // Clear user data after successful logout
             queryClient.setQueryData(['bookingUser'], null);
         },
     });
 }
-
 
 export function useUpdateBookingUser() {
     const queryClient = useQueryClient();
@@ -198,7 +235,6 @@ export function useUpdateBookingUser() {
         }
     })
 }
-
 
 
 export function usePartialApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
@@ -235,16 +271,19 @@ export function useInvoices(): UseQueryResult<ICompletedReservation[]> {
 }
 
 
-
 export function useCreatePartialApplication() {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async (newApplication: Partial<NewPartialApplication>) => {
             const url = phpGWLink(['bookingfrontend', 'applications', 'partials']);
+            const data = {
+                ...newApplication,
+                agegroups: newApplication.agegroups?.map(a => ({agegroup_id: a.id, male: a.male, female: a.female}))
+            }
             const response = await fetch(url, {
                 method: 'POST',
-                body: JSON.stringify(newApplication),
+                body: JSON.stringify(data),
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -267,11 +306,15 @@ export function useUpdatePartialApplication() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async ({id, application}: {id: number, application: IUpdatePartialApplication}) => {
+        mutationFn: async ({id, application}: { id: number, application: IUpdatePartialApplication }) => {
             const url = phpGWLink(['bookingfrontend', 'applications', 'partials', id]);
-            const data: Omit<IUpdatePartialApplication, 'resources'> & {resources?: number[]} = {
+            const data: Omit<IUpdatePartialApplication, 'resources' | 'agegroups'> & {
+                resources?: number[],
+                agegroups?: any[]
+            } = {
                 ...application,
-                resources: application.resources?.map(a => a.id)
+                resources: application.resources?.map(a => a.id),
+                agegroups: application.agegroups?.map(a => ({agegroup_id: a.id, male: a.male, female: a.female}))
             }
             const response = await fetch(url, {
                 method: 'PATCH',
@@ -293,7 +336,10 @@ export function useUpdatePartialApplication() {
             console.log("update partial application", id, application);
 
             // Snapshot current applications
-            const previousApplications = queryClient.getQueryData<{list: IApplication[], total_sum: number}>(['partialApplications']);
+            const previousApplications = queryClient.getQueryData<{
+                list: IApplication[],
+                total_sum: number
+            }>(['partialApplications']);
 
             // Optimistically update applications list
             if (previousApplications) {
@@ -319,11 +365,12 @@ export function useUpdatePartialApplication() {
         },
     });
 }
+
 export function useDeletePartialApplication() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (id:number) => {
+        mutationFn: async (id: number) => {
             const url = phpGWLink(['bookingfrontend', 'applications', id]);
             const response = await fetch(url, {method: 'DELETE'});
 
@@ -333,12 +380,15 @@ export function useDeletePartialApplication() {
 
             return id
         },
-        onMutate: async (id:number) => {
+        onMutate: async (id: number) => {
             // Cancel any outgoing refetches to avoid overwriting optimistic update
             await queryClient.cancelQueries({queryKey: ['partialApplications']});
 
             // Snapshot current applications
-            const previousApplications = queryClient.getQueryData<{list: IApplication[], total_sum: number}>(['partialApplications']);
+            const previousApplications = queryClient.getQueryData<{
+                list: IApplication[],
+                total_sum: number
+            }>(['partialApplications']);
 
             // Optimistically update applications list
             if (previousApplications) {
@@ -362,5 +412,90 @@ export function useDeletePartialApplication() {
             // Always refetch after error or success to ensure data is correct
             queryClient.invalidateQueries({queryKey: ['partialApplications']});
         },
+    });
+}
+
+
+export function useBuildingAgeGroups(building_id: number): UseQueryResult<IAgeGroup[]> {
+    return useQuery(
+        {
+            queryKey: ['building_agegroups', building_id],
+            queryFn: () => fetchBuildingAgeGroups(building_id), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+        }
+    );
+}
+
+
+export function useBuildingAudience(building_id: number): UseQueryResult<IAudience[]> {
+    return useQuery(
+        {
+            queryKey: ['building_audience', building_id],
+            queryFn: () => fetchBuildingAudience(building_id), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+        }
+    );
+}
+
+
+interface UploadDocumentParams {
+    id: number;
+    files: FormData;
+}
+
+export function useUploadApplicationDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({id, files}: UploadDocumentParams) => {
+            const url = phpGWLink(['bookingfrontend', 'applications', id, 'documents']);
+            const response = await fetch(url, {
+                method: 'POST',
+                body: files,
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to upload documents');
+            }
+
+            return response.json();
+        },
+        onSuccess: (data, variables) => {
+            // Invalidate and refetch partial applications to update documents list
+            queryClient.invalidateQueries({
+                queryKey: ['partialApplications']
+            });
+
+            // Could also invalidate specific application if needed
+            queryClient.invalidateQueries({
+                queryKey: ['partialApplications', variables.id]
+            });
+        }
+    });
+}
+export function useDeleteApplicationDocument() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (documentId: number) => {
+            const url = phpGWLink(['bookingfrontend', 'applications', 'document', documentId]);
+            const response = await fetch(url, {
+                method: 'DELETE',
+                credentials: 'include'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete document');
+            }
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({
+                queryKey: ['partialApplications']
+            });
+        }
     });
 }

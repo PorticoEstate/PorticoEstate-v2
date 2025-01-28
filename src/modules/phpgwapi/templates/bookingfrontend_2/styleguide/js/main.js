@@ -218,51 +218,65 @@ function formatDateToDateTimeString(date) {
 }
 
 
-
 function GenerateDateTime(start, end) {
+    // const { DateTime } = luxon;
+    const timezone = "Europe/Oslo"; // Change this to your desired timezone
+
+    const DateTime = {
+        fromJSDate: (...a) => luxon.DateTime.fromJSDate(...a).setZone(timezone),
+        fromMillis:(...a) => luxon.DateTime.fromMillis(...a).setZone(timezone),
+    }
+    luxon.Settings.defaultZoneName = timezone
     const toDate = value => {
         if (typeof value === 'number') {
-            return new Date(value);
+            return DateTime.fromMillis(value).setZone(timezone);
         }
         if (value instanceof luxon.DateTime) {
-            return value.toJSDate();
+            return value;
         }
-        return value;
-    }
-    const options = {hour: '2-digit', minute: '2-digit'};
+        return DateTime.fromJSDate(value).setZone(timezone);
+    };
+
+
+
+    const options = 'HH.mm'; // Luxon formatting for Norwegian-style time
+
+    /** @type {luxon.DateTime} */
     const startTime = toDate(start);
+
+    /** @type {luxon.DateTime} */
     const endTime = toDate(end);
 
-    const startDate = `${startTime.getDate()}. ${monthNamesShort[startTime.getMonth()].toLowerCase()}`
-    if ((startTime.getMonth() === endTime.getMonth() && startTime.getFullYear() === endTime.getFullYear() && startTime.getDate() === endTime.getDate())) {
-        // language=HTML
+    console.log(startTime.zoneName)
+    console.log(luxon.Info.features())
+
+    // Format dates
+    const startDate = `${startTime.day}. ${startTime.toFormat('MMM').toLowerCase()}`;
+    const endDate = `${endTime.day}. ${endTime.toFormat('MMM').toLowerCase()}`;
+
+    if (startTime.hasSame(endTime, 'day')) {
         return `
-            <!--            <div class="single-date">-->
             <div class="date">
-                <span className="text-primary text-bold">${startDate}</span>
+                <span class="text-primary text-bold">${startDate}</span>
             </div>
             <div class="time">
-                ${startTime.toLocaleTimeString('no', options).replace(':', '.')} -
-                ${endTime.toLocaleTimeString('no', options).replace(':', '.')}
+                ${startTime.toFormat(options)} - ${endTime.toFormat(options)}
             </div>
-            <!--            </div>-->
-        `
+        `;
     }
 
-    const endDate = `${endTime.getDate()}. ${monthNamesShort[endTime.getMonth()].toLowerCase()}`
-
-    // language=HTML
     return `
         <div class="multi-date">
             <div class="date"><span class="text-primary text-bold">${startDate}</span>
-                ${startTime.toLocaleTimeString('no', options).replace(':', '.')} -
+                ${startTime.toFormat(options)} -
             </div>
-            <div  class="time"><span class="text-primary text-bold">${endDate}</span>
-                ${endTime.toLocaleTimeString('no', options).replace(':', '.')}
+            <div class="time"><span class="text-primary text-bold">${endDate}</span>
+                ${endTime.toFormat(options)}
             </div>
         </div>
-    `
+    `;
 }
+
 
 
 /**

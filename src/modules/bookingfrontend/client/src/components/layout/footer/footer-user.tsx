@@ -1,6 +1,6 @@
 'use client'
 import {FC, useEffect, useState} from 'react';
-import {useBookingUser} from "@/service/hooks/api-hooks";
+import {useBookingUser, useLogout} from "@/service/hooks/api-hooks";
 import Link from "next/link";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {phpGWLink} from "@/service/util";
@@ -14,6 +14,7 @@ interface FooterUserProps {
 
 const FooterUser: FC<FooterUserProps> = (props) => {
     const bookingUserQ = useBookingUser();
+    const logout = useLogout();
     const queryClient = useQueryClient();
     const params = useSearchParams();
     const [lastParam, setLastParam] = useState<string>();
@@ -28,6 +29,14 @@ const FooterUser: FC<FooterUserProps> = (props) => {
         }
 
     }, [params, queryClient, lastParam]);
+
+    const handleLogout = async () => {
+        try {
+            await logout.mutateAsync();
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    };
     const t = useTrans();
     const {data: bookingUser, isLoading} = bookingUserQ;
     return (

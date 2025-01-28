@@ -1,18 +1,16 @@
-import React, {Dispatch, FC, MutableRefObject, useEffect, useMemo} from 'react';
+import React, {Dispatch, FC, MutableRefObject} from 'react';
 import {Badge, Button} from "@digdir/designsystemet-react";
 import {ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
 import styles from './calendar-inner-header.module.scss';
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import CalendarDatePicker from "@/components/building-calendar/modules/header/calendar-date-picker";
+import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import FullCalendar from "@fullcalendar/react";
 import ButtonGroup from "@/components/button-group/button-group";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCalendar} from "@fortawesome/free-regular-svg-icons";
-import {faArrowRightLong, faLayerGroup, faTableList} from "@fortawesome/free-solid-svg-icons";
+import {faLayerGroup, faPlus, faTableList} from "@fortawesome/free-solid-svg-icons";
 import {useEnabledResources, useResourcesHidden, useTempEvents} from "@/components/building-calendar/calendar-context";
-import {phpGWLink} from "@/service/util";
-import Link from "next/link";
 
 interface CalendarInnerHeaderProps {
 
@@ -21,7 +19,7 @@ interface CalendarInnerHeaderProps {
     view: string;
     building: IBuilding;
     calendarRef: MutableRefObject<FullCalendar | null>;
-
+    createNew: () => void;
 }
 
 const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
@@ -31,17 +29,6 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
     const {tempEvents} = useTempEvents();
     const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
 
-
-    const applicationURL = useMemo(() => {
-        const params = {
-            menuaction: 'bookingfrontend.uiapplication.add',
-            building_id: props.building.id,
-            resources: [...enabledResources],
-            dates: Object.values(tempEvents).map((ev) => `${Math.floor(ev.start.getTime() / 1000)}_${Math.floor(ev.end.getTime() / 1000)}`)
-
-        }
-        return phpGWLink('bookingfrontend/', params, false);
-    }, [tempEvents, props.building, enabledResources]);
 
     const c = calendarRef.current;
 
@@ -86,8 +73,13 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
                         width: '100%'
                     }}/>
                 </Button>
-                <CalendarDatePicker currentDate={currentDate} view={c.getApi().view.type}
-                                    onDateChange={(v) => v && calendarApi.gotoDate(v)}/>
+                <CalendarDatePicker
+                    currentDate={currentDate}
+                    view={c.getApi().view.type}
+                    onDateChange={(v) => v && calendarApi.gotoDate(v)}
+                    // timeIntervals={30}
+                    // dateFormat="dd.MM.yyyy HH:mm"
+                />
                 <Button icon={true} data-size={'sm'} variant='tertiary' style={{borderRadius: "50%"}}
                         onClick={() => {
                             if (c) {
@@ -131,16 +123,16 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
                 }}><FontAwesomeIcon icon={faTableList}/> <span
                     className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
             </ButtonGroup>
-            <Button variant={'primary'} asChild data-size={'sm'} className={styles.orderButton}>
-                <Link href={applicationURL}>
-                    {t('bookingfrontend.to application site')}
+            <Button variant={'primary'} onClick={props.createNew} data-size={'sm'} className={styles.orderButton}>
+                {/*<Link href={applicationURL}>*/}
+                    {t('bookingfrontend.new application')}
                     {Object.values(tempEvents).length > 0 &&
                         <Badge count={Object.values(tempEvents).length}
                                color={'info'} data-size={'sm'}>
 
                         </Badge>}
-                    <FontAwesomeIcon icon={faArrowRightLong}/>
-                </Link>
+                    <FontAwesomeIcon icon={faPlus}/>
+                {/*</Link>*/}
 
             </Button>
         </div>

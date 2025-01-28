@@ -53,6 +53,6 @@ $(document).ready(function ()
 		decimalCharacter: ",",
 		digitGroupSeparator: " "
 	});
-	console.log(anElement);
+	//console.log(anElement);
 });
 

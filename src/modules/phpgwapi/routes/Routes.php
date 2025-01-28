@@ -11,6 +11,11 @@ use App\modules\phpgwapi\helpers\LoginHelper;
 use App\modules\phpgwapi\helpers\RedirectHelper;
 use Slim\Routing\RouteCollectorProxy;
 
+// Handle requests for favicon.ico
+$app->get('/favicon.ico', function (Request $request, Response $response)
+{
+	return $response->withStatus(204);
+});
 
 $app->get('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->post('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
@@ -24,7 +29,7 @@ $app->post('/preferences/', PreferenceHelper::class . ':index')->add(new Session
 // Define a factory for the Preferences singleton in the container
 $container->set(PreferenceHelper::class, function ($container)
 {
-    return PreferenceHelper::getInstance();
+	return PreferenceHelper::getInstance();
 });
 
 $app->get('/preferences/section', PreferenceHelper::class . ':section')->add(new SessionsMiddleware($app->getContainer()));
@@ -37,11 +42,11 @@ $app->get('/home/', HomeHelper::class . ':processHome')->add(new SessionsMiddlew
 
 $app->get('/swagger[/{params:.*}]', function (Request $request, Response $response)
 {
-    $json_file = __DIR__ . '/../../../../swagger.json';
-    $json = file_get_contents($json_file);
-    $response = $response->withHeader('Content-Type', 'application/json');
-    $response->getBody()->write($json);
-    return $response;
+	$json_file = __DIR__ . '/../../../../swagger.json';
+	$json = file_get_contents($json_file);
+	$response = $response->withHeader('Content-Type', 'application/json');
+	$response->getBody()->write($json);
+	return $response;
 });
 
 
@@ -55,23 +60,23 @@ $app->post('/login_ui[/{params:.*}]', LoginHelper::class . ':processLogin');
 $app->get('/login[/{params:.*}]', function (Request $request, Response $response) use ($phpgw_domain)
 {
 
-    $last_domain = \Sanitizer::get_var('last_domain', 'string', 'COOKIE', false);
-    $domainOptions = '';
-    foreach (array_keys($phpgw_domain) as $domain)
-    {
-        $selected = ($domain === $last_domain) ? 'selected' : '';
-        $domainOptions .= "<option value=\"$domain\" $selected>$domain</option>";
-    }
+	$last_domain = \Sanitizer::get_var('last_domain', 'string', 'COOKIE', false);
+	$domainOptions = '';
+	foreach (array_keys($phpgw_domain) as $domain)
+	{
+		$selected = ($domain === $last_domain) ? 'selected' : '';
+		$domainOptions .= "<option value=\"$domain\" $selected>$domain</option>";
+	}
 
-    $sectionOptions = "<option value=\"\">None</option>";
-    $sections = ['activitycalendarfrontend', 'bookingfrontend', 'eventplannerfrontend', 'mobilefrontend'];
-    foreach ($sections as $section)
-    {
-        $sectionOptions .= "<option value=\"$section\">$section</option>";
-    }
+	$sectionOptions = "<option value=\"\">None</option>";
+	$sections = ['activitycalendarfrontend', 'bookingfrontend', 'eventplannerfrontend', 'mobilefrontend'];
+	foreach ($sections as $section)
+	{
+		$sectionOptions .= "<option value=\"$section\">$section</option>";
+	}
 
 
-    $html = '
+	$html = '
         <!DOCTYPE html>
         <html>
         <head>
@@ -106,74 +111,75 @@ $app->get('/login[/{params:.*}]', function (Request $request, Response $response
         </body>
         </html>
     ';
-    $response = $response->withHeader('Content-Type', 'text/html');
-    $response->getBody()->write($html);
-    return $response;
+	$response = $response->withHeader('Content-Type', 'text/html');
+	$response->getBody()->write($html);
+	return $response;
 });
 
 
 $app->post('/login', function (Request $request, Response $response)
 {
-    // Get the session ID
-    $session_id = session_id();
+	// Get the session ID
+	$session_id = session_id();
 
-    // Prepare the response
-    $json = json_encode(['session_name' => session_name(),'session_id' => $session_id]);
-    $response = $response->withHeader('Content-Type', 'application/json');
-    $response->getBody()->write($json);
-    return $response;
+	// Prepare the response
+	$json = json_encode(['session_name' => session_name(), 'session_id' => $session_id]);
+	$response = $response->withHeader('Content-Type', 'application/json');
+	$response->getBody()->write($json);
+	return $response;
 })
-    ->addMiddleware(new App\modules\phpgwapi\middleware\LoginMiddleware($container));
+	->addMiddleware(new App\modules\phpgwapi\middleware\LoginMiddleware($container));
 
 $app->get('/refreshsession[/{params:.*}]', function (Request $request, Response $response)
 {
-    $sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
-    if (!$sessions->verify())
-    {
-        $response_str = json_encode(['message' => 'Du er ikke logget inn']);
-        $response->getBody()->write($response_str);
-        return $response->withHeader('Content-Type', 'application/json');
-    } else
-    {
-        $session_id = $sessions->get_session_id();
-        $response_str = json_encode(['session_id' => $session_id, 'fullname' => $sessions->get_user()['fullname']]);
-        $response->getBody()->write($response_str);
-        return $response->withHeader('Content-Type', 'application/json');
-    }
+	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+	if (!$sessions->verify())
+	{
+		$response_str = json_encode(['message' => 'Du er ikke logget inn']);
+		$response->getBody()->write($response_str);
+		return $response->withHeader('Content-Type', 'application/json');
+	}
+	else
+	{
+		$session_id = $sessions->get_session_id();
+		$response_str = json_encode(['session_id' => $session_id, 'fullname' => $sessions->get_user()['fullname']]);
+		$response->getBody()->write($response_str);
+		return $response->withHeader('Content-Type', 'application/json');
+	}
 });
 
 $app->get('/logout[/{params:.*}]', function (Request $request, Response $response)
 {
-    $sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
-    if (!$sessions->verify())
-    {
-        $response_str = json_encode(['message' => 'Du er ikke logget inn']);
-        $response->getBody()->write($response_str);
-        return $response->withHeader('Content-Type', 'application/json');
-    } else
-    {
-        $session_id = $sessions->get_session_id();
-        $sessions->destroy($session_id);
-        $response_str = json_encode(['message' => 'Du er logget ut']);
-        $response->getBody()->write($response_str);
-        return $response->withHeader('Content-Type', 'application/json');
-    }
+	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+	if (!$sessions->verify())
+	{
+		$response_str = json_encode(['message' => 'Du er ikke logget inn']);
+		$response->getBody()->write($response_str);
+		return $response->withHeader('Content-Type', 'application/json');
+	}
+	else
+	{
+		$session_id = $sessions->get_session_id();
+		$sessions->destroy($session_id);
+		$response_str = json_encode(['message' => 'Du er logget ut']);
+		$response->getBody()->write($response_str);
+		return $response->withHeader('Content-Type', 'application/json');
+	}
 });
 
 
 $app->get('/logout_ui[/{params:.*}]', function (Request $request, Response $response)
 {
-    $sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
-    $session_id = $sessions->get_session_id();
-    if ($session_id)
-    {
-        $sessions->destroy($session_id);
-    }
-    phpgw::redirect_link('/login_ui', array('cd' => 1, 'logout' => 1));
+	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+	$session_id = $sessions->get_session_id();
+	if ($session_id)
+	{
+		$sessions->destroy($session_id);
+	}
+	phpgw::redirect_link('/login_ui', array('cd' => 1, 'logout' => 1));
 });
 
 $app->group('/api', function (RouteCollectorProxy $group)
 {
-    $group->get('/server-settings', ServerSettingsController::class . ':index');
+	$group->get('/server-settings', ServerSettingsController::class . ':index');
 });
-

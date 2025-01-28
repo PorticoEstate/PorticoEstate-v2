@@ -76,14 +76,14 @@ class Auth extends Auth_
 		$account_id = $row['account_id'];
 		$authenticated =  $this->verify_hash($passwd, $hash);
 		$ssn = Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
-		$headers = getallheaders();
+		$headers = array_change_key_case(getallheaders(), CASE_LOWER);
 		$ssn = !empty($headers['uid']) ? $headers['uid'] : $ssn;
 		$ssn = !empty($_SERVER['HTTP_UID']) ? $_SERVER['HTTP_UID'] : $ssn;
 
 		// skip anonymous users
 		Acl::getInstance()->set_account_id($account_id);
 		//!empty($_REQUEST['skip_remote']) &&
-		if ( !Acl::getInstance($account_id)->check('anonymous', 1, 'phpgwapi') && $ssn && $authenticated)
+		if (!Acl::getInstance($account_id)->check('anonymous', 1, 'phpgwapi') && $ssn && $authenticated)
 		{
 			$this->update_hash($account_id, $ssn);
 		}

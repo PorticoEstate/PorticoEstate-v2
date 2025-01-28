@@ -78,18 +78,12 @@
 				</td>
 			</tr>
 
-			<tr class="pure-table-odd">
-				<td>{lang_Would_you_like_phpGroupWare_to_cache_data_in_shared_memory}?:</td>
-				<td>
-					<select name="newsettings[shm_enable]" class="pure-u-1">
-						<option value="">{lang_No}</option>
-						<option value="True"{selected_shm_enable_True}>{lang_Yes}</option>
-					</select>
-				</td>
+			<tr class="th">
+				<td colspan="2">&nbsp;<b>{lang_cache_settings}</b></td>
 			</tr>
 
-			<tr>
-				<td>{lang_Would_you_like_phpGroupWare_to_cache_data_in_redis_database}?:</td>
+            <tr class="pure-table-odd">
+				<td>1 {lang_Would_you_like_phpGroupWare_to_cache_data_in_redis_database}?:</td>
 				<td>
 					<select name="newsettings[redis_enable]" class="pure-u-1">
 						<option value="">{lang_No}</option>
@@ -97,13 +91,31 @@
 					</select>
 				</td>
 			</tr>
-			<tr>
+			 <tr class="pure-table-odd">
 				<td>{lang_redis_host}: (port 6379)</td>
 				<td><input size="8" name="newsettings[redis_host]" value="{value_redis_host}" class="pure-u-1"/></td>
 			</tr>
-			<tr>
+			 <tr class="pure-table-odd">
 				<td>{lang_redis_database}: (0 - 15)</td>
 				<td><input type="number" min="0" max="15" name="newsettings[redis_database]" value="{value_redis_database}" class="pure-u-1"/></td>
+			</tr>
+			<tr class="pure-table-odd">
+				<td>2 {lang_Would_you_like_phpGroupWare_to_cache_data_in_ACPu?:</td>
+				<td>
+					<select name="newsettings[apcu_enable]" class="pure-u-1">
+						<option value="">{lang_No}</option>
+						<option value="True"{selected_apcu_enable_True}>{lang_Yes}</option>
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>3 {lang_Would_you_like_phpGroupWare_to_cache_data_in_shared_memory}?:</td>
+				<td>
+					<select name="newsettings[shm_enable]" class="pure-u-1">
+						<option value="">{lang_No}</option>
+						<option value="True"{selected_shm_enable_True}>{lang_Yes}</option>
+					</select>
+				</td>
 			</tr>
 
 			<tr class="th">

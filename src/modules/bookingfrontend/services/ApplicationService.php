@@ -3,6 +3,7 @@
 namespace App\modules\bookingfrontend\services;
 
 use App\modules\bookingfrontend\models\Application;
+use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\helper\Date;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\models\Order;
@@ -13,10 +14,12 @@ use PDO;
 class ApplicationService
 {
     private $db;
+    private $documentService;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
+        $this->documentService = new DocumentService(Document::OWNER_APPLICATION);
     }
 
     public function getPartialApplications(string $session_id): array
@@ -34,12 +37,20 @@ class ApplicationService
             $application->dates = $this->fetchDates($application->id);
             $application->resources = $this->fetchResources($application->id);
             $application->orders = $this->fetchOrders($application->id);
+            $application->agegroups = $this->fetchAgeGroups($application->id);
+            $application->audience = $this->fetchTargetAudience($application->id);
+            $application->documents = $this->fetchDocuments($application->id);
             $applications[] = $application->serialize([]);
         }
 
         return $applications;
     }
 
+    private function fetchDocuments(int $application_id): array
+    {
+        $documents = $this->documentService->getDocumentsForId($application_id);
+        return $documents;
+    }
 
     public function getApplicationsBySsn(string $ssn): array
     {
@@ -58,6 +69,9 @@ class ApplicationService
             $application->dates = $this->fetchDates($application->id);
             $application->resources = $this->fetchResources($application->id);
             $application->orders = $this->fetchOrders($application->id);
+            $application->agegroups = $this->fetchAgeGroups($application->id);
+            $application->audience = $this->fetchTargetAudience($application->id);
+            $application->documents = $this->fetchDocuments($application->id);
             $applications[] = $application->serialize([]);
         }
 
@@ -144,15 +158,15 @@ class ApplicationService
         return round($total_sum, 2);
     }
 
-    public function deletePartial(int $id, string $session_id): bool
+    public function deletePartial(int $id): bool
     {
         try {
             $this->db->beginTransaction();
 
             // Verify the application exists and belongs to the current session
-            $sql = "SELECT id FROM bb_application WHERE id = :id AND session_id = :session_id AND status = 'NEWPARTIAL1'";
+            $sql = "SELECT id FROM bb_application WHERE id = :id AND status = 'NEWPARTIAL1'";
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([':id' => $id, ':session_id' => $session_id]);
+            $stmt->execute([':id' => $id]);
 
             if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
                 throw new Exception("Application not found or not owned by the current session");
@@ -182,6 +196,12 @@ class ApplicationService
 
     private function deleteAssociatedData(int $application_id): void
     {
+
+
+        $documents = $this->documentService->getDocumentsForId($application_id);
+        foreach ($documents as $document) {
+            $this->documentService->deleteDocument($document->id);
+        }
         // Order matters here due to foreign key constraints
         $tables = [
             'bb_purchase_order_line',
@@ -218,6 +238,7 @@ class ApplicationService
         try {
             $this->db->beginTransaction();
 
+            // Save main application data
             if (!empty($data['id'])) {
                 $receipt = $this->updateApplication($data);
                 $id = $data['id'];
@@ -227,18 +248,26 @@ class ApplicationService
                 $this->update_id_string();
             }
 
-            // Handle purchase orders if present
+            // Save age groups if present
+            if (!empty($data['agegroups'])) {
+                $this->saveApplicationAgeGroups($id, $data['agegroups']);
+            }
+
+            // Save target audience if present
+            if (!empty($data['audience'])) {
+                $this->saveApplicationTargetAudience($id, $data['audience']);
+            }
+
+            // Handle other related data...
             if (!empty($data['purchase_order']['lines'])) {
                 $data['purchase_order']['application_id'] = $id;
                 $this->savePurchaseOrder($data['purchase_order']);
             }
 
-            // Handle resource mappings
             if (!empty($data['resources'])) {
                 $this->saveApplicationResources($id, $data['resources']);
             }
 
-            // Handle dates
             if (!empty($data['dates'])) {
                 $this->saveApplicationDates($id, $data['dates']);
             }
@@ -274,6 +303,12 @@ class ApplicationService
 
         // Get associated dates
         $result['dates'] = $this->fetchDates($id);
+
+        // Get age groups
+        $result['agegroups'] = $this->fetchAgeGroups($id);
+
+        // Get target audience
+        $result['audience'] = $this->fetchTargetAudience($id);
 
         // Get purchase orders if any
         $result['purchase_order'] = $this->fetchOrders($id);
@@ -477,6 +512,92 @@ class ApplicationService
             ':parent_mapping_id' => $line['parent_mapping_id'] ?? null
         ]);
     }
+
+    private function fetchAgeGroups(int $application_id): array
+    {
+        $sql = "SELECT ag.*, aag.male, aag.female
+                FROM bb_application_agegroup aag
+                JOIN bb_agegroup ag ON aag.agegroup_id = ag.id
+                WHERE aag.application_id = :application_id
+                ORDER BY ag.sort";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $application_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    private function fetchTargetAudience(int $application_id): array
+    {
+        $sql = "SELECT ta.id
+                FROM bb_application_targetaudience ata
+                JOIN bb_targetaudience ta ON ata.targetaudience_id = ta.id
+                WHERE ata.application_id = :application_id
+                ORDER BY ta.sort";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $application_id]);
+        return array_column($stmt->fetchAll(PDO::FETCH_ASSOC), 'id');
+    }
+
+    public function saveApplicationAgeGroups(int $application_id, array $agegroups): void
+    {
+//        $this->db->beginTransaction();
+        try {
+            // Delete existing age groups
+            $sql = "DELETE FROM bb_application_agegroup WHERE application_id = :application_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':application_id' => $application_id]);
+
+            // Insert new age groups
+            $sql = "INSERT INTO bb_application_agegroup
+                    (application_id, agegroup_id, male, female)
+                    VALUES (:application_id, :agegroup_id, :male, :female)";
+            $stmt = $this->db->prepare($sql);
+
+            foreach ($agegroups as $agegroup) {
+                $stmt->execute([
+                    ':application_id' => $application_id,
+                    ':agegroup_id' => $agegroup['agegroup_id'],
+                    ':male' => $agegroup['male'],
+                    ':female' => $agegroup['female']
+                ]);
+            }
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    public function saveApplicationTargetAudience(int $application_id, array $audience_ids): void
+    {
+//        $this->db->beginTransaction();
+        try {
+            // Delete existing target audience
+            $sql = "DELETE FROM bb_application_targetaudience
+                    WHERE application_id = :application_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':application_id' => $application_id]);
+
+            // Insert new target audience
+            $sql = "INSERT INTO bb_application_targetaudience
+                    (application_id, targetaudience_id)
+                    VALUES (:application_id, :targetaudience_id)";
+            $stmt = $this->db->prepare($sql);
+
+            foreach ($audience_ids as $audience_id) {
+                $stmt->execute([
+                    ':application_id' => $application_id,
+                    ':targetaudience_id' => $audience_id
+                ]);
+            }
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
 
     /**
      * Get an application by ID

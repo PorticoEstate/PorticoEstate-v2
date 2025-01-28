@@ -9,6 +9,12 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use App\modules\phpgwapi\security\Sessions;
 use Exception;
 
+/**
+ * @OA\Tag(
+ *     name="Events",
+ *     description="API Endpoints for Events"
+ * )
+ */
 class EventController
 {
 
@@ -18,7 +24,33 @@ class EventController
     {
         $this->service = new EventService();
     }
-
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/events/{id}",
+     *     summary="Get a specific event by ID",
+     *     tags={"Events"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the event to fetch",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="The requested event",
+     *         @OA\JsonContent(ref="#/components/schemas/Event")
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No active session"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Event not found"
+     *     )
+     * )
+     */
     public function getEventById(Request $request, Response $response, array $args)
     {
         $id = (int)$args['id'];
@@ -48,7 +80,62 @@ class EventController
             );
         }
     }
-
+    /**
+     * @OA\Patch(
+     *     path="/bookingfrontend/events/{id}",
+     *     summary="Partially update an Event",
+     *     tags={"Events"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the Event to update",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *      @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="name", type="string"),
+     *             @OA\Property(property="from_", type="string", format="date-time"),
+     *             @OA\Property(property="to_", type="string", format="date-time")
+     *             @OA\Property(property="organizer", type="string"),
+     *             @OA\Property(property="participant_limit", type="integer"),
+     *             @OA\Property(
+     *                 property="resource_ids",
+     *                 type="array",
+     *                 description="Complete replacement of resources",
+     *                 @OA\Items(type="integer")
+     *             ),
+     *         )
+     *      ),
+     *      @OA\Response(
+     *         response=201,
+     *         description="Event updated successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id", type="integer")
+     *             @OA\Property(property="message", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No active session"
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid JSON data"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Forbidden"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Event not found"
+     *     )
+     * )
+     */
     public function updateEvent(Request $request, Response $response, array $args)
     {
         $id = (int)$args['id'];

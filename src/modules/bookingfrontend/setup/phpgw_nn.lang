@@ -666,3 +666,4 @@ register_unregister_pre-register	bookingfrontend	nn	Velg handling påmeld/avmeld
 pre_register	bookingfrontend	nn	Påmeld
 unregister	bookingfrontend	nn	Avmeld
 register	bookingfrontend	nn	Forhåndspåmeld
+number_of_participants	bookingfrontend	nn	Antall deltakere

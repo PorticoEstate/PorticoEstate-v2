@@ -665,3 +665,4 @@ register_unregister_pre-register	bookingfrontend	no	Velg handling påmeld/avmeld
 pre_register	bookingfrontend	no	Påmeld
 unregister	bookingfrontend	no	Avmeld
 register	bookingfrontend	no	Forhåndspåmeld
+number_of_participants	bookingfrontend	no	Antall deltakere

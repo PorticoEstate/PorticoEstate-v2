@@ -665,4 +665,5 @@ enter_the_mobile_number_of_recipient	bookingfrontend	en	Enter mobile number for 
 register_unregister_pre-register	bookingfrontend	en	Select action: Register/Unregister/Pre-register
 pre_register	bookingfrontend	en	Pre-register
 unregister	bookingfrontend	en	Unregister
-register	bookingfrontend	en	Register  	
+register	bookingfrontend	en	Register
+number_of_participants	bookingfrontend	en	Number of participants

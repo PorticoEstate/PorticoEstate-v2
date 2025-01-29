@@ -14,6 +14,7 @@ import {userSubPages} from "@/app/[lang]/(public)/user/user-page-helper";
 
 interface UserLayoutProps extends PropsWithChildren {
 }
+
 const UserLayout: FC<UserLayoutProps> = (props) => {
     const user = useBookingUser();
     const pathname = usePathname();
@@ -58,18 +59,22 @@ const UserLayout: FC<UserLayoutProps> = (props) => {
                 <div>
                     <PageHeader title={t('bookingfrontend.my page')} className={'mb-2'}/>
 
-                    <Tabs value={currPath}>
+                    <Tabs value={currPath}  onChange={str => router.push(str)}>
                         <Tabs.List>
                             {links.map((link) => {
                                 const SVGIcon = link.icon;
 
                                 return (
-                                    <Link key={'/user' + link.relativePath} href={'/user' + link.relativePath} className={'link-text link-text-unset normal'}>
-                                        <Tabs.Tab value={'/user' + link.relativePath} >
+                                    <Tabs.Tab  key={'/user' + link.relativePath} value={'/user' + link.relativePath}>
+                                        {/*<Link href={'/user' + link.relativePath}*/}
+                                        {/*      className={'link-text link-text-unset normal'}>*/}
+
                                             <SVGIcon fontSize='1.75rem' aria-hidden/>
                                             {t(link.labelTag)}
-                                        </Tabs.Tab>
-                                    </Link>
+
+                                        {/*</Link>*/}
+                                    </Tabs.Tab>
+
                                 )
                             })}
                         </Tabs.List>

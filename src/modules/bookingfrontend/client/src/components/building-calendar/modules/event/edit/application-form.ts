@@ -1,6 +1,6 @@
 import {z} from "zod";
 
-export const eventFormSchema = z.object({
+export const applicationFormSchema = z.object({
     title: z.string().min(1, ('bookingfrontend.enter_title')),
     start: z.date(),
     end: z.date(),
@@ -13,7 +13,7 @@ export const eventFormSchema = z.object({
     agegroups: z.array(z.object({
         id: z.number(),
         male: z.number().min(0),
-        female: z.literal(0), // Still tracking only male counts
+        female: z.number().default(0), // Still tracking only male counts
         name: z.string(),
         description: z.string().nullable(),
         sort: z.number()
@@ -24,4 +24,4 @@ export const eventFormSchema = z.object({
         }
     )
 });
-export type EventFormData = z.infer<typeof eventFormSchema>;
+export type ApplicationFormData = z.infer<typeof applicationFormSchema>;

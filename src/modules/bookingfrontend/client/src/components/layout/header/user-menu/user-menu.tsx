@@ -1,6 +1,6 @@
 'use client'
 import React, {FC, useEffect, useState} from 'react';
-import {useBookingUser} from "@/service/hooks/api-hooks";
+import {useBookingUser, useLogin, useLogout} from "@/service/hooks/api-hooks";
 import {Button, Divider, Dropdown} from "@digdir/designsystemet-react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faChevronDown, faFutbol, faSignInAlt, faUser} from "@fortawesome/free-solid-svg-icons";
@@ -21,6 +21,9 @@ const UserMenu: FC<UserMenuProps> = (props) => {
     const searchparams = useSearchParams();
     const queryClient = useQueryClient();
 
+    const login = useLogin();
+    const logout = useLogout();
+
     useEffect(() => {
         const clickHistory = searchparams.get('click_history');
         if (clickHistory !== lastClickHistory) {
@@ -28,6 +31,24 @@ const UserMenu: FC<UserMenuProps> = (props) => {
             queryClient.invalidateQueries({queryKey: ['bookingUser']})
         }
     }, [searchparams, queryClient]);
+
+
+    const handleLogin = async () => {
+        try {
+            await login.mutateAsync();
+        } catch (error) {
+            console.error('Login failed:', error);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await logout.mutateAsync();
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    };
+
 
     if (bookingUser?.is_logged_in) {
         return (<Dropdown.TriggerContext>
@@ -72,12 +93,8 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                 <Dropdown.List>
 
                     <Dropdown.Item>
-                        <Dropdown.Button asChild>
-
-                            <Link href={phpGWLink(['bookingfrontend', 'logout'])}
-                                  className="link-text link-text-unset normal">
-                                {t('common.logout')}
-                            </Link>
+                        <Dropdown.Button onClick={handleLogout}>
+                            {t('common.logout')}
                         </Dropdown.Button>
 
                     </Dropdown.Item>
@@ -94,14 +111,8 @@ const UserMenu: FC<UserMenuProps> = (props) => {
         <Dropdown>
             <Dropdown.List>
                 <Dropdown.Item>
-                    <Dropdown.Button asChild>
-
-                        <Link
-                            href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
-
-                            className={'link-text link-text-unset normal'}>
-                            <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
-                        </Link>
+                    <Dropdown.Button onClick={handleLogin}>
+                        <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
                     </Dropdown.Button>
                 </Dropdown.Item>
                 <Divider/>

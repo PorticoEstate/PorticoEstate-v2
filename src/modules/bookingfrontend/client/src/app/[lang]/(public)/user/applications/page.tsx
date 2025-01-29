@@ -75,7 +75,7 @@ const Applications: FC<ApplicationsProps> = (props) => {
                 const resources = info.getValue();
                 return (
                     <div className="resources-list" style={{display: 'flex', flexDirection: 'column'}}>
-                        <ResourceCircles resources={resources} maxCircles={4} size={'small'} expandable />
+                        <ResourceCircles resources={resources} maxCircles={4} size={'small'} expandable/>
                     </div>
                 );
             },
@@ -85,16 +85,17 @@ const Applications: FC<ApplicationsProps> = (props) => {
             header: t('bookingfrontend.from'),
             cell: info => {
                 const dates = info.getValue();
+                console.log(dates);
                 if (dates.length === 0) return null;
 
                 // Sort dates and get earliest from_ date
                 const earliestDate = dates
                     .sort((a, b) =>
-                        DateTime.fromSQL(a.from_).toMillis() -
-                        DateTime.fromSQL(b.from_).toMillis()
+                        DateTime.fromISO(a.from_).toMillis() -
+                        DateTime.fromISO(b.from_).toMillis()
                     )[0];
 
-                return DateTime.fromSQL(earliestDate.from_).toFormat('dd.MM.yyyy HH:mm');
+                return DateTime.fromISO(earliestDate.from_).toFormat('dd.MM.yyyy HH:mm');
             },
         }),
 

@@ -1,4 +1,11 @@
-import {keepPreviousData, useMutation, useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
+import {
+    keepPreviousData,
+    skipToken,
+    useMutation,
+    useQuery,
+    useQueryClient,
+    UseQueryResult
+} from "@tanstack/react-query";
 import {IBookingUser} from "@/service/types/api.types";
 import {
     fetchBuildingAgeGroups, fetchBuildingAudience,
@@ -148,26 +155,62 @@ export function useBookingUser() {
 }
 
 
+export function useLogin() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async () => {
+            const url = phpGWLink(['bookingfrontend', 'auth', 'login']);
+            const response = await fetch(url, {
+                method: 'POST',
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error('Login failed');
+            }
+
+            return response.json();
+        },
+        onSuccess: () => {
+            // Refetch user data after successful login
+            queryClient.invalidateQueries({queryKey: ['bookingUser']});
+        },
+    });
+}
+
+// Update the existing useLogout hook
 export function useLogout() {
     const queryClient = useQueryClient();
 
     return useMutation({
         mutationFn: async () => {
-            const url = phpGWLink(['bookingfrontend', 'logout']);
+            const url = phpGWLink(['bookingfrontend', 'auth', 'logout']);
             const response = await fetch(url, {
+                method: 'POST',
                 credentials: 'include',
             });
 
             if (!response.ok) {
                 throw new Error('Logout failed');
             }
+
+            const data = await response.json();
+
+            // Handle external logout if provided
+            if (data.external_logout_url) {
+                window.location.href = data.external_logout_url;
+                return;
+            }
+
+            return data;
         },
         onSuccess: () => {
+            // Clear user data after successful logout
             queryClient.setQueryData(['bookingUser'], null);
         },
     });
 }
-
 
 export function useUpdateBookingUser() {
     const queryClient = useQueryClient();
@@ -380,24 +423,26 @@ export function useDeletePartialApplication() {
 }
 
 
-export function useBuildingAgeGroups(building_id: number): UseQueryResult<IAgeGroup[]> {
+export function useBuildingAgeGroups(building_id?: number): UseQueryResult<IAgeGroup[]> {
     return useQuery(
         {
             queryKey: ['building_agegroups', building_id],
-            queryFn: () => fetchBuildingAgeGroups(building_id), // Fetch function
+            queryFn: building_id === undefined ? skipToken : () => fetchBuildingAgeGroups(building_id), // Fetch function
             retry: 2, // Number of retry attempts if the query fails
+            enabled: building_id !== undefined,
             refetchOnWindowFocus: false, // Do not refetch on window focus by default
         }
     );
 }
 
 
-export function useBuildingAudience(building_id: number): UseQueryResult<IAudience[]> {
+export function useBuildingAudience(building_id?: number): UseQueryResult<IAudience[]> {
     return useQuery(
         {
             queryKey: ['building_audience', building_id],
-            queryFn: () => fetchBuildingAudience(building_id), // Fetch function
+            queryFn: building_id === undefined ? skipToken : () => fetchBuildingAudience(building_id), // Fetch function
             retry: 2, // Number of retry attempts if the query fails
+            enabled: building_id !== undefined,
             refetchOnWindowFocus: false, // Do not refetch on window focus by default
         }
     );

@@ -33,10 +33,10 @@ import EventContentList from "@/components/building-calendar/modules/event/conte
 import {EventImpl} from "@fullcalendar/core/internal";
 import EventContentAllDay from "@/components/building-calendar/modules/event/content/event-content-all-day";
 import {useBuilding, useBuildingResources} from "@/service/api/building";
-import EventCrud from "@/components/building-calendar/modules/event/edit/event-crud";
 import {usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
 import {IUpdatePartialApplication} from "@/service/types/api/application.types";
 import DebugInfo from "@/components/building-calendar/util/debug-info/debug-info";
+import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 
 interface BuildingCalendarProps {
     events?: IEvent[];
@@ -540,10 +540,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
                 setPopperAnchorEl(null);
             }}/>
 
-            {currentTempEvent && (
-                <EventCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempEvent={currentTempEvent}
+                <ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
                            building_id={props.building.id}/>
-            )}
 
 
         </React.Fragment>

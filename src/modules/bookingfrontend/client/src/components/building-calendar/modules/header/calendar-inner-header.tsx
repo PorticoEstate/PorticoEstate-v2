@@ -1,17 +1,16 @@
-import React, {Dispatch, FC, MutableRefObject, useEffect, useMemo} from 'react';
+import React, {Dispatch, FC, MutableRefObject} from 'react';
 import {Badge, Button} from "@digdir/designsystemet-react";
 import {ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
 import styles from './calendar-inner-header.module.scss';
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import CalendarDatePicker from "@/components/building-calendar/modules/header/calendar-date-picker";
+import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import FullCalendar from "@fullcalendar/react";
 import ButtonGroup from "@/components/button-group/button-group";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCalendar} from "@fortawesome/free-regular-svg-icons";
 import {faLayerGroup, faPlus, faTableList} from "@fortawesome/free-solid-svg-icons";
 import {useEnabledResources, useResourcesHidden, useTempEvents} from "@/components/building-calendar/calendar-context";
-import {phpGWLink} from "@/service/util";
 
 interface CalendarInnerHeaderProps {
 
@@ -78,7 +77,6 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
                     currentDate={currentDate}
                     view={c.getApi().view.type}
                     onDateChange={(v) => v && calendarApi.gotoDate(v)}
-                    // showTimeSelect={true}
                     // timeIntervals={30}
                     // dateFormat="dd.MM.yyyy HH:mm"
                 />

@@ -64,19 +64,14 @@ class EventController
 
         try {
             $data = $this->service->getEventById($id);
-            if (!$data) {
+            if (!$data['event']) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Event not found'],
                     404
                 );
             }
 
-            $numberOfParticipants = $this->service->getNumberOfParticipants($id);
-            $result = [ 
-                'event' => $data, 
-                'numberOfParticipants' => $numberOfParticipants  
-            ];
-            $response->getBody()->write(json_encode($result));
+            $response->getBody()->write(json_encode($data));
             return $response->withStatus(200)
                 ->withHeader('Content-Type', 'application/json');
         } catch (Exception $e) {

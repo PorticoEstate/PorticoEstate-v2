@@ -3,9 +3,8 @@
 namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
-use App\modules\bookingfrontend\models\Event;
-use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\repositories\EventRepository;
 use Exception;
 use PDO;
 
@@ -13,11 +12,13 @@ class EventService
 {
     private $db;
     private $bouser;
+    private $repository;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->bouser = new UserHelper();
+        $this->repository = new EventRepository();
     }
 
     private function patchEventMainData(array $data, array $existingEvent)
@@ -29,6 +30,7 @@ class EventService
             'to_',
             'participant_limit'
         ];
+
         //Check if this a diff between existing record and new data
         $shouldUpdate = false;
         foreach ($data as $field => $value) {
@@ -41,82 +43,49 @@ class EventService
             return null;
         }
 
-        //Create set-pairs for sql update
-        $params = [':id' => $existingEvent['id']];
-        $updateFields = [];
-
-        foreach ($data as $field => $value) {
-            if (in_array($field, $allowedFields)) {
-                $updateFields[] = "$field = :$field";
-                $params[":$field"] = $value;
-            }
-        }
-
-        $sql = "UPDATE bb_event SET " . implode(', ', $updateFields) .
-            " WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        $this->repository->patchMainData($existingEvent['id'], $data, $allowedFields);
     }
 
     private function saveNewResourcesList(array $data, array $existingEvent)
     {
         if (!$data['resource_ids']) return null;
-        //Check if this a diff between existing resource array and new res array
-        $sql =
-            "SELECT array_to_json(ARRAY_AGG(resource_id)) as event_resources from bb_event_resource
-        WHERE event_id = :event_id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':event_id' => $existingEvent['id']]);
-        $resources_ids = json_decode($stmt->fetch()['event_resources']);
+        $resourceIds = $this->repository->resourceIds($existingEvent['id']); 
 
         //Delete removed resources
-        $to_delete = [];
-        foreach ($resources_ids as $resource_id) {
-            if (!in_array($resource_id, $data['resource_ids'])) {
-                array_push($to_delete, $resource_id);
+        $toDelete = [];
+        foreach ($resourceIds as $resourceId) {
+            if (!in_array($resourceId, $data['resource_ids'])) {
+                array_push($toDelete, $resourceId);
             }
         }
-        if (count($to_delete) > 0) {
-            $deleteSql = 
-            "DELETE FROM bb_event_resource 
-            WHERE resource_id IN (" . implode(', ', $to_delete) . ")";
-            $insertStmt = $this->db->prepare($deleteSql);
-            $insertStmt->execute();
+        if (count($toDelete) > 0) {
+            $this->repository->deleteResources($toDelete);
         }
 
         //Set new resources
-        $insertSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES ";
-        $should_insert = false;
+        $shouldInsert = false;
+        $toInsert = [];
         foreach ($data['resource_ids'] as $newResource) {
-            if (!in_array($newResource, $resources_ids)) {
-                $should_insert = true;
-                $insertSql .= '(' . $existingEvent['id'] . ', ' . $newResource . '),';
+            if (!in_array($newResource, $resourceIds)) {
+                $shouldInsert = true;
+                array_push($toInsert, 
+                    [
+                        'id' => $existingEvent['id'], 
+                        'resourceId' => $newResource
+                    ]
+                );
             }
         }
-        if ($should_insert) {
-            $insertStmt = $this->db->prepare(rtrim($insertSql, ','));
-            $insertStmt->execute();
+        if ($shouldInsert) {
+            $this->repository->insertResources($existingEvent['id'], $toInsert);
         }
     }
 
-    private function saveNewDates(array $data, array $existingEvent)
+    private function saveNewDates($id, array $data)
     {
-        $params = ['event_id' => $existingEvent['id']];
-        $sql = "UPDATE bb_event_date SET ";
-        if ($data['from_'] && $data['from_'] !== $existingEvent['from_']) {
-            $sql .= 'from_ = :from, ';
-            $params[':from'] = $data['from_'];
-        }
-        if ($data['to_'] && $data['to_'] !== $existingEvent['to_']) {
-            $sql .= 'to_ = :to ';
-            $params[':to'] = $data['to_'];
-        }
-
-        if (!$params[':from'] && !$params[':to']) return;
-
-        $sql .= "WHERE event_id = :event_id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
+        if (!$data['from_'] && !$data['to_']) return null;
+       
+        $this->repository->updateDates($id, $data);
     }
 
     public function getPartialEventObjectById(int $id)
@@ -147,7 +116,7 @@ class EventService
 
             $this->patchEventMainData($data, $existingEvent);
             $this->saveNewResourcesList($data, $existingEvent);
-            $this->saveNewDates($data, $existingEvent);
+            $this->saveNewDates($existingEvent['id'], $data);
 
             $this->db->commit();
             return $existingEvent['id'];
@@ -160,73 +129,30 @@ class EventService
 
     public function getEventById($id)
     {
-        $sql = "SELECT ev.*, act.name as activity_name, 
-        (
-            SELECT jsonb_object_agg(res.id, res.name) from bb_event_resource as evres
-            JOIN bb_resource as res
-            ON res.id = evres.resource_id
-            WHERE evres.event_id = ev.id
-        ) as resources
-        FROM public.bb_event ev
-        JOIN bb_activity act
-        ON ev.activity_id = act.id
-        WHERE ev.id = :id
-        ";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':id' => $id]);
-        $data = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$data) return false;
-
-        $entity = new Event($data);
-        $resources = [];
-        foreach (json_decode($data['resources'], true) as $id => $name) {
-            $resourceEntity = new Resource(array('id' => $id, 'name' => $name));
-            array_push($resources, $resourceEntity);
-        }
-        $entity->resources = $resources;
+        $entity = $this->repository->getEventById($id);
     
         $userOrgs = $this->bouser->organizations 
             ? array_column($this->bouser->organizations, 'orgnr') 
             : null;
-
-        return $entity->serialize(
-            ['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]
-        );
-    }
-
-    public function getNumberOfParticipants($eventId)
-    {
-        $sql = "SELECT sum(quantity) as cnt"
-        . " FROM bb_participant"
-            . " WHERE reservation_type='event'"
-            . " AND reservation_id=" . (int) $eventId;
-        $this->db->query($sql, __LINE__, __FILE__);
-        $this->db->next_record();
-        return (int)$this->db->f('cnt');
-    }
-    public function getPreviousRegistration($eventId, $phone)
-    {
-        $sql = "SELECT id, email, from_, to_, quantity"
-        . " FROM bb_participant"
-        . " WHERE reservation_type='event'"
-        . " AND reservation_id=" . (int) $eventId
-        . " AND phone LIKE '%{$phone}'"
-        . " ORDER BY id DESC";
-
-        $this->db->query($sql, __LINE__, __FILE__);
-        return $this->db->next_record();
+        $participants = $this->repository->currentParticipants($id);
+        return [
+            'event' => $entity->serialize(
+                ['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]
+            ),
+            'numberOfParticipants' => $participants  
+        ];
     }
 
     public function preRegister(array $data, array $event, int $phone)
     {  
-        $previousPreRegistration = $this->getPreviousRegistration($event['id'], $phone);
+        $previousPreRegistration = $this->repository->getPreviousRegistration($event['id'], $phone);
         // If participant already pre-register return null. 
         // Participant is pre-register if ONLY have from_ field
         if (!$previousPreRegistration['to_']) {
             return null;
         }
 
-        $numberOfParticipants = $this->getNumberOfParticipants($event['id']);
+        $numberOfParticipants = $this->repository->currentParticipants($event['id']);
         $newAllPeoplesQuantity = $numberOfParticipants + $data['quantity'];
         if ($newAllPeoplesQuantity > (int) $event['participant_limit']) {
             return null;

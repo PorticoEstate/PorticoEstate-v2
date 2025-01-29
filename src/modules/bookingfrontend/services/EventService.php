@@ -193,4 +193,46 @@ class EventService
             ['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]
         );
     }
+
+    public function getNumberOfParticipants($eventId)
+    {
+        $sql = "SELECT sum(quantity) as cnt"
+        . " FROM bb_participant"
+            . " WHERE reservation_type='event'"
+            . " AND reservation_id=" . (int) $eventId;
+        $this->db->query($sql, __LINE__, __FILE__);
+        $this->db->next_record();
+        return (int)$this->db->f('cnt');
+    }
+    public function getPreviousRegistration($eventId, $phone)
+    {
+        $sql = "SELECT id, email, from_, to_, quantity"
+        . " FROM bb_participant"
+        . " WHERE reservation_type='event'"
+        . " AND reservation_id=" . (int) $eventId
+        . " AND phone LIKE '%{$phone}'"
+        . " ORDER BY id DESC";
+
+        $this->db->query($sql, __LINE__, __FILE__);
+        return $this->db->next_record();
+    }
+
+    public function preRegister(array $data, array $event, int $phone)
+    {  
+        $previousPreRegistration = $this->getPreviousRegistration($event['id'], $phone);
+        // If participant already pre-register return null. 
+        // Participant is pre-register if ONLY have from_ field
+        if (!$previousPreRegistration['to_']) {
+            return null;
+        }
+
+        $numberOfParticipants = $this->getNumberOfParticipants($event['id']);
+        $newAllPeoplesQuantity = $numberOfParticipants + $data['quantity'];
+        if ($newAllPeoplesQuantity > (int) $event['participant_limit']) {
+            return null;
+        }
+        //TODO
+
+
+    }
 }

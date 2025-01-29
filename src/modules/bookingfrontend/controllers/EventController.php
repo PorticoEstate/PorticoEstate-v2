@@ -70,7 +70,13 @@ class EventController
                     404
                 );
             }
-            $response->getBody()->write(json_encode($data));
+
+            $numberOfParticipants = $this->service->getNumberOfParticipants($id);
+            $result = [ 
+                'event' => $data, 
+                'numberOfParticipants' => $numberOfParticipants  
+            ];
+            $response->getBody()->write(json_encode($result));
             return $response->withStatus(200)
                 ->withHeader('Content-Type', 'application/json');
         } catch (Exception $e) {
@@ -190,4 +196,5 @@ class EventController
             );
         }
     }
+
 }

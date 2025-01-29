@@ -1,8 +1,7 @@
 import {useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import axios from "axios";
-import { DateTime } from "luxon";
-import { fetchBuildingResources, useBuildingResources } from "./building";
+import { fetchBuildingResources } from "./building";
 
 export type PopperInfoType = FilteredEventInfo;
 
@@ -21,12 +20,13 @@ export interface ActivityData {
     building_id: number;
     building_name: string;
     skip_bas: number;
-    type: 'event',
+    type: 'event';
     activity_id: number;
     reminder: number;
     is_public: boolean;
     resources: Map<number, string>;
     buildingResources: Map<number, string>;
+    numberOfParticipants: number;
 
     name: string | 'PRIVATE EVENT';
     organizer?: string;
@@ -38,7 +38,7 @@ export interface ActivityData {
     contact_phone?: string;
     participant_limit?: number;
     customer_organization_id?: number;
-    customer_organization_name?: string 
+    customer_organization_name?: string;
 }
 
 export interface FilteredEventInfo {
@@ -181,19 +181,23 @@ export const useEventData = (eventId: (string | number)) => {
         queryFn: async () => {
             const url = phpGWLink(['bookingfrontend', 'events', eventId]);
             const res = await fetch(url);
-            const data = await res.json();
-            const buildingResources = await fetchBuildingResources(data.building_id);
+            const { event, numberOfParticipants } = await res.json();
+            const buildingResources = await fetchBuildingResources(event.building_id);
             return {
-                ...data,
-                to_: new Date(data.to_),
-                from_: new Date(data.from_),
-                participant_limit: data.participant_limit || 0,
+                ...event,
+                to_: new Date(event.to_),
+                from_: new Date(event.from_),
+                participant_limit: event.participant_limit || 0,
                 resources: new Map(
-                    data.resources.map(({ id, name }: any) => [parseInt(id), name])
+                    event.resources.map(({ id, name }: any) => [
+                        parseInt(id),
+                        name,
+                    ])
                 ),
                 buildingResources: new Map(
                     buildingResources.map(({ id, name }) => [id, name])
                 ),
+                numberOfParticipants,
             };
         }
     });

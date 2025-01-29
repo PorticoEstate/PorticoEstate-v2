@@ -14,13 +14,18 @@ interface EventViewProps {
     privateAccess: boolean;
     openEditing?: () => void;
 }
+interface PrivateEventView {
+    event: ActivityData;
+    openEditing?: () => void;
+}
 
-const PrivateEventView: FC<EventViewProps> = ({ event, openEditing }: EventViewProps) => {
+const PrivateEventView: FC<PrivateEventView> = ({ event, openEditing }: PrivateEventView) => {
     const t = useTrans();
     return (
         <>
             <p><b>{t('bookingfrontend.organizer')}: </b>{event.organizer}</p>
             <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants_info')}: </b>{event.participant_limit}</p>
+             <p style={{marginBottom: '0'}}><b>{t('bookingfrontend.number_of_participants')}: </b>{event.numberOfParticipants}</p>
             <div style={{display: 'flex'}}>
                 <Button asChild style={{marginRight: '0.5rem'}} variant='secondary'>
                     <Link 

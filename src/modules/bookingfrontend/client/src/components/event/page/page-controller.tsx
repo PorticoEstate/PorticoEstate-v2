@@ -1,19 +1,25 @@
 "use client"
 import EventEditing from "@/components/event/editing/editing-controller";
-import { ActivityData, editEvent } from "@/service/api/event-info";
-import { FC, useState } from "react";
+import { ActivityData, editEvent, useEventData } from "@/service/api/event-info";
+import { FC, useState, useEffect } from "react";
 import EventView from "./page-view";
 
 interface EventPageProps {
     event: ActivityData;
+    eventId: number;
     privateAccess: boolean
 }
 
-const EventPageController: FC<EventPageProps> = ({ event, privateAccess }: EventPageProps) => {
+const EventPageController: FC<EventPageProps> = ({ eventId, privateAccess }: EventPageProps) => {
+    const {data: eventInfo} = useEventData(eventId);
     const [isEditing, setEditingMode] = useState(false);
-    const [eventState, setEventState] = useState(event);
+    const [eventState, setEventState] = useState(eventInfo);
     const cancelEditing = () => setEditingMode(false);
     const openEditing = () => setEditingMode(true);
+
+    useEffect(() => {
+        setEventState(eventInfo);
+    }, [eventInfo]);
 
     const saveChanges = (newEventObject: ActivityData) => {
         const updatedData: any = {};
@@ -24,12 +30,12 @@ const EventPageController: FC<EventPageProps> = ({ event, privateAccess }: Event
                 updatedData.resource_ids = [...(new Set([...new_ids]))];
                 continue;
             }
-            if (newEventObject[f] !== event[f]) {
+            if (newEventObject[f] !== eventInfo[f]) {
                 updatedData[f] = newEventObject[f];
             }
         }
         setEventState(newEventObject);
-        editEvent(event.id, updatedData);
+        editEvent(eventInfo.id, updatedData);
         cancelEditing();
     }
     if (!privateAccess) {

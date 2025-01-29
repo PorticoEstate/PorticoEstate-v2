@@ -175,6 +175,7 @@ export function useLogin() {
         onSuccess: () => {
             // Refetch user data after successful login
             queryClient.invalidateQueries({queryKey: ['bookingUser']});
+            queryClient.invalidateQueries({queryKey: ['eventInfo']});
         },
     });
 }
@@ -208,6 +209,7 @@ export function useLogout() {
         onSuccess: () => {
             // Clear user data after successful logout
             queryClient.setQueryData(['bookingUser'], null);
+            queryClient.setQueryData(['eventInfo'], null);
         },
     });
 }

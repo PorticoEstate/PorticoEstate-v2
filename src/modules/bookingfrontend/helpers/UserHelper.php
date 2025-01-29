@@ -493,15 +493,19 @@ class UserHelper
 		{
 			$ssn = $this->config->config_data['test_ssn'];
 			Cache::message_set('Warning: ssn is set by test-data', 'error');
-		}
-		else if (!empty($_SERVER['HTTP_UID']))
-		{
-			$ssn = (string)$_SERVER['HTTP_UID'];
-		}
-		else
-		{
-			$ssn = (string)$_SERVER['OIDC_pid'];
-		}
+		} else 
+		if (!empty($_SERVER['HTTP_UID']))
+        {
+            $ssn = (string)$_SERVER['HTTP_UID'];
+        } 
+		if (!empty($_SERVER['OIDC_pid']))
+        {
+            $ssn = (string)$_SERVER['OIDC_pid'];
+        }
+		if (!empty($_SERVER['REDIRECT_OIDC_pid']))
+        {
+            $ssn = (string)$_SERVER['REDIRECT_OIDC_pid'];
+        }
 
 		if (isset($this->config->config_data['bypass_external_login']) && $this->config->config_data['bypass_external_login'])
 		{

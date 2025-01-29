@@ -1,5 +1,5 @@
 import {phpGWLink} from "@/service/util";
-import {useQuery} from "@tanstack/react-query";
+import {skipToken, useQuery} from "@tanstack/react-query";
 import {IBuilding} from "@/service/types/Building";
 import {IAPIQueryResponse, IDocument, IDocumentCategoryQuery} from "@/service/types/api.types";
 import {IShortResource} from "@/service/pecalendar.types";
@@ -44,15 +44,15 @@ export async function fetchResource(resource_id: number | string, instance?: str
  * @param initialData - Optional initial data, skrip fetching from db
  * @returns {object} - Returns the query object from TanStack Query.
  */
-export function useBuilding(building_id: number, instance?: string, initialData?: IBuilding) {
+export function useBuilding(building_id?: number, instance?: string, initialData?: IBuilding) {
     return useQuery<IBuilding>(
         {
             queryKey: ['building', building_id],
-            queryFn: () => {
+            queryFn: building_id === undefined ? skipToken : () => {
                 console.log('fetching building', building_id)
                 return fetchBuilding(building_id, instance)
             }, // Fetch function
-            enabled: !!building_id, // Only run the query if building_id is provided
+            enabled: building_id !== undefined, // Only run the query if building_id is provided
             retry: 2, // Number of retry attempts if the query fails
             refetchOnWindowFocus: false, // Do not refetch on window focus by default
             initialData
@@ -83,12 +83,12 @@ export function useResource(resource_id: number | string, instance?: string) {
  * @param {string} instance - Optional instance string for the request.
  * @returns {object} - Returns the query object from TanStack Query.
  */
-export function useBuildingResources(building_id: number | string, instance?: string) {
+export function useBuildingResources(building_id?: number | string, instance?: string) {
     return useQuery<IResource[]>(
         {
             queryKey: ['buildingResources', `${building_id}`],
-            queryFn: () => fetchBuildingResources(building_id,false, instance), // Fetch function
-            enabled: !!building_id, // Only run the query if building_id is provided
+            queryFn: building_id === undefined ? skipToken : () => fetchBuildingResources(building_id,false, instance), // Fetch function
+            enabled: building_id !== undefined, // Only run the query if building_id is provided
             retry: 2, // Number of retry attempts if the query fails
             refetchOnWindowFocus: false, // Do not refetch on window focus by default
         }

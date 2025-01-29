@@ -28,16 +28,15 @@ import {useEnabledResources, useTempEvents} from "@/components/building-calendar
 import EventContentTemp from "@/components/building-calendar/modules/event/content/event-content-temp";
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import {Placement} from "@floating-ui/utils";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import EventContentList from "@/components/building-calendar/modules/event/content/event-content-list";
 import {EventImpl} from "@fullcalendar/core/internal";
 import EventContentAllDay from "@/components/building-calendar/modules/event/content/event-content-all-day";
 import {useBuilding, useBuildingResources} from "@/service/api/building";
-import EventCrud from "@/components/building-calendar/modules/event/edit/event-crud";
 import {usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
 import {IUpdatePartialApplication} from "@/service/types/api/application.types";
 import DebugInfo from "@/components/building-calendar/util/debug-info/debug-info";
+import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 
 interface BuildingCalendarProps {
     events?: IEvent[];
@@ -105,8 +104,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         }
     };
 
-    const handleDateSelect = useCallback((selectInfo: DateSelectArg) => {
-        if (selectInfo.view.type === 'dayGridMonth') {
+    const handleDateSelect = useCallback((selectInfo?: Partial<DateSelectArg>) => {
+        if (selectInfo?.view?.type === 'dayGridMonth') {
             return;
         }
         // console.log(enabledResources, props.resources);
@@ -115,9 +114,9 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         const newEvent: FCallTempEvent = {
             id: `temp-${Date.now()}`,
             title,
-            start: selectInfo.start,
-            end: selectInfo.end,
-            allDay: selectInfo.allDay,
+            start: selectInfo?.start,
+            end: selectInfo?.end,
+            allDay: selectInfo?.allDay ?? false,
             editable: true,
             extendedProps: {
                 type: 'temporary',
@@ -127,8 +126,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         };
         // setTempEvents(prev => ({...prev, [newEvent.id]: newEvent}))
         setCurrentTempEvent(newEvent);
-        selectInfo.view.calendar.unselect(); // Clear selection
-    }, [resources, enabledResources]);
+        selectInfo?.view?.calendar.unselect(); // Clear selection
+    }, [t, enabledResources, props.building.id]);
 
 
     const handleEventClick = useCallback((clickInfo: FCEventClickArg<FCallBaseEvent>) => {
@@ -140,7 +139,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
         // Check if the event is a valid, interactive event
         if ('id' in clickInfo.event && clickInfo.event.id) {
-            if(clickInfo.event.extendedProps.type === 'temporary') {
+            if (clickInfo.event.extendedProps.type === 'temporary') {
                 setCurrentTempEvent(clickInfo.event as FCallTempEvent);
             } else {
                 setSelectedEvent(clickInfo.event);
@@ -292,7 +291,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
     const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
         const newEnd = resizeInfo.event.end;
         const newStart = resizeInfo.event.start;
-        if(!newEnd || !newStart) {
+        if (!newEnd || !newStart) {
             console.log("No new date")
             return;
         }
@@ -302,7 +301,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             console.log(partials?.list);
             const existingEvent = partials?.list.find(app => +app.id === +eventId);
 
-            if(!eventId || !dateId || !existingEvent) {
+            if (!eventId || !dateId || !existingEvent) {
                 console.log("missing data", eventId, dateId, existingEvent)
 
                 return;
@@ -349,17 +348,25 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
     const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
 
-    const popperPlacement = (): Placement => {
+    const popperPlacement = useMemo(() => {
         switch (calendarRef.current?.getApi().view.type) {
             case 'timeGridDay':
                 return 'bottom-start';
             case 'listWeek':
                 return 'bottom-start';
             default:
+                const el = popperAnchorEl;
+                if (el) {
+                    const rect = el.getBoundingClientRect();
+                    const screenWidth = window.innerWidth;
+                    const elementRightPosition = rect.right;
+
+                    // Check if element is more than 60% to the right of the screen
+                    return (elementRightPosition / screenWidth > 0.6) ? 'left-start' : 'right-start';
+                }
                 return 'right-start';
         }
-
-    }
+    }, [calendarRef.current?.getApi().view.type, popperAnchorEl]);
 
     useEffect(() => {
         const convertedEvents = (events || [])
@@ -444,7 +451,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             />
             <CalendarInnerHeader view={view} calendarRef={calendarRef}
                                  setView={(v) => setView(v)}
-                                 setLastCalendarView={() => setView(lastCalendarView)} building={props.building}/>
+                                 setLastCalendarView={() => setView(lastCalendarView)} building={props.building}
+                                 createNew={() => handleDateSelect()}/>
             <FullCalendar
                 ref={calendarRef}
                 plugins={[interactionPlugin, dayGridPlugin, timeGridPlugin, listPlugin]}
@@ -525,17 +533,15 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
             <EventPopper
                 event={selectedEvent}
                 placement={
-                    popperPlacement()
+                    popperPlacement
                 }
                 anchor={popperAnchorEl} onClose={() => {
                 setSelectedEvent(null);
                 setPopperAnchorEl(null);
             }}/>
 
-            {currentTempEvent && (
-                <EventCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempEvent={currentTempEvent}
-                           building_id={props.building.id} />
-            )}
+                <ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
+                           building_id={props.building.id}/>
 
 
         </React.Fragment>

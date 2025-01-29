@@ -91,8 +91,10 @@ export interface Season {
 
 export interface IFreeTimeSlot {
     when: string
-    start: string
-    end: string
+    // start: string
+    // end: string
+    start_iso: string;
+    end_iso: string;
     overlap: false | 1 | 2 | 3 // false = ledig | 1 = bestilt av ein anna | 2 = påbegynt/reservert | 3 = fortid
     applicationLink: ApplicationLink
 }

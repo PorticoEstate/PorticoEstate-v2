@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\controllers;
 
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\services\ApplicationService;
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Settings;
@@ -19,13 +20,16 @@ use OpenApi\Annotations as OA;
  *     description="API Endpoints for Applications"
  * )
  */
-class ApplicationController
+class ApplicationController extends DocumentController
 {
+    private $bouser;
     private $applicationService;
     private $userSettings;
 
     public function __construct(ContainerInterface $container)
     {
+        parent::__construct(Document::OWNER_APPLICATION);
+        $this->bouser = new UserHelper();
         $this->applicationService = new ApplicationService();
         $this->userSettings = Settings::getInstance()->get('user');
     }
@@ -149,23 +153,36 @@ class ApplicationController
      */
     public function deletePartial(Request $request, Response $response, array $args): Response
     {
-        $id = (int) $args['id'];
-        $session = Sessions::getInstance();
-        $session_id = $session->get_session_id();
-
-        if (empty($session_id)) {
-            $response->getBody()->write(json_encode(['error' => 'No active session']));
-            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-        }
-
         try {
-            $deleted = $this->applicationService->deletePartial($id, $session_id);
-            $response->getBody()->write(json_encode(['deleted' => $deleted]));
-            return $response->withHeader('Content-Type', 'application/json');
+            $id = (int)$args['id'];
+
+            // Get the application to check permissions
+            $application = $this->applicationService->getApplicationById($id);
+            if (!$application) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Application not found'],
+                    404
+                );
+            }
+
+            // Verify permissions
+            if (!$this->canModifyApplication($application)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to delete this application'],
+                    403
+                );
+            }
+
+            $deleted = $this->applicationService->deletePartial($id);
+
+            return $response->withHeader('Content-Type', 'application/json')
+                ->write(json_encode(['deleted' => $deleted]));
+
         } catch (Exception $e) {
-            $status = ($e->getMessage() === "Application not found or not owned by the current session") ? 404 : 500;
-            $response->getBody()->write(json_encode(['error' => $e->getMessage()]));
-            return $response->withStatus($status)->withHeader('Content-Type', 'application/json');
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error deleting application: " . $e->getMessage()],
+                500
+            );
         }
     }
 
@@ -270,13 +287,21 @@ class ApplicationController
     {
         try {
             $id = (int)$args['id'];
-            $session = Sessions::getInstance();
-            $session_id = $session->get_session_id();
 
-            if (empty($session_id)) {
+            // Get the application to check permissions
+            $application = $this->applicationService->getApplicationById($id);
+            if (!$application) {
                 return ResponseHelper::sendErrorResponse(
-                    ['error' => 'No active session'],
-                    400
+                    ['error' => 'Application not found'],
+                    404
+                );
+            }
+
+            // Verify permissions
+            if (!$this->canModifyApplication($application)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to modify this application'],
+                    403
                 );
             }
 
@@ -288,29 +313,17 @@ class ApplicationController
                 );
             }
 
-            // Verify ownership
-            $existing = $this->applicationService->getPartialApplicationById($id);
-            if (!$existing || $existing['session_id'] !== $session_id) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Application not found or not owned by current session'],
-                    404
-                );
-            }
-
-//            $data['id'] = $id;
-            $data['session_id'] = $session_id;
-//            $data['status'] = 'NEWPARTIAL1';
-//            $this->populateDummyData($data);
-
+            $data['id'] = $id;
             $this->applicationService->savePartialApplication($data);
 
-            $response->getBody()->write(json_encode([
-                'message' => 'Application updated successfully'
-            ]));
-            return $response->withHeader('Content-Type', 'application/json');
+            return $response->withHeader('Content-Type', 'application/json')
+                ->write(json_encode([
+                    'message' => 'Application updated successfully'
+                ]));
+
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
-                ['error' => "Error updating partial application: " . $e->getMessage()],
+                ['error' => "Error updating application: " . $e->getMessage()],
                 500
             );
         }
@@ -379,13 +392,21 @@ class ApplicationController
     {
         try {
             $id = (int)$args['id'];
-            $session = Sessions::getInstance();
-            $session_id = $session->get_session_id();
 
-            if (empty($session_id)) {
+            // Get the application to check permissions
+            $application = $this->applicationService->getApplicationById($id);
+            if (!$application) {
                 return ResponseHelper::sendErrorResponse(
-                    ['error' => 'No active session'],
-                    400
+                    ['error' => 'Application not found'],
+                    404
+                );
+            }
+
+            // Verify permissions
+            if (!$this->canModifyApplication($application)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to modify this application'],
+                    403
                 );
             }
 
@@ -397,23 +418,15 @@ class ApplicationController
                 );
             }
 
-            // Verify ownership
-            $existing = $this->applicationService->getPartialApplicationById($id);
-            if (!$existing || $existing['session_id'] !== $session_id) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Application not found or not owned by current session'],
-                    404
-                );
-            }
-
-
             $data['id'] = $id;
             $this->applicationService->patchApplication($data);
 
-            $response->getBody()->write(json_encode([
-                'message' => 'Application updated successfully'
-            ]));
-            return $response->withHeader('Content-Type', 'application/json');
+            return $response->withHeader('Content-Type', 'application/json')
+                ->withStatus(200)
+                ->write(json_encode([
+                    'message' => 'Application updated successfully'
+                ]));
+
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => "Error updating application: " . $e->getMessage()],
@@ -445,6 +458,264 @@ class ApplicationController
                 $data[$field] = $value;
             }
         }
+    }
+
+
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/applications/{id}/documents",
+     *     summary="Upload documents for an application",
+     *     description="Upload one or more documents to an application. Only the application owner or delegates can upload documents.",
+     *     tags={"Applications"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the application",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 @OA\Property(
+     *                     property="files[]",
+     *                     type="array",
+     *                     @OA\Items(type="string", format="binary"),
+     *                     description="The files to upload"
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Documents successfully uploaded",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(
+     *                 property="document_ids",
+     *                 type="array",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No files provided"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized to upload documents to this application"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Application not found"
+     *     )
+     * )
+     */
+    public function uploadDocument(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $applicationId = (int)$args['id'];
+
+            // Get application using ApplicationService
+            $application = $this->applicationService->getApplicationById($applicationId);
+            if (!$application) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Application not found'],
+                    404
+                );
+            }
+
+            // Verify ownership
+            if (!$this->canModifyApplication($application)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to upload documents to this application'],
+                    403
+                );
+            }
+
+            $uploadedFiles = $request->getUploadedFiles();
+
+            if (empty($uploadedFiles['files'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'No files uploaded'],
+                    400
+                );
+            }
+            $files = $uploadedFiles['files'];
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+
+            $documents = [];
+            $parseBody = $request->getParsedBody();
+            $description = $parseBody['description'] ?? null;
+
+            foreach ($files as $file) {
+                // Basic validation
+                $filename = $file->getClientFilename();
+//                $fileType = $this->documentService->getFileTypeFromFilename($filename);
+//
+//                if (!$this->documentService->isAllowedFileType($fileType)) {
+//                    return ResponseHelper::sendErrorResponse(
+//                        ['error' => "File type not allowed for: {$filename}"],
+//                        400
+//                    );
+//                }
+
+                // Create document record
+                $document = [
+                    'category' => Document::CATEGORY_OTHER,
+                    'owner_id' => $applicationId,
+                    'name' => $filename,
+                    'description' => $description ?? $filename
+                ];
+
+                $docId = $this->documentService->createDocument($document);
+
+                // Move uploaded file to correct location
+                $this->documentService->saveDocumentFile($docId, $file);
+                $documents[] = $docId;
+            }
+
+
+            $response->getBody()->write(json_encode([
+                'message' => 'Files uploaded successfully',
+                'document_ids' => $documents
+            ]));
+            return $response->withHeader('Content-Type', 'application/json');
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error uploading files: " . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+
+    /**
+     * @OA\Delete(
+     *     path="/bookingfrontend/applications/document/{id}",
+     *     summary="Delete a document from an application",
+     *     description="Delete a specific document. Only the application owner or delegates can delete documents.",
+     *     tags={"Applications"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the document to delete",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=204,
+     *         description="Document successfully deleted"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized to delete this document"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Document or associated application not found"
+     *     )
+     * )
+     */
+    public function deleteDocument(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $documentId = (int)$args['id'];
+
+            $document = $this->documentService->getDocumentById($documentId);
+            if (!$document) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Document not found'],
+                    404
+                );
+            }
+
+            // Get the application using ApplicationService
+            $application = $this->applicationService->getApplicationById($document->owner_id);
+            if (!$application) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Associated application not found'],
+                    404
+                );
+            }
+
+            // Verify ownership
+            if (!$this->canModifyApplication($application)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to delete this document'],
+                    403
+                );
+            }
+
+            // Delete the document and its file
+            $this->documentService->deleteDocument($documentId);
+
+            return $response->withStatus(204);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error deleting document: " . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * Check if the current user/session can modify the given application
+     *
+     * Verifies either:
+     * - Application belongs to current session (for in-progress applications)
+     * OR if user is logged in:
+     * - Is the direct owner (via SSN)
+     * - Belongs to the owning organization
+     * - Is a delegate for the owning organization
+     *
+     * @param array $application The application data to check
+     * @return bool True if user can modify the application, false otherwise
+     */
+    private function canModifyApplication(array $application): bool
+    {
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        // Check if application belongs to current session
+        if ($application['status'] === 'NEWPARTIAL1' && $application['session_id'] === $session_id) {
+            return true;
+        }
+
+        // Additional checks if user is logged in
+        if ($this->bouser->is_logged_in()) {
+            $ssn = $this->bouser->ssn;
+            $orgnr = $this->bouser->orgnr;
+
+            if ($application['customer_ssn'] === $ssn) {
+                return true;
+            }
+
+            if ($application['customer_identifier_type'] === 'organization_number'
+                && $application['customer_organization_number'] === $orgnr) {
+                return true;
+            }
+
+            if ($application['customer_identifier_type'] === 'organization_number'
+                && $this->bouser->organizations) {
+                foreach ($this->bouser->organizations as $org) {
+                    if ($org['orgnr'] === $application['customer_organization_number']) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
 }

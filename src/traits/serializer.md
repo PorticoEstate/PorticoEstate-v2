@@ -61,7 +61,7 @@ public $conditionalProperty;
 ```
 
 ### @Default
-Specifies a default value to use when a property is not exposed based on conditions.
+Specifies a default value to use when a property is not exposed based on conditions, or when the value is null.
 
 ```php
 /**
@@ -98,7 +98,7 @@ Defines how complex properties should be serialized.
 ```php
 /**
  * @Expose
- * @SerializeAs(type="array", of="App\Models\Comment")
+ * @SerializeAs(type="array", of="App\Models\Comment", short=true)
  */
 public $comments;
 
@@ -127,15 +127,27 @@ Available modes:
 - `encode`: Encode special characters for HTML output
 - `none`: No escaping performed
 
+### @Timestamp
+Controls the formatting of timestamp values.
+
+```php
+/**
+ * @Expose
+ * @Timestamp(format="Y-m-d H:i:s")
+ */
+public $created_at;
+```
+
+If no format is specified, defaults to ISO 8601 format ("c").
+
 ## Conditional Exposure
 
-You can control property exposure based on object state and context:
+The @Expose decorator supports complex conditions to control when properties are exposed:
 
 ### Simple Conditions
 ```php
 /**
  * @Expose(when={"is_public=1"})
- * @Default("PRIVATE")
  */
 public $title;
 ```
@@ -199,6 +211,33 @@ Example:
 public $description;
 ```
 
+## Timestamp Handling
+
+### Basic Usage
+```php
+/**
+ * @Expose
+ * @Timestamp
+ */
+public $created_at; // Will format as ISO 8601
+```
+
+### Custom Format
+```php
+/**
+ * @Expose
+ * @Timestamp(format="Y-m-d")
+ */
+public $date; // Will format as YYYY-MM-DD
+```
+
+### Input Handling
+The serializer can handle various timestamp input formats:
+- Unix timestamps (numeric values)
+- Date strings
+- 'now' keyword
+- DateTime objects
+
 ## Nested Object Serialization
 
 ### Simple Objects
@@ -259,15 +298,14 @@ class Event {
 
     /**
      * @Expose
+     * @Timestamp(format="c")
+     */
+    public $created_at;
+
+    /**
+     * @Expose
      */
     public $customer_identifier_type;
-
-    // Usage:
-    // $event->serialize([
-    //     'user_ssn' => '12345',
-    //     'organization_number' => ['67890', '11111'],
-    //     'roles' => ['user']
-    // ]);
 }
 ```
 
@@ -313,6 +351,7 @@ For best performance:
 - Use `@Short` when possible to minimize data transfer
 - Consider caching serialized output for static data
 - Use appropriate string escaping modes
+- Take advantage of the annotation cache
 
 ## Error Handling
 
@@ -366,7 +405,9 @@ public function getEventData(string $userSsn, array $organizationNumbers): array
 
 6. **Security**: Use both groups and conditions for sensitive data
 
-7. **Documentation**: Include example output in property documentation
+7. **Timestamps**: Use `@Timestamp` with appropriate formats for date/time fields
+
+8. **Documentation**: Include example output in property documentation
 
 ## Common Issues and Solutions
 
@@ -384,6 +425,13 @@ Solutions:
 - Verify conditions are evaluating as expected
 - Check that the property isn't being excluded by other means
 
+### Timestamp Formatting Issues
+Problem: Dates not formatted correctly
+Solutions:
+- Check the format string syntax
+- Ensure input data is in a recognized format
+- Use appropriate format for your use case
+
 ### Circular References
 Problem: Infinite recursion in nested objects
-Solution: Use `@SerializeAs` with careful object structure
+Solution: Use `@SerializeAs` with careful object structure and consider using `short=true` for nested objects

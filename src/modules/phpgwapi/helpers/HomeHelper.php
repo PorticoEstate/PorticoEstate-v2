@@ -78,10 +78,11 @@ class HomeHelper
 			$this->phpgwapi_common->phpgw_exit();
 		}
 
+		//temporary hack to avoid dodgy session handling after initial login
 		if (!empty($this->serverSettings['forward_to_http']))
 		{
-			// check if we are already on https
-			if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on')
+			// check if we are already on a https frontend
+			if (isset($_SERVER['HTTP_SHIB_HANDLER']))
 			{
 				// redirect to http
 				$redirect = \phpgw::link('/home/', $_GET, false, true);

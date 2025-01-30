@@ -283,6 +283,7 @@ $phpgw_baseline = array(
 				'precision' => '4',
 				'default' => 0
 			),
+			'deny_application_if_booked' => array('type' => 'int', 'nullable' => false, 'precision' => 2, 'default' => 0),
 		),
 		'pk' => array('id'),
 		'fk' => array(

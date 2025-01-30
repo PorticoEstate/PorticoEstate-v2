@@ -82,6 +82,7 @@ class booking_uiresource extends booking_uicommon
 			'deactivate_application'		 => 'int',
 			'hidden_in_frontend'			 => 'int',
 			'activate_prepayment'			 => 'int',
+			'deny_application_if_booked'	 => 'int',
 		);
 		self::set_active_menu('booking::buildings::resources::resources');
 		$this->display_name = lang('resources');
@@ -284,7 +285,9 @@ class booking_uiresource extends booking_uicommon
 		$resource['tabs'] = phpgwapi_jquery::tabview_generate($tabs, $active_tab);
 		$resource['validator'] = phpgwapi_jquery::formvalidator_generate(array(
 			'location',
-			'date', 'security', 'file'
+			'date',
+			'security',
+			'file'
 		));
 
 		self::render_template_xsl('resource_form', array(
@@ -385,7 +388,9 @@ class booking_uiresource extends booking_uicommon
 		$resource['tabs'] = phpgwapi_jquery::tabview_generate($tabs, $active_tab);
 		$resource['validator'] = phpgwapi_jquery::formvalidator_generate(array(
 			'location',
-			'date', 'security', 'file'
+			'date',
+			'security',
+			'file'
 		));
 		$jqcal = createObject('phpgwapi.jqcal');
 		$jqcal2 = createObject('phpgwapi.jqcal2');
@@ -606,7 +611,8 @@ class booking_uiresource extends booking_uicommon
 			'container' => 'datatable-container_1',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction' => 'booking.uiresource.get_e_locks',
-				'resource_id' => $id, 'phpgw_return_as' => 'json'
+				'resource_id' => $id,
+				'phpgw_return_as' => 'json'
 			))),
 			'ColumnDefs' => self::get_e_lock_columns(),
 			'data' => json_encode(array()),
@@ -641,7 +647,8 @@ class booking_uiresource extends booking_uicommon
 			'container' => 'datatable-container_2',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction' => 'booking.uiresource.get_participant_limit',
-				'resource_id' => $id, 'phpgw_return_as' => 'json'
+				'resource_id' => $id,
+				'phpgw_return_as' => 'json'
 			))),
 			'ColumnDefs' => self::get_participant_limit_columns(),
 			'data' => json_encode(array()),
@@ -674,8 +681,11 @@ class booking_uiresource extends booking_uicommon
 			array('key' => 'name', 'label' => lang('name'), 'sortable' => true, 'resizeable' => true),
 			array('key' => 'street', 'label' => lang('street'), 'sortable' => true, 'resizeable' => true),
 			array(
-				'key' => 'activity_name', 'label' => lang('activity'), 'sortable' => true,
-				'resizeable' => true, 'formatter' => 'ChangeSchema'
+				'key' => 'activity_name',
+				'label' => lang('activity'),
+				'sortable' => true,
+				'resizeable' => true,
+				'formatter' => 'ChangeSchema'
 			),
 			array('key' => 'active', 'label' => lang('active'), 'sortable' => true, 'resizeable' => true)
 		);
@@ -688,7 +698,8 @@ class booking_uiresource extends booking_uicommon
 			'container' => 'datatable-container_0',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction' => 'booking.uiresource.get_buildings',
-				'resource_id' => $id, 'phpgw_return_as' => 'json'
+				'resource_id' => $id,
+				'phpgw_return_as' => 'json'
 			))),
 			'ColumnDefs' => self::get_building_columns(),
 			'data' => json_encode(array()),
@@ -807,7 +818,9 @@ class booking_uiresource extends booking_uicommon
 		$_filter_building['id'] = array_merge(array(-1), $resource['buildings']);
 
 		$bui_result = $this->sobuilding->read(array(
-			'results' => -1, "sort" => "name", "dir" => "asc",
+			'results' => -1,
+			"sort" => "name",
+			"dir" => "asc",
 			"filters" => $_filter_building
 		));
 
@@ -889,7 +902,9 @@ class booking_uiresource extends booking_uicommon
 		$_filter_building['id'] = array_merge(array(-1), $resource['buildings']);
 
 		$bui_result = $this->sobuilding->read(array(
-			'results' => -1, "sort" => "name", "dir" => "asc",
+			'results' => -1,
+			"sort" => "name",
+			"dir" => "asc",
 			"filters" => $_filter_building
 		));
 

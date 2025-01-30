@@ -25,6 +25,16 @@
 				<td>{lang_cache_refresh_token}:</td>
 				<td><input size="8" name="newsettings[cache_refresh_token]" value="{value_cache_refresh_token}" class="pure-u-1"/></td>
 			</tr>
+
+            <tr class="pure-table-odd">
+                <td>{lang_forward_to_http}:</td>
+                <td>
+                    <select name="newsettings[forward_to_http]" class="pure-u-1">
+                        <option value="">{lang_No}</option>
+                        <option value="True"{selected_forward_to_http_True}>{lang_Yes}</option>
+                    </select>
+                </td>
+            </tr>
 			<tr>
 				<td>{lang_privacy_url}:</td>
 				<td><input name="newsettings[privacy_url]" value="{value_privacy_url}" class="pure-u-1"/></td>

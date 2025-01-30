@@ -78,6 +78,18 @@ class HomeHelper
 			$this->phpgwapi_common->phpgw_exit();
 		}
 
+		if (!empty($this->serverSettings['forward_to_http']))
+		{
+			// check if we are already on https
+			if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on')
+			{
+				// redirect to http
+				$redirect = \phpgw::link('/home/', $_GET, false, true);
+				header('Location: ' . str_replace('https', 'http', $redirect));
+				exit;
+			}
+		}
+
 		// check if forward parameter is set
 		if (isset($_GET['phpgw_forward']) && is_array($_GET['phpgw_forward']))
 		{

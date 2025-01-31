@@ -63,18 +63,21 @@ export function middleware(req: NextRequest): NextResponse | undefined {
 
 
     if (pathLang) {
-        // If the path starts with a supported language, set it in the cookies with an expiry of 1 month
+        // Check if there's already a cookie with the same language value
+        const currentCookie = req.cookies.get(cookieName);
 
-        // Calculate the expiration date (1 month from now)
-        const expires = new Date();
-        expires.setMonth(expires.getMonth() + 1);
+        // Only set the cookie if it doesn't exist or has a different value
+        if (!currentCookie || currentCookie.value !== pathLang.key) {
+            // Calculate the expiration date (1 month from now)
+            const expires = new Date();
+            expires.setMonth(expires.getMonth() + 1);
 
-        // Manually set the Set-Cookie header
-        response.headers.set('Set-Cookie', `${cookieName}=${pathLang.key}; Expires=${expires.toUTCString()}; path=/; domain=${domain}; SameSite=Lax`);
+            // Manually set the Set-Cookie header
+            response.headers.set('Set-Cookie', `${cookieName}=${pathLang.key}; Expires=${expires.toUTCString()}; path=/; domain=${domain}; SameSite=Lax`);
+        }
 
         return response;
     }
-
     // Redirect if the language in the path is not supported
     if (
         !languages.some((loc) => pathname.startsWith(`/${loc.key}`)) &&
@@ -93,10 +96,15 @@ export function middleware(req: NextRequest): NextResponse | undefined {
             const refererUrl = new URL(referer);
             const lngInReferer = languages.find((l) => refererUrl.pathname.startsWith(`/${l.key}`));
             if (lngInReferer) {
-                // Set the cookie with an expiration date of 1 month
-                const expires = new Date();
-                expires.setMonth(expires.getMonth() + 1);
-                response.headers.set('Set-Cookie', `${cookieName}=${lngInReferer}; Expires=${expires.toUTCString()}; path=/; domain=${domain}; SameSite=Lax`);
+                // Check if there's already a cookie with the same language value
+                const currentCookie = req.cookies.get(cookieName);
+
+                // Only set the cookie if it doesn't exist or has a different value
+                if (!currentCookie || currentCookie.value !== lngInReferer.key) {
+                    const expires = new Date();
+                    expires.setMonth(expires.getMonth() + 1);
+                    response.headers.set('Set-Cookie', `${cookieName}=${lngInReferer.key}; Expires=${expires.toUTCString()}; path=/; domain=${domain}; SameSite=Lax`);
+                }
             }
         }
     }

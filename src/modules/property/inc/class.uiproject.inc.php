@@ -1700,7 +1700,7 @@ JS;
 			{
 				$boticket		 = CreateObject('property.botts');
 				$ticket			 = $boticket->read_single($origin_id);
-				$values['descr'] = $ticket['details'];
+				$values['descr'] = strip_tags($ticket['details']);
 				$values['name']	 = $ticket['subject'] ? $ticket['subject'] : $ticket['category_name'];
 				$ticket_notes	 = $boticket->read_additional_notes($origin_id);
 				$i				 = count($ticket_notes) - 1;

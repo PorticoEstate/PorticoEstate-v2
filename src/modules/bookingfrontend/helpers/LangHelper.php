@@ -16,22 +16,15 @@ class LangHelper
     public function process(Request $request, Response $response, array $args = []): Response
     {
         $userSettings = Settings::getInstance()->get('user');
-        $selected_lang = Sanitizer::get_var('selected_lang', 'string', 'COOKIE');
+        $current_lang = Sanitizer::get_var('selected_lang', 'string', 'COOKIE');
 
-        // Check for lang in route parameter
-        if (isset($args['lang'])) {
-            $selected_lang = $args['lang'];
-        }
-        // If not in route parameter, check GET parameter
-        elseif ($request->getQueryParams()['lang'] ?? false) {
-            $selected_lang = $request->getQueryParams()['lang'];
-        }
-        // If not in route or GET parameter, and cookie is not set, set it to "no"
-        elseif (!$selected_lang) {
-            $selected_lang = "no";
-        }
+        // Determine the selected language
+        $selected_lang = $args['lang'] ??
+            ($request->getQueryParams()['lang'] ??
+                ($current_lang ?? "no"));
 
-        if ($selected_lang) {
+        // Only set cookie if the language has changed
+        if ($selected_lang && $selected_lang !== $current_lang) {
             $sessions = Sessions::getInstance();
             $sessions->phpgw_setcookie('selected_lang', $selected_lang, (time() + (60 * 60 * 24 * 14)));
         }

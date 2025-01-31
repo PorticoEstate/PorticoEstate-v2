@@ -465,7 +465,8 @@ class property_uirequest extends phpgwapi_uicommon_jquery
 		$count			 = count($values_combo_box);
 		$categories		 = $this->cats->formatted_xslt_list(array(
 			'select_name'	 => 'cat_id',
-			'selected'		 => $this->cat_id, 'globals'		 => True
+			'selected'		 => $this->cat_id,
+			'globals'		 => True
 		));
 		$default_value	 = array('cat_id' => '', 'name' => lang('no category'));
 		array_unshift($categories['cat_list'], $default_value);
@@ -531,7 +532,9 @@ class property_uirequest extends phpgwapi_uicommon_jquery
 
 		$building_part_list			 = $this->bocommon->select_category_list(array(
 			'type'		 => 'building_part',
-			'selected'	 => $this->building_part, 'order'		 => 'id', 'id_in_name' => 'num',
+			'selected'	 => $this->building_part,
+			'order'		 => 'id',
+			'id_in_name' => 'num',
 			'filter'	 => $_filter_buildingpart
 		));
 		array_unshift($building_part_list, array('id' => '', 'name' => lang('building part')));
@@ -548,7 +551,9 @@ class property_uirequest extends phpgwapi_uicommon_jquery
 		$count						 = count($values_combo_box);
 		$responsible_unit_list		 = $this->bocommon->select_category_list(array(
 			'type'		 => 'request_responsible_unit',
-			'selected'	 => $this->responsible_unit, 'order'		 => 'id', 'fields'	 => array(
+			'selected'	 => $this->responsible_unit,
+			'order'		 => 'id',
+			'fields'	 => array(
 				'descr'
 			)
 		));
@@ -808,7 +813,8 @@ class property_uirequest extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 1, 'acl_location'	 => $this->acl_location
+				'perm'			 => 1,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -1181,7 +1187,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 16, 'acl_location'	 => $this->acl_location
+				'perm'			 => 16,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 
@@ -1388,7 +1395,7 @@ JS;
 			{
 				$boticket		 = CreateObject('property.botts');
 				$ticket			 = $boticket->read_single($origin_id);
-				$values['descr'] = $ticket['details'];
+				$values['descr'] = strip_tags($ticket['details']);
 				$values['title'] = $ticket['subject'];
 				$ticket_notes	 = $boticket->read_additional_notes($origin_id);
 				$i				 = count($ticket_notes) - 1;
@@ -1408,7 +1415,9 @@ JS;
 			if ($location_code)
 			{
 				$values['location_data'] = $this->bolocation->read_single($location_code, array(
-					'tenant_id'	 => $tenant_id, 'p_num'		 => $p_num, 'view'		 => true
+					'tenant_id'	 => $tenant_id,
+					'p_num'		 => $p_num,
+					'view'		 => true
 				));
 			}
 		}
@@ -1566,21 +1575,28 @@ JS;
 			'requestUrl' => "''",
 			'ColumnDefs' => array(
 				array(
-					'key'		 => 'value_date', 'label'		 => lang('Date'),
+					'key'		 => 'value_date',
+					'label'		 => lang('Date'),
 					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array('key' => 'value_user', 'label' => lang('User'), 'sortable' => true, 'resizeable' => true),
 				array(
-					'key'		 => 'value_action', 'label'		 => lang('Action'), 'sortable'	 => true,
+					'key'		 => 'value_action',
+					'label'		 => lang('Action'),
+					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'value_old_value', 'label'		 => lang('old value'), 'sortable'	 => true,
+					'key'		 => 'value_old_value',
+					'label'		 => lang('old value'),
+					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'value_new_value', 'label'		 => lang('New Value'), 'sortable'	 => true,
+					'key'		 => 'value_new_value',
+					'label'		 => lang('New Value'),
+					'sortable'	 => true,
 					'resizeable' => true
 				)
 			),
@@ -1609,15 +1625,22 @@ JS;
 
 		$files_def = array(
 			array(
-				'key'		 => 'file_name', 'label'		 => lang('Filename'), 'sortable'	 => false,
+				'key'		 => 'file_name',
+				'label'		 => lang('Filename'),
+				'sortable'	 => false,
 				'resizeable' => true
 			),
 			array(
-				'key'		 => 'picture', 'label'		 => lang('picture'), 'sortable'	 => false,
-				'resizeable' => true, 'formatter'	 => 'JqueryPortico.showPicture'
+				'key'		 => 'picture',
+				'label'		 => lang('picture'),
+				'sortable'	 => false,
+				'resizeable' => true,
+				'formatter'	 => 'JqueryPortico.showPicture'
 			),
 			array(
-				'key'		 => 'delete_file', 'label'		 => lang('Delete file'), 'sortable'	 => false,
+				'key'		 => 'delete_file',
+				'label'		 => lang('Delete file'),
+				'sortable'	 => false,
 				'resizeable' => true
 			)
 		);
@@ -1627,7 +1650,8 @@ JS;
 			//				'requestUrl' => "''",
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.uirequest.get_files',
-				'id'				 => $id, 'phpgw_return_as'	 => 'json'
+				'id'				 => $id,
+				'phpgw_return_as'	 => 'json'
 			))),
 			'ColumnDefs' => $files_def,
 			'data'		 => json_encode($content_files),
@@ -1671,22 +1695,30 @@ JS;
 			'requestUrl' => "''",
 			'ColumnDefs' => array(
 				array(
-					'key'		 => 'id', 'label'		 => lang('id'), 'sortable'	 => true,
+					'key'		 => 'id',
+					'label'		 => lang('id'),
+					'sortable'	 => true,
 					'resizeable' => false
 				),
 				array('key' => 'type', 'label' => lang('type'), 'sortable' => true, 'resizeable' => true),
 				array('key' => 'status', 'label' => lang('status'), 'sortable' => false, 'resizeable' => true),
 				array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true),
 				array(
-					'key'		 => 'start_date', 'label'		 => lang('start date'), 'sortable'	 => true,
+					'key'		 => 'start_date',
+					'label'		 => lang('start date'),
+					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'end_date', 'label'		 => lang('end date'), 'sortable'	 => true,
+					'key'		 => 'end_date',
+					'label'		 => lang('end date'),
+					'sortable'	 => true,
 					'resizeable' => true
 				),
 				array(
-					'key'		 => 'budget', 'label'		 => lang('budget'), 'sortable'	 => true,
+					'key'		 => 'budget',
+					'label'		 => lang('budget'),
+					'sortable'	 => true,
 					'resizeable' => false,
 					'formatter'	 => 'JqueryPortico.FormatterAmount0'
 				)
@@ -1854,8 +1886,10 @@ JS;
 			'lang_status'						 => lang('Status'),
 			'lang_status_statustext'			 => lang('What is the current status of this request ?'),
 			'responsible_unit_list'				 => array('options' => $this->bocommon->select_category_list(array(
-				'type'		 => 'request_responsible_unit', 'selected'	 => $values['responsible_unit'],
-				'order'		 => 'id', 'fields'	 => array('descr')
+				'type'		 => 'request_responsible_unit',
+				'selected'	 => $values['responsible_unit'],
+				'order'		 => 'id',
+				'fields'	 => array('descr')
 			))),
 			'value_recommended_year'			 => $values['recommended_year'],
 			'branch_list'						 => array('options' => $this->boproject->select_branch_list($values['branch_id'])),
@@ -1868,16 +1902,21 @@ JS;
 			'value_notify_mail_address'			 => $supervisor_email,
 			'currency'							 => $this->userSettings['preferences']['common']['currency'],
 			'authorities_demands'				 => array('options' => execMethod('property.bogeneric.get_list', array(
-				'type'		 => 'authorities_demands', 'selected'	 => $values['authorities_demands']
+				'type'		 => 'authorities_demands',
+				'selected'	 => $values['authorities_demands']
 			))),
 			'regulations'						 => execMethod('property.bogeneric.get_list', array(
 				'type'		 => 'regulations',
-				'selected'	 => $values['regulations'], 'fields'	 => array('descr', 'external_ref')
+				'selected'	 => $values['regulations'],
+				'fields'	 => array('descr', 'external_ref')
 			)),
 			'condition_list'					 => $this->bo->select_conditions($id),
 			'building_part_list'				 => array('options' => $this->bocommon->select_category_list(array(
-				'type'		 => 'building_part', 'selected'	 => $values['building_part'], 'order'		 => 'id',
-				'id_in_name' => 'num', 'filter'	 => $_filter_buildingpart
+				'type'		 => 'building_part',
+				'selected'	 => $values['building_part'],
+				'order'		 => 'id',
+				'id_in_name' => 'num',
+				'filter'	 => $_filter_buildingpart
 			))),
 			'value_consume'						 => isset($receipt['error']) ? $values['consume_value'] : '',
 			'value_multiplier'					 => $values['multiplier'],
@@ -1886,7 +1925,9 @@ JS;
 			'value_total_cost_estimate'			 => $values['representative'] ? number_format((float)($values['budget'] * $values['representative']), 0, ',', ' ') : '',
 			'validator'							 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
-				'date', 'security', 'file'
+				'date',
+				'security',
+				'file'
 			)),
 			'multiple_uploader'					 => !!$id,
 
@@ -1923,7 +1964,8 @@ JS;
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 8, 'acl_location'	 => $this->acl_location
+				'perm'			 => 8,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 

@@ -174,7 +174,7 @@ if (!class_exists("EBF_ticket_smartsheet_integration"))
 			 */
 			$rows									 = array();
 			$rows['SakID']							 = $data['id'];
-			$rows['Beskrivelse av sak/reklamasjon']	 = $ticket['details'];
+			$rows['Beskrivelse av sak/reklamasjon']	 = strip_tags($ticket['details']);
 			$rows['Type sak']						 = 'Reklamasjon';
 			$rows['Hvor']							 = $ticket['location_code'] . ' : ' . $ticket['address'];
 			$rows['Referanse']						 = array(
@@ -200,7 +200,7 @@ if (!class_exists("EBF_ticket_smartsheet_integration"))
 	}
 }
 
-if(!isset($transfer_action) && $transfer_action !== 'receive_order')
+if (!isset($transfer_action) && $transfer_action !== 'receive_order')
 {
 	$ticket_smartsheet = new EBF_ticket_smartsheet_integration();
 	$ticket_smartsheet->check_category($data);

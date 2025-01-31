@@ -1160,7 +1160,8 @@
 			init_table = function()
 			{
     			var	stateSave = true;
-
+console.log(app_method);
+console.log(app_method_referrer);
                 //check referer and if it is the same as the current page, then clear state
                 if(app_method !== app_method_referrer)
                 {

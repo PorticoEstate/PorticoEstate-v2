@@ -82,7 +82,8 @@ class HomeHelper
 		if (!empty($this->serverSettings['forward_to_http']))
 		{
 			// check if we are already on a https frontend
-			if (isset($_SERVER['HTTP_SHIB_HANDLER']))
+			//check HTTP_REFERER
+			if (isset($_SERVER['HTTP_SHIB_HANDLER']) && !preg_match('/bergen.kommune.no/', $_SERVER['HTTP_REFERER']))
 			{
 				// redirect to http
 				$redirect = \phpgw::link('/home/', $_GET, false, true);

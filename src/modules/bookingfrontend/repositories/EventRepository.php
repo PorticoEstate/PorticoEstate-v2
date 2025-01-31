@@ -135,4 +135,23 @@ class EventRepository
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
     }
+
+    public function addPreregistration($id, $data)
+    {
+        $fields = [
+            'reservation_type',
+            'reservation_id',
+            'phone',
+            'quantity'
+        ];
+        $sql = 
+        "INSERT INTO bb_participant(" . implode(', ', $fields) . 
+        ") VALUES('event', :eventId, :phone, :quantity)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'eventId' => $id,
+            'phone' => $data['phone'],
+            'quantity' => $data['quantity']
+        ]);
+    }
 }

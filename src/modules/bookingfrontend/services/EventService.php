@@ -90,7 +90,7 @@ class EventService
 
     public function getPartialEventObjectById(int $id)
     {
-        $fields = ['id', 'customer_ssn', 'customer_organization_number'];
+        $fields = ['id', 'customer_ssn', 'customer_organization_number', 'participant_limit'];
         $sql = "SELECT " . implode(', ', $fields) . " FROM bb_event WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
@@ -143,12 +143,11 @@ class EventService
         ];
     }
 
-    public function preRegister(array $data, array $event, int $phone)
+    public function preRegister(array $data, array $event)
     {  
-        $previousPreRegistration = $this->repository->getPreviousRegistration($event['id'], $phone);
-        // If participant already pre-register return null. 
-        // Participant is pre-register if ONLY have from_ field
-        if (!$previousPreRegistration['to_']) {
+        $previousPreRegistration = $this->repository->getPreviousRegistration($event['id'], $data['phone']);
+
+        if ($previousPreRegistration['id']) {
             return null;
         }
 
@@ -157,8 +156,8 @@ class EventService
         if ($newAllPeoplesQuantity > (int) $event['participant_limit']) {
             return null;
         }
-        //TODO
-
-
+       
+        $this->repository->addPreregistration($event['id'], $data);
+        return $event['id'];
     }
 }

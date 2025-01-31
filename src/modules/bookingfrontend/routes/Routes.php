@@ -67,6 +67,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
     {
         $group->get('/{id}', EventController::class . ':getEventById');
         $group->patch('/{id}', EventController::class . ':updateEvent');
+        $group->post('/{id}/pre-register', EventController::class . ':preRegister');
     });
 })->add(new SessionsMiddleware($app->getContainer()));
 

@@ -144,10 +144,10 @@ class EventService
     }
 
     public function preRegister(array $data, array $event)
-    {  
-        $previousPreRegistration = $this->repository->getPreviousRegistration($event['id'], $data['phone']);
+    {
+        $preRegistration = $this->repository->findPreRegistration($event['id'], $data['phone']);
 
-        if ($previousPreRegistration['id']) {
+        if ($preRegistration['id']) {
             return null;
         }
 
@@ -158,6 +158,33 @@ class EventService
         }
        
         $this->repository->addPreregistration($event['id'], $data);
+        return $event['id'];
+    }
+
+    public function inRegister(array $data, array $event)
+    {
+        $inRegistration = $this->repository->findInRegistration($event['id'], $data['phone']);
+
+        if ($inRegistration['id']) {
+            return null;
+        }
+
+        $preRegistration = $this->repository->findPreRegistration($event['id'], $data['phone']);
+        if ($preRegistration) {
+            $acceptedQuantity = $preRegistration['quantity'];
+            $data['quantity'] = $acceptedQuantity > $data['quantity'] ? $data['quantity'] : $acceptedQuantity;
+        }
+        
+        $numberOfParticipants = $this->repository->currentParticipants($event['id'], true);
+        $newAllPeoplesQuantity = $numberOfParticipants + $data['quantity'];
+        if ($newAllPeoplesQuantity > (int) $event['participant_limit']) {
+            return null;
+        }
+
+        $data['from'] = date('Y-m-d H:i:s');
+        $preRegistration 
+            ? $this->repository->updateInRegistration($event['id'], $data)
+            : $this->repository->insertInRegistration($event['id'], $data);
         return $event['id'];
     }
 }

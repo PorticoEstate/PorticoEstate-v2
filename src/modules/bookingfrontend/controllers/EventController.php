@@ -242,4 +242,54 @@ class EventController
             );
         }
     }
+
+    public function inRegistration(Request $request, Response $response, array $args)
+    {
+        $id = (int)$args['id'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        $data = json_decode($request->getBody()->getContents(), true);
+        if (!$data) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Invalid JSON data'],
+                400
+            );
+        }
+
+        $existingEvent = $this->service->getPartialEventObjectById($id);
+        if (!$existingEvent) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Event not found'],
+                404
+            );
+        }
+
+        try {
+            $id = $this->service->inRegister($data, $existingEvent);
+            if (!$id) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Incorrect data'],
+                    400
+                );
+            }
+            $responseData = [
+                'id' => $id,
+                'message' => 'Pre-registration successfull'
+            ];
+            $response->getBody()->write(json_encode($responseData));
+            return $response->withStatus(201)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error updating the event: ' . $e->getMessage()],
+                500
+            );
+        }
+    }
 }

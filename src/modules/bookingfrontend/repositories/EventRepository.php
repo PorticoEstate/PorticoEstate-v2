@@ -93,24 +93,45 @@ class EventRepository
         $insertStmt->execute();
     }
 
-    public function currentParticipants(int $id): int
+    public function currentParticipants(int $id, $registeredIn = false): int
     {
+        $filtermethod = '';
+        if ($registeredIn) {
+            $filtermethod .= 'AND from_ IS NOT NULL AND to_ IS NULL';
+        } else {
+            $filtermethod .= 'AND to_ IS NULL';
+        }
+
         $sql = "SELECT sum(quantity) as cnt"
         . " FROM bb_participant"
             . " WHERE reservation_type='event'"
-            . " AND reservation_id=" . (int) $id;
+            . " AND reservation_id=" . (int) $id
+            . " {$filtermethod}";
         $this->db->query($sql, __LINE__, __FILE__);
         $this->db->next_record();
         return (int)$this->db->f('cnt');
     }
 
-    public function getPreviousRegistration(int $id, string $phone)
+    public function findPreRegistration(int $id, string $phone)
     {
         $sql = "SELECT id, email, from_, to_, quantity"
         . " FROM bb_participant"
         . " WHERE reservation_type='event'"
         . " AND reservation_id=" . (int) $id
         . " AND phone LIKE '%{$phone}'"
+        . " ORDER BY id DESC";
+
+        $this->db->query($sql, __LINE__, __FILE__);
+        return $this->db->next_record();
+    }
+    public function findInRegistration(int $id, string $phone)
+    {
+        $sql = "SELECT id, email, from_, to_, quantity"
+        . " FROM bb_participant"
+        . " WHERE reservation_type='event'"
+        . " AND reservation_id=" . (int) $id
+        . " AND phone LIKE '%{$phone}'"
+        . " AND from_ IS NOT NULL AND to_ IS NULL"
         . " ORDER BY id DESC";
 
         $this->db->query($sql, __LINE__, __FILE__);
@@ -154,4 +175,14 @@ class EventRepository
             'quantity' => $data['quantity']
         ]);
     }
+
+    public function insertInRegistration($id, $data) 
+    {
+
+    }
+    public function updateInRegistration($id, $data)
+    {
+
+    }
+
 }

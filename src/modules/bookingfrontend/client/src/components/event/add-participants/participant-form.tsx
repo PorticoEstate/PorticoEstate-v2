@@ -5,42 +5,61 @@ import { faCalendarCheck, faUserMinus, faUserPlus } from "@fortawesome/free-soli
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import styles from './add-participants.module.scss';
 import { FC, useState } from "react";
+import { inRegistration, outRegistration, preRegistration } from "@/service/api/event-info";
 
 interface ParticipantFormProps {
-	maxParticipants: number;
+    eventId: number;
+    pendingEvent: boolean;
 }
 
-const ParticipantForm: FC<ParticipantFormProps> = ({ maxParticipants }: ParticipantFormProps) => {
+const ParticipantForm: FC<ParticipantFormProps> = ({ eventId, pendingEvent }: ParticipantFormProps) => {
 	const t = useTrans();
-	const [number, setNumber] = useState();
+	const [phone, setPhone] = useState('');
+    const [quantity, setQuantity] = useState(0);
 
-	const phoneNumberOnChange = ({ target: { value } }: any) => {}
-
+	const phoneNumberOnChange = ({ target: { value } }: any) => {
+        setPhone(value);
+    }
+    
 	return (
 		<div className={styles.addParticipantsContainer}>
 			<div className={styles.addParticipantsInputs}>
 				<Textfield 
+                    type="number"
 					label=''
 					placeholder={t('bookingfrontend.enter_participants_number')}
-					value={maxParticipants}
+                    onChange={({ target }) => setQuantity(parseInt(target.value))}
+					value={quantity}
 				/>
 				<Textfield 
 					label=''
 					onChange={phoneNumberOnChange}
-					value={number}
+					value={phone}
 					placeholder={t('bookingfrontend.enter_the_mobile_number_of_recipient')}
 				/>
 			</div>
-			<div  className={styles.addParticipantsButtons}>
-				<Button variant='secondary'>
+			<div className={styles.addParticipantsButtons}>
+				<Button 
+                    variant='secondary' 
+                    disabled={pendingEvent}
+                    onClick={() => preRegistration(eventId, phone, quantity)} 
+                >
 					<FontAwesomeIcon icon={faCalendarCheck}/>
 					{t('bookingfrontend.pre_register')}
 				</Button>
-				<Button variant='secondary'>
+				<Button 
+                    variant='secondary' 
+                    disabled={!pendingEvent}
+                    onClick={() => outRegistration(eventId, phone)} 
+                >
 					<FontAwesomeIcon icon={faUserMinus}/>
 					{t('bookingfrontend.unregister')}
 				</Button>
-				<Button variant='secondary' disabled>
+				<Button 
+                    variant='secondary' 
+                    disabled={!pendingEvent}
+                    onClick={() => inRegistration(eventId, phone, quantity)} 
+                >
 					<FontAwesomeIcon icon={faUserPlus}/>
 					{t('bookingfrontend.register')}
 				</Button>

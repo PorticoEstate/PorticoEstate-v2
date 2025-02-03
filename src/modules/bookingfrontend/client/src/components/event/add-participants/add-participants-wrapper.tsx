@@ -14,6 +14,7 @@ const AddParticipantsWrapper: FC<WrapperProps> = ({ eventId }: WrapperProps) => 
     if (!isLoading && eventInfo) {
 		const access = eventInfo.name !== 'PRIVATE EVENT';
 		if (!access) return null;
+        const pendingEvent = eventInfo.from_ <= new Date();
         return (
 			<>
 				<AddParticipantsHeader
@@ -22,7 +23,8 @@ const AddParticipantsWrapper: FC<WrapperProps> = ({ eventId }: WrapperProps) => 
 					numberOfParticipants={eventInfo.numberOfParticipants}
 				/>
 				<ParticipantForm 
-					maxParticipants={eventInfo.participant_limit}
+					eventId={eventInfo.id}
+                    pendingEvent={pendingEvent}
 				/> 
 			</>
 		)

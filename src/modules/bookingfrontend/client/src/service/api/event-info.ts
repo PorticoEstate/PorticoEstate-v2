@@ -219,6 +219,71 @@ export const editEvent = async (id: number, data: Partial<ActivityData>) => {
     return response.json();
 }
 
+export const preRegistration = async (
+    id: number,
+    phone: string,
+    quantity: number
+) => {
+    const url = phpGWLink([
+        "bookingfrontend",
+        "events",
+        id,
+        "pre-registration",
+    ]);
+    const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify({ phone, quantity }),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update event");
+    }
+    return response.json();
+};
+
+export const inRegistration = async (
+    id: number,
+    phone: string,
+    quantity: number
+) => {
+    const url = phpGWLink([
+        "bookingfrontend",
+        "events",
+        id,
+        "in-registration",
+    ]);
+    const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify({ phone, quantity }),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update event");
+    }
+    return response.json();
+}; 
+export const outRegistration = async (
+    id: number,
+    phone: string,
+) => {
+    const url = phpGWLink(["bookingfrontend", "events", id, "out-registration"]);
+    const response = await fetch(url, {
+        method: "PATCH",
+        body: JSON.stringify({ phone }),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update event");
+    }
+    return response.json();
+}; 
+
 
 export const useAllocationPopperData = (allocation_id: (string | number)) => {
     const query = useQuery({

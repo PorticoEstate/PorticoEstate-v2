@@ -5,6 +5,7 @@ namespace App\modules\bookingfrontend\services;
 use App\Database\Db;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\repositories\EventRepository;
+use DateTime;
 use Exception;
 use PDO;
 
@@ -145,6 +146,12 @@ class EventService
 
     public function preRegister(array $data, array $event)
     {
+        $now = new DateTime();
+        $from = new DateTime(date('Y-m-d H:i:s', strtotime($event['from_'])));
+        if ($from < $now) {
+            return false;
+        }
+
         $preRegistration = $this->repository->findRegistration($event['id'], $data['phone']);
         //If user already pre-registered
         if ($preRegistration['id']) {
@@ -163,6 +170,13 @@ class EventService
 
     public function inRegister(array $data, array $event)
     {
+        $now = new DateTime();
+        $from = new DateTime(date('Y-m-d H:i:s', strtotime($event['from_'])));
+        $to = new DateTime(date('Y-m-d H:i:s', strtotime($event['to_'])));
+        if (!($from < $now && $to > $now)) {
+            return null;
+        }
+
         $registration = $this->repository->findRegistration($event['id'], $data['phone']);
         // If user already registered in
         if ($registration['from_']) {
@@ -189,6 +203,14 @@ class EventService
 
     public function outRegistration(string $phone, array $event)
     {
+        $now = new DateTime();
+        $from = new DateTime(date('Y-m-d H:i:s', strtotime($event['from_'])));
+        $to = new DateTime(date('Y-m-d H:i:s', strtotime($event['to_'])));
+
+        $pre = $from < $now;
+        $in = $from < $now && $to > $now;
+        if (!($pre || $in)) return null;
+
         $inRegistration = $this->repository->findRegistration($event['id'], $phone);
 
         // If user didnt register in

@@ -280,7 +280,7 @@ class EventController
             }
             $responseData = [
                 'id' => $id,
-                'message' => 'Pre-registration successfull'
+                'message' => 'In-registration successfull'
             ];
             $response->getBody()->write(json_encode($responseData));
             return $response->withStatus(201)
@@ -330,7 +330,7 @@ class EventController
             }
             $responseData = [
                 'id' => $id,
-                'message' => 'Pre-registration successfull'
+                'message' => 'Out-registrated'
             ];
             $response->getBody()->write(json_encode($responseData));
             return $response->withStatus(201)

@@ -81,7 +81,7 @@ class EventService
         }
     }
 
-    private function saveNewDates($id, array $data)
+    private function saveNewDates(int $id, array $data)
     {
         if (!$data['from_'] && !$data['to_']) return null;
        
@@ -127,7 +127,7 @@ class EventService
         }
     }
 
-    public function getEventById($id)
+    public function getEventById(int $id)
     {
         $entity = $this->repository->getEventById($id);
     
@@ -200,7 +200,8 @@ class EventService
             return null;
         }
 
-        $data = ['phone' => $phone, 'to' => date('Y-m-d H:i:s')];
+        $data = ['phone' => $phone, 'to_' => date('Y-m-d H:i:s')];
         $this->repository->outRegistration($event['id'], $data);
+        return $event['id'];
     }
 }

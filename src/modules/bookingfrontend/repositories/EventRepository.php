@@ -104,12 +104,13 @@ class EventRepository
 
         $sql = "SELECT sum(quantity) as cnt"
         . " FROM bb_participant"
-            . " WHERE reservation_type='event'"
-            . " AND reservation_id=" . (int) $id
-            . " {$filtermethod}";
-        $this->db->query($sql, __LINE__, __FILE__);
-        $this->db->next_record();
-        return (int)$this->db->f('cnt');
+        . " WHERE reservation_type='event'"
+        . " AND reservation_id=:eventId"
+        . " {$filtermethod}";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['eventId' => $id]);
+        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $data['cnt'] ? $data['cnt'] : 0;
     }
 
     public function findRegistration(int $id, string $phone)
@@ -117,12 +118,13 @@ class EventRepository
         $sql = "SELECT id, email, from_, to_, quantity"
         . " FROM bb_participant"
         . " WHERE reservation_type='event'"
-        . " AND reservation_id=" . (int) $id
+        . " AND reservation_id=:id"
         . " AND phone LIKE '%{$phone}'"
         . " ORDER BY id DESC";
 
-        $this->db->query($sql, __LINE__, __FILE__);
-        return $this->db->next_record();
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function updateDates($id, $data)
@@ -172,8 +174,8 @@ class EventRepository
             'phone',
             'quantity'
         ];
-        $sql = "INSERT INTO bb_participant()" . implode(', ', $insertFields)
-        . " VALUES('event', :eventId, :from, :phone, :quantity)";
+        $sql = "INSERT INTO bb_participant(" . implode(', ', $insertFields)
+        . ") VALUES('event', :eventId, :from, :phone, :quantity)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'eventId' => $id,
@@ -184,11 +186,11 @@ class EventRepository
     }
 
     private function updateRegistration(int $id, string $phone, string $fieldName, $value)
-    {
-        $sql = "UPDATE bb_participant SET $fieldName=::from"
+    { 
+        $sql = "UPDATE bb_participant SET $fieldName=:$fieldName"
         . " WHERE reservation_type='event'"
-        . " AND reservation_id=" . (int) $id
-            . " AND phone LIKE '%{:phone}'";
+        . " AND reservation_id=:eventId"
+        . " AND phone LIKE :phone";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'eventId' => $id,

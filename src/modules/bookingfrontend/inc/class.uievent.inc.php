@@ -781,14 +781,15 @@ class bookingfrontend_uievent extends booking_uievent
 
 	public function info_json()
 	{
+		// Retrieve multiple allocation IDs
 		$ids = Sanitizer::get_var('ids', 'string');
-		if ($ids)
+		if (!is_array($ids))
 		{
 			$ids = explode(',', $ids);
 		}
 		elseif (!$ids || !is_array($ids))
 		{
-			$ids = array(Sanitizer::get_var('id'));
+			$ids = array(Sanitizer::get_var('id', 'int'));
 		}
 		if (empty($ids))
 		{

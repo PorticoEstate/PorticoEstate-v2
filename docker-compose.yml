@@ -23,6 +23,8 @@ services:
                 INSTALL_MSSQL: ${INSTALL_MSSQL:-false}
                 INSTALL_XDEBUG: ${INSTALL_XDEBUG:-false}
                 INSTALL_ORACLE: ${INSTALL_ORACLE:-false}
+                http_proxy: ${http_proxy}
+                https_proxy: ${https_proxy}
         working_dir: /var/www/html
         environment:
             <<: *common-variables
@@ -43,6 +45,8 @@ services:
             dockerfile: Dockerfile.nextjs
             args:
                 - NEXT_ENV=${NEXT_ENV:-production}
+                - http_proxy=${http_proxy}
+                - https_proxy=${https_proxy}
         environment:
             <<: *common-variables
         networks:

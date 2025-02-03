@@ -1788,7 +1788,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		// Retrieve multiple allocation IDs
 		$ids = Sanitizer::get_var('ids', 'string');
-		if (!is_array($ids))
+		if ($ids && !is_array($ids))
 		{
 			$ids = explode(',', $ids);
 		}

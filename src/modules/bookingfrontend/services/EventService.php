@@ -145,8 +145,8 @@ class EventService
 
     public function preRegister(array $data, array $event)
     {
-        $preRegistration = $this->repository->findPreRegistration($event['id'], $data['phone']);
-
+        $preRegistration = $this->repository->findRegistration($event['id'], $data['phone']);
+        //If user already pre-registered
         if ($preRegistration['id']) {
             return null;
         }
@@ -163,15 +163,14 @@ class EventService
 
     public function inRegister(array $data, array $event)
     {
-        $inRegistration = $this->repository->findInRegistration($event['id'], $data['phone']);
-
-        if ($inRegistration['id']) {
+        $registration = $this->repository->findRegistration($event['id'], $data['phone']);
+        // If user already registered in
+        if ($registration['from_']) {
             return null;
         }
-
-        $preRegistration = $this->repository->findPreRegistration($event['id'], $data['phone']);
-        if ($preRegistration) {
-            $acceptedQuantity = $preRegistration['quantity'];
+        // If user have pre-registration
+        if ($registration) {
+            $acceptedQuantity = $registration['quantity'];
             $data['quantity'] = $acceptedQuantity > $data['quantity'] ? $data['quantity'] : $acceptedQuantity;
         }
         
@@ -181,10 +180,27 @@ class EventService
             return null;
         }
 
-        $data['from'] = date('Y-m-d H:i:s');
-        $preRegistration 
-            ? $this->repository->updateInRegistration($event['id'], $data)
+        $data['from_'] = date('Y-m-d H:i:s');
+        $registration 
+            ? $this->repository->inRegistration($event['id'], $data)
             : $this->repository->insertInRegistration($event['id'], $data);
         return $event['id'];
+    }
+
+    public function outRegistration(string $phone, array $event)
+    {
+        $inRegistration = $this->repository->findRegistration($event['id'], $phone);
+
+        // If user didnt register in
+        if (!$inRegistration['from_']) {
+            return null;
+        }
+        //If user already registered out
+        if ($inRegistration['to_']) {
+            return null;
+        }
+
+        $data = ['phone' => $phone, 'to' => date('Y-m-d H:i:s')];
+        $this->repository->outRegistration($event['id'], $data);
     }
 }

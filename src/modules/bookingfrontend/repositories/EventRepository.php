@@ -112,26 +112,13 @@ class EventRepository
         return (int)$this->db->f('cnt');
     }
 
-    public function findPreRegistration(int $id, string $phone)
+    public function findRegistration(int $id, string $phone)
     {
         $sql = "SELECT id, email, from_, to_, quantity"
         . " FROM bb_participant"
         . " WHERE reservation_type='event'"
         . " AND reservation_id=" . (int) $id
         . " AND phone LIKE '%{$phone}'"
-        . " ORDER BY id DESC";
-
-        $this->db->query($sql, __LINE__, __FILE__);
-        return $this->db->next_record();
-    }
-    public function findInRegistration(int $id, string $phone)
-    {
-        $sql = "SELECT id, email, from_, to_, quantity"
-        . " FROM bb_participant"
-        . " WHERE reservation_type='event'"
-        . " AND reservation_id=" . (int) $id
-        . " AND phone LIKE '%{$phone}'"
-        . " AND from_ IS NOT NULL AND to_ IS NULL"
         . " ORDER BY id DESC";
 
         $this->db->query($sql, __LINE__, __FILE__);
@@ -177,12 +164,44 @@ class EventRepository
     }
 
     public function insertInRegistration($id, $data) 
-    {
-
+    {   
+        $insertFields = [
+            'reservation_type',
+            'reservation_id',
+            'from_',
+            'phone',
+            'quantity'
+        ];
+        $sql = "INSERT INTO bb_participant()" . implode(', ', $insertFields)
+        . " VALUES('event', :eventId, :from, :phone, :quantity)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'eventId' => $id,
+            'phone' => $data['phone'],
+            'from' => $data['from_'],
+            'quantity' => $data['quantity']
+        ]);
     }
-    public function updateInRegistration($id, $data)
+
+    private function updateRegistration(int $id, string $phone, string $fieldName, $value)
     {
-
+        $sql = "UPDATE bb_participant SET $fieldName=::from"
+        . " WHERE reservation_type='event'"
+        . " AND reservation_id=" . (int) $id
+            . " AND phone LIKE '%{:phone}'";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'eventId' => $id,
+            'phone' => $phone,
+            $fieldName =>  $value
+        ]);
     }
-
+    public function outRegistration($id, $data) 
+    {
+       return $this->updateRegistration($id, $data['phone'], 'to_', $data['to_']);
+    }
+    public function inRegistration($id, $data)
+    {
+        return $this->updateRegistration($id, $data['phone'], 'from_', $data['from_']);
+    }
 }

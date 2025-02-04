@@ -26,7 +26,7 @@ const ResourcesGroup: FC<ResourcesGroupProps> = ({ buildingResources, selectedRe
                     asChild
                     value={String(id)}
                     id={`resource-${id}`}
-                    onClick={() => onChange(id, name)} 
+                     onChange={() => onChange(id, name)} 
                     checked={selectedResources.has(id)}
                 >   
                     <label htmlFor={`resource-${id}`}>

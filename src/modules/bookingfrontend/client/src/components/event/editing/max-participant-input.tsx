@@ -1,10 +1,9 @@
-import { ActivityData } from "@/service/api/event-info"
 import { Input } from "@digdir/designsystemet-react"
 import styles from '../event.module.scss';
 import { FC } from "react"
 
 interface ParticipantInputProps {
-    updateField: (key: keyof ActivityData, value: number) => void;
+    updateField: (value: number) => void;
     fieldValue: number;
 }
 
@@ -12,8 +11,8 @@ const MaxParticipantInput: FC<ParticipantInputProps> = ({ updateField, fieldValu
     const handler = (action: 'plus' | 'minus') => {
         if (action === 'minus' && fieldValue <= 0) return;
         return action === 'plus' ? 
-            updateField('participant_limit', fieldValue + 1)
-            : updateField('participant_limit', fieldValue - 1)
+            updateField(fieldValue + 1)
+            : updateField(fieldValue - 1)
     }
     return (
         <div className={styles.participantInput}>

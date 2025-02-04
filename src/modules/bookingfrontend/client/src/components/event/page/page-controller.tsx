@@ -3,6 +3,7 @@ import EventEditing from "@/components/event/editing/editing-controller";
 import { ActivityData, editEvent, useEventData } from "@/service/api/event-info";
 import { FC, useState, useEffect } from "react";
 import EventView from "./page-view";
+import { EditingEvent } from "../editing/eventFormSchema";
 
 interface EventPageProps {
     event: ActivityData;
@@ -21,10 +22,10 @@ const EventPageController: FC<EventPageProps> = ({ eventId, privateAccess }: Eve
         setEventState(eventInfo);
     }, [eventInfo]);
 
-    const saveChanges = (newEventObject: ActivityData) => {
+    const saveChanges = (newEventObject: EditingEvent) => {
         const updatedData: any = {};
         for (const field in newEventObject) {
-            const f: keyof ActivityData = field as any;
+            const f: keyof EditingEvent = field as any;
             if (f === 'resources') {
                 const new_ids = newEventObject[f].keys();
                 updatedData.resource_ids = [...(new Set([...new_ids]))];

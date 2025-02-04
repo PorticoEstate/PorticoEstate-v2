@@ -221,8 +221,7 @@ export const editEvent = async (id: number, data: Partial<ActivityData>) => {
 
 export const preRegistration = async (
     id: number,
-    phone: string,
-    quantity: number
+    data: { phone: string, quantity: number }
 ) => {
     const url = phpGWLink([
         "bookingfrontend",
@@ -232,7 +231,7 @@ export const preRegistration = async (
     ]);
     const response = await fetch(url, {
         method: "POST",
-        body: JSON.stringify({ phone, quantity }),
+        body: JSON.stringify(data),
         headers: {
             "Content-Type": "application/json",
         },
@@ -245,18 +244,12 @@ export const preRegistration = async (
 
 export const inRegistration = async (
     id: number,
-    phone: string,
-    quantity: number
+    data: { phone: string; quantity: number }
 ) => {
-    const url = phpGWLink([
-        "bookingfrontend",
-        "events",
-        id,
-        "in-registration",
-    ]);
+    const url = phpGWLink(["bookingfrontend", "events", id, "in-registration"]);
     const response = await fetch(url, {
         method: "POST",
-        body: JSON.stringify({ phone, quantity }),
+        body: JSON.stringify(data),
         headers: {
             "Content-Type": "application/json",
         },

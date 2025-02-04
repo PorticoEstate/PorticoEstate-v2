@@ -25,6 +25,7 @@ const AddParticipantsWrapper: FC<WrapperProps> = ({ eventId }: WrapperProps) => 
 				<ParticipantForm 
 					eventId={eventInfo.id}
                     pendingEvent={pendingEvent}
+					participantLimit={eventInfo.participant_limit}
 				/> 
 			</>
 		)

@@ -24,7 +24,7 @@
 				}
 			);
 
-			var sUrl = phpGWLink('logout.php');
+			var sUrl = phpGWLink('logout_ui');
 			window.open(sUrl, '_self');
 		}
 

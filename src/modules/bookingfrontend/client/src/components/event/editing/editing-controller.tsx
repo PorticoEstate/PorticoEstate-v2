@@ -66,7 +66,7 @@ const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing
         }
         saveChanges(data);
     }
-    console.log(isDirty);
+
     return (
         <main>
             <EventEditingForm control={control} errors={errors} event={event} />

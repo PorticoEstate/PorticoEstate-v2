@@ -24,7 +24,7 @@ export interface ActivityData {
     activity_id: number;
     reminder: number;
     is_public: boolean;
-    resources: Map<number, string>;
+    resources: { id: number, name: string }[]
     buildingResources: Map<number, string>;
     numberOfParticipants: number;
 
@@ -186,18 +186,12 @@ export const useEventData = (eventId: (string | number)) => {
             const res = await fetch(url);
             const { event, numberOfParticipants } = await res.json();
             const buildingResources = await fetchBuildingResources(event.building_id);
-            if (!event.resources) event.resources = [];
             return {
                 ...event,
                 to_: new Date(event.to_),
                 from_: new Date(event.from_),
                 participant_limit: event.participant_limit || 0,
-                resources: new Map(
-                    event.resources.map(({ id, name }: any) => [
-                        parseInt(id),
-                        name,
-                    ])
-                ),
+                resources: event.resources || [],
                 buildingResources: new Map(
                     buildingResources.map(({ id, name }) => [id, name])
                 ),
@@ -212,8 +206,8 @@ export const editEvent = async (id: number, data: Partial<ActivityData>) => {
     let field: keyof ActivityData;
     for (field in data) {
         if (field === 'resources' && data.resources) {
-            const new_ids = data.resources.keys();
-            transformed.resource_ids = [...(new Set([...new_ids]))]
+            const new_ids = data.resources.map((item) => item.id);
+            transformed.resource_ids = new_ids;
         } else transformed[field] = data[field];
     }
 

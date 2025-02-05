@@ -86,8 +86,8 @@ const EventEditingForm: FC<FormProps> = ({ event, control, errors }: FormProps) 
                     <Field style={{gap: '0'}}>
                         <span className={styles.inputLabel}>{t('bookingfrontend.resource')}</span>
                         <ResourcesGroup 
-                            updateField={(data) => onChange(data)}
-                            buildingResources={event.buildingResources}
+                            updateField={onChange}
+                            buildingResources={event.buildingResources} 
                             selectedResources={value}
                         />
                     </Field>

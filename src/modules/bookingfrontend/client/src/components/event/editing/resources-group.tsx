@@ -6,16 +6,18 @@ import ColourCircle from "@/components/building-calendar/modules/colour-circle/c
 
 interface ResourcesGroupProps {
     buildingResources: Map<number, string>;
-    selectedResources: Map<number, string>;
-    updateField: (selectedResources: Map<number, string>) => void;
+    selectedResources: {id: number, name: string}[]
+    updateField: (selectedResources: { id: number, name: string}[]) => void;
 }
 
 const ResourcesGroup: FC<ResourcesGroupProps> = ({ buildingResources, selectedResources, updateField }: ResourcesGroupProps) => {
     const onChange = (id: number, name: string) => {
-        const copy = new Map(selectedResources);
-        if (selectedResources.has(id)) copy.delete(id);
-        else copy.set(id, name);
-        updateField(copy);
+        let copy;
+        const exist = selectedResources.find((item) => item.id === id);
+        if (exist) copy = selectedResources.filter((item) => item.id !== exist.id);
+        else copy = [...selectedResources, { id, name }];
+        console.log(copy, 'copy');
+        updateField(copy);  
     }
 
     return (
@@ -26,8 +28,8 @@ const ResourcesGroup: FC<ResourcesGroupProps> = ({ buildingResources, selectedRe
                     asChild
                     value={String(id)}
                     id={`resource-${id}`}
-                     onChange={() => onChange(id, name)} 
-                    checked={selectedResources.has(id)}
+                    onChange={() => onChange(id, name)} 
+                    checked={selectedResources.find((item) => id === item.id)}
                 >   
                     <label htmlFor={`resource-${id}`}>
                         <ColourCircle size="medium" resourceId={id}/>

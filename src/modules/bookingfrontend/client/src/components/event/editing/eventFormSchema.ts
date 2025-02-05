@@ -6,8 +6,13 @@ export interface EditingEvent {
     to_: Date;
     organizer: string;
     participant_limit: number;
-    resources: Map<number, string>
+    resources: {id: number, name: string}[]
 }
+
+const resourceSchema = z.object({
+    id: z.number(),
+    name: z.string()
+})
 
 export const eventFormSchema: z.ZodType<EditingEvent> = z.object({
     name: z.string().min(5).max(255),
@@ -15,6 +20,6 @@ export const eventFormSchema: z.ZodType<EditingEvent> = z.object({
     to_: z.date(),
     participant_limit: z.number().min(1).max(50),
     organizer: z.string().min(5).max(100),
-    resources: z.map(z.number(), z.string()),
+    resources: z.array(resourceSchema),
     building_name: z.string().readonly()
 });

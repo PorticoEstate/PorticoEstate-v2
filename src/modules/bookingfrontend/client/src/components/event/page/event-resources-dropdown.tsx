@@ -6,7 +6,7 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 
 interface ResourcesDropdownpProps {
-    resources: Map<number, string>
+    resources: {id: number, name: string}[]
 }
 
 const ResourcesDropdown: FC<ResourcesDropdownpProps> = ({ resources }: ResourcesDropdownpProps) => {
@@ -33,7 +33,7 @@ const ResourcesDropdown: FC<ResourcesDropdownpProps> = ({ resources }: Resources
             </Dropdown.Trigger>
             <Dropdown placement='bottom' open={open} onClose={() => setOpen(false)}>
                 <Dropdown.List>
-                    {Array.from(resources).map(([id, name]) => renderResource(id, name))}
+                    {resources.map(({id, name}) => renderResource(id, name))}
                 </Dropdown.List>
             </Dropdown>
         </Dropdown.TriggerContext>

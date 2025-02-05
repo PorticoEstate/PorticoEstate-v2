@@ -3,6 +3,11 @@ FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
+ARG http_proxy
+ARG https_proxy
+
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
 
 # In case of firewall/proxy
 RUN if [ -n "${http_proxy}" ]; then \

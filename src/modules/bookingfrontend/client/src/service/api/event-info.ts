@@ -204,10 +204,19 @@ export const useEventData = (eventId: (string | number)) => {
 };
 
 export const editEvent = async (id: number, data: Partial<ActivityData>) => {
+    const transformed: any = {};
+    let field: keyof ActivityData;
+    for (field in data) {
+        if (field === 'resources' && data.resources) {
+            const new_ids = data.resources.keys();
+            transformed.resource_ids = [...(new Set([...new_ids]))]
+        } else transformed[field] = data[field];
+    }
+
     const url = phpGWLink(['bookingfrontend', 'events', id]);
     const response = await fetch(url, {
         method: "PATCH",
-        body: JSON.stringify(data),
+        body: JSON.stringify(transformed),
         headers: {
             "Content-Type": "application/json",
         },

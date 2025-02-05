@@ -7,11 +7,11 @@ import EventEditingForm from "./editing-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { eventFormSchema } from "./eventFormSchema";
+import { EditingEvent, eventFormSchema } from "./eventFormSchema";
 
 interface EventEditingProps {
     event: ActivityData;
-    saveChanges: (newEventObject: ActivityData) => void;
+    saveChanges: (newEventObject: EditingEvent) => void;
     cancelEditing: () => void;
 }
 
@@ -20,7 +20,8 @@ const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing
     const {
         control,
         handleSubmit,
-        formState: {isDirty},
+        setError,
+        formState: {isDirty, errors},
     } = useForm({
         resolver: zodResolver(eventFormSchema),
         defaultValues: {
@@ -58,13 +59,17 @@ const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing
     //     setDraft(copy);
     // }
 
-    const onSubmit = (data: any) => {
+    const onSubmit = (data: EditingEvent) => {
+        if (data.from_ >= data.to_) {
+            setError('from_', { message: 'Invalid date range' });
+            return;
+        }
         saveChanges(data);
     }
     console.log(isDirty);
     return (
         <main>
-            <EventEditingForm control={control} event={event} />
+            <EventEditingForm control={control} errors={errors} event={event} />
             <div className={styles.controllButtonsContainer}>
                 <Button 
                     variant="secondary" 

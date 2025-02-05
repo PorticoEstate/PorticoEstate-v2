@@ -10,11 +10,12 @@ import CalendarDatePicker from "@/components/date-time-picker/calendar-date-pick
 import { Controller } from "react-hook-form";
 interface FormProps {
     event: ActivityData;
-    control: any
+    control: any;
+    errors: any;
 }
 
-const EventEditingForm: FC<FormProps> = ({ event, control }: FormProps) => {
-    const t = useTrans();
+const EventEditingForm: FC<FormProps> = ({ event, control, errors }: FormProps) => {
+    const t = useTrans(); 
     return (
         <div className={styles.editForm}>
             <Controller 
@@ -23,11 +24,13 @@ const EventEditingForm: FC<FormProps> = ({ event, control }: FormProps) => {
                 render={({ field }) => (
                     <Textfield
                         label={t('bookingfrontend.title')}
+                        error={errors.name?.message ? t(errors.name.message) : undefined}
                         { ...field }
                     />
                 )}
             />
-            <Controller
+            <div>
+                <Controller
                 name="from_"
                 control={control}
                 render={({ field: { onChange, value } }) => (
@@ -48,7 +51,7 @@ const EventEditingForm: FC<FormProps> = ({ event, control }: FormProps) => {
                 control={control}
                 render={({ field: { onChange, value } }) => (
                     <Field>
-                        <span className={styles.inputLabel}>From</span>
+                        <span className={styles.inputLabel}>To</span>
                         <CalendarDatePicker 
                             showTimeSelect
                             timeIntervals={5}
@@ -59,6 +62,16 @@ const EventEditingForm: FC<FormProps> = ({ event, control }: FormProps) => {
                     </Field>
                 )}
             />
+            { errors.from_?.message || errors.to_message  
+                ? ( 
+                    <p className="ds-validation-message">
+                        {errors.from_?.message || errors.to_message}
+                    </p>
+                )
+                : null 
+            }
+            </div>
+            
             <Field>
                 <span className={styles.inputLabel}>{t('bookingfrontend.place')}</span>
                 <Input
@@ -87,6 +100,11 @@ const EventEditingForm: FC<FormProps> = ({ event, control }: FormProps) => {
                 render={({ field }) => (
                     <Textfield 
                         { ...field }
+                        error={
+                            errors.organizer?.message 
+                            ? t(errors.organizer.message) 
+                            : undefined
+                        }
                         label={t('bookingfrontend.organizer')}
                     />
                 )}
@@ -98,6 +116,11 @@ const EventEditingForm: FC<FormProps> = ({ event, control }: FormProps) => {
                     <Field>
                         <Label>{t('bookingfrontend.max_participants_info')}</Label>
                         <MaxParticipantInput 
+                            error={
+                                errors.participant_limit?.message 
+                                ? t(errors.participant_limit.message) 
+                                : undefined
+                            }
                             updateField={onChange} 
                             fieldValue={value}
                         />

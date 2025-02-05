@@ -22,21 +22,9 @@ const EventPageController: FC<EventPageProps> = ({ eventId, privateAccess }: Eve
         setEventState(eventInfo);
     }, [eventInfo]);
 
-    const saveChanges = (newEventObject: EditingEvent) => {
-        const updatedData: any = {};
-        for (const field in newEventObject) {
-            const f: keyof EditingEvent = field as any;
-            if (f === 'resources') {
-                const new_ids = newEventObject[f].keys();
-                updatedData.resource_ids = [...(new Set([...new_ids]))];
-                continue;
-            }
-            if (newEventObject[f] !== eventInfo[f]) {
-                updatedData[f] = newEventObject[f];
-            }
-        }
-        setEventState(newEventObject);
-        editEvent(eventInfo.id, updatedData);
+    const saveChanges = (editedEvent: EditingEvent) => {
+        setEventState({ ...eventState, ...editedEvent });
+        editEvent(eventInfo.id, editedEvent);
         cancelEditing();
     }
     if (!privateAccess) {

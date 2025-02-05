@@ -49,8 +49,9 @@ class EventService
 
     private function saveNewResourcesList(array $data, array $existingEvent)
     {
-        if (!$data['resource_ids']) return null;
-        $resourceIds = $this->repository->resourceIds($existingEvent['id']); 
+        if (!isset($data['resource_ids'])) return null;
+        $resourceIds = $this->repository->resourceIds($existingEvent['id']);
+        $resourceIds = $resourceIds ? $resourceIds : [];
 
         //Delete removed resources
         $toDelete = [];

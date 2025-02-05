@@ -178,11 +178,15 @@ export const useEventData = (eventId: (string | number)) => {
     return useQuery({
         queryKey: ['eventInfo', eventId],
         retry: 2,
+        onError: (err: any) => {
+            console.log(err)
+        },
         queryFn: async () => {
             const url = phpGWLink(['bookingfrontend', 'events', eventId]);
             const res = await fetch(url);
             const { event, numberOfParticipants } = await res.json();
             const buildingResources = await fetchBuildingResources(event.building_id);
+            if (!event.resources) event.resources = [];
             return {
                 ...event,
                 to_: new Date(event.to_),

@@ -94,6 +94,14 @@ class Auth extends Auth_
 		 */
 		if ($username && !$ssn)
 		{
+			//force to use login.php
+			//get me the route path from the http-request
+			$routePath = $_SERVER['REQUEST_URI'];
+			if (!preg_match('/\/login.php/', $routePath))
+			{
+				return '';
+			}
+
 			return $username;
 		}
 

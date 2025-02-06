@@ -44,7 +44,7 @@ phpgwapi_jquery::load_widget('jqtree');
 $javascripts = array();
 $javascripts[]	 = "/phpgwapi/js/popper/popper2.min.js";
 $javascripts[]	 = "/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/js/bootstrap.min.js";
-$javascripts[]	 = "/phpgwapi/templates/bootstrap/js/keep_alive.js";
+//$javascripts[]	 = "/phpgwapi/templates/bootstrap/js/keep_alive.js";
 
 $userSettings['preferences']['common']['sidecontent'] = 'ajax_menu'; //ajax_menu|jsmenu
 if (empty($flags['noframework']) && empty($flags['nonavbar']))

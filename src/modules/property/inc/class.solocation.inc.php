@@ -989,7 +989,7 @@ class property_solocation
 						$filtermethod	 .= " {$where} fm_location{$type_id}_category.descr $this->like '%{$value}%'";
 						break;
 					default:
-						if(!$metadata)
+						if (!$metadata)
 						{
 							$metadata = $this->db->metadata("fm_location{$type_id}");
 						}
@@ -2110,6 +2110,15 @@ class property_solocation
 
 		$filtermethod	 = '';
 		$where			 = 'WHERE';
+
+		$metadata = $this->db->metadata($entity_table);
+
+		if (isset($metadata['driftsstatus_id']))
+		{
+			$filtermethod .= " WHERE {$entity_table}.driftsstatus_id = 1";
+			$where = 'AND';
+		}
+
 		if ($district_id > 0)
 		{
 			$uicols['name'][]		 = 'district_id';
@@ -2190,7 +2199,7 @@ class property_solocation
 		$cols = "count(*) as count, fm_location{$type_id}.category, fm_location{$type_id}_category.descr as type";
 
 		$sql = "SELECT $cols FROM $paranthesis fm_location1 $joinmethod";
-//		_debug_array($sql . $filtermethod . $groupmethod);
+		//		_debug_array($sql . $filtermethod . $groupmethod);
 		$this->db->query($sql . $filtermethod . $groupmethod . " ORDER BY $entity_table.category", __LINE__, __FILE__);
 
 		$values = array();

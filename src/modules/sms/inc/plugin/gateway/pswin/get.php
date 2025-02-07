@@ -42,11 +42,17 @@ class sms_sms_ extends sms_sms__
 		$messages = array();
 		while ($this->db->next_record())
 		{
+			$data = unserialize($this->db->f('data', true));
+			if (!isset($data->m->Text))
+			{
+				continue;
+			}
+
 			$messages[] = array(
 				'id' => $this->db->f('id'),
 				'type' => $this->db->f('type'),
 				'entry_date' => $this->db->f('entry_date'),
-				'data' => unserialize($this->db->f('data', true))
+				'data' => $data
 			);
 		}
 
@@ -54,7 +60,7 @@ class sms_sms_ extends sms_sms__
 
 		foreach ($messages as $entry)
 		{
-			$message = $entry['data']->m->Text;
+			$message = trim($entry['data']->m->Text);
 			if ($strip_code && stripos($message, "{$strip_code} ") === 0)
 			{
 				$strip_code = strtolower($strip_code);

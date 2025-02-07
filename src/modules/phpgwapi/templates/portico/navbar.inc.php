@@ -57,7 +57,7 @@ function parse_navbar($force = False)
 		'home_icon'		=> 'icon icon-home',
 		'about_url'		=> phpgw::link('/about.php', array('app' => $flags['currentapp'])),
 		'about_text'	=> lang('about'),
-		'logout_url'	=> phpgw::link('/logout.php'),
+		'logout_url'	=> phpgw::link('/logout_ui'),
 		'logout_text'	=> lang('logout'),
 		'site_title'	=> "{$serverSettings['site_title']}",
 		'user_fullname' => $user->__toString(),

@@ -30,7 +30,7 @@ class SessionsMiddleware implements MiddlewareInterface
 		{
 			throw new \Exception('Not connected to the server');
 		}
-		
+
 		$second_pass = Sanitizer::get_var('login_second_pass', 'bool', 'COOKIE');
 
 		$routeContext = RouteContext::fromRequest($request);
@@ -167,7 +167,8 @@ class SessionsMiddleware implements MiddlewareInterface
 						$cookietime = time() + 60;
 						$sessions->phpgw_setcookie('redirect', json_encode($_GET), $cookietime);
 					}
-					\phpgw::redirect_link('/login_ui');
+					\phpgw::redirect_link('/login.php');
+					//\phpgw::redirect_link('/login_ui');
 				}
 				$response = new Response();
 				return $response->withHeader('Content-Type', 'text/html');

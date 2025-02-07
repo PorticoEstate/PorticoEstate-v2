@@ -73,7 +73,7 @@ class Login
 		{
 			$this->flags['session_name'] = $session_name;
 		}
-//_debug_array($this->flags);die();
+		//_debug_array($this->flags);die();
 		/**
 		 * check for emailaddress as username
 		 */

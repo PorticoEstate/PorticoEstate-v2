@@ -8,6 +8,12 @@ ARG INSTALL_MSSQL=false
 ARG INSTALL_XDEBUG=false
 ARG INSTALL_ORACLE=false
 
+ARG http_proxy
+ARG https_proxy
+
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
+
 
 # Download and install the install-php-extensions script
 # https://github.com/mlocati/docker-php-extension-installer

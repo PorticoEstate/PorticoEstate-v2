@@ -1070,16 +1070,21 @@
 			*/
 			var table_url = JqueryPortico.parseURL(window.location.href);
 			var menuaction = 'dummy';
+			var app_method = 'dummy';
+			var app_method_referrer = 'dummy';
+
 			var	column_search_is_initated = false;
 
 			try
 			{
 				menuaction = table_url.searchObject.menuaction.replace(/\./g, '_');
+                app_method = menuaction.split('_')[0] + '_' + menuaction.split('_')[1];
+                let refferer = new URL(document.referrer).searchParams.get('menuaction').replace(/\./g, '_');
+                app_method_referrer = refferer.split('_')[0] + '_' + refferer.split('_')[1];
 			}
 			catch (e)
 			{
 			}
-
 			//clear state
 			var clear_state = false;
 			if(typeof(table_url.searchObject.clear_state) != 'undefined' && table_url.searchObject.clear_state == 1)
@@ -1090,19 +1095,71 @@
 			if(typeof(table_url.searchObject.type_id) != 'undefined')
 			{
 				menuaction += '_type_id' + table_url.searchObject.type_id;
+
+                if(typeof(table_url.searchObject.location_code) != 'undefined')
+                {
+                   let location_code = table_url.searchObject.location_code.split('-');
+                   app_method += '_type_id' + location_code.length;
+                }
+                else
+                {
+                    app_method += '_type_id' + table_url.searchObject.type_id;
+                }
+  
+                try
+                {
+                    if(new URL(document.referrer).searchParams.get('location_code'))
+                    {
+                        let location_code = new URL(document.referrer).searchParams.get('location_code').split('-');
+                        app_method_referrer += '_type_id' + location_code.length;
+                    }
+                    else
+                    {
+                        app_method_referrer += '_type_id' + new URL(document.referrer).searchParams.get('type_id');
+                    }
+                }
+                catch(e)
+                {
+                }
 			}
 
 			//uientity
 			if(typeof(table_url.searchObject.entity_id) != 'undefined' && typeof(table_url.searchObject.cat_id) != 'undefined')
 			{
-				menuaction += '_entity_id' + table_url.searchObject.entity_id + '_cat_id' + table_url.searchObject.cat_id;
+                menuaction += '_entity_id' + table_url.searchObject.entity_id + '_cat_id' + table_url.searchObject.cat_id;
+                app_method += '_entity_id' + table_url.searchObject.entity_id + '_cat_id' + table_url.searchObject.cat_id;
 			}
 
+            //uientity for document.referrer
+            try
+            {
+                if(new URL(document.referrer).searchParams.get('entity_id') && new URL(document.referrer).searchParams.get('cat_id'))
+                {
+                    app_method_referrer += '_entity_id' + new URL(document.referrer).searchParams.get('entity_id') + '_cat_id' + new URL(document.referrer).searchParams.get('cat_id');
+                }
+            }
+            catch(e)
+            {
+            }
+          
 			//uigeneric
 			if(typeof(table_url.searchObject.type) != 'undefined' && menuaction.includes("uigeneric"))
 			{
 				menuaction += '_type_' + table_url.searchObject.type;
+                app_method += '_type_' + table_url.searchObject.type;
 			}
+
+            //uigeneric for document.referrer
+            try
+            {
+                if(new URL(document.referrer).searchParams.get('type') && menuaction_referer.includes("uigeneric"))
+                {
+                    app_method_referrer += '_type_' + new URL(document.referrer).searchParams.get('type');
+                }
+            }
+            catch(e)
+            {
+            }
 
 			var select = false;
 
@@ -1139,7 +1196,23 @@
 
 			init_table = function()
 			{
-				oTable = $('#datatable-container').dataTable({
+      			var	stateSave = true;
+                var pageReload = false;
+                // Detect page refresh
+                if (performance.getEntriesByType("navigation")[0].type === "reload")
+                {
+                    pageReload = true;
+                }
+
+console.log(app_method);
+console.log(app_method_referrer);
+                //check referer and if it is the same as the current page, then clear state
+                if(!pageReload && app_method !== app_method_referrer)
+                {
+                   stateSave = false;
+                }
+ 
+ 				oTable = $('#datatable-container').dataTable({
 				paginate:		disablePagination ? false : true,
 				searchDelay: 	1200,
 				processing:		true,
@@ -1407,7 +1480,7 @@
 				lengthMenu:		JqueryPortico.i18n.lengthmenu(),
 				language:		JqueryPortico.i18n.datatable(),
 				columns:		JqueryPortico.columns,
-				stateSave:		true,
+				stateSave:		stateSave,
 				stateDuration: -1, //sessionstorage
 				tabIndex:		1,
 				"search": initial_search,

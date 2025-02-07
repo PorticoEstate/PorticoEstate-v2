@@ -154,20 +154,13 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
         let maxTime = '00:00:00';
 
         // Helper function to extract time portion from datetime string
-        const extractTime = (dateTimeStr: string): string => {
+        const extractTime = (dateTimeStr: TDateISO): string => {
             // If it's already in HH:mm:ss format, return as is
-            if (/^\d{2}:\d{2}:\d{2}$/.test(dateTimeStr)) {
-                return dateTimeStr;
-            }
 
-            // Parse datetime string and return time portion
-            try {
-                const dt = DateTime.fromSQL(dateTimeStr); // Remove milliseconds if present
-                return dt.toFormat('HH:mm:ss');
-            } catch (e) {
-                console.error('Error parsing datetime:', dateTimeStr);
-                return '00:00:00';
-            }
+            const dt = DateTime.fromISO(dateTimeStr);
+            const localTime = dt.toFormat('HH:mm:ss');
+            return localTime;
+
         };
 
         // Check seasons (assuming seasons format hasn't changed)
@@ -540,8 +533,8 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
                 setPopperAnchorEl(null);
             }}/>
 
-                <ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
-                           building_id={props.building.id}/>
+            <ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
+                             building_id={props.building.id}/>
 
 
         </React.Fragment>

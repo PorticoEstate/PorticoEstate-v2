@@ -6,6 +6,7 @@ import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience} from "@/service/types/Building";
+import {IOrganization} from "@/service/types/api/organization.types";
 
 
 
@@ -109,6 +110,29 @@ export async function patchBookingUser(updateData: Partial<IBookingUser>): Promi
 
 export async function fetchPartialApplications(): Promise<{ list: IApplication[], total_sum: number }> {
     const url = phpGWLink(['bookingfrontend', 'applications', 'partials']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+
+
+export async function fetchMyOrganizations(): Promise<IOrganization[]> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', 'my']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result?.results;
+}
+
+export async function searchOrganizations(query: string): Promise<IOrganization[]> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', 'list'], {query: query});
+    const response = await fetch(url);
+    const result = await response.json();
+    return result?.results;
+}
+
+export async function validateOrgNum(org_num: string): Promise<IOrganization[]> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', 'lookup', org_num]);
     const response = await fetch(url);
     const result = await response.json();
     return result;

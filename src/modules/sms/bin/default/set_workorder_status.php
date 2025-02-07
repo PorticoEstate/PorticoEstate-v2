@@ -26,7 +26,7 @@ $status_code = array(
 	3 => 'i_arbeid',
 );
 
-$param = explode(' ', str_ireplace(array("\n", 'status ', ':', '  '), array('', '', '', ' '), $command_param));
+$param = explode(' ', str_ireplace(array("\n", 'status ', ':', '.', '  '), array('', '', '', '', ' '), $command_param));
 //	_debug_array($param);
 
 for ($i = 0; $i < count($param); $i++)

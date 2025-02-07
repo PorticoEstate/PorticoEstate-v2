@@ -922,6 +922,7 @@ class property_boworkorder
 		$workorder['tender_received']			 = $this->bocommon->date_to_timestamp($workorder['tender_received']);
 		$workorder['inspection_on_completion']	 = $this->bocommon->date_to_timestamp($workorder['inspection_on_completion']);
 		$workorder['location_code']				 = isset($workorder['location']) && $workorder['location'] ? implode('-', $workorder['location']) : '';
+		$workorder['contact_phone']				 = !empty($workorder['contact_phone']) ? substr($workorder['contact_phone'], 0, 20) : '';
 
 		if ($action == 'edit')
 		{

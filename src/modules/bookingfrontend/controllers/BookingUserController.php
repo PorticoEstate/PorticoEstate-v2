@@ -106,7 +106,11 @@ class BookingUserController
                 );
             }
 
+
             $userModel = new User($bouser);
+            if (isset($userModel->ssn)) {
+                $userModel->ssn = $this->maskSSN($userModel->ssn);
+            }
             $serialized = $userModel->serialize();
 
             $response->getBody()->write(json_encode($serialized));
@@ -294,5 +298,12 @@ class BookingUserController
             return $response->withHeader('Content-Type', 'application/json')
                 ->withStatus(500);
         }
+    }
+    private function maskSSN(string $ssn): string {
+        if (empty($ssn)) {
+            return '';
+        }
+        // Keep first digits, replace last 5 with asterisks
+        return substr($ssn, 0, -5) . '*****';
     }
 }

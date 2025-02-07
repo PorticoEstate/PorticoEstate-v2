@@ -658,7 +658,7 @@ class ApplicationService
             'status', 'name', 'contact_name', 'contact_email', 'contact_phone',
             'responsible_street', 'responsible_zip_code', 'responsible_city',
             'customer_identifier_type', 'customer_organization_number',
-            'customer_organization_name', 'description', 'equipment'
+            'customer_organization_name', 'description', 'equipment', 'organizer', 'parent_id'
         ];
 
         foreach ($data as $field => $value) {

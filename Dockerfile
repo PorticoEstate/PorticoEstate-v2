@@ -31,7 +31,7 @@ fi
 # Install necessary packages
 RUN apt-get update && apt-get install -y software-properties-common \
     apt-utils libcurl4-openssl-dev libicu-dev libxslt-dev libpq-dev \
-    zlib1g-dev libpng-dev libfreetype-dev libjpeg62-turbo-dev \ 
+    zlib1g-dev libpng-dev libfreetype-dev libjpeg62-turbo-dev \
     libc-client-dev libkrb5-dev libzip-dev libonig-dev \
     git \
     less vim-tiny \
@@ -118,10 +118,11 @@ RUN echo 'post_max_size = 20M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 8M' >> /usr/local/etc/php/php.ini
 
 # Install Java
-RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg && \
-    echo "deb [arch=amd64] https://packages.microsoft.com/debian/$(cat /etc/debian_version | cut -d. -f1)/prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/mssql-release.list
+RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg
 
-RUN apt-get update && apt-get install -y msopenjdk-21 unzip
+RUN wget https://packages.microsoft.com/config/debian/$(cat /etc/debian_version | cut -d. -f1)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+RUN dpkg -i packages-microsoft-prod.deb
+RUN apt-get update && apt-get install -y msopenjdk-21
 
 ## Verify Java installation
 RUN java -version

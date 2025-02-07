@@ -57,6 +57,7 @@ $app->post('/login.php', LoginHelper::class . ':processLogin');
 $app->get('/login_ui[/{params:.*}]', LoginHelper::class . ':processLogin');
 $app->post('/login_ui[/{params:.*}]', LoginHelper::class . ':processLogin');
 
+$phpgw_domain = $phpgw_domain ?? [];
 $app->get('/login[/{params:.*}]', function (Request $request, Response $response) use ($phpgw_domain)
 {
 

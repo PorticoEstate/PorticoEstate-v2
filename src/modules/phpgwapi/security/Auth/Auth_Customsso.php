@@ -85,7 +85,7 @@ class Auth extends Auth_
 		$ssn = !empty($_SERVER['HTTP_UID']) ? $_SERVER['HTTP_UID'] : $ssn;
 		$upn = !empty($headers['upn']) ? $headers['upn'] : false;
 
-		$remote_user = !empty($headers['REMOTE_USER']) ? $headers['REMOTE_USER'] : $upn;
+		$remote_user = !empty($headers['remote_user']) ? $headers['remote_user'] : $upn;
 		$username_arr  = explode('@', $remote_user);
 		$username = $username_arr[0];
 

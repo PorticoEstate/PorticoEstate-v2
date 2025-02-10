@@ -92,7 +92,7 @@ class EventService
 
     public function getPartialEventObjectById(int $id)
     {
-        $fields = ['id', 'customer_ssn', 'customer_organization_number', 'participant_limit'];
+        $fields = ['id', 'customer_ssn', 'customer_organization_number', 'from_', 'to_', 'participant_limit'];
         $sql = "SELECT " . implode(', ', $fields) . " FROM bb_event WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
@@ -148,11 +148,10 @@ class EventService
     public function preRegister(array $data, array $event)
     {
         $now = new DateTime();
-        $from = new DateTime(date('Y-m-d H:i:s', strtotime($event['from_'])));
+        $from = new DateTime($event['from_']);
         if ($from < $now) {
             return false;
         }
-
         $preRegistration = $this->repository->findRegistration($event['id'], $data['phone']);
         //If user already pre-registered
         if ($preRegistration['id']) {
@@ -164,7 +163,6 @@ class EventService
         if ($newAllPeoplesQuantity > (int) $event['participant_limit']) {
             return null;
         }
-       
         $this->repository->addPreregistration($event['id'], $data);
         return $event['id'];
     }
@@ -172,8 +170,8 @@ class EventService
     public function inRegister(array $data, array $event)
     {
         $now = new DateTime();
-        $from = new DateTime(date('Y-m-d H:i:s', strtotime($event['from_'])));
-        $to = new DateTime(date('Y-m-d H:i:s', strtotime($event['to_'])));
+        $from = new DateTime($event['from_']);
+        $to = new DateTime($event['to_']);
         if (!($from < $now && $to > $now)) {
             return null;
         }
@@ -205,8 +203,8 @@ class EventService
     public function outRegistration(string $phone, array $event)
     {
         $now = new DateTime();
-        $from = new DateTime(date('Y-m-d H:i:s', strtotime($event['from_'])));
-        $to = new DateTime(date('Y-m-d H:i:s', strtotime($event['to_'])));
+        $from = new DateTime($event['from_']);
+        $to = new DateTime($event['to_']);
 
         $pre = $from < $now;
         $in = $from < $now && $to > $now;

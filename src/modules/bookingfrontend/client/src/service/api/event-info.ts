@@ -2,6 +2,7 @@ import {useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import axios from "axios";
 import { fetchBuildingResources } from "./building";
+import { DateTime } from "luxon";
 
 export type PopperInfoType = FilteredEventInfo;
 
@@ -178,18 +179,17 @@ export const useEventData = (eventId: (string | number)) => {
     return useQuery({
         queryKey: ['eventInfo', eventId],
         retry: 2,
-        onError: (err: any) => {
-            console.log(err)
-        },
         queryFn: async () => {
             const url = phpGWLink(['bookingfrontend', 'events', eventId]);
             const res = await fetch(url);
             const { event, numberOfParticipants } = await res.json();
             const buildingResources = await fetchBuildingResources(event.building_id);
+            const parsedFrom = DateTime.fromSQL(event.from_, { zone: 'UTC' }).setZone('Europe/Oslo');
+            const parsedTo = DateTime.fromSQL(event.to_, { zone: 'UTC' }).setZone('Europe/Oslo');
             return {
                 ...event,
-                to_: new Date(event.to_),
-                from_: new Date(event.from_),
+                to_: parsedTo.toJSDate(),
+                from_: parsedFrom.toJSDate(),
                 participant_limit: event.participant_limit || 0,
                 resources: event.resources || [],
                 buildingResources: new Map(

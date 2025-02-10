@@ -14,8 +14,8 @@ const phoneRegex = new RegExp(
   /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
 );
 const participantFormSchema: z.ZodType<{ phone: string, quantity: number }> = z.object({
-    phone: z.string().regex(phoneRegex, 'Invalid phone number!'),
-    quantity: z.coerce.number().gt(0)
+    phone: z.string().regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
+    quantity: z.coerce.number().gt(0, 'bookingfrontend.one_and_more')
 })
 
 interface ParticipantFormProps {
@@ -45,7 +45,7 @@ const ParticipantForm: FC<ParticipantFormProps> = ({ eventId, pendingEvent, part
             if (data.quantity > participantLimit) {
                 setError(
                     'quantity', 
-                    { message: 'Too many participant' }, 
+                    { message: 'bookingfrontend.to_many_participants' }, 
                     { shouldFocus: true }
                 );
                 return;
@@ -89,7 +89,7 @@ const ParticipantForm: FC<ParticipantFormProps> = ({ eventId, pendingEvent, part
                             value={value}
                             label=''
                             error={errors.phone?.message ? t(errors.phone.message) : undefined}
-                            placeholder={t('bookingfrontend.enter_participants_number')}
+                            placeholder={t('bookingfrontend.enter_the_mobile_number_of_recipient')}
 				        />
                     )}
                 />

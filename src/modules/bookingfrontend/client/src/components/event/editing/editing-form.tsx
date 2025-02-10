@@ -31,45 +31,45 @@ const EventEditingForm: FC<FormProps> = ({ event, control, errors }: FormProps) 
             />
             <div>
                 <Controller
-                name="from_"
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                    <Field>
-                        <span className={styles.inputLabel}>From</span>
-                        <CalendarDatePicker 
-                            showTimeSelect
-                            timeIntervals={5}
-                            onDateChange={(date) => onChange(date)}
-                            currentDate={value}
-                            view="timeGridDay"
-                        />
-                    </Field>
-                )}
-            />
-            <Controller
-                name="to_"
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                    <Field>
-                        <span className={styles.inputLabel}>To</span>
-                        <CalendarDatePicker 
-                            showTimeSelect
-                            timeIntervals={5}
-                            onDateChange={(date) => onChange(date)}
-                            currentDate={value}
-                            view="timeGridDay"
-                        />
-                    </Field>
-                )}
-            />
-            { errors.from_?.message || errors.to_message  
-                ? ( 
-                    <p className="ds-validation-message">
-                        {errors.from_?.message || errors.to_message}
-                    </p>
-                )
-                : null 
-            }
+                    name="from_"
+                    control={control}
+                    render={({ field: { onChange, value } }) => (
+                        <Field>
+                            <span className={styles.inputLabel}>From</span>
+                            <CalendarDatePicker 
+                                showTimeSelect
+                                timeIntervals={5}
+                                onDateChange={(date) => onChange(date)}
+                                currentDate={value}
+                                view="timeGridDay"
+                            />
+                        </Field>
+                    )}
+                />
+                <Controller
+                    name="to_"
+                    control={control}
+                    render={({ field: { onChange, value } }) => (
+                        <Field>
+                            <span className={styles.inputLabel}>To</span>
+                            <CalendarDatePicker 
+                                showTimeSelect
+                                timeIntervals={5}
+                                onDateChange={(date) => onChange(date)}
+                                currentDate={value}
+                                view="timeGridDay"
+                            />
+                        </Field>
+                    )}
+                />
+                { errors.from_?.message || errors.to_message  
+                    ? ( 
+                        <p className="ds-validation-message">
+                            {t(errors.from_?.message || errors.to_message)}
+                        </p>
+                    )
+                    : null 
+                }
             </div>
             
             <Field>
@@ -93,6 +93,14 @@ const EventEditingForm: FC<FormProps> = ({ event, control, errors }: FormProps) 
                     </Field>
                 )}
             />
+            { errors.resources?.message
+                ? ( 
+                    <p className="ds-validation-message">
+                        {t(errors.resources?.message)}
+                    </p>
+                )
+                : null 
+            }
            
             <Controller
                 name="organizer"

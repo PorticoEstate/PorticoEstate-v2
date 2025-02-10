@@ -666,4 +666,10 @@ register_unregister_pre-register	bookingfrontend	nn	Velg handling påmeld/avmeld
 pre_register	bookingfrontend	nn	Påmeld
 unregister	bookingfrontend	nn	Avmeld
 register	bookingfrontend	nn	Forhåndspåmeld
-number_of_participants	bookingfrontend	nn	Antall deltakere
+participant_number	bookingfrontend	nn	Antall deltakere
+invalid_date_range	bookingfrontend	nn	Ugyldig datointervall
+no_selected_resources	bookingfrontend	nn	Ingen utvalgte ressurser
+time	bookingfrontend	nn	Tid
+invalid_phone_number	bookingfrontend	nn	Ugyldig telefonnummer
+one_and_more	bookingfrontend	nn	Bør være større enn null
+to_many_participants	bookingfrontend	nn	For mange deltakere

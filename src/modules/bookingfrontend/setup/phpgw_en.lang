@@ -666,4 +666,10 @@ register_unregister_pre-register	bookingfrontend	en	Select action: Register/Unre
 pre_register	bookingfrontend	en	Pre-register
 unregister	bookingfrontend	en	Unregister
 register	bookingfrontend	en	Register
-number_of_participants	bookingfrontend	en	Number of participants
+participant_number	bookingfrontend	en	Number of participants
+invalid_date_range	bookingfrontend	en	Invalid date range
+no_selected_resources	bookingfrontend	en	No selected resources
+time	bookingfrontend	en	Time
+invalid_phone_number	bookingfrontend	en	Invalid telefon number
+one_and_more	bookingfrontend	en	Should be more than zero
+to_many_participants	bookingfrontend	en	Too many participants

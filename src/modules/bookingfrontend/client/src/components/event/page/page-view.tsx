@@ -57,7 +57,7 @@ const EventView: FC<EventViewProps> = ({ event, openEditing, privateAccess }: Ev
             <h2 style={{ marginBottom: '1rem' }}>{event.name}</h2>
             <span>#{event.id}</span>
             <p style={{marginTop: '2rem'}}><b>{t('bookingfrontend.date')}: </b>{date}</p>
-            <p><b>Time: </b>{fromTime}-{toTime}</p>
+            <p><b>{t('bookingfrontend.tid')}: </b>{fromTime}-{toTime}</p>
             <p>
                 <b>{t('bookingfrontend.place')}: </b>
                 <Link 

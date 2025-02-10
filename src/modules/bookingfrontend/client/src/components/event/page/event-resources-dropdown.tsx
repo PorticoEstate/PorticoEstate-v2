@@ -22,6 +22,10 @@ const ResourcesDropdown: FC<ResourcesDropdownpProps> = ({ resources }: Resources
         </Dropdown.Item>
     )
 
+    if (resources.length === 0) {
+        return <p>{t('bookingfrontend.no_selected_resources')}</p>;
+    }
+
     return (
         <Dropdown.TriggerContext>
             <Dropdown.Trigger variant='tertiary' onClick={() => setOpen(!open)}>

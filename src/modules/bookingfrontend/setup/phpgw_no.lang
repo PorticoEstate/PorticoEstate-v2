@@ -665,4 +665,9 @@ register_unregister_pre-register	bookingfrontend	no	Velg handling påmeld/avmeld
 pre_register	bookingfrontend	no	Påmeld
 unregister	bookingfrontend	no	Avmeld
 register	bookingfrontend	no	Forhåndspåmeld
-number_of_participants	bookingfrontend	no	Antall deltakere
+participant_number	bookingfrontend	no	Antall deltakere
+invalid_date_range	bookingfrontend	no	Ugyldig datointervall
+no_selected_resources	bookingfrontend	no	Ingen utvalgte ressurser
+time	bookingfrontend	no	Tid
+invalid_phone_number	bookingfrontend	no	Bør være større enn null
+to_many_participants	bookingfrontend	no	For mange deltakere

@@ -16,7 +16,7 @@ interface CheckoutEventDetailsProps {
 }
 
 
-function getCommonValue<T extends { [key: string]: any }>(arr?: T[], key: keyof T): string | undefined {
+function getCommonValue<T extends { [key: string]: any }>(arr?: T[], key: keyof T): string  {
     if (!arr || arr.length === 0) return '';
 
     const firstValue = arr[0][key];
@@ -36,6 +36,11 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
         resolver: zodResolver(checkoutEventDetailsSchema),
         defaultValues: defaultValues
     });
+
+    // Add this effect to handle initial values
+    useEffect(() => {
+        onDetailsChange(defaultValues);
+    }, [defaultValues, onDetailsChange]);
 
     useEffect(() => {
         const subscription = watch((value) => onDetailsChange(value as CheckoutEventDetailsData));

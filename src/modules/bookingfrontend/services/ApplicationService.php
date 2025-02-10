@@ -11,6 +11,9 @@ use App\modules\bookingfrontend\models\OrderLine;
 use App\Database\Db;
 use PDO;
 
+require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
+
+
 class ApplicationService
 {
     private $db;
@@ -80,6 +83,345 @@ class ApplicationService
 
 
 
+
+    /**
+     * Update all partial applications with contact and organization info
+     *
+     * @param string $session_id Current session ID
+     * @param array $data Contact and organization information
+     * @return array Updated applications
+     * @throws Exception If update fails
+     */
+    public function checkoutPartials(string $session_id, array $data): array
+    {
+        try
+        {
+            $errors = $this->validateCheckoutData($data);
+            if (!empty($errors))
+            {
+                throw new Exception(implode(", ", $errors));
+            }
+
+            $this->db->beginTransaction();
+
+            $applications = $this->getPartialApplications($session_id);
+
+            if (empty($applications))
+            {
+                throw new Exception('No partial applications found for checkout');
+            }
+
+            $parent_id = $data['parent_id'] ?? $applications[0]['id'];
+
+            // Prepare base update data
+            $baseUpdateData = [
+                'contact_name' => $data['contactName'],
+                'contact_email' => $data['contactEmail'],
+                'contact_phone' => $data['contactPhone'],
+                'responsible_street' => $data['street'],
+                'responsible_zip_code' => $data['zipCode'],
+                'responsible_city' => $data['city'],
+                'name' => $data['eventTitle'],
+                'organizer' => $data['organizerName'],
+                'customer_identifier_type' => $data['customerType'],
+                'customer_organization_number' => $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null,
+                'customer_organization_name' => $data['customerType'] === 'organization_number' ? $data['organizationName'] : null,
+                'modified' => date('Y-m-d H:i:s'),
+                'session_id' => null
+            ];
+
+            $updatedApplications = [];
+            foreach ($applications as $application)
+            {
+                // Check if this application should be automatically approved
+                $isDirectBooking = $this->checkDirectBooking($application);
+
+                // Prepare update data for this application
+                $updateData = array_merge($baseUpdateData, [
+                    'status' => $isDirectBooking ? 'ACCEPTED' : 'NEW',
+                    'parent_id' => $application['id'] == $parent_id ? null : $parent_id
+                ]);
+
+                // Update application
+                $this->patchApplicationMainData($updateData, $application['id']);
+
+                // If direct booking, create corresponding event
+                if ($isDirectBooking)
+                {
+                    $this->createEventForApplication($application);
+                }
+
+                // Send appropriate notification
+                $this->sendApplicationNotification($application['id']);
+
+                $updatedApplications[] = array_merge($application, $updateData);
+            }
+
+            $this->db->commit();
+            return $updatedApplications;
+
+        } catch (Exception $e)
+        {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+
+    private function createEventForApplication(array $application): void
+    {
+        $event = array_merge($application, [
+            'active' => 1,
+            'application_id' => $application['id'],
+            'completed' => 0,
+            'is_public' => 0,
+            'include_in_list' => 0,
+            'reminder' => 0,
+            'customer_internal' => 0
+        ]);
+
+        // Create event for each date
+        foreach ($application['dates'] as $date) {
+            $event['from_'] = $date['from_'];
+            $event['to_'] = $date['to_'];
+
+            $booking_boevent = CreateObject('booking.boevent');
+            $receipt = $booking_boevent->so->add($event);
+
+            // Update ID string after event creation
+            $booking_boevent->so->update_id_string();
+        }
+
+        // Handle any purchase orders
+        createObject('booking.sopurchase_order')->identify_purchase_order(
+            $application['id'],
+            $receipt['id'],
+            'event'
+        );
+    }
+
+    private function checkDirectBooking(array $application): bool
+    {
+        // First check if all resources have direct booking enabled
+        $sql = "SELECT r.*, br.building_id,
+            r.booking_limit_number,
+            r.booking_limit_number_horizont
+            FROM bb_resource r
+            JOIN bb_application_resource ar ON r.id = ar.resource_id
+            JOIN bb_building_resource br ON r.id = br.resource_id
+            WHERE ar.application_id = :application_id";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $application['id']]);
+        $resources = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($resources as $resource) {
+            // Check if direct booking is enabled and the date is valid
+            if (!$resource['direct_booking'] || $resource['direct_booking'] > time()) {
+                return false;
+            }
+
+            // Check booking limits for the user
+            if ($resource['booking_limit_number_horizont'] > 0 &&
+                $resource['booking_limit_number'] > 0 &&
+                $application['customer_ssn']) {
+
+                $limit_reached = $this->checkBookingLimit(
+                    $application['session_id'],
+                    $resource['id'],
+                    $application['customer_ssn'],
+                    $resource['booking_limit_number_horizont'],
+                    $resource['booking_limit_number']
+                );
+
+                if ($limit_reached) {
+                    return false;
+                }
+            }
+        }
+
+        // Check for collisions
+        foreach ($application['dates'] as $date) {
+            $collision = $this->checkCollision(
+                $application['resources'],
+                $date['from_'],
+                $date['to_'],
+                $application['session_id']
+            );
+            if ($collision) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+
+    private function checkCollision(array $resources, string $from, string $to, string $session_id): bool
+    {
+        $resource_ids = implode(',', array_map('intval', $resources));
+
+        $sql = "SELECT 1 FROM bb_application a
+            JOIN bb_application_resource ar ON a.id = ar.application_id
+            WHERE ar.resource_id IN ($resource_ids)
+            AND a.status NOT IN ('REJECTED', 'NEWPARTIAL1')
+            AND a.active = 1
+            AND ((a.from_ BETWEEN :from_date AND :to_date)
+                OR (a.to_ BETWEEN :from_date AND :to_date)
+                OR (:from_date BETWEEN a.from_ AND a.to_)
+                OR (:to_date BETWEEN a.from_ AND a.to_))
+            AND (a.session_id IS NULL OR a.session_id != :session_id)
+            LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':from_date' => $from,
+            ':to_date' => $to,
+            ':session_id' => $session_id
+        ]);
+
+        return (bool)$stmt->fetch();
+    }
+
+    /**
+     * Helper function to check if user has too many direct bookings of type
+     */
+    private function checkBookingLimit(
+        string $session_id,
+        int $resource_id,
+        string $ssn,
+        int $horizon_days,
+        int $limit
+    ): bool {
+        $sql = "SELECT COUNT(*) as count
+            FROM bb_application a
+            JOIN bb_application_resource ar ON a.id = ar.application_id
+            WHERE ar.resource_id = :resource_id
+            AND a.customer_ssn = :ssn
+            AND a.created >= NOW() - INTERVAL :horizon_days DAY
+            AND a.status != 'REJECTED'
+            AND a.active = 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':resource_id' => $resource_id,
+            ':ssn' => $ssn,
+            ':horizon_days' => $horizon_days
+        ]);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $result['count'] >= $limit;
+    }
+
+
+
+    private function validateCheckoutData(array $data): array
+    {
+        $errors = [];
+
+        // Basic required field validation
+        $required_fields = [
+            'contactName' => 'Contact name',
+            'contactEmail' => 'Contact email',
+            'contactPhone' => 'Contact phone',
+            'street' => 'Street address',
+            'zipCode' => 'Zip code',
+            'city' => 'City',
+            'eventTitle' => 'Event title',
+            'organizerName' => 'Organizer name',
+            'customerType' => 'Customer type'
+        ];
+
+        foreach ($required_fields as $field => $label) {
+            if (empty($data[$field])) {
+                $errors[] = "{$label} is required";
+            }
+        }
+
+        // Email validation
+        if (!empty($data['contactEmail'])) {
+            $validator = createObject('booking.sfValidatorEmail', array(), array(
+                'invalid' => '%field% contains an invalid email'
+            ));
+            try {
+                $validator->clean($data['contactEmail']);
+            } catch (\sfValidatorError $e) {
+                $errors[] = 'Invalid email format';
+            }
+        }
+
+        // Zip code validation
+        if (!empty($data['zipCode']) && !preg_match('/^\d{4}$/', $data['zipCode'])) {
+            $errors[] = 'Invalid zip code format';
+        }
+
+        // Phone number validation
+        if (!empty($data['contactPhone']) && strlen($data['contactPhone']) < 8) {
+            $errors[] = 'Phone number must be at least 8 digits';
+        }
+
+        // Organization number validation if organization type
+        if ($data['customerType'] === 'organization_number') {
+            if (empty($data['organizationNumber'])) {
+                $errors[] = 'Organization number is required for organization bookings';
+            } else {
+                try {
+                    $validator = createObject('booking.sfValidatorNorwegianOrganizationNumber');
+                    $validator->clean($data['organizationNumber']);
+                } catch (\sfValidatorError $e) {
+                    $errors[] = 'Invalid organization number';
+                }
+            }
+        }
+
+        // SSN validation if provided through POST
+        if ($data['customerType'] === 'ssn' && !empty($_POST['customer_ssn'])) {
+            try {
+                $validator = createObject('booking.sfValidatorNorwegianSSN');
+                $validator->clean($_POST['customer_ssn']);
+            } catch (\sfValidatorError $e) {
+                $errors[] = 'Invalid SSN';
+            }
+        }
+
+        // Validate organization name is provided if organization number is provided
+        if (!empty($data['organizationNumber']) && empty($data['organizationName'])) {
+            $errors[] = 'Organization name is required when organization number is provided';
+        }
+
+        // Validate customer type is valid
+        if (!in_array($data['customerType'], ['ssn', 'organization_number'])) {
+            $errors[] = 'Invalid customer type';
+        }
+
+        // Event title and organizer name length validation
+        if (strlen($data['eventTitle']) > 255) {
+            $errors[] = 'Event title is too long (maximum 255 characters)';
+        }
+        if (strlen($data['organizerName']) > 255) {
+            $errors[] = 'Organizer name is too long (maximum 255 characters)';
+        }
+
+        return $errors;
+    }
+
+
+    /**
+     * Send notification for completed application
+     */
+    private function sendApplicationNotification(int $application_id): void
+    {
+//        $sql = "SELECT * FROM bb_application WHERE id = :id";
+//        $stmt = $this->db->prepare($sql);
+//        $stmt->execute([':id' => $application_id]);
+        $application = $this->getFullApplication($application_id);
+
+        if ($application) {
+            // Call existing notification method from booking.boapplication
+            $bo = CreateObject('booking.boapplication');
+            $bo->send_notification((array) $application, true);
+        }
+    }
 
     private function fetchDates(int $application_id): array
     {
@@ -339,13 +681,13 @@ class ApplicationService
         activity_id, contact_name, contact_email, contact_phone,
         responsible_street, responsible_zip_code, responsible_city,
         customer_identifier_type, customer_organization_number,
-        created, modified, secret, owner_id, name
+        created, modified, secret, owner_id, name, organizer
     ) VALUES (
         :status, :session_id, :building_name, :building_id,
         :activity_id, :contact_name, :contact_email, :contact_phone,
         :responsible_street, :responsible_zip_code, :responsible_city,
         :customer_identifier_type, :customer_organization_number,
-        NOW(), NOW(), :secret, :owner_id, :name
+        NOW(), NOW(), :secret, :owner_id, :name, :organizer
     )";
 
         $params = [
@@ -364,7 +706,8 @@ class ApplicationService
             ':customer_organization_number' => $data['customer_organization_number'],
             ':secret' => $this->generate_secret(),
             ':owner_id' => $data['owner_id'],
-            ':name' => $data['name']
+            ':name' => $data['name'],
+            ':organizer' => $data['organizer']
         ];
 
         $stmt = $this->db->prepare($sql);
@@ -391,6 +734,7 @@ class ApplicationService
         customer_identifier_type = :customer_identifier_type,
         customer_organization_number = :customer_organization_number,
         name = :name,
+        organizer = :organizer,
         modified = NOW()
         WHERE id = :id AND session_id = :session_id";
 
@@ -408,6 +752,7 @@ class ApplicationService
             ':responsible_city' => $data['responsible_city'],
             ':customer_identifier_type' => $data['customer_identifier_type'],
             ':customer_organization_number' => $data['customer_organization_number'],
+            ':organizer' => $data['organizer'],
             ':name' => $data['name']
         ];
 
@@ -613,6 +958,32 @@ class ApplicationService
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+
+    /**
+     * Get a full application object with all related data
+     *
+     * @param int $id Application ID
+     * @return Application|null The complete application data or null if not found
+     */
+    public function getFullApplication(int $id): ?Application
+    {
+        $result = $this->getApplicationById($id);
+
+        if (!$result) {
+            return null;
+        }
+
+        $application = new Application($result);
+        $application->dates = $this->fetchDates($application->id);
+        $application->resources = $this->fetchResources($application->id);
+        $application->orders = $this->fetchOrders($application->id);
+        $application->agegroups = $this->fetchAgeGroups($application->id);
+        $application->audience = $this->fetchTargetAudience($application->id);
+        $application->documents = $this->fetchDocuments($application->id);
+
+        return $application;
+    }
+
     /**
      * Patch an existing application with partial data
      *
@@ -646,12 +1017,20 @@ class ApplicationService
 
     /**
      * Update main application data
+     * @param array $data The data to update
+     * @param int|null $id Optional ID parameter. If not provided, uses ID from data array
      */
-    private function patchApplicationMainData(array $data): void
+    private function patchApplicationMainData(array $data, ?int $id = null): void
     {
+        // Use provided ID if available, otherwise fall back to data['id']
+        $applicationId = $id ?? $data['id'];
+        if (!$applicationId) {
+            throw new Exception("No application ID provided");
+        }
+
         // Build dynamic UPDATE query based on provided fields
         $updateFields = [];
-        $params = [':id' => $data['id']];
+        $params = [':id' => $applicationId];
 
         // List of allowed fields to update
         $allowedFields = [
@@ -668,22 +1047,19 @@ class ApplicationService
             }
         }
 
-//        if (!empty($updateFields)) {
-            // Add modified timestamp
-            $updateFields[] = "modified = NOW()";
+        // Add modified timestamp
+        $updateFields[] = "modified = NOW()";
 
-            $sql = "UPDATE bb_application SET " . implode(', ', $updateFields) .
-                " WHERE id = :id";
+        $sql = "UPDATE bb_application SET " . implode(', ', $updateFields) .
+            " WHERE id = :id";
 
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute($params);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
 
-            if ($stmt->rowCount() === 0) {
-                throw new Exception("Application not found or no changes made");
-            }
-//        }
+        if ($stmt->rowCount() === 0) {
+            throw new Exception("Application not found or no changes made");
+        }
     }
-
     /**
      * Patch application dates - update existing dates and create new ones
      */

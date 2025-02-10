@@ -337,17 +337,46 @@ class booking_soapplication extends booking_socommon
 		);
 	}
 
-	function get_resource_name($id)
-	{
-		$list	 = implode(",", $id);
-		$results = array();
-		$this->db->query("SELECT name FROM bb_resource where id IN ($list)", __LINE__, __FILE__);
-		while ($this->db->next_record())
-		{
-			$results[] = $this->db->f('name', true);
-		}
-		return $results;
-	}
+    function get_resource_name($ids)
+    {
+        // Handle both array of numbers and array of objects
+        $clean_ids = array();
+
+        if (empty($ids)) {
+            return array();
+        }
+
+        foreach ($ids as $id) {
+            if (is_object($id)) {
+                $clean_ids[] = (int)$id->id;
+            } else {
+                $clean_ids[] = (int)$id;
+            }
+        }
+
+        // If all IDs were invalid, return empty array
+        if (empty($clean_ids)) {
+            return array();
+        }
+
+        $placeholders = str_repeat('?,', count($clean_ids) - 1) . '?';
+
+        try {
+            $query = "SELECT name FROM bb_resource WHERE id IN ($placeholders)";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute($clean_ids);
+
+            $results = array();
+            while ($row = $stmt->fetch()) {
+                $results[] = $row['name'];
+            }
+
+            return $results;
+        } catch (Exception $e) {
+            // Handle or log error appropriately
+            return array();
+        }
+    }
 
 	function get_building($id)
 	{

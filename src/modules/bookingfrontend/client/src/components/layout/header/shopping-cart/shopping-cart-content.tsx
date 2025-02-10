@@ -71,7 +71,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                     <Button variant="primary" className={'default'} asChild
                             data-size={'sm'}><Link
 
-                        href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiapplication.add_contact'}, false)}
+                        href={'/checkout'}
                         className={'link-text link-text-unset normal'}>
                         {t('bookingfrontend.submit_application')} <FontAwesomeIcon icon={faArrowRightLong}/>
                     </Link>

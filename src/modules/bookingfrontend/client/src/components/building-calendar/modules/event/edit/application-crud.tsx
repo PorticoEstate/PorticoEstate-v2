@@ -18,6 +18,7 @@ import styles from './application-crud.module.scss';
 import {useForm, Controller} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {
+    useBookingUser,
     useBuildingAgeGroups,
     useBuildingAudience,
     useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
@@ -29,6 +30,7 @@ import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/sho
 import {IAgeGroup, IAudience, IBuilding} from "@/service/types/Building";
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import {ApplicationFormData, applicationFormSchema} from './application-form';
+import {IBookingUser} from "@/service/types/api.types";
 
 interface ApplicationCrudProps {
     selectedTempApplication?: Partial<FCallTempEvent>;
@@ -47,6 +49,7 @@ interface ApplicationCrudInnerProps extends ApplicationCrudProps {
     existingApplication?: IApplication;
     onSubmitSuccess?: (data: ApplicationFormData) => void;
     lastSubmittedData?: Partial<ApplicationFormData> | null;
+    bookingUser?: IBookingUser;
 }
 
 const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
@@ -68,6 +71,8 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
     const {data: agegroups, isLoading: agegroupsLoading} = useBuildingAgeGroups(
         building_id ? +building_id : undefined
     );
+    const {data: bookingUser, isLoading: userLoading} = useBookingUser();
+
 
     const existingApplication = useMemo(() => {
         const applicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
@@ -85,7 +90,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
         return null;
     }
 
-    if (buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
+    if (userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
         return null;
     }
 
@@ -95,7 +100,6 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
         return null;
     }
 
-    console.log(lastSubmittedData);
 
     return (
         <div style={{ display: isOpen ? 'block' : 'none' }}>
@@ -107,6 +111,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
                 buildingResources={buildingResources}
                 partials={partials}
                 lastSubmittedData={lastSubmittedData}
+                bookingUser={bookingUser}
                 onSubmitSuccess={(data) => setLastSubmittedData(data)}
                 {...props}
             />
@@ -159,6 +164,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                 homepage: existingApplication.homepage || '',
                 description: existingApplication.description || '',
                 equipment: existingApplication.equipment || '',
+                organizer: existingApplication.organizer || '',
                 resources: existingApplication.resources?.map((res) => res.id.toString()) ||
                     props.selectedTempApplication?.extendedProps?.resources?.map(String) ||
                     [],
@@ -177,6 +183,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
         // Use lastSubmittedData if available, otherwise use default empty values
         return {
             title: props.lastSubmittedData?.title ?? '',
+            organizer: props.bookingUser?.name ?? '',
             start: defaultStartEnd.start,
             end: defaultStartEnd.end,
             homepage: props.lastSubmittedData?.homepage ?? '',
@@ -194,7 +201,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                 sort: ag.sort,
             })) || []
         };
-    }, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication]);
+    }, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication, props.bookingUser]);
 
 
     const {
@@ -252,6 +259,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                 'homepage',
                 'description',
                 'equipment',
+                'organizer'
             ]
             for (const checkField of checkFields) {
                 if (dirtyFields[checkField]) {
@@ -284,6 +292,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                 ...ag,
                 female: 0 // Since we're only tracking male numbers
             })),
+            organizer: data.organizer,
             name: data.title,
             resources: data.resources.map(res => (+res)),
             activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1

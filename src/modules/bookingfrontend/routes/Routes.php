@@ -57,6 +57,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
     {
         $group->get('/partials', ApplicationController::class . ':getPartials');
         $group->post('/partials', ApplicationController::class . ':createPartial');
+        $group->post('/partials/checkout', ApplicationController::class . ':checkoutPartials');
         $group->put('/partials/{id}', ApplicationController::class . ':updatePartial');
         $group->get('', ApplicationController::class . ':getApplications');
         $group->delete('/{id}', [ApplicationController::class, 'deletePartial']);

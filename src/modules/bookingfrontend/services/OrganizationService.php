@@ -8,6 +8,9 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 use Exception;
 use PDO;
 
+
+require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
+
 class OrganizationService
 {
     private $db;

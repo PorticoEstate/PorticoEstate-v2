@@ -52,6 +52,20 @@ const BillingForm: FC<BillingFormProps> = ({onBillingChange, onSubmit, user}) =>
             city: user?.city || '',
         }
     });
+    useEffect(() => {
+        const defaultValues = {
+            customerType: 'ssn',
+            contactName: user?.name || '',
+            contactEmail: user?.email || '',
+            contactEmailConfirm: user?.email || '',
+            contactPhone: user?.phone || '',
+            street: user?.street || '',
+            zipCode: user?.zip_code || '',
+            city: user?.city || '',
+        };
+        onBillingChange(defaultValues);
+    }, [user, onBillingChange]);
+
 
     const customerType = watch('customerType');
     const selectedOrg = watch('organizationNumber');

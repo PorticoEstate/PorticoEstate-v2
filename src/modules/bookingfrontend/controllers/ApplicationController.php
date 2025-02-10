@@ -435,6 +435,87 @@ class ApplicationController extends DocumentController
         }
     }
 
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/applications/partials/checkout",
+     *     summary="Update and finalize all partial applications with contact and organization info",
+     *     tags={"Applications"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
+     *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
+     *             @OA\Property(property="organizationNumber", type="string"),
+     *             @OA\Property(property="organizationName", type="string"),
+     *             @OA\Property(property="contactName", type="string"),
+     *             @OA\Property(property="contactEmail", type="string"),
+     *             @OA\Property(property="contactPhone", type="string"),
+     *             @OA\Property(property="street", type="string"),
+     *             @OA\Property(property="zipCode", type="string"),
+     *             @OA\Property(property="city", type="string"),
+     *             @OA\Property(property="eventTitle", type="string"),
+     *             @OA\Property(property="organizerName", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Applications updated successfully"
+     *     )
+     * )
+     */
+    public function checkoutPartials(Request $request, Response $response): Response
+    {
+        try {
+            $session = Sessions::getInstance();
+            $session_id = $session->get_session_id();
+
+            if (empty($session_id)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'No active session'],
+                    400
+                );
+            }
+
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
+
+            try {
+                // Update all partial applications
+                $updatedApplications = $this->applicationService->checkoutPartials($session_id, $data);
+
+                $response->getBody()->write(json_encode([
+                    'message' => 'Applications updated successfully',
+                    'applications' => $updatedApplications
+                ]));
+                return $response->withHeader('Content-Type', 'application/json');
+
+            } catch (Exception $e) {
+                // Check if the error message contains validation errors
+                if (strpos($e->getMessage(), ',') !== false) {
+                    // This is likely a validation error with multiple messages
+                    return ResponseHelper::sendErrorResponse(
+                        ['errors' => explode(', ', $e->getMessage())],
+                        400
+                    );
+                }
+                throw $e;
+            }
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+
 
     /**
      * Helper function to populate required dummy data

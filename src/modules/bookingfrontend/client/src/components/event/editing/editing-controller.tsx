@@ -20,9 +20,9 @@ const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing
     const {
         control,
         handleSubmit,
-        setError,
-        formState: {isDirty, errors},
+        formState: {isDirty, errors, isValid},
     } = useForm({
+        mode: 'onChange',
         resolver: zodResolver(eventFormSchema),
         defaultValues: {
             name: event.name,
@@ -58,15 +58,6 @@ const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing
     //     }
     //     setDraft(copy);
     // }
-
-    const onSubmit = (data: EditingEvent) => {
-        if (data.from_ >= data.to_) {
-            setError('from_', { message: 'Invalid date range' });
-            return;
-        }
-        saveChanges(data);
-    }
-
     return (
         <main>
             <EventEditingForm control={control} errors={errors} event={event} />
@@ -77,8 +68,8 @@ const EventEditing: FC<EventEditingProps> = ({ event, saveChanges, cancelEditing
                     style={{ marginRight: '0.5rem' }}
                 >{t('bookingfrontend.cancel')}</Button>
                 <Button 
-                    disabled={!isDirty}
-                    onClick={handleSubmit(onSubmit)}
+                    disabled={!isDirty || !isValid}
+                    onClick={handleSubmit(saveChanges)}
                 >
                     {t('bookingfrontend.save')}
                 </Button>

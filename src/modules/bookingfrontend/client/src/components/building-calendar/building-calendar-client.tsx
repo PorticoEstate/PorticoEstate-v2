@@ -17,7 +17,6 @@ import {FCallEventConverter} from "@/components/building-calendar/util/event-con
 import EventContent from "@/components/building-calendar/modules/event/content/event-content";
 import EventPopper from "@/components/building-calendar/modules/event/popper/event-popper";
 import CalendarInnerHeader from "@/components/building-calendar/modules/header/calendar-inner-header";
-import {usePopperData} from "@/service/api/event-info";
 import {
     FCallBackgroundEvent, FCallBaseEvent,
     FCallEvent,
@@ -75,13 +74,6 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
     const {enabledResources} = useEnabledResources();
     const {data: resources} = useBuildingResources(props.building.id);
-
-    const eventInfos = usePopperData(
-        (events || []).filter(e => e.type === 'event').map(e => e.id),
-        (events || []).filter(e => e.type === 'allocation').map(e => e.id),
-        (events || []).filter(e => e.type === 'booking').map(e => e.id)
-    );
-
 
     useEffect(() => {
         if (view === 'listWeek') {

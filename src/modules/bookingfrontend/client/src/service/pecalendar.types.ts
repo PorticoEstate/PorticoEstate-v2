@@ -1,5 +1,16 @@
 export type IEvent = IAPIEvent | IAPIBooking | IAPIAllocation;
 
+export const IEventIsAPIEvent = (event: IEvent): event is IAPIEvent => {
+    return event.type === 'event';
+}
+export const IEventIsAPIBooking = (event: IEvent): event is IAPIBooking => {
+    return event.type === 'booking';
+}
+
+export const IEventIsAPIAllocation = (event: IEvent): event is IAPIAllocation => {
+    return event.type === 'allocation';
+}
+
 export interface IAPIScheduleEntity {
     type: 'booking' | 'allocation' | 'event';
     id: number;

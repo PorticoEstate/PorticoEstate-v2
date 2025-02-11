@@ -108,9 +108,9 @@ class BookingUserController
 
 
             $userModel = new User($bouser);
-            if (isset($userModel->ssn)) {
-                $userModel->ssn = $this->maskSSN($userModel->ssn);
-            }
+//            if (isset($userModel->ssn)) {
+//                $userModel->ssn = $this->maskSSN($userModel->ssn);
+//            }
             $serialized = $userModel->serialize();
 
             $response->getBody()->write(json_encode($serialized));

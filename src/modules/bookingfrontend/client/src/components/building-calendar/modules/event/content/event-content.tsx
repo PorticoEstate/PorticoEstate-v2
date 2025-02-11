@@ -6,9 +6,9 @@ import {faLayerGroup, faUser, faUsers} from "@fortawesome/free-solid-svg-icons";
 import {formatEventTime} from "@/service/util";
 import {FCallEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import {usePopperGlobalInfo} from "@/service/api/event-info";
 import popperStyles from '../popper/event-popper.module.scss'
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {IEventIsAPIEvent} from "@/service/pecalendar.types";
 
 interface EventContentProps {
     eventInfo: FCEventContentArg<FCallEvent>;
@@ -54,11 +54,7 @@ const EventContent: FC<EventContentProps> = memo(function EventContent(props) {
         const {eventInfo} = props;
         const t = useTrans();
         const eventRef = useRef<HTMLDivElement>(null);
-        const {
-            data: infoData,
-            isLoading
-        } = usePopperGlobalInfo(props.eventInfo.event.extendedProps.type, props.eventInfo.event.id);
-
+        const eventData = eventInfo.event.extendedProps.source;
         const [layout, setLayout] = useState<LayoutState>({
             visibleResources: 0,
             visibleCircles: 0,
@@ -266,15 +262,15 @@ const EventContent: FC<EventContentProps> = memo(function EventContent(props) {
                         {layout.showOrderNumber && (
                             <div className={`text-small ${styles.orderNumber}`}>#{eventInfo.event.id}</div>
                         )}
-                        {layout.showOrganizer && infoData?.organizer && (
+                        {layout.showOrganizer && IEventIsAPIEvent(eventData) && eventData?.organizer && (
                             <div className={`text-small ${styles.organizer}`}>
-                                <FontAwesomeIcon className={'text-small'} icon={faUser}/> {infoData?.organizer}
+                                <FontAwesomeIcon className={'text-small'} icon={faUser}/> {eventData?.organizer}
                             </div>
                         )}
-                        {layout.showParticipantLimit && (infoData?.info_participant_limit || 0) > 0 && (
+                        {layout.showParticipantLimit&& IEventIsAPIEvent(eventData) && (eventData?.participant_limit || 0) > 0 && (
                             <div className={`text-small ${styles.participantLimit}`}>
                                 <FontAwesomeIcon className={'text-small'} icon={faUsers}/>
-                                <span>Max {infoData?.info_participant_limit} participants</span>
+                                <span>Max {eventData?.participant_limit} participants</span>
                             </div>
                         )}
                     </>

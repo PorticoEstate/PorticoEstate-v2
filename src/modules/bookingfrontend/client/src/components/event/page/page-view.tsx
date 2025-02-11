@@ -25,7 +25,7 @@ const PrivateEventView: FC<PrivateEventView> = ({ event, openEditing }: PrivateE
         <>
             <p><b>{t('bookingfrontend.organizer')}: </b>{event.organizer}</p>
             <p style={{marginTop: '2rem', marginBottom: '0'}}><b>{t('bookingfrontend.max_participants_info')}: </b>{event.participant_limit}</p>
-             <p style={{marginBottom: '0'}}><b>{t('bookingfrontend.number_of_participants')}: </b>{event.numberOfParticipants}</p>
+             <p style={{marginBottom: '0'}}><b>{t('bookingfrontend.participant_number')}: </b>{event.numberOfParticipants}</p>
             <div style={{display: 'flex'}}>
                 <Button asChild style={{marginRight: '0.5rem'}} variant='secondary'>
                     <Link 
@@ -57,7 +57,7 @@ const EventView: FC<EventViewProps> = ({ event, openEditing, privateAccess }: Ev
             <h2 style={{ marginBottom: '1rem' }}>{event.name}</h2>
             <span>#{event.id}</span>
             <p style={{marginTop: '2rem'}}><b>{t('bookingfrontend.date')}: </b>{date}</p>
-            <p><b>{t('bookingfrontend.tid')}: </b>{fromTime}-{toTime}</p>
+            <p><b>{t('bookingfrontend.time')}: </b>{fromTime}-{toTime}</p>
             <p>
                 <b>{t('bookingfrontend.place')}: </b>
                 <Link 

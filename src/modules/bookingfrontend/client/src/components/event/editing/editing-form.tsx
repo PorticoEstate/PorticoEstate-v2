@@ -35,7 +35,7 @@ const EventEditingForm: FC<FormProps> = ({ event, control, errors }: FormProps) 
                     control={control}
                     render={({ field: { onChange, value } }) => (
                         <Field>
-                            <span className={styles.inputLabel}>From</span>
+                            <span className={styles.inputLabel}>{t('bookingfrontend.from')}</span>
                             <CalendarDatePicker 
                                 showTimeSelect
                                 timeIntervals={5}
@@ -51,7 +51,7 @@ const EventEditingForm: FC<FormProps> = ({ event, control, errors }: FormProps) 
                     control={control}
                     render={({ field: { onChange, value } }) => (
                         <Field>
-                            <span className={styles.inputLabel}>To</span>
+                            <span className={styles.inputLabel}>{t('bookingfrontend.to')}</span>
                             <CalendarDatePicker 
                                 showTimeSelect
                                 timeIntervals={5}

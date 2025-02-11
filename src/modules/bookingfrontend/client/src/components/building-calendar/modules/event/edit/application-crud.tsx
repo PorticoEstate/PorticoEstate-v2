@@ -292,7 +292,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                 ...ag,
                 female: 0 // Since we're only tracking male numbers
             })),
-            organizer: data.organizer,
+            organizer: data.organizer || '',
             name: data.title,
             resources: data.resources.map(res => (+res)),
             activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1

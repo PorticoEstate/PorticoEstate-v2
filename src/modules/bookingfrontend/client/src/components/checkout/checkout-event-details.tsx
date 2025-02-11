@@ -16,7 +16,7 @@ interface CheckoutEventDetailsProps {
 }
 
 
-function getCommonValue<T extends { [key: string]: any }>(arr?: T[], key: keyof T): string  {
+function getCommonValue<T extends { [key: string]: any }>(arr: (T[] | undefined), key: keyof T): string  {
     if (!arr || arr.length === 0) return '';
 
     const firstValue = arr[0][key];

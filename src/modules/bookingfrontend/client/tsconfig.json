@@ -18,8 +18,6 @@
         "jsx": "preserve",
         "types": [
             "@porticoestate/design-tokens/colors.d.ts",
-            "@/shared-types/iso-date.types.ts",
-            "@/shared-types/polyfill.d.ts"
         ],
         "incremental": true,
         "plugins": [

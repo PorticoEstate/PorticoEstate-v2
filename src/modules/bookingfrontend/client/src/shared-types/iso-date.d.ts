@@ -1,3 +1,5 @@
+
+
 interface Date {
     /**
      * Returns a string in simplified extended ISO format (ISO 8601)
@@ -26,7 +28,7 @@ type TDateISODate = `${YYYY}-${MM}-${DD}`;
 /**
  * Represents a valid ISO 8601 time portion, with optional milliseconds
  */
-type TDateISOTime = `${HH}:${mm}:${ss}` | `${HH}:${mm}:${ss}.${sss}`;
+// type TDateISOTime = `${HH}:${mm}:${ss}` | `${HH}:${mm}:${ss}.${sss}`;
 
 /**
  * Represents a complete valid ISO 8601 datetime string
@@ -34,4 +36,5 @@ type TDateISOTime = `${HH}:${mm}:${ss}` | `${HH}:${mm}:${ss}.${sss}`;
  * - YYYY-MM-DDTHH:mm:ss.sssZ
  * - YYYY-MM-DDTHH:mm:ss±HH:mm
  */
-type TDateISO = `${TDateISODate}T${TDateISOTime}${TimezoneOffset}`;
+// type TDateISO = `${TDateISODate}T${TDateISOTime}${TimezoneOffset}`;
+type TDateISO = string;

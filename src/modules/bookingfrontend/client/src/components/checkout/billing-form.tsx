@@ -53,7 +53,7 @@ const BillingForm: FC<BillingFormProps> = ({onBillingChange, onSubmit, user}) =>
         }
     });
     useEffect(() => {
-        const defaultValues = {
+        const defaultValues: BillingFormData = {
             customerType: 'ssn',
             contactName: user?.name || '',
             contactEmail: user?.email || '',
@@ -115,13 +115,13 @@ const BillingForm: FC<BillingFormProps> = ({onBillingChange, onSubmit, user}) =>
             // const data = await response.json();
 
             setValue('organizationName', data.navn);
-            setValue('street', data.postadresse.adresse[0]);
-            setValue('zipCode', data.postadresse.postnummer);
-            setValue('city', data.postadresse.poststed);
-            console.log('organizationName', data.navn);
-            console.log('street', data.postadresse.adresse[0]);
-            console.log('zipCode', data.postadresse.postnummer);
-            console.log('city', data.postadresse.poststed);
+            setValue('street', data.postadresse?.adresse?.[0] || '');
+            setValue('zipCode', data.postadresse?.postnummer || '');
+            setValue('city', data.postadresse?.poststed || '');
+            // console.log('organizationName', data.navn);
+            // console.log('street', data.postadresse.adresse[0]);
+            // console.log('zipCode', data.postadresse.postnummer);
+            // console.log('city', data.postadresse.poststed);
         } catch (error) {
             console.error('Failed to fetch organization details:', error);
         }

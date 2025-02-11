@@ -44,7 +44,7 @@ const Invoices: FC<InvoicesProps> = (props) => {
                 // size: 0.5
                 defaultHidden: true,
             },
-            cell: info => DateTime.fromISO(info.getValue()).toFormat('dd.MM.yyyy HH:mm'),
+            cell: info => DateTime.fromISO(info.getValue() as string).toFormat('dd.MM.yyyy HH:mm'),
         }),
         columnHelper.accessor('to_', {
             header: t('bookingfrontend.to'),
@@ -52,7 +52,7 @@ const Invoices: FC<InvoicesProps> = (props) => {
                 // size: 0.5
                 defaultHidden: true,
             },
-            cell: info => DateTime.fromISO(info.getValue()).toFormat('dd.MM.yyyy  HH:mm'),
+            cell: info => DateTime.fromISO(info.getValue() as string).toFormat('dd.MM.yyyy  HH:mm'),
         }),
         columnHelper.accessor('customer_organization_number', {
             header: t('bookingfrontend.organization number'),

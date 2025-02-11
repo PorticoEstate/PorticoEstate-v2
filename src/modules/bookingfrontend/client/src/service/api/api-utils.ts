@@ -6,7 +6,7 @@ import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience} from "@/service/types/Building";
-import {IOrganization} from "@/service/types/api/organization.types";
+import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 
 
 
@@ -131,7 +131,7 @@ export async function searchOrganizations(query: string): Promise<IOrganization[
     return result?.results;
 }
 
-export async function validateOrgNum(org_num: string): Promise<IOrganization[]> {
+export async function validateOrgNum(org_num: string): Promise<BrregOrganization> {
     const url = phpGWLink(['bookingfrontend', 'organizations', 'lookup', org_num]);
     const response = await fetch(url);
     const result = await response.json();

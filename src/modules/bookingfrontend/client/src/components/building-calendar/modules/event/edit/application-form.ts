@@ -8,6 +8,7 @@ export const applicationFormSchema = z.object({
     homepage: z.union([z.literal(""), z.string().trim().url()]),
     description: z.string().optional(),
     equipment: z.string().optional(),
+    organizer: z.string().optional(),
     // Add validation for audience and agegroups
     audience: z.array(z.number()),
     agegroups: z.array(z.object({

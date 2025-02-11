@@ -26,12 +26,14 @@ abstract class BaseScheduleEntity
     /**
      * @OA\Property(type="string", format="date-time")
      * @Expose
+     * @Timestamp
      */
     public $from_;
 
     /**
      * @OA\Property(type="string", format="date-time")
      * @Expose
+     * @Timestamp
      */
     public $to_;
 

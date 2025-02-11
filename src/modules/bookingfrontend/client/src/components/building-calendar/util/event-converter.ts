@@ -14,8 +14,8 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
     let startDateTime: DateTime;
     let endDateTime: DateTime;
 
-    startDateTime = DateTime.fromSQL(event.from_);
-    endDateTime = DateTime.fromSQL(event.to_);
+    startDateTime = DateTime.fromISO(event.from_);
+    endDateTime = DateTime.fromISO(event.to_);
 
     // Calculate the duration of the event in minutes
     const durationMinutes = endDateTime.diff(startDateTime, 'minutes').minutes;
@@ -27,9 +27,21 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
 
     const allDay = !startDateTime.hasSame(endDateTime, 'day');
 
+    let name: string | undefined = undefined;
+    switch (event.type) {
+        case "event":
+            name = event.name;
+            break;
+        case 'booking':
+            name = event.group_name;
+            break;
+        case "allocation":
+            name = event.organization_name;
+            break;
+    }
     const mainEvent: FCallEvent = {
         id: event.id,
-        title: (is_public === 1 ? event.name : 'Private Event') + ` \n`,
+        title: (is_public === 1 ? name : 'Private Event') + ` \n`,
         start: startDateTime.toJSDate(),
         // in all day, END is EXCLUSIVE
         end: allDay ? displayEndDateTime.plus({days: 1}).toJSDate() : displayEndDateTime.toJSDate(),

@@ -460,15 +460,23 @@
 			$user_can_delete_allocations = $config['user_can_delete_allocations'] === 'yes' ? 1 : ($config['user_can_delete_allocations'] === 'never' ? 2 : 0);
 
 			// Retrieve multiple allocation IDs
-			$ids = Sanitizer::get_var('ids', 'string');
-			if ($ids && !is_array($ids))
-			{
-				$ids = explode(',', $ids);
-			}
-			elseif (!$ids || !is_array($ids))
-			{
-				$ids = array(Sanitizer::get_var('id', 'int'));
-			}
+            $ids = Sanitizer::get_var('ids', 'string');
+
+            if (is_array($ids)) {
+                // ids is already an array, keep as is
+            } elseif ($ids) {
+                // Convert comma-separated string to array
+                $ids = explode(',', $ids);
+            } else {
+                // No ids provided, try single id
+                $ids = array(Sanitizer::get_var('id'));
+            }
+
+            // Filter out empty values and ensure we have at least one valid ID
+            $ids = array_filter($ids);
+            if (empty($ids)) {
+                phpgw::no_access('booking', lang('missing id'));
+            }
 			$allocations_info = [];
 			foreach ($ids as $id)
 			{

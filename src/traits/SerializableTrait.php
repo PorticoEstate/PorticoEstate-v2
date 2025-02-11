@@ -557,21 +557,26 @@ trait SerializableTrait
         // Get format from options or use ISO 8601 as default
         $format = $options['format'] ?? 'c';
 
+        // Create Oslo timezone object
+        $osloTz = new \DateTimeZone('Europe/Oslo');
+
         // Handle different timestamp formats
         if (is_numeric($value)) {
             // Unix timestamp
-            $date = new \DateTime();
+            $date = new \DateTime('now', $osloTz);
             $date->setTimestamp($value);
             return $date->format($format);
         }
 
         if ($value === 'now') {
-            return (new \DateTime())->format($format);
+            $date = new \DateTime('now', $osloTz);
+            return $date->format($format);
         }
 
         try {
-            // Try to parse the date string
-            $date = new \DateTime($value);
+            // Create DateTime with Oslo timezone from the start
+            // This will treat the input time as being in Oslo timezone
+            $date = new \DateTime($value, $osloTz);
             return $date->format($format);
         } catch (\Exception $e) {
             // If parsing fails, return original value

@@ -215,6 +215,7 @@ class booking_boapplication extends booking_bocommon
 		$reply_to = !empty($config->config_data['email_reply_to']) ? $config->config_data['email_reply_to'] : '';
 		$external_site_address = !empty($config->config_data['external_site_address']) ? $config->config_data['external_site_address'] : $this->serverSettings['webserver_url'];
 
+
 		$resourcename = implode(", ", $this->get_resource_name($application['resources']));
 
 		$resources = CreateObject('booking.soresource')->read(array(

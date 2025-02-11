@@ -454,73 +454,73 @@
 			}
 		}
 
-        public function info_json()
-        {
-            $config = CreateObject('phpgwapi.config', 'booking')->read();
-            $user_can_delete_allocations = $config['user_can_delete_allocations'] === 'yes' ? 1 : ($config['user_can_delete_allocations'] === 'never' ? 2 : 0);
+		public function info_json()
+		{
+			$config = CreateObject('phpgwapi.config', 'booking')->read();
+			$user_can_delete_allocations = $config['user_can_delete_allocations'] === 'yes' ? 1 : ($config['user_can_delete_allocations'] === 'never' ? 2 : 0);
 
-            // Retrieve multiple allocation IDs
-            $ids = Sanitizer::get_var('ids', 'string');
+			// Retrieve multiple allocation IDs
+			$ids = Sanitizer::get_var('ids', 'string');
 
-            if (is_array($ids))
-            {
-                // ids is already an array, keep as is
-            } elseif ($ids)
-            {
-                // Convert comma-separated string to array
-                $ids = explode(',', $ids);
-            } else
-            {
-                // No ids provided, try single id
-                $ids = array(Sanitizer::get_var('id'));
-            }
+			if (is_array($ids))
+			{
+				// ids is already an array, keep as is
+			} elseif ($ids)
+			{
+				// Convert comma-separated string to array
+				$ids = explode(',', $ids);
+			} else
+			{
+				// No ids provided, try single id
+				$ids = array(Sanitizer::get_var('id'));
+			}
 
-            // Filter out empty values and ensure we have at least one valid ID
-            $ids = array_filter($ids);
-            if (empty($ids))
-            {
-                phpgw::no_access('booking', lang('missing id'));
-            }
-            $allocations_info = [];
-            foreach ($ids as $id)
-            {
-                $allocation = $this->bo->read_single((int)$id);
-                if (!$allocation)
-                {
-                    continue; // Skip if the allocation is not found
-                }
+			// Filter out empty values and ensure we have at least one valid ID
+			$ids = array_filter($ids);
+			if (empty($ids))
+			{
+				phpgw::no_access('booking', lang('missing id'));
+			}
+			$allocations_info = [];
+			foreach ($ids as $id)
+			{
+				$allocation = $this->bo->read_single((int)$id);
+				if (!$allocation)
+				{
+					continue; // Skip if the allocation is not found
+				}
 
-                // Process each allocation
-                $allocation['info_resource_info'] = $this->calculate_resource_info($allocation['resources']);
-                $allocation['info_building_link'] = self::link([
-                    'menuaction' => 'bookingfrontend.uibuilding.show',
-                    'id' => $allocation['building_id']
-                ]);
-                $allocation['info_org_link'] = self::link([
-                    'menuaction' => 'bookingfrontend.uiorganization.show',
-                    'id' => $allocation['organization_id']
-                ]);
-                $allocation['info_when'] = $this->info_format_allocation_time($allocation['from_'], $allocation['to_']);
-                $allocation['info_participant_limit'] = $this->info_calculate_participant_limit($allocation, $config);
-                $allocation['info_add_link'] = $this->info_determine_add_link($allocation);
-                $allocation['info_edit_link'] = $this->info_determine_edit_link($allocation);
-                $allocation['info_cancel_link'] = $this->info_determine_cancel_link($allocation, $user_can_delete_allocations);
-                $allocation['info_ical_link'] = self::link([
-                    'menuaction' => 'bookingfrontend.uiparticipant.ical',
-                    'reservation_type' => 'allocation',
-                    'reservation_id' => $allocation['id']
-                ]);
-                $allocation['info_show_link'] = self::link(array(
-                    'menuaction' => 'bookingfrontend.uiallocation.show',
-                    'id' => $allocation['id']
-                ));
+				// Process each allocation
+				$allocation['info_resource_info'] = $this->calculate_resource_info($allocation['resources']);
+				$allocation['info_building_link'] = self::link([
+					'menuaction' => 'bookingfrontend.uibuilding.show',
+					'id' => $allocation['building_id']
+				]);
+				$allocation['info_org_link'] = self::link([
+					'menuaction' => 'bookingfrontend.uiorganization.show',
+					'id' => $allocation['organization_id']
+				]);
+				$allocation['info_when'] = $this->info_format_allocation_time($allocation['from_'], $allocation['to_']);
+				$allocation['info_participant_limit'] = $this->info_calculate_participant_limit($allocation, $config);
+				$allocation['info_add_link'] = $this->info_determine_add_link($allocation);
+				$allocation['info_edit_link'] = $this->info_determine_edit_link($allocation);
+				$allocation['info_cancel_link'] = $this->info_determine_cancel_link($allocation, $user_can_delete_allocations);
+				$allocation['info_ical_link'] = self::link([
+					'menuaction' => 'bookingfrontend.uiparticipant.ical',
+					'reservation_type' => 'allocation',
+					'reservation_id' => $allocation['id']
+				]);
+				$allocation['info_show_link'] = self::link(array(
+					'menuaction' => 'bookingfrontend.uiallocation.show',
+					'id' => $allocation['id']
+				));
 
-                // Add processed allocation to the array
-                $allocations_info[$id] = $allocation;
-            }
+				// Add processed allocation to the array
+				$allocations_info[$id] = $allocation;
+			}
 
-            return ['allocations' => $allocations_info, 'user_can_delete_allocations' => $user_can_delete_allocations];
-        }
+			return ['allocations' => $allocations_info, 'user_can_delete_allocations' => $user_can_delete_allocations];
+		}
 
 		private function info_determine_add_link($allocation)
 		{

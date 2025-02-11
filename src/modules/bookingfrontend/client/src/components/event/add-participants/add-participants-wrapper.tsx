@@ -14,7 +14,7 @@ const AddParticipantsWrapper: FC<WrapperProps> = ({ eventId }: WrapperProps) => 
     if (!isLoading && eventInfo) {
 		const access = eventInfo.name !== 'PRIVATE EVENT';
 		if (!access) return null;
-        const pendingEvent = eventInfo.from_ <= new Date();
+        const pendingEvent = eventInfo.from_ <= new Date() && eventInfo.to_ > new Date();
         return (
 			<>
 				<AddParticipantsHeader

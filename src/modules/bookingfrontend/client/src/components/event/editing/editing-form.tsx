@@ -29,7 +29,7 @@ const EventEditingForm: FC<FormProps> = ({ event, control, errors }: FormProps) 
                     />
                 )}
             />
-            <div>
+            <div className={styles.timepickers}>
                 <Controller
                     name="from_"
                     control={control}

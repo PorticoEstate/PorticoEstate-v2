@@ -779,71 +779,75 @@ class bookingfrontend_uievent extends booking_uievent
 		phpgwapi_xslttemplates::getInstance()->set_output('wml'); // Evil hack to disable page chrome
 	}
 
-	public function info_json()
-	{
+    public function info_json()
+    {
         $ids = Sanitizer::get_var('ids', 'string');
 
-        if (is_array($ids)) {
+        if (is_array($ids))
+        {
             // ids is already an array, keep as is
-        } elseif ($ids) {
+        } elseif ($ids)
+        {
             // Convert comma-separated string to array
             $ids = explode(',', $ids);
-        } else {
+        } else
+        {
             // No ids provided, try single id
             $ids = array(Sanitizer::get_var('id'));
         }
 
         // Filter out empty values and ensure we have at least one valid ID
         $ids = array_filter($ids);
-        if (empty($ids)) {
+        if (empty($ids))
+        {
             phpgw::no_access('booking', lang('missing id'));
         }
-		$config = CreateObject('phpgwapi.config', 'booking')->read();
-		$user_can_delete_events = $config['user_can_delete_events'] === 'yes' ? 1 : 0;
+        $config = CreateObject('phpgwapi.config', 'booking')->read();
+        $user_can_delete_events = $config['user_can_delete_events'] === 'yes' ? 1 : 0;
 
-		$from_org = Sanitizer::get_var('from_org', 'boolean', 'REQUEST', false);
+        $from_org = Sanitizer::get_var('from_org', 'boolean', 'REQUEST', false);
 
-		$events_info = [];
-		foreach ($ids as $id)
-		{
-			$event = $this->bo->read_single($id);
-			if (!$event)
-			{
-				continue; // Skip if the event is not found
-			}
+        $events_info = [];
+        foreach ($ids as $id)
+        {
+            $event = $this->bo->read_single($id);
+            if (!$event)
+            {
+                continue; // Skip if the event is not found
+            }
 
-			$event = $this->filterEventForPublic($event);
+            $event = $this->filterEventForPublic($event);
 
-			$event['type'] = 'event';
-			$event['info_resource_info'] = $this->calculate_resource_info($event['resources']);
-			$event['info_org'] = $this->info_get_org_info($event['customer_organization_number']);
-			$event['info_when'] = $this->info_format_event_time($event['from_'], $event['to_']);
-			$event['info_participant_limit'] = $this->info_calculate_participant_limit($event, $config);
+            $event['type'] = 'event';
+            $event['info_resource_info'] = $this->calculate_resource_info($event['resources']);
+            $event['info_org'] = $this->info_get_org_info($event['customer_organization_number']);
+            $event['info_when'] = $this->info_format_event_time($event['from_'], $event['to_']);
+            $event['info_participant_limit'] = $this->info_calculate_participant_limit($event, $config);
 
-			$number_of_participants = createObject('booking.boparticipant')->get_number_of_participants('event', $event['id']);
-			$event['number_of_participants'] = $number_of_participants;
+            $number_of_participants = createObject('booking.boparticipant')->get_number_of_participants('event', $event['id']);
+            $event['number_of_participants'] = $number_of_participants;
 
-			// Add resource_ids to the event info
-			$event['resource_ids'] = isset($event['resources']) ? array_map('intval', $event['resources']) : [];
+            // Add resource_ids to the event info
+            $event['resource_ids'] = isset($event['resources']) ? array_map('intval', $event['resources']) : [];
 
-			$event['info_edit_link'] = $this->info_determine_edit_link($event, $from_org);
-			$event['info_cancel_link'] = $this->info_determine_cancel_link($event, $user_can_delete_events, $from_org);
+            $event['info_edit_link'] = $this->info_determine_edit_link($event, $from_org);
+            $event['info_cancel_link'] = $this->info_determine_cancel_link($event, $user_can_delete_events, $from_org);
 
-			$event['info_ical_link'] = self::link([
-				'menuaction' => 'bookingfrontend.uiparticipant.ical',
-				'reservation_type' => 'event',
-				'reservation_id' => $event['id']
-			]);
-			$event['info_show_link'] = self::link([
-				'menuaction' => 'bookingfrontend.uievent.show',
-				'id' => $event['id']
-			]);
+            $event['info_ical_link'] = self::link([
+                'menuaction' => 'bookingfrontend.uiparticipant.ical',
+                'reservation_type' => 'event',
+                'reservation_id' => $event['id']
+            ]);
+            $event['info_show_link'] = self::link([
+                'menuaction' => 'bookingfrontend.uievent.show',
+                'id' => $event['id']
+            ]);
 
-			$events_info[$id] = $event;
-		}
+            $events_info[$id] = $event;
+        }
 
-		return ['events' => $events_info, 'info_user_can_delete_events' => $user_can_delete_events];
-	}
+        return ['events' => $events_info, 'info_user_can_delete_events' => $user_can_delete_events];
+    }
 
 
 	function filterEventForPublic($event)

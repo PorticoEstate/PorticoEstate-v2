@@ -1781,66 +1781,71 @@ class bookingfrontend_uibooking extends booking_uibooking
 		self::render_template_xsl('booking_info', array('booking' => $booking, 'user_can_delete_bookings' => $user_can_delete_bookings));
 		phpgwapi_xslttemplates::getInstance()->set_output('wml'); // Evil hack to disable page chrome
 	}
-	public function info_json()
-	{
-		$config = CreateObject('phpgwapi.config', 'booking')->read();
-		$user_can_delete_bookings = $config['user_can_delete_bookings'] === 'yes' ? 1 : 0;
 
-		// Retrieve multiple booking IDs
+    public function info_json()
+    {
+        $config = CreateObject('phpgwapi.config', 'booking')->read();
+        $user_can_delete_bookings = $config['user_can_delete_bookings'] === 'yes' ? 1 : 0;
+
+        // Retrieve multiple booking IDs
         $ids = Sanitizer::get_var('ids', 'string');
 
-        if (is_array($ids)) {
+        if (is_array($ids))
+        {
             // ids is already an array, keep as is
-        } elseif ($ids) {
+        } elseif ($ids)
+        {
             // Convert comma-separated string to array
             $ids = explode(',', $ids);
-        } else {
+        } else
+        {
             // No ids provided, try single id
             $ids = array(Sanitizer::get_var('id'));
         }
 
         // Filter out empty values and ensure we have at least one valid ID
         $ids = array_filter($ids);
-        if (empty($ids)) {
+        if (empty($ids))
+        {
             phpgw::no_access('booking', lang('missing id'));
         }
-		$bookings_info = [];
-		foreach ($ids as $id)
-		{
-			$booking = $this->bo->read_single($id);
-			if (!$booking)
-			{
-				continue;
-			}
-			$booking['info_group'] = $this->group_bo->read_single($booking['group_id']);
-			$booking['info_resource_info'] = $this->calculate_resource_info($booking['resources']);
-			$booking['info_building_link'] = self::link([
-				'menuaction' => 'bookingfrontend.uibuilding.show',
-				'id' => $booking['building_id']
-			]);
-			$booking['info_group_link'] = self::link([
-				'menuaction' => 'bookingfrontend.uigroup.show',
-				'id' => $booking['group']['id']
-			]);
-			$booking['info_when'] = $this->info_format_booking_time($booking['from_'], $booking['to_']);
-			$booking['info_participant_limit'] = $this->info_calculate_participant_limit($booking, $config);
-			$booking['info_edit_link'] = $this->info_determine_edit_link($booking, $user_can_delete_bookings);
-			$booking['info_cancel_link'] = $this->info_determine_cancel_link($booking, $user_can_delete_bookings);
-			$booking['info_ical_link'] = self::link([
-				'menuaction' => 'bookingfrontend.uiparticipant.ical',
-				'reservation_type' => 'booking',
-				'reservation_id' => $booking['id']
-			]);
+        $bookings_info = [];
+        foreach ($ids as $id)
+        {
+            $booking = $this->bo->read_single($id);
+            if (!$booking)
+            {
+                continue;
+            }
+            $booking['info_group'] = $this->group_bo->read_single($booking['group_id']);
+            $booking['info_resource_info'] = $this->calculate_resource_info($booking['resources']);
+            $booking['info_building_link'] = self::link([
+                'menuaction' => 'bookingfrontend.uibuilding.show',
+                'id' => $booking['building_id']
+            ]);
+            $booking['info_group_link'] = self::link([
+                'menuaction' => 'bookingfrontend.uigroup.show',
+                'id' => $booking['group']['id']
+            ]);
+            $booking['info_when'] = $this->info_format_booking_time($booking['from_'], $booking['to_']);
+            $booking['info_participant_limit'] = $this->info_calculate_participant_limit($booking, $config);
+            $booking['info_edit_link'] = $this->info_determine_edit_link($booking, $user_can_delete_bookings);
+            $booking['info_cancel_link'] = $this->info_determine_cancel_link($booking, $user_can_delete_bookings);
+            $booking['info_ical_link'] = self::link([
+                'menuaction' => 'bookingfrontend.uiparticipant.ical',
+                'reservation_type' => 'booking',
+                'reservation_id' => $booking['id']
+            ]);
 
-			$booking['info_show_link'] = self::link(array(
-				'menuaction' => 'bookingfrontend.uibooking.show',
-				'id' => $booking['id']
-			));
-			$bookings_info[$id] = $booking;
-		}
+            $booking['info_show_link'] = self::link(array(
+                'menuaction' => 'bookingfrontend.uibooking.show',
+                'id' => $booking['id']
+            ));
+            $bookings_info[$id] = $booking;
+        }
 
-		return ['bookings' => $bookings_info, 'info_user_can_delete_bookings' => $user_can_delete_bookings];
-	}
+        return ['bookings' => $bookings_info, 'info_user_can_delete_bookings' => $user_can_delete_bookings];
+    }
 
 
 

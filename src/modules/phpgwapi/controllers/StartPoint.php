@@ -44,14 +44,16 @@ class StartPoint
 		$serverSettings = Settings::getInstance()->get('server');
 		$userSettings = Settings::getInstance()->get('user');
 
-		if(!empty($serverSettings['log_levels']['module']['mobilefrontend']) 
-		&& !empty($userSettings['apps']['admin'])
-		&& !Sanitizer::get_var('phpgw_return_as', 'string', 'GET') == 'json')
+		if (
+			!empty($serverSettings['log_levels']['module']['mobilefrontend'])
+			&& !empty($userSettings['apps']['admin'])
+			&& !Sanitizer::get_var('phpgw_return_as', 'string', 'GET') == 'json'
+		)
 		{
 			_debug_array(Settings::getInstance()->get('flags'));
 			_debug_array($_SERVER);
 		}
-		
+
 		$this->validate_object_method();
 
 		$this->api_requested = false;
@@ -184,8 +186,10 @@ class StartPoint
 	public function run(Request $request, Response $response)
 	{
 		$this->validate_object_method();
-		$phpgwapi_common = new \phpgwapi_common();
 
+		$this->handle_redirect();
+
+		$phpgwapi_common = new \phpgwapi_common();
 
 		$this->api_requested = false;
 		if ($this->app == 'phpgwapi')
@@ -226,7 +230,6 @@ class StartPoint
 				$response_str = json_encode($return_data);
 				$response->getBody()->write($response_str);
 				return $response->withHeader('Content-Type', 'application/json');
-
 			}
 			else
 			{
@@ -341,11 +344,8 @@ class StartPoint
 	}
 
 
-	public function execute(Request $request, Response $response, $app)
+	private function handle_redirect($app = null)
 	{
-		//	_debug_array($response);
-
-		// Make sure we're always logged in
 		$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
 
 		$redirect_input = Sanitizer::get_var('redirect', 'raw', 'COOKIE');
@@ -368,12 +368,21 @@ class StartPoint
 				$redirect_data['kp3']		 = Sanitizer::get_var('kp3', 'string', 'GET');
 			}
 
+			$target = $app ? "/{$app}/" : '/';
 			$sessions->phpgw_setcookie('redirect', false, 0);
-			\phpgw::redirect_link("/{$app}/", $redirect_data);
+			\phpgw::redirect_link($target, $redirect_data);
 			unset($redirect);
 			unset($redirect_data);
 			unset($sessid);
 		}
+	}
+
+	public function execute(Request $request, Response $response, $app)
+	{
+		// Make sure we're always logged in
+		$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+
+		$this->handle_redirect($app);
 
 		$flags = Settings::getInstance()->get('flags');
 		$flags['currentapp'] = $app;

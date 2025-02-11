@@ -174,6 +174,17 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
+						<xsl:value-of select="php:function('lang', 'take over')"/>
+					</label>
+					<input type="checkbox" name="values[takeover]" value="1">
+						<xsl:attribute name="title">
+							<xsl:value-of select="php:function('lang', 'Take over the assignment for this ticket')"/>
+						</xsl:attribute>
+					</input>
+				</div>
+
+				<div class="pure-control-group">
+					<label>
 						<xsl:value-of select="lang_status"/>
 					</label>
 					<xsl:for-each select="status_list">

@@ -66,7 +66,7 @@ class LoginHelper
 		$currentApp = trim($routePath_arr[1], '[');
 
 		//backwards compatibility
-	//	if (empty($_POST) && $currentApp == 'mobilefrontend' && $routePath_arr[2] == 'login.php')
+		//	if (empty($_POST) && $currentApp == 'mobilefrontend' && $routePath_arr[2] == 'login.php')
 		if (empty($_POST) && ($routePath_arr[1] == 'login.php' || $routePath_arr[2] == 'login.php'))
 		{
 			$process_login = new Login();

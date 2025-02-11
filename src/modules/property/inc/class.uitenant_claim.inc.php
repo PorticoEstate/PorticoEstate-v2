@@ -170,7 +170,8 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => ACL_READ, 'acl_location'	 => $this->acl_location
+				'perm'			 => ACL_READ,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 		ExecMethod('property.bofiles.get_file', Sanitizer::get_var('file_id', 'int'));
@@ -183,7 +184,9 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		$values_combo_box[0] = $this->bocommon->select_category_list(array(
 			'format'	 => 'filter',
-			'selected'	 => $this->cat_id, 'type'		 => 'tenant_claim', 'order'		 => 'descr'
+			'selected'	 => $this->cat_id,
+			'type'		 => 'tenant_claim',
+			'order'		 => 'descr'
 		));
 		array_unshift($values_combo_box[0], array('id' => '', 'name' => lang('no category')));
 		$combos[]			 = array(
@@ -204,7 +207,8 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		$values_combo_box[2] = $this->bo->get_status_list(array(
 			'format'	 => 'filter',
-			'selected'	 => $this->status, 'default'	 => 'open'
+			'selected'	 => $this->status,
+			'default'	 => 'open'
 		));
 		array_unshift($values_combo_box[2], array('id' => '', 'name' => lang('open')));
 		$combos[]			 = array(
@@ -967,36 +971,57 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		$myColumnDefs0 = array(
 			array(
-				'key'			 => 'workorder_id', 'label'			 => lang('Workorder'), 'sortable'		 => true,
-				'resizeable'	 => true, 'formatter'		 => $formatter, 'value_footer'	 => lang('Sum')
+				'key'			 => 'workorder_id',
+				'label'			 => lang('Workorder'),
+				'sortable'		 => true,
+				'resizeable'	 => true,
+				'formatter'		 => $formatter,
+				'value_footer'	 => lang('Sum')
 			),
 			array(
-				'key'			 => 'budget', 'label'			 => lang('Budget'), 'sortable'		 => true,
+				'key'			 => 'budget',
+				'label'			 => lang('Budget'),
+				'sortable'		 => true,
 				'resizeable'	 => true,
-				'formatter'		 => 'JqueryPortico.FormatterAmount0', 'value_footer'	 => number_format((float)$sumaBudget, 0, $this->decimal_separator, ' ')
+				'formatter'		 => 'JqueryPortico.FormatterAmount0',
+				'value_footer'	 => number_format((float)$sumaBudget, 0, $this->decimal_separator, ' ')
 			),
 			array('key' => 'budget_hidden', 'hidden' => true),
 			array(
-				'key'		 => 'calculation', 'label'		 => lang('Calculation'), 'sortable'	 => true,
-				'resizeable' => true, 'formatter'	 => 'JqueryPortico.FormatterAmount0'
+				'key'		 => 'calculation',
+				'label'		 => lang('Calculation'),
+				'sortable'	 => true,
+				'resizeable' => true,
+				'formatter'	 => 'JqueryPortico.FormatterAmount0'
 			),
 			array('key' => 'calculation_hidden', 'hidden' => true),
 			array(
-				'key'			 => 'actual_cost', 'label'			 => lang('actual cost'), 'sortable'		 => true,
-				'resizeable'	 => true, 'formatter'		 => 'JqueryPortico.FormatterAmount0', 'value_footer'	 => number_format((float)$sumactualcost, 0, $this->decimal_separator, ' ')
+				'key'			 => 'actual_cost',
+				'label'			 => lang('actual cost'),
+				'sortable'		 => true,
+				'resizeable'	 => true,
+				'formatter'		 => 'JqueryPortico.FormatterAmount0',
+				'value_footer'	 => number_format((float)$sumactualcost, 0, $this->decimal_separator, ' ')
 			),
 			array('key' => 'actual_cost_hidden', 'hidden' => true),
 			array(
-				'key'		 => 'vendor_name', 'label'		 => lang('Vendor'), 'sortable'	 => true,
+				'key'		 => 'vendor_name',
+				'label'		 => lang('Vendor'),
+				'sortable'	 => true,
 				'resizeable' => true
 			),
 			array(
-				'key'		 => 'charge_tenant', 'label'		 => lang('Charge tenant'), 'sortable'	 => true,
-				'resizeable' => true, 'formatter'	 => 'JqueryPortico.FormatterCenter'
+				'key'		 => 'charge_tenant',
+				'label'		 => lang('Charge tenant'),
+				'sortable'	 => true,
+				'resizeable' => true,
+				'formatter'	 => 'JqueryPortico.FormatterCenter'
 			),
 			array('key' => 'status', 'label' => 'Status', 'sortable' => true, 'resizeable' => true),
 			array(
-				'key'		 => 'voucher_id', 'label'		 => lang('voucher'), 'sortable'	 => true,
+				'key'		 => 'voucher_id',
+				'label'		 => lang('voucher'),
+				'sortable'	 => true,
 				'resizeable' => true
 			),
 			array('key' => 'selected', 'label' => lang('select'), 'sortable' => false, 'resizeable' => false)
@@ -1045,11 +1070,15 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		$myColumnDefs1 = array(
 			array(
-				'key'		 => 'file_name', 'label'		 => lang('Filename'), 'sortable'	 => false,
+				'key'		 => 'file_name',
+				'label'		 => lang('Filename'),
+				'sortable'	 => false,
 				'resizeable' => true
 			),
 			array(
-				'key'		 => 'delete_file', 'label'		 => lang('Delete file'), 'sortable'	 => false,
+				'key'		 => 'delete_file',
+				'label'		 => lang('Delete file'),
+				'sortable'	 => false,
 				'resizeable' => true
 			)
 		);
@@ -1069,15 +1098,21 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			array('key' => 'value_date', 'label' => lang('Date'), 'sortable' => true, 'resizeable' => true),
 			array('key' => 'value_user', 'label' => lang('User'), 'Action' => true, 'resizeable' => true),
 			array(
-				'key'		 => 'value_action', 'label'		 => lang('Action'), 'sortable'	 => true,
+				'key'		 => 'value_action',
+				'label'		 => lang('Action'),
+				'sortable'	 => true,
 				'resizeable' => true
 			),
 			array(
-				'key'		 => 'value_old_value', 'label'		 => lang('old value'), 'sortable'	 => true,
+				'key'		 => 'value_old_value',
+				'label'		 => lang('old value'),
+				'sortable'	 => true,
 				'resizeable' => true
 			),
 			array(
-				'key'		 => 'value_new_value', 'label'		 => lang('New Value'), 'sortable'	 => true,
+				'key'		 => 'value_new_value',
+				'label'		 => lang('New Value'),
+				'sortable'	 => true,
 				'resizeable' => true
 			)
 		);
@@ -1138,7 +1173,7 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			'lang_sum'							 => lang('Sum'),
 			'select_user_name'					 => 'project_values[coordinator]',
 			'lang_no_user'						 => lang('Select coordinator'),
-			'user_list'							 => $this->bocommon->get_user_list('select', $project_values['coordinator'], $extra								 = false, $default							 = false, $start								 = -1, $sort								 = 'ASC', $order								 = 'account_lastname', $query								 = '', $offset								 = -1),
+			'user_list'							 => $this->bocommon->get_user_list('select', $values['user_id'], $extra								 = false, $default							 = false, $start								 = -1, $sort								 = 'ASC', $order								 = 'account_lastname', $query								 = '', $offset								 = -1),
 			'currency'							 => $this->userSettings['preferences']['common']['currency'],
 			'lang_contact_phone'				 => lang('Contact phone'),
 			'contact_phone'						 => $project_values['contact_phone'],
@@ -1186,13 +1221,16 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			'select_name'						 => 'values[cat_id]',
 			'cat_list'							 => $this->bocommon->select_category_list(array(
 				'format'	 => 'select',
-				'selected'	 => $this->cat_id, 'type'		 => 'tenant_claim', 'order'		 => 'descr'
+				'selected'	 => $this->cat_id,
+				'type'		 => 'tenant_claim',
+				'order'		 => 'descr'
 			)),
 			'tabs'								 => phpgwapi_jquery::tabview_generate($tabs, $active_tab),
 			'validator'							 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
 				'date',
-				'security', 'file'
+				'security',
+				'file'
 			)),
 			'multi_upload_action'				 => phpgw::link('/index.php', array('menuaction' => 'property.uitenant_claim.handle_multi_upload_file', 'id' => $claim_id)),
 			'multiple_uploader'					 => $claim_id ? true : '',
@@ -1286,7 +1324,8 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		{
 			phpgw::redirect_link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.stop',
-				'perm'			 => 8, 'acl_location'	 => $this->acl_location
+				'perm'			 => 8,
+				'acl_location'	 => $this->acl_location
 			));
 		}
 

@@ -1106,14 +1106,20 @@
                     app_method += '_type_id' + table_url.searchObject.type_id;
                 }
   
-                if(new URL(document.referrer).searchParams.get('location_code'))
+                try
                 {
-                    let location_code = new URL(document.referrer).searchParams.get('location_code').split('-');
-                    app_method_referrer += '_type_id' + location_code.length;
+                    if(new URL(document.referrer).searchParams.get('location_code'))
+                    {
+                        let location_code = new URL(document.referrer).searchParams.get('location_code').split('-');
+                        app_method_referrer += '_type_id' + location_code.length;
+                    }
+                    else
+                    {
+                        app_method_referrer += '_type_id' + new URL(document.referrer).searchParams.get('type_id');
+                    }
                 }
-                else
+                catch(e)
                 {
-                    app_method_referrer += '_type_id' + new URL(document.referrer).searchParams.get('type_id');
                 }
 			}
 
@@ -1125,9 +1131,15 @@
 			}
 
             //uientity for document.referrer
-            if(new URL(document.referrer).searchParams.get('entity_id') && new URL(document.referrer).searchParams.get('cat_id'))
+            try
             {
-                app_method_referrer += '_entity_id' + new URL(document.referrer).searchParams.get('entity_id') + '_cat_id' + new URL(document.referrer).searchParams.get('cat_id');
+                if(new URL(document.referrer).searchParams.get('entity_id') && new URL(document.referrer).searchParams.get('cat_id'))
+                {
+                    app_method_referrer += '_entity_id' + new URL(document.referrer).searchParams.get('entity_id') + '_cat_id' + new URL(document.referrer).searchParams.get('cat_id');
+                }
+            }
+            catch(e)
+            {
             }
           
 			//uigeneric
@@ -1138,9 +1150,15 @@
 			}
 
             //uigeneric for document.referrer
-            if(new URL(document.referrer).searchParams.get('type') && menuaction_referer.includes("uigeneric"))
+            try
             {
-                app_method_referrer += '_type_' + new URL(document.referrer).searchParams.get('type');
+                if(new URL(document.referrer).searchParams.get('type') && menuaction_referer.includes("uigeneric"))
+                {
+                    app_method_referrer += '_type_' + new URL(document.referrer).searchParams.get('type');
+                }
+            }
+            catch(e)
+            {
             }
 
 			var select = false;
@@ -1179,9 +1197,17 @@
 			init_table = function()
 			{
       			var	stateSave = true;
+                var pageReload = false;
+                // Detect page refresh
+                if (performance.getEntriesByType("navigation")[0].type === "reload")
+                {
+                    pageReload = true;
+                }
 
+console.log(app_method);
+console.log(app_method_referrer);
                 //check referer and if it is the same as the current page, then clear state
-                if(app_method !== app_method_referrer)
+                if(!pageReload && app_method !== app_method_referrer)
                 {
                    stateSave = false;
                 }

@@ -49,11 +49,10 @@ class Db
 			{
 				if ($e)
 				{
-					trigger_error('Error: ' . $e->getMessage(), E_USER_ERROR);
+					throw new Exception('Error: ' . $e->getMessage());
 				}
 			}
 		}
-
 	}
 
 	/**
@@ -61,7 +60,7 @@ class Db
 	 */
 	public function __call($method, $arguments)
 	{
-		if(!self::$connected)
+		if (!self::$connected)
 		{
 			return false;
 		}
@@ -122,7 +121,6 @@ class Db
 				throw new Exception("Database type not supported");
 		}
 		return $dsn;
-
 	}
 
 	/**
@@ -199,7 +197,7 @@ class Db
 			{
 				if ($e)
 				{
-					trigger_error('Error: ' . $e->getMessage(), E_USER_ERROR);
+					throw new Exception('Error: ' . $e->getMessage());
 				}
 			}
 		}
@@ -371,7 +369,7 @@ class Db
 		}
 		catch (\PDOException $e)
 		{
-			trigger_error('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n", E_USER_ERROR);
+			throw new Exception('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n");
 		}
 		return $ret;
 	}
@@ -400,7 +398,7 @@ class Db
 		}
 		catch (\PDOException $e)
 		{
-			trigger_error('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n", E_USER_ERROR);
+			throw new Exception('Error: ' . $e->getMessage() . "<br>SQL: $sql\n in File: $file\n on Line: $line\n");
 		}
 		return $ret;
 	}

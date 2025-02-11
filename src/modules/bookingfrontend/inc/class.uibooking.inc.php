@@ -119,80 +119,92 @@ class bookingfrontend_uibooking extends booking_uibooking
 		return $freetime;
 	}
 
-    public function building_schedule_pe()
-    {
-        $dates = Sanitizer::get_var('dates');
-        $dates_csv = Sanitizer::get_var('dates_csv', 'string', 'REQUEST', '');
+	public function building_schedule_pe()
+	{
+		$dates = Sanitizer::get_var('dates');
+		$dates_csv = Sanitizer::get_var('dates_csv', 'string', 'REQUEST', '');
 
-        if (!empty($dates_csv)) {
-            // Split the comma-separated string into an array
-            $dates = explode(',', $dates_csv);
-        } elseif (!$dates || !is_array($dates)) {
-            $dates = array(Sanitizer::get_var('date', 'string', 'REQUEST', ''));
-        }
+		if (!empty($dates_csv))
+		{
+			// Split the comma-separated string into an array
+			$dates = explode(',', $dates_csv);
+		}
+		elseif (!$dates || !is_array($dates))
+		{
+			$dates = array(Sanitizer::get_var('date', 'string', 'REQUEST', ''));
+		}
 
 
-        // Remove any empty values
-        $dates = array_filter($dates);
+		// Remove any empty values
+		$dates = array_filter($dates);
 
-        // Initialize arrays for results, resources, and seasons
-        $results = array();
-        $allResources = array();
-        $allSeasons = array();
+		// Initialize arrays for results, resources, and seasons
+		$results = array();
+		$allResources = array();
+		$allSeasons = array();
 
-        // Filter out dates to ensure one fetch per week
-        $uniqueWeeks = array();
-        foreach ($dates as $date) {
-            $date = trim($date); // Trim any whitespace
-            if (!empty($date)) {
-                $_date = new DateTime($date);
-                // Adjust to the start of the week, considering Monday as the first day of the week
-                $_date->modify('Monday this week');
-                $weekStart = $_date->format('Y-m-d');
-                if (!in_array($weekStart, $uniqueWeeks)) {
-                    $uniqueWeeks[] = $weekStart;
-                }
-            }
-        }
+		// Filter out dates to ensure one fetch per week
+		$uniqueWeeks = array();
+		foreach ($dates as $date)
+		{
+			$date = trim($date); // Trim any whitespace
+			if (!empty($date))
+			{
+				$_date = new DateTime($date);
+				// Adjust to the start of the week, considering Monday as the first day of the week
+				$_date->modify('Monday this week');
+				$weekStart = $_date->format('Y-m-d');
+				if (!in_array($weekStart, $uniqueWeeks))
+				{
+					$uniqueWeeks[] = $weekStart;
+				}
+			}
+		}
 
-        // Process each unique week
-        foreach ($uniqueWeeks as $weekStart) {
-            $_date = new DateTime($weekStart);
-            $bookings = $this->bo->building_schedule_pe(Sanitizer::get_var('building_id', 'int'), $_date);
-            if (isset($bookings['results']['schedule']) && is_array($bookings['results']['schedule'])) {
-                $results = array_merge($results, $bookings['results']['schedule']);
-            }
-            if (isset($bookings['results']['resources']) && is_array($bookings['results']['resources'])) {
-                foreach ($bookings['results']['resources'] as $id => $resource) {
-                    $allResources[$id] = $resource;
-                }
-            }
-            if (isset($bookings['results']['seasons']) && is_array($bookings['results']['seasons'])) {
-                foreach ($bookings['results']['seasons'] as $season) {
-                    $uniqueKey = sprintf('%s-%d-%s-%s', $season['id'], $season['wday'], $season['from_'], $season['to_']);
-                    $allSeasons[$uniqueKey] = $season;
-                }
-            }
-        }
+		// Process each unique week
+		foreach ($uniqueWeeks as $weekStart)
+		{
+			$_date = new DateTime($weekStart);
+			$bookings = $this->bo->building_schedule_pe(Sanitizer::get_var('building_id', 'int'), $_date);
+			if (isset($bookings['results']['schedule']) && is_array($bookings['results']['schedule']))
+			{
+				$results = array_merge($results, $bookings['results']['schedule']);
+			}
+			if (isset($bookings['results']['resources']) && is_array($bookings['results']['resources']))
+			{
+				foreach ($bookings['results']['resources'] as $id => $resource)
+				{
+					$allResources[$id] = $resource;
+				}
+			}
+			if (isset($bookings['results']['seasons']) && is_array($bookings['results']['seasons']))
+			{
+				foreach ($bookings['results']['seasons'] as $season)
+				{
+					$uniqueKey = sprintf('%s-%d-%s-%s', $season['id'], $season['wday'], $season['from_'], $season['to_']);
+					$allSeasons[$uniqueKey] = $season;
+				}
+			}
+		}
 
-        // Prepare the final data structure
-        $data = array(
-            'dates' => $uniqueWeeks,
-            'ResultSet' => array(
-                "totalResultsAvailable" => count($results),
-                "Result" => array(
-                    "total_records" => count($results),
-                    "results" => array(
-                        "schedule" => $results,
-                        "resources" => $allResources,
-                        "seasons" => array_values($allSeasons)
-                    )
-                )
-            )
-        );
+		// Prepare the final data structure
+		$data = array(
+			'dates' => $uniqueWeeks,
+			'ResultSet' => array(
+				"totalResultsAvailable" => count($results),
+				"Result" => array(
+					"total_records" => count($results),
+					"results" => array(
+						"schedule" => $results,
+						"resources" => $allResources,
+						"seasons" => array_values($allSeasons)
+					)
+				)
+			)
+		);
 
-        return $data;
-    }
+		return $data;
+	}
 
 
 
@@ -463,14 +475,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 				{
 					self::redirect(array(
 						'menuaction' => 'bookingfrontend.uiorganization.show',
-						'id' => $allocation['organization_id'], 'date' => date("Y-m-d", strtotime($booking['from_']))
+						'id' => $allocation['organization_id'],
+						'date' => date("Y-m-d", strtotime($booking['from_']))
 					));
 				}
 				else
 				{
 					self::redirect(array(
 						'menuaction' => 'bookingfrontend.uibuilding.show',
-						'id' => $booking['building_id'], 'date' => date("Y-m-d", strtotime($booking['from_']))
+						'id' => $booking['building_id'],
+						'date' => date("Y-m-d", strtotime($booking['from_']))
 					));
 				}
 			}
@@ -527,14 +541,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uiorganization.show',
-							'id' => $allocation['organization_id'], 'date' => date("Y-m-d", strtotime($booking['from_']))
+							'id' => $allocation['organization_id'],
+							'date' => date("Y-m-d", strtotime($booking['from_']))
 						));
 					}
 					else
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uibuilding.show',
-							'id' => $booking['building_id'], 'date' => date("Y-m-d", strtotime($booking['from_']))
+							'id' => $booking['building_id'],
+							'date' => date("Y-m-d", strtotime($booking['from_']))
 						));
 					}
 				}
@@ -564,14 +580,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 		{
 			$booking['cancel_link'] = self::link(array(
 				'menuaction' => 'bookingfrontend.uiorganization.show',
-				'id' => $allocation['organization_id'], 'date' => date("Y-m-d", strtotime($booking['from_']))
+				'id' => $allocation['organization_id'],
+				'date' => date("Y-m-d", strtotime($booking['from_']))
 			));
 		}
 		else
 		{
 			$booking['cancel_link'] = self::link(array(
 				'menuaction' => 'bookingfrontend.uibuilding.show',
-				'id' => $booking['building_id'], 'date' => date("Y-m-d", strtotime($booking['from_']))
+				'id' => $booking['building_id'],
+				'date' => date("Y-m-d", strtotime($booking['from_']))
 			));
 		}
 
@@ -607,7 +625,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 		$jqcal2->add_listener('field_repeat_until', 'date');
 
 		phpgwapi_jquery::formvalidator_generate(array(
-			'location', 'date', 'security',
+			'location',
+			'date',
+			'security',
 			'file'
 		), 'booking_form');
 
@@ -689,7 +709,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 			$step = -1; // indicates that an error message should be displayed in the template
 			self::render_template_xsl('report_numbers', array(
 				'event_object' => $booking,
-				'agegroups' => $agegroups, 'building' => $building, 'step' => $step
+				'agegroups' => $agegroups,
+				'building' => $building,
+				'step' => $step
 			));
 			return false;
 		}
@@ -721,7 +743,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 		}
 		self::render_template_xsl('report_numbers', array(
 			'event_object' => $booking,
-			'agegroups' => $agegroups, 'building' => $building, 'step' => $step
+			'agegroups' => $agegroups,
+			'building' => $building,
+			'step' => $step
 		));
 	}
 
@@ -766,14 +790,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uiorganization.show',
-							'id' => $_POST['organization_id'], 'date' => $temp_date
+							'id' => $_POST['organization_id'],
+							'date' => $temp_date
 						));
 					}
 					else
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uibuilding.show',
-							'id' => $booking['building_id'], 'date' => $temp_date
+							'id' => $booking['building_id'],
+							'date' => $temp_date
 						));
 					}
 				}
@@ -895,14 +921,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 		{
 			$booking['cancel_link'] = self::link(array(
 				'menuaction' => 'bookingfrontend.uiorganization.show',
-				'id' => $group['organization_id'], 'date' => date("Y-m-d", strtotime($booking['from_']))
+				'id' => $group['organization_id'],
+				'date' => date("Y-m-d", strtotime($booking['from_']))
 			));
 		}
 		else
 		{
 			$booking['cancel_link'] = self::link(array(
 				'menuaction' => 'bookingfrontend.uibuilding.show',
-				'id' => $booking['building_id'], 'date' => date("Y-m-d", strtotime($booking['from_']))
+				'id' => $booking['building_id'],
+				'date' => date("Y-m-d", strtotime($booking['from_']))
 			));
 		}
 
@@ -924,7 +952,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 		}
 
 		phpgwapi_jquery::formvalidator_generate(array(
-			'location', 'date', 'security',
+			'location',
+			'date',
+			'security',
 			'file'
 		), 'booking_form');
 
@@ -1067,7 +1097,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 		self::add_javascript('bookingfrontend', 'base', 'booking_massupdate.js');
 
 		phpgwapi_jquery::formvalidator_generate(array(
-			'location', 'date', 'security',
+			'location',
+			'date',
+			'security',
 			'file'
 		), 'booking_form');
 
@@ -1259,9 +1291,13 @@ class bookingfrontend_uibooking extends booking_uibooking
 				$system_message['title'] = lang('Cancelation of booking from') . " " . $booking['group_name'];
 
 				$link = self::link(array(
-					'menuaction' => 'booking.uibooking.delete', 'id' => $booking['id'],
-					'outseason' => $outseason, 'recurring' => $recurring, 'repeat_until' => $repeat_until,
-					'field_interval' => $field_interval, 'delete_allocation' => $delete_allocation
+					'menuaction' => 'booking.uibooking.delete',
+					'id' => $booking['id'],
+					'outseason' => $outseason,
+					'recurring' => $recurring,
+					'repeat_until' => $repeat_until,
+					'field_interval' => $field_interval,
+					'delete_allocation' => $delete_allocation
 				));
 				$link = mb_strcut($link, 16, strlen($link));
 				$system_message['message'] = $system_message['message'] . "\n\n" . lang('To cancel booking use this link') . " - <a href='" . $link . "'>" . lang('Delete') . "</a>";
@@ -1272,21 +1308,24 @@ class bookingfrontend_uibooking extends booking_uibooking
 				{
 					self::redirect(array(
 						'menuaction' => 'bookingfrontend.uiorganization.show',
-						'id' => $organization_id, 'date' => date("Y-m-d", strtotime($original_from))
+						'id' => $organization_id,
+						'date' => date("Y-m-d", strtotime($original_from))
 					));
 				}
 				else
 				{
 					self::redirect(array(
 						'menuaction' => 'bookingfrontend.uibuilding.show',
-						'id' => $system_message['building_id'], 'date' => date("Y-m-d", strtotime($original_from))
+						'id' => $system_message['building_id'],
+						'date' => date("Y-m-d", strtotime($original_from))
 					));
 				}
 			}
 
 			$booking['cancel_link'] = self::link(array(
 				'menuaction' => 'bookingfrontend.uibuilding.show',
-				'id' => $booking['building_id'], 'date' => date("Y-m-d", strtotime($original_from))
+				'id' => $booking['building_id'],
+				'date' => date("Y-m-d", strtotime($original_from))
 			));
 			$booking['from_'] = pretty_timestamp($booking['from_']);
 			$booking['to_'] = pretty_timestamp($booking['to_']);
@@ -1414,14 +1453,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uiorganization.show',
-							'id' => $allocation['organization_id'], 'date' => date("Y-m-d", strtotime($original_from))
+							'id' => $allocation['organization_id'],
+							'date' => date("Y-m-d", strtotime($original_from))
 						));
 					}
 					else
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uibuilding.show',
-							'id' => $booking['building_id'], 'date' => date("Y-m-d", strtotime($original_from))
+							'id' => $booking['building_id'],
+							'date' => date("Y-m-d", strtotime($original_from))
 						));
 					}
 				}
@@ -1539,14 +1580,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 						{
 							self::redirect(array(
 								'menuaction' => 'bookingfrontend.uiorganization.show',
-								'id' => $allocation['organization_id'], 'date' => date("Y-m-d", strtotime($original_from))
+								'id' => $allocation['organization_id'],
+								'date' => date("Y-m-d", strtotime($original_from))
 							));
 						}
 						else
 						{
 							self::redirect(array(
 								'menuaction' => 'bookingfrontend.uibuilding.show',
-								'id' => $allocation['building_id'], 'date' => date("Y-m-d", strtotime($original_from))
+								'id' => $allocation['building_id'],
+								'date' => date("Y-m-d", strtotime($original_from))
 							));
 						}
 					}
@@ -1574,14 +1617,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 			{
 				$booking['cancel_link'] = self::link(array(
 					'menuaction' => 'bookingfrontend.uiorganization.show',
-					'id' => $allocation['organization_id'], 'date' => date("Y-m-d", strtotime($original_from))
+					'id' => $allocation['organization_id'],
+					'date' => date("Y-m-d", strtotime($original_from))
 				));
 			}
 			else
 			{
 				$booking['cancel_link'] = self::link(array(
 					'menuaction' => 'bookingfrontend.uibuilding.show',
-					'id' => $booking['building_id'], 'date' => date("Y-m-d", strtotime($original_from))
+					'id' => $booking['building_id'],
+					'date' => date("Y-m-d", strtotime($original_from))
 				));
 			}
 
@@ -1741,15 +1786,15 @@ class bookingfrontend_uibooking extends booking_uibooking
 		$config = CreateObject('phpgwapi.config', 'booking')->read();
 		$user_can_delete_bookings = $config['user_can_delete_bookings'] === 'yes' ? 1 : 0;
 
-		// Retrieve multiple booking IDs
+		// Retrieve multiple allocation IDs
 		$ids = Sanitizer::get_var('ids', 'string');
-		if ($ids)
+		if ($ids && !is_array($ids))
 		{
 			$ids = explode(',', $ids);
 		}
 		elseif (!$ids || !is_array($ids))
 		{
-			$ids = array(Sanitizer::get_var('id'));
+			$ids = array(Sanitizer::get_var('id', 'int'));
 		}
 		$bookings_info = [];
 		foreach ($ids as $id)

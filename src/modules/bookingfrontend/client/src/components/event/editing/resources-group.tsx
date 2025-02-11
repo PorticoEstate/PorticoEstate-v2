@@ -29,7 +29,7 @@ const ResourcesGroup: FC<ResourcesGroupProps> = ({ buildingResources, selectedRe
                     value={String(id)}
                     id={`resource-${id}`}
                     onChange={() => onChange(id, name)} 
-                    checked={selectedResources.find((item) => id === item.id)}
+                    checked={!!selectedResources.find((item) => id === item.id)}
                 >   
                     <label htmlFor={`resource-${id}`}>
                         <ColourCircle size="medium" resourceId={id}/>

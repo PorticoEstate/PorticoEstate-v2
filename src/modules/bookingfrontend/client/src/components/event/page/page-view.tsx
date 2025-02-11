@@ -33,12 +33,12 @@ const PrivateEventView: FC<PrivateEventView> = ({ event, openEditing }: PrivateE
                         href={`./${event.id}/participants`}
                     >
                         <FontAwesomeIcon icon={faUserPlus} />
-                        {t('bookingfrontend.edit')}
+                        {t('bookingfrontend.participant_registration')}
                     </Link>
                 </Button>
                 <Button variant='secondary' onClick={openEditing}>
                     <FontAwesomeIcon icon={faPen} />
-                    {t('bookingfrontend.participant_registration')}
+                    {t('bookingfrontend.edit')}
                 </Button>
             </div>
         </>

@@ -6,7 +6,6 @@ import EventView from "./page-view";
 import { EditingEvent } from "../editing/eventFormSchema";
 
 interface EventPageProps {
-    event: ActivityData;
     eventId: number;
     privateAccess: boolean
 }

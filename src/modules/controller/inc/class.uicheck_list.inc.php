@@ -130,7 +130,7 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			Settings::getInstance()->update('flags', ['noframework' => true]);
 		}
 
-		Settings::getInstance()->update('flags', ['app_header' => lang('controller') . ':: ' .lang('Check_list')]);
+		Settings::getInstance()->update('flags', ['app_header' => lang('controller') . ':: ' . lang('Check_list')]);
 
 		//			phpgwapi_css::getInstance()->add_external_file('controller/templates/base/css/base.css');
 		phpgwapi_js::getInstance()->validate_file('alertify', 'alertify.min', 'phpgwapi');
@@ -351,7 +351,8 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 				$location_name = execMethod('property.bolocation.get_location_name', $component_arr['location_code']);
 
 				$short_desc = $location_name . '::' . execMethod('property.soentity.get_short_description', array(
-					'location_id' => $location_id, 'id' => $component_id
+					'location_id' => $location_id,
+					'id' => $component_id
 				));
 			}
 
@@ -488,8 +489,10 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 		self::add_javascript('controller', 'base', 'check_list.js');
 
 		self::render_template_xsl(array(
-			'check_list/add_check_list', 'check_list/fragments/nav_control_plan',
-			'check_list/fragments/check_list_top_section', 'check_list/fragments/add_check_list_menu',
+			'check_list/add_check_list',
+			'check_list/fragments/nav_control_plan',
+			'check_list/fragments/check_list_top_section',
+			'check_list/fragments/add_check_list_menu',
 			'check_list/fragments/select_buildings_on_property'
 		), $data);
 	}
@@ -716,7 +719,8 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 				$location_name = execMethod('property.bolocation.get_location_name', $location_code);
 
 				$short_desc = $location_name . '::' . execMethod('property.soentity.get_short_description', array(
-					'location_id' => $location_id, 'id' => $component_id
+					'location_id' => $location_id,
+					'id' => $component_id
 				));
 			}
 
@@ -789,7 +793,8 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			'container' => 'datatable-container_0',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction' => "controller.uicheck_list.get_files3",
-				'id' => $check_list_id,	'phpgw_return_as' => 'json'
+				'id' => $check_list_id,
+				'phpgw_return_as' => 'json'
 			))),
 			'ColumnDefs' => $file_def,
 			'data' => json_encode(array()),
@@ -1094,7 +1099,8 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 
 		$component_arr = execMethod('property.soentity.read_single_eav', array(
 			'location_id' => $location_id,
-			'id' => $component_id, 'values' => array('attributes' => $attributes)
+			'id' => $component_id,
+			'values' => array('attributes' => $attributes)
 		));
 
 		$_custom_config = CreateObject('admin.soconfig', $location_id);
@@ -1142,7 +1148,8 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 
 					$__value = false;
 					if (!$__value = urlencode($component_arr[str_replace(array('__', '*'), array(
-						'', ''
+						'',
+						''
 					), $_substitute)]))
 					{
 						foreach ($component_arr['attributes'] as $_attribute)
@@ -1477,7 +1484,8 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 						$location_name = execMethod('property.bolocation.get_location_name', $component_arr['location_code']);
 
 						$short_desc = $location_name . '::' . execMethod('property.soentity.get_short_description', array(
-							'location_id' => $check_list->get_location_id(), 'id' => $check_list->get_component_id()
+							'location_id' => $check_list->get_location_id(),
+							'id' => $check_list->get_component_id()
 						));
 					}
 				}
@@ -1636,8 +1644,11 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			if ($doc_type)
 			{
 				$document_list = array_merge($document_list, $sodocument->read_at_location(array(
-					'entity_id' => $entity_id, 'cat_id' => $cat_id, 'p_num' => $data['id'],
-					'doc_type' => $doc_type, 'allrows' => true
+					'entity_id' => $entity_id,
+					'cat_id' => $cat_id,
+					'p_num' => $data['id'],
+					'doc_type' => $doc_type,
+					'allrows' => true
 				)));
 			}
 		}
@@ -1796,7 +1807,8 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 				$location_name = execMethod('property.bolocation.get_location_name', $component_arr['location_code']);
 
 				$short_desc = $location_name . '::' . execMethod('property.soentity.get_short_description', array(
-					'location_id' => $location_id, 'id' => $component_id
+					'location_id' => $location_id,
+					'id' => $component_id
 				));
 			}
 
@@ -1850,8 +1862,10 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 		self::add_javascript('controller', 'base', 'check_list_update_status.js');
 
 		self::render_template_xsl(array(
-			'check_list/fragments/check_list_menu', 'check_list/fragments/check_list_top_section',
-			'check_list/fragments/nav_control_plan', 'check_list/view_control_info',
+			'check_list/fragments/check_list_menu',
+			'check_list/fragments/check_list_top_section',
+			'check_list/fragments/nav_control_plan',
+			'check_list/view_control_info',
 			'check_list/fragments/select_buildings_on_property'
 		), $data);
 	}
@@ -2142,7 +2156,7 @@ class controller_uicheck_list extends phpgwapi_uicommon_jquery
 			 * Sigurd: in case ticket alert in not sufficient - some extra magic, not implemented so far
 			 */
 
-			 /*
+			/*
 				  $location		 = array();
 				  $_location_arr	 = explode('-', $data['location_code']);
 				  $i				 = 1;
@@ -2320,7 +2334,8 @@ HTML;
 			else
 			{
 				$short_desc = execMethod('property.soentity.get_short_description', array(
-					'location_id' => $location_id, 'id' => $component_id
+					'location_id' => $location_id,
+					'id' => $component_id
 				));
 			}
 		}
@@ -2556,7 +2571,8 @@ HTML;
 			else
 			{
 				$short_desc = execMethod('property.soentity.get_short_description', array(
-					'location_id' => $location_id, 'id' => $component_id
+					'location_id' => $location_id,
+					'id' => $component_id
 				));
 			}
 
@@ -2625,7 +2641,8 @@ HTML;
 							$error_message = "mangler registrering for required</br>";
 							$error_message .= "{$required_control_item['title']}</br>";
 							$error_message .= execMethod('property.soentity.get_short_description', array(
-								'location_id' => $_component_at_location['location_id'], 'id' => $_component_at_location['id']
+								'location_id' => $_component_at_location['location_id'],
+								'id' => $_component_at_location['id']
 							));
 							$error_message .= "</br>";
 							Cache::message_set($error_message, 'error');
@@ -4167,6 +4184,7 @@ HTML;
 
 	function render_report($report_data, $return_as_file = false)
 	{
+		$check_list_id = $report_data['check_list_id'];
 		$xslttemplates = CreateObject('phpgwapi.xslttemplates', PHPGW_SERVER_ROOT . '/controller/templates/base');
 		$xslttemplates->add_file(array(PHPGW_SERVER_ROOT . '/controller/templates/base/report'));
 		$xslttemplates->set_var('phpgw', array('report' => $report_data));
@@ -4196,7 +4214,7 @@ HTML;
 
 		if ($return_as_file && $pdf_enabled && $report_data['return_as_pdf'])
 		{
-			return $this->makePDF($html, $return_as_file);
+			return $this->makePDF($html, $check_list_id, $return_as_file);
 		}
 		else
 		{
@@ -4207,7 +4225,7 @@ HTML;
 			else
 			{
 				$tmp_dir = $this->serverSettings['temp_dir'];
-				$tempfile = $tmp_dir . "/temp_report_" . strtotime(date('Y-m-d')) . ".html";
+				$tempfile = $tmp_dir . "/temp_report_{$check_list_id}_" . strtotime(date('Y-m-d')) . ".html";
 				$fh = fopen($tempfile, 'w') or die("can't open file");
 				fwrite($fh, $html);
 				fclose($fh);
@@ -4216,7 +4234,7 @@ HTML;
 		}
 	}
 
-	public function makePDF($stringData, $return_as_file = false)
+	public function makePDF($stringData, $check_list_id, $return_as_file = false)
 	{
 
 		//			phpgw::import_class('phpgwapi.html2pdf');
@@ -4227,12 +4245,12 @@ HTML;
 		include PHPGW_SERVER_ROOT . '/rental/inc/SnappyMedia.php';
 		include PHPGW_SERVER_ROOT . '/rental/inc/SnappyPdf.php';
 		$tmp_dir = $this->serverSettings['temp_dir'];
-		$myFile = $tmp_dir . "/temp_report_" . strtotime(date('Y-m-d')) . ".html";
+		$myFile = $tmp_dir . "/temp_report_{$check_list_id}_" . strtotime(date('Y-m-d')) . ".html";
 		$fh = fopen($myFile, 'w') or die("can't open file");
 		fwrite($fh, $stringData);
 		fclose($fh);
 
-		$pdf_file_name = $tmp_dir . "/temp_checklist_" . strtotime(date('Y-m-d')) . ".pdf";
+		$pdf_file_name = $tmp_dir . "/temp_checklist_{$check_list_id}_" . strtotime(date('Y-m-d')) . ".pdf";
 
 		$wkhtmltopdf_executable = !empty($config->config_data['path_to_wkhtmltopdf']) ? $config->config_data['path_to_wkhtmltopdf'] : '/usr/bin/wkhtmltopdf';
 		if (!is_file($wkhtmltopdf_executable))
@@ -4361,7 +4379,8 @@ HTML;
 				));
 				$location_name = execMethod('property.bolocation.get_location_name', $component_arr['location_code']);
 				$short_desc = $location_name . '::' . execMethod('property.soentity.get_short_description', array(
-					'location_id' => $location_id, 'id' => $component_id
+					'location_id' => $location_id,
+					'id' => $component_id
 				));
 			}
 
@@ -4467,7 +4486,8 @@ HTML;
 					else
 					{
 						$short_desc = execMethod('property.soentity.get_short_description', array(
-							'location_id' => $component_location_id, 'id' => $component_id
+							'location_id' => $component_location_id,
+							'id' => $component_id
 						));
 
 						$component_child_location_id = $case->get_component_child_location_id();
@@ -4476,7 +4496,8 @@ HTML;
 						if ($component_child_location_id && $component_child_item_id)
 						{
 							$short_desc .= "<br>" . execMethod('property.soentity.get_short_description', array(
-								'location_id' => $component_child_location_id, 'id' => $component_child_item_id
+								'location_id' => $component_child_location_id,
+								'id' => $component_child_item_id
 							));
 						}
 					}

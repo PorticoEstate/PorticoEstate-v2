@@ -4,6 +4,7 @@ import ClientLayout from "@/app/[lang]/(public)/user/client-layout";
 import {getTranslation} from "@/app/i18n";
 import {headers} from "next/headers";
 import {userSubPages} from "@/app/[lang]/(public)/user/user-page-helper";
+import AuthGuard from "@/components/user/auth-guard";
 
 interface UserLayoutProps extends PropsWithChildren {
 }
@@ -32,8 +33,10 @@ export async function generateMetadata(props: UserLayoutProps) {
 const UserLayout= async (props: UserLayoutProps) => {
     // await requireAuth();
     return (
-        <ClientLayout>{props.children}</ClientLayout>
-    );
+        <AuthGuard>
+            <ClientLayout>{props.children}</ClientLayout>
+        </AuthGuard>
+);
 }
 export default UserLayout
 

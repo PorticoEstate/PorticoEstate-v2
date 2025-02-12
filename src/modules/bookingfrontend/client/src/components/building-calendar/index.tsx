@@ -1,5 +1,5 @@
 import {DateTime} from "luxon";
-import {fetchBuildingScheduleOLD, fetchFreeTimeSlots} from "@/service/api/api-utils";
+import {fetchBuildingScheduleOLD, fetchFreeTimeSlotsForRange} from "@/service/api/api-utils";
 import {fetchBuilding, fetchBuildingResources} from "@/service/api/building";
 import CalendarWrapper from "@/components/building-calendar/CalendarWrapper";
 import NotFound from "next/dist/client/components/not-found-error";
@@ -20,10 +20,14 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
         initialDate.set({weekday: 1}).startOf('day').plus({week: 1}).toFormat("y-MM-dd"),
     ];
 
-    try {
+	// Get start and end dates for initial free time slots
+	const startDate = initialDate.startOf('week');
+	const endDate = startDate.plus({ weeks: 2 }); // Fetch 2 weeks initially
+
+	try {
         const [initialSchedule, initialFreeTime, building, buildingResources] = await Promise.all([
             fetchBuildingScheduleOLD(buildingId, weeksToFetch),
-            fetchFreeTimeSlots(buildingId),
+			fetchFreeTimeSlotsForRange(buildingId, startDate, endDate),
             fetchBuilding(buildingId),
             fetchBuildingResources(buildingId)
         ]);

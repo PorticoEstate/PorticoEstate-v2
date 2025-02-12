@@ -11,6 +11,12 @@ import ResourceInfoModal
     from "@/components/building-calendar/modules/resource-filter/resource-info-popper/resource-info-popper";
 import {useBuildingResources} from "@/service/api/building";
 
+
+interface GroupedResources {
+	slotted: CalendarResourceFilterOption[];
+	normal: CalendarResourceFilterOption[];
+}
+
 export interface CalendarResourceFilterOption {
     value: string;
     label: string;
@@ -43,7 +49,30 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
         }));
     }, [resources]);
 
-    const onToggle = (resourceId: string) => {
+
+	// const groupedResources = useMemo<GroupedResources>(() => {
+	// 	const slotted: CalendarResourceFilterOption[] = [];
+	// 	const normal: CalendarResourceFilterOption[] = [];
+	//
+	// 	(resources || []).forEach(resource => {
+	// 		const option = {
+	// 			value: resource.id.toString(),
+	// 			label: resource.name
+	// 		};
+	//
+	// 		// Assuming resource has a property indicating if it uses free time slots
+	// 		if (resource.free_time_slots) {
+	// 			slotted.push(option);
+	// 		} else {
+	// 			normal.push(option);
+	// 		}
+	// 	});
+	//
+	// 	return { slotted, normal };
+	// }, [resources]);
+
+
+	const onToggle = (resourceId: string) => {
         setEnabledResources(prevEnabled => {
             const newEnabled = new Set(prevEnabled);
             if (newEnabled.has(resourceId)) {
@@ -129,3 +158,5 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 };
 
 export default memo(CalendarResourceFilter);
+
+

@@ -8,16 +8,16 @@ import {
 } from "@tanstack/react-query";
 import {IBookingUser} from "@/service/types/api.types";
 import {
-    fetchBuildingAgeGroups, fetchBuildingAudience,
-    fetchBuildingSchedule,
-    fetchDeliveredApplications,
-    fetchInvoices,
-    fetchPartialApplications, patchBookingUser
+	fetchBuildingAgeGroups, fetchBuildingAudience,
+	fetchBuildingSchedule,
+	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
+	fetchInvoices,
+	fetchPartialApplications, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
-import {IEvent} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useEffect} from "react";
 import {IAgeGroup, IAudience} from "@/service/types/Building";
@@ -28,6 +28,101 @@ interface UseScheduleOptions {
     weeks: DateTime[];
     instance?: string;
     initialWeekSchedule?: Record<string, IEvent[]>
+}
+
+interface FreeTimeSlotsResponse {
+	[resourceId: string]: IFreeTimeSlot[];
+}
+
+
+export function useBuildingFreeTimeSlots({
+											 building_id,
+											 weeks,
+											 instance,
+											 initialFreeTime
+										 }: {
+	building_id: number;
+	weeks: DateTime[];
+	instance?: string;
+	initialFreeTime?: FreeTimeSlotsResponse;
+}) {
+	const queryClient = useQueryClient();
+	const weekStarts = weeks.map(d => d.set({weekday: 1}).startOf('day'));
+	const weekEnds = weekStarts.map(d => d.plus({ weeks: 1 }).endOf('day'));
+
+	const getWeekCacheKey = (weekStart: string): readonly ['buildingFreeTime', number, string] => {
+		return ['buildingFreeTime', building_id, weekStart] as const;
+	};
+
+	useEffect(() => {
+		if (initialFreeTime) {
+			Object.entries(initialFreeTime).forEach(([resourceId, slots]) => {
+				weekStarts.forEach(weekStart => {
+					const weekKey = weekStart.toFormat("y-MM-dd");
+					const cacheKey = getWeekCacheKey(weekKey);
+					const weekSlots = slots.filter((slot: IFreeTimeSlot) => {
+						const slotDate = DateTime.fromISO(slot.start_iso);
+						return slotDate >= weekStart && slotDate < weekStart.plus({ weeks: 1 });
+					});
+
+					if (!queryClient.getQueryData(cacheKey)) {
+						queryClient.setQueryData(cacheKey, { [resourceId]: weekSlots });
+					}
+				});
+			});
+		}
+	}, [initialFreeTime, building_id, queryClient, weekStarts]);
+
+	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
+		const uncachedWeeks = weekStarts.filter(weekStart => {
+			const cacheKey = getWeekCacheKey(weekStart.toFormat("y-MM-dd"));
+			return !queryClient.getQueryData(cacheKey);
+		});
+
+		if (uncachedWeeks.length === 0) {
+			const combinedData: FreeTimeSlotsResponse = {};
+			weekStarts.forEach(weekStart => {
+				const cacheKey = getWeekCacheKey(weekStart.toFormat("y-MM-dd"));
+				const weekData = queryClient.getQueryData<FreeTimeSlotsResponse>(cacheKey);
+				if (weekData) {
+					Object.entries(weekData).forEach(([resourceId, slots]) => {
+						if (!combinedData[resourceId]) combinedData[resourceId] = [];
+						combinedData[resourceId].push(...slots);
+					});
+				}
+			});
+			return combinedData;
+		}
+
+		const freeTimeData = await fetchFreeTimeSlotsForRange(
+			building_id,
+			uncachedWeeks[0],
+			uncachedWeeks[uncachedWeeks.length - 1].plus({ weeks: 1 }),
+			instance
+		);
+
+		uncachedWeeks.forEach(weekStart => {
+			const weekKey = weekStart.toFormat("y-MM-dd");
+			const weekEnd = weekStart.plus({ weeks: 1 });
+			const weekData: FreeTimeSlotsResponse = {};
+
+			Object.entries(freeTimeData).forEach(([resourceId, slots]) => {
+				weekData[resourceId] = slots.filter((slot: IFreeTimeSlot) => {
+					const slotDate = DateTime.fromISO(slot.start_iso);
+					return slotDate >= weekStart && slotDate < weekEnd;
+				});
+			});
+
+			queryClient.setQueryData(getWeekCacheKey(weekKey), weekData);
+		});
+
+		return freeTimeData;
+	};
+
+	return useQuery({
+		queryKey: ['buildingFreeTime', building_id, weekStarts.map(d => d.toFormat("y-MM-dd")).join(',')],
+		queryFn: fetchFreeTimeSlots,
+	});
 }
 
 

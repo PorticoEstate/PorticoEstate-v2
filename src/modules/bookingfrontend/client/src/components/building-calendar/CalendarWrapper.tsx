@@ -3,11 +3,11 @@
 import React, {useState, useCallback, useRef, useEffect, useMemo} from 'react';
 import {DateTime, Interval} from "luxon";
 import BuildingCalendarClient from "@/components/building-calendar/building-calendar-client";
-import {IEvent, Season} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, Season} from "@/service/pecalendar.types";
 import {DatesSetArg} from "@fullcalendar/core";
 import {IBuilding} from "@/service/types/Building";
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
-import {useBuildingSchedule} from "@/service/hooks/api-hooks";
+import {useBuildingFreeTimeSlots, useBuildingSchedule} from "@/service/hooks/api-hooks";
 import CalendarProvider from "@/components/building-calendar/calendar-context";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 import {useQueryClient} from "@tanstack/react-query";
@@ -17,7 +17,7 @@ import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface CalendarWrapperProps {
     initialSchedule: IEvent[];
-    initialFreeTime: any; // Replace 'any' with the correct type
+    initialFreeTime: Record<string, IFreeTimeSlot[]>; // [resourceId]: Array<IFreeTimeSlot>
     buildingId: number;
     resources: IResource[];
     seasons: Season[];
@@ -48,13 +48,22 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
     const isMobile = useIsMobile();
     const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!resourceId && !(window.innerWidth < 601));
     const [resourcesHidden, setSResourcesHidden] = useState<boolean>(!!resourceId || window.innerWidth < 601);
+	const [dates, setDates] = useState<DateTime[]>([DateTime.fromJSDate(initialDate)]);
+
+	const {data: freeTimeSlots} = useBuildingFreeTimeSlots({
+		building_id: buildingId,
+		weeks: dates,
+		instance: undefined,
+		initialFreeTime
+	});
+
+	console.log(freeTimeSlots)
 
     useEffect(() => {
         resources.forEach((res) => queryClient.setQueryData<IResource>(['resource', `${res.id}`], res))
         queryClient.setQueryData(['buildingResources', `${resourceId}`], resources);
     }, [resources, queryClient, resourceId]);
 
-    const [dates, setDates] = useState<DateTime[]>([DateTime.fromJSDate(initialDate)]);
 
     const QCRES = useBuildingSchedule({
         building_id: building.id,

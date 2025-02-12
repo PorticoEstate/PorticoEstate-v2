@@ -31,7 +31,7 @@ class OrganizationRepository
     public function getDelegate($ssn, $orgId)
     {
         $sql = "SELECT id from bb_delegate
-        WHERE organization_id=:orgId && ssn=:ssn";
+        WHERE organization_id=:orgId and ssn=:ssn";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':orgId' => $orgId, 'ssn' => $ssn]);
         return !!$stmt->fetch(PDO::FETCH_ASSOC);

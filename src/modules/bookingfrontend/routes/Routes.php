@@ -12,6 +12,7 @@ use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
 use App\modules\bookingfrontend\helpers\LogoutHelper;
+use App\modules\bookingfrontend\middlewares\CanEditInOrganization;
 use App\modules\bookingfrontend\middlewares\OrganizationExist;
 use App\modules\bookingfrontend\services\OrganizationService;
 use App\modules\phpgwapi\controllers\StartPoint;
@@ -85,12 +86,15 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
     $group->group('/organization', function (RouteCollectorProxy $group)
     {
         $group->get('/{id}', OrganizationController::class . ':getOrganizationById');
-        $group->patch('/{id}', OrganizationController::class . ':editOrganization');
-        $group->patch('/{id}/{delegateId}', OrganizationController::class . ':patchDelegate');
-        $group->post('/{id}/delegate', OrganizationController::class . ':createDelegate');
-        $group->post('/{id}/group', OrganizationController::class . ':createGroup');
-        $group->patch('/{id}/group/{groupId}', OrganizationController::class . ':editGroup');
-        $group->patch('/{id}/group/{groupId}/leader/{leaderId}', OrganizationController::class . ':editGroupLeader');
+        $group->group('', function (RouteCollectorProxy $group)
+        {
+            $group->patch('/{id}', OrganizationController::class . ':editOrganization');
+            $group->patch('/{id}/{delegateId}', OrganizationController::class . ':patchDelegate');
+            $group->post('/{id}/delegate', OrganizationController::class . ':createDelegate');
+            $group->post('/{id}/group', OrganizationController::class . ':createGroup');
+            $group->patch('/{id}/group/{groupId}', OrganizationController::class . ':editGroup');
+            $group->patch('/{id}/group/{groupId}/leader/{leaderId}', OrganizationController::class . ':editGroupLeader');
+        })->add(new CanEditInOrganization($group->getContainer()));
     })->add(new OrganizationExist($container));
 })->add(new SessionsMiddleware($app->getContainer()));
 

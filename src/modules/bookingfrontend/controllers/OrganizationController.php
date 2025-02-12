@@ -84,13 +84,6 @@ class OrganizationController
                 404
             );
         }
-        if ($this->service->canEdit($id))
-        {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Forbidden'],
-                403
-            );
-        }
 
         try {
             $data = $this->service->patchDelegate($delegateId, $newData);
@@ -131,13 +124,6 @@ class OrganizationController
             );
         }
 
-        if ($this->service->canEdit($id))
-        {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Forbidden'],
-                403
-            );
-        }
 
         try {
             $data = $this->service->createDelegate($id, $newData);
@@ -177,13 +163,6 @@ class OrganizationController
         if (empty($session_id)) {
             $response->getBody()->write(json_encode(['error' => 'No active session']));
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-        }
-
-        if (!$this->service->canEdit($id)) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Forbidden'],
-                403
-            );
         }
 
         try {
@@ -230,13 +209,6 @@ class OrganizationController
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Group not found'],
                 404
-            );
-        }
-
-        if (!$this->service->canEdit($id)) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Forbidden'],
-                403
             );
         }
 

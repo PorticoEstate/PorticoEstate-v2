@@ -6,6 +6,7 @@ use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
 use App\modules\bookingfrontend\controllers\LoginController;
+use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\controllers\ResourceController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
@@ -39,6 +40,14 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
     });
+
+    $group->group('/organizations', function (RouteCollectorProxy $group) {
+        $group->get('/my', OrganizationController::class . ':getMyOrganizations');
+        $group->post('', OrganizationController::class . ':create');
+        $group->get('/lookup/{number}', OrganizationController::class . ':lookup');
+        $group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');
+        $group->get('/list', OrganizationController::class . ':getList');
+    });
 })->add(new SessionsMiddleware($app->getContainer()));
 
 // Session group
@@ -48,6 +57,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
     {
         $group->get('/partials', ApplicationController::class . ':getPartials');
         $group->post('/partials', ApplicationController::class . ':createPartial');
+        $group->post('/partials/checkout', ApplicationController::class . ':checkoutPartials');
         $group->put('/partials/{id}', ApplicationController::class . ':updatePartial');
         $group->get('', ApplicationController::class . ':getApplications');
         $group->delete('/{id}', [ApplicationController::class, 'deletePartial']);

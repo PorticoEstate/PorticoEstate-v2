@@ -1,5 +1,70 @@
+export type IEvent = IAPIEvent | IAPIBooking | IAPIAllocation;
 
-export interface IEvent {
+export interface IAPIScheduleEntity {
+    type: 'booking' | 'allocation' | 'event';
+    id: number;
+    active: number;  // @Expose + default 1
+    from_: TDateISO;  // @Expose + NOT NULL
+    to_: TDateISO;    // @Expose + NOT NULL
+    cost?: number;     // nullable + no @Expose
+    completed: number; // @Expose + default 0
+    application_id?: number;  // nullable + no @Expose
+    building_name: string;    // @Expose + NOT NULL + default
+    skip_bas: number;        // @Expose + default 0
+    resources: IShortResource[];  // @Expose
+}
+
+export interface IAPIAllocation extends IAPIScheduleEntity {
+    type: 'allocation';  // @Default
+    organization_id: number;  // @Expose + NOT NULL
+    season_id: number;       // @Expose + NOT NULL
+    id_string: string;       // @Expose + default
+    additional_invoice_information?: string;  // @Expose + nullable
+    organization_name: string;    // @Expose (computed)
+    organization_shortname: string;  // @Expose (computed)
+}
+
+export interface IAPIBooking extends IAPIScheduleEntity {
+    type: 'booking';  // @Default
+    group_id: number;        // @Expose + NOT NULL
+    allocation_id?: number;  // @Expose + nullable
+    season_id: number;       // @Expose + NOT NULL
+    activity_id: number;     // @Expose + NOT NULL
+    reminder: number;        // @Expose + default 0
+    secret: string;         // @Expose + NOT NULL
+    sms_total?: number;     // @Expose + nullable
+    group_name: string;     // @Expose (computed)
+    activity_name: string;  // @Expose (computed)
+}
+
+export interface IAPIEvent extends IAPIScheduleEntity {
+    type: 'event';  // @Default
+    activity_id: number;     // @Expose + NOT NULL
+    description?: string;    // conditional @Expose + nullable
+    contact_name?: string;   // conditional @Expose + NOT NULL
+    contact_email?: string;  // conditional @Expose + nullable
+    contact_phone?: string;  // conditional @Expose + NOT NULL
+    reminder: number;        // @Expose + default 0
+    secret?: string;        // conditional @Expose + NOT NULL
+    customer_identifier_type?: string;  // no @Expose + nullable
+    customer_organization_number?: string;  // no @Expose + nullable
+    customer_ssn?: string;   // no @Expose + nullable
+    customer_internal?: number;  // no @Expose + default 1
+    is_public: number;      // @Expose + default 1
+    customer_organization_id?: number;  // conditional @Expose + nullable
+    customer_organization_name?: string;  // conditional @Expose + nullable
+    id_string: string;      // @Expose + default
+    building_id: number;    // @Expose + nullable
+    name: string;           // @Expose + @Default("PRIVATE EVENT")
+    organizer?: string;     // conditional @Expose + nullable
+    homepage?: string;      // conditional @Expose + nullable
+    equipment?: string;     // conditional @Expose + nullable
+    access_requested?: number;  // no @Expose + default 0
+    participant_limit?: number;  // conditional @Expose + nullable
+}
+
+
+export interface IEventOLD {
     type: 'booking' | 'allocation' | 'event'
     // allocation -> booking -> event | temporary
     id: number
@@ -42,7 +107,6 @@ export interface IEventDate {
     to_: string
     id: number
 }
-
 
 
 export interface ResultSet {

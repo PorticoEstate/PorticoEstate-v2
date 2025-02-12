@@ -3,7 +3,7 @@ import {EventClickArg, EventContentArg} from "@fullcalendar/core";
 import {EventImpl} from "@fullcalendar/core/internal";
 
 
-export type ValidCalendarType = IEvent['type'] | 'background'
+export type ValidCalendarType = IEvent['type'] | 'temporary' | 'background'
 
 export interface FCEventContentArg<T = EventImpl> extends Omit<EventContentArg, 'event'> {
     event: T

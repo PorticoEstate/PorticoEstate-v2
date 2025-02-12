@@ -3,6 +3,9 @@
 use Slim\Factory\AppFactory;
 use DI\ContainerBuilder;
 use App\providers\DatabaseServiceProvider;
+use Slim\Psr7\Factory\ResponseFactory;
+use Psr\Container\ContainerInterface;
+use Psr\Http\Message\ResponseFactoryInterface;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -41,7 +44,10 @@ $containerBuilder->addDefinitions([
 	'settings' => [
 		'db' => $database_settings,
 		'session_name' => $session_name
-	]
+	],
+	ResponseFactoryInterface::class => function (ContainerInterface $container) {
+        return $container->get(ResponseFactory::class);
+    },
 ]);
 
 // Build PHP-DI Container instance

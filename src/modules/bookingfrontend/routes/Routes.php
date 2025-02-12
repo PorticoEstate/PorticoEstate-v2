@@ -8,9 +8,12 @@ use App\modules\bookingfrontend\controllers\BookingUserController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\ResourceController;
 use App\modules\bookingfrontend\controllers\EventController;
+use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
 use App\modules\bookingfrontend\helpers\LogoutHelper;
+use App\modules\bookingfrontend\middlewares\OrganizationExist;
+use App\modules\bookingfrontend\services\OrganizationService;
 use App\modules\phpgwapi\controllers\StartPoint;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use Slim\Routing\RouteCollectorProxy;
@@ -73,6 +76,23 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
     });
 })->add(new SessionsMiddleware($app->getContainer()));
 
+$app->group('/bookingfrontend', function (RouteCollectorProxy $group)
+{
+    $container = $group->getContainer();
+    $container->set(OrganizationService::class, function () {
+        return new OrganizationService();
+    });
+    $group->group('/organization', function (RouteCollectorProxy $group)
+    {
+        $group->get('/{id}', OrganizationController::class . ':getOrganizationById');
+        $group->patch('/{id}', OrganizationController::class . ':editOrganization');
+        $group->patch('/{id}/{delegateId}', OrganizationController::class . ':patchDelegate');
+        $group->post('/{id}/delegate', OrganizationController::class . ':createDelegate');
+        $group->post('/{id}/group', OrganizationController::class . ':createGroup');
+        $group->patch('/{id}/group/{groupId}', OrganizationController::class . ':editGroup');
+        $group->patch('/{id}/group/{groupId}/leader/{leaderId}', OrganizationController::class . ':editGroupLeader');
+    })->add(new OrganizationExist($container));
+})->add(new SessionsMiddleware($app->getContainer()));
 
 $app->get('/bookingfrontend/', StartPoint::class . ':bookingfrontend')->add(new SessionsMiddleware($app->getContainer()));
 $app->post('/bookingfrontend/', StartPoint::class . ':bookingfrontend')->add(new SessionsMiddleware($app->getContainer()));

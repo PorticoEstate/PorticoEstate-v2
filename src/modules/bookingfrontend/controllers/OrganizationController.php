@@ -1,0 +1,268 @@
+<?php
+
+namespace App\modules\bookingfrontend\controllers;
+
+use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\modules\bookingfrontend\services\OrganizationService;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use App\modules\phpgwapi\security\Sessions;
+use Exception;
+
+/**
+ * @OA\Tag(
+ *     name="Organizations",
+ *     description="API Endpoints for Organization"
+ * )
+ */
+class OrganizationController 
+{
+    private OrganizationService $service;
+
+    public function __construct(OrganizationService $service)
+    {
+        $this->service = $service;
+    }
+    public function editOrganization(Request $request, Response $response, $args)
+    {
+
+    }
+    public function getOrganizationById(Request $request, Response $response, $args)
+    {   
+        $id = (int)$args['id'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        try {
+            $data = $this->service->getOrganizationById($id);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Event not found'],
+                    404
+                );
+            }
+
+            $response->getBody()->write(json_encode($data));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    public function patchDelegate(Request $request, Response $response, $args)
+    {
+        $id = (int)$args['id'];
+        $delegateId = (int)$args['delegateId'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        } 
+
+        $newData = json_decode($request->getBody()->getContents(), true);
+        if (!$newData) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Invalid JSON data'],
+                400
+            );
+        }
+
+        if (!$this->service->delegateExist($delegateId)) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Organization not found'],
+                404
+            );
+        }
+        if ($this->service->canEdit($id))
+        {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Forbidden'],
+                403
+            );
+        }
+
+        try {
+            $data = $this->service->patchDelegate($delegateId, $newData);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Organization not found'],
+                    404
+                );
+            }
+
+            $response->getBody()->write(json_encode($data));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    public function createDelegate(Request $request, Response $response, $args)
+    {
+        $id = (int)$args['id'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        $newData = json_decode($request->getBody()->getContents(), true);
+        if (!$newData) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Invalid JSON data'],
+                400
+            );
+        }
+
+        if ($this->service->canEdit($id))
+        {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Forbidden'],
+                403
+            );
+        }
+
+        try {
+            $data = $this->service->createDelegate($id, $newData);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Organization not found'],
+                    404
+                );
+            }
+
+            $response->getBody()->write(json_encode($data));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+
+    }
+ 
+    public function createGroup(Request $request, Response $response, $args)
+    {
+        $id = (int)$args['id'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        $newData = json_decode($request->getBody()->getContents(), true);
+        if (!$newData) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Invalid JSON data'],
+                400
+            );
+        }
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        if (!$this->service->canEdit($id)) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Forbidden'],
+                403
+            );
+        }
+
+        try {
+            $data = $this->service->createGroup($id, $newData);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Something went wrong'],
+                    400
+                );
+            }
+
+            $response->getBody()->write(json_encode($data));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    public function editGroup(Request $request, Response $response, $args)
+    {
+        $id = (int)$args['id'];
+        $groupId = (int)$args['groupId'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        $newData = json_decode($request->getBody()->getContents(), true);
+        if (!$newData) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Invalid JSON data'],
+                400
+            );
+        }
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        if ($this->service->existGroup($groupId)) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Group not found'],
+                404
+            );
+        }
+
+        if (!$this->service->canEdit($id)) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Forbidden'],
+                403
+            );
+        }
+
+        try {
+            $data = $this->service->editGroup($id, $newData);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Something went wrong'],
+                    400
+                );
+            }
+
+            $response->getBody()->write(json_encode($data));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    public function editGroupLeader(Request $request, Response $response, $args)
+    {
+
+    }
+
+}

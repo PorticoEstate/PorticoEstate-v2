@@ -456,7 +456,7 @@ class ConfigLocation
 			return $receipt;
 		}
 
-		$values['attrib_id'] = $this->db->lastInsertId();
+		$values['attrib_id'] = $this->db->next_id('phpgw_config2_attrib', array('section_id' => $values['section_id']));
 
 		$insert_values = array(
 			':section_id' => $values['section_id'],
@@ -524,7 +524,8 @@ class ConfigLocation
 
 		if ($values['new_choice'])
 		{
-			$choice_id = $this->db->lastInsertId();
+
+			$choice_id = $this->db->next_id('phpgw_config2_choice', array('section_id' => $values['section_id'], 'attrib_id' => $values['attrib_id']));
 
 			$values_insert = array(
 				':section_id' => $values['section_id'],

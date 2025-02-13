@@ -11,10 +11,13 @@
  * @version $Id: class.soconfig.inc.php 3613 2009-09-18 16:19:49Z sigurd $
  */
 
-namespace App\modules\phpgwapi\services; 
+namespace App\modules\phpgwapi\services;
+
 use App\helpers\DateHelper;
 use App\Database\Db;
+use App\modules\phpgwapi\services\Settings;
 use PDO;
+
 /**
  * Description
  * @package admin
@@ -33,16 +36,17 @@ class ConfigLocation
 
 	public function __construct($location_id = 0)
 	{
-		$this->db			= \App\Database\Db::getInstance();
+		$this->db			= Db::getInstance();
 		$this->join			= 'JOIN';
 		$this->left_join	= 'LEFT JOIN';
 		$this->like			= 'ILIKE';
 
-		$this->userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+		$this->userSettings = Settings::getInstance()->get('user');
 
 		$this->maxMatches = isset($this->userSettings['preferences']['common']['maxmatchs']) ? (int)$this->userSettings['preferences']['common']['maxmatchs'] : 15;
 
-		if ($location_id) {
+		if ($location_id)
+		{
 			$this->set_location($location_id);
 			$this->read_repository();
 		}
@@ -55,11 +59,13 @@ class ConfigLocation
 
 	public function read()
 	{
-		if (!$this->location_id) {
+		if (!$this->location_id)
+		{
 			throw new \Exception("location_id is not set");
 		}
 
-		if (!$this->config_data) {
+		if (!$this->config_data)
+		{
 			$this->read_repository();
 		}
 		return $this->config_data;
@@ -76,14 +82,17 @@ class ConfigLocation
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([':location_id' => $this->location_id]);
 
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-			$test = @unserialize($this->db->unmarshal($row['config_value'], 'string'));
-			if ($test) {
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
+			$test = unserialize($this->db->unmarshal($row['config_value'], 'string'));
+			if ($test)
+			{
 				$this->config_data[$row['section']][$row['config_name']] = $test;
-			} else {
+			}
+			else
+			{
 				$this->config_data[$row['section']][$row['config_name']] = $this->db->unmarshal($row['config_value'], 'string');
 			}
-
 		}
 	}
 
@@ -96,16 +105,20 @@ class ConfigLocation
 		$order		= isset($data['order']) ? $data['order'] : '';
 		$allrows	= isset($data['allrows']) ? $data['allrows'] : '';
 
-		if ($order) {
+		if ($order)
+		{
 			$ordermethod = " ORDER BY $order $sort";
-		} else {
+		}
+		else
+		{
 			$ordermethod = ' ORDER BY name ASC';
 		}
 
 		$table = 'phpgw_config2_section';
 
 		$querymethod = '';
-		if ($query) {
+		if ($query)
+		{
 			$querymethod = "AND name LIKE :query";
 			$query = "%$query%";
 		}
@@ -114,7 +127,8 @@ class ConfigLocation
 
 		$stmt = $this->db->prepare($sql);
 		$params = [':location_id' => $this->location_id];
-		if ($query) {
+		if ($query)
+		{
 			$params[':query'] = $query;
 		}
 		$stmt->execute($params);
@@ -122,17 +136,21 @@ class ConfigLocation
 		$this->total_records = $stmt->rowCount();
 
 		$limit = $this->maxMatches;
-		if (!$allrows) {
-			$stmt = $this->db->prepare($sql . $ordermethod . " LIMIT :start, :limit");
-			$stmt->bindValue(':start', $start, PDO::PARAM_INT);
-			$stmt->bindValue(':limit', $limit, PDO::PARAM_INT); // Assuming $limit is defined
-		} else {
+		if (!$allrows)
+		{
+			$stmt = $this->db->prepare($sql . $ordermethod . " LIMIT :limit OFFSET :start");
+			$params[':start'] = $start;
+			$params[':limit'] = $limit;
+		}
+		else
+		{
 			$stmt = $this->db->prepare($sql . $ordermethod);
 		}
-		$stmt->execute();
+		$stmt->execute($params);
 
 		$config_info = array();
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
 			$config_info[] = array(
 				'id'    => $row['id'],
 				'name'  => stripslashes($row['name']),
@@ -152,7 +170,8 @@ class ConfigLocation
 		$stmt->execute([':location_id' => $this->location_id, ':id' => $id]);
 
 		$values = array();
-		if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+		if ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
 			$values['id'] = $id;
 			$values['name'] = $this->db->unmarshal($row['name'], 'string');
 			$values['descr'] = $this->db->unmarshal($row['descr'], 'string');
@@ -163,9 +182,12 @@ class ConfigLocation
 
 	function add_section(array $values)
 	{
-		if ($this->db->get_transaction()) {
+		if ($this->db->get_transaction())
+		{
 			$this->global_lock = true;
-		} else {
+		}
+		else
+		{
 			$this->db->transaction_begin();
 		}
 
@@ -176,7 +198,8 @@ class ConfigLocation
 		$stmt->execute([':location_id' => $this->location_id, ':name' => $values['name']]);
 
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
-		if ($row) {
+		if ($row)
+		{
 			$receipt['section_id'] =  $row['id'];
 			$receipt['message'][] = array('msg' => lang('config section has not been saved'));
 			return $receipt;
@@ -196,7 +219,8 @@ class ConfigLocation
 		$receipt['message'][] = array('msg' => lang('config section has been saved'));
 		$receipt['section_id'] = $values['section_id'];
 
-		if (!$this->global_lock) {
+		if (!$this->global_lock)
+		{
 			$this->db->transaction_commit();
 		}
 
@@ -205,9 +229,12 @@ class ConfigLocation
 
 	function edit_section(array $values)
 	{
-		if ($this->db->get_transaction()) {
+		if ($this->db->get_transaction())
+		{
 			$this->global_lock = true;
-		} else {
+		}
+		else
+		{
 			$this->db->transaction_begin();
 		}
 
@@ -225,7 +252,8 @@ class ConfigLocation
 			':id' => $values['section_id']
 		]);
 
-		if (!$this->global_lock) {
+		if (!$this->global_lock)
+		{
 			$this->db->transaction_commit();
 		}
 
@@ -239,9 +267,12 @@ class ConfigLocation
 	{
 		$id = (int)$id;
 
-		if ($this->db->get_transaction()) {
+		if ($this->db->get_transaction())
+		{
 			$this->global_lock = true;
-		} else {
+		}
+		else
+		{
 			$this->db->transaction_begin();
 		}
 
@@ -257,7 +288,8 @@ class ConfigLocation
 		$stmt = $this->db->prepare("DELETE FROM phpgw_config2_section WHERE id = :id");
 		$stmt->execute([':id' => $id]);
 
-		if (!$this->global_lock) {
+		if (!$this->global_lock)
+		{
 			$this->db->transaction_commit();
 		}
 	}
@@ -277,8 +309,7 @@ class ConfigLocation
 		$attrib_table = 'phpgw_config2_attrib';
 		$value_table = 'phpgw_config2_value';
 
-		$querymethod = $query ? " AND name LIKE :query" : '';
-		$query = $query ? "%$query%" : null;
+		$querymethod = $query ? " AND {$attrib_table}.name LIKE :query" : '';
 
 		$sql = "SELECT $attrib_table.id, $attrib_table.section_id, $value_table.id as value_id, $attrib_table.name, $attrib_table.descr, $attrib_table.input_type, $value_table.value"
 			. " FROM ($section_table JOIN $attrib_table ON  ($section_table.id = $attrib_table.section_id))"
@@ -286,30 +317,53 @@ class ConfigLocation
 			. " WHERE location_id = :location_id AND $attrib_table.section_id = :section_id $querymethod";
 
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':location_id' => $this->location_id, ':section_id' => $section_id, ':query' => $query]);
+		$params = [
+			':location_id' => $this->location_id,
+			':section_id' => $section_id
+		];
+		if ($query)
+		{
+			$params[':query'] = "%$query%";
+		}
+		$stmt->execute($params);
+
 
 		$this->total_records = $stmt->rowCount();
 
 		$limit = $this->maxMatches;
 
-		if (!$allrows) {
-			$stmt = $this->db->prepare($sql . $ordermethod . " LIMIT :start, :limit");
-			$stmt->bindValue(':start', $start, PDO::PARAM_INT);
-			$stmt->bindValue(':limit', $limit, PDO::PARAM_INT); // Assuming $limit is defined
-			$stmt->execute();
-		} else {
+		if (!$allrows)
+		{
+			$stmt = $this->db->prepare($sql . $ordermethod . " LIMIT :limit OFFSET :start");
+			$params[':start'] = $start;
+			$params[':limit'] = $limit;
+			$stmt->execute($params);
+		}
+		else
+		{
 			$stmt = $this->db->prepare($sql . $ordermethod);
-			$stmt->execute();
+			$stmt->execute($params);
 		}
 
 		$dateformat = $this->userSettings['preferences']['dateformat'];
 
 		$config_info = array();
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
 			$input_type = $row['input_type'];
-			switch ($input_type) {
+			switch ($input_type)
+			{
 				case 'password':
 					$value = '****';
+					break;
+				case 'checkbox':
+					$value = $row['value'];
+					$test = unserialize($value);
+					if ($test)
+					{
+						$value = $test;
+					}
+
 					break;
 				case 'date':
 					$value = DateHelper::showDate($row['value'], $dateformat);
@@ -340,12 +394,14 @@ class ConfigLocation
 		$stmt->execute([':section_id' => $section_id, ':id' => $id]);
 
 		$values = array();
-		if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+		if ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
 			$values['id'] = $id;
 			$values['input_type'] = $row['input_type'];
 			$values['name'] = $this->db->unmarshal($row['name'], 'string');
 			$values['descr'] = $this->db->unmarshal($row['descr'], 'string');
-			if ($row['input_type'] == 'listbox') {
+			if (in_array($row['input_type'], ['listbox', 'radio', 'checkbox']))
+			{
 				$values['choice'] = $this->read_attrib_choice($section_id, $id);
 			}
 		}
@@ -366,7 +422,8 @@ class ConfigLocation
 		$stmt->execute([':section_id' => $section_id, ':attrib_id' => $attrib_id]);
 
 		$choice = array();
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
 			$choice[] = array(
 				'id'    => $row['id'],
 				'value' => $this->db->unmarshal($row['value'], 'string')
@@ -378,9 +435,12 @@ class ConfigLocation
 
 	function add_attrib(array $values)
 	{
-		if ($this->db->get_transaction()) {
+		if ($this->db->get_transaction())
+		{
 			$this->global_lock = true;
-		} else {
+		}
+		else
+		{
 			$this->db->transaction_begin();
 		}
 
@@ -389,7 +449,8 @@ class ConfigLocation
 		$stmt->execute([':section_id' => $values['section_id'], ':name' => $values['name']]);
 
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
-		if ($row) {
+		if ($row)
+		{
 			$receipt['attrib_id'] = $row['id'];
 			$receipt['error'][] = array('msg' => lang('config attrib has been saved'));
 			return $receipt;
@@ -411,21 +472,25 @@ class ConfigLocation
 		$stmt->execute($insert_values);
 
 		$choice_map = array();
-		if (isset($values['choice']) && $values['choice']) {
-			foreach ($values['choice'] as $choice) {
+		if (isset($values['choice']) && $values['choice'])
+		{
+			foreach ($values['choice'] as $choice)
+			{
 				$values['new_choice'] = $choice;
 				$this->edit_attrib($values);
 			}
 		}
 
-		if (isset($values['value']) && $values['value']) {
+		if (isset($values['value']) && $values['value'])
+		{
 			$this->add_value($values);
 		}
 
 		$receipt['message'][] = array('msg' => lang('config attrib has been saved'));
 		$receipt['attrib_id'] = $values['attrib_id'];
 
-		if (!$this->global_lock) {
+		if (!$this->global_lock)
+		{
 			$this->db->transaction_commit();
 		}
 
@@ -434,9 +499,12 @@ class ConfigLocation
 
 	function edit_attrib(array $values)
 	{
-		if ($this->db->get_transaction()) {
+		if ($this->db->get_transaction())
+		{
 			$this->global_lock = true;
-		} else {
+		}
+		else
+		{
 			$this->db->transaction_begin();
 		}
 
@@ -454,7 +522,8 @@ class ConfigLocation
 			':attrib_id' => $values['attrib_id']
 		]));
 
-		if ($values['new_choice']) {
+		if ($values['new_choice'])
+		{
 			$choice_id = $this->db->lastInsertId();
 
 			$values_insert = array(
@@ -469,8 +538,10 @@ class ConfigLocation
 			$stmt->execute($values_insert);
 		}
 
-		if (isset($values['delete_choice']) && is_array($values['delete_choice'])) {
-			foreach ($values['delete_choice'] as $choice_id) {
+		if (isset($values['delete_choice']) && is_array($values['delete_choice']))
+		{
+			foreach ($values['delete_choice'] as $choice_id)
+			{
 				$sql = "DELETE FROM phpgw_config2_choice WHERE section_id = :section_id AND attrib_id = :attrib_id AND id = :choice_id";
 				$stmt = $this->db->prepare($sql);
 				$stmt->execute([
@@ -480,8 +551,9 @@ class ConfigLocation
 				]);
 			}
 		}
-	
-		if (!$this->global_lock) {
+
+		if (!$this->global_lock)
+		{
 			$this->db->transaction_commit();
 		}
 
@@ -497,9 +569,12 @@ class ConfigLocation
 		$section_id	= (int) $section_id;
 		$id			= (int) $id;
 
-		if ($this->db->get_transaction()) {
+		if ($this->db->get_transaction())
+		{
 			$this->global_lock = true;
-		} else {
+		}
+		else
+		{
 			$this->db->transaction_begin();
 		}
 
@@ -512,7 +587,8 @@ class ConfigLocation
 		$stmt = $this->db->prepare("DELETE FROM phpgw_config2_attrib WHERE section_id = :section_id AND id = :id");
 		$stmt->execute([':section_id' => $section_id, ':id' => $id]);
 
-		if (!$this->global_lock) {
+		if (!$this->global_lock)
+		{
 			$this->db->transaction_commit();
 		}
 	}
@@ -532,7 +608,8 @@ class ConfigLocation
 		$table = 'phpgw_config2_value';
 
 		$querymethod = '';
-		if ($query) {
+		if ($query)
+		{
 			$querymethod = " AND name LIKE :query";
 			$query = "%$query%";
 		}
@@ -540,29 +617,49 @@ class ConfigLocation
 		$sql = "SELECT * FROM $table WHERE section_id = :section_id AND attrib_id = :attrib_id $querymethod";
 
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':section_id' => $section_id, ':attrib_id' => $attrib_id, ':query' => $query]);
+
+		$params = [
+			':section_id' => $section_id,
+			':attrib_id' => $attrib_id
+		];
+		if ($query)
+		{
+			$params[':query'] = $query;
+		}
+
+		$stmt->execute($params);
 
 		$this->total_records = $stmt->rowCount();
 
 		$limit = $this->maxMatches;
 
-		if (!$allrows) {
-			$stmt = $this->db->prepare($sql . $ordermethod . " LIMIT :start, :limit");
-			$stmt->bindValue(':start', $start, PDO::PARAM_INT);
-			$stmt->bindValue(':limit', $limit, PDO::PARAM_INT); // Assuming $limit is defined
-			$stmt->execute();
-		} else {
+		if (!$allrows)
+		{
+			$stmt = $this->db->prepare($sql . $ordermethod . " LIMIT :limit OFFSET :start");
+			$params[':start'] = $start;
+			$params[':limit'] = $limit;
+			$stmt->execute($params);
+		}
+		else
+		{
 			$stmt = $this->db->prepare($sql . $ordermethod);
 			$stmt->execute();
 		}
 
 		$config_info = array();
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
+			$value = $row['value'];
+			$test = unserialize($value);
+			if ($test)
+			{
+				$value = $test;
+			}
 			$config_info[] = array(
 				'id'        => $row['id'],
 				'section_id'    => $section_id,
 				'attrib_id'    => $attrib_id,
-				'value'        => $row['value'],
+				'value'        => $value,
 			);
 		}
 		return $config_info;
@@ -579,9 +676,19 @@ class ConfigLocation
 		$stmt->execute([':section_id' => $section_id, ':attrib_id' => $attrib_id, ':id' => $id]);
 
 		$values = array();
-		if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-			$values['id'] = $id;
-			$values['value'] = stripslashes($row['value']);
+		if ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
+			$values['id']		= $id;
+			$value	=	stripslashes($row['value']);
+			$test = unserialize($value);
+			if ($test)
+			{
+				$values['value'] = $test;
+			}
+			else
+			{
+				$values['value'] = $value;
+			}
 		}
 
 		return $values;
@@ -589,16 +696,24 @@ class ConfigLocation
 
 	function add_value($values)
 	{
-		if (isset($values['input_type']) && $values['input_type'] == 'date') {
+		if (isset($values['input_type']) && $values['input_type'] == 'date')
+		{
 			$values['value'] = DateHelper::date_to_timestamp($values['value']);
 		}
 
-		if ($this->db->get_transaction()) {
+		if ($this->db->get_transaction())
+		{
 			$this->global_lock = true;
-		} else {
+		}
+		else
+		{
 			$this->db->transaction_begin();
 		}
 
+		if (is_array($values['value']))
+		{
+			$values['value'] = serialize($values['value']);
+		}
 
 		$id = $this->db->next_id('phpgw_config2_value', array('section_id' => $values['section_id'], 'attrib_id' => $values['attrib_id']));
 
@@ -612,11 +727,12 @@ class ConfigLocation
 		$sql = "INSERT INTO phpgw_config2_value (section_id, attrib_id, id, value) VALUES (:section_id, :attrib_id, :id, :value)";
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute($insert_values);
-		
+
 		$receipt['message'][] = array('msg' => lang('config value has been saved'));
 		$receipt['id'] = $id;
 
-		if (!$this->global_lock) {
+		if (!$this->global_lock)
+		{
 			$this->db->transaction_commit();
 		}
 
@@ -625,17 +741,29 @@ class ConfigLocation
 
 	function edit_value($values)
 	{
-		if (isset($values['input_type']) && $values['input_type'] == 'date') {
+		if (isset($values['input_type']) && $values['input_type'] == 'date')
+		{
 			$values['value'] = DateHelper::date_to_timestamp($values['value']);
 		}
 
-		if (!$values['value']) {
+		if (!$values['value'])
+		{
 			$this->delete_value($values['section_id'], $values['attrib_id'], $values['id']);
-		} else {
-			if ($this->db->get_transaction()) {
+		}
+		else
+		{
+			if ($this->db->get_transaction())
+			{
 				$this->global_lock = true;
-			} else {
+			}
+			else
+			{
 				$this->db->transaction_begin();
+			}
+
+			if (is_array($values['value']))
+			{
+				$values['value'] = serialize($values['value']);
 			}
 
 			$value_set = array(
@@ -649,7 +777,8 @@ class ConfigLocation
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute($value_set);
 
-			if (!$this->global_lock) {
+			if (!$this->global_lock)
+			{
 				$this->db->transaction_commit();
 			}
 		}
@@ -666,16 +795,20 @@ class ConfigLocation
 		$attrib_id	= (int) $attrib_id;
 		$id			= (int) $id;
 
-		if ($this->db->get_transaction()) {
+		if ($this->db->get_transaction())
+		{
 			$this->global_lock = true;
-		} else {
+		}
+		else
+		{
 			$this->db->transaction_begin();
 		}
 
 		$stmt = $this->db->prepare("DELETE FROM phpgw_config2_value WHERE section_id = :section_id AND attrib_id = :attrib_id AND id = :id");
 		$stmt->execute([':section_id' => $section_id, ':attrib_id' => $attrib_id, ':id' => $id]);
 
-		if (!$this->global_lock) {
+		if (!$this->global_lock)
+		{
 			$this->db->transaction_commit();
 		}
 	}
@@ -689,12 +822,16 @@ class ConfigLocation
 		$stmt->execute([':section_id' => $section_id, ':attrib_id' => $attrib_id]);
 
 		$choice = array();
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
+			$value = $this->db->unmarshal($row['value'], 'string');
 			$choice[] = array(
-				'id'    => $row['id'],
-				'name'  => $this->db->unmarshal($row['value'], 'string')
+				'id'    => $value, //used for the value of the option in ui-forms
+				'name'  => $value
 			);
-		}		return $choice;
+		}
+		return $choice;
 	}
 
 	function select_conf_list()
@@ -703,7 +840,8 @@ class ConfigLocation
 		$stmt->execute([':location_id' => $this->location_id]);
 
 		$section = array();
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
+		{
 			$section[] = array(
 				'id'    => $row['id'],
 				'name'  => $this->db->unmarshal($row['name'], 'string')

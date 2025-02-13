@@ -91,31 +91,30 @@ class Auth extends Auth_
 		$username_arr  = explode('@', $remote_user);
 		$username = $username_arr[0];
 
+		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+		$location_id	= $location_obj->get_id('admin', 'openid_connect');
+		$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+
 		/**
 		 * OpenID Connect
 		 */
-		if (!$username && !$ssn)
+		if (!empty($config_openid['common']['method_backend']))
 		{
-			$location_obj = new \App\modules\phpgwapi\controllers\Locations();
-			$location_id	= $location_obj->get_id('admin', 'openid_connect');
-			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
-			if (!empty($config_openid['common']['method_backend']))
-			{
-				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
-				$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
 
-				$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
-				if ($get_username_callback)
-				{
-					$userInfo = $OpenIDConnect->get_userinfo();
-					$username = $userInfo->user_id;
-					return $username;
-				}
-				else
-				{
-					$OpenIDConnect->authenticate();
-					exit;
-				}
+			$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
+			$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
+
+			$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
+			if ($get_username_callback)
+			{
+				$userInfo = $OpenIDConnect->get_userinfo();
+				$username = $userInfo->user_id;
+				return $username;
+			}
+			else
+			{
+				$OpenIDConnect->authenticate();
+				exit;
 			}
 		}
 

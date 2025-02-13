@@ -596,10 +596,10 @@
 
 
 <!-- add / edit value -->
-	<xsl:template match="edit_value">
+	<xsl:template match="edit_value" xmlns:php="http://php.net/xsl">
 		<div align="left">
 		<xsl:variable name="form_action"><xsl:value-of select="form_action"/></xsl:variable>
-		<form method="post" action="{$form_action}">
+		<form method="post" action="{$form_action}" class="pure-form">
 		<table cellpadding="2" cellspacing="2" width="80%" align="center">
 			<xsl:choose>
 				<xsl:when test="msgbox_data != ''">
@@ -650,8 +650,15 @@
 						<xsl:variable name="lang_value_status_text"><xsl:value-of select="lang_value_status_text"/></xsl:variable>
 						<select name="values[value]" class="forms" title="{$lang_value_status_text}">
 							<option value=""><xsl:value-of select="lang_no_value"/></option>
-							<xsl:apply-templates select="choice_list"/>
+							<xsl:apply-templates select="choice_list">
+								<xsl:with-param name="type" select="value_input_type"/>
+							</xsl:apply-templates>
 						</select>
+					</xsl:when>
+					<xsl:when test="value_input_type = 'checkbox'">
+						<xsl:apply-templates select="choice_list">
+							<xsl:with-param name="type" select="value_input_type"/>
+						</xsl:apply-templates>
 					</xsl:when>
 					<xsl:when test="value_input_type = 'date'">
 						<input type="text" id="date_value" name="values[value]" size="10" value="{value_attrib_value}" readonly="readonly">
@@ -720,13 +727,33 @@
 	</xsl:template>
 
 	<xsl:template match="choice_list">
-	<xsl:variable name="id"><xsl:value-of select="id"/></xsl:variable>
+		<xsl:param name="type"/>
+		<xsl:variable name="id"><xsl:value-of select="id"/></xsl:variable>
 		<xsl:choose>
-			<xsl:when test="selected">
-				<option value="{$id}" selected="selected"><xsl:value-of disable-output-escaping="yes" select="name"/></option>
+			<xsl:when test="$type = 'checkbox'">
+				<label for="checkbox-option-{id}" class="pure-checkbox">
+					<input id="checkbox-option-{id}" name="values[value][]" type="checkbox" value="{$id}" >
+						<xsl:choose>
+							<xsl:when test="selected">
+								<xsl:attribute name="checked">checked</xsl:attribute>
+							</xsl:when>
+						</xsl:choose>
+						<xsl:attribute name="title">
+							<xsl:value-of select="name"/>
+						</xsl:attribute>
+					</input>
+					<xsl:value-of select="name"/>
+				</label>
 			</xsl:when>
 			<xsl:otherwise>
-				<option value="{$id}"><xsl:value-of disable-output-escaping="yes" select="name"/></option>
+				<xsl:choose>
+					<xsl:when test="selected">
+						<option value="{$id}" selected="selected"><xsl:value-of disable-output-escaping="yes" select="name"/></option>
+					</xsl:when>
+					<xsl:otherwise>
+						<option value="{$id}"><xsl:value-of disable-output-escaping="yes" select="name"/></option>
+					</xsl:otherwise>
+				</xsl:choose>
 			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>

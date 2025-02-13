@@ -179,7 +179,10 @@ class admin_boconfig
 	function read_section()
 	{
 		$config_info = $this->so->read_section(array(
-			'start' => $this->start, 'query' => $this->query, 'sort' => $this->sort, 'order' => $this->order,
+			'start' => $this->start,
+			'query' => $this->query,
+			'sort' => $this->sort,
+			'order' => $this->order,
 			'allrows' => $this->allrows
 		));
 		$this->total_records = $this->so->total_records;
@@ -225,8 +228,12 @@ class admin_boconfig
 	{
 
 		$config_info = $this->so->read_attrib(array(
-			'start' => $this->start, 'query' => $this->query, 'sort' => $this->sort, 'order' => $this->order,
-			'allrows' => $this->allrows, 'section_id' => $section_id
+			'start' => $this->start,
+			'query' => $this->query,
+			'sort' => $this->sort,
+			'order' => $this->order,
+			'allrows' => $this->allrows,
+			'section_id' => $section_id
 		));
 
 		$this->total_records = $this->so->total_records;
@@ -271,8 +278,13 @@ class admin_boconfig
 	function read_value(int $section_id, int $attrib_id)
 	{
 		$config_info = $this->so->read_value(array(
-			'start' => $this->start, 'query' => $this->query, 'sort' => $this->sort, 'order' => $this->order,
-			'allrows' => $this->allrows, 'section_id' => $section_id, 'attrib_id' => $attrib_id
+			'start' => $this->start,
+			'query' => $this->query,
+			'sort' => $this->sort,
+			'order' => $this->order,
+			'allrows' => $this->allrows,
+			'section_id' => $section_id,
+			'attrib_id' => $attrib_id
 		));
 		$this->total_records = $this->so->total_records;
 		return $config_info;
@@ -313,7 +325,7 @@ class admin_boconfig
 	}
 
 
-	function select_choice_list(int $section_id, int $attrib_id, $selected = '')
+	function select_choice_list(int $section_id, int $attrib_id, $selected = null)
 	{
 		$list = $this->so->select_choice_list($section_id, $attrib_id);
 		return $this->select_list($selected, $list);
@@ -332,6 +344,10 @@ class admin_boconfig
 				'name' => 'listbox'
 			),
 			array(
+				'id' => 'checkbox',
+				'name' => 'checkbox'
+			),
+			array(
 				'id' => 'password',
 				'name' => lang('password')
 			),
@@ -343,16 +359,23 @@ class admin_boconfig
 		return $this->select_list($selected, $input_type);
 	}
 
-	function select_list($selected = '', $input_list = '')
+	function select_list($selected = null, $input_list = '')
 	{
 		if (isset($input_list) and is_array($input_list))
 		{
 			foreach ($input_list as $entry)
 			{
 				$sel_entry = '';
-				if ($entry['id'] == $selected)
+				if (is_array($selected) && in_array($entry['id'], $selected))
 				{
 					$sel_entry = 'selected';
+				}
+				else
+				{
+					if ($entry['id'] == $selected)
+					{
+						$sel_entry = 'selected';
+					}
 				}
 				$entry_list[] = array(
 					'id'		=> $entry['id'],

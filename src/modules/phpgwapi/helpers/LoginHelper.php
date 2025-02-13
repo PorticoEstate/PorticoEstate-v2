@@ -57,6 +57,26 @@ class LoginHelper
 		$this->msg_only = $msg_only;
 	}
 
+	public function processLoginCallback(Request $request, Response $response, array $args)
+	{
+		$Login = new Login();
+		$sessionid = $Login->login();
+		if ($sessionid)
+		{
+			$this->redirect();
+		}
+		else
+		{
+			$LoginUi = new LoginUi($this->msg_only);
+			$variables = array();
+			$LoginUi->phpgw_display_login($variables, $Login->get_cd());
+		}
+
+		$response = $response->withHeader('Content-Type', 'text/html');
+		return $response;
+	}
+
+
 	public function processLogin(Request $request, Response $response, array $args)
 	{
 		$routeContext = RouteContext::fromRequest($request);
@@ -66,8 +86,8 @@ class LoginHelper
 		$currentApp = trim($routePath_arr[1], '[');
 
 		//backwards compatibility
-		//	if (empty($_POST) && $currentApp == 'mobilefrontend' && $routePath_arr[2] == 'login.php')
-		if (empty($_POST) && ($routePath_arr[1] == 'login.php' || $routePath_arr[2] == 'login.php'))
+		$login_type = Sanitizer::get_var('type', 'string', 'GET');
+		if ($login_type !== 'sql' && empty($_POST) && ($routePath_arr[1] == 'login.php' || $routePath_arr[2] == 'login.php'))
 		{
 			$process_login = new Login();
 			if ($process_login->login()) //SSO login
@@ -75,6 +95,52 @@ class LoginHelper
 				phpgw::redirect_link('/home/', array('cd' => 'yes'));
 			}
 		}
+
+		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+		$location_id	= $location_obj->get_id('admin', 'openid_connect');
+		$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']))
+		{
+			$options = <<<HTML
+			<option value="">Velg</option>
+			<option value="sql">Brukernavn/Passord</option>
+HTML;
+			foreach ($config_openid['common']['method_backend'] as $type)
+			{
+				$method_name = $config_openid[$type]['name'];
+				$options .= <<<HTML
+				<option value="{$type}">{$method_name}</option>
+HTML;
+			}
+
+			$html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+</head>
+<body>
+	<div class="container">
+		<h1>Logg inn</h1>
+		<form method="GET" action="./login.php">
+			<div class="mb-3">
+				<label for="type" class="form-label">Logg inn med:</label>
+				<select id="type" name="type" class="form-select">
+					{$options}
+				</select>
+			</div>
+			<button type="submit" class="btn btn-primary">Logg inn</button>
+		</form>
+	</div>
+</body>
+</html>
+HTML;
+
+			$response = $response->withHeader('Content-Type', 'text/html');
+			$response->getBody()->write($html);
+			return $response;
+		}
+
 
 		$LoginUi   = new LoginUi($this->msg_only);
 		$variables = array();

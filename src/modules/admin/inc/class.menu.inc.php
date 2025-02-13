@@ -91,6 +91,17 @@ class admin_menu
 					array('menuaction' => 'admin.uiconfig.index', 'appname' => 'admin')
 				)
 			);
+			$menus['admin']['openid_connect'] = array(
+				'text'	=> 'OpenID Connect',
+				'nav_location' => 'navbar#' . $locations->get_id('admin', 'openid_connect'),
+				'url'	=> phpgw::link(
+					'/index.php',
+					array(
+						'menuaction' => 'admin.uiconfig2.index',
+						'location_id' => $locations->get_id('admin', 'openid_connect')
+					)
+				)
+			);
 			$menus['admin']['file_config'] = array(
 				'text'	=> $translation->translate('file configuration', array(), true),
 				'nav_location' => 'navbar#' . $locations->get_id('admin', 'vfs_filedata'),

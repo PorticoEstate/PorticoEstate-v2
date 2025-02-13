@@ -29,7 +29,9 @@
 
 namespace App\modules\phpgwapi\security\Auth;
 
+use App\modules\phpgwapi\services\Cache;
 use PDO;
+use Sanitizer;
 
 /**
  * Authentication based on SQL table
@@ -88,6 +90,35 @@ class Auth extends Auth_
 		$remote_user = !empty($headers['remote_user']) ? $headers['remote_user'] : $upn;
 		$username_arr  = explode('@', $remote_user);
 		$username = $username_arr[0];
+
+		/**
+		 * OpenID Connect
+		 */
+		if (!$username && !$ssn)
+		{
+			$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+			$location_id	= $location_obj->get_id('admin', 'openid_connect');
+			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+			if (!empty($config_openid['common']['method_backend']))
+			{
+				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
+				$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
+
+				$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
+				if ($get_username_callback)
+				{
+					$userInfo = $OpenIDConnect->get_userinfo();
+					$username = $userInfo->user_id;
+					return $username;
+				}
+				else
+				{
+					$OpenIDConnect->authenticate();
+					exit;
+				}
+			}
+		}
+
 
 		/**
 		 * Shibboleth from inside firewall

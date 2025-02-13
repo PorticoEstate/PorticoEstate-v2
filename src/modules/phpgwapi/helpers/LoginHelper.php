@@ -98,7 +98,12 @@ class LoginHelper
 
 		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
 		$location_id	= $location_obj->get_id('admin', 'openid_connect');
-		$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+
+		if ($location_id)
+		{
+			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+		}
+
 		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']))
 		{
 			$options = <<<HTML

@@ -14,9 +14,11 @@ class OpenIDConnect
 	private $config;
 	private $oidc;
 	private $idToken;
+	private $debug;
 
 	function __construct($type = 'local', $config = [])
 	{
+		$this->debug = false;
 
 		if (!$config)
 		{
@@ -35,8 +37,12 @@ class OpenIDConnect
 			throw new \Exception('Configuration for the specified type is missing.');
 		}
 
-		//	_debug_array($this->config);
-		//		die();
+		$this->debug = $this->config['debug'] ?? false;
+
+		if ($this->debug)
+		{
+			_debug_array($this->config);
+		}
 
 		$this->oidc = new OpenIDConnectClient(
 			$this->config['authority'],
@@ -50,7 +56,6 @@ class OpenIDConnect
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
-		$this->idToken = $this->oidc->getIdToken();
 	}
 
 	public function get_userinfo()
@@ -58,13 +63,20 @@ class OpenIDConnect
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
-
-		return $this->oidc->requestUserInfo();
+		$this->idToken = $this->oidc->getIdToken();
+		Cache::session_set('openid_connect', 'idToken', $this->idToken);
+		$userInfo = $this->oidc->requestUserInfo();
+		return $userInfo;
 	}
 
 	public function get_username(): string
 	{
 		$userInfo = $this->get_userinfo();
+		if ($this->debug)
+		{
+			_debug_array($userInfo);
+		}
+
 		$response_variable = $this->config['response_variable'] ?? 'email';
 		return $userInfo->$response_variable;
 	}

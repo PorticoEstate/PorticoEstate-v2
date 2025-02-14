@@ -110,8 +110,7 @@ class Auth extends Auth_
 			$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
 			if ($get_username_callback)
 			{
-				$userInfo = $OpenIDConnect->get_userinfo();
-				$username = $userInfo->user_id;
+				$username = $OpenIDConnect->get_username();
 				return $username;
 			}
 			else

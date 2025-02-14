@@ -481,6 +481,16 @@ $receipt = $custom_config->add_attrib(
 		'value'			=> '',
 	)
 );
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_remote['section_id'],
+		'input_type'	=> 'checkbox',
+		'name'			=> 'debug',
+		'descr'			=> 'Debug - will print out the response',
+		'choice' => array('debug'),
+		'value'			=> [],
+	)
+);
 
 //local
 $receipt_section_local = $custom_config->add_section(
@@ -566,5 +576,16 @@ $receipt = $custom_config->add_attrib(
 		'name'			=> 'scopes',
 		'descr'			=> 'Scopes',
 		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_local['section_id'],
+		'input_type'	=> 'checkbox',
+		'name'			=> 'debug',
+		'descr'			=> 'Debug - will print out the response',
+		'choice' => array('debug'),
+		'value'			=> [],
 	)
 );

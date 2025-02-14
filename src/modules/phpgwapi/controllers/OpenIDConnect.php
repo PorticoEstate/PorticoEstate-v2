@@ -70,6 +70,7 @@ class OpenIDConnect
 		if ($this->debug)
 		{
 			_debug_array($userInfo);
+			die();
 		}
 
 		$response_variable = $this->config['response_variable'] ?? 'email';

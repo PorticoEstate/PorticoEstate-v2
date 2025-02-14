@@ -4058,8 +4058,8 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 		array(
 			'section_id'	=> $receipt_section_remote['section_id'],
 			'input_type'	=> 'text',
-			'name'			=> 'authority',
-			'descr'			=> 'Authority',
+			'name'			=> 'provider_url',
+			'descr'			=> 'Provider url',
 			'value'			=> '',
 		)
 	);
@@ -4087,7 +4087,7 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 		'client_id' => 'YOUR_CLIENT_ID',
 		'client_secret' => 'YOUR_CLIENT_SECRET',
 		'redirect_uri' => 'https://yourdomain.com/callback.php',
-		'authority' => 'https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0',
+		'provider_url' => 'https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0',
 		'scopes' => 'openid profile email'
 	];
 */
@@ -4144,8 +4144,8 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 		array(
 			'section_id'	=> $receipt_section_local['section_id'],
 			'input_type'	=> 'text',
-			'name'			=> 'authority',
-			'descr'			=> 'Authority',
+			'name'			=> 'provider_url',
+			'descr'			=> 'Provider url',
 			'value'			=> '',
 		)
 	);

@@ -466,8 +466,8 @@ $receipt = $custom_config->add_attrib(
 	array(
 		'section_id'	=> $receipt_section_remote['section_id'],
 		'input_type'	=> 'text',
-		'name'			=> 'authority',
-		'descr'			=> 'Authority',
+		'name'			=> 'provider_url',
+		'descr'			=> 'Provider url',
 		'value'			=> '',
 	)
 );
@@ -495,7 +495,7 @@ $receipt_section_local = $custom_config->add_section(
 		'client_id' => 'YOUR_CLIENT_ID',
 		'client_secret' => 'YOUR_CLIENT_SECRET',
 		'redirect_uri' => 'https://yourdomain.com/callback.php',
-		'authority' => 'https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0',
+		'provider_url' => 'https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0',
 		'scopes' => 'openid profile email'
 	];
 */
@@ -553,8 +553,8 @@ $receipt = $custom_config->add_attrib(
 	array(
 		'section_id'	=> $receipt_section_local['section_id'],
 		'input_type'	=> 'text',
-		'name'			=> 'authority',
-		'descr'			=> 'Authority',
+		'name'			=> 'provider_url',
+		'descr'			=> 'Provider url',
 		'value'			=> '',
 	)
 );

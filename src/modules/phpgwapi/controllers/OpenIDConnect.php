@@ -40,7 +40,7 @@ class OpenIDConnect
 		$this->debug = $this->config['debug'] ?? false;
 
 		$this->oidc = new OpenIDConnectClient(
-			$this->config['authority'],
+			$this->config['provider_url'],
 			$this->config['client_id'],
 			$this->config['client_secret']
 		);
@@ -64,7 +64,7 @@ class OpenIDConnect
 		return $userInfo;
 	}
 
-	public function get_username()
+	public function get_username(): string
 	{
 		$userInfo = $this->get_userinfo();
 		if ($this->debug)

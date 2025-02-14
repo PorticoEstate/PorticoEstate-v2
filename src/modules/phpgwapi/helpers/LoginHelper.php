@@ -122,21 +122,42 @@ HTML;
 <!DOCTYPE html>
 <html>
 <head>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectElement = document.getElementById('type');
+            const submitButton = document.getElementById('submit-button');
+
+            // Function to check the selected option and enable/disable the button
+            function checkSelectedOption() {
+                if (selectElement.value === '') {
+                    submitButton.disabled = true;
+                } else {
+                    submitButton.disabled = false;
+                }
+            }
+
+            // Initial check when the page loads
+            checkSelectedOption();
+
+            // Add event listener to the select element
+            selectElement.addEventListener('change', checkSelectedOption);
+        });
+    </script>
 </head>
 <body>
-	<div class="container">
-		<h1>Logg inn</h1>
-		<form method="GET" action="./login.php">
-			<div class="mb-3">
-				<label for="type" class="form-label">Logg inn med:</label>
-				<select id="type" name="type" class="form-select">
-					{$options}
-				</select>
-			</div>
-			<button type="submit" class="btn btn-primary">Logg inn</button>
-		</form>
-	</div>
+    <div class="container">
+        <h1>Logg inn</h1>
+        <form method="GET" action="./login.php">
+            <div class="mb-3">
+                <label for="type" class="form-label">Logg inn med:</label>
+                <select id="type" name="type" class="form-select">
+                    {$options}
+                </select>
+            </div>
+            <button type="submit" id="submit-button" class="btn btn-primary">Logg inn</button>
+        </form>
+    </div>
 </body>
 </html>
 HTML;

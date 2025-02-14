@@ -39,11 +39,6 @@ class OpenIDConnect
 
 		$this->debug = $this->config['debug'] ?? false;
 
-		if ($this->debug)
-		{
-			_debug_array($this->config);
-		}
-
 		$this->oidc = new OpenIDConnectClient(
 			$this->config['authority'],
 			$this->config['client_id'],

@@ -64,7 +64,7 @@ class OpenIDConnect
 		return $userInfo;
 	}
 
-	public function get_username(): string
+	public function get_username()
 	{
 		$userInfo = $this->get_userinfo();
 		if ($this->debug)

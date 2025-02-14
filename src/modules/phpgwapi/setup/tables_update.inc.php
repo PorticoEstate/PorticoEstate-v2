@@ -4059,7 +4059,7 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 			'section_id'	=> $receipt_section_remote['section_id'],
 			'input_type'	=> 'text',
 			'name'			=> 'provider_url',
-			'descr'			=> 'Authority',
+			'descr'			=> 'Provider url',
 			'value'			=> '',
 		)
 	);
@@ -4145,7 +4145,7 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 			'section_id'	=> $receipt_section_local['section_id'],
 			'input_type'	=> 'text',
 			'name'			=> 'provider_url',
-			'descr'			=> 'Authority',
+			'descr'			=> 'Provider url',
 			'value'			=> '',
 		)
 	);

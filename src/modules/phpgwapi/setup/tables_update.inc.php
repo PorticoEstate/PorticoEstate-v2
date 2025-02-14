@@ -4074,6 +4074,17 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 		)
 	);
 
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'debug',
+			'descr'			=> 'Debug - will print out the response',
+			'choice' => array('debug'),
+			'value'			=> [],
+		)
+	);
+
 	//local
 	$receipt_section_local = $custom_config->add_section(
 		array(
@@ -4159,6 +4170,18 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 			'value'			=> '',
 		)
 	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'debug',
+			'descr'			=> 'Debug - will print out the response',
+			'choice' => array('debug'),
+			'value'			=> [],
+		)
+	);
+
 	if ($oProc->m_odb->transaction_commit())
 	{
 		$currentver = '0.9.17.569';

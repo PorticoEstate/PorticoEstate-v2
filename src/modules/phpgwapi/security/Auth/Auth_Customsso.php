@@ -98,11 +98,14 @@ class Auth extends Auth_
 			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
 		}
 
+		$use_openid = false;
+		$epost = null;
 		/**
 		 * OpenID Connect
 		 */
 		if (!empty($config_openid['common']['method_backend']))
 		{
+			$use_openid = true;
 
 			$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
 			$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
@@ -110,8 +113,7 @@ class Auth extends Auth_
 			$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
 			if ($get_username_callback)
 			{
-				$username = $OpenIDConnect->get_username();
-				return $username;
+				$epost = $OpenIDConnect->get_username();
 			}
 			else
 			{
@@ -124,15 +126,15 @@ class Auth extends Auth_
 		/**
 		 * Shibboleth from inside firewall
 		 */
-		if ($username && !$ssn)
+		if (!$use_openid && $username && !$ssn)
 		{
 			//force to use login.php
 			//get me the route path from the http-request
-			$routePath = $_SERVER['REQUEST_URI'];
-			if (!preg_match('/\/login.php/', $routePath))
-			{
-				return '';
-			}
+			//			$routePath = $_SERVER['REQUEST_URI'];
+			//			if (!preg_match('/\/login.php/', $routePath))
+			//			{
+			//				return '';
+			//			}
 
 			return $username;
 		}
@@ -140,7 +142,7 @@ class Auth extends Auth_
 		/**
 		 * Shibboleth from outside firewall
 		 */
-		if (!$ssn)
+		if (!$ssn && !$use_openid)
 		{
 			return '';
 		}
@@ -162,8 +164,7 @@ class Auth extends Auth_
 		}
 
 		// Alternative config
-		$locations = new \App\modules\phpgwapi\controllers\Locations();
-		$location_id = $locations->get_id('property', '.admin');
+		$location_id = $location_obj->get_id('property', '.admin');
 
 		$config = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
 
@@ -201,11 +202,25 @@ class Auth extends Auth_
 			return false;
 		}
 
-		$sql = "SELECT BRUKERNAVN FROM V_AD_PERSON WHERE FODSELSNR = :ssn";
-		$stmt = $db->prepare($sql);
-		$stmt->execute([':ssn' => $ssn]);
+		if ($ssn)
+		{
+			$sql = "SELECT * FROM V_AD_BRUKERE WHERE FODSELSNR = :ssn";
+			$stmt = $db->prepare($sql);
+			$stmt->execute([':ssn' => $ssn]);
+		}
+		else if ($epost)
+		{
+			$sql = "SELECT BRUKERNAVN FROM V_AD_BRUKERE WHERE EPOST = :epost";
+			$stmt = $db->prepare($sql);
+			$stmt->execute([':epost' => $epost]);
+		}
+		else
+		{
+			return '';
+		}
 
 		$row = $stmt->fetch(PDO::FETCH_ASSOC);
+
 		if ($row)
 		{
 			$username = $row['BRUKERNAVN'];

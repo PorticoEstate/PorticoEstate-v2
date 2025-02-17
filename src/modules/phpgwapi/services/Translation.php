@@ -79,7 +79,7 @@ class Translation
 
 		$this->preferences = isset(Settings::getInstance()->get('user')['preferences']) ? Settings::getInstance()->get('user')['preferences'] : $preferences;
 
-		$userlang = isset($this->preferences['default_lang']) && $this->preferences['default_lang'] ? $this->preferences['default_lang'] : 'en';
+		$userlang = isset($this->serverSettings['default_lang']) && $this->serverSettings['default_lang'] ? $this->serverSettings['default_lang'] : 'en';
 		if (isset($this->preferences['common']['lang']))
 		{
 			$userlang = $this->preferences['common']['lang'];

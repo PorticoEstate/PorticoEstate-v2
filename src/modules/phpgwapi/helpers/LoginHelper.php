@@ -95,7 +95,6 @@ class LoginHelper
 				phpgw::redirect_link('/home/', array('cd' => 'yes'));
 			}
 		}
-
 		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
 		$location_id	= $location_obj->get_id('admin', 'openid_connect');
 
@@ -106,9 +105,10 @@ class LoginHelper
 
 		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']))
 		{
+			$lang_sign_in = lang('Sign in');
+			$lang_select_login_method = lang('Select login method');
 			$options = <<<HTML
-			<option value="">Velg</option>
-			<option value="sql">Brukernavn/Passord</option>
+			<option value="">{$lang_select_login_method}</option>
 HTML;
 			foreach ($config_openid['common']['method_backend'] as $type)
 			{
@@ -117,48 +117,56 @@ HTML;
 				<option value="{$type}">{$method_name}</option>
 HTML;
 			}
+			$options .= <<<HTML
+			<option value="sql">Brukernavn/Passord</option>
+HTML;
 
 			$html = <<<HTML
 <!DOCTYPE html>
-<html>
-<head>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const selectElement = document.getElementById('type');
-            const submitButton = document.getElementById('submit-button');
+	<html>
+	<head>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				const selectElement = document.getElementById('type');
+				const form = document.getElementById('login-form');
 
-            // Function to check the selected option and enable/disable the button
-            function checkSelectedOption() {
-                if (selectElement.value === '') {
-                    submitButton.disabled = true;
-                } else {
-                    submitButton.disabled = false;
-                }
-            }
+				// Function to reset the select box to its default value
+				function resetSelectBox() {
+					selectElement.value = '';
+				}
 
-            // Initial check when the page loads
-            checkSelectedOption();
+				// Function to check the selected option and submit the form
+				function checkSelectedOption() {
+					if (selectElement.value !== '') {
+						form.submit();
+					}
+				}
 
-            // Add event listener to the select element
-            selectElement.addEventListener('change', checkSelectedOption);
-        });
-    </script>
-</head>
-<body>
-    <div class="container">
-        <h1>Logg inn</h1>
-        <form method="GET" action="./login.php">
-            <div class="mb-3">
-                <label for="type" class="form-label">Logg inn med:</label>
-                <select id="type" name="type" class="form-select">
-                    {$options}
-                </select>
-            </div>
-            <button type="submit" id="submit-button" class="btn btn-primary">Logg inn</button>
-        </form>
-    </div>
-</body>
+				// Reset the select box on page load
+				resetSelectBox();
+
+				// Add event listener to the select element
+				selectElement.addEventListener('change', checkSelectedOption);
+
+				// Reset the select box when the user clicks the "back" button
+				window.addEventListener('pageshow', resetSelectBox);
+			});
+		</script>
+	</head>
+	<body>
+		<div class="container">
+			<h1>{$lang_sign_in} {$this->serverSettings['site_title']}</h1>
+			<form id="login-form" method="GET" action="./login.php">
+				<div class="mb-3">
+					<label for="type" class="form-label">Logg inn med:</label>
+					<select id="type" name="type" class="form-select">
+						{$options}
+					</select>
+				</div>
+			</form>
+		</div>
+	</body>
 </html>
 HTML;
 

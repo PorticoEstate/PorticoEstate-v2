@@ -31,6 +31,7 @@ namespace App\modules\phpgwapi\security\Auth;
 use PDO;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\security\Acl;
+use App\modules\phpgwapi\services\Cache;
 use Sanitizer;
 
 
@@ -79,6 +80,7 @@ class Auth extends Auth_
 		$headers = array_change_key_case(getallheaders(), CASE_LOWER);
 		$ssn = !empty($headers['uid']) ? $headers['uid'] : $ssn;
 		$ssn = !empty($_SERVER['HTTP_UID']) ? $_SERVER['HTTP_UID'] : $ssn;
+		$ssn = $ssn ? $ssn : Cache::session_get('openid_connect', 'ssn');
 
 		// skip anonymous users
 		Acl::getInstance()->set_account_id($account_id);

@@ -86,14 +86,20 @@ class phpgwapi_xslttemplates
 		}
 	}
 
-	public static function getInstance($root = '.')
+	public static function getInstance($root = '.', $skip_singleton = null)
 	{
+		if ($root == '.' && defined('PHPGW_APP_TPL'))
+		{
+			$root = PHPGW_APP_TPL;
+		}
+
+		if ($skip_singleton)
+		{
+			return new phpgwapi_xslttemplates($root);
+		}
+		
 		if (self::$instance == null)
 		{
-			if ($root == '.' && defined('PHPGW_APP_TPL'))
-			{
-				$root = PHPGW_APP_TPL;
-			}
 			self::$instance = new phpgwapi_xslttemplates($root);
 		}
 

@@ -23,4 +23,20 @@ class ResponseHelper
             ->withHeader('Content-Type', 'application/json')
             ->withStatus($statusCode);
     }
+
+    /**
+     * Send an error response
+     *
+     * @param Response $response
+     * @param array $data
+     * @param int $statusCode
+     *
+     * @return Response
+     */
+    public static function sendJson(Response $response, $data, int $statusCode = 200): Response
+    {
+        $response->getBody()->write(json_encode($data));
+        return $response->withStatus($statusCode)
+            ->withHeader('Content-Type', 'application/json');
+    }
 }

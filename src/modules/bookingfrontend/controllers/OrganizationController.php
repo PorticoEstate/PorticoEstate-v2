@@ -23,10 +23,12 @@ class OrganizationController
     {
         $this->service = $service;
     }
+
     public function editOrganization(Request $request, Response $response, $args)
     {
 
     }
+
     public function getOrganizationById(Request $request, Response $response, $args)
     {   
         $id = (int)$args['id'];
@@ -39,17 +41,8 @@ class OrganizationController
         }
 
         try {
-            $data = $this->service->getOrganizationById($id);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Event not found'],
-                    404
-                );
-            }
-
-            $response->getBody()->write(json_encode($data));
-            return $response->withStatus(200)
-                ->withHeader('Content-Type', 'application/json');
+            $result = $this->service->getOrganizationById($id);
+            return ResponseHelper::sendJson($response, $result);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error' . $e->getMessage()],
@@ -60,7 +53,6 @@ class OrganizationController
 
     public function patchDelegate(Request $request, Response $response, $args)
     {
-        $id = (int)$args['id'];
         $delegateId = (int)$args['delegateId'];
         $session = Sessions::getInstance();
         $session_id = $session->get_session_id();
@@ -70,14 +62,6 @@ class OrganizationController
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         } 
 
-        $newData = json_decode($request->getBody()->getContents(), true);
-        if (!$newData) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Invalid JSON data'],
-                400
-            );
-        }
-
         if (!$this->service->delegateExist($delegateId)) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Organization not found'],
@@ -86,17 +70,8 @@ class OrganizationController
         }
 
         try {
-            $data = $this->service->patchDelegate($delegateId, $newData);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Organization not found'],
-                    404
-                );
-            }
-
-            $response->getBody()->write(json_encode($data));
-            return $response->withStatus(200)
-                ->withHeader('Content-Type', 'application/json');
+            $result = $this->service->patchDelegate($delegateId, $request->getParsedBody());
+            return ResponseHelper::sendJson($response, $result);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error' . $e->getMessage()],
@@ -116,34 +91,15 @@ class OrganizationController
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
-        $newData = json_decode($request->getBody()->getContents(), true);
-        if (!$newData) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Invalid JSON data'],
-                400
-            );
-        }
-
-
         try {
-            $data = $this->service->createDelegate($id, $newData);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Organization not found'],
-                    404
-                );
-            }
-
-            $response->getBody()->write(json_encode($data));
-            return $response->withStatus(200)
-                ->withHeader('Content-Type', 'application/json');
+            $result = $this->service->createDelegate($id, $request->getParsedBody());
+            return ResponseHelper::sendJson($response, $result);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error' . $e->getMessage()],
                 500
             );
         }
-
     }
  
     public function createGroup(Request $request, Response $response, $args)
@@ -152,31 +108,14 @@ class OrganizationController
         $session = Sessions::getInstance();
         $session_id = $session->get_session_id();
 
-        $newData = json_decode($request->getBody()->getContents(), true);
-        if (!$newData) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Invalid JSON data'],
-                400
-            );
-        }
-
         if (empty($session_id)) {
             $response->getBody()->write(json_encode(['error' => 'No active session']));
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
         }
 
         try {
-            $data = $this->service->createGroup($id, $newData);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Something went wrong'],
-                    400
-                );
-            }
-
-            $response->getBody()->write(json_encode($data));
-            return $response->withStatus(200)
-                ->withHeader('Content-Type', 'application/json');
+            $result = $this->service->createGroup($id, $request->getParsedBody());
+            return ResponseHelper::sendJson($response, $result);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error' . $e->getMessage()],
@@ -185,27 +124,19 @@ class OrganizationController
         }
     }
 
-    public function editGroup(Request $request, Response $response, $args)
+    public function patchGroup(Request $request, Response $response, $args)
     {
         $id = (int)$args['id'];
         $groupId = (int)$args['groupId'];
         $session = Sessions::getInstance();
         $session_id = $session->get_session_id();
 
-        $newData = json_decode($request->getBody()->getContents(), true);
-        if (!$newData) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Invalid JSON data'],
-                400
-            );
-        }
-
         if (empty($session_id)) {
             $response->getBody()->write(json_encode(['error' => 'No active session']));
             return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
-        }
+        }  
 
-        if ($this->service->existGroup($groupId)) {
+        if (!$this->service->existGroup($groupId)) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Group not found'],
                 404
@@ -213,17 +144,8 @@ class OrganizationController
         }
 
         try {
-            $data = $this->service->editGroup($id, $newData);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Something went wrong'],
-                    400
-                );
-            }
-
-            $response->getBody()->write(json_encode($data));
-            return $response->withStatus(200)
-                ->withHeader('Content-Type', 'application/json');
+            $result = $this->service->patchGroup($groupId, $request->getParsedBody());
+            return ResponseHelper::sendJson($response, $result);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error' . $e->getMessage()],
@@ -232,9 +154,40 @@ class OrganizationController
         }
     }
 
-    public function editGroupLeader(Request $request, Response $response, $args)
+    public function patchGroupLeader(Request $request, Response $response, $args)
     {
+        $id = (int)$args['id'];
+        $groupId = (int)$args['groupId'];
+        $leaderId = (int)$args['leaderId'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
 
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        if (!$this->service->existGroup($groupId)) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Group not found'],
+                404
+            );
+        }
+        if (!$this->service->existLeader($id)) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Leader not found'],
+                404
+            );
+        }
+
+        try {
+            $result = $this->service->patchGroupLeader($leaderId, $request->getParsedBody());
+            return ResponseHelper::sendJson($response, $result);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
     }
-
 }

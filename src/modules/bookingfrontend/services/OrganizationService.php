@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\services;
 
 use App\modules\bookingfrontend\repositories\OrganizationRepository;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use Exception;
 
 class OrganizationService
 {
@@ -18,7 +19,7 @@ class OrganizationService
 
     public function canEdit(int $orgId) 
     {
-        $userSsn= $this->bouser->ssn;
+        $userSsn = $this->bouser->ssn;
         return !!$this->repository->getDelegate($userSsn, $orgId);
     }
     public function delegateExist($id = null)
@@ -41,11 +42,14 @@ class OrganizationService
     {
         return $this->repository->partialGroup($id);
     }
+    public function existLeader(int $id)
+    {
+        return $this->repository->partialLeader($id);
+    }
 
     public function patchDelegate(int $delegateId, array $data) 
     {
-        $this->repository->patchDelegate($delegateId, $data);
-        return $delegateId;
+        return $this->repository->patchDelegate($delegateId, $data);
     }
 
     public function createDelegate(int $id, array $data)
@@ -56,18 +60,31 @@ class OrganizationService
 
     public function createGroup(int $id, array $data)
     {
-        $groupId = $this->repository->insertGroup($id, $data['groupData']);
+        $group = $this->repository->insertGroup($id, (array) $data['groupData']);
 
-        foreach($data['groupLeaders'] as $leader) {
-            $this->repository->insertGroupContact($groupId, $leader);
+        foreach((array) $data['groupLeaders'] as $leader) {
+            if ($leader['id']) {
+                $leaderData = $this->repository->getGroupLeader($leader['id']);
+                if (!$leaderData || $leaderData['group_id'] === $group['id']) {
+                    throw new Exception();
+                }
+                $this->repository->insertGroupContact($group['id'], (array) $leaderData);
+            } else {
+                $this->repository->insertGroupContact($group['id'], (array) $leader);
+            }
         }
 
-        return $groupId;
+        return $group;
     }
 
-    public function editGroup(int $groupId, array $data)
+    public function patchGroup(int $groupId, array $data)
     {
         return $this->repository->patchGroup($groupId, $data);
+    }
+
+    public function patchGroupLeader(int $groupId, array $data)
+    {
+        return $this->repository->patchGroupLeader($groupId, $data);
     }
 
 }

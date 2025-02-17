@@ -14,18 +14,26 @@ class OrganizationRepository
         $this->db = Db::getInstance();
     }
     
-    public function partialOrganization(int $id)
+    private function getPartial($table, $id)
     {
-        $sql = "SELECT id FROM bb_organization
+        $sql = "SELECT id FROM $table
         WHERE id=:id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
         return !!$stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function partialOrganization(int $id)
+    {
+        return $this->getPartial('bb_organization', $id);
+    }
     public function partialGroup(int $id)
     {
-        return 1;
+        return $this->getPartial('bb_group', $id);
+    }
+    public function partialLeader(int $id)
+    {
+        return $this->getPartial('bb_group_contact', $id);
     }
 
     public function getDelegate($ssn, $orgId)
@@ -38,12 +46,9 @@ class OrganizationRepository
     }
     public function getDelegateById(int $id)
     {
-        $sql = "SELECT id from bb_delegate
-        WHERE id=:id";
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':id' => $id ]);
-        return $stmt->fetch(PDO::FETCH_ASSOC);
+        return $this->getPartial('bb_delegate', $id);
     }
+
     public function organizationById(int $id) 
     {
         $activitySql = "SELECT json_build_object('id', act.id) FROM bb_activity AS act
@@ -110,15 +115,19 @@ class OrganizationRepository
         }
 
         $sql = "UPDATE bb_delegate SET " . implode(', ', $updateFields) .
-            " WHERE id = :id";
+        " WHERE id = :id
+        RETURNING id
+        ";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function insertDelegate(int $id, array $data): int
+    public function insertDelegate(int $id, array $data): array
     {
         $sql = "INSERT INTO bb_delegate(active, name, email, phone, ssn, organization_id)
         VALUES (1, :name, :email, :phone, :ssn, :organization_id)
+        RETURNING id
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -128,12 +137,26 @@ class OrganizationRepository
             'phone' => $data['phone'],
             'ssn' => $data['ssn'],
             'organization_id' => $id,
-        ]);
-        return 1;
+        ]); 
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function insertGroup(int $id, array $data): int {
-        return 1;
+    public function insertGroup(int $id, array $data): array {
+        $sql = "INSERT INTO 
+        bb_group(organization_id, description, name, shortname, activity_id)
+        VALUES(:organization_id, :description, :name, :shortname, :activity_id) 
+        RETURNING id
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'organization_id' => $id,
+            'description' => $data['description'],
+            'name' => $data['name'],
+            'shortname' => $data['shortName'],
+            'activity_id' => $data['activity_id'] 
+        ]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function insertGroupContact(int $groupId, array $data): int {
@@ -151,7 +174,16 @@ class OrganizationRepository
         return 1;
     }
 
-    public function patchGroup(int $groupId, array $data): int
+    public function getGroupLeader(int $id)
+    {
+        $sql = "SELECT name, phone, email, group_id FROM bb_group_contact
+        WHERE id=:id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function patchGroup(int $groupId, array $data): array
     {
         $params = [':id' => $groupId];
         $updateFields = [];
@@ -162,10 +194,29 @@ class OrganizationRepository
         }
 
         $sql = "UPDATE bb_group SET " . implode(', ', $updateFields) .
-            " WHERE id = :id";
+        " WHERE id = :id
+        RETURNING id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return 1;
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    public function patchGroupLeader(int $groupId, array $data)
+    {
+        $params = [':id' => $groupId];
+        $updateFields = [];
+
+        foreach ($data as $field => $value) {
+            $updateFields[] = "$field = :$field";
+            $params[":$field"] = $value;
+        }
+
+        $sql = "UPDATE bb_group_contact SET " . implode(', ', $updateFields) .
+        " WHERE id = :id
+        RETURNING id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
 }

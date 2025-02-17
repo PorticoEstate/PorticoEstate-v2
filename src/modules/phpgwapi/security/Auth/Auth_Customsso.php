@@ -103,7 +103,7 @@ class Auth extends Auth_
 		/**
 		 * OpenID Connect
 		 */
-		if (!empty($config_openid['common']['method_backend']))
+		if (!$ssn && !empty($config_openid['common']['method_backend']))
 		{
 			$use_openid = true;
 

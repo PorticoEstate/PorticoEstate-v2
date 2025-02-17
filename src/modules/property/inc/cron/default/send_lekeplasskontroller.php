@@ -150,7 +150,14 @@ class send_lekeplasskontroller extends property_cron_parent
 			{
 				$now = time();
 				$sql = "UPDATE controller_check_list SET dispatched = {$now} WHERE id = $check_list_id";
-				$this->db->query($sql, __LINE__, __FILE__);
+				if ($this->debug)
+				{
+					_debug_array($sql);
+				}
+				else
+				{
+					$this->db->query($sql, __LINE__, __FILE__);
+				}
 			}
 		}
 	}
@@ -200,7 +207,6 @@ class send_lekeplasskontroller extends property_cron_parent
 		if ($this->debug)
 		{
 			_debug_array("Sending report for {$company_name} for checklist {$check_list_id} to {$component['postmottak']}");
-			return false;
 		}
 
 		$report_file_path = $this->uicheck_list->get_report($check_list_id, true);
@@ -266,24 +272,27 @@ HTML;
 
 		$bcc = 'Sigurd.Nes@Bergen.kommune.no';
 		$error = false;
-		try
+
+		if (!$this->debug)
 		{
-			$rcpt = $this->send->msg('email', $to, $subject, $body, '', $cc = '', $bcc, $from_email, $from_name, 'html', '', $attachments);
-			if (!$rcpt)
+			try
+			{
+				$rcpt = $this->send->msg('email', $to, $subject, $body, '', $cc = '', $bcc, $from_email, $from_name, 'html', '', $attachments);
+				if (!$rcpt)
+				{
+					$error = true;
+				}
+			}
+			catch (Exception $e)
 			{
 				$error = true;
 			}
-		}
-		catch (Exception $e)
-		{
-			$error = true;
-		}
-
-		//clean up
-		foreach ($attachments as $attachment)
-		{
-			unlink($attachment['file']);
-			unlink($attachment['file'] . '.zip');
+			//clean up
+			foreach ($attachments as $attachment)
+			{
+				unlink($attachment['file']);
+				unlink($attachment['file'] . '.zip');
+			}
 		}
 
 		if (!$error)

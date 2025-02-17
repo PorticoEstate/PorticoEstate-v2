@@ -107,7 +107,7 @@ class Settings
 		}
 
 		//check if the temp_dir is set and is writable
-		if ($modules[0] == 'phpgwapi' && (empty($this->config_data['temp_dir']) || !is_writable($this->config_data['temp_dir'])))
+		if ($modules[0] == 'phpgwapi' && (empty($this->config_data['server']['temp_dir']) || !is_writable($this->config_data['server']['temp_dir'])))
 		{
 			$this->config_data['server']['temp_dir'] = '/tmp';
 		}

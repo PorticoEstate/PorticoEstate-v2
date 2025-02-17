@@ -3950,7 +3950,7 @@ HTML;
 		$soentity = CreateObject('property.soentity');
 		$completed_list = array();
 		$reported_cases = array();
-		$$component_child_data = array();
+		$component_child_data = array();
 		foreach ($_component_children as &$component_child)
 		{
 			$data = array();
@@ -4039,7 +4039,7 @@ HTML;
 						$_value = implode(',', $_choice);
 					}
 
-					if ($attributes['datatype'] == 'CH')
+					if ($attribute['datatype'] == 'CH')
 					{
 						$_selected = explode(',', trim($_value, ','));
 
@@ -4185,8 +4185,11 @@ HTML;
 	function render_report($report_data, $return_as_file = false)
 	{
 		$check_list_id = $report_data['check_list_id'];
-		$xslttemplates = CreateObject('phpgwapi.xslttemplates', PHPGW_SERVER_ROOT . '/controller/templates/base');
+		$skip_singleton = true;
+		$xslttemplates = CreateObject('phpgwapi.xslttemplates', PHPGW_SERVER_ROOT . '/controller/templates/base', $skip_singleton);
 		$xslttemplates->add_file(array(PHPGW_SERVER_ROOT . '/controller/templates/base/report'));
+		//reset the xml data
+		$xslttemplates->set_xml_data('');
 		$xslttemplates->set_var('phpgw', array('report' => $report_data));
 
 		$xslttemplates->set_output('html5');
@@ -4225,7 +4228,7 @@ HTML;
 			else
 			{
 				$tmp_dir = $this->serverSettings['temp_dir'];
-				$tempfile = $tmp_dir . "/temp_report_{$check_list_id}_" . strtotime(date('Y-m-d')) . ".html";
+				$tempfile = $tmp_dir . "/temp_report_{$check_list_id}_" . time() . ".html";
 				$fh = fopen($tempfile, 'w') or die("can't open file");
 				fwrite($fh, $html);
 				fclose($fh);

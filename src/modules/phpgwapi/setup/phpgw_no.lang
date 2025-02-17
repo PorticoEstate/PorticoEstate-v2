@@ -373,3 +373,5 @@ which language do you want?	common	no	Hvilket språk ønsker du?
 error_report_system	common	no	Feilmelding (om systemet)
 start	common	no	Start
 end	common	no	Slutt
+sign in	common	no	Logg inn
+Select login method	common	no	Velg påloggingsmetode

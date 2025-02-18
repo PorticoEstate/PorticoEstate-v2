@@ -90,8 +90,6 @@ class OpenIDConnect
 	public function logout(): void
 	{
 		$idToken = Cache::session_get('openid_connect', 'idToken');
-		_debug_array($idToken);
-		die();
 		$postLogoutRedirectUri = null;
 		$this->oidc->signOut($idToken, $postLogoutRedirectUri);
 		self::$idToken = null;

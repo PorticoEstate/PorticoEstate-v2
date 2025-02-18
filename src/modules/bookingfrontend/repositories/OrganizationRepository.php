@@ -46,7 +46,11 @@ class OrganizationRepository
     }
     public function getDelegateById(int $id)
     {
-        return $this->getPartial('bb_delegate', $id);
+        $sql = "SELECT * from bb_delegate
+        WHERE id=:id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
     public function organizationById(int $id) 
@@ -125,8 +129,8 @@ class OrganizationRepository
 
     public function insertDelegate(int $id, array $data): array
     {
-        $sql = "INSERT INTO bb_delegate(active, name, email, phone, ssn, organization_id)
-        VALUES (1, :name, :email, :phone, :ssn, :organization_id)
+        $sql = "INSERT INTO bb_delegate(name, email, phone, ssn, organization_id)
+        VALUES (:name, :email, :phone, :ssn, :organization_id)
         RETURNING id
         ";
 

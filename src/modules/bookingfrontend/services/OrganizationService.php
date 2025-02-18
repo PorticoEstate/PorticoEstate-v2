@@ -47,6 +47,11 @@ class OrganizationService
         return $this->repository->partialLeader($id);
     }
 
+    public function getDelegateById(int $delegateId)
+    {
+        return $this->repository->getDelegateById($delegateId);
+    }
+
     public function patchDelegate(int $delegateId, array $data) 
     {
         return $this->repository->patchDelegate($delegateId, $data);

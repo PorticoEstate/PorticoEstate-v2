@@ -78,17 +78,18 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
     });
 })->add(new SessionsMiddleware($app->getContainer()));
 
-$app->group('/bookingfrontend/organization/{id}', function (RouteCollectorProxy $group)
+$app->group('/bookingfrontend/organization', function (RouteCollectorProxy $group)
 {
     $group->getContainer()->set(OrganizationService::class, function () {
         return new OrganizationService();
     });
-    $group->get('', OrganizationController::class . ':getOrganizationById');
+    $group->get('/{id}', OrganizationController::class . ':getOrganizationById');
     $group->group('', function (RouteCollectorProxy $group) {
-        $group->patch('', OrganizationController::class . ':patchOrganization');
+        $group->patch('/{id}', OrganizationController::class . ':patchOrganization');
+        $group->get('/delegate/{delegateId}', OrganizationController::class . ':getDelegateById');
         $group->patch('/delegate/{delegateId}', OrganizationController::class . ':patchDelegate');
-        $group->post('/delegate', OrganizationController::class . ':createDelegate');
-        $group->post('/group', OrganizationController::class . ':createGroup');
+        $group->post('/{id}/delegate', OrganizationController::class . ':createDelegate');
+        $group->post('/{id}/group', OrganizationController::class . ':createGroup');
         $group->patch('/group/{groupId}', OrganizationController::class . ':patchGroup');
         $group->patch('/group/{groupId}/leader/{leaderId}', OrganizationController::class . ':patchGroupLeader');
     });

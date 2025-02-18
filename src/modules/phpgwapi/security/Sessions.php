@@ -279,9 +279,6 @@ class Sessions
 		Settings::getInstance()->setAccountId($this->_account_id);
 		$accounts->set_account($this->_account_id);
 
-		//   \App\helpers\DebugArray::debug(Settings::getInstance()->get('user'));
-
-
 		session_start();
 		$this->_sessionid = session_id();
 
@@ -339,6 +336,12 @@ class Sessions
 		}
 
 		Cache::session_set('phpgwapi', 'password', base64_encode($this->_passwd));
+
+		$flags = Settings::getInstance()->get('flags');
+		if(!empty($flags['openid_connect']['type']))
+		{
+			Cache::session_set('openid_connect', 'type', $flags['openid_connect']['type']);
+		}
 
 		$this->db->transaction_begin();
 		$this->register_session($login, $user_ip, $now, $session_flags);
@@ -724,10 +727,21 @@ class Sessions
 		$this->log_access($this->_sessionid);	// log logout-time
 		$user_info  = Settings::getInstance()->get('user');
 
-		//		\App\helpers\DebugArray::debug($user_info);
+		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+		$location_id	= $location_obj->get_id('admin', 'openid_connect');
+		if ($location_id)
+		{
+			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+		}
 
+		$type = Cache::session_get('openid_connect', 'type');
+		if ($type && !empty($config_openid['common']['method_backend']))
+		{
+			$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
+			$OpenIDConnect->logout();
+		}
 
-		// Only do the following, if where working with the current user
+		// Only do the following, if we are working with the current user
 		if ($sessionid == $user_info['sessionid'])
 		{
 			session_unset();
@@ -745,7 +759,8 @@ class Sessions
 		}
 		else
 		{
-			\SessionHandlerDb::destroy($sessionid);
+			$sessionHandler = new \SessionHandlerDb();
+			$sessionHandler->destroy($sessionid);
 		}
 
 		return true;

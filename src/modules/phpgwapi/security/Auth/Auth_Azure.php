@@ -26,7 +26,9 @@
 
 	namespace App\modules\phpgwapi\security\Auth;
 	use App\modules\phpgwapi\security\Sso\Mapping;
+	use App\modules\phpgwapi\services\Cache;
 	use PDO;
+	use Sanitizer;
 
 	/**
 	* Authentication based on Azure AD
@@ -70,7 +72,8 @@
 			$authenticated = $stmt->fetchColumn() !== false;
 			$account_id = (int)$stmt->fetchColumn();
 
-			$ssn = \Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
+			$ssn = Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
+			$ssn = $ssn ? $ssn : Cache::session_get('openid_connect', 'ssn');
 
 		// skip anonymous users
 			$Acl = \App\modules\phpgwapi\security\Acl::getInstance($account_id);
@@ -95,6 +98,48 @@
 
 			$_remote_user = $remote_user_2 ? $remote_user_2 : $remote_user_1[0];
 
+			$ssn = Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
+
+			$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+			$location_id	= $location_obj->get_id('admin', 'openid_connect');
+			if ($location_id)
+			{
+				$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+			}
+
+			/**
+			 * OpenID Connect
+			 */
+			if (!empty($config_openid['common']['method_backend']))
+			{
+
+				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
+				$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
+
+				$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
+				if ($get_username_callback)
+				{
+					if($type == 'remote')
+					{
+						$ssn = $OpenIDConnect->get_username();
+						Cache::session_set('openid_connect', 'ssn', $ssn);
+					}
+					else
+					{
+						$remote_user_3 = $OpenIDConnect->get_username();
+						$remote_user_4 = explode('@', $remote_user_3);
+						//The AD username directly, or the first part of the email address.
+						$_remote_user = !empty($remote_user_4[1]) ? $remote_user_4[0] : $remote_user_3;
+					}
+				}
+				else
+				{
+					$OpenIDConnect->authenticate();
+					exit;
+				}
+			}
+
+
 			if($primary)
 			{
 				return $_remote_user;
@@ -107,7 +152,6 @@
 				$username = $this->mapping->get_mapping($_SERVER['REMOTE_USER']);
 			}
 
-			$ssn = \Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
 
 			/**
 			 * Azure from inside firewall

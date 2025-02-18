@@ -13,7 +13,8 @@ class OpenIDConnect
 	protected $serverSettings;
 	private $config;
 	private $oidc;
-	private $idToken;
+	private static $idToken;
+	private static $type;
 	private $debug;
 
 	function __construct($type = 'local', $config = [])
@@ -38,6 +39,7 @@ class OpenIDConnect
 		}
 
 		$this->debug = $this->config['debug'] ?? false;
+		self::$type = $type;
 
 		$this->oidc = new OpenIDConnectClient(
 			$this->config['provider_url'],
@@ -58,8 +60,10 @@ class OpenIDConnect
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
-		$this->idToken = $this->oidc->getIdToken();
-		Cache::session_set('openid_connect', 'idToken', $this->idToken);
+		self::$idToken = $this->oidc->getIdToken();
+
+		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
+
 		$userInfo = $this->oidc->requestUserInfo();
 		return $userInfo;
 	}
@@ -88,11 +92,23 @@ class OpenIDConnect
 		$idToken = Cache::session_get('openid_connect', 'idToken');
 		$postLogoutRedirectUri = null;
 		$this->oidc->signOut($idToken, $postLogoutRedirectUri);
-		$this->idToken = null;
+		self::$idToken = null;
 	}
 
 	public function isAuthenticated(): bool
 	{
-		return !empty($this->idToken);
+		return !empty(self::$idToken);
+	}
+
+	public function getIdToken(): ?string
+	{
+		return self::$idToken;
+	}
+
+	public function refreshIdToken(): void
+	{
+		$userInfo = $this->get_userinfo();
+		self::$idToken = $userInfo->id_token ?? null;
+		Cache::session_set('openid_connect', 'idToken', self::$idToken);
 	}
 }

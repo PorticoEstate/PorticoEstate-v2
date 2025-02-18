@@ -341,6 +341,7 @@ class Sessions
 		if(!empty($flags['openid_connect']['type']))
 		{
 			Cache::session_set('openid_connect', 'type', $flags['openid_connect']['type']);
+			Cache::session_set('openid_connect', 'idToken',	$flags['openid_connect']['idToken']);
 		}
 
 		$this->db->transaction_begin();

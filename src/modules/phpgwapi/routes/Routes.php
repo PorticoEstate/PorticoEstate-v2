@@ -177,6 +177,7 @@ $app->get('/logout_ui[/{params:.*}]', function (Request $request, Response $resp
 	$session_id = $sessions->get_session_id();
 	if ($session_id)
 	{
+		$sessions->verify($session_id);
 		$sessions->destroy($session_id);
 	}
 	phpgw::redirect_link('/login_ui', array('cd' => 1, 'logout' => 1));

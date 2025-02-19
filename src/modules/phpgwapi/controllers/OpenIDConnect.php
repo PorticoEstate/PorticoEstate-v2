@@ -81,7 +81,7 @@ class OpenIDConnect
 			echo "JWKS URI: $jwksUri<br>";
 			$jwks = json_decode(file_get_contents($jwksUri), true);
 			echo "JWKS:<br>";
-			print_r($jwks);
+			_debug_array($jwks);
 			// Find the correct key (usually only one for Azure AD)
 			$publicKey = null;
 			foreach ($jwks['keys'] as $key)

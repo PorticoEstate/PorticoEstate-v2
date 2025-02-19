@@ -82,11 +82,16 @@ class OpenIDConnect
 			$jwks = json_decode(file_get_contents($jwksUri), true);
 			echo "JWKS:<br>";
 			_debug_array($jwks);
+
+			// Extract the kid from the JWT header
+			$jwtHeader = json_decode(base64_decode(explode('.', self::$idToken)[0]), true);
+			$kid = $jwtHeader['kid'];
+			echo "kid: $kid<br>";
 			// Find the correct key (usually only one for Azure AD)
 			$publicKey = null;
 			foreach ($jwks['keys'] as $key)
 			{
-				if ($key['kty'] === 'RSA')
+				if ($key['kid'] === $kid && $key['kty'] === 'RSA')
 				{ // Assuming RSA key, which is common
 					$publicKey = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($key['n'], 64, "\n") . "\n-----END PUBLIC KEY-----";
 					break;
@@ -100,16 +105,7 @@ class OpenIDConnect
 			try
 			{
 				$decodedToken = JWT::decode(self::$idToken, new Key($publicKey, 'RS256')); // RS256 is a common algorithm
-				// $decodedToken = JWT::decode($idToken, $publicKey, array('RS256')); // older versions of firebase/php-jwt
-				// Now $decodedToken contains the claims as an object.
-				// Access them like this:
-				//	echo "UPN: " . $decodedToken->upn . "<br>"; // Example: User Principal Name
-				//	echo "Given Name: " . $decodedToken->given_name . "<br>";
-				//	echo "Family Name: " . $decodedToken->family_name . "<br>";
-				// ... access other claims as needed
-				// You can also convert it to an array if you prefer:
-				//	$tokenClaimsArray = (array) $decodedToken;
-				//	print_r($tokenClaimsArray);
+
 			}
 			catch (\Exception $e)
 			{

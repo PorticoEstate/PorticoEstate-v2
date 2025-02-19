@@ -42,8 +42,14 @@ class OpenIDConnect
 		$this->debug = $this->config['debug'] ?? false;
 		self::$type = $type;
 
+		$provider_url = $this->config['provider_url'];
+		if (strpos($provider_url, '/v2.0') === false)
+		{
+			$provider_url = rtrim($provider_url, '/') . '/v2.0';
+		}
+
 		$this->oidc = new OpenIDConnectClient(
-			$this->config['provider_url'],
+			$provider_url,
 			$this->config['client_id'],
 			$this->config['client_secret']
 		);

@@ -45,7 +45,7 @@ class OpenIDConnect
 		$provider_url = rtrim($this->config['provider_url'], '/');
 		if (strpos($provider_url, '/v2.0') === false)
 		{
-//			$provider_url .= '/v2.0'; // Ensure /v2.0 is appended to the provider URL
+			//			$provider_url .= '/v2.0'; // Ensure /v2.0 is appended to the provider URL
 		}
 
 		$this->oidc = new OpenIDConnectClient(
@@ -76,7 +76,7 @@ class OpenIDConnect
 			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
 			$issuer = $this->oidc->getIssuer();
 			//remove the /v2.0 part
-	//		$issuer = substr($issuer, 0, -5);
+			//		$issuer = substr($issuer, 0, -5);
 			$jwksUri = rtrim($issuer, '/') . "/discovery/v2.0/keys"; // Construct JWKS URI
 			echo "JWKS URI: $jwksUri<br>";
 			$jwks = json_decode(file_get_contents($jwksUri), true);
@@ -118,23 +118,29 @@ class OpenIDConnect
 
 		return $userInfo;
 	}
-
 	private function createPublicKey($n, $e)
 	{
-		$modulus = base64_decode(strtr($n, '-_', '+/'));
-		$exponent = base64_decode(strtr($e, '-_', '+/'));
+		$modulus = strtr($n, '-_', '+/');
+		$exponent = strtr($e, '-_', '+/');
 
-		$keyDetails = [
-			'e' => bin2hex($exponent),
-			'n' => bin2hex($modulus),
+		$modulus = base64_decode($modulus . str_repeat('=', 3 - (3 + strlen($modulus)) % 4));
+		$exponent = base64_decode($exponent . str_repeat('=', 3 - (3 + strlen($exponent)) % 4));
+
+		$rsaDetail = [
+			'n' => $modulus,
+			'e' => $exponent
 		];
 
-		$publicKey = "-----BEGIN RSA PUBLIC KEY-----\n" .
-			chunk_split(base64_encode(pack('H*', $keyDetails['n']) . pack('H*', $keyDetails['e'])), 64, "\n") .
-			"-----END RSA PUBLIC KEY-----";
+		$publicKeyResource = openssl_pkey_new([
+			'private_key_type' => OPENSSL_KEYTYPE_RSA,
+			'rsa' => $rsaDetail
+		]);
 
-		return $publicKey;
+		$publicKey = openssl_pkey_get_details($publicKeyResource);
+
+		return $publicKey['key'];
 	}
+
 
 	public function get_username(): string
 	{

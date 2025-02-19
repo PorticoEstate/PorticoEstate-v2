@@ -124,18 +124,13 @@ class OpenIDConnect
 		$modulus = base64_decode(strtr($n, '-_', '+/'));
 		$exponent = base64_decode(strtr($e, '-_', '+/'));
 
-		$components = [
-			'modulus' => $modulus,
-			'publicExponent' => $exponent
-		];
-
-		$rsa = [
-			'n' => $modulus,
-			'e' => $exponent
+		$keyDetails = [
+			'e' => bin2hex($exponent),
+			'n' => bin2hex($modulus),
 		];
 
 		$publicKey = "-----BEGIN RSA PUBLIC KEY-----\n" .
-			chunk_split(base64_encode(pack('Ca*a*', 0x30, pack('Ca*a*', 0x02, pack('Ca*a*', 0x02, $rsa['n']), pack('Ca*a*', 0x02, $rsa['e'])))), 64, "\n") .
+			chunk_split(base64_encode(pack('H*', $keyDetails['n']) . pack('H*', $keyDetails['e'])), 64, "\n") .
 			"-----END RSA PUBLIC KEY-----";
 
 		return $publicKey;

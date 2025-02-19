@@ -93,7 +93,8 @@ class OpenIDConnect
 			{
 				if ($key['kid'] === $kid && $key['kty'] === 'RSA')
 				{ // Assuming RSA key, which is common
-					$publicKey = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($key['n'], 64, "\n") . "\n-----END PUBLIC KEY-----";
+					//$publicKey = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($key['n'], 64, "\n") . "\n-----END PUBLIC KEY-----";
+					$publicKey = $this->createPublicKey($key['n'], $key['e']);
 					break;
 				}
 			}
@@ -105,7 +106,6 @@ class OpenIDConnect
 			try
 			{
 				$decodedToken = JWT::decode(self::$idToken, new Key($publicKey, 'RS256')); // RS256 is a common algorithm
-
 			}
 			catch (\Exception $e)
 			{
@@ -117,6 +117,28 @@ class OpenIDConnect
 		$userInfo = $decodedToken ? $decodedToken : $userInfo;
 
 		return $userInfo;
+	}
+
+	private function createPublicKey($n, $e)
+	{
+		$modulus = base64_decode(strtr($n, '-_', '+/'));
+		$exponent = base64_decode(strtr($e, '-_', '+/'));
+
+		$components = [
+			'modulus' => $modulus,
+			'publicExponent' => $exponent
+		];
+
+		$rsa = [
+			'n' => $modulus,
+			'e' => $exponent
+		];
+
+		$publicKey = "-----BEGIN RSA PUBLIC KEY-----\n" .
+			chunk_split(base64_encode(pack('Ca*a*', 0x30, pack('Ca*a*', 0x02, pack('Ca*a*', 0x02, $rsa['n']), pack('Ca*a*', 0x02, $rsa['e'])))), 64, "\n") .
+			"-----END RSA PUBLIC KEY-----";
+
+		return $publicKey;
 	}
 
 	public function get_username(): string

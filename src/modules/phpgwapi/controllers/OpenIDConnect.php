@@ -74,7 +74,10 @@ class OpenIDConnect
 		if ($this->debug)
 		{
 			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
-			$jwksUri = $this->oidc->getIssuer() . "/discovery/v2.0/keys"; // Construct JWKS URI
+			$issuer = $this->oidc->getIssuer();
+			//remove the /v2.0 part
+			$issuer = substr($issuer, 0, -5);
+			$jwksUri = $issuer . "/discovery/v2.0/keys"; // Construct JWKS URI
 			echo "JWKS URI: $jwksUri<br>";
 			$jwks = json_decode(file_get_contents($jwksUri), true);
 			echo "JWKS:<br>";

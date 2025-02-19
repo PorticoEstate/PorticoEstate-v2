@@ -1,7 +1,8 @@
-import {useQuery, UseQueryResult, useMutation} from "@tanstack/react-query";
-import {phpGWLink} from "@/service/util";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { phpGWLink } from "@/service/util";
 import { Organization } from "../types/api/organization.types";
 import { CreatingDelegate } from "@/components/organization/delegate/schemas";
+import { CreatingGroup } from "@/components/organization/group/schemas";
 
 export const useOrganizationData = (orgId: number) => {
     return useQuery({
@@ -65,4 +66,29 @@ export const createDelegate = (orgId: number) => {
             return await res.json();
         }
     });
+}
+
+export const createGroup = (orgId: number) => {
+    return useMutation({
+        mutationFn: async (data: CreatingGroup) => {
+            const url = phpGWLink([
+                'bookingfrontend', 
+                'organization', 
+                orgId, 
+                'group'
+            ]);
+            const res = await fetch(url, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error();
+            }
+            return await res.json();
+        }
+    })
 }

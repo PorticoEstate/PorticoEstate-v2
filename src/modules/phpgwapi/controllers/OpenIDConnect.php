@@ -69,7 +69,10 @@ class OpenIDConnect
 		{
 			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
 			$jwksUri = $this->oidc->getIssuer() . "/discovery/v2.0/keys"; // Construct JWKS URI
+			echo "JWKS URI: $jwksUri<br>";
 			$jwks = json_decode(file_get_contents($jwksUri), true);
+			echo "JWKS:<br>";
+			print_r($jwks);
 			// Find the correct key (usually only one for Azure AD)
 			$publicKey = null;
 			foreach ($jwks['keys'] as $key)

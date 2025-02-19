@@ -228,11 +228,7 @@ class Login
 		/**
 		 * OpenID Connect
 		 */
-		else if (
-			in_array($this->serverSettings['auth_type'],  array('remoteuser', 'azure'))
-			&& (isset($_SERVER['OIDC_upn']) || isset($_SERVER['REMOTE_USER']) || isset($_SERVER['OIDC_pid']))
-			&& empty($_REQUEST['skip_remote'])
-		)
+		else if (in_array($this->serverSettings['auth_type'],  array('remoteuser', 'azure')) && empty($_REQUEST['skip_remote']))
 		{
 			//	print_r($this->serverSettings);
 

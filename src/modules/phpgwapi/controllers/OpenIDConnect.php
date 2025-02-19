@@ -42,10 +42,10 @@ class OpenIDConnect
 		$this->debug = $this->config['debug'] ?? false;
 		self::$type = $type;
 
-		$provider_url = $this->config['provider_url'];
+		$provider_url = rtrim($this->config['provider_url'], '/');
 		if (strpos($provider_url, '/v2.0') === false)
 		{
-//			$provider_url = rtrim($provider_url, '/') . '/v2.0';
+//			$provider_url .= '/v2.0'; // Ensure /v2.0 is appended to the provider URL
 		}
 
 		$this->oidc = new OpenIDConnectClient(
@@ -77,7 +77,7 @@ class OpenIDConnect
 			$issuer = $this->oidc->getIssuer();
 			//remove the /v2.0 part
 	//		$issuer = substr($issuer, 0, -5);
-			$jwksUri = $issuer . "/discovery/v2.0/keys"; // Construct JWKS URI
+			$jwksUri = rtrim($issuer, '/') . "/discovery/v2.0/keys"; // Construct JWKS URI
 			echo "JWKS URI: $jwksUri<br>";
 			$jwks = json_decode(file_get_contents($jwksUri), true);
 			echo "JWKS:<br>";

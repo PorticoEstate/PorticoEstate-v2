@@ -64,42 +64,45 @@ class OpenIDConnect
 		self::$idToken = $this->oidc->getIdToken();
 
 		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
-
-		// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
-		$jwksUri = $this->oidc->getIssuer() . "/discovery/v2.0/keys"; // Construct JWKS URI
-		$jwks = json_decode(file_get_contents($jwksUri), true);
-		// Find the correct key (usually only one for Azure AD)
-		$publicKey = null;
-		foreach ($jwks['keys'] as $key)
+		$decodedToken = null;
+		if ($this->debug)
 		{
-			if ($key['kty'] === 'RSA')
-			{ // Assuming RSA key, which is common
-				$publicKey = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($key['n'], 64, "\n") . "\n-----END PUBLIC KEY-----";
-				break;
+			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
+			$jwksUri = $this->oidc->getIssuer() . "/discovery/v2.0/keys"; // Construct JWKS URI
+			$jwks = json_decode(file_get_contents($jwksUri), true);
+			// Find the correct key (usually only one for Azure AD)
+			$publicKey = null;
+			foreach ($jwks['keys'] as $key)
+			{
+				if ($key['kty'] === 'RSA')
+				{ // Assuming RSA key, which is common
+					$publicKey = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($key['n'], 64, "\n") . "\n-----END PUBLIC KEY-----";
+					break;
+				}
 			}
-		}
-		if ($publicKey === null)
-		{
-			die("Public key not found in JWKS.");
-		}
-		// 2. Decode and validate the ID token
-		try
-		{
-			$decodedToken = JWT::decode(self::$idToken, new Key($publicKey, 'RS256')); // RS256 is a common algorithm
-			// $decodedToken = JWT::decode($idToken, $publicKey, array('RS256')); // older versions of firebase/php-jwt
-			// Now $decodedToken contains the claims as an object.
-			// Access them like this:
-		//	echo "UPN: " . $decodedToken->upn . "<br>"; // Example: User Principal Name
-		//	echo "Given Name: " . $decodedToken->given_name . "<br>";
-		//	echo "Family Name: " . $decodedToken->family_name . "<br>";
-			// ... access other claims as needed
-			// You can also convert it to an array if you prefer:
-		//	$tokenClaimsArray = (array) $decodedToken;
-		//	print_r($tokenClaimsArray);
-		}
-		catch (\Exception $e)
-		{
-			echo "Error decoding or validating token: " . $e->getMessage();
+			if ($publicKey === null)
+			{
+				die("Public key not found in JWKS.");
+			}
+			// 2. Decode and validate the ID token
+			try
+			{
+				$decodedToken = JWT::decode(self::$idToken, new Key($publicKey, 'RS256')); // RS256 is a common algorithm
+				// $decodedToken = JWT::decode($idToken, $publicKey, array('RS256')); // older versions of firebase/php-jwt
+				// Now $decodedToken contains the claims as an object.
+				// Access them like this:
+				//	echo "UPN: " . $decodedToken->upn . "<br>"; // Example: User Principal Name
+				//	echo "Given Name: " . $decodedToken->given_name . "<br>";
+				//	echo "Family Name: " . $decodedToken->family_name . "<br>";
+				// ... access other claims as needed
+				// You can also convert it to an array if you prefer:
+				//	$tokenClaimsArray = (array) $decodedToken;
+				//	print_r($tokenClaimsArray);
+			}
+			catch (\Exception $e)
+			{
+				echo "Error decoding or validating token: " . $e->getMessage();
+			}
 		}
 		// You can still use $this->oidc->requestUserInfo() if you need claims specifically from the /userinfo endpoint
 		$userInfo = $this->oidc->requestUserInfo();

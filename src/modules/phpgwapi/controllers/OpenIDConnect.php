@@ -45,7 +45,7 @@ class OpenIDConnect
 		$provider_url = rtrim($this->config['provider_url'], '/');
 		if (strpos($provider_url, '/v2.0') === false)
 		{
-//			$provider_url .= '/v2.0'; // Ensure /v2.0 is appended to the provider URL
+			//			$provider_url .= '/v2.0'; // Ensure /v2.0 is appended to the provider URL
 		}
 
 		$this->oidc = new OpenIDConnectClient(
@@ -76,7 +76,7 @@ class OpenIDConnect
 			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
 			$issuer = $this->oidc->getIssuer();
 			//remove the /v2.0 part
-	//		$issuer = substr($issuer, 0, -5);
+			//		$issuer = substr($issuer, 0, -5);
 			$jwksUri = rtrim($issuer, '/') . "/discovery/v2.0/keys"; // Construct JWKS URI
 			echo "JWKS URI: $jwksUri<br>";
 			$jwks = json_decode(file_get_contents($jwksUri), true);
@@ -118,22 +118,45 @@ class OpenIDConnect
 
 		return $userInfo;
 	}
-
 	private function createPublicKey($n, $e)
 	{
-		$modulus = base64_decode(strtr($n, '-_', '+/'));
-		$exponent = base64_decode(strtr($e, '-_', '+/'));
+		// Convert base64url to base64
+		$modulus = strtr($n, '-_', '+/');
+		$exponent = strtr($e, '-_', '+/');
 
-		$keyDetails = [
-			'e' => bin2hex($exponent),
-			'n' => bin2hex($modulus),
-		];
+		// Decode base64
+		$modulus = base64_decode($modulus . str_repeat('=', 3 - (3 + strlen($modulus)) % 4));
+		$exponent = base64_decode($exponent . str_repeat('=', 3 - (3 + strlen($exponent)) % 4));
 
-		$publicKey = "-----BEGIN RSA PUBLIC KEY-----\n" .
-			chunk_split(base64_encode(pack('H*', $keyDetails['n']) . pack('H*', $keyDetails['e'])), 64, "\n") .
-			"-----END RSA PUBLIC KEY-----";
+		// Convert the modulus and exponent to their binary representations
+		$modulus = "\x00" . $modulus; // Add leading zero to ensure it's interpreted as a positive number
+		$exponent = "\x00" . $exponent; // Add leading zero to ensure it's interpreted as a positive number
 
-		return $publicKey;
+		// Construct the ASN.1 structure for the RSA public key
+		$modulus = "\x02" . $this->encodeLength(strlen($modulus)) . $modulus;
+		$exponent = "\x02" . $this->encodeLength(strlen($exponent)) . $exponent;
+		$rsaPublicKey = "\x30" . $this->encodeLength(strlen($modulus) + strlen($exponent)) . $modulus . $exponent;
+		$rsaPublicKey = "\x30" . $this->encodeLength(strlen($rsaPublicKey) + 2) . "\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01\x05\x00\x03" . $this->encodeLength(strlen($rsaPublicKey) + 1) . "\x00" . $rsaPublicKey;
+
+		// Encode the ASN.1 structure in base64 and wrap it in the PEM format
+		$pem = "-----BEGIN PUBLIC KEY-----\n" .
+			chunk_split(base64_encode($rsaPublicKey), 64, "\n") .
+			"-----END PUBLIC KEY-----\n";
+
+		return $pem;
+	}
+
+	private function encodeLength($length)
+	{
+		if ($length <= 0x7F)
+		{
+			return chr($length);
+		}
+		else
+		{
+			$len = ltrim(pack('N', $length), "\x00");
+			return chr(0x80 | strlen($len)) . $len;
+		}
 	}
 
 	public function get_username(): string

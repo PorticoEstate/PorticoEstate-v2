@@ -43,16 +43,15 @@ class OpenIDConnect
 		self::$type = $type;
 
 		$provider_url = rtrim($this->config['provider_url'], '/');
-		if (strpos($provider_url, '/v2.0') === false)
-		{
-			//			$provider_url .= '/v2.0'; // Ensure /v2.0 is appended to the provider URL
-		}
 
 		$this->oidc = new OpenIDConnectClient(
 			$provider_url,
 			$this->config['client_id'],
 			$this->config['client_secret']
 		);
+
+		// Enable PKCE with S256 method
+		$this->oidc->setCodeChallengeMethod('S256');
 	}
 
 	public function authenticate()
@@ -64,48 +63,57 @@ class OpenIDConnect
 
 	public function get_userinfo()
 	{
+		static $userInfo = null;
+		if ($userInfo)
+		{
+			return $userInfo;
+		}
+		$this->oidc->setCodeChallengeMethod(false);
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
 		self::$idToken = $this->oidc->getIdToken();
 
+		$provider_type = $this->getProviderType();
+
 		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
 		$decodedToken = null;
-		if ($this->debug)
+
+		if ($provider_type === 'azure')
 		{
+
 			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
 			$issuer = $this->oidc->getIssuer();
-			//remove the /v2.0 part
-			//		$issuer = substr($issuer, 0, -5);
 			$jwksUri = rtrim($issuer, '/') . "/discovery/v2.0/keys"; // Construct JWKS URI
-			echo "JWKS URI: $jwksUri<br>";
 			$jwks = json_decode(file_get_contents($jwksUri), true);
-			echo "JWKS:<br>";
-			_debug_array($jwks);
-
 			// Extract the kid from the JWT header
 			$jwtHeader = json_decode(base64_decode(explode('.', self::$idToken)[0]), true);
 			$kid = $jwtHeader['kid'];
-			echo "kid: $kid<br>";
+			if ($this->debug)
+			{
+				echo "JWKS URI: $jwksUri<br>";
+				echo "JWKS:<br>";
+				_debug_array($jwks);
+				echo "kid: $kid<br>";
+			}
 			// Find the correct key (usually only one for Azure AD)
 			$publicKey = null;
 			foreach ($jwks['keys'] as $key)
 			{
 				if ($key['kid'] === $kid && $key['kty'] === 'RSA')
-				{ // Assuming RSA key, which is common
-					//$publicKey = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($key['n'], 64, "\n") . "\n-----END PUBLIC KEY-----";
+				{
+					// Assuming RSA key, which is common
 					$publicKey = $this->generate_rsa_public_key($key['n'], $key['e']);
 					break;
 				}
 			}
-			if ($publicKey === null)
+			if ($this->debug)
 			{
-				die("Public key not found in JWKS.");
+				echo "PublicKey:<br>";
+				_debug_array($publicKey);
+				echo "idToken:<br>";
+				_debug_array(self::$idToken);
 			}
-			echo "PublicKey:<br>";
-			_debug_array($publicKey);
-			echo "idToken:<br>";
-			_debug_array(self::$idToken);
 			// 2. Decode and validate the ID token
 			try
 			{
@@ -177,8 +185,14 @@ class OpenIDConnect
 			die();
 		}
 
-		$response_variable = $this->config['response_variable'] ?? 'email';
+		$response_variable = $this->config['response_variable'] ?? 'upn';
 		return $userInfo->$response_variable;
+	}
+
+	public function get_groups(): array
+	{
+		$userInfo = $this->get_userinfo();
+		return $userInfo->groups ?? [];
 	}
 
 	public function get_user_email(): string
@@ -190,7 +204,8 @@ class OpenIDConnect
 	public function logout(): void
 	{
 		$idToken = Cache::session_get('openid_connect', 'idToken');
-		$postLogoutRedirectUri = null;
+
+		$postLogoutRedirectUri = $this->config['redirect_logout_uri'] ?? null;
 		$this->oidc->signOut($idToken, $postLogoutRedirectUri);
 		self::$idToken = null;
 	}
@@ -210,5 +225,62 @@ class OpenIDConnect
 		$userInfo = $this->get_userinfo();
 		self::$idToken = $userInfo->id_token ?? null;
 		Cache::session_set('openid_connect', 'idToken', self::$idToken);
+	}
+
+	private function getProviderType()
+	{
+		$provider_url = rtrim($this->config['provider_url'], '/');
+		$well_known_url = $provider_url . '/.well-known/openid-configuration';
+
+		if ($this->debug)
+		{
+			error_log("Fetching provider configuration from: " . $well_known_url);
+		}
+
+		try
+		{
+			$configuration = json_decode(file_get_contents($well_known_url), true);
+
+			if ($this->debug)
+			{
+				error_log("Provider configuration: " . print_r($configuration, true));
+			}
+
+			// Check for Azure AD specific indicators
+			if (
+				(strpos($configuration['issuer'], 'microsoftonline.com') !== false) ||
+				(strpos($configuration['token_endpoint'], 'microsoftonline.com') !== false)
+			)
+			{
+				return 'azure';
+			}
+
+			// Check for other common providers
+			if (strpos($configuration['issuer'], 'accounts.google.com') !== false)
+			{
+				return 'google';
+			}
+
+			if (strpos($configuration['issuer'], 'auth0.com') !== false)
+			{
+				return 'auth0';
+			}
+
+			if (strpos($configuration['issuer'], 'okta.com') !== false)
+			{
+				return 'okta';
+			}
+
+			// Default to generic OpenID Connect provider
+			return 'generic';
+		}
+		catch (\Exception $e)
+		{
+			if ($this->debug)
+			{
+				error_log("Error fetching provider configuration: " . $e->getMessage());
+			}
+			return 'unknown';
+		}
 	}
 }

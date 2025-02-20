@@ -102,6 +102,8 @@ class OpenIDConnect
 			{
 				die("Public key not found in JWKS.");
 			}
+			echo "PublicKey:<br>";
+			_debug_array($publicKey);
 			// 2. Decode and validate the ID token
 			try
 			{

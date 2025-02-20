@@ -94,7 +94,7 @@ class OpenIDConnect
 				if ($key['kid'] === $kid && $key['kty'] === 'RSA')
 				{ // Assuming RSA key, which is common
 					//$publicKey = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($key['n'], 64, "\n") . "\n-----END PUBLIC KEY-----";
-					$publicKey = $this->createPublicKey($key['n'], $key['e']);
+					$publicKey = $this->generate_rsa_public_key($key['n'], $key['e']);
 					break;
 				}
 			}
@@ -122,45 +122,50 @@ class OpenIDConnect
 
 		return $userInfo;
 	}
-	private function createPublicKey($n, $e)
+
+
+	private function base64url_decode($data)
 	{
-		// Convert base64url to base64
-		$modulus = strtr($n, '-_', '+/');
-		$exponent = strtr($e, '-_', '+/');
+		$padding = 4 - (strlen($data) % 4);
+		if ($padding < 4)
+		{
+			$data .= str_repeat('=', $padding);
+		}
+		return base64_decode(strtr($data, '-_', '+/'));
+	}
 
-		// Decode base64
-		$modulus = base64_decode($modulus . str_repeat('=', 3 - (3 + strlen($modulus)) % 4));
-		$exponent = base64_decode($exponent . str_repeat('=', 3 - (3 + strlen($exponent)) % 4));
+	private function generate_rsa_public_key($n_base64, $e_base64)
+	{
+		$n = $this->base64url_decode($n_base64);
+		$e = $this->base64url_decode($e_base64);
 
-		// Convert the modulus and exponent to their binary representations
-		$modulus = "\x00" . $modulus; // Add leading zero to ensure it's interpreted as a positive number
-		$exponent = "\x00" . $exponent; // Add leading zero to ensure it's interpreted as a positive number
+		// Convert n and e to binary format
+		$modulus = "\x00" . $n;  // Ensure the modulus is positive
+		$exponent = $e;
 
-		// Construct the ASN.1 structure for the RSA public key
-		$modulus = "\x02" . $this->encodeLength(strlen($modulus)) . $modulus;
-		$exponent = "\x02" . $this->encodeLength(strlen($exponent)) . $exponent;
-		$rsaPublicKey = "\x30" . $this->encodeLength(strlen($modulus) + strlen($exponent)) . $modulus . $exponent;
-		$rsaPublicKey = "\x30" . $this->encodeLength(strlen($rsaPublicKey) + 2) . "\x30\x0d\x06\x09\x2a\x86\x48\x86\xf7\x0d\x01\x01\x01\x05\x00\x03" . $this->encodeLength(strlen($rsaPublicKey) + 1) . "\x00" . $rsaPublicKey;
+		// DER encoding structure for RSA public key
+		$modulus = pack('Ca*a*', 0x02, $this->encode_length(strlen($modulus)), $modulus);
+		$exponent = pack('Ca*a*', 0x02, $this->encode_length(strlen($exponent)), $exponent);
+		$rsa_key = pack('Ca*a*a*', 0x30, $this->encode_length(strlen($modulus . $exponent)), $modulus, $exponent);
 
-		// Encode the ASN.1 structure in base64 and wrap it in the PEM format
-		$pem = "-----BEGIN PUBLIC KEY-----\n" .
-			chunk_split(base64_encode($rsaPublicKey), 64, "\n") .
-			"-----END PUBLIC KEY-----\n";
+		// Wrap in SubjectPublicKeyInfo structure
+		$rsa_oid = pack('H*', '300d06092a864886f70d0101010500'); // ASN.1 encoding for rsaEncryption
+		$public_key_info = pack('Ca*a*', 0x30, $this->encode_length(strlen($rsa_oid . "\x03" . $this->encode_length(strlen($rsa_key) + 1) . "\x00" . $rsa_key)), $rsa_oid . "\x03" . $this->encode_length(strlen($rsa_key) + 1) . "\x00" . $rsa_key);
+
+		// Encode to PEM format
+		$pem = "-----BEGIN PUBLIC KEY-----\n" . chunk_split(base64_encode($public_key_info), 64, "\n") . "-----END PUBLIC KEY-----\n";
 
 		return $pem;
 	}
 
-	private function encodeLength($length)
+	private function encode_length($length)
 	{
-		if ($length <= 0x7F)
+		if ($length < 128)
 		{
 			return chr($length);
 		}
-		else
-		{
-			$len = ltrim(pack('N', $length), "\x00");
-			return chr(0x80 | strlen($len)) . $len;
-		}
+		$len = ltrim(pack('N', $length), "\x00");
+		return chr(0x80 | strlen($len)) . $len;
 	}
 
 	public function get_username(): string

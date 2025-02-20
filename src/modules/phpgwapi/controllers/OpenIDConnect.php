@@ -71,51 +71,50 @@ class OpenIDConnect
 
 		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
 		$decodedToken = null;
+		// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
+		$issuer = $this->oidc->getIssuer();
+		//remove the /v2.0 part
+		//		$issuer = substr($issuer, 0, -5);
+		$jwksUri = rtrim($issuer, '/') . "/discovery/v2.0/keys"; // Construct JWKS URI
+		$jwks = json_decode(file_get_contents($jwksUri), true);
+		// Extract the kid from the JWT header
+		$jwtHeader = json_decode(base64_decode(explode('.', self::$idToken)[0]), true);
+		$kid = $jwtHeader['kid'];
 		if ($this->debug)
 		{
-			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:
-			$issuer = $this->oidc->getIssuer();
-			//remove the /v2.0 part
-			//		$issuer = substr($issuer, 0, -5);
-			$jwksUri = rtrim($issuer, '/') . "/discovery/v2.0/keys"; // Construct JWKS URI
 			echo "JWKS URI: $jwksUri<br>";
-			$jwks = json_decode(file_get_contents($jwksUri), true);
 			echo "JWKS:<br>";
 			_debug_array($jwks);
-
-			// Extract the kid from the JWT header
-			$jwtHeader = json_decode(base64_decode(explode('.', self::$idToken)[0]), true);
-			$kid = $jwtHeader['kid'];
 			echo "kid: $kid<br>";
-			// Find the correct key (usually only one for Azure AD)
-			$publicKey = null;
-			foreach ($jwks['keys'] as $key)
+		}
+		// Find the correct key (usually only one for Azure AD)
+		$publicKey = null;
+		foreach ($jwks['keys'] as $key)
+		{
+			if ($key['kid'] === $kid && $key['kty'] === 'RSA')
 			{
-				if ($key['kid'] === $kid && $key['kty'] === 'RSA')
-				{ // Assuming RSA key, which is common
-					//$publicKey = "-----BEGIN PUBLIC KEY-----\n" . chunk_split($key['n'], 64, "\n") . "\n-----END PUBLIC KEY-----";
-					$publicKey = $this->generate_rsa_public_key($key['n'], $key['e']);
-					break;
-				}
+				// Assuming RSA key, which is common
+				$publicKey = $this->generate_rsa_public_key($key['n'], $key['e']);
+				break;
 			}
-			if ($publicKey === null)
-			{
-				die("Public key not found in JWKS.");
-			}
+		}
+		if ($this->debug)
+		{
 			echo "PublicKey:<br>";
 			_debug_array($publicKey);
 			echo "idToken:<br>";
 			_debug_array(self::$idToken);
-			// 2. Decode and validate the ID token
-			try
-			{
-				$decodedToken = JWT::decode(self::$idToken, new Key($publicKey, 'RS256')); // RS256 is a common algorithm
-			}
-			catch (\Exception $e)
-			{
-				echo "Error decoding or validating token: " . $e->getMessage();
-			}
 		}
+		// 2. Decode and validate the ID token
+		try
+		{
+			$decodedToken = JWT::decode(self::$idToken, new Key($publicKey, 'RS256')); // RS256 is a common algorithm
+		}
+		catch (\Exception $e)
+		{
+			echo "Error decoding or validating token: " . $e->getMessage();
+		}
+
 		// You can still use $this->oidc->requestUserInfo() if you need claims specifically from the /userinfo endpoint
 		$userInfo = $this->oidc->requestUserInfo();
 		$userInfo = $decodedToken ? $decodedToken : $userInfo;

@@ -104,6 +104,8 @@ class OpenIDConnect
 			}
 			echo "PublicKey:<br>";
 			_debug_array($publicKey);
+			echo "idToken:<br>";
+			_debug_array(self::$idToken);
 			// 2. Decode and validate the ID token
 			try
 			{

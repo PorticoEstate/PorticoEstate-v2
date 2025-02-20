@@ -184,6 +184,36 @@
 			return $username;
 		}
 
+		public function get_groups()
+		{
+			$ad_groups = array();
+			if (!empty($_SERVER["OIDC_groups"]))
+			{
+				$OIDC_groups = mb_convert_encoding(mb_convert_encoding($_SERVER["OIDC_groups"], 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1');
+				$ad_groups = explode(",", $OIDC_groups);
+			}
+			$ad_groups = array_map('strtolower', $ad_groups);
+
+			$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+			$location_id	= $location_obj->get_id('admin', 'openid_connect');
+			if ($location_id)
+			{
+				$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+			}
+
+			/**
+			 * OpenID Connect
+			 */
+			if (!empty($config_openid['common']['method_backend']))
+			{
+
+				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
+				$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
+				$ad_groups = $OpenIDConnect->get_groups();
+			}
+
+			return $ad_groups;
+		}
 	
 		/**
 		* Set the user's password to a new value

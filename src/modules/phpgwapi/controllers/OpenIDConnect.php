@@ -53,6 +53,9 @@ class OpenIDConnect
 			$this->config['client_id'],
 			$this->config['client_secret']
 		);
+
+		// Enable PKCE with S256 method
+		$this->oidc->setCodeChallengeMethod('S256');
 	}
 
 	public function authenticate()
@@ -64,6 +67,12 @@ class OpenIDConnect
 
 	public function get_userinfo()
 	{
+		static $userInfo = null;
+		if ($userInfo)
+		{
+			return $userInfo;
+		}
+		
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
@@ -176,8 +185,14 @@ class OpenIDConnect
 			die();
 		}
 
-		$response_variable = $this->config['response_variable'] ?? 'email';
+		$response_variable = $this->config['response_variable'] ?? 'upn';
 		return $userInfo->$response_variable;
+	}
+
+	public function get_groups(): array
+	{
+		$userInfo = $this->get_userinfo();
+		return $userInfo->groups ?? [];
 	}
 
 	public function get_user_email(): string
@@ -189,7 +204,8 @@ class OpenIDConnect
 	public function logout(): void
 	{
 		$idToken = Cache::session_get('openid_connect', 'idToken');
-		$postLogoutRedirectUri = null;
+		
+		$postLogoutRedirectUri = $this->config['redirect_logout_uri'] ?? null;
 		$this->oidc->signOut($idToken, $postLogoutRedirectUri);
 		self::$idToken = null;
 	}

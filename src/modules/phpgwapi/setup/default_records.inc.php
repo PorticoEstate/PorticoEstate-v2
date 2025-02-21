@@ -466,6 +466,16 @@ $receipt = $custom_config->add_attrib(
 	array(
 		'section_id'	=> $receipt_section_remote['section_id'],
 		'input_type'	=> 'text',
+		'name'			=> 'redirect_logout_uri',
+		'descr'			=> 'Redirect Logout URI',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_remote['section_id'],
+		'input_type'	=> 'text',
 		'name'			=> 'provider_url',
 		'descr'			=> 'Provider url',
 		'value'			=> '',
@@ -555,6 +565,16 @@ $receipt = $custom_config->add_attrib(
 		'input_type'	=> 'text',
 		'name'			=> 'redirect_uri',
 		'descr'			=> 'Redirect URI',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_local['section_id'],
+		'input_type'	=> 'text',
+		'name'			=> 'redirect_logout_uri',
+		'descr'			=> 'Redirect Logout URI',
 		'value'			=> '',
 	)
 );

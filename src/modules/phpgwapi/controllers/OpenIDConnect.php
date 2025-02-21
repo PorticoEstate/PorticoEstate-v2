@@ -60,9 +60,9 @@ class OpenIDConnect
 
 		$this->provider_type = $this->getProviderType();
 
-//		if ($this->provider_type !== 'azure')
+		if ($this->provider_type == 'idporten')
 		{
-			$this->debug = true;
+//			$this->debug = true;
 			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);
 			// Enable PKCE with S256 method
 			$this->oidc->setCodeChallengeMethod('S256');

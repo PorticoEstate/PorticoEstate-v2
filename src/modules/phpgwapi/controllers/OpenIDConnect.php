@@ -21,10 +21,10 @@ class OpenIDConnect
 
 	function __construct($type = 'local', $config = [])
 	{
-//start a session if not already started
+		//start a session if not already started
 		if (session_status() == PHP_SESSION_NONE)
 		{
-			session_start();
+//			session_start();
 	
 		}
 
@@ -62,7 +62,6 @@ class OpenIDConnect
 
 		if ($this->provider_type == 'idporten')
 		{
-//			$this->debug = true;
 			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);
 			// Enable PKCE with S256 method
 			$this->oidc->setCodeChallengeMethod('S256');
@@ -72,11 +71,12 @@ class OpenIDConnect
 		{
 			$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		}
+
+		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 	}
 
 	public function authenticate()
 	{
-		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->authenticate();
 	}
 
@@ -98,7 +98,6 @@ class OpenIDConnect
 			}
 		}
 
-		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->authenticate();
 		self::$idToken = $this->oidc->getIdToken();
 
@@ -227,11 +226,6 @@ class OpenIDConnect
 		return $userInfo->groups ?? [];
 	}
 
-	public function get_user_email(): string
-	{
-		$userInfo = $this->get_userinfo();
-		return $userInfo->email;
-	}
 
 	public function logout($idToken = null): void
 	{
@@ -253,17 +247,6 @@ class OpenIDConnect
 		return !empty(self::$idToken);
 	}
 
-	public function getIdToken(): ?string
-	{
-		return self::$idToken;
-	}
-
-	public function refreshIdToken(): void
-	{
-		$userInfo = $this->get_userinfo();
-		self::$idToken = $userInfo->id_token ?? null;
-		Cache::session_set('openid_connect', 'idToken', self::$idToken);
-	}
 
 	private function getProviderType()
 	{

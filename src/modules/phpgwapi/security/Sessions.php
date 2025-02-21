@@ -736,6 +736,7 @@ class Sessions
 		}
 
 		$type = Cache::session_get('openid_connect', 'type');
+		$idToken = Cache::session_get('openid_connect', 'idToken');
 
 		// Only do the following, if we are working with the current user
 		if ($sessionid == $user_info['sessionid'])
@@ -762,7 +763,7 @@ class Sessions
 		if ($type && !empty($config_openid['common']['method_backend']))
 		{
 			$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
-			$OpenIDConnect->logout();
+			$OpenIDConnect->logout($idToken);
 		}
 
 		return true;

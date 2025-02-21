@@ -17,6 +17,7 @@ class OpenIDConnect
 	private static $idToken;
 	private static $type;
 	private $debug;
+	private $provider_type;
 
 	function __construct($type = 'local', $config = [])
 	{
@@ -50,8 +51,16 @@ class OpenIDConnect
 			$this->config['client_secret']
 		);
 
-		// Enable PKCE with S256 method
-		$this->oidc->setCodeChallengeMethod('S256');
+		$this->provider_type = $this->getProviderType();
+
+
+		if (!$this->provider_type === 'azure')
+		{
+			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);
+			// Enable PKCE with S256 method
+			$this->oidc->setCodeChallengeMethod('S256');
+		}
+
 	}
 
 	public function authenticate()
@@ -68,23 +77,16 @@ class OpenIDConnect
 		{
 			return $userInfo;
 		}
-		$provider_type = $this->getProviderType();
-
-		if (!$provider_type === 'azure')
-		{
-			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);
-		}
 
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
 		self::$idToken = $this->oidc->getIdToken();
 
-
 		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
 		$decodedToken = null;
 
-		if ($provider_type === 'azure')
+		if ($this->provider_type === 'azure')
 		{
 
 			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:

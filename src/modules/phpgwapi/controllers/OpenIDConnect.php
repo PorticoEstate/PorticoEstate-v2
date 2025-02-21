@@ -40,7 +40,7 @@ class OpenIDConnect
 			throw new \Exception('Configuration for the specified type is missing.');
 		}
 
-		$this->debug = true;//$this->config['debug'] ?? false;
+		$this->debug = $this->config['debug'] ?? false;
 		self::$type = $type;
 
 		$provider_url = rtrim($this->config['provider_url'], '/');
@@ -83,7 +83,7 @@ class OpenIDConnect
 		if ($this->debug)
 		{
 			echo "Provider type: " . $this->provider_type . "<br>";
-			if ($this->provider_type !== 'azure')
+			if ($this->provider_type === 'idporten')
 			{
 				echo "Set token endpoint auth methods supported ['client_secret_post']<br>";
 				echo "Set code challenge method to 'S256'<br>";
@@ -258,7 +258,7 @@ class OpenIDConnect
 
 		if ($this->debug)
 		{
-			echo("Fetching provider configuration from: " . $well_known_url) . "<br>";
+			error_log("Fetching provider configuration from: " . $well_known_url);
 		}
 
 		try
@@ -267,8 +267,7 @@ class OpenIDConnect
 
 			if ($this->debug)
 			{
-				echo("Provider configuration: ") . "<br>";
-				_debug_array($configuration);
+				error_log("Provider configuration: " . print_r($configuration, true));
 			}
 
 			// Check for Azure AD specific indicators
@@ -308,7 +307,7 @@ class OpenIDConnect
 		{
 			if ($this->debug)
 			{
-				echo("Error fetching provider configuration: " . $e->getMessage()) . "<br>";
+				error_log("Error fetching provider configuration: " . $e->getMessage());
 			}
 			return 'unknown';
 		}

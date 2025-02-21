@@ -68,13 +68,18 @@ class OpenIDConnect
 		{
 			return $userInfo;
 		}
-		$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_basic', 'client_secret_post']);
+		$provider_type = $this->getProviderType();
+
+		if (!$provider_type === 'azure')
+		{
+			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);
+		}
+
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
 		self::$idToken = $this->oidc->getIdToken();
 
-		$provider_type = $this->getProviderType();
 
 		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
 		$decodedToken = null;

@@ -652,6 +652,24 @@ calendar_view	bookingfrontend	en	Calendar
 list_view	bookingfrontend	en	List
 deselect_all	bookingfrontend	en	Deselect All
 max_participants	bookingfrontend	en	Max {{count}} participants
+max_participants_info	bookingfrontend	en	Max participants
 edit_event	bookingfrontend	en	Edit Event
 month	bookingfrontend	en	Month
+participant_registration	bookingfrontend	en	Participant registration
+save	bookingfrontend	en	Save
+view_resources	bookingfrontend	en	View resources
+organizer	bookingfrontend	en	Organizer
 enter_title	bookingfrontend	en	Please enter a title
+enter_number_of_participant	bookingfrontend	en	Enter number of participants
+enter_the_mobile_number_of_recipient	bookingfrontend	en	Enter mobile number for receipt
+register_unregister_pre-register	bookingfrontend	en	Select action: Register/Unregister/Pre-register
+pre_register	bookingfrontend	en	Pre-register
+unregister	bookingfrontend	en	Unregister
+register	bookingfrontend	en	Register
+participant_number	bookingfrontend	en	Number of participants
+invalid_date_range	bookingfrontend	en	Invalid date range
+no_selected_resources	bookingfrontend	en	No selected resources
+time	bookingfrontend	en	Time
+invalid_phone_number	bookingfrontend	en	Invalid telefon number
+one_and_more	bookingfrontend	en	Should be more than zero
+to_many_participants	bookingfrontend	en	Too many participants

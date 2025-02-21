@@ -652,6 +652,24 @@ calendar_view	bookingfrontend	nn	Kalender
 list_view	bookingfrontend	nn	Liste
 deselect_all	bookingfrontend	nn	Velg ingen
 max_participants	bookingfrontend	nn	Maks {{count}} deltakarar
+max_participants_info	bookingfrontend	nn	Max deltakarar
 edit_event	bookingfrontend	nn	Rediger arrangement
 month	bookingfrontend	nn	Månad
+participant_registration	bookingfrontend	nn	Deltakerregistrering
+save	bookingfrontend	nn	Lagre
+view_resources	bookingfrontend	nn	Vis ressurses
+organizer	bookingfrontend	nn	Arrangør
 enter_title	bookingfrontend	nn	Angi ein tittel
+enter_number_of_participant	bookingfrontend	nn	Legg inn antall deltakere 
+enter_the_mobile_number_of_recipient	bookingfrontend	nn	Legg inn mobilnummeret til mottaker av kvittering
+register_unregister_pre-register	bookingfrontend	nn	Velg handling påmeld/avmeld/forhåndspåmeld
+pre_register	bookingfrontend	nn	Forhåndspåmeld
+unregister	bookingfrontend	nn	Avmeld
+register	bookingfrontend	nn	Påmeld
+participant_number	bookingfrontend	nn	Antall deltakere
+invalid_date_range	bookingfrontend	nn	Ugyldig datointervall
+no_selected_resources	bookingfrontend	nn	Ingen utvalgte ressurser
+time	bookingfrontend	nn	Tid
+invalid_phone_number	bookingfrontend	nn	Ugyldig telefonnummer
+one_and_more	bookingfrontend	nn	Bør være større enn null
+to_many_participants	bookingfrontend	nn	For mange deltakere

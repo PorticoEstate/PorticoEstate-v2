@@ -8,6 +8,7 @@ use App\modules\bookingfrontend\controllers\BookingUserController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\controllers\ResourceController;
+use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
 use App\modules\bookingfrontend\helpers\LogoutHelper;
@@ -68,6 +69,18 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 
     });
     $group->get('/invoices', CompletedReservationController::class . ':getReservations');
+})->add(new SessionsMiddleware($app->getContainer()));
+
+$app->group('/bookingfrontend', function (RouteCollectorProxy $group)
+{
+    $group->group('/events', function (RouteCollectorProxy $group)
+    {
+        $group->get('/{id}', EventController::class . ':getEventById');
+        $group->patch('/{id}', EventController::class . ':updateEvent');
+        $group->post('/{id}/pre-registration', EventController::class . ':preRegister');
+        $group->post('/{id}/in-registration', EventController::class . ':inRegistration');
+        $group->patch('/{id}/out-registration', EventController::class . ':outRegistration');
+    });
 })->add(new SessionsMiddleware($app->getContainer()));
 
 

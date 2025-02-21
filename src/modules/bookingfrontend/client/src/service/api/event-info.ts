@@ -1,7 +1,8 @@
 import {useQuery, useQueryClient, UseQueryResult} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import axios from "axios";
-
+import { fetchBuildingResources } from "./building";
+import { DateTime } from "luxon";
 
 export type PopperInfoType = FilteredEventInfo;
 
@@ -11,9 +12,40 @@ interface OrgInfo {
     org_link?: string;
 }
 
+export interface ActivityData {
+    id: number;
+    active: number;
+    from_: Date;
+    to_: Date;
+    completed: boolean;
+    building_id: number;
+    building_name: string;
+    skip_bas: number;
+    type: 'event';
+    activity_id: number;
+    reminder: number;
+    is_public: boolean;
+    resources: { id: number, name: string }[]
+    buildingResources: Map<number, string>;
+    numberOfParticipants: number;
+
+    name: string | 'PRIVATE EVENT';
+    organizer?: string;
+    homepage?: string;
+    equipment?: string;
+    description?: string;
+    contact_name?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    participant_limit?: number;
+    customer_organization_id?: number;
+    customer_organization_name?: string;
+}
+
 export interface FilteredEventInfo {
     id: number;
     building_name: string;
+    building_id: number;
     from_: string;
     to_: string;
     is_public: number;
@@ -143,24 +175,114 @@ export const usePopperData = (
     });
 };
 
-export const useEventPopperData = (event_id: (string | number)) => {
-    const query = useQuery({
-        queryKey: ['eventInfo', event_id],
-        queryFn: () => {
-            const url = phpGWLink('bookingfrontend/', {
-                menuaction: 'bookingfrontend.uievent.info_json',
-                id: event_id,
-            }, true)
-
-            return axios.get(url).then<FilteredEventInfo>(d => ({
-                info_user_can_delete_events: d.data.info_user_can_delete_events, ...d.data.events[event_id],
-                type: 'event'
-            })) ;
+export const useEventData = (eventId: (string | number)) => { 
+    return useQuery({
+        queryKey: ['eventInfo', eventId],
+        retry: 2,
+        queryFn: async () => {
+            const url = phpGWLink(['bookingfrontend', 'events', eventId]);
+            const res = await fetch(url);
+            const { event, numberOfParticipants } = await res.json();
+            const buildingResources = await fetchBuildingResources(event.building_id);
+            const parsedFrom = DateTime.fromSQL(event.from_, { zone: 'UTC' }).setZone('Europe/Oslo');
+            const parsedTo = DateTime.fromSQL(event.to_, { zone: 'UTC' }).setZone('Europe/Oslo');
+            return {
+                ...event,
+                to_: parsedTo.toJSDate(),
+                from_: parsedFrom.toJSDate(),
+                participant_limit: event.participant_limit || 0,
+                resources: event.resources || [],
+                buildingResources: new Map(
+                    buildingResources.map(({ id, name }) => [id, name])
+                ),
+                numberOfParticipants,
+            };
         }
-    })
+    });
+};
 
-    return query;
+export const editEvent = async (id: number, data: Partial<ActivityData>) => {
+    const transformed: any = {};
+    let field: keyof ActivityData;
+    for (field in data) {
+        if (field === 'resources' && data.resources) {
+            const new_ids = data.resources.map((item) => item.id);
+            transformed.resource_ids = new_ids;
+        } else transformed[field] = data[field];
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'events', id]);
+    const response = await fetch(url, {
+        method: "PATCH",
+        body: JSON.stringify(transformed),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update event");
+    }
+
+    return response.json();
 }
+
+export const preRegistration = async (
+    id: number,
+    data: { phone: string, quantity: number }
+) => {
+    const url = phpGWLink([
+        "bookingfrontend",
+        "events",
+        id,
+        "pre-registration",
+    ]);
+    const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update event");
+    }
+    return response.json();
+};
+
+export const inRegistration = async (
+    id: number,
+    data: { phone: string; quantity: number }
+) => {
+    const url = phpGWLink(["bookingfrontend", "events", id, "in-registration"]);
+    const response = await fetch(url, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update event");
+    }
+    return response.json();
+}; 
+export const outRegistration = async (
+    id: number,
+    phone: string,
+) => {
+    const url = phpGWLink(["bookingfrontend", "events", id, "out-registration"]);
+    const response = await fetch(url, {
+        method: "PATCH",
+        body: JSON.stringify({ phone }),
+        headers: {
+            "Content-Type": "application/json",
+        },
+    });
+    if (!response.ok) {
+        throw new Error("Failed to update event");
+    }
+    return response.json();
+}; 
 
 
 export const useAllocationPopperData = (allocation_id: (string | number)) => {

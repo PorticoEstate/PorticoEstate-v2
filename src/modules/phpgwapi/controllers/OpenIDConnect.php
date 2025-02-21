@@ -21,12 +21,6 @@ class OpenIDConnect
 
 	function __construct($type = 'local', $config = [])
 	{
-		//start a session if not already started
-		if (session_status() == PHP_SESSION_NONE)
-		{
-//			session_start();
-	
-		}
 
 		$this->debug = false;
 

@@ -81,14 +81,6 @@ class OpenIDConnect
 			return $userInfo;
 		}
 
-		$this->oidc->setRedirectURL($this->config['redirect_uri']);
-		$this->oidc->authenticate();
-		self::$idToken = $this->oidc->getIdToken();
-
-
-		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
-		$decodedToken = null;
-
 		if ($this->debug)
 		{
 			echo "Provider type: " . $this->provider_type . "<br>";
@@ -98,6 +90,13 @@ class OpenIDConnect
 				echo "Set code challenge method to 'S256'<br>";
 			}
 		}
+
+		$this->oidc->setRedirectURL($this->config['redirect_uri']);
+		$this->oidc->authenticate();
+		self::$idToken = $this->oidc->getIdToken();
+
+		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
+		$decodedToken = null;
 
 		if ($this->provider_type === 'azure')
 		{

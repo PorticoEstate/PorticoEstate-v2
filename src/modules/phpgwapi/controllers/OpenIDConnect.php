@@ -68,7 +68,7 @@ class OpenIDConnect
 		{
 			return $userInfo;
 		}
-		$this->oidc->setCodeChallengeMethod(false);
+		$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_basic', 'client_secret_post']);
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();

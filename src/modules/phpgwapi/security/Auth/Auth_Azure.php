@@ -114,6 +114,8 @@
 			{
 
 				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
+$type = 'remote';
+
 				$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
 
 				$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
@@ -207,6 +209,7 @@
 			{
 
 				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
+$type = 'remote';
 				$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
 				$groups = $OpenIDConnect->get_groups();
 			}

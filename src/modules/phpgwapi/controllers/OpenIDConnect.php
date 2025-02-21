@@ -86,18 +86,18 @@ class OpenIDConnect
 		$this->oidc->authenticate();
 		self::$idToken = $this->oidc->getIdToken();
 
-		if ($this->provider_type !== 'azure' && $this->debug)
-		{
-			echo "Provider type: " . $this->provider_type . "<br>";
-		}
 
 		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
 		$decodedToken = null;
 
 		if ($this->debug)
 		{
-			echo "Set token endpoint auth methods supported ['client_secret_post']<br>";
-			echo "Set code challenge method to 'S256'<br>";
+			echo "Provider type: " . $this->provider_type . "<br>";
+			if ($this->provider_type !== 'azure')
+			{
+				echo "Set token endpoint auth methods supported ['client_secret_post']<br>";
+				echo "Set code challenge method to 'S256'<br>";
+			}
 		}
 
 		if ($this->provider_type === 'azure')

@@ -4058,6 +4058,16 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 		array(
 			'section_id'	=> $receipt_section_remote['section_id'],
 			'input_type'	=> 'text',
+			'name'			=> 'redirect_logout_uri',
+			'descr'			=> 'Redirect logout URI',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'text',
 			'name'			=> 'provider_url',
 			'descr'			=> 'Provider url',
 			'value'			=> '',
@@ -4155,6 +4165,16 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 		array(
 			'section_id'	=> $receipt_section_local['section_id'],
 			'input_type'	=> 'text',
+			'name'			=> 'redirect_logout_uri',
+			'descr'			=> 'Redirect logout URI',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'text',
 			'name'			=> 'provider_url',
 			'descr'			=> 'Provider url',
 			'value'			=> '',
@@ -4170,7 +4190,7 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 			'value'			=> '',
 		)
 	);
-
+	
 	$receipt = $custom_config->add_attrib(
 		array(
 			'section_id'	=> $receipt_section_local['section_id'],

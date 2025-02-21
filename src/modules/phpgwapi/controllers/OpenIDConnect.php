@@ -17,6 +17,7 @@ class OpenIDConnect
 	private static $idToken;
 	private static $type;
 	private $debug;
+	private $provider_type;
 
 	function __construct($type = 'local', $config = [])
 	{
@@ -50,14 +51,35 @@ class OpenIDConnect
 			$this->config['client_secret']
 		);
 
-		// Enable PKCE with S256 method
-		$this->oidc->setCodeChallengeMethod('S256');
+		$this->provider_type = $this->getProviderType();
+
+		if ($this->debug)
+		{
+			echo "Provider type: " . $this->provider_type . "<br>";
+		}
+
+		if ($this->provider_type !== 'azure')
+		{
+			if ($this->debug)
+			{
+				echo "Set token endpoint auth methods supported ['client_secret_post']<br>";
+				echo "Set code challenge method to 'S256'<br>";
+			}
+			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);
+			// Enable PKCE with S256 method
+			$this->oidc->setCodeChallengeMethod('S256');
+		}
+
+		if(!empty($this->config['scopes']))
+		{
+			$this->oidc->addScope(explode(' ', $this->config['scopes']));
+		}
+
 	}
 
 	public function authenticate()
 	{
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
-		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
 	}
 
@@ -68,18 +90,15 @@ class OpenIDConnect
 		{
 			return $userInfo;
 		}
-		$this->oidc->setCodeChallengeMethod(false);
+
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
-		$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		$this->oidc->authenticate();
 		self::$idToken = $this->oidc->getIdToken();
-
-		$provider_type = $this->getProviderType();
 
 		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
 		$decodedToken = null;
 
-		if ($provider_type === 'azure')
+		if ($this->provider_type === 'azure')
 		{
 
 			// 1. Get the public keys from Azure AD's JWKS endpoint.  Jumbojett *might* handle this, but it's safer to do it explicitly:

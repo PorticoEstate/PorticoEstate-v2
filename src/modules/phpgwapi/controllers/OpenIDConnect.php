@@ -40,7 +40,7 @@ class OpenIDConnect
 			throw new \Exception('Configuration for the specified type is missing.');
 		}
 
-		$this->debug = $this->config['debug'] ?? false;
+		$this->debug = true;//$this->config['debug'] ?? false;
 		self::$type = $type;
 
 		$provider_url = rtrim($this->config['provider_url'], '/');
@@ -53,14 +53,13 @@ class OpenIDConnect
 
 		$this->provider_type = $this->getProviderType();
 
-
-		if ($this->provider_type !== 'azure')
+		if ($this->provider_type == 'idporten')
 		{
 			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);
 			// Enable PKCE with S256 method
 			$this->oidc->setCodeChallengeMethod('S256');
 		}
-
+		
 		if (!empty($this->config['scopes']))
 		{
 			$this->oidc->addScope(explode(' ', $this->config['scopes']));
@@ -259,7 +258,7 @@ class OpenIDConnect
 
 		if ($this->debug)
 		{
-			error_log("Fetching provider configuration from: " . $well_known_url);
+			echo("Fetching provider configuration from: " . $well_known_url) . "<br>";
 		}
 
 		try
@@ -268,7 +267,8 @@ class OpenIDConnect
 
 			if ($this->debug)
 			{
-				error_log("Provider configuration: " . print_r($configuration, true));
+				echo("Provider configuration: ") . "<br>";
+				_debug_array($configuration);
 			}
 
 			// Check for Azure AD specific indicators
@@ -284,6 +284,11 @@ class OpenIDConnect
 			if (strpos($configuration['issuer'], 'accounts.google.com') !== false)
 			{
 				return 'google';
+			}
+			// Check for other common providers
+			if (strpos($configuration['issuer'], 'idporten.no') !== false)
+			{
+				return 'idporten';
 			}
 
 			if (strpos($configuration['issuer'], 'auth0.com') !== false)
@@ -303,7 +308,7 @@ class OpenIDConnect
 		{
 			if ($this->debug)
 			{
-				error_log("Error fetching provider configuration: " . $e->getMessage());
+				echo("Error fetching provider configuration: " . $e->getMessage()) . "<br>";
 			}
 			return 'unknown';
 		}

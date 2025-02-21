@@ -53,7 +53,7 @@ class OpenIDConnect
 
 		$this->provider_type = $this->getProviderType();
 
-		if ($this->provider_type !== 'azure')
+//		if ($this->provider_type !== 'azure')
 		{
 			$this->debug = true;
 			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);

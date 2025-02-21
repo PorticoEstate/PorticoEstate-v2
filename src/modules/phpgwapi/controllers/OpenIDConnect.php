@@ -61,11 +61,10 @@ class OpenIDConnect
 			$this->oidc->setCodeChallengeMethod('S256');
 		}
 
-		if(!empty($this->config['scopes']))
+		if (!empty($this->config['scopes']))
 		{
 			$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		}
-
 	}
 
 	public function authenticate()
@@ -222,10 +221,16 @@ class OpenIDConnect
 		return $userInfo->email;
 	}
 
-	public function logout(): void
+	public function logout($idToken = null): void
 	{
-		$idToken = Cache::session_get('openid_connect', 'idToken');
-
+		if ($idToken === null)
+		{
+			$idToken = Cache::session_get('openid_connect', 'idToken');
+		}
+		if (!$idToken)
+		{
+			return;
+		}
 		$postLogoutRedirectUri = $this->config['redirect_logout_uri'] ?? null;
 		$this->oidc->signOut($idToken, $postLogoutRedirectUri);
 		self::$idToken = null;

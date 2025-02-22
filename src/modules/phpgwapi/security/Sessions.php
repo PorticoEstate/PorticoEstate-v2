@@ -762,7 +762,7 @@ class Sessions
 
 		if ($type && !empty($config_openid['common']['method_backend']))
 		{
-			$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
+			$OpenIDConnect = \App\modules\phpgwapi\controllers\OpenIDConnect::getInstance($type, $config_openid);
 			$OpenIDConnect->logout($idToken);
 		}
 

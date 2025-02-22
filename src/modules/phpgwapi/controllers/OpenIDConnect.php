@@ -19,6 +19,8 @@ class OpenIDConnect
 	private $debug;
 	private $provider_type;
 
+	private static $instance = null;
+
 	function __construct($type = 'local', $config = [])
 	{
 
@@ -69,6 +71,27 @@ class OpenIDConnect
 		$this->oidc->setRedirectURL($this->config['redirect_uri']);
 	}
 
+	// Prevent cloning
+	private function __clone()
+	{
+	}
+
+	// Prevent unserialization
+	public function __wakeup()
+	{
+		throw new \Exception("Cannot unserialize singleton");
+	}
+
+	// Add getInstance method
+	public static function getInstance($type = 'local', $config = []): self
+	{
+		if (self::$instance === null)
+		{
+			self::$instance = new self($type, $config);
+		}
+		return self::$instance;
+	}
+ 
 	public function authenticate()
 	{
 		$this->oidc->authenticate();

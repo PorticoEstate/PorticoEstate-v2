@@ -103,7 +103,7 @@ class LoginHelper
 			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
 		}
 
-		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']))
+		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']) && empty($_REQUEST['skip_remote']))
 		{
 			$lang_sign_in = lang('Sign in');
 			$lang_select_login_method = lang('Select login method');

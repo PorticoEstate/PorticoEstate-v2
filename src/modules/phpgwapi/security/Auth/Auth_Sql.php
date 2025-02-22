@@ -80,7 +80,12 @@ class Auth extends Auth_
 		$headers = array_change_key_case(getallheaders(), CASE_LOWER);
 		$ssn = !empty($headers['uid']) ? $headers['uid'] : $ssn;
 		$ssn = !empty($_SERVER['HTTP_UID']) ? $_SERVER['HTTP_UID'] : $ssn;
-		$ssn = $ssn ? $ssn : Cache::session_get('openid_connect', 'ssn');
+//		$ssn = $ssn ? $ssn : Cache::session_get('openid_connect', 'ssn');
+
+		if (!empty(Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid']))
+		{
+			$ssn = Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid'];
+		}
 
 		// skip anonymous users
 		Acl::getInstance()->set_account_id($account_id);

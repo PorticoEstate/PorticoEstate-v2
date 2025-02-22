@@ -27,6 +27,7 @@
 	namespace App\modules\phpgwapi\security\Auth;
 	use App\modules\phpgwapi\security\Sso\Mapping;
 	use App\modules\phpgwapi\services\Cache;
+	use App\modules\phpgwapi\services\Settings;
 	use PDO;
 	use Sanitizer;
 
@@ -73,7 +74,10 @@
 			$account_id = (int)$stmt->fetchColumn();
 
 			$ssn = Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
-			$ssn = $ssn ? $ssn : Cache::session_get('openid_connect', 'ssn');
+			if(!empty(Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid']))
+			{
+				$ssn = Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid'];
+			}
 
 		// skip anonymous users
 			$Acl = \App\modules\phpgwapi\security\Acl::getInstance($account_id);
@@ -125,6 +129,7 @@ $type = 'remote';
 					{
 						$ssn = $OpenIDConnect->get_username();
 						Cache::session_set('openid_connect', 'ssn', $ssn);
+						Settings::getInstance()->update('flags', ['openid_connect' => ['OIDC_pid' => $ssn]]);
 					}
 					else
 					{

@@ -261,7 +261,7 @@ class Login
 
 				$this->_sessionid = $this->sessions->create($login, '');
 			}
-			else if (!$login || empty($this->_sessionid))
+			if (!$login || empty($this->_sessionid))
 			{
 				if (!empty($this->serverSettings['auto_create_acct']))
 				{

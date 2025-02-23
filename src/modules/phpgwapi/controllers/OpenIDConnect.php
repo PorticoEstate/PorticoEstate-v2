@@ -235,14 +235,13 @@ class OpenIDConnect
 
 	public function get_groups(): array
 	{
-		if(!empty($this->config['groups']))
+		$userInfo = $this->get_userinfo();
+		$groups = $userInfo->groups ?? [];
+		if (!$groups && !empty($this->config['groups']))
 		{
 			$groups = $this->config['groups'];
-			return $groups;
-		}
-		
-		$userInfo = $this->get_userinfo();
-		return $userInfo->groups ?? [];
+		}		
+		return $groups;
 	}
 
 

@@ -6,7 +6,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Config;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
-
+use App\modules\phpgwapi\controllers\OpenIDConnect;
 
 class UserHelper
 {
@@ -493,19 +493,49 @@ class UserHelper
 		{
 			$ssn = $this->config->config_data['test_ssn'];
 			Cache::message_set('Warning: ssn is set by test-data', 'error');
-		} else 
-		if (!empty($_SERVER['HTTP_UID']))
-        {
-            $ssn = (string)$_SERVER['HTTP_UID'];
-        } 
+		}
+		else if (!empty($_SERVER['HTTP_UID']))
+		{
+			$ssn = (string)$_SERVER['HTTP_UID'];
+		}
 		if (!empty($_SERVER['OIDC_pid']))
-        {
-            $ssn = (string)$_SERVER['OIDC_pid'];
-        }
+		{
+			$ssn = (string)$_SERVER['OIDC_pid'];
+		}
 		if (!empty($_SERVER['REDIRECT_OIDC_pid']))
-        {
-            $ssn = (string)$_SERVER['REDIRECT_OIDC_pid'];
-        }
+		{
+			$ssn = (string)$_SERVER['REDIRECT_OIDC_pid'];
+		}
+
+		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+		$location_id	= $location_obj->get_id('admin', 'openid_connect');
+		if ($location_id)
+		{
+			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+		}
+
+		/**
+		 * OpenID Connect
+		 */
+		$redirect_after_callback = '';
+		if (!empty($config_openid['common']['method_backend']) && in_array('remote', $config_openid['common']['method_backend']))
+		{
+			$get_ssn_callback = \Sanitizer::get_var('callback', 'string', 'GET', false);
+			$type = 'remote';
+			$OpenIDConnect = OpenIDConnect::getInstance($type, $config_openid);
+			if ($get_ssn_callback)
+			{
+				$ssn = $OpenIDConnect->get_username();
+				$redirect_after_callback = Cache::session_get('bookingfrontend', 'redirect_after_callback');
+				Cache::session_clear('bookingfrontend', 'redirect_after_callback');
+			}
+			else
+			{
+				Cache::session_set('bookingfrontend', 'redirect_after_callback', json_encode($redirect));
+				$OpenIDConnect->authenticate();
+				exit;
+			}
+		}
 
 		if (isset($this->config->config_data['bypass_external_login']) && $this->config->config_data['bypass_external_login'])
 		{
@@ -599,6 +629,16 @@ class UserHelper
 		}
 
 		Cache::session_set($this->get_module(), self::USERARRAY_SESSION_KEY, $ret);
+
+		if ($redirect_after_callback)
+		{
+			$redirect = json_decode($redirect_after_callback, true);
+			if ($redirect)
+			{
+				\phpgw::redirect_link('/bookingfrontend/', $redirect);
+			}
+		}
+
 
 		return $ret;
 	}

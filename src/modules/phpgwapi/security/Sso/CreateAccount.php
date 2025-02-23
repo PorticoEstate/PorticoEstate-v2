@@ -56,6 +56,10 @@ class CreateAccount
 			throw new Exception(lang('Access denied'));
 		}
 
+		$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
+
+		$this->login = $Auth->get_username(true);
+
 		if (isset($_SERVER["OIDC_groups"]))
 		{
 			$OIDC_groups = mb_convert_encoding(mb_convert_encoding($_SERVER["OIDC_groups"], 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1');
@@ -80,16 +84,11 @@ class CreateAccount
 			throw new Exception(lang('Access denied'));
 		}
 
-		$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
-
-		$this->login = $Auth->get_username(true);
-
 		if (empty($this->login))
 		{
 			//reserve fallback
 			if (\Sanitizer::get_var('OIDC_pid', 'bool', 'SERVER') || Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid'])
 			{
-				//throw new Exception('FIX me: OIDC_pid is set, redirect to login_ui?');
 				\phpgw::redirect_link('login_ui/', array('skip_remote' => true));
 			}
 			//fallback failed

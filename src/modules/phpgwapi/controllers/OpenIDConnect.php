@@ -40,6 +40,7 @@ class OpenIDConnect
 
 		if (empty($this->config))
 		{
+			return;
 			throw new \Exception('Configuration for the specified type is missing.');
 		}
 
@@ -68,7 +69,8 @@ class OpenIDConnect
 			$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		}
 
-		$this->oidc->setRedirectURL($this->config['redirect_uri']);
+		// _debug_array($this->config);
+		$this->oidc->setRedirectURL($this->config['redirect_uri'] ?? '');
 	}
 
 	// Prevent cloning

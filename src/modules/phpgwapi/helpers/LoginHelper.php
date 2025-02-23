@@ -182,16 +182,15 @@ HTML;
 		if (!Sanitizer::get_var('hide_lightbox', 'bool'))
 		{
 			$partial_url	   = '/login_ui';
-			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
+//			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
 
 			$variables['lang_login']  = lang('login');
 			$variables['partial_url'] = $partial_url;
-			//		$variables['lang_frontend']	= $frontend ? lang($frontend) : '';
-			if (isset($this->serverSettings['half_remote_user']) && $this->serverSettings['half_remote_user'] == 'remoteuser')
-			{
-				$variables['lang_additional_url'] = lang('use sso login');
-				$variables['additional_url']	  = phpgw::link('/' . $phpgw_url_for_sso);
-			}
+			// if (isset($this->serverSettings['half_remote_user']) && $this->serverSettings['half_remote_user'] == 'remoteuser')
+			// {
+			// 	$variables['lang_additional_url'] = lang('use sso login');
+			// 	$variables['additional_url']	  = phpgw::link('/' . $phpgw_url_for_sso);
+			// }
 		}
 
 		if ($this->serverSettings['auth_type'] == 'remoteuser')

@@ -70,13 +70,22 @@
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([':username' => $username]);
 
-			$authenticated = $stmt->fetchColumn() !== false;
 			$account_id = (int)$stmt->fetchColumn();
+			$authenticated = $account_id !== 0;
 
 			$ssn = Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
 			if(!empty(Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid']))
 			{
 				$ssn = Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid'];
+			}
+
+			//get cookie
+			$cookie_name = 'OIDC_pid';
+			if(!empty($_COOKIE[$cookie_name]))
+			{
+				$ssn = $_COOKIE[$cookie_name];
+				//delete cookie
+				setcookie($cookie_name, '', time() - 3600, '/');				
 			}
 
 		// skip anonymous users
@@ -130,6 +139,11 @@ $type = 'remote';
 						$ssn = $OpenIDConnect->get_username();
 						Cache::session_set('openid_connect', 'ssn', $ssn);
 						Settings::getInstance()->update('flags', ['openid_connect' => ['OIDC_pid' => $ssn]]);
+						//set cookie
+						$cookie_name = 'OIDC_pid';
+						$cookie_value = $ssn;
+						setcookie($cookie_name, $cookie_value, time() +  180, "/"); // 180 seconds
+
 					}
 					else
 					{

@@ -8,6 +8,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\controllers\Locations;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use App\modules\phpgwapi\security\Sessions;
 
 class OpenIDConnect
 {
@@ -21,8 +22,15 @@ class OpenIDConnect
 
 	private static $instance = null;
 
+	private const SESSION_KEY = 'openid_connect_userinfo';
+	private const SESSION_TIMESTAMP = 'openid_connect_timestamp';
+	private const CACHE_LIFETIME = 300; // 5 minutes in seconds
+
+
 	function __construct($type = 'local', $config = [])
 	{
+        // Ensure session is started via Sessions singleton
+		Sessions::getInstance();
 
 		$this->debug = false;
 
@@ -101,7 +109,15 @@ class OpenIDConnect
 
 	public function get_userinfo()
 	{
+		// Try to get from session first
+		$cachedInfo = $this->getStoredUserInfo();
+		if ($cachedInfo)
+		{
+			return $cachedInfo;
+		}
+
 		static $userInfo = null;
+
 		if ($userInfo)
 		{
 			return $userInfo;
@@ -172,6 +188,9 @@ class OpenIDConnect
 		$userInfo = $this->oidc->requestUserInfo();
 		$userInfo = $decodedToken ? $decodedToken : $userInfo;
 
+		// Store in session before returning
+		$this->storeUserInfo($userInfo);
+
 		return $userInfo;
 	}
 
@@ -220,6 +239,38 @@ class OpenIDConnect
 		return chr(0x80 | strlen($len)) . $len;
 	}
 
+	private function getStoredUserInfo()
+	{
+		$stored = Cache::session_get('openid_connect', self::SESSION_KEY);
+		$timestamp = Cache::session_get('openid_connect', self::SESSION_TIMESTAMP);
+
+		if (!$stored || !$timestamp)
+		{
+			return null;
+		}
+
+		// Check if cache has expired
+		if ((time() - $timestamp) > self::CACHE_LIFETIME)
+		{
+			$this->clearStoredUserInfo();
+			return null;
+		}
+
+		return $stored;
+	}
+
+	private function storeUserInfo($userInfo): void
+	{
+		Cache::session_set('openid_connect', self::SESSION_KEY, $userInfo);
+		Cache::session_set('openid_connect', self::SESSION_TIMESTAMP, time());
+	}
+
+	private function clearStoredUserInfo(): void
+	{
+		Cache::session_clear('openid_connect', self::SESSION_KEY);
+		Cache::session_clear('openid_connect', self::SESSION_TIMESTAMP);
+	}
+
 	public function get_username(): string
 	{
 		$userInfo = $this->get_userinfo();
@@ -256,6 +307,7 @@ class OpenIDConnect
 			return;
 		}
 		$postLogoutRedirectUri = $this->config['redirect_logout_uri'] ?? null;
+		$this->clearStoredUserInfo();
 		$this->oidc->signOut($idToken, $postLogoutRedirectUri);
 		self::$idToken = null;
 	}

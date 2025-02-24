@@ -114,6 +114,9 @@ class Sessions
 		//don't rewrite URL, as we have to do it in link - why? cos it is buggy otherwise
 		ini_set('url_rewriter.tags', '');
 		ini_set("session.gc_maxlifetime", isset($this->serverSettings['sessions_timeout']) ? $this->serverSettings['sessions_timeout'] : 0);
+
+		session_start();
+		$this->_sessionid = session_id();
 	}
 
 	public static function getInstance()
@@ -279,8 +282,8 @@ class Sessions
 		Settings::getInstance()->setAccountId($this->_account_id);
 		$accounts->set_account($this->_account_id);
 
-		session_start();
-		$this->_sessionid = session_id();
+//		session_start();
+//		$this->_sessionid = session_id();
 
 		if (!empty($this->serverSettings['usecookies']))
 		{

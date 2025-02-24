@@ -520,23 +520,28 @@ class UserHelper
 		$redirect_after_callback = '';
 		if (!empty($config_openid['common']['method_backend']) && in_array('remote', $config_openid['common']['method_backend']))
 		{
-			$get_ssn_callback = \Sanitizer::get_var('callback', 'string', 'GET', false);
+			$get_ssn_callback = false;
+			//check for the url path contains /bookingfrontend/userhelper/callback
+			if (strpos($_SERVER['REQUEST_URI'], '/bookingfrontend/userhelper/callback') !== false)
+			{
+				$get_ssn_callback = true;
+			}
+
 			$type = 'remote';
 			$config_openid[$type]['redirect_uri'] = \phpgw::link('/bookingfrontend/userhelper/callback', ['type' => $type], false, true);
 			$OpenIDConnect = OpenIDConnect::getInstance($type, $config_openid);
-			if ($get_ssn_callback)
-			{
-				$ssn = $OpenIDConnect->get_username();
-_debug_array($ssn);
-				$redirect_after_callback = Cache::session_get('bookingfrontend', 'redirect_after_callback');
-_debug_array($redirect_after_callback);
-				Cache::session_clear('bookingfrontend', 'redirect_after_callback');
-			}
-			else
+
+			if (!$get_ssn_callback)
 			{
 				Cache::session_set('bookingfrontend', 'redirect_after_callback', json_encode($redirect));
 				$OpenIDConnect->authenticate();
 				exit;
+			}
+			else
+			{
+				$ssn = $OpenIDConnect->get_username();
+				$redirect_after_callback = Cache::session_get('bookingfrontend', 'redirect_after_callback');
+				Cache::session_clear('bookingfrontend', 'redirect_after_callback');
 			}
 		}
 

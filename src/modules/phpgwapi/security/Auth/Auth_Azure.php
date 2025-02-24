@@ -228,10 +228,7 @@
 			 */
 			if (!empty($config_openid['common']['method_backend']))
 			{
-
-				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
-				$OpenIDConnect = \App\modules\phpgwapi\controllers\OpenIDConnect::getInstance($type, $config_openid);
-				$groups = $OpenIDConnect->get_groups();
+				$groups = \App\modules\phpgwapi\controllers\OpenIDConnect::getInstance()->get_groups();
 			}
 
 			$groups = array_map('strtolower', $groups);

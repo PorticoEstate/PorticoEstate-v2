@@ -59,7 +59,7 @@ class CreateAccount
 		$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
 
 		$this->login = $Auth->get_username(true);
-
+_debug_array($_SESSION);
 		if (isset($_SERVER["OIDC_groups"]))
 		{
 			$OIDC_groups = mb_convert_encoding(mb_convert_encoding($_SERVER["OIDC_groups"], 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1');

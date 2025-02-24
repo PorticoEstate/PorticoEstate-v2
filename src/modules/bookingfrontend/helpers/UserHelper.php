@@ -523,6 +523,7 @@ class UserHelper
 			$get_ssn_callback = \Sanitizer::get_var('callback', 'string', 'GET', false);
 			$type = 'remote';
 			$config_openid[$type]['redirect_uri'] = \phpgw::link('/bookingfrontend/userhelper/callback', ['type' => $type], false, true);
+			_debug_array($config_openid[$type]['redirect_uri']);die();	
 			$OpenIDConnect = OpenIDConnect::getInstance($type, $config_openid);
 			if ($get_ssn_callback)
 			{

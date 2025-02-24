@@ -1,35 +1,53 @@
 import React from 'react';
 import { DateTime } from 'luxon';
-import { Season } from "@/service/pecalendar.types";
 import styles from './debug-info.module.scss';
+import {useEnabledResources} from "@/components/building-calendar/calendar-context";
+import {Season} from "@/service/types/Building";
 
 interface DebugInfoProps {
     currentDate: DateTime;
     seasons: Season[];
     view: string;
-    enabledResources: Set<string>;
 }
+const formatSeasonBoundary = (boundary: string) => {
+	return DateTime.fromISO(boundary).toFormat('HH:mm:ss');
+};
 
-const DebugInfo = ({ currentDate, seasons, view, enabledResources }: DebugInfoProps) => {
+const DebugInfo = ({ currentDate, seasons, view }: DebugInfoProps) => {
+	const {enabledResources} = useEnabledResources();
+
     if (process.env.NODE_ENV !== 'development') {
         return null;
     }
 
-    const getCurrentWeekSeasons = () => {
-        const weekStart = currentDate.startOf('week');
-        const weekSeasons = [];
-        for (let i = 0; i < 7; i++) {
-            const currentDay = weekStart.plus({ days: i });
-            const dayOfWeek = currentDay.weekday;
-            const season = seasons.find(s => s.wday === (dayOfWeek === 7 ? 0 : dayOfWeek));
+	const getCurrentWeekSeasons = () => {
+		const weekStart = currentDate.startOf('week');
+		const weekSeasons: string[] = [];
 
-            if (season) {
-                weekSeasons.push(`${currentDay.weekdayLong}: ${season.from_}-${season.to_}`);
-            }
-        }
+		for (let i = 0; i < 7; i++) {
+			const currentDay = weekStart.plus({ days: i });
+			const dayOfWeek = currentDay.weekday; // Luxon uses 1=Monday to 7=Sunday
 
-        return weekSeasons;
-    };
+			// Find seasons whose boundaries include the matching `wday`
+			const matchingSeasons = seasons.filter(season =>
+				season.boundaries.some(boundary => boundary.wday === (dayOfWeek === 7 ? 0 : dayOfWeek))
+			);
+
+			if (matchingSeasons.length > 0) {
+				matchingSeasons.forEach(season => {
+					// For each matching season, format the boundary times and display
+					const boundary = season.boundaries.find(boundary => boundary.wday === (dayOfWeek === 7 ? 0 : dayOfWeek));
+					if (boundary) {
+						const fromFormatted = formatSeasonBoundary(boundary.from_);
+						const toFormatted = formatSeasonBoundary(boundary.to_);
+						weekSeasons.push(`${currentDay.weekdayLong}: ${fromFormatted} - ${toFormatted}`);
+					}
+				});
+			}
+		}
+
+		return weekSeasons;
+	};
 
     return (
         <div className={styles.debugContainer}>

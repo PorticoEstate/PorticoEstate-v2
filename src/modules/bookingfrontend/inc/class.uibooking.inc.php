@@ -381,10 +381,27 @@ class bookingfrontend_uibooking extends booking_uibooking
 		$from_org = Sanitizer::get_var('from_org', 'boolean', "REQUEST", false);
 		$allocation_id = Sanitizer::get_var('allocation_id', 'int');
 		#The string replace is a workaround for a problem at Bergen Kommune
+
+		$timezone = !empty($this->userSettings['preferences']['common']['timezone']) ?
+			$this->userSettings['preferences']['common']['timezone'] : 'UTC';
+
 		$booking['from_'] = str_replace('%3A', ':', Sanitizer::get_var('from_', 'string', 'GET'));
 		$booking['to_'] = str_replace('%3A', ':', Sanitizer::get_var('to_', 'string', 'GET'));
-		foreach ($booking['from_'] as $k => $v)
-		{
+
+		// Add Unix timestamp support with timezone
+		if (is_numeric($booking['from_']) && strlen($booking['from_']) === 10) {
+			$dt = new DateTime();
+			$dt->setTimestamp((int)$booking['from_']);
+			$dt->setTimezone(new DateTimeZone($timezone));
+			$booking['from_'] = $dt->format('Y-m-d H:i:s');
+		}
+		if (is_numeric($booking['to_']) && strlen($booking['to_']) === 10) {
+			$dt = new DateTime();
+			$dt->setTimestamp((int)$booking['to_']);
+			$dt->setTimezone(new DateTimeZone($timezone));
+			$booking['to_'] = $dt->format('Y-m-d H:i:s');
+		}
+		foreach ($booking['from_'] as $k => $v) {
 			$booking['from_'][$k] = pretty_timestamp($booking['from_'][$k]);
 			$booking['to_'][$k] = pretty_timestamp($booking['to_'][$k]);
 		}
@@ -1781,29 +1798,34 @@ class bookingfrontend_uibooking extends booking_uibooking
 		self::render_template_xsl('booking_info', array('booking' => $booking, 'user_can_delete_bookings' => $user_can_delete_bookings));
 		phpgwapi_xslttemplates::getInstance()->set_output('wml'); // Evil hack to disable page chrome
 	}
+
 	public function info_json()
 	{
 		$config = CreateObject('phpgwapi.config', 'booking')->read();
 		$user_can_delete_bookings = $config['user_can_delete_bookings'] === 'yes' ? 1 : 0;
 
 		// Retrieve multiple booking IDs
-        $ids = Sanitizer::get_var('ids', 'string');
+		$ids = Sanitizer::get_var('ids', 'string');
 
-        if (is_array($ids)) {
-            // ids is already an array, keep as is
-        } elseif ($ids) {
-            // Convert comma-separated string to array
-            $ids = explode(',', $ids);
-        } else {
-            // No ids provided, try single id
-            $ids = array(Sanitizer::get_var('id'));
-        }
+		if (is_array($ids))
+		{
+			// ids is already an array, keep as is
+		} elseif ($ids)
+		{
+			// Convert comma-separated string to array
+			$ids = explode(',', $ids);
+		} else
+		{
+			// No ids provided, try single id
+			$ids = array(Sanitizer::get_var('id'));
+		}
 
-        // Filter out empty values and ensure we have at least one valid ID
-        $ids = array_filter($ids);
-        if (empty($ids)) {
-            phpgw::no_access('booking', lang('missing id'));
-        }
+		// Filter out empty values and ensure we have at least one valid ID
+		$ids = array_filter($ids);
+		if (empty($ids))
+		{
+			phpgw::no_access('booking', lang('missing id'));
+		}
 		$bookings_info = [];
 		foreach ($ids as $id)
 		{

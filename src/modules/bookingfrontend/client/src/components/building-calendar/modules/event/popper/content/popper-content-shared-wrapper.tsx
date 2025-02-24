@@ -8,6 +8,7 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 interface PopperContentSharedProps extends PropsWithChildren {
     onClose: () => void;
     header?: boolean;
+	headerContent?: JSX.Element;
 
 }
 
@@ -17,18 +18,22 @@ const PopperContentSharedWrapper: FC<PopperContentSharedProps> = (props) => {
         <div className={`${styles.eventPopper} ${props.header ? styles.withHeader : ''}`}>
             {props.header && (
                 <div className={`${styles.dialogHeader}`}>
-                    <Tooltip content={t('booking.close')}>
-                        <Button
-                            icon={true}
-                            variant="tertiary"
-                            aria-label="Close dialog"
-                            onClick={() => props.onClose()}
-                            className={'default'}
-                            data-size={'sm'}
-                        >
-                            <FontAwesomeIcon icon={faXmark} size={'lg'}/>
-                        </Button>
-                    </Tooltip>
+					{props.headerContent && (<div className={styles.headerContent}>{props.headerContent}</div>)}
+					<div className={styles.headerActions}>
+						<Tooltip content={t('booking.close')}>
+							<Button
+								icon={true}
+								variant="tertiary"
+								aria-label="Close dialog"
+								onClick={() => props.onClose()}
+								className={'default'}
+								data-size={'sm'}
+							>
+								<FontAwesomeIcon icon={faXmark} size={'lg'}/>
+							</Button>
+						</Tooltip>
+					</div>
+
                 </div>
             )}
 

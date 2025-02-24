@@ -33,6 +33,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/{id}/schedule', BuildingController::class . ':getSchedule');
         $group->get('/{id}/agegroups', BuildingController::class . ':getAgeGroups');
         $group->get('/{id}/audience', BuildingController::class . ':getAudience');
+		$group->get('/{id}/seasons', BuildingController::class . ':getSeasons');
     });
 
     $group->group('/resources', function (RouteCollectorProxy $group)

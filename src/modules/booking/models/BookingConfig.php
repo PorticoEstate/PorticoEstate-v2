@@ -420,6 +420,7 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
      */
     public $user_can_delete_allocations;
 

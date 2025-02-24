@@ -123,3 +123,12 @@ export function formatDateRange(from: DateTime | Date , to: DateTime | Date, wit
 }
 
 
+
+export function isFutureDate(date: DateTime): boolean {
+	const now = DateTime.utc(); // Current time in UTC
+	return date.isValid && date > now;
+}
+
+export function isDevMode (): boolean {
+	return process.env.NODE_ENV === 'development';
+}

@@ -85,7 +85,7 @@ const Applications: FC<ApplicationsProps> = (props) => {
             header: t('bookingfrontend.from'),
             cell: info => {
                 const dates = info.getValue();
-                console.log(dates);
+                // console.log(dates);
                 if (dates.length === 0) return null;
 
                 // Sort dates and get earliest from_ date

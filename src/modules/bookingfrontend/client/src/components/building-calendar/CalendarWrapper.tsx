@@ -3,9 +3,9 @@
 import React, {useState, useCallback, useRef, useEffect, useMemo} from 'react';
 import {DateTime, Interval} from "luxon";
 import BuildingCalendarClient from "@/components/building-calendar/building-calendar-client";
-import {IEvent, IFreeTimeSlot, Season} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {DatesSetArg} from "@fullcalendar/core";
-import {IBuilding} from "@/service/types/Building";
+import {IBuilding, Season} from "@/service/types/Building";
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
 import {useBuildingFreeTimeSlots, useBuildingSchedule} from "@/service/hooks/api-hooks";
 import CalendarProvider from "@/components/building-calendar/calendar-context";
@@ -14,9 +14,9 @@ import {useQueryClient} from "@tanstack/react-query";
 import styles from "@/components/building-calendar/building-calender.module.scss";
 import CalendarResourceFilter from "@/components/building-calendar/modules/resource-filter/calender-resource-filter";
 import {useIsMobile} from "@/service/hooks/is-mobile";
+import {useBuilding} from "@/service/api/building";
 
 interface CalendarWrapperProps {
-    initialSchedule: IEvent[];
     initialFreeTime: Record<string, IFreeTimeSlot[]>; // [resourceId]: Array<IFreeTimeSlot>
     buildingId: number;
     resources: IResource[];
@@ -24,23 +24,20 @@ interface CalendarWrapperProps {
     building: IBuilding;
     initialDate: Date;
     resourceId?: string;
-    initialWeekSchedule?: Record<string, IEvent[]>
 }
 
 
 const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                                                              initialDate,
-                                                             initialSchedule,
                                                              initialFreeTime,
                                                              buildingId,
                                                              resources,
                                                              seasons,
                                                              building,
                                                              resourceId,
-                                                             initialWeekSchedule
                                                          }) => {
     const initialEnabledResources = new Set<string>(
-        resourceId ? [resourceId] : resources.map(a => `${a.id}`)
+        resourceId ? [resourceId] : []
     );
     const [enabledResources, setEnabledResources] = useState<Set<string>>(initialEnabledResources);
     const {setLoadingState} = useLoadingContext();
@@ -57,9 +54,10 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
 		initialFreeTime
 	});
 
-	console.log(freeTimeSlots)
+	const {data: _, isLoading, isStale} = useBuilding(building.id, undefined, building);
 
-    useEffect(() => {
+
+	useEffect(() => {
         resources.forEach((res) => queryClient.setQueryData<IResource>(['resource', `${res.id}`], res))
         queryClient.setQueryData(['buildingResources', `${resourceId}`], resources);
     }, [resources, queryClient, resourceId]);

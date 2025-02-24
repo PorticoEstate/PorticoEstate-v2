@@ -6,23 +6,26 @@ import {
     useQueryClient,
     UseQueryResult
 } from "@tanstack/react-query";
-import {IBookingUser} from "@/service/types/api.types";
+import {IBookingUser, IServerSettings} from "@/service/types/api.types";
 import {
 	fetchBuildingAgeGroups, fetchBuildingAudience,
-	fetchBuildingSchedule,
+	fetchBuildingSchedule, fetchBuildingSeasons,
 	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
 	fetchInvoices,
-	fetchPartialApplications, patchBookingUser
+	fetchPartialApplications, fetchServerSettings, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
 import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
-import {useEffect} from "react";
-import {IAgeGroup, IAudience} from "@/service/types/Building";
-
-
+import {useCallback, useEffect} from "react";
+import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
+// require('log-timestamp');
+//
+// if(typeof window !== "undefined") {
+// 	require( 'console-stamp' )( console );
+// }
 interface UseScheduleOptions {
     building_id: number;
     weeks: DateTime[];
@@ -30,7 +33,7 @@ interface UseScheduleOptions {
     initialWeekSchedule?: Record<string, IEvent[]>
 }
 
-interface FreeTimeSlotsResponse {
+export interface FreeTimeSlotsResponse {
 	[resourceId: string]: IFreeTimeSlot[];
 }
 
@@ -138,9 +141,9 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
     const keys = weekStarts.map(a => a.toFormat("y-MM-dd"))
 
     // Helper to get cache key for a week
-    const getWeekCacheKey = (key: string) => {
+    const getWeekCacheKey = useCallback((key: string) => {
         return ['buildingSchedule', building_id, key];
-    };
+    }, [building_id]);
     // Initialize cache with provided initial schedule data
     useEffect(() => {
         if (initialWeekSchedule) {
@@ -151,16 +154,20 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
                 }
             });
         }
-    }, [initialWeekSchedule, building_id, queryClient]);
-    // Filter out weeks that are already in cache
-    const uncachedWeeks = keys.filter(weekStart => {
-        const cacheKey = getWeekCacheKey(weekStart);
-        const d = queryClient.getQueryData(cacheKey);
-        return !d;
-    });
+    }, [initialWeekSchedule, building_id, queryClient, getWeekCacheKey]);
+
 
     // Fetch function that gets all uncached weeks
     const fetchUncachedWeeks = async () => {
+		// Filter out weeks that are already in cache
+		const uncachedWeeks = keys.filter(weekStart => {
+			const cacheKey = getWeekCacheKey(weekStart);
+			const d = queryClient.getQueryData(cacheKey);
+
+			console.log("Query state", cacheKey, queryClient.getQueryState(cacheKey), d);
+			return !d;
+		});
+		console.log('weeks', uncachedWeeks);
         if (uncachedWeeks.length === 0) {
             // If all weeks are cached, combine and return cached data
             const combinedData: IEvent[] = [];
@@ -176,14 +183,13 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
 
         // Fetch data for all uncached weeks at once
         const scheduleData = await fetchBuildingSchedule(building_id, uncachedWeeks, instance);
-
         // Cache each week's data separately
         uncachedWeeks.forEach(weekStart => {
             const weekData: IEvent[] = scheduleData[weekStart] || [];
             const cacheKey = getWeekCacheKey(weekStart);
             console.log("uncachedWeek", weekStart);
 
-            queryClient.setQueryData(cacheKey, weekData);
+            queryClient.setQueryData(cacheKey, weekData, {});
         });
 
         // Return combined data for all requested weeks
@@ -203,6 +209,7 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
     return useQuery({
         queryKey: ['buildingSchedule', building_id, keys.join(',')],
         queryFn: fetchUncachedWeeks,
+		// staleTime: 10000
         // staleTime: 1000 * 60 * 5, // 5 minutes
         // cacheTime: 1000 * 60 * 30, // 30 minutes
     });
@@ -525,6 +532,33 @@ export function useBuildingAgeGroups(building_id?: number): UseQueryResult<IAgeG
             queryFn: building_id === undefined ? skipToken : () => fetchBuildingAgeGroups(building_id), // Fetch function
             retry: 2, // Number of retry attempts if the query fails
             enabled: building_id !== undefined,
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+        }
+    );
+}
+
+
+
+export function useBuildingSeasons(building_id?: number): UseQueryResult<Season[]> {
+    return useQuery(
+        {
+            queryKey: ['building_seasons', building_id],
+            queryFn: building_id === undefined ? skipToken : () => fetchBuildingSeasons(building_id), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            enabled: building_id !== undefined,
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+        }
+    );
+}
+
+
+
+export function useServerSettings(): UseQueryResult<IServerSettings> {
+    return useQuery(
+        {
+            queryKey: ['building_seasons'],
+            queryFn: () => fetchServerSettings(), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
             refetchOnWindowFocus: false, // Do not refetch on window focus by default
         }
     );

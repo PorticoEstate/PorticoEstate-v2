@@ -57,7 +57,7 @@ export interface IAPIEvent extends IAPIScheduleEntity {
     contact_phone?: string;  // conditional @Expose + NOT NULL
     reminder: number;        // @Expose + default 0
     secret?: string;        // conditional @Expose + NOT NULL
-    customer_identifier_type?: string;  // no @Expose + nullable
+    customer_identifier_type?: 'organization_number' | 'ssn';  // no @Expose + nullable
     customer_organization_number?: string;  // no @Expose + nullable
     customer_ssn?: string;   // no @Expose + nullable
     customer_internal?: number;  // no @Expose + default 1
@@ -117,35 +117,6 @@ export interface IEventDate {
     from_: string
     to_: string
     id: number
-}
-
-
-export interface ResultSet {
-    totalResultsAvailable: number
-    Result: Result
-}
-
-export interface Result {
-    total_records: number
-    results: SchedulingResults
-}
-
-export interface SchedulingResults {
-    schedule: IEvent[]
-    resources: Record<string, IShortResource>
-    seasons: Season[]
-}
-
-
-export interface Season {
-    id: number
-    building_id: number
-    name: string
-    sfrom: string
-    sto: string
-    wday: number
-    from_: string
-    to_: string
 }
 
 

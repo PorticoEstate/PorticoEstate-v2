@@ -1,4 +1,4 @@
-import React, {Fragment, useMemo, useState, FC} from 'react';
+import React, {Fragment, useMemo, useState, FC, useCallback, useEffect} from 'react';
 import {
     Button,
     Chip, Details,
@@ -18,16 +18,16 @@ import styles from './application-crud.module.scss';
 import {useForm, Controller} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {
-    useBookingUser,
-    useBuildingAgeGroups,
-    useBuildingAudience,
-    useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
-    usePartialApplications,
-    useUpdatePartialApplication, useUploadApplicationDocument
+	useBookingUser,
+	useBuildingAgeGroups,
+	useBuildingAudience, useBuildingSeasons,
+	useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
+	usePartialApplications,
+	useUpdatePartialApplication, useUploadApplicationDocument
 } from "@/service/hooks/api-hooks";
 import {NewPartialApplication, IUpdatePartialApplication, IApplication} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
-import {IAgeGroup, IAudience, IBuilding} from "@/service/types/Building";
+import {IAgeGroup, IAudience, IBuilding, Season} from "@/service/types/Building";
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import {ApplicationFormData, applicationFormSchema} from './application-form';
 import {IBookingUser} from "@/service/types/api.types";
@@ -50,6 +50,7 @@ interface ApplicationCrudInnerProps extends ApplicationCrudProps {
     onSubmitSuccess?: (data: ApplicationFormData) => void;
     lastSubmittedData?: Partial<ApplicationFormData> | null;
     bookingUser?: IBookingUser;
+	seasons?: Season[];
 }
 
 const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
@@ -61,6 +62,8 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
     const {data: building, isLoading: buildingLoading} = useBuilding(
         building_id ? +building_id : undefined
     );
+
+	const {data: seasons, isLoading: seasonsLoading} = useBuildingSeasons(building_id ? +building_id : undefined);
     const {data: buildingResources, isLoading: buildingResourcesLoading} = useBuildingResources(
         building_id
     );
@@ -72,7 +75,6 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
         building_id ? +building_id : undefined
     );
     const {data: bookingUser, isLoading: userLoading} = useBookingUser();
-
 
     const existingApplication = useMemo(() => {
         const applicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
@@ -90,7 +92,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
         return null;
     }
 
-    if (userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
+    if (seasonsLoading||userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
         return null;
     }
 
@@ -112,6 +114,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
                 partials={partials}
                 lastSubmittedData={lastSubmittedData}
                 bookingUser={bookingUser}
+				seasons={seasons}
                 onSubmitSuccess={(data) => setLastSubmittedData(data)}
                 {...props}
             />
@@ -130,30 +133,131 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const updateMutation = useUpdatePartialApplication();
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
+	const [minTime, maxTime] = useMemo(() => {
+		let minTime = '24:00:00';
+		let maxTime = '00:00:00';
+		if(!props.seasons) {
+			return ['00:00:00', '24:00:00']
+		}
 
-    const defaultStartEnd = useMemo(() => {
-        if (!existingApplication?.dates || !props.selectedTempApplication?.id || props.date_id === undefined) {
-            return {
-                start: props.selectedTempApplication?.start || new Date(),
-                end: props.selectedTempApplication?.end || new Date()
-            };
-        }
-        const dateId = props.selectedTempApplication?.id || props.date_id;
-        // Find the date entry matching the selectedTempEvent's id
-        const dateEntry = existingApplication.dates.find(d => +d.id === +dateId);
+		// Get currently active seasons
+		const now = DateTime.now();
+		const activeSeasons = props.seasons?.filter(season => {
+			const seasonStart = DateTime.fromISO(season.from_);
+			const seasonEnd = DateTime.fromISO(season.to_);
+			return season.active && now >= seasonStart && now <= seasonEnd;
+		});
 
-        if (!dateEntry) {
-            return {
-                start: props.selectedTempApplication?.start || new Date(),
-                end: props.selectedTempApplication?.end || new Date()
-            };
-        }
+		// Check all boundaries from active seasons
+		activeSeasons?.forEach(season => {
+			season.boundaries.forEach(boundary => {
+				if (boundary.from_ < minTime) minTime = boundary.from_;
+				if (boundary.to_ > maxTime) maxTime = boundary.to_;
+			});
+		});
 
-        return {
-            start: applicationTimeToLux(dateEntry.from_).toJSDate(),
-            end: applicationTimeToLux(dateEntry.to_).toJSDate()
-        };
-    }, [existingApplication, props.selectedTempApplication, props.date_id]);
+		// Set default values if no valid times found
+		return [
+			minTime === '24:00:00' ? '06:00:00' : minTime,
+			maxTime === '00:00:00' ? '24:00:00' : maxTime
+		];
+	}, [props.seasons]);
+
+	const isWithinBusinessHours = useCallback((date: Date): boolean => {
+		if(!props.seasons) {
+			return true;
+		}
+		const dt = DateTime.fromJSDate(date);
+		const dayOfWeek = dt.weekday;
+		const timeStr = dt.toFormat('HH:mm:ss');
+
+		// Get active seasons for the given date
+		const activeSeasons = props.seasons?.filter(season => {
+			const seasonStart = DateTime.fromISO(season.from_);
+			const seasonEnd = DateTime.fromISO(season.to_);
+			return season.active && dt >= seasonStart && dt <= seasonEnd;
+		});
+
+
+		// Check if time falls within any boundary of any active season
+		return activeSeasons.some(season =>
+			season.boundaries.some(boundary =>
+				boundary.wday === dayOfWeek &&
+				boundary.from_ <= timeStr &&
+				boundary.to_ >= timeStr
+			)
+		);
+	}, [props.seasons]);
+
+	const defaultStartEnd = useMemo(() => {
+		// Helper function to create default timestamps
+		const createDefaultTimes = () => {
+			const startTime = new Date();
+			// Set to next full hour
+			startTime.setHours(startTime.getHours() + 1, 0, 0, 0);
+
+			const endTime = new Date(startTime);
+			// Set end time 1 hour after start time
+			endTime.setHours(endTime.getHours() + 1);
+
+			// Check if this time range is within business hours
+			if (!isWithinBusinessHours(startTime) || !isWithinBusinessHours(endTime)) {
+				// Move to middle of next day
+				const tomorrow = DateTime.fromJSDate(startTime).plus({ days: 1 });
+				// Find active season for tomorrow
+				const tomorrowActiveSeasons = props.seasons!.filter(season => {
+					const seasonStart = DateTime.fromISO(season.from_);
+					const seasonEnd = DateTime.fromISO(season.to_);
+					return season.active && tomorrow >= seasonStart && tomorrow <= seasonEnd;
+				});
+
+				if (tomorrowActiveSeasons.length > 0) {
+					// Get boundaries for tomorrow
+					const tomorrowBoundaries = tomorrowActiveSeasons[0].boundaries
+						.filter(b => b.wday === tomorrow.weekday);
+
+					if (tomorrowBoundaries.length > 0) {
+						// Get middle of first boundary
+						const boundary = tomorrowBoundaries[0];
+						const startHour = parseInt(boundary.from_.split(':')[0]);
+						const endHour = parseInt(boundary.to_.split(':')[0]);
+						const middleHour = Math.floor((startHour + endHour) / 2);
+
+						return {
+							start: tomorrow.set({ hour: middleHour, minute: 0 }).toJSDate(),
+							end: tomorrow.set({ hour: middleHour + 1, minute: 0 }).toJSDate()
+						};
+					}
+				}
+			}
+
+			return { start: startTime, end: endTime };
+		};
+
+		if (!existingApplication?.dates || !props.selectedTempApplication?.id || props.date_id === undefined) {
+			const defaultTimes = createDefaultTimes();
+			return {
+				start: props.selectedTempApplication?.start || defaultTimes.start,
+				end: props.selectedTempApplication?.end || defaultTimes.end
+			};
+		}
+
+		const dateId = props.selectedTempApplication?.id || props.date_id;
+		const dateEntry = existingApplication.dates.find(d => +d.id === +dateId);
+
+		if (!dateEntry) {
+			const defaultTimes = createDefaultTimes();
+			return {
+				start: props.selectedTempApplication?.start || defaultTimes.start,
+				end: props.selectedTempApplication?.end || defaultTimes.end
+			};
+		}
+
+		return {
+			start: applicationTimeToLux(dateEntry.from_).toJSDate(),
+			end: applicationTimeToLux(dateEntry.to_).toJSDate()
+		};
+	}, [existingApplication, props.selectedTempApplication, props.date_id]);
 
     const defaultValues = useMemo(() => {
         if (existingApplication) {
@@ -204,20 +308,51 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     }, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication, props.bookingUser]);
 
 
-    const {
-        control,
-        handleSubmit,
-        watch,
-        setValue,
-        getValues,
-        formState: {errors, isDirty, dirtyFields}
-    } = useForm<ApplicationFormData>({
-        resolver: zodResolver(applicationFormSchema),
-        defaultValues: defaultValues
+	const {
+		control,
+		handleSubmit,
+		watch,
+		setValue,
+		getValues,
+		setError,
+		clearErrors,
+		formState: {errors, isDirty, dirtyFields}
+	} = useForm<ApplicationFormData>({
+		resolver: zodResolver(applicationFormSchema),
+		defaultValues: defaultValues
     });
 
     const selectedResources = watch('resources');
+	const startTime = watch('start');
+	const endTime = watch('end');
 
+
+	// Add useEffect to check times when they change
+	useEffect(() => {
+		if (!startTime) return;
+
+		if (!isWithinBusinessHours(startTime)) {
+			setError('start', {
+				type: 'manual',
+				message: t('bookingfrontend.start_time_outside_business_hours')
+			});
+		} else {
+			clearErrors('start');
+		}
+	}, [startTime, isWithinBusinessHours, setError, clearErrors, t]);
+
+	useEffect(() => {
+		if (!endTime) return;
+
+		if (!isWithinBusinessHours(endTime)) {
+			setError('end', {
+				type: 'manual',
+				message: t('bookingfrontend.end_time_outside_business_hours')
+			});
+		} else {
+			clearErrors('end');
+		}
+	}, [endTime, isWithinBusinessHours, setError, clearErrors, t]);
     const formatDateForInput = (date: Date) => {
         return DateTime.fromJSDate(date).toFormat('yyyy-MM-dd\'T\'HH:mm');
     };
@@ -226,6 +361,24 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
         if (!building || !buildingResources) {
             return;
         }
+		const startOutsideHours = !isWithinBusinessHours(data.start);
+		const endOutsideHours = !isWithinBusinessHours(data.end);
+		if (startOutsideHours || endOutsideHours) {
+			if (startOutsideHours) {
+				setError('start', {
+					type: 'manual',
+					message: t('bookingfrontend.start_time_outside_business_hours')
+				});
+			}
+			if (endOutsideHours) {
+				setError('end', {
+					type: 'manual',
+					message: t('bookingfrontend.end_time_outside_business_hours')
+				});
+			}
+			return;
+		}
+
         if (existingApplication) {
             const updatedApplication: IUpdatePartialApplication = {
                 id: existingApplication.id,
@@ -464,7 +617,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
             </div>
         );
     };
-
+	console.log("max-min time", maxTime, minTime)
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -527,8 +680,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                         {/*    value={formatDateForInput(value)}*/}
                                         {/*    onChange={e => onChange(new Date(e.target.value))}*/}
                                         {/*/>*/}
-                                        <CalendarDatePicker currentDate={value} view={'timeGridDay'} showTimeSelect
-                                                            onDateChange={onChange}/>
+										<CalendarDatePicker
+											currentDate={value}
+											view={'timeGridDay'}
+											showTimeSelect
+											onDateChange={onChange}
+											minTime={minTime}
+											maxTime={maxTime}
+										/>
 
 
                                         {errors.start &&
@@ -550,9 +709,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                         {/*    value={formatDateForInput(value)}*/}
                                         {/*    onChange={e => onChange(new Date(e.target.value))}*/}
                                         {/*/>*/}
-                                        <CalendarDatePicker currentDate={value} view={'timeGridDay'} showTimeSelect
-                                                            onDateChange={onChange} />
-
+										<CalendarDatePicker
+											currentDate={value}
+											view={'timeGridDay'}
+											showTimeSelect
+											onDateChange={onChange}
+											minTime={minTime}
+											maxTime={maxTime}
+										/>
                                         {errors.end &&
                                             <span className={styles.error}>{errors.end.message}</span>}
                                     </>

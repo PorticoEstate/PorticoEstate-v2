@@ -5,7 +5,7 @@ import {IApplication} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
-import {IAgeGroup, IAudience} from "@/service/types/Building";
+import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 
 
@@ -63,6 +63,22 @@ export async function fetchBuildingSchedule(building_id: number, dates: string[]
     }, true, instance);
 
     const response = await fetch(url, FetchAuthOptions());
+    const result = await response.json();
+    // console.log("fetchBuildingSchedule", result);
+    return result;
+}
+
+
+export async function fetchBuildingSeasons(building_id: number, instance?: string): Promise<Season[]> {
+
+
+    const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'seasons'], {
+        // menuaction: 'bookingfrontend.uibooking.building_schedule_pe',
+        // building_id,
+        // dates: dates,
+    }, true, instance);
+
+    const response = await fetch(url);
     const result = await response.json();
     // console.log("fetchBuildingSchedule", result);
     return result;

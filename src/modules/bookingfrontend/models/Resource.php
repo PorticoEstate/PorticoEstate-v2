@@ -153,19 +153,20 @@ class Resource
      */
     public $simple_booking_start_date;
 
-    /**
+
+	/**
+	 * @ORM\Column(type="bigint", nullable=true)
+	 * @Expose
+	 * @OA\Property(description="End date for simple booking", type="integer", format="int64", nullable=true)
+	 */
+	public $simple_booking_end_date;
+
+	/**
      * @ORM\Column(type="integer", nullable=true)
      * @Expose
      * @OA\Property(description="Booking month horizon", type="integer", nullable=true)
      */
     public $booking_month_horizon;
-
-    /**
-     * @ORM\Column(type="bigint", nullable=true)
-     * @Expose
-     * @OA\Property(description="End date for simple booking", type="integer", format="int64", nullable=true)
-     */
-    public $simple_booking_end_date;
 
     /**
      * @ORM\Column(type="integer", nullable=true)

@@ -33,12 +33,13 @@
     grid-template-rows: auto 1fr;
     grid-template-areas: "inner-header inner-header inner-header" "filter calendar-body calendar-body";
     gap: 0.875rem 0.875rem;
-
+	min-height: 985px;
 
     :global .fc {
         grid-area: calendar-body;
         background-color: $grey-light-64;
     }
+
 
     @include mobile {
         display: grid;
@@ -72,6 +73,9 @@
     //border-bottom-left-radius: 8px;
     &-allocation {
         border-left-color: #7D7D7D;
+		&.eventAdmin {
+			border-left-color: #800080;
+		}
     }
 
     &-booking {
@@ -89,10 +93,13 @@
     }
 }
 
+
 .eventAllDay {
     background-color: $blue-16;
     --fc-bg-event-color: #{$blue-16};
 }
+
+
 
 .closedHours {
     --fc-bg-event-color: rgba(211, 211, 211);

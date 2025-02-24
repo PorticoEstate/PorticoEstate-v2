@@ -137,8 +137,7 @@ class CreateAccount
 		if (OpenIDConnect::getInstance()->isAuthenticated())
 		{
 			$userinfo = OpenIDConnect::getInstance()->get_userinfo();
-_debug_array($userinfo);
-			$email = isset($userinfo->email) ? $userinfo->email : $userinfo->name;
+			$email = isset($userinfo->email) ? $userinfo->email : $userinfo->upn;
 			$firstname = $userinfo->given_name;
 			$lastname = $userinfo->family_name;
 		}

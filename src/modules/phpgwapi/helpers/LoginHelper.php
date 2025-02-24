@@ -57,6 +57,26 @@ class LoginHelper
 		$this->msg_only = $msg_only;
 	}
 
+	public function processLoginCallback(Request $request, Response $response, array $args)
+	{
+		$Login = new Login();
+		$sessionid = $Login->login();
+		if ($sessionid)
+		{
+			$this->redirect();
+		}
+		else
+		{
+			$LoginUi = new LoginUi($this->msg_only);
+			$variables = array();
+			$LoginUi->phpgw_display_login($variables, $Login->get_cd());
+		}
+
+		$response = $response->withHeader('Content-Type', 'text/html');
+		return $response;
+	}
+
+
 	public function processLogin(Request $request, Response $response, array $args)
 	{
 		$routeContext = RouteContext::fromRequest($request);
@@ -66,8 +86,8 @@ class LoginHelper
 		$currentApp = trim($routePath_arr[1], '[');
 
 		//backwards compatibility
-	//	if (empty($_POST) && $currentApp == 'mobilefrontend' && $routePath_arr[2] == 'login.php')
-		if (empty($_POST) && ($routePath_arr[1] == 'login.php' || $routePath_arr[2] == 'login.php'))
+		$login_type = Sanitizer::get_var('type', 'string', 'GET');
+		if ($login_type !== 'sql' && empty($_POST) && ($routePath_arr[1] == 'login.php' || $routePath_arr[2] == 'login.php'))
 		{
 			$process_login = new Login();
 			if ($process_login->login()) //SSO login
@@ -75,6 +95,86 @@ class LoginHelper
 				phpgw::redirect_link('/home/', array('cd' => 'yes'));
 			}
 		}
+		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+		$location_id	= $location_obj->get_id('admin', 'openid_connect');
+
+		if ($location_id)
+		{
+			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+		}
+
+		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']) && empty($_REQUEST['skip_remote']))
+		{
+			$lang_sign_in = lang('Sign in');
+			$lang_select_login_method = lang('Select login method');
+			$options = <<<HTML
+			<option value="">{$lang_select_login_method}</option>
+HTML;
+			foreach ($config_openid['common']['method_backend'] as $type)
+			{
+				$method_name = $config_openid[$type]['name'];
+				$options .= <<<HTML
+				<option value="{$type}">{$method_name}</option>
+HTML;
+			}
+			$options .= <<<HTML
+			<option value="sql">Brukernavn/Passord</option>
+HTML;
+
+			$html = <<<HTML
+<!DOCTYPE html>
+	<html>
+	<head>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+		<script>
+			document.addEventListener('DOMContentLoaded', function() {
+				const selectElement = document.getElementById('type');
+				const form = document.getElementById('login-form');
+
+				// Function to reset the select box to its default value
+				function resetSelectBox() {
+					selectElement.value = '';
+				}
+
+				// Function to check the selected option and submit the form
+				function checkSelectedOption() {
+					if (selectElement.value !== '') {
+						form.submit();
+					}
+				}
+
+				// Reset the select box on page load
+				resetSelectBox();
+
+				// Add event listener to the select element
+				selectElement.addEventListener('change', checkSelectedOption);
+
+				// Reset the select box when the user clicks the "back" button
+				window.addEventListener('pageshow', resetSelectBox);
+			});
+		</script>
+	</head>
+	<body>
+		<div class="container">
+			<h1>{$lang_sign_in} {$this->serverSettings['site_title']}</h1>
+			<form id="login-form" method="GET" action="./login.php">
+				<div class="mb-3">
+					<label for="type" class="form-label">Logg inn med:</label>
+					<select id="type" name="type" class="form-select">
+						{$options}
+					</select>
+				</div>
+			</form>
+		</div>
+	</body>
+</html>
+HTML;
+
+			$response = $response->withHeader('Content-Type', 'text/html');
+			$response->getBody()->write($html);
+			return $response;
+		}
+
 
 		$LoginUi   = new LoginUi($this->msg_only);
 		$variables = array();
@@ -82,16 +182,15 @@ class LoginHelper
 		if (!Sanitizer::get_var('hide_lightbox', 'bool'))
 		{
 			$partial_url	   = '/login_ui';
-			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
+//			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
 
 			$variables['lang_login']  = lang('login');
 			$variables['partial_url'] = $partial_url;
-			//		$variables['lang_frontend']	= $frontend ? lang($frontend) : '';
-			if (isset($this->serverSettings['half_remote_user']) && $this->serverSettings['half_remote_user'] == 'remoteuser')
-			{
-				$variables['lang_additional_url'] = lang('use sso login');
-				$variables['additional_url']	  = phpgw::link('/' . $phpgw_url_for_sso);
-			}
+			// if (isset($this->serverSettings['half_remote_user']) && $this->serverSettings['half_remote_user'] == 'remoteuser')
+			// {
+			// 	$variables['lang_additional_url'] = lang('use sso login');
+			// 	$variables['additional_url']	  = phpgw::link('/' . $phpgw_url_for_sso);
+			// }
 		}
 
 		if ($this->serverSettings['auth_type'] == 'remoteuser')

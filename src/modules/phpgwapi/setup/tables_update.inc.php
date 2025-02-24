@@ -3946,6 +3946,277 @@ function phpgwapi_upgrade0_9_17_567($oProc)
 		$currentver = '0.9.17.568';
 		Settings::getInstance()->update('setup_info', ['phpgwapi' => ['currentver' => $currentver]]);
 		return $currentver;
+	}
+}
 
+/**
+ * Add new location for configuration of openid connect
+ * @return string the new version number
+ */
+
+$test[] = '0.9.17.568';
+function phpgwapi_upgrade0_9_17_568($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$location_obj = new App\modules\phpgwapi\controllers\Locations();
+	$location_id = $location_obj->add('openid_connect', 'config section for OpenID Connect', 'admin', false);
+	$custom_config = CreateObject('admin.soconfig', $location_id);
+
+	// common
+	$receipt_section_common = $custom_config->add_section(
+		array(
+			'name' => 'common',
+			'descr' => 'common OpenID Connect configuration'
+		)
+	);
+
+	//method_backend
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_common['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'method_backend',
+			'descr'			=> 'method backend OpenID Connect configuration',
+			'choice' => array('local', 'remote'),
+			'value'			=> [],
+		)
+	);
+
+	//method_frontend
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_common['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'method_frontend',
+			'descr'			=> 'method frontend OpenID Connect configuration',
+			'choice' => array('remote'),
+			'value'			=> [],
+		)
+	);
+
+
+	//remote
+	$receipt_section_remote = $custom_config->add_section(
+		array(
+			'name' => 'remote',
+			'descr' => 'Remote OpenID Connect configuration'
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'name',
+			'descr'			=> 'Name of method',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'response_variable',
+			'descr'			=> 'Name of variable to fetch from response',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'client_id',
+			'descr'			=> 'Client ID',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'password',
+			'name'			=> 'client_secret',
+			'descr'			=> 'Client Secret',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'redirect_uri',
+			'descr'			=> 'Redirect URI',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'redirect_logout_uri',
+			'descr'			=> 'Redirect logout URI',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'provider_url',
+			'descr'			=> 'Provider url',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'scopes',
+			'descr'			=> 'Scopes',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'debug',
+			'descr'			=> 'Debug - will print out the response',
+			'choice' => array('debug'),
+			'value'			=> [],
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'groups',
+			'descr'			=> 'Fallback to groups',
+			'choice'		=> [],
+			'value'			=> [],
+		)
+	);
+
+	//local
+	$receipt_section_local = $custom_config->add_section(
+		array(
+			'name' => 'local',
+			'descr' => 'local OpenID Connect configuration'
+		)
+	);
+
+	/* config values
+	[
+		'client_id' => 'YOUR_CLIENT_ID',
+		'client_secret' => 'YOUR_CLIENT_SECRET',
+		'redirect_uri' => 'https://yourdomain.com/callback.php',
+		'provider_url' => 'https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0',
+		'scopes' => 'openid profile email'
+	];
+*/
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'name',
+			'descr'			=> 'Name of method',
+			'value'			=> '',
+		)
+	);
+	//respons_variable
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'response_variable',
+			'descr'			=> 'Name of variable to fetch from response',
+			'value'			=> '',
+		)
+	);
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'client_id',
+			'descr'			=> 'Client ID',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'password',
+			'name'			=> 'client_secret',
+			'descr'			=> 'Client Secret',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'redirect_uri',
+			'descr'			=> 'Redirect URI',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'redirect_logout_uri',
+			'descr'			=> 'Redirect logout URI',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'provider_url',
+			'descr'			=> 'Provider url',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'scopes',
+			'descr'			=> 'Scopes',
+			'value'			=> '',
+		)
+	);
+	
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_local['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'debug',
+			'descr'			=> 'Debug - will print out the response',
+			'choice' => array('debug'),
+			'value'			=> [],
+		)
+	);
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.9.17.569';
+		Settings::getInstance()->update('setup_info', ['phpgwapi' => ['currentver' => $currentver]]);
+		return $currentver;
 	}
 }

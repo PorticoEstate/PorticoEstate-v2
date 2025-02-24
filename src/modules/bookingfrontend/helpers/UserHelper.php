@@ -6,7 +6,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Config;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
-
+use App\modules\phpgwapi\controllers\OpenIDConnect;
 
 class UserHelper
 {
@@ -493,19 +493,57 @@ class UserHelper
 		{
 			$ssn = $this->config->config_data['test_ssn'];
 			Cache::message_set('Warning: ssn is set by test-data', 'error');
-		} else 
-		if (!empty($_SERVER['HTTP_UID']))
-        {
-            $ssn = (string)$_SERVER['HTTP_UID'];
-        } 
+		}
+		else if (!empty($_SERVER['HTTP_UID']))
+		{
+			$ssn = (string)$_SERVER['HTTP_UID'];
+		}
 		if (!empty($_SERVER['OIDC_pid']))
-        {
-            $ssn = (string)$_SERVER['OIDC_pid'];
-        }
+		{
+			$ssn = (string)$_SERVER['OIDC_pid'];
+		}
 		if (!empty($_SERVER['REDIRECT_OIDC_pid']))
-        {
-            $ssn = (string)$_SERVER['REDIRECT_OIDC_pid'];
-        }
+		{
+			$ssn = (string)$_SERVER['REDIRECT_OIDC_pid'];
+		}
+
+		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+		$location_id	= $location_obj->get_id('admin', 'openid_connect');
+		if ($location_id)
+		{
+			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+		}
+
+		/**
+		 * OpenID Connect
+		 */
+		$redirect_after_callback = '';
+		if (!empty($config_openid['common']['method_backend']) && in_array('remote', $config_openid['common']['method_backend']))
+		{
+			$get_ssn_callback = false;
+			//check for the url path contains /bookingfrontend/userhelper/callback
+			if (strpos($_SERVER['REQUEST_URI'], '/bookingfrontend/userhelper/callback') !== false)
+			{
+				$get_ssn_callback = true;
+			}
+
+			$type = 'remote';
+			$config_openid[$type]['redirect_uri'] = \phpgw::link('/bookingfrontend/userhelper/callback', ['type' => $type], false, true);
+			$OpenIDConnect = OpenIDConnect::getInstance($type, $config_openid);
+
+			if (!$get_ssn_callback)
+			{
+				Cache::session_set('bookingfrontend', 'redirect_after_callback', json_encode($redirect));
+				$OpenIDConnect->authenticate();
+				exit;
+			}
+			else
+			{
+				$ssn = $OpenIDConnect->get_username();
+				$redirect_after_callback = Cache::session_get('bookingfrontend', 'redirect_after_callback');
+				Cache::session_clear('bookingfrontend', 'redirect_after_callback');
+			}
+		}
 
 		if (isset($this->config->config_data['bypass_external_login']) && $this->config->config_data['bypass_external_login'])
 		{
@@ -599,6 +637,16 @@ class UserHelper
 		}
 
 		Cache::session_set($this->get_module(), self::USERARRAY_SESSION_KEY, $ret);
+
+		if ($redirect_after_callback)
+		{
+			$redirect = json_decode($redirect_after_callback, true);
+			if ($redirect)
+			{
+				\phpgw::redirect_link('/bookingfrontend/', $redirect);
+			}
+		}
+
 
 		return $ret;
 	}

@@ -57,6 +57,9 @@ $app->post('/login.php', LoginHelper::class . ':processLogin');
 $app->get('/login_ui[/{params:.*}]', LoginHelper::class . ':processLogin');
 $app->post('/login_ui[/{params:.*}]', LoginHelper::class . ':processLogin');
 
+$app->get('/login_callback', LoginHelper::class . ':processLoginCallback');
+
+$phpgw_domain = $phpgw_domain ?? [];
 $app->get('/login[/{params:.*}]', function (Request $request, Response $response) use ($phpgw_domain)
 {
 
@@ -174,6 +177,7 @@ $app->get('/logout_ui[/{params:.*}]', function (Request $request, Response $resp
 	$session_id = $sessions->get_session_id();
 	if ($session_id)
 	{
+		$sessions->verify($session_id);
 		$sessions->destroy($session_id);
 	}
 	phpgw::redirect_link('/login_ui', array('cd' => 1, 'logout' => 1));

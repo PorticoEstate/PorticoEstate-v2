@@ -228,11 +228,7 @@ class Login
 		/**
 		 * OpenID Connect
 		 */
-		else if (
-			in_array($this->serverSettings['auth_type'],  array('remoteuser', 'azure'))
-			&& (isset($_SERVER['OIDC_upn']) || isset($_SERVER['REMOTE_USER']) || isset($_SERVER['OIDC_pid']))
-			&& empty($_REQUEST['skip_remote'])
-		)
+		else if (in_array($this->serverSettings['auth_type'],  array('remoteuser', 'azure')) && empty($_REQUEST['skip_remote']))
 		{
 			//	print_r($this->serverSettings);
 
@@ -247,22 +243,17 @@ class Login
 					$login .= "#{$this->logindomain}";
 				}
 
+				$groups = $Auth->get_groups();
+
 				/**
 				 * One last check...
 				 */
 				if (!\Sanitizer::get_var('OIDC_pid', 'string', 'SERVER'))
 				{
-					$ad_groups = array();
-					if (!empty($_SERVER["OIDC_groups"]))
-					{
-						$OIDC_groups = mb_convert_encoding(mb_convert_encoding($_SERVER["OIDC_groups"], 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1');
-						$ad_groups	= explode(",", $OIDC_groups);
-					}
 					$default_group_lid	 = !empty($this->serverSettings['default_group_lid']) ? $this->serverSettings['default_group_lid'] : 'Default';
 					$default_group_lid = strtolower($default_group_lid);
-					$ad_groups = array_map('strtolower', $ad_groups);
 
-					if (!in_array($default_group_lid, $ad_groups))
+					if (!in_array($default_group_lid, $groups))
 					{
 						throw new \Exception(lang('missing membership: "%1" is not in the list', $default_group_lid));
 					}
@@ -270,7 +261,7 @@ class Login
 
 				$this->_sessionid = $this->sessions->create($login, '');
 			}
-			else if (!$login || empty($this->_sessionid))
+			if (!$login || empty($this->_sessionid))
 			{
 				if (!empty($this->serverSettings['auto_create_acct']))
 				{

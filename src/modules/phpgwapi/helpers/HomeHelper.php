@@ -78,23 +78,12 @@ class HomeHelper
 			$this->phpgwapi_common->phpgw_exit();
 		}
 
-		//temporary hack to avoid dodgy session handling after initial login
-		if (!empty($this->serverSettings['forward_to_http']))
-		{
-			// check if we are already on a https frontend
-			//check HTTP_UID
-			if (isset($_SERVER['HTTP_SHIB_HANDLER']) && !$_SERVER['HTTP_UID'])
-			{
-				// redirect to http
-				$redirect = \phpgw::link('/home/', $_GET, false, true);
-				header('Location: ' . str_replace('https', 'http', $redirect));
-				exit;
-			}
-		}
 
 		// check if forward parameter is set
 		if (isset($_GET['phpgw_forward']) && is_array($_GET['phpgw_forward']))
 		{
+			
+			$extra_vars = [];
 			foreach ($_GET as $name => $value)
 			{
 				// find phpgw_ in the $_GET parameters but skip phpgw_forward because of redirect call below

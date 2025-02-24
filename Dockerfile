@@ -73,7 +73,7 @@ RUN pecl install apcu && docker-php-ext-enable apcu
 RUN pecl install redis && docker-php-ext-enable redis
 
 # Add APCu configuration
-RUN echo "apc.shm_size=128M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
+RUN echo "apc.shm_size=64M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
     && echo "apc.enabled=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
     && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini
 
@@ -83,7 +83,7 @@ RUN docker-php-ext-install opcache
 
 # Add OPcache configuration
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
-    && echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
+    && echo "opcache.memory_consumption=64" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
     && echo "opcache.interned_strings_buffer=8" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
     && echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
     && echo "opcache.revalidate_freq=2" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
@@ -117,7 +117,7 @@ RUN echo 'session.use_only_cookies=On' >> /usr/local/etc/php/php.ini
 RUN echo 'short_open_tag=Off' >> /usr/local/etc/php/php.ini
 RUN echo 'request_order = "GPCS"' >> /usr/local/etc/php/php.ini
 RUN echo 'variables_order = "GPCS"' >> /usr/local/etc/php/php.ini
-RUN echo 'memory_limit = 5048M' >> /usr/local/etc/php/php.ini
+RUN echo 'memory_limit = 512M' >> /usr/local/etc/php/php.ini
 RUN echo 'max_input_vars = 5000' >> /usr/local/etc/php/php.ini
 RUN echo 'error_reporting = E_ALL & ~E_NOTICE' >> /usr/local/etc/php/php.ini
 RUN echo 'post_max_size = 20M' >> /usr/local/etc/php/php.ini

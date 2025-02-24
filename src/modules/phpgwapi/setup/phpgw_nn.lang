@@ -351,3 +351,5 @@ which language do you want?	common	nn	Kva for språk ynskjer du?
 error_report_system	common	nn	Feilmelding (om systemet)
 start	common	nn	Start
 end	common	nn	Slutt
+sign in	common	nn	Logg inn
+Select login method	common	nn	Velg påloggingsmetode

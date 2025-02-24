@@ -28,7 +28,7 @@ class SessionsMiddleware implements MiddlewareInterface
 		$serverSettings = Settings::getInstance()->get('server');
 		if (!$serverSettings['isConnected'])
 		{
-			throw new \Exception('Not connected to the server');
+			return $this->sendErrorResponse(['msg' => 'Not connected to server, check setup'], 400);
 		}
 
 		$second_pass = Sanitizer::get_var('login_second_pass', 'bool', 'COOKIE');

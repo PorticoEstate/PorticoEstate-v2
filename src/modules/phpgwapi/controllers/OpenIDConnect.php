@@ -113,7 +113,7 @@ class OpenIDConnect
 	{
 		// Try to get from session first
 		$cachedInfo = $this->getStoredUserInfo();
-		if (!empty($_POST))
+		if (!empty($_GET['create_account']))
 		{
 			_debug_array($cachedInfo);
 			_debug_array(Cache::session_get('openid_connect', self::SESSION_KEY));

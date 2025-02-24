@@ -65,12 +65,6 @@ class LoginHelper
 		{
 			$this->redirect();
 		}
-		else
-		{
-			$LoginUi = new LoginUi($this->msg_only);
-			$variables = array();
-			$LoginUi->phpgw_display_login($variables, $Login->get_cd());
-		}
 
 		$response = $response->withHeader('Content-Type', 'text/html');
 		return $response;

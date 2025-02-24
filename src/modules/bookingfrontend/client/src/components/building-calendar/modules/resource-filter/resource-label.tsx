@@ -1,0 +1,31 @@
+import {FC} from "react";
+import {
+	CalendarResourceFilterOption
+} from "@/components/building-calendar/modules/resource-filter/calender-resource-filter";
+
+import styles from './calender-resource-filter.module.scss';
+import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
+import {Button} from "@digdir/designsystemet-react";
+import {InformationSquareIcon} from "@navikt/aksel-icons";
+import {useIsMobile} from "@/service/hooks/is-mobile";
+
+
+const ResourceLabel: FC<{resource: CalendarResourceFilterOption; onInfo: () => void}> = ({resource, onInfo}) => {
+	const isMobile = useIsMobile();
+
+	return (
+		<div className={`${styles.resourceLabel} text-normal`}>
+			<div>
+				<ColourCircle resourceId={+resource.value} size={'medium'}/>
+				<span>{resource.label}</span>
+			</div>
+			{!isMobile && (
+				<Button variant={'tertiary'} data-size={'sm'} onClick={onInfo}>
+					<InformationSquareIcon fontSize={'1.5rem'}/>
+				</Button>
+			)}
+		</div>
+	)
+};
+
+export default ResourceLabel;

@@ -1,3 +1,5 @@
+import {IShortResource} from "@/service/pecalendar.types";
+
 export interface IBuilding {
     /** Unique identifier for the building */
     id: number;
@@ -92,4 +94,23 @@ export interface IAudience {
     active: number;
     sort: number;
     activity_id: number;
+}
+
+
+interface SeasonBoundary {
+	from_: string;  // Format: "HH:mm:ss"
+	to_: string;    // Format: "HH:mm:ss"
+	wday: number;   // 1-7 where 1=Monday through 7=Sunday
+}
+
+export interface Season {
+	id: number;
+	name: string;
+	building_id: number;
+	from_: string;  // ISO 8601 format: "2025-01-01T00:00:00+01:00"
+	to_: string;    // ISO 8601 format: "2025-06-30T23:59:59+02:00"
+	active: number;
+	status: string;
+	resources: IShortResource[];
+	boundaries: SeasonBoundary[];
 }

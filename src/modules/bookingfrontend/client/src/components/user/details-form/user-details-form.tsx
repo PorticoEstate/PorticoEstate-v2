@@ -10,6 +10,15 @@ import styles from "./user-details-form.module.scss";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
 
+const maskSSN = (ssn: string): string => {
+	if (!ssn) {
+		return '';
+	}
+	// Keep first digits, replace last 5 with asterisks
+	return ssn.slice(0, -5) + '*****';
+}
+
+
 // Phone number validation
 const validatePhone = (phone: string) => {
     if (!phone) return true;
@@ -56,6 +65,7 @@ interface FieldConfig {
     placeholder?: string;
     helperText?: string;
     type?: 'text' | 'email' | 'tel' | 'url';
+	masked?: boolean;
     readOnly?: boolean;
 }
 
@@ -108,7 +118,8 @@ const fieldCategories: FieldCategory[] = [
                 label: 'bookingfrontend.ssn',
                 key: 'ssn',
                 editable: false,
-                type: 'text'
+                type: 'text',
+				masked: true
             },
             {
                 label: 'Phone',
@@ -175,7 +186,7 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
         resolver: zodResolver(userFormSchema),
         defaultValues: {
             name: user.name || null,
-            ssn: user.ssn,
+            ssn: user.ssn ? maskSSN(user.ssn) : null,
             homepage: user.homepage || null,
             phone: user.phone || null,
             email: user.email || null,
@@ -192,7 +203,7 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
             // Reset the form with new values
             reset({
                 name: user.name || null,
-                ssn: user.ssn,
+				ssn: user.ssn ? maskSSN(user.ssn) : null,
                 homepage: user.homepage || null,
                 phone: user.phone || null,
                 email: user.email || null,
@@ -331,9 +342,11 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
                                         ) : !isEditing && (
                                             <div className={`${styles.viewField} ${isEditing && styles.editing}`}>
                                                 <span>{t(field.label)}</span>
-                                                <span>{user[field.key] || '-'}</span>
-                                            </div>
-                                        )}
+												{field.masked ? <span>{ user[field.key] ? maskSSN(user[field.key] as string) : '-'}</span> :
+													<span>{user[field.key] || '-'}</span>}
+
+											</div>
+										)}
                                     </div>
                                 ))}
                             </div>

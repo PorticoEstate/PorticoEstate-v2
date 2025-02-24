@@ -4,8 +4,8 @@ import {IBookingUser, IServerSettings} from "@/service/types/api.types";
 import {IApplication} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
-import {IEvent} from "@/service/pecalendar.types";
-import {IAgeGroup, IAudience} from "@/service/types/Building";
+import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
+import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 
 
@@ -69,20 +69,33 @@ export async function fetchBuildingSchedule(building_id: number, dates: string[]
 }
 
 
+export async function fetchBuildingSeasons(building_id: number, instance?: string): Promise<Season[]> {
 
-export async function fetchFreeTimeSlots(building_id: number, instance?: string) {
-    const currDate = DateTime.fromJSDate(new Date());
-    const maxEndDate = currDate.plus({months: BOOKING_MONTH_HORIZON}).endOf('month');
 
-    const url = phpGWLink('bookingfrontend/', {
-        menuaction: 'bookingfrontend.uibooking.get_freetime',
-        building_id,
-        start_date: currDate.toFormat('dd/LL-yyyy'),
-        end_date: maxEndDate.toFormat('dd/LL-yyyy'),
+    const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'seasons'], {
+        // menuaction: 'bookingfrontend.uibooking.building_schedule_pe',
+        // building_id,
+        // dates: dates,
     }, true, instance);
+
     const response = await fetch(url);
     const result = await response.json();
+    // console.log("fetchBuildingSchedule", result);
     return result;
+}
+
+
+
+export async function fetchFreeTimeSlotsForRange(building_id: number, start: DateTime, end: DateTime, instance?: string): Promise<Record<string, IFreeTimeSlot[]>> {
+	const url = phpGWLink('bookingfrontend/', {
+		menuaction: 'bookingfrontend.uibooking.get_freetime',
+		building_id,
+		start_date: start.toFormat('dd/LL-yyyy'),
+		end_date: end.toFormat('dd/LL-yyyy'),
+	}, true, instance);
+	const response = await fetch(url);
+	const result = await response.json();
+	return result;
 }
 
 

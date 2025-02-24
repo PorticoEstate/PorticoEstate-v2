@@ -130,10 +130,13 @@
 
 				$OpenIDConnect = \App\modules\phpgwapi\controllers\OpenIDConnect::getInstance($type, $config_openid);
 
+				/**
+				 * If the user is authenticated, we can get the username
+				 */
 				$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
-				if ($get_username_callback)
+				if ($OpenIDConnect->isAuthenticated() || $get_username_callback)
 				{
-					if($type == 'remote')
+					if($type == 'remote' || $OpenIDConnect->get_type() == 'remote')
 					{
 						$ssn = $OpenIDConnect->get_username();
 						Cache::session_set('openid_connect', 'ssn', $ssn);

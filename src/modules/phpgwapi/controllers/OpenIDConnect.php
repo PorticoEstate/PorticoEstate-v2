@@ -25,6 +25,7 @@ class OpenIDConnect
 	private const SESSION_KEY = 'openid_connect_userinfo';
 	private const SESSION_TIMESTAMP = 'openid_connect_timestamp';
 	private const CACHE_LIFETIME = 300; // 5 minutes in seconds
+	private const SESSION_AUTH_STATE = 'openid_connect_authenticated';
 
 
 	function __construct($type = 'local', $config = [])
@@ -105,6 +106,7 @@ class OpenIDConnect
 	public function authenticate()
 	{
 		$this->oidc->authenticate();
+		Cache::session_set('openid_connect', self::SESSION_AUTH_STATE, true);
 	}
 
 	public function get_userinfo()
@@ -135,6 +137,10 @@ class OpenIDConnect
 
 		$this->oidc->authenticate();
 		self::$idToken = $this->oidc->getIdToken();
+		Cache::session_set('openid_connect', 'idToken', self::$idToken);
+		//store the type in the session
+		Cache::session_set('openid_connect', 'type', self::$type);
+		// Store the idToken in the settings for later use
 
 		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
 		$decodedToken = null;
@@ -295,6 +301,10 @@ class OpenIDConnect
 		return $groups;
 	}
 
+	public function get_type(): ?string
+	{
+		return Cache::session_get('openid_connect', 'type');
+	}
 
 	public function logout($idToken = null): void
 	{
@@ -307,6 +317,8 @@ class OpenIDConnect
 			return;
 		}
 		$postLogoutRedirectUri = $this->config['redirect_logout_uri'] ?? null;
+		Cache::session_clear('openid_connect', self::SESSION_AUTH_STATE);
+		Cache::session_clear('openid_connect', 'idToken');
 		$this->clearStoredUserInfo();
 		$this->oidc->signOut($idToken, $postLogoutRedirectUri);
 		self::$idToken = null;
@@ -314,6 +326,12 @@ class OpenIDConnect
 
 	public function isAuthenticated(): bool
 	{
+		// Check session first
+		$auth_state = Cache::session_get('openid_connect', self::SESSION_AUTH_STATE);
+		if ($auth_state)
+		{
+			return true;
+		}
 		return !empty(self::$idToken);
 	}
 

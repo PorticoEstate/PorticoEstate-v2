@@ -85,6 +85,8 @@ class Translation
 			$userlang = $this->preferences['common']['lang'];
 		}
 
+		$selected_lang = \Sanitizer::get_var('selected_lang', 'string', 'COOKIE');
+		$userlang = $selected_lang ? $selected_lang : $userlang;
 		$this->set_userlang($userlang, true);
 
 		if (

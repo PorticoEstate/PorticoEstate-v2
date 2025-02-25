@@ -85,6 +85,13 @@ class LoginHelper
 		$routePath_arr = explode('/', $routePath);
 		$currentApp = trim($routePath_arr[1], '[');
 
+		$selected_lang = Sanitizer::get_var('lang', 'string', 'GET');
+
+		if($selected_lang)
+		{
+			Sessions::getInstance()->phpgw_setcookie('selected_lang', $selected_lang);
+		}
+
 		//backwards compatibility
 		$login_type = Sanitizer::get_var('type', 'string', 'GET');
 		if ($login_type !== 'sql' && empty($_POST) && ($routePath_arr[1] == 'login.php' || $routePath_arr[2] == 'login.php'))

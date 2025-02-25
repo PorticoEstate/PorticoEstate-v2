@@ -27,6 +27,7 @@
 	namespace App\modules\phpgwapi\security\Auth;
 	use App\modules\phpgwapi\security\Sso\Mapping;
 	use App\modules\phpgwapi\services\Cache;
+	use App\modules\phpgwapi\services\Settings;
 	use PDO;
 	use Sanitizer;
 
@@ -69,11 +70,23 @@
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([':username' => $username]);
 
-			$authenticated = $stmt->fetchColumn() !== false;
 			$account_id = (int)$stmt->fetchColumn();
+			$authenticated = $account_id !== 0;
 
 			$ssn = Sanitizer::get_var('OIDC_pid', 'string', 'SERVER');
-			$ssn = $ssn ? $ssn : Cache::session_get('openid_connect', 'ssn');
+			if(!empty(Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid']))
+			{
+				$ssn = Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid'];
+			}
+
+			//get cookie
+			$cookie_name = 'OIDC_pid';
+			if(!empty($_COOKIE[$cookie_name]))
+			{
+				$ssn = $_COOKIE[$cookie_name];
+				//delete cookie
+				setcookie($cookie_name, '', time() - 3600, '/');				
+			}
 
 		// skip anonymous users
 			$Acl = \App\modules\phpgwapi\security\Acl::getInstance($account_id);
@@ -114,15 +127,25 @@
 			{
 
 				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
-				$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
 
+				$OpenIDConnect = \App\modules\phpgwapi\controllers\OpenIDConnect::getInstance($type, $config_openid);
+
+				/**
+				 * If the user is authenticated, we can get the username
+				 */
 				$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
-				if ($get_username_callback)
+				if ($OpenIDConnect->isAuthenticated() || $get_username_callback)
 				{
-					if($type == 'remote')
+					if($type == 'remote' || $OpenIDConnect->get_type() == 'remote')
 					{
 						$ssn = $OpenIDConnect->get_username();
 						Cache::session_set('openid_connect', 'ssn', $ssn);
+						Settings::getInstance()->update('flags', ['openid_connect' => ['OIDC_pid' => $ssn]]);
+						//set cookie
+						$cookie_name = 'OIDC_pid';
+						$cookie_value = $ssn;
+						setcookie($cookie_name, $cookie_value, time() +  180, "/"); // 180 seconds
+
 					}
 					else
 					{
@@ -205,10 +228,7 @@
 			 */
 			if (!empty($config_openid['common']['method_backend']))
 			{
-
-				$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
-				$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
-				$groups = $OpenIDConnect->get_groups();
+				$groups = \App\modules\phpgwapi\controllers\OpenIDConnect::getInstance()->get_groups();
 			}
 
 			$groups = array_map('strtolower', $groups);

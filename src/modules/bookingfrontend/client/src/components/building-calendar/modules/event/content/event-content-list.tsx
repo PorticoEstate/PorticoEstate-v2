@@ -5,9 +5,9 @@ import {faClock, faUser, faLayerGroup} from "@fortawesome/free-solid-svg-icons";
 import {formatEventTime, formatTimeStamp} from "@/service/util";
 import {FCallEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import {usePopperGlobalInfo} from "@/service/api/event-info";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
+import {IEventIsAPIEvent} from "@/service/pecalendar.types";
 
 interface EventContentListProps {
     eventInfo: FCEventContentArg<FCallEvent>;
@@ -16,8 +16,7 @@ interface EventContentListProps {
 const EventContentList: FC<EventContentListProps> = ({eventInfo}) => {
     const t = useTrans();
     const isMobile = useIsMobile();
-    const {data: infoData} = usePopperGlobalInfo(eventInfo.event.extendedProps.type, eventInfo.event.id);
-
+    const eventData = eventInfo.event.extendedProps.source;
     // const actualTimeText = formatEventTime(eventInfo.event);
     const actualStart = 'actualStart' in eventInfo.event.extendedProps ? eventInfo.event.extendedProps.actualStart : eventInfo.event.start;
     const actualEnd = 'actualEnd' in eventInfo.event.extendedProps ? eventInfo.event.extendedProps.actualEnd : eventInfo.event.end;
@@ -48,10 +47,10 @@ const EventContentList: FC<EventContentListProps> = ({eventInfo}) => {
                 <FontAwesomeIcon icon={faLayerGroup}/>
                 {renderColorCircles(isMobile ? 1 : 3)}
             </div>
-            {(infoData?.organizer || !isMobile) && (
+            {((IEventIsAPIEvent(eventData) && eventData.organizer) && !isMobile) && (
                 <div className={`text-small ${styles.organizer}`}>
                     <FontAwesomeIcon className="text-small"
-                                     icon={faUser}/> {infoData?.is_public  ? infoData?.organizer || t('bookingfrontend.not_available') : t('bookingfrontend.private')}
+                                     icon={faUser}/> {eventData?.is_public  ? eventData?.organizer || t('bookingfrontend.not_available') : t('bookingfrontend.private')}
                 </div>)}
             <span className={`${styles.to_time} text-overline`}>
                 <FontAwesomeIcon className="text-label" icon={faClock}/>{formatTimeStamp(actualEnd, true)}

@@ -14,12 +14,15 @@ use App\modules\bookingfrontend\helpers\LogoutHelper;
 use App\modules\phpgwapi\controllers\StartPoint;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use Slim\Routing\RouteCollectorProxy;
+use App\modules\bookingfrontend\helpers\UserHelper;
 
 
 
 $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
-    $group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
+
+	$group->get('/userhelper/callback[/{params:.*}]', UserHelper::class . ':validate_ssn_login');
+	$group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
     $group->group('/buildings', function (RouteCollectorProxy $group)
     {
         $group->get('', BuildingController::class . ':index');
@@ -30,6 +33,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->get('/{id}/schedule', BuildingController::class . ':getSchedule');
         $group->get('/{id}/agegroups', BuildingController::class . ':getAgeGroups');
         $group->get('/{id}/audience', BuildingController::class . ':getAudience');
+		$group->get('/{id}/seasons', BuildingController::class . ':getSeasons');
     });
 
     $group->group('/resources', function (RouteCollectorProxy $group)

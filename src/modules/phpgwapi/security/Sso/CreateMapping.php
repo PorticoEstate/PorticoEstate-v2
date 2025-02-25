@@ -34,6 +34,7 @@ class CreateMapping
 	 */
 	protected $serverSettings;
 	private $mapping;
+	private $login;
 
 	public function __construct()
 	{
@@ -48,11 +49,15 @@ class CreateMapping
 
 		$this->mapping = new Mapping(array('auth_type' => $phpgw_map_authtype, 'location' => $phpgw_map_location));
 
-		if (!isset($_SERVER['REMOTE_USER']))
+		$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
+
+		$this->login = $Auth->get_username(true);
+
+		if (!$this->login)
 		{
 			throw new Exception(lang('Wrong configuration') . " REMOTE_USER not set");
 		}
-		if ($this->mapping->get_mapping($_SERVER['REMOTE_USER']) != '')
+		if ($this->mapping->get_mapping($this->login) != '')
 		{
 			throw new Exception(lang('Username already taken'));
 		}
@@ -65,12 +70,12 @@ class CreateMapping
 		{
 			$login		 = $_POST['login'];
 			$password	 = $_POST['passwd'];
-			$account_lid = $this->mapping->exist_mapping($_SERVER['REMOTE_USER']);
+			$account_lid = $this->mapping->exist_mapping($this->login);
 			if ($account_lid == '' || $account_lid == $login)
 			{
 				if ($this->mapping->valid_user($login, $password))
 				{
-					$this->mapping->add_mapping($_SERVER['REMOTE_USER'], $login);
+					$this->mapping->add_mapping($this->login, $login);
 					//FIXME: redirect..?
 					\phpgw::redirect_link('/login_ui');
 				}
@@ -95,11 +100,11 @@ class CreateMapping
 		$variables['lang_login']	 = lang('new mapping and login');
 		$variables['partial_url']	 = 'login_ui';
 		$variables['extra_vars']	 = array('create_mapping' => true);
-		if (isset($this->serverSettings['auto_create_acct']) && $this->serverSettings['auto_create_acct'] == True) {
+		if (isset($this->serverSettings['auto_create_acct']) && $this->serverSettings['auto_create_acct'] == True)
+		{
 			$variables['lang_additional_url']	 = lang('new account');
 			$variables['additional_url']		 = \phpgw::link('/login_ui', array('create_account' => true));
 		}
-		$uilogin->phpgw_display_login($variables);
-
+		return $uilogin->phpgw_display_login($variables);
 	}
 }

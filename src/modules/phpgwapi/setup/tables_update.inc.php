@@ -4095,6 +4095,17 @@ function phpgwapi_upgrade0_9_17_568($oProc)
 		)
 	);
 
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_section_remote['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'groups',
+			'descr'			=> 'Fallback to groups',
+			'choice'		=> [],
+			'value'			=> [],
+		)
+	);
+
 	//local
 	$receipt_section_local = $custom_config->add_section(
 		array(

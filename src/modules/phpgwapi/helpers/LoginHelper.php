@@ -32,6 +32,13 @@ class LoginHelper
 			throw new \Exception('Not connected to the server');
 		}
 
+		$selected_lang = Sanitizer::get_var('lang', 'string', 'GET');
+
+		if ($selected_lang)
+		{
+			Sessions::getInstance()->phpgw_setcookie('selected_lang', $selected_lang);
+		}
+
 		$this->serverSettings['template_set'] = Settings::getInstance()->get('login_template_set');
 		$this->serverSettings['template_dir'] = PHPGW_SERVER_ROOT
 			. "/phpgwapi/templates/{$this->serverSettings['template_set']}";
@@ -60,19 +67,18 @@ class LoginHelper
 	public function processLoginCallback(Request $request, Response $response, array $args)
 	{
 		$Login = new Login();
-		$sessionid = $Login->login();
-		if ($sessionid)
+		$result = $Login->login();
+		if (!empty($result['session_id']))
 		{
 			$this->redirect();
 		}
-		else
-		{
-			$LoginUi = new LoginUi($this->msg_only);
-			$variables = array();
-			$LoginUi->phpgw_display_login($variables, $Login->get_cd());
-		}
 
 		$response = $response->withHeader('Content-Type', 'text/html');
+
+		if (!empty($result['html']))
+		{
+			$response->getBody()->write($result['html']);
+		}
 		return $response;
 	}
 
@@ -90,9 +96,16 @@ class LoginHelper
 		if ($login_type !== 'sql' && empty($_POST) && ($routePath_arr[1] == 'login.php' || $routePath_arr[2] == 'login.php'))
 		{
 			$process_login = new Login();
-			if ($process_login->login()) //SSO login
+			$result = $process_login->login();
+			if (!empty($result['session_id'])) //SSO login
 			{
 				phpgw::redirect_link('/home/', array('cd' => 'yes'));
+			}
+			if(!empty($result['html']))
+			{
+				$response = $response->withHeader('Content-Type', 'text/html');
+				$response->getBody()->write($result['html']);
+				return $response;
 			}
 		}
 		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
@@ -103,7 +116,7 @@ class LoginHelper
 			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
 		}
 
-		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']))
+		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']) && empty($_REQUEST['skip_remote']))
 		{
 			$lang_sign_in = lang('Sign in');
 			$lang_select_login_method = lang('Select login method');
@@ -182,16 +195,15 @@ HTML;
 		if (!Sanitizer::get_var('hide_lightbox', 'bool'))
 		{
 			$partial_url	   = '/login_ui';
-			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
+//			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
 
 			$variables['lang_login']  = lang('login');
 			$variables['partial_url'] = $partial_url;
-			//		$variables['lang_frontend']	= $frontend ? lang($frontend) : '';
-			if (isset($this->serverSettings['half_remote_user']) && $this->serverSettings['half_remote_user'] == 'remoteuser')
-			{
-				$variables['lang_additional_url'] = lang('use sso login');
-				$variables['additional_url']	  = phpgw::link('/' . $phpgw_url_for_sso);
-			}
+			// if (isset($this->serverSettings['half_remote_user']) && $this->serverSettings['half_remote_user'] == 'remoteuser')
+			// {
+			// 	$variables['lang_additional_url'] = lang('use sso login');
+			// 	$variables['additional_url']	  = phpgw::link('/' . $phpgw_url_for_sso);
+			// }
 		}
 
 		if ($this->serverSettings['auth_type'] == 'remoteuser')
@@ -199,9 +211,10 @@ HTML;
 			$this->msg_only = true;
 		}
 
+		$html = '';
 		if (empty($_POST))
 		{
-			$LoginUi->phpgw_display_login($variables, Sanitizer::get_var('cd', 'int', 'GET', 0));
+			$html = $LoginUi->phpgw_display_login($variables, Sanitizer::get_var('cd', 'int', 'GET', 0));
 		}
 		else
 		{
@@ -209,29 +222,32 @@ HTML;
 			$Login = new Login();
 			if (Sanitizer::get_var('create_account', 'bool'))
 			{
-				$Login->create_account();
+				$html = $Login->create_account();
 			}
 			else if (Sanitizer::get_var('create_mapping', 'bool'))
 			{
-				$Login->create_mapping();
+				$html = $Login->create_mapping();
 			}
 			else
 			{
 
-				$sessionid = $Login->login();
-				if ($sessionid)
+				$result = $Login->login();
+				if (!empty($result['session_id']))
 				{
-
 					$this->redirect();
 				}
 				else
 				{
-					$LoginUi->phpgw_display_login($variables, $Login->get_cd());
+					$html = $LoginUi->phpgw_display_login($variables, $Login->get_cd());
 				}
 			}
 		}
 
 		$response = $response->withHeader('Content-Type', 'text/html');
+		if($html)
+		{
+			$response->getBody()->write($html);
+		}
 		return $response;
 	}
 

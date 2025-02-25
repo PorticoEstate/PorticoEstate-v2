@@ -36,7 +36,7 @@
 }
 
 .toggleAllContainer {
-    padding: 10px 8px;
+    padding: 5px 4px;
     //position: sticky;
     top: 0;
     background-color: white;
@@ -57,10 +57,11 @@
 }
 
 .resourceItem {
+	margin: 0;
     user-select: none;
     display: flex;
     align-items: center;
-    padding: 10px 8px;
+    padding: 5px 4px;
     border-bottom: 1px solid #eee;
 
     :global(.ds-field) {

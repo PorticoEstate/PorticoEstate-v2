@@ -86,8 +86,9 @@ class LoginMiddleware implements MiddlewareInterface
 		}
 
 		$Login = new Login($this->settings);
-		$sessionid = $Login->login();
-		if (!$sessionid)
+		$result = $Login->login();
+
+		if (empty($result['session_id']))
 		{
 			$reason = $this->check_cdcode($Login->get_cd());
 			return $this->sendErrorResponse(['msg' => $reason], 404);

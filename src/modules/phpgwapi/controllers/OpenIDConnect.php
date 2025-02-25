@@ -8,6 +8,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\controllers\Locations;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use App\modules\phpgwapi\security\Sessions;
 
 class OpenIDConnect
 {
@@ -19,9 +20,28 @@ class OpenIDConnect
 	private $debug;
 	private $provider_type;
 
+	private $simulate = false;
+
+	private static $instance = null;
+
+	private const SESSION_KEY = 'openid_connect_userinfo';
+	private const SESSION_TIMESTAMP = 'openid_connect_timestamp';
+	private const CACHE_LIFETIME = 300; // 5 minutes in seconds
+	private const SESSION_AUTH_STATE = 'openid_connect_authenticated';
+
+
 	function __construct($type = 'local', $config = [])
 	{
+        // Ensure session is started via Sessions singleton
+		Sessions::getInstance();
+
 		$this->debug = false;
+		self::$type = $type;
+
+		if ($this->simulate)
+		{
+			return;
+		}
 
 		if (!$config)
 		{
@@ -37,11 +57,11 @@ class OpenIDConnect
 
 		if (empty($this->config))
 		{
+			return;
 			throw new \Exception('Configuration for the specified type is missing.');
 		}
 
 		$this->debug = $this->config['debug'] ?? false;
-		self::$type = $type;
 
 		$provider_url = rtrim($this->config['provider_url'], '/');
 
@@ -53,51 +73,134 @@ class OpenIDConnect
 
 		$this->provider_type = $this->getProviderType();
 
-
-		if ($this->provider_type !== 'azure')
+		if ($this->provider_type == 'idporten')
 		{
 			$this->oidc->setTokenEndpointAuthMethodsSupported(['client_secret_post']);
 			// Enable PKCE with S256 method
 			$this->oidc->setCodeChallengeMethod('S256');
 		}
-
+		
 		if (!empty($this->config['scopes']))
 		{
 			$this->oidc->addScope(explode(' ', $this->config['scopes']));
 		}
+
+		// _debug_array($this->config);
+		$this->oidc->setRedirectURL($this->config['redirect_uri'] ?? '');
 	}
 
+	// Prevent cloning
+	private function __clone()
+	{
+	}
+
+	// Prevent unserialization
+	public function __wakeup()
+	{
+		throw new \Exception("Cannot unserialize singleton");
+	}
+
+	// Add getInstance method
+	public static function getInstance($type = 'local', $config = []): self
+	{
+		if (self::$instance === null)
+		{
+			self::$instance = new self($type, $config);
+		}
+		return self::$instance;
+	}
+ 
 	public function authenticate()
 	{
-		$this->oidc->setRedirectURL($this->config['redirect_uri']);
+		Cache::session_set('openid_connect', self::SESSION_AUTH_STATE, true);
+
+		if ($this->simulate)
+		{
+			\phpgw::redirect_link('login_callback', array('callback' => 1, 'type' => self::$type));
+			return;
+		}
+
 		$this->oidc->authenticate();
 	}
 
+	
+	private function get_simulated_userinfo()
+	{
+		$userInfo = new \stdClass();
+		$userInfo->upn = 'john.doe@example.com';
+		$userInfo->groups = ['group1', 'default', 'Aktiv kommune brukere'];
+		$userInfo->email = '';
+		$userInfo->given_name = 'John';
+		$userInfo->family_name = 'Doe';
+		$userInfo->name = 'John Doe';
+		$userInfo->preferred_username = 'johndoe';
+		$userInfo->sub = '1234567890';
+		$userInfo->locale = 'en-US';
+		$userInfo->picture = 'https://example.com/johndoe.jpg';
+		$userInfo->updated_at = 1234567890;
+		$userInfo->email_verified = true;
+		$userInfo->phone_number = '+1234567890';
+		$userInfo->phone_number_verified = true;
+		$userInfo->address = new \stdClass();
+		$userInfo->address->street_address = '123 Main St';
+		$userInfo->address->locality = 'Anytown';
+		$userInfo->address->region = 'NY';
+		$userInfo->address->postal_code = '12345';
+		$userInfo->address->country = 'US';
+		$userInfo->address->formatted = '123 Main St, Anytown, NY 12345, US';
+		$userInfo->zoneinfo = 'America/New_York';
+		$userInfo->birthdate = '1970-01-01';
+		$userInfo->onpremisessamaccountname = 'johndoe';
+
+		return $userInfo;
+
+	}
+	
 	public function get_userinfo()
 	{
+		// Try to get from session first
+		//$this->clearStoredUserInfo();
+		$cachedInfo = $this->getStoredUserInfo();
+
+		if ($cachedInfo)
+		{
+			return $cachedInfo;
+		}
+
 		static $userInfo = null;
+
 		if ($userInfo)
 		{
 			return $userInfo;
 		}
 
-		$this->oidc->setRedirectURL($this->config['redirect_uri']);
-		$this->oidc->authenticate();
-		self::$idToken = $this->oidc->getIdToken();
-
-
-		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
-		$decodedToken = null;
+		if ($this->simulate)
+		{
+			$userInfo = $this->get_simulated_userinfo();
+			Cache::session_set('openid_connect', self::SESSION_AUTH_STATE, true);
+			$this->storeUserInfo($userInfo);
+			return $userInfo;
+		}
 
 		if ($this->debug)
 		{
 			echo "Provider type: " . $this->provider_type . "<br>";
-			if ($this->provider_type !== 'azure')
+			if ($this->provider_type === 'idporten')
 			{
 				echo "Set token endpoint auth methods supported ['client_secret_post']<br>";
 				echo "Set code challenge method to 'S256'<br>";
 			}
 		}
+
+		$this->oidc->authenticate();
+		self::$idToken = $this->oidc->getIdToken();
+		Cache::session_set('openid_connect', 'idToken', self::$idToken);
+		//store the type in the session
+		Cache::session_set('openid_connect', 'type', self::$type);
+		// Store the idToken in the settings for later use
+
+		Settings::getInstance()->update('flags', ['openid_connect' => ['idToken' => self::$idToken, 'type' => self::$type]]);
+		$decodedToken = null;
 
 		if ($this->provider_type === 'azure')
 		{
@@ -148,6 +251,9 @@ class OpenIDConnect
 		$userInfo = $this->oidc->requestUserInfo();
 		$userInfo = $decodedToken ? $decodedToken : $userInfo;
 
+		// Store in session before returning
+		$this->storeUserInfo($userInfo);
+
 		return $userInfo;
 	}
 
@@ -196,6 +302,38 @@ class OpenIDConnect
 		return chr(0x80 | strlen($len)) . $len;
 	}
 
+	private function getStoredUserInfo()
+	{
+		$stored = Cache::session_get('openid_connect', self::SESSION_KEY);
+		$timestamp = Cache::session_get('openid_connect', self::SESSION_TIMESTAMP);
+
+		if (!$stored || !$timestamp)
+		{
+			return null;
+		}
+
+		// Check if cache has expired
+		if ((time() - $timestamp) > self::CACHE_LIFETIME)
+		{
+			$this->clearStoredUserInfo();
+			return null;
+		}
+
+		return $stored;
+	}
+
+	private function storeUserInfo($userInfo): void
+	{
+		Cache::session_set('openid_connect', self::SESSION_KEY, $userInfo);
+		Cache::session_set('openid_connect', self::SESSION_TIMESTAMP, time());
+	}
+
+	private function clearStoredUserInfo(): void
+	{
+		Cache::session_clear('openid_connect', self::SESSION_KEY);
+		Cache::session_clear('openid_connect', self::SESSION_TIMESTAMP);
+	}
+
 	public function get_username(): string
 	{
 		$userInfo = $this->get_userinfo();
@@ -212,13 +350,17 @@ class OpenIDConnect
 	public function get_groups(): array
 	{
 		$userInfo = $this->get_userinfo();
-		return $userInfo->groups ?? [];
+		$groups = $userInfo->groups ?? [];
+		if (!$groups && !empty($this->config['groups']))
+		{
+			$groups = $this->config['groups'];
+		}		
+		return $groups;
 	}
 
-	public function get_user_email(): string
+	public function get_type(): ?string
 	{
-		$userInfo = $this->get_userinfo();
-		return $userInfo->email;
+		return Cache::session_get('openid_connect', 'type');
 	}
 
 	public function logout($idToken = null): void
@@ -232,26 +374,24 @@ class OpenIDConnect
 			return;
 		}
 		$postLogoutRedirectUri = $this->config['redirect_logout_uri'] ?? null;
+		Cache::session_clear('openid_connect', self::SESSION_AUTH_STATE);
+		Cache::session_clear('openid_connect', 'idToken');
+		$this->clearStoredUserInfo();
 		$this->oidc->signOut($idToken, $postLogoutRedirectUri);
 		self::$idToken = null;
 	}
 
 	public function isAuthenticated(): bool
 	{
+		// Check session first
+		$auth_state = Cache::session_get('openid_connect', self::SESSION_AUTH_STATE);
+		if ($auth_state)
+		{
+			return true;
+		}
 		return !empty(self::$idToken);
 	}
 
-	public function getIdToken(): ?string
-	{
-		return self::$idToken;
-	}
-
-	public function refreshIdToken(): void
-	{
-		$userInfo = $this->get_userinfo();
-		self::$idToken = $userInfo->id_token ?? null;
-		Cache::session_set('openid_connect', 'idToken', self::$idToken);
-	}
 
 	private function getProviderType()
 	{
@@ -285,6 +425,11 @@ class OpenIDConnect
 			if (strpos($configuration['issuer'], 'accounts.google.com') !== false)
 			{
 				return 'google';
+			}
+			// Check for other common providers
+			if (strpos($configuration['issuer'], 'idporten.no') !== false)
+			{
+				return 'idporten';
 			}
 
 			if (strpos($configuration['issuer'], 'auth0.com') !== false)

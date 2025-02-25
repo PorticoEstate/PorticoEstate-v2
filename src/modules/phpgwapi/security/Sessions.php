@@ -1,6 +1,7 @@
 <?php
 
 namespace App\modules\phpgwapi\security;
+
 use Psr\Http\Message\ResponseInterface as Response;
 use App\modules\phpgwapi\security\Auth\Auth;
 use App\Database\Db;
@@ -76,44 +77,82 @@ class Sessions
 
 	private function __construct()
 	{
+		// Initialize core dependencies
+		$this->initializeDependencies();
+
+		// Initialize session configuration
+		$this->initializeSessionConfig();
+
+		// Get session ID from available sources
+		$this->resolveSessionId();
+
+		// Start session with configured parameters
+		$this->startSession();
+	}
+
+	private function initializeDependencies(): void
+	{
 		$this->db = Db::getInstance();
-
 		$this->serverSettings = Settings::getInstance()->get('server');
-
 		$this->Log = new Log();
-
 		$this->Auth = new Auth($this->db);
+	}
 
+	private function initializeSessionConfig(): void
+	{
 		$this->_use_cookies = false;
-
 		$this->_phpgw_set_cookie_params();
 
-		if (
-			!empty($this->serverSettings['usecookies'])  && !\Sanitizer::get_var('api_mode', 'bool')
-		)
+		if (!empty($this->serverSettings['usecookies']) && !\Sanitizer::get_var('api_mode', 'bool'))
 		{
 			$this->_use_cookies = true;
-			$this->_sessionid	= \Sanitizer::get_var(session_name(), 'string', 'COOKIE');
+			// Add these settings
+			ini_set('session.use_strict_mode', 1);
+			ini_set('session.use_only_cookies', 1);
+			ini_set('session.use_strict_mode', '1');
+			//		ini_set('session.cookie_samesite', 'Lax');  // or 'Strict'
+
 		}
 
-		if(!$this->_sessionid)
-		{
-			if (!empty($_GET[session_name()]))
-			{
-				$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET');
-			}
-			else
-			{
-				$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'POST');
-			}
-		}
-
-		//respect the config option for cookies
+		// Set session configuration
 		ini_set('session.use_cookies', $this->_use_cookies);
-
-		//don't rewrite URL, as we have to do it in link - why? cos it is buggy otherwise
 		ini_set('url_rewriter.tags', '');
-		ini_set("session.gc_maxlifetime", isset($this->serverSettings['sessions_timeout']) ? $this->serverSettings['sessions_timeout'] : 0);
+		ini_set(
+			'session.gc_maxlifetime',
+			$this->serverSettings['sessions_timeout'] ?? 0
+		);
+	}
+
+	private function resolveSessionId(): void
+	{
+		if ($this->_use_cookies)
+		{
+			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'COOKIE');
+		}
+
+		if (!$this->_sessionid)
+		{
+			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET')
+				?? \Sanitizer::get_var(session_name(), 'string', 'POST');
+		}
+	}
+
+	private function startSession(): void
+	{
+		if (session_status() === PHP_SESSION_NONE)
+		{
+			// Set session ID first if we have one
+			if ($this->_sessionid)
+			{
+				session_id($this->_sessionid);
+			}
+
+			session_start();
+
+			// Update our session ID in case none was set and PHP generated one
+			$this->_sessionid = session_id();
+
+		}
 	}
 
 	public static function getInstance()
@@ -132,18 +171,20 @@ class Sessions
 		$privateProperties = $reflectionClass->getProperties(ReflectionProperty::IS_PRIVATE);
 
 		$propertyValues = [];
-		foreach ($publicAndProtectedProperties as $property) {
+		foreach ($publicAndProtectedProperties as $property)
+		{
 			$property->setAccessible(true);
 			$propertyValues[$property->getName()] = $property->getValue($this);
 		}
 
-		foreach ($privateProperties as $property) {
+		foreach ($privateProperties as $property)
+		{
 			$propertyValues[$property->getName()] = 'private';
 		}
 
 		return $propertyValues;
 	}
-	
+
 	public function get_session_id()
 	{
 		return $this->_sessionid;
@@ -202,7 +243,7 @@ class Sessions
 
 		session_set_cookie_params(
 			array(
-				'lifetime' => isset($this->serverSettings['sessions_timeout']) ? $this->serverSettings['sessions_timeout'] : 0,
+				'lifetime' => $this->serverSettings['sessions_timeout'] ?? 0,
 				'path' => parse_url($webserver_url, PHP_URL_PATH),
 				'domain' => $this->_cookie_domain,
 				'secure' => $secure,
@@ -279,9 +320,6 @@ class Sessions
 		Settings::getInstance()->setAccountId($this->_account_id);
 		$accounts->set_account($this->_account_id);
 
-		session_start();
-		$this->_sessionid = session_id();
-
 		if (!empty($this->serverSettings['usecookies']))
 		{
 			$this->phpgw_setcookie('domain', $this->_account_domain);
@@ -338,7 +376,7 @@ class Sessions
 		Cache::session_set('phpgwapi', 'password', base64_encode($this->_passwd));
 
 		$flags = Settings::getInstance()->get('flags');
-		if(!empty($flags['openid_connect']['type']))
+		if (!empty($flags['openid_connect']['type']))
 		{
 			Cache::session_set('openid_connect', 'type', $flags['openid_connect']['type']);
 			Cache::session_set('openid_connect', 'idToken',	$flags['openid_connect']['idToken']);
@@ -663,9 +701,12 @@ class Sessions
 			session_id($sessionid);
 		}
 
-		session_start();
+		if (session_status() === PHP_SESSION_NONE)
+		{
+			session_start();
+		}
 
-		if (!session_id() == $sessionid)
+		if (session_id() != $sessionid)
 		{
 			return array();
 		}
@@ -762,7 +803,7 @@ class Sessions
 
 		if ($type && !empty($config_openid['common']['method_backend']))
 		{
-			$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
+			$OpenIDConnect = \App\modules\phpgwapi\controllers\OpenIDConnect::getInstance($type, $config_openid);
 			$OpenIDConnect->logout($idToken);
 		}
 

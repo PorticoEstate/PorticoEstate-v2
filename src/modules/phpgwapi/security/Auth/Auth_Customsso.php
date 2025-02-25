@@ -108,7 +108,7 @@ class Auth extends Auth_
 			$use_openid = true;
 
 			$type = Sanitizer::get_var('type', 'string', 'GET', $config_openid['common']['method_backend'][0]);
-			$OpenIDConnect = new \App\modules\phpgwapi\controllers\OpenIDConnect($type, $config_openid);
+			$OpenIDConnect = \App\modules\phpgwapi\controllers\OpenIDConnect::getInstance($type, $config_openid);
 
 			$get_username_callback = Sanitizer::get_var('callback', 'string', 'GET', false);
 			if ($get_username_callback)

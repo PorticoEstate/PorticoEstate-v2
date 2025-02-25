@@ -32,6 +32,7 @@ class LoginHelper
 			throw new \Exception('Not connected to the server');
 		}
 
+		Sessions::getInstance();
 		$this->serverSettings['template_set'] = Settings::getInstance()->get('login_template_set');
 		$this->serverSettings['template_dir'] = PHPGW_SERVER_ROOT
 			. "/phpgwapi/templates/{$this->serverSettings['template_set']}";
@@ -60,13 +61,18 @@ class LoginHelper
 	public function processLoginCallback(Request $request, Response $response, array $args)
 	{
 		$Login = new Login();
-		$sessionid = $Login->login();
-		if ($sessionid)
+		$result = $Login->login();
+		if (!empty($result['session_id']))
 		{
 			$this->redirect();
 		}
 
 		$response = $response->withHeader('Content-Type', 'text/html');
+
+		if (!empty($result['html']))
+		{
+			$response->getBody()->write($result['html']);
+		}
 		return $response;
 	}
 
@@ -84,9 +90,16 @@ class LoginHelper
 		if ($login_type !== 'sql' && empty($_POST) && ($routePath_arr[1] == 'login.php' || $routePath_arr[2] == 'login.php'))
 		{
 			$process_login = new Login();
-			if ($process_login->login()) //SSO login
+			$result = $process_login->login();
+			if (!empty($result['session_id'])) //SSO login
 			{
 				phpgw::redirect_link('/home/', array('cd' => 'yes'));
+			}
+			if(!empty($result['html']))
+			{
+				$response = $response->withHeader('Content-Type', 'text/html');
+				$response->getBody()->write($result['html']);
+				return $response;
 			}
 		}
 		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
@@ -192,9 +205,10 @@ HTML;
 			$this->msg_only = true;
 		}
 
+		$html = '';
 		if (empty($_POST))
 		{
-			$LoginUi->phpgw_display_login($variables, Sanitizer::get_var('cd', 'int', 'GET', 0));
+			$html = $LoginUi->phpgw_display_login($variables, Sanitizer::get_var('cd', 'int', 'GET', 0));
 		}
 		else
 		{
@@ -202,29 +216,32 @@ HTML;
 			$Login = new Login();
 			if (Sanitizer::get_var('create_account', 'bool'))
 			{
-				$Login->create_account();
+				$html = $Login->create_account();
 			}
 			else if (Sanitizer::get_var('create_mapping', 'bool'))
 			{
-				$Login->create_mapping();
+				$html = $Login->create_mapping();
 			}
 			else
 			{
 
-				$sessionid = $Login->login();
-				if ($sessionid)
+				$result = $Login->login();
+				if (!empty($result['session_id']))
 				{
-
 					$this->redirect();
 				}
 				else
 				{
-					$LoginUi->phpgw_display_login($variables, $Login->get_cd());
+					$html = $LoginUi->phpgw_display_login($variables, $Login->get_cd());
 				}
 			}
 		}
 
 		$response = $response->withHeader('Content-Type', 'text/html');
+		if($html)
+		{
+			$response->getBody()->write($html);
+		}
 		return $response;
 	}
 

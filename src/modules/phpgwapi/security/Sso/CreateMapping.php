@@ -53,18 +53,6 @@ class CreateMapping
 
 		$this->login = $Auth->get_username(true);
 
-		if($this->login)
-		{
-			setcookie('phpgw_REMOTE_USER', $this->login, time() + 180, '/');
-		}
-
-		if(!$this->login)
-		{
-			$this->login = $_COOKIE['phpgw_REMOTE_USER'];
-			//remove cookie
-			setcookie('phpgw_REMOTE_USER', '', time() - 3600, '/');
-		}
-
 		if (!$this->login)
 		{
 			throw new Exception(lang('Wrong configuration') . " REMOTE_USER not set");
@@ -117,6 +105,6 @@ class CreateMapping
 			$variables['lang_additional_url']	 = lang('new account');
 			$variables['additional_url']		 = \phpgw::link('/login_ui', array('create_account' => true));
 		}
-		$uilogin->phpgw_display_login($variables);
+		return $uilogin->phpgw_display_login($variables);
 	}
 }

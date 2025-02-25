@@ -20,7 +20,7 @@ class OpenIDConnect
 	private $debug;
 	private $provider_type;
 
-	private $simulate = false;
+	private $simulate = true;
 
 	private static $instance = null;
 
@@ -36,6 +36,7 @@ class OpenIDConnect
 		Sessions::getInstance();
 
 		$this->debug = false;
+		self::$type = $type;
 
 		if ($this->simulate)
 		{
@@ -61,7 +62,6 @@ class OpenIDConnect
 		}
 
 		$this->debug = $this->config['debug'] ?? false;
-		self::$type = $type;
 
 		$provider_url = rtrim($this->config['provider_url'], '/');
 
@@ -116,6 +116,7 @@ class OpenIDConnect
 
 		if ($this->simulate)
 		{
+			\phpgw::redirect_link('login_callback', array('callback' => 1, 'type' => self::$type));
 			return;
 		}
 

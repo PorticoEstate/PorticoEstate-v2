@@ -165,9 +165,9 @@ class CreateAccount
 				$error[] = lang('You have to choose a login');
 			}
 
-			if (!preg_match("/^[0-9_a-z]*$/i", $login))
+			if (!preg_match("/^[0-9_a-z\-\.@]+$/i", $login))
 			{
-				$error[] = lang('Please submit just letters and numbers for your login');
+				$error[] = lang('Please submit only letters, numbers, and basic punctuation (.-@_) for your login');
 			}
 			if (!$password1)
 			{
@@ -289,6 +289,6 @@ class CreateAccount
 			$variables['additional_url']		 = \phpgw::link('/login_ui', array('create_mapping' => true));
 		}
 
-		$uilogin->phpgw_display_login($variables);
+		return $uilogin->phpgw_display_login($variables);
 	}
 }

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\modules\phpgwapi\security;
+
 use Psr\Http\Message\ResponseInterface as Response;
 use App\modules\phpgwapi\security\Auth\Auth;
 use App\Database\Db;
@@ -87,7 +88,6 @@ class Sessions
 
 		// Start session with configured parameters
 		$this->startSession();
-
 	}
 
 	private function initializeDependencies(): void
@@ -106,6 +106,12 @@ class Sessions
 		if (!empty($this->serverSettings['usecookies']) && !\Sanitizer::get_var('api_mode', 'bool'))
 		{
 			$this->_use_cookies = true;
+			// Add these settings
+			ini_set('session.use_strict_mode', 1);
+			ini_set('session.use_only_cookies', 1);
+			ini_set('session.use_strict_mode', '1');
+			//		ini_set('session.cookie_samesite', 'Lax');  // or 'Strict'
+
 		}
 
 		// Set session configuration
@@ -127,7 +133,7 @@ class Sessions
 		if (!$this->_sessionid)
 		{
 			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET')
-			?? \Sanitizer::get_var(session_name(), 'string', 'POST');
+				?? \Sanitizer::get_var(session_name(), 'string', 'POST');
 		}
 	}
 
@@ -135,8 +141,17 @@ class Sessions
 	{
 		if (session_status() === PHP_SESSION_NONE)
 		{
+			// Set session ID first if we have one
+			if ($this->_sessionid)
+			{
+				session_id($this->_sessionid);
+			}
+
 			session_start();
+
+			// Update our session ID in case none was set and PHP generated one
 			$this->_sessionid = session_id();
+
 		}
 	}
 
@@ -156,18 +171,20 @@ class Sessions
 		$privateProperties = $reflectionClass->getProperties(ReflectionProperty::IS_PRIVATE);
 
 		$propertyValues = [];
-		foreach ($publicAndProtectedProperties as $property) {
+		foreach ($publicAndProtectedProperties as $property)
+		{
 			$property->setAccessible(true);
 			$propertyValues[$property->getName()] = $property->getValue($this);
 		}
 
-		foreach ($privateProperties as $property) {
+		foreach ($privateProperties as $property)
+		{
 			$propertyValues[$property->getName()] = 'private';
 		}
 
 		return $propertyValues;
 	}
-	
+
 	public function get_session_id()
 	{
 		return $this->_sessionid;
@@ -226,7 +243,7 @@ class Sessions
 
 		session_set_cookie_params(
 			array(
-				'lifetime' => isset($this->serverSettings['sessions_timeout']) ? $this->serverSettings['sessions_timeout'] : 0,
+				'lifetime' => $this->serverSettings['sessions_timeout'] ?? 0,
 				'path' => parse_url($webserver_url, PHP_URL_PATH),
 				'domain' => $this->_cookie_domain,
 				'secure' => $secure,
@@ -359,7 +376,7 @@ class Sessions
 		Cache::session_set('phpgwapi', 'password', base64_encode($this->_passwd));
 
 		$flags = Settings::getInstance()->get('flags');
-		if(!empty($flags['openid_connect']['type']))
+		if (!empty($flags['openid_connect']['type']))
 		{
 			Cache::session_set('openid_connect', 'type', $flags['openid_connect']['type']);
 			Cache::session_set('openid_connect', 'idToken',	$flags['openid_connect']['idToken']);

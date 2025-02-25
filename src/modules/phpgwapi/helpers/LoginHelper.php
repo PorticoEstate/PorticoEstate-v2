@@ -32,7 +32,13 @@ class LoginHelper
 			throw new \Exception('Not connected to the server');
 		}
 
-		Sessions::getInstance();
+		$selected_lang = Sanitizer::get_var('lang', 'string', 'GET');
+
+		if ($selected_lang)
+		{
+			Sessions::getInstance()->phpgw_setcookie('selected_lang', $selected_lang);
+		}
+
 		$this->serverSettings['template_set'] = Settings::getInstance()->get('login_template_set');
 		$this->serverSettings['template_dir'] = PHPGW_SERVER_ROOT
 			. "/phpgwapi/templates/{$this->serverSettings['template_set']}";
@@ -84,13 +90,6 @@ class LoginHelper
 		$routePath = $route->getPattern();
 		$routePath_arr = explode('/', $routePath);
 		$currentApp = trim($routePath_arr[1], '[');
-
-		$selected_lang = Sanitizer::get_var('lang', 'string', 'GET');
-
-		if($selected_lang)
-		{
-			Sessions::getInstance()->phpgw_setcookie('selected_lang', $selected_lang);
-		}
 
 		//backwards compatibility
 		$login_type = Sanitizer::get_var('type', 'string', 'GET');

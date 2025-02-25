@@ -76,47 +76,68 @@ class Sessions
 
 	private function __construct()
 	{
+		// Initialize core dependencies
+		$this->initializeDependencies();
+
+		// Initialize session configuration
+		$this->initializeSessionConfig();
+
+		// Get session ID from available sources
+		$this->resolveSessionId();
+
+		// Start session with configured parameters
+		$this->startSession();
+
+	}
+
+	private function initializeDependencies(): void
+	{
 		$this->db = Db::getInstance();
-
 		$this->serverSettings = Settings::getInstance()->get('server');
-
 		$this->Log = new Log();
-
 		$this->Auth = new Auth($this->db);
+	}
 
+	private function initializeSessionConfig(): void
+	{
 		$this->_use_cookies = false;
-
 		$this->_phpgw_set_cookie_params();
 
-		if (
-			!empty($this->serverSettings['usecookies'])  && !\Sanitizer::get_var('api_mode', 'bool')
-		)
+		if (!empty($this->serverSettings['usecookies']) && !\Sanitizer::get_var('api_mode', 'bool'))
 		{
 			$this->_use_cookies = true;
-			$this->_sessionid	= \Sanitizer::get_var(session_name(), 'string', 'COOKIE');
 		}
 
-		if(!$this->_sessionid)
-		{
-			if (!empty($_GET[session_name()]))
-			{
-				$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET');
-			}
-			else
-			{
-				$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'POST');
-			}
-		}
-
-		//respect the config option for cookies
+		// Set session configuration
 		ini_set('session.use_cookies', $this->_use_cookies);
-
-		//don't rewrite URL, as we have to do it in link - why? cos it is buggy otherwise
 		ini_set('url_rewriter.tags', '');
-		ini_set("session.gc_maxlifetime", isset($this->serverSettings['sessions_timeout']) ? $this->serverSettings['sessions_timeout'] : 0);
+		ini_set(
+			'session.gc_maxlifetime',
+			$this->serverSettings['sessions_timeout'] ?? 0
+		);
+	}
 
-		session_start();
-		$this->_sessionid = session_id();
+	private function resolveSessionId(): void
+	{
+		if ($this->_use_cookies)
+		{
+			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'COOKIE');
+		}
+
+		if (!$this->_sessionid)
+		{
+			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET')
+			?? \Sanitizer::get_var(session_name(), 'string', 'POST');
+		}
+	}
+
+	private function startSession(): void
+	{
+		if (session_status() === PHP_SESSION_NONE)
+		{
+			session_start();
+			$this->_sessionid = session_id();
+		}
 	}
 
 	public static function getInstance()
@@ -281,9 +302,6 @@ class Sessions
 
 		Settings::getInstance()->setAccountId($this->_account_id);
 		$accounts->set_account($this->_account_id);
-
-//		session_start();
-//		$this->_sessionid = session_id();
 
 		if (!empty($this->serverSettings['usecookies']))
 		{
@@ -666,9 +684,12 @@ class Sessions
 			session_id($sessionid);
 		}
 
-		session_start();
+		if (session_status() === PHP_SESSION_NONE)
+		{
+			session_start();
+		}
 
-		if (!session_id() == $sessionid)
+		if (session_id() != $sessionid)
 		{
 			return array();
 		}

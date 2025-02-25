@@ -65,7 +65,7 @@ class CreateAccount
 			$OIDC_groups = mb_convert_encoding(mb_convert_encoding($_SERVER["OIDC_groups"], 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1');
 			$ad_groups	= explode(",", $OIDC_groups);
 			$default_group_lid	 = !empty($this->serverSettings['default_group_lid']) ? $this->serverSettings['default_group_lid'] : 'default';
-			if (!in_array($default_group_lid, $ad_groups))
+			if (!in_array(strtolower($default_group_lid), array_map('strtolower', $ad_groups)))
 			{
 				throw new Exception(lang('missing membership: "%1" is not in the list', $default_group_lid));
 			}
@@ -74,7 +74,7 @@ class CreateAccount
 		{
 			$ad_groups	= OpenIDConnect::getInstance()->get_groups();
 			$default_group_lid	 = !empty($this->serverSettings['default_group_lid']) ? $this->serverSettings['default_group_lid'] : 'default';
-			if (!in_array($default_group_lid, $ad_groups))
+			if (!in_array(strtolower($default_group_lid), array_map('strtolower', $ad_groups)))
 			{
 				throw new Exception(lang('missing membership: "%1" is not in the list', $default_group_lid));
 			}

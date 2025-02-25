@@ -20,6 +20,8 @@ class OpenIDConnect
 	private $debug;
 	private $provider_type;
 
+	private $simulate = false;
+
 	private static $instance = null;
 
 	private const SESSION_KEY = 'openid_connect_userinfo';
@@ -34,6 +36,11 @@ class OpenIDConnect
 		Sessions::getInstance();
 
 		$this->debug = false;
+
+		if ($this->simulate)
+		{
+			return;
+		}
 
 		if (!$config)
 		{
@@ -105,13 +112,20 @@ class OpenIDConnect
  
 	public function authenticate()
 	{
-		$this->oidc->authenticate();
 		Cache::session_set('openid_connect', self::SESSION_AUTH_STATE, true);
+
+		if ($this->simulate)
+		{
+			return;
+		}
+
+		$this->oidc->authenticate();
 	}
 
 	public function get_userinfo()
 	{
 		// Try to get from session first
+		//$this->clearStoredUserInfo();
 		$cachedInfo = $this->getStoredUserInfo();
 
 		if ($cachedInfo)
@@ -126,6 +140,39 @@ class OpenIDConnect
 			return $userInfo;
 		}
 
+		if ($this->simulate)
+		{
+			$userInfo = new \stdClass();
+			$userInfo->upn = 'john.doe@example.com';
+			$userInfo->groups = ['group1', 'default', 'Aktiv kommune brukere'];
+			$userInfo->email = '';
+			$userInfo->given_name = 'John';
+			$userInfo->family_name = 'Doe';
+			$userInfo->name = 'John Doe';
+			$userInfo->preferred_username = 'johndoe';
+			$userInfo->sub = '1234567890';
+			$userInfo->locale = 'en-US';
+			$userInfo->picture = 'https://example.com/johndoe.jpg';
+			$userInfo->updated_at = 1234567890;
+			$userInfo->email_verified = true;
+			$userInfo->phone_number = '+1234567890';
+			$userInfo->phone_number_verified = true;
+			$userInfo->address = new \stdClass();
+			$userInfo->address->street_address = '123 Main St';
+			$userInfo->address->locality = 'Anytown';
+			$userInfo->address->region = 'NY';
+			$userInfo->address->postal_code = '12345';
+			$userInfo->address->country = 'US';
+			$userInfo->address->formatted = '123 Main St, Anytown, NY 12345, US';
+			$userInfo->zoneinfo = 'America/New_York';
+			$userInfo->birthdate = '1970-01-01';
+			$userInfo->onpremisessamaccountname = 'johndoe';
+
+			Cache::session_set('openid_connect', self::SESSION_AUTH_STATE, true);
+			$this->storeUserInfo($userInfo);
+
+			return $userInfo;
+		}
 		if ($this->debug)
 		{
 			echo "Provider type: " . $this->provider_type . "<br>";

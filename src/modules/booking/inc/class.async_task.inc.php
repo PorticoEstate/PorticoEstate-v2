@@ -11,6 +11,7 @@ class booking_async_task
 
 	protected static $task_instances = array();
 	protected $asyncservice, $serverSettings, $userSettings, $flags;
+	protected $global_lock = false;
 
 	function __construct()
 	{

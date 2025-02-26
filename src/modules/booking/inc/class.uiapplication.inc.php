@@ -2304,6 +2304,8 @@ class booking_uiapplication extends booking_uicommon
 					}
 					if ($resources['results'] && count($resources['results']) == $check_direct_booking)
 					{
+						$GLOBALS['phpgw']->db->query('LOCK TABLE bb_block, bb_allocation, bb_allocation_resource, bb_event, bb_event_resource, bb_event_date, bb_application IN EXCLUSIVE MODE', __LINE__, __FILE__);
+
 						foreach ($application['dates'] as &$date)
 						{
 							$collision = $this->bo->so->check_collision($application['resources'], $date['from_'], $date['to_'], $session_id);
@@ -2393,6 +2395,13 @@ class booking_uiapplication extends booking_uicommon
 								Cache::message_set($error_values, 'error');
 							}
 						}
+					}
+					else if ($check_direct_booking)
+					{
+						$GLOBALS['phpgw']->db->transaction_abort();
+						Cache::message_set('Det er desverre opptatt', 'error');
+						$this->delete_partial($application['id']);
+						self::redirect(array());
 					}
 					else
 					{

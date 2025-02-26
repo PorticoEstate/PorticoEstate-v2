@@ -1,15 +1,15 @@
 'use client';
 import { createElement } from 'react';
 import {Spinner} from "@digdir/designsystemet-react";
-import { useDelegateData, useOrganizationData } from "@/service/api/organization";
-import DelegateView from './delegate.view';
-import DelegateForm from './delegate.form';
+import { useGroupData, useOrganizationData } from "@/service/api/organization";
+import GroupView from './group.view';
+import GroupForm from './form/group.form';
 
 interface IdsI {
     id?: number;
     orgId?: number;
 }
-interface DelegateWrapper {
+interface GroupWrapper {
     id?: number;
     orgId?: number;
     component: any;
@@ -17,12 +17,12 @@ interface DelegateWrapper {
 
 function adapter(id?: number, orgId?: number) {
     return id ?
-        useDelegateData(id) 
+        useGroupData(id) 
         : useOrganizationData(orgId as number);
 }
 
-const DelegateWrapper = ({ id, orgId, component }: DelegateWrapper) => {
-    const { data, error, isLoading } = adapter(id, orgId);
+const GroupWrapper = ({ id, orgId, component }: GroupWrapper) => {
+    const { data, isLoading } = adapter(id, orgId);
     if (!isLoading && !data) {
         return null;
     }
@@ -34,8 +34,8 @@ const DelegateWrapper = ({ id, orgId, component }: DelegateWrapper) => {
 
 const ServerToClientAdapter = ({ id, orgId }: IdsI) => {
     return id 
-        ? <DelegateWrapper id={id} component={DelegateView}/>
-        : <DelegateWrapper orgId={orgId} component={DelegateForm}/>
+        ? <GroupWrapper id={id} component={GroupView}/>
+        : <GroupWrapper orgId={orgId} component={GroupForm}/>
 }
 
 export default ServerToClientAdapter;

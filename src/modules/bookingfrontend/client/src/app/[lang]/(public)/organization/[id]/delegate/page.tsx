@@ -1,5 +1,7 @@
+'use server'
 import {FC} from "react";
 import { notFound } from "next/navigation";
+import ServerToClientAdapter from "@/components/organization/delegate/delegate.wrapper";
 
 interface DelegateParams {
     id: string;
@@ -14,9 +16,7 @@ export async function generateMetadata(props: DelegateProps) {
 
     if (isNaN(orgId)) return notFound();
 
-    return {
-        id: orgId
-    }
+    return { orgId }
 }
 
 
@@ -24,7 +24,7 @@ const DelegateCreate: FC<DelegateProps> = async (props: DelegateProps) => {
     const orgId = parseInt(props.params.id, 10);
     if (isNaN(orgId)) return notFound();
     
-    return null;
+    return <ServerToClientAdapter orgId={orgId} />
 }
 
 export default DelegateCreate;

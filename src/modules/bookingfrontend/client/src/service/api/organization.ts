@@ -33,12 +33,7 @@ export const useDelegateData = (delegateId: number) => {
                 delegateId
             ]);
             const res = await fetch(url);
-            const data = await res.json();
-            return {
-                ...data,
-                groups: JSON.parse(data.groups),
-                delegaters: JSON.parse(data.delegaters)
-            }
+            return await res.json();
         }
     })
 }

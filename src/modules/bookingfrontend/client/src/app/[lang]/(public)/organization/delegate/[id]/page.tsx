@@ -1,9 +1,9 @@
 import {FC} from "react";
 import { notFound } from "next/navigation";
-import DelegateWrapper from "@/components/organization/delegate/delegate.wrapper";
+import ServerToClientAdapter from "@/components/organization/delegate/delegate.wrapper";
 
 interface DelegateParams {
-    delegateId: string;
+    id: string;
 }
 
 interface DelegateProps {
@@ -11,7 +11,7 @@ interface DelegateProps {
 }
 
 export async function generateMetadata(props: DelegateProps) {
-    const orgId = parseInt(props.params.delegateId, 10);
+    const orgId = parseInt(props.params.id, 10);
 
     if (isNaN(orgId)) return notFound();
 
@@ -20,12 +20,11 @@ export async function generateMetadata(props: DelegateProps) {
     }
 }
 
-
-const Delegate: FC<DelegateProps> = async (props: DelegateProps) => {
-    const delegateId = parseInt(props.params.delegateId, 10);
+const DelegateView: FC<DelegateProps> = async (props: DelegateProps) => {
+    const delegateId = parseInt(props.params.id, 10);
     if (isNaN(delegateId)) return notFound();
     
-    return <DelegateWrapper id={delegateId}/>;
+    return <ServerToClientAdapter id={delegateId}/>
 }
 
-export default Delegate;
+export default DelegateView;

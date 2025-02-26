@@ -14,9 +14,7 @@ export async function generateMetadata(props: OrganizationProps) {
     const orgId = parseInt(props.params.id, 10);
     if (isNaN(orgId)) return notFound();
 
-    return {
-        id: orgId
-    }
+    return { orgId }
 }
 
 

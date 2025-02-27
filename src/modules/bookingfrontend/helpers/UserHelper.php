@@ -7,6 +7,7 @@ use App\modules\phpgwapi\services\Config;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
 use App\modules\phpgwapi\controllers\OpenIDConnect;
+use App\modules\phpgwapi\security\Sessions;
 
 class UserHelper
 {
@@ -473,12 +474,42 @@ class UserHelper
 		return $flags['currentapp'];
 	}
 
+	public function process_callback()
+	{
+		$after = \Sanitizer::get_var('after', 'raw', 'COOKIE');
+
+		$skip_redirect = true;
+
+		$this->validate_ssn_login($redirect = array(), $skip_redirect);
+
+		if ($after)
+		{
+			\phpgw::redirect_link('/bookingfrontend/', json_decode($after, true));
+		}
+		else
+		{
+			\phpgw::redirect_link('/bookingfrontend/');
+		}
+	}
+
 	/**
 	 * Validate external safe login - and return to me
 	 * @param array $redirect
 	 */
 	public function validate_ssn_login($redirect = array(), $skip_redirect = false)
 	{
+
+		$after = str_replace('&amp;', '&', urldecode(\Sanitizer::get_var('after', 'raw', 'GET')));
+
+		if ($after)
+		{
+			//convert the query string into an array: menuaction=bookingfrontend.uibuilding.show&id=46&click_history=44a37f06be01ecb798e1e7b2a782fb09
+			parse_str($after, $after);
+
+			Sessions::getInstance()->phpgw_setcookie('after', json_encode($after), 0);
+		}
+
+
 		static $user_data = array();
 		if (!$user_data)
 		{
@@ -518,7 +549,7 @@ class UserHelper
 		 * OpenID Connect
 		 */
 		$redirect_after_callback = '';
-		if (!empty($config_openid['common']['method_backend']) && in_array('remote', $config_openid['common']['method_backend']))
+		if (!empty($config_openid['common']['method_frontend']) && in_array('remote', $config_openid['common']['method_frontend']))
 		{
 			$get_ssn_callback = false;
 			//check for the url path contains /bookingfrontend/userhelper/callback

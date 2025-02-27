@@ -20,7 +20,7 @@ class OpenIDConnect
 	private $debug;
 	private $provider_type;
 
-	private $simulate = true;
+	private $simulate = false;
 
 	private static $instance = null;
 

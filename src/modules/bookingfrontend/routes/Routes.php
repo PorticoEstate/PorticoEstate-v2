@@ -21,7 +21,7 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
 
-	$group->get('/userhelper/callback[/{params:.*}]', UserHelper::class . ':validate_ssn_login');
+	$group->get('/userhelper/callback[/{params:.*}]', UserHelper::class . ':process_callback');
 	$group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
     $group->group('/buildings', function (RouteCollectorProxy $group)
     {

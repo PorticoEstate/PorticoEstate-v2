@@ -38,11 +38,6 @@ class OpenIDConnect
 		$this->debug = false;
 		self::$type = $type;
 
-		if ($this->simulate)
-		{
-			return;
-		}
-
 		if (!$config)
 		{
 			$location_obj = new Locations();
@@ -53,6 +48,11 @@ class OpenIDConnect
 		if (!empty($config[$type]))
 		{
 			$this->config = $config[$type];
+		}
+
+		if ($this->simulate)
+		{
+			return;
 		}
 
 		if (empty($this->config))
@@ -116,8 +116,10 @@ class OpenIDConnect
 
 		if ($this->simulate)
 		{
-			\phpgw::redirect_link('login_callback', array('callback' => 1, 'type' => self::$type));
-			return;
+			//redirect to the callback url $this->config['redirect_uri'] with header()
+			header('Location: ' . $this->config['redirect_uri']);
+			exit;
+
 		}
 
 		$this->oidc->authenticate();
@@ -127,6 +129,8 @@ class OpenIDConnect
 	private function get_simulated_userinfo()
 	{
 		$userInfo = new \stdClass();
+		//pid
+		$userInfo->pid = '31015514496';//generert tilfeldig gyldig fødselsnummer
 		$userInfo->upn = 'john.doe@example.com';
 		$userInfo->groups = ['group1', 'default', 'Aktiv kommune brukere'];
 		$userInfo->email = '';

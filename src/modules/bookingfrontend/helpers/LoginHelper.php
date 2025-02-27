@@ -15,7 +15,12 @@ class LoginHelper
 
     public static function organization()
     {
-        if(self::login())
+        
+		Sessions::getInstance()->phpgw_setcookie('login_as_organization', '1');
+
+		//If external login is enabled, callback will be handled by UserHelper::process_callback()
+		
+		if(self::login())
         {
             require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
             /**

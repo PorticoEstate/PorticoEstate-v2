@@ -476,15 +476,33 @@ class UserHelper
 
 	public function process_callback()
 	{
-		$after = \Sanitizer::get_var('after', 'raw', 'COOKIE');
 
 		$skip_redirect = true;
 
 		$this->validate_ssn_login($redirect = array(), $skip_redirect);
 
+		$after = json_decode(\Sanitizer::get_var('after', 'raw', 'COOKIE'), true);
+		if(isset($after['click_history']))
+		{
+			unset($after['click_history']);
+		}
+
+		$login_as_organization = \Sanitizer::get_var('login_as_organization', 'int', 'COOKIE');
+		Sessions::getInstance()->phpgw_setcookie('login_as_organization', '0');
+		Sessions::getInstance()->phpgw_setcookie('after', '', -3600);
+
+		if ($login_as_organization)
+		{
+			/**
+			 * Pick up the external login-info
+			 */
+			$bouser = new UserHelper();
+			$bouser->log_in();
+		}
+
 		if ($after)
 		{
-			\phpgw::redirect_link('/bookingfrontend/', json_decode($after, true));
+			\phpgw::redirect_link('/bookingfrontend/', $after);
 		}
 		else
 		{

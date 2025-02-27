@@ -2304,7 +2304,7 @@ class booking_uiapplication extends booking_uicommon
 					}
 					if ($resources['results'] && count($resources['results']) == $check_direct_booking)
 					{
-						$GLOBALS['phpgw']->db->query('LOCK TABLE bb_block, bb_allocation, bb_allocation_resource, bb_event, bb_event_resource, bb_event_date, bb_application IN EXCLUSIVE MODE', __LINE__, __FILE__);
+						Db::getInstance()->query('LOCK TABLE bb_block, bb_allocation, bb_allocation_resource, bb_event, bb_event_resource, bb_event_date, bb_application IN EXCLUSIVE MODE', __LINE__, __FILE__);
 
 						foreach ($application['dates'] as &$date)
 						{

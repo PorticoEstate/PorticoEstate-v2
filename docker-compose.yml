@@ -54,4 +54,5 @@ services:
 
 networks:
     internal:
-        driver: bridge
+        name: portico_internal
+        external: true

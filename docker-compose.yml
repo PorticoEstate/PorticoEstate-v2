@@ -38,6 +38,8 @@ services:
             # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
         networks:
             - internal
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
 
     nextjs:
         build:

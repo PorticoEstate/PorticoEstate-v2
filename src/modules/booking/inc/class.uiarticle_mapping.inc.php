@@ -300,13 +300,6 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 							'text'	 => lang('status'),
 							'list'	 => $this->get_status_options()
 						),
-						//							array(
-						//								'type' =>  $this->currentapp == 'booking' ? 'checkbox' : 'hidden',
-						//								'name' => 'filter_active',
-						//								'text' => lang('showall'),
-						//								'value' =>  1,
-						//								'checked'=> 1,
-						//							)
 					)
 				)
 			),

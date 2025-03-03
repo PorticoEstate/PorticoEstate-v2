@@ -406,8 +406,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                     female: 0 // Since we're only tracking male numbers
                 }));
             }
+			if (dirtyFields.title) {
+				updatedApplication.name = data.title;
+			}
             const checkFields: (keyof typeof dirtyFields)[] = [
-                'title',
                 'audience',
                 'homepage',
                 'description',

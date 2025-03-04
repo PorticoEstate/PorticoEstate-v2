@@ -73,6 +73,28 @@ class OrganizationController
         }
     }
 
+    public function getGroupById(Request $request, Response $response, $args)
+    {   
+        $id = (int)$args['groupId'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+ 
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        try {
+            $result = $this->service->getGroupById($id);
+            return ResponseHelper::sendJson($response, $result);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
     public function patchDelegate(Request $request, Response $response, $args)
     {
         $delegateId = (int)$args['delegateId'];

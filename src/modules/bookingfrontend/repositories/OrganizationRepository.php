@@ -187,6 +187,15 @@ class OrganizationRepository
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    public function getGroupById(int $id)
+    {
+        $sql = "SELECT * FROM bb_group
+        WHERE id=:id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function patchGroup(int $groupId, array $data): array
     {
         $params = [':id' => $groupId];

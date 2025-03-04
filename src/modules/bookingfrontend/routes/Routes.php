@@ -89,6 +89,7 @@ $app->group('/bookingfrontend/organization', function (RouteCollectorProxy $grou
         $group->patch('/{id}', OrganizationController::class . ':patchOrganization')
             ->add(new OrganizationExist($group->getContainer()));
         $group->get('/delegate/{delegateId}', OrganizationController::class . ':getDelegateById');
+        $group->get('/group/{groupId}', OrganizationController::class . ':getGroupById');
         $group->patch('/delegate/{delegateId}', OrganizationController::class . ':patchDelegate');
         $group->post('/{id}/delegate', OrganizationController::class . ':createDelegate')
             ->add(new OrganizationExist($group->getContainer()));

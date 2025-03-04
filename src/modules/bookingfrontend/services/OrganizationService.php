@@ -33,6 +33,11 @@ class OrganizationService
         return $organization;
     }
 
+    public function getGroupById(int $id)
+    {
+        $group = $this->repository->getGroupById($id);
+        return $group;
+    }
 
     public function existOrganization(int $id)
     {

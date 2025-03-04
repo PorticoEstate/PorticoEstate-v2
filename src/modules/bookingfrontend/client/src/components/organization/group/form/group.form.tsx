@@ -8,6 +8,7 @@ import { createGroup } from "@/service/api/organization";
 import { useActivityList } from "@/service/api/activity";
 import { Activity } from "@/service/types/api/activity.types";
 import ContactsForm from "./contact.form";
+import GroupFormBase from "./base.form";
 
 interface GroupFormProps {
     orgId: number;
@@ -50,77 +51,11 @@ const GroupForm = ({ orgId, orgName, headGroup }: GroupFormProps) => {
                 />
                 : null
             }
-            <Controller
-                name="groupData.name"
+            <GroupFormBase 
                 control={control}
-                render={({ field }) => (
-                    <Textfield
-                        {...field}
-                        label={t('bookingfrontend.name')}
-                        error={
-                            errors.groupData?.name?.message 
-                            ? t(errors.groupData?.name.message) 
-                            : undefined
-                        }
-                    />
-                )}
-            />
-            <Controller
-                name="groupData.shortname"
-                control={control}
-                render={({ field }) => (
-                    <Textfield
-                        {...field}
-                        label={t('bookingfrontend.shortname')}
-                        error={
-                            errors.groupData?.shortname?.message 
-                            ? t(errors.groupData?.shortname.message)
-                            : undefined
-                        }
-                    />
-                )}
-            />
-            <Textfield
-                readOnly
-                value={orgName}
-                label={t('bookingfrontend.organization_name')}
-            />
-            <Controller
-                name='groupData.activity_id'
-                control={control}
-                render={({ field: { onChange, value } }) => (
-                    <Dropdown.TriggerContext>
-                        <Dropdown.Trigger>
-                            { value ? value.id : t(('bookingfrontend.select_activity')) }
-                        </Dropdown.Trigger>
-                        <Dropdown>
-                            <Dropdown.List>
-                                { activity?.map((item: Activity) => (
-                                    <Dropdown.Item onClick={onChange(item)}>
-                                        <Dropdown.Button>
-                                            {item.name}
-                                        </Dropdown.Button>
-                                    </Dropdown.Item>
-                                )) }
-                            </Dropdown.List>
-                        </Dropdown>
-                    </Dropdown.TriggerContext>
-                )}
-            />
-            <Controller
-                name="groupData.description"
-                control={control}
-                render={({ field }) => (
-                    <Textarea
-                        {...field}
-                        label={t('bookingfrontend.name')}
-                        error={
-                            errors.groupData?.name?.message 
-                            ? t(errors.groupData?.name.message) 
-                            : undefined
-                        }
-                    />
-                )}
+                errors={errors}
+                orgName={orgName}
+                activity={activity as Activity[]}
             />
             <ContactsForm
                 control={control}

@@ -44,4 +44,6 @@ export interface Group {
     contact: Contact[];
     description: string;
     name: string;
+    shortname: string;
+    organization: string;
 }

@@ -5,7 +5,6 @@ import { Controller } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 
 interface ContactForm {
-    orgId: number;
     control: any;
     errors: any;
 }
@@ -15,7 +14,7 @@ interface GroupleaderForm {
     errors: any;
 }
 
-const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) => {
+export const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) => {
     const t = useTrans();
 
     let errObj = errors.groupLeaders;

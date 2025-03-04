@@ -2,7 +2,7 @@
 import { createElement } from 'react';
 import {Spinner} from "@digdir/designsystemet-react";
 import { useGroupData, useOrganizationData } from "@/service/api/organization";
-import GroupView from './group.view';
+import GroupController from './group.view';
 import GroupForm from './form/group.form';
 
 interface IdsI {
@@ -26,7 +26,7 @@ const GroupWrapper = ({ id, orgId, component }: GroupWrapper) => {
     if (!isLoading && !data) {
         return null;
     }
-    if (!isLoading) {
+    if (!isLoading && data) {
         return createElement(component, { data });
     }
     return <Spinner aria-label='Laster organization data'/>;
@@ -34,7 +34,7 @@ const GroupWrapper = ({ id, orgId, component }: GroupWrapper) => {
 
 const ServerToClientAdapter = ({ id, orgId }: IdsI) => {
     return id 
-        ? <GroupWrapper id={id} component={GroupView}/>
+        ? <GroupWrapper id={id} component={GroupController}/>
         : <GroupWrapper orgId={orgId} component={GroupForm}/>
 }
 

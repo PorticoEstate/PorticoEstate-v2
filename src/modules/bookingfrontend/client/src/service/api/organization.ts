@@ -104,3 +104,28 @@ export const createGroup = (orgId: number) => {
         }
     })
 }
+
+export const patchGroup = (groupId: number) => {
+    return useMutation({
+        mutationFn: async (data: any) => {
+            const url = phpGWLink([
+                'bookingfrontend',
+                'organization',
+                'group',
+                groupId
+            ]);
+            const res = await fetch(url, {
+                method: "PATCH",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error();
+            }
+            return await res.json();
+        }
+    })
+}

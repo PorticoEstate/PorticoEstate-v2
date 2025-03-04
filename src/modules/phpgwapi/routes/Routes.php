@@ -140,7 +140,8 @@ $app->get('/refreshsession[/{params:.*}]', function (Request $request, Response 
 	{
 		$response_str = json_encode(['message' => 'Du er ikke logget inn']);
 		$response->getBody()->write($response_str);
-		return $response->withHeader('Content-Type', 'application/json');
+		return $response->withHeader('Content-Type', 'application/json')
+			->withStatus(401);
 	}
 	else
 	{

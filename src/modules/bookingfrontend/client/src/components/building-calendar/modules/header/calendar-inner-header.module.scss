@@ -11,15 +11,24 @@
 
     @include mobile {
         row-gap: 0.5rem;
-        grid-template-columns:auto 1fr;
-        grid-template-areas: "mode-select resource-button" "date date" "order order";
+        grid-template-columns:auto auto 1fr auto;
+        grid-template-areas: "resource-button resource-button date date" "mode-select mode-select-time blank order";
+        //display: none;
+    }
+    @include small-mobile {
+        row-gap: 0.5rem;
+        grid-template-columns:auto auto 1fr auto;
+        grid-template-areas: "resource-button resource-button resource-button resource-button" "date date date date" "mode-select mode-select-time blank order";
         //display: none;
     }
     @include tablet {
         row-gap: 0.5rem;
-        grid-template-columns:auto 1fr;
-        grid-template-rows: auto auto;
-        grid-template-areas: "mode-select resource-button" "resource-button date";
+        //grid-template-columns:auto 1fr;
+        //grid-template-rows: auto auto;
+		grid-template-columns:auto 1fr auto auto auto;
+		grid-template-areas:  "date date date date date" "resource-button blank mode-select mode-select-time order";
+        //grid-template-areas: "mode-select resource-button" "resource-button date";
+
         //display: none;
     }
     @include desktop {
@@ -48,10 +57,10 @@
         display: flex;
         justify-content: flex-end;
         grid-area: mode-select-time;
-        @include mobile {
-            //flex-direction: column;
-            display: none;
-        }
+        //@include mobile {
+        //    //flex-direction: column;
+        //    display: none;
+        //}
     }
     .modeSelect {
         grid-area: mode-select;

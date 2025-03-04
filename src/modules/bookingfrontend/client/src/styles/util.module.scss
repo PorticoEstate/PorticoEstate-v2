@@ -16,6 +16,12 @@
     }
 }
 
+@mixin small-mobile {
+    @include underBreakpoint($xsmall-breakpoint) {
+        @content;
+    }
+}
+
 @mixin breakpoint($point) {
     @media (min-width: $point) {
         @content;
@@ -29,8 +35,9 @@
 }
 
 $large-breakpoint: 1200px; // over
-$medium-breakpoint: 601px; // over
-$small-breakpoint: 600px; // under
+$medium-breakpoint: 851px; // over
+$small-breakpoint: 850px; // under
+$xsmall-breakpoint: 601px; // under
 
 
 

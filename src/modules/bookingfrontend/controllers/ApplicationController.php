@@ -174,9 +174,9 @@ class ApplicationController extends DocumentController
             }
 
             $deleted = $this->applicationService->deletePartial($id);
-
-            return $response->withHeader('Content-Type', 'application/json')
-                ->write(json_encode(['deleted' => $deleted]));
+			$response->getBody()->write(json_encode(['deleted' => $deleted]));
+			return $response->withStatus(200)
+				->withHeader('Content-Type', 'application/json');
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -315,11 +315,12 @@ class ApplicationController extends DocumentController
 
             $data['id'] = $id;
             $this->applicationService->savePartialApplication($data);
+			$response->getBody()->write(json_encode([
+				'message' => 'Application updated successfully'
+			]));
+			return $response->withStatus(200)
+				->withHeader('Content-Type', 'application/json');
 
-            return $response->withHeader('Content-Type', 'application/json')
-                ->write(json_encode([
-                    'message' => 'Application updated successfully'
-                ]));
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -420,12 +421,11 @@ class ApplicationController extends DocumentController
 
             $data['id'] = $id;
             $this->applicationService->patchApplication($data);
-
-            return $response->withHeader('Content-Type', 'application/json')
-                ->withStatus(200)
-                ->write(json_encode([
-                    'message' => 'Application updated successfully'
-                ]));
+			$response->getBody()->write(json_encode([
+				'message' => 'Application updated successfully'
+			]));
+			return $response->withStatus(200)
+				->withHeader('Content-Type', 'application/json');
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(

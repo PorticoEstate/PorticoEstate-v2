@@ -7,11 +7,12 @@ phpgw::import_class('booking.async_task');
 
 class booking_async_task_send_access_request extends booking_async_task
 {
-
 	private $account, $config, $e_lock_integration;
 	var	$cleanup_old_reservations = array();
 	var	$e_lock_host_map = array();
 	private $simulate = false;
+	// Tracking array for sent emails
+	private $email_sent = array();
 
 	public function __construct()
 	{
@@ -44,6 +45,9 @@ class booking_async_task_send_access_request extends booking_async_task
 	{
 		static $create_call_ids = array();
 		static $status_call_ids = array();
+
+		// Initialize email tracking array at the beginning of each run
+		$this->email_sent = array();
 
 		$request_method = !empty($this->config['e_lock_request_method']) ? $this->config['e_lock_request_method'] : 'Stavanger_e_lock.php';
 
@@ -123,7 +127,6 @@ class booking_async_task_send_access_request extends booking_async_task
 				{
 					foreach ($request_access['results'] as $reservation)
 					{
-
 						$resources = $so_resource->read(array(
 							'filters'	 => array('where' => 'bb_resource.id IN(' . implode(', ', $reservation['resources']) . ')'),
 							'results'	 => 100
@@ -174,16 +177,18 @@ class booking_async_task_send_access_request extends booking_async_task
 									}
 								}
 								/**
-								 * send email
+								 * send email - only if not already sent for this reservation
 								 */
 								if ($this->simulate)
 								{
 									echo 'stage 0 - email:';
 									_debug_array($reservation['contact_email']);
 								}
-								else
+								else if (!isset($this->email_sent[$reservation['id']]))
 								{
 									$this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($sms_text));
+									// Mark email as sent for this reservation
+									$this->email_sent[$reservation['id']] = true;
 								}
 
 								$this->log('sms_tekst', $sms_text);
@@ -368,12 +373,17 @@ class booking_async_task_send_access_request extends booking_async_task
 											}
 
 											/**
-											 * send email
+											 * send email - only if not already sent for this reservation
 											 */
-											if ($this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($sms_text)))
+											if (
+												!isset($this->email_sent[$reservation['id']]) &&
+												$this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($sms_text))
+											)
 											{
 												$comment = "Melding om tilgang og kode for {$e_lock['e_lock_system_id']}::{$e_lock['e_lock_resource_id']} er sendt til {$reservation['contact_email']}";
 												$bo->add_single_comment($reservation['id'], $comment);
+												// Mark email as sent for this reservation
+												$this->email_sent[$reservation['id']] = true;
 											}
 
 											$this->log('sms_tekst', $sms_text);
@@ -395,7 +405,15 @@ class booking_async_task_send_access_request extends booking_async_task
 											$error_msg	 .= "Du må kontakte byggansvarlig for manuell innlåsing.\n";
 											$error_msg	 .= "Denne meldingen kan ikke besvares";
 											$sms_res	 = $sms_service->websend2pv($this->account, $reservation['contact_phone'], $error_msg);
-											$this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($error_msg));
+
+											// Only send email if not already sent for this reservation
+											if (!isset($this->email_sent[$reservation['id']]))
+											{
+												$this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($error_msg));
+												// Mark email as sent for this reservation
+												$this->email_sent[$reservation['id']] = true;
+											}
+
 											$bo->add_single_comment($reservation['id'], "Fant ikke reservasjonen for {$e_lock_name} i adgangskontrollen.");
 										}
 									}

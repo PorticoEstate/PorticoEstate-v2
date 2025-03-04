@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { phpGWLink } from "@/service/util";
-import { Organization } from "../types/api/organization.types";
+import { Organization, Group, Delegate } from "../types/api/organization.types";
 import { CreatingDelegate } from "@/components/organization/delegate/schemas";
 import { CreatingGroup } from "@/components/organization/group/schemas";
 
@@ -25,12 +25,29 @@ export const useDelegateData = (delegateId: number) => {
     return useQuery({
         queryKey: ['delegate', delegateId],
         retry: 2,
-        queryFn: async (): Promise<Organization> => {
+        queryFn: async (): Promise<Delegate> => {
             const url = phpGWLink([
                 'bookingfrontend', 
                 'organization',
                 'delegate', 
                 delegateId
+            ]);
+            const res = await fetch(url);
+            return await res.json();
+        }
+    })
+}
+
+export const useGroupData = (groupId: number) => {
+    return useQuery({
+        queryKey: ['group', groupId],
+        retry: 2,
+        queryFn: async (): Promise<Group> => {
+            const url = phpGWLink([
+                'bookingfrontend',
+                'organization',
+                'group',
+                groupId
             ]);
             const res = await fetch(url);
             return await res.json();

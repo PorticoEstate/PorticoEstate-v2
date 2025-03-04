@@ -12,7 +12,7 @@ const OrganizationWrapper = ({ id }: OrganizationWrapper) => {
     if (!isLoading && !organization) {
         return null;
     }
-    if (!isLoading) {
+    if (!isLoading && organization) {
         return <OrganizationView organization={organization} />;
     }
     return <Spinner aria-label='Laster organization data'/>;

@@ -1,5 +1,6 @@
 'use client';
-import { Details } from '@digdir/designsystemet-react';
+import { Details, Link } from '@digdir/designsystemet-react';
+import {default as NXLink} from "next/link";
 import { Organization } from "@/service/types/api/organization.types";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 
@@ -43,6 +44,38 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                     <Details.Summary>{t('bookingfrontend.facility')}</Details.Summary>
                     <Details.Content>
                         TODO: No building data
+                    </Details.Content>
+                </Details>
+                <Details>
+                    <Details.Summary>{t('bookingfrontend.delegaters')}</Details.Summary>
+                    <Details.Content>
+                        { organization.delegaters.map((delegate) => (
+                            <div key={delegate.id}>
+                                <Link>
+                                    <NXLink href={`/organization/delegate/${delegate.id}`}>
+                                        {delegate.name}
+                                    </NXLink>
+                                </Link>
+                                <span>{delegate.email}</span>
+                                <hr />
+                            </div>
+                        )) }
+                    </Details.Content>
+                </Details>
+                <Details>
+                    <Details.Summary>{t('bookingfrontend.groups')}</Details.Summary>
+                    <Details.Content>
+                        { organization.groups.map((group) => (
+                            <div key={group.id}>
+                                <Link>
+                                    <NXLink href={`/organization/group/${group.id}`}>
+                                        {group.name}
+                                    </NXLink>
+                                </Link>
+                                <span>{group.contact[0].name}</span>
+                                <hr />
+                            </div>
+                        )) }
                     </Details.Content>
                 </Details>
             </div>

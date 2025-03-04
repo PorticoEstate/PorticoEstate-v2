@@ -5,13 +5,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { createDelegateFormSchema, CreatingDelegate } from "./schemas";
 import { createDelegate } from "@/service/api/organization";
+import { Organization } from "@/service/types/api/organization.types";
 
 interface DelegateFormProps {
-    orgName: string;
-    orgId: number;
+    data: Organization;
 }
 
-const DelegateForm = ({ orgName, orgId }: DelegateFormProps) => {
+const DelegateForm = ({ data }: DelegateFormProps) => {
     const t = useTrans();
     const {
         control,
@@ -21,7 +21,7 @@ const DelegateForm = ({ orgName, orgId }: DelegateFormProps) => {
         mode: 'onChange',
         resolver: zodResolver(createDelegateFormSchema),
     });
-    const create = createDelegate(orgId);
+    const create = createDelegate(data.id);
 
     const save = (data: CreatingDelegate) => {
         create.mutate(data);
@@ -29,6 +29,7 @@ const DelegateForm = ({ orgName, orgId }: DelegateFormProps) => {
 
     return (
         <main>
+            <h4>{t('bookingfrontend.new_delegate')}</h4>
             <Controller 
                 name='name'
                 control={control}
@@ -53,7 +54,7 @@ const DelegateForm = ({ orgName, orgId }: DelegateFormProps) => {
             />
             <Textfield 
                 readOnly
-                value={orgName}
+                value={data.name}
                 label={t('bookingfrontend.organization_name')}
             />
             <Controller 

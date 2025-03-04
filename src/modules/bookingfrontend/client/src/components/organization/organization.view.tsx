@@ -10,6 +10,7 @@ interface OrganizationView {
 
 const OrganizationView = ({ organization }: OrganizationView) => {
     const t = useTrans();
+    console.log(organization);
     return (
         <main>
             <h2>{organization.name}</h2>
@@ -60,6 +61,11 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                                 <hr />
                             </div>
                         )) }
+                        <Link>
+                            <NXLink href={`/organization/${organization.id}/delegate`}>
+                                {t('bookingfrontend.create_delegate')}
+                            </NXLink>
+                        </Link>
                     </Details.Content>
                 </Details>
                 <Details>
@@ -76,6 +82,11 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                                 <hr />
                             </div>
                         )) }
+                        <Link>
+                            <NXLink href={`/organization/${organization.id}/group`}>
+                                {t('bookingfrontend.create_group')}
+                            </NXLink>
+                        </Link>
                     </Details.Content>
                 </Details>
             </div>

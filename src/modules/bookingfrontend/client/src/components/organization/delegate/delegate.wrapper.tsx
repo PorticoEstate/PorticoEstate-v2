@@ -2,7 +2,7 @@
 import { createElement } from 'react';
 import {Spinner} from "@digdir/designsystemet-react";
 import { useDelegateData, useOrganizationData } from "@/service/api/organization";
-import DelegateView from './delegate.view';
+import DelegateController from './delegate.view';
 import DelegateForm from './delegate.form';
 
 interface IdsI {
@@ -34,7 +34,7 @@ const DelegateWrapper = ({ id, orgId, component }: DelegateWrapper) => {
 
 const ServerToClientAdapter = ({ id, orgId }: IdsI) => {
     return id 
-        ? <DelegateWrapper id={id} component={DelegateView}/>
+        ? <DelegateWrapper id={id} component={DelegateController}/>
         : <DelegateWrapper orgId={orgId} component={DelegateForm}/>
 }
 

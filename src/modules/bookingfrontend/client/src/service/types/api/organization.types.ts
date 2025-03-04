@@ -4,7 +4,7 @@ export interface ShortActivity {
 }
 
 export interface Organization {
-    id: string;
+    id: number;
     active: number;
     city: string;
     co_address: string;
@@ -32,6 +32,9 @@ export interface Delegate {
     email: string;
     phone: string;
     name: string;
+}
+export interface ViewDelegate extends Delegate {
+    organization: string;
 }
 
 export interface Group {

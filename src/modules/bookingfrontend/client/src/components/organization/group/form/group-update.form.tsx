@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { createGroupFormSchema } from "../schemas";
 import { useActivityList } from "@/service/api/activity";
-import { Activity } from "@/service/types/api/activity.types";
 import { GroupleaderForm } from "./contact.form";
 import GroupFormBase from "./base.form";
 import { Group } from "@/service/types/api/organization.types";
@@ -16,35 +15,35 @@ interface GroupUpdateFormProps {
 }
 
 const GroupUpdateController = ({ group }: GroupUpdateFormProps) => {
-    const { data: activity } = useActivityList();
-        const t = useTrans();
-        const {
-            control,
-            handleSubmit,
-            formState: { errors },
-        } = useForm({
-            resolver: zodResolver(createGroupFormSchema),
-            defaultValues: {
-                groupData: {
-                    name: group.name,
-                    activity_id: group.activity.id,
-                    shortname: group.shortname,
-                    description: group.description
+    const { data: activities } = useActivityList(group.organization.id);
+    const t = useTrans();
+    const {
+        control,
+        handleSubmit,
+        formState: { errors },
+    } = useForm({
+        resolver: zodResolver(createGroupFormSchema),
+        defaultValues: {
+            groupData: {
+                name: group.name,
+                activity_id: group.activity.id,
+                shortname: group.shortname,
+                description: group.description
+            },
+            groupLeaders: [
+                {
+                    name: group.contact[0].name,
+                    phone: group.contact[0].phone,
+                    email: group.contact[0].email
                 },
-                groupLeaders: [
-                    {
-                        name: group.contact[0].name,
-                        phone: group.contact[0].phone,
-                        email: group.contact[0].email
-                    },
-                    {
-                        name: group.contact[1].name,
-                        phone: group.contact[1].phone,
-                        email: group.contact[1].email
-                    }
-                ]
-            }
-        });
+                {
+                    name: group.contact[1].name,
+                    phone: group.contact[1].phone,
+                    email: group.contact[1].email
+                }
+            ]
+        }
+    });
     const update = patchGroup(group.id);
     
     const save = (group: any) => {
@@ -55,8 +54,9 @@ const GroupUpdateController = ({ group }: GroupUpdateFormProps) => {
             <GroupFormBase 
                 control={control}
                 errors={errors}
-                orgName={group.organization}
-                activity={activity as Activity[]}
+                orgName={group.organization.name}
+                activities={activities}
+                currentActivity={group.activity}
             />
             <GroupleaderForm
                 number={0}

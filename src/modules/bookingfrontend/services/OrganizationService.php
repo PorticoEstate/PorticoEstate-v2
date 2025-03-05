@@ -33,6 +33,11 @@ class OrganizationService
         return $organization;
     }
 
+    public function getSubActivityList(int $id) 
+    {
+        return $this->repository->getSubActivityList($id);
+    }
+
     public function getGroupById(int $id)
     {
         $group = $this->repository->getGroupById($id);

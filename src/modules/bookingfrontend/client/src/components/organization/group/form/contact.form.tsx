@@ -23,7 +23,7 @@ export const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) =>
 
     return (
         <div>
-        <h3>{t('bookingfrontend.groupleader')}</h3>
+        <h3>{t('bookingfrontend.groupleader')} {number + 1}</h3>
         <div>
             <Controller 
                 name={`groupLeaders[${number}].name`}

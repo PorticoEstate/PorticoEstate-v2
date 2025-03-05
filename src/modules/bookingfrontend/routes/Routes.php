@@ -86,6 +86,8 @@ $app->group('/bookingfrontend/organization', function (RouteCollectorProxy $grou
     $group->get('/{id}', OrganizationController::class . ':getOrganizationById')
         ->add(new OrganizationExist($group->getContainer()));
     $group->group('', function (RouteCollectorProxy $group) {
+        $group->get('/{id}/activities', OrganizationController::class . ':getSubActivityList')
+            ->add(new OrganizationExist($group->getContainer()));
         $group->patch('/{id}', OrganizationController::class . ':patchOrganization')
             ->add(new OrganizationExist($group->getContainer()));
         $group->get('/delegate/{delegateId}', OrganizationController::class . ':getDelegateById');

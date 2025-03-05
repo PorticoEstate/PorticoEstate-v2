@@ -50,7 +50,8 @@ export const useGroupData = (groupId: number) => {
                 groupId
             ]);
             const res = await fetch(url);
-            return await res.json();
+            const { data } = await res.json();
+            return JSON.parse(data);
         }
     })
 }

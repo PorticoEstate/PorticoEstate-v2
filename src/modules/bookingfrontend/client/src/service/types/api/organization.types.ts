@@ -45,5 +45,8 @@ export interface Group {
     description: string;
     name: string;
     shortname: string;
-    organization: string;
+    organization: {
+        id: number
+        name: string;
+    };
 }

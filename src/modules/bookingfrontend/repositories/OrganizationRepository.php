@@ -53,6 +53,23 @@ class OrganizationRepository
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+
+    public function getSubActivityList(int $id)
+    {
+        $parentActSql = "SELECT act.id FROM bb_activity as act
+        JOIN bb_organization as org
+        ON act.id = org.activity_id
+        WHERE org.id = :id
+        ";
+
+        $sql = "SELECT json_agg(json_build_object('id', act.id, 'name', act.name)) as data
+        FROM bb_activity as act
+        WHERE act.parent_id = ($parentActSql)";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     public function organizationById(int $id) 
     {
         $activitySql = "SELECT json_build_object('id', act.id) FROM bb_activity AS act
@@ -189,9 +206,39 @@ class OrganizationRepository
 
     public function getGroupById(int $id)
     {
-        $sql = "SELECT * FROM bb_group
-        WHERE id=:id";
-        $stmt = $this->db->prepare($sql);
+        $groupsSql = "
+        SELECT json_build_object(
+            'id', gr.id,
+            'name', gr.name,
+            'description', gr.description,
+            'active', gr.active,
+            'shortname', gr.shortname,
+            'organization', json_build_object(
+                'id', org.id,
+                'name', org.name
+            ),
+            'contact', 
+                (SELECT json_agg(json_build_object(
+                    'id', contact.id,
+                    'name', contact.name,
+                    'phone', contact.phone,
+                    'email', contact.email
+                )) 
+                FROM bb_group_contact as contact 
+                Where contact.group_id = gr.id),
+            'activity', json_build_object(
+                'id', act.id,
+                'name', act.name
+            )
+        ) as data
+        FROM public.bb_group as gr
+        JOIN bb_activity as act
+        ON act.id = gr.activity_id
+        JOIN bb_organization as org
+        ON org.id = gr.organization_id
+        WHERE gr.id = :id
+        ";
+        $stmt = $this->db->prepare($groupsSql);
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }

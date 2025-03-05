@@ -1,23 +1,21 @@
 'use client'
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Textfield, Textarea, Dropdown } from "@digdir/designsystemet-react";
-import { Controller, useForm } from "react-hook-form";
+import { Button, Textfield } from "@digdir/designsystemet-react";
+import { useForm } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { createGroupFormSchema, CreatingGroup } from "../schemas";
 import { createGroup } from "@/service/api/organization";
 import { useActivityList } from "@/service/api/activity";
-import { Activity } from "@/service/types/api/activity.types";
 import ContactsForm from "./contact.form";
 import GroupFormBase from "./base.form";
+import { Organization } from "@/service/types/api/organization.types";
 
 interface GroupFormProps {
-    orgId: number;
-    orgName: string;
-    headGroup?: { id: number; name: string }
+    data: Organization;
 }
 
-const GroupForm = ({ orgId, orgName, headGroup }: GroupFormProps) => {
-    const { data: activity } = useActivityList();
+const GroupForm = ({ data }: GroupFormProps) => {
+    const { data: activities } = useActivityList(data.id);
     const t = useTrans();
     const {
         control,
@@ -35,7 +33,7 @@ const GroupForm = ({ orgId, orgName, headGroup }: GroupFormProps) => {
             groupLeaders: []
         }
     });
-    const create = createGroup(orgId);
+    const create = createGroup(data.id);
 
     const save = (data: CreatingGroup) => {
         create.mutate(data);
@@ -43,19 +41,19 @@ const GroupForm = ({ orgId, orgName, headGroup }: GroupFormProps) => {
 
     return (
         <main>
-            { headGroup 
+            {/* { headGroup 
                 ? <Textfield
                     readOnly
                     value={headGroup.name}
                     label={t('bookingfrontend.head_group')}
                 />
                 : null
-            }
+            } */}
             <GroupFormBase 
                 control={control}
                 errors={errors}
-                orgName={orgName}
-                activity={activity as Activity[]}
+                orgName={data.name}
+                activities={activities}
             />
             <ContactsForm
                 control={control}

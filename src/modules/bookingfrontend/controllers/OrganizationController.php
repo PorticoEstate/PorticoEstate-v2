@@ -24,9 +24,26 @@ class OrganizationController
         $this->service = $service;
     }
 
-    public function editOrganization(Request $request, Response $response, $args)
+    public function getSubActivityList(Request $request, Response $response, $args)
     {
+        $id = (int)$args['id'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
 
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        }
+
+        try {
+            $result = $this->service->getSubActivityList($id);
+            return ResponseHelper::sendJson($response, $result);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
     }
 
     public function getOrganizationById(Request $request, Response $response, $args)

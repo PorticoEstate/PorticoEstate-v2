@@ -2,17 +2,17 @@
 import { Textfield, Textarea, Dropdown } from "@digdir/designsystemet-react";
 import { Controller } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
-import { Activity } from "@/service/types/api/activity.types";
-import ContactsForm from "./contact.form";
+import { ShortActivity } from "@/service/types/api/organization.types";
 
 interface GroupFormBaseProps {
     control: any;
     errors: any;
     orgName: string;
-    activity: Activity[];
+    activities: ShortActivity[];
+    currentActivity?: ShortActivity;
 }
 
-const GroupFormBase = ({ control, errors, orgName, activity }: GroupFormBaseProps) => {
+const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }: GroupFormBaseProps) => {
     const t = useTrans();
     return (
         <main>
@@ -57,12 +57,15 @@ const GroupFormBase = ({ control, errors, orgName, activity }: GroupFormBaseProp
                 render={({ field: { onChange, value } }) => (
                     <Dropdown.TriggerContext>
                         <Dropdown.Trigger>
-                            { value ? value : t(('bookingfrontend.select_activity')) }
+                            { value
+                                ? currentActivity?.name
+                                : t(('bookingfrontend.select_activity')) 
+                            }
                         </Dropdown.Trigger>
                         <Dropdown>
                             <Dropdown.List>
-                                { activity?.map((item: Activity) => (
-                                    <Dropdown.Item key={item.id} onClick={onChange(item)}>
+                                { activities?.map((item: ShortActivity) => (
+                                    <Dropdown.Item key={item.id} onClick={() => onChange(item)}>
                                         <Dropdown.Button>
                                             {item.name}
                                         </Dropdown.Button>

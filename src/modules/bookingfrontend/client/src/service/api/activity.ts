@@ -2,14 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { phpGWLink } from "@/service/util";
 import { Activity } from "../types/api/activity.types";
 
-export const useActivityList = () => {
+export const useActivityList = (orgId: number) => {
     return useQuery({
-        queryKey: ['activity'],
-        retry: 2,
+        queryKey: ['organization','activities'],
         queryFn: async (): Promise<Activity[]> => {
-            const url = phpGWLink(['bookingfrontend', 'activity']);
+            const url = phpGWLink(['bookingfrontend', 'organization', orgId, 'activities']);
             const res = await fetch(url);
-            return await res.json();
+            const { data } = await res.json();
+            return JSON.parse(data);
         }
     })
 }

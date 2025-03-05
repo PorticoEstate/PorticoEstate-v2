@@ -490,7 +490,7 @@
 									<!--  DESCRIPTION -->
 									<label>Beskrivelse:</label>
 									<div class="row">
-										<textarea name="case_descr" class="pure-input-1">
+										<textarea name="case_descr" class="pure-input-1" rows="5" style="min-height:100px;">
 											<xsl:value-of select="descr"/>
 										</textarea>
 									</div>
@@ -499,7 +499,7 @@
 										<xsl:text>:</xsl:text>
 									</label>
 									<div class="row">
-										<textarea name="proposed_counter_measure" class="pure-input-1">
+										<textarea name="proposed_counter_measure" class="pure-input-1" rows="5" style="min-height:100px;">
 											<xsl:value-of select="proposed_counter_measure"/>
 										</textarea>
 									</div>

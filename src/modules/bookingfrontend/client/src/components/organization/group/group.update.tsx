@@ -3,10 +3,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@digdir/designsystemet-react";
 import { useForm } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
-import { createGroupFormSchema } from "../schemas";
+import { createGroupFormSchema } from "./schemas";
 import { useActivityList } from "@/service/api/activity";
-import { GroupleaderForm } from "./contact.form";
-import GroupFormBase from "./base.form";
+import { GroupleaderForm } from "./form/contact.form";
+import GroupFormBase from "./form/base.form";
 import { Group } from "@/service/types/api/organization.types";
 import { patchGroup } from "@/service/api/organization";
 

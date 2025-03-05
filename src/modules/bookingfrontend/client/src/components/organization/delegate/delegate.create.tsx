@@ -11,7 +11,7 @@ interface DelegateFormProps {
     data: Organization;
 }
 
-const DelegateForm = ({ data }: DelegateFormProps) => {
+const DelegateCreate = ({ data }: DelegateFormProps) => {
     const t = useTrans();
     const {
         control,
@@ -89,4 +89,4 @@ const DelegateForm = ({ data }: DelegateFormProps) => {
     )
 } 
 
-export default DelegateForm;
+export default DelegateCreate;

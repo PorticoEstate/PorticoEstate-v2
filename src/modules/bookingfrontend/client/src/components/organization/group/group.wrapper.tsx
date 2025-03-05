@@ -2,8 +2,8 @@
 import { createElement } from 'react';
 import {Spinner} from "@digdir/designsystemet-react";
 import { useGroupData, useOrganizationData } from "@/service/api/organization";
-import GroupController from './group.view';
-import GroupForm from './form/group.form';
+import GroupController from './group.controller';
+import GroupCreate from './group.create';
 
 interface IdsI {
     id?: number;
@@ -35,7 +35,7 @@ const GroupWrapper = ({ id, orgId, component }: GroupWrapper) => {
 const ServerToClientAdapter = ({ id, orgId }: IdsI) => {
     return id 
         ? <GroupWrapper id={id} component={GroupController}/>
-        : <GroupWrapper orgId={orgId} component={GroupForm}/>
+        : <GroupWrapper orgId={orgId} component={GroupCreate}/>
 }
 
 export default ServerToClientAdapter;

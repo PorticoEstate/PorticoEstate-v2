@@ -1,20 +1,20 @@
 'use client'
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Textfield } from "@digdir/designsystemet-react";
+import { Button } from "@digdir/designsystemet-react";
 import { useForm } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
-import { createGroupFormSchema, CreatingGroup } from "../schemas";
+import { createGroupFormSchema, CreatingGroup } from "./schemas";
 import { createGroup } from "@/service/api/organization";
 import { useActivityList } from "@/service/api/activity";
-import ContactsForm from "./contact.form";
-import GroupFormBase from "./base.form";
+import ContactsForm from "./form/contact.form";
+import GroupFormBase from "./form/base.form";
 import { Organization } from "@/service/types/api/organization.types";
 
 interface GroupFormProps {
     data: Organization;
 }
 
-const GroupForm = ({ data }: GroupFormProps) => {
+const GroupCreate = ({ data }: GroupFormProps) => {
     const { data: activities } = useActivityList(data.id);
     const t = useTrans();
     const {
@@ -68,4 +68,4 @@ const GroupForm = ({ data }: GroupFormProps) => {
 
 }
 
-export default GroupForm;
+export default GroupCreate;

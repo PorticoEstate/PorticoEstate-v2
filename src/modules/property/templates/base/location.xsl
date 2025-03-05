@@ -18,6 +18,9 @@
 		<xsl:when test="summary">
 			<xsl:apply-templates select="summary"/>
 		</xsl:when>
+		<xsl:when test="dashboard">
+			<xsl:apply-templates select="dashboard"/>
+		</xsl:when>
 		<xsl:otherwise>
 			<xsl:apply-templates select="list"/>
 		</xsl:otherwise>
@@ -1059,4 +1062,65 @@ onMouseOut="nd()">
 <xsl:template name="controller_integration">
 	<xsl:param name="controller" />
 
+</xsl:template>
+
+<xsl:template match="dashboard" xmlns:php="http://php.net/xsl">
+
+<h2>
+	<xsl:value-of select="php:function('lang', 'location')"/>
+</h2>
+<div class="pure-form pure-form-aligned">
+	<xsl:call-template name="location_view"/>
+</div>
+
+<h2><xsl:value-of select="php:function('lang', 'project')"/> </h2>
+
+<div> <button onclick="window.location='{link_new_project}'"  class="pure-button pure-button-primary">Nytt Prosjekt</button></div>
+<xsl:for-each select="datatable_def">
+	<xsl:if test="container = 'datatable-container_0'">
+		<xsl:call-template name="table_setup">
+			<xsl:with-param name="container" select ='container'/>
+			<xsl:with-param name="requestUrl" select ='requestUrl' />
+			<xsl:with-param name="ColumnDefs" select ='ColumnDefs' />
+			<xsl:with-param name="tabletools" select ='tabletools' />
+			<xsl:with-param name="data" select ='data' />
+			<xsl:with-param name="config" select ='config' />
+		</xsl:call-template>
+	</xsl:if>
+</xsl:for-each>
+
+<h2>
+	<xsl:value-of select="php:function('lang', 'ticket')"/>
+</h2>
+
+<div> <button onclick="window.location='{link_new_ticket}'"  class="pure-button pure-button-primary">Ny Melding</button></div>
+<xsl:for-each select="datatable_def">
+	<xsl:if test="container = 'datatable-container_1'">
+		<xsl:call-template name="table_setup">
+			<xsl:with-param name="container" select ='container'/>
+			<xsl:with-param name="requestUrl" select ='requestUrl' />
+			<xsl:with-param name="ColumnDefs" select ='ColumnDefs' />
+			<xsl:with-param name="tabletools" select ='tabletools' />
+			<xsl:with-param name="data" select ='data' />
+			<xsl:with-param name="config" select ='config' />
+		</xsl:call-template>
+	</xsl:if>
+</xsl:for-each>
+
+<h2>
+	<xsl:value-of select="php:function('lang', 'document')"/>
+</h2>
+
+<xsl:for-each select="datatable_def">
+	<xsl:if test="container = 'datatable-container_2'">
+		<xsl:call-template name="table_setup">
+			<xsl:with-param name="container" select ='container'/>
+			<xsl:with-param name="requestUrl" select ='requestUrl' />
+			<xsl:with-param name="ColumnDefs" select ='ColumnDefs' />
+			<xsl:with-param name="tabletools" select ='tabletools' />
+			<xsl:with-param name="data" select ='data' />
+			<xsl:with-param name="config" select ='config' />
+		</xsl:call-template>
+	</xsl:if>
+</xsl:for-each>
 </xsl:template>

@@ -59,6 +59,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
     $group->group('/applications', function (RouteCollectorProxy $group)
     {
+		$group->post('/simple', ApplicationController::class . ':createSimpleApplication');
         $group->get('/partials', ApplicationController::class . ':getPartials');
         $group->post('/partials', ApplicationController::class . ':createPartial');
         $group->post('/partials/checkout', ApplicationController::class . ':checkoutPartials');

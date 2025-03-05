@@ -173,6 +173,7 @@ class ApplicationController extends DocumentController
                 );
             }
 
+
             $deleted = $this->applicationService->deletePartial($id);
 			$response->getBody()->write(json_encode(['deleted' => $deleted]));
 			return $response->withStatus(200)
@@ -486,14 +487,15 @@ class ApplicationController extends DocumentController
             }
 
             try {
-                // Update all partial applications
-                $updatedApplications = $this->applicationService->checkoutPartials($session_id, $data);
+				// Update all partial applications
+				$result = $this->applicationService->checkoutPartials($session_id, $data);
 
-                $response->getBody()->write(json_encode([
-                    'message' => 'Applications updated successfully',
-                    'applications' => $updatedApplications
-                ]));
-                return $response->withHeader('Content-Type', 'application/json');
+				$response->getBody()->write(json_encode([
+					'message' => 'Applications processed successfully',
+					'applications' => $result['updated'],
+					'skipped' => $result['skipped']
+				]));
+				return $response->withHeader('Content-Type', 'application/json');
 
             } catch (Exception $e) {
                 // Check if the error message contains validation errors
@@ -799,4 +801,98 @@ class ApplicationController extends DocumentController
         return false;
     }
 
+
+	/**
+	 * @OA\Post(
+	 *     path="/bookingfrontend/applications/simple",
+	 *     summary="Create a simple application booking for a specific timeslot",
+	 *     tags={"Applications"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             required={"resource_id", "building_id", "from", "to"},
+	 *             @OA\Property(property="resource_id", type="integer"),
+	 *             @OA\Property(property="building_id", type="integer"),
+	 *             @OA\Property(property="from", type="integer", description="Start timestamp in seconds"),
+	 *             @OA\Property(property="to", type="integer", description="End timestamp in seconds")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=201,
+	 *         description="Simple application created",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="id", type="integer"),
+	 *             @OA\Property(property="message", type="string"),
+	 *             @OA\Property(property="status", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Invalid input or timeslot unavailable"
+	 *     )
+	 * )
+	 */
+	public function createSimpleApplication(Request $request, Response $response): Response
+	{
+		try {
+			$session = Sessions::getInstance();
+			$session_id = $session->get_session_id();
+
+			if (empty($session_id)) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'No active session'],
+					400
+				);
+			}
+
+			$data = json_decode($request->getBody()->getContents(), true);
+			if (!$data) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Invalid JSON data'],
+					400
+				);
+			}
+
+			// Validate required fields
+			$requiredFields = ['resource_id', 'building_id', 'from', 'to'];
+			foreach ($requiredFields as $field) {
+				if (!isset($data[$field])) {
+					return ResponseHelper::sendErrorResponse(
+						['error' => "Missing required field: {$field}"],
+						400
+					);
+				}
+			}
+
+			// Convert timestamps to date strings
+			$from = date('Y-m-d H:i:s', (int)$data['from']);
+			$to = date('Y-m-d H:i:s', (int)$data['to']);
+
+			// Check if resource supports simple booking and is available
+			$result = $this->applicationService->createSimpleBooking(
+				(int)$data['resource_id'],
+				(int)$data['building_id'],
+				$from,
+				$to,
+				$session_id
+			);
+
+			$responseData = [
+				'id' => $result['id'],
+				'message' => 'Simple application created successfully',
+				'status' => $result['status']
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withStatus(201)
+				->withHeader('Content-Type', 'application/json');
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(
+				['error' => "Error creating simple application: " . $e->getMessage()],
+				500
+			);
+		}
+	}
 }

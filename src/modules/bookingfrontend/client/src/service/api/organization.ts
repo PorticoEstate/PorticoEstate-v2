@@ -27,9 +27,9 @@ export const useDelegateData = (delegateId: number) => {
         retry: 2,
         queryFn: async (): Promise<ViewDelegate> => {
             const url = phpGWLink([
-                'bookingfrontend', 
+                'bookingfrontend',
                 'organization',
-                'delegate', 
+                'delegate',
                 delegateId
             ]);
             const res = await fetch(url);
@@ -60,9 +60,9 @@ export const createDelegate = (orgId: number) => {
     return useMutation({
         mutationFn: async (data: CreatingDelegate) => {
             const url = phpGWLink([
-                'bookingfrontend', 
-                'organization', 
-                orgId, 
+                'bookingfrontend',
+                'organization',
+                orgId,
                 'delegate'
             ]);
             const res = await fetch(url, {
@@ -85,9 +85,9 @@ export const createGroup = (orgId: number) => {
     return useMutation({
         mutationFn: async (data: CreatingGroup) => {
             const url = phpGWLink([
-                'bookingfrontend', 
-                'organization', 
-                orgId, 
+                'bookingfrontend',
+                'organization',
+                orgId,
                 'group'
             ]);
             const res = await fetch(url, {
@@ -139,6 +139,30 @@ export const patchDelegate = (delegateId: number) => {
                 'organization',
                 'delegate',
                 delegateId
+            ]);
+            const res = await fetch(url, {
+                method: "PATCH",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error();
+            }
+            return await res.json();
+        }
+    })
+}
+
+export const patchOrganization = (orgId: number) => {
+    return useMutation({
+        mutationFn: async (data: any) => {
+            const url = phpGWLink([
+                'bookingfrontend',
+                'organization',
+                orgId
             ]);
             const res = await fetch(url, {
                 method: "PATCH",

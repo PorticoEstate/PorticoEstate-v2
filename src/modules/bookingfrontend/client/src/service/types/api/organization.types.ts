@@ -18,6 +18,7 @@ export interface Organization {
     shortname: string;
     street: string;
     zip_code: string;
+    organization_number: number,
 }
 
 export interface Contact {

@@ -130,3 +130,28 @@ export const patchGroup = (groupId: number) => {
         }
     })
 }
+
+export const patchDelegate = (delegateId: number) => {
+    return useMutation({
+        mutationFn: async (data: any) => {
+            const url = phpGWLink([
+                'bookingfrontend',
+                'organization',
+                'delegate',
+                delegateId
+            ]);
+            const res = await fetch(url, {
+                method: "PATCH",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json",
+                }
+            });
+
+            if (!res.ok) {
+                throw new Error();
+            }
+            return await res.json();
+        }
+    })
+}

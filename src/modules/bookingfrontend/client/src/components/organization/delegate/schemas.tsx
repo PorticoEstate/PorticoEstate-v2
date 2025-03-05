@@ -7,6 +7,12 @@ export interface CreatingDelegate {
     phone: string;
 }
 
+export interface UpdatingDelegate {
+    name: string;
+    email: string;
+    phone: string;
+}
+
 const phoneRegex = new RegExp(
     /^([+]?[\s0-9]+)?(\d{3}|[(]?[0-9]+[)])?([-]?[\s]?[0-9])+$/
   );
@@ -23,3 +29,13 @@ export const createDelegateFormSchema: z.ZodType<CreatingDelegate> = z
         email: z.string().email(),
         phone: z.string().regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
     });
+
+export const updateDelegateFormSchema: z.ZodType<UpdatingDelegate> = z
+.object({
+    name: z
+        .string()
+        .min(5, { message: "bookingfrontend.enter_name" })
+        .max(255),
+    email: z.string().email(),
+    phone: z.string().regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
+});

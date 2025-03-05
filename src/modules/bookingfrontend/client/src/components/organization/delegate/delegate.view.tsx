@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { ViewDelegate } from "@/service/types/api/organization.types";
 import { Button } from '@digdir/designsystemet-react';
+import DelegateUpdate from './delegate.update';
 
 interface DelegateViewProps {
     data: ViewDelegate;
@@ -40,9 +41,10 @@ const DelegateController = ({ data }: DelegateViewProps) => {
     return (
         <main>
             <h4>{t('bookingfrontend.delegate_details')}</h4>
-            {editing ? null : (
-                <DelegateView data={data} />
-            )}
+            {editing 
+                ? ( <DelegateUpdate data={data} /> )
+                : ( <DelegateView data={data} /> )
+            }
             <div>
                 <Button onClick={() => setEditing(!editing)}>
                     {editing ? 'Avbryt' : 'Rediger'}

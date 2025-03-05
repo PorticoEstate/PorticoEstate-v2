@@ -482,10 +482,6 @@ class UserHelper
 		$this->validate_ssn_login($redirect = array(), $skip_redirect);
 
 		$after = json_decode(\Sanitizer::get_var('after', 'raw', 'COOKIE'), true);
-		if(isset($after['click_history']))
-		{
-			unset($after['click_history']);
-		}
 
 		$login_as_organization = \Sanitizer::get_var('login_as_organization', 'int', 'COOKIE');
 		Sessions::getInstance()->phpgw_setcookie('login_as_organization', '0');
@@ -499,6 +495,7 @@ class UserHelper
 			$bouser = new UserHelper();
 			$bouser->log_in();
 		}
+
 		// If 'after' contains a '/', treat it as a URI (e.g., /this/page?with=params)
 		if (strpos($after, '/') !== false || strpos($after, '?') !== false)
 		{
@@ -523,13 +520,28 @@ class UserHelper
 				exit;
 			}
 		}
-		else if (!empty($after) && is_array($after))
+		else if (!empty($after))
 		{
 			// If 'after' doesn't look like a URI, treat it as query params
-			$after['rid'] = Sessions::getInstance()->generate_click_history();
-			// Redirect to /bookingfrontend/ with the provided query params
-			\phpgw::redirect_link('/bookingfrontend/', $after);
-			exit;
+			$redirect_data = [];
+			parse_str($after, $redirect_data);
+			if (isset($redirect_data['click_history']))
+			{
+				unset($redirect_data['click_history']);
+			}
+			if ($redirect_data)
+			{
+				$redirect_data['rid'] = Sessions::getInstance()->generate_click_history();
+				// Redirect to /bookingfrontend/ with the provided query params
+				\phpgw::redirect_link('/bookingfrontend/', $redirect_data);
+				exit;
+			}
+			else
+			{
+				\phpgw::redirect_link('/bookingfrontend/');
+				exit;
+			}
+
 		}
 		else
 		{
@@ -549,7 +561,7 @@ class UserHelper
 		if ($after)
 		{
 			//convert the query string into an array: menuaction=bookingfrontend.uibuilding.show&id=46&click_history=44a37f06be01ecb798e1e7b2a782fb09
-			parse_str($after, $after);
+			//parse_str($after, $after);
 
 			Sessions::getInstance()->phpgw_setcookie('after', json_encode($after), 0);
 		}

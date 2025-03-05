@@ -59,7 +59,8 @@ class booking_article_mapping extends phpgwapi_model
 		$building_id,
 		$building_name,
 		$article_group,
-		$group_id;
+		$group_id,
+		$article_alternative_code;
 
 	public function __construct(int|null $id = null)
 	{
@@ -156,6 +157,14 @@ class booking_article_mapping extends phpgwapi_model
 				'required'	 => true,
 				'label'		 => 'article code',
 				'public'	 => true
+			),
+			'article_alternative_code'		 => array(
+				'action' => ACL_READ | ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => true,
+				'label'	 => 'alternative article code',
+				'public'	 => true,
 			),
 			'unit'				 => array(
 				'action'	 => ACL_READ | ACL_ADD | ACL_EDIT,

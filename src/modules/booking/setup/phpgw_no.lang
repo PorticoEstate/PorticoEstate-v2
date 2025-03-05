@@ -938,3 +938,4 @@ multi domain	booking	no	Støtte for kryss-instans
 additional invoice information	booking	no	Ekstra fakturainformasjon
 Enter additional invoice information here	booking	no	Legg til ekstra fakturainformasjon
 deny application if booked	booking	no	Blokker søknad om opptatt
+alternative article code	booking	no	Alternativ artikkelkode

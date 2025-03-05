@@ -80,7 +80,18 @@
 									</xsl:attribute>
 								</input>
 							</div>
+							<!--article_alternative_code-->
 							<div class="pure-control-group">
+								<label>
+									<xsl:value-of select="php:function('lang', 'alternative article code')"/>
+								</label>
+								<input type="text" id="article_alternative_code" name="article_alternative_code" value="{article/article_alternative_code}" class="pure-input-1-2">
+									<xsl:attribute name="placeholder">
+										<xsl:value-of select="php:function('lang', 'alternative article code')"/>
+									</xsl:attribute>
+								</input>
+							</div>
+                            <div class="pure-control-group">
 								<label>
 									<xsl:value-of select="php:function('lang', 'article group')"/>
 								</label>

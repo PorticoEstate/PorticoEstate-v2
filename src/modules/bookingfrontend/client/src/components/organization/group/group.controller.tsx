@@ -9,10 +9,8 @@ interface GroupController {
     data: Group;
 }
 
-
 const GroupController = ({ data }: GroupController) => {
     const [editing, setEditing] = useState(false);
-    console.log(data);
     return (
         <>
             { 

@@ -2,6 +2,7 @@
 import {Spinner} from "@digdir/designsystemet-react";
 import { useOrganizationData } from "@/service/api/organization";
 import OrganizationView from "./organization.view";
+import OrganizatioController from "./organization.controller";
 
 interface OrganizationWrapper {
     id: number;
@@ -13,7 +14,7 @@ const OrganizationWrapper = ({ id }: OrganizationWrapper) => {
         return null;
     }
     if (!isLoading && organization) {
-        return <OrganizationView organization={organization} />;
+        return <OrganizatioController data={organization} />;
     }
     return <Spinner aria-label='Laster organization data'/>;
 } 

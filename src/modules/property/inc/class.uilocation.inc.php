@@ -329,6 +329,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		//projects
 		$projects = createObject('property.boproject')->read(array(
 			'query' => $location_code,
+			'status_id' => 'all',
 			'allrows'		 => true
 		));
 
@@ -336,6 +337,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$boticket = createObject('property.botts');
 		$tickets = $boticket->read(array(
 			'location_code' => $location_code,
+			'status_id' => 'all',
 			'allrows'		 => true
 		));
 

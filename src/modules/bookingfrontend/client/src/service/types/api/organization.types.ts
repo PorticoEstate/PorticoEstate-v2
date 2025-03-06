@@ -2,13 +2,20 @@ export interface ShortActivity {
     id: number;
     name: string;
 }
-
+export interface OrganizationContact {
+    id: number;
+    email: string;
+    phone: string;
+    name: string;
+    ssn: number;
+}
 export interface Organization {
     id: number;
     active: number;
     city: string;
     co_address: string;
     delegaters: Delegate[];
+    contacts: OrganizationContact[];
     district: string;
     email: string;
     groups: Group[];
@@ -18,7 +25,9 @@ export interface Organization {
     shortname: string;
     street: string;
     zip_code: string;
-    organization_number: number,
+    organization_number: number;
+    activity: ShortActivity;
+    show_in_portal: boolean;
 }
 
 export interface Contact {

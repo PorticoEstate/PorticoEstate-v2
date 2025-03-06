@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { phpGWLink } from "@/service/util";
-import { Organization, Group, Delegate, ViewDelegate } from "../types/api/organization.types";
+import { Organization, Group, ViewDelegate } from "../types/api/organization.types";
 import { CreatingDelegate } from "@/components/organization/delegate/schemas";
 import { CreatingGroup } from "@/components/organization/group/schemas";
 
@@ -15,7 +15,8 @@ export const useOrganizationData = (orgId: number) => {
             return {
                 ...data,
                 groups: JSON.parse(data.groups),
-                delegaters: JSON.parse(data.delegaters)
+                delegaters: JSON.parse(data.delegaters),
+                contacts: JSON.parse(data.contacts)
             }
         }
     });

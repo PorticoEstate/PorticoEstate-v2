@@ -1,17 +1,17 @@
 'use client';
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@digdir/designsystemet-react";
 import { useForm } from "react-hook-form";
-import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { Organization } from "@/service/types/api/organization.types";
 import { patchOrganization } from "@/service/api/organization";
-import { patchOrganizationSchema, UpdatingOrganization } from "./schema";
+import { patchOrganizationSchema, UpdatingOrganization } from "./schemas";
+import UpdateOrganizationForm from "./form/organization.update.form";
 
 interface OrganizationUpdateProps {
     data: Organization;
 }
 
 const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
-    const t = useTrans();
     const {
         control,
         handleSubmit,
@@ -28,7 +28,22 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
             street: data.street,
             district: data.district,
             zip_code: data.zip_code,
-            organization_number: data.organization_number
+            organization_number: data.organization_number,
+            activity_id: data.activity.id,
+            contacts: [
+                {
+                    id: data.contacts[0].id,
+                    name: data.contacts[0].name,
+                    email: data.contacts[0].email,
+                    phone: data.contacts[0].phone,
+                },
+                {
+                    id: data.contacts[1].id,
+                    name: data.contacts[1].name,
+                    email: data.contacts[1].email,
+                    phone: data.contacts[1].phone,
+                }
+            ]
         }
     });
 
@@ -38,7 +53,16 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
         update.mutate(data);
     }
 
-    return null;
+    return (
+        <>
+            <UpdateOrganizationForm 
+                organization={data} 
+                errors={errors} 
+                control={control}
+            />
+            <Button onClick={handleSubmit(save)}>save</Button>
+        </>
+    )
 }
 
 export default OrganizationUpdate;

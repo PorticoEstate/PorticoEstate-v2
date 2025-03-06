@@ -16,11 +16,11 @@ export interface UpdatingOrganization {
 
 export const patchOrganizationSchema: z.ZodType<UpdatingOrganization> = z
     .object({
-        organization_number: z.string().number(),
+        organization_number: z.string(),
         city: z.string(),
         district: z.string(),
         street: z.string(),
-        zip_code: z.string().number(),
+        zip_code: z.string(),
         name: z.string(),
         shortname: z.string(),
         email: z.string().email(),

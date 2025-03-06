@@ -72,6 +72,17 @@ class OrganizationRepository
 
     public function organizationById(int $id) 
     {
+        $orgContactSql = "SELECT json_agg(json_build_object(
+            'id', orgCon.id,
+            'name', orgCon.name,
+            'ssn', orgCon.ssn,
+            'phone', orgCon.phone,
+            'email', orgCon.email
+        ))
+        FROM bb_organization_contact as orgCon
+        WHERE orgCon.organization_id = org.id
+        ";
+
         $activitySql = "SELECT json_build_object('id', act.id) FROM bb_activity AS act
         WHERE act.id = org.activity_id";
 
@@ -112,7 +123,7 @@ class OrganizationRepository
 
         $sql = "SELECT 
         org.*, ($delegaterSql) as delegaters, ($activitySql) as activity, 
-        ($groupsSql) as groups
+        ($groupsSql) as groups, ($orgContactSql) as contacts
         FROM bb_organization as org
         WHERE id = :orgId
         ";

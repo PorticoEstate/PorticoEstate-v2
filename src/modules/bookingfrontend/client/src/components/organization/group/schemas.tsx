@@ -39,7 +39,7 @@ export const groupDataSchema: z.ZodType<CreatingGroup> = z
             .string()
             .min(5, { message: "bookingfrontend.enter_shortname" })
             .max(255),
-        activity_id: z.string(),
+        activity_id: z.number(),
         description: z
             .string()
             .min(5, { message: "bookingfrontend.enter_description" })

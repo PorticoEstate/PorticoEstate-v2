@@ -48,7 +48,6 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
     });
 
     const update = patchOrganization(data.id);
-
     const save = (data: UpdatingOrganization) => {
         update.mutate(data);
     }

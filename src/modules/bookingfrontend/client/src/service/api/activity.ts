@@ -4,7 +4,7 @@ import { Activity } from "../types/api/activity.types";
 
 export const useActivityList = (orgId: number) => {
     return useQuery({
-        queryKey: ['organization','activities'],
+        queryKey: ['organization', 'activities'],
         queryFn: async (): Promise<Activity[]> => {
             const url = phpGWLink(['bookingfrontend', 'organization', orgId, 'activities']);
             const res = await fetch(url);

@@ -16,10 +16,15 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
     const {
         control,
         handleSubmit,
-        formState: {errors},
+        formState: { errors },
     } = useForm({
         mode: 'onChange',
         resolver: zodResolver(updateDelegateFormSchema),
+        defaultValues: {
+            name: data.name,
+            email: data.email,
+            phone: data.phone
+        }
     });
     const update = patchDelegate(data.id);
 

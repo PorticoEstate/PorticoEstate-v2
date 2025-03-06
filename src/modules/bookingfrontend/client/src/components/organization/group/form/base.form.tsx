@@ -14,6 +14,7 @@ interface GroupFormBaseProps {
 
 const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }: GroupFormBaseProps) => {
     const t = useTrans();
+    if (!activities) return;
     return (
         <main>
             <Controller
@@ -58,14 +59,14 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                     <Dropdown.TriggerContext>
                         <Dropdown.Trigger>
                             { value
-                                ? currentActivity?.name
+                                ? activities.find((ac) => ac.id === value)?.name
                                 : t(('bookingfrontend.select_activity')) 
                             }
                         </Dropdown.Trigger>
                         <Dropdown>
                             <Dropdown.List>
-                                { activities?.map((item: ShortActivity) => (
-                                    <Dropdown.Item key={item.id} onClick={() => onChange(item)}>
+                                { activities.map((item: ShortActivity) => (
+                                    <Dropdown.Item key={item.id} onClick={() => onChange(item.id)}>
                                         <Dropdown.Button>
                                             {item.name}
                                         </Dropdown.Button>

@@ -83,7 +83,8 @@ class OrganizationRepository
         WHERE orgCon.organization_id = org.id
         ";
 
-        $activitySql = "SELECT json_build_object('id', act.id) FROM bb_activity AS act
+        $activitySql = "SELECT json_build_object('id', act.id, 'name', act.name) 
+        FROM bb_activity AS act
         WHERE act.id = org.activity_id";
 
         $delegaterSql = "SELECT json_agg(json_build_object(

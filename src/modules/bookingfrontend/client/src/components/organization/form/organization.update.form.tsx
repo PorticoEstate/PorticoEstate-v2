@@ -1,6 +1,6 @@
 'use client';
-import { useForm, Controller } from "react-hook-form";
-import { Textfield, Textarea, Dropdown, Switch } from "@digdir/designsystemet-react";
+import { Controller } from "react-hook-form";
+import { Textfield, Dropdown, Switch } from "@digdir/designsystemet-react";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { useActivityList } from "@/service/api/activity";
 import { Organization, ShortActivity } from "@/service/types/api/organization.types";
@@ -197,7 +197,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         <Dropdown>
                             <Dropdown.List>
                                 { activities?.map((item: ShortActivity) => (
-                                    <Dropdown.Item key={item.id} onClick={() => onChange(item)}>
+                                    <Dropdown.Item key={item.id} onClick={() => onChange(item.id)}>
                                         <Dropdown.Button>
                                             {item.name}
                                         </Dropdown.Button>

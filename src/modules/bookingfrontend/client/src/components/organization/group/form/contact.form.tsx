@@ -18,7 +18,7 @@ export const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) =>
     const t = useTrans();
 
     let errObj = errors.groupLeaders;
-    if (errObj) errObj = errors.groupLeaders[number];
+    if (errObj) errObj = errObj[number] ? errObj[number] : {}
     else errObj = {}
 
     return (

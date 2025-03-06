@@ -93,8 +93,10 @@ class OrganizationService
     }
 
     public function patchGroup(int $groupId, array $data)
-    {
-        return $this->repository->patchGroup($groupId, $data);
+    {   
+        $this->repository->patchGroupLeader($groupId, $data['groupLeaders'][0]);
+        $this->repository->patchGroupLeader($groupId, $data['groupLeaders'][1]);
+        return $this->repository->patchGroup($groupId, $data['groupData']);
     }
 
     public function patchGroupLeader(int $groupId, array $data)

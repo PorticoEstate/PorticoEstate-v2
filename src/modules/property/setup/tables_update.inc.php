@@ -11519,3 +11519,25 @@
 			return	'0.9.17.763';
 		}
 	}
+
+	/**
+	 * Update property version from 0.9.17.563 to 0.9.17.564
+	 * Rename column
+	 *
+	 */
+	$test[] = '0.9.17.763';
+	function property_upgrade0_9_17_763($oProc)
+	{
+		$oProc->m_odb->transaction_begin();
+
+		$oProc->AddColumn('fm_tts_tickets', 'external_owner_ssn', array(
+			'type' => 'varchar',
+			'precision' => 11,
+			'nullable' => True
+		));
+
+		if ($oProc->m_odb->transaction_commit())
+		{
+			return	'0.9.17.764';
+		}
+	}

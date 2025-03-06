@@ -1243,6 +1243,7 @@
 				'payment_type' => array('type' => 'int', 'precision' => 4, 'nullable' => True),
 				'charge_tenant' => array('type' => 'int', 'precision' => 2, 'nullable' => True),
 				'claim_issued' => array('type' => 'int', 'precision' => 2, 'nullable' => True),
+				'external_owner_ssn' => array('type' => 'varchar', 'precision' => 11, 'nullable' => True),
 			),
 			'pk' => array('id'),
 			'fk' => array(),

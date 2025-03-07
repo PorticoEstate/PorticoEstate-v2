@@ -490,10 +490,19 @@ class ApplicationController extends DocumentController
 				// Update all partial applications
 				$result = $this->applicationService->checkoutPartials($session_id, $data);
 
+				// Add timestamp and session info for debugging
+				$result['debug_timestamp'] = date('Y-m-d H:i:s');
+				$result['debug_session_id'] = $session_id;
+
 				$response->getBody()->write(json_encode([
 					'message' => 'Applications processed successfully',
 					'applications' => $result['updated'],
-					'skipped' => $result['skipped']
+					'skipped' => $result['skipped'],
+					'debug_info' => [
+						'collisions' => $result['debug_collisions'],
+						'timestamp' => $result['debug_timestamp'],
+						'session_id' => $result['debug_session_id']
+					]
 				]));
 				return $response->withHeader('Content-Type', 'application/json');
 
@@ -517,6 +526,100 @@ class ApplicationController extends DocumentController
         }
     }
 
+
+	/**
+	 * @OA\Post(
+	 *     path="/bookingfrontend/applications/validate-checkout",
+	 *     summary="Validate if checkout of partial applications would succeed",
+	 *     tags={"Applications"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
+	 *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
+	 *             @OA\Property(property="organizationNumber", type="string"),
+	 *             @OA\Property(property="organizationName", type="string"),
+	 *             @OA\Property(property="contactName", type="string"),
+	 *             @OA\Property(property="contactEmail", type="string"),
+	 *             @OA\Property(property="contactPhone", type="string"),
+	 *             @OA\Property(property="street", type="string"),
+	 *             @OA\Property(property="zipCode", type="string"),
+	 *             @OA\Property(property="city", type="string"),
+	 *             @OA\Property(property="eventTitle", type="string"),
+	 *             @OA\Property(property="organizerName", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Validation results",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="valid", type="boolean"),
+	 *             @OA\Property(
+	 *                 property="applications",
+	 *                 type="array",
+	 *                 @OA\Items(
+	 *                     type="object",
+	 *                     @OA\Property(property="id", type="integer"),
+	 *                     @OA\Property(property="valid", type="boolean"),
+	 *                     @OA\Property(property="would_be_direct_booking", type="boolean"),
+	 *                     @OA\Property(
+	 *                         property="issues",
+	 *                         type="array",
+	 *                         @OA\Items(
+	 *                             type="object",
+	 *                             @OA\Property(property="type", type="string"),
+	 *                             @OA\Property(property="message", type="string")
+	 *                         )
+	 *                     )
+	 *                 )
+	 *             )
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Invalid data or no active session"
+	 *     )
+	 * )
+	 */
+	public function validateCheckout(Request $request, Response $response): Response
+	{
+		try {
+			$session = Sessions::getInstance();
+			$session_id = $session->get_session_id();
+
+			if (empty($session_id)) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'No active session'],
+					400
+				);
+			}
+
+			$data = json_decode($request->getBody()->getContents(), true);
+			if (!$data) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Invalid JSON data'],
+					400
+				);
+			}
+
+			// Validate checkout
+			$validationResults = $this->applicationService->validateCheckout($session_id, $data);
+
+			$validationResults['debug_timestamp'] = date('Y-m-d H:i:s');
+			$validationResults['debug_session_id'] = $session_id;
+
+			$response->getBody()->write(json_encode($validationResults));
+			return $response->withHeader('Content-Type', 'application/json');
+
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(
+				['error' => $e->getMessage()],
+				500
+			);
+		}
+	}
 
 
     /**

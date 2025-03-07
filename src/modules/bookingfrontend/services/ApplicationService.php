@@ -117,7 +117,6 @@ class ApplicationService
 				throw new Exception('No partial applications found for checkout');
 			}
 
-
 			$resourceBookings = [];
 			foreach ($applications as $application)
 			{
@@ -191,35 +190,44 @@ class ApplicationService
 			];
 
 			$updatedApplications = [];
+			$skippedApplications = [];
+			$collisionDebugInfo = []; // Debug information for collisions
+
 			foreach ($applications as $application)
 			{
-				// Check if this application should be automatically approved
+				// First check if eligible for direct booking without checking collisions
 				$isEligibleForDirectBooking = $this->isEligibleForDirectBooking($application);
-				// Prepare update data for this application
+
 				if ($isEligibleForDirectBooking)
 				{
-					// Check for collisions separately
+					// Check for collisions separately with detailed debug info
 					$hasCollision = false;
+					$applicationCollisionInfo = [];
+
 					foreach ($application['dates'] as $date)
 					{
-						if ($this->checkCollision(
+						$collisionCheck = $this->checkCollisionWithDebug(
 							$application['resources'],
 							$date['from_'],
 							$date['to_'],
 							$application['session_id']
-						))
-						{
+						);
+
+						if ($collisionCheck['has_collision']) {
 							$hasCollision = true;
-							break;
+							$applicationCollisionInfo[] = $collisionCheck;
 						}
 					}
 
 					// If direct booking eligible but has collision, skip this application
 					if ($hasCollision)
 					{
+						$collisionDebugInfo[$application['id']] = $applicationCollisionInfo;
+
 						$skippedApplications[] = [
 							'id' => $application['id'],
-							'reason' => 'Collision detected for direct booking application'
+							'reason' => 'Collision detected for direct booking application',
+							'collision_debug' => $applicationCollisionInfo
 						];
 						continue; // Skip to next application
 					}
@@ -247,6 +255,12 @@ class ApplicationService
 				$this->sendApplicationNotification($application['id']);
 				$updatedApplications[] = array_merge($application, $updateData);
 			}
+			$this->db->commit();
+			return [
+				'updated' => $updatedApplications,
+				'skipped' => $skippedApplications,
+				'debug_collisions' => $collisionDebugInfo
+			];
 
 		} catch (Exception $e)
 		{
@@ -400,32 +414,86 @@ class ApplicationService
 	}
 
 
-	private function checkCollision(array $resources, string $from, string $to, string $session_id): bool
+	/**
+	 * Enhanced collision checking with debugging information
+	 *
+	 * @param array $resources Array of resource IDs
+	 * @param string $from Start time
+	 * @param string $to End time
+	 * @param string $session_id Current session ID
+	 * @return array Debug information with collision result
+	 */
+	private function checkCollisionWithDebug(array $resources, string $from, string $to, string $session_id): array
 	{
-		$resource_ids = implode(',', array_map('intval', $resources));
+		$resourceIds = [];
+		foreach ($resources as $resource) {
+			if (is_array($resource) && isset($resource['id'])) {
+				$resourceIds[] = (int)$resource['id'];
+			} else {
+				$resourceIds[] = (int)$resource;
+			}
+		}
 
-		$sql = "SELECT 1 FROM bb_application a
+		$resource_ids_str = implode(',', $resourceIds);
+
+		if (empty($resource_ids_str)) {
+			return [
+				'has_collision' => false,
+				'from' => $from,
+				'to' => $to,
+				'resource_ids' => $resources,
+				'extracted_ids' => $resourceIds,
+				'session_id' => $session_id,
+				'error' => 'No valid resource IDs found'
+			];
+		}
+
+		$sql = "SELECT a.id, a.name, a.status, ad.from_, ad.to_,
+            r.id as resource_id, r.name as resource_name
+            FROM bb_application a
             JOIN bb_application_resource ar ON a.id = ar.application_id
             JOIN bb_application_date ad ON a.id = ad.application_id
-            WHERE ar.resource_id IN ($resource_ids)
+            JOIN bb_resource r ON ar.resource_id = r.id
+            WHERE ar.resource_id IN ($resource_ids_str)
             AND a.status NOT IN ('REJECTED', 'NEWPARTIAL1')
             AND a.active = 1
             AND ((ad.from_ BETWEEN :from_date AND :to_date)
                 OR (ad.to_ BETWEEN :from_date AND :to_date)
                 OR (:from_date BETWEEN ad.from_ AND ad.to_)
                 OR (:to_date BETWEEN ad.from_ AND ad.to_))
-            AND (a.session_id IS NULL OR a.session_id != :session_id)
-            LIMIT 1";
+            AND (a.session_id IS NULL OR a.session_id != :session_id)";
 
-		$stmt = $this->db->prepare($sql);
-		$stmt->execute([
+		$params = [
 			':from_date' => $from,
 			':to_date' => $to,
 			':session_id' => $session_id
-		]);
+		];
 
-		return (bool)$stmt->fetch();
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($params);
+		$collisions = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+		return [
+			'has_collision' => !empty($collisions),
+			'from' => $from,
+			'to' => $to,
+			'resource_ids' => $resources,
+			'session_id' => $session_id,
+			'sql' => $sql,
+			'params' => $params,
+			'collisions' => $collisions
+		];
 	}
+
+	/**
+	 * Original collision check method - now calls the debug version
+	 */
+	private function checkCollision(array $resources, string $from, string $to, string $session_id): bool
+	{
+		$result = $this->checkCollisionWithDebug($resources, $from, $to, $session_id);
+		return $result['has_collision'];
+	}
+
 
 	/**
 	 * Helper function to check if user has too many direct bookings of type
@@ -1759,6 +1827,156 @@ class ApplicationService
 
 		$result = $stmt->fetch(\PDO::FETCH_ASSOC);
 		return (int)$result['count'];
+	}
+
+	/**
+	 * Pre-validate applications for checkout without making changes
+	 *
+	 * @param string $session_id Current session ID
+	 * @param array $data Contact and organization information
+	 * @return array Validation results with potential issues
+	 */
+	public function validateCheckout(string $session_id, array $data): array
+	{
+		// Validate checkout data
+		$dataErrors = $this->validateCheckoutData($data);
+		if (!empty($dataErrors)) {
+			return [
+				'valid' => false,
+				'data_errors' => $dataErrors,
+				'applications' => []
+			];
+		}
+
+		// Get all applications for this session
+		$applications = $this->getPartialApplications($session_id);
+		if (empty($applications)) {
+			return [
+				'valid' => false,
+				'error' => 'No partial applications found for checkout',
+				'applications' => []
+			];
+		}
+
+		// Check resource booking limits across all applications
+		$resourceBookings = [];
+		foreach ($applications as $application) {
+			foreach ($application['resources'] as $resource) {
+				$resourceId = $resource['id'];
+				if (!isset($resourceBookings[$resourceId])) {
+					$resourceBookings[$resourceId] = 0;
+				}
+				$resourceBookings[$resourceId]++;
+			}
+		}
+
+		$limitErrors = [];
+		$ssn = $this->userHelper->ssn;
+		if ($ssn) {
+			foreach ($resourceBookings as $resourceId => $count) {
+				// Get resource details
+				$sql = "SELECT r.name, r.booking_limit_number, r.booking_limit_number_horizont
+                FROM bb_resource r
+                WHERE r.id = :id";
+				$stmt = $this->db->prepare($sql);
+				$stmt->bindParam(':id', $resourceId, \PDO::PARAM_INT);
+				$stmt->execute();
+				$resource = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+				if ($resource && $resource['booking_limit_number'] > 0 && $resource['booking_limit_number_horizont'] > 0) {
+					// Get existing bookings count
+					$existingCount = $this->getUserBookingCount($resourceId, $ssn, $resource['booking_limit_number_horizont']);
+
+					// Calculate total bookings after checkout
+					$totalBookings = $existingCount + $count;
+
+					// Check if limit would be exceeded
+					if ($totalBookings > $resource['booking_limit_number']) {
+						$limitErrors[] = [
+							'resource_id' => $resourceId,
+							'resource_name' => $resource['name'],
+							'current_bookings' => $existingCount,
+							'additional_bookings' => $count,
+							'max_allowed' => $resource['booking_limit_number'],
+							'time_period_days' => $resource['booking_limit_number_horizont'],
+							'message' => "Quantity limit would be exceeded for {$resource['name']}: You already have {$existingCount} " .
+								"bookings and are trying to add {$count} more, which would exceed the maximum " .
+								"of {$resource['booking_limit_number']} bookings within {$resource['booking_limit_number_horizont']} days"
+						];
+					}
+				}
+			}
+		}
+
+		// If there are global limit errors, return immediately
+		if (!empty($limitErrors)) {
+			return [
+				'valid' => false,
+				'limit_errors' => $limitErrors,
+				'applications' => []
+			];
+		}
+
+		// Check each application individually
+		$applicationResults = [];
+		$debugCollisions = []; // Store all collision debug information
+
+		foreach ($applications as $application) {
+			$result = [
+				'id' => $application['id'],
+				'valid' => true,
+				'issues' => [],
+				'would_be_direct_booking' => false
+			];
+
+			// Check if eligible for direct booking
+			$isEligibleForDirectBooking = $this->isEligibleForDirectBooking($application);
+			$result['would_be_direct_booking'] = $isEligibleForDirectBooking;
+
+			if ($isEligibleForDirectBooking) {
+				// Check for collisions with detailed debug info
+				$collisionDates = [];
+				$collisionDebugInfo = [];
+				foreach ($application['dates'] as $date) {
+					$collisionCheck = $this->checkCollisionWithDebug(
+						$application['resources'],
+						$date['from_'],
+						$date['to_'],
+						$application['session_id']
+					);
+
+					if ($collisionCheck['has_collision']) {
+						$collisionDates[] = [
+							'from' => $date['from_'],
+							'to' => $date['to_']
+						];
+						$collisionDebugInfo[] = $collisionCheck;
+					}
+				}
+
+
+				if (!empty($collisionDates)) {
+					$result['valid'] = false;
+					$result['issues'][] = [
+						'type' => 'collision',
+						'dates' => $collisionDates,
+						'message' => 'Collision detected for dates that would be direct booked',
+						'debug_collision_details' => $collisionDebugInfo
+					];
+
+					// Also store in our global debug array
+					$debugCollisions[$application['id']] = $collisionDebugInfo;
+				}
+			}
+
+			$applicationResults[] = $result;
+		}
+
+		return [
+			'valid' => !count(array_filter($applicationResults, function($result) { return !$result['valid']; })),
+			'applications' => $applicationResults,
+			'debug_collisions' => $debugCollisions
+		];
 	}
 
 }

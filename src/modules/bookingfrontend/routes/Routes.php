@@ -70,6 +70,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->post('/{id}/documents', ApplicationController::class . ':uploadDocument');
         $group->delete('/document/{id}', ApplicationController::class . ':deleteDocument');
         $group->get('/document/{id}/download', ApplicationController::class . ':downloadDocument');
+		$group->post('/validate-checkout', ApplicationController::class . ':validateCheckout');
 
     });
     $group->get('/invoices', CompletedReservationController::class . ':getReservations');

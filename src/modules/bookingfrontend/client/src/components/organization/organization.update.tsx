@@ -19,17 +19,20 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
     } = useForm({
         resolver: zodResolver(patchOrganizationSchema),
         defaultValues: {
-            name: data.name,
-            shortname: data.shortname,
-            homepage: data.homepage,
-            phone: data.phone,
-            email: data.email,
-            city: data.city,
-            street: data.street,
-            district: data.district,
-            zip_code: data.zip_code,
-            organization_number: data.organization_number,
-            activity_id: data.activity.id,
+            organization: {
+                shortname: data.shortname,
+                name: data.name,
+                homepage: data.homepage,
+                phone: data.phone,
+                email: data.email,
+                city: data.city,
+                street: data.street,
+                district: data.district,
+                zip_code: data.zip_code,
+                organization_number: data.organization_number,
+                activity_id: data.activity.id,
+                show_in_portal: data.show_in_portal
+            },
             contacts: [
                 {
                     id: data.contacts[0].id,

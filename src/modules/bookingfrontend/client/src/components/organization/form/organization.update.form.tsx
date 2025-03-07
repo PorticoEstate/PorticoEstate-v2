@@ -19,7 +19,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
         <main>
             <h4>{t('bookingfrontend.organization_details')}</h4>
             <Controller
-                name="organization_number"
+                name="organization.organization_number"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -34,7 +34,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                 )}
             />
             <Controller
-                name="name"
+                name="organization.name"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -42,14 +42,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.organization_name')}
                         error={
                             errors.name?.message 
-                            ? t(errors?.name.message) 
+                            ? t(errors.name.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name="shortname"
+                name="organization.shortname"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -57,14 +57,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.shortname')}
                         error={
                             errors.shortname?.message 
-                            ? t(errors?.shortname.message) 
+                            ? t(errors.shortname.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name="street"
+                name="organization.street"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -72,14 +72,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.street')}
                         error={
                             errors.street?.message 
-                            ? t(errors?.street.message) 
+                            ? t(errors.street.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name="zip_code"
+                name="organization.zip_code"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -87,29 +87,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.zip_code')}
                         error={
                             errors.zip_code?.message 
-                            ? t(errors?.zip_code.message) 
+                            ? t(errors.zip_code.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name="street"
-                control={control}
-                render={({ field }) => (
-                    <Textfield
-                        {...field}
-                        label={t('bookingfrontend.street')}
-                        error={
-                            errors.street?.message 
-                            ? t(errors?.street.message) 
-                            : undefined
-                        }
-                    />
-                )}
-            />
-            <Controller
-                name="district"
+                name="organization.district"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -117,14 +102,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.district')}
                         error={
                             errors.district?.message 
-                            ? t(errors?.district.message) 
+                            ? t(errors.district.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name="city"
+                name="organization.city"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -132,14 +117,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.city')}
                         error={
                             errors.city?.message 
-                            ? t(errors?.city.message) 
+                            ? t(errors.city.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name="email"
+                name="organization.email"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -147,14 +132,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.email')}
                         error={
                             errors.email?.message 
-                            ? t(errors?.email.message) 
+                            ? t(errors.email.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name="phone"
+                name="organization.phone"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -162,14 +147,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.phone')}
                         error={
                             errors.phone?.message 
-                            ? t(errors?.phone.message) 
+                            ? t(errors.phone.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name="homepage"
+                name="organization.homepage"
                 control={control}
                 render={({ field }) => (
                     <Textfield
@@ -177,14 +162,14 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         label={t('bookingfrontend.homepage')}
                         error={
                             errors.homepage?.message 
-                            ? t(errors?.homepage.message) 
+                            ? t(errors.homepage.message) 
                             : undefined
                         }
                     />
                 )}
             />
             <Controller
-                name='activity_id'
+                name='organization.activity_id'
                 control={control}
                 render={({ field: { onChange, value } }) => (
                     <Dropdown.TriggerContext>
@@ -208,15 +193,23 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                     </Dropdown.TriggerContext>
                 )}
             />
-            <div>
-                <div>
-                    <h5>{t('bookingfrontend.show_in_portal')}</h5>
-                    <p>{t('bookingfrontend.control_organization_visibility')}</p>
-                </div>
-                <Switch
-                   position={organization.show_in_portal ? 'end' : 'start'} 
-                />
-            </div>
+            <Controller
+                name='organization.show_in_portal'
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                    <div>
+                        <div>
+                            <h5>{t('bookingfrontend.show_in_portal')}</h5>
+                            <p>{t('bookingfrontend.control_organization_visibility')}</p>
+                        </div>
+                        <Switch
+                            onClick={() => onChange(!value)}
+                            checked={value}
+                        />
+                    </div>
+                )}
+            >   
+            </Controller>
             <OrganizationContactForm 
                 control={control}
                 errors={errors}

@@ -92,6 +92,14 @@ class OrganizationService
         return $group;
     }
 
+    public function patchOrganization(int $orgId, array $data)
+    {
+        $data['organization']['show_in_portal'] = (int) $data['organization']['show_in_portal'];
+        $this->repository->patchOrganizationLeader($orgId, $data['contacts'][0]);
+        $this->repository->patchOrganizationLeader($orgId, $data['contacts'][1]);
+        return $this->repository->patchOrganization($orgId, $data['organization']);
+    }
+
     public function patchGroup(int $groupId, array $data)
     {   
         $this->repository->patchGroupLeader($groupId, $data['groupLeaders'][0]);
@@ -101,7 +109,6 @@ class OrganizationService
 
     public function patchGroupLeader(int $groupId, array $data)
     {
-        return $this->repository->patchGroupLeader($groupId, $data);
+        return $this->repository->patchGroupLeader($groupId, $data); 
     }
-
 }

@@ -23,6 +23,42 @@ class OrganizationRepository
         return !!$stmt->fetch(PDO::FETCH_ASSOC);
     }
 
+    private function sqlPrepare($table, $data)
+    {
+        $params = [':id' => $data['id']];
+        $updateFields = [];
+
+        foreach ($data as $field => $value) {
+            $updateFields[] = "$field = :$field";
+            $params[":$field"] = $value;
+        }
+
+        $sql = "UPDATE bb_$table SET " . implode(', ', $updateFields) .
+        " WHERE id = :id
+        RETURNING id
+        ";
+        return ['sql' => $sql, 'params' => $params];
+    }
+    private function sqlPrepareContactTable($table, $ownerId, $data)
+    {
+        $params = [':id' => $data['id']];
+        $updateFields = [];
+
+        foreach ($data as $field => $value) {
+            $updateFields[] = "$field = :$field";
+            $params[":$field"] = $value;
+        }
+
+        $tableName = "bb_" . $table . "_contact";
+        $field = $table . '_id';
+        $sql = "UPDATE $tableName SET " . implode(', ', $updateFields) .
+        " WHERE id = :id AND $field = $ownerId
+        RETURNING id
+        ";
+        return ['sql' => $sql, 'params' => $params];
+    }
+    
+
     public function partialOrganization(int $id)
     {
         return $this->getPartial('bb_organization', $id);
@@ -290,5 +326,21 @@ class OrganizationRepository
         $stmt->execute($params);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
+    
+    public function patchOrganization(int $id, array $data) 
+    {
+        $data['id'] = $id;
+        ['sql' => $sql, 'params' => $params] = $this->sqlPrepare('organization', $data);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 
+    public function patchOrganizationLeader(int $id, array $data)
+    {
+        ['sql' => $sql, 'params' => $params] = $this->sqlPrepareContactTable('organization', $id, $data);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
 }

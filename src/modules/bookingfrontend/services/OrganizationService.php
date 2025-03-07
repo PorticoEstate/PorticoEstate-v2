@@ -69,6 +69,8 @@ class OrganizationService
 
     public function createDelegate(int $id, array $data)
     {
+        $existing = $this->repository->getDelegate($data['ssn'], $id);
+        if ($existing) throw new Exception('Delegate already exists');
         $delegateId = $this->repository->insertDelegate($id, $data);
         return $delegateId;
     }

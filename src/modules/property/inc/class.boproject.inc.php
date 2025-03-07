@@ -562,7 +562,7 @@ class property_boproject
 			'dry_run'			 => $data['dry_run'],
 			'filter'			 => $this->filter,
 			'cat_id'			 => $this->cat_id,
-			'status_id'			 => $this->status_id,
+			'status_id'			 => $data['status_id'] ?? $this->status_id,
 			'wo_hour_cat_id'	 => $this->wo_hour_cat_id,
 			'start_date'		 => $this->bocommon->date_to_timestamp($data['start_date']),
 			'end_date'			 => $this->bocommon->date_to_timestamp($data['end_date']),

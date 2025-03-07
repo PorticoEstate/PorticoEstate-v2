@@ -418,11 +418,11 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		}
 	}
 
-	if (data.length > 5)
-	{
-		lengthMenu[0].push(data.length);
-		lengthMenu[1].push(data.length);
-	}
+	// if (data.length > 5)
+	// {
+	// 	lengthMenu[0].push(data.length);
+	// 	lengthMenu[1].push(data.length);
+	// }
 
 	var language = null;
 	try
@@ -478,7 +478,8 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 			}
 	}
 
-	var oTable = $("#" + container).dataTable({
+ 	var oTable = $("#" + container).dataTable({
+    columns: columns,
 		scrollY: scrollY,
 		scrollX: scrollX,
 		scroller: scrollY ? true : false,
@@ -494,7 +495,13 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		deferRender: true,
 		select: select,
 		data: data,
-		ajax: ajax_def,
+	 	ajax: ajax_def,
+		layout: layout,
+		buttons: buttons_def,
+		search: initial_search,
+		lengthMenu: lengthMenu,
+		pageLength: parseInt(pageLength),
+		language: language,
 		fnServerParams: function (aoData)
 		{
 			try
@@ -528,24 +535,11 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		fnInitComplete: function (oSettings, json)
 		{
 		},
-		lengthMenu: lengthMenu,
-		pageLength: pageLength,
-		language: language,
-		columns: columns,
-		//	stateSave:		true,
-		//	stateDuration: -1, //sessionstorage
-		//	tabIndex:		1,
 		fnDrawCallback: function ()
 		{
 			if (typeof (oTable) != 'undefined')
 			{
 				var api = oTable.api();
-//				window.setTimeout(function ()
-//				{
-//					api.columns.adjust()
-//						.fixedColumns().relayout();
-//				}, 50);
-
 				api.buttons('.record').enable(false);
 				oTable.makeEditable({
 					sUpdateURL: editor_action,
@@ -597,10 +591,7 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 			{
 				//nothing
 			}
-		},
-		layout: layout,
-		buttons: buttons_def,
-		search: initial_search
+		}
 	});
 
 

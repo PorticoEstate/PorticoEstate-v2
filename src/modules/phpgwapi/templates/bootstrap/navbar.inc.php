@@ -167,7 +167,7 @@ HTML;
 		$breadcrumb_html = <<<HTML
 			<div class="clearfix">
 			<nav aria-label="breadcrumb">
-				  <ol class="breadcrumb shadow ps-2 pt-2 pb-3">
+				  <ol class="breadcrumb shadow ps-2 pt-2 pb-3 rounded">
 HTML;
 		$history_url = array();
 		$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');

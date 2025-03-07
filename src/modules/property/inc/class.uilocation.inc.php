@@ -89,7 +89,8 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		'get_checklists'			 => true,
 		'get_cases_for_checklist'	 => true,
 		'get_location_data'			 => true,
-		'edit_field'				 => true
+		'edit_field'				 => true,
+		'dashboard'					 => true,
 	);
 
 	function __construct()
@@ -300,6 +301,222 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 		$this->bo->save_sessiondata($data);
 	}
 
+	public function dashboard()
+	{
+		$location_code = Sanitizer::get_var('location_code');
+
+		if (!$location_code)
+		{
+			phpgw::no_access('property', lang('missing location code'));
+			return;
+		}
+		//location_levels
+		$location_arr = explode('-', $location_code);
+		$location_levels = array();
+
+		// Add the current location as the first (most specific) level
+		$location_levels[] = $location_code;
+
+		// Dynamically generate all parent levels - from most specific to most general
+		for ($i = count($location_arr) - 1; $i > 0; $i--)
+		{
+			$location_levels[] = implode('-', array_slice($location_arr, 0, $i));
+		}
+
+
+		$location_data = $this->bo->read_single($location_code, array('noattrib' => true));
+
+		//projects
+		$projects = createObject('property.boproject')->read(array(
+			'query' => $location_code,
+			'status_id' => 'all',
+			'allrows'		 => true
+		));
+
+		//tickets
+		$boticket = createObject('property.botts');
+		$tickets = $boticket->read(array(
+			'location_code' => $location_code,
+			'status_id' => 'all',
+			'allrows'		 => true
+		));
+
+
+		if ($tickets)
+		{
+			$status		 = array();
+			$status['X'] = lang('closed');
+			$status['O'] = isset($boticket->config->config_data['tts_lang_open']) && $boticket->config->config_data['tts_lang_open'] ? $boticket->config->config_data['tts_lang_open'] : lang('Open');
+			$status['C'] = lang('closed');
+
+			$custom_status = $boticket->get_custom_status();
+
+			foreach ($custom_status as $custom)
+			{
+				$status["C{$custom['id']}"] = $custom['name'];
+			}
+
+			foreach ($tickets as &$entry)
+			{
+				$entry['status'] = $status[$entry['status']];
+			}
+		}
+
+		//documents
+
+		$documents = createObject('property.bogallery')->read(array(
+			'query' => $location_code,
+			'allrows'		 => true
+		));
+
+		$location_data = $this->bo->initiate_ui_location(
+			array(
+				'values'		 => $location_data,
+				'type_id'		 => count($location_arr),
+				'tenant'		 => true,
+				'lookup_type'	 => 'view'
+			)
+		);
+
+
+		$datatable_def = array();
+
+		$project_def = array(
+			array('key' => 'project_id', 'label' => lang('id'), 'sortable' => true, 'formatter' => 'project_link'),
+			array('key' => 'name', 'label' => lang('name'), 'sortable' => true),
+			array('key' => 'status', 'label' => lang('status'), 'sortable' => true),
+			array(
+				'key' => 'entry_date',
+				'label' => lang('entry date'),
+				'sortable' => false,
+			),
+			array(
+				'key' => 'start_date',
+				'label' => lang('start date'),
+				'sortable' => false,
+
+			),
+			array(
+				'key' => 'end_date',
+				'label' => lang('end date'),
+				'sortable' => false,
+			),
+
+			array('key' => 'coordinator', 'label' => lang('coordinator'), 'sortable' => true),
+			array('key' => 'vendor_names', 'label' => lang('vendor'), 'sortable' => true),
+
+		);
+		$datatable_def[] = array(
+			'container'	 => 'datatable-container_0',
+			'requestUrl' => "''",
+			'data'		 => json_encode($projects),
+			'ColumnDefs' => $project_def,
+			'config'	 => array(
+		//		array('disableFilter' => true),
+				array('rows_per_page' => 15)
+			)
+		);
+
+
+		$ticket_def = array(
+			array('key' => 'id', 'label' => lang('id'), 'sortable' => true, 'formatter' => 'ticket_link'),
+			array('key' => 'subject', 'label' => lang('subject'), 'sortable' => true),
+			array('key' => 'loc1_name', 'label' => lang('location'), 'sortable' => true),
+			array('key' => 'district', 'label' => lang('district'), 'sortable' => true),
+			array('key' => 'address', 'label' => lang('address'), 'sortable' => true),
+			array('key' => 'assignedto', 'label' => lang('assigned to'), 'sortable' => true),
+			array('key' => 'status', 'label' => lang('status'), 'sortable' => true),
+			array('key' => 'priority', 'label' => lang('priority'), 'sortable' => true),
+			array('key' => 'entry_date', 'label' => lang('entry date'), 'sortable' => true),
+			array('key' => 'modified_date', 'label' => lang('modified date'), 'sortable' => true),
+			array('key' => 'finnish_date', 'label' => lang('finnish date'), 'sortable' => true),
+			array('key' => 'order_id', 'label' => lang('order id'), 'sortable' => true),
+			array('key' => 'category', 'label' => lang('category'), 'sortable' => true),
+			array('key' => 'user', 'label' => lang('user'), 'sortable' => true),
+			array('key' => 'delay', 'label' => lang('delay'), 'sortable' => true),
+
+		);
+
+		$datatable_def[] = array(
+			'container'	 => 'datatable-container_1',
+			'requestUrl' => "''",
+			'data'		 => json_encode($tickets),
+			'ColumnDefs' => $ticket_def,
+			'config'	 => array(
+			//	array('disableFilter' => true),
+				array('rows_per_page' => 15)
+			)
+		);
+
+
+		$document_def = array(
+			array(
+				'key'		 => 'id',
+				'label'		 => lang('id'),
+				'sortable'	 => true,
+				//		'hidden'	 => true
+			),
+			array(
+				'key'		 => 'img_id',
+				'label'		 => 'img_id',
+				'sortable'	 => false,
+				'hidden'	 => true
+			),
+			array(
+				'key'		 => 'directory',
+				'label'		 => lang('directory'),
+				'sortable'	 => true
+			),
+			array('key' => 'name', 'label' => lang('name'), 'sortable' => true),
+			array('key' => 'mime_type', 'label' => lang('mime type'), 'sortable' => true),
+			array('key' => 'created', 'label' => lang('created'), 'sortable' => true),
+			array('key' => 'user', 'label' => lang('user'), 'sortable' => true),
+			array(
+				'key'		 => 'document_url',
+				'label'		 => lang('document'),
+				'sortable'	 => false,
+				'formatter'	 => 'JqueryPortico.formatLinkGallery'
+			),
+			array(
+				'key'		 => 'picture',
+				'label'		 => lang('picture'),
+				'sortable'	 => false,
+				'formatter'	 => 'JqueryPortico.showPicture'
+			)
+		);
+
+		$datatable_def[] = array(
+			'container'	 => 'datatable-container_2',
+			'requestUrl' => "''",
+			'data'		 => json_encode($documents),
+			'ColumnDefs' => $document_def,
+			'config'	 => array(
+			//	array('disableFilter' => true),
+				array('rows_per_page' => 15)
+			)
+		);
+
+		$data = array(
+			'location_code'	 => $location_code,
+			'location_data'	 => $location_data,
+			'projects'		 => $projects,
+			'tickets'		 => $tickets,
+			'documents'		 => $documents,
+			'datatable_def'	 => $datatable_def,
+			'link_new_project' => phpgw::link('/index.php', array('menuaction' => 'property.uiproject.add', 'location_code' => $location_code, 'bypass' => 1)),
+			'link_new_ticket' => phpgw::link('/index.php', array('menuaction' => 'property.uitts.add', 'location_code' => $location_code, 'bypass' => 1)),
+		);
+		$appname = lang('dashboard');
+		$this->flags['app_header']	 = lang('property') . ' - ' . $appname;
+		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
+		self::add_javascript('property', 'base', 'location.dashboard.js');
+
+		self::render_template_xsl(array('location', 'location_view', 'datatable_inline'), array(
+			'dashboard' => $data
+		));
+	}
+
+
 	function download()
 	{
 		if (!$this->acl_read)
@@ -323,8 +540,11 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 				$search	 = Sanitizer::get_var('search');
 
 				$list = $this->bo->get_responsible(array(
-					'user_id'	 => $user_id, 'role_id'	 => $role_id,
-					'type_id'	 => $type_id, 'query'		 => $search['value'], 'allrows'	 => true
+					'user_id'	 => $user_id,
+					'role_id'	 => $role_id,
+					'type_id'	 => $type_id,
+					'query'		 => $search['value'],
+					'allrows'	 => true
 				));
 
 				foreach ($list as &$entry)
@@ -1009,8 +1229,10 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 
 
 		$this->bo->read(array(
-			'type_id'		 => $type_id, 'lookup_tenant'	 => $lookup_tenant,
-			'lookup'		 => $lookup, 'dry_run'		 => true
+			'type_id'		 => $type_id,
+			'lookup_tenant'	 => $lookup_tenant,
+			'lookup'		 => $lookup,
+			'dry_run'		 => true
 		));
 		$uicols = $this->bo->uicols;
 
@@ -1483,8 +1705,10 @@ JS;
 			if (Sanitizer::get_var('head'))
 			{
 				$this->bo->get_responsible(array(
-					'user_id'	 => $user_id, 'role_id'	 => $role_id,
-					'type_id'	 => $type_id, 'dry_run'	 => true
+					'user_id'	 => $user_id,
+					'role_id'	 => $role_id,
+					'type_id'	 => $type_id,
+					'dry_run'	 => true
 				));
 
 				$uicols = $this->get_uicols_responsiblility_role();
@@ -1607,8 +1831,11 @@ JS;
 		self::add_javascript('property', 'base', 'location.responsiblility_role.js');
 
 		$this->bo->get_responsible(array(
-			'user_id'	 => $user_id, 'role_id'	 => $role_id,
-			'type_id'	 => $type_id, 'allrows'	 => $this->allrows, 'dry_run'	 => true
+			'user_id'	 => $user_id,
+			'role_id'	 => $role_id,
+			'type_id'	 => $type_id,
+			'allrows'	 => $this->allrows,
+			'dry_run'	 => true
 		));
 
 		$uicols = $this->get_uicols_responsiblility_role();
@@ -2171,7 +2398,8 @@ JS;
 			if ($_enable_controller && $location_code)
 			{
 				$tabs['controller']	 = array(
-					'label'		 => lang('controller'), 'link'		 => '#controller',
+					'label'		 => lang('controller'),
+					'link'		 => '#controller',
 					'function'	 => "set_tab('controller')"
 				);
 				$active_tab			 = $active_tab ? $active_tab : 'general';
@@ -2253,8 +2481,10 @@ JS;
 				$cats				 = CreateObject('phpgwapi.categories', -1, 'property', '.document');
 				$cats->supress_info	 = true;
 				$categories			 = $cats->formatted_xslt_list(array(
-					'format'	 => 'filter', 'selected'	 => 0,
-					'globals'	 => true, 'use_acl'	 => false
+					'format'	 => 'filter',
+					'selected'	 => 0,
+					'globals'	 => true,
+					'use_acl'	 => false
 				));
 				$default_value		 = array('cat_id' => '', 'name' => lang('no document type'));
 				array_unshift($categories['cat_list'], $default_value);
@@ -2316,12 +2546,16 @@ JS;
 				$documents_def = array(
 					array('key' => 'id', 'label' => lang('id'), 'sortable' => false, 'resizeable' => true),
 					array(
-						'key'		 => 'document_name', 'label'		 => lang('name'), 'sortable'	 => true,
+						'key'		 => 'document_name',
+						'label'		 => lang('name'),
+						'sortable'	 => true,
 						'resizeable' => true
 					),
 					array('key' => 'title', 'label' => 'Info', 'sortable' => true, 'resizeable' => true),
 					array(
-						'key'		 => 'document_date', 'label'		 => lang('date'), 'sortable'	 => true,
+						'key'		 => 'document_date',
+						'label'		 => lang('date'),
+						'sortable'	 => true,
 						'resizeable' => true
 					),
 				);
@@ -2330,7 +2564,8 @@ JS;
 					'container'	 => 'datatable-container_0',
 					'requestUrl' => json_encode(self::link(array(
 						'menuaction'		 => 'property.uilocation.get_documents',
-						'location_code'		 => $location_code, 'phpgw_return_as'	 => 'json'
+						'location_code'		 => $location_code,
+						'phpgw_return_as'	 => 'json'
 					))),
 					'data'		 => "",
 					'tabletools' => ($mode == 'edit') ? $documents_tabletools : array(),
@@ -2424,7 +2659,8 @@ JS;
 
 				$link_history = json_encode(self::link(array(
 					'menuaction'		 => 'property.uilocation.get_history_data',
-					'location_code'		 => $location_code, 'phpgw_return_as'	 => 'json'
+					'location_code'		 => $location_code,
+					'phpgw_return_as'	 => 'json'
 				)));
 			}
 
@@ -2615,40 +2851,58 @@ JS;
 				$controls_def	 = array(
 					array('key' => 'serie_id', 'label' => 'serie', 'sortable' => false, 'resizeable' => true),
 					array(
-						'key'		 => 'control_id', 'label'		 => lang('controller'), 'sortable'	 => false,
+						'key'		 => 'control_id',
+						'label'		 => lang('controller'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array('key' => 'title', 'label' => lang('title'), 'sortable' => false, 'resizeable' => true),
 					array(
-						'key'		 => 'assigned_to_name', 'label'		 => lang('user'), 'sortable'	 => false,
+						'key'		 => 'assigned_to_name',
+						'label'		 => lang('user'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'start_date', 'label'		 => lang('start date'), 'sortable'	 => false,
+						'key'		 => 'start_date',
+						'label'		 => lang('start date'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'repeat_type', 'label'		 => lang('repeat type'), 'sortable'	 => false,
+						'key'		 => 'repeat_type',
+						'label'		 => lang('repeat type'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'repeat_interval', 'label'		 => lang('interval'), 'sortable'	 => false,
+						'key'		 => 'repeat_interval',
+						'label'		 => lang('interval'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'controle_time', 'label'		 => lang('controle time'), 'sortable'	 => false,
+						'key'		 => 'controle_time',
+						'label'		 => lang('controle time'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'service_time', 'label'		 => lang('service time'), 'sortable'	 => false,
+						'key'		 => 'service_time',
+						'label'		 => lang('service time'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'total_time', 'label'		 => lang('total time'), 'sortable'	 => false,
+						'key'		 => 'total_time',
+						'label'		 => lang('total time'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					array(
-						'key'		 => 'serie_enabled', 'label'		 => lang('enabled'), 'sortable'	 => false,
+						'key'		 => 'serie_enabled',
+						'label'		 => lang('enabled'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 					//					array('key' => 'select','label'=>lang('select'),'sortable'=>false,'resizeable'=>true),
@@ -2737,7 +2991,9 @@ JS;
 					array('key' => 'status', 'label' => lang('status'), 'sortable' => false, 'resizeable' => true),
 					array('key' => 'user', 'label' => lang('user'), 'sortable' => true, 'resizeable' => true),
 					array(
-						'key'		 => 'entry_date', 'label'		 => lang('entry date'), 'sortable'	 => false,
+						'key'		 => 'entry_date',
+						'label'		 => lang('entry date'),
+						'sortable'	 => false,
 						'resizeable' => true
 					),
 				);
@@ -2825,7 +3081,8 @@ JS;
 			'form_action'					 => phpgw::link('/index.php', $link_data),
 			'done_action'					 => phpgw::link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.index',
-				'type_id'		 => $type_id, 'lookup_tenant'	 => $lookup_tenant
+				'type_id'		 => $type_id,
+				'lookup_tenant'	 => $lookup_tenant
 			)),
 			'lang_save'						 => lang('save'),
 			'lang_done'						 => lang('done'),
@@ -2837,7 +3094,9 @@ JS;
 			'select_name'					 => 'cat_id',
 			'cat_list'						 => $this->bocommon->select_category_list(array(
 				'format'	 => 'select',
-				'selected'	 => $values['cat_id'], 'type'		 => 'location', 'type_id'	 => $type_id,
+				'selected'	 => $values['cat_id'],
+				'type'		 => 'location',
+				'type_id'	 => $type_id,
 				'order'		 => 'descr'
 			)),
 			'doc_type_filter'				 => array('options' => $doc_type_filter),
@@ -2851,7 +3110,9 @@ JS;
 			'lang_collapse_all'				 => lang('collapse all'),
 			'validator'						 => phpgwapi_jquery::formvalidator_generate(array(
 				'location',
-				'date', 'security', 'file'
+				'date',
+				'security',
+				'file'
 			)),
 			'edit_link' => phpgw::link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.edit',
@@ -3032,7 +3293,8 @@ JS;
 			'done_action'			 => phpgw::link('/index.php', $link_data),
 			'delete_action'			 => phpgw::link('/index.php', array(
 				'menuaction'	 => 'property.uilocation.delete',
-				'location_code'	 => $location_code, 'type_id'		 => $type_id
+				'location_code'	 => $location_code,
+				'type_id'		 => $type_id
 			)),
 			'lang_confirm_msg'		 => lang('do you really want to delete this entry'),
 			'lang_yes'				 => lang('yes'),

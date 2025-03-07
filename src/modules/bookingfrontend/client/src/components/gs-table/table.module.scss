@@ -44,7 +44,7 @@
             }
             &:nth-child(odd) > * {
                 /* Apply background color here */
-                background-color: var(--ds-color-neutral-background-subtle);
+                background-color: var(--ds-color-neutral-background-tinted);
             }
         }
 
@@ -199,7 +199,7 @@
 .expandedContent {
     grid-area: content;  // Places this element in the "content" grid area
     width: 100%;         // Ensures it takes full width
-    background: var(--ds-color-neutral-background-subtle);
+    background: var(--ds-color-neutral-background-tinted);
     margin-top: 0.5rem;  // Space between row and expanded content
     border-radius: 4px;
     overflow: hidden;    // In case of dynamic content

@@ -43,13 +43,11 @@ services:
 
     nextjs:
         build:
-            context: ./src/modules/bookingfrontend/client
-            dockerfile: Dockerfile.nextjs
+            dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs
             args:
                 - NEXT_ENV=${NEXT_ENV:-production}
                 - http_proxy=${http_proxy}
                 - https_proxy=${https_proxy}
-                - GIT_COMMIT_ID=$(git rev-parse HEAD)
         environment:
             <<: *common-variables
         networks:

@@ -1,5 +1,7 @@
 # Base image
 FROM node:20-alpine AS base
+ENV base_path=/src/modules/bookingfrontend/client
+RUN apk add --no-cache git
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -20,7 +22,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+COPY ${base_path}/package.json ${base_path}/yarn.lock* ${base_path}/package-lock.json* ${base_path}/pnpm-lock.yaml* ./
 RUN \
   if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci; \
@@ -34,17 +36,19 @@ ARG NEXT_ENV=production
 ARG GIT_COMMIT_ID=unknown
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY ./src ./src
-COPY ./public ./public
-COPY ./.env ./.env
-COPY ./next.config.mjs ./next.config.mjs
-COPY ./tsconfig.json ./tsconfig.json
-COPY ./yarn.lock ./yarn.lock
-COPY ./package.json ./package.json
+COPY ${base_path}/src ./src
+COPY ${base_path}/public ./public
+COPY ${base_path}/.env ./.env
+COPY ${base_path}/next.config.mjs ./next.config.mjs
+COPY ${base_path}/tsconfig.json ./tsconfig.json
+COPY ${base_path}/yarn.lock ./yarn.lock
+COPY ${base_path}/package.json ./package.json
+COPY ${base_path}/package.json ./package.json
+COPY /.git ./.git
 
 RUN echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" > ./.build-time
 
-RUN echo "${GIT_COMMIT_ID}" > ./.git-commit-id
+RUN echo "$(git rev-parse HEAD)" > ./.git-commit-id
 
 # Only build in production mode
 RUN \

@@ -14,9 +14,9 @@ const Page: FC<PageProps> = (props) => {
                 <Button variant={"primary"} data-color={'brand1'}>brand1</Button>
                 <Button variant={"primary"} data-color={'brand2'}>brand2</Button>
                 <Button variant={"primary"} data-color={'brand3'}>brand3</Button>
-                <Button variant={"primary"} data-color={'info'}>info</Button>
-                <Button variant={"primary"} data-color={'success'}>success</Button>
-                <Button variant={"primary"} data-color={'warning'}>warning</Button>
+                {/*<Button variant={"primary"} data-color={'info'}>info</Button>*/}
+                {/*<Button variant={"primary"} data-color={'success'}>success</Button>*/}
+                {/*<Button variant={"primary"} data-color={'warning'}>warning</Button>*/}
             </div>
         </div>
     );

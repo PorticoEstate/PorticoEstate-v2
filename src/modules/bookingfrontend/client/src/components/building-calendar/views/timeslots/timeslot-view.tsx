@@ -1,7 +1,7 @@
 import React, {FC, useMemo} from 'react';
 import styles from "./timeslot-view.module.scss";
 import {DateTime} from "luxon";
-import {useBuildingFreeTimeSlots} from "@/service/hooks/api-hooks";
+import {useBuildingFreeTimeSlots, useCreateSimpleApplication} from "@/service/hooks/api-hooks";
 import {IBuilding} from "@/service/types/Building";
 import {useEnabledResources} from "@/components/building-calendar/calendar-context";
 import TimeSlotCard from "@/components/building-calendar/views/timeslots/card/time-slot-card";
@@ -15,6 +15,7 @@ interface TimeslotViewProps {
 
 const TimeslotView: FC<TimeslotViewProps> = (props) => {
 	const {enabledResources} = useEnabledResources();
+	const createSimpleApp = useCreateSimpleApplication();
 	const viewRange = useMemo(() => {
 		if (props.viewMode.includes('Day')) {
 			return 'day'
@@ -108,6 +109,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 					key={`${slot.start_iso}-${index}`}
 					slot={slot}
 					resourceId={currentResourceId}
+					onSelect={(slot) => createSimpleApp.mutate(slot)}
 				/>
 			))}
 			{visibleTimeslots.length === 0 && (

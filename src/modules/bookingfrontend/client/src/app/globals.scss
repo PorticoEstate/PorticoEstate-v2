@@ -38,7 +38,7 @@ body {
 
 // Make select faded when disabled option selected
 select:not(:disabled):has(option:checked:disabled) {
-    color: color-mix(in srgb, currentColor var(--ds-disabled-opacity), transparent);
+    color: color-mix(in srgb, currentColor var(--ds-opacity-disabled), transparent);
 }
 
 .ds-details {

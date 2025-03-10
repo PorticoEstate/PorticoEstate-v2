@@ -1,8 +1,12 @@
 'use client';
-import { Details, Link } from '@digdir/designsystemet-react';
+import { Details, Link, Icon, Button} from '@digdir/designsystemet-react';
 import {default as NXLink} from "next/link";
 import { Organization } from "@/service/types/api/organization.types";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
+import { faSitemap, faUserPlus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+import styles from './styles/organization.view.module.scss';
 
 interface OrganizationView {
     organization: Organization;
@@ -13,10 +17,32 @@ const OrganizationView = ({ organization }: OrganizationView) => {
     console.log(organization);
     return (
         <main>
-            <h2>{organization.name}</h2>
-            <p>{organization.city}</p>
-            <p>{organization.district}</p>
-            <p>{organization.street}</p>
+            <div className={styles.header}>
+                <FontAwesomeIcon icon={faSitemap} /> 
+                <h2>{organization.name}</h2>
+            </div>
+            <div className={styles.position}>
+                <div>
+                    <p>{organization.district}</p>
+                    <ul><li>{organization.city}</li></ul>
+                </div>
+                <p>{organization.street}</p>
+            </div>
+            <div className={styles.contact}>
+                <h3>{t('bookingfrontend.contact information')}</h3>
+                <div>
+                    <span><b>{t('bookingfrontend.name')}:</b></span>
+                    <p>TODO: no contact name</p>
+                </div>
+                <div>
+                    <span><b>{t('bookingfrontend.contact_email')}:</b></span>
+                    <p>{organization.email}</p>
+                </div>
+                <div>
+                    <span><b>{t('bookingfrontend.phone')}:</b></span>
+                    <p>{organization.phone}</p>
+                </div>
+            </div>
             <div>
                 <Details>
                     <Details.Summary>{t('bookingfrontend.information')}</Details.Summary>
@@ -25,24 +51,7 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                     </Details.Content>
                 </Details>
                 <Details>
-                    <Details.Summary>{t('bookingfrontend.contact_information')}</Details.Summary>
-                    <Details.Content>
-                        <div>
-                            <span>{t('bookingfrontend.name')}</span>
-                            <p>TODO: no contact name</p>
-                        </div>
-                        <div>
-                            <span>{t('bookingfrontend.email')}</span>
-                            <p>{organization.email}</p>
-                        </div>
-                        <div>
-                            <span>{t('bookingfrontend.phone')}</span>
-                            <p>{organization.phone}</p>
-                        </div>
-                    </Details.Content>
-                </Details>
-                <Details>
-                    <Details.Summary>{t('bookingfrontend.facility')}</Details.Summary>
+                    <Details.Summary>{t('bookingfrontend.Used buildings (2018)')}</Details.Summary>
                     <Details.Content>
                         TODO: No building data
                     </Details.Content>
@@ -51,42 +60,49 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                     <Details.Summary>{t('bookingfrontend.delegaters')}</Details.Summary>
                     <Details.Content>
                         { organization.delegaters.map((delegate) => (
-                            <div key={delegate.id}>
-                                <Link>
-                                    <NXLink href={`/organization/delegate/${delegate.id}`}>
+                            <div key={delegate.id} className={styles.listed_delegate}>
+                                <NXLink href={`/organization/delegate/${delegate.id}`}>
+                                    <Link data-color='info'>
                                         {delegate.name}
-                                    </NXLink>
-                                </Link>
-                                <span>{delegate.email}</span>
-                                <hr />
+                                    </Link>
+                                </NXLink>
+                                <div>
+                                    <span><b>{t('bookingfrontend.contact_email')}:</b></span>
+                                    <p>{delegate.email}</p>
+                                </div>
+                                <div>
+                                    <span><b>{t('bookingfrontend.phone')}:</b></span>
+                                    <p>{delegate.phone}</p>
+                                </div>
                             </div>
                         )) }
-                        <Link>
-                            <NXLink href={`/organization/${organization.id}/delegate`}>
+                        <NXLink href={`/organization/${organization.id}/delegate`}>
+                            <Button variant='tertiary'>
+                                <FontAwesomeIcon icon={faUserPlus} />
                                 {t('bookingfrontend.create_delegate')}
-                            </NXLink>
-                        </Link>
+                            </Button>
+                        </NXLink>
                     </Details.Content>
                 </Details>
                 <Details>
                     <Details.Summary>{t('bookingfrontend.groups')}</Details.Summary>
                     <Details.Content>
                         { organization.groups.map((group) => (
-                            <div key={group.id}>
-                                <Link>
-                                    <NXLink href={`/organization/group/${group.id}`}>
+                            <div key={group.id} className={styles.listed_group}>
+                                <NXLink href={`/organization/group/${group.id}`}>
+                                    <Link data-color='brand1'>
                                         {group.name}
-                                    </NXLink>
-                                </Link>
+                                    </Link>
+                                </NXLink>
                                 <span>{group.contact[0].name}</span>
-                                <hr />
                             </div>
                         )) }
-                        <Link>
-                            <NXLink href={`/organization/${organization.id}/group`}>
+                        <NXLink href={`/organization/${organization.id}/group`}>
+                            <Button variant='tertiary' data-color='accent'>
+                                <FontAwesomeIcon icon={faPlus} />   
                                 {t('bookingfrontend.create_group')}
-                            </NXLink>
-                        </Link>
+                            </Button>                 
+                        </NXLink>
                     </Details.Content>
                 </Details>
             </div>

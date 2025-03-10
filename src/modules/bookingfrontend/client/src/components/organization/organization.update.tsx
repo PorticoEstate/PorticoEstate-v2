@@ -6,12 +6,16 @@ import { Organization } from "@/service/types/api/organization.types";
 import { patchOrganization } from "@/service/api/organization";
 import { patchOrganizationSchema, UpdatingOrganization } from "./schemas";
 import UpdateOrganizationForm from "./form/organization.update.form";
+import { useTrans } from "@/app/i18n/ClientTranslationProvider";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 
 interface OrganizationUpdateProps {
     data: Organization;
 }
 
 const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
+    const t = useTrans();
     const {
         control,
         handleSubmit,
@@ -57,12 +61,15 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
 
     return (
         <>
-            <UpdateOrganizationForm 
+            <UpdateOrganizaionForm 
                 organization={data} 
                 errors={errors} 
                 control={control}
             />
-            <Button onClick={handleSubmit(save)}>save</Button>
+            <Button onClick={handleSubmit(save)}>
+                <FontAwesomeIcon icon={faFloppyDisk} />
+                {t('bookingfrontend.save')}
+            </Button>
         </>
     )
 }

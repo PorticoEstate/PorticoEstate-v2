@@ -969,9 +969,33 @@ class ApplicationController extends DocumentController
 				}
 			}
 
-			// Convert timestamps to date strings
-			$from = date('Y-m-d H:i:s', (int)$data['from']);
-			$to = date('Y-m-d H:i:s', (int)$data['to']);
+
+			// FIXED CONVERSION: Properly convert milliseconds to date strings
+			// Debug before conversion
+			error_log("Timestamps received: from={$data['from']}, to={$data['to']}");
+			$osloTz = new \DateTimeZone('Europe/Oslo');
+			// Convert from milliseconds to seconds if needed
+			$fromTimestamp = is_numeric($data['from']) ? (int)$data['from'] : 0;
+			$toTimestamp = is_numeric($data['to']) ? (int)$data['to'] : 0;
+
+			// If these look like milliseconds (13 digits), convert to seconds
+			if ($fromTimestamp > 10000000000) {
+				$fromTimestamp = (int)($fromTimestamp / 1000);
+			}
+			if ($toTimestamp > 10000000000) {
+				$toTimestamp = (int)($toTimestamp / 1000);
+			}
+
+			// Create DateTime objects with Oslo timezone
+			$fromDate = new \DateTime('@' . $fromTimestamp); // Create with UTC
+			$fromDate->setTimezone($osloTz);                 // Convert to Oslo
+
+			$toDate = new \DateTime('@' . $toTimestamp);     // Create with UTC
+			$toDate->setTimezone($osloTz);                   // Convert to Oslo
+
+			// Format for database with Oslo timezone
+			$from = $fromDate->format('Y-m-d H:i:s');
+			$to = $toDate->format('Y-m-d H:i:s');
 
 			// Check if resource supports simple booking and is available
 			$result = $this->applicationService->createSimpleBooking(

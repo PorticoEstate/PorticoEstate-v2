@@ -5,6 +5,7 @@ use App\modules\bookingfrontend\controllers\BuildingController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
+use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\controllers\ResourceController;
@@ -52,6 +53,15 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
         $group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');
         $group->get('/list', OrganizationController::class . ':getList');
     });
+
+	$group->group('/events', function (RouteCollectorProxy $group)
+	{
+		$group->get('/{id}', EventController::class . ':getEventById');
+		$group->patch('/{id}', EventController::class . ':updateEvent');
+		$group->post('/{id}/pre-registration', EventController::class . ':preRegister');
+		$group->post('/{id}/in-registration', EventController::class . ':inRegistration');
+		$group->patch('/{id}/out-registration', EventController::class . ':outRegistration');
+	});
 })->add(new SessionsMiddleware($app->getContainer()));
 
 // Session group

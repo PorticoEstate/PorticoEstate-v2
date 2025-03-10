@@ -13,7 +13,7 @@ class EventService
 {
     private $db;
     private $bouser;
-    private $repository;
+    public $repository;
 
     public function __construct()
     {
@@ -70,9 +70,9 @@ class EventService
         foreach ($data['resource_ids'] as $newResource) {
             if (!in_array($newResource, $resourceIds)) {
                 $shouldInsert = true;
-                array_push($toInsert, 
+                array_push($toInsert,
                     [
-                        'id' => $existingEvent['id'], 
+                        'id' => $existingEvent['id'],
                         'resourceId' => $newResource
                     ]
                 );
@@ -86,7 +86,7 @@ class EventService
     private function saveNewDates(int $id, array $data)
     {
         if (!$data['from_'] && !$data['to_']) return null;
-       
+
         $this->repository->updateDates($id, $data);
     }
 
@@ -103,13 +103,13 @@ class EventService
         $ownerSsn = $existingEvent['customer_ssn'];
         $ownerOrgNum = $existingEvent['customer_organization_number'];
         $ssn = $this->bouser->ssn;
-        $userOrgs = $this->bouser->organizations 
-            ? array_column($this->bouser->organizations, 'orgnr') 
+        $userOrgs = $this->bouser->organizations
+            ? array_column($this->bouser->organizations, 'orgnr')
             : [];
-        return 
-            $ssn === $ownerSsn || 
+        return
+            $ssn === $ownerSsn ||
             in_array($ownerOrgNum, $userOrgs);
-        
+
     }
     public function updateEvent(array $data, array $existingEvent)
     {
@@ -132,16 +132,16 @@ class EventService
     public function getEventById(int $id)
     {
         $entity = $this->repository->getEventById($id);
-    
-        $userOrgs = $this->bouser->organizations 
-            ? array_column($this->bouser->organizations, 'orgnr') 
+
+        $userOrgs = $this->bouser->organizations
+            ? array_column($this->bouser->organizations, 'orgnr')
             : null;
         $participants = $this->repository->currentParticipants($id);
         return [
             'event' => $entity->serialize(
                 ['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]
             ),
-            'numberOfParticipants' => $participants  
+            'numberOfParticipants' => $participants
         ];
     }
 
@@ -186,7 +186,7 @@ class EventService
             $acceptedQuantity = $registration['quantity'];
             $data['quantity'] = $acceptedQuantity > $data['quantity'] ? $data['quantity'] : $acceptedQuantity;
         }
-        
+
         $numberOfParticipants = $this->repository->currentParticipants($event['id'], true);
         $newAllPeoplesQuantity = $numberOfParticipants + $data['quantity'];
         if ($newAllPeoplesQuantity > (int) $event['participant_limit']) {
@@ -194,7 +194,7 @@ class EventService
         }
 
         $data['from_'] = date('Y-m-d H:i:s');
-        $registration 
+        $registration
             ? $this->repository->inRegistration($event['id'], $data)
             : $this->repository->insertInRegistration($event['id'], $data);
         return $event['id'];
@@ -225,4 +225,94 @@ class EventService
         $this->repository->outRegistration($event['id'], $data);
         return $event['id'];
     }
+
+
+	/**
+	 * Create an event from an application
+	 */
+	public function createFromApplication(array $application, array $date): int
+	{
+		try {
+			// Create the base event data
+			$eventData = [
+				'active' => 1,
+				'application_id' => $application['id'],
+				'completed' => 0,
+				'is_public' => 0,
+				'include_in_list' => 0,
+				'reminder' => 0,
+				'customer_internal' => 0,
+				'from_' => $this->formatDateForDatabase($date['from_']),
+				'to_' => $this->formatDateForDatabase($date['to_']),
+				'name' => $application['name'],
+				'activity_id' => $application['activity_id'],
+				'building_id' => $application['building_id'],
+				'building_name' => $application['building_name'],
+				'contact_name' => $application['contact_name'],
+				'contact_email' => $application['contact_email'],
+				'contact_phone' => $application['contact_phone'],
+				'customer_organization_name' => $application['customer_organization_name'] ?? null,
+				'customer_organization_id' => $application['customer_organization_id'] ?? null,
+				'customer_identifier_type' => $application['customer_identifier_type'],
+				'customer_ssn' => $application['customer_ssn'] ?? null,
+				'customer_organization_number' => $application['customer_organization_number'] ?? null,
+				'organizer' => $application['organizer'],
+				'description' => $application['description'] ?? null,
+				'equipment' => $application['equipment'] ?? null,
+				'cost' => 0,
+				'secret' => $this->generateSecret()
+			];
+
+			// Create the event
+			$eventId = $this->repository->createEvent($eventData);
+
+			// Associate resources, audience, and age groups
+			if (!empty($application['resources'])) {
+				$this->repository->saveEventResources($eventId, $application['resources']);
+			}
+
+			if (!empty($application['audience'])) {
+				$this->repository->saveEventAudience($eventId, $application['audience']);
+			}
+
+			if (!empty($application['agegroups'])) {
+				$this->repository->saveEventAgeGroups($eventId, $application['agegroups']);
+			}
+
+			return $eventId;
+		} catch (Exception $e) {
+			throw new Exception("Failed to create event: " . $e->getMessage());
+		}
+	}
+
+	/**
+	 * Generate a secret for the event
+	 */
+	private function generateSecret(int $length = 16): string
+	{
+		return bin2hex(random_bytes($length));
+	}
+
+
+	/**
+	 * Normalize date format for database storage
+	 */
+	private function formatDateForDatabase($dateString): string
+	{
+		// Handle ISO format with timezone (e.g. "2004-09-21T08:00:00+02:00")
+		if (strpos($dateString, 'T') !== false) {
+			$dateTime = new DateTime($dateString);
+			// Convert to UTC if needed
+			return $dateTime->format('Y-m-d H:i:s');
+		}
+
+		// Handle timestamp in milliseconds (e.g. 1741777200000)
+		if (is_numeric($dateString) && strlen($dateString) > 10) {
+			return date('Y-m-d H:i:s', (int)$dateString / 1000);
+		}
+
+		// If already in SQL format (e.g. "2000-03-14 08:00:00")
+		return $dateString;
+	}
+
 }

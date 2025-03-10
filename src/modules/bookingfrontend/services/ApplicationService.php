@@ -195,6 +195,10 @@ class ApplicationService
 
 			foreach ($applications as $application)
 			{
+
+				$this->patchApplicationMainData($baseUpdateData, $application['id']);
+
+
 				// First check if eligible for direct booking without checking collisions
 				$isEligibleForDirectBooking = $this->isEligibleForDirectBooking($application);
 
@@ -239,7 +243,7 @@ class ApplicationService
 					]);
 
 					$this->patchApplicationMainData($updateData, $application['id']);
-					$this->createEventForApplication($application);
+					$this->createEventForApplication($application['id']);
 				} else
 				{
 					// Not eligible for direct booking - process normally
@@ -270,39 +274,69 @@ class ApplicationService
 	}
 
 
-	private function createEventForApplication(array $application): void
+	/**
+	 * Create events for an application that has been accepted for direct booking
+	 */
+	private function createEventForApplication(int $applicationId): void
 	{
-		$event = array_merge($application, [
-			'active' => 1,
-			'application_id' => $application['id'],
-			'completed' => 0,
-			'is_public' => 0,
-			'include_in_list' => 0,
-			'reminder' => 0,
-			'customer_internal' => 0
-		]);
+		$eventService = new EventService();
+		$lastEventId = null;
 
-		// Create event for each date
-		foreach ($application['dates'] as $date)
+		$startedTransaction = false;
+		try
 		{
-			$event['from_'] = $date['from_'];
-			$event['to_'] = $date['to_'];
+			// Check if a transaction is already in progress
+			if (!$this->db->inTransaction())
+			{
+				$this->db->beginTransaction();
+				$startedTransaction = true;
+			}
 
-			$booking_boevent = CreateObject('booking.boevent');
-			$receipt = $booking_boevent->so->add($event);
+			// Fetch the most up-to-date application data
+			$application = $this->getFullApplication($applicationId);
 
-			// Update ID string after event creation
-			$booking_boevent->so->update_id_string();
+			if (!$application) {
+				throw new Exception("Application not found with ID: {$applicationId}");
+			}
+
+			// Convert to array for compatibility with EventService
+			$applicationData = (array)$application;
+
+			// Create an event for each date
+			foreach ($applicationData['dates'] as $date)
+			{
+				$eventId = $eventService->createFromApplication($applicationData, $date);
+				$lastEventId = $eventId;
+			}
+
+			// Update ID strings (legacy format)
+			$eventService->repository->updateIdString();
+
+			// Handle purchase orders using the legacy system
+			if ($lastEventId)
+			{
+				createObject('booking.sopurchase_order')->identify_purchase_order(
+					$applicationId,
+					$lastEventId,
+					'event'
+				);
+			}
+
+			// Only commit if we started the transaction
+			if ($startedTransaction)
+			{
+				$this->db->commit();
+			}
+		} catch (Exception $e)
+		{
+			// Only rollback if we started the transaction
+			if ($startedTransaction && $this->db->inTransaction())
+			{
+				$this->db->rollBack();
+			}
+			throw $e;
 		}
-
-		// Handle any purchase orders
-		createObject('booking.sopurchase_order')->identify_purchase_order(
-			$application['id'],
-			$receipt['id'],
-			'event'
-		);
 	}
-
 
 	private function isEligibleForDirectBooking(array $application): bool
 	{
@@ -1373,7 +1407,7 @@ class ApplicationService
 			'status', 'name', 'contact_name', 'contact_email', 'contact_phone',
 			'responsible_street', 'responsible_zip_code', 'responsible_city',
 			'customer_identifier_type', 'customer_organization_number',
-			'customer_organization_name', 'description', 'equipment', 'organizer', 'parent_id'
+			'customer_organization_name', 'description', 'equipment', 'organizer', 'parent_id', 'customer_ssn'
 		];
 
 		foreach ($data as $field => $value)
@@ -1640,6 +1674,7 @@ class ApplicationService
 				$this->db->beginTransaction();
 				$startedTransaction = true;
 			}
+
 
 			// Check if resource supports simple booking
 			$resource = $this->getSimpleBookingResource($resourceId);

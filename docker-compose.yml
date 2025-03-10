@@ -49,6 +49,7 @@ services:
                 - NEXT_ENV=${NEXT_ENV:-production}
                 - http_proxy=${http_proxy}
                 - https_proxy=${https_proxy}
+                - GIT_COMMIT_ID=$(git rev-parse HEAD)
         environment:
             <<: *common-variables
         networks:

@@ -31,6 +31,7 @@ RUN \
 # Rebuild the source code only for production
 FROM base AS builder
 ARG NEXT_ENV=production
+ARG GIT_COMMIT_ID=unknown
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY ./src ./src
@@ -40,6 +41,10 @@ COPY ./next.config.mjs ./next.config.mjs
 COPY ./tsconfig.json ./tsconfig.json
 COPY ./yarn.lock ./yarn.lock
 COPY ./package.json ./package.json
+
+RUN echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" > ./.build-time
+
+RUN echo "${GIT_COMMIT_ID}" > ./.git-commit-id
 
 # Only build in production mode
 RUN \
@@ -72,7 +77,8 @@ COPY --from=builder /app/public ./public
 # Only copy the .next files for production mode
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
+COPY --from=builder --chown=nextjs:nodejs /app/.git-commit-id ./
+COPY --from=builder --chown=nextjs:nodejs /app/.build-time ./
 USER nextjs
 
 EXPOSE 3000

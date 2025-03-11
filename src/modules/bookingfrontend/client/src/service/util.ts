@@ -21,13 +21,13 @@ export function phpGWLink(
     let newURL = urlParts[0];
 
     // Helper function to safely join URL parts without double slashes
-    function safeJoinURL(base: string, path: string): string {
-        return base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
-    }
+	function safeJoinURL(base: string, path: string): string {
+		return base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
+	}
 
     if (Array.isArray(strURL)) {
-        const path = strURL.map(s => s.toString().replace(/^\/+|\/+$/g, '')).join('/');
-        newURL = safeJoinURL(newURL, path);
+		const path = strURL.map(s => s.toString().replace(/^\/+/g, '')).join('/');
+		newURL = safeJoinURL(newURL, path);
     } else {
         newURL = safeJoinURL(newURL, strURL.toString());
     }

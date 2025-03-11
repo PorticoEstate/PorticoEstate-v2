@@ -57,7 +57,7 @@ const FooterUser: FC<FooterUserProps> = (props) => {
                         <FontAwesomeIcon icon={faSignOutAlt}/> {bookingUser.orgnr} :: {t('common.logout')}
                     </Link>
                 ) : (
-                    <Link href={phpGWLink(['bookingfrontend', 'login'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
+                    <Link href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
                           rel="noopener noreferrer" className="link-text link-text-secondary normal">
                         <FontAwesomeIcon icon={faSignInAlt}/> {t('bookingfrontend.organization')}
                     </Link>

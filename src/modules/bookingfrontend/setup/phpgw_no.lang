@@ -671,3 +671,21 @@ no_selected_resources	bookingfrontend	no	Ingen utvalgte ressurser
 time	bookingfrontend	no	Tid
 invalid_phone_number	bookingfrontend	no	Bør være større enn null
 to_many_participants	bookingfrontend	no	For mange deltakere
+information	bookingfrontend	no	Informasjon
+delegaters	bookingfrontend	no	Delegater
+create_delegate	bookingfrontend	no	Opprett ny delegat
+groups	bookingfrontend	no	Groups
+create_group	bookingfrontend	no	Opprett ny gruppe
+organization_details	bookingfrontend	no	Organisasjondetaljer
+organization_name	bookingfrontend	no	Organisasjonnavn
+organization_shortname	bookingfrontend	no	Visingsnavn
+show_in_portal	bookingfrontend	no	Vis i portal
+group_details	bookingfrontend	no	Gruppedetaljer
+organization_company	bookingfrontend	no	Organisasjon/bedrift
+group_leader	bookingfrontend	no	Groupleder
+delegate_details	bookingfrontend	no	Delegatdetaljer
+new_delegate	bookingfrontend	no	Ny delegate
+new_group	bookingfrontend	no	Ny gruppe
+birth_number	bookingfrontend	no	Fødselnummer
+add_groupleader	bookingfrontend	no	Lage ny gruppeleder
+remove_groupleader	bookingfrontend	no	Slett ny gruppeleder

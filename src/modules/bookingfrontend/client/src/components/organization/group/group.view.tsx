@@ -11,17 +11,17 @@ const GroupView = ({ group }: GroupViewProps) => {
     const t = useTrans();
     return (
         <main>
-            <h3>{t('bookingfrontend.groupe_details')}</h3>
+            <h3>{t('bookingfrontend.group_details')}</h3>
             <div>
                 <h5>{t('bookingfrontend.name')}</h5>
                 <p>{group.name}</p>
             </div>
             <div>
-                <h5>{t('bookingfrontend.shortname')}</h5>
+                <h5>{t('bookingfrontend.organization_shortname')}</h5>
                 <p>{group.shortname}</p>
             </div>
             <div>
-                <h5>{t('bookingfrontend.organization-bedrift')}</h5>
+                <h5>{t('bookingfrontend.organization_company')}</h5>
                 <p>{group.organization.name}</p>
             </div>
             <div>
@@ -41,11 +41,11 @@ const GroupView = ({ group }: GroupViewProps) => {
                             <p>{contact.name}</p>
                         </div>
                         <div>
-                            <h5>{t('bookingfrontend.organization-bedrift')}</h5>
+                            <h5>{t('bookingfrontend.organization_company')}</h5>
                             <p>{group.organization.name}</p>
                         </div>
                         <div>
-                            <h5>{t('bookingfrontend.email')}</h5>
+                            <h5>{t('bookingfrontend.contact_email')}</h5>
                             <p>{contact.email}</p>
                         </div>
                         <div>

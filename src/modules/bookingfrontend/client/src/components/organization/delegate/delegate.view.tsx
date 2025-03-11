@@ -20,7 +20,7 @@ const DelegateView = ({ data }: DelegateViewProps) => {
                 <p>{data.organization}</p>
             </div>
             <div>
-                <h3>{t('bookingfrontend.email')}</h3>
+                <h3>{t('bookingfrontend.contact_email')}</h3>
                 <p>{data.email}</p>
             </div>
             <div>

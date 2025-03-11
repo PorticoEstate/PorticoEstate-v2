@@ -9,7 +9,7 @@ export const useActivityList = (orgId: number) => {
             const url = phpGWLink(['bookingfrontend', 'organization', orgId, 'activities']);
             const res = await fetch(url);
             const { data } = await res.json();
-            return JSON.parse(data);
+            return JSON.parse(data) || [];
         }
     })
 }

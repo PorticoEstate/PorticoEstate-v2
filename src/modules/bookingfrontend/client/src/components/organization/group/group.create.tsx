@@ -49,6 +49,7 @@ const GroupCreate = ({ data }: GroupFormProps) => {
                 />
                 : null
             } */}
+            <h2>{t('bookingfrontend.new_group')}</h2>
             <GroupFormBase 
                 control={control}
                 errors={errors}

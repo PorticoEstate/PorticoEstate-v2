@@ -14,7 +14,6 @@ interface OrganizationView {
 
 const OrganizationView = ({ organization }: OrganizationView) => {
     const t = useTrans();
-    console.log(organization);
     return (
         <main>
             <div className={styles.header}>
@@ -26,7 +25,7 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                     <p>{organization.district}</p>
                     <ul><li>{organization.city}</li></ul>
                 </div>
-                <p>{organization.street}</p>
+                <ul><li>{organization.street}</li></ul>
             </div>
             <div className={styles.contact}>
                 <h3>{t('bookingfrontend.contact information')}</h3>

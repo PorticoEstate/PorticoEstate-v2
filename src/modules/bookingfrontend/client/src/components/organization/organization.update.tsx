@@ -61,7 +61,7 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
 
     return (
         <>
-            <UpdateOrganizaionForm 
+            <UpdateOrganizationForm 
                 organization={data} 
                 errors={errors} 
                 control={control}

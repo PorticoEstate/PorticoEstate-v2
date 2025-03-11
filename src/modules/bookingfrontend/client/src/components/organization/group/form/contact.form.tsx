@@ -23,7 +23,7 @@ export const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) =>
 
     return (
         <div>
-        <h3>{t('bookingfrontend.groupleader')} {number + 1}</h3>
+        <h3>{t('bookingfrontend.group_leader')} {number + 1}</h3>
         <div>
             <Controller 
                 name={`groupLeaders[${number}].name`}
@@ -61,7 +61,7 @@ export const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) =>
                 render={({ field }) => (
                     <Textfield
                         {...field}
-                        label={t('bookingfrontend.email')}
+                        label={t('bookingfrontend.contact_email')}
                         error={
                             errObj.email?.message 
                             ? t(errObj.email.message) 
@@ -88,7 +88,7 @@ const ContactsForm = ({ control, errors }: ContactForm) => {
             { 
                  leadersCount !== 1
                  ? <Button onClick={() => setCount(1)}>
-                       {t('bookingfronted.add_second_groupleader')}
+                       {t('bookingfrontend.add_groupleader')}
                    </Button>
                  : null  
             }
@@ -101,7 +101,7 @@ const ContactsForm = ({ control, errors }: ContactForm) => {
               
               leadersCount === 1
               ? <Button onClick={() => setCount(0)}>
-                    {t('bookingfronted.remove_second_groupleader')}
+                    {t('bookingfrontend.remove_groupleader')}
                 </Button>
               : null
             }

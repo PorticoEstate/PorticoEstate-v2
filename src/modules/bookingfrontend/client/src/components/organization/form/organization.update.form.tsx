@@ -1,10 +1,13 @@
 'use client';
 import { Controller } from "react-hook-form";
-import { Textfield, Dropdown, Switch } from "@digdir/designsystemet-react";
+import { useState } from 'react';
+import { Textfield, Dropdown, Switch, Button } from "@digdir/designsystemet-react";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { useActivityList } from "@/service/api/activity";
 import { Organization, ShortActivity } from "@/service/types/api/organization.types";
 import { OrganizationContactForm } from "./organizaiton.contact.form";
+import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 interface UpdateOrganizationProps {
     organization: Organization;
@@ -14,6 +17,7 @@ interface UpdateOrganizationProps {
 
 const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganizationProps) => {
     const t = useTrans();
+    const [activityList, setOpen] = useState(false);
     const { data: activities } = useActivityList(organization.id);
     return (
         <main>
@@ -24,7 +28,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                 render={({ field }) => (
                     <Textfield
                         {...field}
-                        label={t('bookingfrontend.organization_number')}
+                        label={t('bookingfrontend.organization number')}
                         error={
                             errors.organization_number?.message 
                             ? t(errors.organization_number.message) 
@@ -54,7 +58,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                 render={({ field }) => (
                     <Textfield
                         {...field}
-                        label={t('bookingfrontend.shortname')}
+                        label={t('bookingfrontend.organization_shortname')}
                         error={
                             errors.shortname?.message 
                             ? t(errors.shortname.message) 
@@ -84,7 +88,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                 render={({ field }) => (
                     <Textfield
                         {...field}
-                        label={t('bookingfrontend.zip_code')}
+                        label={t('bookingfrontend.zip code')}
                         error={
                             errors.zip_code?.message 
                             ? t(errors.zip_code.message) 
@@ -129,7 +133,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                 render={({ field }) => (
                     <Textfield
                         {...field}
-                        label={t('bookingfrontend.email')}
+                        label={t('bookingfrontend.contact_email')}
                         error={
                             errors.email?.message 
                             ? t(errors.email.message) 
@@ -172,14 +176,27 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                 name='organization.activity_id'
                 control={control}
                 render={({ field: { onChange, value } }) => (
-                    <Dropdown.TriggerContext>
-                        <Dropdown.Trigger>
-                            { value
+                    <div>
+                        <Button 
+                            popovertarget='activity_list' 
+                            variant="secondary"
+                            onClick={() => setOpen(!activityList)}
+                        >
+                            {  value
                                 ? organization.activity.name
                                 : t(('bookingfrontend.select_activity')) 
                             }
-                        </Dropdown.Trigger>
-                        <Dropdown>
+                            {
+                                activityList
+                                ? <FontAwesomeIcon icon={faCaretUp} />
+                                : <FontAwesomeIcon icon={faCaretDown} />
+                            }
+                        </Button>
+                        <Dropdown 
+                            open={activityList} 
+                            onClose={() => setOpen(false)} 
+                            id="activity_list"
+                        >
                             <Dropdown.List>
                                 { activities?.map((item: ShortActivity) => (
                                     <Dropdown.Item key={item.id} onClick={() => onChange(item.id)}>
@@ -190,7 +207,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                                 )) }
                             </Dropdown.List>
                         </Dropdown>
-                    </Dropdown.TriggerContext>
+                    </div>
                 )}
             />
             <Controller

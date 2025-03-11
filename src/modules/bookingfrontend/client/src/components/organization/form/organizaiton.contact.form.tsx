@@ -18,7 +18,7 @@ export const OrganizationContactForm = ({ number, control, errors }: Groupleader
 
     return (
         <div>
-        <h3>{t('bookingfrontend.organization_leader')} {number + 1}</h3>
+        <h3>{t(`bookingfrontend.admin ${number + 1}`)}</h3>
         <div>
             <Controller 
                 name={`contacts[${number}].name`}
@@ -56,7 +56,7 @@ export const OrganizationContactForm = ({ number, control, errors }: Groupleader
                 render={({ field }) => (
                     <Textfield
                         {...field}
-                        label={t('bookingfrontend.email')}
+                        label={t('bookingfrontend.contact_email')}
                         error={
                             errObj.email?.message 
                             ? t(errObj.email.message) 

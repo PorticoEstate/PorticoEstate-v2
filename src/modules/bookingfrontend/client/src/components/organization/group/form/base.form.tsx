@@ -1,8 +1,11 @@
 'use client'
-import { Textfield, Textarea, Dropdown } from "@digdir/designsystemet-react";
+import { useState } from 'react';
+import { Textfield, Textarea, Dropdown, Label, Button } from "@digdir/designsystemet-react";
 import { Controller } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { ShortActivity } from "@/service/types/api/organization.types";
+import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 interface GroupFormBaseProps {
     control: any;
@@ -14,6 +17,7 @@ interface GroupFormBaseProps {
 
 const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }: GroupFormBaseProps) => {
     const t = useTrans();
+    const [activityList, setOpen] = useState(false);
     if (!activities) return;
     return (
         <main>
@@ -38,7 +42,7 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                 render={({ field }) => (
                     <Textfield
                         {...field}
-                        label={t('bookingfrontend.shortname')}
+                        label={t('bookingfrontend.organization_shortname')}
                         error={
                             errors.groupData?.shortname?.message 
                             ? t(errors.groupData?.shortname.message)
@@ -56,14 +60,27 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                 name='groupData.activity_id'
                 control={control}
                 render={({ field: { onChange, value } }) => (
-                    <Dropdown.TriggerContext>
-                        <Dropdown.Trigger>
+                    <div>
+                        <Button 
+                            popovertarget='activity_list' 
+                            variant="secondary"
+                            onClick={() => setOpen(!activityList)}
+                        >
                             { value
                                 ? activities.find((ac) => ac.id === value)?.name
-                                : t(('bookingfrontend.select_activity')) 
+                                : t(('bookingfrontend.please select an activity')) 
                             }
-                        </Dropdown.Trigger>
-                        <Dropdown>
+                            {
+                                activityList
+                                ? <FontAwesomeIcon icon={faCaretUp} />
+                                : <FontAwesomeIcon icon={faCaretDown} />
+                            }
+                        </Button>
+                        <Dropdown 
+                            open={activityList} 
+                            onClose={() => setOpen(false)} 
+                            id="activity_list"
+                        >
                             <Dropdown.List>
                                 { activities.map((item: ShortActivity) => (
                                     <Dropdown.Item key={item.id} onClick={() => onChange(item.id)}>
@@ -74,16 +91,16 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                                 )) }
                             </Dropdown.List>
                         </Dropdown>
-                    </Dropdown.TriggerContext>
+                    </div>
                 )}
             />
+            <Label>{t('bookingfrontend.description')}</Label>
             <Controller
                 name="groupData.description"
                 control={control}
                 render={({ field }) => (
                     <Textarea
                         {...field}
-                        label={t('bookingfrontend.name')}
                         error={
                             errors.groupData?.name?.message 
                             ? t(errors.groupData?.name.message) 

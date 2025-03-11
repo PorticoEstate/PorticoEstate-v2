@@ -51,10 +51,15 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
                 render={({ field }) => (
                     <Textfield 
                         {...field}
-                        label={t('bookingfrontend.email')}
+                        label={t('bookingfrontend.contact_email')}
                         error={errors.email?.message ? t(errors.email.message) : undefined}
                     />
                 )}
+            />
+           <Textfield             
+                readOnly
+                label={t('bookingfrontend.organization_company')}
+                value={data.organization}
             />
             <Controller 
                 name='phone'
@@ -67,10 +72,8 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
                     />
                 )}
             />
-             <Button
-                onClick={handleSubmit(updateCb)}
-            >
-                {t('bookingfrontend.update_delegate')}
+            <Button onClick={handleSubmit(updateCb)}>
+                {t('bookingfrontend.save')}
             </Button>
         </>
     )

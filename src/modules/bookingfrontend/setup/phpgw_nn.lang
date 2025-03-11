@@ -143,7 +143,7 @@ No rent object chosen	bookingfrontend	nn	Ingen leieobjekt er valgt
 No valid identification returned from login	common	nn	Ingen gyldig identifikasjon returnert frå innlogging.
 Object No.	bookingfrontend	nn	objektnummer
 Official organization	bookingfrontend	nn	Registrert i Brønnøysund
-Organization shortname	bookingfrontend	nn	Kortnamn
+Organization shortname	bookingfrontend	nn	Kortnavn
 Out season	bookingfrontend	nn	Ut denne sesongen
 Overlaps other organizations allocation	bookingfrontend	nn	Overlappar med ein annan organisasjonstildeling
 Overlaps with existing allocation	bookingfrontend	nn	Overlappar med eksisterande tildeling
@@ -673,3 +673,21 @@ time	bookingfrontend	nn	Tid
 invalid_phone_number	bookingfrontend	nn	Ugyldig telefonnummer
 one_and_more	bookingfrontend	nn	Bør være større enn null
 to_many_participants	bookingfrontend	nn	For mange deltakere
+information	bookingfrontend	nn	Informasjon
+delegaters	bookingfrontend	nn	Delegater
+create_delegate	bookingfrontend	nn	Opprett ny delegat
+groups	bookingfrontend	nn	Grupper
+create_group	bookingfrontend	nn	Opprett ny gruppe
+organization_details	bookingfrontend	nn	Organisasjondetaljer
+organization_name	bookingfrontend	nn	Organisasjonnavn
+organization_shortname	bookingfrontend	nn	Visingsnavn
+show_in_portal	bookingfrontend	nn	Vis i portal
+group_details	bookingfrontend	nn	Gruppedetaljer
+organization_company	bookingfrontend	nn	Organisasjon/bedrift
+group_leader	bookingfrontend	nn	Groupleder
+delegate_details	bookingfrontend	nn	Delegatdetaljer
+new_delegate	bookingfrontend	nn	Ny delegate
+new_group	bookingfrontend	nn	Ny gruppe
+birth_number	bookingfrontend	nn	Fødselnummer
+add_groupleader	bookingfrontend	nn	Lage ny gruppeleder
+remove_groupleader	bookingfrontend	nn	Slett ny gruppeleder

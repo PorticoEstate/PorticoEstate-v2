@@ -83,7 +83,7 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
             <Button
                 onClick={handleSubmit(save)}
             >
-                {t('bookingfrontend.new_delegate')}
+                {t('bookingfrontend.save')}
             </Button>
         </main>
     )

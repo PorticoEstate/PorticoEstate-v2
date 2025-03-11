@@ -131,6 +131,7 @@ class TicketController
 		{
 			$sql = "SELECT * FROM fm_tts_tickets"
 				. " WHERE external_owner_ssn = :ssn AND id = :id";
+//				. " WHERE id = :id";
 			$stmt = $this->db->prepare($sql);
 			$stmt->bindParam(':ssn', $ssn, \PDO::PARAM_STR);
 			$stmt->bindParam(':id', $id, \PDO::PARAM_INT);

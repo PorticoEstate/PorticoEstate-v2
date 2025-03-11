@@ -20,7 +20,7 @@ $app->get('/property/usercase/', TicketController::class . ':getUserCases')
 	->addMiddleware(new SessionsMiddleware($container));
 
 //get_user_case
-$app->get('/property/usercase/{id}', TicketController::class . ':getUserCase')
+$app->get('/property/usercase/{id}/', TicketController::class . ':getUserCase')
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));
 

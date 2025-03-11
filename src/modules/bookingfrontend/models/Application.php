@@ -79,7 +79,8 @@ class Application
     /**
      * @OA\Property(type="string")
      * @Expose
-     * @Short
+	 * @EscapeString(mode="default")
+	 * @Short
      */
     public $building_name;
 
@@ -137,6 +138,7 @@ class Application
     /**
      * @OA\Property(type="string")
      * @Expose
+	 * @EscapeString(mode="default")
      */
     public $name;
 

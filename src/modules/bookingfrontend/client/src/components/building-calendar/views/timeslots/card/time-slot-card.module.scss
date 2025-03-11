@@ -42,15 +42,15 @@
 		gap: var(--ds-border-radius-md);
 	}
 	&.status-false {
-		background-color: var(--ds-color-success-surface-default);
+		background-color: var(--ds-color-success-surface-tinted);
 	}
 
 	&.status-2 {
-		background-color: var(--ds-color-warning-surface-default);
+		background-color: var(--ds-color-warning-surface-tinted);
 	}
 
 	&.status-1, &.status-3 {
-		background-color: var(--ds-color-danger-surface-default);
+		background-color: var(--ds-color-danger-surface-tinted);
 	}
 	//.status {
 	padding:0 var(--ds-border-radius-md);

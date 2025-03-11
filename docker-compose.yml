@@ -43,8 +43,7 @@ services:
 
     nextjs:
         build:
-            context: ./src/modules/bookingfrontend/client
-            dockerfile: Dockerfile.nextjs
+            dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs
             args:
                 - NEXT_ENV=${NEXT_ENV:-production}
                 - http_proxy=${http_proxy}

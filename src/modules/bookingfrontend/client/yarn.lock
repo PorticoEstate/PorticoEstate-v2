@@ -93,28 +93,25 @@
     "@babel/helper-validator-identifier" "^7.24.7"
     to-fast-properties "^2.0.0"
 
-"@digdir/designsystemet-css@1.0.0-next.47":
-  version "1.0.0-next.47"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-css/-/designsystemet-css-1.0.0-next.47.tgz#7c74e21e81aeb53391822b5f13c2cfcef0d84f45"
-  integrity sha512-baf/z4LBHaOo5cQso6ACqwwzsQQDVdS6WQsSRKHlyyQJOvZPznmQ3RHO4aR/I57ACw5CWzdrciISrOLj2eGsUw==
+"@digdir/designsystemet-css@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-css/-/designsystemet-css-1.0.1.tgz#5860ab1c7f7b98fe0d36d44d8547f97353091bda"
+  integrity sha512-USrmwkanygIpAO4Qdzrsc5vfOIj2fjco9ppTkPKxO8k79OqCMiq9c29FwVbiRzMZvBtWln8/E7Fi0e0lYWpnGg==
 
-"@digdir/designsystemet-react@1.0.0-next.47":
-  version "1.0.0-next.47"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-react/-/designsystemet-react-1.0.0-next.47.tgz#e9e41390a36c5e34e63d02060cc5219d8f96c512"
-  integrity sha512-iSj0l5AqH8evZ3huIAx0OiXE9nkoQWagVpr7v9dEQj1DolZF+tfRjrxjUOuJK+9wxloBJthELA49+b6gkl1wVQ==
+"@digdir/designsystemet-react@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-react/-/designsystemet-react-1.0.1.tgz#f5c811058090724825ab6e7dd99420677cccc043"
+  integrity sha512-l7afzSQ69q39IQqHav8IvGQ8NtVlm7RDmFT87quN47Jv407H5RCI4sO5Y15U4UT7EBiT+xb4PIcLIIms9guhsA==
   dependencies:
     "@floating-ui/dom" "^1.6.10"
     "@floating-ui/react" "0.26.23"
-    "@navikt/aksel-icons" "^6.14.0"
-    "@radix-ui/react-slot" "^1.1.0"
-    "@tanstack/react-virtual" "^3.10.7"
+    "@navikt/aksel-icons" "^7.0.0"
+    "@radix-ui/react-slot" "^1.1.1"
+    "@tanstack/react-virtual" "^3.11.2"
+    "@u-elements/u-datalist" "^0.1.3"
     "@u-elements/u-details" "^0.1.0"
+    "@u-elements/u-tags" "^0.1.2"
     clsx "^2.1.1"
-
-"@digdir/designsystemet-theme@1.0.0-next.47":
-  version "1.0.0-next.47"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-theme/-/designsystemet-theme-1.0.0-next.47.tgz#39669ea59a9d3cad39860aa7e067eab2bb0aef57"
-  integrity sha512-a2MIevIRrQN0JGZ+wZ5n5xd6kBi4uH2VE5q1cMdIw+1mN6pr/1U2R4BK/a9lFr9QqJgKHDY0nK3A2jBWvDauiQ==
 
 "@emotion/babel-plugin@^11.12.0":
   version "11.12.0"
@@ -447,10 +444,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@navikt/aksel-icons@^6.14.0":
-  version "6.17.0"
-  resolved "https://registry.npmjs.org/@navikt/aksel-icons/-/aksel-icons-6.17.0.tgz"
-  integrity sha512-n+1AsE9kRFh3C7BcD0fAJhIA6/65PsLGrpNKnLQUjW8hwESzo1LYHfZgZXi2Shaw2hCzQ1wx/hBBdwtQfUiBNg==
+"@navikt/aksel-icons@^7.0.0":
+  version "7.16.0"
+  resolved "https://registry.yarnpkg.com/@navikt/aksel-icons/-/aksel-icons-7.16.0.tgz#65fbe711a1c243b265ff217f97633223d91b8d59"
+  integrity sha512-0n0R9rwePZIeKXZHBSNyBKkf4YaCxqIZ0aaWZBqmiVPiccVTmC+xQ1KCPWToaVHAsXScPCoETChbePfUwlYuLQ==
 
 "@next/env@14.2.23":
   version "14.2.23"
@@ -546,20 +543,20 @@
   integrity sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==
 
 "@porticoestate/design-tokens@github:PorticoEstate/digdir-design-tokens":
-  version "1.0.0"
-  resolved "https://codeload.github.com/PorticoEstate/digdir-design-tokens/tar.gz/5b619c3bc42e168e6d968e783310a15d1385cc7c"
+  version "1.0.1"
+  resolved "https://codeload.github.com/PorticoEstate/digdir-design-tokens/tar.gz/a91f1781d869c2eb9965b840182fc667003030e4"
 
-"@radix-ui/react-compose-refs@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.npmjs.org/@radix-ui/react-compose-refs/-/react-compose-refs-1.1.0.tgz"
-  integrity sha512-b4inOtiaOnYf9KWyO3jAeeCG6FeyfY6ldiEPanbUjWd+xIk5wZeHa8yVwmrJ2vderhu/BQvzCrJI0lHd+wIiqw==
+"@radix-ui/react-compose-refs@1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-compose-refs/-/react-compose-refs-1.1.1.tgz#6f766faa975f8738269ebb8a23bad4f5a8d2faec"
+  integrity sha512-Y9VzoRDSJtgFMUCoiZBDVo084VQ5hfpXxVE+NgkdNsjiDBByiImMZKKhxMwCbdHvhlENG6a833CbFkOQvTricw==
 
-"@radix-ui/react-slot@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.npmjs.org/@radix-ui/react-slot/-/react-slot-1.1.0.tgz"
-  integrity sha512-FUCf5XMfmW4dtYl69pdS4DbxKy8nj4M7SafBgPllysxmdachynNflAdp/gCsnYWNDnge6tI9onzMp5ARYc1KNw==
+"@radix-ui/react-slot@^1.1.1":
+  version "1.1.2"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-slot/-/react-slot-1.1.2.tgz#daffff7b2bfe99ade63b5168407680b93c00e1c6"
+  integrity sha512-YAKxaiGsSQJ38VzKH86/BPRC4rh+b1Jpa+JneA5LRE7skmLPNAyeG8kPJj/oo4STLvlrs8vkf/iYyc3A5stYCQ==
   dependencies:
-    "@radix-ui/react-compose-refs" "1.1.0"
+    "@radix-ui/react-compose-refs" "1.1.1"
 
 "@rtsao/scc@^1.1.0":
   version "1.1.0"
@@ -622,22 +619,22 @@
   dependencies:
     "@tanstack/table-core" "8.20.5"
 
-"@tanstack/react-virtual@^3.10.7":
-  version "3.10.8"
-  resolved "https://registry.npmjs.org/@tanstack/react-virtual/-/react-virtual-3.10.8.tgz"
-  integrity sha512-VbzbVGSsZlQktyLrP5nxE+vE1ZR+U0NFAWPbJLoG2+DKPwd2D7dVICTVIIaYlJqX1ZCEnYDbaOpmMwbsyhBoIA==
+"@tanstack/react-virtual@^3.11.2":
+  version "3.13.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-virtual/-/react-virtual-3.13.2.tgz#87da8f7010a12370db87dcc98ac410981c0c57fc"
+  integrity sha512-LceSUgABBKF6HSsHK2ZqHzQ37IKV/jlaWbHm+NyTa3/WNb/JZVcThDuTainf+PixltOOcFCYXwxbLpOX9sCx+g==
   dependencies:
-    "@tanstack/virtual-core" "3.10.8"
+    "@tanstack/virtual-core" "3.13.2"
 
 "@tanstack/table-core@8.20.5":
   version "8.20.5"
   resolved "https://registry.npmjs.org/@tanstack/table-core/-/table-core-8.20.5.tgz"
   integrity sha512-P9dF7XbibHph2PFRz8gfBKEXEY/HJPOhym8CHmjF8y3q5mWpKx9xtZapXQUWCgkqvsK0R46Azuz+VaxD4Xl+Tg==
 
-"@tanstack/virtual-core@3.10.8":
-  version "3.10.8"
-  resolved "https://registry.npmjs.org/@tanstack/virtual-core/-/virtual-core-3.10.8.tgz"
-  integrity sha512-PBu00mtt95jbKFi6Llk9aik8bnR3tR/oQP1o3TSi+iG//+Q2RTIzCEgKkHG8BB86kxMNW6O8wku+Lmi+QFR6jA==
+"@tanstack/virtual-core@3.13.2":
+  version "3.13.2"
+  resolved "https://registry.yarnpkg.com/@tanstack/virtual-core/-/virtual-core-3.13.2.tgz#132fde09a19cc4b10dff24a2df1fc7be40635866"
+  integrity sha512-Qzz4EgzMbO5gKrmqUondCjiHcuu4B1ftHb0pjCut661lXZdGoHeze9f/M8iwsK1t5LGR6aNuNGU7mxkowaW6RQ==
 
 "@teskon/react-slidedown@^1.0.1":
   version "1.0.1"
@@ -746,10 +743,20 @@
     "@typescript-eslint/types" "7.2.0"
     eslint-visitor-keys "^3.4.1"
 
+"@u-elements/u-datalist@^0.1.3":
+  version "0.1.3"
+  resolved "https://registry.yarnpkg.com/@u-elements/u-datalist/-/u-datalist-0.1.3.tgz#1a05a7a8224be3cabe30150d3364976ef5b10deb"
+  integrity sha512-jyHwyfAANfmaLIRV544s6VL0RAuHW4SDjZ6yq15pMVEi6oUrEY8U0iAH7wDIfgY8vj8xef8pnZXcnn7gDAyorQ==
+
 "@u-elements/u-details@^0.1.0":
   version "0.1.0"
   resolved "https://registry.npmjs.org/@u-elements/u-details/-/u-details-0.1.0.tgz"
   integrity sha512-PAyTwXXsKj7SOI5U+iqSFrnOcMbOkw9aR6egTVlj4CgTZ+apxhS/RE5MW7t3LDXJp+ecVQA21u+XVyEGyuMW6Q==
+
+"@u-elements/u-tags@^0.1.2":
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/@u-elements/u-tags/-/u-tags-0.1.2.tgz#deb9e6c7063fd151b6c5a1c516254528853cc9a0"
+  integrity sha512-lBMQBGpSf14knHYWQ9TiwonDs1OVjPnIGq4PzY8Rya0C+X8n0gbK7nbC4XNjdyQXG+pgFuAGFpcEPOxrHKg7Yg==
 
 "@ungap/structured-clone@^1.2.0":
   version "1.2.0"

@@ -54,7 +54,7 @@ JqueryPortico.formatLinkTenant = function (key, oData)
 {
 
 	var id = oData[key];
-	var strURL = phpGWLink('index.php', {menuaction: "property.uiworkorder.edit", id: id});
+	var strURL = phpGWLink('index.php', { menuaction: "property.uiworkorder.edit", id: id });
 	return '<a href="' + strURL + '">' + id + '</a>';
 };
 
@@ -62,7 +62,7 @@ JqueryPortico.formatLinkTicket = function (key, oData)
 {
 
 	var id = oData[key];
-	var strURL = phpGWLink('index.php', {menuaction: "property.uitts.view", id: id});
+	var strURL = phpGWLink('index.php', { menuaction: "property.uitts.view", id: id });
 	return '<a href="' + strURL + '">' + id + '</a>';
 };
 
@@ -250,7 +250,7 @@ JqueryPortico.show_picture_popup = function (img_url)
 
 	var html = "<h4 style='text-align: center;'><a href='" + img_url + "'>Download</a></h4>";
 	html += "<img src='" + img_url + "' style ='display: block; margin-left: auto; margin-right: auto; width: " + width + "px;'/>";
-	TINY.box.show({html: html, boxid: "frameless", width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: "darkmask", maskopacity: 40, mask: true, animate: true, close: true});
+	TINY.box.show({ html: html, boxid: "frameless", width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: "darkmask", maskopacity: 40, mask: true, animate: true, close: true });
 };
 
 JqueryPortico.formatJsonArray = function (key, oData)
@@ -356,7 +356,7 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 	{
 		if (columns[i]['editor'] === true)
 		{
-			editor_cols.push({sUpdateURL: editor_action + '&field_name=' + columns[i]['data']});
+			editor_cols.push({ sUpdateURL: editor_action + '&field_name=' + columns[i]['data'] });
 		}
 		else
 		{
@@ -390,7 +390,8 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 
 	if (responsive == true)
 	{
-		responsive_def = {details: {
+		responsive_def = {
+			details: {
 				display: $.fn.dataTable.Responsive.display.childRowImmediate,
 				type: ''
 			}
@@ -435,7 +436,7 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 
 	if (ajax_url)
 	{
-		var ajax_def = {url: ajax_url, data: {}, type: 'GET'};
+		var ajax_def = { url: ajax_url, data: {}, type: 'GET' };
 		var serverSide_def = true;
 	}
 	else
@@ -452,12 +453,12 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 	if (buttons_def)
 	{
 		var layout = {
-					topStart: 'buttons',
-					topEnd: 'search',
-					bottomStart: ['pageLength'],
-					bottomEnd: ['paging'],
-					bottom2Start: 'info'
-			}
+			topStart: 'buttons',
+			topEnd: 'search',
+			bottomStart: ['pageLength'],
+			bottomEnd: ['paging'],
+			bottom2Start: 'info'
+		}
 
 		if (singleSelect == true)
 		{
@@ -465,21 +466,21 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		}
 		else
 		{
-			select = {style: 'multi'};
+			select = { style: 'multi' };
 		}
 	}
 	else
 	{
 		var layout = {
-					topStart: 'pageLength',
-					topEnd: 'search',
-					bottomStart: 'info',
-					bottomEnd: 'paging'
-			}
+			topStart: 'pageLength',
+			topEnd: 'search',
+			bottomStart: 'info',
+			bottomEnd: 'paging'
+		}
 	}
 
- 	var oTable = $("#" + container).dataTable({
-    columns: columns,
+	var oTable = $("#" + container).dataTable({
+		columns: columns,
 		scrollY: scrollY,
 		scrollX: scrollX,
 		scroller: scrollY ? true : false,
@@ -495,7 +496,7 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		deferRender: true,
 		select: select,
 		data: data,
-	 	ajax: ajax_def,
+		ajax: ajax_def,
 		layout: layout,
 		buttons: buttons_def,
 		search: initial_search,
@@ -546,7 +547,7 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 					fnOnEditing: function (input)
 					{
 						var iPos = input.closest("tr").prevAll().length;
-				//		var aData = oTable.fnGetData(iPos);
+						//		var aData = oTable.fnGetData(iPos);
 						var aData = oTable.api().rows(iPos).data()[0];
 						id = aData['id'];
 						cell = input.parents("td");
@@ -648,14 +649,15 @@ JqueryPortico.updateinlineTableHelper = function (oTable, requestUrl)
 JqueryPortico.fnGetSelected = function (oTable)
 {
 	var aReturn = new Array();
-	var aTrs = oTable.fnGetNodes();
-	for (var i = 0; i < aTrs.length; i++)
+	var nodes = oTable.api().rows().nodes();
+	for (var i = 0; i < nodes.length; i++)
 	{
-		if ($(aTrs[i]).hasClass('selected'))
+		if ($(nodes[i]).hasClass('selected'))
 		{
 			aReturn.push(i);
 		}
 	}
+
 	return aReturn;
 };
 
@@ -826,15 +828,17 @@ JqueryPortico.autocompleteHelper = function (baseUrl, field, hidden, container, 
 JqueryPortico.openPopup = function (oArgs, options)
 {
 	options = options || {};
-	var width = options['width'] || Math.round($(window).width()*0.9);
-	var height = options['height'] || Math.round($(window).height()*0.9);
+	var width = options['width'] || Math.round($(window).width() * 0.9);
+	var height = options['height'] || Math.round($(window).height() * 0.9);
 	var closeAction = options['closeAction'] || false;
 
 	var requestUrl = phpGWLink('index.php', oArgs);
-	TINY.box.show({iframe: requestUrl, boxid: 'frameless', width: width, height: height, fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true, close: true, closejs: function ()
+	TINY.box.show({
+		iframe: requestUrl, boxid: 'frameless', width: width, height: height, fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true, close: true, closejs: function ()
 		{
 			JqueryPortico.onPopupClose(closeAction);
-		}});
+		}
+	});
 };
 
 JqueryPortico.onPopupClose = function (closeAction)
@@ -856,7 +860,7 @@ JqueryPortico.onPopupClose = function (closeAction)
 
 JqueryPortico.lightboxlogin = function ()
 {
-	var oArgs = {lightbox: 1};
+	var oArgs = { lightbox: 1 };
 	var strURL = phpGWLink('login.php', oArgs);
 	var width = $(window).width() * 0.80;
 	TINY.box.show({
@@ -878,7 +882,7 @@ JqueryPortico.lightboxlogin = function ()
 
 JqueryPortico.showlightbox_history = function (sUrl)
 {
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true, close: true});
+	TINY.box.show({ iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true, close: true });
 }
 
 JqueryPortico.checkAll = function (myclass)
@@ -1172,7 +1176,7 @@ function createTable(d, u, c, r, cl, l, callback)
 							var array_attr = new Array();
 							$.each(vo['attrs'], function (ia, va)
 							{
-								array_attr.push({name: va['name'], value: va['value']});
+								array_attr.push({ name: va['name'], value: va['value'] });
 							});
 							if ((vc['value']))
 							{
@@ -1187,7 +1191,7 @@ function createTable(d, u, c, r, cl, l, callback)
 								});
 								if (value_found == 0)
 								{
-									array_attr.push({name: 'value', value: vd[vc['value']]});
+									array_attr.push({ name: 'value', value: vd[vc['value']] });
 								}
 							}
 							if ((vc['checked']))
@@ -1201,14 +1205,14 @@ function createTable(d, u, c, r, cl, l, callback)
 										{
 											if (vcc == v['value'])
 											{
-												array_attr.push({name: 'checked', value: 'checked'});
+												array_attr.push({ name: 'checked', value: 'checked' });
 											}
 										}
 										else
 										{
 											if ((jQuery.inArray(v['value'], vcc) != -1) || (jQuery.inArray(v['value'].toString(), vcc) != -1) || (jQuery.inArray(parseInt(v['value']), vcc) != -1))
 											{
-												array_attr.push({name: 'checked', value: 'checked'});
+												array_attr.push({ name: 'checked', value: 'checked' });
 											}
 										}
 									}
@@ -1225,22 +1229,22 @@ function createTable(d, u, c, r, cl, l, callback)
 										{
 											if (vcd == v['value'])
 											{
-												array_attr.push({name: 'disabled', value: 'disabled'});
-												array_attr.push({name: 'style', value: 'display:none;'});
+												array_attr.push({ name: 'disabled', value: 'disabled' });
+												array_attr.push({ name: 'style', value: 'display:none;' });
 											}
 										}
 										else
 										{
 											if ((jQuery.inArray(v['value'], vcd) != -1) || (jQuery.inArray(v['value'].toString(), vcd) != -1) || (jQuery.inArray(parseInt(v['value']), vcd) != -1))
 											{
-												array_attr.push({name: 'disabled', value: 'disabled'});
-												array_attr.push({name: 'style', value: 'display:none;'});
+												array_attr.push({ name: 'disabled', value: 'disabled' });
+												array_attr.push({ name: 'style', value: 'display:none;' });
 											}
 										}
 									}
 								});
 							}
-							objects.push({type: vo['type'], attrs: array_attr});
+							objects.push({ type: vo['type'], attrs: array_attr });
 						});
 						var object = createObject(objects);
 						$.each(object, function (i, o)
@@ -1566,7 +1570,7 @@ function createTableSchedule(d, u, c, r, cl, a, p, t)
 				{
 					var k = vc.key;
 
-//					var tableBodyTrTdType = (k == key) ? "th" : "td";
+					//					var tableBodyTrTdType = (k == key) ? "th" : "td";
 					var tableBodyTrTdType = (vc['type']) ? (vc['type'] == "th") ? "th" : "td" : "td";
 
 					var tableBodyTrTd = document.createElement(tableBodyTrTdType);
@@ -1660,7 +1664,7 @@ function createTableSchedule(d, u, c, r, cl, a, p, t)
 			{
 				var toolbar = eval(t + "()");
 				container_toolbar.appendChild(toolbar);
-//				container.insertBefore(toolbar, xtable);
+				//				container.insertBefore(toolbar, xtable);
 			}
 		}
 	});
@@ -1783,7 +1787,7 @@ function scheduleResourceColumn(data, col, date)
 
 	if (data[k])
 	{
-		trAttributes.push({attribute: 'resource', value: data['resource_id']});
+		trAttributes.push({ attribute: 'resource', value: data['resource_id'] });
 	}
 
 	var resourceLink = (date) ? data['resource_link'] + "#date=" + date : data['resource_link'];
@@ -1818,29 +1822,29 @@ function seasonDateColumn(data, col, date)
 		text = name;
 		classes = colorCell;
 		trFunction.push(
-		{
-			event: 'click',
-			callFunction: function ()
 			{
-//					schedule.newAllocationForm({id: data[k]['id']});
-				schedule.newAllocationForm({id: id});
+				event: 'click',
+				callFunction: function ()
+				{
+					//					schedule.newAllocationForm({id: data[k]['id']});
+					schedule.newAllocationForm({ id: id });
+				}
 			}
-		}
 		);
 	}
 	else
 	{
 		text = lang['free'] || "free";
-//		text = "free";
+		//		text = "free";
 		classes = "free";
 		trFunction.push(
-		{
-			event: 'click',
-			callFunction: function ()
 			{
-				schedule.newAllocationForm({'_from': data['_from'], '_to': data['_to'], 'wday': col['key']});
+				event: 'click',
+				callFunction: function ()
+				{
+					schedule.newAllocationForm({ '_from': data['_from'], '_to': data['_to'], 'wday': col['key'] });
+				}
 			}
-		}
 		);
 	}
 
@@ -1915,16 +1919,16 @@ function backendScheduleDateColumn(data, col, date)
 	else
 	{
 		text = lang['free'] || "free";
-//		text = "free";
+		//		text = "free";
 		classes = "free";
 		trFunction.push(
-		{
-			event: 'click',
-			callFunction: function ()
 			{
-				schedule.newApplicationForm(col['date'], data['_from'], data['_to'])
+				event: 'click',
+				callFunction: function ()
+				{
+					schedule.newApplicationForm(col['date'], data['_from'], data['_to'])
+				}
 			}
-		}
 		)
 	}
 
@@ -1979,23 +1983,23 @@ function frontendScheduleDateColumn(data, col, date)
 		text = name;
 
 		trFunction.push(
-		{
-			event: 'click',
-			callFunction: function ()
 			{
-				var resource = $(this).parent().attr('resource');
-				schedule.showInfo(data[k]['info_url'], resource);
-
-				// close modal on overlay click
-				setTimeout(function ()
+				event: 'click',
+				callFunction: function ()
 				{
-					document.querySelector(".ui-widget-overlay").addEventListener("click", function ()
+					var resource = $(this).parent().attr('resource');
+					schedule.showInfo(data[k]['info_url'], resource);
+
+					// close modal on overlay click
+					setTimeout(function ()
 					{
-						document.querySelector(".ui-dialog-titlebar-close").click();
-					});
-				}, 200);
+						document.querySelector(".ui-widget-overlay").addEventListener("click", function ()
+						{
+							document.querySelector(".ui-dialog-titlebar-close").click();
+						});
+					}, 200);
+				}
 			}
-		}
 		);
 	}
 	else
@@ -2003,14 +2007,14 @@ function frontendScheduleDateColumn(data, col, date)
 		text = lang['free'] || "free";
 		classes = "calender-free";
 		trFunction.push(
-		{
-			event: 'click',
-			callFunction: function ()
 			{
-				var resource = $(this).parent().attr('resource');
-				schedule.newApplicationForm(col['date'], data['_from'], data['_to'], resource);
+				event: 'click',
+				callFunction: function ()
+				{
+					var resource = $(this).parent().attr('resource');
+					schedule.newApplicationForm(col['date'], data['_from'], data['_to'], resource);
+				}
 			}
-		}
 		);
 	}
 
@@ -2045,28 +2049,28 @@ function rentalSchedule(data, col, date)
 	else
 	{
 		text = lang['free'] || "free";
-//		text = "free";
+		//		text = "free";
 		classes = "free";
 	}
 
-	trAttributes.push({attribute: 'data-id', value: data['id']});
+	trAttributes.push({ attribute: 'data-id', value: data['id'] });
 	trFunction.push(
-	{
-		event: 'click',
-		callFunction: function ()
 		{
-			$(this).parent().parent().find('tr').removeClass("trselected")
-			$(this).parent().addClass("trselected");
-			$('#schedule_toolbar button').attr('disabled', false);
-			var b_needFree = eval(needFree);
-			if (!b_needFree)
+			event: 'click',
+			callFunction: function ()
 			{
-				$('#schedule_toolbar button.need-free').attr('disabled', true);
+				$(this).parent().parent().find('tr').removeClass("trselected")
+				$(this).parent().addClass("trselected");
+				$('#schedule_toolbar button').attr('disabled', false);
+				var b_needFree = eval(needFree);
+				if (!b_needFree)
+				{
+					$('#schedule_toolbar button.need-free').attr('disabled', true);
+				}
+				schedule.rental.data = data;
+				schedule.rental.col = col;
 			}
-			schedule.rental.data = data;
-			schedule.rental.col = col;
 		}
-	}
 	);
 
 	var data_return = {
@@ -2116,24 +2120,24 @@ function rentalScheduleApplication(data, col, date)
 			classes = "free";
 		}
 
-		trAttributes.push({attribute: 'data-id', value: data['id']});
+		trAttributes.push({ attribute: 'data-id', value: data['id'] });
 		trFunction.push(
-		{
-			event: 'click',
-			callFunction: function ()
 			{
-				$(this).parent().parent().find('tr').removeClass("trselected")
-				$(this).parent().addClass("trselected");
-				$('#schedule_toolbar button').attr('disabled', false);
-				var b_needFree = eval(needFree);
-				if (!b_needFree)
+				event: 'click',
+				callFunction: function ()
 				{
-					$('#schedule_toolbar button.need-free').attr('disabled', true);
+					$(this).parent().parent().find('tr').removeClass("trselected")
+					$(this).parent().addClass("trselected");
+					$('#schedule_toolbar button').attr('disabled', false);
+					var b_needFree = eval(needFree);
+					if (!b_needFree)
+					{
+						$('#schedule_toolbar button.need-free').attr('disabled', true);
+					}
+					schedule.rental.data = data;
+					schedule.rental.col = col;
 				}
-				schedule.rental.data = data;
-				schedule.rental.col = col;
 			}
-		}
 		);
 	}
 
@@ -2158,19 +2162,19 @@ function rentalScheduleComposites(data, col, date)
 
 	text = data[k];
 
-	trAttributes.push({attribute: 'data-id', value: data['id']});
+	trAttributes.push({ attribute: 'data-id', value: data['id'] });
 	trFunction.push(
-	{
-		event: 'click',
-		callFunction: function ()
 		{
-			$(this).parent().parent().find('tr').removeClass("trselected")
-			$(this).parent().addClass("trselected");
-			$('#composites_toolbar button').attr('disabled', false);
-			composites.rental.data = data;
-			composites.rental.col = col;
+			event: 'click',
+			callFunction: function ()
+			{
+				$(this).parent().parent().find('tr').removeClass("trselected")
+				$(this).parent().addClass("trselected");
+				$('#composites_toolbar button').attr('disabled', false);
+				composites.rental.data = data;
+				composites.rental.col = col;
+			}
 		}
-	}
 	);
 
 	var data_return = {
@@ -2213,18 +2217,18 @@ function formatBackendScheduleDateColumn(id, name, type, conflicts)
 	conflicts = (conflicts) ? conflicts : {};
 	if (type == "booking")
 	{
-		link = phpGWLink('index.php', {menuaction: 'booking.uibooking.edit', id: id});
-//		link = 'index.php?menuaction=booking.uibooking.edit&id=' + id;
+		link = phpGWLink('index.php', { menuaction: 'booking.uibooking.edit', id: id });
+		//		link = 'index.php?menuaction=booking.uibooking.edit&id=' + id;
 	}
 	else if (type == "allocation")
 	{
-		link = phpGWLink('index.php', {menuaction: 'booking.uiallocation.edit', id: id});
-//		link = 'index.php?menuaction=booking.uiallocation.edit&id=' + id;
+		link = phpGWLink('index.php', { menuaction: 'booking.uiallocation.edit', id: id });
+		//		link = 'index.php?menuaction=booking.uiallocation.edit&id=' + id;
 	}
 	else if (type == "event")
 	{
-		link = phpGWLink('index.php', {menuaction: 'booking.uievent.edit', id: id});
-//		link = 'index.php?menuaction=booking.uievent.edit&id=' + id;
+		link = phpGWLink('index.php', { menuaction: 'booking.uievent.edit', id: id });
+		//		link = 'index.php?menuaction=booking.uievent.edit&id=' + id;
 	}
 	text = formatGenericLink(name, link);
 	if (type == "event" && conflicts.length > 0)

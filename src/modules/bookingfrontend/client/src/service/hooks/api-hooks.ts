@@ -525,6 +525,59 @@ export function useDeletePartialApplication() {
 }
 
 
+
+export function useCreateSimpleApplication() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (params: IFreeTimeSlot) => {
+			const url = phpGWLink(['bookingfrontend', 'applications', 'simple']);
+
+			const response = await fetch(url, {
+				method: 'POST',
+				body: JSON.stringify({
+					from: params.start,
+					to: params.end,
+					resource_id: params.applicationLink.resource_id,
+					building_id: params.applicationLink.building_id,
+				}),
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+
+			if (!response.ok) {
+				// Parse error message from response if available
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || 'Failed to create simple application');
+			}
+
+			return response.json();
+		},
+		// onMutate: async (params) => {
+		// 	// Cancel any outgoing refetches to avoid overwriting optimistic update
+		// 	await queryClient.cancelQueries({queryKey: ['partialApplications']});
+		//
+		// 	// Snapshot current applications
+		// 	const previousApplications = queryClient.getQueryData<{
+		// 		list: IApplication[],
+		// 		total_sum: number
+		// 	}>(['partialApplications']);
+		//
+		// 	// We could add optimistic update here, but since we don't know the ID yet,
+		// 	// it's safer to wait for the real response and just invalidate
+		//
+		// 	return { previousApplications };
+		// },
+		onSuccess: () => {
+			// Invalidate and refetch partial applications queries
+			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+		},
+	});
+}
+
+
+
 export function useBuildingAgeGroups(building_id?: number): UseQueryResult<IAgeGroup[]> {
     return useQuery(
         {

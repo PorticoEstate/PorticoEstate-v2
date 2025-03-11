@@ -10,9 +10,10 @@ import {ColourIndex} from "@/service/hooks/Colours";
 interface TimeSlotCardProps {
 	slot: IFreeTimeSlot;
 	resourceId?: string;
+	onSelect: (slot: IFreeTimeSlot) => void;
 }
 
-const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId }) => {
+const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect }) => {
 	const startDateTime = DateTime.fromISO(slot.start_iso);
 	const endDateTime = DateTime.fromISO(slot.end_iso);
 	const t = useTrans();
@@ -64,7 +65,7 @@ const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId }) => {
 
 			<div className={styles.actionColumn}>
 				{slot.overlap === false && slot.applicationLink && (
-					<Button className={styles.actionButton} variant={'primary'} data-color={'primary'} data-size={'md'}>
+					<Button className={styles.actionButton} variant={'primary'} data-size={'md'} onClick={() => onSelect(slot)}>
 						{t('booking.select')}
 					</Button>
 				)}

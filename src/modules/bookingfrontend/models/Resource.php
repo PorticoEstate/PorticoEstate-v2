@@ -34,7 +34,8 @@ class Resource
      * @ORM\Column(type="string", length=150)
      * @Expose
      * @Short
-     * @OA\Property(description="Name of the resource", type="string", maxLength=150)
+	 * @EscapeString(mode="default")
+	 * @OA\Property(description="Name of the resource", type="string", maxLength=150)
      */
     public $name;
 

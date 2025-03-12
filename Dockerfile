@@ -121,7 +121,7 @@ RUN echo 'memory_limit = 512M' >> /usr/local/etc/php/php.ini
 RUN echo 'max_input_vars = 5000' >> /usr/local/etc/php/php.ini
 RUN echo 'error_reporting = E_ALL & ~E_NOTICE' >> /usr/local/etc/php/php.ini
 RUN echo 'post_max_size = 20M' >> /usr/local/etc/php/php.ini
-RUN echo 'upload_max_filesize = 8M' >> /usr/local/etc/php/php.ini
+RUN echo 'upload_max_filesize = 50M' >> /usr/local/etc/php/php.ini
 
 # Install Java
 RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg

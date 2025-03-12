@@ -1,13 +1,14 @@
 'use client';
 import { Controller } from "react-hook-form";
 import { useState } from 'react';
-import { Textfield, Dropdown, Switch, Button } from "@digdir/designsystemet-react";
+import { Textfield, Dropdown, Switch, Button, Label } from "@digdir/designsystemet-react";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { useActivityList } from "@/service/api/activity";
 import { Organization, ShortActivity } from "@/service/types/api/organization.types";
 import { OrganizationContactForm } from "./organizaiton.contact.form";
 import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import styles from '../styles/organization.update.module.scss';
 
 interface UpdateOrganizationProps {
     organization: Organization;
@@ -20,7 +21,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
     const [activityList, setOpen] = useState(false);
     const { data: activities } = useActivityList(organization.id);
     return (
-        <main>
+        <main className={styles.form_container}>
             <h4>{t('bookingfrontend.organization_details')}</h4>
             <Controller
                 name="organization.organization_number"
@@ -177,6 +178,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                 control={control}
                 render={({ field: { onChange, value } }) => (
                     <div>
+                        <Label>{t('bookingfrontend.activity')}</Label>
                         <Button 
                             popovertarget='activity_list' 
                             variant="secondary"
@@ -214,10 +216,10 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                 name='organization.show_in_portal'
                 control={control}
                 render={({ field: { onChange, value } }) => (
-                    <div>
+                    <div className={styles.view_in_portal}>
                         <div>
-                            <h5>{t('bookingfrontend.show_in_portal')}</h5>
-                            <p>{t('bookingfrontend.control_organization_visibility')}</p>
+                            <h4>{t('bookingfrontend.show_in_portal')}</h4>
+                            <p>Long text with long description of Switch main purpose</p>
                         </div>
                         <Switch
                             onClick={() => onChange(!value)}

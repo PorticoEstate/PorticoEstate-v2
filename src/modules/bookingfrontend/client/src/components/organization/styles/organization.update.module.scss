@@ -1,0 +1,27 @@
+.form_container {
+    & > div { 
+        margin-bottom: 0.7rem;
+    }
+}
+
+.view_in_portal {
+    display: flex;
+    align-items: center;
+    & > div:first-child {
+        margin-right: 1rem;
+        & > h4 {
+            margin: 0;
+        }
+        & > p {
+            max-width: 200px;
+            margin: 0;
+        }
+    }
+}
+
+.contact_form_container {
+    margin-bottom: 1rem;
+    & > div {
+        margin-bottom: 0.7rem;
+    }
+}

@@ -13,16 +13,14 @@ const GroupController = ({ data }: GroupController) => {
     const [editing, setEditing] = useState(false);
     return (
         <>
+            <Button variant='secondary' onClick={() => setEditing(!editing)}>
+                {editing ? 'Avbryt' : 'Rediger'}
+            </Button>
             { 
                 editing 
                 ? <GroupUpdateController group={data}/>
                 : <GroupView group={data}/>
             }
-            <div>
-                <Button onClick={() => setEditing(!editing)}>
-                    {editing ? 'Avbryt' : 'Rediger'}
-                </Button>
-            </div>
         </>
     )
 }

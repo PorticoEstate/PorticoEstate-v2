@@ -9,6 +9,10 @@ import { GroupleaderForm } from "./form/contact.form";
 import GroupFormBase from "./form/base.form";
 import { Group } from "@/service/types/api/organization.types";
 import { patchGroup } from "@/service/api/organization";
+import styles from './styles/group.create.module.scss';
+import leaders from './styles/group.update.module.scss';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 
 interface GroupUpdateFormProps {
     group: Group
@@ -45,30 +49,37 @@ const GroupUpdateController = ({ group }: GroupUpdateFormProps) => {
         }
     });
     const update = patchGroup(group.id);
-    
+
     const save = (group: any) => {
         update.mutate(group);
     }
     return (
-        <main>
-            <GroupFormBase 
+        <main className={styles.new_group_container}>
+            <h3 style={{ marginTop: '1.25rem' }}>{t('bookingfrontend.group_details')}</h3>
+            <GroupFormBase
                 control={control}
                 errors={errors}
                 orgName={group.organization.name}
                 activities={activities}
                 currentActivity={group.activity}
             />
-            <GroupleaderForm
-                number={0}
-                control={control}
-                errors={errors}
-            />
-            <GroupleaderForm
-                number={1}
-                control={control}
-                errors={errors}
-            />
-            <Button onClick={handleSubmit(save)}>{t('bookingfrontend.save')}</Button>
+            <div className={leaders.group_leader_container}>
+                <GroupleaderForm
+                    number={0}
+                    control={control}
+                    errors={errors}
+                />
+                <GroupleaderForm
+                    number={1}
+                    control={control}
+                    errors={errors}
+                />
+            </div>
+
+            <Button onClick={handleSubmit(save)}>
+                <FontAwesomeIcon icon={faFloppyDisk} />
+                {t('bookingfrontend.save')}
+            </Button>
         </main>
     )
 }

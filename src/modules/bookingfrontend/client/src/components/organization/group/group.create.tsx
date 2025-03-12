@@ -9,6 +9,10 @@ import { useActivityList } from "@/service/api/activity";
 import ContactsForm from "./form/contact.form";
 import GroupFormBase from "./form/base.form";
 import { Organization } from "@/service/types/api/organization.types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
+
+import styles from './styles/group.create.module.scss'
 
 interface GroupFormProps {
     data: Organization;
@@ -40,7 +44,7 @@ const GroupCreate = ({ data }: GroupFormProps) => {
     }
 
     return (
-        <main>
+        <main className={styles.new_group_container}>
             {/* { headGroup 
                 ? <Textfield
                     readOnly
@@ -60,9 +64,12 @@ const GroupCreate = ({ data }: GroupFormProps) => {
                 control={control}
                 errors={errors}
             />    
-            <div>
-                <Button onClick={handleSubmit(save)}>{t('bookingfrontend.save')}</Button>
-                <Button>{t('bookingfrontend.cancel')}</Button>
+            <div className={styles.group_buttons}>
+                <Button onClick={handleSubmit(save)}>
+                    <FontAwesomeIcon icon={faFloppyDisk} />
+                    {t('bookingfrontend.save')}
+                </Button>
+                <Button variant='secondary'>{t('bookingfrontend.cancel')}</Button>
             </div>
         </main>
     )

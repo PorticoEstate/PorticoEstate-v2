@@ -1,0 +1,9 @@
+.group_leader_container > div {
+    margin-bottom: 1rem;
+    & > div {
+        margin-top: 0.7rem;
+        & > div {
+            margin-bottom: 0.5rem;
+        }
+    }
+}

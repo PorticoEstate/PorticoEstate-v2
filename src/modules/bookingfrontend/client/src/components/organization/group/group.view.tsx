@@ -1,7 +1,7 @@
 'use client';
-
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { Group } from "@/service/types/api/organization.types";
+import styles from './styles/group.view.module.scss'
 
 interface GroupViewProps {
     group: Group;
@@ -10,7 +10,7 @@ interface GroupViewProps {
 const GroupView = ({ group }: GroupViewProps) => {
     const t = useTrans();
     return (
-        <main>
+        <main className={styles.group_view_container} >
             <h3>{t('bookingfrontend.group_details')}</h3>
             <div>
                 <h5>{t('bookingfrontend.name')}</h5>
@@ -34,7 +34,7 @@ const GroupView = ({ group }: GroupViewProps) => {
             </div>
             {
                 group.contact.map((contact) => (
-                    <div>
+                    <div className={styles.group_leader_container}>
                         <h3>{t('bookingfrontend.group_leader')} 1</h3>
                         <div>
                             <h5>{t('bookingfrontend.name')}</h5>

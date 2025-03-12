@@ -3,6 +3,9 @@ import { useState } from 'react';
 import { Button, Textfield } from "@digdir/designsystemet-react";
 import { Controller } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
+
 
 interface ContactForm {
     control: any;
@@ -87,7 +90,8 @@ const ContactsForm = ({ control, errors }: ContactForm) => {
             />
             { 
                  leadersCount !== 1
-                 ? <Button onClick={() => setCount(1)}>
+                 ? <Button variant='tertiary' onClick={() => setCount(1)}>
+                        <FontAwesomeIcon icon={faPlus} />
                        {t('bookingfrontend.add_groupleader')}
                    </Button>
                  : null  
@@ -100,7 +104,8 @@ const ContactsForm = ({ control, errors }: ContactForm) => {
             {
               
               leadersCount === 1
-              ? <Button onClick={() => setCount(0)}>
+              ? <Button variant='tertiary' onClick={() => setCount(0)}>
+                    <FontAwesomeIcon icon={faMinus} />
                     {t('bookingfrontend.remove_groupleader')}
                 </Button>
               : null

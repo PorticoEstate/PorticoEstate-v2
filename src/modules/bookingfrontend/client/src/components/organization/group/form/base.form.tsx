@@ -6,6 +6,7 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { ShortActivity } from "@/service/types/api/organization.types";
 import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import styles from '../styles/group-base-form.module.scss';
 
 interface GroupFormBaseProps {
     control: any;
@@ -20,7 +21,7 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
     const [activityList, setOpen] = useState(false);
     if (!activities) return;
     return (
-        <main>
+        <>
             <Controller
                 name="groupData.name"
                 control={control}
@@ -61,6 +62,7 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                 control={control}
                 render={({ field: { onChange, value } }) => (
                     <div>
+                        <Label>{t('bookingfrontend.activity')}</Label>
                         <Button 
                             popovertarget='activity_list' 
                             variant="secondary"
@@ -94,22 +96,24 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                     </div>
                 )}
             />
-            <Label>{t('bookingfrontend.description')}</Label>
             <Controller
                 name="groupData.description"
                 control={control}
                 render={({ field }) => (
-                    <Textarea
-                        {...field}
-                        error={
-                            errors.groupData?.name?.message 
-                            ? t(errors.groupData?.name.message) 
-                            : undefined
-                        }
-                    />
+                    <div>
+                        <Label>{t('bookingfrontend.description')}</Label>
+                        <Textarea
+                            {...field}
+                            error={
+                                errors.groupData?.name?.message 
+                                ? t(errors.groupData?.name.message) 
+                                : undefined
+                            }
+                        />
+                    </div>
                 )}
             />
-        </main>
+        </>
     )
 
 }

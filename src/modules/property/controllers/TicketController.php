@@ -2,7 +2,7 @@
 
 namespace App\modules\property\controllers;
 
-use App\modules\property\models\Tenant;
+use App\modules\property\models\Ticket;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -39,13 +39,13 @@ class TicketController
 
 	/**
 	 * @OA\Get(
-	 *     path="/bookingfrontend/buildings",
-	 *     summary="Get a list of all buildings",
-	 *     tags={"Buildings"},
+	 *     path="/property/usercase/",
+	 *     summary="Get a list of user cases",
+	 *     tags={"User Cases"},
 	 *     @OA\Response(
 	 *         response=200,
-	 *         description="A list of buildings",
-	 *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Building"))
+	 *         description="A list of user cases",
+	 *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/UserCase"))
 	 *     )
 	 * )
 	 */
@@ -57,9 +57,9 @@ class TicketController
 		$perPage = isset($queryParams['results']) ? (int)$queryParams['results'] : $maxMatches;
 		$sort = isset($queryParams['sort']) ? $queryParams['sort'] : 'id';
 		$dir = isset($queryParams['dir']) ? $queryParams['dir'] : 'ASC';
-		$ssn = '';Sanitizer::get_var('ssn', 'string', 'GET');
+		$ssn = Sanitizer::get_var('ssn', 'string', 'GET');
 
-		$sql = "SELECT id, subject, status, entry_date, modified_date FROM fm_tts_tickets WHERE external_owner_ssn = :ssn ORDER BY id";
+		$sql = "SELECT id, subject, status, entry_date, modified_date FROM fm_tts_tickets WHERE external_owner_ssn = :ssn";
 
 		if ($sort && in_array($sort, ['id', 'entry_date', 'modified_date']))
 		{
@@ -91,23 +91,25 @@ class TicketController
 				$stmt->bindParam(':start', $start, \PDO::PARAM_INT);
 			}
 			$stmt->execute();
-			$results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+			$results = (array)$stmt->fetchAll(\PDO::FETCH_ASSOC);
 
+			$ticket = new Ticket();
+
+			$tickets = [];
+			foreach ($results as $entry)
+			{
+				$ticket->populate($entry);
+				$tickets[] = $ticket->serialize($this->getUserRoles());
+			}
 
 			$data = array(
 				'total_records' => $total_records,
 				'start' => $start,
 				'sort' => $sort,
 				'dir' => $dir,
-				'results' => $results,
+				'results' => $tickets,
 				'perPage' => $perPage,
 			);
-
-			// $tickets = array_map(function ($data)
-			// {
-			// 	$ticket = new Tenant($data);
-			// 	return $ticket->serialize($this->getUserRoles());
-			// }, $results);
 
 			$response->getBody()->write(json_encode($data));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
@@ -121,6 +123,30 @@ class TicketController
 	}
 
 
+	/**
+	 * @OA\Get(
+	 *     path="/property/usercase/{id}/",
+	 *     summary="Get a user case",
+	 *     tags={"User Cases"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         description="ID of the user case",
+	 *         required=true,
+	 *         @OA\Schema(type="integer")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="A user case",
+	 *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/UserCase"))
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Case not found",
+	 *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Error"))
+	 *     )
+	 * )
+	 */
 	public function getUserCase(Request $request, Response $response, array $args): Response
 	{
 		$ssn = Sanitizer::get_var('ssn', 'string', 'GET');
@@ -131,7 +157,6 @@ class TicketController
 		{
 			$sql = "SELECT * FROM fm_tts_tickets"
 				. " WHERE external_owner_ssn = :ssn AND id = :id";
-//				. " WHERE id = :id";
 			$stmt = $this->db->prepare($sql);
 			$stmt->bindParam(':ssn', $ssn, \PDO::PARAM_STR);
 			$stmt->bindParam(':id', $id, \PDO::PARAM_INT);
@@ -145,7 +170,19 @@ class TicketController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
 
-			$response->getBody()->write(json_encode($result));
+
+			$ticket = new Ticket($result);
+			$additional_notes = $ticket->get_additional_notes();
+			$record_history	 = $ticket->get_record_history();
+
+			$history = array_merge($additional_notes, $record_history);
+
+			usort($history, function ($a, $b)
+			{
+				return intval($a['value_id']) <=> intval($b['value_id']);
+			});
+
+			$response->getBody()->write(json_encode(['ticket' => $ticket->serialize($this->getUserRoles()), 'history' => $history]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		}
 		catch (Exception $e)
@@ -155,6 +192,4 @@ class TicketController
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
 	}
-
-
 }

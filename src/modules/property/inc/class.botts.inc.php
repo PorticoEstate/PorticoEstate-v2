@@ -979,6 +979,7 @@ class property_botts
 		{
 			$record_history[$i]['value_date']	 = $this->phpgwapi_common->show_date($value['datetime']);
 			$record_history[$i]['value_user']	 = $value['owner'];
+			$record_history[$i]['value_id']	 = $value['id'];
 
 			switch ($value['status'])
 			{
@@ -1012,7 +1013,7 @@ class property_botts
 				case 'B':
 					$type					 = lang('Budget changed');
 					break;
-					//				case 'B': $type = lang('Billable rate changed'); break;
+				//				case 'B': $type = lang('Billable rate changed'); break;
 				case 'F':
 					$type					 = lang('finnish date changed');
 					break;
@@ -1412,7 +1413,7 @@ class property_botts
 
 		// build subject
 		$subject = '[' . lang('Ticket') . ' #' . $id . '] : ' . $location_code . ' ' . $this->get_category_name($ticket['cat_id']);
-		if($ticket['subject'])
+		if ($ticket['subject'])
 		{
 			$subject .= '; ' . $ticket['subject'];
 		}

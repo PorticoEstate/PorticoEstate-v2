@@ -6,6 +6,8 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { createDelegateFormSchema, CreatingDelegate } from "./schemas";
 import { createDelegate } from "@/service/api/organization";
 import { Organization } from "@/service/types/api/organization.types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 
 interface DelegateFormProps {
     data: Organization;
@@ -80,9 +82,8 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
                 )}
             />
             { create.isSuccess ? <h3>Delegate added</h3> : null }
-            <Button
-                onClick={handleSubmit(save)}
-            >
+            <Button  style={{ marginTop: '0.75rem' }} onClick={handleSubmit(save)}>
+                <FontAwesomeIcon icon={faFloppyDisk} />
                 {t('bookingfrontend.save')}
             </Button>
         </main>

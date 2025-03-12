@@ -17,8 +17,12 @@ const DelegateController = ({ data }: DelegateControllerProps) => {
     return (
         <main>
             <div>
-                <Button onClick={() => setEditing(!editing)}>
-                    {editing ? 'Avbryt' : 'Rediger'}
+                <Button varian='secondary' onClick={() => setEditing(!editing)}>
+                {
+                    editing 
+                    ? t('bookingfrontend.cancel')
+                    : t('bookingfrontend.edit')
+                }
                 </Button>
             </div>
             <h2>{t('bookingfrontend.delegate_details')}</h2>

@@ -6,6 +6,8 @@ import { UpdatingDelegate, updateDelegateFormSchema } from "./schemas";
 import { patchDelegate } from "@/service/api/organization";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { ViewDelegate } from "@/service/types/api/organization.types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 
 interface DelegateUpdateProps {
     data: ViewDelegate;
@@ -72,7 +74,8 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
                     />
                 )}
             />
-            <Button onClick={handleSubmit(updateCb)}>
+            <Button  style={{ marginTop: '0.75rem' }} onClick={handleSubmit(updateCb)}>
+                <FontAwesomeIcon icon={faFloppyDisk} />
                 {t('bookingfrontend.save')}
             </Button>
         </>

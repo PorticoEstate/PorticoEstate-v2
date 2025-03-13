@@ -280,30 +280,21 @@ class TicketController
 			}
 
 			$ticket = new Ticket($result);
-
+			$this->db->transaction_begin();
 			// Add the response
 			$ticket->add_comment($content, $user_name, true); // true for publish
 
 			// Add attachment if present
 			if ($attachment)
 			{
-	//			$ticket->add_attachment($attachment);
+				$ticket->add_attachment($attachment);
 			}
-
-			// Get the updated ticket data to return
-			$additional_notes = $ticket->get_additional_notes();
-			$record_history = $ticket->get_record_history();
-			$history = array_merge($additional_notes, $record_history);
-
-			// Sort history by ID
-			usort($history, function ($a, $b)
-			{
-				return intval($a['value_id']) <=> intval($b['value_id']);
-			});
+			
+			$this->db->transaction_commit();
 
 			$response->getBody()->write(json_encode([
-				'ticket' => $ticket->serialize($this->getUserRoles()),
-				'history' => $history,
+				'ticket_id' => $caseId,
+				'status' => 'success',
 				'message' => 'Response added successfully'
 			]));
 

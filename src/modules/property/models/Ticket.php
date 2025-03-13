@@ -151,4 +151,58 @@ class Ticket
 		$_history_id			 = $this->db->get_last_insert_id('fm_tts_history', 'history_id');
 		$this->db->query("UPDATE fm_tts_history SET publish = 1 WHERE history_id = $_history_id", __LINE__, __FILE__);
 	}
+
+	//add_attachment
+	public function add_attachment($attachment)
+	{
+		$receipt = [];
+		$bofiles = CreateObject('property.bofiles');
+
+		// Get filename and sanitize it
+		$file_name = str_replace(array(' ', '..'), array('_', '.'), $attachment['name']);
+
+		if (empty($file_name) || empty($attachment['content']))
+		{
+			return;
+		}
+
+		if ($file_name && $this->id) // Check if the file name is not empty and the ticket id is set
+		{
+			$to_file = $bofiles->fakebase . '/fmticket/' . $this->id . '/' . $file_name;
+
+			if ($bofiles->vfs->file_exists(array(
+				'string'    => $to_file,
+				'relatives' => array(RELATIVE_NONE)
+			)))
+			{
+				$receipt['error'][] = lang('This file already exists !');
+			}
+			else
+			{
+				// Create directory if it doesn't exist
+				$bofiles->create_document_dir("fmticket/{$this->id}");
+				$bofiles->vfs->override_acl = 1;
+
+				// Create a temporary file to hold the content
+				$temp_file = tempnam(sys_get_temp_dir(), 'ticket_attachment');
+				file_put_contents($temp_file, $attachment['content']);
+
+				// Copy the file to its destination
+				if (!$bofiles->vfs->cp(array(
+					'from'      => $temp_file,
+					'to'        => $to_file,
+					'relatives' => array(RELATIVE_NONE | VFS_REAL, RELATIVE_ALL)
+				)))
+				{
+					$receipt['error'][] = lang('Failed to upload file !');
+				}
+
+				// Clean up the temporary file
+				unlink($temp_file);
+				$bofiles->vfs->override_acl = 0;
+			}
+		}
+
+		return $receipt;
+	}
 }

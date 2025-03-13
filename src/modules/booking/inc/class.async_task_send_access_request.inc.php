@@ -150,12 +150,17 @@ class booking_async_task_send_access_request extends booking_async_task
 								 */
 								$sms_text = "Hei {$reservation['contact_name']}\n "
 									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$reservation['from_']} - {$reservation['to_']}";
+								/**
+								 * send email - only if not already sent for this reservation
+								 */
 								if ($this->simulate)
 								{
 									echo 'stage 0 - sms:';
 									_debug_array($reservation['contact_phone']);
+									echo 'stage 0 - email:';
+									_debug_array($reservation['contact_email']);
 								}
-								else
+								else if (!isset($this->email_sent[$reservation['id']]))
 								{
 									if ($sms_service)
 									{
@@ -175,17 +180,6 @@ class booking_async_task_send_access_request extends booking_async_task
 											$bo->add_single_comment($reservation['id'], $comment);
 										}
 									}
-								}
-								/**
-								 * send email - only if not already sent for this reservation
-								 */
-								if ($this->simulate)
-								{
-									echo 'stage 0 - email:';
-									_debug_array($reservation['contact_email']);
-								}
-								else if (!isset($this->email_sent[$reservation['id']]))
-								{
 									$this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($sms_text));
 									// Mark email as sent for this reservation
 									$this->email_sent[$reservation['id']] = true;
@@ -352,8 +346,12 @@ class booking_async_task_send_access_request extends booking_async_task
 											echo 'stage 2 - sms/contact_phone:';
 											_debug_array($reservation['contact_phone']);
 										}
-										else
+										else if (!isset($this->email_sent[$reservation['id']]))
 										{
+											/**
+											 * send email - only if not already sent for this reservation
+											 */
+
 											if ($sms_service)
 											{
 												try
@@ -362,30 +360,23 @@ class booking_async_task_send_access_request extends booking_async_task
 												}
 												catch (Exception $ex)
 												{
+													//implement me
 													$this->log('sms_error', $ex->getMessage());
 												}
 
 												if (!empty($sms_res[0][0]))
 												{
-													$comment = 'Melding om tilgang og kode er sendt til ' . $reservation['contact_phone'];
+													$comment = 'Melding om tilgang er sendt til ' . $reservation['contact_phone'];
 													$bo->add_single_comment($reservation['id'], $comment);
 												}
 											}
-
-											/**
-											 * send email - only if not already sent for this reservation
-											 */
-											if (
-												!isset($this->email_sent[$reservation['id']]) &&
-												$this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($sms_text))
-											)
+											if ($this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($sms_text)))
 											{
 												$comment = "Melding om tilgang og kode for {$e_lock['e_lock_system_id']}::{$e_lock['e_lock_resource_id']} er sendt til {$reservation['contact_email']}";
 												$bo->add_single_comment($reservation['id'], $comment);
-												// Mark email as sent for this reservation
-												$this->email_sent[$reservation['id']] = true;
 											}
-
+											// Mark email as sent for this reservation
+											$this->email_sent[$reservation['id']] = true;
 											$this->log('sms_tekst', $sms_text);
 										}
 									}
@@ -401,14 +392,15 @@ class booking_async_task_send_access_request extends booking_async_task
 										}
 										else
 										{
-											$error_msg	 = "Fant ikke reservasjonen for {$e_lock_name} i adgangskontrollen.\n";
-											$error_msg	 .= "Du må kontakte byggansvarlig for manuell innlåsing.\n";
-											$error_msg	 .= "Denne meldingen kan ikke besvares";
-											$sms_res	 = $sms_service->websend2pv($this->account, $reservation['contact_phone'], $error_msg);
 
 											// Only send email if not already sent for this reservation
 											if (!isset($this->email_sent[$reservation['id']]))
 											{
+												$error_msg	 = "Fant ikke reservasjonen for {$e_lock_name} i adgangskontrollen.\n";
+												$error_msg	 .= "Du må kontakte byggansvarlig for manuell innlåsing.\n";
+												$error_msg	 .= "Denne meldingen kan ikke besvares";
+												$sms_res	 = $sms_service->websend2pv($this->account, $reservation['contact_phone'], $error_msg);
+
 												$this->send_mailnotification($reservation['contact_email'], 'Melding om tilgang', nl2br($error_msg));
 												// Mark email as sent for this reservation
 												$this->email_sent[$reservation['id']] = true;

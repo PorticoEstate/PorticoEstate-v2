@@ -14,6 +14,10 @@ $app->get('/property/tenant/', TenantController::class . ':show')
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));
 
+$app->get('/property/tenantbylocation/{location_code}/', TenantController::class . ':ByLocation')
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
 //get_user_cases
 $app->get('/property/usercase/', TicketController::class . ':getUserCases')
 	->addMiddleware(new AccessVerifier($container))

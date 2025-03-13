@@ -151,6 +151,55 @@ class TenantController
 		}
 	}
 
+
+	public function ByLocation(Request $request, Response $response, array $args): Response
+	{
+		$location_code = $args['location_code'];
+		$location_level_tenant = count(explode('-', $location_code));
+
+		$metadata = $this->db->metadata("fm_location{$location_level_tenant}");
+
+		if(!isset($metadata['tenant_id']))
+		{
+			$error = "Error fetching tenants: Invalid location code";
+			$response->getBody()->write(json_encode(['error' => $error]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+		}
+
+		try
+		{
+			$sql = "SELECT fm_tenant.* , location_code, fm_streetaddress.descr as street,"
+				. " fm_location{$location_level_tenant}.street_number, fm_location{$location_level_tenant}.etasje"
+				. " FROM fm_tenant"
+				. " JOIN fm_location{$location_level_tenant} ON fm_tenant.id = fm_location{$location_level_tenant}.tenant_id"
+				. " JOIN fm_streetaddress ON fm_location{$location_level_tenant}.street_id = fm_streetaddress.id"
+				. " WHERE location_code = :location_code";
+			$stmt = $this->db->prepare($sql);
+			$stmt->bindParam(':location_code', $location_code, \PDO::PARAM_STR);
+			$stmt->execute();
+
+			$result = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+			if($result)
+			{
+				$tenant = new Tenant($result);
+				$response->getBody()->write(json_encode($tenant->serialize($this->getUserRoles())));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+			}
+			else
+			{
+				$response->getBody()->write(json_encode(['error' => 'Tenant not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+		}
+		catch (Exception $e)
+		{
+			$error = "Error fetching tenants: " . $e->getMessage();
+			$response->getBody()->write(json_encode(['error' => $error]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
 	private function read_config_single($column_name)
 	{
 		$sql = "SELECT location_type FROM fm_location_config WHERE column_name = :column_name";

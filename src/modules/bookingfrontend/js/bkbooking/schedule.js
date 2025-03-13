@@ -15,7 +15,7 @@ schedule.renderSchedule = function (container, url, date, colFormatter, includeR
 	var detected_lang = navigator.language || navigator.userLanguage;
 	var lang = {};
 
-//	if(detected_lang == 'no' || detected_lang == 'nn' || detected_lang == 'nb' ||detected_lang == 'nb-no' || detected_lang == 'no-no' || detected_lang == 'nn-no')
+	//	if(detected_lang == 'no' || detected_lang == 'nn' || detected_lang == 'nb' ||detected_lang == 'nb-no' || detected_lang == 'no-no' || detected_lang == 'nn-no')
 	if (window.navigator.language != "en")
 	{
 		lang = {
@@ -46,11 +46,11 @@ schedule.renderSchedule = function (container, url, date, colFormatter, includeR
 	}
 
 	var colDefs = [
-		{key: 'time', label: date.getFullYear() + '<br/>' + lang['LBL_TIME'], type: 'th'}
-    ];
+		{ key: 'time', label: date.getFullYear() + '<br/>' + lang['LBL_TIME'], type: 'th' }
+	];
 	if (includeResource)
 	{
-		colDefs.push({key: 'resource', label: lang['LBL_RESOURCE'], formatter: 'scheduleResourceColumn'});
+		colDefs.push({ key: 'resource', label: lang['LBL_RESOURCE'], formatter: 'scheduleResourceColumn' });
 	}
 	schedule.dates = {};
 	var keys = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -60,12 +60,12 @@ schedule.renderSchedule = function (container, url, date, colFormatter, includeR
 		d.setDate(d.getDate() + i);
 		var x = (i < 6) ? i + 1 : 0;
 		schedule.dates[keys[x]] = d;
-		colDefs.push({key: keys[x], label: lang['WEEKDAYS_FULL'][x] + '<br>' + lang['MONTHS_LONG'][d.getMonth()] + ' ' + d.getDate(), formatter: colFormatter, date: d, day: d.getDate()});
+		colDefs.push({ key: keys[x], label: lang['WEEKDAYS_FULL'][x] + '<br>' + lang['MONTHS_LONG'][d.getMonth()] + ' ' + d.getDate(), formatter: colFormatter, date: d, day: d.getDate() });
 	}
-	var r = [{n: 'ResultSet'}, {n: 'Result'}];
+	var r = [{ n: 'ResultSet' }, { n: 'Result' }];
 	var params = (schedule.params) ? schedule.params : new Array();
 
-//    createta d u c r cl
+	//    createta d u c r cl
 	createTableSchedule(container, url, colDefs, r, classTable, params);
 
 };
@@ -171,7 +171,7 @@ schedule.showInfo2 = function (url, resource)
 	var content_overlay = document.getElementById('content_overlay');
 	var overlay = document.createElement('div');
 	var img = document.createElement('img');
-	img.setAttribute('src', '/portico/phpgwapi/templates/pure/images/loading_overlay.gif');
+	img.setAttribute('src', '/src/modules/phpgwapi/templates/pure/images/loading_overlay.gif');
 	overlay.appendChild(img);
 	content_overlay.appendChild(overlay);
 	var hc = $('#content_overlay').height();
@@ -203,7 +203,7 @@ schedule.showInfo = function (url, resource)
 {
 	var dialog = document.getElementById('dialog_schedule');
 	var img = document.createElement('img');
-	img.setAttribute('src', '/portico/phpgwapi/templates/pure/images/loading_overlay.gif');
+	img.setAttribute('src', '/src/modules/phpgwapi/templates/pure/images/loading_overlay.gif');
 	img.style.display = "block";
 	img.style.margin = "37px auto 0";
 	dialog.appendChild(img);
@@ -264,7 +264,7 @@ schedule.closeOverlay = function ()
 schedule.newAllocationForm = function (args)
 {
 
-	var oArgs = {menuaction: 'bookingfrontend.uiseason.wtemplate_alloc'};
+	var oArgs = { menuaction: 'bookingfrontend.uiseason.wtemplate_alloc' };
 	if (typeof (args['id']) !== 'undefined')
 	{
 		oArgs['id'] = args['id'];
@@ -292,7 +292,8 @@ schedule.newAllocationForm = function (args)
 		sUrl += '&filter_id[]=' + resource_ids[i];
 	}
 
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width: 650, height: 500, fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: 650, height: 500, fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: false
 	});

@@ -17,7 +17,7 @@ const AuthGuard = ({ children }: AuthGuardProps) => {
             // Redirect to login page with return URL
             const returnUrl = encodeURI(window.location.href.split('bookingfrontend')[1]);
             const loginUrl = phpGWLink(['bookingfrontend', 'login/'], { after: returnUrl });
-            router.replace(loginUrl);
+			window.location.replace(loginUrl);
         }
     }, [bookingUser, isLoading, router]);
 

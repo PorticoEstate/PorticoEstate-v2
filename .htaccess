@@ -8,3 +8,10 @@ RewriteRule ^ index.php [QSA,L]
    Header add Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
    Header merge Vary Origin
 </IfModule>
+
+# Suppress .map file 404 errors
+<Files ~ "\.map$">
+  Order allow,deny
+  Deny from all
+  Satisfy All
+</Files>

@@ -74,7 +74,7 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
                     />
                 )}
             />
-            <Button  style={{ marginTop: '0.75rem' }} onClick={handleSubmit(updateCb)}>
+            <Button onClick={handleSubmit(updateCb)}>
                 <FontAwesomeIcon icon={faFloppyDisk} />
                 {t('bookingfrontend.save')}
             </Button>

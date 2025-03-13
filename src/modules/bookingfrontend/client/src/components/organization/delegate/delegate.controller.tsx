@@ -6,6 +6,8 @@ import DelegateUpdate from './delegate.update';
 import { ViewDelegate } from '@/service/types/api/organization.types';
 import DelegateView from './delegate.view';
 
+import styles from './styles/delegater.form.module.scss';
+
 interface DelegateControllerProps {
     data: ViewDelegate;
 }
@@ -15,17 +17,15 @@ const DelegateController = ({ data }: DelegateControllerProps) => {
     const [editing, setEditing] = useState(false);
 
     return (
-        <main>
-            <div>
-                <Button varian='secondary' onClick={() => setEditing(!editing)}>
+        <main className={styles.delegate_create}>
+            <Button varian='secondary' onClick={() => setEditing(!editing)}>
                 {
                     editing 
                     ? t('bookingfrontend.cancel')
                     : t('bookingfrontend.edit')
                 }
-                </Button>
-            </div>
-            <h2>{t('bookingfrontend.delegate_details')}</h2>
+            </Button>
+            <h2>{t('booki ngfrontend.delegate_details')}</h2>
             {editing 
                 ? ( <DelegateUpdate data={data} /> )
                 : ( <DelegateView data={data} /> )

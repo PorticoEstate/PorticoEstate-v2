@@ -8,6 +8,8 @@ import { createDelegate } from "@/service/api/organization";
 import { Organization } from "@/service/types/api/organization.types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
+import styles from './styles/delegater.form.module.scss';
+
 
 interface DelegateFormProps {
     data: Organization;
@@ -30,8 +32,12 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
     }
 
     return (
-        <main>
-            <h4>{t('bookingfrontend.new_delegate')}</h4>
+        <main className={styles.delegate_create} >
+            <Button onClick={handleSubmit(save)}>
+                <FontAwesomeIcon icon={faFloppyDisk} />
+                {t('bookingfrontend.save')}
+            </Button>
+            <h2>{t('bookingfrontend.new_delegate')}</h2>
             <Controller 
                 name='name'
                 control={control}
@@ -82,10 +88,6 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
                 )}
             />
             { create.isSuccess ? <h3>Delegate added</h3> : null }
-            <Button  style={{ marginTop: '0.75rem' }} onClick={handleSubmit(save)}>
-                <FontAwesomeIcon icon={faFloppyDisk} />
-                {t('bookingfrontend.save')}
-            </Button>
         </main>
     )
 } 

@@ -87,16 +87,26 @@ p.conflicts {margin: 0;color: #000;}
 }
 
 .date-container .close-btn {
-    background: transparent url("../../../../phpgwapi/js/yui3/assets/skins/sam/sprite.png") no-repeat scroll 0 -300px;
-    border: medium none;
-    color: white;
-    cursor: pointer;
-    height: 15px;
+    background: none;
+    border: none;
     position: absolute;
     right: 0;
-    text-decoration: none;
     top: 0;
     width: 25px;
+    height: 15px;
+    cursor: pointer;
+    color: #999;
+    font-size: 18px;
+    line-height: 1;
+    text-align: center;
+}
+
+.date-container .close-btn:before {
+    content: "×";
+}
+
+.date-container .close-btn:hover {
+    color: #333;
 }
 
 /*ul.ui-autocomplete {

@@ -2788,7 +2788,7 @@ HTML;
 			}
 		}
 
-//		if ($this->apps['frontend']['enabled'])
+		//		if ($this->apps['frontend']['enabled'])
 		{
 			$note_def[] = array(
 				'key'		 => 'publish_note',
@@ -2799,8 +2799,11 @@ HTML;
 			);
 			foreach ($_additional_notes as &$note)
 			{
-				$_checked				 = $note['value_publish'] ? 'checked' : '';
-				$note['publish_note']	 = "<input type='checkbox' {$_checked}  name='values[publish_note][]' value='{$id}_{$note['value_id']}' title='" . lang('Check to publish text at frontend') . "'>";
+				if ($note['value_id'])
+				{
+					$_checked				 = $note['value_publish'] ? 'checked' : '';
+					$note['publish_note']	 = "<input type='checkbox' {$_checked}  name='values[publish_note][]' value='{$id}_{$note['value_id']}' title='" . lang('Check to publish text at frontend') . "'>";
+				}
 			}
 		}
 

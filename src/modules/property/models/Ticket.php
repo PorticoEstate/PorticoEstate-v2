@@ -141,4 +141,14 @@ class Ticket
 	{
 		return $this->botts->read_record_history($this->id);
 	}
+
+
+	public function add_comment($content, $user_name, $publish)
+	{
+		$new_comment = "{$user_name}: $content";
+		$historylog	 = CreateObject('property.historylog', 'tts');
+		$historylog->add('C', $this->id, $content);
+		$_history_id			 = $this->db->get_last_insert_id('fm_tts_history', 'history_id');
+		$this->db->query("UPDATE fm_tts_history SET publish = 1 WHERE history_id = $_history_id", __LINE__, __FILE__);
+	}
 }

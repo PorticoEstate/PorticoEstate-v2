@@ -33,4 +33,6 @@ $app->get('/property[/{params:.*}]', RedirectHelper::class . ':process')
 ->addMiddleware(new SessionsMiddleware($container));
 
 
-
+$app->post('/property/usercase/{caseId}/response/', TicketController::class . ':addUserCaseResponse')
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));

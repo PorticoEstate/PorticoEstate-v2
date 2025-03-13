@@ -202,4 +202,118 @@ class TicketController
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
 	}
+
+
+	/**
+	 * @OA\Post(
+	 *     path="/property/usercase/{caseId}/response/",
+	 *     summary="Add a response to a user case",
+	 *     tags={"User Cases"},
+	 *     @OA\Parameter(
+	 *         name="caseId",
+	 *         in="path",
+	 *         description="ID of the user case",
+	 *         required=true,
+	 *         @OA\Schema(type="integer")
+	 *     ),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         description="Response content",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="content", type="string", description="Response text"),
+	 *             @OA\Property(property="user_name", type="string", description="User name"),
+	 *             @OA\Property(property="attachment", type="object", description="Optional attachment")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Response added successfully",
+	 *         @OA\JsonContent(type="object", 
+	 *             @OA\Property(property="ticket", ref="#/components/schemas/UserCase"),
+	 *             @OA\Property(property="message", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Case not found",
+	 *         @OA\JsonContent(ref="#/components/schemas/Error")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Server error",
+	 *         @OA\JsonContent(ref="#/components/schemas/Error")
+	 *     )
+	 * )
+	 */
+	public function addUserCaseResponse(Request $request, Response $response, array $args): Response
+	{
+		$ssn = Sanitizer::get_var('ssn', 'string', 'POST');
+		$caseId = $args['caseId'];
+
+		// Get form data
+		$data = $request->getParsedBody();
+		$content = $data['content'] ?? '';
+		$user_name = $data['user_name'] ?? 'Bruker';
+		$attachment = null;
+
+		// Process attachment if present
+		if (!empty($data['attachment']))
+		{
+			$attachment = is_string($data['attachment']) ? json_decode($data['attachment'], true) : $data['attachment'];
+		}
+
+		try
+		{
+			// Verify the ticket exists and belongs to the user
+			$sql = "SELECT * FROM fm_tts_tickets WHERE id = :id AND external_owner_ssn = :ssn";
+			$stmt = $this->db->prepare($sql);
+			$stmt->bindParam(':id', $caseId, \PDO::PARAM_INT);
+			$stmt->bindParam(':ssn', $ssn, \PDO::PARAM_STR);
+			$stmt->execute();
+
+			$result = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+			if (!$result)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Case not found or access denied']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$ticket = new Ticket($result);
+
+			// Add the response
+			$ticket->add_comment($content, $user_name, true); // true for publish
+
+			// Add attachment if present
+			if ($attachment)
+			{
+	//			$ticket->add_attachment($attachment);
+			}
+
+			// Get the updated ticket data to return
+			$additional_notes = $ticket->get_additional_notes();
+			$record_history = $ticket->get_record_history();
+			$history = array_merge($additional_notes, $record_history);
+
+			// Sort history by ID
+			usort($history, function ($a, $b)
+			{
+				return intval($a['value_id']) <=> intval($b['value_id']);
+			});
+
+			$response->getBody()->write(json_encode([
+				'ticket' => $ticket->serialize($this->getUserRoles()),
+				'history' => $history,
+				'message' => 'Response added successfully'
+			]));
+
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		}
+		catch (Exception $e)
+		{
+			$error = "Error adding response: " . $e->getMessage();
+			$response->getBody()->write(json_encode(['error' => $error]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
 }

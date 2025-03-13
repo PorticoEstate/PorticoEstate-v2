@@ -1979,19 +1979,19 @@ if (globalThis['ko']) {
                         <div class="info-types d-none">
                             <div class="type text-small">
                                 <img class="event-filter"
-                                     src="${phpGWLink('phpgwapi/templates/bookingfrontend_2/svg/ellipse.svg', {}, false, this.instance)}"
+                                     src="${phpGWLink('src/modules/phpgwapi/templates/bookingfrontend_2/svg/ellipse.svg', {}, false, this.instance)}"
                                      alt="ellipse">
                                 <trans>bookingfrontend:event</trans>
                             </div>
                             <div class="type text-small">
                                 <img class="booking-filter"
-                                     src="${phpGWLink('phpgwapi/templates/bookingfrontend_2/svg/ellipse.svg', {}, false, this.instance)}"
+                                     src="${phpGWLink('src/modules/phpgwapi/templates/bookingfrontend_2/svg/ellipse.svg', {}, false, this.instance)}"
                                      alt="ellipse">
                                 <trans>bookingfrontend:booking</trans>
                             </div>
                             <div class="type text-small">
                                 <img class="allocation-filter"
-                                     src="${phpGWLink('phpgwapi/templates/bookingfrontend_2/svg/ellipse.svg', {}, false, this.instance)}"
+                                     src="${phpGWLink('src/modules/phpgwapi/templates/bookingfrontend_2/svg/ellipse.svg', {}, false, this.instance)}"
                                      alt="ellipse">
                                 <trans>bookingfrontend:allocation</trans>
                             </div>
@@ -2073,7 +2073,7 @@ if (globalThis['ko']) {
                             <button class="dots-container"
                                     data-bind="withAfterRender: { afterRender: (e) => $parent.addPopperAfterRender(e, $data)}, click: (e,c) => $parent.togglePopper(e,c), css: {'z-auto': $parent.tempEvent()}">
                                 <!--                                <img-->
-                                <!--                                        data-bind="attr: {src: phpGWLink('phpgwapi/templates/bookingfrontend_2/svg/dots.svg', {}, false)}"-->
+                                <!--                                        data-bind="attr: {src: phpGWLink('src/modules/phpgwapi/templates/bookingfrontend_2/svg/dots.svg', {}, false)}"-->
                                 <!--                                        class="dots"/>-->
                                 <i class="fas fa-info-circle"></i>
 

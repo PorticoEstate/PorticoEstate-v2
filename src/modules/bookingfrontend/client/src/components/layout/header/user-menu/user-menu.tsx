@@ -113,12 +113,12 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                 <Dropdown.Item>
                     <Dropdown.Button asChild>
 
-                        <Link
+                        <a
                             href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
 
                             className={'link-text link-text-unset normal'}>
                             <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
-                        </Link>
+                        </a>
                     </Dropdown.Button>
                 </Dropdown.Item>
                 <Divider/>

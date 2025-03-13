@@ -41,10 +41,18 @@ ul.pathway li a { color: #000; text-decoration: none;}
 ul.pathway li a:hover { color: #008; }
 ul.pathway li { 
     display: inline;
-    background: url(../images/pathwaysep.png) no-repeat 0% 50%;
+    position: relative;
     padding-left: 16px;
 }
-ul.pathway li:first-child { background: none; padding-left: 0;}
+
+ul.pathway li:not(:first-child):before {
+    content: "/";
+    position: absolute;
+    left: 5px;
+    color: #999;
+}
+
+ul.pathway li:first-child { padding-left: 0; }
 
 dl.form, dl.form-col, dl.form-2col {
     margin: 1em 1em 1em 0;

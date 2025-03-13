@@ -10,7 +10,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import styles from './styles/delegater.form.module.scss';
 
-
 interface DelegateFormProps {
     data: Organization;
 }
@@ -33,10 +32,15 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
 
     return (
         <main className={styles.delegate_create} >
-            <Button onClick={handleSubmit(save)}>
-                <FontAwesomeIcon icon={faFloppyDisk} />
-                {t('bookingfrontend.save')}
-            </Button>
+            <div className={styles.buttons_group}>
+                <Button variant='secondary'>
+                    {t('bookingfrontend.cancel')}
+                </Button>
+                <Button onClick={handleSubmit(save)}>
+                    <FontAwesomeIcon icon={faFloppyDisk} />
+                    {t('bookingfrontend.save')}
+                </Button>
+            </div>
             <h2>{t('bookingfrontend.new_delegate')}</h2>
             <Controller 
                 name='name'

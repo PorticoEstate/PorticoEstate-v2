@@ -15,10 +15,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 
 interface GroupUpdateFormProps {
-    group: Group
+    group: Group;
+    button: any;
 }
 
-const GroupUpdateController = ({ group }: GroupUpdateFormProps) => {
+const GroupUpdateController = ({ group, button }: GroupUpdateFormProps) => {
     const { data: activities } = useActivityList(group.organization.id);
     const t = useTrans();
     const {
@@ -55,7 +56,16 @@ const GroupUpdateController = ({ group }: GroupUpdateFormProps) => {
     }
     return (
         <main className={styles.new_group_container}>
-            <h3 style={{ marginTop: '1.25rem' }}>{t('bookingfrontend.group_details')}</h3>
+            <div className={styles.group_buttons}>
+                {button}
+                <Button onClick={handleSubmit(save)}>
+                    <FontAwesomeIcon icon={faFloppyDisk} />
+                    {t('bookingfrontend.save')}
+                </Button>
+            </div>
+            <h3 style={{ marginTop: '1.25rem', marginBottom: '1rem' }}>
+                {t('bookingfrontend.group_details')}
+            </h3>
             <GroupFormBase
                 control={control}
                 errors={errors}
@@ -75,11 +85,6 @@ const GroupUpdateController = ({ group }: GroupUpdateFormProps) => {
                     errors={errors}
                 />
             </div>
-
-            <Button onClick={handleSubmit(save)}>
-                <FontAwesomeIcon icon={faFloppyDisk} />
-                {t('bookingfrontend.save')}
-            </Button>
         </main>
     )
 }

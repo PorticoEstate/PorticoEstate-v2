@@ -15,19 +15,22 @@ interface DelegateControllerProps {
 const DelegateController = ({ data }: DelegateControllerProps) => {
     const t = useTrans();
     const [editing, setEditing] = useState(false);
-
+    const button = (
+        <Button variant='secondary' onClick={() => setEditing(!editing)}>
+            {
+                editing 
+                ? t('bookingfrontend.cancel')
+                : t('bookingfrontend.edit')
+            }
+        </Button>
+    )
     return (
         <main className={styles.delegate_create}>
-            <Button varian='secondary' onClick={() => setEditing(!editing)}>
-                {
-                    editing 
-                    ? t('bookingfrontend.cancel')
-                    : t('bookingfrontend.edit')
-                }
-            </Button>
-            <h2>{t('booki ngfrontend.delegate_details')}</h2>
+            { 
+                !editing ? button : null
+            }
             {editing 
-                ? ( <DelegateUpdate data={data} /> )
+                ? ( <DelegateUpdate button={button} data={data} /> )
                 : ( <DelegateView data={data} /> )
             }
         </main>

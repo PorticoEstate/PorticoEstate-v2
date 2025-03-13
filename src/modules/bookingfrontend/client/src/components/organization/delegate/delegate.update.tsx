@@ -8,12 +8,14 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { ViewDelegate } from "@/service/types/api/organization.types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
+import styles from './styles/delegater.form.module.scss';
 
 interface DelegateUpdateProps {
     data: ViewDelegate;
+    button: any;
 }
 
-const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
+const DelegateUpdate = ({ data, button }: DelegateUpdateProps) => {
     const t = useTrans();
     const {
         control,
@@ -36,6 +38,14 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
     
     return (
         <>
+            <div className={styles.buttons_group}>
+                { button }
+                <Button onClick={handleSubmit(updateCb)}>
+                    <FontAwesomeIcon icon={faFloppyDisk} />
+                    {t('bookingfrontend.save')}
+                </Button>
+            </div>
+            <h2>{t('bookingfrontend.delegate_details')}</h2>
             <Controller 
                 name='name'
                 control={control}
@@ -74,10 +84,6 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
                     />
                 )}
             />
-            <Button onClick={handleSubmit(updateCb)}>
-                <FontAwesomeIcon icon={faFloppyDisk} />
-                {t('bookingfrontend.save')}
-            </Button>
         </>
     )
 }

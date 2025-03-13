@@ -11,45 +11,63 @@ const GroupView = ({ group }: GroupViewProps) => {
     const t = useTrans();
     return (
         <main className={styles.group_view_container} >
-            <h3>{t('bookingfrontend.group_details')}</h3>
+            <h3 style={{ marginBottom: '1rem'}} >
+                {t('bookingfrontend.group_details')}
+            </h3>
             <div>
-                <h5>{t('bookingfrontend.name')}</h5>
+                <label className='ds-label'>{t('bookingfrontend.name')}</label>
                 <p>{group.name}</p>
             </div>
             <div>
-                <h5>{t('bookingfrontend.organization_shortname')}</h5>
+                <label className='ds-label'>
+                    {t('bookingfrontend.organization_shortname')}
+                </label>
                 <p>{group.shortname}</p>
             </div>
             <div>
-                <h5>{t('bookingfrontend.organization_company')}</h5>
+                <label className='ds-label'>
+                    {t('bookingfrontend.organization_company')}
+                </label>
                 <p>{group.organization.name}</p>
             </div>
             <div>
-                <h5>{t('bookingfrontend.activity')}</h5>
+                <label className='ds-label'>
+                    {t('bookingfrontend.activity')}
+                </label>
                 <p>{group.activity.name}</p>
             </div>
             <div>
-                <h5>{t('bookingfrontend.description')}</h5>
+                <label className='ds-label'>
+                    {t('bookingfrontend.description')}
+                </label>
                 <p>{group.description}</p>
             </div>
             {
                 group.contact.map((contact) => (
-                    <div className={styles.group_leader_container}>
+                    <div key={contact.id} className={styles.group_leader_container}>
                         <h3>{t('bookingfrontend.group_leader')} 1</h3>
                         <div>
-                            <h5>{t('bookingfrontend.name')}</h5>
+                            <label className='ds-label'>
+                                {t('bookingfrontend.name')}
+                            </label>
                             <p>{contact.name}</p>
                         </div>
                         <div>
-                            <h5>{t('bookingfrontend.organization_company')}</h5>
+                            <label className='ds-label'>
+                                {t('bookingfrontend.organization_company')}
+                            </label>
                             <p>{group.organization.name}</p>
                         </div>
                         <div>
-                            <h5>{t('bookingfrontend.contact_email')}</h5>
+                            <label className='ds-label'>
+                                {t('bookingfrontend.contact_email')}
+                            </label>
                             <p>{contact.email}</p>
                         </div>
                         <div>
-                            <h5>{t('bookingfrontend.phone')}</h5>
+                            <label className='ds-label'>
+                                {t('bookingfrontend.phone')}
+                            </label>
                             <p>{contact.phone}</p>
                         </div>
                     </div>

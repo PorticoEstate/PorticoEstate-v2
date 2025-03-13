@@ -45,6 +45,13 @@ const GroupCreate = ({ data }: GroupFormProps) => {
 
     return (
         <main className={styles.new_group_container}>
+            <div className={styles.group_buttons}>
+                <Button variant='secondary'>{t('bookingfrontend.cancel')}</Button>
+                <Button onClick={handleSubmit(save)}>
+                    <FontAwesomeIcon icon={faFloppyDisk} />
+                    {t('bookingfrontend.save')}
+                </Button>
+            </div>
             {/* { headGroup 
                 ? <Textfield
                     readOnly
@@ -63,14 +70,7 @@ const GroupCreate = ({ data }: GroupFormProps) => {
             <ContactsForm
                 control={control}
                 errors={errors}
-            />    
-            <div className={styles.group_buttons}>
-                <Button onClick={handleSubmit(save)}>
-                    <FontAwesomeIcon icon={faFloppyDisk} />
-                    {t('bookingfrontend.save')}
-                </Button>
-                <Button variant='secondary'>{t('bookingfrontend.cancel')}</Button>
-            </div>
+            />
         </main>
     )
 

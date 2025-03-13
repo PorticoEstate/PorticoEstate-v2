@@ -1,3 +1,10 @@
 .delegate_create > div {
     margin-bottom: 0.7rem;
 }
+
+.buttons_group {
+    display: flex;
+    & > button:first-child {
+        margin-right: 0.5rem;
+    }
+}

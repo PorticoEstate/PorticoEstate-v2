@@ -22,7 +22,7 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
     const { data: activities } = useActivityList(organization.id);
     return (
         <main className={styles.form_container}>
-            <h4>{t('bookingfrontend.organization_details')}</h4>
+            <h2>{t('bookingfrontend.organization_details')}</h2>
             <Controller
                 name="organization.organization_number"
                 control={control}

@@ -56,13 +56,13 @@
 	<div id="dialog_schedule"></div>
 	<script>
 		var link = document.createElement( "link" );
-		link.href =  strBaseURL.split('?')[0] + "bookingfrontend/css/bookingfrontend.css";
+		link.href =  strBaseURL.split('?')[0] + "src/modules/bookingfrontend/css/bookingfrontend.css";
 		link.type = "text/css";
 		link.rel = "stylesheet";
 		link.media = "screen,print";
 		document.getElementsByTagName( "head" )[0].appendChild( link );
 		var link = document.createElement( "link" );
-		link.href =  strBaseURL.split('?')[0] + "phpgwapi/templates/bookingfrontend/css/bootstrap.min.css";
+		link.href =  strBaseURL.split('?')[0] + "src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css";
 		link.type = "text/css";
 		link.rel = "stylesheet";
 		link.media = "screen,print";

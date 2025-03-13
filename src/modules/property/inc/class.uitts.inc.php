@@ -2804,6 +2804,10 @@ HTML;
 					$_checked				 = $note['value_publish'] ? 'checked' : '';
 					$note['publish_note']	 = "<input type='checkbox' {$_checked}  name='values[publish_note][]' value='{$id}_{$note['value_id']}' title='" . lang('Check to publish text at frontend') . "'>";
 				}
+				else
+				{
+					$note['publish_note'] = '<span class="checked-indicator">&check;</span>';
+				}
 			}
 		}
 

@@ -172,7 +172,17 @@ class TicketController
 
 
 			$ticket = new Ticket($result);
-			$additional_notes = $ticket->get_additional_notes();
+			$_additional_notes = $ticket->get_additional_notes();
+
+			$additional_notes = [];
+			foreach ($_additional_notes as $note)
+			{
+				if ($note['value_publish'])
+				{
+					$additional_notes[] = $note;
+				}
+			}
+
 			$record_history	 = $ticket->get_record_history();
 
 			$history = array_merge($additional_notes, $record_history);

@@ -146,17 +146,18 @@ class Ticket
 	public function add_comment($content, $user_name, $publish)
 	{
 		$new_comment = "{$user_name}: $content";
-		$historylog	 = CreateObject('property.historylog', 'tts');
-		$historylog->add('C', $this->id, $content);
+		$historylog	 = createObject('property.historylog', 'tts');
+		$historylog->add('C', $this->id, $new_comment);
 		$_history_id			 = $this->db->get_last_insert_id('fm_tts_history', 'history_id');
 		$this->db->query("UPDATE fm_tts_history SET publish = 1 WHERE history_id = $_history_id", __LINE__, __FILE__);
+		createObject('property.sotts')->reset_views($this->id);
 	}
 
 	//add_attachment
 	public function add_attachment($attachment)
 	{
 		$receipt = [];
-		$bofiles = CreateObject('property.bofiles');
+		$bofiles = createObject('property.bofiles');
 
 		// Get filename and sanitize it
 		$file_name = str_replace(array(' ', '..'), array('_', '.'), $attachment['name']);

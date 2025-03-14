@@ -253,13 +253,28 @@ class TicketController
 		// Get form data
 		$data = $request->getParsedBody();
 		$content = $data['content'] ?? '';
-		$user_name = $data['user_name'] ?? 'Bruker';
+		$user_name = $data['user_name'] ?? 'Kunde';
 		$attachment = null;
 
 		// Process attachment if present
-		if (!empty($data['attachment']))
+		$attachment = null;
+
+		$uploadedFiles = $request->getUploadedFiles();
+		if (!empty($uploadedFiles['files']))
 		{
-			$attachment = is_string($data['attachment']) ? json_decode($data['attachment'], true) : $data['attachment'];
+			$uploadedFile = $uploadedFiles['files'];
+
+			if ($uploadedFile->getError() === UPLOAD_ERR_OK)
+			{
+				$stream = $uploadedFile->getStream();
+				$contents = (string)$stream;
+				$attachment = [
+					'name' => $uploadedFile->getClientFilename(),
+					'type' => $uploadedFile->getClientMediaType(),
+					'size' => $uploadedFile->getSize(),
+					'content' => $contents
+				];
+			}
 		}
 
 		try
@@ -289,7 +304,7 @@ class TicketController
 			{
 				$ticket->add_attachment($attachment);
 			}
-			
+
 			$this->db->transaction_commit();
 
 			$response->getBody()->write(json_encode([

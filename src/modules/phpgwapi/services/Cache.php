@@ -750,13 +750,14 @@ class Cache
 	 *
 	 * @param string or array $message the message set to register
 	 * @param string $type the type (error/message) of message
+	 * @param string|null $id Optional message ID
 	 * @return bool was the data stored in the session cache?
 	 */
-	public static function message_set($message, $type = 'message')
+	public static function message_set($message, $type = 'message', $id = null)
 	{
 		if (!$type == 'message')
 		{
-			$type == 'error';
+			$type = 'error';
 		}
 		$receipt = self::session_get('phpgwapi', 'phpgw_messages');
 		if (!is_array($receipt))
@@ -772,12 +773,56 @@ class Cache
 		{
 			$_input = $message;
 		}
-		foreach ($_input as $msg)
+
+		// Create a list of existing messages for deduplication
+		$existing_messages = array();
+		if (isset($receipt[$type]) && is_array($receipt[$type])) {
+			foreach ($receipt[$type] as $existing) {
+				$existing_messages[] = $existing['msg'];
+			}
+		}
+
+		foreach ($_input as $key => $msg)
 		{
-			$receipt[$type][] = array('msg' => $msg);
+			// Skip if this message already exists
+			if (in_array($msg, $existing_messages)) {
+				continue;
+			}
+
+			// For arrays, we could have different IDs per message
+			$msg_id = $id;
+
+			// If $id is an array, try to get the corresponding ID
+			if (is_array($id) && isset($id[$key])) {
+				$msg_id = $id[$key];
+			}
+
+			// If we still don't have an ID, generate one
+			if ($msg_id === null) {
+				$msg_id = self::generate_secret(8); // 16 character hex string
+			}
+
+			$receipt[$type][] = array(
+				'msg' => $msg,
+				'id' => $msg_id
+			);
+
+			// Add to our tracking array for subsequent messages in this batch
+			$existing_messages[] = $msg;
 		}
 
 		return !!self::session_set('phpgwapi', 'phpgw_messages', $receipt);
+	}
+
+	/**
+	 * Generate a random secret string
+	 *
+	 * @param int $length Length of random bytes before hex encoding (final length will be 2x)
+	 * @return string Random hex string
+	 */
+	protected static function generate_secret($length = 8)
+	{
+		return bin2hex(random_bytes($length));
 	}
 
 	/**

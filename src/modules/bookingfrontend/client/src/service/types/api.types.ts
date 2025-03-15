@@ -170,7 +170,7 @@ export interface IBookingConfig {
     invoice_ftp_password?: string;
     invoice_ftp_user?: string;
     invoice_last_id?: number;
-    landing_sections?: string;
+    landing_sections?: Array<string>;
     logopath_frontend?: string;
     mail_users_season?: boolean;
     metatag_author?: string;

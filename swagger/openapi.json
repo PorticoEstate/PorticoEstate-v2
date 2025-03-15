@@ -2069,6 +2069,132 @@
                     }
                 }
             }
+        },
+        "/login": {
+            "post": {
+                "tags": [
+                    "API"
+                ],
+                "summary": "Authenticate user and create session",
+                "description": "Process login request",
+                "operationId": "cae6706f5bc34bffc8becb14da0486ad",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "properties": {
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "passwd": {
+                                        "type": "string"
+                                    },
+                                    "logindomain": {
+                                        "type": "string"
+                                    },
+                                    "section": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "session_name": {
+                                            "type": "string"
+                                        },
+                                        "session_id": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/refreshsession": {
+            "get": {
+                "tags": [
+                    "API"
+                ],
+                "summary": "Refresh session and verify login status",
+                "description": "Refresh session information",
+                "operationId": "7aa854aec3bd66534327b8909e8a5f13",
+                "responses": {
+                    "200": {
+                        "description": "Session is valid",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "session_id": {
+                                            "type": "string"
+                                        },
+                                        "fullname": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/logout": {
+            "get": {
+                "tags": [
+                    "API"
+                ],
+                "summary": "Log out current user",
+                "description": "Log out a user",
+                "operationId": "8ee1a271ffe281dc5850db62a3bedcea",
+                "responses": {
+                    "200": {
+                        "description": "Logout status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -3225,6 +3351,10 @@
         {
             "name": "Translation",
             "description": "Translation"
+        },
+        {
+            "name": "API",
+            "description": "API"
         }
     ]
 }

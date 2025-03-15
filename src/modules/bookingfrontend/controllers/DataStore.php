@@ -33,7 +33,7 @@ class DataStore
 	}
 	/**
 	 * @OA\Get(
-	 *     path="/search-data",
+	 *     path="/bookingfrontend/searchdataall",
 	 *     summary="Get various search data",
 	 *     tags={"Search Data"},
 	 *     @OA\Response(

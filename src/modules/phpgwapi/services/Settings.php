@@ -76,7 +76,7 @@ class Settings
 		$this->config_data['server']['versions'] =  $setup_info['phpgwapi']['versions'];
 
 
-		$this->config_data['server']['db_type'] = $this->db->get_config()['db_type'];
+		$this->config_data['server']['db_type'] = $this->db->get_config()['db_type']??'';
 		$this->config_data['server']['isConnected'] = $this->db->isConnected();
 
 		//		_debug_array($this->config_data);die();

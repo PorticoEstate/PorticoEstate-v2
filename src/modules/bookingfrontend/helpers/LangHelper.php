@@ -10,9 +10,33 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 
 use Sanitizer;
+use OpenApi\Annotations as OA;
 
 class LangHelper
 {
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/lang",
+     *     summary="Get language settings",
+     *     tags={"Translation"},
+     *     @OA\Parameter(
+     *         name="lang",
+     *         in="query",
+     *         description="Language code",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Language settings",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="key", type="string", description="Translation key"),
+     *             @OA\Property(property="value", type="string", description="Translation value")
+     *         )
+     *     )
+     * )
+     */
     public function process(Request $request, Response $response, array $args = []): Response
     {
         $userSettings = Settings::getInstance()->get('user');

@@ -114,3 +114,10 @@ $app->get('/bookingfrontend/client[/{params:.*}]', function ($request, $response
     $response = $response->withHeader('Location', '/bookingfrontend/client/');
     return $response;
 });
+
+$app->get('/bookingfrontend/api-docs', function ($request, $response)
+{
+    return $response
+        ->withHeader('Location', '/swagger/index.html')
+        ->withStatus(302);
+})->setName('api-docs');

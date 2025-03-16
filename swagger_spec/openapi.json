@@ -717,6 +717,87 @@
                 }
             }
         },
+        "\/bookingfrontend\/user\/messages": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get system messages for the current user",
+                "operationId": "f845ac54d0ebe83d7a44b2d33e6034f8",
+                "responses": {
+                    "200": {
+                        "description": "System messages",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "type": {
+                                                "description": "Message type (error, success, info, warning)",
+                                                "type": "string"
+                                            },
+                                            "text": {
+                                                "description": "Message text",
+                                                "type": "string"
+                                            },
+                                            "class": {
+                                                "description": "CSS class for styling",
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/user\/messages\/{id}": {
+            "delete": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete a specific message by ID",
+                "operationId": "6c26604ad50227502b5b6a10f183ee8e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the message to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message deleted successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Message not found"
+                    }
+                }
+            }
+        },
         "\/bookingfrontend\/buildings": {
             "get": {
                 "tags": [
@@ -3315,11 +3396,6 @@
                 "type": "apiKey",
                 "in": "cookie",
                 "name": "sessionphpgwsessid"
-            },
-            "api_key": {
-                "type": "apiKey",
-                "in": "query",
-                "name": "api_key"
             }
         }
     },

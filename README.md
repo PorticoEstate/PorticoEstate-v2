@@ -104,4 +104,5 @@ In general, all routes are registered from a common method that traverses all ``
 docker exec -it -w /var/www/html portico_api php generate-swagger.php
 ```
 Swagger documentation will be available at http://localhost/swagger
-Note: You need a valid session to access the Swagger documentation.
+
+ **Note:** You need a valid session to access the Swagger documentation.

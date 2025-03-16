@@ -76,3 +76,41 @@ $app->group('/api', function (RouteCollectorProxy $group)
 {
 	$group->get('/server-settings', ServerSettingsController::class . ':index');
 });
+
+
+$app->get('/swagger[/]', function ($request, $response) use ($container)
+{
+	// Check if user is authenticated
+	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+	if (!$sessions->verify())
+	{
+		// Redirect to login if not authenticated
+		return $response->withHeader('Location', '/login')
+			->withStatus(302);
+	}
+
+	// If authorized, show Swagger UI directly using the controller
+	$swaggerController = new \App\modules\phpgwapi\controllers\SwaggerController();
+	return $swaggerController->index($request, $response);
+})->setName('api-docs');
+
+// Add a route for the spec file
+$app->get('/swagger/spec', function ($request, $response) use ($container)
+{
+	// Same authentication checks
+	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+	if (!$sessions->verify())
+	{
+		return $response->withStatus(401)->withJson(['error' => 'Authentication required']);
+	}
+
+	$userInfo = $sessions->get_user();
+	if (empty($userInfo['apps']['admin']['enabled']))
+	{
+		return $response->withStatus(403)->withJson(['error' => 'Admin privileges required']);
+	}
+
+	// Serve the spec
+	$swaggerController = new \App\modules\phpgwapi\controllers\SwaggerController();
+	return $swaggerController->getSpec($request, $response);
+});

@@ -30,7 +30,29 @@ $openapi = \OpenApi\Generator::scan([
 	'validate' => false
 ]);
 
+// Parse to array for manipulation
+$spec = json_decode($openapi->toJson(), true);
+
+// Add security schemes if not present
+if (!isset($spec['components']))
+{
+	$spec['components'] = [];
+}
+
+if (!isset($spec['components']['securitySchemes']))
+{
+	$spec['components']['securitySchemes'] = [
+		'session_auth' => [
+			'type' => 'apiKey',
+			'in' => 'cookie',
+			'name' => 'sessionphpgwsessid'
+		]
+	];
+}
+
+
 // Output the OpenAPI specification
-file_put_contents(__DIR__ . '/swagger/openapi.json', $openapi->toJson());
+file_put_contents(__DIR__ . '/swagger_spec/openapi.json', json_encode($spec, JSON_PRETTY_PRINT));
+//file_put_contents(__DIR__ . '/swagger/openapi.json', $openapi->toJson());
 echo "OpenAPI documentation generated successfully.\n";
 echo __DIR__ . '/swagger/openapi.json';

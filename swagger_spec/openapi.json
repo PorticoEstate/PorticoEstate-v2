@@ -10,11 +10,11 @@
     },
     "servers": [
         {
-            "url": "http://localhost:8080"
+            "url": "http:\/\/localhost:8080"
         }
     ],
     "paths": {
-        "/bookingfrontend/applications/partials": {
+        "\/bookingfrontend\/applications\/partials": {
             "get": {
                 "tags": [
                     "Applications"
@@ -25,13 +25,13 @@
                     "200": {
                         "description": "List of partial applications",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "list": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Application"
+                                                "$ref": "#\/components\/schemas\/Application"
                                             }
                                         },
                                         "total_sum": {
@@ -54,9 +54,9 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/Application"
+                                "$ref": "#\/components\/schemas\/Application"
                             }
                         }
                     }
@@ -65,7 +65,7 @@
                     "201": {
                         "description": "Partial application created",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "id": {
@@ -86,7 +86,7 @@
                 }
             }
         },
-        "/bookingfrontend/applications/{id}": {
+        "\/bookingfrontend\/applications\/{id}": {
             "delete": {
                 "tags": [
                     "Applications"
@@ -108,7 +108,7 @@
                     "200": {
                         "description": "Application successfully deleted",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "deleted": {
@@ -129,7 +129,7 @@
                 }
             }
         },
-        "/bookingfrontend/applications/partials/{id}": {
+        "\/bookingfrontend\/applications\/partials\/{id}": {
             "put": {
                 "tags": [
                     "Applications"
@@ -149,9 +149,9 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/Application"
+                                "$ref": "#\/components\/schemas\/Application"
                             }
                         }
                     }
@@ -182,7 +182,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "properties": {
                                     "status": {
@@ -237,7 +237,7 @@
                     "200": {
                         "description": "Application updated successfully",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
@@ -258,7 +258,7 @@
                 }
             }
         },
-        "/bookingfrontend/applications/partials/checkout": {
+        "\/bookingfrontend\/applications\/partials\/checkout": {
             "post": {
                 "tags": [
                     "Applications"
@@ -268,7 +268,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "required": [
                                     "customerType",
@@ -327,7 +327,7 @@
                 }
             }
         },
-        "/bookingfrontend/applications/validate-checkout": {
+        "\/bookingfrontend\/applications\/validate-checkout": {
             "post": {
                 "tags": [
                     "Applications"
@@ -337,7 +337,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "required": [
                                     "customerType",
@@ -393,7 +393,7 @@
                     "200": {
                         "description": "Validation results",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "valid": {
@@ -442,7 +442,7 @@
                 }
             }
         },
-        "/bookingfrontend/applications/{id}/documents": {
+        "\/bookingfrontend\/applications\/{id}\/documents": {
             "post": {
                 "tags": [
                     "Applications"
@@ -464,7 +464,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "multipart/form-data": {
+                        "multipart\/form-data": {
                             "schema": {
                                 "properties": {
                                     "files[]": {
@@ -485,7 +485,7 @@
                     "200": {
                         "description": "Documents successfully uploaded",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
@@ -520,7 +520,7 @@
                 ]
             }
         },
-        "/bookingfrontend/applications/document/{id}": {
+        "\/bookingfrontend\/applications\/document\/{id}": {
             "delete": {
                 "tags": [
                     "Applications"
@@ -557,7 +557,7 @@
                 ]
             }
         },
-        "/bookingfrontend/applications/simple": {
+        "\/bookingfrontend\/applications\/simple": {
             "post": {
                 "tags": [
                     "Applications"
@@ -567,7 +567,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "required": [
                                     "resource_id",
@@ -600,7 +600,7 @@
                     "201": {
                         "description": "Simple application created",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "id": {
@@ -624,7 +624,7 @@
                 }
             }
         },
-        "/bookingfrontend/user": {
+        "\/bookingfrontend\/user": {
             "get": {
                 "tags": [
                     "User"
@@ -635,9 +635,9 @@
                     "200": {
                         "description": "User details",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/User"
+                                    "$ref": "#\/components\/schemas\/User"
                                 }
                             }
                         }
@@ -656,7 +656,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "properties": {
                                     "name": {
@@ -690,14 +690,14 @@
                     "200": {
                         "description": "User updated successfully",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
                                             "type": "string"
                                         },
                                         "user": {
-                                            "$ref": "#/components/schemas/User"
+                                            "$ref": "#\/components\/schemas\/User"
                                         }
                                     },
                                     "type": "object"
@@ -717,7 +717,7 @@
                 }
             }
         },
-        "/bookingfrontend/buildings": {
+        "\/bookingfrontend\/buildings": {
             "get": {
                 "tags": [
                     "Buildings"
@@ -728,11 +728,11 @@
                     "200": {
                         "description": "A list of buildings",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/Building"
+                                        "$ref": "#\/components\/schemas\/Building"
                                     }
                                 }
                             }
@@ -741,7 +741,7 @@
                 }
             }
         },
-        "/bookingfrontend/buildings/{id}": {
+        "\/bookingfrontend\/buildings\/{id}": {
             "get": {
                 "tags": [
                     "Buildings"
@@ -763,9 +763,9 @@
                     "200": {
                         "description": "Building details",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Building"
+                                    "$ref": "#\/components\/schemas\/Building"
                                 }
                             }
                         }
@@ -776,7 +776,7 @@
                 }
             }
         },
-        "/bookingfrontend/buildings/{id}/schedule": {
+        "\/bookingfrontend\/buildings\/{id}\/schedule": {
             "get": {
                 "tags": [
                     "Buildings"
@@ -821,13 +821,13 @@
                     "200": {
                         "description": "Building schedules mapped by week",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "type": "object",
                                     "additionalProperties": {
                                         "type": "array",
                                         "items": {
-                                            "$ref": "#/components/schemas/BuildingSchedule"
+                                            "$ref": "#\/components\/schemas\/BuildingSchedule"
                                         }
                                     }
                                 }
@@ -840,7 +840,7 @@
                 }
             }
         },
-        "/bookingfrontend/buildings/{id}/agegroups": {
+        "\/bookingfrontend\/buildings\/{id}\/agegroups": {
             "get": {
                 "tags": [
                     "Buildings"
@@ -862,11 +862,11 @@
                     "200": {
                         "description": "List of age groups",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/AgeGroup"
+                                        "$ref": "#\/components\/schemas\/AgeGroup"
                                     }
                                 }
                             }
@@ -878,7 +878,7 @@
                 }
             }
         },
-        "/bookingfrontend/buildings/{id}/audience": {
+        "\/bookingfrontend\/buildings\/{id}\/audience": {
             "get": {
                 "tags": [
                     "Buildings"
@@ -900,11 +900,11 @@
                     "200": {
                         "description": "List of target audiences",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/Audience"
+                                        "$ref": "#\/components\/schemas\/Audience"
                                     }
                                 }
                             }
@@ -916,7 +916,7 @@
                 }
             }
         },
-        "/bookingfrontend/buildings/{id}/seasons": {
+        "\/bookingfrontend\/buildings\/{id}\/seasons": {
             "get": {
                 "tags": [
                     "Buildings"
@@ -958,11 +958,11 @@
                     "200": {
                         "description": "List of seasons",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/Season"
+                                        "$ref": "#\/components\/schemas\/Season"
                                     }
                                 }
                             }
@@ -974,7 +974,7 @@
                 }
             }
         },
-        "/bookingfrontend/completedreservations": {
+        "\/bookingfrontend\/completedreservations": {
             "get": {
                 "tags": [
                     "CompletedReservations"
@@ -985,11 +985,11 @@
                     "200": {
                         "description": "List of completed reservations",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/CompletedReservation"
+                                        "$ref": "#\/components\/schemas\/CompletedReservation"
                                     }
                                 }
                             }
@@ -1001,7 +1001,7 @@
                 }
             }
         },
-        "/bookingfrontend/searchdataall": {
+        "\/bookingfrontend\/searchdataall": {
             "get": {
                 "tags": [
                     "Search Data"
@@ -1012,73 +1012,73 @@
                     "200": {
                         "description": "Successful response",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "activities": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Activity"
+                                                "$ref": "#\/components\/schemas\/Activity"
                                             }
                                         },
                                         "buildings": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Building"
+                                                "$ref": "#\/components\/schemas\/Building"
                                             }
                                         },
                                         "building_resources": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/BuildingResource"
+                                                "$ref": "#\/components\/schemas\/BuildingResource"
                                             }
                                         },
                                         "facilities": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Facility"
+                                                "$ref": "#\/components\/schemas\/Facility"
                                             }
                                         },
                                         "resources": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Resource"
+                                                "$ref": "#\/components\/schemas\/Resource"
                                             }
                                         },
                                         "resource_activities": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/ResourceActivity"
+                                                "$ref": "#\/components\/schemas\/ResourceActivity"
                                             }
                                         },
                                         "resource_facilities": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/ResourceFacility"
+                                                "$ref": "#\/components\/schemas\/ResourceFacility"
                                             }
                                         },
                                         "resource_categories": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/ResourceCategory"
+                                                "$ref": "#\/components\/schemas\/ResourceCategory"
                                             }
                                         },
                                         "resource_category_activity": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/ResourceCategoryActivity"
+                                                "$ref": "#\/components\/schemas\/ResourceCategoryActivity"
                                             }
                                         },
                                         "towns": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Town"
+                                                "$ref": "#\/components\/schemas\/Town"
                                             }
                                         },
                                         "organizations": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Organization"
+                                                "$ref": "#\/components\/schemas\/Organization"
                                             }
                                         }
                                     },
@@ -1090,7 +1090,7 @@
                     "500": {
                         "description": "Internal server error",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "error": {
@@ -1105,7 +1105,7 @@
                 }
             }
         },
-        "/bookingfrontend/{ownertype}/{id}/documents": {
+        "\/bookingfrontend\/{ownertype}\/{id}\/documents": {
             "get": {
                 "tags": [
                     "Buildings",
@@ -1151,11 +1151,11 @@
                     "200": {
                         "description": "List of documents",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "$ref": "#/components/schemas/Document"
+                                        "$ref": "#\/components\/schemas\/Document"
                                     }
                                 }
                             }
@@ -1164,7 +1164,7 @@
                 }
             }
         },
-        "/bookingfrontend/documents/{id}/download": {
+        "\/bookingfrontend\/documents\/{id}\/download": {
             "get": {
                 "tags": [
                     "Buildings"
@@ -1206,7 +1206,7 @@
                 }
             }
         },
-        "/bookingfrontend/events/{id}": {
+        "\/bookingfrontend\/events\/{id}": {
             "get": {
                 "tags": [
                     "Events"
@@ -1228,9 +1228,9 @@
                     "200": {
                         "description": "The requested event",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Event"
+                                    "$ref": "#\/components\/schemas\/Event"
                                 }
                             }
                         }
@@ -1263,7 +1263,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "properties": {
                                     "name": {
@@ -1300,7 +1300,7 @@
                     "200": {
                         "description": "Event updated successfully",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "id": {
@@ -1327,7 +1327,7 @@
                 }
             }
         },
-        "/bookingfrontend/auth/login": {
+        "\/bookingfrontend\/auth\/login": {
             "post": {
                 "tags": [
                     "Authentication"
@@ -1339,7 +1339,7 @@
                     "200": {
                         "description": "Login successful",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "success": {
@@ -1357,7 +1357,7 @@
                     "401": {
                         "description": "Authentication failed",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "error": {
@@ -1372,7 +1372,7 @@
                 }
             }
         },
-        "/bookingfrontend/auth/logout": {
+        "\/bookingfrontend\/auth\/logout": {
             "post": {
                 "tags": [
                     "Authentication"
@@ -1384,7 +1384,7 @@
                     "200": {
                         "description": "Logout successful",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "success": {
@@ -1405,7 +1405,7 @@
                 }
             }
         },
-        "/bookingfrontend/organizations": {
+        "\/bookingfrontend\/organizations": {
             "post": {
                 "tags": [
                     "Organizations"
@@ -1415,7 +1415,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "required": [
                                     "organization_number"
@@ -1458,7 +1458,7 @@
                     "201": {
                         "description": "Organization created successfully",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "id": {
@@ -1479,12 +1479,12 @@
                 }
             }
         },
-        "/bookingfrontend/organizations/lookup/{number}": {
+        "\/bookingfrontend\/organizations\/lookup\/{number}": {
             "get": {
                 "tags": [
                     "Organizations"
                 ],
-                "summary": "Look up organization details from Brønnøysund Register",
+                "summary": "Look up organization details from Br\u00f8nn\u00f8ysund Register",
                 "operationId": "1e04afc10d8dbc01a5c9b50f7e85bf47",
                 "parameters": [
                     {
@@ -1502,7 +1502,7 @@
                     "200": {
                         "description": "Organization details found",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "navn": {
@@ -1544,7 +1544,7 @@
                 }
             }
         },
-        "/bookingfrontend/organizations/{id}": {
+        "\/bookingfrontend\/organizations\/{id}": {
             "put": {
                 "tags": [
                     "Organizations"
@@ -1565,7 +1565,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "properties": {
                                     "name": {
@@ -1604,7 +1604,7 @@
                 ]
             }
         },
-        "/bookingfrontend/organizations/{id}/delegates": {
+        "\/bookingfrontend\/organizations\/{id}\/delegates": {
             "post": {
                 "tags": [
                     "Organizations"
@@ -1625,7 +1625,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/json": {
+                        "application\/json": {
                             "schema": {
                                 "required": [
                                     "ssn"
@@ -1659,7 +1659,7 @@
                 ]
             }
         },
-        "/bookingfrontend/organizations/my": {
+        "\/bookingfrontend\/organizations\/my": {
             "get": {
                 "tags": [
                     "Organizations"
@@ -1670,7 +1670,7 @@
                     "200": {
                         "description": "List of organizations",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "results": {
@@ -1716,7 +1716,7 @@
                 ]
             }
         },
-        "/bookingfrontend/organizations/list": {
+        "\/bookingfrontend\/organizations\/list": {
             "get": {
                 "tags": [
                     "Organizations"
@@ -1745,7 +1745,7 @@
                     "200": {
                         "description": "List of organizations",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "results": {
@@ -1788,7 +1788,7 @@
                 }
             }
         },
-        "/bookingfrontend/resources": {
+        "\/bookingfrontend\/resources": {
             "get": {
                 "tags": [
                     "Resources"
@@ -1854,7 +1854,7 @@
                     "200": {
                         "description": "A list of active and visible resources",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "total_records": {
@@ -1872,7 +1872,7 @@
                                         "results": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Resource"
+                                                "$ref": "#\/components\/schemas\/Resource"
                                             }
                                         }
                                     },
@@ -1884,7 +1884,7 @@
                 }
             }
         },
-        "/bookingfrontend/resources/{id}": {
+        "\/bookingfrontend\/resources\/{id}": {
             "get": {
                 "tags": [
                     "Resources"
@@ -1906,9 +1906,9 @@
                     "200": {
                         "description": "The requested resource",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/Resource"
+                                    "$ref": "#\/components\/schemas\/Resource"
                                 }
                             }
                         }
@@ -1919,7 +1919,7 @@
                 }
             }
         },
-        "/bookingfrontend/buildings/{id}/resources": {
+        "\/bookingfrontend\/buildings\/{id}\/resources": {
             "get": {
                 "tags": [
                     "Buildings",
@@ -1995,7 +1995,7 @@
                     "200": {
                         "description": "A list of active and visible resources for the specified building",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "total_records": {
@@ -2013,7 +2013,7 @@
                                         "results": {
                                             "type": "array",
                                             "items": {
-                                                "$ref": "#/components/schemas/Resource"
+                                                "$ref": "#\/components\/schemas\/Resource"
                                             }
                                         }
                                     },
@@ -2028,7 +2028,7 @@
                 }
             }
         },
-        "/bookingfrontend/lang": {
+        "\/bookingfrontend\/lang": {
             "get": {
                 "tags": [
                     "Translation"
@@ -2050,7 +2050,7 @@
                     "200": {
                         "description": "Language settings",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "key": {
@@ -2070,7 +2070,7 @@
                 }
             }
         },
-        "/login": {
+        "\/login": {
             "post": {
                 "tags": [
                     "API"
@@ -2081,7 +2081,7 @@
                 "requestBody": {
                     "required": true,
                     "content": {
-                        "application/x-www-form-urlencoded": {
+                        "application\/x-www-form-urlencoded": {
                             "schema": {
                                 "properties": {
                                     "login": {
@@ -2106,7 +2106,7 @@
                     "200": {
                         "description": "Login successful",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "session_name": {
@@ -2124,7 +2124,7 @@
                 }
             }
         },
-        "/refreshsession": {
+        "\/refreshsession": {
             "get": {
                 "tags": [
                     "API"
@@ -2136,7 +2136,7 @@
                     "200": {
                         "description": "Session is valid",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "session_id": {
@@ -2154,7 +2154,7 @@
                     "401": {
                         "description": "Not logged in",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
@@ -2169,7 +2169,7 @@
                 }
             }
         },
-        "/logout": {
+        "\/logout": {
             "get": {
                 "tags": [
                     "API"
@@ -2181,7 +2181,7 @@
                     "200": {
                         "description": "Logout status",
                         "content": {
-                            "application/json": {
+                            "application\/json": {
                                 "schema": {
                                     "properties": {
                                         "message": {
@@ -2261,7 +2261,7 @@
                     "resources": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Resource"
+                            "$ref": "#\/components\/schemas\/Resource"
                         }
                     },
                     "organization_id": {
@@ -2396,25 +2396,25 @@
                     "dates": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Date"
+                            "$ref": "#\/components\/schemas\/Date"
                         }
                     },
                     "resources": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Resource"
+                            "$ref": "#\/components\/schemas\/Resource"
                         }
                     },
                     "orders": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Order"
+                            "$ref": "#\/components\/schemas\/Order"
                         }
                     },
                     "documents": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Document"
+                            "$ref": "#\/components\/schemas\/Document"
                         }
                     },
                     "responsible_street": {
@@ -2506,7 +2506,7 @@
                     "resources": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Resource"
+                            "$ref": "#\/components\/schemas\/Resource"
                         }
                     },
                     "group_id": {
@@ -2881,7 +2881,7 @@
                     "resources": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Resource"
+                            "$ref": "#\/components\/schemas\/Resource"
                         }
                     },
                     "activity_id": {
@@ -2967,7 +2967,7 @@
                     "lines": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/OrderLine"
+                            "$ref": "#\/components\/schemas\/OrderLine"
                         }
                     }
                 },
@@ -3224,13 +3224,13 @@
                     "resources": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Resource"
+                            "$ref": "#\/components\/schemas\/Resource"
                         }
                     },
                     "boundaries": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/SeasonBoundary"
+                            "$ref": "#\/components\/schemas\/SeasonBoundary"
                         }
                     }
                 },
@@ -3285,7 +3285,7 @@
                     "delegates": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/Delegate"
+                            "$ref": "#\/components\/schemas\/Delegate"
                         }
                     }
                 },
@@ -3308,6 +3308,18 @@
                     }
                 },
                 "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "session_auth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "sessionphpgwsessid"
+            },
+            "api_key": {
+                "type": "apiKey",
+                "in": "query",
+                "name": "api_key"
             }
         }
     },

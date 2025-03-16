@@ -96,8 +96,12 @@ $app->post('/bookingfrontend/index.php', StartPoint::class . ':bookingfrontend')
 
 $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
-	$group->get('/user', BookingUserController::class . ':index');
-	$group->patch('/user', BookingUserController::class . ':update');
+	$group->group('/user', function (RouteCollectorProxy $group) {
+		$group->get('', BookingUserController::class . ':index');
+		$group->patch('', BookingUserController::class . ':update');
+		$group->get('/messages', BookingUserController::class . ':getMessages');
+		$group->delete('/messages/{id}', BookingUserController::class . ':deleteMessage');
+	});
 })->add(new SessionsMiddleware($app->getContainer()));
 
 $app->group('/bookingfrontend/auth', function (RouteCollectorProxy $group) {

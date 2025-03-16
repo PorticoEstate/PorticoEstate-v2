@@ -1699,6 +1699,19 @@ HTML;
 			phpgwapi_xslttemplates::getInstance()->add_file('msgbox', $this->get_tpl_dir('phpgwapi', 'base'));
 		}
 
+		// If text is already processed data, just return it
+		if (is_array($text) && isset($text[0]) && is_array($text[0]) && isset($text[0]['msgbox_text']))
+		{
+			if ($base)
+			{
+				phpgwapi_xslttemplates::getInstance()->set_var($base, array('msgbox_data' => $text), True);
+			}
+			else
+			{
+				return $text;
+			}
+			return;
+		}
 
 		$data = array();
 		if (is_array($text))
@@ -1707,48 +1720,60 @@ HTML;
 			{
 				if ($value == True)
 				{
-					$img	= $this->image('phpgwapi', 'msgbox_good');
-					$alt	= lang('OK');
+					$img    = $this->image('phpgwapi', 'msgbox_good');
+					$alt    = lang('OK');
 					$class  = $class_success;
 				}
 				else
 				{
-					$img	= $this->image('phpgwapi', 'msgbox_bad');
-					$alt	= lang('ERROR');
+					$img    = $this->image('phpgwapi', 'msgbox_bad');
+					$alt    = lang('ERROR');
 					$class  = $class_error;
 				}
 
-				$data[] = array(
-					'msgbox_text'				=> $key,
-					'msgbox_img'				=> $img,
-					'msgbox_img_alt'			=> $alt,
-					'lang_msgbox_statustext'	=> $alt,
-					'msgbox_class'				=> $class
+				$item = array(
+					'msgbox_text'              => $key,
+					'msgbox_img'               => $img,
+					'msgbox_img_alt'           => $alt,
+					'lang_msgbox_statustext'   => $alt,
+					'msgbox_class'             => $class
 				);
+
+				// If this is a complex array with ID
+				if (is_array($value) && isset($value['id'])) {
+					$item['msgbox_id'] = $value['id'];
+				}
+
+				$data[] = $item;
 			}
 		}
 		else
 		{
 			if ($type == True)
 			{
-				$img	= $this->image('phpgwapi', 'msgbox_good');
-				$alt	= lang('OK');
+				$img    = $this->image('phpgwapi', 'msgbox_good');
+				$alt    = lang('OK');
 				$class  = $class_success;
 			}
 			else
 			{
-				$img	= $this->image('phpgwapi', 'msgbox_bad');
-				$alt	= lang('ERROR');
+				$img    = $this->image('phpgwapi', 'msgbox_bad');
+				$alt    = lang('ERROR');
 				$class  = $class_error;
 			}
 
 			$data = array(
-				'msgbox_text'				=> lang($text),
-				'msgbox_img'				=> $img,
-				'msgbox_img_alt'			=> $alt,
-				'lang_msgbox_statustext'	=> $alt,
-				'msgbox_class'				=> $class
+				'msgbox_text'              => lang($text),
+				'msgbox_img'               => $img,
+				'msgbox_img_alt'           => $alt,
+				'lang_msgbox_statustext'   => $alt,
+				'msgbox_class'             => $class
 			);
+
+			// If this is a complex array with ID
+			if (is_array($type) && isset($type['id'])) {
+				$data['msgbox_id'] = $type['id'];
+			}
 		}
 
 		if ($base)
@@ -1771,33 +1796,61 @@ HTML;
 
 	public function msgbox_data($receipt)
 	{
-		$msgbox_data_error	 = array();
-		$msgbox_data_message = array();
+		$msgbox_data = array();
+
+		// Process error messages
 		if (isset($receipt['error']) && is_array($receipt['error']))
 		{
 			foreach ($receipt['error'] as $dummy => $error)
 			{
-				$msgbox_data_error[$error['msg']] = false;
+				$msg_data = array('msgbox_text' => $error['msg'], 'msgbox_class' => 'alert alert-danger');
+
+				// Include ID if available
+				if (isset($error['id'])) {
+					$msg_data['msgbox_id'] = $error['id'];
+				}
+
+				$msgbox_data[] = $msg_data;
 			}
 		}
 		else if (isset($receipt['error']))
 		{
-			$msgbox_data_error[$receipt['error']] = false;
+			$msg_data = array('msgbox_text' => $receipt['error'], 'msgbox_class' => 'alert alert-danger');
+
+			// Include ID if available
+			if (isset($receipt['id'])) {
+				$msg_data['msgbox_id'] = $receipt['id'];
+			}
+
+			$msgbox_data[] = $msg_data;
 		}
 
+		// Process message (success) messages
 		if (isset($receipt['message']) && is_array($receipt['message']))
 		{
 			foreach ($receipt['message'] as $dummy => $message)
 			{
-				$msgbox_data_message[$message['msg']] = true;
+				$msg_data = array('msgbox_text' => $message['msg'], 'msgbox_class' => 'alert alert-success');
+
+				// Include ID if available
+				if (isset($message['id'])) {
+					$msg_data['msgbox_id'] = $message['id'];
+				}
+
+				$msgbox_data[] = $msg_data;
 			}
 		}
 		else if (isset($receipt['message']))
 		{
-			$msgbox_data_message[$receipt['message']] = true;
-		}
+			$msg_data = array('msgbox_text' => $receipt['message'], 'msgbox_class' => 'alert alert-success');
 
-		$msgbox_data = array_merge($msgbox_data_error, $msgbox_data_message);
+			// Include ID if available
+			if (isset($receipt['id'])) {
+				$msg_data['msgbox_id'] = $receipt['id'];
+			}
+
+			$msgbox_data[] = $msg_data;
+		}
 
 		return $msgbox_data;
 	}

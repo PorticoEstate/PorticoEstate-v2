@@ -12,7 +12,7 @@ import {
 	fetchBuildingSchedule, fetchBuildingSeasons,
 	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
 	fetchInvoices,
-	fetchPartialApplications, fetchServerSettings, patchBookingUser
+	fetchPartialApplications, fetchServerMessages, fetchServerSettings, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
@@ -21,6 +21,7 @@ import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
+import {IServerMessage} from "@/service/types/api/server-messages.types";
 // require('log-timestamp');
 //
 // if(typeof window !== "undefined") {
@@ -367,6 +368,59 @@ export function useApplications(): UseQueryResult<{ list: IApplication[], total_
         }
     );
 }
+export function useServerMessages(): UseQueryResult<IServerMessage[]> {
+    return useQuery(
+        {
+            queryKey: ['serverMessages'],
+            queryFn: () => fetchServerMessages(), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+        }
+    );
+}
+
+
+export function useDeleteServerMessage() {
+	const queryClient = useQueryClient();
+
+	return useMutation({
+		mutationFn: async (id: string) => {
+			const url = phpGWLink(['bookingfrontend', 'user','messages', id]);
+			const response = await fetch(url, {method: 'DELETE'});
+
+			if (!response.ok) {
+				throw new Error('Failed to delete server message');
+			}
+
+			return id
+		},
+		onMutate: async (id: string) => {
+			// Cancel any outgoing refetches to avoid overwriting optimistic update
+			await queryClient.cancelQueries({queryKey: ['serverMessages']});
+
+			// Snapshot current server messages
+			const previousMessages = queryClient.getQueryData<IServerMessage[]>(['serverMessages']);
+
+			// Optimistically update server messages list
+			if (previousMessages) {
+				queryClient.setQueryData(['serverMessages'], previousMessages.filter(message => message.id !== id));
+			}
+
+			return {previousMessages: previousMessages};
+		},
+		onError: (err, variables, context) => {
+			// On error, rollback to previous state
+			if (context?.previousMessages) {
+				queryClient.setQueryData(['serverMessages'], context.previousMessages);
+			}
+		},
+		onSettled: () => {
+			// Always refetch after error or success to ensure data is correct
+			queryClient.invalidateQueries({queryKey: ['serverMessages']});
+		},
+	});
+}
+
 
 export function useInvoices(): UseQueryResult<ICompletedReservation[]> {
     return useQuery(

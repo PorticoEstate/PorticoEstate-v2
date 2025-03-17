@@ -290,7 +290,10 @@ class booking_boapplication extends booking_bocommon
 			{
 				if ($assoc['active'])
 				{
-					$_adates[] = "\t{$assoc['from_']} - {$assoc['to_']}";
+					$_from = date($this->datetimeformat, strtotime($assoc['from_']));
+					$_to = date($this->datetimeformat, strtotime($assoc['to_']));
+					
+					$_adates[] = "\t{$_from} - {$_to}";
 					$cost += (float)$assoc['cost'];
 				}
 			}

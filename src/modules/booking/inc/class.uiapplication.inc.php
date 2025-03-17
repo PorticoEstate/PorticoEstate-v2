@@ -2398,7 +2398,7 @@ class booking_uiapplication extends booking_uicommon
 					}
 					else if ($check_direct_booking)
 					{
-						$GLOBALS['phpgw']->db->transaction_abort();
+						Db::getInstance()->transaction_abort();
 						Cache::message_set('Det er desverre opptatt', 'error');
 						$this->delete_partial($application['id']);
 						self::redirect(array());

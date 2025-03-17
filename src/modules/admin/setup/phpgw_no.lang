@@ -146,3 +146,5 @@ please set a site name in admin &gt; siteconfig	common	no	Vennligst angi tittele
 redis host	admin	no	Redis server
 redis database	admin	no	Redis database
 opcache monitor	admin	no	Opcache monitor
+Trusted proxies	admin	no	Betrodde proxyer
+comma separated list of IPs or CIDR	admin	no	Komma-separert liste av IP-adresser eller CIDR

@@ -53,10 +53,10 @@ $(document).ready(function ()
 
 	});
 
-	JqueryPortico.autocompleteHelper(phpGWLink('index.php/', {menuaction: 'booking.uibuilding.index'}, true),
+	JqueryPortico.autocompleteHelper(phpGWLink('index.php', { menuaction: 'booking.uibuilding.index' }, true),
 		'field_building_name', 'field_building_id', 'building_container');
 
-	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.uiorganization.index'}, true),
+	JqueryPortico.autocompleteHelper(phpGWLink('index.php', { menuaction: 'booking.uiorganization.index' }, true),
 		'field_org_name', 'field_org_id', 'org_container');
 
 	$("#field_activity").change(function ()
@@ -67,7 +67,7 @@ $(document).ready(function ()
 			populateTableChkResources(building_id, initialSelection);
 		}
 
-		var oArgs = {menuaction: 'booking.uiapplication.get_activity_data', activity_id: $(this).val()};
+		var oArgs = { menuaction: 'booking.uiapplication.get_activity_data', activity_id: $(this).val() };
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 
 		$.ajax({
@@ -198,7 +198,7 @@ $(window).on('load', function ()
 	$("#field_org_name").on("autocompleteselect", function (event, ui)
 	{
 		var organization_id = ui.item.value;
-		var requestURL = phpGWLink('index.php', {menuaction: "booking.uiorganization.index", filter_id: organization_id}, true);
+		var requestURL = phpGWLink('index.php', { menuaction: "booking.uiorganization.index", filter_id: organization_id }, true);
 
 		$.getJSON(requestURL, function (result)
 		{
@@ -414,16 +414,20 @@ function populateTableChkResources(building_id, selection)
 	var oArgs = {
 		menuaction: 'booking.uiresource.index',
 		sort: 'name',
-//		sub_activity_id: $("#field_activity").val(),
+		//		sub_activity_id: $("#field_activity").val(),
 		filter_building_id: building_id,
 		length: -1
 	};
 	var url = phpGWLink('index.php', oArgs, true);
 	var container = 'resources_container';
-	var colDefsResources = [{label: '', object: [{type: 'input', attrs: [
-						{name: 'type', value: 'checkbox'}, {name: 'name', value: 'resources[]'}, {name: 'class', value: 'chkRegulations'}
-					]}
-			], value: 'id', checked: selection}, {key: 'name', label: lang['Name']}, {key: 'rescategory_name', label: lang['Resource Type']}
+	var colDefsResources = [{
+		label: '', object: [{
+			type: 'input', attrs: [
+				{ name: 'type', value: 'checkbox' }, { name: 'name', value: 'resources[]' }, { name: 'class', value: 'chkRegulations' }
+			]
+		}
+		], value: 'id', checked: selection
+	}, { key: 'name', label: lang['Name'] }, { key: 'rescategory_name', label: lang['Resource Type'] }
 	];
 	populateTableResources(url, container, colDefsResources);
 }
@@ -446,15 +450,19 @@ function populateTableChkRegulations(building_id, selection, resources)
 		url += '&owner[]=resource::' + resources[r];
 	}
 	var container = 'regulation_documents';
-	var colDefsRegulations = [{label: lang['Accepted'], object: [
-				{type: 'input', attrs: [
-						{name: 'type', value: 'checkbox'}, {name: 'name', value: 'accepted_documents[]'}
-					]}
-			], value: 'id', checked: selection}, {key: 'name', label: lang['Document'], formatter: genericLink}
+	var colDefsRegulations = [{
+		label: lang['Accepted'], object: [
+			{
+				type: 'input', attrs: [
+					{ name: 'type', value: 'checkbox' }, { name: 'name', value: 'accepted_documents[]' }
+				]
+			}
+		], value: 'id', checked: selection
+	}, { key: 'name', label: lang['Document'], formatter: genericLink }
 	];
 	if (regulations_select_all)
 	{
-		colDefsRegulations[0]['object'][0]['attrs'].push({name: 'checked', value: 'checked'});
+		colDefsRegulations[0]['object'][0]['attrs'].push({ name: 'checked', value: 'checked' });
 	}
 	regulations_select_all = false;
 	populateTableRegulations(url, container, colDefsRegulations);

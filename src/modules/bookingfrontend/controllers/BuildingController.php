@@ -49,10 +49,31 @@ class BuildingController extends DocumentController
 	 *     path="/bookingfrontend/buildings",
 	 *     summary="Get a list of all buildings",
 	 *     tags={"Buildings"},
+	 *     @OA\Parameter(
+	 *         name="start",
+	 *         in="query",
+	 *         description="Starting index for pagination",
+	 *         required=false,
+	 *         @OA\Schema(type="integer", default=0)
+	 *     ),
+	 *     @OA\Parameter(
+	 *         name="results",
+	 *         in="query",
+	 *         description="Number of results per page",
+	 *         required=false,
+	 *         @OA\Schema(type="integer")
+	 *     ),
 	 *     @OA\Response(
 	 *         response=200,
 	 *         description="A list of buildings",
 	 *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Building"))
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Server error",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string")
+	 *         )
 	 *     )
 	 * )
 	 */
@@ -539,20 +560,20 @@ class BuildingController extends DocumentController
 	 *     @OA\Parameter(
 	 *         name="from",
 	 *         in="query",
-	 *         description="Start date (ISO 8601)",
+	 *         description="Start date (defaults to today)",
 	 *         required=false,
-	 *         @OA\Schema(type="string", format="date-time")
+	 *         @OA\Schema(type="string", format="date-time", example="2025-03-17T00:00:00+01:00")
 	 *     ),
 	 *     @OA\Parameter(
 	 *         name="to",
 	 *         in="query",
-	 *         description="End date (ISO 8601)",
+	 *         description="End date (optional)",
 	 *         required=false,
-	 *         @OA\Schema(type="string", format="date-time")
+	 *         @OA\Schema(type="string", format="date-time", example="2025-06-17T23:59:59+02:00")
 	 *     ),
 	 *     @OA\Response(
 	 *         response=200,
-	 *         description="List of seasons",
+	 *         description="List of seasons with associated resources and boundaries",
 	 *         @OA\JsonContent(
 	 *             type="array",
 	 *             @OA\Items(ref="#/components/schemas/Season")
@@ -560,7 +581,17 @@ class BuildingController extends DocumentController
 	 *     ),
 	 *     @OA\Response(
 	 *         response=404,
-	 *         description="Building not found"
+	 *         description="Building not found",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Building not found")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Server error",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string")
+	 *         )
 	 *     )
 	 * )
 	 */

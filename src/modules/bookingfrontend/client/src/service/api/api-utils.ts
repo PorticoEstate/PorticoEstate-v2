@@ -7,6 +7,7 @@ import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
+import {IServerMessage} from "@/service/types/api/server-messages.types";
 
 
 
@@ -155,6 +156,14 @@ export async function validateOrgNum(org_num: string): Promise<BrregOrganization
 export async function fetchDeliveredApplications(): Promise<{ list: IApplication[], total_sum: number }> {
     const url = phpGWLink(['bookingfrontend', 'applications']);
     const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+
+export async function fetchServerMessages(): Promise<IServerMessage[]> {
+    const url = phpGWLink(['bookingfrontend', 'user', 'messages']);
+    const response = await fetch(url, FetchAuthOptions());
     const result = await response.json();
     return result;
 }

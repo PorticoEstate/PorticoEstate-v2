@@ -229,7 +229,7 @@ ICAL;
 			if ($_SERVER['REQUEST_METHOD'] == 'POST' && $register_type && $enable_register_form)
 			{
 				$user_inputs = (array)Cache::system_get('bookingfrontendt', 'add_participant');
-				$ip_address = Sanitizer::get_ip_address();
+				$ip_address = Sanitizer::get_ip_address(true);
 				$user_inputs[$ip_address][time()] = 1;
 
 				/**

@@ -4,7 +4,6 @@ use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
 
 phpgw::import_class('booking.uicommon');
-phpgw::import_class('phpgwapi.send');
 
 class booking_uisend_email extends booking_uicommon
 {

@@ -202,14 +202,6 @@ class phpgw
 			unset($new_extravars);
 		}
 
-		/* if using frames we make sure there is a framepart */
-		if (defined('PHPGW_USE_FRAMES') && PHPGW_USE_FRAMES)
-		{
-			if (!isset($extravars['framepart']))
-			{
-				$extravars['framepart'] = 'body';
-			}
-		}
 
 		if (!$external)
 		{

@@ -200,7 +200,9 @@ class ErrorHandler
 		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
 		$referer = str_replace('?', "\n?", $referer);
 		$referer = str_replace('&', "\n&", $referer);
-		$trace = "IP_address: {$IP_address}</b>\n Referer: {$referer} </b>\nPath: {$path}</b>\n" . $this->phpgw_parse_backtrace($bt);
+		$parametres = $_GET;
+		$parametres = print_r($parametres, true);
+		$trace = "IP_address: {$IP_address}</b>\n Referer: {$referer} </b>\nParameters: {$parametres}</b>\nPath: {$path}</b>\n" . $this->phpgw_parse_backtrace($bt);
 
 		$log_args = array(
 			'file'	=> $error_file,
@@ -378,7 +380,9 @@ class ErrorHandler
 		$referer = str_replace('&', "\n&", $referer);
 		$path = $this->path;
 		$IP_address = Sanitizer::get_ip_address(false);
-		$trace = "IP_address: {$IP_address}</b>\nReferer: {$referer} </b>\nPath: {$path}</b>\n" . $e->getTraceAsString();
+		$parametres = $_GET;
+		$parametres = print_r($parametres, true);
+		$trace = "IP_address: {$IP_address}</b>\nReferer: {$referer} </b>\nPath: {$path}</b>\nParameters: {$parametres}</b>\n" . $e->getTraceAsString();
 		
 		$tables = $this->db->table_names();
 		if (in_array('phpgw_log', $tables))

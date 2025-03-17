@@ -1,4 +1,5 @@
-class SideNav {
+class SideNav
+{
 
 	constructor()
 	{
@@ -15,9 +16,23 @@ class SideNav {
 		this.setupFilter();
 		this.setupCollapseNavbar();
 		this.setupContextMenu();
-//		this.setupExpandNavbar();
+		this.setupNodeStateEvents();
+		//		this.setupExpandNavbar();
 	}
 
+	setupNodeStateEvents() 
+	{
+		// Save tree state when nodes are manually opened or closed
+		this.navbar.on('tree.close', () =>
+		{
+			localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
+		});
+
+		this.navbar.on('tree.open', () =>
+		{
+			localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
+		});
+	}
 	renderTree(data)
 	{
 		this.treemenu_data = data;
@@ -30,7 +45,8 @@ class SideNav {
 			useContextMenu: false,
 			closedIcon: $('<i class="far fa-arrow-alt-circle-right"></i>'),
 			openedIcon: $('<i class="far fa-arrow-alt-circle-down"></i>'),
-			onCreateLi: (node, $li) => {
+			onCreateLi: (node, $li) =>
+			{
 				this.navbar.tree('removeFromSelection', node);
 				node.selected = 0;
 				if (node.id === menu_selection || 'navbar::' + node.id === menu_selection)
@@ -111,9 +127,10 @@ class SideNav {
 		}
 		else
 		{
-			var oArgs = {menuaction: 'phpgwapi.menu_jqtree.get_menu'};
+			var oArgs = { menuaction: 'phpgwapi.menu_jqtree.get_menu' };
 			var some_url = phpGWLink('index.php', oArgs, true);
-			$.getJSON(some_url, (data) => {
+			$.getJSON(some_url, (data) =>
+			{
 				this.renderTree(data);
 				localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
 			});
@@ -122,9 +139,11 @@ class SideNav {
 
 	setupFilter()
 	{
-		this.filter.keyup(() => {
+		this.filter.keyup(() =>
+		{
 			clearTimeout(this.thread);
-			this.thread = setTimeout(() => {
+			this.thread = setTimeout(() =>
+			{
 				this.navbar.tree('loadData', this.treemenu_data);
 			}, 50);
 		});
@@ -132,33 +151,34 @@ class SideNav {
 
 	setupCollapseNavbar()
 	{
-		$('#collapseNavbar').on('click', () => {
+		$('#collapseNavbar').on('click', () =>
+		{
 			var tree = this.navbar.tree('getTree');
 			this.iterateNodes(tree);
 			localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
 		});
 	}
 
-//	setupExpandNavbar()
-//	{
-//		$('#expandNavbar').on('click', () => {
-//			var tree = this.navbar.tree('getTree');
-//			this.iterateNodes(tree);
-//			localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
-//
-//			var $tree = $('#navbar');
-//			var tree = $tree.tree('getTree');
-//
-//			tree.iterate(
-//				function (node)
-//				{
-//					$tree.tree('openNode', node, false);
-//				}
-//			);
-//			$('#navbar_search').show();
-//
-//		});
-//	}
+	//	setupExpandNavbar()
+	//	{
+	//		$('#expandNavbar').on('click', () => {
+	//			var tree = this.navbar.tree('getTree');
+	//			this.iterateNodes(tree);
+	//			localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
+	//
+	//			var $tree = $('#navbar');
+	//			var tree = $tree.tree('getTree');
+	//
+	//			tree.iterate(
+	//				function (node)
+	//				{
+	//					$tree.tree('openNode', node, false);
+	//				}
+	//			);
+	//			$('#navbar_search').show();
+	//
+	//		});
+	//	}
 
 	// Define a recursive function to iterate over all nodes
 	iterateNodes(node)
@@ -188,7 +208,7 @@ class SideNav {
 				var href = $(this).attr("href");
 				var location_id = $(this).attr("location_id");
 				var text = $(this).text();
-				var oArgs = {menuaction: 'phpgwapi.menu.update_bookmark_menu'};
+				var oArgs = { menuaction: 'phpgwapi.menu.update_bookmark_menu' };
 				var requestUrl = phpGWLink('index.php', oArgs, true);
 				if (key === 'open_in_new')
 				{
@@ -200,7 +220,7 @@ class SideNav {
 					type: 'POST',
 					url: requestUrl,
 					dataType: 'json',
-					data: {bookmark_candidate: id, text: text, icon: icon, href: href, location_id: location_id},
+					data: { bookmark_candidate: id, text: text, icon: icon, href: href, location_id: location_id },
 					success: function (data)
 					{
 						if (data)
@@ -212,8 +232,8 @@ class SideNav {
 				});
 			},
 			items: {
-				"edit": {name: "Bookmark", icon: "far fa-bookmark"},
-				"open_in_new": {name: "Åpne i nytt vindu", icon: "fas fa-external-link-alt"}
+				"edit": { name: "Bookmark", icon: "far fa-bookmark" },
+				"open_in_new": { name: "Åpne i nytt vindu", icon: "fas fa-external-link-alt" }
 			}
 		});
 	}

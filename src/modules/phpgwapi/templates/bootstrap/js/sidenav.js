@@ -1,4 +1,5 @@
-class SideNav {
+class SideNav
+{
 
 	constructor()
 	{
@@ -15,6 +16,21 @@ class SideNav {
 		this.setupFilter();
 		this.setupCollapseNavbar();
 		this.setupContextMenu();
+		this.setupNodeStateEvents();
+	}
+
+	setupNodeStateEvents() 
+	{
+		// Save tree state when nodes are manually opened or closed
+		this.navbar.on('tree.close', () =>
+		{
+			localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
+		});
+
+		this.navbar.on('tree.open', () =>
+		{
+			localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
+		});
 	}
 
 	renderTree(data)
@@ -29,7 +45,8 @@ class SideNav {
 			useContextMenu: false,
 			closedIcon: $('<i class="far fa-arrow-alt-circle-right"></i>'),
 			openedIcon: $('<i class="far fa-arrow-alt-circle-down"></i>'),
-			onCreateLi: (node, $li) => {
+			onCreateLi: (node, $li) =>
+			{
 				this.navbar.tree('removeFromSelection', node);
 				node.selected = 0;
 				if (node.id === menu_selection || 'navbar::' + node.id === menu_selection)
@@ -110,9 +127,10 @@ class SideNav {
 		}
 		else
 		{
-			var oArgs = {menuaction: 'phpgwapi.menu_jqtree.get_menu'};
+			var oArgs = { menuaction: 'phpgwapi.menu_jqtree.get_menu' };
 			var some_url = phpGWLink('index.php', oArgs, true);
-			$.getJSON(some_url, (data) => {
+			$.getJSON(some_url, (data) =>
+			{
 				this.renderTree(data);
 				localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
 			});
@@ -121,9 +139,11 @@ class SideNav {
 
 	setupFilter()
 	{
-		this.filter.keyup(() => {
+		this.filter.keyup(() =>
+		{
 			clearTimeout(this.thread);
-			this.thread = setTimeout(() => {
+			this.thread = setTimeout(() =>
+			{
 				this.navbar.tree('loadData', this.treemenu_data);
 			}, 50);
 		});
@@ -131,9 +151,10 @@ class SideNav {
 
 	setupCollapseNavbar()
 	{
-		$('#collapseNavbar').on('click', () => {
+		$('#collapseNavbar').on('click', () =>
+		{
 			var tree = this.navbar.tree('getTree');
-	//		console.log(tree);
+			//		console.log(tree);
 			this.iterateNodes(tree);
 			localStorage.setItem('menu_tree_' + sessionid, this.navbar.tree('toJson'));
 		});
@@ -167,7 +188,7 @@ class SideNav {
 				var href = $(this).attr("href");
 				var location_id = $(this).attr("location_id");
 				var text = $(this).text();
-				var oArgs = {menuaction: 'phpgwapi.menu.update_bookmark_menu'};
+				var oArgs = { menuaction: 'phpgwapi.menu.update_bookmark_menu' };
 				var requestUrl = phpGWLink('index.php', oArgs, true);
 				if (key === 'open_in_new')
 				{
@@ -179,7 +200,7 @@ class SideNav {
 					type: 'POST',
 					url: requestUrl,
 					dataType: 'json',
-					data: {bookmark_candidate: id, text: text, icon: icon, href: href, location_id: location_id},
+					data: { bookmark_candidate: id, text: text, icon: icon, href: href, location_id: location_id },
 					success: function (data)
 					{
 						if (data)
@@ -191,8 +212,8 @@ class SideNav {
 				});
 			},
 			items: {
-				"edit": {name: "Bookmark", icon: "far fa-bookmark"},
-				"open_in_new": {name: "Åpne i nytt vindu", icon: "fas fa-external-link-alt"}
+				"edit": { name: "Bookmark", icon: "far fa-bookmark" },
+				"open_in_new": { name: "Åpne i nytt vindu", icon: "fas fa-external-link-alt" }
 			}
 		});
 	}
@@ -208,12 +229,12 @@ $(document).ready(function ()
 
 		var template = $(this).val();
 		//user[template_set] = template;
-		var oArgs = {appname: 'preferences', type: 'user'};
+		var oArgs = { appname: 'preferences', type: 'user' };
 		var requestUrl = phpGWLink('preferences/section', oArgs, true);
 		$.ajax({
 			type: 'POST',
 			dataType: 'json',
-			data: {user: {template_set: template}, submit: true},
+			data: { user: { template_set: template }, submit: true },
 			url: requestUrl,
 			success: function (data)
 			{
@@ -231,10 +252,10 @@ function strip_html(originalString)
 
 function get_messages()
 {
-//	var profile_img = phpGWLink('phpgwapi/templates/bootstrap/images/undraw_profile.svg', {}, false);
+	//	var profile_img = phpGWLink('phpgwapi/templates/bootstrap/images/undraw_profile.svg', {}, false);
 
 	var htmlString = '';
-	var oArgs = {menuaction: 'messenger.uimessenger.index', status: 'N'};
+	var oArgs = { menuaction: 'messenger.uimessenger.index', status: 'N' };
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 	$.ajax({
 		type: 'GET',

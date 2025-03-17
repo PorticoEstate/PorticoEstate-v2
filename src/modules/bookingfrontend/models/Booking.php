@@ -15,10 +15,16 @@ use App\modules\bookingfrontend\models\helper\BaseScheduleEntity;
  */
 class Booking extends BaseScheduleEntity
 {
-    /**
-     * @Expose
-     * @Default("booking")
-     */
+	/**
+	 * @OA\Property(
+	 *     property="type",
+	 *     type="string",
+	 *     description="Entity type identifier",
+	 *     example="booking"
+	 * )
+	 * @Expose
+	 * @Default("booking")
+	 */
     public $type;
 
     /**
@@ -53,8 +59,10 @@ class Booking extends BaseScheduleEntity
 
     /**
      * @OA\Property(type="string")
-     * @Expose
-     */
+	 * @Expose(when={
+	 * *  "group_id=$user_group_id"
+	 * * })
+ */
     public $secret;
 
     /**

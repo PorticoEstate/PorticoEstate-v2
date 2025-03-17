@@ -15,10 +15,16 @@ use App\modules\bookingfrontend\models\helper\BaseScheduleEntity;
  */
 class Allocation extends BaseScheduleEntity
 {
-    /**
-     * @Expose
-     * @Default("allocation")
-     */
+	/**
+	 * @OA\Property(
+	 *     property="type",
+	 *     type="string",
+	 *     description="Entity type identifier",
+	 *     example="allocation"
+	 * )
+	 * @Expose
+	 * @Default("allocation")
+	 */
     public $type;
 
     /**

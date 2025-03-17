@@ -57,6 +57,13 @@ class BuildingScheduleService
         }
 
         $results = [];
+		// Get User orgs
+		$userOrgs = $this->bouser->organizations ? array_column($this->bouser->organizations, 'orgnr') : null;
+		$userOrgIds = $this->bouser->organizations ? array_column($this->bouser->organizations, 'org_id') : null;
+
+		// Get User groups
+		$userGroups = $this->bouser->getUserGroups();
+		$userGroupIds = $userGroups ? array_column($userGroups, 'id') : null;
 
         // Get allocations with their resources
         $allocations = $this->getAllocations($building_id, $resource_ids, $weekStart, $weekEnd);
@@ -71,11 +78,10 @@ class BuildingScheduleService
         foreach ($this->groupByEntity($bookings) as $bookingGroup) {
             $booking = new Booking($bookingGroup[0]);
             $booking->resources = array_map([$this, 'formatResource'], $bookingGroup);
-            $results[] = $booking->serialize();
-        }
+			$results[] = $booking->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
 
-        // Get User orgs
-        $userOrgs = $this->bouser->organizations ? array_column($this->bouser->organizations, 'orgnr') : null;
+		}
+
 
         // Get events with their resources
         $events = $this->getEvents($building_id, $resource_ids, $weekStart, $weekEnd);

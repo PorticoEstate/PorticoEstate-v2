@@ -419,6 +419,86 @@ class UserHelper
 		return $group;
 	}
 
+
+	/**
+	 * Get groups associated with the current user
+	 * Retrieves groups where the user is either an organization admin or delegate
+	 *
+	 * @return array List of groups the user has access to
+	 */
+	public function getUserGroups(): array
+	{
+		if (!$this->is_logged_in()) {
+			return [];
+		}
+
+		// Get organization IDs from user's organizations
+		$orgIds = [];
+
+		// Use the existing organizations property
+		if ($this->organizations) {
+			$orgIds = array_column($this->organizations, 'org_id');
+		}
+
+		// Also add organizations where user is directly the admin by SSN
+		if ($this->ssn) {
+			$sql = "SELECT id FROM bb_organization WHERE customer_ssn = :ssn";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([':ssn' => $this->ssn]);
+			$directOrgIds = array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'id');
+
+			$orgIds = array_merge($orgIds, $directOrgIds);
+			$orgIds = array_unique($orgIds); // Remove duplicates
+		}
+
+		if (empty($orgIds)) {
+			return [];
+		}
+
+		// Get all groups for these organizations
+		$placeholders = implode(',', array_fill(0, count($orgIds), '?'));
+		$sql = "SELECT g.*, o.name as organization_name
+            FROM bb_group g
+            JOIN bb_organization o ON g.organization_id = o.id
+            WHERE g.organization_id IN ($placeholders)
+            AND g.active = 1
+            ORDER BY g.name";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($orgIds);
+		$groups = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+		return $groups;
+	}
+
+	/**
+	 * Get groups for a specific organization
+	 *
+	 * @param int $organization_id The ID of the organization
+	 * @param bool $checkAccess Whether to check if the user has access to the organization
+	 * @return array List of groups belonging to the organization
+	 */
+	public function getOrganizationGroups(int $organization_id, bool $checkAccess = true): array
+	{
+		// Check if user has access to this organization if required
+		if ($checkAccess && !$this->is_organization_admin($organization_id)) {
+			return [];
+		}
+
+		$sql = "SELECT g.*, o.name as organization_name
+            FROM bb_group g
+            JOIN bb_organization o ON g.organization_id = o.id
+            WHERE g.organization_id = :organization_id
+            AND g.active = 1
+            ORDER BY g.name";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([':organization_id' => $organization_id]);
+		$groups = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+		return $groups;
+	}
+
 	protected function write_user_orgnr_to_session()
 	{
 		if (!$this->is_logged_in())

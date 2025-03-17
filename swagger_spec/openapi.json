@@ -805,6 +805,27 @@
                 ],
                 "summary": "Get a list of all buildings",
                 "operationId": "92e88be22288b82cbaff0716a1854251",
+                "parameters": [
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Starting index for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "results",
+                        "in": "query",
+                        "description": "Number of results per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "A list of buildings",
@@ -815,6 +836,21 @@
                                     "items": {
                                         "$ref": "#\/components\/schemas\/Building"
                                     }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
@@ -1017,27 +1053,29 @@
                     {
                         "name": "from",
                         "in": "query",
-                        "description": "Start date (ISO 8601)",
+                        "description": "Start date (defaults to today)",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date-time",
+                            "example": "2025-03-17T00:00:00+01:00"
                         }
                     },
                     {
                         "name": "to",
                         "in": "query",
-                        "description": "End date (ISO 8601)",
+                        "description": "End date (optional)",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date-time",
+                            "example": "2025-06-17T23:59:59+02:00"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "List of seasons",
+                        "description": "List of seasons with associated resources and boundaries",
                         "content": {
                             "application\/json": {
                                 "schema": {
@@ -1050,7 +1088,35 @@
                         }
                     },
                     "404": {
-                        "description": "Building not found"
+                        "description": "Building not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Building not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }

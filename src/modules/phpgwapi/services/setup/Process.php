@@ -330,8 +330,8 @@ class Process
 					}
 					catch (\Exception $ex)
 					{
-						// Nothing
-
+						echo '<br>process->dropviews(): Error dropping :' . $setup_info[$key]['name'] . ' view: ' . $view;
+						echo '<br>Exception message: ' . $ex->getMessage();
 					}
 				}
 			}

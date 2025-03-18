@@ -12,7 +12,7 @@ import {
 	fetchBuildingSchedule, fetchBuildingSeasons,
 	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
 	fetchInvoices,
-	fetchPartialApplications, fetchServerMessages, fetchServerSettings, patchBookingUser
+	fetchPartialApplications, fetchSearchData, fetchServerMessages, fetchServerSettings, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
@@ -22,6 +22,7 @@ import {DateTime} from "luxon";
 import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
+import {ISearchDataAll} from "@/service/types/api/search.types";
 // require('log-timestamp');
 //
 // if(typeof window !== "undefined") {
@@ -378,6 +379,20 @@ export function useServerMessages(): UseQueryResult<IServerMessage[]> {
         }
     );
 }
+
+
+export function useSearchData(): UseQueryResult<ISearchDataAll> {
+	return useQuery(
+		{
+			queryKey: ['searchData'],
+			queryFn: () => fetchSearchData(), // Fetch function
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 60 * 60 * 1000,
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+		}
+	);
+}
+
 
 
 export function useDeleteServerMessage() {

@@ -57,7 +57,12 @@ $(document).ready(function ()
 	{
 		getFreetime(urlParams);
 	}
-	selectedDescription(initialDesc);
+	// Decode Base64
+	var decodedDesc = decodeURIComponent(escape(atob(initialDesc)));
+
+	// console.log({decodedDesc, initialDesc}); // Should now contain proper HTML tags
+
+	selectedDescription(decodedDesc);
 
 
 	PopulateResourceData();

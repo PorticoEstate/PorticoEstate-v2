@@ -194,9 +194,8 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 
                 phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/pecalendar/pecalendar.css");
                 phpgwapi_css::getInstance()->add_external_file("bookingfrontend/js/bookingfrontend_2/components/light-box.css");
-                $resource['description'] = self::removeInitialEmptyHtmlTags($resource['description']);
-
-
+//				$data['resource']['description'] = self::removeInitialEmptyHtmlTags($resource['description']);
+				$data['resource']['description'] = base64_encode(html_entity_decode($resource['description']));
             } else {
                 phpgwapi_js::getInstance()->add_external_file("phpgwapi/templates/bookingfrontend/js/build/aui/aui-min.js");
             }

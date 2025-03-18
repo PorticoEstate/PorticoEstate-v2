@@ -172,9 +172,32 @@ class Sanitizer
 		return self::clean_value($value, $value_type, $default);
 	}
 
+	public static function get_ip_address_fallback()
+	{
+		$ip_keys = array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED');
+		foreach ($ip_keys as $key)
+		{
+			if (array_key_exists($key, $_SERVER) === true)
+			{
+				foreach (explode(',', $_SERVER[$key]) as $ip)
+				{
+					// trim for safety measures
+					$ip = trim($ip);
+					// attempt to validate IP
+					if (self::validate_ip($ip, false))
+					{
+						return $ip;
+					}
+				}
+			}
+		}
+	}
+
 
 	public static function get_ip_address($strict = false)
 	{
+		$remote_addr = false;
+
 		// Most reliable source - directly from server
 		if (!empty($_SERVER['REMOTE_ADDR']) && self::validate_ip($_SERVER['REMOTE_ADDR'], $strict))
 		{
@@ -200,11 +223,16 @@ class Sanitizer
 				}
 			}
 
-			return $remote_addr;
 		}
 
+		// Fallback to other methods
+		if (!$remote_addr)
+		{
+			$remote_addr = self::get_ip_address_fallback();
+		}
+		return $remote_addr;
+
 		// Support both IPv4 and IPv6
-		return false;
 	}
 	/**
 	 * Check if an IP address is in the trusted proxy list

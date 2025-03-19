@@ -20,7 +20,9 @@ const DividerCircle = () => <svg width="6" height="6" viewBox="0 0 6 6" fill="no
 const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
     const t = useTrans();
 
-    const tags = useMemo(() => [resource.building?.district, resource.building?.name].filter(a => !!a), [resource]);
+    const tags = useMemo(() =>
+        [<Link key='building-link' href={'/building/' + resource.building_id}>{resource.building?.name}</Link>, resource.building?.district]
+            .filter(a => !!a), [resource]);
     return (
         <Card
             data-color="neutral"

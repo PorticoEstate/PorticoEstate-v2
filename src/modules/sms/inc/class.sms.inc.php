@@ -130,7 +130,8 @@ class sms_sms__
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->phpgwapi_common = new \phpgwapi_common();
 
-		$this->db =	new Db2();
+//		$this->db =	new Db2();
+		$this->db =	Db::getInstance();
 		$this->db2 = new Db2();
 		$this->init = true;
 		$this->like = $this->db->like;

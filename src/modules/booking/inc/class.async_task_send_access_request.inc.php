@@ -13,12 +13,15 @@ class booking_async_task_send_access_request extends booking_async_task
 	private $simulate = false;
 	// Tracking array for sent emails
 	private $email_sent = array();
+	private $dateTimeFormat;
 
 	public function __construct()
 	{
 		parent::__construct();
 		$this->account	 = $this->userSettings['account_id'];
 		$this->config	 = CreateObject('phpgwapi.config', 'booking')->read();
+
+		$this->dateTimeFormat = $this->userSettings['preferences']['common']['dateformat'] . ' H:i';
 
 		$bogeneric = createObject('booking.bogeneric');
 		$lock_systems = $bogeneric->read(array('location_info' => array('type' => 'e_lock_system')));
@@ -148,8 +151,11 @@ class booking_async_task_send_access_request extends booking_async_task
 								/**
 								 * send SMS
 								 */
+
+								$_from = date($this->dateTimeFormat, strtotime($reservation['from_']));
+								$_to = date($this->dateTimeFormat, strtotime($reservation['to_']));
 								$sms_text = "Hei {$reservation['contact_name']}\n "
-									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$reservation['from_']} - {$reservation['to_']}";
+									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$_from} - {$_to}.";
 								/**
 								 * send email - only if not already sent for this reservation
 								 */
@@ -244,8 +250,10 @@ class booking_async_task_send_access_request extends booking_async_task
 							}
 							else if ($stage == 2)
 							{
+								$_from = date($this->dateTimeFormat, strtotime($reservation['from_']));
+								$_to = date($this->dateTimeFormat, strtotime($reservation['to_']));
 								$sms_text = "Hei {$reservation['contact_name']}\n "
-									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$reservation['from_']} - {$reservation['to_']}.\n ";
+									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$_from} - {$_to}.\n ";
 								/**
 								 * Get status
 								 */

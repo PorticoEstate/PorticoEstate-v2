@@ -112,6 +112,28 @@ class property_hook_helper
 	 */
 	public function home_backend()
 	{
+
+
+		//echo the styles
+	
+		echo '<style>
+		.table-filter {
+    margin-bottom: 15px;
+    padding: 8px 0;
+}
+
+.table-filter-select {
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    min-width: 150px;
+}
+
+.table-filter label {
+    margin-right: 8px;
+    font-weight: bold;
+}
+		</style>';
 		//			$this->home_workorder_overdue_tender();
 		//			$this->home_project_overdue_end_date();
 		$this->home_tenant_claims();
@@ -585,13 +607,22 @@ JS;
 
 			$js = <<<JS
 					<script type="text/javascript">
-					var building_id = 1;
+// Define filter options
+var filterOptions = {
+    label: 'Filter',
+    placeholder: 'Alle tildelte',
+    paramName: 'user_id',
+    options: [
+        { value: {$accound_id}, text: 'Bare mine' }
+    ]
+};
+
 					var lang = $lang;
 					var ticket_infoURL = phpGWLink('index.php', {
 						menuaction:'property.uitts.query2',
 						order:'id',
 						sort:'desc',
-						user_id:{$accound_id},
+						user_id: -{$accound_id},
 						result:10
 						}, true);
 
@@ -613,7 +644,19 @@ JS;
 					paginatorTableTicket_info.limit = 10;
 					createPaginatorTable('ticket_info_container', paginatorTableTicket_info);
 
-					createTable('ticket_info_container', ticket_infoURL, colDefsTicket_info, rTicket_info, 'pure-table pure-table-bordered', paginatorTableTicket_info);
+	//				createTable('ticket_info_container', ticket_infoURL, colDefsTicket_info, rTicket_info, 'pure-table pure-table-bordered', paginatorTableTicket_info);
+					let afterTableLoad  = null;       // callback function (optional)
+					
+					createTableWithFilter(
+					'ticket_info_container', 
+					ticket_infoURL, 
+					colDefsTicket_info, 
+					rTicket_info, 
+					'pure-table pure-table-bordered',
+					paginatorTableTicket_info, 
+					filterOptions,
+					afterTableLoad
+				);
 
 					</script>
 

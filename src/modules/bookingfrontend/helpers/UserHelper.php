@@ -549,6 +549,11 @@ class UserHelper
 		}
 	}
 
+	public function get_cached_user_data()
+	{
+		return Cache::session_get($this->get_module(), self::USERARRAY_SESSION_KEY);
+	}
+
 	/**
 	 * Validate external safe login - and return to me
 	 * @param array $redirect
@@ -570,7 +575,7 @@ class UserHelper
 		static $user_data = array();
 		if (!$user_data)
 		{
-			$user_data = Cache::session_get($this->get_module(), self::USERARRAY_SESSION_KEY);
+			$user_data = $this->get_cached_user_data();
 		}
 		if (!empty($user_data['ssn']))
 		{

@@ -40,7 +40,7 @@ class booking_boevent extends booking_bocommon_authorized
 				$found_credentials = true;
 			}
 
-			$external_login_info = $bouser->validate_ssn_login(array(), true);
+			$external_login_info = $bouser->get_cached_user_data();
 
 			if (!$found_credentials && $for_object['customer_ssn'] == $external_login_info['ssn'])
 			{

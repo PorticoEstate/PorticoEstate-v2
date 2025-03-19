@@ -47,11 +47,11 @@ class LangHelper
             ($request->getQueryParams()['lang'] ??
                 ($current_lang ?? "no"));
 
-        // Only set cookie if the language has changed
-        if ($selected_lang && $selected_lang !== $current_lang) {
-            $sessions = Sessions::getInstance();
-            $sessions->phpgw_setcookie('selected_lang', $selected_lang, (time() + (60 * 60 * 24 * 14)));
-        }
+//        // Only set cookie if the language has changed
+//        if ($selected_lang && $selected_lang !== $current_lang) {
+//            $sessions = Sessions::getInstance();
+//            $sessions->phpgw_setcookie('selected_lang', $selected_lang, (time() + (60 * 60 * 24 * 14)));
+//        }
 
         $userlang = $selected_lang ?: $userSettings['preferences']['common']['lang'];
 

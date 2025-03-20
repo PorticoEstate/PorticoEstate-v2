@@ -20,14 +20,20 @@ class booking_uicompleted_reservation_export extends booking_uicommon
 		'index'	 => true,
 		'query'	 => true,
 		'add'	 => true,
+		'archive' => true,
 		'show'	 => true,
 		'delete' => true
 	);
 	protected
 		$module = 'booking',
 		$fields = array(
-			'season_id', 'season_name', 'building_id', 'building_name', 'from_',
-			'to_', 'export_configurations'
+			'season_id',
+			'season_name',
+			'building_id',
+			'building_name',
+			'from_',
+			'to_',
+			'export_configurations'
 		);
 
 	var $generated_files_bo, $display_name;
@@ -490,8 +496,8 @@ class booking_uicompleted_reservation_export extends booking_uicommon
 		{
 			//Fill in a dummy value (so as to temporarily pass validation), this will then be
 			//automatically filled in by bo->add process later on.
-			
-			if(empty($export['from_']))
+
+			if (empty($export['from_']))
 			{
 				$export['from_'] = date('Y-m-d H:i:s');
 			}
@@ -538,5 +544,49 @@ class booking_uicompleted_reservation_export extends booking_uicommon
 			'new_form' => true,
 			'export' => $export
 		));
+	}
+
+	//archive
+	public function archive()
+	{
+		//Values passed in from the "Export"-action in uicompleted_reservation.index
+		$archive = extract_values($_POST, $this->fields);
+		$archive['process'] = Sanitizer::get_var('process', 'int', 'POST');
+		$errors = array();
+		//Fill in a dummy value (so as to temporarily pass validation), this will then be
+		//automatically filled in by bo->add process later on.
+
+		if (empty($archive['from_']))
+		{
+			$archive['from_'] = date('Y-m-d H:i:s');
+		}
+		if (!isset($archive['to_']) || empty($archive['to_']))
+		{
+			$archive['to_'] = date('Y-m-d');
+		}
+
+		$errors = $this->bo->validate($archive);
+		if (!$errors)
+		{
+			try
+			{
+				$receipt = $this->bo->archive($archive);
+				$this->redirect_to('index');
+			}
+			catch (booking_unauthorized_exception $e)
+			{
+				$errors['global'] = lang('Could not add object due to insufficient permissions');
+			}
+		}
+
+
+		//$this->flash_form_errors($errors);
+
+		foreach ($errors as $key => $value)
+		{
+			Cache::message_set($value, 'error');
+		}
+
+		$this->redirect_to('index');
 	}
 }

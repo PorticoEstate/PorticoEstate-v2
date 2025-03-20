@@ -300,6 +300,14 @@ JS;
 			'custom_code'	 => 'window.open("' . $this->link_to('toggle_show_all_completed_reservations') . '", "_self");',
 		);
 
+		$data['datatable']['actions'][] = array(
+			'my_name'		 => 'Archive',
+			'type'			 => 'custom',
+			'className'		 => 'save',
+			'custom_code'	 => "archive_completed_reservations();",
+			'text'			 => 'Arkiver' . '...',
+		);
+
 		self::render_template_xsl('datatable2', $data);
 	}
 

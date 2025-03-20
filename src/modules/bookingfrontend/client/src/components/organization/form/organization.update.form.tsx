@@ -31,8 +31,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.organization number')}
                         error={
-                            errors.organization_number?.message 
-                            ? t(errors.organization_number.message) 
+                            errors.organization?.organization_number?.message 
+                            ? t(errors.organization.organization_number.message) 
                             : undefined
                         }
                     />
@@ -46,8 +46,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.organization_name')}
                         error={
-                            errors.name?.message 
-                            ? t(errors.name.message) 
+                            errors.organization?.name?.message 
+                            ? t(errors.organization.name.message) 
                             : undefined
                         }
                     />
@@ -61,8 +61,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.organization_shortname')}
                         error={
-                            errors.shortname?.message 
-                            ? t(errors.shortname.message) 
+                            errors.organization?.shortname?.message 
+                            ? t(errors.organization.shortname.message) 
                             : undefined
                         }
                     />
@@ -76,8 +76,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.street')}
                         error={
-                            errors.street?.message 
-                            ? t(errors.street.message) 
+                            errors.organization?.street?.message 
+                            ? t(errors.organization.street.message) 
                             : undefined
                         }
                     />
@@ -91,8 +91,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.zip code')}
                         error={
-                            errors.zip_code?.message 
-                            ? t(errors.zip_code.message) 
+                            errors.organization?.zip_code?.message 
+                            ? t(errors.organization.zip_code.message) 
                             : undefined
                         }
                     />
@@ -106,8 +106,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.district')}
                         error={
-                            errors.district?.message 
-                            ? t(errors.district.message) 
+                            errors.organization?.district?.message 
+                            ? t(errors.organization.district.message) 
                             : undefined
                         }
                     />
@@ -121,8 +121,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.city')}
                         error={
-                            errors.city?.message 
-                            ? t(errors.city.message) 
+                            errors.organization?.city?.message 
+                            ? t(errors.organization.city.message) 
                             : undefined
                         }
                     />
@@ -136,8 +136,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.contact_email')}
                         error={
-                            errors.email?.message 
-                            ? t(errors.email.message) 
+                            errors.organization?.email?.message 
+                            ? t(errors.organization.email.message) 
                             : undefined
                         }
                     />
@@ -151,8 +151,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.phone')}
                         error={
-                            errors.phone?.message 
-                            ? t(errors.phone.message) 
+                            errors.organization?.phone?.message 
+                            ? t(errors.organization?.phone.message) 
                             : undefined
                         }
                     />
@@ -166,8 +166,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                         {...field}
                         label={t('bookingfrontend.homepage')}
                         error={
-                            errors.homepage?.message 
-                            ? t(errors.homepage.message) 
+                            errors.organization?.homepage?.message 
+                            ? t(errors.organization.homepage.message) 
                             : undefined
                         }
                     />

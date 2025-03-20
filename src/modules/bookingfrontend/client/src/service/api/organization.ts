@@ -17,7 +17,8 @@ export const useOrganizationData = (orgId: number) => {
                 groups: JSON.parse(data.groups),
                 delegaters: JSON.parse(data.delegaters),
                 contacts: JSON.parse(data.contacts),
-                activity: JSON.parse(data.activity)
+                activity: JSON.parse(data.activity),
+                show_in_portal: !!data.show_in_portal
             }
         }
     });

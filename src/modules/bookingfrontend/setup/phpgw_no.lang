@@ -689,3 +689,8 @@ new_group	bookingfrontend	no	Ny gruppe
 birth_number	bookingfrontend	no	Fødselnummer
 add_groupleader	bookingfrontend	no	Lage ny gruppeleder
 remove_groupleader	bookingfrontend	no	Slett ny gruppeleder
+edit_organization	bookingfrontend	no	Endre organisasjon
+field_is_required	bookingfrontend	no	Feltet er påkrevd
+field_is_too_short	bookingfrontend	no	Feltet er for kort
+ssn_length	bookingfrontend	no	Fødselsnummeret skal bestå av 11 tall
+invalid_email	bookingfrontend	no	Ugyldig e-post

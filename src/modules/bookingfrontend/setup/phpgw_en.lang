@@ -690,4 +690,9 @@ new_delegate	bookingfrontend	en	New delegate
 new_group	bookingfrontend	en	New group
 birth_number	bookingfrontend	en	Birth number
 add_groupleader	bookingfrontend	en	Add groupleader
-remove_groupleader	bookingfrontend	no	Remove groupleader
+remove_groupleader	bookingfrontend	en	Remove groupleader
+edit_organization	bookingfrontend	en	Edit organization
+field_is_required	bookingfrontend	en	Name is required
+field_is_too_short	bookingfrontend	en	Field value is too short
+ssn_length	bookingfrontend	en	Birth nummer should consists of 11 numbers
+invalid_email	bookingfrontend	en	Invalid email

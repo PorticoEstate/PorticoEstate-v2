@@ -20,22 +20,30 @@ const phoneRegex = new RegExp(
 export const createDelegateFormSchema: z.ZodType<CreatingDelegate> = z
     .object({
         name: z
-            .string()
-            .min(5, { message: "bookingfrontend.enter_name" })
+            .string({ message: "bookingfrontend.field_required" })
+            .min(5, { message: "bookingfrontend.name_is_too_short" })
             .max(255),
         ssn: z
-            .string()
-            .length(11, { message: 'bookingfrontend_incorrect_ssn' }),
-        email: z.string().email(),
-        phone: z.string().regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
+            .string({ message: "bookingfrontend.field_required" })
+            .length(11, { message: 'bookingfrontend.ssn_length' }),
+        email: z
+            .string({ message: "bookingfrontend.field_required" })
+            .email({ message: "bookingfrontend.invalid_email" }),
+        phone: z
+            .string({ message: "bookingfrontend.field_required" })
+            .regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
     });
 
 export const updateDelegateFormSchema: z.ZodType<UpdatingDelegate> = z
 .object({
     name: z
-        .string()
-        .min(5, { message: "bookingfrontend.enter_name" })
+        .string({ message: "bookingfrontend.field_required" })
+        .min(5, { message: "bookingfrontend.name_is_too_short" })
         .max(255),
-    email: z.string().email(),
-    phone: z.string().regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
+    email: z
+        .string({ message: "bookingfrontend.field_required" })
+        .email({ message: "bookingfrontend.invalid_email" }),
+    phone: z
+        .string({ message: "bookingfrontend.field_required" })
+        .regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
 });

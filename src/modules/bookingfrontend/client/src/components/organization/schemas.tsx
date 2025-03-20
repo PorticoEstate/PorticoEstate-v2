@@ -29,33 +29,53 @@ const patchOrganizationContacts: z.ZodType<UpdatingOrganizationContacts> = z.
     object({
         id: z.number().readonly(),
         name: z
-            .string()
-            .min(5, { message: "bookingfrontend.enter_name" })
+            .string({ message: "bookingfrontend.field_required" })
+            .min(5, { message: "bookingfrontend.name_is_too_short" })
             .max(255),
-        phone: z.string().regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
-        email: z.string().email()
+        email: z
+            .string({ message: "bookingfrontend.field_required" })
+            .email({ message: "bookingfrontend.invalid_email" }),
+        phone: z
+            .string({ message: "bookingfrontend.field_required" })
+            .regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
     })
 
 const patchOrganizationData: z.ZodType<UpdatingOrganization> = z
 .object({
+    organization_number: z
+        .string({ message: "bookingfrontend.field_required" })
+        .min(5, { message: "bookingfrontend.field_is_too_short" }),
     name: z
-        .string()
-        .min(5, { message: "bookingfrontend.enter_name" })
+        .string({ message: "bookingfrontend.field_required" })
+        .min(5, { message: "bookingfrontend.field_is_too_short" })
         .max(255),
     shortname: z
-        .string()
-        .min(5, { message: "bookingfrontend.enter_shortname" })
+        .string({ message: "bookingfrontend.field_required" })
+        .min(5, { message: "bookingfrontend.field_is_too_short" })
         .max(255),
-    homepage: z.string(),
-    organization_number: z.string(),
-    city: z.string(),
-    district: z.string(),
-    street: z.string(),
-    zip_code: z.string(),
-    email: z.string().email(),
-    phone: z.string().regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
-    activity_id: z.number(),
-    show_in_portal: z.boolean()
+    homepage: z
+        .string({ message: "bookingfrontend.field_required" })
+        .min(1, { message: 'bookingfrontend.field_is_too_short' }),
+    city: z
+        .string({ message: "bookingfrontend.field_required" })
+        .min(1, { message: 'bookingfrontend.field_is_too_short' }),
+    district: z
+        .string({ message: "bookingfrontend.field_required" })
+        .min(1, { message: 'bookingfrontend.field_is_too_short' }),
+    street: z
+        .string({ message: "bookingfrontend.field_required" })
+        .min(1, { message: 'bookingfrontend.field_is_too_short' }),
+    zip_code: z
+        .string({ message: "bookingfrontend.field_required" })
+        .min(1, { message: 'bookingfrontend.field_is_too_short' }),
+    email: z
+        .string({ message: "bookingfrontend.field_required" })
+        .email({ message: "bookingfrontend.invalid_email" }),
+    phone: z
+        .string({ message: "bookingfrontend.field_required" })
+        .regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
+    activity_id: z.number({ message: "bookingfrontend.field_required" }),
+    show_in_portal: z.boolean({ message: "bookingfrontend.field_required" })
 });
 
 export const patchOrganizationSchema: z.ZodType<UpdatingOrganization> = z

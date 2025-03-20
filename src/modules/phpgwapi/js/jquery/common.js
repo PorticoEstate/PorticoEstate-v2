@@ -436,7 +436,44 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 
 	if (ajax_url)
 	{
-		var ajax_def = { url: ajax_url, data: {}, type: 'GET' };
+		var ajax_def = {
+			url: ajax_url,
+			type: 'GET',
+			data: function (d)
+			{
+				// This replaces the old fnServerParams functionality
+				try
+				{
+					if ($.isNumeric(container.substr(container.length - 1, 1)))
+					{
+						if (!$.isEmptyObject(eval('paramsTable' + container.substr(container.length - 1, 1))))
+						{
+							$.each(eval('paramsTable' + container.substr(container.length - 1, 1)), function (k, v)
+							{
+								d[k] = v;
+							});
+						}
+					}
+				}
+				catch (err)
+				{
+					// Error handling
+				}
+
+				// Keep only the relevant column for ordering if needed
+				if (typeof (d.order) != 'undefined')
+				{
+					var column = d.order[0].column;
+					var dir = d.order[0].dir;
+					var column_to_keep = d.columns[column];
+					delete d.columns;
+					d.columns = {};
+					d.columns[column] = column_to_keep;
+				}
+
+				return d;
+			}
+		};
 		var serverSide_def = true;
 	}
 	else
@@ -503,36 +540,6 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		lengthMenu: lengthMenu,
 		pageLength: parseInt(pageLength),
 		language: language,
-		fnServerParams: function (aoData)
-		{
-			try
-			{
-				if ($.isNumeric(container.substr(container.length - 1, 1)))
-				{
-					if (!$.isEmptyObject(eval('paramsTable' + container.substr(container.length - 1, 1))))
-					{
-						$.each(eval('paramsTable' + container.substr(container.length - 1, 1)), function (k, v)
-						{
-							aoData[k] = v;
-						});
-					}
-				}
-			}
-			catch (err)
-			{
-
-			}
-
-			if (typeof (aoData.order) != 'undefined')
-			{
-				var column = aoData.order[0].column;
-				var dir = aoData.order[0].dir;
-				var column_to_keep = aoData.columns[column];
-				delete aoData.columns;
-				aoData.columns = {};
-				aoData.columns[column] = column_to_keep;
-			}
-		},
 		fnInitComplete: function (oSettings, json)
 		{
 		},

@@ -455,6 +455,16 @@ class booking_socompleted_reservation extends booking_socommon
 		return $db->query($sql, __LINE__, __FILE__);
 	}
 
+	public function update_archived_state_of(&$reservations, $with_export_id)
+	{
+		$db = $this->db;
+
+		$table_name = $this->table_name;
+		$ids = join(', ', array_map(array($this, 'select_id'), $reservations));
+		$sql = "UPDATE $table_name SET exported = $with_export_id, export_file_id = -1, invoice_file_order_id = -1  WHERE {$table_name}.id IN ($ids);";
+		return $db->query($sql, __LINE__, __FILE__);
+	}
+
 	public function associate_with_export_file($id, $with_export_file_id, $and_invoice_file_order_id)
 	{
 		if (empty($id))

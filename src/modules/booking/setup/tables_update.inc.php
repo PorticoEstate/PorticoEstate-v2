@@ -7661,3 +7661,30 @@ function booking_upgrade0_2_107($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.107';
+function booking_upgrade0_2_108($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$db = $oProc->m_odb;
+
+	$userSettings = App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+
+	$account_id = $userSettings['account_id'];
+
+	$sql = "SELECT id FROM bb_completed_reservation_export_file WHERE id = -1";
+	$db->query($sql, __LINE__, __FILE__);
+	if (!$db->next_record())
+	{
+		$db->query("INSERT INTO bb_completed_reservation_export_file (
+			id, filename, total_cost, type, total_items, created_on, created_by)
+			VALUES (-1, 'Arkivert', 0, 'internal', 0, NOW(), {$account_id})", __LINE__, __FILE__);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.109';
+		return $currentver;
+	}
+}
+

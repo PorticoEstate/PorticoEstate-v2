@@ -607,15 +607,15 @@ JS;
 
 			$js = <<<JS
 					<script type="text/javascript">
-// Define filter options
-var filterOptions = {
-    label: 'Filter',
-    placeholder: 'Alle tildelte',
-    paramName: 'user_id',
-    options: [
-        { value: {$accound_id}, text: 'Bare mine' }
-    ]
-};
+					// Define filter options
+					var filterOptions = {
+						label: 'Filter',
+						placeholder: 'Alle tildelte',
+						paramName: 'user_id',
+						options: [
+							{ value: {$accound_id}, text: 'Bare mine' }
+						]
+					};
 
 					var lang = $lang;
 					var ticket_infoURL = phpGWLink('index.php', {
@@ -644,7 +644,6 @@ var filterOptions = {
 					paginatorTableTicket_info.limit = 10;
 					createPaginatorTable('ticket_info_container', paginatorTableTicket_info);
 
-	//				createTable('ticket_info_container', ticket_infoURL, colDefsTicket_info, rTicket_info, 'pure-table pure-table-bordered', paginatorTableTicket_info);
 					let afterTableLoad  = null;       // callback function (optional)
 					
 					createTableWithFilter(

@@ -22,7 +22,7 @@ export const OrganizationContactForm = ({ number, control, errors }: Groupleader
             <h3>{t(`bookingfrontend.admin ${number + 1}`)}</h3>
             <div className={styles.contact_form_container}>
                 <Controller 
-                    name={`contac ts[${number}].name`}
+                    name={`contacts[${number}].name`}
                     control={control}
                     render={({ field }) => (
                         <Textfield

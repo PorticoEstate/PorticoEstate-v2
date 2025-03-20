@@ -7662,15 +7662,15 @@ function booking_upgrade0_2_107($oProc)
 	}
 }
 
-$test[] = '0.2.107';
+$test[] = '0.2.108';
 function booking_upgrade0_2_108($oProc)
 {
 	$oProc->m_odb->transaction_begin();
 	$db = $oProc->m_odb;
 
-	$userSettings = App\modules\phpgwapi\services\Settings::getInstance()->get('user');
-
-	$account_id = $userSettings['account_id'];
+	$db->query("SELECT min(account_id) as account_id FROM phpgw_accounts WHERE account_type = 'u'", __LINE__, __FILE__);
+	$db->next_record();
+	$account_id = $db->f('account_id');
 
 	$sql = "SELECT id FROM bb_completed_reservation_export_file WHERE id = -1";
 	$db->query($sql, __LINE__, __FILE__);

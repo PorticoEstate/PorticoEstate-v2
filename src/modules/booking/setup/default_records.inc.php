@@ -344,6 +344,19 @@ foreach ($bb_rescategory_activity as $activity_id)
 	$db->query($sql, __LINE__, __FILE__);
 }
 
+$db->query("SELECT min(account_id) as account_id FROM phpgw_accounts WHERE account_type = 'u'", __LINE__, __FILE__);
+$db->next_record();
+$account_id = $db->f('account_id');
+
+$sql = "SELECT id FROM bb_completed_reservation_export_file WHERE id = -1";
+$db->query($sql, __LINE__, __FILE__);
+if (!$db->next_record())
+{
+	$db->query("INSERT INTO bb_completed_reservation_export_file (
+			id, filename, total_cost, type, total_items, created_on, created_by)
+			VALUES (-1, 'Arkivert', 0, 'internal', 0, NOW(), {$account_id})", __LINE__, __FILE__);
+}
+
 // Default groups and users
 
 $aclobj = Acl::getInstance();

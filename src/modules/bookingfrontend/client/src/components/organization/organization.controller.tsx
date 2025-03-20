@@ -26,7 +26,7 @@ const OrganizatioController = ({ data }: OrganizationControllerProps) => {
                 {
                     editing 
                     ? t('bookingfrontend.cancel')
-                    : t('bookingfrontend.edit')}
+                    : t('bookingfrontend.edit_organization')}
             </Button>
         </div>
         {

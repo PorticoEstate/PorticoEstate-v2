@@ -12,10 +12,9 @@ import styles from './styles/delegater.form.module.scss';
 
 interface DelegateUpdateProps {
     data: ViewDelegate;
-    button: any;
 }
 
-const DelegateUpdate = ({ data, button }: DelegateUpdateProps) => {
+const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
     const t = useTrans();
     const {
         control,
@@ -39,7 +38,9 @@ const DelegateUpdate = ({ data, button }: DelegateUpdateProps) => {
     return (
         <>
             <div className={styles.buttons_group}>
-                { button }
+                <Button variant='secondary'>
+                    {t('bookingfrontend.cancel')}
+                </Button>
                 <Button onClick={handleSubmit(updateCb)}>
                     <FontAwesomeIcon icon={faFloppyDisk} />
                     {t('bookingfrontend.save')}

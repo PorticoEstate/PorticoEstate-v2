@@ -22,6 +22,7 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
         formState: { errors }
     } = useForm({
         resolver: zodResolver(patchOrganizationSchema),
+        mode: 'onChange',
         defaultValues: {
             organization: {
                 shortname: data.shortname,
@@ -58,7 +59,6 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
     const save = (data: UpdatingOrganization) => {
         update.mutate(data);
     }
-
     return (
         <>
             <UpdateOrganizationForm 

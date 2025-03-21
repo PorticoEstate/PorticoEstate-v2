@@ -1,5 +1,13 @@
-.delegate_create > div {
-    margin-bottom: 0.7rem;
+@import '../../../../styles/util.module';
+
+.delegate_create {
+    width: 47%;
+    @include mobile {
+        width: 100%;
+    }
+    & > div {
+        margin-bottom: 0.7rem;
+    }
 }
 
 .buttons_group {

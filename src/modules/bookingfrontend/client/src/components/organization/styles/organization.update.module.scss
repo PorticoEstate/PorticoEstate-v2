@@ -1,4 +1,10 @@
+@import '../../../styles/util.module';
+
 .form_container {
+    width: 47%;
+    @include mobile {
+        width: 100%;
+    }
     & > div { 
         margin-bottom: 0.7rem;
     }

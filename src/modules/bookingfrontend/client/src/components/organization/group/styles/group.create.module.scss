@@ -1,5 +1,14 @@
-.new_group_container > div{
-    margin-bottom: 1rem;
+@import '../../../../styles/util.module';
+
+.new_group_container {
+    width: 47%;
+    @include mobile {
+        width: 100%;
+    }
+    & > div {
+         margin-bottom: 1rem;
+    }
+   
 }
 
 .group_buttons {

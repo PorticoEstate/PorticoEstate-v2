@@ -36,7 +36,7 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
     }
     
     return (
-        <>
+        <main className={styles.delegate_create}>
             <div className={styles.buttons_group}>
                 <Button variant='secondary'>
                     {t('bookingfrontend.cancel')}
@@ -85,7 +85,7 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
                     />
                 )}
             />
-        </>
+        </main>
     )
 }
 

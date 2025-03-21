@@ -1,6 +1,12 @@
+@import '../../../../styles/util.module';
+
 .group_view_container {
     margin-bottom: 1rem;
     margin-top: 1.25rem; 
+    width: 47%;
+    @include mobile {
+        width: 100%;
+    }
     & > div {
         margin-top: 1.25rem;
         border-bottom: 1px solid gray;

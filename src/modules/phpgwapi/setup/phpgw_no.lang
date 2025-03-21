@@ -114,6 +114,7 @@ enter the attribute value for this entity	common	no	Angi egenskap verdi for denn
 entry has been deleted sucessfully	common	no	Entry har blitt slettet
 entry updated sucessfully	common	no	Entry er oppdatert
 error	common	no	Feil
+error_occurred	common	no	Det oppstod en feil
 error_report_system	common	no	Feilmelding (om systemet)
 exit	common	no	Avslutt
 expires	common	no	Utløpsdato
@@ -330,6 +331,7 @@ todays date, eg. %1	common	no	Dagens dato, %1
 toolbar	common	no	Verktøy
 total	common	no	Total
 true	common	no	Sant
+try_again	common	no	Prøv igjen
 tuesday	common	no	Tirsdag
 unable to load jquery script '%1' when attempting to load widget: '%2'	common	no	Ikke i stand til å laste  jquery script '%1' på forsøk på å laste widget: '%2'
 up	common	no	opp

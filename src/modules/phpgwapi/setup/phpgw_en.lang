@@ -150,6 +150,7 @@ error	common	en	Error
 error creating %1 %2 directory	common	en	Error creating %1 %2 directory
 error deleting %1 %2 directory	common	en	Error deleting %1 %2 directory
 error renaming %1 %2 directory	common	en	Error renaming %1 %2 directory
+error_occurred	common	en	An error occurred
 error_report_system	common	en	Error Report (regarding the system)
 estonia	common	en	ESTONIA
 ethiopia	common	en	ETHIOPIA
@@ -499,6 +500,7 @@ tonga	common	en	TONGA
 too many unsuccessful attempts to login: %1 for the user '%2', %3 for the ip %4	common	en	Too many unsuccessful attempts to login: %1 for the user '%2', %3 for the IP %4
 total	common	en	Total
 trinidad and tobago	common	en	TRINIDAD AND TOBAGO
+try_again	common	en	Try again
 tuesday	common	en	Tuesday
 tunisia	common	en	TUNISIA
 turkey	common	en	TURKEY

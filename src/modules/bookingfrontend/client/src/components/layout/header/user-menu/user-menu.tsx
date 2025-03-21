@@ -93,9 +93,14 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                 <Dropdown.List>
 
                     <Dropdown.Item>
-                        <Dropdown.Button onClick={handleLogout}>
-                            {t('common.logout')}
-                        </Dropdown.Button>
+						<Dropdown.Button asChild>
+							<a
+								href={phpGWLink(['bookingfrontend', 'logout/'])}
+
+								className={'link-text link-text-unset normal'}>
+								{t('common.logout')}
+							</a>
+						</Dropdown.Button>
 
                     </Dropdown.Item>
                 </Dropdown.List>

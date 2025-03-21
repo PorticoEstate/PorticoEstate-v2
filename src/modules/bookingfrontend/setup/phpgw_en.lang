@@ -519,7 +519,10 @@ schedule	bookingfrontend	en	Schedule
 Search available resources	bookingfrontend	en	Search for available facilities
 Search building, resource, organization	bookingfrontend	en	Search building, resource, organization
 Search results	bookingfrontend	en	Search results
+search_clear_filters	bookingfrontend	en	Clear filters
 search_for_like_minded_people	bookingfrontend	en	Are you looking for someone interested in the same things as you? Search by the name of a team or organization, or filter by activity or area
+search_no_resources_match	bookingfrontend	en	No resources match your search
+search_use_filters_to_search	bookingfrontend	en	Use filters to find resources
 season	bookingfrontend	en	Season
 season name	bookingfrontend	en	Season name
 seasons	bookingfrontend	en	Seasons

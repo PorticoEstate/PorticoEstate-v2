@@ -118,6 +118,11 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
     const filteredResources = useMemo(() => {
         if (!resourcesWithBuildings.length) return [];
 
+        // If no filters are applied, return empty array (don't show results by default)
+        if (!textSearchQuery.trim() && !where) {
+            return [];
+        }
+
         let filtered = resourcesWithBuildings;
 
         // Only apply text search if something has been entered
@@ -250,7 +255,11 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
             </section>
 
             <section id="resource-results" className={styles.resultsSection}>
-                {filteredResources.length > 0 ? (
+                {!textSearchQuery.trim() && !where ? (
+                    <div className={styles.noResults}>
+                        <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
+                    </div>
+                ) : filteredResources.length > 0 ? (
                     <div className={styles.resourceGrid}>
                         {filteredResources.map(resource => (
                             <ResourceResultItem key={resource.id} resource={resource}/>
@@ -258,12 +267,12 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
                     </div>
                 ) : (
                     <div className={styles.noResults}>
-                        <p>{t('search.no_resources_match')}</p>
+                        <p>{t('bookingfrontend.search_no_resources_match')}</p>
                         <Button
                             variant="secondary"
                             onClick={clearFilters}
                         >
-                            {t('search.clear_filters')}
+                            {t('bookingfrontend.search_clear_filters')}
                         </Button>
                     </div>
                 )}

@@ -101,8 +101,10 @@ class OrganizationRepository
         $sql = "SELECT json_agg(json_build_object('id', act.id, 'name', act.name)) as data
         FROM bb_activity as act
         WHERE act.parent_id = ($parentActSql)";
+
+        $sql = "SElECT json_agg(json_build_object('id', act.id, 'name', act.name)) as data FROM bb_activity as act";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute([':id' => $id]);
+        $stmt->execute();
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
@@ -158,8 +160,18 @@ class OrganizationRepository
         WHERE organization_id = :orgId
         ";
 
+        $buildingSql = "
+        SELECT json_agg(json_build_object('id', bld.id, 'name', bld.name)) FROM public.bb_building as bld
+        WHERE bld.id IN (
+	        SELECT br.building_id FROM bb_allocation_resource ar 
+	        JOIN bb_resource r ON ar.resource_id = r.id
+	        JOIN bb_building_resource br ON (br.resource_id  = r.id)
+	        JOIN bb_allocation a ON a.id = ar.allocation_id AND (a.from_ - NOW()::timestamp < '300 days') AND a.organization_id = 1
+        )
+        ";
+
         $sql = "SELECT 
-        org.*, ($delegaterSql) as delegaters, ($activitySql) as activity, 
+        org.*, ($buildingSql) as buildings, ($delegaterSql) as delegaters, ($activitySql) as activity, 
         ($groupsSql) as groups, ($orgContactSql) as contacts
         FROM bb_organization as org
         WHERE id = :orgId

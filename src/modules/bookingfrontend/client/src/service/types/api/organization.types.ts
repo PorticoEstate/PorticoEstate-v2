@@ -9,6 +9,10 @@ export interface OrganizationContact {
     name: string;
     ssn: number;
 }
+interface ShortBuildings {
+    id: number;
+    name: string;
+}
 export interface Organization {
     id: number;
     active: number;
@@ -16,6 +20,7 @@ export interface Organization {
     co_address: string;
     delegaters: Delegate[];
     contacts: OrganizationContact[];
+    buildings: ShortBuildings[];
     district: string;
     email: string;
     groups: Group[];

@@ -170,8 +170,8 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
     if (isLoading) {
         return (
             <div className={styles.loadingContainer}>
-                <Spinner data-size="lg" aria-label={t('common.loading')}/>
-                <p>{t('common.loading')}</p>
+                <Spinner data-size="lg" aria-label={t('common.loading...')}/>
+                <p>{t('common.loading...')}</p>
             </div>
         );
     }
@@ -191,16 +191,16 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
                 <div className={styles.searchInputs}>
                     <div className={styles.searchField}>
                         <Textfield
-                            label={t('search.search_resources')}
+                            label={t('common.search')}
                             value={textSearchQuery}
                             onChange={(e) => setTextSearchQuery(e.target.value)}
-                            placeholder={t('search.search_by_name_or_location')}
+                            placeholder={t('bookingfrontend.search available resources')}
                         />
                     </div>
 
                     <div className={styles.dateFilter}>
                         <Field>
-                            <Label>{t('search.available_on_date')}</Label>
+                            <Label>{t('bookingfrontend.when')}</Label>
                             <CalendarDatePicker
                                 currentDate={date}
                                 onDateChange={handleDateChange}
@@ -211,13 +211,13 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
 
                     <div className={styles.districtFilter}>
                         <Field>
-                            <Label>{t('search.available_on_date')}</Label>
+                            <Label>{t('bookingfrontend.where')}</Label>
                             <Select
                                 value={where}
                                 onChange={(e) => setWhere(e.target.value)}
                             >
 
-                                <Select.Option value="">{t('search.all_districts')}</Select.Option>
+                                <Select.Option value="">{t('booking.all')}</Select.Option>
                                 {districts.map(district => (
                                     <Select.Option key={district} value={district}>
                                         {district}
@@ -230,16 +230,16 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
 
                 {(textSearchQuery || where !== '') && (
                     <div className={styles.activeFilters}>
-                        <span>{t('search.active_filters')}:</span>
+                        <span>{t('common.filter')}:</span>
                         <div className={styles.filterChips}>
                             {textSearchQuery && (
                                 <Chip.Removable data-color="brand1" onClick={() => setTextSearchQuery('')}>
-                                    {t('search.search')}: {textSearchQuery}
+                                    {t('common.search')}: {textSearchQuery}
                                 </Chip.Removable>
                             )}
                             {where && (
                                 <Chip.Removable data-color="brand1" onClick={() => setWhere('')}>
-                                    {t('search.district')}: {where}
+                                    {t('bookingfrontend.town part')}: {where}
                                 </Chip.Removable>
                             )}
                             <Button
@@ -247,7 +247,7 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
                                 data-size="sm"
                                 onClick={clearFilters}
                             >
-                                {t('search.clear_all_filters')}
+                                {t('bookingfrontend.search_clear_filters')}
                             </Button>
                         </div>
                     </div>

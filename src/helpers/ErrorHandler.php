@@ -13,6 +13,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Throwable;
 use ErrorException;
 use App\modules\phpgwapi\services\Settings;
+use Sanitizer;
 
 $serverSettings  = Settings::getInstance()->get('server');
 
@@ -194,12 +195,14 @@ class ErrorHandler
 
 		$bt = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS);
 
+		$IP_address = Sanitizer::get_ip_address(true);
+
 		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
 		$referer = str_replace('?', "\n?", $referer);
 		$referer = str_replace('&', "\n&", $referer);
-		$referer = str_replace('=', "\n=", $referer);
-		$trace = "Referer: {$referer} </b>\nPath: {$path}</b>\n" . $this->phpgw_parse_backtrace($bt);
-
+		$parametres = $_GET;
+		$parametres = print_r($parametres, true);
+		$trace = "IP_address: {$IP_address}</b>\n Referer: {$referer} </b>\nParameters: {$parametres}</b>\nPath: {$path}</b>\n" . $this->phpgw_parse_backtrace($bt);
 
 		$log_args = array(
 			'file'	=> $error_file,
@@ -375,9 +378,11 @@ class ErrorHandler
 		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
 		$referer = str_replace('?', "\n?", $referer);
 		$referer = str_replace('&', "\n&", $referer);
-		$referer = str_replace('=', "\n=", $referer);
 		$path = $this->path;
-		$trace = "Referer: {$referer} </b>\nPath: {$path}</b>\n" . $e->getTraceAsString();
+		$IP_address = Sanitizer::get_ip_address(true);
+		$parametres = $_GET;
+		$parametres = print_r($parametres, true);
+		$trace = "IP_address: {$IP_address}</b>\nReferer: {$referer} </b>\nPath: {$path}</b>\nParameters: {$parametres}</b>\n" . $e->getTraceAsString();
 		
 		$tables = $this->db->table_names();
 		if (in_array('phpgw_log', $tables))

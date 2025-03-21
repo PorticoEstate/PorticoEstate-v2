@@ -33,9 +33,9 @@ not_implemented	frontend	no	Ikke implementert
 select_unit	frontend	no	Velg bygg
 under_planning	frontend	no	Under planlegging
 active_single	frontend	no	Aktiv
-ended	frontend	no	 Avsluttet
+ended	frontend	no	Avsluttet
 status_unknown	frontend	no	Ukjent status
-old_contract_id	frontend 	no	Kontraktsnummer
+old_contract_id	frontend	no	Kontraktsnummer
 date_start	frontend	no	Startdato
 date_end	frontend	no	Sluttdato
 contract_status	frontend	no	Status

@@ -31,6 +31,8 @@ import {IAgeGroup, IAudience, IBuilding, Season} from "@/service/types/Building"
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import {ApplicationFormData, applicationFormSchema} from './application-form';
 import {IBookingUser} from "@/service/types/api.types";
+import ArticleTable from "@/components/article-table/article-table";
+import {ArticleOrder} from "@/service/types/api/order-articles.types";
 
 interface ApplicationCrudProps {
     selectedTempApplication?: Partial<FCallTempEvent>;
@@ -259,54 +261,72 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		};
 	}, [existingApplication, props.selectedTempApplication, props.date_id]);
 
-    const defaultValues = useMemo(() => {
-        if (existingApplication) {
-            return {
-                title: existingApplication.name,
-                start: defaultStartEnd.start,
-                end: defaultStartEnd.end,
-                homepage: existingApplication.homepage || '',
-                description: existingApplication.description || '',
-                equipment: existingApplication.equipment || '',
-                organizer: existingApplication.organizer || '',
-                resources: existingApplication.resources?.map((res) => res.id.toString()) ||
-                    props.selectedTempApplication?.extendedProps?.resources?.map(String) ||
-                    [],
-                audience: existingApplication.audience || undefined,
-                agegroups: agegroups?.map(ag => ({
-                    id: ag.id,
-                    male: existingApplication.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
-                    female: 0,
-                    name: ag.name,
-                    description: ag.description,
-                    sort: ag.sort,
-                })) || []
-            };
-        }
+	// In defaultValues section, add articles field:
+	const defaultValues = useMemo(() => {
+		if (existingApplication) {
+			// Convert orders to ArticleOrder format if they exist
+			const articleOrders: ArticleOrder[] = [];
 
-        // Use lastSubmittedData if available, otherwise use default empty values
-        return {
-            title: props.lastSubmittedData?.title ?? '',
-            organizer: props.bookingUser?.name ?? '',
-            start: defaultStartEnd.start,
-            end: defaultStartEnd.end,
-            homepage: props.lastSubmittedData?.homepage ?? '',
-            description: props.lastSubmittedData?.description ?? '',
-            equipment: props.lastSubmittedData?.equipment ?? '',
-            resources: props.selectedTempApplication?.extendedProps?.resources?.map(String) ??
-                [],
-            audience: props.lastSubmittedData?.audience ?? undefined,
-            agegroups: agegroups?.map(ag => ({
-                id: ag.id,
-                male: props.lastSubmittedData?.agegroups?.find(eag => eag.id === ag.id)?.male ?? 0,
-                female: 0,
-                name: ag.name,
-                description: ag.description,
-                sort: ag.sort,
-            })) || []
-        };
-    }, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication, props.bookingUser]);
+			// Process orders from existing application
+			if (existingApplication.orders && existingApplication.orders.length > 0) {
+				existingApplication.orders.forEach(order => {
+					if (order.lines && order.lines.length > 0) {
+						order.lines.forEach(line => {
+							articleOrders.push({
+								id: line.article_mapping_id,
+								quantity: +line.quantity,
+								parent_id: line.parent_mapping_id > 0 ? line.parent_mapping_id : null
+							});
+						});
+					}
+				});
+			}
+			return {
+				title: existingApplication.name,
+				start: defaultStartEnd.start,
+				end: defaultStartEnd.end,
+				homepage: existingApplication.homepage || '',
+				description: existingApplication.description || '',
+				equipment: existingApplication.equipment || '',
+				organizer: existingApplication.organizer || '',
+				resources: existingApplication.resources?.map((res) => res.id.toString()) ||
+					props.selectedTempApplication?.extendedProps?.resources?.map(String) ||
+					[],
+				audience: existingApplication.audience || undefined,
+				articles: articleOrders, // Use converted orders
+				agegroups: agegroups?.map(ag => ({
+					id: ag.id,
+					male: existingApplication.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
+					female: 0,
+					name: ag.name,
+					description: ag.description,
+					sort: ag.sort,
+				})) || []
+			};
+		}
 
+		// Use lastSubmittedData if available, otherwise use default empty values
+		return {
+			title: props.lastSubmittedData?.title ?? '',
+			organizer: props.bookingUser?.name ?? '',
+			start: defaultStartEnd.start,
+			end: defaultStartEnd.end,
+			homepage: props.lastSubmittedData?.homepage ?? '',
+			description: props.lastSubmittedData?.description ?? '',
+			equipment: props.lastSubmittedData?.equipment ?? '',
+			resources: props.selectedTempApplication?.extendedProps?.resources?.map(String) ?? [],
+			audience: props.lastSubmittedData?.audience ?? undefined,
+			articles: props.lastSubmittedData?.articles ?? [],
+			agegroups: agegroups?.map(ag => ({
+				id: ag.id,
+				male: props.lastSubmittedData?.agegroups?.find(eag => eag.id === ag.id)?.male ?? 0,
+				female: 0,
+				name: ag.name,
+				description: ag.description,
+				sort: ag.sort,
+			})) || []
+		};
+	}, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication, props.bookingUser]);
 
 	const {
 		control,
@@ -400,6 +420,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
             if (dirtyFields.resources) {
                 updatedApplication.resources = buildingResources.filter(res => data.resources.some(selected => (+selected === res.id)))
             }
+
+			if (dirtyFields.articles) {
+				updatedApplication.articles = data.articles;
+			}
+
             if (dirtyFields.agegroups) {
                 updatedApplication.agegroups = data.agegroups.map(ag => ({
                     ...ag,
@@ -447,6 +472,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                 ...ag,
                 female: 0 // Since we're only tracking male numbers
             })),
+			articles: data.articles,
             organizer: data.organizer || '',
             name: data.title,
             resources: data.resources.map(res => (+res)),
@@ -733,6 +759,28 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                             <span className={styles.error}>{t(errors.resources.message)}</span>
                         )}
                     </div>
+
+					{/* Add this after the resources selection section */}
+					{selectedResources.length > 0 && (
+						<div className={`${styles.formGroup} ${styles.wide}`}>
+							<div className={styles.resourcesHeader}>
+								<h4>{t('bookingfrontend.articles')}</h4>
+							</div>
+							<Controller
+								name="articles"
+								control={control}
+								render={({ field }) => (
+									<ArticleTable
+										resourceIds={selectedResources.map(id => parseInt(id))}
+										selectedArticles={field.value || []}
+										onArticlesChange={field.onChange}
+										startTime={watch('start')}
+										endTime={watch('end')}
+									/>
+								)}
+							/>
+						</div>
+					)}
                     <div className={`${styles.formGroup}`}>
                         <div className={styles.resourcesHeader}>
                             <h4>{t('bookingfrontend.target audience')}</h4>
@@ -838,7 +886,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                     <div className={`${styles.formGroup} ${styles.wide}`}>
                         <Details data-color={'neutral'}>
                             <Details.Summary>
-                                Tilleggsinformasjon (valgfritt) TODO: Translation!
+								{t('bookingfrontend.additional_information')}
                             </Details.Summary>
                             <Details.Content style={{backgroundColor: "inherit"}} className={styles.eventForm}>
                                 <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>

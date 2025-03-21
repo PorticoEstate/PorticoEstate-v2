@@ -21,60 +21,43 @@ function requestWithBuildingFilter(sQuery)
  * In order to process selected rows, there is compiled a form with the seleted items
  * 
  */
-function export_completed_reservations()
+/**
+ * Process reservations with the specified action
+ * @param {string} action - The menuaction endpoint
+ */
+function process_completed_reservations(action)
 {
 	var oArgs = {
-		menuaction:'booking.uicompleted_reservation_export.add'
+		menuaction: action
 	};
 	var requestUrl = phpGWLink('index.php', oArgs);
 
-
-    var form = document.createElement("form");
+	var form = document.createElement("form");
 	form.setAttribute("method", 'POST');
 	form.setAttribute("action", requestUrl);
 
-	var building_id = document.createElement("input");
-	building_id.setAttribute("type", "hidden");
-	building_id.setAttribute("name", 'building_id');
-	building_id.setAttribute("value",$('#filter_building_id').val());
-	form.appendChild(building_id);
+	// Add filter fields
+	var filterFields = {
+		'building_id': $('#filter_building_id').val(),
+		'building_name': $('#filter_building_name').val(),
+		'season_id': $('#filter_season_id').val(),
+		'season_name': $('#filter_season_name').val(),
+		'from_': $('#filter_from').val(),
+		'to_': $('#filter_to').val(),
+		'prevalidate': 1
+	};
 
-	var building_name = document.createElement("input");
-	building_name.setAttribute("type", "hidden");
-	building_name.setAttribute("name", 'building_name');
-	building_name.setAttribute("value",$('#filter_building_name').val());
-	form.appendChild(building_name);
+	// Create input elements for each filter field
+	for (var name in filterFields)
+	{
+		var input = document.createElement("input");
+		input.setAttribute("type", "hidden");
+		input.setAttribute("name", name);
+		input.setAttribute("value", filterFields[name]);
+		form.appendChild(input);
+	}
 
-	var season_id = document.createElement("input");
-	season_id.setAttribute("type", "hidden");
-	season_id.setAttribute("name", 'season_id');
-	season_id.setAttribute("value",$('#filter_season_id').val());
-	form.appendChild(season_id);
-
-	var season_name = document.createElement("input");
-	season_name.setAttribute("type", "hidden");
-	season_name.setAttribute("name", 'season_name');
-	season_name.setAttribute("value",$('#filter_season_name').val());
-	form.appendChild(season_name);
-
-	var from_ = document.createElement("input");
-	from_.setAttribute("type", "hidden");
-	from_.setAttribute("name", 'from_');
-	from_.setAttribute("value",$('#filter_from').val());
-	form.appendChild(from_);
-
-	var to_ = document.createElement("input");
-	to_.setAttribute("type", "hidden");
-	to_.setAttribute("name", 'to_');
-	to_.setAttribute("value",$('#filter_to').val());
-	form.appendChild(to_);
-
-	var prevalidate = document.createElement("input");
-	prevalidate.setAttribute("type", "hidden");
-	prevalidate.setAttribute("name", 'prevalidate');
-	prevalidate.setAttribute("value",1);
-	form.appendChild(prevalidate);
-
+	// Add checked items
 	$(".mychecks:checked").each(function ()
 	{
 		var hiddenField = document.createElement("input");
@@ -84,8 +67,23 @@ function export_completed_reservations()
 		form.appendChild(hiddenField);
 	});
 
-    document.body.appendChild(form);
-    form.submit();
-
-//	window.open(requestUrl, '_self');
+	document.body.appendChild(form);
+	form.submit();
 }
+
+/**
+ * Export selected completed reservations
+ */
+function export_completed_reservations()
+{
+	process_completed_reservations('booking.uicompleted_reservation_export.add');
+}
+
+/**
+ * Archive selected completed reservations
+ */
+function archive_completed_reservations()
+{
+	process_completed_reservations('booking.uicompleted_reservation_export.archive');
+}
+

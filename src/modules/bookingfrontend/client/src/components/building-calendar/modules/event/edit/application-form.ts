@@ -1,5 +1,6 @@
+// application-form.ts
 import {z} from "zod";
-
+import { ArticleOrder } from "@/service/types/api/order-articles.types";
 
 export const applicationFormSchema = z.object({
 	title: z.string().min(1, ('bookingfrontend.enter_title')),
@@ -11,6 +12,11 @@ export const applicationFormSchema = z.object({
 	equipment: z.string().optional(),
 	organizer: z.string().optional(),
 	audience: z.array(z.number()),
+	articles: z.array(z.object({
+		id: z.number(),
+		quantity: z.number().min(0),
+		parent_id: z.number().nullable().optional(),
+	})).optional(),
 	agegroups: z.array(z.object({
 		id: z.number(),
 		male: z.number().min(0),

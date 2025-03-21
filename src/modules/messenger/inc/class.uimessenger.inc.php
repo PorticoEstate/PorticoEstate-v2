@@ -796,7 +796,7 @@ JS;
 			'severity' => 'W',
 			'text' => 'W-Permissions, Attempted to access %1 from %2',
 			'p1' => "{$this->flags['currentapp']}::{$location}",
-			'p2' => Sanitizer::get_ip_address()
+			'p2' => Sanitizer::get_ip_address(true)
 		);
 
 		$log = new Log();

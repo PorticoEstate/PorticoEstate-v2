@@ -519,6 +519,7 @@ class SetupController
 				flush();
 				//ob_start();
 				$this->db->set_halt_on_error('yes');
+				$this->db->transaction_begin();
 
 				switch ($setup_data['currentver']['phpgwapi'])
 				{
@@ -553,6 +554,8 @@ class SetupController
 				//ob_end_clean();
 
 				$this->db->set_halt_on_error('no');
+				$this->db->transaction_commit();
+
 
 				$setup_tpl->set_var('tableshave', $this->setup->lang('If you did not receive any errors, your applications have been'));
 				$setup_tpl->set_var('re-check_my_installation', $this->setup->lang('Re-Check My Installation'));

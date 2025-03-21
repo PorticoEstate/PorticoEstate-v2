@@ -396,7 +396,7 @@ periodization	property	nn	Periodisering
 periodization start	property	nn	Startperiode
 periodization outline	property	nn	Periodiseringsfordeling
 delete receipt	property	nn	Slett kvittering
-plan 	property	nn	Tidsplan
+plan	property	nn	Tidsplan
 planned year	property	nn	Planlagt år
 planning	property	nn	Planlagt
 planning date	property	nn	Dato planlagt disponering
@@ -907,7 +907,7 @@ import invoice	property	nn	Import faktura
 import this invoice	property	nn	Importer denne fakturaen
 import vcard	common	nn	Importer visittkort
 incl tax	property	nn	inkl. mva
-ex tax	property	nn		eks. mva
+ex tax	property	nn	eks. mva
 include in location form	property	nn	Inkluder i lokaliseringsskjema
 include in search	property	nn	Inkluder i søk
 include the workorder to this claim	property	nn	Inkluder bestillingen i dette kravet
@@ -1205,7 +1205,7 @@ open JasperReport %1 in new window	property	nn	Åpne JasperReport %1 i nytt vind
 open view in new window	property	nn	Åpne visning i nytt vindu
 operation	property	nn	Drift
 o&m	property	nn	D/V
-Operations and Maintenance	nn	Drift og vedlikehold
+Operations and Maintenance	property	nn	Drift og vedlikehold
 order	property	nn	Bestilling
 order approval revoked	property	nn	Bestillingsgodkjenning opphevet
 order approved	property	nn	Bestilling godkjent
@@ -2255,7 +2255,7 @@ contact block 2	property	nn	Kontakt blokk 2
 check missing project budget	property	nn	Sjekk manglende prosjekt budsjett
 request condition_type	property	nn	Forespør betingelsestype
 pending action type	property	nn	Venter på handlingstype
-use acl for document types. (not implementet) 	property	nn	Bruk acl for dokumenttyper . (Ikke implementert)
+use acl for document types. (not implementet)	property	nn	Bruk acl for dokumenttyper . (Ikke implementert)
 org unit id	property	nn	Organsisasjonsnummer
 order footer header	property	nn	Overskrift for bestillings-avslutnings-tekst
 order footer	property	nn	bestillings-avslutnings-tekst
@@ -2292,7 +2292,7 @@ path to external files for use with location	property	nn	Sti til eksterne filer 
 on windows use	property	nn	På Windows bruk
 max recursive level at external files	property	nn	Maks rekursivt nivå på eksterne filer
 filter at level at external files	property	nn	Filter på nivå ved eksterne filer
-enter map url 	property	nn	Skriv inn kart url
+enter map url	property	nn	Skriv inn kart url
 enter gab location level	property	nn	Skriv inn matrikkel-lokasjonsnivå
 default value is	property	nn	Standardverdi er
 enter gab url	property	nn	Skriv inn matrikkel url

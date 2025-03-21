@@ -196,21 +196,21 @@ class Applications
 					$terror = array($setup_info[$appname]);
 
 					if (
-						isset($setup_info[$appname]['tables'])
-						&& $setup_info[$appname]['tables']
-					)
-					{
-						$this->process->droptables($terror, $DEBUG);
-						$header .=  '<li>' . $this->setup->lang('%1 tables dropped', $this->setup->lang($appname)) . ".</li>\n";
-					}
-
-					if (
 						isset($setup_info[$appname]['views'])
 						&& $setup_info[$appname]['views']
 					)
 					{
 						$this->process->dropviews($terror, $DEBUG);
 						$header .=  '<li>' . $this->setup->lang('%1 views dropped', $this->setup->lang($appname)) . ".</li>\n";
+					}
+
+					if (
+						isset($setup_info[$appname]['tables'])
+						&& $setup_info[$appname]['tables']
+					)
+					{
+						$this->process->droptables($terror, $DEBUG);
+						$header .=  '<li>' . $this->setup->lang('%1 tables dropped', $this->setup->lang($appname)) . ".</li>\n";
 					}
 
 					$this->setup->deregister_app($appname);

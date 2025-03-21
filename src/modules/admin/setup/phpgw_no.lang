@@ -130,7 +130,7 @@ enable debug-messages	admin	no	Aktiver feilsøkingsmeldinger
 cancel testjob!	admin	no	Kanseller testjobb!
 start testjob!	admin	no	Start testjobb!
 for the times above	admin	no	For tidene over
-the testjob sends you a mail everytime it is called 	admin	no	Testjobben sender deg en e-post hver gang den blir kjørt
+the testjob sends you a mail everytime it is called	admin	no	Testjobben sender deg en e-post hver gang den blir kjørt
 jobs	admin	no	Jobber
 next run	admin	no	Neste kjøring
 times	admin	no	Tider
@@ -146,3 +146,5 @@ please set a site name in admin &gt; siteconfig	common	no	Vennligst angi tittele
 redis host	admin	no	Redis server
 redis database	admin	no	Redis database
 opcache monitor	admin	no	Opcache monitor
+Trusted proxies	admin	no	Betrodde proxyer
+comma separated list of IPs or CIDR	admin	no	Komma-separert liste av IP-adresser eller CIDR

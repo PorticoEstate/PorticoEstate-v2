@@ -192,8 +192,8 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 
 			{groupedResources.slotted.length > 0 && (
 				<Fieldset>
-					<Fieldset.Legend>{t('bookingfrontend.timeslot_resources')}</Fieldset.Legend>
-					<Fieldset.Description>
+					<Fieldset.Legend style={{marginLeft: '0.5rem'}}>{t('bookingfrontend.timeslot_resources')}</Fieldset.Legend>
+					<Fieldset.Description style={{marginLeft: '0.5rem'}}>
 						{t('bookingfrontend.timeslot_resources_description')}
 					</Fieldset.Description>
 					{groupedResources.slotted.map(resource => (
@@ -231,7 +231,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 			)}
 			{groupedResources.normal.length > 0 && (
 				<Fieldset>
-					<Fieldset.Legend>{t('bookingfrontend.calendar_resources')}</Fieldset.Legend>
+					<Fieldset.Legend style={{marginLeft: '0.5rem'}}>{t('bookingfrontend.calendar_resources')}</Fieldset.Legend>
 					<div className={styles.toggleAllContainer}>
 						<Checkbox
 							data-size={'sm'}
@@ -239,7 +239,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 							id={`resource-all`}
 							checked={groupedResources.normal.every(r => enabledResources.has(r.value))}
 							onChange={() => onToggleAll(groupedResources.normal)}
-							label={t('common.select all')}
+							label={t('bookingfrontend.select_all')}
 							className={styles.resourceCheckbox}
 						/>
 					</div>

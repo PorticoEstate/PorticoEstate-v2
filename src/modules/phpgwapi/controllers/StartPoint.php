@@ -166,7 +166,7 @@ class StartPoint
 				$this->log->message(array(
 					'text' => 'W-BadmenuactionVariable, attempted to access private method: %1 from %2',
 					'p1'   => "{$this->class}::{$this->method}",
-					'p2' => Sanitizer::get_ip_address(),
+					'p2' => Sanitizer::get_ip_address(true),
 					'line' => __LINE__,
 					'file' => __FILE__
 				));
@@ -285,7 +285,7 @@ class StartPoint
 				$this->log->message(array(
 					'text' => 'W-BadmenuactionVariable, attempted to access private method: %1 from %2',
 					'p1'   => "{$this->class}::{$this->method}",
-					'p2' => Sanitizer::get_ip_address(),
+					'p2' => Sanitizer::get_ip_address(true),
 					'line' => __LINE__,
 					'file' => __FILE__
 				));
@@ -460,7 +460,7 @@ class StartPoint
 			$this->log->write(array(
 				'text'	 => 'W-Permissions, Attempted to access %1 from %2',
 				'p1'	 => $this->app,
-				'p2'	 => Sanitizer::get_ip_address()
+				'p2'	 => Sanitizer::get_ip_address(true)
 			));
 
 			$lang_denied = lang('Access not permitted');
@@ -551,7 +551,7 @@ HTML;
 				$this->log->message(array(
 					'text' => 'W-BadmenuactionVariable, attempted to access private method: %1 from %2',
 					'p1'   => "{$this->class}::{$this->method}",
-					'p2' => Sanitizer::get_ip_address(),
+					'p2' => Sanitizer::get_ip_address(true),
 					'line' => __LINE__,
 					'file' => __FILE__
 				));
@@ -584,7 +584,7 @@ HTML;
 				$log->write(array(
 					'text' => 'W-Permissions, Attempted to access %1 from %2',
 					'p1' => $flags['currentapp'],
-					'p2' => Sanitizer::get_ip_address()
+					'p2' => Sanitizer::get_ip_address(true)
 				));
 
 				$lang_denied = lang('Access not permitted');
@@ -648,7 +648,7 @@ HTML;
 
 			$log->message(array(
 				'text' => "W-BadmenuactionVariable, attempted to access private method as anonymous: {$app}.{$class}.{$method} from %1",
-				'p1' => Sanitizer::get_ip_address(),
+				'p1' => Sanitizer::get_ip_address(true),
 				'line' => __LINE__,
 				'file' => __FILE__
 			));

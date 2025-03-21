@@ -6,7 +6,7 @@ class booking_bocommon
 {
 
 	var $so;
-	protected $phpgwapi_common, $flags, $serverSettings, $userSettings, $apps;
+	protected $phpgwapi_common, $flags, $serverSettings, $userSettings, $apps, $dateformat, $datetimeformat;
 
 	public function __construct()
 	{
@@ -15,7 +15,8 @@ class booking_bocommon
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->apps = Settings::getInstance()->get('apps');
-
+		$this->dateformat = $this->userSettings['preferences']['common']['dateformat'];
+		$this->datetimeformat = "{$this->dateformat} H:i";
 	}
 
 	/**

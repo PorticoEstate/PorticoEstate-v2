@@ -28,8 +28,13 @@ class booking_uicompleted_reservation extends booking_uicommon
 	protected
 		$module = 'booking',
 		$fields = array(
-			'cost', 'organization_id', 'customer_organization_number', 'customer_ssn',
-			'customer_type', 'description', 'article_description'
+			'cost',
+			'organization_id',
+			'customer_organization_number',
+			'customer_ssn',
+			'customer_type',
+			'description',
+			'article_description'
 		),
 		$customer_id,
 		$export_filters = array();
@@ -96,14 +101,20 @@ class booking_uicompleted_reservation extends booking_uicommon
 	{
 		//TODO: also filter on exported value
 		$filter_values = extract_values($_GET, array(
-			'season_id', 'season_name', 'building_id',
-			'building_name', 'to'
+			'season_id',
+			'season_name',
+			'building_id',
+			'building_name',
+			'to'
 		), array('prefix' => 'filter_', 'preserve_prefix' => true));
 		$export_key = $this->store_export_filters($filter_values);
 
 		$forward_values = extract_values($_GET, array(
-			'season_id', 'season_name',
-			'building_id', 'building_name', 'to'
+			'season_id',
+			'season_name',
+			'building_id',
+			'building_name',
+			'to'
 		), array('prefix' => 'filter_'));
 		isset($forward_values['to']) and $forward_values['to_'] = $forward_values['to'];
 		$forward_values['export_key'] = $export_key;
@@ -138,8 +149,8 @@ class booking_uicompleted_reservation extends booking_uicommon
 		}
 
 		$jqcal2 = createObject('phpgwapi.jqcal2');
-		$jqcal2->add_listener('filter_from');
-		$jqcal2->add_listener('filter_to');
+		$jqcal2->add_listener('filter_from', 'date', $_GET['filter_from'] ?? 0);
+		$jqcal2->add_listener('filter_to', 'date', $_GET['filter_to'] ?? 0);
 		phpgwapi_jquery::load_widget('datepicker');
 
 		self::add_javascript('booking', 'base', 'completed_reservation.js');
@@ -300,6 +311,14 @@ JS;
 			'custom_code'	 => 'window.open("' . $this->link_to('toggle_show_all_completed_reservations') . '", "_self");',
 		);
 
+		$data['datatable']['actions'][] = array(
+			'my_name'		 => 'Archive',
+			'type'			 => 'custom',
+			'className'		 => 'save',
+			'custom_code'	 => "archive_completed_reservations();",
+			'text'			 => 'Arkiver' . '...',
+		);
+
 		self::render_template_xsl('datatable2', $data);
 	}
 
@@ -451,7 +470,8 @@ JS;
 
 			$reservation['reservation_type'] = array(
 				'href' => $this->link_to($reservation['reservation_type'] == 'event' ? 'edit' : 'show', array(
-					'ui' => $reservation['reservation_type'], 'id' => $reservation['reservation_id']
+					'ui' => $reservation['reservation_type'],
+					'id' => $reservation['reservation_id']
 				)),
 				'label' => lang($reservation['reservation_type']),
 			);
@@ -608,7 +628,8 @@ JS;
 		}
 
 		$reservation['reservation_link'] = $this->link_to($reservation['reservation_type'] == 'event' ? 'edit' : 'show', array(
-			'ui' => $reservation['reservation_type'], 'id' => $reservation['reservation_id']
+			'ui' => $reservation['reservation_type'],
+			'id' => $reservation['reservation_id']
 		));
 
 		$reservation['cancel_link'] = $this->link_to('show', array('id' => $reservation['id']));
@@ -815,7 +836,10 @@ JS;
 		$active_tab = 'completed_reservation_edit';
 		$reservation['tabs'] = phpgwapi_jquery::tabview_generate($tabs, $active_tab);
 		$reservation['validator'] = phpgwapi_jquery::formvalidator_generate(array(
-			'location', 'date', 'security', 'file'
+			'location',
+			'date',
+			'security',
+			'file'
 		));
 
 		$this->add_default_display_data($reservation);

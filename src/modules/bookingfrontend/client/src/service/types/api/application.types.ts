@@ -1,5 +1,6 @@
 import {IShortResource} from "@/service/pecalendar.types";
 import {IDocument} from "@/service/types/api.types";
+import {ArticleOrder} from "@/service/types/api/order-articles.types";
 
 export interface IApplication {
     id: number;
@@ -42,6 +43,7 @@ export interface IApplication {
     customer_organization_name: string | null;
     customer_organization_id: number | null;
     agegroups: IApplicationAgeGroup[];
+	articles?: ArticleOrder[];
 }
 
 
@@ -92,6 +94,7 @@ export interface NewPartialApplication extends Pick<IApplication, 'name' | 'buil
     resources: Array<number>;
     agegroups?: IApplicationAgeGroup[];
     audience?: number[];
+	articles?: ArticleOrder[];
 
 }
 export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'dates' | 'resources'>>{
@@ -103,4 +106,5 @@ export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'd
     }>;
     resources?: Array<IShortResource | IResource>;
     agegroups?: IApplicationAgeGroup[];
+	articles?: ArticleOrder[];
 }

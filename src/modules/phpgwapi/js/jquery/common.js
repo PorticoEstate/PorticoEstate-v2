@@ -436,7 +436,44 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 
 	if (ajax_url)
 	{
-		var ajax_def = { url: ajax_url, data: {}, type: 'GET' };
+		var ajax_def = {
+			url: ajax_url,
+			type: 'GET',
+			data: function (d)
+			{
+				// This replaces the old fnServerParams functionality
+				try
+				{
+					if ($.isNumeric(container.substr(container.length - 1, 1)))
+					{
+						if (!$.isEmptyObject(eval('paramsTable' + container.substr(container.length - 1, 1))))
+						{
+							$.each(eval('paramsTable' + container.substr(container.length - 1, 1)), function (k, v)
+							{
+								d[k] = v;
+							});
+						}
+					}
+				}
+				catch (err)
+				{
+					// Error handling
+				}
+
+				// Keep only the relevant column for ordering if needed
+				if (typeof (d.order) != 'undefined')
+				{
+					var column = d.order[0].column;
+					var dir = d.order[0].dir;
+					var column_to_keep = d.columns[column];
+					delete d.columns;
+					d.columns = {};
+					d.columns[column] = column_to_keep;
+				}
+
+				return d;
+			}
+		};
 		var serverSide_def = true;
 	}
 	else
@@ -503,36 +540,6 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 		lengthMenu: lengthMenu,
 		pageLength: parseInt(pageLength),
 		language: language,
-		fnServerParams: function (aoData)
-		{
-			try
-			{
-				if ($.isNumeric(container.substr(container.length - 1, 1)))
-				{
-					if (!$.isEmptyObject(eval('paramsTable' + container.substr(container.length - 1, 1))))
-					{
-						$.each(eval('paramsTable' + container.substr(container.length - 1, 1)), function (k, v)
-						{
-							aoData[k] = v;
-						});
-					}
-				}
-			}
-			catch (err)
-			{
-
-			}
-
-			if (typeof (aoData.order) != 'undefined')
-			{
-				var column = aoData.order[0].column;
-				var dir = aoData.order[0].dir;
-				var column_to_keep = aoData.columns[column];
-				delete aoData.columns;
-				aoData.columns = {};
-				aoData.columns[column] = column_to_keep;
-			}
-		},
 		fnInitComplete: function (oSettings, json)
 		{
 		},
@@ -1035,6 +1042,87 @@ function createPaginatorTable(c, p)
 	}, false);
 
 	container.appendChild(tablePaginator);
+}
+
+function createTableWithFilter(containerId, url, columns, responseKey, tableClass, pagination, filterOptions, callback)
+{
+	// Create container for filter
+	var container = document.getElementById(containerId);
+	var filterContainer = document.createElement('div');
+	filterContainer.className = 'table-filter';
+
+	// Create select element
+	var select = document.createElement('select');
+	select.id = containerId + '_filter';
+	select.className = 'table-filter-select';
+
+	// Add default option
+	var defaultOption = document.createElement('option');
+	defaultOption.value = '';
+	defaultOption.text = filterOptions.placeholder || 'All items';
+	select.appendChild(defaultOption);
+
+	// Add options from the provided filter options
+	if (filterOptions && filterOptions.options)
+	{
+		filterOptions.options.forEach(function (option)
+		{
+			var optionEl = document.createElement('option');
+			optionEl.value = option.value;
+			optionEl.text = option.text;
+			select.appendChild(optionEl);
+		});
+	}
+
+	// Add label if provided
+	if (filterOptions && filterOptions.label)
+	{
+		var label = document.createElement('label');
+		label.htmlFor = select.id;
+		label.textContent = filterOptions.label + ': ';
+		filterContainer.appendChild(label);
+	}
+
+	// Add select to container
+	filterContainer.appendChild(select);
+
+	// Insert filter container before any existing content
+	if (container.firstChild)
+	{
+		container.insertBefore(filterContainer, container.firstChild);
+	} else
+	{
+		container.appendChild(filterContainer);
+	}
+
+	// Create original table
+	createTable(containerId, url, columns, responseKey, tableClass, pagination, callback);
+
+	// Add change handler to reload table with filter
+	select.addEventListener('change', function ()
+	{
+		var filterValue = this.value;
+		var filterParam = filterOptions.paramName || 'filter';
+
+		// Build new URL with filter parameter
+		var newUrl = url;
+		if (filterValue)
+		{
+			if (url.indexOf('?') > -1)
+			{
+				newUrl = url + '&' + filterParam + '=' + encodeURIComponent(filterValue);
+			} else
+			{
+				newUrl = url + '?' + filterParam + '=' + encodeURIComponent(filterValue);
+			}
+		}
+
+		// Clear existing table and recreate with filter
+		$("#" + containerId + " table").remove();
+		createTable(containerId, newUrl, columns, responseKey, tableClass, pagination, callback);
+	});
+
+	return select; // Return the select element in case further customization is needed
 }
 
 

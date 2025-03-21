@@ -24,6 +24,7 @@ const GroupCreate = ({ data }: GroupFormProps) => {
     const {
         control,
         handleSubmit,
+        resetField,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(createGroupFormSchema),
@@ -70,6 +71,7 @@ const GroupCreate = ({ data }: GroupFormProps) => {
             <ContactsForm
                 control={control}
                 errors={errors}
+                resetField={resetField}
             />
         </main>
     )

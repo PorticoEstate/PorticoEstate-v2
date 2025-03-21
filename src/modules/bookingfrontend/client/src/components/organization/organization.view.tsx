@@ -1,9 +1,9 @@
 'use client';
-import { Details, Link, Icon, Button} from '@digdir/designsystemet-react';
+import { Details, Link, Button} from '@digdir/designsystemet-react';
 import {default as NXLink} from "next/link";
 import { Organization } from "@/service/types/api/organization.types";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
-import { faSitemap, faUserPlus, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faSitemap, faUserPlus, faPlus, faHouse } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 import styles from './styles/organization.view.module.scss';
@@ -12,47 +12,69 @@ interface OrganizationView {
     organization: Organization;
 }
 
+const OrganizationContacts = ({ email, phone }) => {
+    const t = useTrans();
+    const emailBlock = email ? (
+        <div>
+            <span><b>{t('bookingfrontend.contact_email')}:</b></span>
+            <p>{email}</p>
+        </div> 
+    ) : null;
+    const phoneBlock = phone ? (
+        <div>
+            <span><b>{t('bookingfrontend.phone')}:</b></span>
+            <p>{phone}</p>
+        </div>
+    ) : null;
+
+    return (
+        <div className={styles.contact}>
+            <h3>{t('bookingfrontend.contact information')}</h3>
+            { 
+                !emailBlock && !phoneBlock 
+                ? <div>{t('bookingfrontend.no Data.')}</div> 
+                : <>{emailBlock}{phoneBlock}</>
+            }
+        </div>
+    )
+}
+
 const OrganizationView = ({ organization }: OrganizationView) => {
     const t = useTrans();
     return (
-        <main>
+        <main className={styles.main_container}>
             <div className={styles.header}>
                 <FontAwesomeIcon icon={faSitemap} /> 
                 <h2>{organization.name}</h2>
             </div>
             <div className={styles.position}>
-                <div>
-                    <p>{organization.district}</p>
-                    <ul><li>{organization.city}</li></ul>
+                <div> 
+                    <p>{organization.city}</p>
+                    <ul><li>{organization.district}</li></ul>
                 </div>
-                <ul><li>{organization.street}</li></ul>
+                <ul>
+                    <li>
+                        <Link data-color="brand1">
+                            {organization.street}, {organization.zip_code} {organization.district}
+                        </Link>
+                    </li>
+                </ul>
             </div>
-            <div className={styles.contact}>
-                <h3>{t('bookingfrontend.contact information')}</h3>
-                <div>
-                    <span><b>{t('bookingfrontend.name')}:</b></span>
-                    <p>TODO: no contact name</p>
-                </div>
-                <div>
-                    <span><b>{t('bookingfrontend.contact_email')}:</b></span>
-                    <p>{organization.email}</p>
-                </div>
-                <div>
-                    <span><b>{t('bookingfrontend.phone')}:</b></span>
-                    <p>{organization.phone}</p>
-                </div>
-            </div>
+            <OrganizationContacts email={organization.email} phone={organization.phone}/>
             <div>
                 <Details>
-                    <Details.Summary>{t('bookingfrontend.information')}</Details.Summary>
+                    <Details.Summary>{t('bookingfrontend.buildings')}</Details.Summary>
                     <Details.Content>
-                        {organization.name}
-                    </Details.Content>
-                </Details>
-                <Details>
-                    <Details.Summary>{t('bookingfrontend.Used buildings (2018)')}</Details.Summary>
-                    <Details.Content>
-                        TODO: No building data
+                        { organization.buildings.map((building) => (
+                            <Button 
+                                key={`building-${building.id}`} 
+                                variant='secondary'
+                                style={{ marginBottom: '0.5rem' }}
+                            >
+                                <FontAwesomeIcon icon={faHouse} />
+                                {building.name}
+                            </Button>
+                        )) }
                     </Details.Content>
                 </Details>
                 <Details>

@@ -216,7 +216,6 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 
 		foreach ($list as $day => $resources)
 		{
-
 			if ($first != $day)
 			{
 				$first = $day;
@@ -230,104 +229,97 @@ class bookingfrontend_uibuilding extends booking_uibuilding
 
 				$from = date('d.m.Y', strtotime($from . ' 00:00:01 +1 day'));
 			}
+
 			foreach ($resources as $res => $booking)
 			{
 				$html .= '<tr>';
 				$html .= '<td colspan="2">';
 				$html .= $res;
 				$html .= '</td>';
-				$last = -1;
+
+				// Initialize the current time position
+				$currentPosition = $timestart;
+
+				// Sort bookings by start time
+				ksort($booking);
+
 				foreach ($booking as $date => $value)
 				{
-					$time2 = $timestart;
+					// Get exact time string without any alterations
+					$fromTime = substr($value['from_'], -8);
+					$toTime = substr($value['to_'], -8);
 
-					$bftime = explode(':', substr($value['from_'], -8));
-					$bttime = explode(':', substr($value['to_'], -8));
+					// Extract hours and minutes directly
+					list($fromHour, $fromMinute) = explode(':', $fromTime);
+					list($toHour, $toMinute) = explode(':', $toTime);
 
-					if ($bftime[1] == 30)
+					// Convert to decimal hours for calculations
+					$startPosition = (int)$fromHour + ($fromMinute === '30' ? 0.5 : 0);
+					$endPosition = (int)$toHour + ($toMinute === '30' ? 0.5 : 0);
+
+					// Skip bookings entirely before our display window
+					if ($endPosition <= $timestart)
 					{
-						$bftime = $bftime[0] + 0.5;
+						continue;
+					}
+
+					// Handle bookings that start before our display window
+					if ($startPosition < $timestart)
+					{
+						$startPosition = $timestart;
+					}
+
+					// Fill gap before this booking if needed
+					if ($startPosition > $currentPosition)
+					{
+						$gapColspan = round(($startPosition - $currentPosition) * 2);
+						if ($gapColspan > 0)
+						{
+							$html .= '<td colspan="' . $gapColspan . '">&nbsp;</td>';
+						}
+					}
+
+					// Cap the end position to our display window
+					if ($endPosition > $timeend)
+					{
+						$endPosition = $timeend;
+					}
+
+					// Calculate colspan for the booking
+					$colspan = round(($endPosition - $startPosition) * 2);
+
+					// Create the booking cell
+					$html .= '<td colspan="' . $colspan . '" class="data">';
+					$testlen = 12 * $colspan;
+					if (strlen($value['name']) > $testlen)
+					{
+						$html .= $value['shortname'] . " ";
 					}
 					else
 					{
-						$bftime = intval($bftime[0]);
+						$html .= $value['name'] . " ";
 					}
-					if ($bttime[1] == 30)
+					$html .= '</td>';
+
+					// Update the current position to the end of this booking
+					$currentPosition = $endPosition;
+				}
+
+				// Fill any remaining space to the end of the display window
+				if ($currentPosition < $timeend)
+				{
+					$finalColspan = round(($timeend - $currentPosition) * 2);
+					if ($finalColspan > 0)
 					{
-						$bttime = $bttime[0] + 0.5;
-					}
-					else
-					{
-						$bttime = intval($bttime[0]);
-					}
-
-					while ($time2 < $timeend)
-					{
-						if ($bftime == $time2 && $time2 < $timeend)
-						{
-							$last = $bttime;
-							$colspan = $value['colspan'];
-							if ($bttime > $timeend)
-							{
-								$colspan = $value['colspan'] - ($bttime - $timeend);
-							}
-							$testlen = 12 * $colspan;
-
-							$html .= '<td colspan="' . $colspan . '" class="data" style="">';
-							if (strlen($value['name']) > $testlen)
-							{
-								$html .= $value['shortname'] . " ";
-							}
-							else
-							{
-								$html .= $value['name'] . " ";
-							}
-							$html .= '</td>';
-						}
-						elseif ($last === -1 && $bftime < $timestart && $bttime > $timestart)
-						{
-							$last = $bttime;
-							$colspan = ($bttime - $timestart) * 2;
-							$html .= '<td colspan="' . $colspan . '" class="data" style="">';
-							$testlen = 12 * $colspan;
-							if (strlen($value['name']) > $testlen)
-							{
-								$html .= $value['shortname'] . " ";
-							}
-							else
-							{
-								$html .= $value['name'] . " ";
-							}
-							$html .= '</td>';
-						}
-						elseif ($last === -1 && $bftime != $timestart && $bftime < $timeend && $bftime > $timestart)
-						{
-							$colspan = ($bftime - $timestart) * 2;
-
-							$html .= '<td colspan="' . $colspan . '">';
-							$html .= " ";
-							$html .= '</td>';
-							$last = $bttime;
-						}
-						elseif ($last != -1 && $bftime != $last && $time2 > $last && $last < $bftime && $bftime < $timeend)
-						{
-							$colspan = ($bftime - $last) * 2;
-							$html .= '<td colspan="' . $colspan . '">';
-							$html .= " ";
-							$html .= '</td>';
-							$last = $bttime;
-						}
-
-						if ($time2 >= $timeend)
-						{
-							$last = $timestart - 1;
-						}
-						$time2 += 0.5;
+						$html .= '<td colspan="' . $finalColspan . '">&nbsp;</td>';
 					}
 				}
+
 				$html .= '</tr>';
 			}
 		}
+
+
 		$html .= '</tbody>';
 		$html .= '</table>';
 		$html .= '</body></html>';

@@ -12,7 +12,7 @@ const BuildingContact = async (props: BuildingContactProps) => {
             <hr className={`my-2`}/>
             <div>
                 <h3>
-                    {t('common.contact')}
+                    {t('booking.contact')}
                 </h3>
                 <div>{t('booking.phone')}: {props.building.phone}</div>
                 <div>{t('common.email')}: {props.building.email}</div>

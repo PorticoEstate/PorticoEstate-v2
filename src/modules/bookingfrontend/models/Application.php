@@ -236,6 +236,20 @@ class Application
     public array $documents;
 
     /**
+     * @OA\Property(
+     *     type="array",
+     *     @OA\Items(
+     *         type="object",
+     *         @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *         @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *         @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *     )
+     * )
+     * @Expose
+     */
+    public array $articles;
+
+    /**
      * @OA\Property(type="string")
      * @Expose
      */

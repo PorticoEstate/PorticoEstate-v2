@@ -137,7 +137,7 @@ enter your http proxy server port	setup	no	Enter your HTTP proxy server port
 export has been completed!  you will need to set the user passwords manually.	setup	no	Export has been completed!  You will need to set the user passwords manually.
 export phpgroupware accounts from sql to ldap	setup	no	Export phpGroupWare accounts from SQL to LDAP
 export sql users to ldap	setup	no	Export SQL users to LDAP
-failed to modify: 	setup	no	failed to modify: 
+failed to modify:	setup	no	failed to modify:
 failed to modify: %1	setup	no	failed to modify: %1
 file	setup	no	FILE
 file type, size, version, etc.	setup	no	file type, size, version, etc.

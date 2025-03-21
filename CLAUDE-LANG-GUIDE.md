@@ -90,6 +90,26 @@ Sort only specific languages in a module:
 php test_lang_files.php --sort --lang=en,no --module=bookingfrontend
 ```
 
+### Search for Translation Keys
+
+Search for a specific key in the format "module.key" across all language files:
+
+```bash
+php test_lang_files.php --search=booking.save
+```
+
+Search for a key in specific languages:
+
+```bash
+php test_lang_files.php --search=booking.save --langs=no,en,nn
+```
+
+Search for a key in all languages of a specific module:
+
+```bash
+php test_lang_files.php --search=save --module=booking
+```
+
 ## Common Workflows with Claude
 
 ### 1. Initial Check
@@ -126,7 +146,20 @@ Before comparing translations, check for format issues in the language files:
 php test_lang_files.php --module=booking --verbose
 ```
 
-### 5. Sorting Language Files by Key
+### 5. Searching for Specific Translation Keys
+
+When you need to find where a specific translation key is used across languages:
+
+```
+php test_lang_files.php --search=booking.save --langs=en,no,nn
+```
+
+This helps when:
+- You need to check how a key is translated in different languages
+- You want to verify if a key exists in all required language files
+- You need to find the context of a specific key for better translation
+
+### 6. Sorting Language Files by Key
 
 To make language files easier to maintain, you can sort them alphabetically by key:
 
@@ -136,7 +169,7 @@ php test_lang_files.php --sort --lang=en,no,nn --module=bookingfrontend
 
 This organizes all translations in a consistent order across language files, making differences easier to spot and maintenance simpler.
 
-### 6. Fixing Translations
+### 7. Fixing Translations
 
 After identifying missing translations, use Claude to add them to the language files:
 
@@ -183,6 +216,22 @@ for module in $(find src/modules -type d -mindepth 1 -maxdepth 1 -exec basename 
   php test_lang_files.php --compare --lang=en,no,nn --module=$module;
 done
 ```
+
+### Searching for a Specific Translation Key
+
+Search for a specific key across all language files:
+
+```
+php test_lang_files.php --search=booking.save
+```
+
+Search for the same key in specific languages:
+
+```
+php test_lang_files.php --search=booking.save --langs=en,no,nn
+```
+
+This helps when you need to check if a translation exists in all required languages or when you need to see how a specific term is translated in different languages.
 
 ### Sorting Language Files for Better Maintainability
 

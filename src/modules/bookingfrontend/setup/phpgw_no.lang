@@ -104,6 +104,7 @@ Building users	bookingfrontend	no	Brukere av bygg/anlegg
 buildings	bookingfrontend	no	Bygg/anlegg
 bygning	bookingfrontend	no	Bygg/anlegg
 calendar view	bookingfrontend	no	Dags-/ukesvisning
+calendar_resources	bookingfrontend	no	Kalender ressurser
 calendar_view	bookingfrontend	no	Kalender
 Can not create a booking in the past	bookingfrontend	no	Du kan ikke opprette en interntildeling i fortiden.
 Can not repeat from a date in the past	bookingfrontend	no	Du kan ikke repetere fra en dato i fortiden.
@@ -588,6 +589,8 @@ Tilsynsvakt email	bookingfrontend	no	Epost til tilsynsvakt
 Tilsynsvakt name	bookingfrontend	no	Navn på tilsynsvakt
 Tilsynsvakt telephone	bookingfrontend	no	Telefonnummer til tilsynsvakt
 Time is set wrong	bookingfrontend	no	Et av klokkeslettene er feil
+timeslot_resources	bookingfrontend	no	Tidsslot ressurser
+timeslot_resources_description	bookingfrontend	no	Velg enkelt en tid
 title	bookingfrontend	no	Tittel
 to	bookingfrontend	no	Til
 To application site	bookingfrontend	no	Til bestilling

@@ -15,6 +15,7 @@
  *   php test_lang_files.php --module=booking                  # Alternative syntax for modules
  *   php test_lang_files.php --compare --modules=booking,property  # Compare langs in specific modules
  *   php test_lang_files.php --compare --baseline=en  # Use English as baseline for comparison
+ *   php test_lang_files.php --search=module.key --langs=no,en # Search for module.key in specified languages
  */
 
 // Configuration
@@ -36,6 +37,8 @@ $verbose = in_array('--verbose', $argv) || in_array('-v', $argv);
 $json_output = in_array('--output=json', $argv);
 $compare_mode = in_array('--compare', $argv);
 $sort_mode = in_array('--sort', $argv);
+$search_mode = false;
+$search_key = '';
 $langs = [];
 $modules = [];
 $baseline_lang = 'en'; // Default baseline language for comparison
@@ -46,6 +49,11 @@ foreach ($argv as $arg)
 	if (strpos($arg, '--lang=') === 0)
 	{
 		$lang_list = substr($arg, 7); // Remove '--lang='
+		$langs = array_map('trim', explode(',', $lang_list));
+	}
+	elseif (strpos($arg, '--langs=') === 0)
+	{
+		$lang_list = substr($arg, 8); // Remove '--langs='
 		$langs = array_map('trim', explode(',', $lang_list));
 	}
 	elseif (strpos($arg, '--modules=') === 0)
@@ -61,6 +69,11 @@ foreach ($argv as $arg)
 	elseif (strpos($arg, '--baseline=') === 0)
 	{
 		$baseline_lang = substr($arg, 11); // Remove '--baseline='
+	}
+	elseif (strpos($arg, '--search=') === 0)
+	{
+		$search_key = substr($arg, 9); // Remove '--search='
+		$search_mode = true;
 	}
 }
 
@@ -79,11 +92,14 @@ if ($help_requested)
 	echo "  --output=json        Output results in JSON format for parsing\n";
 	echo "  --lang=xx,yy,zz      Only check files for specific languages (comma-separated)\n";
 	echo "                       Example: --lang=no,en,de\n";
+	echo "  --langs=xx,yy,zz     Alternative syntax for --lang\n";
 	echo "  --compare            Compare languages for missing translations\n";
 	echo "  --modules=a,b,c      Only check specified modules (in both modes)\n";
 	echo "  --module=a,b,c       Alternative syntax for --modules\n";
 	echo "  --baseline=xx        Use specified language as baseline for comparison (default: en)\n";
-	echo "  --sort               Sort language files alphabetically by key and deduplicate entries\n\n";
+	echo "  --sort               Sort language files alphabetically by key and deduplicate entries\n";
+	echo "  --search=module.key  Search for a specific translation key in format module.key\n";
+	echo "                       Example: --search=booking.save\n\n";
 	echo "Examples:\n";
 	echo "  php " . basename(__FILE__) . "                     # Check all language files\n";
 	echo "  php " . basename(__FILE__) . " --verbose           # Show detailed diagnostic information\n";
@@ -95,6 +111,7 @@ if ($help_requested)
 	echo "  php " . basename(__FILE__) . " --compare --module=booking      # Compare only a single module\n";
 	echo "  php " . basename(__FILE__) . " --compare --baseline=no    # Use Norwegian as baseline for comparison\n";
 	echo "  php " . basename(__FILE__) . " --sort --lang=en,no,nn --module=booking  # Sort and deduplicate booking module language files\n";
+	echo "  php " . basename(__FILE__) . " --search=booking.save --langs=no,en,nn  # Search for 'booking.save' key in specified languages\n";
 	exit(0);
 }
 
@@ -336,6 +353,109 @@ function find_lang_files($dir)
 	}
 
 	return $results;
+}
+
+// Function to search for a specific key in module.key format
+function search_for_key($lang_files, $search_key)
+{
+	global $verbose, $base_dir, $langs;
+	
+	// Split the search key into module and key parts
+	if (strpos($search_key, '.') !== false) {
+		list($search_module, $search_phrase) = explode('.', $search_key, 2);
+	} else {
+		// If no dot is present, treat the entire string as the key and search in all modules
+		$search_module = null;
+		$search_phrase = $search_key;
+	}
+	
+	if ($verbose) {
+		echo "Searching for ";
+		if ($search_module) {
+			echo "module: '{$search_module}', ";
+		}
+		echo "key: '{$search_phrase}'\n";
+	}
+	
+	$results = [];
+	$total_matches = 0;
+	
+	foreach ($lang_files as $file_path) {
+		// Extract language from file path
+		if (preg_match('/phpgw_(.*)\.lang$/', basename($file_path), $matches)) {
+			$lang_code = $matches[1];
+		} else {
+			$lang_code = 'unknown';
+		}
+		
+		// Extract module from the file path
+		$module = get_module_from_path($file_path);
+		
+		// Skip if we're searching for a specific module and this isn't it
+		if ($search_module !== null && $search_module !== $module) {
+			if ($verbose) {
+				echo "Skipping {$file_path}, module '{$module}' doesn't match search module '{$search_module}'\n";
+			}
+			continue;
+		}
+		
+		$content = file_get_contents($file_path);
+		$lines = explode("\n", $content);
+		$matches = [];
+		
+		foreach ($lines as $line_number => $line) {
+			$line = trim($line);
+			
+			// Skip empty lines and comments
+			if (empty($line) || strpos($line, '#') === 0) {
+				continue;
+			}
+			
+			$parts = explode("\t", $line);
+			if (count($parts) === 4) {
+				$key = $parts[0];
+				$module_in_file = $parts[1];
+				$lang = $parts[2];
+				$value = $parts[3];
+				
+				// Only match if the module matches our search (if specified)
+				if ($search_module !== null && $search_module !== $module_in_file) {
+					continue;
+				}
+				
+				// Check if key matches search phrase
+				if ($key === $search_phrase) {
+					$matches[] = [
+						'line_number' => $line_number + 1, // 1-based line numbers
+						'key' => $key,
+						'module' => $module_in_file,
+						'lang' => $lang,
+						'value' => $value,
+						'full_line' => $line
+					];
+				}
+			}
+		}
+		
+		if (!empty($matches)) {
+			$relative_path = str_replace($base_dir, '', $file_path);
+			$results[$file_path] = [
+				'file' => $relative_path,
+				'language' => $lang_code,
+				'module' => $module,
+				'matches' => $matches,
+				'match_count' => count($matches)
+			];
+			$total_matches += count($matches);
+		}
+	}
+	
+	return [
+		'results' => $results,
+		'total_matches' => $total_matches,
+		'search_module' => $search_module,
+		'search_key' => $search_phrase
+	];
 }
 
 // Function to extract module name from file path
@@ -597,6 +717,107 @@ if (empty($lang_files))
 {
 	echo "No language files found! Please check the base directory.\n";
 	exit(1);
+}
+
+// SEARCH MODE
+if ($search_mode) {
+	if (empty($search_key)) {
+		echo "Error: You must provide a search key with --search=module.key\n";
+		exit(1);
+	}
+	
+	echo "Mode: Searching for key '{$search_key}'\n";
+	
+	// If no languages specified, search in all languages
+	if (empty($langs)) {
+		echo "No languages specified, will search in all available language files.\n";
+	} else {
+		echo "Searching in languages: " . implode(', ', $langs) . "\n";
+	}
+	
+	$search_results = search_for_key($lang_files, $search_key);
+	$total_matches = $search_results['total_matches'];
+	$search_module = $search_results['search_module'];
+	$search_phrase = $search_results['search_key'];
+	$results = $search_results['results'];
+	
+	// Output search results
+	echo "\nSearch Results:\n";
+	echo "==============\n\n";
+	
+	if ($search_module) {
+		echo "Searching for key '{$search_phrase}' in module '{$search_module}'\n\n";
+	} else {
+		echo "Searching for key '{$search_phrase}' in all modules\n\n";
+	}
+	
+	if ($total_matches === 0) {
+		echo "No matches found for the key '{$search_key}'.\n";
+		
+		// Provide suggestions or help
+		echo "\nSuggestions:\n";
+		echo "  - Check if the module name is correct\n";
+		echo "  - Try searching without module prefix using: --search={$search_phrase}\n";
+		echo "  - Ensure you're searching in the correct languages with --langs=xx,yy\n";
+		exit(0);
+	}
+	
+	echo "Found {$total_matches} matches in " . count($results) . " files.\n\n";
+	
+	// Group results by language for easier reading
+	$results_by_lang = [];
+	foreach ($results as $file_path => $result) {
+		$lang = $result['language'];
+		if (!isset($results_by_lang[$lang])) {
+			$results_by_lang[$lang] = [];
+		}
+		$results_by_lang[$lang][$file_path] = $result;
+	}
+	
+	// Sort languages alphabetically
+	ksort($results_by_lang);
+	
+	// Display results grouped by language
+	foreach ($results_by_lang as $lang => $lang_results) {
+		$lang_match_count = 0;
+		foreach ($lang_results as $result) {
+			$lang_match_count += $result['match_count'];
+		}
+		
+		echo "LANGUAGE: {$lang} ({$lang_match_count} matches)\n";
+		echo "=======================\n\n";
+		
+		foreach ($lang_results as $file_path => $result) {
+			echo "File: {$result['file']} (Module: {$result['module']})\n";
+			
+			foreach ($result['matches'] as $match) {
+				echo "  Line {$match['line_number']}: {$match['key']}\t{$match['module']}\t{$match['lang']}\t{$match['value']}\n";
+			}
+			echo "\n";
+		}
+	}
+	
+	// If JSON output is requested
+	if ($json_output) {
+		$output = [
+			'search_query' => [
+				'module' => $search_module,
+				'key' => $search_phrase,
+				'full_query' => $search_key
+			],
+			'summary' => [
+				'total_matches' => $total_matches,
+				'files_with_matches' => count($results),
+				'languages_with_matches' => count($results_by_lang)
+			],
+			'results' => $results,
+			'results_by_language' => $results_by_lang
+		];
+		
+		echo json_encode($output, JSON_PRETTY_PRINT);
+	}
+	
+	exit(0);
 }
 
 // SORT MODE

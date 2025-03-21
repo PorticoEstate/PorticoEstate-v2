@@ -104,6 +104,7 @@ Building users	bookingfrontend	en	Building users
 buildings	bookingfrontend	en	Buildings
 bygning	bookingfrontend	en	Bygning
 calendar view	bookingfrontend	en	Day/week view
+calendar_resources	bookingfrontend	en	Calendar resources
 calendar_view	bookingfrontend	en	Calendar
 Can not create a booking in the past	bookingfrontend	en	Can not create a booking in the past
 Can not repeat from a date in the past	bookingfrontend	en	Can not repeat from a date in the past
@@ -589,6 +590,8 @@ Tilsynsvakt email	bookingfrontend	en	Tilsynsvakt email
 Tilsynsvakt name	bookingfrontend	en	Tilsynsvakt name
 Tilsynsvakt telephone	bookingfrontend	en	Tilsynsvakt telephone
 Time is set wrong	bookingfrontend	en	Time is set wrong
+timeslot_resources	bookingfrontend	en	Timeslot resources
+timeslot_resources_description	bookingfrontend	en	Easily select a time
 title	bookingfrontend	en	Title
 to	bookingfrontend	en	To
 To application site	bookingfrontend	en	Order now

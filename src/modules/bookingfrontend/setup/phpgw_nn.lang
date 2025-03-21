@@ -359,7 +359,6 @@ metadata settings	bookingfrontend	nn	Metadata innstillingar
 meter	bookingfrontend	nn	Meter
 Minimum 8 digits	bookingfrontend	nn	Minimum 8 tal
 minute	bookingfrontend	nn	Minutt
-minute	bookingfrontend	nn	Minutt
 minute_rate	bookingfrontend	nn	Minuttpris
 Missing rights	bookingfrontend	nn	Mangler rettigheter
 mo	bookingfrontend	nn	mån
@@ -371,7 +370,6 @@ my page	bookingfrontend	nn	Mi side
 name	bookingfrontend	nn	Namn
 Name for event/activity	bookingfrontend	nn	Namn på arrangementet / aktiviteten
 Needed for the return from the external logout	bookingfrontend	nn	Nødvendig for retur frå ekstern logg ut
-new	bookingfrontend	nn	Ny
 new	bookingfrontend	nn	Ny
 new activity	bookingfrontend	nn	Ny aktivitet
 new age group	bookingfrontend	nn	Ny aldersgruppe

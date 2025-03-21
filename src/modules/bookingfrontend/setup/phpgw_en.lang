@@ -359,7 +359,6 @@ metadata settings	bookingfrontend	en	Metadata settings
 meter	bookingfrontend	en	Meter
 Minimum 8 digits	bookingfrontend	en	Minimum 8 digits
 minute	bookingfrontend	en	Minute
-minute	bookingfrontend	en	Minute
 minute_rate	bookingfrontend	en	Minute rate
 Missing rights	bookingfrontend	en	Missing rights
 mo	bookingfrontend	en	Mo
@@ -371,7 +370,6 @@ my page	bookingfrontend	en	My page
 name	bookingfrontend	en	Name
 Name for event/activity	bookingfrontend	en	Name for event/activity
 Needed for the return from the external logout	bookingfrontend	en	Needed for the return from the external logout
-new	bookingfrontend	en	New
 new	bookingfrontend	en	New
 new activity	bookingfrontend	en	New activity
 new age group	bookingfrontend	en	New age group

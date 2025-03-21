@@ -239,7 +239,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 							id={`resource-all`}
 							checked={groupedResources.normal.every(r => enabledResources.has(r.value))}
 							onChange={() => onToggleAll(groupedResources.normal)}
-							label={t('common.select all')}
+							label={t('bookingfrontend.select_all')}
 							className={styles.resourceCheckbox}
 						/>
 					</div>

@@ -274,7 +274,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						order.lines.forEach(line => {
 							articleOrders.push({
 								id: line.article_mapping_id,
-								quantity: parseFloat(line.quantity),
+								quantity: +line.quantity,
 								parent_id: line.parent_mapping_id > 0 ? line.parent_mapping_id : null
 							});
 						});

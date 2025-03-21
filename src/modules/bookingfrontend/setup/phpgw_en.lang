@@ -533,6 +533,7 @@ select category...	bookingfrontend	en	Select category...
 select date	bookingfrontend	en	Select date
 select method	bookingfrontend	en	Select method
 select role...	bookingfrontend	en	Select role...
+select_all	bookingfrontend	en	Select All
 selected	bookingfrontend	en	Selected
 selected_time_must_be_in_future	bookingfrontend	en	The selected time must be in the future
 Send	bookingfrontend	en	Send

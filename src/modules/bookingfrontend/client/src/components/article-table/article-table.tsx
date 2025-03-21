@@ -1,10 +1,11 @@
 // components/article-table/article-table.tsx
-import React, { useEffect, useMemo } from 'react';
-import { Checkbox, Table, Textfield, Spinner } from '@digdir/designsystemet-react';
-import { useResourceArticles } from '@/service/hooks/api-hooks';
-import { ArticleOrder, IArticle } from '@/service/types/api/order-articles.types';
-import { useTrans } from '@/app/i18n/ClientTranslationProvider';
-import { DateTime } from 'luxon';
+import React, {useEffect, useMemo} from 'react';
+import {Checkbox, Table, Textfield, Spinner, Button} from '@digdir/designsystemet-react';
+import {useResourceArticles} from '@/service/hooks/api-hooks';
+import {ArticleOrder, IArticle} from '@/service/types/api/order-articles.types';
+import {useTrans} from '@/app/i18n/ClientTranslationProvider';
+import {DateTime} from 'luxon';
+import {MinusCircleIcon, PlusCircleIcon} from '@navikt/aksel-icons';
 import styles from './article-table.module.scss';
 
 interface ArticleTableProps {
@@ -44,7 +45,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 	}, [selectedArticles]);
 
 	// Fetch articles for selected resources
-	const { data: articles, isLoading, error } = useResourceArticles({
+	const {data: articles, isLoading, error} = useResourceArticles({
 		resourceIds: resourceIds.filter(id => id > 0)
 	});
 
@@ -126,51 +127,77 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		);
 	}, [articles]);
 
-	// Effect to update quantity of mandatory hourly articles when duration changes
-	useEffect(() => {
-		if (!articles) return;
+	// Function to update mandatory hourly articles
+	const updateMandatoryHourlyArticles = () => {
+		if (!articles || !articles.length || !onArticlesChange) return;
 
-		let hasUpdates = false;
+		// Always create a fresh copy of articles to ensure updates
 		const updatedArticles = [...selectedArticles];
+		let hasUpdates = false;
 
-		// Check each selected article to see if it needs quantity updates
-		selectedArticles.forEach((articleOrder, index) => {
-			const article = articles.find(a => a.id === articleOrder.id);
-			if (article &&
-				article.unit === 'hour' &&
-				article.resource_id &&
-				(article.mandatory === 1 || article.mandatory === '1')) {
-				// If this is a mandatory hourly article with resource_id and quantity doesn't match duration, update it
-				if (articleOrder.quantity !== durationHours) {
-					updatedArticles[index] = {
-						...articleOrder,
-						quantity: durationHours
-					};
-					hasUpdates = true;
-				}
-			}
-		});
+		// First, handle mandatory hourly articles with resource_id that aren't selected yet
+		const mandatoryHourlyArticlesToAdd = articles.filter(article =>
+			article.unit === 'hour' &&
+			article.resource_id &&
+			(article.mandatory === 1 || article.mandatory === '1') &&
+			!selectedArticlesMap.has(article.id)
+		);
 
-		// Also check mandatory hourly articles with resource_id that aren't selected yet
-		articles.forEach(article => {
-			if (article.unit === 'hour' &&
-				article.resource_id &&
-				(article.mandatory === 1 || article.mandatory === '1') &&
-				!selectedArticlesMap.has(article.id)) {
-				// Add mandatory hourly article
+		// Add any missing mandatory hourly articles
+		if (mandatoryHourlyArticlesToAdd.length > 0) {
+			mandatoryHourlyArticlesToAdd.forEach(article => {
 				updatedArticles.push({
 					id: article.id,
 					quantity: durationHours,
 					parent_id: article.parent_mapping_id || null
 				});
+			});
+			hasUpdates = true;
+		}
+
+		// Then update quantities for already selected articles if needed
+		for (let i = 0; i < updatedArticles.length; i++) {
+			const articleOrder = updatedArticles[i];
+			const article = articles.find(a => a.id === articleOrder.id);
+
+			if (article &&
+				article.unit === 'hour' &&
+				article.resource_id &&
+				(article.mandatory === 1 || article.mandatory === '1') &&
+				articleOrder.quantity !== durationHours) {
+
+				// Update the quantity to match duration
+				updatedArticles[i] = {
+					...articleOrder,
+					quantity: durationHours
+				};
 				hasUpdates = true;
 			}
-		});
+		}
 
-		if (hasUpdates && onArticlesChange) {
+		// Only trigger update if we have changes
+		if (hasUpdates) {
 			onArticlesChange(updatedArticles);
 		}
-	}, [articles, selectedArticles, durationHours, onArticlesChange, selectedArticlesMap]);
+	};
+
+	// Use immediate effect when articles or duration changes
+	useEffect(() => {
+		// This must run synchronously on mount and updates
+		if ((articles?.length || 0) > 0) {
+			// Use setTimeout to ensure this runs after React's rendering cycle
+			setTimeout(() => {
+				updateMandatoryHourlyArticles();
+			}, 0);
+		}
+	}, [articles, durationHours, selectedArticles.length]);
+
+	// Also run when selected articles map changes (for deeper dependency checking)
+	useEffect(() => {
+		if ((articles?.length || 0) > 0) {
+			updateMandatoryHourlyArticles();
+		}
+	}, [selectedArticlesMap]);
 
 	const handleQuantityChange = (article: IArticle, quantity: number) => {
 		// Only prevent editing for mandatory hourly articles with resource_id
@@ -193,7 +220,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		} else {
 			// Update or add article with new quantity
 			if (index !== -1) {
-				newArticles[index] = { ...newArticles[index], quantity };
+				newArticles[index] = {...newArticles[index], quantity};
 			} else {
 				newArticles.push({
 					id: article.id,
@@ -207,21 +234,80 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 	};
 
 	// Calculate total price for all selected articles
-	const totalPrice = selectedArticles.reduce((total, articleOrder) => {
-		const article = articles?.find(a => a.id === articleOrder.id);
-		if (article) {
-			const isMandatoryHourly = article.unit === 'hour' &&
-				article.resource_id &&
-				(article.mandatory === 1 || article.mandatory === '1');
+	const totalPrice = useMemo(() => {
+		return selectedArticles.reduce((total, articleOrder) => {
+			const article = articles?.find(a => a.id === articleOrder.id);
+			if (article) {
+				const isMandatoryHourly = article.unit === 'hour' &&
+					article.resource_id &&
+					(article.mandatory === 1 || article.mandatory === '1');
 
-			const quantity = isMandatoryHourly ? durationHours : articleOrder.quantity;
-			return total + (parseFloat(article.unit_price) * quantity);
+				const quantity = isMandatoryHourly ? durationHours : articleOrder.quantity;
+				return total + (parseFloat(article.unit_price) * quantity);
+			}
+			return total;
+		}, 0).toFixed(2);
+	}, [selectedArticles, articles, durationHours]);
+
+	// Helper functions for incrementing and decrementing quantity
+	const incrementQuantity = (article: IArticle) => {
+		const isMandatoryHourly = article.unit === 'hour' &&
+			article.resource_id &&
+			(article.mandatory === 1 || article.mandatory === '1');
+
+		if (isMandatoryHourly || !onArticlesChange) {
+			return; // Can't change mandatory hourly articles
 		}
-		return total;
-	}, 0).toFixed(2);
+
+		const newArticles = [...selectedArticles];
+		const index = newArticles.findIndex(a => a.id === article.id);
+		const currentQuantity = index !== -1 ? newArticles[index].quantity : 0;
+
+		// Increment the quantity
+		if (index !== -1) {
+			newArticles[index] = {...newArticles[index], quantity: currentQuantity + 1};
+		} else {
+			newArticles.push({
+				id: article.id,
+				quantity: 1,
+				parent_id: article.parent_mapping_id || null
+			});
+		}
+
+		onArticlesChange(newArticles);
+	};
+
+	const decrementQuantity = (article: IArticle) => {
+		const isMandatoryHourly = article.unit === 'hour' &&
+			article.resource_id &&
+			(article.mandatory === 1 || article.mandatory === '1');
+
+		if (isMandatoryHourly || !onArticlesChange) {
+			return; // Can't change mandatory hourly articles
+		}
+
+		const newArticles = [...selectedArticles];
+		const index = newArticles.findIndex(a => a.id === article.id);
+
+		if (index === -1) {
+			return; // Article not in selection, nothing to decrement
+		}
+
+		const currentQuantity = newArticles[index].quantity;
+
+		if (currentQuantity <= 1) {
+			// Remove the article if quantity would be 0
+			newArticles.splice(index, 1);
+		} else {
+			// Decrease the quantity
+			newArticles[index] = {...newArticles[index], quantity: currentQuantity - 1};
+		}
+
+		onArticlesChange(newArticles);
+	};
 
 	if (isLoading) {
-		return <Spinner data-size="md" aria-label={t('common.loading')} />;
+		return <Spinner data-size="md" aria-label={t('common.loading')}/>;
 	}
 
 	if (error) {
@@ -266,7 +352,8 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 										<Table.Cell id={`${article.id}-name`}>
 											{article.name.replace('- ', '')}
 											{article.article_remark && (
-												<div className={styles.articleRemark} dangerouslySetInnerHTML={{ __html: article.article_remark}}></div>
+												<div className={styles.articleRemark}
+													 dangerouslySetInnerHTML={{__html: article.article_remark}}></div>
 											)}
 											{/*{isMandatoryHourly && (*/}
 											{/*	<div className={styles.hourlyLabel}>*/}
@@ -277,19 +364,64 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 										<Table.Cell>{article.price} kr</Table.Cell>
 										{!readOnly && (
 											<Table.Cell>
-												{isMandatoryHourly ? (
-													<div className={styles.calculatedQuantity}>{durationHours}</div>
-												) : (
-													<Textfield
-														aria-labelledby={`${article.id}-name`}
-														type="number"
-														value={isSelected ? quantity.toString() : ''}
-														onChange={(e) => handleQuantityChange(article, parseInt(e.target.value) || 0)}
-														min={0}
-														disabled={isMandatory}
-														placeholder="0"
-													/>
-												)}
+												<div className={styles.quantityControls}>
+													{isMandatoryHourly ? (
+														<>
+															<span className={styles.hiddenButton}>
+																<Button
+																	variant="tertiary"
+																	data-size="sm"
+																	icon={true}
+																	disabled={true}
+																	aria-label={t('common.decrease')}
+																>
+																	<MinusCircleIcon aria-hidden="true"/>
+																</Button>
+															</span>
+															<span className={styles.quantityValue}>
+																{durationHours}
+															</span>
+															<span className={styles.hiddenButton}>
+
+															<Button
+																variant="tertiary"
+																data-size="sm"
+																icon={true}
+																disabled={true}
+																aria-label={t('common.increase')}
+															>
+																<PlusCircleIcon aria-hidden="true"/>
+															</Button>
+															</span>
+														</>
+													) : (
+														<>
+															<Button
+																variant="tertiary"
+																data-size="sm"
+																icon={true}
+																onClick={() => decrementQuantity(article)}
+																disabled={isMandatory || !isSelected}
+																aria-label={t('common.decrease')}
+															>
+																<MinusCircleIcon aria-hidden="true"/>
+															</Button>
+															<span className={styles.quantityValue}>
+																{isSelected ? quantity : 0}
+															</span>
+															<Button
+																variant="tertiary"
+																data-size="sm"
+																icon={true}
+																onClick={() => incrementQuantity(article)}
+																disabled={isMandatory}
+																aria-label={t('common.increase')}
+															>
+																<PlusCircleIcon aria-hidden="true"/>
+															</Button>
+														</>
+													)}
+												</div>
 											</Table.Cell>
 										)}
 										<Table.Cell>{isSelected ? `${total} kr` : '-'}</Table.Cell>

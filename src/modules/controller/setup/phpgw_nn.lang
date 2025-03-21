@@ -1,142 +1,158 @@
-missing value for required	controller	nn	Mangler registrering for obligatorisk
-Please enter billable hours	controller	nn	Angi egne timer
-my assigned controls	controller	nn	Mine kontroller
+%1 case(s) sent as message %2	controller	nn	%1 sak(er) sendt som melding %2
+1-6 characters	controller	nn	1-6 tegn
+6 characters	controller	nn	6 tegn
+ACCEPTED	controller	nn	Akseptert
+active	controller	nn	Aktiv
+add	controller	nn	Legg til
 add case	controller	nn	Registrer sak
-cases	common	nn	Registrerte saker
+add components for control	controller	nn	Legg til knytning mellom kontroll og komponent(er)
+add picture	controller	nn	Legg til bilete
 add ticket	controller	nn	Registrer melding
+add_case	controller	nn	Registrer sak
 add_check_list_to_location	controller	nn	Registrer kontroll for bygg
+Add_component_for_control	controller	nn	Legg til knytning mot utstyr
+Add_component_for_control_group	controller	nn	Legg til knytning mot utstyr
+add_location	controller	nn	Registrer kontroll til bygg
+Add_locations_for_control	controller	nn	Legg til knytning mot lokasjon
 added	controller	nn	Lagt til
-deleted	controller	nn	Slettet
+Address	controller	nn	Adresse
+administrator	controller	nn	Administrator
+all	controller	nn	Alle
+all_locations	controller	nn	Enheter fra eiendomsregisteret
+annually	controller	nn	Årlig
+assign	controller	nn	Tildel
+back	controller	nn	Tilbake
+Bim_id	controller	nn	Utstyrs-id
+Bim_name	controller	nn	Utstyrsnavn
+Bim_type	controller	nn	Utstyrstype
 bookmark	controller	nn	Bokmerke
-location_connections	controller	nn	Byggknytning
+building	controller	nn	Bygg
+Building part	controller	nn	Bygningsdel
+bulk update assigned	controller	nn	Masseoppdatering av tildeling
+calendar planner	controller	nn	Planleggar
+calendar_months	controller	nn	["Januar","Februar","Mars","April","Mai","Juni","Juli","August","September","Oktober","November","Desember"]
+Calendar_overview	controller	nn	Kontrollplan
+calendar_weekdays	controller	nn	["Sø","Ma","Ti","On","To","Fr","Lø"]
+cancel	controller	nn	Avbryt
+cases	common	nn	Registrerte saker
+category assignment	controller	nn	Meldingskategori pr Kontrolltype
+certificate	controller	nn	Sertifikat
+change status	controller	nn	endre status
+change to	controller	nn	Endre til
+check list status	controller	nn	Status for heile kontrollen
+Check_list	controller	nn	Sjekkliste
+Check_lists	controller	nn	Sjekklister
+choose a location	controller	nn	Velg en lokasjon
+Choose_building_category	controller	nn	Velg byggkategori
+Choose_building_type	controller	nn	Velg byggtype
+Choose_component_category	controller	nn	Velg utstyrskategori
+Choose_component_type	controller	nn	Velg utstyrstype
+Choose_control_groups	controller	nn	Velg kontrollgrupper
+Choose_control_items	controller	nn	Velg kontrollpunkt
+Choose_district	controller	nn	Velg distrikt
+Choose_part_of_town	controller	nn	Velg bydel
+chosen attributes	controller	nn	Valgte datafelter
+clear	controller	nn	Nullstill
+close	controller	nn	Lukk
+closed	controller	nn	lukka
+comment	controller	nn	Kommentar
+comments	controller	nn	Kommentarer
+component	controller	nn	Utstyr
+component_category_ifc	controller	nn	IFC
+component_category_internal	controller	nn	Internt utstyrsregister
+component_for_control	controller	nn	Utstyr tilknyttet kontroll
+component_for_control_group	controller	nn	Utstyr tilknyttet kontrollgrupper
+components	controller	nn	Komponenter
+components for control	controller	nn	Komponenter tilknyttet kontroll
+condition degree	controller	nn	Tilstandsgrad
+condition not assessed	controller	nn	Ikkje udersøkt. Mogleg risiko
+consequence	controller	nn	Konsekvens
 control	controller	nn	Kontroll
-controller	common	nn	Kontroll
-Register control item	controller	nn	Legg til nytt kontrollpunkt
-Edit control item	controller	nn	Endre kontrollpunkt
-Entity	controller	nn	Komponentregister
-View control item	controller	nn	Vis kontrollpunkt
+Control area	controller	nn	Kontrollområde
+Control group	controller	nn	Kontrollgruppe
+Control group title	controller	nn	Tittel
+Control item title	controller	nn	Kontrollpunkt
+Control item what to do	controller	nn	Hva skal gjøres
+Control title	controller	nn	Tittel
+Control types	controller	nn	Kontrolltyper
+Control_area	controller	nn	Kontrollområde
+Control_areas	controller	nn	Kontrollområder
+CONTROL_CANCELED	controller	nn	Kontroll kansellert
+Control_component	controller	nn	Utstyr
+CONTROL_DONE_IN_TIME_WITHOUT_ERRORS	controller	nn	Kontroll gjennomført uten åpne saker før frist
+CONTROL_DONE_OVER_TIME_WITHOUT_ERRORS	controller	nn	Kontroll gjennomført uten åpne saker etter frist
+CONTROL_DONE_WITH_ERRORS	controller	nn	Kontroll gjennomført med saker
+Control_group	controller	nn	Kontrollgruppe
+Control_groups	controller	nn	Kontrollgrupper
+control_helptext	controller	nn	Her kommer hjelpetekst for å opprette en kontroll
+Control_item	controller	nn	Kontrollpunkt
 control_item_type_1	controller	nn	Ved innskriving av kommentar
 control_item_type_2	controller	nn	Ved innskriving av måling i et tekstfelt
 control_item_type_3	controller	nn	Ved valg av verdi fra nedtrekksliste
 control_item_type_4	controller	nn	Ved valg av verdi fra radioknapper
 control_item_type_5	controller	nn	Ved valg av verdi fra Avkrysning
-control_helptext	controller	nn	Her kommer hjelpetekst for å opprette en kontroll
-condition degree	controller	nn	Tilstandsgrad
-minor symptoms	controller	nn	Ikkje vesentleg avvik
-medium symptoms	controller	nn	Vesentleg avvik
-serious symptoms	controller	nn	Stort eller vesentleg avvik
-condition not assessed	controller	nn	Ikkje udersøkt. Mogleg risiko
-consequence	controller	nn	Konsekvens
-Check_list	controller	nn	Sjekkliste
-chosen attributes	controller	nn	Valgte datafelter
-Calendar_overview	controller	nn	Kontrollplan
-Check_lists	controller	nn	Sjekklister
-Choose_control_groups	controller	nn	Velg kontrollgrupper
-Choose_control_items	controller	nn	Velg kontrollpunkt
-Choose_building_type	controller	nn	Velg byggtype
-Choose_building_category	controller	nn	Velg byggkategori
-Choose_district	controller	nn	Velg distrikt
-district	controller	nn	Distrikt
-user	controller	nn	Bruker
-Choose_part_of_town	controller	nn	Velg bydel
-DATATABLE_MSG_EMPTY	controller	nn	Ingen data
-DATATABLE_MSG_ERROR	controller	nn	Datafeil
-DATATABLE_MSG_LOADING	controller	nn	Laster data
-Sort_check_list	controller	nn	Sorter sjekkliste
-Show_check_lists	controller	nn	Vis sjekklister
-save_check_list	controller	nn	Lagre sjekkliste
-title	controller	nn	kontroll
-close	controller	nn	Lukk
-clear	controller	nn	Nullstill
-month 1	controller	nn	januar
-month 2	controller	nn	februar
-month 3	controller	nn	mars
-month 4	controller	nn	april
-month 5	controller	nn	mai
-month 6	controller	nn	juni
-month 7	controller	nn	juli
-month 8	controller	nn	august
-month 9	controller	nn	september
-month 10	controller	nn	oktober
-month 11	controller	nn	november
-month 12	controller	nn	desember
-month 0 capitalized	controller	nn	Ikke tilgjengelig
-month 1 capitalized	controller	nn	Januar
-month 2 capitalized	controller	nn	Februar
-month 3 capitalized	controller	nn	Mars
-month 4 capitalized	controller	nn	April
-month 5 capitalized	controller	nn	Mai
-month 6 capitalized	controller	nn	Juni
-month 7 capitalized	controller	nn	Juli
-month 8 capitalized	controller	nn	August
-month 9 capitalized	controller	nn	September
-month 10 capitalized	controller	nn	Oktober
-month 11 capitalized	controller	nn	November
-month 12 capitalized	controller	nn	Desember
-short_month 1 capitalized	controller	nn	Jan
-short_month 2 capitalized	controller	nn	Feb
-short_month 3 capitalized	controller	nn	Mar
-short_month 4 capitalized	controller	nn	Apr
-short_month 5 capitalized	controller	nn	Mai
-short_month 6 capitalized	controller	nn	Jun
-short_month 7 capitalized	controller	nn	Jul
-short_month 8 capitalized	controller	nn	Aug
-short_month 9 capitalized	controller	nn	Sep
-short_month 10 capitalized	controller	nn	Okt
-short_month 11 capitalized	controller	nn	Nov
-short_month 12 capitalized	controller	nn	Des
-monthly	controller	nn	Månedlig
-month	controller	nn	Måned
-no part of town	controller	nn	Bydel ikke valgt
-no district	controller	nn	Distrikt ikke valgt
-calendar_months	controller	nn	["Januar","Februar","Mars","April","Mai","Juni","Juli","August","September","Oktober","November","Desember"]
-calendar_weekdays	controller	nn	["Sø","Ma","Ti","On","To","Fr","Lø"]
-select_date	controller	nn	Velg dato
-select	controller	nn	Velg
-year	controller	nn	År
-location_code	controller	nn	Enhetsnummer
-included_units	controller	nn	Kontrollens enheter
-floor	controller	nn	Etasje
-section	controller	nn	Seksjon
-room	controller	nn	Rom
-save	controller	nn	Lagre
-save_order	controller	nn	Lagre rekkefølge
-1-6 characters	controller	nn	1-6 tegn
-6 characters	controller	nn	6 tegn
-active	controller	nn	Aktiv
-add	controller	nn	Legg til
-add_location	controller	nn	Registrer kontroll til bygg
-all	controller	nn	Alle
-all_locations	controller	nn	Enheter fra eiendomsregisteret
-annually	controller	nn	Årlig
-back	controller	nn	Tilbake
-building	controller	nn	Bygg
-calendar_months	controller	nn	["Januar","Februar","Mars","April","Mai","Juni","Juli","August","September","Oktober","November","Desember"]
-calendar_weekdays	controller	nn	["Sø","Ma","Ti","On","To","Fr","Lø"]
-cancel	controller	nn	Avbryt
-close	controller	nn	Lukk
-clear	controller	nn	Nullstill
-comment	controller	nn	Kommentar
-comments	controller	nn	Kommentarer
+control_items	controller	nn	Kontrollpunkt
+Control_locations	controller	nn	Lokasjoner
+CONTROL_NOT_DONE	controller	nn	Kontroll ikke gjennomført
+CONTROL_PLANNED	controller	nn	Kontroll har planlagt dato
+CONTROL_REGISTERED	controller	nn	Kontroll satt opp
+controle time	common	nn	Kontrolltid
+ControlId	controller	nn	Kontroll-id
+controller	common	nn	Kontroll
+controller	controller	nn	Kontroll
+corrected	controller	nn	Korrigert
+corrected on controll	controller	nn	Korrigert ved utført kontroll
 count	controller	nn	Antall
 count_suffix	controller	nn	stk
+create_case_message	controller	nn	Registrer melding
 create_shortcut	controller	nn	Ny snarvei
 DATATABLE_MSG_EMPTY	controller	nn	Ingen data
 DATATABLE_MSG_ERROR	controller	nn	Datafeil
 DATATABLE_MSG_LOADING	controller	nn	Laster data
-date_end	controller	nn	Gjelder til
 date	controller	nn	Dato
+date_end	controller	nn	Gjelder til
 date_start	controller	nn	Gjelder fra
+deadline	controller	nn	Frist
+deadline end of year	controller	nn	Frist på slutten av året for årskontroller
 delete	controller	nn	Slett
+deleted	controller	nn	Slettet
 description	controller	nn	Beskrivelse
 details	controller	nn	Detaljer
+deviation	controller	nn	Avvik
+district	controller	nn	Distrikt
+Do not edit archived version	controller	nn	Du kan ikke endre arkiverte versjoner
 do_not_exist	controller	nn	Eksisterer ikke
+Document description	controller	nn	Beskrivelse
+Document name	controller	nn	Filnavn
+Document title	controller	nn	Dokumentets tittel
+document types	controller	nn	Dokumenttyper
+done with open deviation	controller	nn	Utført med åpne avvik
 edit	controller	nn	Redigér
-elements_pr_page	controller	nn	elementer per side
+Edit control item	controller	nn	Endre kontrollpunkt
 elements	controller	nn	Elementer
+elements_pr_page	controller	nn	elementer per side
+end_date	controller	nn	Sluttdato
+Entity	controller	nn	Komponentregister
+equipment	controller	nn	Utstyr
+error	controller	nn	Feil
+error_msg_1	controller	nn	Vennligst fyll inn dette feltet
+error_msg_2	controller	nn	Vennligst velg en verdi i listen
+error_msg_3	controller	nn	Vennligst angi sluttdato etter startdato
+error_msg_4	controller	nn	Sjekklisten må være tilknyttet en kontroll
+error_msg_5	controller	nn	Vennligst angi når kontrollen ble utført
+error_msg_6	controller	nn	Kontrollen må være knyttet mot en komponent/lokasjon
+error_msg_7	controller	nn	Vennligst endre status for kontroll eller angi planlagtdato
+error_msg_8	controller	nn	Planlagtdato kan ikke være etter fristdato
+error_msg_9	controller	nn	Utførtdato kan ikke være etter fristdato
+error_msg_control_passed_due_date	controller	nn	Sjekkliste kan ikke lagres da frist er overskredet
+error_msg_no_controls_for_component	controller	nn	Ingen kontroller for komponent i denne perioden
+error_msg_no_controls_in_period	controller	nn	Ingen kontroller for bygg i denne perioden
 every_second_week	controller	nn	Hver 14. dag
 export	controller	nn	Eksport
 export_to	controller	nn	Eksporter
+f_new_procedure	controller	nn	Legg til
+f_select_columns	controller	nn	Velg kolonner
+file not found	controller	nn	Fil ikke funnen
 filters	controller	nn	Filtre
 Finish	controller	nn	Avslutt
 fire_drawings	controller	nn	Branntegninger
@@ -145,30 +161,47 @@ first_half	controller	nn	1. halvår
 first_quarter	controller	nn	1. kvartal
 fixed	controller	nn	Tidsbestemt
 floor	controller	nn	Etasje
+Font Style	controller	nn	Font stil
 fourth_quarter	controller	nn	4. kvartal
 from	controller	nn	Fra
-f_select_columns	controller	nn	Velg kolonner
 gab	controller	nn	GAB
 gab_id	controller	nn	GAB
+GUID	controller	nn	GUID
 half-year	controller	nn	Halvårig
 hidden	controller	nn	Skjult
 hidden_for_pick	controller	nn	skjult
 house_number	controller	nn	Husnummer
 id	controller	nn	ID
 Identifier	controller	nn	Identifikator
+in queue	controller	nn	I kø
 inactive	controller	nn	Inaktiv
+included_units	controller	nn	Kontrollens enheter
+Insert Item	controller	nn	Sett inn
+inspection history	controller	nn	Utførte kontrollar
+inspector	controller	nn	Kontrollør
 interval	controller	nn	Intervall
+invert_checkboxes	controller	nn	Inverter merking
 is_active	controller	nn	Aktiv
-is_inactive	controller	nn	Inaktiv
 is_executed	controller	nn	Utført
+is_inactive	controller	nn	Inaktiv
 land_title	controller	nn	Gnr/Bnr
-lastname	controller	nn	Etternavn
+lang_control_mandatory_location	controller	nn	Påkrevd lokasjonsvalg
 last	controller	nn	Siste
+last inspection	controller	nn	Sist kontrollert
 last_updated	controller	nn	Sist oppdatert
+lastname	controller	nn	Etternavn
 level	controller	nn	Nivå
 link	controller	nn	Lenke
+Lists	controller	nn	Lister
+location	controller	nn	Lokasjon
+location category	controller	nn	Lokaliseringskategori
+location_code	controller	nn	Enhetsnummer
+location_connections	controller	nn	Byggknytning
+Locations	controller	nn	Lokasjoner
+locations for control	controller	nn	Lokasjoner tilknyttet kontroll
 Locations_for_control	controller	nn	Bygg tilknyttet kontroll
 make_pdf	controller	nn	Lag PDF for utskrift
+medium symptoms	controller	nn	Vesentleg avvik
 message	controller	nn	Melding
 messages_form_error	controller	nn	Skjemaet inneholder en feil.
 messages_general	controller	nn	Feil i feltet
@@ -180,302 +213,256 @@ messages_required_field	controller	nn	Dette feltet er påkrevd
 messages_right_click_to_add	controller	nn	Høyreklikk for å legge til
 messages_saved_form	controller	nn	Informasjonen ble lagret.
 messages_string_too_long	controller	nn	Teksten er for lang
+minor symptoms	controller	nn	Ikkje vesentleg avvik
 Missing responsibility id.	controller	nn	Ansvar mangler.
+missing start date	controller	nn	Mangler startdato
+missing value for required	controller	nn	Mangler registrering for obligatorisk
 mobile_phone	controller	nn	Mobiltelefon
+modified by	controller	nn	Endret av
+modified date	controller	nn	Dato siste endring
 month	controller	nn	Måned
+month 0 capitalized	controller	nn	Ikke tilgjengelig
+month 1	controller	nn	januar
+month 1 capitalized	controller	nn	Januar
+month 10	controller	nn	oktober
+month 10 capitalized	controller	nn	Oktober
+month 11	controller	nn	november
+month 11 capitalized	controller	nn	November
+month 12	controller	nn	desember
+month 12 capitalized	controller	nn	Desember
+month 2	controller	nn	februar
+month 2 capitalized	controller	nn	Februar
+month 3	controller	nn	mars
+month 3 capitalized	controller	nn	Mars
+month 4	controller	nn	april
+month 4 capitalized	controller	nn	April
+month 5	controller	nn	mai
+month 5 capitalized	controller	nn	Mai
+month 6	controller	nn	juni
+month 6 capitalized	controller	nn	Juni
+month 7	controller	nn	juli
+month 7 capitalized	controller	nn	Juli
+month 8	controller	nn	august
+month 8 capitalized	controller	nn	August
+month 9	controller	nn	september
+month 9 capitalized	controller	nn	September
+monthly	controller	nn	Månedlig
+my assigned controls	controller	nn	Mine kontroller
 name	controller	nn	Navn
 never	controller	nn	Aldri
+NEW	controller	nn	Ny
+New control	controller	nn	Ny kontroll
+New control group	controller	nn	Ny kontrollgruppe
+New control item	controller	nn	Nytt kontrollpunkt
+new picture	controller	nn	Nytt bilete
+new revision	controller	nn	Ny revisjon
 new_notification	controller	nn	Nytt varsel
 next	controller	nn	Neste
 no	controller	nn	Nei
-none	controller	nn	Ingen
-nobody	controller	nn	Ingen
+no category selected	controller	nn	Kategori ikke valgt
+no district	controller	nn	Distrikt ikke valgt
+no part of town	controller	nn	Bydel ikke valgt
+no symptoms	controller	nn	Ingen avvik
 no_hits	controller	nn	Ingen treff
 no_value	controller	nn	Ingen
+nobody	controller	nn	Ingen
+none	controller	nn	Ingen
+not performed	controller	nn	Ikkje utført
+Not selected	controller	nn	Ingen valgt
 not_available	controller	nn	Ikke tilgjengelig
-notification_status	controller	nn	Varsel
-notifications	controller	nn	Varsler
+not_available_nor_hidden	controller	nn	tilgjengelig eller skjult
+not_started	controller	nn	Ikke startet
+notification content	controller	nn	Innhold i varsling
+notification subject	controller	nn	Overskrift på varsling
 notification_optgroup_groups	controller	nn	Grupper
 notification_optgroup_users	controller	nn	Brukere
-not_started	controller	nn	Ikke startet
-not_available_nor_hidden	controller	nn	tilgjengelig eller skjult
+notification_status	controller	nn	Varsel
+notifications	controller	nn	Varsler
 object_number	controller	nn	Objektnummer
 objno_name_address	controller	nn	Objektnummer/navn/adresse
 occupied	controller	nn	Opptatt
+ODS	controller	nn	ODS
 of_total	controller	nn	av totalt
 ok	controller	nn	Ok
-ODS	controller	nn	ODS
 only_one_time	controller	nn	Status
+open	controller	nn	Open
 or	controller	nn	eller
+other controll	controller	nn	Annen kontroll
 others	controller	nn	Annet
 out_of_operation	controller	nn	Ikke i drift
 panels	controller	nn	Vinduer
+part of town	controller	nn	Bydel
+PENDING	controller	nn	Venter
+perform control	controller	nn	utfør kontroll
+perform control on selected	controller	nn	Utfør kontroll på valt utstyr
+performed	controller	nn	Utført
+performed by	controller	nn	Utført av
+performed without deviation	controller	nn	Utført utan avvik
 phone	controller	nn	Telefon
+picture	controller	nn	Bilete
+plan	controller	nn	Planlegg
+planned	controller	nn	Planlagt
+planned date	common	nn	Planlagt Dato
+planned_date	controller	nn	Planlagtdato
+Please enter billable hours	controller	nn	Angi egne timer
 postal_code_place	controller	nn	Postnummer/-sted
 previous	controller	nn	Forrige
-propertyident	controller	nn	G.nr. / B.nr. / F.nr. / S.nr.
-property_id	controller	nn	BKB identifikator
+Procedure	controller	nn	Prosedyre
+Procedure attachment	controller	nn	Vedlegg
+Procedure description	controller	nn	Beskrivelse
+Procedure end date	controller	nn	Sluttdato
+Procedure purpose	controller	nn	Formål
+Procedure reference	controller	nn	Referanse
+Procedure responsibility	controller	nn	Ansvar og myndighet
+Procedure revision	controller	nn	Versjon
+Procedure revision date	controller	nn	Revisjonsdato
+Procedure start date	controller	nn	Startdato
+Procedure title	controller	nn	Navn
+Procedure valid from date	controller	nn	Gyldig fra
+Procedures	controller	nn	Prosedyrer
 property	controller	nn	Eiendom
+Property name	controller	nn	Lokasjonsnavn
+property_id	controller	nn	BKB identifikator
+propertyident	controller	nn	G.nr. / B.nr. / F.nr. / S.nr.
+proposed counter measure	controller	nn	Forslag til tiltak
 quarterly	controller	nn	Kvartalvis
-recurrence	controller	nn	Gjentakelse
-registered	controller	nn	Registrert
-remove	controller	nn	Fjern
-controller	controller	nn	Kontroll
-reports	controller	nn	Rapporter
-report	controller	nn	Rapport
 Receipt	controller	nn	Kvittering
+recurrence	controller	nn	Gjentakelse
+Register control item	controller	nn	Legg til nytt kontrollpunkt
+Register new message	controller	nn	Registrer ny melding
+registered	controller	nn	Registrert
+regulation reference	controller	nn	Heimel
+REJECTED	controller	nn	Avvist
+remove	controller	nn	Fjern valgte elementer
+repeat type	controller	nn	Intervalltype
+repeat_type_day	controller	nn	Dag
+repeat_type_month	controller	nn	Måned
+repeat_type_none	controller	nn	Ingen
+repeat_type_week	controller	nn	Uke
+repeat_type_year	controller	nn	År
+report	controller	nn	Rapport
+report type	controller	nn	Rapporttype
+reports	controller	nn	Rapporter
+request ical event	controller	nn	Send møteinnkalling
 reset	controller	nn	Nullstill
+reset form	controller	nn	Tøm skjema
 responsibility	controller	nn	Ansvar
-responsibility_id	controller	nn	Ansvar
 Responsibility id must be 6 characters.	controller	nn	Ansvar må være seks tegn.
+responsibility_id	controller	nn	Ansvar
 responsibility_id_not_numeric	controller	nn	Ansvar må være et tall
+revisit	controller	nn	Revidér
+role at location	controller	nn	Tildeling av rolle
 room	controller	nn	Rom
 running	controller	nn	Løpende
 save	controller	nn	Lagre
-save_control_item	controller	nn	Lagre kontrollpunkt
+save check list	controller	nn	Lagre verdier
 save_check_item	controller	nn	Lagre sjekkpunkt
+save_check_list	controller	nn	Lagre sjekkliste
+save_control_item	controller	nn	Lagre kontrollpunkt
+save_order	controller	nn	Lagre rekkefølge
+saved	controller	nn	Lagra
+search	controller	nn	Søk
 search_for	controller	nn	Søk etter
 search_options	controller	nn	Søkevalg
-search	controller	nn	Søk
 search_where	controller	nn	i
+searchfield	controller	nn	Søkefelt
 second_half	controller	nn	2. halvår
 second_quarter	controller	nn	2. kvartal
 section	controller	nn	Seksjon
 security	controller	nn	Sikkerhet
+select	controller	nn	Velg
+select add	controller	nn	Velg for å legge til
+select delete	controller	nn	Velg for sletting
+select value	controller	nn	Velg
 select_all_options	controller	nn	&lt;Alle$gt;
 select_date	controller	nn	Velg dato
 select_date_valid_year	controller	nn	Vennligst velg et gyldig år
+send notification	controller	nn	Send varsel
+send report	controller	nn	Send rapport
+serie	controller	nn	Serie
+serious symptoms	controller	nn	Stort eller vesentleg avvik
 service	controller	nn	Tjeneste
-service_id	controller	nn	Tjeneste
 Service id must be 5 characters.	controller	nn	Tjeneste må være fem tegn.
-service_id_not_numeric	controller	nn	Tjeneste må være et tall
+service time	common	nn	Servicetid
 service_exist	controller	nn	Eksisterer
+service_id	controller	nn	Tjeneste
+service_id_not_numeric	controller	nn	Tjeneste må være et tall
+set status: done	controller	nn	Sett status: utført
+set status: not done	controller	nn	Sett status: ikkje utført
+settings	controller	nn	Innstillingar
+short_month 1 capitalized	controller	nn	Jan
+short_month 10 capitalized	controller	nn	Okt
+short_month 11 capitalized	controller	nn	Nov
+short_month 12 capitalized	controller	nn	Des
+short_month 2 capitalized	controller	nn	Feb
+short_month 3 capitalized	controller	nn	Mar
+short_month 4 capitalized	controller	nn	Apr
+short_month 5 capitalized	controller	nn	Mai
+short_month 6 capitalized	controller	nn	Jun
+short_month 7 capitalized	controller	nn	Jul
+short_month 8 capitalized	controller	nn	Aug
+short_month 9 capitalized	controller	nn	Sep
 shortcuts	controller	nn	Snarveier
 show	controller	nn	Vis
+Show message	controller	nn	Vis melding
+Show_check_lists	controller	nn	Vis sjekklister
+show_controls_for_location	controller	nn	Vis lokasjoner/ komponenter
 shows_from	controller	nn	Viser fra
+Sort_check_list	controller	nn	Sorter sjekkliste
+start date	controller	nn	Startdato
+start inspection	controller	nn	Start kontroll
+start_date	controller	nn	Startdato
 started	controller	nn	Startet
+status	controller	nn	Status
+status components	controller	nn	Status komponenter
+status done	controller	nn	Utført
+Status done	controller	nn	Status: Utført
+status locations	controller	nn	Status lokasjoner
+status not done	controller	nn	Ikke utført
+Status not done	controller	nn	Status: Ikke utført
 status_before	controller	nn	før
 status_date	controller	nn	den
 status_unknown	controller	nn	Ukjent status
-status	controller	nn	Status
-status done	controller	nn	Utført
-status not done	controller	nn	Ikke utført
-done with open deviation	controller	nn	Utført med åpne avvik
 Success	controller	nn	Suksess
 sum	controller	nn	Sum
+summary	common	nn	Sammendrag
+supervisor	controller	nn	Soneleiar
 System setting for responsibility id for the current user must be 6 characters.	controller	nn	Systeminnstilling for ansvar må være seks tegn.
+t_functions	controller	nn	Funksjoner
+t_new_procedure	controller	nn	Ny prosedyre
 target_me	controller	nn	Meg selv
 target_none	controller	nn	Ingen
 third_quarter	controller	nn	3. kvartal
-t_functions	controller	nn	Funksjoner
 title	controller	nn	Tittel
 to	controller	nn	til
 to_the_top	controller	nn	Til toppen
+total time	common	nn	Totaltid
 type	controller	nn	Type
-units	controller	nn	Enheter
+unable_to_connect_to_database	controller	nn	Problemer med å koble til databasen.
 unit_id	controller	nn	Enhetsid
 unit_name	controller	nn	Enhetsnavn
+units	controller	nn	Enheter
+unknown_user	controller	nn	Personen finnes ikke.
 update	controller	nn	Oppdatér
+update geolocation	controller	nn	Oppdater geolokasjon
 upload	controller	nn	Last opp
 url	controller	nn	Nettsted
-username	controller	nn	Brukernavn
+Use ACL for control areas	common	nn	Bruk rettighetsstyring på kontrollområder
+user	controller	nn	Bruker
 user_or_group	controller	nn	Bruker/Gruppe
-unable_to_connect_to_database	controller	nn	Problemer med å koble til databasen.
-unknown_user	controller	nn	Personen finnes ikke.
+username	controller	nn	Brukernavn
+View control item	controller	nn	Vis kontrollpunkt
+view_cases	controller	nn	Vis saker
+View_component_for_control	controller	nn	Vis knytning mot utstyr
+View_component_for_control_group	controller	nn	Vis knytning mot utstyr
+view_control_info	controller	nn	Vis info om kontroll
+view_details	controller	nn	Vis detaljer for sjekkliste
+View_documents_for_procedure	controller	nn	Tilknyttede dokumenter
+View_locations_for_control	controller	nn	Vis kontroller for lokasjon
+View_procedure	controller	nn	Prosedyre
 weekly	controller	nn	Ukentlig
+where	controller	nn	Hvor
 working_on	controller	nn	Kontrakter under arbeid
 year	controller	nn	År
 yes	controller	nn	Ja
-control_items	controller	nn	Kontrollpunkt
-Control_item	controller	nn	Kontrollpunkt
-Procedure	controller	nn	Prosedyre
-Procedures	controller	nn	Prosedyrer
-Procedure title	controller	nn	Navn
-t_new_procedure	controller	nn	Ny prosedyre
-f_new_procedure	controller	nn	Legg til
-Procedure purpose	controller	nn	Formål
-Procedure responsibility	controller	nn	Ansvar og myndighet
-Procedure description	controller	nn	Beskrivelse
-Procedure reference	controller	nn	Referanse
-Procedure attachment	controller	nn	Vedlegg
-Procedure start date	controller	nn	Startdato
-Procedure end date	controller	nn	Sluttdato
-Procedure valid from date	controller	nn	Gyldig fra
-New control item	controller	nn	Nytt kontrollpunkt
-Control item title	controller	nn	Kontrollpunkt
-Control_group	controller	nn	Kontrollgruppe
-Control group	controller	nn	Kontrollgruppe
-Control_groups	controller	nn	Kontrollgrupper
-Control_area	controller	nn	Kontrollområde
-Control area	controller	nn	Kontrollområde
-Control_areas	controller	nn	Kontrollområder
-Use ACL for control areas	common	nn	Bruk rettighetsstyring på kontrollområder
-Control item what to do	controller	nn	Hva skal gjøres
-Not selected	controller	nn	Ingen valgt
-searchfield	controller	nn	Søkefelt
-NEW	controller	nn	Ny
-PENDING	controller	nn	Venter
-ACCEPTED	controller	nn	Akseptert
-REJECTED	controller	nn	Avvist
-New control group	controller	nn	Ny kontrollgruppe
-Control group title	controller	nn	Tittel
-Building part	controller	nn	Bygningsdel
-remove	controller	nn	Fjern valgte elementer
-Locations	controller	nn	Lokasjoner
-component	controller	nn	Utstyr
-Control_locations	controller	nn	Lokasjoner
-Control_component	controller	nn	Utstyr
-New control	controller	nn	Ny kontroll
-revisit	controller	nn	Revidér
-Procedure revision	controller	nn	Versjon
-Procedure revision date	controller	nn	Revisjonsdato
-Font Style	controller	nn	Font stil
-Lists	controller	nn	Lister
-Insert Item	controller	nn	Sett inn
-Control title	controller	nn	Tittel
-start_date	controller	nn	Startdato
-planned_date	controller	nn	Planlagtdato
-end_date	controller	nn	Sluttdato
-View_locations_for_control	controller	nn	Vis kontroller for lokasjon
-Add_locations_for_control	controller	nn	Legg til knytning mot lokasjon
-View_component_for_control	controller	nn	Vis knytning mot utstyr
-Add_component_for_control	controller	nn	Legg til knytning mot utstyr
-component_for_control	controller	nn	Utstyr tilknyttet kontroll
-Choose_component_type	controller	nn	Velg utstyrstype
-Choose_component_category	controller	nn	Velg utstyrskategori
-component_category_internal	controller	nn	Internt utstyrsregister
-component_category_ifc	controller	nn	IFC
-invert_checkboxes	controller	nn	Inverter merking
-ControlId	controller	nn	Kontroll-id
-Bim_id	controller	nn	Utstyrs-id
-Bim_name	controller	nn	Utstyrsnavn
-Bim_type	controller	nn	Utstyrstype
-GUID	controller	nn	GUID
-View_procedure	controller	nn	Prosedyre
-View_documents_for_procedure	controller	nn	Tilknyttede dokumenter
-Document title	controller	nn	Dokumentets tittel
-Document name	controller	nn	Filnavn
-Document description	controller	nn	Beskrivelse
-select value	controller	nn	Velg
-component_for_control_group	controller	nn	Utstyr tilknyttet kontrollgrupper
-View_component_for_control_group	controller	nn	Vis knytning mot utstyr
-Add_component_for_control_group	controller	nn	Legg til knytning mot utstyr
-show_controls_for_location	controller	nn	Vis lokasjoner/ komponenter
-Property name	controller	nn	Lokasjonsnavn
-Address	controller	nn	Adresse
 Zip code	controller	nn	Postnummer
-no category selected	controller	nn	Kategori ikke valgt
-repeat_type_none	controller	nn	Ingen
-repeat_type_day	controller	nn	Dag
-repeat_type_week	controller	nn	Uke
-repeat_type_month	controller	nn	Måned
-repeat_type_year	controller	nn	År
-components for control	controller	nn	Komponenter tilknyttet kontroll
-add components for control	controller	nn	Legg til knytning mellom kontroll og komponent(er)
-locations for control	controller	nn	Lokasjoner tilknyttet kontroll
-location category	controller	nn	Lokaliseringskategori
-select add	controller	nn	Velg for å legge til
-select delete	controller	nn	Velg for sletting
-error_msg_1	controller	nn	Vennligst fyll inn dette feltet
-error_msg_2	controller	nn	Vennligst velg en verdi i listen
-error_msg_3	controller	nn	Vennligst angi sluttdato etter startdato
-error_msg_4	controller	nn	Sjekklisten må være tilknyttet en kontroll
-error_msg_5	controller	nn	Vennligst angi når kontrollen ble utført
-error_msg_6	controller	nn	Kontrollen må være knyttet mot en komponent/lokasjon
-error_msg_7	controller	nn	Vennligst endre status for kontroll eller angi planlagtdato
-error_msg_8	controller	nn	Planlagtdato kan ikke være etter fristdato
-error_msg_9	controller	nn	Utførtdato kan ikke være etter fristdato
-error_msg_no_controls_in_period	controller	nn	Ingen kontroller for bygg i denne perioden
-error_msg_no_controls_for_component	controller	nn	Ingen kontroller for komponent i denne perioden
-error_msg_control_passed_due_date	controller	nn	Sjekkliste kan ikke lagres da frist er overskredet
-role at location	controller	nn	Tildeling av rolle
-Register new message	controller	nn	Registrer ny melding
-Show message	controller	nn	Vis melding
-Status not done	controller	nn	Status: Ikke utført
-Status done	controller	nn	Status: Utført
-planned date	common	nn	Planlagt Dato
-status components	controller	nn	Status komponenter
-status locations	controller	nn	Status lokasjoner
-controle time	common	nn	Kontrolltid
-service time	common	nn	Servicetid
-total time	common	nn	Totaltid
-request ical event	controller	nn	Send møteinnkalling
-summary	common	nn	Sammendrag
-components	controller	nn	Komponenter
-report type	controller	nn	Rapporttype
-lang_control_mandatory_location	controller	nn	Påkrevd lokasjonsvalg
-Control types	controller	nn	Kontrolltyper
-location	controller	nn	Lokasjon
-CONTROL_REGISTERED	controller	nn	Kontroll satt opp
-CONTROL_PLANNED	controller	nn	Kontroll har planlagt dato
-CONTROL_DONE_OVER_TIME_WITHOUT_ERRORS	controller	nn	Kontroll gjennomført uten åpne saker etter frist
-CONTROL_DONE_IN_TIME_WITHOUT_ERRORS	controller	nn	Kontroll gjennomført uten åpne saker før frist
-CONTROL_DONE_WITH_ERRORS	controller	nn	Kontroll gjennomført med saker
-CONTROL_NOT_DONE	controller	nn	Kontroll ikke gjennomført
-CONTROL_CANCELED	controller	nn	Kontroll kansellert
-document types	controller	nn	Dokumenttyper
-Do not edit archived version	controller	nn	Du kan ikke endre arkiverte versjoner
-choose a location	controller	nn	Velg en lokasjon
-deadline end of year	controller	nn	Frist på slutten av året for årskontroller
-missing start date	controller	nn	Mangler startdato
-new revision	controller	nn	Ny revisjon
-deviation	controller	nn	Avvik
-save check list	controller	nn	Lagre verdier
-plan	controller	nn	Planlegg
-modified date	controller	nn	Dato siste endring
-modified by	controller	nn	Endret av
-set status: done	controller	nn	Sett status: utført
-in queue	controller	nn	I kø
-change to	controller	nn	Endre til
-assign	controller	nn	Tildel
-where	controller	nn	Hvor
-start date	controller	nn	Startdato
-repeat type	controller	nn	Intervalltype
-bulk update assigned	controller	nn	Masseoppdatering av tildeling
-deadline	controller	nn	Frist
-planned	controller	nn	Planlagt
-serie	controller	nn	Serie
-picture	controller	nn	Bilete
-saved	controller	nn	Lagra
-new picture	controller	nn	Nytt bilete
-equipment	controller	nn	Utstyr
-file not found	controller	nn	Fil ikke funnen
-error	controller	nn	Feil
-proposed counter measure	controller	nn	Forslag til tiltak
-reset form	controller	nn	Tøm skjema
-add picture	controller	nn	Legg til bilete
-other controll	controller	nn	Annen kontroll
-calendar planner	controller	nn	Planleggar
-start inspection	controller	nn	Start kontroll
-last inspection	controller	nn	Sist kontrollert
-%1 case(s) sent as message %2	controller	nn	%1 sak(er) sendt som melding %2
-add_case	controller	nn	Registrer sak
-view_details	controller	nn	Vis detaljer for sjekkliste
-view_cases	controller	nn	Vis saker
-view_control_info	controller	nn	Vis info om kontroll
-create_case_message	controller	nn	Registrer melding
-performed by	controller	nn	Utført av
-inspector	controller	nn	Kontrollør
-administrator	controller	nn	Administrator
-supervisor	controller	nn	Soneleiar
-part of town	controller	nn	Bydel
-open	controller	nn	Open
-closed	controller	nn	lukka
-certificate	controller	nn	Sertifikat
-inspection history	controller	nn	Utførte kontrollar
-settings	controller	nn	Innstillingar
-corrected	controller	nn	Korrigert
-corrected on controll	controller	nn	Korrigert ved utført kontroll
-set status: not done	controller	nn	Sett status: ikkje utført
-notification subject	controller	nn	Overskrift på varsling
-notification content	controller	nn	Innhold i varsling
-send notification	controller	nn	Send varsel
-change status	controller	nn	endre status
-performed	controller	nn	Utført
-not performed	controller	nn	Ikkje utført
-check list status	controller	nn	Status for heile kontrollen
-performed without deviation	controller	nn	Utført utan avvik
-perform control	controller	nn	utfør kontroll
-perform control on selected	controller	nn	Utfør kontroll på valt utstyr
-update geolocation	controller	nn	Oppdater geolokasjon
-send report	controller	nn	Send rapport

@@ -42,3 +42,20 @@
 	border-top: 1px solid #e0e0e0;
 	font-weight: bold;
 }
+
+.quantityControls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+}
+
+.quantityValue {
+  min-width: 1.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+.hiddenButton {
+  visibility: hidden;
+}

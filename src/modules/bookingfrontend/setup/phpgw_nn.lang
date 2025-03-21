@@ -533,6 +533,7 @@ select category...	bookingfrontend	nn	Vel ein kategori
 select date	bookingfrontend	nn	Vel dato
 select method	bookingfrontend	nn	Vel ein metode
 select role...	bookingfrontend	nn	Vel rolle
+select_all	bookingfrontend	nn	Velg alle
 selected	bookingfrontend	nn	Valgt
 selected_time_must_be_in_future	bookingfrontend	nn	Det valde tidspunktet må vere i framtida
 Send	bookingfrontend	nn	Send

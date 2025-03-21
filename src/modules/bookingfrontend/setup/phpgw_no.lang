@@ -203,7 +203,6 @@ delete_rentobject	bookingfrontend	no	Slette leieobjekt
 delete_rentobject_body	bookingfrontend	no	Er du sikker på du vil slette dette utleieobjektet fra handlekurven?
 Deleted on	bookingfrontend	no	Avbestilling i
 description	bookingfrontend	no	Beskrivelse
-deselect_all	bookingfrontend	no	Velg ingen
 district	bookingfrontend	no	Område
 Do you really want to collect users	booking	no	Vil du virkelig samle brukere?
 do you really want to collect users again	booking	no	Vil du virkelig samle brukere igjen?
@@ -533,6 +532,7 @@ select category...	bookingfrontend	no	Velg en kategori
 select date	bookingfrontend	no	Velg dato
 select method	bookingfrontend	no	Velg metode
 select role...	bookingfrontend	no	Velg rolle
+select_all	bookingfrontend	no	Velg alle
 selected	bookingfrontend	no	Valgt
 selected_time_must_be_in_future	bookingfrontend	no	Det valgte tidspunktet må være i fremtiden
 Send	bookingfrontend	no	Send

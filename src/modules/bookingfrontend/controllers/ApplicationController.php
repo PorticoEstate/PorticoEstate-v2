@@ -195,7 +195,19 @@ class ApplicationController extends DocumentController
      *     tags={"Applications"},
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/Application")
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/Application",
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                 )
+     *             )
+     *         )
      *     ),
      *     @OA\Response(
      *         response=201,
@@ -276,7 +288,19 @@ class ApplicationController extends DocumentController
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/Application")
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/Application",
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                 )
+     *             )
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -368,6 +392,17 @@ class ApplicationController extends DocumentController
      *                     @OA\Property(property="id", type="integer"),
      *                     @OA\Property(property="from_", type="string", format="date-time"),
      *                     @OA\Property(property="to_", type="string", format="date-time")
+     *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 description="Complete replacement of articles",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
      *                 )
      *             )
      *         )

@@ -48,6 +48,7 @@ class ApplicationService
 			$application->dates = $this->fetchDates($application->id);
 			$application->resources = $this->fetchResources($application->id);
 			$application->orders = $this->fetchOrders($application->id);
+			$application->articles = $this->fetchArticles($application->id);
 			$application->agegroups = $this->fetchAgeGroups($application->id);
 			$application->audience = $this->fetchTargetAudience($application->id);
 			$application->documents = $this->fetchDocuments($application->id);
@@ -761,6 +762,44 @@ class ApplicationService
 			return $order->serialize();
 		}, array_values($orders));
 	}
+	
+	/**
+	 * Fetch articles for an application in ArticleOrder format
+	 * 
+	 * @param int $application_id The application ID
+	 * @return array Array of articles in ArticleOrder format
+	 */
+	private function fetchArticles(int $application_id): array
+	{
+		$sql = "SELECT pol.article_mapping_id as id, pol.quantity, pol.parent_mapping_id as parent_id,
+                CASE WHEN r.name IS NULL THEN s.name ELSE r.name END AS name,
+                am.unit, am.article_cat_id, am.article_id, pol.unit_price,
+                pol.tax_code, e.percent_ AS tax_percent
+                FROM bb_purchase_order po
+                JOIN bb_purchase_order_line pol ON po.id = pol.order_id
+                JOIN bb_article_mapping am ON pol.article_mapping_id = am.id
+                LEFT JOIN fm_ecomva e ON pol.tax_code = e.id
+                LEFT JOIN bb_service s ON (am.article_id = s.id AND am.article_cat_id = 2)
+                LEFT JOIN bb_resource r ON (am.article_id = r.id AND am.article_cat_id = 1)
+                WHERE po.cancelled IS NULL AND po.application_id = :application_id
+                ORDER BY pol.id";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([':application_id' => $application_id]);
+		$results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+		
+		// Convert result rows to ArticleOrder format
+		$articles = [];
+		foreach ($results as $row) {
+			$articles[] = [
+				'id' => (int)$row['id'],
+				'quantity' => (int)$row['quantity'],
+				'parent_id' => !empty($row['parent_id']) ? (int)$row['parent_id'] : null
+			];
+		}
+
+		return $articles;
+	}
 
 	public function calculateTotalSum(array $applications): float
 	{
@@ -933,6 +972,12 @@ class ApplicationService
 			{
 				$data['purchase_order']['application_id'] = $id;
 				$this->savePurchaseOrder($data['purchase_order']);
+			}
+
+			// Process new articles format if present
+			if (!empty($data['articles']))
+			{
+				$this->saveApplicationArticles($id, $data['articles']);
 			}
 
 			if (!empty($data['resources']))
@@ -1125,6 +1170,116 @@ class ApplicationService
 
 
 	/**
+	 * Save articles for an application using the new ArticleOrder format
+	 * 
+	 * @param int $applicationId The application ID
+	 * @param array $articles Array of ArticleOrder objects with id, quantity, and parent_id
+	 */
+	private function saveApplicationArticles(int $applicationId, array $articles): void
+	{
+		try {
+			// First delete existing purchase order lines for this application
+			$this->deleteExistingPurchaseOrderLines($applicationId);
+			
+			// Create a new purchase order if it doesn't exist
+			$purchase_order_id = $this->getOrCreatePurchaseOrder($applicationId);
+			
+			// Add each article as a purchase order line
+			foreach ($articles as $article) {
+				// Get article details from the mapping
+				$mapping = $this->getArticleMappingById($article['id']);
+				if (!$mapping) {
+					continue; // Skip if mapping not found
+				}
+				
+				// Create the purchase order line
+				$line = [
+					'article_mapping_id' => $article['id'],
+					'quantity' => $article['quantity'],
+					'parent_mapping_id' => $article['parent_id'] ?? null,
+					'ex_tax_price' => $mapping['price'] ?? 0, // Using price from mapping
+					'tax_code' => $mapping['tax_code'] ?? null
+				];
+				
+				$this->savePurchaseOrderLine($purchase_order_id, $line);
+			}
+		} catch (Exception $e) {
+			throw new Exception("Error saving application articles: " . $e->getMessage());
+		}
+	}
+	
+	/**
+	 * Get article mapping by ID
+	 * 
+	 * @param int $mappingId The mapping ID
+	 * @return array|null The article mapping or null if not found
+	 */
+	private function getArticleMappingById(int $mappingId): ?array
+	{
+		// Query the mapping and also join price information
+		$sql = "SELECT am.*, p.price, am.tax_code 
+				FROM bb_article_mapping am
+				LEFT JOIN bb_article_price p ON p.article_mapping_id = am.id
+				WHERE am.id = :id
+				ORDER BY p.from_ DESC
+				LIMIT 1";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(['id' => $mappingId]);
+		
+		return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+	}
+	
+	/**
+	 * Delete existing purchase order lines for an application
+	 * 
+	 * @param int $applicationId The application ID
+	 */
+	private function deleteExistingPurchaseOrderLines(int $applicationId): void
+	{
+		// First get the purchase order ID
+		$sql = "SELECT id FROM bb_purchase_order WHERE application_id = :application_id";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(['application_id' => $applicationId]);
+		$purchase_order = $stmt->fetch(PDO::FETCH_ASSOC);
+		
+		if (!$purchase_order) {
+			return; // No purchase order exists
+		}
+		
+		// Delete the lines - using the correct column name 'order_id' instead of 'purchase_order_id'
+		$sql = "DELETE FROM bb_purchase_order_line WHERE order_id = :order_id";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(['order_id' => $purchase_order['id']]);
+	}
+	
+	/**
+	 * Get existing purchase order or create a new one
+	 * 
+	 * @param int $applicationId The application ID
+	 * @return int The purchase order ID
+	 */
+	private function getOrCreatePurchaseOrder(int $applicationId): int
+	{
+		// Check if purchase order exists
+		$sql = "SELECT id FROM bb_purchase_order WHERE application_id = :application_id";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(['application_id' => $applicationId]);
+		$purchase_order = $stmt->fetch(PDO::FETCH_ASSOC);
+		
+		if ($purchase_order) {
+			return (int)$purchase_order['id'];
+		}
+		
+		// Create a new purchase order
+		$sql = "INSERT INTO bb_purchase_order (application_id) VALUES (:application_id)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(['application_id' => $applicationId]);
+		
+		return (int)$this->db->lastInsertId();
+	}
+
+
+	/**
 	 * Save application dates
 	 */
 	private function saveApplicationDates(int $applicationId, array $dates): void
@@ -1183,11 +1338,25 @@ class ApplicationService
 	{
 		$sql = "INSERT INTO bb_purchase_order_line (
         order_id, article_mapping_id, quantity,
-        tax_code, ex_tax_price, parent_mapping_id
+        tax_code, unit_price, parent_mapping_id, amount, tax, currency
     ) VALUES (
         :order_id, :article_mapping_id, :quantity,
-        :tax_code, :ex_tax_price, :parent_mapping_id
+        :tax_code, :unit_price, :parent_mapping_id, :amount, :tax, :currency
     )";
+
+		// Calculate the amount based on unit price and quantity
+		$unitPrice = $line['ex_tax_price'] ?? 0;
+		$quantity = $line['quantity'] ?? 0;
+		$amount = $unitPrice * $quantity;
+		
+		// Get tax rate information (assuming 25% if not specified)
+		$taxRate = 0.25; // Default tax rate
+		if (!empty($line['tax_code'])) {
+			// Could look up actual tax rate here if needed
+		}
+		
+		// Calculate tax amount
+		$tax = $amount * $taxRate;
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([
@@ -1195,8 +1364,11 @@ class ApplicationService
 			':article_mapping_id' => $line['article_mapping_id'],
 			':quantity' => $line['quantity'],
 			':tax_code' => $line['tax_code'],
-			':ex_tax_price' => $line['ex_tax_price'],
-			':parent_mapping_id' => $line['parent_mapping_id'] ?? null
+			':unit_price' => $unitPrice,
+			':parent_mapping_id' => $line['parent_mapping_id'] ?? null,
+			':amount' => $amount,
+			':tax' => $tax,
+			':currency' => 'NOK' // Default currency
 		]);
 	}
 
@@ -1358,6 +1530,12 @@ class ApplicationService
 			if (isset($data['dates']))
 			{
 				$this->patchApplicationDates($data['id'], $data['dates']);
+			}
+			
+			// Handle articles if present (complete replacement)
+			if (isset($data['articles']))
+			{
+				$this->saveApplicationArticles($data['id'], $data['articles']);
 			}
 
 			// Handle agegroups if present

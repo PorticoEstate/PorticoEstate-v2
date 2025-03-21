@@ -83,7 +83,7 @@ if ($help_requested)
 	echo "  --modules=a,b,c      Only check specified modules (in both modes)\n";
 	echo "  --module=a,b,c       Alternative syntax for --modules\n";
 	echo "  --baseline=xx        Use specified language as baseline for comparison (default: en)\n";
-	echo "  --sort               Sort language files alphabetically by key\n\n";
+	echo "  --sort               Sort language files alphabetically by key and deduplicate entries\n\n";
 	echo "Examples:\n";
 	echo "  php " . basename(__FILE__) . "                     # Check all language files\n";
 	echo "  php " . basename(__FILE__) . " --verbose           # Show detailed diagnostic information\n";
@@ -94,7 +94,7 @@ if ($help_requested)
 	echo "  php " . basename(__FILE__) . " --compare --modules=booking,property  # Compare only specific modules\n";
 	echo "  php " . basename(__FILE__) . " --compare --module=booking      # Compare only a single module\n";
 	echo "  php " . basename(__FILE__) . " --compare --baseline=no    # Use Norwegian as baseline for comparison\n";
-	echo "  php " . basename(__FILE__) . " --sort --lang=en,no,nn --module=booking  # Sort booking module language files by key\n";
+	echo "  php " . basename(__FILE__) . " --sort --lang=en,no,nn --module=booking  # Sort and deduplicate booking module language files\n";
 	exit(0);
 }
 
@@ -404,6 +404,7 @@ function sort_lang_file($file_path)
 	$entries = [];
 	$comments = [];
 	$empty_lines = [];
+	$duplicates = [];
 	
 	// Extract all entries, preserving comments and empty lines
 	foreach ($lines as $line_number => $line) {
@@ -421,7 +422,23 @@ function sort_lang_file($file_path)
 				$lang = $parts[2];
 				$value = $parts[3];
 				
-				$entries[] = [
+				// Create a unique identifier for detecting duplicates
+				$entry_id = $key . '|' . $module;
+				
+				if (isset($entries[$entry_id])) {
+					// We found a duplicate!
+					if (!isset($duplicates[$entry_id])) {
+						$duplicates[$entry_id] = 1;
+					}
+					$duplicates[$entry_id]++;
+					
+					if ($verbose) {
+						echo "Found duplicate entry in {$file_path} at line {$line_number}: {$key} (module: {$module})\n";
+					}
+				}
+				
+				// Always use the last occurrence of a duplicate key
+				$entries[$entry_id] = [
 					'key' => $key,
 					'module' => $module,
 					'lang' => $lang,
@@ -437,14 +454,29 @@ function sort_lang_file($file_path)
 		}
 	}
 	
+	// Report on duplicates found
+	$duplicate_count = count($duplicates);
+	if ($duplicate_count > 0) {
+		echo "Found {$duplicate_count} duplicate entries in {$file_path} (keeping only the last occurrence)\n";
+		if ($verbose) {
+			foreach ($duplicates as $entry_id => $count) {
+				list($key, $module) = explode('|', $entry_id, 2);
+				echo "  - '{$key}' (module: {$module}) appeared {$count} times\n";
+			}
+		}
+	}
+	
+	// Convert to indexed array for sorting
+	$entries_array = array_values($entries);
+	
 	// Sort entries by key
-	usort($entries, function ($a, $b) {
+	usort($entries_array, function ($a, $b) {
 		return strcasecmp($a['key'], $b['key']);
 	});
 	
 	// Rebuild the file content
 	$sorted_lines = [];
-	foreach ($entries as $entry) {
+	foreach ($entries_array as $entry) {
 		$sorted_lines[] = $entry['key'] . "\t" . $entry['module'] . "\t" . $entry['lang'] . "\t" . $entry['value'];
 	}
 	
@@ -455,8 +487,13 @@ function sort_lang_file($file_path)
 		return false;
 	}
 	
-	if ($verbose) {
-		echo "Successfully sorted {$file_path} by key\n";
+	$result_message = "Successfully sorted {$file_path} by key";
+	if ($duplicate_count > 0) {
+		$result_message .= " (removed {$duplicate_count} duplicates)";
+	}
+	
+	if ($verbose || $duplicate_count > 0) {
+		echo "{$result_message}\n";
 	}
 	
 	return true;
@@ -564,7 +601,7 @@ if (empty($lang_files))
 
 // SORT MODE
 if ($sort_mode) {
-	echo "Mode: Sorting language files by key\n";
+	echo "Mode: Sorting language files by key and deduplicating entries\n";
 	
 	$sorted_count = 0;
 	$failed_count = 0;
@@ -588,7 +625,7 @@ if ($sort_mode) {
 		exit(1);
 	}
 	
-	echo "\nAll language files have been sorted alphabetically by key.\n";
+	echo "\nAll language files have been sorted alphabetically by key and deduplicated.\n";
 	exit(0);
 }
 

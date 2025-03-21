@@ -1,5 +1,5 @@
 'use client'
-import React, {FC, useMemo, useState} from 'react';
+import React, {FC, useMemo, useState, useEffect} from 'react';
 import {useSearchData} from "@/service/hooks/api-hooks";
 import {IBuilding} from "@/service/types/Building";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
@@ -14,8 +14,19 @@ import ResourceResultItem from "@/components/search/resource/resource-result-ite
 interface ResourceSearchProps {
 }
 
+// Interface for localStorage search state
+interface StoredSearchState {
+  textSearchQuery: string;
+  date: string;
+  where: string;
+  timestamp: number;
+}
+
+const STORAGE_KEY = 'resource_search_state';
+const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
 const ResourceSearch: FC<ResourceSearchProps> = () => {
-    // State for search filters
+    // Initialize state for search filters
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
     const [date, setDate] = useState<Date>(new Date());
     const [where, setWhere] = useState<IBuilding['district'] | ''>('');
@@ -23,6 +34,35 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
     // Fetch all search data
     const {data: searchData, isLoading, error} = useSearchData();
     const t = useTrans();
+    
+    // Load saved search state from localStorage on initial render
+    useEffect(() => {
+        // Only run in browser environment
+        if (typeof window !== 'undefined') {
+            try {
+                const savedState = localStorage.getItem(STORAGE_KEY);
+                if (savedState) {
+                    const parsedState: StoredSearchState = JSON.parse(savedState);
+                    
+                    // Check if state is still valid (not expired)
+                    const now = Date.now();
+                    if (now - parsedState.timestamp < STORAGE_TTL) {
+                        setTextSearchQuery(parsedState.textSearchQuery);
+                        if (parsedState.date) {
+                            setDate(new Date(parsedState.date));
+                        }
+                        setWhere(parsedState.where as IBuilding['district'] | '');
+                    } else {
+                        // Remove expired state
+                        localStorage.removeItem(STORAGE_KEY);
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading search state from localStorage:', e);
+                localStorage.removeItem(STORAGE_KEY);
+            }
+        }
+    }, []);
 
     // Extract unique districts from buildings
     const districts = useMemo(() => {
@@ -165,7 +205,32 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
         setTextSearchQuery('');
         setWhere('');
         setDate(new Date());
+        
+        // Clear localStorage when filters are reset
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem(STORAGE_KEY);
+        }
     };
+    
+    // Save search state to localStorage whenever it changes
+    useEffect(() => {
+        // Only save if there's actually something to save
+        if (textSearchQuery || where !== '') {
+            if (typeof window !== 'undefined') {
+                try {
+                    const stateToSave: StoredSearchState = {
+                        textSearchQuery,
+                        date: date.toISOString(),
+                        where,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+                } catch (e) {
+                    console.error('Error saving search state to localStorage:', e);
+                }
+            }
+        }
+    }, [textSearchQuery, date, where]);
 
     if (isLoading) {
         return (

@@ -61,7 +61,7 @@ const ClientLayout: FC<ClientLayoutProps> = (props) => {
 
 
 	return (
-		<nav aria-label="Booking categories">
+		<nav aria-label="Booking categories" style={{marginBottom: '1rem'}}>
 			<Tabs value={pathname}>
 				<Tabs.List>
 					{links.map((link) => {

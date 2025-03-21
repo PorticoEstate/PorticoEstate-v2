@@ -8,6 +8,7 @@ import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
+import {IArticle} from "@/service/types/api/order-articles.types";
 
 
 
@@ -164,6 +165,14 @@ export async function fetchDeliveredApplications(): Promise<{ list: IApplication
 export async function fetchServerMessages(): Promise<IServerMessage[]> {
     const url = phpGWLink(['bookingfrontend', 'user', 'messages']);
     const response = await fetch(url, FetchAuthOptions());
+    const result = await response.json();
+    return result;
+}
+
+
+export async function fetchArticlesForResources(resource_ids: number[]): Promise<IArticle[]> {
+    const url = phpGWLink(['bookingfrontend', 'applications', 'articles'], {resources: resource_ids});
+    const response = await fetch(url);
     const result = await response.json();
     return result;
 }

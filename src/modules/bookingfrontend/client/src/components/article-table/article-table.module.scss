@@ -1,0 +1,44 @@
+// components/article-table/article-table.module.scss
+//.articleTableContainer {
+//	margin: 1rem 0;
+//}
+
+//.resourceArticleGroup {
+//	margin-bottom: 2rem;
+//}
+
+.resourceTitle {
+	margin-bottom: 0.5rem;
+	padding-bottom: 0.5rem;
+	border-bottom: 1px solid #e0e0e0;
+}
+
+.articleRemark {
+	font-size: 0.875rem;
+	color: #666;
+	margin-top: 0.25rem;
+}
+
+.error {
+	color: #d32f2f;
+	padding: 1rem;
+	background-color: #ffebee;
+	border-radius: 4px;
+}
+
+.noArticles {
+	font-style: italic;
+	color: #666;
+	padding: 1rem 0;
+}
+
+.totalSection {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	gap: 1rem;
+	margin-top: 1rem;
+	padding-top: 1rem;
+	border-top: 1px solid #e0e0e0;
+	font-weight: bold;
+}

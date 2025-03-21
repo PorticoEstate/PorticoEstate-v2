@@ -81,6 +81,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->delete('/document/{id}', ApplicationController::class . ':deleteDocument');
 		$group->get('/document/{id}/download', ApplicationController::class . ':downloadDocument');
 		$group->post('/validate-checkout', ApplicationController::class . ':validateCheckout');
+		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
 
 	});
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');

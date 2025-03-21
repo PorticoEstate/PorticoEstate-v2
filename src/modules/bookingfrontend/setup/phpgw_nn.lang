@@ -20,8 +20,8 @@ Application basket	bookingfrontend	nn	Søknadskorg
 Application cart	bookingfrontend	nn	Handlekurv
 Apply filter	bookingfrontend	nn	Aktiver filter
 Apply for time	bookingfrontend	nn	Søk om tid
-Article	bookingfrontend	nn	artikkel
-rticles	bookingfrontend	nn	Artikklar
+Article	bookingfrontend	nn	Artikkel
+articles	bookingfrontend	nn	Tileggstjenester
 Associated bookings	bookingfrontend	nn	Tilhørende tildelinger/arrangementer
 Back to user list	booking	nn	Attende til brukarlista
 Book resource	bookingfrontend	nn	Søknad
@@ -655,3 +655,5 @@ max_participants	bookingfrontend	nn	Maks {{count}} deltakarar
 edit_event	bookingfrontend	nn	Rediger arrangement
 month	bookingfrontend	nn	Månad
 enter_title	bookingfrontend	nn	Angi ein tittel
+complete applications	bookingfrontend	nn	Fullfør søknad
+additional_information	bookingfrontend	nn	Tilleggsinformasjon (valfritt)

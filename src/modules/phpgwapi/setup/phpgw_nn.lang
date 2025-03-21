@@ -353,3 +353,15 @@ start	common	nn	Start
 end	common	nn	Slutt
 sign in	common	nn	Logg inn
 Select login method	common	nn	Velg påloggingsmetode
+dec	common	nn	desember
+nov	common	nn	november
+oct	common	nn	oktober
+sep	common	nn	september
+aug	common	nn	august
+jul	common	nn	juli
+jun	common	nn	juni
+apr	common	nn	april
+mar	common	nn	mars
+feb	common	nn	februar
+jan	common	nn	januar
+value is used in records	common	nn	Verdien er brukt i registrerte postar

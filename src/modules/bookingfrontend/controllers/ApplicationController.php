@@ -1022,4 +1022,56 @@ class ApplicationController extends DocumentController
 			);
 		}
 	}
+
+
+
+
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/applications/articles",
+	 *     summary="Get available articles for resources",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(
+	 *         name="resources[]",
+	 *         in="query",
+	 *         required=true,
+	 *         @OA\Schema(type="array", @OA\Items(type="integer"))
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="List of articles",
+	 *         @OA\JsonContent(
+	 *             type="array",
+	 *              @OA\Items(type="object")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function getArticlesByResources(Request $request, Response $response): Response
+	{
+		try
+		{
+			$resources = $request->getQueryParams()['resources'] ?? [];
+
+			if (empty($resources))
+			{
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Resources parameter is required'],
+					400
+				);
+			}
+
+			// Get articles by resources
+			$articles = $this->applicationService->getArticlesByResources($resources);
+
+			$response->getBody()->write(json_encode($articles));
+			return $response->withHeader('Content-Type', 'application/json');
+		} catch (Exception $e)
+		{
+			return ResponseHelper::sendErrorResponse(
+				['error' => "Error fetching articles: " . $e->getMessage()],
+				500
+			);
+		}
+	}
 }

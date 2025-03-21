@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\services;
 
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Application;
+use App\modules\bookingfrontend\models\Article;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\helper\Date;
 use App\modules\bookingfrontend\models\Resource;
@@ -2014,4 +2015,176 @@ class ApplicationService
 		];
 	}
 
+
+	/**
+	 * Get articles by resources without requiring an application
+	 */
+	public function getArticlesByResources(array $resourceIds): array
+	{
+		// If no resources provided, return empty array
+		if (empty($resourceIds)) {
+			return [];
+		}
+
+		// Convert resource IDs to integers
+		$resourceIds = array_map('intval', $resourceIds);
+		$resourcePlaceholders = implode(',', array_fill(0, count($resourceIds), '?'));
+
+		$articlesData = [];
+
+		// First, get the primary resource articles
+		$sql = "SELECT bb_article_mapping.id AS mapping_id,
+            bb_article_mapping.article_cat_id || '_' || bb_article_mapping.article_id AS article_id,
+            bb_resource.name as name,
+            bb_article_mapping.article_id AS resource_id,
+            bb_article_mapping.unit,
+            fm_ecomva.percent_ AS tax_percent,
+            bb_article_mapping.tax_code,
+            bb_article_mapping.group_id,
+            bb_article_group.name AS article_group_name,
+            bb_article_group.remark AS article_group_remark
+            FROM bb_article_mapping
+            JOIN bb_resource ON (bb_article_mapping.article_id = bb_resource.id)
+            JOIN fm_ecomva ON (bb_article_mapping.tax_code = fm_ecomva.id)
+            JOIN bb_article_group ON (bb_article_mapping.group_id = bb_article_group.id)
+            WHERE bb_article_mapping.article_cat_id = 1
+            AND bb_resource.active = 1
+            AND bb_article_mapping.article_id IN ({$resourcePlaceholders})
+            ORDER BY bb_resource.name";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($resourceIds);
+		$resourceArticles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+		// Now process each resource and get associated services
+		foreach ($resourceArticles as $resourceArticle) {
+			// Add the resource article first
+			$articleData = [
+				'id' => $resourceArticle['mapping_id'],
+				'parent_mapping_id' => null,
+				'resource_id' => $resourceArticle['resource_id'],
+				'article_id' => $resourceArticle['article_id'],
+				'name' => $resourceArticle['name'],
+				'unit' => $resourceArticle['unit'],
+				'tax_code' => $resourceArticle['tax_code'],
+				'tax_percent' => (float)($resourceArticle['tax_percent'] ?? 0),
+				'group_id' => (int)$resourceArticle['group_id'],
+				'article_remark' => '',
+				'article_group_name' => $resourceArticle['article_group_name'],
+				'article_group_remark' => $resourceArticle['article_group_remark']
+			];
+
+			$articlesData[] = $articleData;
+
+			// Get related service articles
+			$resourceId = $resourceArticle['resource_id'];
+			$sql = "SELECT bb_article_mapping.id AS mapping_id,
+                bb_article_mapping.article_cat_id || '_' || bb_article_mapping.article_id AS article_id,
+                bb_service.name as name,
+                bb_service.description as article_remark,
+                bb_resource_service.resource_id,
+                bb_article_mapping.unit,
+                fm_ecomva.percent_ AS tax_percent,
+                bb_article_mapping.tax_code,
+                bb_article_mapping.group_id,
+                bb_article_group.name AS article_group_name,
+                bb_article_group.remark AS article_group_remark
+                FROM bb_article_mapping
+                JOIN bb_service ON (bb_article_mapping.article_id = bb_service.id)
+                JOIN bb_resource_service ON (bb_service.id = bb_resource_service.service_id)
+                JOIN fm_ecomva ON (bb_article_mapping.tax_code = fm_ecomva.id)
+                JOIN bb_article_group ON (bb_article_mapping.group_id = bb_article_group.id)
+                WHERE bb_article_mapping.article_cat_id = 2
+                AND bb_resource_service.resource_id = ?";
+
+			// Add frontend filter if needed
+			if ($this->currentapp == 'bookingfrontend') {
+				$sql .= ' AND deactivate_in_frontend IS NULL';
+			}
+
+			$sql .= " ORDER BY bb_resource_service.resource_id, bb_service.name";
+
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([$resourceId]);
+			$serviceArticles = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+			// Add service articles for this resource
+			foreach ($serviceArticles as $serviceArticle) {
+				$articleData = [
+					'id' => $serviceArticle['mapping_id'],
+					'parent_mapping_id' => $resourceArticle['mapping_id'],
+					'article_id' => $serviceArticle['article_id'],
+					'name' => "- " . $serviceArticle['name'],
+					'unit' => $serviceArticle['unit'],
+					'tax_code' => $serviceArticle['tax_code'],
+					'tax_percent' => (float)($serviceArticle['tax_percent'] ?? 0),
+					'group_id' => (int)$serviceArticle['group_id'],
+					'article_remark' => $serviceArticle['article_remark'],
+					'article_group_name' => $serviceArticle['article_group_name'],
+					'article_group_remark' => $serviceArticle['article_group_remark']
+				];
+
+				$articlesData[] = $articleData;
+			}
+		}
+
+		// Create Article objects and add pricing info
+		$articles = [];
+		foreach ($articlesData as $articleData) {
+			// Get pricing info
+			$sql = "SELECT price, remark FROM bb_article_price
+                WHERE article_mapping_id = ?
+                AND active = 1
+                ORDER BY default_ ASC";
+
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([$articleData['id']]);
+			$price = $stmt->fetch(PDO::FETCH_ASSOC);
+
+			// Add price data to article data
+			$articleData['ex_tax_price'] = (float)($price['price'] ?? 0);
+			$articleData['tax'] = $articleData['ex_tax_price'] * ($articleData['tax_percent'] / 100);
+			$articleData['price'] = $articleData['ex_tax_price'] * (1 + ($articleData['tax_percent'] / 100));
+			$articleData['price_remark'] = $price['remark'] ?? '';
+
+			// Format for frontend
+			$articleData['unit_price'] = (float)$articleData['price'];
+			$articleData['selected_quantity'] = 0;
+			$articleData['selected_sum'] = 0;
+
+			// Format numeric values
+			$articleData['ex_tax_price'] = number_format($articleData['ex_tax_price'], 2, '.', '');
+			$articleData['unit_price'] = number_format($articleData['unit_price'], 2, '.', '');
+			$articleData['price'] = number_format($articleData['price'], 2, '.', '');
+			$articleData['tax'] = number_format($articleData['tax'], 2, '.', '');
+
+			// Set defaults for resource items
+			$articleData['mandatory'] = isset($articleData['resource_id']) ? 1 : '';
+			$articleData['lang_unit'] = $articleData['unit'];
+
+			if (empty($articleData['selected_quantity'])) {
+				$articleData['selected_quantity'] = isset($articleData['resource_id']) ? 1 : '';
+			}
+
+			if (empty($articleData['selected_article_quantity'])) {
+				$parentId = $articleData['parent_mapping_id'] ?? 'null';
+				$articleData['selected_article_quantity'] = isset($articleData['resource_id'])
+					? "{$articleData['id']}_1_{$articleData['tax_code']}_{$articleData['ex_tax_price']}_{$parentId}"
+					: '';
+			}
+
+			if (empty($articleData['selected_sum'])) {
+				$articleData['selected_sum'] = isset($articleData['resource_id']) ? $articleData['price'] : '';
+			}
+
+			// Create Article object from data
+			$article = new Article($articleData);
+			$articles[] = $article;
+		}
+
+		// Return serialized articles
+		return array_map(function($article) {
+			return $article->serialize();
+		}, $articles);
+	}
 }

@@ -559,23 +559,32 @@ class booking_uicompleted_reservation_export extends booking_uicommon
 		if (empty($archive['from_']))
 		{
 			$archive['from_'] = date('Y-m-d H:i:s');
+			$filter_from = time();
+		}
+		else
+		{
+			$filter_from = phpgwapi_datetime::date_to_timestamp($archive['from_']);
 		}
 		if (!isset($archive['to_']) || empty($archive['to_']))
 		{
 			$archive['to_'] = date('Y-m-d');
+			$filter_to = time();
+		}
+		else
+		{
+			$filter_to = phpgwapi_datetime::date_to_timestamp($archive['to_']);
 		}
 
-		$errors = $this->bo->validate($archive);
 		if (!$errors)
 		{
 			try
 			{
 				$receipt = $this->bo->archive($archive);
-				$this->redirect_to('index');
+				phpgw::redirect_link('/', ['menuaction' => 'booking.uicompleted_reservation.index', 'filter_from' => $filter_from, 'filter_to' => $filter_to]);
 			}
-			catch (booking_unauthorized_exception $e)
+			catch (Exception $e)
 			{
-				$errors['global'] = lang('Could not add object due to insufficient permissions');
+				$errors['global'] =  $e->getMessage();
 			}
 		}
 
@@ -587,6 +596,6 @@ class booking_uicompleted_reservation_export extends booking_uicommon
 			Cache::message_set($value, 'error');
 		}
 
-		$this->redirect_to('index');
+		phpgw::redirect_link('/', ['menuaction' => 'booking.uicompleted_reservation.index', 'filter_from' => $filter_from, 'filter_to' => $filter_to]);
 	}
 }

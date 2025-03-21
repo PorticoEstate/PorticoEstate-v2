@@ -1,5 +1,7 @@
 import {IBuilding} from "@/service/types/Building";
 
+
+
 export interface ISearchDataAll {
 	activities: ISearchDataActivity[];
 	buildings: ISearchDataBuilding[];
@@ -11,7 +13,7 @@ export interface ISearchDataAll {
 	resource_categories: unknown[];
 	resource_category_activity: unknown[];
 	towns: ISearchDataTown[];
-	organizations: unknown[];
+	organizations: ISearchOrganization[];
 }
 
 export interface ISearchDataTown {
@@ -34,3 +36,18 @@ export interface ISearchDataActivity {
 
 export interface ISearchDataBuilding extends Pick<IBuilding,'id' | 'activity_id' | 'deactivate_calendar' | 'deactivate_application' | 'deactivate_sendmessage' | 'extra_kalendar' | 'name' | 'homepage' | 'location_code' | 'phone' | 'email' | 'tilsyn_name' | 'tilsyn_phone' | 'tilsyn_email' | 'tilsyn_name2' | 'tilsyn_phone2' | 'tilsyn_email2' | 'street' | 'zip_code' | 'district' | 'city' | 'calendar_text' | 'opening_hours'
 > {}
+
+export interface ISearchOrganization {
+	id: number;
+	organization_number?: string;
+	name: string;
+	homepage?: string;
+	phone?: string;
+	email?: string;
+	co_address?: string;
+	zip_code?: string;
+	district?: string;
+	city?: string;
+	activity_id?: number;
+	show_in_portal: boolean;
+}

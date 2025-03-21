@@ -1,3 +1,4 @@
+Completed	booking	nn	Fullført
 current activities	booking	nn	Aktivitetar
 select	booking	nn	Velg
 -- select an activity --	booking	nn	Velg ein aktivitet
@@ -861,8 +862,8 @@ From date	booking	nn	Fra dato
 To date	booking	nn	Til dato
 Building type	booking	nn	Bygningstype
 Search for events	booking	nn	Finn arrangement
-Building or facility name	booking nn	Bygning/anleggsnavn
-enable upload attachment	booking nn	Aktiver opplasting av vedlegg
+Building or facility name	booking	nn	Bygning/anleggsnavn
+enable upload attachment	booking	nn	Aktiver opplasting av vedlegg
 minutes	booking	nn	Minutt
 limit number	booking	nn	Begrensning på antall
 limit number horizont	booking	nn	Begrensningshorisont (dager)

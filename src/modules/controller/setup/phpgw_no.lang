@@ -94,7 +94,7 @@ calendar_months	controller	no	["Januar","Februar","Mars","April","Mai","Juni","J
 calendar_weekdays	controller	no	["Sø","Ma","Ti","On","To","Fr","Lø"]
 select_date	controller	no	Velg dato
 select	controller	no	Velg
-year controller	no	År
+year	controller	no	År
 location_code	controller	no	Enhetsnummer
 included_units	controller	no	Kontrollens enheter
 floor	controller	no	Etasje
@@ -138,7 +138,7 @@ elements	controller	no	Elementer
 every_second_week	controller	no	Hver 14. dag
 export	controller	no	Eksport
 export_to	controller	no	Eksporter
-filters 	controller	no	Filtre
+filters	controller	no	Filtre
 Finish	controller	no	Avslutt
 fire_drawings	controller	no	Branntegninger
 first	controller	no	Første
@@ -352,7 +352,7 @@ Bim_id	controller	no	Utstyrs-id
 Bim_name	controller	no	Utstyrsnavn
 Bim_type	controller	no	Utstyrstype
 GUID	controller	no	GUID
-View_procedure	controller	Prosedyre
+View_procedure	controller	no	Prosedyre
 View_documents_for_procedure	controller	no	Tilknyttede dokumenter
 Document title	controller	no	Dokumentets tittel
 Document name	controller	no	Filnavn
@@ -393,7 +393,7 @@ role at location	controller	no	Tildeling av rolle
 Register new message	controller	no	Registrer ny melding
 Show message	controller	no	Vis melding
 Status not done	controller	no	Status: Ikke utført
-Status done controller	no	Status: Utført
+Status done	controller	no	Status: Utført
 planned date	common	no	Planlagt Dato
 status components	controller	no	Status komponenter
 status locations	controller	no	Status lokasjoner

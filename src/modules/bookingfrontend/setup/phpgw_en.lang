@@ -5,48 +5,115 @@
 2 weeks	bookingfrontend	en	2 weeks
 3 weeks	bookingfrontend	en	3 weeks
 4 weeks	bookingfrontend	en	4 weeks
+_organization	bookingfrontend	en	Organization
 A Case officer will review your application as soon as possible.	bookingfrontend	en	A case officer will review your application as soon as possible.
 About Aktive kommune	bookingfrontend	en	About Aktive Kommune
 About the service	bookingfrontend	en	About the service
+accept application	bookingfrontend	en	Accept application
+accepted	bookingfrontend	en	Accepted
 Access denied	bookingfrontend	en	Access denied
+account	bookingfrontend	en	Account
 Account Codes	bookingfrontend	en	Account codes
+account status	bookingfrontend	en	Account status
+actions	bookingfrontend	en	Actions
+active	bookingfrontend	en	Active
+active applications	bookingfrontend	en	Active applications
 Activities (2018)	bookingfrontend	en	Activities
+activity	bookingfrontend	en	Activity
+activity_id	bookingfrontend	en	Activity id
+add a comment	bookingfrontend	en	Add a comment
+add another date	bookingfrontend	en	Add another date
 Add application	bookingfrontend	en	Add application
+add boundary	bookingfrontend	en	Add boundary
+add comment	bookingfrontend	en	Add comment
+add document	bookingfrontend	en	Add document
 Add group	bookingfrontend	en	Add group
+add new event	bookingfrontend	en	Add new event
+add permission	bookingfrontend	en	Add permission
+add_date	bookingfrontend	en	Add date
+add_rent_object	bookingfrontend	en	Add rent object
+add_rental_period	bookingfrontend	en	Add rental period
+added %1 users	booking	en	Added %1 users
+additional_information	bookingfrontend	en	Additional information (optional)
+address	bookingfrontend	en	Address
+admin 1	bookingfrontend	en	Admin 1
+admin 2	bookingfrontend	en	Admin 2
+admins	bookingfrontend	en	Admins
+again	booking	en	Again
+age group	bookingfrontend	en	Agegroup
+agegroup	bookingfrontend	en	Agegroup
 Agegroups kan not be larger than 9999 peoples	bookingfrontend	en	Agegroups kan not be larger than 9999 peoples
+allocation	bookingfrontend	en	Allocation
 Allocation deleted on	bookingfrontend	en	Allocation deleted on
+allocation show	bookingfrontend	en	Allocation display
+allocations	bookingfrontend	en	Allocations
+allocations colliding with existing bookings or allocations (%1)	bookingfrontend	en	Allocations colliding with existing bookings or allocations (%1)
 Allocations deleted on	bookingfrontend	en	Allocations deleted on
+allocations that can be created (%1)	bookingfrontend	en	Allocations that can be created (%1)
+amount	bookingfrontend	en	Amount
+anonymous password	bookingfrontend	en	Anonymous password
+anonymous user	bookingfrontend	en	Anonymous user
+application	bookingfrontend	en	Application
+application add	bookingfrontend	en	Application add
 Application basket	bookingfrontend	en	Application basket
 Application cart	bookingfrontend	en	Application cart
+applications	bookingfrontend	en	Applications
 Apply filter	bookingfrontend	en	Activate filter
 Apply for time	bookingfrontend	en	Apply for time
+apr	bookingfrontend	en	April
+archived	bookingfrontend	en	Archived
 Article	bookingfrontend	en	Article
 articles	bookingfrontend	en	Articles
 Associated bookings	bookingfrontend	en	Associated allocations/events
+attachment	bookingfrontend	en	Attachment
+audience	bookingfrontend	en	Audience
+aug	bookingfrontend	en	August
+available	bookingfrontend	en	Available
+back	bookingfrontend	en	Back
 Back to user list	booking	en	Back to user list
+billing	bookingfrontend	en	Billing
+billing_information	bookingfrontend	en	Billing information
+billing_information_contact_person	bookingfrontend	en	Billing information for contact person
 Book resource	bookingfrontend	en	Book resource
-booking_calendar	bookingfrontend	en	Bookingcalendar
+bookable resources	bookingfrontend	en	Bookable resources
+booking	bookingfrontend	en	Booking
+Booking and allocations deleted on	bookingfrontend	en	Booking and allocations deleted on
 Booking Cancel information	bookingfrontend	en	Booking cancel information
 Booking Cancel information2	bookingfrontend	en	Booking cancel information2
 Booking Delete information	bookingfrontend	en	Booking delete information
 Booking Delete information2	bookingfrontend	en	Booking delete information2
 Booking Delete information3	bookingfrontend	en	Booking delete information3
-Booking and allocations deleted on	bookingfrontend	en	Booking and allocations deleted on
 Booking deleted on	bookingfrontend	en	Booking deleted on
+booking district	bookingfrontend	en	Booking district
+booking name	bookingfrontend	en	Booking name
+booking show	bookingfrontend	en	Internal allocation
+booking_calendar	bookingfrontend	en	Bookingcalendar
+bookingfrontend host	bookingfrontend	en	Bookingfrontend host
+bookingfrontend settings	bookingfrontend	en	Bookingfrontend settings
+bookings	bookingfrontend	en	Bookings
 Bookings and allocations deleted on	bookingfrontend	en	Bookings and allocations deleted on
 Bookings deleted on	bookingfrontend	en	Bookings deleted on
 Bookings that can be created	bookingfrontend	en	Bookings that can be created
+boundaries	bookingfrontend	en	Boundaries
+building	bookingfrontend	en	Building
 Building information	bookingfrontend	en	Building information
+building name	bookingfrontend	en	Building name
 Building or facility name	bookingfrontend	en	Building/facility name
+building schedule	bookingfrontend	en	Building schedule
 Building users	bookingfrontend	en	Building users
-CONFIRMED	bookingfrontend	en	Confirmed
+buildings	bookingfrontend	en	Buildings
+bygning	bookingfrontend	en	Bygning
+calendar view	bookingfrontend	en	Day/week view
+calendar_view	bookingfrontend	en	Calendar
 Can not create a booking in the past	bookingfrontend	en	Can not create a booking in the past
 Can not repeat from a date in the past	bookingfrontend	en	Can not repeat from a date in the past
+cancel	bookingfrontend	en	Cancel
 Cancel allocation	bookingfrontend	en	Cancel allocation
 Cancel allocation also	bookingfrontend	en	Cancel allocation also
 Cancel allocations	bookingfrontend	en	Cancel allocations
 Cancel booking	bookingfrontend	en	Cancel booking
 Cancel bookings	bookingfrontend	en	Cancel bookings
+cancel event	bookingfrontend	en	Cancel event
 Cancel information	bookingfrontend	en	Cancel information
 Cancel information2	bookingfrontend	en	Cancel information2
 Cancel until	bookingfrontend	en	Cancel until
@@ -55,357 +122,196 @@ Cancelation of booking and allocation from	bookingfrontend	en	Cancelation of boo
 Cancelation of booking from	bookingfrontend	en	Cancelation of booking from
 Cancelation of bookings and allocations from	bookingfrontend	en	Cancelation of bookings and allocations from
 Cancelation of bookings from	bookingfrontend	en	Cancelation of bookings from
+cancelled	bookingfrontend	en	Cancelled
 Cannot change end time	bookingfrontend	en	Failed to change end time. End date cannot be before start date
 Cannot change start time	bookingfrontend	en	Failed to change start time. Start date cannot be later than end date
+case officer	bookingfrontend	en	Case officer
+category	bookingfrontend	en	Category
 Change organization	common	en	Change organization
 Change the allocation	bookingfrontend	en	Change the allocation
 Check calendar	bookingfrontend	en	Check calendar
+choose a date	bookingfrontend	en	Choose a date
 Choose another building	bookingfrontend	en	Choose another building
 Choose atleast one object	bookingfrontend	en	Choose at least one object
 Choose categories	bookingfrontend	en	Choose categories
 Choose date	bookingfrontend	en	Choose date
-add_date	bookingfrontend	en	Add date
 Choose date-range	bookingfrontend	en	Choose date range
-Choose resources	bookingfrontend	en	Choose resources
-Close	bookingfrontend	en	Close
-Collects users from all applications and events	booking	en	Collects users from all applications and events
-Complete applications	bookingfrontend	en	Complete applications
-complete_applications	bookingfrontend	en	Complete applications
-Confirm e-mail address	bookingfrontend	en	Confirm e-mail address
-Contact information name is to long. max 50 characters	bookingfrontend	en	Contact information name is to long. max 50 characters
-Could not delete allocation due to a booking still use it	bookingfrontend	en	Could not delete allocation due to a booking still use it
-Could not find application id. Contact case officer with allocation id	bookingfrontend	en	Could not find the corresponding application. To increase time, you must contact the case handler with the allocation:
-Create new booking	bookingfrontend	en	Create new booking
-Customer number	bookingfrontend	en	Reference number
-Date	bookingfrontend	en	Date
-Date of birth or SSN	bookingfrontend	en	Date of birth or ssn
-Decrease of from time overlap with existing booking	bookingfrontend	en	Cannot change date. Start time overlaps with existing internal allocation
-Decrease of to time overlap with existing booking	bookingfrontend	en	Cannot change date. End time overlaps with an existing internal allocation
-Delete Event	bookingfrontend	en	Delete event
-Delete information	bookingfrontend	en	Delete information
-Delete information2	bookingfrontend	en	Delete information2
-Deleted on	bookingfrontend	en	Deleted on
-Do you really want to collect users	booking	en	Do you really want to collect users?
-Do you want to delete application?	bookingfrontend	en	Do you want to delete application?
-E-mail address	bookingfrontend	en	E-mail address
-Edit Events	bookingfrontend	en	Edit events
-Edit Group	bookingfrontend	en	Edit group
-Edit System Message	bookingfrontend	en	Edit system message
-Edit allocation information	bookingfrontend	en	If you only need to change the allocation for a selected date, press the Change button below to mark the time as available, and the time will be shown as available in the calendar, and can be allocated to other clubs/organizations.
-Edit allocation information2	bookingfrontend	en	If you need to change more, you can select 'Out season' or 'Change to' and choose a date, you can also choose an interval (e.g., every other week).
-Edit until	bookingfrontend	en	Edit until
-Equipment text	bookingfrontend	en	In the field below, please enter if you have any special needs related to the activity
-Event Delete Information	bookingfrontend	en	Event delete information
-Event Delete Information2	bookingfrontend	en	Event delete information2
-Event was created	booking	en	The event was created
-Event/activity description	bookingfrontend	en	Event/activity description
-Event/activity homepage	bookingfrontend	en	Event/activity homepage
-Facilities	bookingfrontend	en	Facilities
-facilities	bookingfrontend	en	Facilities
-Field %1 is required	bookingfrontend	en	Field %1 is required
-Field %1: Invalid format	bookingfrontend	en	Field %1: invalid format
-Find available	bookingfrontend	en	Find available
-Find available resources	bookingfrontend	en	Find available resources
-Follow status	bookingfrontend	en	You can follow the status under My Page --> Applications
-For rent	bookingfrontend	en	For rent
-From time	bookingfrontend	en	From time
-Go back	bookingfrontend	en	Go back
-Go back to calendar	bookingfrontend	en	Go back to calendar
-Go to allocation	bookingfrontend	en	Go to allocation
-Group shortname	bookingfrontend	en	Group shortname
-Happening in Bergen	bookingfrontend	en	Happening in Bergen
-I am feeling lucky	bookingfrontend	en	I am feeling lucky
-In order to send the invoice we need information about either customer organization number or norwegian social security number	bookingfrontend	en	In order to send the invoice we need information about either customer organization number or norwegian social security number
-Information about the event	bookingfrontend	en	Information about the event
-Information about the event (edit)	bookingfrontend	en	Information about the event (edit)
-Internal Customer	bookingfrontend	en	Internal customer
-Interval	bookingfrontend	en	Interval
-Invalid from date	bookingfrontend	en	Invalid from date
-Invoice Instruction	bookingfrontend	en	Invoice instruction
-It is currently not possible to rent anything here	bookingfrontend	en	It is currently not possible to rent anything here
-Layout	bookingfrontend	en	Layout
-Lengt of name is to long, max %1 characters long	bookingfrontend	en	Lengt of name is to long, max %1 characters long
-Lengt of shortname is to long, max 11 characters long	bookingfrontend	en	Lengt of shortname is to long, max 11 characters long
-Link to website	bookingfrontend	en	Link to website
-Loading...	bookingfrontend	en	Loading...
-Mass update	bookingfrontend	en	Mass update
-Message	bookingfrontend	en	Message
-Minimum 8 digits	bookingfrontend	en	Minimum 8 digits
-Missing rights	bookingfrontend	en	Missing rights
-Name for event/activity	bookingfrontend	en	Name for event/activity
-Needed for the return from the external logout	bookingfrontend	en	Needed for the return from the external logout
-New message	bookingfrontend	en	New message
-New system message	bookingfrontend	en	New system message
-Next step	bookingfrontend	en	Next step
-Previous step	bookingfrontend	en	Previous step
-No available options	bookingfrontend	en	No available options
-No rent object chosen	bookingfrontend	en	No rent object chosen
-No valid identification returned from login	common	en	No valid identification returned from login
-Object No.	bookingfrontend	en	Object no.
-Official organization	bookingfrontend	en	Registered in Brønnøysund
-Organization shortname	bookingfrontend	en	Organization shortname
-Out season	bookingfrontend	en	Out season
-Overlaps other organizations allocation	bookingfrontend	en	Overlaps other organizations allocation
-Overlaps with existing allocation	bookingfrontend	en	Overlaps with existing allocation
-Overlaps with existing booking	bookingfrontend	en	Overlaps with existing booking
-Overlaps with existing event	bookingfrontend	en	Overlaps with existing event
-Part of town (2018)	bookingfrontend	en	Part of town
-Pending	bookingfrontend	en	Pending
-Phone is already registered	bookingfrontend	en	Phone is already registered
-Pictures	bookingfrontend	en	Pictures
-Place	bookingfrontend	en	Place
-Please check your Spam Filter if you are missing mail.	bookingfrontend	en	Please check your spam filter if you are missing mail.
-Please enter correct numbers for the event	bookingfrontend	en	Please enter correct numbers for the event
-Please fill all fields	bookingfrontend	en	Please fill all fields
-Please update the data and click the Next-button.	bookingfrontend	en	Please update the data and click the next-button.
-Print as PDF	bookingfrontend	en	Print as pdf
-Privacy	bookingfrontend	en	Privacy
-Privacy statement	bookingfrontend	en	Privacy statement
-Private event	bookingfrontend	en	Private event
-Project No.	bookingfrontend	en	Project no.
-Public schedule	bookingfrontend	en	Public schedule
-Recurring allocation cancelation	bookingfrontend	en	Recurring allocation cancelation
-Recurring allocation edit	bookingfrontend	en	Edit in intervals
-Recurring booking	bookingfrontend	en	Recurring booking
-Redirect is computed if url ends with	bookingfrontend	en	Redirect is computed if url ends with
-Repeat until	bookingfrontend	en	Repeat until
-Report numbers	bookingfrontend	en	Report numbers
-Request for changed time	bookingfrontend	en	Request to change time has been registered
-Request for equipment	bookingfrontend	en	Request for necessary equipment on allocation:
-Request for equipment has been sent	bookingfrontend	en	Request for necessary equipment has been sent to the case handler
-Request to increase time on existing booking	bookingfrontend	en	Request to increase allocated time on allocation:
-Reset filter	bookingfrontend	en	Reset filter
-Reset filters	bookingfrontend	en	Reset filters
-Resources type	bookingfrontend	en	Facilities type
-Responsible Code	bookingfrontend	en	Responsible code
-SSN not registred	common	en	Ssn not registred
-Sa	bookingfrontend	en	Saturday
-Search available resources	bookingfrontend	en	Search for available facilities
-Search building, resource, organization	bookingfrontend	en	Search building, resource, organization
-Search results	bookingfrontend	en	Search results
-See	bookingfrontend	en	See
-Select a group	bookingfrontend	en	Select a group
-Send	bookingfrontend	en	Send
-Send message	bookingfrontend	en	Send message
-Send message to case officer for building	bookingfrontend	en	Send message to case officer for building
-Service	bookingfrontend	en	Service
-Short description. For public events, activities and training under the direction of organizations and clubs, this information will be displayed on the internet	bookingfrontend	en	Short description. For public events, activities and training under the direction of organizations and clubs, this information will be displayed on the internet
-Show more results	bookingfrontend	en	Load more results
-Ssn	bookingfrontend	en	Ssn
-Successfully changed end time	bookingfrontend	en	End time change was successful. New end time for allocation is:
-Successfully changed start time	bookingfrontend	en	Start time change was successful. New start time for allocation is:
-System message	bookingfrontend	en	System message
-System messages	bookingfrontend	en	System messages
-Thank you	bookingfrontend	en	Thank you
-The booking uses resources not in the containing allocation	bookingfrontend	en	The booking uses resources not in the containing allocation
-The data was successfully updated	bookingfrontend	en	The data was successfully updated
-The e-mail addresses you entered do not match	bookingfrontend	en	The e-mail addresses you entered do not match
-The user has accepted the document under point 8.	bookingfrontend	en	The user has accepted the document under point 8.
-The user has accepted the following documents	bookingfrontend	en	The user has accepted the following documents
-This booking is not connected to a season	bookingfrontend	en	This booking is not connected to a season
-This booking is outside the organization's allocated time	bookingfrontend	en	This booking is outside the organization's allocated time
-Tilsynsvakt email	bookingfrontend	en	Tilsynsvakt email
-Tilsynsvakt name	bookingfrontend	en	Tilsynsvakt name
-Tilsynsvakt telephone	bookingfrontend	en	Tilsynsvakt telephone
-Time is set wrong	bookingfrontend	en	Time is set wrong
-To application site	bookingfrontend	en	Order now
-To borrow premises you must verify that you have read terms and conditions	bookingfrontend	en	To borrow premises you must verify that you have read terms and conditions
-To cancel allocation use this link	bookingfrontend	en	To cancel allocation use this link
-To cancel booking use this link	bookingfrontend	en	To cancel booking use this link
-To time	bookingfrontend	en	To time
-Town part	bookingfrontend	en	Area/District
-Unable to fill report	bookingfrontend	en	Unable to fill report
-Unit No.	bookingfrontend	en	Unit no.
-Unit Prefix	bookingfrontend	en	Unit prefix
-Upcomming Events	bookingfrontend	en	Upcoming Events
-Update	bookingfrontend	en	Update
-Upload Attachment	bookingfrontend	en	Upload attachment
-Used buildings	bookingfrontend	en	Used buildings
-Used buildings (2018)	bookingfrontend	en	Used buildings
-User	bookingfrontend	en	User
-User has changed field for equipment	bookingfrontend	en	Change of field for required equipment:
-User has made a request to alter time on existing booking	bookingfrontend	en	Request to change time for booking. New time:
-User has made a request to cancel event	bookingfrontend	en	Customer has requested to cancel the event.
-View all events	bookingfrontend	en	View all events
-When clicking the Next-button you will be presented to a list of bookings that will be updated.	bookingfrontend	en	When clicking the next-button you will be presented to a list of bookings that will be updated.
-You are now about to update all bookings from this date and to the end of the season.	bookingfrontend	en	You are now about to update all bookings from this date and to the end of the season.
-You can't cancel event that has started, for help contacts site admin	bookingfrontend	en	You can't cancel event that has started, for help contacts site admin
-You can't change resources to the event, for that contact administrator	bookingfrontend	en	You can't change resources to the event, for that contact administrator
-You can't extend the event, for that contact administrator	bookingfrontend	en	You can't extend the event, for that contact administrator
-You cant edit a booking that is older than 2 weeks	bookingfrontend	en	You cant edit a booking that is older than 2 weeks
-You must accept to follow all terms and conditions of lease first.	bookingfrontend	en	You must accept to follow all terms and conditions of lease first.
-Your application has now been processed and a confirmation email has been sent to you.	bookingfrontend	en	Your application has been approved, and a confirmation has been sent to you via email.
-Your application has now been registered and a confirmation email has been sent to you.	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
-Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
-accept application	bookingfrontend	en	Accept application
-accepted	bookingfrontend	en	Accepted
-account	bookingfrontend	en	Account
-account status	bookingfrontend	en	Account status
-actions	bookingfrontend	en	Actions
-active	bookingfrontend	en	Active
-active applications	bookingfrontend	en	Active applications
-activity	bookingfrontend	en	Activity
-activity_id	bookingfrontend	en	Activity id
-add a comment	bookingfrontend	en	Add a comment
-add another date	bookingfrontend	en	Add another date
-add boundary	bookingfrontend	en	Add boundary
-add comment	bookingfrontend	en	Add comment
-add document	bookingfrontend	en	Add document
-add new event	bookingfrontend	en	Add new event
-add permission	bookingfrontend	en	Add permission
-added %1 users	booking	en	Added %1 users
-address	bookingfrontend	en	Address
-admin 1	bookingfrontend	en	Admin 1
-admin 2	bookingfrontend	en	Admin 2
-admins	bookingfrontend	en	Admins
-again	booking	en	Again
-age group	bookingfrontend	en	Agegroup
-agegroup	bookingfrontend	en	Agegroup
-allocation	bookingfrontend	en	Allocation
-allocation show	bookingfrontend	en	Allocation display
-allocations	bookingfrontend	en	Allocations
-allocations colliding with existing bookings or allocations (%1)	bookingfrontend	en	Allocations colliding with existing bookings or allocations (%1)
-allocations that can be created (%1)	bookingfrontend	en	Allocations that can be created (%1)
-anonymous password	bookingfrontend	en	Anonymous password
-anonymous user	bookingfrontend	en	Anonymous user
-application	bookingfrontend	en	Application
-application add	bookingfrontend	en	Application add
-applications	bookingfrontend	en	Applications
-apr	bookingfrontend	en	April
-archived	bookingfrontend	en	Archived
-attachment	bookingfrontend	en	Attachment
-audience	bookingfrontend	en	Audience
-amount	bookingfrontend	en	Amount
-aug	bookingfrontend	en	August
-available	bookingfrontend	en	Available
-back	bookingfrontend	en	Back
-price_unit	bookingfrontend	en	Price/unit
-bookable resources	bookingfrontend	en	Bookable resources
-booking	bookingfrontend	en	Booking
-booking district	bookingfrontend	en	Booking district
-booking name	bookingfrontend	en	Booking name
-booking show	bookingfrontend	en	Internal allocation
-bookingfrontend host	bookingfrontend	en	Bookingfrontend host
-bookingfrontend settings	bookingfrontend	en	Bookingfrontend settings
-bookings	bookingfrontend	en	Bookings
-boundaries	bookingfrontend	en	Boundaries
-building	bookingfrontend	en	Building
-building name	bookingfrontend	en	Building name
-building schedule	bookingfrontend	en	Building schedule
-buildings	bookingfrontend	en	Buildings
-bygning	bookingfrontend	en	Bygning
-calendar view	bookingfrontend	en	Day/week view
-cancel	bookingfrontend	en	Cancel
-cancel event	bookingfrontend	en	Cancel event
-cancelled	bookingfrontend	en	Cancelled
-case officer	bookingfrontend	en	Case officer
-category	bookingfrontend	en	Category
-choose a date	bookingfrontend	en	Choose a date
 choose file	bookingfrontend	en	Choose file
-choose rent object and rentperiod	bookingfrontend	en	Choose rent object and rentperiod
 choose rent object	bookingfrontend	en	Choose rent object
-add_rent_object	bookingfrontend	en	Add rent object
+choose rent object and rentperiod	bookingfrontend	en	Choose rent object and rentperiod
 choose rent period	bookingfrontend	en	Choose rent period
+Choose resources	bookingfrontend	en	Choose resources
 choose target audience	bookingfrontend	en	Choose target audience
 chosen rent object	bookingfrontend	en	Chosen resources
 chosen rent period	bookingfrontend	en	Chosen rent period
-rent period	bookingfrontend	en	Rent period
 city	bookingfrontend	en	City
 click to sort ascending	bookingfrontend	en	Click to sort ascending
-clock_short	bookingfrontend	en	Time
 click to sort descending	bookingfrontend	en	Click to sort descending
+clock_short	bookingfrontend	en	Time
+Close	bookingfrontend	en	Close
 collect users	booking	en	Collect users
+Collects users from all applications and events	booking	en	Collects users from all applications and events
+Complete applications	bookingfrontend	en	Complete applications
+complete applications	bookingfrontend	en	Complete applications
+complete_applications	bookingfrontend	en	Complete applications
+Confirm e-mail address	bookingfrontend	en	Confirm e-mail address
+CONFIRMED	bookingfrontend	en	Confirmed
 contact	bookingfrontend	en	Contact
 contact 1	bookingfrontend	en	Contact 1
 contact 2	bookingfrontend	en	Contact 2
 contact information	bookingfrontend	en	Contact information
+Contact information name is to long. max 50 characters	bookingfrontend	en	Contact information name is to long. max 50 characters
 contact person	bookingfrontend	en	Contact person
 contact_email	bookingfrontend	en	Email
 contact_name	bookingfrontend	en	Contact name
 contacts[0][email] contains an invalid email	bookingfrontend	en	Contacts[0][email] contains an invalid email
 contacts[1][email] contains an invalid email	bookingfrontend	en	Contacts[1][email] contains an invalid email
+continue	bookingfrontend	en	Continue
 cookie domain for sessions	bookingfrontend	en	Cookie domain for sessions
 cost	bookingfrontend	en	Cost
 cost is set	booking	en	New price is set
+Could not delete allocation due to a booking still use it	bookingfrontend	en	Could not delete allocation due to a booking still use it
+Could not find application id. Contact case officer with allocation id	bookingfrontend	en	Could not find the corresponding application. To increase time, you must contact the case handler with the allocation:
 create	bookingfrontend	en	Create
+Create new booking	bookingfrontend	en	Create new booking
 created	bookingfrontend	en	Created
 current activities	bookingfrontend	en	Current activities
 custom login url	bookingfrontend	en	Custom login url
 custom login url parameter	bookingfrontend	en	Custom login url parameter
 customer identifier type is required	bookingfrontend	en	Customer identifier type is required
+Customer number	bookingfrontend	en	Reference number
 customer_identifier_type	bookingfrontend	en	Customer identifier type
 customer_organization_number is invalid	bookingfrontend	en	Customer organization number is invalid
 customer_ssn contains an invalid Norwegian social security number (6 or 11 digits)	bookingfrontend	en	Customer_ssn contains an invalid norwegian social security number (6 or 11 digits)
+daily_rate	bookingfrontend	en	Daily rate
 dashboard	bookingfrontend	en	Dashboard
+Date	bookingfrontend	en	Date
+Date of birth or SSN	bookingfrontend	en	Date of birth or ssn
 dates	bookingfrontend	en	Dates
 day	bookingfrontend	en	Day
 day of the week	bookingfrontend	en	Day of the week
+days	bookingfrontend	en	Days
 dec	bookingfrontend	en	Dec
+Decrease of from time overlap with existing booking	bookingfrontend	en	Cannot change date. Start time overlaps with existing internal allocation
+Decrease of to time overlap with existing booking	bookingfrontend	en	Cannot change date. End time overlaps with an existing internal allocation
 delegate from	bookingfrontend	en	Delegate from
+delete	bookingfrontend	en	Delete
+Delete Event	bookingfrontend	en	Delete event
+Delete information	bookingfrontend	en	Delete information
+Delete information2	bookingfrontend	en	Delete information2
+delete_rentobject	bookingfrontend	en	Delete rent object
+delete_rentobject_body	bookingfrontend	en	Are you sure you want to delete this rent object from your basket?
+Deleted on	bookingfrontend	en	Deleted on
 description	bookingfrontend	en	Description
+deselect_all	bookingfrontend	en	Deselect All
 district	bookingfrontend	en	District
+Do you really want to collect users	booking	en	Do you really want to collect users?
 do you really want to collect users again	booking	en	Do you really want to collect users again?
+Do you want to delete application?	bookingfrontend	en	Do you want to delete application?
 document	bookingfrontend	en	Document
 document name	bookingfrontend	en	Document name
 documents	bookingfrontend	en	Documents
 download to your calendar	bookingfrontend	en	Download to your calendar
 drawing	bookingfrontend	en	Drawing
+E-mail address	bookingfrontend	en	E-mail address
 each	bookingfrontend	en	Each
 edit	bookingfrontend	en	Edit
-edit Audience group	bookingfrontend	en	Edit audience group
 edit agegroup group	bookingfrontend	en	Edit agegroup group
 edit allocation	bookingfrontend	en	Edit allocation
+Edit allocation information	bookingfrontend	en	If you only need to change the allocation for a selected date, press the Change button below to mark the time as available, and the time will be shown as available in the calendar, and can be allocated to other clubs/organizations.
+Edit allocation information2	bookingfrontend	en	If you need to change more, you can select 'Out season' or 'Change to' and choose a date, you can also choose an interval (e.g., every other week).
+edit Audience group	bookingfrontend	en	Edit audience group
 edit booking	bookingfrontend	en	Edit booking
 edit data	bookingfrontend	en	Edit data
 edit event	bookingfrontend	en	Edit event
+Edit Events	bookingfrontend	en	Edit events
+Edit Group	bookingfrontend	en	Edit group
 edit organization	bookingfrontend	en	Edit organization
+Edit System Message	bookingfrontend	en	Edit system message
+Edit until	bookingfrontend	en	Edit until
+edit_event	bookingfrontend	en	Edit Event
 editer	bookingfrontend	en	Editer
+enter_team_organization_name	bookingfrontend	en	Enter team/organization name
+enter_title	bookingfrontend	en	Please enter a title
 entity %1 has been saved	bookingfrontend	en	Entity %1 has been saved
 entity %1 has been updated	bookingfrontend	en	Entity %1 has been updated
 equipment	bookingfrontend	en	Equipment
 equipment name	bookingfrontend	en	Equipment name
+Equipment text	bookingfrontend	en	In the field below, please enter if you have any special needs related to the activity
 estimated number of participants	bookingfrontend	en	Estimated number of participants
 event	bookingfrontend	en	Event
+Event Delete Information	bookingfrontend	en	Event delete information
+Event Delete Information2	bookingfrontend	en	Event delete information2
 event show	bookingfrontend	en	Event display
+Event was created	booking	en	The event was created
+Event/activity description	bookingfrontend	en	Event/activity description
+Event/activity homepage	bookingfrontend	en	Event/activity homepage
+event_building	bookingfrontend	en	Event / Building
 events	bookingfrontend	en	Events
 every	bookingfrontend	en	every
 executiveofficer	bookingfrontend	en	Executiveofficer
 expired for edit	bookingfrontend	en	Expired
+Facilities	bookingfrontend	en	Facilities
+facilities	bookingfrontend	en	Facilities
 feb	bookingfrontend	en	Feb
 female	bookingfrontend	en	Female
 fetching data	bookingfrontend	en	Fetching data
+Field %1 is required	bookingfrontend	en	Field %1 is required
+Field %1: Invalid format	bookingfrontend	en	Field %1: invalid format
 filnavn	bookingfrontend	en	Filename
+Find available	bookingfrontend	en	Find available
+Find available resources	bookingfrontend	en	Find available resources
 find_event_or_activity	bookingfrontend	en	Find event or activity
 find_team_or_organization	bookingfrontend	en	Find team or organization
+Follow status	bookingfrontend	en	You can follow the status under My Page --> Applications
 footer info	bookingfrontend	en	Footer info
 footer privacy link	bookingfrontend	en	Footer privacy link
 for allocations until	bookingfrontend	en	for allocations until:
 for remaining season	bookingfrontend	en	for the remaining season
+For rent	bookingfrontend	en	For rent
 found %1 results	bookingfrontend	en	Found %1 results
 found none	booking	en	Found none
 fr	bookingfrontend	en	Fr
 free	bookingfrontend	en	Free
 from	bookingfrontend	en	From
+From time	bookingfrontend	en	From time
 from_date	bookingfrontend	en	From date
 generate allocations	bookingfrontend	en	Generate allocations
 generate allocations from week template	bookingfrontend	en	Generate allocations from week template
 get name from external source	bookingfrontend	en	Get name from external source
+Go back	bookingfrontend	en	Go back
+Go back to calendar	bookingfrontend	en	Go back to calendar
 go back to the template week	bookingfrontend	en	Go back to the template week
+Go to allocation	bookingfrontend	en	Go to allocation
 google tracker id	bookingfrontend	en	Google tracker id
 group	bookingfrontend	en	Group
+Group shortname	bookingfrontend	en	Group shortname
 group_id	bookingfrontend	en	Group id
+Happening in Bergen	bookingfrontend	en	Happening in Bergen
 history and comments (%1)	bookingfrontend	en	History and comments (%1)
 hms document	bookingfrontend	en	Hse document
+home_page	bookingfrontend	en	To the homepage
 homepage	bookingfrontend	en	Homepage
 hour	bookingfrontend	en	Hour
+hourly_rate	bookingfrontend	en	Hourly rate
+hours	bookingfrontend	en	Hours
 how many?	bookingfrontend	en	How many?
+I am feeling lucky	bookingfrontend	en	I am feeling lucky
 id	bookingfrontend	en	Id
 if same as framework leave empty	bookingfrontend	en	If same as framework leave empty
+In order to send the invoice we need information about either customer organization number or norwegian social security number	bookingfrontend	en	In order to send the invoice we need information about either customer organization number or norwegian social security number
 inactivate	bookingfrontend	en	Inactivate
 inactive	bookingfrontend	en	Inactive
+Information about the event	bookingfrontend	en	Information about the event
+Information about the event (edit)	bookingfrontend	en	Information about the event (edit)
+Internal Customer	bookingfrontend	en	Internal customer
+Interval	bookingfrontend	en	Interval
 invalid date	common	en	Invalid date
+Invalid from date	bookingfrontend	en	Invalid from date
 invoice	bookingfrontend	en	Invoice
 invoice information	bookingfrontend	en	Invoice information
+Invoice Instruction	bookingfrontend	en	Invoice instruction
+It is currently not possible to rent anything here	bookingfrontend	en	It is currently not possible to rent anything here
 jan	bookingfrontend	en	January
 jul	bookingfrontend	en	July
 jun	bookingfrontend	en	Jun
@@ -413,7 +319,13 @@ kg	bookingfrontend	en	kg
 last login	bookingfrontend	en	Last login
 last modified	bookingfrontend	en	Last modified
 last password change	bookingfrontend	en	Last password change
+Layout	bookingfrontend	en	Layout
 leased	bookingfrontend	en	Leased
+Lengt of name is to long, max %1 characters long	bookingfrontend	en	Lengt of name is to long, max %1 characters long
+Lengt of shortname is to long, max 11 characters long	bookingfrontend	en	Lengt of shortname is to long, max 11 characters long
+Link to website	bookingfrontend	en	Link to website
+list_view	bookingfrontend	en	List
+Loading...	bookingfrontend	en	Loading...
 location	bookingfrontend	en	Location
 locations	bookingfrontend	en	Facilities
 log off	bookingfrontend	en	Log off
@@ -439,16 +351,27 @@ male	bookingfrontend	en	Male
 manual	bookingfrontend	en	Manual
 manual	common	en	Manual
 mar	bookingfrontend	en	Mars
+Mass update	bookingfrontend	en	Mass update
+max_participants	bookingfrontend	en	Max {{count}} participants
 may	bookingfrontend	en	May
+Message	bookingfrontend	en	Message
 metadata settings	bookingfrontend	en	Metadata settings
 meter	bookingfrontend	en	Meter
+Minimum 8 digits	bookingfrontend	en	Minimum 8 digits
 minute	bookingfrontend	en	Minute
+minute	bookingfrontend	en	Minute
+minute_rate	bookingfrontend	en	Minute rate
+Missing rights	bookingfrontend	en	Missing rights
 mo	bookingfrontend	en	Mo
 modified	bookingfrontend	en	Modified
+month	bookingfrontend	en	Month
 more	bookingfrontend	en	More
 more info	bookingfrontend	en	More info
 my page	bookingfrontend	en	My page
 name	bookingfrontend	en	Name
+Name for event/activity	bookingfrontend	en	Name for event/activity
+Needed for the return from the external logout	bookingfrontend	en	Needed for the return from the external logout
+new	bookingfrontend	en	New
 new	bookingfrontend	en	New
 new activity	bookingfrontend	en	New activity
 new age group	bookingfrontend	en	New age group
@@ -464,105 +387,188 @@ new document	bookingfrontend	en	New document
 new equipment	bookingfrontend	en	New equipment
 new event	bookingfrontend	en	New event
 new group	bookingfrontend	en	New group
+New message	bookingfrontend	en	New message
 new organization	bookingfrontend	en	New organization
 new resource	bookingfrontend	en	New resource
 new root permission	bookingfrontend	en	New root permission
 new season	bookingfrontend	en	New season
 new season permission	bookingfrontend	en	New season permission
+New system message	bookingfrontend	en	New system message
+Next step	bookingfrontend	en	Next step
+No available options	bookingfrontend	en	No available options
 no Data.	bookingfrontend	en	No data.
 no description yet	bookingfrontend	en	No description yet
 no parents	bookingfrontend	en	No parents
 no records found.	bookingfrontend	en	No records found.
+No rent object chosen	bookingfrontend	en	No rent object chosen
+No valid identification returned from login	common	en	No valid identification returned from login
+no_documents_to_accept	bookingfrontend	en	There are no documents to accept for this application.
+no_resources_found	bookingfrontend	en	No resources found for the given date
 nov	bookingfrontend	en	November
 number of participants	bookingfrontend	en	Number of participants
 number of participants is required	bookingfrontend	en	Number of participants is required
+Object No.	bookingfrontend	en	Object no.
 oct	bookingfrontend	en	October
 of	bookingfrontend	en	Of
 officer	bookingfrontend	en	Officer
+Official organization	bookingfrontend	en	Registered in Brønnøysund
+old	bookingfrontend	en	Old
 optional	booking	en	Optional
 organization	bookingfrontend	en	Organization
-_organization	bookingfrontend	en	Organization
 organization index	bookingfrontend	en	Organization index
 organization number	bookingfrontend	en	Organization number
+Organization shortname	bookingfrontend	en	Organization shortname
 organization type	bookingfrontend	en	Organization type
+organization_calendar	bookingfrontend	en	Organization Calendar
 organizations	bookingfrontend	en	Organizations
 organizer/responsible seeker	bookingfrontend	en	Organizer/responsible seeker
 other	bookingfrontend	en	Other
+Out season	bookingfrontend	en	Out season
+Overlaps other organizations allocation	bookingfrontend	en	Overlaps other organizations allocation
+Overlaps with existing allocation	bookingfrontend	en	Overlaps with existing allocation
+Overlaps with existing booking	bookingfrontend	en	Overlaps with existing booking
+Overlaps with existing event	bookingfrontend	en	Overlaps with existing event
 parent activity	bookingfrontend	en	Parent activity
 parent id	bookingfrontend	en	Parent id
 part of town	common	en	Part of town
+Part of town (2018)	bookingfrontend	en	Part of town
+Pending	bookingfrontend	en	Pending
 permissions	bookingfrontend	en	Permissions
 personal group	bookingfrontend	en	Not registered in Brønnøysund
 phone	bookingfrontend	en	Phone
+Phone is already registered	bookingfrontend	en	Phone is already registered
 picture	bookingfrontend	en	Picture
+Pictures	bookingfrontend	en	Pictures
+Place	bookingfrontend	en	Place
 planning	bookingfrontend	en	Planning
+Please check your Spam Filter if you are missing mail.	bookingfrontend	en	Please check your spam filter if you are missing mail.
 please choose at least 1 resource	common	en	Please choose at least 1 resource
 please choose at least 1 target audience	bookingfrontend	en	Please choose at least 1 target audience
 please enter a building name	bookingfrontend	en	Please enter a building name
 please enter a contact email	bookingfrontend	en	Please enter a contact email
 please enter a contact name	bookingfrontend	en	Please enter a contact name
 please enter a descripction	bookingfrontend	en	Please enter a descripction
+Please enter correct numbers for the event	bookingfrontend	en	Please enter correct numbers for the event
+Please fill all fields	bookingfrontend	en	Please fill all fields
 please select an activity	bookingfrontend	en	Please select an activity
+Please update the data and click the Next-button.	bookingfrontend	en	Please update the data and click the next-button.
 please wait	bookingfrontend	en	Please wait
+please_accept_terms	bookingfrontend	en	Please accept the terms and conditions
+please_correct_errors_before_proceeding	bookingfrontend	en	Please correct the errors below before proceeding to the next step
+please_enter_event_name	bookingfrontend	en	Please enter the name for the event/activity
+please_enter_organizer	bookingfrontend	en	Please enter the organizer/responsible seeker
+please_enter_participants	bookingfrontend	en	Please enter the estimated number of participants
+please_fill_all_date_and_time_fields	bookingfrontend	en	Please fill in all date and time fields
+please_select_at_least_one_date_and_time	bookingfrontend	en	Please select at least one date and time slot
+please_select_at_least_one_resource	bookingfrontend	en	Please select at least one resource
+please_select_target_audience	bookingfrontend	en	Please select a target audience
 postal city	bookingfrontend	en	Postal city
 prev	bookingfrontend	en	Prev
 preview	bookingfrontend	en	Preview
+Previous step	bookingfrontend	en	Previous step
 price	bookingfrontend	en	Price
 price list	bookingfrontend	en	Price list
+price_unit	bookingfrontend	en	Price/unit
 primary admin	bookingfrontend	en	Primary admin
 primary contact	bookingfrontend	en	Primary contact
+Print as PDF	bookingfrontend	en	Print as pdf
+Privacy	bookingfrontend	en	Privacy
+Privacy statement	bookingfrontend	en	Privacy statement
+Private event	bookingfrontend	en	Private event
+Project No.	bookingfrontend	en	Project no.
+Public schedule	bookingfrontend	en	Public schedule
 published	bookingfrontend	en	Published
 quantity limit (%1) exceeded for %2: maximum %3 times within a period of %4 days	bookingfrontend	en	Quantity limit (%1) exceeded for %2: maximum %3 times within a period of %4 days
+Recurring allocation cancelation	bookingfrontend	en	Recurring allocation cancelation
+Recurring allocation edit	bookingfrontend	en	Edit in intervals
+Recurring booking	bookingfrontend	en	Recurring booking
+Redirect is computed if url ends with	bookingfrontend	en	Redirect is computed if url ends with
 registration	bookingfrontend	en	Registration
 regulation	bookingfrontend	en	Regulation
 reject application	bookingfrontend	en	Reject application
 rejected	bookingfrontend	en	Rejected
 remote authentication	bookingfrontend	en	Remote authentication
 remove date	bookingfrontend	en	Remove date
-rent object	bookingfrontend	en	Rent object
 rent	bookingfrontend	en	Rent
+rent object	bookingfrontend	en	Rent object
+rent period	bookingfrontend	en	Rent period
 rent_premises_facilities_equipment	bookingfrontend	en	Rent premises, facilities, or equipment
 rental_resources	bookingfrontend	en	Rental resources
+Repeat until	bookingfrontend	en	Repeat until
+Report numbers	bookingfrontend	en	Report numbers
+Request for changed time	bookingfrontend	en	Request to change time has been registered
+Request for equipment	bookingfrontend	en	Request for necessary equipment on allocation:
+Request for equipment has been sent	bookingfrontend	en	Request for necessary equipment has been sent to the case handler
+Request to increase time on existing booking	bookingfrontend	en	Request to increase allocated time on allocation:
 reserved	bookingfrontend	en	Reserved
 reset	bookingfrontend	en	Reset
+Reset filter	bookingfrontend	en	Reset filter
+Reset filters	bookingfrontend	en	Reset filters
 resource	bookingfrontend	en	Resource
 resource name	bookingfrontend	en	Resource name
 resource schedule	bookingfrontend	en	Resource schedule
 resource type	bookingfrontend	en	Resource type
 resources	bookingfrontend	en	Resources
+Resources type	bookingfrontend	en	Facilities type
 responsible applicant	bookingfrontend	en	Responsible applicant
+Responsible Code	bookingfrontend	en	Responsible code
 role	bookingfrontend	en	Role
 root permissions	bookingfrontend	en	Root permissions
+Sa	bookingfrontend	en	Saturday
 saved data	bookingfrontend	en	Saved data
 schedule	bookingfrontend	en	Schedule
+Search available resources	bookingfrontend	en	Search for available facilities
+Search building, resource, organization	bookingfrontend	en	Search building, resource, organization
+Search results	bookingfrontend	en	Search results
 search_for_like_minded_people	bookingfrontend	en	Are you looking for someone interested in the same things as you? Search by the name of a team or organization, or filter by activity or area
 season	bookingfrontend	en	Season
 season name	bookingfrontend	en	Season name
 seasons	bookingfrontend	en	Seasons
 secondary admin	bookingfrontend	en	Secondary admin
+See	bookingfrontend	en	See
+see_less_filters	bookingfrontend	en	See less filters
+see_more_filters	bookingfrontend	en	See more filters
 select a building first	bookingfrontend	en	Select a building first
 select a grooup	bookingfrontend	en	Select a grooup
+Select a group	bookingfrontend	en	Select a group
 select category...	bookingfrontend	en	Select category...
 select date	bookingfrontend	en	Select date
 select method	bookingfrontend	en	Select method
 select role...	bookingfrontend	en	Select role...
 selected	bookingfrontend	en	Selected
+selected_time_must_be_in_future	bookingfrontend	en	The selected time must be in the future
+Send	bookingfrontend	en	Send
+Send message	bookingfrontend	en	Send message
+Send message to case officer for building	bookingfrontend	en	Send message to case officer for building
 sep	bookingfrontend	en	September
+Service	bookingfrontend	en	Service
 settings	bookingfrontend	en	Settings
+Short description. For public events, activities and training under the direction of organizations and clubs, this information will be displayed on the internet	bookingfrontend	en	Short description. For public events, activities and training under the direction of organizations and clubs, this information will be displayed on the internet
+Show more results	bookingfrontend	en	Load more results
 show only active	bookingfrontend	en	Show only active
-show_more	bookingfrontend	en	Show more
 show_less	bookingfrontend	en	Show less
+show_more	bookingfrontend	en	Show more
+show_only_available	bookingfrontend	en	Show only available
 showing items	bookingfrontend	en	Showing items
 showing items {startRecord} - {endRecord} of {totalRecords}	bookingfrontend	en	Showing items {startrecord} - {endrecord} of {totalrecords}
 site title	bookingfrontend	en	Site title
 social security number	bookingfrontend	en	Social security number
 square meter	bookingfrontend	en	Square meter
+Ssn	bookingfrontend	en	Ssn
+SSN not registred	common	en	Ssn not registred
+start_time_must_be_before_end_time	bookingfrontend	en	Start time must be earlier than end time
 status	bookingfrontend	en	Status
 street	bookingfrontend	en	Street
 su	bookingfrontend	en	Sunday
 submit	bookingfrontend	en	Submit
+submit_application	bookingfrontend	en	Submit application
+Successfully changed end time	bookingfrontend	en	End time change was successful. New end time for allocation is:
+Successfully changed start time	bookingfrontend	en	Start time change was successful. New start time for allocation is:
 successfully created (%1) allocations:	bookingfrontend	en	Successfully created (%1) allocations:
+summary	bookingfrontend	en	Summary
 surname	bookingfrontend	en	Surname
+System message	bookingfrontend	en	System message
+System messages	bookingfrontend	en	System messages
 target audience	bookingfrontend	en	Target audience
 team leader 1	bookingfrontend	en	Team leader 1
 team leader 2	bookingfrontend	en	Team leader 2
@@ -571,88 +577,83 @@ telephone	bookingfrontend	en	Telephone
 terms and conditions	bookingfrontend	en	Terms and conditions
 test organization	bookingfrontend	en	Test organization
 th	bookingfrontend	en	Th
+Thank you	bookingfrontend	en	Thank you
+The booking uses resources not in the containing allocation	bookingfrontend	en	The booking uses resources not in the containing allocation
+The data was successfully updated	bookingfrontend	en	The data was successfully updated
+The e-mail addresses you entered do not match	bookingfrontend	en	The e-mail addresses you entered do not match
+The user has accepted the document under point 8.	bookingfrontend	en	The user has accepted the document under point 8.
+The user has accepted the following documents	bookingfrontend	en	The user has accepted the following documents
 this application is not within a valid season	bookingfrontend	en	This application is outside the valid season
+This booking is not connected to a season	bookingfrontend	en	This booking is not connected to a season
+This booking is outside the organization's allocated time	bookingfrontend	en	This booking is outside the organization's allocated time
+Tilsynsvakt email	bookingfrontend	en	Tilsynsvakt email
+Tilsynsvakt name	bookingfrontend	en	Tilsynsvakt name
+Tilsynsvakt telephone	bookingfrontend	en	Tilsynsvakt telephone
+Time is set wrong	bookingfrontend	en	Time is set wrong
 title	bookingfrontend	en	Title
 to	bookingfrontend	en	To
+To application site	bookingfrontend	en	Order now
+To borrow premises you must verify that you have read terms and conditions	bookingfrontend	en	To borrow premises you must verify that you have read terms and conditions
+To cancel allocation use this link	bookingfrontend	en	To cancel allocation use this link
+To cancel booking use this link	bookingfrontend	en	To cancel booking use this link
+To time	bookingfrontend	en	To time
 to_date	bookingfrontend	en	To date
+total	bookingfrontend	en	Total
+Town part	bookingfrontend	en	Area/District
 tu	bookingfrontend	en	Tu
 type	bookingfrontend	en	Type
+Unable to fill report	bookingfrontend	en	Unable to fill report
 unit	bookingfrontend	en	Unit
 unit cost	bookingfrontend	en	Unit cost
+Unit No.	bookingfrontend	en	Unit no.
+Unit Prefix	bookingfrontend	en	Unit prefix
+Upcomming Events	bookingfrontend	en	Upcoming Events
+Update	bookingfrontend	en	Update
 update results	bookingfrontend	en	Update results
+Upload Attachment	bookingfrontend	en	Upload attachment
 upload document	bookingfrontend	en	Upload document
 url to external logout	bookingfrontend	en	Url to external logout
 use cookies to pass sessionid	bookingfrontend	en	Use cookies to pass sessionid
 use_filters_to_find_rental_objects	bookingfrontend	en	Use the filters to find the rental objects you wish to rent
 use_filters_to_find_todays_events	bookingfrontend	en	Use the filters to find out what's happening today, or this weekend
+Used buildings	bookingfrontend	en	Used buildings
+Used buildings (2018)	bookingfrontend	en	Used buildings
+User	bookingfrontend	en	User
 user	bookingfrontend	en	User
+User has changed field for equipment	bookingfrontend	en	Change of field for required equipment:
+User has made a request to alter time on existing booking	bookingfrontend	en	Request to change time for booking. New time:
+User has made a request to cancel event	bookingfrontend	en	Customer has requested to cancel the event.
 uustatus	bookingfrontend	en	Availability declaration
 validate	bookingfrontend	en	Validate
+version	bookingfrontend	en	Version
+version_choice	bookingfrontend	en	Choose version
+View all events	bookingfrontend	en	View all events
 view allocation	bookingfrontend	en	View allocation
 view booking	bookingfrontend	en	View booking
 view event	bookingfrontend	en	View event
 we	bookingfrontend	en	We
 week	bookingfrontend	en	Week
 week template	bookingfrontend	en	Week template
+what_is_aktiv_kommune	bookingfrontend	en	What is Aktiv kommune?
 when	bookingfrontend	en	When
+When clicking the Next-button you will be presented to a list of bookings that will be updated.	bookingfrontend	en	When clicking the next-button you will be presented to a list of bookings that will be updated.
 when?	bookingfrontend	en	When?
 where	bookingfrontend	en	Where
 where?	bookingfrontend	en	Where?
+which_version_do_you_want	bookingfrontend	en	Which version do you want?
 who	bookingfrontend	en	Who
 who?	bookingfrontend	en	Who?
 why	bookingfrontend	en	Why
 why?	bookingfrontend	en	Why?
+You are now about to update all bookings from this date and to the end of the season.	bookingfrontend	en	You are now about to update all bookings from this date and to the end of the season.
+You can't cancel event that has started, for help contacts site admin	bookingfrontend	en	You can't cancel event that has started, for help contacts site admin
+You can't change resources to the event, for that contact administrator	bookingfrontend	en	You can't change resources to the event, for that contact administrator
+You can't extend the event, for that contact administrator	bookingfrontend	en	You can't extend the event, for that contact administrator
+You cant edit a booking that is older than 2 weeks	bookingfrontend	en	You cant edit a booking that is older than 2 weeks
 you must accept to follow all terms and conditions of lease first	common	en	You must accept to follow all terms and conditions of lease first
-zip code	bookingfrontend	en	Zip code
-see_more_filters	bookingfrontend	en	See more filters
-see_less_filters	bookingfrontend	en	See less filters
-event_building	bookingfrontend	en	Event / Building
-enter_team_organization_name	bookingfrontend	en	Enter team/organization name
-show_only_available	bookingfrontend	en	Show only available
-version_choice	bookingfrontend	en	Choose version
-version	bookingfrontend	en	Version
-which_version_do_you_want	bookingfrontend	en	Which version do you want?
-old	bookingfrontend	en	Old
-new	bookingfrontend	en	New
-what_is_aktiv_kommune	bookingfrontend	en	What is Aktiv kommune?
-add_rental_period	bookingfrontend	en	Add rental period
-minute_rate	bookingfrontend	en	Minute rate
-hourly_rate	bookingfrontend	en	Hourly rate
-daily_rate	bookingfrontend	en	Daily rate
-hours	bookingfrontend	en	Hours
-total	bookingfrontend	en	Total
-minute	bookingfrontend	en	Minute
-days	bookingfrontend	en	Days
-continue	bookingfrontend	en	Continue
-billing	bookingfrontend	en	Billing
-home_page	bookingfrontend	en	To the homepage
-summary	bookingfrontend	en	Summary
+You must accept to follow all terms and conditions of lease first.	bookingfrontend	en	You must accept to follow all terms and conditions of lease first.
+Your application has now been processed and a confirmation email has been sent to you.	bookingfrontend	en	Your application has been approved, and a confirmation has been sent to you via email.
+Your application has now been registered and a confirmation email has been sent to you.	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
+Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
-billing_information_contact_person	bookingfrontend	en	Billing information for contact person
-billing_information	bookingfrontend	en	Billing information
-submit_application	bookingfrontend	en	Submit application
-delete	bookingfrontend	en	Delete
-delete_rentobject	bookingfrontend	en	Delete rent object
-delete_rentobject_body	bookingfrontend	en	Are you sure you want to delete this rent object from your basket?
-please_select_at_least_one_resource	bookingfrontend	en	Please select at least one resource
-please_select_at_least_one_date_and_time	bookingfrontend	en	Please select at least one date and time slot
-please_correct_errors_before_proceeding	bookingfrontend	en	Please correct the errors below before proceeding to the next step
-selected_time_must_be_in_future	bookingfrontend	en	The selected time must be in the future
-start_time_must_be_before_end_time	bookingfrontend	en	Start time must be earlier than end time
-please_fill_all_date_and_time_fields	bookingfrontend	en	Please fill in all date and time fields
-please_select_target_audience	bookingfrontend	en	Please select a target audience
-please_enter_event_name	bookingfrontend	en	Please enter the name for the event/activity
-please_enter_organizer	bookingfrontend	en	Please enter the organizer/responsible seeker
-please_enter_participants	bookingfrontend	en	Please enter the estimated number of participants
-please_accept_terms	bookingfrontend	en	Please accept the terms and conditions
-organization_calendar	bookingfrontend	en	Organization Calendar
-no_resources_found	bookingfrontend	en	No resources found for the given date
-no_documents_to_accept	bookingfrontend	en	There are no documents to accept for this application.
-calendar_view	bookingfrontend	en	Calendar
-list_view	bookingfrontend	en	List
-deselect_all	bookingfrontend	en	Deselect All
-max_participants	bookingfrontend	en	Max {{count}} participants
-edit_event	bookingfrontend	en	Edit Event
-month	bookingfrontend	en	Month
-enter_title	bookingfrontend	en	Please enter a title
-additional_information	bookingfrontend	en	Additional information (optional)
+zip code	bookingfrontend	en	Zip code

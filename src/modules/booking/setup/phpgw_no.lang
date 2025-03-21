@@ -1,3 +1,4 @@
+Completed	booking	no	Fullført
 current activities	booking	no	Aktiviteter
 select	booking	no	Velg
 -- select an activity --	booking	no	Velg en aktivitet
@@ -860,7 +861,7 @@ From date	booking	no	Fra dato
 To date	booking	no	Til dato
 Building type	booking	no	Bygningstype
 Search for events	booking	no	Finn arrangement
-Building or facility name	booking no	Bygning/anleggsnavn
+Building or facility name	booking	no	Bygning/anleggsnavn
 enable upload attachment	booking	no	Aktiver opplasting av vedlegg
 minutes	booking	no	Minutter
 limit number	booking	no	Begrensning på antall

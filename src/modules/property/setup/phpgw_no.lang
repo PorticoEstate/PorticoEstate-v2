@@ -397,7 +397,7 @@ periodization	property	no	Periodisering
 periodization start	property	no	Startperiode
 periodization outline	property	no	Periodiseringsfordeling
 delete receipt	property	no	Slett kvittering
-plan 	property	no	Tidsplan
+plan	property	no	Tidsplan
 planned year	property	no	Planlagt år
 planning	property	no	Planlagt
 planning date	property	no	Dato planlagt disponering
@@ -1206,7 +1206,7 @@ open JasperReport %1 in new window	property	no	Åpne JasperReport %1 i nytt vind
 open view in new window	property	no	Åpne visning i nytt vindu
 operation	property	no	Drift
 o&m	property	no	D/V
-Operations and Maintenance	no	Drift og vedlikehold
+Operations and Maintenance	property	no	Drift og vedlikehold
 order	property	no	Bestilling
 order approval revoked	property	no	Bestillingsgodkjenning opphevet
 order approved	property	no	Bestilling godkjent
@@ -2256,7 +2256,7 @@ contact block 2	property	no	Kontakt blokk 2
 check missing project budget	property	no	Sjekk manglende prosjekt budsjett
 request condition_type	property	no	Forespør betingelsestype
 pending action type	property	no	Venter på handlingstype
-use acl for document types. (not implementet) 	property	no	Bruk acl for dokumenttyper . (Ikke implementert)
+use acl for document types. (not implementet)	property	no	Bruk acl for dokumenttyper . (Ikke implementert)
 org unit id	property	no	Organsisasjonsnummer
 order footer header	property	no	Overskrift for bestillings-avslutnings-tekst
 order footer	property	no	bestillings-avslutnings-tekst
@@ -2293,7 +2293,7 @@ path to external files for use with location	property	no	Sti til eksterne filer 
 on windows use	property	no	På Windows bruk
 max recursive level at external files	property	no	Maks rekursivt nivå på eksterne filer
 filter at level at external files	property	no	Filter på nivå ved eksterne filer
-enter map url 	property	no	Skriv inn kart url
+enter map url	property	no	Skriv inn kart url
 enter gab location level	property	no	Skriv inn matrikkel-lokasjonsnivå
 default value is	property	no	Standardverdi er
 enter gab url	property	no	Skriv inn matrikkel url

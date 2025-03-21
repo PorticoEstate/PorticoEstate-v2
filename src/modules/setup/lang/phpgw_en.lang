@@ -73,7 +73,7 @@ continue	setup	en	Continue
 could not open header.inc.php for writing!	setup	en	Could not open header.inc.php for writing!
 country selection	setup	en	Country Selection
 create	setup	en	Create
-create accounts	en	Create Accounts
+create accounts	setup	en	Create Accounts
 create database	setup	en	Create Database
 create demo accounts	setup	en	Create demo accounts
 create one now	setup	en	Create one now
@@ -131,7 +131,7 @@ enter your http proxy server port	setup	en	Enter your HTTP proxy server port
 export has been completed!  you will need to set the user passwords manually.	setup	en	Export has been completed!  You will need to set the user passwords manually.
 export phpgroupware accounts from sql to ldap	setup	en	Export phpGroupWare accounts from SQL to LDAP
 export sql users to ldap	setup	en	Export SQL users to LDAP
-failed to modify: 	setup	en	failed to modify: 
+failed to modify:	setup	en	failed to modify:
 failed to modify: %1	setup	en	failed to modify: %1
 file	setup	en	FILE
 file type, size, version, etc.	setup	en	file type, size, version, etc.

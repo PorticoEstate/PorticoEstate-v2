@@ -29,7 +29,7 @@ const Footer = async (props: FooterProps) => {
             <div>
                 {/*Contact */}
                 <h3 className={'text-body'}>
-                    {t('common.contact')}
+                    {t('booking.contact')}
                 </h3>
                 <ul className={'list-unstyled text-small'}>
                     <li>

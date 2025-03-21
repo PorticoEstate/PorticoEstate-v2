@@ -195,7 +195,19 @@ class ApplicationController extends DocumentController
      *     tags={"Applications"},
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/Application")
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/Application",
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                 )
+     *             )
+     *         )
      *     ),
      *     @OA\Response(
      *         response=201,
@@ -276,7 +288,19 @@ class ApplicationController extends DocumentController
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/Application")
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/Application",
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                 )
+     *             )
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -368,6 +392,17 @@ class ApplicationController extends DocumentController
      *                     @OA\Property(property="id", type="integer"),
      *                     @OA\Property(property="from_", type="string", format="date-time"),
      *                     @OA\Property(property="to_", type="string", format="date-time")
+     *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 description="Complete replacement of articles",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
      *                 )
      *             )
      *         )
@@ -1018,6 +1053,58 @@ class ApplicationController extends DocumentController
 		} catch (Exception $e) {
 			return ResponseHelper::sendErrorResponse(
 				['error' => "Error creating simple application: " . $e->getMessage()],
+				500
+			);
+		}
+	}
+
+
+
+
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/applications/articles",
+	 *     summary="Get available articles for resources",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(
+	 *         name="resources[]",
+	 *         in="query",
+	 *         required=true,
+	 *         @OA\Schema(type="array", @OA\Items(type="integer"))
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="List of articles",
+	 *         @OA\JsonContent(
+	 *             type="array",
+	 *              @OA\Items(type="object")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function getArticlesByResources(Request $request, Response $response): Response
+	{
+		try
+		{
+			$resources = $request->getQueryParams()['resources'] ?? [];
+
+			if (empty($resources))
+			{
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Resources parameter is required'],
+					400
+				);
+			}
+
+			// Get articles by resources
+			$articles = $this->applicationService->getArticlesByResources($resources);
+
+			$response->getBody()->write(json_encode($articles));
+			return $response->withHeader('Content-Type', 'application/json');
+		} catch (Exception $e)
+		{
+			return ResponseHelper::sendErrorResponse(
+				['error' => "Error fetching articles: " . $e->getMessage()],
 				500
 			);
 		}

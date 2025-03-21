@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import {IBookingUser, IServerSettings} from "@/service/types/api.types";
 import {
+	fetchArticlesForResources,
 	fetchBuildingAgeGroups, fetchBuildingAudience,
 	fetchBuildingSchedule, fetchBuildingSeasons,
 	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
@@ -22,6 +23,7 @@ import {DateTime} from "luxon";
 import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
+import { IArticle } from "../types/api/order-articles.types";
 // require('log-timestamp');
 //
 // if(typeof window !== "undefined") {
@@ -743,4 +745,138 @@ export function useDeleteApplicationDocument() {
             });
         }
     });
+}
+
+export function useResourceArticles({
+										resourceIds,
+										initialArticles
+									}: {
+	resourceIds: number[];
+	initialArticles?: IArticle[];
+}) {
+	const queryClient = useQueryClient();
+
+	// Helper to get cache key for a resource
+	const getResourceCacheKey = (resourceId: number): readonly ['resourceArticles', number] => {
+		return ['resourceArticles', resourceId] as const;
+	};
+
+	// Initialize cache with provided initial articles data
+	useEffect(() => {
+		if (initialArticles) {
+			// First, create a map of all articles by ID for quick lookup of parent articles
+			const articlesById = new Map<number, IArticle>();
+			initialArticles.forEach(article => {
+				articlesById.set(article.id, article);
+			});
+
+			// For each article, determine its resource_id (either direct or via parent)
+			initialArticles.forEach((article) => {
+				let resourceId = article.resource_id;
+
+				// If no resource_id but has parent_mapping_id, try to get resource_id from parent
+				if (!resourceId && article.parent_mapping_id) {
+					let parentArticle = articlesById.get(article.parent_mapping_id);
+					// Follow the parent chain to find a resource_id
+					while (parentArticle && !resourceId) {
+						resourceId = parentArticle.resource_id;
+						if (!resourceId && parentArticle.parent_mapping_id) {
+							parentArticle = articlesById.get(parentArticle.parent_mapping_id);
+						} else {
+							break;
+						}
+					}
+				}
+
+				// Only cache if we found a resource_id
+				if (resourceId) {
+					const cacheKey = getResourceCacheKey(resourceId);
+					const existingData = queryClient.getQueryData<IArticle[]>(cacheKey);
+
+					if (!existingData) {
+						// If no data exists for this resource, create new cache entry
+						queryClient.setQueryData(cacheKey, [article]);
+					} else if (!existingData.some(a => a.id === article.id)) {
+						// If the article doesn't exist in the cache, add it
+						queryClient.setQueryData(cacheKey, [...existingData, article]);
+					}
+				}
+			});
+		}
+	}, [initialArticles, queryClient]);
+
+	const fetchArticles = async (): Promise<IArticle[]> => {
+		// Check which resource IDs don't have cached data
+		const uncachedResourceIds = resourceIds.filter(id => {
+			const cacheKey = getResourceCacheKey(id);
+			return !queryClient.getQueryData(cacheKey);
+		});
+
+		if (uncachedResourceIds.length === 0) {
+			// If all resources have cached articles, combine and return them
+			const combinedArticles: IArticle[] = [];
+			resourceIds.forEach(resourceId => {
+				const cacheKey = getResourceCacheKey(resourceId);
+				const resourceArticles = queryClient.getQueryData<IArticle[]>(cacheKey);
+				if (resourceArticles) {
+					combinedArticles.push(...resourceArticles);
+				}
+			});
+			return combinedArticles;
+		}
+
+		// Fetch data for uncached resource IDs
+		const articlesData = await fetchArticlesForResources(uncachedResourceIds);
+
+		// Create a map of all articles by ID for parent lookups
+		const articlesById = new Map<number, IArticle>();
+		articlesData.forEach(article => {
+			articlesById.set(article.id, article);
+		});
+
+		// Cache articles by resource ID, resolving parent relationships
+		articlesData.forEach(article => {
+			let resourceId = article.resource_id;
+
+			// If no resource_id but has parent_mapping_id, try to get resource_id from parent
+			if (!resourceId && article.parent_mapping_id) {
+				let parentArticle = articlesById.get(article.parent_mapping_id);
+				// Follow the parent chain to find a resource_id
+				while (parentArticle && !resourceId) {
+					resourceId = parentArticle.resource_id;
+					if (!resourceId && parentArticle.parent_mapping_id) {
+						parentArticle = articlesById.get(parentArticle.parent_mapping_id);
+					} else {
+						break;
+					}
+				}
+			}
+
+			// Associate the article with its resource, even if determined from parent
+			if (resourceId) {
+				const cacheKey = getResourceCacheKey(resourceId);
+				const existingData = queryClient.getQueryData<IArticle[]>(cacheKey) || [];
+				if (!existingData.some(a => a.id === article.id)) {
+					queryClient.setQueryData(cacheKey, [...existingData, article]);
+				}
+			}
+		});
+
+		// Return combined articles for all requested resources
+		const combinedArticles: IArticle[] = [];
+		resourceIds.forEach(resourceId => {
+			const cacheKey = getResourceCacheKey(resourceId);
+			const resourceArticles = queryClient.getQueryData<IArticle[]>(cacheKey);
+			if (resourceArticles) {
+				combinedArticles.push(...resourceArticles);
+			}
+		});
+
+		return combinedArticles;
+	};
+
+	return useQuery({
+		queryKey: ['resourceArticles', resourceIds.sort().join(',')],
+		queryFn: fetchArticles,
+	});
 }

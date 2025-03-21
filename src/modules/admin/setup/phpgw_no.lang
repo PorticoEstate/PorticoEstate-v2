@@ -130,7 +130,7 @@ enable debug-messages	admin	no	Aktiver feilsøkingsmeldinger
 cancel testjob!	admin	no	Kanseller testjobb!
 start testjob!	admin	no	Start testjobb!
 for the times above	admin	no	For tidene over
-the testjob sends you a mail everytime it is called 	admin	no	Testjobben sender deg en e-post hver gang den blir kjørt
+the testjob sends you a mail everytime it is called	admin	no	Testjobben sender deg en e-post hver gang den blir kjørt
 jobs	admin	no	Jobber
 next run	admin	no	Neste kjøring
 times	admin	no	Tider

@@ -1,7 +1,8 @@
 import {IBuilding} from "@/service/types/Building";
 
-
-
+/**
+ * Full search data interface including all fields returned by the API
+ */
 export interface ISearchDataAll {
 	activities: ISearchDataActivity[];
 	buildings: ISearchDataBuilding[];
@@ -14,6 +15,31 @@ export interface ISearchDataAll {
 	resource_category_activity: unknown[];
 	towns: ISearchDataTown[];
 	organizations: ISearchOrganization[];
+}
+
+/**
+ * Optimized search data interface with only the fields used by React components
+ */
+export interface ISearchDataOptimized {
+	activities: ISearchDataActivity[];
+	buildings: ISearchDataBuilding[];
+	building_resources: ISearchDataBuildingResource[];
+	resources: ISearchResource[];
+	towns: ISearchDataTown[];
+	organizations: ISearchOrganization[];
+}
+
+/**
+ * Optimized resource interface with only the fields actually used in search component
+ */
+export interface ISearchResource {
+	id: number;
+	name: string;
+	activity_id: number | null;
+	active: number;
+	simple_booking: number | null;
+	deactivate_calendar: number;
+	deactivate_application: number;
 }
 
 export interface ISearchDataTown {
@@ -30,11 +56,11 @@ export interface ISearchDataActivity {
 	id: number;
 	parent_id: number; // can be related to other activity
 	name: string;
-	description: string;
+	// description: string;
 	active: 1 | 0;
 }
 
-export interface ISearchDataBuilding extends Pick<IBuilding,'id' | 'activity_id' | 'deactivate_calendar' | 'deactivate_application' | 'deactivate_sendmessage' | 'extra_kalendar' | 'name' | 'homepage' | 'location_code' | 'phone' | 'email' | 'tilsyn_name' | 'tilsyn_phone' | 'tilsyn_email' | 'tilsyn_name2' | 'tilsyn_phone2' | 'tilsyn_email2' | 'street' | 'zip_code' | 'district' | 'city' | 'calendar_text' | 'opening_hours'
+export interface ISearchDataBuilding extends Pick<IBuilding,'id' | 'activity_id' | 'deactivate_calendar' | 'deactivate_application' | 'deactivate_sendmessage' | 'extra_kalendar' | 'name' | 'location_code' | 'street' | 'zip_code' | 'district' | 'city'
 > {}
 
 export interface ISearchOrganization {

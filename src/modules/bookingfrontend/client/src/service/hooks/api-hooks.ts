@@ -24,7 +24,7 @@ import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
 import { IArticle } from "../types/api/order-articles.types";
-import {ISearchDataAll} from "@/service/types/api/search.types";
+import {ISearchDataAll, ISearchDataOptimized} from "@/service/types/api/search.types";
 // require('log-timestamp');
 //
 // if(typeof window !== "undefined") {
@@ -383,14 +383,21 @@ export function useServerMessages(): UseQueryResult<IServerMessage[]> {
 }
 
 
-export function useSearchData(): UseQueryResult<ISearchDataAll> {
+/**
+ * Hook to fetch search data using the optimized endpoint
+ * @param options - Query options including initialData for server-side rendering
+ */
+export function useSearchData(options?: { 
+	initialData?: ISearchDataOptimized 
+}): UseQueryResult<ISearchDataOptimized> {
 	return useQuery(
 		{
 			queryKey: ['searchData'],
 			queryFn: () => fetchSearchData(), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
-			staleTime: 60 * 60 * 1000,
+			staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour
 			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			initialData: options?.initialData, // Use server-side fetched data if available
 		}
 	);
 }

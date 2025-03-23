@@ -1,14 +1,13 @@
 import React, {FC, useMemo} from 'react';
-import {Badge, Button, Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
-import {ISearchDataBuilding} from "@/service/types/api/search.types";
-import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
+import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
+import {ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import {CircleFillIcon, LayersIcon} from "@navikt/aksel-icons";
+import {LayersIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 
 interface ResourceResultItemProps {
-	resource: IResource & { building?: ISearchDataBuilding };
+	resource: ISearchResource & { building?: ISearchDataBuilding };
 }
 
 const DividerCircle = () => <svg width="6" height="6" viewBox="0 0 6 6" fill="none" xmlns="http://www.w3.org/2000/svg">

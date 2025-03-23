@@ -3,15 +3,14 @@ import React, {FC, useMemo, useState, useEffect} from 'react';
 import {useSearchData} from "@/service/hooks/api-hooks";
 import {IBuilding} from "@/service/types/Building";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
-import {DateTime} from 'luxon';
 import styles from './resource-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import ColourCircle from '@/components/building-calendar/modules/colour-circle/colour-circle';
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
-import {ISearchDataBuilding} from '@/service/types/api/search.types';
+import {ISearchDataBuilding, ISearchDataOptimized, ISearchResource} from '@/service/types/api/search.types';
 import ResourceResultItem from "@/components/search/resource/resource-result-item";
 
 interface ResourceSearchProps {
+	initialSearchData?: ISearchDataOptimized;
 }
 
 // Interface for localStorage search state
@@ -25,16 +24,18 @@ interface StoredSearchState {
 const STORAGE_KEY = 'resource_search_state';
 const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const ResourceSearch: FC<ResourceSearchProps> = () => {
+const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
     // Initialize state for search filters
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
     const [date, setDate] = useState<Date>(new Date());
     const [where, setWhere] = useState<IBuilding['district'] | ''>('');
 
-    // Fetch all search data
-    const {data: searchData, isLoading, error} = useSearchData();
+    // Fetch all search data, using initialSearchData as default
+    const {data: searchData, isLoading, error} = useSearchData({
+        initialData: initialSearchData
+    });
     const t = useTrans();
-    
+
     // Load saved search state from localStorage on initial render
     useEffect(() => {
         // Only run in browser environment
@@ -43,7 +44,7 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
                 const savedState = localStorage.getItem(STORAGE_KEY);
                 if (savedState) {
                     const parsedState: StoredSearchState = JSON.parse(savedState);
-                    
+
                     // Check if state is still valid (not expired)
                     const now = Date.now();
                     if (now - parsedState.timestamp < STORAGE_TTL) {
@@ -79,7 +80,7 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
     const resourcesWithBuildings = useMemo(() => {
         if (!searchData) return [];
 
-        const result: Array<IResource & { building?: ISearchDataBuilding }> = [];
+        const result: Array<ISearchResource & { building?: ISearchDataBuilding }> = [];
 
         // Create a mapping of building_id to building
         const buildingMap = new Map<number, ISearchDataBuilding>();
@@ -109,7 +110,7 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
 
     // Calculate similarity score for sorting
     const calculateSimilarity = (
-        resource: IResource & { building?: ISearchDataBuilding },
+        resource: ISearchResource & { building?: ISearchDataBuilding },
         query: string
     ): number => {
         const resourceName = resource.name.toLowerCase();
@@ -205,13 +206,13 @@ const ResourceSearch: FC<ResourceSearchProps> = () => {
         setTextSearchQuery('');
         setWhere('');
         setDate(new Date());
-        
+
         // Clear localStorage when filters are reset
         if (typeof window !== 'undefined') {
             localStorage.removeItem(STORAGE_KEY);
         }
     };
-    
+
     // Save search state to localStorage whenever it changes
     useEffect(() => {
         // Only save if there's actually something to save

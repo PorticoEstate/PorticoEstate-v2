@@ -4,10 +4,11 @@ import {useSearchData} from "@/service/hooks/api-hooks";
 import {Textfield, Button, Chip, Spinner} from '@digdir/designsystemet-react';
 import styles from './organization-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import {ISearchOrganization} from '@/service/types/api/search.types';
+import {ISearchDataOptimized, ISearchOrganization} from '@/service/types/api/search.types';
 import OrganizationResultItem from "./organization-result-item";
 
 interface OrganizationSearchProps {
+	initialSearchData?: ISearchDataOptimized;
 }
 
 // Interface for localStorage search state
@@ -20,13 +21,15 @@ interface StoredSearchState {
 const STORAGE_KEY = 'organization_search_state';
 const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const OrganizationSearch: FC<OrganizationSearchProps> = () => {
+const OrganizationSearch: FC<OrganizationSearchProps> = ({ initialSearchData }) => {
 	// Initialize state for search filters
 	const [textSearchQuery, setTextSearchQuery] = useState<string>('');
 	const [where, setWhere] = useState<string>('');
 
-	// Fetch all search data
-	const {data: searchData, isLoading, error} = useSearchData();
+	// Fetch all search data, using initialSearchData as default
+	const {data: searchData, isLoading, error} = useSearchData({
+		initialData: initialSearchData
+	});
 	const t = useTrans();
 
 	// Load saved search state from localStorage on initial render

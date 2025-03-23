@@ -24,6 +24,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 
 	$group->get('/userhelper/callback[/{params:.*}]', UserHelper::class . ':process_callback');
 	$group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
+	$group->get('/searchdataalloptimised[/{params:.*}]', DataStore::class . ':SearchDataAllOptimised');
 	$group->group('/buildings', function (RouteCollectorProxy $group)
 	{
 		$group->get('', BuildingController::class . ':index');

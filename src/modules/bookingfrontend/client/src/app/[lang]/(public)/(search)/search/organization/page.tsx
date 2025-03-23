@@ -1,6 +1,11 @@
 import {FC} from 'react';
 import OrganizationSearch from '@/components/search/organization/organization-search';
 import {getTranslation} from '@/app/i18n';
+import { fetchSearchData } from "@/service/api/api-utils";
+import { ISearchDataOptimized } from "@/service/types/api/search.types";
+
+// Revalidate the page every 1 hour
+export const revalidate = 3600;
 
 export async function generateMetadata({
 										   params: {lang},
@@ -21,12 +26,15 @@ interface OrganizationSearchPageProps {
 }
 
 const OrganizationSearchPage: FC<OrganizationSearchPageProps> = async ({params}) => {
+	// Fetch search data server-side
+	const initialSearchData: ISearchDataOptimized = await fetchSearchData();
+	
 	return (
 		<div>
 			{/*<Heading level={1} data-size="large">*/}
 			{/*  {t('bookingfrontend.search_organizations')}*/}
 			{/*</Heading>*/}
-			<OrganizationSearch/>
+			<OrganizationSearch initialSearchData={initialSearchData}/>
 		</div>
 	);
 };

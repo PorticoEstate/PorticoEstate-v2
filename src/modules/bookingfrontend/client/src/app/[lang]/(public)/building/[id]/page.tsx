@@ -57,10 +57,10 @@ const BuildingShow = async (props: BuildingShowProps) => {
     return (
         <main>
             <BuildingHeader building={building}/>
-            <BuildingResources building={building}/>
             {/*<hr className={`my-2 mx-standard`}/>*/}
 
             <section className={'mx-standard my-2'}>
+				<BuildingResources building={building}/>
                 <DescriptionAccordion description_json={building.description_json}/>
                 <PhotosAccordion object={building} type={'building'}/>
                 {/*<BuildingDescription building={building}/>*/}

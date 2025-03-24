@@ -2,8 +2,19 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
 import {createInstance} from 'i18next';
 import {initReactI18next} from 'react-i18next/initReactI18next';
-import {getOptions} from '@/app/i18n/settings';
+import {getOptions, languages} from '@/app/i18n/settings';
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
+import {registerLocale, setDefaultLocale} from "react-datepicker";
+import {nb, nn, enGB} from 'date-fns/locale';
+
+// Register locales for DatePicker
+registerLocale('no', nb);
+registerLocale('nb', nb);
+registerLocale('nn', nn);
+registerLocale('en', enGB);
+
+// Set Norwegian as default
+setDefaultLocale('no');
 
 interface TranslationContextType {
     t: (key: string, options?: any) => string;

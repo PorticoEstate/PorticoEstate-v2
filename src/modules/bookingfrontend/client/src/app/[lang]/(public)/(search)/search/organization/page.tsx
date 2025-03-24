@@ -1,7 +1,7 @@
 import {FC} from 'react';
 import OrganizationSearch from '@/components/search/organization/organization-search';
 import {getTranslation} from '@/app/i18n';
-import { fetchSearchData } from "@/service/api/api-utils";
+import { fetchSearchData } from "@/service/api/api-utils-static";
 import { ISearchDataOptimized } from "@/service/types/api/search.types";
 
 // Revalidate the page every 1 hour
@@ -28,7 +28,7 @@ interface OrganizationSearchPageProps {
 const OrganizationSearchPage: FC<OrganizationSearchPageProps> = async ({params}) => {
 	// Fetch search data server-side
 	const initialSearchData: ISearchDataOptimized = await fetchSearchData();
-	
+
 	return (
 		<div>
 			{/*<Heading level={1} data-size="large">*/}

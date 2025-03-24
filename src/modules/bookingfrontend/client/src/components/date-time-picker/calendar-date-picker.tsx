@@ -4,6 +4,7 @@ import {CalendarIcon, ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-ico
 import {Button, Field, Input, Label, Select} from "@digdir/designsystemet-react";
 import styles from './calendar-date-picker.module.scss';
 import {DateTime} from "luxon";
+import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
 
 interface CalendarDatePickerProps {
 	currentDate: Date;
@@ -39,7 +40,7 @@ interface TimePickerProps {
 
 const TimePicker: FC<TimePickerProps & { minTime?: string; maxTime?: string }> =
 	({date, onChangeDate, intervals = 30, minTime, maxTime}) => {
-
+		const t= useTrans();
 		const getHourRange = () => {
 			const minHour = minTime ? parseInt(minTime.split(':')[0]) : 0;
 			const maxHour = maxTime ? parseInt(maxTime.split(':')[0]) : 23;
@@ -89,7 +90,7 @@ const TimePicker: FC<TimePickerProps & { minTime?: string; maxTime?: string }> =
 			<div className={styles.timeInput}>
 				<div className={styles.timeColumns}>
 					<div className={styles.timeColumn}>
-						<div className={styles.timeColumnHeader}>Timer</div>
+						<div className={styles.timeColumnHeader}>{t('bookingfrontend.hour')}</div>
 						<div className={styles.timeColumnList} ref={hoursListRef}>
 							{hours.map(hour => (
 								<div
@@ -106,7 +107,7 @@ const TimePicker: FC<TimePickerProps & { minTime?: string; maxTime?: string }> =
 						</div>
 					</div>
 					<div className={styles.timeColumn}>
-						<div className={styles.timeColumnHeader}>Minutter</div>
+						<div className={styles.timeColumnHeader}>{t('bookingfrontend.minute')}</div>
 						<div className={styles.timeColumnList} ref={minutesListRef}>
 							{minutes.map(minute => (
 								<div
@@ -136,71 +137,77 @@ const CustomHeader: FC<CustomHeaderProps> = ({
 												 increaseMonth,
 												 prevMonthButtonDisabled,
 												 nextMonthButtonDisabled
-											 }) => (
-	<div className={styles.header}>
-		<Button
-			onClick={decreaseMonth}
-			disabled={prevMonthButtonDisabled}
-			className={styles.navButton}
-			data-size="sm"
-			variant="tertiary"
-			icon={true}
-			style={{borderRadius: "50%"}}
-		>
-			<ChevronLeftIcon style={{
-				height: '100%',
-				width: '100%'
-			}}/>
-		</Button>
+											 }) => {
+	// Get current language from i18n via HTML attribute
+	const { i18n } = useClientTranslation();
+	const currentLang = i18n.language || 'no';
 
-		<div className={styles.selects}>
-			<Select
-				className={styles.select}
-				value={date.getMonth()}
-				onChange={({target: {value}}) => changeMonth(parseInt(value, 10))}
+	return (
+		<div className={styles.header}>
+			<Button
+				onClick={decreaseMonth}
+				disabled={prevMonthButtonDisabled}
+				className={styles.navButton}
+				data-size="sm"
+				variant="tertiary"
+				icon={true}
+				style={{borderRadius: "50%"}}
 			>
-				{Array.from({length: 12}, (_, i) => i).map((month) => (
-					<Select.Option key={month} value={month}>
-						{new Date(date.getFullYear(), month).toLocaleString('nb', {
-							month: 'short',
-						})}
-					</Select.Option>
-				))}
-			</Select>
-			<Select
-				className={styles.select}
-				value={date.getFullYear()}
-				onChange={({target: {value}}) => changeYear(parseInt(value, 10))}
+				<ChevronLeftIcon style={{
+					height: '100%',
+					width: '100%'
+				}}/>
+			</Button>
+
+			<div className={styles.selects}>
+				<Select
+					className={styles.select}
+					value={date.getMonth()}
+					onChange={({target: {value}}) => changeMonth(parseInt(value, 10))}
+				>
+					{Array.from({length: 12}, (_, i) => i).map((month) => (
+						<Select.Option key={month} value={month}>
+							{new Date(date.getFullYear(), month).toLocaleString(currentLang, {
+								month: 'short',
+							})}
+						</Select.Option>
+					))}
+				</Select>
+				<Select
+					className={styles.select}
+					value={date.getFullYear()}
+					onChange={({target: {value}}) => changeYear(parseInt(value, 10))}
+				>
+					{Array.from(
+						{length: 12},
+						(_, i) => date.getFullYear() - 5 + i
+					).map((year) => (
+						<Select.Option key={year} value={year}>
+							{year}
+						</Select.Option>
+					))}
+				</Select>
+
+
+			</div>
+
+			<Button
+				onClick={increaseMonth}
+				disabled={nextMonthButtonDisabled}
+				className={styles.navButton}
+				data-size="sm"
+				variant="tertiary"
+				icon={true}
+				style={{borderRadius: "50%"}}
 			>
-				{Array.from(
-					{length: 12},
-					(_, i) => date.getFullYear() - 5 + i
-				).map((year) => (
-					<Select.Option key={year} value={year}>
-						{year}
-					</Select.Option>
-				))}
-			</Select>
-
-
+				<ChevronRightIcon style={{
+					height: '100%',
+					width: '100%'
+				}}/>
+			</Button>
 		</div>
-
-		<Button
-			onClick={increaseMonth}
-			disabled={nextMonthButtonDisabled}
-			className={styles.navButton}
-			data-size="sm"
-			variant="tertiary"
-			icon={true}
-			style={{borderRadius: "50%"}}
-		>
-			<ChevronRightIcon style={{
-				height: '100%',
-				width: '100%'
-			}}/>
-		</Button>
-	</div>
-);
+	);
+};
 
 
 const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
@@ -213,8 +220,12 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 															 maxTime,
 															 minTime
 														 }) => {
+	// Get current language from i18n
+	const { i18n } = useClientTranslation();
+	const currentLang = i18n.language || 'no';
+
 	const formatSelectedDate = (showYear?: boolean) => {
-		const luxonDate = DateTime.fromJSDate(currentDate).setLocale('nb');
+		const luxonDate = DateTime.fromJSDate(currentDate).setLocale(currentLang);
 		const timeStr = showTimeSelect ? luxonDate.toFormat(' HH:mm') : '';
 
 		switch (view) {
@@ -249,6 +260,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 				shouldCloseOnSelect={false}
 				dateFormat={dateFormat}
 				showTimeInput={showTimeSelect}
+				locale={currentLang}
 				// showTimeSelectOnly
 				// timeIntervals={timeIntervals}
 				customTimeInput={

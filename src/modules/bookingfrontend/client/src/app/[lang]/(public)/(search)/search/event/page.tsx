@@ -1,5 +1,5 @@
 import {FC} from 'react';
-import { fetchSearchData } from "@/service/api/api-utils";
+import { fetchSearchData } from "@/service/api/api-utils-static";
 import { ISearchDataOptimized } from "@/service/types/api/search.types";
 
 // Revalidate the page every 1 hour
@@ -14,7 +14,7 @@ interface EventSearchProps {
 const EventSearch: FC<EventSearchProps> = async () => {
     // Fetch search data server-side
     const initialSearchData: ISearchDataOptimized = await fetchSearchData();
-    
+
     return (
         <div>
             {/* Event search component will be implemented later */}

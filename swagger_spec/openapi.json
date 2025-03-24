@@ -913,11 +913,12 @@
                     {
                         "name": "date",
                         "in": "query",
-                        "description": "Single date to get schedule for",
+                        "description": "Single date to get schedule for (format: YYYY-MM-DD)",
                         "required": false,
                         "schema": {
                             "type": "string",
-                            "format": "date"
+                            "format": "date",
+                            "example": "2025-03-17"
                         }
                     },
                     {
@@ -929,30 +930,148 @@
                             "type": "array",
                             "items": {
                                 "type": "string",
-                                "format": "date"
+                                "format": "date",
+                                "example": "2025-03-17"
                             }
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Building schedules mapped by week",
+                        "description": "Building schedules mapped by week start date",
                         "content": {
                             "application\/json": {
                                 "schema": {
                                     "type": "object",
                                     "additionalProperties": {
+                                        "description": "Weekly schedule array keyed by week start date (Monday)",
                                         "type": "array",
                                         "items": {
-                                            "$ref": "#\/components\/schemas\/BuildingSchedule"
+                                            "oneOf": [
+                                                {
+                                                    "$ref": "#\/components\/schemas\/Event"
+                                                },
+                                                {
+                                                    "$ref": "#\/components\/schemas\/Booking"
+                                                },
+                                                {
+                                                    "$ref": "#\/components\/schemas\/Allocation"
+                                                }
+                                            ]
                                         }
                                     }
+                                },
+                                "example": {
+                                    "2025-03-17": [
+                                        {
+                                            "type": "allocation",
+                                            "organization_id": 733,
+                                            "season_id": 1024,
+                                            "id_string": "497574",
+                                            "additional_invoice_information": "",
+                                            "organization_name": "Skjold Nesttun Janitsjar",
+                                            "organization_shortname": "",
+                                            "id": 497574,
+                                            "active": 1,
+                                            "from_": "2025-03-23T17:00:00+01:00",
+                                            "to_": "2025-03-23T18:00:00+01:00",
+                                            "completed": 0,
+                                            "building_name": "Fana kulturhus",
+                                            "skip_bas": 0,
+                                            "resources": [
+                                                {
+                                                    "id": 125,
+                                                    "name": "Kultursalen",
+                                                    "activity_id": 1
+                                                },
+                                                {
+                                                    "id": 106,
+                                                    "name": "Sm\u00e5salen",
+                                                    "activity_id": 1
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "booking",
+                                            "group_id": 995,
+                                            "allocation_id": 497594,
+                                            "season_id": 1024,
+                                            "activity_id": 1,
+                                            "reminder": 1,
+                                            "secret": "265a4cc74c8c2e371e4ecd8698499f2b",
+                                            "group_name": "Skjold Nesttun Janitsjar",
+                                            "activity_name": "Kultur",
+                                            "id": 215652,
+                                            "active": 1,
+                                            "from_": "2025-03-20T16:00:00+01:00",
+                                            "to_": "2025-03-20T20:00:00+01:00",
+                                            "completed": 0,
+                                            "building_name": "Fana kulturhus",
+                                            "skip_bas": 0,
+                                            "resources": [
+                                                {
+                                                    "id": 482,
+                                                    "name": "Anretning",
+                                                    "activity_id": 1
+                                                },
+                                                {
+                                                    "id": 125,
+                                                    "name": "Kultursalen",
+                                                    "activity_id": 1
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid date format",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid date format: 2025-13-45"
+                                        }
+                                    },
+                                    "type": "object"
                                 }
                             }
                         }
                     },
                     "404": {
-                        "description": "Building not found"
+                        "description": "Building not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Building not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2411,6 +2530,11 @@
                             "$ref": "#\/components\/schemas\/Resource"
                         }
                     },
+                    "type": {
+                        "description": "Entity type identifier",
+                        "type": "string",
+                        "example": "allocation"
+                    },
                     "organization_id": {
                         "type": "integer"
                     },
@@ -2655,6 +2779,11 @@
                         "items": {
                             "$ref": "#\/components\/schemas\/Resource"
                         }
+                    },
+                    "type": {
+                        "description": "Entity type identifier",
+                        "type": "string",
+                        "example": "booking"
                     },
                     "group_id": {
                         "type": "integer"
@@ -3030,6 +3159,11 @@
                         "items": {
                             "$ref": "#\/components\/schemas\/Resource"
                         }
+                    },
+                    "type": {
+                        "description": "Entity type identifier",
+                        "type": "string",
+                        "example": "event"
                     },
                     "activity_id": {
                         "type": "integer"

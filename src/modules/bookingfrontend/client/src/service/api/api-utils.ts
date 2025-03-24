@@ -8,6 +8,7 @@ import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
+import {ISearchDataOptimized} from "@/service/types/api/search.types";
 import {IArticle} from "@/service/types/api/order-articles.types";
 
 
@@ -175,6 +176,14 @@ export async function fetchArticlesForResources(resource_ids: number[]): Promise
     const response = await fetch(url);
     const result = await response.json();
     return result;
+}
+
+export async function fetchSearchDataClient(): Promise<ISearchDataOptimized> {
+	const url = phpGWLink(['bookingfrontend', 'searchdataalloptimised']);
+	const response = await fetch(url);
+	const result = await response.json();
+	console.log("SEARCH DATA FETCHED")
+	return result;
 }
 
 export async function fetchInvoices(): Promise<ICompletedReservation[]> {

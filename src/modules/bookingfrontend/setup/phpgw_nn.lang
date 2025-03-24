@@ -519,7 +519,12 @@ schedule	bookingfrontend	nn	Vekeplan
 Search available resources	bookingfrontend	nn	Søk etter tilgjengelige lokaler
 Search building, resource, organization	bookingfrontend	nn	Søk anlegg, lokale, organisasjon
 Search results	bookingfrontend	nn	Søkeresultat
+search_clear_filters	bookingfrontend	nn	Nullstill filter
 search_for_like_minded_people	bookingfrontend	nn	Er du på jakt etter nokon som er interessert i det same som deg? Søk på namn til lag eller organisasjon, eller filtrer på aktivitet eller område
+search_no_organizations_match	bookingfrontend	nn	Ingen organisasjonar passar søket ditt
+search_no_resources_match	bookingfrontend	nn	Ingen ressursar passar søket ditt
+search_organizations	bookingfrontend	nn	Søk organisasjonar
+search_use_filters_to_search	bookingfrontend	nn	Bruk filter for å finne ressursar
 season	bookingfrontend	nn	Sesong
 season name	bookingfrontend	nn	Namn på sesong
 seasons	bookingfrontend	nn	Sesongar

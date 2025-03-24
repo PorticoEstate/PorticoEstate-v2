@@ -9,6 +9,7 @@ import logo from '/public/logo_aktiv_kommune.png';
 import logo_horizontal from '/public/logo_aktiv_kommune_horizontal.png';
 import Image from "next/image";
 import ShoppingCartFab from "@/components/layout/header/shopping-cart/shopping-cart-fab";
+import Link from "next/link";
 
 
 interface HeaderProps {
@@ -18,7 +19,7 @@ const Header = async (props: HeaderProps) => {
 
     return (
         <nav className={`${styles.navbar}`}>
-            <ClientPHPGWLink strURL={'bookingfrontend/'} className={styles.logo}>
+            <Link href={'/'} className={styles.logo}>
                 <Image src={logo_horizontal}
                        alt="Aktiv kommune logo"
                        width={192}
@@ -27,7 +28,7 @@ const Header = async (props: HeaderProps) => {
                        alt="Aktiv kommune logo"
                        width={80}
                        className={`${styles.logoImg} ${styles.logoImgDesktop}`}/>
-            </ClientPHPGWLink>
+            </Link>
             {/*${baseUrl}*/}
             <HeaderMenuContent>
                 <LanguageSwitcher/>

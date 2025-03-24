@@ -171,7 +171,6 @@ class BuildingController extends DocumentController
 		}
 	}
 
-
 	/**
 	 * @OA\Get(
 	 *     path="/bookingfrontend/buildings/{id}/schedule",
@@ -188,8 +187,8 @@ class BuildingController extends DocumentController
 	 *         name="date",
 	 *         in="query",
 	 *         required=false,
-	 *         description="Single date to get schedule for",
-	 *         @OA\Schema(type="string", format="date")
+	 *         description="Single date to get schedule for (format: YYYY-MM-DD)",
+	 *         @OA\Schema(type="string", format="date", example="2025-03-17")
 	 *     ),
 	 *     @OA\Parameter(
 	 *         name="dates[]",
@@ -198,23 +197,109 @@ class BuildingController extends DocumentController
 	 *         description="Array of dates to get schedules for (overrides single date if both provided)",
 	 *         @OA\Schema(
 	 *             type="array",
-	 *             @OA\Items(type="string", format="date")
+	 *             @OA\Items(type="string", format="date", example="2025-03-17")
 	 *         )
 	 *     ),
 	 *     @OA\Response(
 	 *         response=200,
-	 *         description="Building schedules mapped by week",
+	 *         description="Building schedules mapped by week start date",
 	 *         @OA\JsonContent(
 	 *             type="object",
 	 *             @OA\AdditionalProperties(
+	 *                 description="Weekly schedule array keyed by week start date (Monday)",
 	 *                 type="array",
-	 *                 @OA\Items(ref="#/components/schemas/BuildingSchedule")
-	 *             )
+	 *                 @OA\Items(
+	 *                     oneOf={
+	 *                         @OA\Schema(ref="#/components/schemas/Event"),
+	 *                         @OA\Schema(ref="#/components/schemas/Booking"),
+	 *                         @OA\Schema(ref="#/components/schemas/Allocation")
+	 *                     }
+	 *                 )
+	 *             ),
+	 *             example={
+	 *                 "2025-03-17": {
+	 *                     {
+	 *                         "type": "allocation",
+	 *                         "organization_id": 733,
+	 *                         "season_id": 1024,
+	 *                         "id_string": "497574",
+	 *                         "additional_invoice_information": "",
+	 *                         "organization_name": "Skjold Nesttun Janitsjar",
+	 *                         "organization_shortname": "",
+	 *                         "id": 497574,
+	 *                         "active": 1,
+	 *                         "from_": "2025-03-23T17:00:00+01:00",
+	 *                         "to_": "2025-03-23T18:00:00+01:00",
+	 *                         "completed": 0,
+	 *                         "building_name": "Fana kulturhus",
+	 *                         "skip_bas": 0,
+	 *                         "resources": {
+	 *                             {
+	 *                                 "id": 125,
+	 *                                 "name": "Kultursalen",
+	 *                                 "activity_id": 1
+	 *                             },
+	 *                             {
+	 *                                 "id": 106,
+	 *                                 "name": "Småsalen",
+	 *                                 "activity_id": 1
+	 *                             }
+	 *                         }
+	 *                     },
+	 *                     {
+	 *                         "type": "booking",
+	 *                         "group_id": 995,
+	 *                         "allocation_id": 497594,
+	 *                         "season_id": 1024,
+	 *                         "activity_id": 1,
+	 *                         "reminder": 1,
+	 *                         "secret": "265a4cc74c8c2e371e4ecd8698499f2b",
+	 *                         "group_name": "Skjold Nesttun Janitsjar",
+	 *                         "activity_name": "Kultur",
+	 *                         "id": 215652,
+	 *                         "active": 1,
+	 *                         "from_": "2025-03-20T16:00:00+01:00",
+	 *                         "to_": "2025-03-20T20:00:00+01:00",
+	 *                         "completed": 0,
+	 *                         "building_name": "Fana kulturhus",
+	 *                         "skip_bas": 0,
+	 *                         "resources": {
+	 *                             {
+	 *                                 "id": 482,
+	 *                                 "name": "Anretning",
+	 *                                 "activity_id": 1
+	 *                             },
+	 *                             {
+	 *                                 "id": 125,
+	 *                                 "name": "Kultursalen",
+	 *                                 "activity_id": 1
+	 *                             }
+	 *                         }
+	 *                     }
+	 *                 }
+	 *             }
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Invalid date format",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Invalid date format: 2025-13-45")
 	 *         )
 	 *     ),
 	 *     @OA\Response(
 	 *         response=404,
-	 *         description="Building not found"
+	 *         description="Building not found",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Building not found")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Server error",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string")
+	 *         )
 	 *     )
 	 * )
 	 */

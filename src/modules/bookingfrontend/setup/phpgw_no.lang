@@ -204,6 +204,7 @@ delete_rentobject	bookingfrontend	no	Slette leieobjekt
 delete_rentobject_body	bookingfrontend	no	Er du sikker på du vil slette dette utleieobjektet fra handlekurven?
 Deleted on	bookingfrontend	no	Avbestilling i
 description	bookingfrontend	no	Beskrivelse
+deselect_all	bookingfrontend	no	Velg ingen
 district	bookingfrontend	no	Område
 Do you really want to collect users	booking	no	Vil du virkelig samle brukere?
 do you really want to collect users again	booking	no	Vil du virkelig samle brukere igjen?
@@ -518,7 +519,12 @@ schedule	bookingfrontend	no	Ukeplan
 Search available resources	bookingfrontend	no	Søk etter tilgjengelige lokaler
 Search building, resource, organization	bookingfrontend	no	Søk anlegg, lokale, organisasjon
 Search results	bookingfrontend	no	Søkeresultat
+search_clear_filters	bookingfrontend	no	Nullstill filtre
 search_for_like_minded_people	bookingfrontend	no	Er du på jakt etter noen som er interessert i det samme som deg? Søk på navn til lag eller organisasjon, eller filtrer på aktivitet eller område
+search_no_organizations_match	bookingfrontend	no	Ingen organisasjoner matcher søket ditt
+search_no_resources_match	bookingfrontend	no	Ingen ressurser matcher søket ditt
+search_organizations	bookingfrontend	no	Søk organisasjoner
+search_use_filters_to_search	bookingfrontend	no	Bruk filtre for å finne ressurser
 season	bookingfrontend	no	Sesong
 season name	bookingfrontend	no	Navn på sesong
 seasons	bookingfrontend	no	Sesonger

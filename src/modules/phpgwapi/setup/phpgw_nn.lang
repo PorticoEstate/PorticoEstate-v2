@@ -145,6 +145,7 @@ error	common	nn	Feil
 error creating %1 %2 directory	common	nn	Feil ved oppretting av %1 %2 katalog
 error deleting %1 %2 directory	common	nn	Feil ved sletting av %1 %2 katalog
 error renaming %1 %2 directory	common	nn	Feil ved endring av namn på %1 %2 katalog
+error_occurred	common	nn	Det oppstod ein feil
 error_report_system	common	nn	Feilmelding (om systemet)
 exit	common	nn	Avslutt
 expires	common	nn	Utløpsdato
@@ -413,6 +414,7 @@ todays date, eg. %1	common	nn	Dagens dato, %1
 toolbar	common	nn	Verktøy
 total	common	nn	Total
 true	common	nn	Sant
+try_again	common	nn	Prøv igjen
 tuesday	common	nn	Tysdag
 unable to load jquery script '%1' when attempting to load widget: '%2'	common	nn	Ikke i stand til å laste  jquery script '%1' på forsøk på å laste widget: '%2'
 up	common	nn	opp

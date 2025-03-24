@@ -15,6 +15,17 @@ else
 $_phpgw_domains = array_keys($phpgw_domain);
 $default_domain = $_phpgw_domains[0];
 
+if (isset($_POST['FormDomain']))
+{
+	//avoid confusion with cookies
+	unset($_COOKIE['domain']);
+	setcookie('domain', '', [
+		'expires' => time() - 3600, // 1 hour
+		'path' => '/',
+		'samesite' => 'Lax'
+	]);
+}
+
 if (isset($_POST['login']))	// on login
 {
 	$login = $_POST['login'];

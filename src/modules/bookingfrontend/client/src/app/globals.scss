@@ -6,6 +6,7 @@
 @import "../styles/link/link";
 @import "../styles/bs-containers/container.global";
 @import "../styles/hr.module";
+@import "../styles/digdir-utility/digdir-utility.module";
 
 
 body {
@@ -38,7 +39,15 @@ body {
 
 // Make select faded when disabled option selected
 select:not(:disabled):has(option:checked:disabled) {
-    color: color-mix(in srgb, currentColor var(--ds-opacity-disabled), transparent);
+	color: color-mix(in srgb, currentColor var(--ds-opacity-disabled), transparent);
+
+}
+
+select option:not([disabled]) {
+	color: var(--dsc-input-color);
+}
+select option:disabled {
+	color: color-mix(in srgb, var(--dsc-input-color) var(--ds-opacity-disabled), transparent);
 }
 
 .ds-details {

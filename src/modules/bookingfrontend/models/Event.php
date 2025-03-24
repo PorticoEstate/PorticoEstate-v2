@@ -16,6 +16,12 @@ use App\modules\bookingfrontend\models\helper\BaseScheduleEntity;
 class Event extends BaseScheduleEntity
 {
 	/**
+	 * @OA\Property(
+	 *     property="type",
+	 *     type="string",
+	 *     description="Entity type identifier",
+	 *     example="event"
+	 * )
 	 * @Expose
 	 * @Default("event")
 	 */

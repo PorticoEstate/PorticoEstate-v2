@@ -101,6 +101,40 @@ class DataStore
 		}
 	}
 
+
+	public function SearchDataAllOptimised(Request $request, Response $response): Response
+	{
+		try {
+			$data = [
+				'activities' => $this->getRowsAsArray("SELECT id, parent_id, name, active from bb_activity where active=1"),
+				'buildings' => $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
+					. " deactivate_sendmessage, extra_kalendar, name, location_code, street, zip_code, district, city"
+					. " FROM bb_building WHERE active=1"),
+				'building_resources' => $this->getRowsAsArray("SELECT * from bb_building_resource"),
+				'resources' => $this->getRowsAsArray("SELECT id, name, activity_id, active, simple_booking, deactivate_calendar,
+              deactivate_application
+              FROM bb_resource WHERE active=1 AND hidden_in_frontend=0 AND deactivate_calendar=0"),
+				'towns' => $this->getRowsAsArray("SELECT DISTINCT bb_building.id as b_id, bb_building.name as b_name, fm_part_of_town.id, fm_part_of_town.name FROM"
+					. " bb_building JOIN fm_locations ON bb_building.location_code = fm_locations.location_code"
+					. " JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1"
+					. " JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id"
+					. " where bb_building.active=1"),
+				'organizations' => $this->getRowsAsArray("SELECT id, organization_number, name, homepage, phone, email, co_address,"
+					. " street, zip_code, district, city, activity_id, show_in_portal"
+					. " FROM bb_organization WHERE active=1 AND show_in_portal=1"),
+			];
+
+			$response->getBody()->write(json_encode($data));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			// Handle database error (e.g., log the error, return an error response)
+			$error = "Error fetching data: " . $e->getMessage();
+			$response->getBody()->write(json_encode(['error' => $error]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+
 	public function getRowsAsArray($sql)
 	{
 		$values = array();

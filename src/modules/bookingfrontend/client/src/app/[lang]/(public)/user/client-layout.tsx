@@ -1,44 +1,30 @@
 'use client'
-import {FC, PropsWithChildren, ReactNode, useMemo} from "react";
+import {FC, PropsWithChildren, useMemo} from "react";
 import {useBookingUser} from "@/service/hooks/api-hooks";
-import {usePathname, useRouter} from "next/navigation";
+import {useRouter} from "next/navigation";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import {Spinner, Tabs, TabsTabProps} from "@digdir/designsystemet-react";
+import {Spinner, Tabs} from "@digdir/designsystemet-react";
 import styles from "@/components/layout/header/internal-nav/internal-nav.module.scss";
 import Link from "next/link";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faArrowLeft} from "@fortawesome/free-solid-svg-icons";
 import PageHeader from "@/components/page-header/page-header";
 import {userSubPages} from "@/app/[lang]/(public)/user/user-page-helper";
+import {LinkTab} from "@/components/util/LinkTab";
+import {useCurrentPath} from "@/service/hooks/path-hooks";
 
 interface UserLayoutProps extends PropsWithChildren {
 }
 
-interface LinkTabProps extends Omit<TabsTabProps, 'value'> {
-	href: string;
-	children: ReactNode;
-}
-
-const LinkTab = ({ href, children, ...props }: LinkTabProps) => {
-	return (
-		<Link href={href} passHref legacyBehavior>
-			<Tabs.Tab value={href} {...props}>
-				{children}
-			</Tabs.Tab>
-		</Link>
-	);
-}
-
 const UserLayout: FC<UserLayoutProps> = (props) => {
 	const user = useBookingUser();
-	const pathname = usePathname();
+	const pathname = useCurrentPath();
 	const router = useRouter();
 	const path = pathname.split('/')
 	const isMobile = useIsMobile();
 	const t = useTrans();
 
-	const currPath = '/' + (path.filter(a => a).slice(1).join('/'));
 
 	const links = useMemo(() => {
 		return userSubPages.filter(a => !a.needsDelegates || (user.data?.delegates?.length || 0) > 0);
@@ -59,7 +45,6 @@ const UserLayout: FC<UserLayoutProps> = (props) => {
 		return <Spinner aria-label={'Loading user'}/>
 	}
 
-
 	return (
 		<div>
 			{/* Show tabs for desktop, links for mobile */}
@@ -74,19 +59,17 @@ const UserLayout: FC<UserLayoutProps> = (props) => {
 				<div>
 					<PageHeader title={t('bookingfrontend.my page')} className={'mb-2'}/>
 
-					<Tabs value={currPath}>
+					<Tabs value={'/' + pathname}>
 						<Tabs.List>
 							{links.map((link) => {
 								const SVGIcon = link.icon;
 								const fullPath = '/user' + link.relativePath;
 
 								return (
-									<Link key={fullPath} href={fullPath} passHref legacyBehavior>
-										<Tabs.Tab value={fullPath}>
-											<SVGIcon fontSize='1.75rem' aria-hidden/>
-											{t(link.labelTag)}
-										</Tabs.Tab>
-									</Link>
+									<LinkTab href={fullPath} key={fullPath}>
+										<SVGIcon fontSize='1.75rem' aria-hidden/>
+										{t(link.labelTag)}
+									</LinkTab>
 								)
 							})}
 						</Tabs.List>

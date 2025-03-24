@@ -80,6 +80,8 @@ phpgw::import_class('booking.uicommon');
 				return $this->query();
 			}
 
+			phpgwapi_jquery::load_widget('numberformat');
+
 			$data = array(
 				'datatable_name' => $this->display_name,
 				'datatable' => array(
@@ -102,7 +104,8 @@ phpgw::import_class('booking.uicommon');
 						array(
 							'key' => 'total_cost',
 							'label' => lang('Total Cost'),
-						),
+							'formatter' => 'JqueryPortico.FormatterAmount2'
+							),
 						array(
 							'key' => 'created_on',
 							'label' => lang('Created'),

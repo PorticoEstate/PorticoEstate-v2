@@ -50,24 +50,24 @@ select option:disabled {
 	color: color-mix(in srgb, var(--dsc-input-color) var(--ds-opacity-disabled), transparent);
 }
 
-.ds-details {
-    border-radius: 0;
-    user-select: none;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    border-top: var(--dsc-details-border);
-    background-color: inherit;
-    u-summary {
-        border-radius: 0;
-    }
-    u-summary:not([aria-expanded="true"]) {
-        background-color: inherit;
-    }
-    >*:not(u-summary) {
-        background-color: white;
-    }
-}
+//.ds-details {
+//    border-radius: 0;
+//    user-select: none;
+//    border-left: none;
+//    border-right: none;
+//    border-bottom: none;
+//    border-top: var(--dsc-details-border);
+//    background-color: inherit;
+//    u-summary {
+//        border-radius: 0;
+//    }
+//    u-summary:not([aria-expanded="true"]) {
+//        background-color: inherit;
+//    }
+//    >*:not(u-summary) {
+//        background-color: white;
+//    }
+//}
 
 .fc-event-main {
     display: flex;

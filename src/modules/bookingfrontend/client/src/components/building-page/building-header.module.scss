@@ -9,11 +9,16 @@
             align-items: center;
         }
     }
-    .infoLine {
+	.infoLine {
+		flex-wrap: wrap;
+		margin-top: 0.5rem;
+
+	}
+    .infoLine, .infoLine span {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        margin-top: 0.5rem;
+
         @extend .text-overline;
     }
 }

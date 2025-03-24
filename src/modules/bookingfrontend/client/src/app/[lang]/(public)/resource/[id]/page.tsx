@@ -1,11 +1,11 @@
 import {notFound} from "next/navigation";
 import {fetchBuilding, fetchResource} from "@/service/api/building";
 import DescriptionAccordion from "@/components/building-page/description-accordion";
-import PhotosAccordion from "@/components/building-page/building-photos/photos-accordion";
 import ResourceHeader from "@/components/resource-page/resource-header";
 import TextAccordion from "@/components/building-page/text-accordion";
 import {getTranslation} from "@/app/i18n";
 import BuildingCalendar from "@/components/building-calendar";
+import BuildingPhotos from "@/components/building-page/building-photos/building-photos";
 
 interface ResourceParams {
     id: string;
@@ -65,12 +65,12 @@ const Resource = async (props: ResourceProps) => {
     return (
         <main>
             <ResourceHeader building={building} resource={resource}/>
-            <hr className={`my-2 mx-standard`}/>
+			<BuildingPhotos object={building} type={'building'} />
+
             <section className={'mx-standard my-2'}>
 
                 <DescriptionAccordion description_json={resource.description_json}/>
-                <PhotosAccordion object={resource} type={"resource"}/>
-                <TextAccordion text={resource.opening_hours} title={t('booking.opening hours')}/>
+				<TextAccordion text={resource.opening_hours} title={t('booking.opening hours')}/>
                 <TextAccordion text={resource.contact_info} title={t('bookingfrontend.contact information')}/>
             </section>
                 <BuildingCalendar building_id={`${building.id}`} resource_id={`${resourceId}`}/>

@@ -17,7 +17,7 @@ const BuildingResources = async (props: BuildingResourcesProps) => {
     const resources = await fetchBuildingResources(props.building.id, true)
     const {t} = await getTranslation()
     return (
-		<GSAccordion data-color={'brand1'}>
+		<GSAccordion data-color={'neutral'}>
 			<GSAccordion.Heading>
 				<h3>{t('bookingfrontend.rental_resources')}</h3>
 			</GSAccordion.Heading>
@@ -25,7 +25,7 @@ const BuildingResources = async (props: BuildingResourcesProps) => {
 				<div className={styles.resourcesGrid}>
 
                 {resources.map((res) =>
-                    <Button asChild key={res.id} variant={'secondary'} data-color={'brand1'}
+                    <Button asChild key={res.id} variant={'secondary'} data-color={'accent'}
                             className={'default'}>
                         <Link href={'/resource/' + res.id}>
                             <FontAwesomeIcon icon={faLayerGroup}/>{res.name}

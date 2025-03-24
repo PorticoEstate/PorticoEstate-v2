@@ -6,6 +6,7 @@ import {getOptions, languages} from '@/app/i18n/settings';
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
 import {registerLocale, setDefaultLocale} from "react-datepicker";
 import {nb, nn, enGB} from 'date-fns/locale';
+import { usePathname } from 'next/navigation';
 
 // Register locales for DatePicker
 registerLocale('no', nb);
@@ -49,6 +50,7 @@ const TranslationProvider: React.FC<TranslationProviderProps> = ({
                                                                  }) => {
     const {setLoadingState} = useLoadingContext();
     const [translationContext, setTranslationContext] = useState<TranslationContextType | null>(null);
+    const pathname = usePathname(); // This will trigger re-renders when path changes (including language changes)
 
     useEffect(() => {
         const initializeTranslations = async () => {
@@ -59,8 +61,20 @@ const TranslationProvider: React.FC<TranslationProviderProps> = ({
                 .use(initReactI18next)
                 .init(getOptions({ key: lang } as any));
 
-            // Add the server-side fetched translations
-            i18nInstance.addResourceBundle(lang, 'translation', initialTranslations, true, true);
+            // Add the server-side fetched translations with fresh fetch
+            const url = new URL(window.location.origin + `/bookingfrontend/lang/${lang}`);
+            url.searchParams.append('t', Date.now().toString()); // Cache-busting
+            
+            try {
+                const response = await fetch(url, { cache: 'no-store' });
+                const freshTranslations = await response.json();
+                
+                // Use the fresh translations instead of the initial ones
+                i18nInstance.addResourceBundle(lang, 'translation', freshTranslations, true, true);
+            } catch (e) {
+                // Fallback to initial translations if fetch fails
+                i18nInstance.addResourceBundle(lang, 'translation', initialTranslations, true, true);
+            }
 
             setTranslationContext({
                 t: i18nInstance.getFixedT(lang, 'translation'),
@@ -71,7 +85,7 @@ const TranslationProvider: React.FC<TranslationProviderProps> = ({
         };
 
         initializeTranslations();
-    }, [lang, initialTranslations, setLoadingState]);
+    }, [lang, initialTranslations, setLoadingState, pathname]); // Add pathname dependency to force refresh on route changes
 
     return (
         <TranslationContext.Provider value={translationContext}>

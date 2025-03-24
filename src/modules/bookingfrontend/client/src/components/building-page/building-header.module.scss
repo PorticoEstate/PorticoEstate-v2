@@ -1,15 +1,19 @@
+@import "../../styles/typography-vars.module";
+
 .buildingHeader {
     .buildingName {
-        h2 {
+        .heading {
             margin: 0;
             display: flex;
             gap: 0.5rem;
             align-items: center;
         }
     }
-    .buildingArea {
+    .infoLine {
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        margin-top: 0.5rem;
+        @extend .text-overline;
     }
 }

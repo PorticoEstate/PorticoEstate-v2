@@ -30,6 +30,7 @@
         "@fullcalendar/react": "^6.1.14",
         "@fullcalendar/timegrid": "^6.1.14",
         "@hookform/resolvers": "^3.9.1",
+        "@navikt/aksel-icons": "^7.17.4",
         "@next/env": "^14.2.7",
         "@porticoestate/design-tokens": "github:PorticoEstate/digdir-design-tokens",
         "@tanstack/match-sorter-utils": "^8.19.4",

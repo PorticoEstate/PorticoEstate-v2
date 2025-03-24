@@ -7,7 +7,7 @@ import ClientHeading from "@/app/[lang]/(public)/(search)/client-heading";
 import ServerMessages from '@/components/server-messages/server-messages';
 
 
-
+export const dynamic = 'force-dynamic';
 export default async function Layout(props: PropsWithChildren) {
 	const serverSettings = await fetchServerSettings();
 	const {t} = await getTranslation();

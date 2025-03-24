@@ -427,7 +427,10 @@ if (!class_exists("lag_agresso_ordre_fra_workorder"))
 				)
 			);
 
-			if (empty($workorder['order_sent']))
+		/*
+		Generer varemottaket på nytt, dersom det er endringer i ordren
+		*/
+			//	if (empty($workorder['order_sent']))
 			{
 				$exporter_ordre->reset_transfer_xml();
 				$exporter_ordre->create_order_receive_xml($param);

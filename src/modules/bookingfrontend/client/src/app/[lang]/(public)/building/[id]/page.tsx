@@ -5,7 +5,7 @@ import BuildingHeader from "@/components/building-page/building-header";
 import DescriptionAccordion from "@/components/building-page/description-accordion";
 import BuildingResources from "@/components/building-page/resource-list/building-resources";
 import BuildingContact from "@/components/building-page/building-contact";
-import PhotosAccordion from "@/components/building-page/building-photos/photos-accordion";
+import BuildingPhotos from "@/components/building-page/building-photos/building-photos";
 
 interface BuildingShowParams {
     id: string;
@@ -57,16 +57,15 @@ const BuildingShow = async (props: BuildingShowProps) => {
     return (
         <main>
             <BuildingHeader building={building}/>
-            <BuildingResources building={building}/>
             {/*<hr className={`my-2 mx-standard`}/>*/}
 
-            <section className={'mx-standard my-2'}>
+			<BuildingPhotos object={building} type={'building'} />
+			<section className={'my-2'}>
+				{/* Photos moved above accordions */}
+                <BuildingResources building={building}/>
                 <DescriptionAccordion description_json={building.description_json}/>
-                <PhotosAccordion object={building} type={'building'}/>
-                {/*<BuildingDescription building={building}/>*/}
-                {/*<BuildingDescription building={building}/>*/}
             </section>
-            <hr className={`my-2 mx-2`}/>
+            {/*<hr className={`my-2`}/>*/}
             <BuildingCalendar building_id={props.params.id}/>
             <BuildingContact building={building}/>
         </main>

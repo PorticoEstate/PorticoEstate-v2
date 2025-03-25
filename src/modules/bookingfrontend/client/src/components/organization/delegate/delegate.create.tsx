@@ -8,6 +8,7 @@ import { createDelegate } from "@/service/api/organization";
 import { Organization } from "@/service/types/api/organization.types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from 'next/navigation'
 import styles from './styles/delegater.form.module.scss';
 
 interface DelegateFormProps {
@@ -15,6 +16,7 @@ interface DelegateFormProps {
 }
 
 const DelegateCreate = ({ data }: DelegateFormProps) => {
+    const router = useRouter();
     const t = useTrans();
     const {
         control,
@@ -29,11 +31,10 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
     const save = (data: CreatingDelegate) => {
         create.mutate(data);
     }
-
     return (
         <main className={styles.delegate_create} >
             <div className={styles.buttons_group}>
-                <Button variant='secondary'>
+                <Button variant='secondary' onClick={() => router.back()}>
                     {t('bookingfrontend.cancel')}
                 </Button>
                 <Button onClick={handleSubmit(save)}>
@@ -60,7 +61,11 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
                     <Textfield 
                         {...field}
                         label={t('bookingfrontend.birth_number')}
-                        error={errors.ssn?.message ? t(errors.ssn.message) : undefined}
+                        error={
+                            errors.ssn?.message 
+                            ? t(errors.ssn.message)
+                            : create.error ? create.error.message : null
+                        }
                     />
                 )}
             />

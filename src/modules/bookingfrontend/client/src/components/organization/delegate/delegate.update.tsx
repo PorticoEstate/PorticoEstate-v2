@@ -8,6 +8,7 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { ViewDelegate } from "@/service/types/api/organization.types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from 'next/navigation'
 import styles from './styles/delegater.form.module.scss';
 
 interface DelegateUpdateProps {
@@ -15,6 +16,7 @@ interface DelegateUpdateProps {
 }
 
 const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
+    const router = useRouter();
     const t = useTrans();
     const {
         control,
@@ -38,7 +40,7 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
     return (
         <main className={styles.delegate_create}>
             <div className={styles.buttons_group}>
-                <Button variant='secondary'>
+                <Button variant='secondary' onClick={() => router.back()}>
                     {t('bookingfrontend.cancel')}
                 </Button>
                 <Button onClick={handleSubmit(updateCb)}>

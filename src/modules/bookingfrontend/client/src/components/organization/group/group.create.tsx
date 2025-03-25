@@ -11,6 +11,7 @@ import GroupFormBase from "./form/base.form";
 import { Organization } from "@/service/types/api/organization.types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
+import { useRouter } from "next/navigation";
 
 import styles from './styles/group.create.module.scss'
 
@@ -19,6 +20,7 @@ interface GroupFormProps {
 }
 
 const GroupCreate = ({ data }: GroupFormProps) => {
+    const router = useRouter();
     const { data: activities } = useActivityList(data.id);
     const t = useTrans();
     const {
@@ -47,7 +49,9 @@ const GroupCreate = ({ data }: GroupFormProps) => {
     return (
         <main className={styles.new_group_container}>
             <div className={styles.group_buttons}>
-                <Button variant='secondary'>{t('bookingfrontend.cancel')}</Button>
+                <Button variant='secondary' onClick={() => router.back()}>
+                    {t('bookingfrontend.cancel')}
+                </Button>
                 <Button onClick={handleSubmit(save)}>
                     <FontAwesomeIcon icon={faFloppyDisk} />
                     {t('bookingfrontend.save')}

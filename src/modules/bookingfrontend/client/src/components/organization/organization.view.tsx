@@ -41,6 +41,8 @@ const OrganizationContacts = ({ email, phone }) => {
 
 const OrganizationView = ({ organization }: OrganizationView) => {
     const t = useTrans();
+    const mapsLink = `https://www.google.com/maps/search/${organization.street}, ${organization.zip_code} ${organization.district}`
+
     return (
         <main className={styles.main_container}>
             <div className={styles.header}>
@@ -54,7 +56,7 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                 </div>
                 <ul>
                     <li>
-                        <Link data-color="brand1">
+                        <Link target="_blank" rel="noopener noreferrer" href={mapsLink} data-color="brand1">
                             {organization.street}, {organization.zip_code} {organization.district}
                         </Link>
                     </li>

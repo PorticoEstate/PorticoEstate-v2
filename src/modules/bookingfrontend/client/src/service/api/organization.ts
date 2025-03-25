@@ -76,9 +76,9 @@ export const createDelegate = (orgId: number) => {
                     "Content-Type": "application/json",
                 }
             });
-
-            if (!res.ok) {
-                throw new Error();
+            const result = await res.json();
+            if (result.error) {
+                throw new Error(result.error);
             }
             return await res.json();
         }

@@ -23,6 +23,7 @@ $openapi = \OpenApi\Generator::scan([
 	SRC_ROOT_PATH . '/modules/bookingfrontend/models',
 	SRC_ROOT_PATH . '/modules/bookingfrontend/helpers',
 	SRC_ROOT_PATH . '/modules/phpgwapi/helpers/LoginHelper.php',
+	SRC_ROOT_PATH . '/modules/phpgwapi/controllers/DatabaseController.php',
 ], [
 	'exclude' => [
 //		SRC_ROOT_PATH . '/modules/bookingfrontend/controllers/LoginController.php'

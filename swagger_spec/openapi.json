@@ -226,6 +226,28 @@
                                             },
                                             "type": "object"
                                         }
+                                    },
+                                    "articles": {
+                                        "description": "Complete replacement of articles",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Article mapping ID",
+                                                    "type": "integer"
+                                                },
+                                                "quantity": {
+                                                    "description": "Quantity ordered",
+                                                    "type": "integer"
+                                                },
+                                                "parent_id": {
+                                                    "description": "Optional parent mapping ID for sub-items",
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
                                     }
                                 },
                                 "type": "object"
@@ -620,6 +642,43 @@
                     },
                     "400": {
                         "description": "Invalid input or timeslot unavailable"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/applications\/articles": {
+            "get": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Get available articles for resources",
+                "operationId": "0189b3463044599ce25e64b969c55b16",
+                "parameters": [
+                    {
+                        "name": "resources[]",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of articles",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2461,6 +2520,194 @@
                     }
                 }
             }
+        },
+        "\/api\/tables": {
+            "get": {
+                "tags": [
+                    "Database"
+                ],
+                "summary": "Get a list of public tables in the database",
+                "description": "This endpoint returns a list of public tables in the database, including metadata about their columns.",
+                "operationId": "getTables",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "name": {
+                                                "description": "Table name",
+                                                "type": "string"
+                                            },
+                                            "columns": {
+                                                "description": "Table columns",
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "name": {
+                                                            "description": "Column name",
+                                                            "type": "string"
+                                                        },
+                                                        "type": {
+                                                            "description": "Column type",
+                                                            "type": "string"
+                                                        },
+                                                        "length": {
+                                                            "description": "Column length",
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        },
+                                                        "nullable": {
+                                                            "description": "Whether the column allows NULL values",
+                                                            "type": "boolean"
+                                                        },
+                                                        "default": {
+                                                            "description": "Default value for the column",
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "primary_key": {
+                                                            "description": "Whether the column is a primary key",
+                                                            "type": "boolean"
+                                                        },
+                                                        "unique_key": {
+                                                            "description": "Whether the column has a unique constraint",
+                                                            "type": "boolean"
+                                                        },
+                                                        "has_default": {
+                                                            "description": "Whether the column has a default value",
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/api\/tabledata\/{table}": {
+            "get": {
+                "tags": [
+                    "Database"
+                ],
+                "summary": "Get data from a specific table",
+                "description": "This endpoint returns data from a specific table in the database. The structure of the returned dataset will depend on the chosen table.",
+                "operationId": "getTableData",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "path",
+                        "description": "Table name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Number of items per page. If set to a negative value, the entire dataset will be returned in one go.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. The structure of the returned dataset will depend on the chosen table.",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "description": "Array of records. The structure of each record will depend on the chosen table.",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": true
+                                            }
+                                        },
+                                        "pagination": {
+                                            "description": "Pagination details",
+                                            "properties": {
+                                                "page": {
+                                                    "description": "Current page number",
+                                                    "type": "integer"
+                                                },
+                                                "limit": {
+                                                    "description": "Number of items per page",
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "description": "Total number of records",
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Table not found or no records found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "description": "Error message",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Table not public",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "description": "Error message",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -2688,6 +2935,27 @@
                             "$ref": "#\/components\/schemas\/Document"
                         }
                     },
+                    "articles": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "Article mapping ID",
+                                    "type": "integer"
+                                },
+                                "quantity": {
+                                    "description": "Quantity ordered",
+                                    "type": "integer"
+                                },
+                                "parent_id": {
+                                    "description": "Optional parent mapping ID for sub-items",
+                                    "type": "integer",
+                                    "nullable": true
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
                     "responsible_street": {
                         "type": "string"
                     },
@@ -2711,6 +2979,86 @@
                     },
                     "customer_organization_id": {
                         "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "Article": {
+                "title": "Article",
+                "description": "Article model for resources and services",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "article_id": {
+                        "type": "string"
+                    },
+                    "parent_mapping_id": {
+                        "type": "integer"
+                    },
+                    "resource_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "unit": {
+                        "type": "string"
+                    },
+                    "tax_code": {
+                        "type": "integer"
+                    },
+                    "tax_percent": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "group_id": {
+                        "type": "integer"
+                    },
+                    "article_remark": {
+                        "type": "string"
+                    },
+                    "article_group_name": {
+                        "type": "string"
+                    },
+                    "article_group_remark": {
+                        "type": "string"
+                    },
+                    "ex_tax_price": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "tax": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "price_remark": {
+                        "type": "string"
+                    },
+                    "unit_price": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "selected_quantity": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "selected_sum": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "selected_article_quantity": {
+                        "type": "string"
+                    },
+                    "mandatory": {
+                        "type": "integer"
+                    },
+                    "lang_unit": {
+                        "type": "string"
                     }
                 },
                 "type": "object"
@@ -3643,6 +3991,10 @@
         {
             "name": "API",
             "description": "API"
+        },
+        {
+            "name": "Database",
+            "description": "Database"
         }
     ]
 }

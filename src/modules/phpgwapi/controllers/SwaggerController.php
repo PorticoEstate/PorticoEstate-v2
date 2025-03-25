@@ -4,15 +4,16 @@ namespace App\modules\phpgwapi\controllers;
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use App\Database\Db;
 
 class SwaggerController
 {
-    /**
-     * Show the Swagger UI interface
-     */
-    public function index(Request $request, Response $response): Response
-    {
-        $html = <<<HTML
+  /**
+   * Show the Swagger UI interface
+   */
+  public function index(Request $request, Response $response): Response
+  {
+    $html = <<<HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -84,25 +85,26 @@ class SwaggerController
 </html>
 HTML;
 
-        $response->getBody()->write($html);
-        return $response->withHeader('Content-Type', 'text/html');
+    $response->getBody()->write($html);
+    return $response->withHeader('Content-Type', 'text/html');
+  }
+
+  /**
+   * Serve the OpenAPI specification
+   */
+  public function getSpec(Request $request, Response $response): Response
+  {
+    // Path to your OpenAPI specification
+    $specFile = __DIR__ . '/../../../../swagger_spec/openapi.json';
+
+    if (!file_exists($specFile))
+    {
+      $response->getBody()->write(json_encode(['error' => 'Specification not found']));
+      return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
     }
 
-    /**
-     * Serve the OpenAPI specification
-     */
-    public function getSpec(Request $request, Response $response): Response
-    {
-        // Path to your OpenAPI specification
-        $specFile = __DIR__ . '/../../../../swagger_spec/openapi.json';
-        
-        if (!file_exists($specFile)) {
-            $response->getBody()->write(json_encode(['error' => 'Specification not found']));
-            return $response->withStatus(404)->withHeader('Content-Type', 'application/json');
-        }
-        
-        $spec = file_get_contents($specFile);
-        $response->getBody()->write($spec);
-        return $response->withHeader('Content-Type', 'application/json');
-    }
+    $spec = file_get_contents($specFile);
+    $response->getBody()->write($spec);
+    return $response->withHeader('Content-Type', 'application/json');
+  }
 }

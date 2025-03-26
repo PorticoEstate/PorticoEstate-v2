@@ -1,5 +1,6 @@
 import {dir} from 'i18next'
 import {languages} from "@/app/i18n/settings";
+import {setLayoutLanguage} from "@/app/i18n";
 
 import type {Metadata} from "next";
 import {Roboto, Poppins} from "next/font/google";
@@ -42,6 +43,8 @@ interface RootLayoutProps extends PropsWithChildren {
 }
 
 const RootLayout: FC<RootLayoutProps> = (props) => {
+    // Store the language from URL params for future use
+    setLayoutLanguage(props.params.lang);
 
     return (
         <html lang={props.params.lang} dir={dir(props.params.lang)}>

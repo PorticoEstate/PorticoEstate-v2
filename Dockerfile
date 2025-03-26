@@ -176,6 +176,7 @@ RUN a2enmod headers
 RUN a2enmod ssl
 RUN a2enmod proxy
 RUN a2enmod proxy_http
+RUN a2enmod proxy_wstunnel
 
 # Set Apache LogFormat to combined format
 RUN echo 'LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined' > /etc/apache2/conf-available/custom-log-format.conf \

@@ -1,4 +1,4 @@
-## istructions to build the image ##
+## instructions to build the image ##
 # export INSTALL_MSSQL=true
 # export INSTALL_XDEBUG=true
 # export INSTALL_ORACLE=true
@@ -8,6 +8,8 @@ x-common-variables: &common-variables
     NEXT_ENV: ${NEXT_ENV:-production}
     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://slim}
+    WEBSOCKET_HOST: ${WEBSOCKET_HOST:-websocket}
+    WEBSOCKET_PORT: ${WEBSOCKET_PORT:-8080}
 
 volumes:
     logs:
@@ -36,6 +38,30 @@ services:
             - ./logs:/var/log/apache2
             - /var/local/:/var/local/
             # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
+        networks:
+            - internal
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+            
+    websocket:
+        container_name: portico_websocket
+        build:
+            context: .
+            dockerfile: Dockerfile.websocket
+            args:
+                http_proxy: ${http_proxy}
+                https_proxy: ${https_proxy}
+        working_dir: /var/www/html
+        environment:
+            <<: *common-variables
+            docker: "true"
+        ports:
+            - "8080:8080"
+        volumes:
+            - .:/var/www/html
+            - ./logs:/var/log/apache2
+        depends_on:
+            - slim
         networks:
             - internal
         extra_hosts:

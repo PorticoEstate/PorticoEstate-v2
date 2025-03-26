@@ -1368,7 +1368,7 @@ phpgw::import_class('booking.bocommon_authorized');
 			return array('total_records' => count($results), 'results' => $results);
 		}
 
-		function get_free_events( $building_id, $resource_id, $start_date, $end_date, $weekdays, $stop_on_end_date=false, $all_simple_bookings=false )
+		function get_free_events( $building_id, $resource_id, $start_date, $end_date, $weekdays, $stop_on_end_date=false, $all_simple_bookings=false, $detailed_overlap=false )
 		{
 
 			$timezone	 = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
@@ -1714,23 +1714,49 @@ phpgw::import_class('booking.bocommon_authorized');
 						}
 						if($within_season)
 						{
-							$overlap = $this->check_if_resurce_is_taken($resource, $StartTime, $endTime, $events);
-							$availlableTimeSlots[$resource['id']][] = [
+							$overlap_result = $this->check_if_resurce_is_taken($resource, $StartTime, $endTime, $events);
+							
+							// Handle both old and new format return values
+							$overlap_status = is_array($overlap_result) ? $overlap_result['status'] : $overlap_result;
+							$overlap_reason = is_array($overlap_result) ? $overlap_result['reason'] : null;
+							$overlap_type = is_array($overlap_result) ? $overlap_result['type'] : null;
+							$overlap_event = is_array($overlap_result) ? $overlap_result['event'] : null;
+							
+							// Create the base timeslot structure
+							$timeslot = [
 								'when'				 => $StartTime->format($datetimeformat) . ' - ' . $endTime->format($datetimeformat),
 								'start'				 => $StartTime->getTimestamp() . '000',
 								'end'				 => $endTime->getTimestamp() . '000',
-								'overlap'			 => $overlap,
+								'overlap'			 => $overlap_status,
                                 'start_iso'          => $StartTime->format('c'),
-                                'end_iso'            => $endTime->format('c'),
-								'applicationLink'	 => [
+                                'end_iso'            => $endTime->format('c')
+							];
+							
+							// Add detailed overlap information or applicationLink based on detailed_overlap parameter
+							if ($detailed_overlap) {
+								// Add the detailed overlap information if it's available
+								if ($overlap_reason) {
+									$timeslot['overlap_reason'] = $overlap_reason;
+								}
+								if ($overlap_type) {
+									$timeslot['overlap_type'] = $overlap_type;
+								}
+								if ($overlap_event) {
+									$timeslot['overlap_event'] = $overlap_event;
+								}
+							} else {
+								// Only add applicationLink when detailed_overlap is false
+								$timeslot['applicationLink'] = [
 									'menuaction'	 => 'bookingfrontend.uiapplication.add',
 									'resource_id'	 => $resource['id'],
 									'building_id'	 => $building_id,
 									'from_[]'		 => $from_utc->format('Y-m-d H:i:s'),
 									'to_[]'			 => $to_utc->format('Y-m-d H:i:s'),
 									'simple'		 => true
-								]
-							];
+								];
+							}
+							
+							$availlableTimeSlots[$resource['id']][] = $timeslot;
 						}
 
 						if ($booking_lenght == -1 || $resource['booking_time_default_end'] == -1)
@@ -1797,6 +1823,9 @@ phpgw::import_class('booking.bocommon_authorized');
 			$timezone		 = $this->userSettings['preferences']['common']['timezone'];
 			$DateTimeZone	 = new DateTimeZone($timezone);
 			$overlap = false;
+			$overlap_reason = null;
+			$overlap_event = null;
+			$overlap_type = null;
 
 			$resource_id = $resource['id'];
 			$booking_buffer_deadline = $resource['booking_buffer_deadline'];
@@ -1810,7 +1839,9 @@ phpgw::import_class('booking.bocommon_authorized');
 
 			if ($StartTime <= $now)
 			{
-				return $overlap = 3; // disabled
+				$overlap_reason = 'time_in_past';
+				$overlap_type = 'disabled';
+				return ['status' => 3, 'reason' => $overlap_reason, 'type' => $overlap_type]; // disabled
 			}
 
 			foreach ($events['results'] as $event)
@@ -1819,18 +1850,81 @@ phpgw::import_class('booking.bocommon_authorized');
 				{
 					$event_start = new DateTime($event['from_'], $DateTimeZone);
 					$event_end	 = new DateTime($event['to_'], $DateTimeZone);
-					if (
-                       ($event_start <= $StartTime AND $event_end > $StartTime)
-                      || ($event_start > $StartTime AND $event_end < $endTime)
-                      || ($event_start < $endTime AND $event_end >= $endTime)
-					)
+					
+					// Check for exact match or full coverage (event has identical time boundaries or completely covers the requested slot)
+					if (($event_start <= $StartTime AND $event_end >= $endTime) ||
+						($event_start->format('Y-m-d H:i:s') === $StartTime->format('Y-m-d H:i:s') AND 
+						 $event_end->format('Y-m-d H:i:s') === $endTime->format('Y-m-d H:i:s')))
 					{
-
+						$overlap_reason = 'complete_overlap';
+						$overlap_type = 'complete';
+						$overlap_event = [
+							'id' => isset($event['id']) ? $event['id'] : null,
+							'type' => $event['type'],
+							'status' => isset($event['status']) ? $event['status'] : null,
+							'from' => $event_start->format('Y-m-d H:i:s'),
+							'to' => $event_end->format('Y-m-d H:i:s')
+						];
+						$overlap = ($event['type'] == 'block' ||  $event['status'] == 'NEWPARTIAL1') ? 2 : 1;
+						break;
+					}
+					// Check for complete containment (existing event is inside the requested time)
+					else if ($event_start > $StartTime AND $event_end < $endTime) 
+					{
+						$overlap_reason = 'complete_containment';
+						$overlap_type = 'complete';
+						$overlap_event = [
+							'id' => isset($event['id']) ? $event['id'] : null,
+							'type' => $event['type'],
+							'status' => isset($event['status']) ? $event['status'] : null,
+							'from' => $event_start->format('Y-m-d H:i:s'),
+							'to' => $event_end->format('Y-m-d H:i:s')
+						];
+						$overlap = ($event['type'] == 'block' ||  $event['status'] == 'NEWPARTIAL1') ? 2 : 1;
+						break;
+					}
+					// Check for start overlap (existing event starts before/at and ends after start time but before end time)
+					else if ($event_start <= $StartTime AND $event_end > $StartTime AND $event_end < $endTime) 
+					{
+						$overlap_reason = 'start_overlap';
+						$overlap_type = 'partial';
+						$overlap_event = [
+							'id' => isset($event['id']) ? $event['id'] : null,
+							'type' => $event['type'],
+							'status' => isset($event['status']) ? $event['status'] : null,
+							'from' => $event_start->format('Y-m-d H:i:s'),
+							'to' => $event_end->format('Y-m-d H:i:s')
+						];
+						$overlap = ($event['type'] == 'block' ||  $event['status'] == 'NEWPARTIAL1') ? 2 : 1;
+						break;
+					}
+					// Check for end overlap (existing event starts after start time but before end time and ends at/after end time)
+					else if ($event_start > $StartTime AND $event_start < $endTime AND $event_end >= $endTime) 
+					{
+						$overlap_reason = 'end_overlap';
+						$overlap_type = 'partial';
+						$overlap_event = [
+							'id' => isset($event['id']) ? $event['id'] : null,
+							'type' => $event['type'],
+							'status' => isset($event['status']) ? $event['status'] : null,
+							'from' => $event_start->format('Y-m-d H:i:s'),
+							'to' => $event_end->format('Y-m-d H:i:s')
+						];
 						$overlap = ($event['type'] == 'block' ||  $event['status'] == 'NEWPARTIAL1') ? 2 : 1;
 						break;
 					}
 				}
 			}
+			
+			if ($overlap) {
+				return [
+					'status' => $overlap, 
+					'reason' => $overlap_reason, 
+					'type' => $overlap_type,
+					'event' => $overlap_event
+				];
+			}
+			
 			return $overlap;
 		}
 

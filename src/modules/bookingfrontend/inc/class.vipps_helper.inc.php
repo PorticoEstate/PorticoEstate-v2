@@ -9,6 +9,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\security\Sessions;
 use App\Database\Db;
+use GuzzleHttp;
 
 
 class bookingfrontend_vipps_helper
@@ -52,7 +53,6 @@ class bookingfrontend_vipps_helper
 		$this->msn				 = !empty($custom_config_data['msn']) ? $custom_config_data['msn'] : '';
 		$this->proxy			 = !empty($config['proxy']) ? $config['proxy'] : '';
 
-		require_once PHPGW_API_INC . '/guzzle/vendor/autoload.php';
 		$this->client = new GuzzleHttp\Client();
 
 		$this->accesstoken = $this->get_accesstoken();

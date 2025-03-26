@@ -62,6 +62,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		$start_date = Sanitizer::get_var('start_date', 'date');
 		$end_date = Sanitizer::get_var('end_date', 'date');
+		
+		// Get the detailed_overlap parameter (default to false)
+		$detailed_overlap = Sanitizer::get_var('detailed_overlap', 'bool', 'REQUEST', false);
 
 		$weekdays = array();
 		$timezone = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
@@ -76,7 +79,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		try
 		{
-			$freetime = $this->bo->get_free_events($building_id, $resource_id, new DateTime(date('Y-m-d', $start_date), $DateTimeZone), new DateTime(date('Y-m-d', $end_date), $DateTimeZone), $weekdays);
+			$freetime = $this->bo->get_free_events($building_id, $resource_id, new DateTime(date('Y-m-d', $start_date), $DateTimeZone), new DateTime(date('Y-m-d', $end_date), $DateTimeZone), $weekdays, false, false, $detailed_overlap);
 		} catch (Exception $exc)
 		{
 			return "booking_bobooking::get_free_events() - " . $exc->getMessage();
@@ -102,12 +105,15 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		$start_date = Sanitizer::get_var('start_date', 'date');
 		$end_date = Sanitizer::get_var('end_date', 'date');
+		
+		// Get the detailed_overlap parameter (default to false)
+		$detailed_overlap = Sanitizer::get_var('detailed_overlap', 'bool', 'REQUEST', false);
 
 		$weekdays = array();
 
 		try
 		{
-			$freetime = $this->bo->get_free_events($building_id, $resource_ids, new DateTime(date('Y-m-d', $start_date)), new DateTime(date('Y-m-d', $end_date)), $weekdays, true, $all_simple_bookings);
+			$freetime = $this->bo->get_free_events($building_id, $resource_ids, new DateTime(date('Y-m-d', $start_date)), new DateTime(date('Y-m-d', $end_date)), $weekdays, true, $all_simple_bookings, $detailed_overlap);
 		} catch (Exception $exc)
 		{
 			return "booking_bobooking::get_free_events() - " . $exc->getMessage();

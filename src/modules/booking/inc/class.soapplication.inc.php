@@ -337,46 +337,56 @@ class booking_soapplication extends booking_socommon
 		);
 	}
 
-    function get_resource_name($ids)
-    {
-        // Handle both array of numbers and array of objects
-        $clean_ids = array();
+	function get_resource_name($ids)
+	{
+		// Handle both array of numbers and array of objects
+		$clean_ids = array();
 
-        if (empty($ids)) {
-            return array();
-        }
+		if (empty($ids))
+		{
+			return array();
+		}
 
-        foreach ($ids as $id) {
-            if (is_object($id)) {
-                $clean_ids[] = (int)$id->id;
-            } else {
-                $clean_ids[] = (int)$id;
-            }
-        }
+		foreach ($ids as $id)
+		{
+			if (is_object($id))
+			{
+				$clean_ids[] = (int)$id->id;
+			}
+			else
+			{
+				$clean_ids[] = (int)$id;
+			}
+		}
 
-        // If all IDs were invalid, return empty array
-        if (empty($clean_ids)) {
-            return array();
-        }
+		// If all IDs were invalid, return empty array
+		if (empty($clean_ids))
+		{
+			return array();
+		}
 
-        $placeholders = str_repeat('?,', count($clean_ids) - 1) . '?';
+		$placeholders = str_repeat('?,', count($clean_ids) - 1) . '?';
 
-        try {
-            $query = "SELECT name FROM bb_resource WHERE id IN ($placeholders)";
-            $stmt = $this->db->prepare($query);
-            $stmt->execute($clean_ids);
+		try
+		{
+			$query = "SELECT name FROM bb_resource WHERE id IN ($placeholders)";
+			$stmt = $this->db->prepare($query);
+			$stmt->execute($clean_ids);
 
-            $results = array();
-            while ($row = $stmt->fetch()) {
-                $results[] = $row['name'];
-            }
+			$results = array();
+			while ($row = $stmt->fetch())
+			{
+				$results[] = $row['name'];
+			}
 
-            return $results;
-        } catch (Exception $e) {
-            // Handle or log error appropriately
-            return array();
-        }
-    }
+			return $results;
+		}
+		catch (Exception $e)
+		{
+			// Handle or log error appropriately
+			return array();
+		}
+	}
 
 	function get_building($id)
 	{
@@ -865,6 +875,130 @@ class booking_soapplication extends booking_socommon
 		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		return $this->db->f('application_id');
+	}
+
+	/**
+	 * Retrieves transactions that have not been posted to the accounting system with pagination and filtering.
+	 *
+	 * @param array $params Parameters for filtering and pagination
+	 *                     - status: Filter by status (e.g., 'completed')
+	 *                     - limit: Number of records to return
+	 *                     - offset: Starting offset for pagination
+	 *                     - sort: Sort field
+	 *                     - dir: Sort direction ('asc' or 'desc')
+	 * @return array List of unposted transactions and total count
+	 */
+	public function get_unposted_transactions($params = array())
+	{
+		// Set default values
+		$status = isset($params['status']) ? $this->db->db_addslashes($params['status']) : null;
+		$limit = isset($params['limit']) && (int)$params['limit'] > 0 ? (int)$params['limit'] : null;
+		$offset = isset($params['offset']) ? (int)$params['offset'] : 0;
+
+		// Map frontend sort fields to database columns with table prefix
+		$sortMap = [
+			'remote_id' => 'bb_payment.remote_id',
+			'amount' => 'bb_payment.amount',
+			'created' => 'bb_payment.created',
+			'date' => 'bb_payment.created', // Map 'date' to 'bb_payment.created'
+			'description' => 'description' // This is an alias from the CASE statement
+		];
+
+		$sort = isset($params['sort']) && isset($sortMap[$params['sort']])
+			? $sortMap[$params['sort']] : 'bb_payment.created';
+		$dir = isset($params['dir']) && strtolower($params['dir']) === 'asc' ? 'ASC' : 'DESC';
+
+		// Base query with payment_method join
+		$sql_base = "FROM 
+                bb_payment
+            JOIN 
+                bb_purchase_order ON bb_payment.order_id = bb_purchase_order.id
+            LEFT JOIN
+                bb_payment_method ON bb_payment.payment_method_id = bb_payment_method.id
+            WHERE 
+                bb_payment.posted_to_accounting IS NULL AND bb_payment_method.id != 2"; // Exclude 'Etterfakturering' payment method
+
+		// Add status filter if provided
+		if ($status)
+		{
+			$sql_base .= " AND bb_payment.status = '{$status}'";
+		}
+
+		// Count total records
+		$count_sql = "SELECT COUNT(*) AS total " . $sql_base;
+		$this->db->query($count_sql, __LINE__, __FILE__);
+		$this->db->next_record();
+		$total = (int)$this->db->f('total');
+
+		// Get data with pagination
+		$sql = "SELECT 
+                bb_payment.remote_id AS remote_order_id,
+                bb_payment.amount,
+                bb_payment.created AS date,
+                bb_payment.status,
+				bb_payment.remote_state,
+                bb_payment_method.payment_gateway_name,
+                bb_payment_method.payment_gateway_mode,
+                CASE 
+                    WHEN bb_purchase_order.reservation_type = 'event' THEN (
+                        SELECT string_agg(bb_event.name, ', ')
+                        FROM bb_event
+                        WHERE bb_event.id = bb_purchase_order.reservation_id
+                    )
+                    WHEN bb_purchase_order.reservation_type = 'allocation' THEN (
+                        SELECT bb_allocation.building_name || ' ' || bb_allocation.from_ || ' - ' || bb_allocation.to_
+                        FROM bb_allocation
+                        WHERE bb_allocation.id = bb_purchase_order.reservation_id
+                    )
+                    ELSE NULL
+                END AS description
+            " . $sql_base . "
+            ORDER BY " . $sort . " " . $dir;
+
+		// Add limit and offset if provided
+		if ($limit !== null)
+		{
+			$sql .= " LIMIT " . $limit . " OFFSET " . $offset;
+		}
+
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		$transactions = [];
+		while ($this->db->next_record())
+		{
+			$transactions[] = [
+				'remote_order_id' => $this->db->f('remote_order_id'),
+				'amount'          => (float)$this->db->f('amount'),
+				'date'            => $this->db->f('date'),
+				'description'     => $this->db->f('description', true),
+				'status'          => $this->db->f('status'),
+				'remote_state'    => $this->db->f('remote_state'),
+				'payment_method'  => $this->db->f('payment_gateway_name', true)
+			];
+		}
+
+		return [
+			'results' => $transactions,
+			'total' => $total
+		];
+	}
+
+	/**
+	 * Marks a transaction as posted to the accounting system.
+	 *
+	 * @param string $remote_order_id The remote order ID of the transaction to mark as posted.
+	 * @return bool True if the update was successful, false otherwise.
+	 */
+	public function mark_as_posted($remote_order_id)
+	{
+		$remote_id = $this->db->db_addslashes($remote_order_id);
+		$timestamp = time(); // Current Unix timestamp
+
+		$sql = "UPDATE bb_payment 
+            SET posted_to_accounting = {$timestamp} 
+            WHERE remote_id = '{$remote_id}'";
+
+		return $this->db->query($sql, __LINE__, __FILE__);
 	}
 }
 

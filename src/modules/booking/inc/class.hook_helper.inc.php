@@ -27,6 +27,8 @@
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\controllers\Locations;
 use App\Database\Db;
+use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\controllers\Applications;
 
 phpgw::import_class('phpgwapi.datetime');
 
@@ -37,12 +39,19 @@ phpgw::import_class('phpgwapi.datetime');
  */
 class booking_hook_helper
 {
-	private $location_obj, $db;
+	private $location_obj, $db, $userSettings, $app_id, $navbar_bg, $flags, $portal_order, $phpgwapi_common;
 
 	function __construct()
 	{
 		$this->location_obj		 = new Locations();
 		$this->db				 = Db::getInstance();
+		$theme = Settings::getInstance()->get('theme');
+		$this->navbar_bg = isset($theme['navbar_bg']) ? $theme['navbar_bg'] : '';
+		$this->phpgwapi_common = new \phpgwapi_common();
+		$this->userSettings = Settings::getInstance()->get('user');
+		$this->flags = Settings::getInstance()->get('flags');
+		$this->app_id = (new Applications())->name2id('booking');
+		$this->portal_order = (array)Cache::session_get('phpgwapi', 'portal_order');
 	}
 	/*
 		  $args = array
@@ -155,5 +164,130 @@ class booking_hook_helper
 			$this->db->insert($add_sql, $insert_update, __LINE__, __FILE__);
 			Cache::message_set(lang('%1 resources mapped as articles', count($insert_update)));
 		}
+	}
+
+	function home()
+	{
+		$this->home_vipps_transactions();
+	}
+	private function get_controls($app_id)
+	{
+		$var = array(
+			'up'	 => array('url' => '/set_box.php', 'app' => $app_id),
+			'down'	 => array('url' => '/set_box.php', 'app' => $app_id),
+		);
+		return $var;
+	}
+	/**
+	 * Show Vipps pending transactions for dashboard
+	 *
+	 * @return void
+	 */
+	public function home_vipps_transactions()
+	{
+		$accound_id = $this->userSettings['account_id'];
+		$save_app = $this->flags['currentapp'];
+		$this->flags['currentapp'] = 'booking';
+		Settings::getInstance()->set('flags', $this->flags);
+
+		$maxmatches = $this->userSettings['preferences']['common']['maxmatchs'];
+		$this->userSettings['preferences']['common']['maxmatchs'] = 10;
+		Settings::getInstance()->set('user', $this->userSettings);
+
+		$prefs = $this->userSettings['preferences'];
+
+		// Create a header box for the transactions
+		$portalbox = CreateObject('phpgwapi.listbox', array(
+			'title'                  => lang('Pending Vipps Transactions'),
+			'primary'                => $this->navbar_bg,
+			'secondary'              => $this->navbar_bg,
+			'tertiary'               => $this->navbar_bg,
+			'width'                  => '100%',
+			'outerborderwidth'       => '0',
+			'header_background_image' => $this->phpgwapi_common->image('phpgwapi', 'bg_filler', '.png', False)
+		));
+
+		$app_id = $this->app_id;
+		if (!isset($this->portal_order) || !in_array($app_id, $this->portal_order))
+		{
+			$this->portal_order[] = $app_id;
+			Cache::session_set('phpgwapi', 'portal_order', $this->portal_order);
+		}
+
+		$var = $this->get_controls($app_id);
+
+		foreach ($var as $key => $value)
+		{
+			// $portalbox->set_controls($key, $value);
+		}
+
+		$portalbox->data = array();
+
+		$grid_element = 'row mt-4';
+
+		echo "\n<div class='container'>";
+		echo "\n" . '<!-- BEGIN vipps transaction info -->' . "\n<div class='{$grid_element}' style='padding-left: 10px;'>" . $portalbox->draw() . "</div>\n" . '<!-- END vipps transaction info -->' . "\n";
+
+		echo '<div id="vipps_transaction_container"></div>';
+
+		$lang = js_lang('Remote Order ID', 'Amount', 'Date', 'Description', 'Status', 'Payment Method');
+
+		$js = <<<JS
+        <script type="text/javascript">
+            // Define filter options
+            var filterOptions = {
+                label: 'Filter',
+                placeholder: 'Alle transaksjoner',
+                paramName: 'status',
+                options: [
+                    { value: 'completed', text: 'Kun fullførte' }
+                ]
+            };
+
+            var lang = $lang;
+            var transactions_url = phpGWLink('booking/getpendingtransactions/vipps', {
+                order:'date',
+                sort:'desc',
+                result:10
+            }, true);
+
+            var rTransactions = [{n: 'ResultSet'},{n: 'Result'}];
+
+            var colDefsTransactions = [
+                {key: 'remote_order_id', label: lang['Remote Order ID']},
+                {key: 'amount', label: lang['Amount'], formatter: function(o) { return o.value + ' NOK'; }},
+                {key: 'date', label: lang['Date']},
+                {key: 'description', label: lang['Description']},
+                {key: 'remote_state', label: lang['Status']},
+                {key: 'payment_method', label: lang['Payment Method']}
+            ];
+
+            var paginatorTableTransactions = new Array();
+            paginatorTableTransactions.limit = 10;
+            createPaginatorTable('vipps_transaction_container', paginatorTableTransactions);
+
+            let afterTableLoad = null;
+            
+            createTableWithFilter(
+                'vipps_transaction_container', 
+                transactions_url, 
+                colDefsTransactions, 
+                rTransactions, 
+                'pure-table pure-table-bordered',
+                paginatorTableTransactions, 
+                filterOptions,
+                afterTableLoad
+            );
+        </script>
+    JS;
+
+		echo $js;
+		echo "\n</div>";
+
+		$this->flags['currentapp'] = $save_app;
+		Settings::getInstance()->set('flags', $this->flags);
+
+		$this->userSettings['preferences']['common']['maxmatchs'] = $maxmatches;
+		Settings::getInstance()->set('user', $this->userSettings);
 	}
 }

@@ -19,6 +19,7 @@ class bookingfrontend_vipps_helper
 		'initiate'				 => true,
 		'get_payment_details'	 => true,
 		'check_payment_status'	 => true,
+		'getPendingTransactionsVipps' => true,
 	);
 	private $client_id,
 		$client_secret,
@@ -29,7 +30,9 @@ class bookingfrontend_vipps_helper
 		$debug,
 		$client,
 		$base_url,
-		$msn;
+		$msn,
+		$visma_client_id,
+		$visma_client_secret;
 
 	public function __construct()
 	{
@@ -39,6 +42,10 @@ class bookingfrontend_vipps_helper
 		$location_id		 = $location_obj->get_id('booking', 'run');
 		$custom_config		 = CreateObject('admin.soconfig', $location_id);
 		$custom_config_data	 = $custom_config->config_data['Vipps'];
+		$custom_config_visma = $custom_config->config_data['Visma']??[];
+		$this->visma_client_id = $custom_config_visma['client_id'] ?? '';
+		$this->visma_client_secret = $custom_config_visma['client_secret'] ?? '';
+
 		$config				 = CreateObject('phpgwapi.config', 'booking')->read();
 
 		if (!empty($custom_config_data['debug']))
@@ -639,5 +646,168 @@ class bookingfrontend_vipps_helper
 		}
 
 		return $ret;
+	}
+
+
+	public function getPendingTransactions()
+	{
+		$soapplication = CreateObject('booking.soapplication');
+
+		// Fetch unposted transactions
+		$unposted_transactions = $soapplication->get_unposted_transactions();
+
+		// Return the transactions for rendering in the view
+		return $unposted_transactions;
+	}
+
+	public function postToAccountingSystem()
+	{
+		$soapplication = CreateObject('booking.soapplication');
+
+		// Hent alle transaksjoner som ikke er bokført
+		$unposted_transactions = $soapplication->get_unposted_transactions();
+
+		foreach ($unposted_transactions as $transaction)
+		{
+			$remote_order_id = $transaction['remote_order_id'];
+			$amount = $transaction['amount'];
+			$description = $transaction['description'];
+			$date = $transaction['date'];
+
+			// Hent detaljer om transaksjonen fra Vipps
+			$payment_details = $this->get_payment_details($remote_order_id);
+
+			if ($payment_details['transactionInfo']['status'] === 'CAPTURE')
+			{
+				// Send transaksjonen til regnskapssystemet
+				$result = $this->post_to_visma($amount / 100, $description, $date);
+
+				if ($result)
+				{
+					// Oppdater status i databasen for å markere som bokført
+					$soapplication->mark_as_posted($remote_order_id);
+				}
+				else
+				{
+					if ($this->debug)
+					{
+						print_r("Failed to post transaction {$remote_order_id} to accounting system.");
+					}
+				}
+			}
+			else
+			{
+				if ($this->debug)
+				{
+					print_r("Transaction {$remote_order_id} is not captured. Skipping.");
+				}
+			}
+		}
+	}
+
+	private function get_visma_access_token()
+	{
+		$url = "https://integration.visma.net/API/security/authorize"; // Visma's token endpoint
+
+		$headers = [
+			'Content-Type' => 'application/x-www-form-urlencoded',
+		];
+
+		$body = [
+			'grant_type'    => 'client_credentials',
+			'client_id'     => $this->visma_client_id, // Replace with your Visma client ID
+			'client_secret' => $this->visma_client_secret, // Replace with your Visma client secret
+			'scope'         => 'financials', // Adjust the scope based on your needs
+		];
+
+		try
+		{
+			$client = new GuzzleHttp\Client();
+			$response = $client->request('POST', $url, [
+				'headers' => $headers,
+				'form_params' => $body,
+			]);
+
+			$data = json_decode($response->getBody()->getContents(), true);
+
+			if (!empty($data['access_token']))
+			{
+				return $data['access_token'];
+			}
+			else
+			{
+				throw new Exception('Failed to retrieve Visma access token.');
+			}
+		}
+		catch (\GuzzleHttp\Exception\BadResponseException $e)
+		{
+			if ($this->debug)
+			{
+				print_r($e->getMessage());
+			}
+			return null;
+		}
+	}
+
+	private function get_cached_visma_access_token()
+	{
+		$cache_key = 'visma_access_token';
+		$cached_token = Cache::session_get('vipps', $cache_key);
+
+		if ($cached_token)
+		{
+			return $cached_token;
+		}
+
+		// Fetch a new token if not cached
+		$new_token = $this->get_visma_access_token();
+
+		if ($new_token)
+		{
+			// Cache the token for 1 hour (or the token's expiration time)
+			Cache::session_set('vipps', $cache_key, $new_token);
+		}
+
+		return $new_token;
+	}
+	private function post_to_visma($amount, $description, $date)
+	{
+		$url = "https://integration.visma.net/API/controller/api/v1/journaltransaction";
+
+		$headers = [
+			'Authorization' => 'Bearer ' . $this->get_cached_visma_access_token(),
+			'Content-Type'  => 'application/json',
+		];
+		$request_body = [
+			"lines" => [
+				[
+					"account"       => "3000", // Konto for Vipps-inntekter
+					"amount"        => $amount,
+					"description"   => $description,
+					"transactionDate" => $date,
+				]
+			],
+			"journalTransactionDate" => $date,
+			"description"            => "Vipps betaling",
+		];
+
+		try
+		{
+			$client = new GuzzleHttp\Client();
+			$response = $client->request('POST', $url, [
+				'headers' => $headers,
+				'json'    => $request_body,
+			]);
+
+			return json_decode($response->getBody()->getContents(), true);
+		}
+		catch (\GuzzleHttp\Exception\BadResponseException $e)
+		{
+			if ($this->debug)
+			{
+				print_r($e->getMessage());
+			}
+			return false;
+		}
 	}
 }

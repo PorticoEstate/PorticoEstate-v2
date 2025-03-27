@@ -80,7 +80,7 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
                 render={({ field }) => (
                     <Textfield 
                         {...field}
-                        label={t('bookingfrontend.email')}
+                        label={t('bookingfrontend.contact_email')}
                         error={errors.email?.message ? t(errors.email.message) : undefined}
                     />
                 )}

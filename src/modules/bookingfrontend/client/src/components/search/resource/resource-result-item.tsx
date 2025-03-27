@@ -30,10 +30,14 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 			<div className={styles.cardContent}>
 				<DigdirLink asChild data-color='accent'>
 					<Link href={'/resource/' + resource.id} className={styles.titleLink}>
-						<Heading level={3} data-size="xs" className={styles.resourceHeading}>
-							<LayersIcon fontSize="1em"/>
-							{resource.name}
-						</Heading>
+						<div className={styles.resourceHeadingContainer}>
+							<Heading level={3} data-size="xs" className={styles.resourceIcon}>
+								<LayersIcon fontSize="1em"/>
+							</Heading>
+							<Heading level={3} data-size="xs" className={styles.resourceTitle}>
+								{resource.name}
+							</Heading>
+						</div>
 					</Link>
 				</DigdirLink>
 

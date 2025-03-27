@@ -157,7 +157,7 @@ class OrganizationController
             return ResponseHelper::sendJson($response, $result);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
-                ['error' => 'Error' . $e->getMessage()],
+                ['error' => 'Error: ' . $e->getMessage()],
                 500
             );
         }

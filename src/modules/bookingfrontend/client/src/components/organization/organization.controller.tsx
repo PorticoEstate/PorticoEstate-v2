@@ -26,12 +26,12 @@ const OrganizatioController = ({ data }: OrganizationControllerProps) => {
                 {
                     editing 
                     ? t('bookingfrontend.cancel')
-                    : t('bookingfrontend.edit_organization')}
+                    : t('bookingfrontend.edit organization')}
             </Button>
         </div>
         {
             editing 
-            ? <OrganizationUpdate data={data}/>
+            ? <OrganizationUpdate org={data}/>
             : <OrganizationView organization={data}/>
         }
         </>

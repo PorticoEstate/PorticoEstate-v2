@@ -160,26 +160,22 @@ export const patchDelegate = (delegateId: number) => {
     })
 }
 
-export const patchOrganization = (orgId: number) => {
-    return useMutation({
-        mutationFn: async (data: any) => {
-            const url = phpGWLink([
-                'bookingfrontend',
-                'organization',
-                orgId
-            ]);
-            const res = await fetch(url, {
-                method: "PATCH",
-                body: JSON.stringify(data),
-                headers: {
-                    "Content-Type": "application/json",
-                }
-            });
-
-            if (!res.ok) {
-                throw new Error();
-            }
-            return await res.json();
+export const patchOrganizationRequest = async (orgId: number, data: any) => {
+    const url = phpGWLink([
+        'bookingfrontend',
+        'organization',
+        orgId
+    ]);
+    const res = await fetch(url, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+        headers: {
+            "Content-Type": "application/json",
         }
-    })
+    });
+
+    if (!res.ok) {
+        throw new Error();
+    }
+    return await res.json();
 }

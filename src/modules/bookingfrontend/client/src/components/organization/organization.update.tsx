@@ -3,7 +3,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@digdir/designsystemet-react";
 import { useForm } from "react-hook-form";
 import { Organization } from "@/service/types/api/organization.types";
-import { patchOrganization } from "@/service/api/organization";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { patchOrganizationRequest } from "@/service/api/organization";
 import { patchOrganizationSchema, UpdatingOrganization } from "./schemas";
 import UpdateOrganizationForm from "./form/organization.update.form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
@@ -11,11 +12,20 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 
 interface OrganizationUpdateProps {
-    data: Organization;
+    org: Organization;
 }
 
-const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
+const OrganizationUpdate = ({ org }: OrganizationUpdateProps) => {
     const t = useTrans();
+    const queryClient = useQueryClient();
+
+    const patch = useMutation({
+        mutationFn: (data: any) => patchOrganizationRequest(org.id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['organization', org.id] });
+        }
+    })
+
     const {
         control,
         handleSubmit,
@@ -25,44 +35,43 @@ const OrganizationUpdate = ({ data }: OrganizationUpdateProps) => {
         mode: 'onChange',
         defaultValues: {
             organization: {
-                shortname: data.shortname,
-                name: data.name,
-                homepage: data.homepage,
-                phone: data.phone,
-                email: data.email,
-                city: data.city,
-                street: data.street,
-                district: data.district,
-                zip_code: data.zip_code,
-                organization_number: data.organization_number,
-                activity_id: data.activity.id,
-                show_in_portal: data.show_in_portal
+                shortname: org.shortname,
+                name: org.name,
+                homepage: org.homepage,
+                phone: org.phone,
+                email: org.email,
+                city: org.city,
+                street: org.street,
+                district: org.district,
+                zip_code: org.zip_code,
+                organization_number: org.organization_number,
+                activity_id: org.activity.id,
+                show_in_portal: org.show_in_portal
             },
             contacts: [
                 {
-                    id: data.contacts[0].id,
-                    name: data.contacts[0].name,
-                    email: data.contacts[0].email,
-                    phone: data.contacts[0].phone,
+                    id: org.contacts[0].id,
+                    name: org.contacts[0].name,
+                    email: org.contacts[0].email,
+                    phone: org.contacts[0].phone,
                 },
                 {
-                    id: data.contacts[1].id,
-                    name: data.contacts[1].name,
-                    email: data.contacts[1].email,
-                    phone: data.contacts[1].phone,
+                    id: org.contacts[1].id,
+                    name: org.contacts[1].name,
+                    email: org.contacts[1].email,
+                    phone: org.contacts[1].phone,
                 }
             ]
         }
     });
 
-    const update = patchOrganization(data.id);
-    const save = (data: UpdatingOrganization) => {
-        update.mutate(data);
+    const save = (org: UpdatingOrganization) => {
+        patch.mutate(org);
     }
     return (
         <>
             <UpdateOrganizationForm 
-                organization={data} 
+                organization={org} 
                 errors={errors} 
                 control={control}
             />

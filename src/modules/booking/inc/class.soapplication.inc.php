@@ -1000,6 +1000,188 @@ class booking_soapplication extends booking_socommon
 
 		return $this->db->query($sql, __LINE__, __FILE__);
 	}
+
+	/**
+	 * Retrieves refund transactions that have not been posted to the accounting system with pagination and filtering.
+	 *
+	 * @param array $params Parameters for filtering and pagination
+	 *                     - limit: Number of records to return
+	 *                     - offset: Starting offset for pagination
+	 *                     - sort: Sort field
+	 *                     - dir: Sort direction ('asc' or 'desc')
+	 * @return array List of unposted refund transactions and total count
+	 */
+	public function get_unposted_refund_transactions($params = array())
+	{
+		// Set default values
+		$limit = isset($params['limit']) && (int)$params['limit'] > 0 ? (int)$params['limit'] : null;
+		$offset = isset($params['offset']) ? (int)$params['offset'] : 0;
+
+		// Map frontend sort fields to database columns with table prefix
+		$sortMap = [
+			'remote_id' => 'bb_payment.remote_id',
+			'amount' => 'bb_payment.refunded_amount',
+			'created' => 'bb_payment.created',
+			'date' => 'bb_payment.created',
+			'description' => 'description'
+		];
+
+		$sort = isset($params['sort']) && isset($sortMap[$params['sort']])
+			? $sortMap[$params['sort']] : 'bb_payment.created';
+		$dir = isset($params['dir']) && strtolower($params['dir']) === 'asc' ? 'ASC' : 'DESC';
+
+		// Base query with payment_method join
+		$sql_base = "FROM 
+            bb_payment
+        JOIN 
+            bb_purchase_order ON bb_payment.order_id = bb_purchase_order.id
+        LEFT JOIN
+            bb_payment_method ON bb_payment.payment_method_id = bb_payment_method.id
+        WHERE 
+            (bb_payment.status = 'refunded' OR bb_payment.status = 'partially_refunded')
+            AND bb_payment.refunded_amount > 0
+            AND bb_payment.refund_posted_to_accounting IS NULL AND bb_payment_method.id != 2";
+
+		// Count total records
+		$count_sql = "SELECT COUNT(*) AS total " . $sql_base;
+		$this->db->query($count_sql, __LINE__, __FILE__);
+		$this->db->next_record();
+		$total = (int)$this->db->f('total');
+
+		// Get data with pagination
+		$sql = "SELECT 
+            bb_payment.remote_id AS remote_order_id,
+            bb_payment.refunded_amount AS amount,
+            bb_payment.created AS date,
+            bb_payment.status,
+            bb_payment.remote_state,
+            bb_payment_method.payment_gateway_name,
+            bb_payment_method.payment_gateway_mode,
+            CASE 
+                WHEN bb_purchase_order.reservation_type = 'event' THEN (
+                    SELECT string_agg(bb_event.name, ', ')
+                    FROM bb_event
+                    WHERE bb_event.id = bb_purchase_order.reservation_id
+                )
+                WHEN bb_purchase_order.reservation_type = 'allocation' THEN (
+                    SELECT bb_allocation.building_name || ' ' || bb_allocation.from_ || ' - ' || bb_allocation.to_
+                    FROM bb_allocation
+                    WHERE bb_allocation.id = bb_purchase_order.reservation_id
+                )
+                ELSE NULL
+            END AS description
+        " . $sql_base . "
+        ORDER BY " . $sort . " " . $dir;
+
+		// Add limit and offset if provided
+		if ($limit !== null)
+		{
+			$sql .= " LIMIT " . $limit . " OFFSET " . $offset;
+		}
+
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		$transactions = [];
+		while ($this->db->next_record())
+		{
+			$transactions[] = [
+				'remote_order_id' => $this->db->f('remote_order_id'),
+				'amount' => (float)$this->db->f('amount'),
+				'date' => $this->db->f('date'),
+				'description' => $this->db->f('description', true),
+				'status' => $this->db->f('status'),
+				'remote_state' => $this->db->f('remote_state'),
+				'payment_method' => $this->db->f('payment_gateway_name', true),
+				'original_transaction_id' => $this->db->f('remote_order_id') // For refunds, original_transaction_id is the same as remote_order_id
+			];
+		}
+
+		return [
+			'results' => $transactions,
+			'total' => $total
+		];
+	}
+
+	/**
+	 * Marks a refund transaction as posted to the accounting system.
+	 *
+	 * @param string $remote_order_id The remote order ID of the refund transaction to mark as posted.
+	 * @return bool True if the update was successful, false otherwise.
+	 */
+	public function mark_refund_as_posted($remote_order_id)
+	{
+		$remote_id = $this->db->db_addslashes($remote_order_id);
+		$timestamp = time(); // Current Unix timestamp
+
+		$sql = "UPDATE bb_payment 
+        SET refund_posted_to_accounting = {$timestamp} 
+        WHERE remote_id = '{$remote_id}' 
+        AND (status = 'refunded' OR status = 'partially_refunded')
+        AND refunded_amount > 0";
+
+		return $this->db->query($sql, __LINE__, __FILE__);
+	}
+
+	/**
+	 * Retrieves payments that have been posted to accounting but later refunded and need refund posting.
+	 *
+	 * @param array $params Optional parameters for filtering
+	 * @return array List of posted payments that need refund posting
+	 */
+	public function get_refunded_posted_payments($params = array())
+	{
+		$sql = "SELECT 
+					bp.remote_id AS remote_order_id,
+					bp.refunded_amount AS amount,
+					bp.created AS date,
+					bp.status,
+					bp.remote_state,
+					bpm.payment_gateway_name,
+					bpm.payment_gateway_mode,
+					CASE 
+						WHEN bpo.reservation_type = 'event' THEN (
+							SELECT string_agg(bb_event.name, ', ')
+							FROM bb_event
+							WHERE bb_event.id = bpo.reservation_id
+						)
+						WHEN bpo.reservation_type = 'allocation' THEN (
+							SELECT bb_allocation.building_name || ' ' || bb_allocation.from_ || ' - ' || bb_allocation.to_
+							FROM bb_allocation
+							WHERE bb_allocation.id = bpo.reservation_id
+						)
+						ELSE NULL
+					END AS description
+				FROM 
+					bb_payment bp
+				JOIN 
+					bb_purchase_order bpo ON bp.order_id = bpo.id
+				LEFT JOIN
+					bb_payment_method bpm ON bp.payment_method_id = bpm.id
+				WHERE 
+					bp.posted_to_accounting IS NOT NULL 
+					AND (bp.status = 'refunded' OR bp.status = 'partially_refunded') 
+					AND bp.refunded_amount > 0
+					AND bp.refund_posted_to_accounting IS NULL
+					AND bp.payment_method_id != 2"; // Exclude 'Etterfakturering' payment method
+		
+		$this->db->query($sql, __LINE__, __FILE__);
+		
+		$refunds_needing_posting = [];
+		while ($this->db->next_record()) {
+			$refunds_needing_posting[] = [
+				'remote_order_id' => $this->db->f('remote_order_id'),
+				'amount' => (float)$this->db->f('amount'),
+				'date' => $this->db->f('date'),
+				'description' => $this->db->f('description', true) ? 
+					"Refusjon: " . $this->db->f('description', true) : 
+					"Refusjon av betaling",
+				'original_transaction_id' => $this->db->f('remote_order_id'),
+				'payment_method' => $this->db->f('payment_gateway_name', true)
+			];
+		}
+		
+		return $refunds_needing_posting;
+	}
 }
 
 class booking_soapplication_association extends booking_socommon

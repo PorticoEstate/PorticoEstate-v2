@@ -7,6 +7,10 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception; // For handling potential errors
 use App\Database\Db;
+use App\modules\bookingfrontend\models\Activity;
+use App\modules\bookingfrontend\models\Building;
+use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\models\Organization;
 
 /**
  * @OA\OpenApi(
@@ -105,24 +109,59 @@ class DataStore
 	public function SearchDataAllOptimised(Request $request, Response $response): Response
 	{
 		try {
-			$data = [
-				'activities' => $this->getRowsAsArray("SELECT id, parent_id, name, active from bb_activity where active=1"),
-				'buildings' => $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
-					. " deactivate_sendmessage, extra_kalendar, name, location_code, street, zip_code, district, city"
-					. " FROM bb_building WHERE active=1"),
-				'building_resources' => $this->getRowsAsArray("SELECT * from bb_building_resource"),
-				'resources' => $this->getRowsAsArray("SELECT id, name, activity_id, active, simple_booking, deactivate_calendar,
+			$data = [];
+			
+			// Activities
+			$activities = [];
+			$rows = $this->getRowsAsArray("SELECT id, parent_id, name, active from bb_activity where active=1");
+			foreach ($rows as $row) {
+				$activity = new Activity($row);
+				$activities[] = $activity->serialize([], true);
+			}
+			$data['activities'] = $activities;
+			
+			// Buildings
+			$buildings = [];
+			$rows = $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
+				. " deactivate_sendmessage, extra_kalendar, name, location_code, street, zip_code, district, city"
+				. " FROM bb_building WHERE active=1");
+			foreach ($rows as $row) {
+				$building = new Building($row);
+				$buildings[] = $building->serialize([], true);
+			}
+			$data['buildings'] = $buildings;
+			
+			// Building resources (no model yet, use array)
+			$data['building_resources'] = $this->getRowsAsArray("SELECT * from bb_building_resource");
+			
+			// Resources
+			$resources = [];
+			$rows = $this->getRowsAsArray("SELECT id, name, activity_id, active, simple_booking, deactivate_calendar,
               deactivate_application
-              FROM bb_resource WHERE active=1 AND hidden_in_frontend=0 AND deactivate_calendar=0"),
-				'towns' => $this->getRowsAsArray("SELECT DISTINCT bb_building.id as b_id, bb_building.name as b_name, fm_part_of_town.id, fm_part_of_town.name FROM"
-					. " bb_building JOIN fm_locations ON bb_building.location_code = fm_locations.location_code"
-					. " JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1"
-					. " JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id"
-					. " where bb_building.active=1"),
-				'organizations' => $this->getRowsAsArray("SELECT id, organization_number, name, homepage, phone, email, co_address,"
-					. " street, zip_code, district, city, activity_id, show_in_portal"
-					. " FROM bb_organization WHERE active=1 AND show_in_portal=1"),
-			];
+              FROM bb_resource WHERE active=1 AND hidden_in_frontend=0 AND deactivate_calendar=0");
+			foreach ($rows as $row) {
+				$resource = new Resource($row);
+				$resources[] = $resource->serialize([], true);
+			}
+			$data['resources'] = $resources;
+			
+			// Towns (no model yet, use array)
+			$data['towns'] = $this->getRowsAsArray("SELECT DISTINCT bb_building.id as b_id, bb_building.name as b_name, fm_part_of_town.id, fm_part_of_town.name FROM"
+				. " bb_building JOIN fm_locations ON bb_building.location_code = fm_locations.location_code"
+				. " JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1"
+				. " JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id"
+				. " where bb_building.active=1");
+			
+			// Organizations
+			$organizations = [];
+			$rows = $this->getRowsAsArray("SELECT id, organization_number, name, homepage, phone, email, co_address,"
+				. " street, zip_code, district, city, activity_id, show_in_portal"
+				. " FROM bb_organization WHERE active=1 AND show_in_portal=1");
+			foreach ($rows as $row) {
+				$organization = new Organization($row);
+				$organizations[] = $organization->serialize([], true);
+			}
+			$data['organizations'] = $organizations;
 
 			$response->getBody()->write(json_encode($data));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);

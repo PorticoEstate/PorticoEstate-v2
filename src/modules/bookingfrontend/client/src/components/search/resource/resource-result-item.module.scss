@@ -30,18 +30,34 @@
 	}
 }
 
-.resourceHeading {
-	//color: inherit;
+.resourceHeadingContainer {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
+	justify-content: center;
 	gap: 0.5rem;
+	margin-bottom: 0;
+}
+
+.resourceIcon {
+	display: flex;
+	align-items: center;
+	margin-bottom: 0;
+}
+
+.resourceTitle {
 	overflow: hidden;
 	text-overflow: ellipsis;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
-	max-height: 3em;
-	line-height: 1.5em;
+	max-width: calc(100% - 2rem);
+
+	white-space: nowrap; // for 1 line
+
+	//display: -webkit-box; // for 2 line
+	//-webkit-line-clamp: 2; // for 2 line
+	//-webkit-box-orient: vertical; // for 2 line
+	//line-height: 1.5em; // for 2 line
+	//max-height: 3em; // for 2 line
+
 	margin-bottom: 0;
 }
 

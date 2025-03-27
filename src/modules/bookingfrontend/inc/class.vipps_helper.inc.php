@@ -19,7 +19,6 @@ class bookingfrontend_vipps_helper
 		'initiate'				 => true,
 		'get_payment_details'	 => true,
 		'check_payment_status'	 => true,
-		'getPendingTransactionsVipps' => true,
 	);
 	private $client_id,
 		$client_secret,
@@ -30,9 +29,7 @@ class bookingfrontend_vipps_helper
 		$debug,
 		$client,
 		$base_url,
-		$msn,
-		$visma_client_id,
-		$visma_client_secret;
+		$msn;
 
 	public function __construct()
 	{
@@ -42,9 +39,6 @@ class bookingfrontend_vipps_helper
 		$location_id		 = $location_obj->get_id('booking', 'run');
 		$custom_config		 = CreateObject('admin.soconfig', $location_id);
 		$custom_config_data	 = $custom_config->config_data['Vipps'];
-		$custom_config_visma = $custom_config->config_data['Visma']??[];
-		$this->visma_client_id = $custom_config_visma['client_id'] ?? '';
-		$this->visma_client_secret = $custom_config_visma['client_secret'] ?? '';
 
 		$config				 = CreateObject('phpgwapi.config', 'booking')->read();
 
@@ -649,23 +643,52 @@ class bookingfrontend_vipps_helper
 	}
 
 
-	public function getPendingTransactions()
-	{
-		$soapplication = CreateObject('booking.soapplication');
-
-		// Fetch unposted transactions
-		$unposted_transactions = $soapplication->get_unposted_transactions();
-
-		// Return the transactions for rendering in the view
-		return $unposted_transactions;
-	}
-
 	public function postToAccountingSystem()
 	{
+		require_once SRC_ROOT_PATH . '/modules/booking/inc/interfaces/AccountingSystemInterface.php';
+		require_once SRC_ROOT_PATH . '/modules/booking/inc/accounting/AccountingSystemFactory.php';
+		require_once SRC_ROOT_PATH . '/modules/booking/inc/accounting/VismaEnterpriseAccounting.php';
+
 		$soapplication = CreateObject('booking.soapplication');
 
+		// Hent config for å avgjøre hvilket regnskapssystem som skal brukes
+		$location_obj = new Locations();
+		$location_id = $location_obj->get_id('booking', 'run');
+		$custom_config = CreateObject('admin.soconfig', $location_id);
+		$accounting_config = $custom_config->config_data['Accounting'] ?? [];
+		$accounting_system = $accounting_config['system'] ?? 'visma_enterprise';
+
+		// Opprett regnskapssystem basert på konfigurasjon
+		try
+		{
+			$accounting = \App\modules\booking\helpers\accounting\AccountingSystemFactory::create(
+				$accounting_system,
+				$accounting_config,
+				$this->debug
+			);
+		}
+		catch (Exception $e)
+		{
+			if ($this->debug)
+			{
+				print_r("Failed to initialize accounting system: " . $e->getMessage());
+			}
+			return;
+		}
+
+		// Sjekk om regnskapssystemet er riktig konfigurert
+		if (!$accounting->isConfigured())
+		{
+			if ($this->debug)
+			{
+				print_r("Accounting system is not properly configured: " . $accounting->getLastError());
+			}
+			return;
+		}
+
 		// Hent alle transaksjoner som ikke er bokført
-		$unposted_transactions = $soapplication->get_unposted_transactions();
+		$result = $soapplication->get_unposted_transactions();
+		$unposted_transactions = $result['results'] ?? [];
 
 		foreach ($unposted_transactions as $transaction)
 		{
@@ -680,18 +703,28 @@ class bookingfrontend_vipps_helper
 			if ($payment_details['transactionInfo']['status'] === 'CAPTURE')
 			{
 				// Send transaksjonen til regnskapssystemet
-				$result = $this->post_to_visma($amount / 100, $description, $date);
+				$result = $accounting->postTransaction(
+					$amount / 100,
+					$description,
+					$date,
+					$remote_order_id
+				);
 
 				if ($result)
 				{
 					// Oppdater status i databasen for å markere som bokført
 					$soapplication->mark_as_posted($remote_order_id);
+
+					if ($this->debug)
+					{
+						print_r("Successfully posted transaction {$remote_order_id} to accounting system.");
+					}
 				}
 				else
 				{
 					if ($this->debug)
 					{
-						print_r("Failed to post transaction {$remote_order_id} to accounting system.");
+						print_r("Failed to post transaction {$remote_order_id} to accounting system: " . $accounting->getLastError());
 					}
 				}
 			}
@@ -703,111 +736,78 @@ class bookingfrontend_vipps_helper
 				}
 			}
 		}
-	}
+		// Hent transaksjoner som er markert som refundert men ikke bokført
+		$result = $soapplication->get_unposted_refund_transactions();
+		$unposted_refunds = $result['results'] ?? [];
 
-	private function get_visma_access_token()
-	{
-		$url = "https://integration.visma.net/API/security/authorize"; // Visma's token endpoint
-
-		$headers = [
-			'Content-Type' => 'application/x-www-form-urlencoded',
-		];
-
-		$body = [
-			'grant_type'    => 'client_credentials',
-			'client_id'     => $this->visma_client_id, // Replace with your Visma client ID
-			'client_secret' => $this->visma_client_secret, // Replace with your Visma client secret
-			'scope'         => 'financials', // Adjust the scope based on your needs
-		];
-
-		try
+		foreach ($unposted_refunds as $refund)
 		{
-			$client = new GuzzleHttp\Client();
-			$response = $client->request('POST', $url, [
-				'headers' => $headers,
-				'form_params' => $body,
-			]);
+			$remote_order_id = $refund['remote_order_id'];
+			$amount = $refund['amount'];
+			$description = $refund['description'];
+			$date = $refund['date'];
+			$original_transaction_id = $refund['original_transaction_id'] ?? null;
 
-			$data = json_decode($response->getBody()->getContents(), true);
+			// Send refunderingen til regnskapssystemet
+			$result = $accounting->postRefundTransaction(
+				$amount / 100,
+				$description,
+				$date,
+				$remote_order_id,
+				$original_transaction_id
+			);
 
-			if (!empty($data['access_token']))
+			if ($result)
 			{
-				return $data['access_token'];
+				// Oppdater status i databasen for å markere refunderingen som bokført
+				$soapplication->mark_refund_as_posted($remote_order_id);
+
+				if ($this->debug)
+				{
+					print_r("Successfully posted refund for transaction {$remote_order_id} to accounting system.");
+				}
 			}
 			else
 			{
-				throw new Exception('Failed to retrieve Visma access token.');
+				if ($this->debug)
+				{
+					print_r("Failed to post refund for transaction {$remote_order_id} to accounting system: " . $accounting->getLastError());
+				}
 			}
 		}
-		catch (\GuzzleHttp\Exception\BadResponseException $e)
+		// Etter du har behandlet unposted_refund_transactions
+		// Finn betalinger som er bokført, men senere refundert og refunderingen er ikke bokført
+		$refunds_needing_posting = $soapplication->get_refunded_posted_payments();
+
+		// Bokfør disse refunderingene
+		foreach ($refunds_needing_posting as $refund)
 		{
-			if ($this->debug)
+			// Send refunderingen til regnskapssystemet
+			$result = $accounting->postRefundTransaction(
+				$refund['amount'] / 100,
+				$refund['description'],
+				$refund['date'],
+				$refund['remote_order_id'],
+				$refund['original_transaction_id']
+			);
+
+			if ($result)
 			{
-				print_r($e->getMessage());
+				// Oppdater status i databasen for å markere refunderingen som bokført
+				$soapplication->mark_refund_as_posted($refund['remote_order_id']);
+
+				if ($this->debug)
+				{
+					print_r("Successfully posted refund for transaction {$refund['remote_order_id']} to accounting system.");
+				}
 			}
-			return null;
-		}
-	}
-
-	private function get_cached_visma_access_token()
-	{
-		$cache_key = 'visma_access_token';
-		$cached_token = Cache::session_get('vipps', $cache_key);
-
-		if ($cached_token)
-		{
-			return $cached_token;
-		}
-
-		// Fetch a new token if not cached
-		$new_token = $this->get_visma_access_token();
-
-		if ($new_token)
-		{
-			// Cache the token for 1 hour (or the token's expiration time)
-			Cache::session_set('vipps', $cache_key, $new_token);
-		}
-
-		return $new_token;
-	}
-	private function post_to_visma($amount, $description, $date)
-	{
-		$url = "https://integration.visma.net/API/controller/api/v1/journaltransaction";
-
-		$headers = [
-			'Authorization' => 'Bearer ' . $this->get_cached_visma_access_token(),
-			'Content-Type'  => 'application/json',
-		];
-		$request_body = [
-			"lines" => [
-				[
-					"account"       => "3000", // Konto for Vipps-inntekter
-					"amount"        => $amount,
-					"description"   => $description,
-					"transactionDate" => $date,
-				]
-			],
-			"journalTransactionDate" => $date,
-			"description"            => "Vipps betaling",
-		];
-
-		try
-		{
-			$client = new GuzzleHttp\Client();
-			$response = $client->request('POST', $url, [
-				'headers' => $headers,
-				'json'    => $request_body,
-			]);
-
-			return json_decode($response->getBody()->getContents(), true);
-		}
-		catch (\GuzzleHttp\Exception\BadResponseException $e)
-		{
-			if ($this->debug)
+			else
 			{
-				print_r($e->getMessage());
+				if ($this->debug)
+				{
+					print_r("Failed to post refund for transaction {$refund['remote_order_id']} to accounting system: " . $accounting->getLastError());
+				}
 			}
-			return false;
 		}
 	}
 }

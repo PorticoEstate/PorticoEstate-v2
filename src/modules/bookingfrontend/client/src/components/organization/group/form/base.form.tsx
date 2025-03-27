@@ -19,7 +19,6 @@ interface GroupFormBaseProps {
 const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }: GroupFormBaseProps) => {
     const t = useTrans();
     const [activityList, setOpen] = useState(false);
-    if (!activities) return;
     return (
         <>
             <Controller
@@ -69,7 +68,7 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                             onClick={() => setOpen(!activityList)}
                         >
                             { value
-                                ? activities.find((ac) => ac.id === value)?.name
+                                ? activities?.find((ac) => ac.id === value)?.name
                                 : t(('bookingfrontend.please select an activity')) 
                             }
                             {
@@ -84,7 +83,7 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                             id="activity_list"
                         >
                             <Dropdown.List>
-                                { activities.map((item: ShortActivity) => (
+                                { activities?.map((item: ShortActivity) => (
                                     <Dropdown.Item key={item.id} onClick={() => onChange(item.id)}>
                                         <Dropdown.Button>
                                             {item.name}

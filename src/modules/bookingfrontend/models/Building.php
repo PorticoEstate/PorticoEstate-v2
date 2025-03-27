@@ -26,6 +26,7 @@ class Building
      * @ORM\Column(type="integer")
      * @ORM\GeneratedValue(strategy="AUTO")
      * @Expose
+     * @Short
      * @OA\Property(
      *      description="Unique identifier for the building",
      *      type="integer"
@@ -36,6 +37,7 @@ class Building
     /**
      * @ORM\Column(type="string", length=150)
      * @Expose
+     * @Short
      * @EscapeString(mode="default")
      * @OA\Property(
      *      description="Name of the building",
@@ -92,6 +94,7 @@ class Building
     /**
      * @ORM\Column(type="string", length=255)
      * @Expose
+     * @Short
      * @OA\Property(
      *      description="Street address of the building",
      *      type="string",
@@ -103,6 +106,7 @@ class Building
     /**
      * @ORM\Column(type="string", length=255)
      * @Expose
+     * @Short
      * @OA\Property(
      *      description="Zip code of the building",
      *      type="string",
@@ -114,6 +118,7 @@ class Building
     /**
      * @ORM\Column(type="string", length=255)
      * @Expose
+     * @Short
      * @OA\Property(
      *      description="City where the building is located",
      *      type="string",
@@ -125,6 +130,7 @@ class Building
     /**
      * @ORM\Column(type="string", length=255)
      * @Expose
+     * @Short
      * @OA\Property(
      *      description="District or part of town",
      *      type="string",
@@ -135,6 +141,8 @@ class Building
 
     /**
      * @ORM\Column(type="text", nullable=true)
+     * @Expose
+     * @Short
      * @OA\Property(
      *      description="Location code of the building",
      *      type="string",
@@ -146,6 +154,7 @@ class Building
     /**
      * @ORM\Column(type="integer", options={"default" : 0})
      * @Expose
+     * @Short
      * @OA\Property(
      *      description="Whether the calendar is deactivated, 0 or 1",
      *      type="integer"
@@ -156,6 +165,7 @@ class Building
     /**
      * @ORM\Column(type="integer", options={"default" : 0})
      * @Expose
+     * @Short
      * @OA\Property(
      *      description="Whether applications are deactivated, 0 or 1",
      *      type="integer"
@@ -166,6 +176,7 @@ class Building
     /**
      * @ORM\Column(type="integer", options={"default" : 0})
      * @Expose
+     * @Short
      * @OA\Property(
      *      description="Whether sending messages is deactivated, 0 or 1",
      *      type="integer"
@@ -253,6 +264,8 @@ class Building
 
     /**
      * @ORM\Column(type="integer", options={"default" : 0})
+     * @Expose
+     * @Short
      * @OA\Property(
      *      description="Whether there is an extra calendar, 0 or 1",
      *      type="integer"
@@ -262,6 +275,8 @@ class Building
 
     /**
      * @ORM\Column(type="integer")
+     * @Expose
+     * @Short
      * @OA\Property(
      *      description="Activity ID associated with the building",
      *      type="integer"

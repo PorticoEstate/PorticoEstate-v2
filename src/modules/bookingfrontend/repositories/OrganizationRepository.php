@@ -58,7 +58,6 @@ class OrganizationRepository
         return ['sql' => $sql, 'params' => $params];
     }
     
-
     public function partialOrganization(int $id)
     {
         return $this->getPartial('bb_organization', $id);
@@ -92,19 +91,17 @@ class OrganizationRepository
 
     public function getSubActivityList(int $id)
     {
-        $parentActSql = "SELECT act.id FROM bb_activity as act
-        JOIN bb_organization as org
-        ON act.id = org.activity_id
-        WHERE org.id = :id
-        ";
-
-        $sql = "SELECT json_agg(json_build_object('id', act.id, 'name', act.name)) as data
-        FROM bb_activity as act
-        WHERE act.parent_id = ($parentActSql)";
-
-        $sql = "SElECT json_agg(json_build_object('id', act.id, 'name', act.name)) as data FROM bb_activity as act";
+        
+        $sql = "SELECT json_agg(json_build_object('id', a1.id, 'name', a1.name)) as data
+        FROM public.bb_activity a1
+        JOIN bb_activity a2
+        ON a1.parent_id = a2.id
+        WHERE a2.id = (
+            select o.activity_id FROM bb_organization o
+            where o.id = :id
+        )";
         $stmt = $this->db->prepare($sql);
-        $stmt->execute();
+        $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 

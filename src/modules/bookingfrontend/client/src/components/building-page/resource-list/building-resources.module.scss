@@ -1,25 +1,17 @@
+@import "@/styles/util.module";
+
 .resourcesHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
-.resourcesContainer {
-    display: flex;
-    gap: 5px;
-    flex-wrap: wrap;
-    max-height: 42px; /* Adjust this value based on your button height */
-    overflow: hidden;
-    position: relative;
-}
 
-.showMoreButton {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    background-color: white;
-    padding: 0 5px;
-}
+.resourcesGrid {
+	display: flex;
+	flex-wrap: wrap;
+    gap: 10px;
+    @include mobile {
 
-.expanded {
-    max-height: none;
+        gap: 8px;
+    }
 }

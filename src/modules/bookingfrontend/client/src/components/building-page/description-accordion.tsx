@@ -21,7 +21,7 @@ const DescriptionAccordion = async (props: DescriptionAccordionProps) => {
         return null;
     }
     return (
-        <GSAccordion>
+        <GSAccordion data-color={'neutral'}>
                 <GSAccordion.Heading>
                     <h3>{t('common.description')}</h3>
                 </GSAccordion.Heading>

@@ -1,75 +1,4 @@
-@use "sass:math";
-
-$medium-screen: 1024px;
-
-$text-regular: 400;
-$text-medium: 500;
-$text-bold: 700;
-$text-bolder: 900;
-
-@mixin small-screen {
-	@media (max-width: $medium-screen) {
-		@content;
-	}
-}
-
-@function getFontDef($device-map, $type, $size-or-height) {
-	@return nth(map-get($device-map, $type), if($size-or-height == 'size', 1, 2));
-}
-
-
-// name: (SIZE, HEIGHT)
-$desktop: (
-	display: (3.5rem, 4.25rem),
-	headline: (2.25rem, 2.75rem),
-	title: (1.25rem, 1.625rem),
-	subtitle: (1.125rem, 1.75rem),
-	label: (1rem, 1.25rem),
-	overline: (0.75rem, 1.375rem),
-	body: (1rem, 1.75rem),
-	caption: (0.875rem, 1.25rem),
-	tiny: (0.6875rem, 1.1),
-);
-
-$mobile: (
-	display: (2.125rem, 2.75rem),
-	headline: (1.5rem, 1.875rem),
-	title: (1.125rem, 1.5rem),
-	subtitle: (1rem, 1.375rem),
-	label: (0.875rem, 1.125rem),
-	overline: (0.625rem, 1.25rem),
-	body: (0.875rem, 1.5rem),
-	caption: (0.75rem, 1.125rem),
-	tiny: (0.6875rem, 1.1),
-);
-
-
-@mixin applyFontProperties($type) {
-	font-size: getFontDef($desktop, $type, 'size');
-	line-height: getFontDef($desktop, $type, 'height');
-
-	@include small-screen {
-		font-size: getFontDef($mobile, $type, 'size');
-		line-height: getFontDef($mobile, $type, 'height');
-	}
-}
-
-@mixin applyLineHeights($type) {
-	line-height: getFontDef($desktop, $type, 'height');
-
-	@include small-screen {
-		line-height: getFontDef($mobile, $type, 'height');
-	}
-}
-
-@mixin applyFontSize($type) {
-	font-size: getFontDef($desktop, $type, 'size');
-
-	@include small-screen {
-		font-size: getFontDef($mobile, $type, 'size');
-	}
-}
-
+@import "./typography-vars.module.scss";
 
 body {
 	//font-family: 'Roboto', sans-serif;
@@ -78,7 +7,7 @@ body {
 }
 
 h1, .h1 {
-	font-family: var(--font-poppins);
+	//font-family: var(--font-poppins);
 	font-weight: $text-regular;
 	margin-top: 0;
 	margin-bottom: 2rem;
@@ -86,7 +15,7 @@ h1, .h1 {
 }
 
 h2, .h2 {
-	font-family: var(--font-poppins);
+	//font-family: var(--font-poppins);
 	&:not(.ds-heading) {
 		font-weight: $text-regular;
 		@include applyFontProperties('headline');
@@ -102,10 +31,6 @@ h3, .h3 {
 h4, .h4 {
 	font-weight: $text-medium;
 	@include applyFontProperties('subtitle');
-}
-
-@function strip-unit($value) {
-	@return math.div($value, ($value * 0 + 1));
 }
 
 .font-size {
@@ -147,54 +72,6 @@ h4, .h4 {
 	}
 }
 
-@mixin text-styles {
-	&-small {
-		@include applyFontProperties('caption');
-	}
-
-	&-overline {
-		@include applyFontProperties('overline');
-		text-transform: uppercase;
-		font-weight: $text-regular;
-	}
-
-	&-body, &-normal, &-medium, &-lg {
-		@include applyFontProperties('body');
-	}
-
-	&-label {
-		@include applyFontProperties('label');
-		font-weight: $text-bold;
-	}
-
-	&-xl {
-		@include applyFontProperties('title');
-	}
-
-	&-2xl {
-		@include applyFontProperties('headline');
-	}
-
-	&-3xl, &-4xl {
-		@include applyFontProperties('display');
-	}
-
-	&-normal {
-		font-weight: $text-regular;
-	}
-
-	&-bold {
-		font-weight: $text-bold;
-	}
-
-	&-bolder {
-		font-weight: $text-bolder;
-	}
-}
-
-.text {
-	@include text-styles;
-}
 
 .line-height {
 	&-h1 {
@@ -212,4 +89,8 @@ h4, .h4 {
 	&-h4 {
 		@include applyLineHeights('label');
 	}
+}
+
+.underline {
+	text-decoration: underline;
 }

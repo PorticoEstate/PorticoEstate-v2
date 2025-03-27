@@ -7705,3 +7705,21 @@ function booking_upgrade0_2_109($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.110';
+function booking_upgrade0_2_110($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn(
+		'bb_payment',
+		'refund_posted_to_accounting',
+		array('type' => 'int', 'precision' => '8', 'nullable' => true),
+	);
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.111';
+		return $currentver;
+	}
+}

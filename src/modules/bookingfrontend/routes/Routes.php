@@ -104,6 +104,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->patch('', BookingUserController::class . ':update');
 		$group->get('/messages', BookingUserController::class . ':getMessages');
 		$group->delete('/messages/{id}', BookingUserController::class . ':deleteMessage');
+		$group->get('/messages/test', BookingUserController::class . ':createTestMessage');
 	});
 })->add(new SessionsMiddleware($app->getContainer()));
 

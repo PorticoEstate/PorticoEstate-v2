@@ -1,14 +1,15 @@
 'use client'
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@digdir/designsystemet-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
-import { createGroupFormSchema } from "./schemas";
+import { updateGroupFormSchema } from "./schemas";
 import { useActivityList } from "@/service/api/activity";
 import { GroupleaderForm } from "./form/contact.form";
 import GroupFormBase from "./form/base.form";
 import { Group } from "@/service/types/api/organization.types";
-import { patchGroup } from "@/service/api/organization";
+import { patchGroupRequest } from "@/service/api/organization";
 import styles from './styles/group.create.module.scss';
 import leaders from './styles/group.update.module.scss';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -21,13 +22,14 @@ interface GroupUpdateFormProps {
 
 const GroupUpdateController = ({ group, button }: GroupUpdateFormProps) => {
     const { data: activities } = useActivityList(group.organization.id);
+    const queryClient = useQueryClient();
     const t = useTrans();
     const {
         control,
         handleSubmit,
         formState: { errors },
     } = useForm({
-        resolver: zodResolver(createGroupFormSchema),
+        resolver: zodResolver(updateGroupFormSchema),
         defaultValues: {
             groupData: {
                 name: group.name,
@@ -37,11 +39,13 @@ const GroupUpdateController = ({ group, button }: GroupUpdateFormProps) => {
             },
             groupLeaders: [
                 {
+                    id: group.contact[0].id,
                     name: group.contact[0].name,
                     phone: group.contact[0].phone,
                     email: group.contact[0].email
                 },
                 {
+                    id: group.contact[1].id,
                     name: group.contact[1].name,
                     phone: group.contact[1].phone,
                     email: group.contact[1].email
@@ -49,7 +53,13 @@ const GroupUpdateController = ({ group, button }: GroupUpdateFormProps) => {
             ]
         }
     });
-    const update = patchGroup(group.id);
+        
+    const update = useMutation({
+        mutationFn: (data: any) => patchGroupRequest(group.id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['group', group.id] });
+        }
+    })
 
     const save = (group: any) => {
         update.mutate(group);

@@ -30,6 +30,9 @@ export const groupLeaderSchema: z.ZodType<CreateOrConnectLeader> = z
             .string({ message: "bookingfrontend.field_required" })
             .regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
     });
+export const groupLeaderUpdate = groupLeaderSchema.extend({
+    id: z.number().readonly()
+})
 export const groupDataSchema: z.ZodType<CreatingGroup> = z
     .object({
         name: z
@@ -49,5 +52,10 @@ export const groupDataSchema: z.ZodType<CreatingGroup> = z
 export const createGroupFormSchema: z.ZodType<CreatingGroup> = z
     .object({
         groupLeaders: z.array(groupLeaderSchema).max(2),
+        groupData: groupDataSchema
+    });
+export const updateGroupFormSchema: z.ZodType<CreatingGroup> = z
+    .object({
+        groupLeaders: z.array(groupLeaderUpdate).max(2),
         groupData: groupDataSchema
     });

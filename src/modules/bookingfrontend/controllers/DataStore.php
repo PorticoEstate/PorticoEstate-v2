@@ -241,10 +241,16 @@ class DataStore
 	public function getAvailableResources(Request $request, Response $response): Response
 	{
 		try {
+			$totalStartTime = microtime(true);
+			
 			// Get the query parameters
 			$params = $request->getQueryParams();
 			$date = $params['date'] ?? date('Y-m-d');
 			$debug = isset($params['debug']) && ($params['debug'] === 'true' || $params['debug'] === '1');
+			
+			// Initialize timing info
+			$timings = [];
+			$startTime = microtime(true);
 			
 			// Validate date format
 			$dateObj = \DateTime::createFromFormat('Y-m-d', $date);
@@ -258,14 +264,18 @@ class DataStore
 			
 			// Initialize debug info
 			$debugInfo = [];
+			$timings['date_validation'] = $this->formatExecutionTime($startTime);
 			
 			// Get all resources
+			$startTime = microtime(true);
 			$resources = $this->getRowsAsArray(
 				"SELECT r.id, r.name 
 				FROM bb_resource r"
 			);
+			$timings['get_all_resources'] = $this->formatExecutionTime($startTime);
 			
 			// Keep track of all resources for debug
+			$startTime = microtime(true);
 			if ($debug) {
 				$debugInfo['all_resources'] = [];
 				foreach ($resources as $resource) {
@@ -283,17 +293,20 @@ class DataStore
 			foreach ($resources as $r) {
 				$resourceNames[$r['id']] = $r['name'];
 			}
+			$timings['process_initial_resources'] = $this->formatExecutionTime($startTime);
 			
 			if (empty($resourceIds)) {
 				$result = ['resources' => []];
 				if ($debug) {
 					$result['debug_info'] = ['error' => 'No resources found'];
+					$result['debug_info']['timings'] = $timings;
 				}
 				$response->getBody()->write(json_encode($result));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 			}
 			
 			// Filter active resources
+			$startTime = microtime(true);
 			$activeResources = $this->getRowsAsArray(
 				"SELECT r.id 
 				FROM bb_resource r 
@@ -303,8 +316,10 @@ class DataStore
 			);
 			
 			$activeResourceIds = array_map(function($r) { return $r['id']; }, $activeResources);
+			$timings['filter_active_resources'] = $this->formatExecutionTime($startTime);
 			
 			// Update debug info for inactive resources
+			$startTime = microtime(true);
 			if ($debug) {
 				foreach ($resourceIds as $id) {
 					if (!in_array($id, $activeResourceIds)) {
@@ -312,17 +327,20 @@ class DataStore
 					}
 				}
 			}
+			$timings['update_inactive_debug_info'] = $this->formatExecutionTime($startTime);
 			
 			if (empty($activeResourceIds)) {
 				$result = ['resources' => []];
 				if ($debug) {
 					$result['debug_info'] = $debugInfo;
+					$result['debug_info']['timings'] = $timings;
 				}
 				$response->getBody()->write(json_encode($result));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 			}
 			
 			// Get seasons and boundaries for these resources on the specified date
+			$startTime = microtime(true);
 			$seasonBoundaries = $this->getRowsAsArray(
 				"SELECT DISTINCT r.id as resource_id, 
 					sb.from_ as start_time, 
@@ -342,8 +360,10 @@ class DataStore
 					':date' => $date
 				]
 			);
+			$timings['get_season_boundaries'] = $this->formatExecutionTime($startTime);
 			
 			// Group boundaries by resource ID
+			$startTime = microtime(true);
 			$resourceBoundaryMap = [];
 			foreach ($seasonBoundaries as $boundary) {
 				$resourceId = $boundary['resource_id'];
@@ -352,8 +372,10 @@ class DataStore
 				}
 				$resourceBoundaryMap[$resourceId][] = $boundary;
 			}
+			$timings['group_boundaries'] = $this->formatExecutionTime($startTime);
 			
 			// Update debug info for resources without boundaries
+			$startTime = microtime(true);
 			if ($debug) {
 				foreach ($activeResourceIds as $id) {
 					if (!isset($resourceBoundaryMap[$id])) {
@@ -361,8 +383,10 @@ class DataStore
 					}
 				}
 			}
+			$timings['update_no_boundary_debug_info'] = $this->formatExecutionTime($startTime);
 			
 			// Get all bookings for the current date
+			$startTime = microtime(true);
 			$bookings = $this->getRowsAsArray(
 				"SELECT DISTINCT br.resource_id,
 					b.from_ as booking_start,
@@ -379,8 +403,10 @@ class DataStore
 					':date_end' => $date . ' 23:59:59'
 				]
 			);
+			$timings['get_bookings'] = $this->formatExecutionTime($startTime);
 			
 			// Group bookings by resource ID
+			$startTime = microtime(true);
 			$resourceBookingsMap = [];
 			foreach ($bookings as $booking) {
 				$resourceId = $booking['resource_id'];
@@ -389,8 +415,10 @@ class DataStore
 				}
 				$resourceBookingsMap[$resourceId][] = $booking;
 			}
+			$timings['group_bookings'] = $this->formatExecutionTime($startTime);
 			
 			// Get all allocations for the current date
+			$startTime = microtime(true);
 			$allocations = $this->getRowsAsArray(
 				"SELECT DISTINCT ar.resource_id,
 					a.from_ as alloc_start,
@@ -407,8 +435,10 @@ class DataStore
 					':date_end' => $date . ' 23:59:59'
 				]
 			);
+			$timings['get_allocations'] = $this->formatExecutionTime($startTime);
 			
 			// Group allocations by resource ID
+			$startTime = microtime(true);
 			$resourceAllocationsMap = [];
 			foreach ($allocations as $allocation) {
 				$resourceId = $allocation['resource_id'];
@@ -417,13 +447,21 @@ class DataStore
 				}
 				$resourceAllocationsMap[$resourceId][] = $allocation;
 			}
+			$timings['group_allocations'] = $this->formatExecutionTime($startTime);
 			
 			// Process each resource to check availability
+			$startTime = microtime(true);
 			$availableResources = [];
+			$resourceProcessingTimes = [];
 			
 			foreach ($activeResourceIds as $resourceId) {
+				$resourceStartTime = microtime(true);
+				
 				// Skip if resource has no boundaries (not available this day)
 				if (!isset($resourceBoundaryMap[$resourceId])) {
+					if ($debug) {
+						$resourceProcessingTimes[$resourceId] = $this->formatExecutionTime($resourceStartTime);
+					}
 					continue;
 				}
 				
@@ -435,6 +473,8 @@ class DataStore
 				
 				// Check for each boundary if there's at least 30 minutes available
 				foreach ($resourceBoundaryMap[$resourceId] as $boundary) {
+					$boundaryStartTime = microtime(true);
+					
 					$startTime = strtotime($date . ' ' . $boundary['start_time']);
 					$endTime = strtotime($date . ' ' . $boundary['end_time']);
 					$boundaryDuration = ($endTime - $startTime) / 60; // duration in minutes
@@ -445,7 +485,8 @@ class DataStore
 							$availableMinutesPerBoundary[] = [
 								'boundary' => $date . ' ' . $boundary['start_time'] . ' - ' . $date . ' ' . $boundary['end_time'],
 								'duration' => $boundaryDuration,
-								'reason' => 'Boundary too short (less than 30 minutes)'
+								'reason' => 'Boundary too short (less than 30 minutes)',
+								'processing_time' => $this->formatExecutionTime($boundaryStartTime)
 							];
 						}
 						continue;
@@ -457,6 +498,7 @@ class DataStore
 					$overlappingAllocations = [];
 					
 					// Process bookings
+					$bookingsStartTime = microtime(true);
 					foreach ($resourceBookings as $booking) {
 						$bookingStart = strtotime($booking['booking_start']);
 						$bookingEnd = strtotime($booking['booking_end']);
@@ -480,8 +522,10 @@ class DataStore
 							];
 						}
 					}
+					$bookingsProcessingTime = $this->formatExecutionTime($bookingsStartTime);
 					
 					// Process allocations
+					$allocationsStartTime = microtime(true);
 					foreach ($resourceAllocations as $allocation) {
 						$allocStart = strtotime($allocation['alloc_start']);
 						$allocEnd = strtotime($allocation['alloc_end']);
@@ -505,6 +549,7 @@ class DataStore
 							];
 						}
 					}
+					$allocationsProcessingTime = $this->formatExecutionTime($allocationsStartTime);
 					
 					// Check if at least 30 minutes are available
 					$availableMinutes = $boundaryDuration - $totalUnavailableMinutes;
@@ -516,6 +561,11 @@ class DataStore
 							'booked_duration' => $totalUnavailableMinutes,
 							'available_duration' => $availableMinutes,
 							'has_30min_available' => $availableMinutes >= 30,
+							'processing_time' => $this->formatExecutionTime($boundaryStartTime),
+							'timings' => [
+								'bookings_check' => $bookingsProcessingTime,
+								'allocations_check' => $allocationsProcessingTime
+							]
 						];
 						
 						if (!empty($overlappingBookings)) {
@@ -552,9 +602,15 @@ class DataStore
 					$debugInfo['all_resources'][$resourceId]['reason'] = 'No 30-minute slot available in any boundary';
 					$debugInfo['all_resources'][$resourceId]['boundaries'] = $availableMinutesPerBoundary;
 				}
+				
+				if ($debug) {
+					$resourceProcessingTimes[$resourceId] = $this->formatExecutionTime($resourceStartTime);
+				}
 			}
+			$timings['process_resources'] = $this->formatExecutionTime($startTime);
 			
 			// Prepare response
+			$startTime = microtime(true);
 			$result = ['resources' => $availableResources];
 			
 			if ($debug) {
@@ -562,17 +618,24 @@ class DataStore
 				$formattedDebugInfo = [];
 				foreach ($debugInfo['all_resources'] as $id => $info) {
 					$info['name'] = $resourceNames[$id] ?? 'Unknown';
+					if (isset($resourceProcessingTimes[$id])) {
+						$info['processing_time'] = $resourceProcessingTimes[$id];
+					}
 					$formattedDebugInfo[$id] = $info;
 				}
+				
+				$timings['total_execution_time'] = $this->formatExecutionTime($totalStartTime);
 				
 				$result['debug_info'] = [
 					'date' => $date,
 					'day_of_week' => $dayOfWeek,
 					'resources' => $formattedDebugInfo,
 					'available_count' => count($availableResources),
-					'total_resources' => count($resourceIds)
+					'total_resources' => count($resourceIds),
+					'timings' => $timings
 				];
 			}
+			$timings['prepare_response'] = $this->formatExecutionTime($startTime);
 			
 			// Return the list of available resource IDs
 			$response->getBody()->write(json_encode($result));
@@ -584,6 +647,17 @@ class DataStore
 			$response->getBody()->write(json_encode(['error' => $error]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
+	}
+	
+	/**
+	 * Format execution time in milliseconds
+	 *
+	 * @param float $startTime The start time from microtime(true)
+	 * @return float Execution time in milliseconds
+	 */
+	private function formatExecutionTime($startTime): float
+	{
+		return round((microtime(true) - $startTime) * 1000, 2); // milliseconds with 2 decimal places
 	}
 
 }

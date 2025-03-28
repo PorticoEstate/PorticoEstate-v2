@@ -1,8 +1,8 @@
 @import "../../../styles/util.module";
 
 .mainContent {
-    margin-left: 2px;
-    margin-right: 2px;
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
     @include tablet {
         margin-left: 1rem;
         margin-right: 1rem;

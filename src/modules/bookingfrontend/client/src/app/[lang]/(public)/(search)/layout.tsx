@@ -13,7 +13,7 @@ export default async function Layout(props: PropsWithChildren) {
 	const {t} = await getTranslation();
 
 	return (
-		<div className="container">
+		<div>
 			<ClientHeading>
 				<header className="page-heading">
 					<Heading data-size={"xl"}

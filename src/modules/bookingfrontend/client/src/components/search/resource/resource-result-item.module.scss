@@ -50,13 +50,13 @@
 	text-overflow: ellipsis;
 	max-width: calc(100% - 2rem);
 
-	white-space: nowrap; // for 1 line
+	//white-space: nowrap; // for 1 line
 
-	//display: -webkit-box; // for 2 line
-	//-webkit-line-clamp: 2; // for 2 line
-	//-webkit-box-orient: vertical; // for 2 line
-	//line-height: 1.5em; // for 2 line
-	//max-height: 3em; // for 2 line
+	display: -webkit-box; // for 2 line
+	-webkit-line-clamp: 2; // for 2 line
+	-webkit-box-orient: vertical; // for 2 line
+	line-height: 1.5em; // for 2 line
+	max-height: 3em; // for 2 line
 
 	margin-bottom: 0;
 }

@@ -28,7 +28,7 @@ const ClientHeading: FC<ClientHeadingProps> = (props) => {
 		return props.children
 	}
 	return (
-		<header className="page-heading">
+		<header className="page-heading" style={{paddingBottom: '1rem'}}>
 			<Heading data-size={"xl"}
 					 className="page-title ds-color-accent">{t('bookingfrontend.'+title)}</Heading>
 			<Paragraph data-size={'xl'}

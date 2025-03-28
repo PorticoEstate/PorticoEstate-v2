@@ -318,9 +318,9 @@ class OrganizationRepository
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function patchGroupLeader(int $groupId, array $data)
+    public function patchGroupLeader(array $data)
     {
-        $params = [':id' => $groupId];
+        $params = [':id' => $data['id']];
         $updateFields = [];
 
         foreach ($data as $field => $value) {

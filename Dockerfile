@@ -46,9 +46,11 @@ RUN apt-get update && apt-get install -y software-properties-common \
     libaio1 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \
-	cron \
-	iputils-ping \
-	wkhtmltopdf
+    cron \
+    iputils-ping \
+    net-tools \
+    psmisc \
+    wkhtmltopdf
 
 RUN touch /etc/cron.d/cronjob && chmod 0644 /etc/cron.d/cronjob
 
@@ -165,6 +167,7 @@ ENV APACHE_RUN_GROUP=www-data
 ENV APACHE_LOG_DIR=/var/log/apache2
 ENV APP_DOCUMENT_ROOT=/var/www/html
 
+# Expose ports
 EXPOSE 80
 
 
@@ -176,6 +179,7 @@ RUN a2enmod headers
 RUN a2enmod ssl
 RUN a2enmod proxy
 RUN a2enmod proxy_http
+RUN a2enmod proxy_wstunnel  # Required for WebSockets
 
 # Set Apache LogFormat to combined format
 RUN echo 'LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined' > /etc/apache2/conf-available/custom-log-format.conf \

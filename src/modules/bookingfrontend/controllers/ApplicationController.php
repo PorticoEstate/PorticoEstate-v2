@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\controllers;
 
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\services\ApplicationService;
 use App\modules\phpgwapi\security\Sessions;
@@ -264,6 +265,9 @@ class ApplicationController extends DocumentController
                 'id' => $id,
                 'message' => 'Partial application created successfully'
             ];
+
+            // Broadcast notification through WebSocket
+            $this->broadcastPartialApplicationCreated($id, $data);
 
             $response->getBody()->write(json_encode($responseData));
             return $response->withStatus(201)
@@ -1117,4 +1121,33 @@ class ApplicationController extends DocumentController
 			);
 		}
 	}
+
+    /**
+     * Broadcasts a notification when a partial application is created
+     *
+     * @param int $id The ID of the created partial application
+     * @param array $data The application data
+     * @return void
+     */
+    protected function broadcastPartialApplicationCreated(int $id, array $data): void
+    {
+        try {
+            // Extract relevant information to include in the notification
+            $notificationData = [
+                'id' => $id,
+                'type' => 'partial_application_created',
+                'resource_id' => $data['resources'][0] ?? null,
+                'timestamp' => date('c')
+            ];
+            
+            // Send the notification through WebSocket
+            WebSocketHelper::sendNotification(
+                'New partial application created', 
+                $notificationData
+            );
+        } catch (Exception $e) {
+            // Log error but don't interrupt the main request flow
+            error_log("WebSocket notification error: " . $e->getMessage());
+        }
+    }
 }

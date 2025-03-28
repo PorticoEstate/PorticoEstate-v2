@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        #messages {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        .message {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .message-input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        .controls button {
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket Test</h1>
+    
+    <div id="connection-status">Disconnected</div>
+    
+    <div class="controls">
+        <button id="connect">Connect</button>
+        <button id="disconnect">Disconnect</button>
+    </div>
+    
+    <h2>Messages:</h2>
+    <div id="messages"></div>
+    
+    <input type="text" id="message" class="message-input" placeholder="Type a message...">
+    <div class="controls">
+        <button id="send-chat">Send Chat Message</button>
+        <button id="send-notification">Send Notification</button>
+    </div>
+
+    <!-- Include the WebSocket client library -->
+    <script src="/src/WebSocket/client.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const connectBtn = document.getElementById('connect');
+            const disconnectBtn = document.getElementById('disconnect');
+            const sendChatBtn = document.getElementById('send-chat');
+            const sendNotificationBtn = document.getElementById('send-notification');
+            const messageInput = document.getElementById('message');
+            const messagesContainer = document.getElementById('messages');
+            const connectionStatus = document.getElementById('connection-status');
+            
+            let wsClient = null;
+            
+            function addMessage(text) {
+                const msgEl = document.createElement('div');
+                msgEl.className = 'message';
+                msgEl.textContent = text;
+                messagesContainer.appendChild(msgEl);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+            
+            connectBtn.addEventListener('click', () => {
+                if (wsClient) {
+                    addMessage('Already connected');
+                    return;
+                }
+                
+                // Use the correct WebSocket URL based on your configuration
+                // For local testing with direct port access
+                const hostname = window.location.hostname;
+                const wsUrl = window.location.protocol === 'https:' 
+                    ? `wss://${hostname}/wss` 
+                    : `ws://${hostname}/wss`;
+                
+                // For debugging, also show direct port connection option
+                console.log(`Connection options:
+                1. Via proxy: ${wsUrl}
+                2. Direct port: ws://${hostname}:8082`);
+                    
+                addMessage(`Connecting to ${wsUrl}...`);
+                
+                try {
+                    // Always use the /wss path, regardless of environment
+                    
+                    // Use the client library
+                    wsClient = createWebSocketClient(wsUrl);
+                    
+                    // Success is handled by the client library events
+                    addMessage(`Connection attempt initiated to ${wsUrl}`);
+                } catch (error) {
+                    addMessage(`Failed to connect: ${error.message}`);
+                    console.error('Connection error:', error);
+                }
+            });
+            
+            disconnectBtn.addEventListener('click', () => {
+                if (wsClient) {
+                    wsClient.close();
+                    addMessage('Disconnecting...');
+                    wsClient = null;
+                } else {
+                    addMessage('Not connected');
+                }
+            });
+            
+            sendChatBtn.addEventListener('click', () => {
+                sendWebSocketMessage('chat');
+            });
+            
+            sendNotificationBtn.addEventListener('click', () => {
+                sendWebSocketMessage('notification');
+            });
+            
+            function sendWebSocketMessage(type) {
+                if (!wsClient) {
+                    addMessage('Not connected to server');
+                    return;
+                }
+                
+                const message = messageInput.value.trim();
+                if (!message) {
+                    addMessage('Please enter a message');
+                    return;
+                }
+                
+                // Send the message using the client library
+                const success = wsClient.sendMessage(type, message);
+                
+                if (success) {
+                    addMessage(`Sent ${type}: ${message}`);
+                    messageInput.value = '';
+                } else {
+                    addMessage('Failed to send message');
+                }
+            }
+            
+            messageInput.addEventListener('keypress', (event) => {
+                if (event.key === 'Enter') {
+                    sendWebSocketMessage('chat');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -43,6 +43,7 @@ again	booking	no	Igjen
 age group	bookingfrontend	no	Aldersgruppe
 agegroup	bookingfrontend	no	Aldersgruppe
 Agegroups kan not be larger than 9999 peoples	bookingfrontend	no	Estimert antall deltakere kan ikke være større en 9999 personer
+all_day	bookingfrontend	no	Hele dagen
 allocation	bookingfrontend	no	Tildeling
 Allocation deleted on	bookingfrontend	no	Tildeling slette på
 allocation show	bookingfrontend	no	Tildeling
@@ -233,6 +234,8 @@ Edit System Message	bookingfrontend	no	Rediger systemmelding
 Edit until	bookingfrontend	no	Endre til
 edit_event	bookingfrontend	no	Rediger arrangement
 editer	bookingfrontend	no	Rediger
+end_time_in_past	bookingfrontend	no	Sluttidspunktet kan ikke være i fortiden
+end_time_outside_business_hours	bookingfrontend	no	Sluttidspunktet må være innenfor åpningstider
 enter_team_organization_name	bookingfrontend	no	Skriv navn på lag/organisasjon
 enter_title	bookingfrontend	no	Angi en tittel
 entity %1 has been saved	bookingfrontend	no	Post %1 er lagret
@@ -563,7 +566,9 @@ social security number	bookingfrontend	no	Fødselsnummer (11 siffer)
 square meter	bookingfrontend	no	Kvadratmeter
 Ssn	bookingfrontend	no	Fødselsnummer (11 siffer)
 SSN not registred	common	no	Du er ikke registrert i Frivillighetsregisteret eller organisasjonen mangler organisasjonsnummer i AktivKommune
+start_time_in_past	bookingfrontend	no	Starttidspunktet kan ikke være i fortiden
 start_time_must_be_before_end_time	bookingfrontend	no	Starttiden må være tidligere enn sluttiden
+start_time_outside_business_hours	bookingfrontend	no	Starttidspunktet må være innenfor åpningstider
 status	bookingfrontend	no	Status
 street	bookingfrontend	no	Gate
 su	bookingfrontend	no	søn

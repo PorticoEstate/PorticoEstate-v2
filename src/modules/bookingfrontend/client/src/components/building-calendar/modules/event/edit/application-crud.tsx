@@ -351,7 +351,16 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	useEffect(() => {
 		if (!startTime) return;
 
-		if (!isWithinBusinessHours(startTime)) {
+		// Check if date is in the past
+		const now = new Date();
+		if (startTime < now) {
+			setError('start', {
+				type: 'manual',
+				message: t('bookingfrontend.start_time_in_past')
+			});
+		} 
+		// Check if within business hours
+		else if (!isWithinBusinessHours(startTime)) {
 			setError('start', {
 				type: 'manual',
 				message: t('bookingfrontend.start_time_outside_business_hours')
@@ -364,7 +373,16 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	useEffect(() => {
 		if (!endTime) return;
 
-		if (!isWithinBusinessHours(endTime)) {
+		// Check if date is in the past
+		const now = new Date();
+		if (endTime < now) {
+			setError('end', {
+				type: 'manual',
+				message: t('bookingfrontend.end_time_in_past')
+			});
+		}
+		// Check if within business hours
+		else if (!isWithinBusinessHours(endTime)) {
 			setError('end', {
 				type: 'manual',
 				message: t('bookingfrontend.end_time_outside_business_hours')
@@ -381,16 +399,36 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
         if (!building || !buildingResources) {
             return;
         }
+        
+        // Check for dates in the past
+        const now = new Date();
+        const startInPast = data.start < now;
+        const endInPast = data.end < now;
+        
+        // Check for times outside business hours
 		const startOutsideHours = !isWithinBusinessHours(data.start);
 		const endOutsideHours = !isWithinBusinessHours(data.end);
-		if (startOutsideHours || endOutsideHours) {
-			if (startOutsideHours) {
+		
+		// Validate dates
+		if (startInPast || endInPast || startOutsideHours || endOutsideHours) {
+			if (startInPast) {
+				setError('start', {
+					type: 'manual',
+					message: t('bookingfrontend.start_time_in_past')
+				});
+			} else if (startOutsideHours) {
 				setError('start', {
 					type: 'manual',
 					message: t('bookingfrontend.start_time_outside_business_hours')
 				});
 			}
-			if (endOutsideHours) {
+			
+			if (endInPast) {
+				setError('end', {
+					type: 'manual',
+					message: t('bookingfrontend.end_time_in_past')
+				});
+			} else if (endOutsideHours) {
 				setError('end', {
 					type: 'manual',
 					message: t('bookingfrontend.end_time_outside_business_hours')

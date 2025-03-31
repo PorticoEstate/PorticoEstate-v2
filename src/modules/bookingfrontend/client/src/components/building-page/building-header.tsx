@@ -17,7 +17,7 @@ const BuildingHeader = async (props: BuildingHeaderProps) => {
 		<section className={`${styles.buildingHeader}`}>
 			<div className={styles.buildingName}>
 				<Heading level={2} data-size="md" className={styles.heading}>
-					<Buildings3Icon fontSize="20px"/>
+					<Buildings3Icon fontSize="24px"/>
 					{building.name}
 				</Heading>
 			</div>

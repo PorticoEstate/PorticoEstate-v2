@@ -300,6 +300,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 		const selectStart = DateTime.fromJSDate(span.start);
 		const selectEnd = DateTime.fromJSDate(span.end);
+		
+		// Prevent selections in the past
+		const now = DateTime.now();
+		if (selectStart < now) {
+			return false;
+		}
 
 		// Get all events in the calendar
 		const allEvents = calendarApi.getEvents();
@@ -404,7 +410,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			headerToolbar={false}
 			slotDuration={"00:30:00"}
 			themeSystem={'bootstrap'}
-
+			allDayText={t('bookingfrontend.all_day')}
 			firstDay={1}
 			eventClick={(clickInfo) => handleEventClick(clickInfo as any)}
 			datesSet={(dateInfo) => {

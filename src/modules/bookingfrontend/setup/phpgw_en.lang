@@ -43,6 +43,7 @@ again	booking	en	Again
 age group	bookingfrontend	en	Agegroup
 agegroup	bookingfrontend	en	Agegroup
 Agegroups kan not be larger than 9999 peoples	bookingfrontend	en	Agegroups kan not be larger than 9999 peoples
+all_day	bookingfrontend	en	All day
 allocation	bookingfrontend	en	Allocation
 Allocation deleted on	bookingfrontend	en	Allocation deleted on
 allocation show	bookingfrontend	en	Allocation display
@@ -233,6 +234,8 @@ Edit System Message	bookingfrontend	en	Edit system message
 Edit until	bookingfrontend	en	Edit until
 edit_event	bookingfrontend	en	Edit Event
 editer	bookingfrontend	en	Editer
+end_time_in_past	bookingfrontend	en	End time cannot be in the past
+end_time_outside_business_hours	bookingfrontend	en	End time must be within business hours
 enter_team_organization_name	bookingfrontend	en	Enter team/organization name
 enter_title	bookingfrontend	en	Please enter a title
 entity %1 has been saved	bookingfrontend	en	Entity %1 has been saved
@@ -563,7 +566,9 @@ social security number	bookingfrontend	en	Social security number
 square meter	bookingfrontend	en	Square meter
 Ssn	bookingfrontend	en	Ssn
 SSN not registred	common	en	Ssn not registred
+start_time_in_past	bookingfrontend	en	Start time cannot be in the past
 start_time_must_be_before_end_time	bookingfrontend	en	Start time must be earlier than end time
+start_time_outside_business_hours	bookingfrontend	en	Start time must be within business hours
 status	bookingfrontend	en	Status
 street	bookingfrontend	en	Street
 su	bookingfrontend	en	Sunday

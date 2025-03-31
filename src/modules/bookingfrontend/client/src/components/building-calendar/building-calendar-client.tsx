@@ -98,6 +98,12 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 		if (selectInfo?.view?.type === 'dayGridMonth') {
 			return;
 		}
+		
+		// Prevent creating events in the past
+		if (selectInfo?.start && DateTime.fromJSDate(selectInfo.start) < DateTime.now()) {
+			return;
+		}
+		
 		const title = t('bookingfrontend.new application');
 
 		const newEvent: FCallTempEvent = {

@@ -1,27 +1,45 @@
 import React, {FC, useMemo} from 'react';
 import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
-import {ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
+import {ISearchDataActivity, ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {LayersIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 import DividerCircle from "@/components/util/DividerCircle";
+import {useSearchData} from "@/service/hooks/api-hooks";
 
 interface ResourceResultItemProps {
 	resource: ISearchResource & { building?: ISearchDataBuilding };
 }
 
-
-
-
 const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 	const t = useTrans();
+	const {data: searchData} = useSearchData();
 
-	const tags = useMemo(() =>
+	// Find activity associated with this resource
+	const activity = useMemo(() => 
+		resource.activity_id ? 
+			searchData?.activities.find(a => a.id === resource.activity_id) : 
+			undefined, 
+		[resource.activity_id, searchData?.activities]
+	);
 
-		[<DigdirLink key='building-link' asChild className={styles.buildingLink} data-color='brand1'><Link
-			   href={'/building/' + resource.building?.id}>{resource.building?.name}</Link></DigdirLink>, resource.building?.district]
-			.filter(a => !!a), [resource]);
+	const tags = useMemo(() => {
+		const tagElements = [
+			<DigdirLink key='building-link' asChild className={styles.buildingLink} data-color='brand1'>
+				<Link href={'/building/' + resource.building?.id}>{resource.building?.name}</Link>
+			</DigdirLink>, 
+			resource.building?.district
+		];
+
+		// Add activity tag if available
+		if (activity) {
+			tagElements.push(activity.name);
+		}
+
+		return tagElements.filter(a => !!a);
+	}, [resource, activity]);
+
 	return (
 		<Card
 			data-color="neutral"

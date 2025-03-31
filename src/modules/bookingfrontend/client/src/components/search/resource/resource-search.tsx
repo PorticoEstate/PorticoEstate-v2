@@ -116,9 +116,14 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
         const resourceName = resource.name.toLowerCase();
         const buildingName = resource.building?.name?.toLowerCase() || '';
         const queryLower = query.toLowerCase();
+        
+        // Find matching activity for this resource
+        const activityName = searchData?.activities.find(activity => 
+            activity.id === resource.activity_id
+        )?.name.toLowerCase() || '';
 
-        // Check both resource name and building name
-        const nameToCheck = [resourceName, buildingName];
+        // Check resource name, building name, and activity name
+        const nameToCheck = [resourceName, buildingName, activityName];
         let highestScore = 0;
 
         for (const name of nameToCheck) {
@@ -172,7 +177,15 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
             filtered = filtered.filter(resource => {
                 const resourceNameMatch = resource.name.toLowerCase().includes(query);
                 const buildingNameMatch = resource.building?.name?.toLowerCase().includes(query);
-                return resourceNameMatch || buildingNameMatch;
+                
+                // Find activity for this resource and check if it matches the query
+                const activityMatch = resource.activity_id ? 
+                    searchData?.activities.find(activity => 
+                        activity.id === resource.activity_id && 
+                        activity.name.toLowerCase().includes(query)
+                    ) : null;
+                
+                return resourceNameMatch || buildingNameMatch || !!activityMatch;
             });
 
             // Sort by relevance/similarity

@@ -5,6 +5,7 @@ import {Button, Field, Input, Label, Select} from "@digdir/designsystemet-react"
 import styles from './calendar-date-picker.module.scss';
 import {DateTime} from "luxon";
 import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface CalendarDatePickerProps {
 	currentDate: Date;
@@ -15,6 +16,12 @@ interface CalendarDatePickerProps {
 	dateFormat?: string;
 	minTime?: string;
 	maxTime?: string;
+	/** If true, dates in the past can be selected (defaults to false) */
+	allowPastDates?: boolean;
+	/** Specify a custom minimum date (takes precedence over allowPastDates) */
+	minDate?: Date;
+	/** If true, shows debug information (ISO string of the date) below the input */
+	showDebug?: boolean;
 }
 
 
@@ -218,11 +225,15 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 															 timeIntervals = 30,
 															 dateFormat = 'dd.MM.yyyy HH:mm',
 															 maxTime,
-															 minTime
+															 minTime,
+															 allowPastDates = false,
+															 minDate,
+															 showDebug = false
 														 }) => {
 	// Get current language from i18n
 	const { i18n } = useClientTranslation();
 	const currentLang = i18n.language || 'no';
+	const isMobile = useIsMobile();
 
 	const formatSelectedDate = (showYear?: boolean) => {
 		const luxonDate = DateTime.fromJSDate(currentDate).setLocale(currentLang);
@@ -243,6 +254,111 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 		}
 	};
 
+	const handleNativeDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (!e.target.value) return;
+
+		const newDate = new Date(e.target.value);
+
+		// If using datetime-local, it already has time
+		if (e.target.type === 'datetime-local') {
+			// Ensure time is rounded to the nearest interval
+			if (timeIntervals) {
+				const minutes = newDate.getMinutes();
+				const roundedMinutes = Math.round(minutes / timeIntervals) * timeIntervals;
+				newDate.setMinutes(roundedMinutes);
+				newDate.setSeconds(0);
+			}
+			onDateChange(newDate);
+			return;
+		}
+
+		// If just date input, preserve current time
+		if (e.target.type === 'date') {
+			newDate.setHours(currentDate.getHours());
+			newDate.setMinutes(currentDate.getMinutes());
+			newDate.setSeconds(currentDate.getSeconds());
+			onDateChange(newDate);
+		}
+	};
+
+	// Determine the minimum date
+	// If minDate is specifically set, use that
+	// Otherwise, use today's date unless allowPastDates is true
+	const effectiveMinDate = minDate ? minDate : allowPastDates ? undefined : new Date();
+
+	// Format the min date for HTML inputs
+	const getMinDateString = () => {
+		if (minDate) {
+			return DateTime.fromJSDate(minDate).toFormat('yyyy-MM-dd');
+		}
+
+		if (!allowPastDates) {
+			return DateTime.now().toFormat('yyyy-MM-dd');
+		}
+
+		// If past dates are allowed, don't set a min value
+		return undefined;
+	};
+
+	const minDateString = getMinDateString();
+
+	// Helper function to ensure time aligns with the intervals
+	const alignTimeToInterval = (date: Date): Date => {
+		if (!timeIntervals) return date;
+
+		const result = new Date(date);
+		const minutes = result.getMinutes();
+		const roundedMinutes = Math.round(minutes / timeIntervals) * timeIntervals;
+		result.setMinutes(roundedMinutes);
+		result.setSeconds(0);
+		return result;
+	};
+
+	// Use native date inputs on mobile
+	if (isMobile) {
+		// Ensure the current date's time aligns with the intervals
+		const alignedDate = alignTimeToInterval(currentDate);
+		const dateValue = DateTime.fromJSDate(alignedDate).toFormat('yyyy-MM-dd');
+		const dateTimeValue = DateTime.fromJSDate(alignedDate).toFormat('yyyy-MM-dd\'T\'HH:mm');
+
+		return (
+			<div >
+				<Field className={styles.datePicker}>
+					<Field.Affixes>
+						<Field.Affix><CalendarIcon title="a11y-title" fontSize="1.5rem"/></Field.Affix>
+						{showTimeSelect ? (
+							<Input
+								type="datetime-local"
+								value={dateTimeValue}
+								onChange={handleNativeDateChange}
+								min={minDateString ? minDateString + "T00:00" : undefined}
+								step={timeIntervals * 60} // Convert minutes to seconds for step attribute
+							/>
+						) : (
+							<Input
+								type="date"
+								value={dateValue}
+								onChange={handleNativeDateChange}
+								min={minDateString}
+							/>
+						)}
+					</Field.Affixes>
+				</Field>
+				{showDebug && (
+					/* DEBUG: Display JavaScript Date as ISO string */
+					<div style={{
+						fontSize: '10px',
+						color: '#666',
+						marginTop: '4px',
+						fontFamily: 'monospace',
+						wordBreak: 'break-all'
+					}}>
+						<span style={{ fontWeight: 'bold' }}>Debug:</span> {alignedDate.toISOString()}
+					</div>
+				)}
+			</div>
+		);
+	}
 
 	return (
 		<div className={styles.datePicker}>
@@ -261,8 +377,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 				dateFormat={dateFormat}
 				showTimeInput={showTimeSelect}
 				locale={currentLang}
-				// showTimeSelectOnly
-				// timeIntervals={timeIntervals}
+				minDate={effectiveMinDate}
 				customTimeInput={
 					<TimePicker onChangeDate={(e) => {
 						onDateChange(e)
@@ -279,17 +394,20 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 							}} value={formatSelectedDate()}/>
 						</Field.Affixes>
 					</Field>
-					// <div className={styles.datePicker}>
-					//     <Button
-					//         variant="tertiary"
-					//         data-size="sm"
-					//         className={styles.datePickerButton}
-					//     >
-					//         {formatSelectedDate()}
-					//     </Button>
-					// </div>
 				)}
 			/>
+			{showDebug && (
+				/* DEBUG: Display JavaScript Date as ISO string */
+				<div style={{
+					fontSize: '10px',
+					color: '#666',
+					marginTop: '4px',
+					fontFamily: 'monospace',
+					wordBreak: 'break-all'
+				}}>
+					<span style={{ fontWeight: 'bold' }}>Debug:</span> {alignTimeToInterval(currentDate).toISOString()}
+				</div>
+			)}
 		</div>
 	);
 };

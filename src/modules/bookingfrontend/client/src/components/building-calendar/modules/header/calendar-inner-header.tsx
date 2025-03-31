@@ -16,6 +16,7 @@ import {
 	useResourcesHidden,
 } from "@/components/building-calendar/calendar-context";
 import {DateTime} from "luxon";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface CalendarInnerHeaderProps {
 
@@ -35,6 +36,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 	const {enabledResources} = useEnabledResources();
 	const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
 	const calendarViewMode = useCalenderViewMode();
+	const isMobile = useIsMobile();
 
 
 	const c = calendarRef.current;
@@ -131,23 +133,22 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 				</Button>
 			</div>
 
-			<ButtonGroup className={styles.modeSelectTime}>
-				<Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} data-color={'brand1'}
-						data-size={'sm'}
-						className={'captialize'}
-
-						onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
-				<Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
-						data-size={'sm'}
-						className={'captialize'}
-
-						onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-				{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
-				{/*        className={'captialize'}*/}
-
-				{/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
-
-			</ButtonGroup>
+			{/* Hide day/week buttons when in calendar mode on mobile */}
+			{!(isMobile && calendarViewMode === 'calendar') && (
+				<ButtonGroup className={styles.modeSelectTime}>
+					<Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} data-color={'brand1'}
+							data-size={'sm'}
+							className={'captialize'}
+							onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
+					<Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
+							data-size={'sm'}
+							className={'captialize'}
+							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
+					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
+					{/*        className={'captialize'}*/}
+					{/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
+					</ButtonGroup>
+				)}
 
 			{
 				calendarViewMode === 'calendar' &&

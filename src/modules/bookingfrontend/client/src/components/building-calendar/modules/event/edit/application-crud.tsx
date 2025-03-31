@@ -1,4 +1,4 @@
-import React, {Fragment, useMemo, useState, FC, useCallback, useEffect} from 'react';
+import React, {Fragment, useMemo, useState, FC, useCallback, useEffect, useRef} from 'react';
 import {
     Button,
     Chip, Details,
@@ -33,6 +33,7 @@ import {ApplicationFormData, applicationFormSchema} from './application-form';
 import {IBookingUser} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
 import {ArticleOrder} from "@/service/types/api/order-articles.types";
+import {isDevMode} from "@/service/util";
 
 interface ApplicationCrudProps {
     selectedTempApplication?: Partial<FCallTempEvent>;
@@ -135,6 +136,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const updateMutation = useUpdatePartialApplication();
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
+    const participantsSectionRef = useRef<HTMLDivElement>(null);
 	const [minTime, maxTime] = useMemo(() => {
 		let minTime = '24:00:00';
 		let maxTime = '00:00:00';
@@ -336,11 +338,18 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		getValues,
 		setError,
 		clearErrors,
-		formState: {errors, isDirty, dirtyFields}
+		formState: {errors, isDirty, dirtyFields, isSubmitted}
 	} = useForm<ApplicationFormData>({
 		resolver: zodResolver(applicationFormSchema),
 		defaultValues: defaultValues
     });
+
+    // Scroll to participant counts error if it exists after form submission
+    useEffect(() => {
+        if (isSubmitted && errors.agegroups?.['root']?.message && participantsSectionRef.current) {
+            participantsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [isSubmitted, errors.agegroups]);
 
     const selectedResources = watch('resources');
 	const startTime = watch('start');
@@ -358,7 +367,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				type: 'manual',
 				message: t('bookingfrontend.start_time_in_past')
 			});
-		} 
+		}
 		// Check if within business hours
 		else if (!isWithinBusinessHours(startTime)) {
 			setError('start', {
@@ -399,16 +408,16 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
         if (!building || !buildingResources) {
             return;
         }
-        
+
         // Check for dates in the past
         const now = new Date();
         const startInPast = data.start < now;
         const endInPast = data.end < now;
-        
+
         // Check for times outside business hours
 		const startOutsideHours = !isWithinBusinessHours(data.start);
 		const endOutsideHours = !isWithinBusinessHours(data.end);
-		
+
 		// Validate dates
 		if (startInPast || endInPast || startOutsideHours || endOutsideHours) {
 			if (startInPast) {
@@ -422,7 +431,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					message: t('bookingfrontend.start_time_outside_business_hours')
 				});
 			}
-			
+
 			if (endInPast) {
 				setError('end', {
 					type: 'manual',
@@ -696,25 +705,27 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                         <h3>{existingApplication ? t('bookingfrontend.edit application') : t('bookingfrontend.new application')}</h3>
                     </div>
                 }
-                footer={<Fragment>
-                    {existingApplication && (
+                footer={
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        {existingApplication && (
+                            <Button
+                                variant="tertiary"
+                                color="danger"
+                                onClick={handleDelete}
+                                type="button"
+                            >
+                                {t('common.delete')}
+                            </Button>
+                        )}
                         <Button
-                            variant="tertiary"
-                            color="danger"
-                            onClick={handleDelete}
-                            type="button"
+                            variant="primary"
+                            type="submit"
+                            disabled={!(isDirty || !existingApplication)}
                         >
-                            {t('common.delete')}
+                            {t('common.save')}
                         </Button>
-                    )}
-                    <Button
-                        variant="primary"
-                        type="submit"
-                        disabled={!(isDirty || !existingApplication)}
-                    >
-                        {t('common.save')}
-                    </Button>
-                </Fragment>}
+                    </div>
+                }
             >
                 <section className={styles.eventForm}>
                     <div className={`${styles.formGroup}`}>
@@ -753,6 +764,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											onDateChange={onChange}
 											minTime={minTime}
 											maxTime={maxTime}
+											allowPastDates={existingApplication !== undefined}
+											showDebug={isDevMode()}
 										/>
 
 
@@ -782,6 +795,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											onDateChange={onChange}
 											minTime={minTime}
 											maxTime={maxTime}
+											allowPastDates={existingApplication !== undefined}
+											showDebug={isDevMode()}
 										/>
                                         {errors.end &&
                                             <span className={styles.error}>{errors.end.message}</span>}
@@ -855,7 +870,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                         />
                     </div>
 
-                    <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+                    <div className={`${styles.formGroup}`} style={{gridColumn: 1}} ref={participantsSectionRef}>
                         <div className={styles.resourcesHeader}
                              style={{flexDirection: 'column', alignItems: 'flex-start'}}>
                             <h4>{t('bookingfrontend.estimated number of participants')}</h4>
@@ -876,11 +891,18 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                             type="number"
                                             label={agegroup.name}
                                             {...field}
-                                            value={field.value}
+                                            value={field.value === 0 ? '' : field.value}
+                                            placeholder="0"
                                             min={0}
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
                                             description={agegroup.description}
-                                            onChange={(e) => field.onChange(Number(e.target.value))}
+                                            onChange={(e) => {
+                                                const value = e.target.value === '' ? 0 : Number(e.target.value);
+                                                field.onChange(value);
+                                            }}
                                             error={errors.agegroups?.[0]?.message ? t(errors.agegroups?.[0]?.message) : undefined}
+                                            className={styles.participantInput}
                                         />
                                     )}
                                 />

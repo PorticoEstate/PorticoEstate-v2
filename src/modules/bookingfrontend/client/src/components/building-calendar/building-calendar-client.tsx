@@ -53,6 +53,13 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 		setLastCalendarView(view)
 
 	}, [view, lastCalendarView]);
+	
+	// Force day view when in calendar mode on mobile
+	useEffect(() => {
+		if (window.innerWidth < 601 && calendarViewMode === 'calendar' && view !== 'timeGridDay' && view !== 'listWeek') {
+			setView('timeGridDay');
+		}
+	}, [calendarViewMode, view]);
 
 
 	const selectEvent = useCallback((event: FCallEvent | FCallTempEvent, targetEl?: HTMLElement) => {

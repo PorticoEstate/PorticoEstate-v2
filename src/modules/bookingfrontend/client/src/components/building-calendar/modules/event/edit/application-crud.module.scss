@@ -8,8 +8,12 @@
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
+    padding-bottom: 1rem;
+
     @include mobile {
-        grid-template-columns: 1fr;
+		display: flex;
+		flex-direction: column;
+        padding-bottom: 2rem; // Extra padding at bottom on mobile for sticky footer
     }
 
     .wide {
@@ -35,6 +39,35 @@
         //@media (max-width: 600px) {
         //    grid-template-columns: 1fr;
         //}
+    }
+
+    .dateTimeInput {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        @include mobile {
+            width: 100%;
+
+            // Make the date picker containers full width
+            > :global(.datePicker), > :global(.ds-field) {
+                width: 100%;
+            }
+        }
+
+        input:not(:global(.dateView)) {
+            padding: 0.5rem;
+            border: 1px solid var(--dsc-field-affix-border-color);
+            border-radius: 0.25rem;
+			border-bottom-left-radius: 0;
+			border-top-left-radius: 0;
+            font-size: 1rem;
+
+            &:focus {
+                outline: none;
+                border-color: var(--border-focus);
+            }
+        }
     }
 
     .resourcesHeader {
@@ -63,7 +96,7 @@
             align-items: center;
             gap: 0.75rem;
             //padding: 0.75rem;
-            //border: 1px solid var(--border-subtle);
+            //border: 1px solid var(--dsc-field-affix-border-color);
             //border-radius: 0.5rem;
             //background-color: var(--surface-neutral-subtle);
 
@@ -89,7 +122,7 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            border: 1px solid var(--border-subtle);
+            border: 1px solid var(--dsc-field-affix-border-color);
             border-radius: 0.5rem;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -116,8 +149,10 @@
 
         input:not(:global(.dateView)) {
             padding: 0.5rem;
-            border: 1px solid var(--border-subtle);
-            border-radius: 0.25rem;
+            border: 1px solid var(--dsc-field-affix-border-color);
+			border-radius: 0.25rem;
+			border-bottom-left-radius: 0;
+			border-top-left-radius: 0;
             font-size: 1rem;
 
             &:focus {
@@ -169,4 +204,34 @@
     padding: 0.25rem 0;
     color: var(--ds-color-background-normal);
     font-size: 0.875rem;
+}
+
+.participantInput {
+    :global {
+        input[type="number"] {
+            -moz-appearance: textfield;
+            &::-webkit-outer-spin-button,
+            &::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            &::placeholder {
+                opacity: 0.6;
+            }
+        }
+    }
+
+    @include mobile {
+        input {
+            font-size: 16px !important; // Prevents iOS zoom on focus
+            padding-left: 0.75rem !important;
+            padding-right: 0.75rem !important;
+            height: 3rem !important; // Slightly larger touch target
+
+            &::placeholder {
+                color: var(--ds-color-text-muted);
+            }
+        }
+    }
 }

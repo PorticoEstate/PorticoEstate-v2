@@ -7,6 +7,7 @@ import {LayersIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 import DividerCircle from "@/components/util/DividerCircle";
 import {useSearchData} from "@/service/hooks/api-hooks";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface ResourceResultItemProps {
 	resource: ISearchResource & { building?: ISearchDataBuilding };
@@ -15,12 +16,12 @@ interface ResourceResultItemProps {
 const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 	const t = useTrans();
 	const {data: searchData} = useSearchData();
-
+	const isMobile = useIsMobile();
 	// Find activity associated with this resource
-	const activity = useMemo(() => 
-		resource.activity_id ? 
-			searchData?.activities.find(a => a.id === resource.activity_id) : 
-			undefined, 
+	const activity = useMemo(() =>
+		resource.activity_id ?
+			searchData?.activities.find(a => a.id === resource.activity_id) :
+			undefined,
 		[resource.activity_id, searchData?.activities]
 	);
 
@@ -28,14 +29,14 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 		const tagElements = [
 			<DigdirLink key='building-link' asChild className={styles.buildingLink} data-color='brand1'>
 				<Link href={'/building/' + resource.building?.id}>{resource.building?.name}</Link>
-			</DigdirLink>, 
+			</DigdirLink>,
 			resource.building?.district
 		];
 
-		// Add activity tag if available
-		if (activity) {
-			tagElements.push(activity.name);
-		}
+		// // Add activity tag if available
+		// if (activity) {
+		// 	tagElements.push(activity.name);
+		// }
 
 		return tagElements.filter(a => !!a);
 	}, [resource, activity]);
@@ -60,7 +61,7 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 				</DigdirLink>
 
 
-				<Paragraph data-size="sm" className={styles.resourceTags}>
+				<Paragraph data-size={isMobile ? 'xs' : "sm"} className={styles.resourceTags}>
 					{tags.map((tag, index) => {
 						if (index === 0) {
 							return <span key={'tag' + index}>{tag}</span>

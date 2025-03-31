@@ -127,6 +127,7 @@ cancelled	bookingfrontend	en	Cancelled
 Cannot change end time	bookingfrontend	en	Failed to change end time. End date cannot be before start date
 Cannot change start time	bookingfrontend	en	Failed to change start time. Start date cannot be later than end date
 case officer	bookingfrontend	en	Case officer
+case_officer	bookingfrontend	en	Case Officer
 category	bookingfrontend	en	Category
 Change organization	common	en	Change organization
 Change the allocation	bookingfrontend	en	Change the allocation
@@ -474,6 +475,7 @@ Print as PDF	bookingfrontend	en	Print as pdf
 Privacy	bookingfrontend	en	Privacy
 Privacy statement	bookingfrontend	en	Privacy statement
 Private event	bookingfrontend	en	Private event
+private_person	bookingfrontend	en	Private Person
 Project No.	bookingfrontend	en	Project no.
 Public schedule	bookingfrontend	en	Public schedule
 published	bookingfrontend	en	Published

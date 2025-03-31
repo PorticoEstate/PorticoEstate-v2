@@ -127,6 +127,7 @@ cancelled	bookingfrontend	no	Avbestilt
 Cannot change end time	bookingfrontend	no	Endring av sluttidspunkt feilet. Sluttdato kan ikke være før startdato
 Cannot change start time	bookingfrontend	no	Endring av startidspunkt feilet. Startdato kan ikke være senere enn sluttdato
 case officer	bookingfrontend	no	Saksbehandler
+case_officer	bookingfrontend	no	Saksbehandler
 category	bookingfrontend	no	Kategori
 Change organization	common	no	Bytt organisasjon
 Change the allocation	bookingfrontend	no	Endre tildeling
@@ -474,6 +475,7 @@ Print as PDF	bookingfrontend	no	Skriv ut som PDF
 Privacy	bookingfrontend	no	Personvern
 Privacy statement	bookingfrontend	no	Personvern
 Private event	bookingfrontend	no	Privat arrangement
+private_person	bookingfrontend	no	Privatperson
 Project No.	bookingfrontend	no	Prosjektnummer
 Public schedule	bookingfrontend	no	Publikumsbading
 published	bookingfrontend	no	Publisert

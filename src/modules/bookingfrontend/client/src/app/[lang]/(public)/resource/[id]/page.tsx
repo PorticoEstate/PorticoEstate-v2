@@ -67,7 +67,7 @@ const Resource = async (props: ResourceProps) => {
             <ResourceHeader building={building} resource={resource}/>
 			<BuildingPhotos object={building} type={'building'} />
 
-            <section className={'mx-standard my-2'}>
+            <section className={'my-2'}>
 
                 <DescriptionAccordion description_json={resource.description_json}/>
 				<TextAccordion text={resource.opening_hours} title={t('booking.opening hours')}/>

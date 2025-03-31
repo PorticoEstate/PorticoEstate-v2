@@ -640,6 +640,7 @@ View all events	bookingfrontend	nn	Se alle arrangement
 view allocation	bookingfrontend	nn	Vis tildeling
 view booking	bookingfrontend	nn	Vis interntildeling
 view event	bookingfrontend	nn	Vis arrangement
+view_all_images	bookingfrontend	nn	Vis alle bilete
 we	bookingfrontend	nn	ons
 week	bookingfrontend	nn	uke
 week template	bookingfrontend	nn	Vekeplan

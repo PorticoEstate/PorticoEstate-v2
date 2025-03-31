@@ -16,6 +16,7 @@
  *   php test_lang_files.php --compare --modules=booking,property  # Compare langs in specific modules
  *   php test_lang_files.php --compare --baseline=en  # Use English as baseline for comparison
  *   php test_lang_files.php --search=module.key --langs=no,en # Search for module.key in specified languages
+ *   php test_lang_files.php --add-translation --key=key --module=module --langs=no:text,en:text # Add new translations
  */
 
 // Configuration
@@ -39,8 +40,14 @@ $compare_mode = in_array('--compare', $argv);
 $sort_mode = in_array('--sort', $argv);
 $search_mode = false;
 $search_key = '';
+$add_translation_mode = in_array('--add-translation', $argv);
+$translation_key = '';
+$translation_module = '';
+$translation_langs = []; // Will be in format ['en' => 'English text', 'no' => 'Norwegian text']
 $langs = [];
 $modules = [];
+
+// Debug code removed
 $baseline_lang = 'en'; // Default baseline language for comparison
 
 // Parse more arguments
@@ -63,8 +70,15 @@ foreach ($argv as $arg)
 	}
 	elseif (strpos($arg, '--module=') === 0)
 	{
-		$module_list = substr($arg, 9); // Remove '--module='
-		$modules = array_map('trim', explode(',', $module_list));
+		$module_value = substr($arg, 9); // Remove '--module='
+		
+		if ($add_translation_mode) {
+			// In add-translation mode, use this as the translation module
+			$translation_module = $module_value;
+		} else {
+			// In standard mode, treat it as a module list
+			$modules = array_map('trim', explode(',', $module_value));
+		}
 	}
 	elseif (strpos($arg, '--baseline=') === 0)
 	{
@@ -74,6 +88,19 @@ foreach ($argv as $arg)
 	{
 		$search_key = substr($arg, 9); // Remove '--search='
 		$search_mode = true;
+	}
+	elseif (strpos($arg, '--key=') === 0)
+	{
+		$translation_key = substr($arg, 6); // Remove '--key='
+	}
+	elseif (strpos($arg, '--langs=') === 0)
+	{
+		$lang_list = substr($arg, 8); // Remove '--langs='
+		
+		if (!$add_translation_mode) {
+			// For normal mode (not add-translation)
+			$langs = array_map('trim', explode(',', $lang_list));
+		}
 	}
 }
 
@@ -99,7 +126,16 @@ if ($help_requested)
 	echo "  --baseline=xx        Use specified language as baseline for comparison (default: en)\n";
 	echo "  --sort               Sort language files alphabetically by key and deduplicate entries\n";
 	echo "  --search=module.key  Search for a specific translation key in format module.key\n";
-	echo "                       Example: --search=booking.save\n\n";
+	echo "                       Example: --search=booking.save\n";
+	echo "  --add-translation    Add new translations to language files\n";
+	echo "  --key=key            The key to add (used with --add-translation)\n";
+	echo "  --module=module      The module for the translation (used with --add-translation)\n";
+	echo "                       Use 'common' for global translations (phpgwapi)\n";
+	echo "  --langs=lang:text    Language and translation pairs (used with --add-translation)\n";
+	echo "                       Format: lang1:text1,lang2:text2\n";
+	echo "                       Basic example: --langs=no:Tekst,en:Text\n";
+	echo "                       For text with commas, spaces, or special characters, use quotes:\n";
+	echo "                       Example: --langs=\"no:Tekst med komma, og mellomrom,en:Text with comma, and spaces\"\n\n";
 	echo "Examples:\n";
 	echo "  php " . basename(__FILE__) . "                     # Check all language files\n";
 	echo "  php " . basename(__FILE__) . " --verbose           # Show detailed diagnostic information\n";
@@ -112,17 +148,21 @@ if ($help_requested)
 	echo "  php " . basename(__FILE__) . " --compare --baseline=no    # Use Norwegian as baseline for comparison\n";
 	echo "  php " . basename(__FILE__) . " --sort --lang=en,no,nn --module=booking  # Sort and deduplicate booking module language files\n";
 	echo "  php " . basename(__FILE__) . " --search=booking.save --langs=no,en,nn  # Search for 'booking.save' key in specified languages\n";
+	echo "  php " . basename(__FILE__) . " --add-translation --key=save --module=booking --langs=no:Lagre,en:Save,nn:Lagra  # Add translations\n";
+	echo "  php " . basename(__FILE__) . " --add-translation --key=confirm --module=booking --langs=\"no:Er du sikker?,en:Are you sure?\"  # With special characters\n";
 	exit(0);
 }
 
-// Show which languages are being checked
-if (!empty($langs))
+// No post-processing needed anymore
+
+// Show which languages are being checked (except in add-translation mode)
+if (!empty($langs) && !$add_translation_mode)
 {
 	echo "Filtering to only check languages: " . implode(', ', $langs) . "\n";
 }
 
-// If modules specified
-if (!empty($modules))
+// If modules specified (except in add-translation mode)
+if (!empty($modules) && !$add_translation_mode)
 {
 	echo "Filtering to only check modules: " . implode(', ', $modules) . "\n";
 }
@@ -260,9 +300,15 @@ function find_lang_files($dir)
 	if (!empty($modules)) {
 		// Direct module path lookup
 		foreach ($modules as $module) {
-			$module_setup_dir = $dir . "/src/modules/" . $module . "/setup";
+			// Special handling for "common" module - look in phpgwapi
+			$actual_module = ($module === "common") ? "phpgwapi" : $module;
+			
+			$module_setup_dir = $dir . "/src/modules/" . $actual_module . "/setup";
 			if ($verbose) {
 				echo "Checking module directory: {$module_setup_dir}\n";
+				if ($module === "common") {
+					echo "  (Using phpgwapi for 'common' module)\n";
+				}
 			}
 			
 			if (is_dir($module_setup_dir)) {
@@ -363,6 +409,12 @@ function search_for_key($lang_files, $search_key)
 	// Split the search key into module and key parts
 	if (strpos($search_key, '.') !== false) {
 		list($search_module, $search_phrase) = explode('.', $search_key, 2);
+		// Handle "common" module special case
+		if ($search_module === 'common') {
+			if ($verbose) {
+				echo "Converting search module from 'common' to 'phpgwapi' internally\n";
+			}
+		}
 	} else {
 		// If no dot is present, treat the entire string as the key and search in all modules
 		$search_module = null;
@@ -392,11 +444,15 @@ function search_for_key($lang_files, $search_key)
 		$module = get_module_from_path($file_path);
 		
 		// Skip if we're searching for a specific module and this isn't it
-		if ($search_module !== null && $search_module !== $module) {
-			if ($verbose) {
-				echo "Skipping {$file_path}, module '{$module}' doesn't match search module '{$search_module}'\n";
+		if ($search_module !== null) {
+			// Special handling for "common" module
+			if (($search_module === 'common' && $module !== 'common') ||
+				($search_module !== 'common' && $search_module !== $module)) {
+				if ($verbose) {
+					echo "Skipping {$file_path}, module '{$module}' doesn't match search module '{$search_module}'\n";
+				}
+				continue;
 			}
-			continue;
 		}
 		
 		$content = file_get_contents($file_path);
@@ -464,8 +520,17 @@ function get_module_from_path($file_path)
 	global $verbose;
 	if (preg_match('#/modules/([^/]+)/#', $file_path, $matches)) {
 		$module = $matches[1];
+		
+		// Special handling for phpgwapi - return as "common"
+		if ($module === 'phpgwapi') {
+			$module = 'common';
+		}
+		
 		if ($verbose) {
 			echo "Extracted module '{$module}' from path '{$file_path}'\n";
+			if ($module === 'common') {
+				echo "  (Converted from 'phpgwapi' to 'common')\n";
+			}
 		}
 		return $module;
 	}
@@ -473,6 +538,118 @@ function get_module_from_path($file_path)
 		echo "Could not extract module from path '{$file_path}'\n";
 	}
 	return 'unknown';
+}
+
+// Function to add new translations to language files
+function add_translation($translation_key, $translation_module, $translation_langs) 
+{
+	global $base_dir, $verbose;
+	
+	if (empty($translation_key)) {
+		echo "Error: Translation key is required. Use --key=your_key\n";
+		exit(1);
+	}
+	
+	if (empty($translation_module)) {
+		echo "Error: Module is required. Use --module=module_name\n";
+		exit(1);
+	}
+	
+	if (empty($translation_langs)) {
+		echo "Error: No translations provided. Use --langs=lang:text format\n";
+		echo "Example: --langs=no:Norwegian text,en:English text\n";
+		exit(1);
+	}
+	
+	echo "Adding translations for key '{$translation_key}' in module '{$translation_module}'...\n";
+	
+	// For "common" module, use phpgwapi
+	$module_path = $translation_module;
+	if ($translation_module === "common") {
+		$module_path = "phpgwapi";
+	}
+	
+	// Find the module directory
+	$module_setup_dir = $base_dir . "/src/modules/" . $module_path . "/setup";
+	
+	if (!is_dir($module_setup_dir)) {
+		echo "Error: Module directory not found: {$module_setup_dir}\n";
+		exit(1);
+	}
+	
+	$success_count = 0;
+	$error_count = 0;
+	
+	foreach ($translation_langs as $lang_code => $translation_text) {
+		$lang_file = $module_setup_dir . "/phpgw_" . $lang_code . ".lang";
+		
+		if (!file_exists($lang_file)) {
+			echo "Warning: Language file for '{$lang_code}' does not exist. Creating new file...\n";
+			
+			// Create file with header comment
+			$content = "# {$translation_module} language file for {$lang_code}\n";
+			file_put_contents($lang_file, $content);
+			
+			if (!file_exists($lang_file)) {
+				echo "Error: Could not create language file: {$lang_file}\n";
+				$error_count++;
+				continue;
+			}
+		}
+		
+		// Check if key already exists
+		$current_content = file_get_contents($lang_file);
+		$lines = explode("\n", $current_content);
+		$key_exists = false;
+		
+		foreach ($lines as $line) {
+			$line = trim($line);
+			if (empty($line) || strpos($line, '#') === 0) {
+				continue;
+			}
+			
+			$parts = explode("\t", $line);
+			if (count($parts) === 4 && $parts[0] === $translation_key && $parts[1] === $translation_module) {
+				$key_exists = true;
+				if ($verbose) {
+					echo "Key '{$translation_key}' for module '{$translation_module}' already exists in {$lang_file}.\n";
+					echo "Current value: \"{$parts[3]}\"\n";
+					echo "New value: \"{$translation_text}\"\n";
+				}
+				break;
+			}
+		}
+		
+		if ($key_exists) {
+			echo "Warning: Translation for key '{$translation_key}' in module '{$translation_module}' already exists in {$lang_code}. Skipping...\n";
+			$error_count++;
+			continue;
+		}
+		
+		// Prepare new entry
+		$new_entry = $translation_key . "\t" . $translation_module . "\t" . $lang_code . "\t" . $translation_text;
+		
+		// Append to file
+		$result = file_put_contents($lang_file, $current_content . ($current_content ? "\n" : "") . $new_entry);
+		
+		if ($result === false) {
+			echo "Error: Failed to add translation for '{$lang_code}' to {$lang_file}\n";
+			$error_count++;
+		} else {
+			echo "Success: Added translation for '{$lang_code}': {$translation_key} => \"{$translation_text}\"\n";
+			$success_count++;
+		}
+	}
+	
+	echo "\nCompleted adding translations:\n";
+	echo "  - Successfully added: {$success_count}\n";
+	
+	if ($error_count > 0) {
+		echo "  - Failed to add: {$error_count}\n";
+		exit(1);
+	}
+	
+	return true;
 }
 
 // Function to extract language entries from a file
@@ -630,8 +807,20 @@ function compare_lang_files($lang_files)
 		$module = get_module_from_path($file_path);
 		
 		// Skip if not in specified modules (when modules filter is active)
-		if (!empty($modules) && !in_array($module, $modules)) {
-			continue;
+		if (!empty($modules)) {
+			$module_match = false;
+			foreach ($modules as $requested_module) {
+				// Handle "common" module special case
+				if (($requested_module === 'common' && $module === 'common') ||
+					($requested_module !== 'common' && $module === $requested_module)) {
+					$module_match = true;
+					break;
+				}
+			}
+			
+			if (!$module_match) {
+				continue;
+			}
 		}
 		
 		if (preg_match('/phpgw_(.*)\.lang$/', basename($file_path), $matches)) {
@@ -713,10 +902,42 @@ function compare_lang_files($lang_files)
 echo "Starting validation of language files...\n";
 $lang_files = find_lang_files($base_dir);
 
-if (empty($lang_files))
+if (empty($lang_files) && !$add_translation_mode)
 {
 	echo "No language files found! Please check the base directory.\n";
 	exit(1);
+}
+
+// ADD TRANSLATION MODE
+if ($add_translation_mode) {
+	// Manually parse arguments
+	foreach ($argv as $arg) {
+		if (strpos($arg, '--key=') === 0) {
+			$translation_key = substr($arg, 6);
+		} 
+		elseif (strpos($arg, '--module=') === 0) {
+			$translation_module = substr($arg, 9);
+		}
+		elseif (strpos($arg, '--langs=') === 0) {
+			$raw_langs = substr($arg, 8);
+			
+			// Parse language pairs by splitting on commas followed by a two-letter code and colon
+			$parts = preg_split('/,(?=[a-z]{2}:)/i', $raw_langs);
+			
+			foreach ($parts as $part) {
+				if (preg_match('/^([a-z]{2}):(.+)$/i', $part, $matches)) {
+					$lang_code = $matches[1];
+					$lang_text = $matches[2];
+					$translation_langs[$lang_code] = $lang_text;
+				}
+			}
+		}
+	}
+	
+	// Debug messages removed
+	
+	add_translation($translation_key, $translation_module, $translation_langs);
+	exit(0);
 }
 
 // SEARCH MODE

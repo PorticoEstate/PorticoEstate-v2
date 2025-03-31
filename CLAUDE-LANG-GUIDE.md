@@ -38,6 +38,31 @@ Check multiple specific modules:
 php test_lang_files.php --modules=booking,bookingfrontend
 ```
 
+### Adding New Translations
+
+Add new translations to language files:
+
+```bash
+php test_lang_files.php --add-translation --key=key_name --module=module_name --langs=no:Norwegian text,en:English text
+```
+
+For "common" translations that should be available globally, use `common` as the module name:
+
+```bash
+php test_lang_files.php --add-translation --key=save --module=common --langs=no:Lagre,en:Save,nn:Lagra
+```
+
+**Important notes about translations with commas or special characters:**
+- The script correctly handles translations containing commas, spaces, and special characters
+- Use quotes around the entire --langs parameter to ensure proper parsing
+- Example with commas and special characters:
+
+```bash
+php test_lang_files.php --add-translation --key=confirm --module=booking --langs="no:Er du sikker på at du vil fortsette?,en:Are you sure you want to continue?"
+```
+
+The script will automatically add the translations to the appropriate language files, creating them if they don't exist.
+
 ### Compare Translations Between Languages
 
 Check for missing translations across all languages:
@@ -171,10 +196,18 @@ This organizes all translations in a consistent order across language files, mak
 
 ### 7. Fixing Translations
 
-After identifying missing translations, use Claude to add them to the language files:
+After identifying missing translations, you can add them to the language files:
 
-1. View the file: `View /path/to/file.lang`
-2. Edit the file to add the missing translations: `Edit /path/to/file.lang`
+1. **Method 1: Using the add-translation command (recommended):**
+   ```
+   php test_lang_files.php --add-translation --key=missing_key --module=module_name --langs=no:Norwegian text,en:English text,nn:Nynorsk text
+   ```
+   This automatically adds the translations to the correct language files.
+
+2. **Method 2: Manual editing:**
+   - View the file: `View /path/to/file.lang`
+   - Edit the file to add the missing translations: `Edit /path/to/file.lang`
+
 3. Verify changes fixed the issues:
    ```
    php test_lang_files.php --compare --lang=en,no,nn --module=module_name
@@ -206,6 +239,26 @@ php test_lang_files.php --compare --lang=en,no,nn
 
 ```
 php test_lang_files.php
+```
+
+### Adding Missing Translations Automatically
+
+To add translations for a missing key in multiple languages at once:
+
+```
+php test_lang_files.php --add-translation --key=save --module=booking --langs=no:Lagre,en:Save,nn:Lagra
+```
+
+For common translations (in phpgwapi):
+
+```
+php test_lang_files.php --add-translation --key=yes --module=common --langs=no:Ja,en:Yes,nn:Ja
+```
+
+With complex text containing commas, spaces, or special characters:
+
+```
+php test_lang_files.php --add-translation --key=error_message --module=booking --langs="no:Noe gikk galt, vennligst prøv igjen senere.,en:Something went wrong, please try again later."
 ```
 
 ### Finding a Specific Module with Issues
@@ -245,7 +298,25 @@ This makes files more readable and easier to compare across languages by ensurin
 
 ### Adding a Missing Translation
 
-When a key is missing from a language file, add it like this:
+#### Method 1: Using the command-line tool (recommended)
+
+Add translations for a missing key using the command-line tool:
+
+```
+php test_lang_files.php --add-translation --key=my_missing_key --module=booking --langs=no:Min oversettelse,en:My translation
+```
+
+For translations with commas, spaces, or special characters, use quotes around the --langs parameter:
+
+```
+php test_lang_files.php --add-translation --key=confirm_delete --module=booking --langs="no:Er du sikker på at du vil slette denne?,en:Are you sure you want to delete this?"
+```
+
+This automatically adds the translations to the correct language files with proper formatting.
+
+#### Method 2: Manual format
+
+When manually adding a key to a language file, use this format:
 
 ```
 key_name	module_name	language_code	translation

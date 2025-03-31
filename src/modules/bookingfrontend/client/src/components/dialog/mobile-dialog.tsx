@@ -57,7 +57,7 @@ const Dialog: React.FC<DialogProps> = ({
     // Attempt to close the dialog, with confirmation if necessary
     const attemptClose =useCallback( () => {
         if (confirmOnClose) {
-            if (window.confirm(t('Are you sure you want to close?'))) {
+            if (window.confirm(t('common.confirm_close'))) {
                 onClose();
             }
         } else {
@@ -140,11 +140,11 @@ const Dialog: React.FC<DialogProps> = ({
                     <div className={`${styles.dialogHeader} ${scrolled ? styles.scrolled : ''}`}>
                         <div className={styles.headerTitle}>{title  || ''}</div>
                         <div className={styles.headerButtons}>
-                            {!isMobile && <Tooltip content={isFullscreen ? t('Exit fullscreen') : t('Enter fullscreen')} className={'text-body text-primary'}>
+                            {!isMobile && <Tooltip content={isFullscreen ? t('common.exit_fullscreen') : t('common.enter_fullscreen')} className={'text-body text-primary'}>
                                 <Button
                                     icon={true}
                                     variant="tertiary"
-                                    aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+                                    aria-label={isFullscreen ? t('common.exit_fullscreen') : t('common.enter_fullscreen')}
                                     onClick={toggleFullscreen}
                                     tabIndex={-1}
                                     className={'default'}
@@ -157,7 +157,7 @@ const Dialog: React.FC<DialogProps> = ({
                                 <Button
                                     icon={true}
                                     variant="tertiary"
-                                    aria-label="Close dialog"
+                                    aria-label={t('common.close_dialog')}
                                     onClick={attemptClose}
                                     className={'default'}
                                     tabIndex={-1}

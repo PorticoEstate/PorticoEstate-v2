@@ -529,13 +529,13 @@ class ApplicationController extends DocumentController
 				// Add timestamp and session info for debugging
 				$result['debug_timestamp'] = date('Y-m-d H:i:s');
 				$result['debug_session_id'] = $session_id;
-				
+
 				// Add success message to cache
-				$message = count($result['updated']) > 1 ? 
-					lang('Your applications have now been processed and confirmation emails have been sent to you.') : 
+				$message = count($result['updated']) > 1 ?
+					lang('Your applications have now been processed and confirmation emails have been sent to you.') :
 					lang('your application has now been processed and a confirmation email has been sent to you.');
 				$spam_filter_msg = lang('Please check your Spam Filter if you are missing mail.');
-				Cache::message_set("{$message}<br/>{$spam_filter_msg}");
+				Cache::message_set("{$message}<br/>{$spam_filter_msg}", 'message', 'booking.booking confirmed');
 
 				$response->getBody()->write(json_encode([
 					'message' => 'Applications processed successfully',

@@ -122,7 +122,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                             href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
 
                             className={'link-text link-text-unset normal'}>
-                            <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
+                            <FontAwesomeIcon icon={faSignInAlt}/> {t('bookingfrontend.private_person')}
                         </a>
                     </Dropdown.Button>
                 </Dropdown.Item>
@@ -135,7 +135,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                             menuaction: 'booking.uiapplication.index',
                         }, false)}
                               className={'link-text link-text-unset normal'}>
-                            <FontAwesomeIcon icon={faSignInAlt}/> Saksbehandler
+                            <FontAwesomeIcon icon={faSignInAlt}/> {t('bookingfrontend.case_officer')}
                         </Link>
                     </Dropdown.Button>
                 </Dropdown.Item>

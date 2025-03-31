@@ -944,3 +944,4 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been registered and confirmation emails have been sent to you.	booking	nn	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 Your applications have now been processed and confirmation emails have been sent to you.	booking	nn	Søknadene er handsama, og stadfestingar er sendt til deg på e-post.
 zip code	booking	nn	Postnummer
+booking confirmed	booking	nn	Booking bekreftet

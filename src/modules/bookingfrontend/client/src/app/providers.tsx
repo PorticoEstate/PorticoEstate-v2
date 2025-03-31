@@ -25,7 +25,7 @@ const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang
             <ClientTranslationProvider lang={lang} initialTranslations={translations}>
                 <QueryProvider>
                     <PrefetchWrapper>
-                        <LoadingIndicationWrapper>
+                        <LoadingIndicationWrapper loadingString={t('common.loading')}>
                             {children}
                         </LoadingIndicationWrapper>
                         <ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'} />
@@ -37,3 +37,5 @@ const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang
 }
 
 export default Providers;
+
+

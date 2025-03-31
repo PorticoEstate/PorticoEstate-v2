@@ -66,7 +66,10 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                     <Details.Summary>{t('bookingfrontend.buildings')}</Details.Summary>
                     <Details.Content>
                         {organization.buildings.map((building) => (
-                            <NXLink href={`/building/${building.id}`}>
+                            <NXLink 
+                                key={`short-building-${building.id}`} 
+                                href={`/building/${building.id}`}
+                            >
                                 <Button
                                     key={`building-${building.id}`}
                                     variant='secondary'
@@ -86,8 +89,8 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                         {organization.delegaters.map((delegate) => (
                             <div key={delegate.id} className={styles.listed_delegate}>
                                 <NXLink href={`/organization/delegate/${delegate.id}`}>
-                                    <Link data-color='info'>
-                                        {delegate.name}
+                                    <Link asChild={true} data-color='info'>
+                                        <span>{delegate.name}</span>
                                     </Link>
                                 </NXLink>
                                 <div>
@@ -114,8 +117,8 @@ const OrganizationView = ({ organization }: OrganizationView) => {
                         {organization.groups.map((group) => (
                             <div key={group.id} className={styles.listed_group}>
                                 <NXLink href={`/organization/group/${group.id}`}>
-                                    <Link data-color='brand1'>
-                                        {group.name}
+                                    <Link asChild={true} data-color='brand1'>
+                                        <span>{group.name}</span>
                                     </Link>
                                 </NXLink>
                                 <span>{group.contact[0].name}</span>

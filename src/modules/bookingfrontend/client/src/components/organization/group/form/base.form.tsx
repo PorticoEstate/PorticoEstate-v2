@@ -6,7 +6,6 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { ShortActivity } from "@/service/types/api/organization.types";
 import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import styles from '../styles/group-base-form.module.scss';
 
 interface GroupFormBaseProps {
     control: any;

@@ -42,7 +42,8 @@ class booking_async_task
 			'booking.async_task_delete_expired_blocks',
 			'booking.async_task_delete_access_log',
 			'booking.async_task_clean_up_old_posts',
-			'booking.async_task_anonyminizer'
+			'booking.async_task_anonyminizer',
+			'booking.async_task_postToAccountingSystem',
 		);
 	}
 

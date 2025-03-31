@@ -145,6 +145,7 @@ booking new	booking	no	Ny interntildeling
 booking settings	booking	no	Booking innstillinger
 Booking system settings	booking	no	Systeminnstillinger i Bookingmodul
 booking_async_task_anonyminizer	booking	no	Anonymiser kunderegister
+booking_async_task_postToAccountingSystem	booking	no	Overfør bokføring til regnskapssystem
 booking_async_task_clean_up_old_posts	booking	no	Deaktivere gamle søknader og sesonger
 booking_async_task_delete_access_log	booking	no	Slette aksesslogg for anonym frontend-bruker
 booking_async_task_delete_expired_blocks	booking	no	Slette ubrukte reservasjoner

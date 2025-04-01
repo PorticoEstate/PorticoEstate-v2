@@ -40,7 +40,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 				let currentWeek = startOfMonth.startOf('week');
 				while (currentWeek <= endOfMonth) {
 					weeks.push(currentWeek);
-					currentWeek = currentWeek.plus({ weeks: 1 });
+					currentWeek = currentWeek.plus({weeks: 1});
 				}
 
 				return weeks;
@@ -109,7 +109,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 					key={`${slot.start_iso}-${index}`}
 					slot={slot}
 					resourceId={currentResourceId}
-					onSelect={(slot) => createSimpleApp.mutate(slot)}
+					onSelect={(slot) => createSimpleApp.mutate({timeslot: slot, building_id: props.building.id})}
 				/>
 			))}
 			{visibleTimeslots.length === 0 && (

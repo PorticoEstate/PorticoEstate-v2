@@ -44,6 +44,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('', ResourceController::class . ':index');
 		$group->get('/{id}', ResourceController::class . ':getResource');
 		$group->get('/{id}/documents', ResourceController::class . ':getDocuments');
+		$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
 		$group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
 	});

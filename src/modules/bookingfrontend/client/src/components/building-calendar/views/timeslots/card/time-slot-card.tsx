@@ -64,7 +64,7 @@ const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect }) => 
 			</div>
 
 			<div className={styles.actionColumn}>
-				{slot.overlap === false && slot.applicationLink && (
+				{slot.overlap === false && (
 					<Button className={styles.actionButton} variant={'primary'} data-size={'md'} onClick={() => onSelect(slot)}>
 						{t('booking.select')}
 					</Button>

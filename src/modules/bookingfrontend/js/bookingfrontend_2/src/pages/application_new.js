@@ -4,7 +4,7 @@ import '../components/map-modal';
 import '../helpers/util';
 import "../components/application-cart";
 
-import {CreateUrlParams} from "../helpers/formatting";
+import { CreateUrlParams } from "../helpers/formatting";
 
 
 /* global direct_booking */
@@ -22,7 +22,8 @@ var am;
 var lastcheckedResources = [];
 
 
-function applicationModel() {
+function applicationModel()
+{
     var self = this;
     self.translationObservable = globalThis['translations'];
     self.building_id = ko.observable();
@@ -40,42 +41,55 @@ function applicationModel() {
     self.bookingStartTime = ko.observable('');
     self.bookingEndTime = ko.observable('');
 
-    self.goNext = () => {
-        if (am.formStep() === 0) {
+    self.goNext = () =>
+    {
+        if (am.formStep() === 0)
+        {
             // Check if there are unsaved time entries before validation
-            if (checkAndAddPendingTimeEntries()) {
-                if (validateStep1()) {
+            if (checkAndAddPendingTimeEntries())
+            {
+                if (validateStep1())
+                {
                     clearGlobalError();
                     self.formStep(self.formStep() + 1);
-                    window.scrollTo({top: 0, behavior: 'smooth'});
-                } else {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else
+                {
                     showStep1Errors();
                 }
-            } else {
+            } else
+            {
                 // If time entries were added, delay the validation to allow state update
-                setTimeout(() => {
-                    if (validateStep1()) {
+                setTimeout(() =>
+                {
+                    if (validateStep1())
+                    {
                         clearGlobalError();
                         self.formStep(self.formStep() + 1);
-                        window.scrollTo({top: 0, behavior: 'smooth'});
-                    } else {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    } else
+                    {
                         showStep1Errors();
                     }
                 }, 100);
             }
-        } else if (am.formStep() === 1) {
-            if (validateStep2()) {
+        } else if (am.formStep() === 1)
+        {
+            if (validateStep2())
+            {
                 document.getElementById('application_form').submit();
             }
         }
     };
 
     // Add new function to check and add pending time entries
-    function checkAndAddPendingTimeEntries() {
+    function checkAndAddPendingTimeEntries()
+    {
         let timeEntriesAdded = false;
 
         // Only attempt to add if we have all required fields
-        if (self.bookingDate() && self.bookingStartTime() && self.bookingEndTime()) {
+        if (self.bookingDate() && self.bookingStartTime() && self.bookingEndTime())
+        {
             self.addDate();
             timeEntriesAdded = true;
         }
@@ -86,13 +100,15 @@ function applicationModel() {
 
 
 
-    self.goPrev = () => {
+    self.goPrev = () =>
+    {
         self.formStep(self.formStep() - 1);
-        window.scrollTo({top: 0, behavior: 'smooth'});
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
 
-    self.formatDate = function (date) {
+    self.formatDate = function (date)
+    {
         const from = luxon.DateTime.fromFormat(date.from_, "dd/MM/yyyy HH:mm");
         var day = from.day;
         var months = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des'];
@@ -101,7 +117,8 @@ function applicationModel() {
     };
 
 
-    self.formatTimePeriod = function (date) {
+    self.formatTimePeriod = function (date)
+    {
         var fromTime = date.from_.split(' ')[1];
         var toTime = date.to_.split(' ')[1];
         return fromTime + '-' + toTime;
@@ -110,67 +127,81 @@ function applicationModel() {
 
     self.bookableResource = ko.observableArray();
     self.selectedResourcesOld = ko.observableArray(0);
-    self.isResourceSelected = ko.computed(function () {
+    self.isResourceSelected = ko.computed(function ()
+    {
         var checkedResources = [];
         var k = 0;
-        for (var i = 0; i < self.bookableResource().length; i++) {
-            if (self.bookableResource()[i].selected()) {
+        for (var i = 0; i < self.bookableResource().length; i++)
+        {
+            if (self.bookableResource()[i].selected())
+            {
                 checkedResources.push(self.bookableResource()[i].id);
 
-                if (self.selectedResourcesOld.indexOf(self.bookableResource()[i].id) < 0) {
+                if (self.selectedResourcesOld.indexOf(self.bookableResource()[i].id) < 0)
+                {
                     self.selectedResourcesOld.push(self.bookableResource()[i].id);
                 }
                 k++;
-            } else {
-                if (self.selectedResourcesOld.indexOf(self.bookableResource()[i].id) > -1) {
+            } else
+            {
+                if (self.selectedResourcesOld.indexOf(self.bookableResource()[i].id) > -1)
+                {
                     self.selectedResourcesOld.splice(self.selectedResourcesOld.indexOf(self.bookableResource()[i].id), 1);
                 }
             }
         }
-        if (k > 0) {
+        if (k > 0)
+        {
 
             var array1 = checkedResources;
             var array2 = lastcheckedResources;
 
-            var is_same = (array1.length == array2.length) && array1.every(function (element, index) {
+            var is_same = (array1.length == array2.length) && array1.every(function (element, index)
+            {
                 return element === array2[index];
             });
 
-            if (is_same) {
+            if (is_same)
+            {
                 return true;
             }
 
             lastcheckedResources = checkedResources;
-//			console.log(checkedResources);
+            //			console.log(checkedResources);
             $("#regulation_documents").empty();
             getDoc(checkedResources);
             /**
              * Defined in the file purchase_order_add.js
              */
 
-            if (typeof (populateTableChkArticles) === 'function') {
+            if (typeof (populateTableChkArticles) === 'function')
+            {
                 populateTableChkArticles([], checkedResources, '', '', '');
                 return true;
             }
             return true;
         }
         return false;
-    }).extend({required: true});
+    }).extend({ required: true });
     self.audiences = ko.observableArray();
     self.audienceSelectedValue = ko.observable();
 
 
     self.activityId = ko.observable();
     self.date = ko.observableArray();
-    self.addDate = function () {
-        if (self.bookingDate() && self.bookingStartTime() && self.bookingEndTime()) {
+    self.addDate = function ()
+    {
+        if (self.bookingDate() && self.bookingStartTime() && self.bookingEndTime())
+        {
             let dateStr = self.bookingDate();
             let dateParts = dateStr.split(".");
-            if (dateParts[0].length === 1) {
+            if (dateParts[0].length === 1)
+            {
                 dateParts[0] = "0" + dateParts[0];
                 dateStr = dateParts.join(".");
             }
-            if (dateParts[1].length === 1) {
+            if (dateParts[1].length === 1)
+            {
                 dateParts[1] = "0" + dateParts[1];
                 dateStr = dateParts.join(".");
             }
@@ -179,25 +210,30 @@ function applicationModel() {
             var startTimeParts = self.bookingStartTime().split(":");
             var endTimeParts = self.bookingEndTime().split(":");
 
-            var start = date.set({hour: parseInt(startTimeParts[0]), minute: parseInt(startTimeParts[1])});
-            var end = date.set({hour: parseInt(endTimeParts[0]), minute: parseInt(endTimeParts[1])});
+            var start = date.set({ hour: parseInt(startTimeParts[0]), minute: parseInt(startTimeParts[1]) });
+            var end = date.set({ hour: parseInt(endTimeParts[0]), minute: parseInt(endTimeParts[1]) });
 
             var now = luxon.DateTime.local();
 
-            if (start < now || end < now) {
+            if (start < now || end < now)
+            {
                 showError('date-time-selection', trans('bookingfrontend', 'selected_time_must_be_in_future'));
                 return false;
-            } else if (start >= end) {
+            } else if (start >= end)
+            {
                 showError('date-time-selection', trans('bookingfrontend', 'start_time_must_be_before_end_time'));
                 return false;
-            } else {
+            } else
+            {
                 hideError('date-time-selection');
                 clearGlobalError();
-                var match = ko.utils.arrayFirst(self.date(), function (item) {
+                var match = ko.utils.arrayFirst(self.date(), function (item)
+                {
                     return item.id === [start.toISO(), end.toISO()].join("");
                 });
 
-                if (!match) {
+                if (!match)
+                {
                     self.date.push({
                         id: [start.toISO(), end.toISO()].join(""),
                         from_: start.toFormat('dd/MM/yyyy HH:mm'),
@@ -205,12 +241,14 @@ function applicationModel() {
                         formatedPeriode: start.toFormat('dd/MM/yyyy HH:mm') + ' - ' + end.toFormat('HH:mm')
                     });
 
-                    setTimeout(function () {
+                    setTimeout(function ()
+                    {
                         self.bookingDate("");
                         self.bookingStartTime("");
                         self.bookingEndTime("");
                         $(".applicationSelectedDates").html("");
-                        if (typeof (post_handle_order_table) === 'function') {
+                        if (typeof (post_handle_order_table) === 'function')
+                        {
                             post_handle_order_table();
                         }
                     }, 500);
@@ -220,16 +258,20 @@ function applicationModel() {
         }
         return false;
     };
-    self.removeDate = function (data) {
+    self.removeDate = function (data)
+    {
         self.date.remove(data);
-        if (typeof (post_handle_order_table) === 'function') {
-            setTimeout(function () {
+        if (typeof (post_handle_order_table) === 'function')
+        {
+            setTimeout(function ()
+            {
                 post_handle_order_table();
             }, 500);
 
         }
     };
-    self.removeRessource = function () {
+    self.removeRessource = function ()
+    {
         this.selected(false);
     };
     self.aboutArrangement = ko.observable("");
@@ -239,9 +281,12 @@ function applicationModel() {
 
     self.schedule = ko.observableArray();
 
-    self.loadBuildingData = async () => {
-        try {
-            if (!self.building_id() || !self.date() || self.date().length === 0) {
+    self.loadBuildingData = async () =>
+    {
+        try
+        {
+            if (!self.building_id() || !self.date() || self.date().length === 0)
+            {
                 return;
             }
             // const currDate = DateTime.fromJSDate(new Date());
@@ -265,41 +310,52 @@ function applicationModel() {
             self.schedule(buildingData?.schedule || []);
             // console.log(buildingData.schedule);
             // this.calculateStartEndHours();
-        } catch (error) {
+        } catch (error)
+        {
             console.error('Error loading building data:', error);
         }
     }
-    self.building_id.subscribe(newBuildingId => {
+    self.building_id.subscribe(newBuildingId =>
+    {
         self.loadBuildingData();
     });
-    self.date.subscribe(date => {
+    self.date.subscribe(date =>
+    {
         self.loadBuildingData();
     });
 
-    self.selectedResources = ko.computed(() => {
-        return ko.utils.arrayFilter(self.bookableResource(), function (resource) {
+    self.selectedResources = ko.computed(() =>
+    {
+        return ko.utils.arrayFilter(self.bookableResource(), function (resource)
+        {
             return resource.selected();
         });
 
     })
 
-    self.selectedResources.subscribe(function(newValue) {
-        if (newValue.length > 0) {
+    self.selectedResources.subscribe(function (newValue)
+    {
+        if (newValue.length > 0)
+        {
             hideError('select-multiple');
             clearGlobalError();
-        } else {
+        } else
+        {
             showError('select-multiple', trans('bookingfrontend', 'please_select_at_least_one_resource'));
         }
     });
 
 
-    self.selectedResourcesWithFacilities = ko.computed(function () {
-        var selectedResources = ko.utils.arrayFilter(self.bookableResource(), function (resource) {
+    self.selectedResourcesWithFacilities = ko.computed(function ()
+    {
+        var selectedResources = ko.utils.arrayFilter(self.bookableResource(), function (resource)
+        {
             return resource.selected();
         });
 
         var result = [];
-        for (var i = 0; i < selectedResources.length; i++) {
+        for (var i = 0; i < selectedResources.length; i++)
+        {
             var facilities = globalFacilitiesList()[selectedResources[i].id.toString()] || [];
             result.push({
                 resourceName: selectedResources[i].name,  // Only pushing the name
@@ -310,9 +366,11 @@ function applicationModel() {
         return result;
     });
 
-    self.selectedResourcesOld.subscribe(function (currentSelectedResources) {
+    self.selectedResourcesOld.subscribe(function (currentSelectedResources)
+    {
         // Iterate over all bookable resources
-        self.bookableResource().forEach(function (resource) {
+        self.bookableResource().forEach(function (resource)
+        {
             var isSelected = currentSelectedResources.includes(resource.id);
             // Update aria-selected attribute
             var element = $(`#select2-select-multiple-results [id*='${resource.id}']`);
@@ -322,7 +380,8 @@ function applicationModel() {
     });
 
 
-    $(document).ready(function () {
+    $(document).ready(function ()
+    {
         /* Multiselect dropdown */
         var $select = $('#select-multiple'); // Replace with your select element's ID
         var $displayContainer = $('.selected-items-display'); // The container where you want to display the selected items
@@ -334,8 +393,10 @@ function applicationModel() {
         })
 
 
-        const updateSelected = () => {
-            $(".select2-results__option[id^='select2-select-multiple-result-']").each(function () {
+        const updateSelected = () =>
+        {
+            $(".select2-results__option[id^='select2-select-multiple-result-']").each(function ()
+            {
                 var splitElementid = this.id.split("-"); // Get the item's ID
                 const itemId = splitElementid[splitElementid.length - 1]
                 console.log('updateSelected', itemId);
@@ -347,32 +408,38 @@ function applicationModel() {
             });
         }
 
-        $select.on('select2:open', function () {
+        $select.on('select2:open', function ()
+        {
             // Use setTimeout to ensure the operations happen after the Select2 dropdown is fully rendered
-            setTimeout(function () {
+            setTimeout(function ()
+            {
                 updateSelected();
             }, 0);
         });
 
 
-        function handleSelectUnselect(e) {
+        function handleSelectUnselect(e)
+        {
             var data = e.params.data;
             console.log("Item selected/unselected: ", +data.id);
-            var resource = self.bookableResource().find(function (r) {
+            var resource = self.bookableResource().find(function (r)
+            {
                 return r.id === +data.id;
             });
 
             console.log(self.bookableResource());
             console.log(resource);
 
-            if (resource) {
+            if (resource)
+            {
                 resource.selected(!resource.selected()); // Toggle the selected state
             }
             console.log($(this))
 
             // Reset the value and trigger change to refresh the Select2 display
             $(this).val(null).trigger('change');
-            setTimeout(function () {
+            setTimeout(function ()
+            {
                 updateSelected();
             }, 0);
         }
@@ -383,40 +450,49 @@ function applicationModel() {
     });
 
 
-    function validateStep1() {
+    function validateStep1()
+    {
         let isValid = true;
 
         // Validate resource selection
-        if (self.selectedResources().length === 0) {
+        if (self.selectedResources().length === 0)
+        {
             isValid = false;
             showError('select-multiple', trans('bookingfrontend', 'please_select_at_least_one_resource'));
-        } else {
+        } else
+        {
             hideError('select-multiple');
         }
 
         // Validate date and time selection
-        if (self.date().length === 0) {
+        if (self.date().length === 0)
+        {
             isValid = false;
             showError('date-time-selection', trans('bookingfrontend', 'please_select_at_least_one_date_and_time'));
-        } else {
+        } else
+        {
             hideError('date-time-selection');
         }
 
-        if (isValid) {
+        if (isValid)
+        {
             clearGlobalError();
         }
 
         return isValid;
     }
 
-    function showError(elementId, message) {
+    function showError(elementId, message)
+    {
         let element = document.getElementById(elementId);
         // console.log("err", elementId, message, element)
 
-        if (element) {
+        if (element)
+        {
             element.classList.add('is-invalid');
             let errorElement = document.getElementById(elementId + '-error');
-            if (!errorElement) {
+            if (!errorElement)
+            {
                 errorElement = document.createElement('div');
                 errorElement.id = elementId + '-error';
                 errorElement.className = 'invalid-feedback';
@@ -427,29 +503,36 @@ function applicationModel() {
         }
     }
 
-    function hideError(elementId) {
+    function hideError(elementId)
+    {
         let element = document.getElementById(elementId);
-        if (element) {
+        if (element)
+        {
             element.classList.remove('is-invalid');
             let errorElement = document.getElementById(elementId + '-error');
-            if (errorElement) {
+            if (errorElement)
+            {
                 errorElement.style.display = 'none';
             }
         }
     }
 
-    function clearGlobalError() {
+    function clearGlobalError()
+    {
         let generalError = document.getElementById('step1-general-error');
-        if (generalError) {
+        if (generalError)
+        {
             generalError.style.display = 'none';
             generalError.textContent = '';
         }
     }
 
-    function showStep1Errors() {
+    function showStep1Errors()
+    {
         // Show a general error message at the top of the form
         let generalError = document.getElementById('step1-general-error');
-        if (!generalError) {
+        if (!generalError)
+        {
             generalError = document.createElement('div');
             generalError.id = 'step1-general-error';
             generalError.className = 'alert alert-danger mt-3';
@@ -461,74 +544,93 @@ function applicationModel() {
         // Scroll to the top of the form to ensure the error message is visible
         window.scrollTo({ top: 0, behavior: "smooth" });
     }
-    function validateStep2() {
+    function validateStep2()
+    {
         let isValid = true;
 
         // Validate Target audience
-        if (!self.audienceSelectedValue()) {
+        if (!self.audienceSelectedValue())
+        {
             isValid = false;
             showError('audienceDropdown', trans('bookingfrontend', 'please_select_target_audience'));
-        } else {
+        } else
+        {
             hideError('audienceDropdown');
         }
 
         // Validate Name for event/activity
-        if (!document.getElementById('inputEventName').value.trim()) {
+        if (!document.getElementById('inputEventName').value.trim())
+        {
             isValid = false;
             showError('inputEventName', trans('bookingfrontend', 'please_enter_event_name'));
-        } else {
+        } else
+        {
             hideError('inputEventName');
         }
 
         // Validate organizer/responsible seeker
-        if (!document.getElementById('inputOrganizerName').value.trim()) {
+        if (!document.getElementById('inputOrganizerName').value.trim())
+        {
             isValid = false;
             showError('inputOrganizerName', trans('bookingfrontend', 'please_enter_organizer'));
-        } else {
+        } else
+        {
             hideError('inputOrganizerName');
         }
 
         // Validate Estimated number of participants
         let participantsValid = false;
-        self.agegroupList().forEach(function(agegroup) {
-            if (agegroup.inputCountMale() || agegroup.inputCountFemale()) {
+        self.agegroupList().forEach(function (agegroup)
+        {
+            if (agegroup.inputCountMale() || agegroup.inputCountFemale())
+            {
                 participantsValid = true;
             }
         });
-        if (!participantsValid) {
+        if (!participantsValid)
+        {
             isValid = false;
             showError('participants-container', trans('bookingfrontend', 'please_enter_participants'));
-        } else {
+        } else
+        {
             hideError('participants-container');
         }
 
         // Validate legal condition
         const documentInputs = document.querySelectorAll('#regulation_documents input[name="accepted_documents[]"]');
         console.log(`found documents`, documentInputs)
-        if (documentInputs.length > 0) {
-            if (!document.querySelector('#regulation_documents input[name="accepted_documents[]"]:checked')) {
+        if (documentInputs.length > 0)
+        {
+            if (!document.querySelector('#regulation_documents input[name="accepted_documents[]"]:checked'))
+            {
                 isValid = false;
                 showError('regulation_documents', trans('bookingfrontend', 'please_accept_terms'));
-            } else {
+            } else
+            {
                 hideError('regulation_documents');
             }
-        } else {
+        } else
+        {
             // No documents to accept, so this check passes
             hideError('regulation_documents');
         }
 
-        if (isValid) {
+        if (isValid)
+        {
             clearGlobalError();
-        } else {
+        } else
+        {
             showStep2Errors();
         }
 
         return isValid;
     }
 
-    function showStep2Errors() {
+    function showStep2Errors()
+    {
         let generalError = document.getElementById('step2-general-error');
-        if (!generalError) {
+        if (!generalError)
+        {
             generalError = document.createElement('div');
             generalError.id = 'step2-general-error';
             generalError.className = 'alert alert-danger mt-3';
@@ -544,10 +646,12 @@ function applicationModel() {
 
 }
 
-$(document).ready(function () {
+$(document).ready(function ()
+{
     var activityId;
 
-    if (typeof urlParams['building_id'] === 'undefined') {
+    if (typeof urlParams['building_id'] === 'undefined')
+    {
         urlParams['building_id'] = building_id;
     }
     am = new applicationModel();
@@ -558,35 +662,43 @@ $(document).ready(function () {
         building_id: urlParams['building_id'],
         phpgw_return_as: "json"
     }, true);
-    $.getJSON(getJsonURL, function (result) {
+    $.getJSON(getJsonURL, function (result)
+    {
         activityId = result.application.activity_id;
-        for (var i = 0; i < result.agegroups.length; i++) {
+        for (var i = 0; i < result.agegroups.length; i++)
+        {
             am.agegroupList.push({
                 name: result.agegroups[i].name, agegroupLabel: result.agegroups[i].name,
-                inputCountMale: ko.observable("").extend({number: true}),
-                inputCountFemale: ko.observable("").extend({number: true}),
+                inputCountMale: ko.observable("").extend({ number: true }),
+                inputCountFemale: ko.observable("").extend({ number: true }),
                 malename: 'male[' + result.agegroups[i].id + ']',
                 femalename: 'female[' + result.agegroups[i].id + ']',
                 id: result.agegroups[i].id
             });
         }
-        if (initialAgegroups != null) {
-            for (var i = 0; i < initialAgegroups.length; i++) {
+        if (initialAgegroups != null)
+        {
+            for (var i = 0; i < initialAgegroups.length; i++)
+            {
                 var id = initialAgegroups[i].agegroup_id;
-                var find = ko.utils.arrayFirst(am.agegroupList(), function (current) {
+                var find = ko.utils.arrayFirst(am.agegroupList(), function (current)
+                {
                     return current.id == id;
                 });
-                if (find) {
+                if (find)
+                {
                     find.inputCountMale(initialAgegroups[i].male);
                     find.inputCountFemale(initialAgegroups[i].female);
                 }
             }
         }
-        for (var i = 0; i < result.audience.length; i++) {
-            if ($.inArray(result.audience[i].id, initialAudience) > -1) {
+        for (var i = 0; i < result.audience.length; i++)
+        {
+            if ($.inArray(result.audience[i].id, initialAudience) > -1)
+            {
                 $("#audienceDropdownBtn").text(result.audience[i].name);
             }
-            am.audiences.push({id: result.audience[i].id, name: result.audience[i].name})
+            am.audiences.push({ id: result.audience[i].id, name: result.audience[i].name })
         }
 
         getJsonURL = phpGWLink('bookingfrontend/', {
@@ -595,16 +707,22 @@ $(document).ready(function () {
             sort: "name",
             phpgw_return_as: "json"
         }, true);
-        $.getJSON(getJsonURL, function (result) {
-            for (var i = 0; i < result.results.length; i++) {
+        $.getJSON(getJsonURL, function (result)
+        {
+            for (var i = 0; i < result.results.length; i++)
+            {
                 var currentResource = result.results[i];
-                if (currentResource.deactivate_application !== 1 && currentResource.building_id == urlParams['building_id']) {
+                if (currentResource.deactivate_application !== 1 && currentResource.building_id == urlParams['building_id'])
+                {
                     var tempSelected = false;
-                    if ($.inArray(currentResource.id, initialSelection) > -1) {
+                    if ($.inArray(currentResource.id, initialSelection) > -1)
+                    {
                         tempSelected = true;
                     }
-                    if (typeof urlParams['resource_id'] !== "undefined" && initialSelection.length == 0) {
-                        if (urlParams['resource_id'] == currentResource.id) {
+                    if (typeof urlParams['resource_id'] !== "undefined" && initialSelection.length == 0)
+                    {
+                        if (urlParams['resource_id'] == currentResource.id)
+                        {
                             tempSelected = true;
                         }
                     }
@@ -612,11 +730,14 @@ $(document).ready(function () {
 
                     var now = Math.floor(Date.now() / 1000);
 
-                    if ((currentResource.simple_booking && currentResource.simple_booking_start_date < now) || currentResource.hidden_in_frontend == 1) {
+                    if ((currentResource.simple_booking && currentResource.simple_booking_start_date < now) || currentResource.hidden_in_frontend == 1)
+                    {
                         //skip this one
                         resource_name += ' *';
-                    } else {
-                        if (currentResource.direct_booking && currentResource.direct_booking < now) {
+                    } else
+                    {
+                        if (currentResource.direct_booking && currentResource.direct_booking < now)
+                        {
                             resource_name += ' *';
                         }
                         am.bookableResource.push({
@@ -628,12 +749,15 @@ $(document).ready(function () {
                 }
 
                 // Save facilities for the current resource to the globalFacilitiesList observable
-                if (currentResource.facilities_list && Array.isArray(currentResource.facilities_list)) {
+                if (currentResource.facilities_list && Array.isArray(currentResource.facilities_list))
+                {
                     var resourceId = currentResource.id.toString();
-                    if (!globalFacilitiesList()[resourceId]) {
+                    if (!globalFacilitiesList()[resourceId])
+                    {
                         globalFacilitiesList()[resourceId] = [];
                     }
-                    for (var j = 0; j < currentResource.facilities_list.length; j++) {
+                    for (var j = 0; j < currentResource.facilities_list.length; j++)
+                    {
                         globalFacilitiesList()[resourceId].push(currentResource.facilities_list[j]);
                     }
                 }
@@ -648,27 +772,32 @@ $(document).ready(function () {
         };
         getJsonURL = phpGWLink('bookingfrontend/', parameter, true);
 
-        for (var i = 0; i < initialSelection.length; i++) {
+        for (var i = 0; i < initialSelection.length; i++)
+        {
             getJsonURL += '&owner[]=resource::' + initialSelection[i];
         }
 
-        $.getJSON(getJsonURL, function (result) {
+        $.getJSON(getJsonURL, function (result)
+        {
             setDoc(result.data);
         });
 
-    }).done(function () {
+    }).done(function ()
+    {
         am.activityId(activityId);
         console.log("Applying bindings");
         ko.applyBindings(am, document.getElementById("new-application-page"));
         PopulatePostedDate();
         populateApplicationDate();
-        if (typeof initialAudience !== "undefined") {
+        if (typeof initialAudience !== "undefined")
+        {
             am.audienceSelectedValue(initialAudience);
         }
 
     });
 
-    $('.resourceDropdown').on('click', function () {
+    $('.resourceDropdown').on('click', function ()
+    {
         $(this).parent().toggleClass('show');
     });
 
@@ -680,14 +809,18 @@ $(document).ready(function () {
     //     }
     // });
 
-    $("#application_form").submit(function(event) {
+    $("#application_form").submit(function (event)
+    {
         // if (am.formStep() === 1) {
-        if (!am.validateStep2()) {
+        if (!am.validateStep2())
+        {
             event.preventDefault();
             event.stopPropagation();
-        } else {
+        } else
+        {
             var allowSubmit = validate_documents();
-            if (!allowSubmit) {
+            if (!allowSubmit)
+            {
                 alert(errorAcceptedDocs);
                 event.preventDefault();
             }
@@ -697,50 +830,61 @@ $(document).ready(function () {
 
 });
 
-function validate_documents() {
+function validate_documents()
+{
     const documentInputs = $('#regulation_documents input[name="accepted_documents[]"]');
-    if (documentInputs.length === 0) {
+    if (documentInputs.length === 0)
+    {
         // No documents to validate, so return true
         return true;
     }
 
     var n = 0;
-    documentInputs.each(function () {
-        if (!$(this).is(':checked')) {
+    documentInputs.each(function ()
+    {
+        if (!$(this).is(':checked'))
+        {
             n++;
         }
     });
     return n === 0;
 }
 
-function getDoc(checkedResources) {
+function getDoc(checkedResources)
+{
     var parameter = {
         menuaction: "bookingfrontend.uidocument_view.regulations",
         'owner[]': "building::" + urlParams['building_id'],
         sort: "name"
     };
     var getJsonURL = phpGWLink('bookingfrontend/', parameter, true);
-    for (var i = 0; i < checkedResources.length; i++) {
+    for (var i = 0; i < checkedResources.length; i++)
+    {
         getJsonURL += '&owner[]=resource::' + checkedResources[i];
     }
 
-    $.getJSON(getJsonURL, function (result) {
+    $.getJSON(getJsonURL, function (result)
+    {
         setDoc(result.data);
     });
 }
 
 // Modified setDoc function
-function setDoc(data) {
-    if (!Array.isArray(data) || data.length === 0) {
+function setDoc(data)
+{
+    if (!Array.isArray(data) || data.length === 0)
+    {
         // No documents to display
         $("#regulation_documents").html('<p>' + trans('bookingfrontend', 'no_documents_to_accept') + '</p>');
         return;
     }
 
     var child = '';
-    for (var i = 0; i < data.length; i++) {
+    for (var i = 0; i < data.length; i++)
+    {
         var checked = '';
-        if (initialAcceptedDocs != null && initialAcceptedDocs[i] == data[i].id) {
+        if (initialAcceptedDocs != null && initialAcceptedDocs[i] == data[i].id)
+        {
             checked = ' checked="checked"';
         }
 
@@ -759,9 +903,12 @@ function setDoc(data) {
 }
 
 
-function PopulatePostedDate() {
-    if (initialDates != null) {
-        for (var i = 0; i < initialDates.length; i++) {
+function PopulatePostedDate()
+{
+    if (initialDates != null)
+    {
+        for (var i = 0; i < initialDates.length; i++)
+        {
             var from_ = (initialDates[i].from_).replace(" ", "T");
             var to_ = (initialDates[i].to_).replace(" ", "T");
             am.date.push({
@@ -770,9 +917,12 @@ function PopulatePostedDate() {
                 formatedPeriode: formatDate(new Date(from_), new Date(to_))
             });
         }
-    } else {
-        if (typeof urlParams['start'] !== "undefined" && typeof urlParams['end'] !== "undefined") {
-            if (urlParams['start'].length > 0 && urlParams['end'].length > 0) {
+    } else
+    {
+        if (typeof urlParams['start'] !== "undefined" && typeof urlParams['end'] !== "undefined")
+        {
+            if (urlParams['start'].length > 0 && urlParams['end'].length > 0)
+            {
                 am.date.push({
                     from_: formatDateToDateTimeString(new Date(parseInt(urlParams['start']))),
                     to_: formatDateToDateTimeString(new Date(parseInt(urlParams['end']))), /*repeat: false,*/
@@ -783,14 +933,16 @@ function PopulatePostedDate() {
     }
 }
 
-function populateApplicationDate() {
-    if (typeof urlParams['fromDate'] !== "undefined") {
+function populateApplicationDate()
+{
+    if (typeof urlParams['fromDate'] !== "undefined")
+    {
         let date = new Date(urlParams['fromDate']);
         am.bookingDate(date);
 
-        let ye = new Intl.DateTimeFormat('en', {year: 'numeric'}).format(date);
-        let mo = new Intl.DateTimeFormat('en', {month: '2-digit'}).format(date);
-        let da = new Intl.DateTimeFormat('en', {day: '2-digit'}).format(date);
+        let ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date);
+        let mo = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date);
+        let da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date);
         $(".datepicker-btn").val(`${da}/${mo}/${ye}`);
     }
 }
@@ -808,11 +960,12 @@ const attContainer = document.getElementById("attachment");
 const attUpload = document.getElementById("attachment-upload");
 
 // Show Alert Function
-function showAlert(message, className) {
+function showAlert(message, className)
+{
     // Create Div
     const attError = document.createElement("div");
     // Alert
-//  attError.className = `alert ${className}`;
+    //  attError.className = `alert ${className}`;
     attError.className = 'alert ' + className;
     //Add Text
     attError.appendChild(document.createTextNode(message));
@@ -822,7 +975,8 @@ function showAlert(message, className) {
     attRemove.className = 'isDisabled';
     attUpload.className = 'isDisabled';
     // Timeout and remove error
-    setTimeout(function () {
+    setTimeout(function ()
+    {
         document.querySelector(".alert").remove();
         attRemove.classList.remove("isDisabled");
         attUpload.classList.remove("isDisabled");
@@ -830,49 +984,61 @@ function showAlert(message, className) {
 }
 
 // Shows remove attachment button when input has text:
-if (attInput) {
-    attInput.addEventListener("change", function () {
+if (attInput)
+{
+    attInput.addEventListener("change", function ()
+    {
 
-        if (attInput.value === '' && attInput.textContent === '') {
+        if (attInput.value === '' && attInput.textContent === '')
+        {
             return
-        } else {
+        } else
+        {
             attRemove.style.display = "block";
         }
     })
     // Pushes filename to field_name_input and validates file size
-    document.getElementById('field_name').onchange = function () {
+    document.getElementById('field_name').onchange = function ()
+    {
         var error = false;
         var filePath = this.value;
         var accepted_filetypes = this.accept;
-        if (filePath) {
+        if (filePath)
+        {
             var fileName = filePath.split(/(\\|\/)/g).pop();
             $("#field_name_input").empty().append(fileName);
 
             var suffix = '.' + fileName.split('.').pop();
             const regex = new RegExp(suffix);
-            if (!accepted_filetypes.match(regex)) {
+            if (!accepted_filetypes.match(regex))
+            {
                 error = true;
                 showAlert('Ugyldig filtype!', 'alert-danger')
             }
         }
-        // Checks if file size is greater than 2MB
-        if (attInput.files[0].size > 2000000) {
+        // Checks if file size is greater than 20MB
+        if (attInput.files[0].size > 20000000)
+        {
             error = true;
             showAlert('Filen er for stor!', 'alert-danger')
         }
         ;
 
-        if (error) {
+        if (error)
+        {
             attFileInput.textContent = '';
             attInput.value = '';
             attRemove.style.display = "none";
         }
     };
     // Removes attachment when clicked
-    attRemove.addEventListener("click", function () {
-        if (attFileInput.textContent === '' && attInput.value === '') {
+    attRemove.addEventListener("click", function ()
+    {
+        if (attFileInput.textContent === '' && attInput.value === '')
+        {
             return;
-        } else {
+        } else
+        {
             showAlert('Vedlegg fjernet!', "alert-success")
             attFileInput.textContent = '';
             attInput.value = '';
@@ -882,40 +1048,50 @@ if (attInput) {
 }
 
 
-window.onload = function () {
+window.onload = function ()
+{
     const error = document.getElementById("submit-error");
     const eventName = document.getElementById("inputEventName");
     const organizerName = document.getElementById("inputOrganizerName");
     const targetAudience = document.getElementById("inputTargetAudience")
-    if (!eventName) {
+    if (!eventName)
+    {
         console.error("inputEventName missing!")
         return;
     }
-    if (!error) {
+    if (!error)
+    {
         console.error("submit-error missing!")
         return;
     }
-    if (!organizerName) {
+    if (!organizerName)
+    {
         console.error("inputOrganizerName missing!")
         return;
     }
-    if (!targetAudience) {
+    if (!targetAudience)
+    {
         console.error("inputTargetAudience missing!")
         return;
     }
     let inputElements = [eventName, organizerName]
 
-    for (let i = 0; i < inputElements.length; i++) {
-        inputElements[i].addEventListener("input", function (e) {
-            if (!e.target.value) {
+    for (let i = 0; i < inputElements.length; i++)
+    {
+        inputElements[i].addEventListener("input", function (e)
+        {
+            if (!e.target.value)
+            {
                 e.target.classList.add("is-invalid") + e.target.classList.remove("is-valid");
-            } else {
+            } else
+            {
                 e.target.classList.remove("is-invalid") + e.target.classList.add("is-valid");
             }
         })
     }
 
-    const validateTargetAudience = function () {
+    const validateTargetAudience = function ()
+    {
         const targetAudienceSelect = document.getElementById("audienceDropdown");
 
         // If no value is selected, add 'is-invalid' class, else add 'is-valid' class
@@ -924,43 +1100,52 @@ window.onload = function () {
             targetAudienceSelect.classList.add("is-valid");
     };
 
-    const validateInputs = function () {
+    const validateInputs = function ()
+    {
         !eventName.value ? eventName.classList.add("is-invalid") : eventName.classList.replace("is-invalid", "is-valid") || eventName.classList.add("is-valid");
 
         !organizerName.value ? organizerName.classList.add("is-invalid") : organizerName.classList.replace("is-invalid", "is-valid") || organizerName.classList.add("is-valid")
     }
 
-    const submitDateIfNeeded = function () {
+    const submitDateIfNeeded = function ()
+    {
         // Check if all date fields are filled
-        if (am.bookingDate() && am.bookingStartTime() && am.bookingEndTime()) {
+        if (am.bookingDate() && am.bookingStartTime() && am.bookingEndTime())
+        {
 
             // Check if this date was already submitted
-            var isAlreadySubmitted = am.date().some(function (submittedDate) {
+            var isAlreadySubmitted = am.date().some(function (submittedDate)
+            {
                 return submittedDate.from_ === am.bookingDate() &&
                     submittedDate.to_ === am.bookingStartTime() &&
                     submittedDate.formatedPeriode === am.bookingEndTime();
             });
 
             // If not submitted, submit it
-            if (!isAlreadySubmitted) {
+            if (!isAlreadySubmitted)
+            {
                 am.addDate();
             }
         }
     };
 
 
-    form.addEventListener("submit", function (e) {
+    form.addEventListener("submit", function (e)
+    {
         submitDateIfNeeded();
-        if (!eventName.value || !organizerName.value || !targetAudience.value) {
+        if (!eventName.value || !organizerName.value || !targetAudience.value)
+        {
             e.preventDefault();
             e.stopPropagation();
             validateInputs();
             validateTargetAudience();
             error.style.display = "block";
-            setTimeout(function () {
+            setTimeout(function ()
+            {
                 error.style.display = "none";
             }, 5000)
-        } else {
+        } else
+        {
             return;
         }
     })

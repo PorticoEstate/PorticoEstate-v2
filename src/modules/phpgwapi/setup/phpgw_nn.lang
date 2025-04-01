@@ -74,6 +74,7 @@ clear	common	nn	Clear
 clear cache	common	nn	Slett cache (minne)
 clear form	common	nn	Tøm skjema
 close	common	nn	Lukk
+close_dialog	common	nn	Lukk
 collection	common	nn	Samling..
 color	common	nn	Farge
 color selector	common	nn	Fargevelger
@@ -82,6 +83,7 @@ column search	common	nn	Kolonnesøk
 configuration	common	nn	Konfigurasjon
 configure access permissions	common	nn	Tilgangskontroll
 confirm password	common	nn	Bekreft passord
+confirm_close	common	nn	Er du sikker på at du vil lukke? Ulagra endringar vil gå tapt.
 contact	common	nn	Kontakt
 copy	common	nn	Kopiér
 create	common	nn	Lag
@@ -139,6 +141,7 @@ end date	common	nn	Sluttdato
 end time	common	nn	Sluttid
 enter the attribute id	common	nn	Angi egenskap-id
 enter the attribute value for this entity	common	nn	Angi egenskap verdi for denne posten
+enter_fullscreen	common	nn	Opne i fullskjerm
 entry has been deleted sucessfully	common	nn	Entry har blitt slettet
 entry updated sucessfully	common	nn	Entry er oppdatert
 error	common	nn	Feil
@@ -148,6 +151,7 @@ error renaming %1 %2 directory	common	nn	Feil ved endring av namn på %1 %2 kata
 error_occurred	common	nn	Det oppstod ein feil
 error_report_system	common	nn	Feilmelding (om systemet)
 exit	common	nn	Avslutt
+exit_fullscreen	common	nn	Avslutt fullskjerm
 expires	common	nn	Utløpsdato
 false	common	nn	Usann
 fatal error	common	nn	Fatal feil
@@ -232,6 +236,7 @@ link	common	nn	Link
 list groups	common	nn	gruppeliste
 list users	common	nn	brukarliste
 listbox	common	nn	Nedtrekksliste
+loading	common	nn	Lastar
 Loading...	common	nn	Laster...
 login	common	nn	Login
 login	login	nn	Login

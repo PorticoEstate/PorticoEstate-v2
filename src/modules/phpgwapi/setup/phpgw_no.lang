@@ -56,6 +56,7 @@ choose language	common	no	Velg språk
 clear	common	no	Clear
 clear cache	common	no	Slett cache (minne)
 clear form	common	no	Tøm skjema
+close_dialog	common	no	Lukk
 collection	common	no	Samling..
 color	common	no	Farge
 color selector	common	no	Fargevelger
@@ -65,6 +66,7 @@ configuration	common	no	Konfigurasjon
 configure access permissions	common	no	Tilgangskontroll
 confirm password	login	no	Bekreft passord
 confirm password	common	no	Bekreft passord
+confirm_close	common	no	Er du sikker på at du vil lukke? Ulagrede endringer vil gå tapt.
 contact	common	no	Kontakt
 copy	common	no	Kopiér
 create	common	no	Lag
@@ -111,12 +113,14 @@ enabled	common	no	aktiv
 end	common	no	Slutt
 enter the attribute id	common	no	Angi egenskap-id
 enter the attribute value for this entity	common	no	Angi egenskap verdi for denne posten
+enter_fullscreen	common	no	Åpne i fullskjerm
 entry has been deleted sucessfully	common	no	Entry har blitt slettet
 entry updated sucessfully	common	no	Entry er oppdatert
 error	common	no	Feil
 error_occurred	common	no	Det oppstod en feil
 error_report_system	common	no	Feilmelding (om systemet)
 exit	common	no	Avslutt
+exit_fullscreen	common	no	Avslutt fullskjerm
 expires	common	no	Utløpsdato
 false	common	no	Usann
 fatal error	common	no	Fatal feil
@@ -185,6 +189,7 @@ link	common	no	Link
 list groups	common	no	gruppeliste
 list users	common	no	brukerliste
 listbox	common	no	Nedtrekksliste
+loading	common	no	Laster
 Loading...	common	no	Laster...
 login	common	no	Login
 login	login	no	Login

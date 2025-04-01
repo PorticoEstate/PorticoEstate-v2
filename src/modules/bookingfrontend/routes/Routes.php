@@ -25,6 +25,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->get('/userhelper/callback[/{params:.*}]', UserHelper::class . ':process_callback');
 	$group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
 	$group->get('/searchdataalloptimised[/{params:.*}]', DataStore::class . ':SearchDataAllOptimised');
+	$group->get('/availableresources[/{params:.*}]', DataStore::class . ':getAvailableResources');
 	$group->group('/buildings', function (RouteCollectorProxy $group)
 	{
 		$group->get('', BuildingController::class . ':index');
@@ -103,6 +104,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->patch('', BookingUserController::class . ':update');
 		$group->get('/messages', BookingUserController::class . ':getMessages');
 		$group->delete('/messages/{id}', BookingUserController::class . ':deleteMessage');
+		$group->get('/messages/test', BookingUserController::class . ':createTestMessage');
 	});
 })->add(new SessionsMiddleware($app->getContainer()));
 

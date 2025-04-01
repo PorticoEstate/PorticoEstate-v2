@@ -321,6 +321,7 @@ class BookingUserController
 	 *             @OA\Items(
 	 *                 @OA\Property(property="type", type="string", description="Message type (error, success, info, warning)"),
 	 *                 @OA\Property(property="text", type="string", description="Message text"),
+	 *                 @OA\Property(property="title", type="string", description="Optional message title"),
 	 *                 @OA\Property(property="class", type="string", description="CSS class for styling")
 	 *             )
 	 *         )
@@ -363,6 +364,11 @@ class BookingUserController
 						$messageData['id'] = $message['msgbox_id'];
 					}
 
+					// Add the title if it exists
+					if (isset($message['msgbox_title'])) {
+						$messageData['title'] = $message['msgbox_title'];
+					}
+
 					$processed_messages[] = $messageData;
 				}
 
@@ -379,6 +385,54 @@ class BookingUserController
 		} catch (Exception $e) {
 			// Log the error but don't expose internal details
 			error_log("Error fetching messages: " . $e->getMessage());
+
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Internal server error'],
+				500
+			);
+		}
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/user/messages/test",
+	 *     summary="Create a test message with a title",
+	 *     tags={"User"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Test message created",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean"),
+	 *             @OA\Property(property="message", type="string")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function createTestMessage(Request $request, Response $response): Response
+	{
+		try {
+			// Clear any existing messages
+			Cache::session_clear('phpgwapi', 'phpgw_messages');
+
+			// Create a test message with a title
+			$messageText = "This is a test message with a title";
+			$messageTitle = 'booking.booking confirmed';
+
+			// Store the message with a title
+			Cache::message_set($messageText, 'message', $messageTitle);
+
+			// Return success response
+			$response->getBody()->write(json_encode([
+				'success' => true,
+				'message' => 'Test message created with title: ' . $messageTitle
+			]));
+
+			return $response
+				->withHeader('Content-Type', 'application/json')
+				->withStatus(200);
+		} catch (Exception $e) {
+			// Log the error but don't expose internal details
+			error_log("Error creating test message: " . $e->getMessage());
 
 			return ResponseHelper::sendErrorResponse(
 				['error' => 'Internal server error'],

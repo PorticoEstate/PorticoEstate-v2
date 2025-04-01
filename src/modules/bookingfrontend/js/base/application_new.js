@@ -67,7 +67,7 @@ function applicationModel()
 		return bc.applicationCartItems();
 	});
 
-//	console.log(urlParams);
+	//	console.log(urlParams);
 
 	self.bookingDate = ko.observable("");
 	self.bookingStartTime = ko.observable("");
@@ -116,20 +116,20 @@ function applicationModel()
 				return element === array2[index];
 			});
 
-			if(is_same)
+			if (is_same)
 			{
 				return true;
 			}
 
 			lastcheckedResources = checkedResources;
-//			console.log(checkedResources);
+			//			console.log(checkedResources);
 			$("#regulation_documents").empty();
 			getDoc(checkedResources);
 			/**
 			 * Defined in the file purchase_order_add.js
 			 */
 
-			if( typeof(populateTableChkArticles) === 'function')
+			if (typeof (populateTableChkArticles) === 'function')
 			{
 				populateTableChkArticles([], checkedResources, '', '', '');
 				return true;
@@ -137,7 +137,7 @@ function applicationModel()
 			return true;
 		}
 		return false;
-	}).extend({required: true});
+	}).extend({ required: true });
 	self.audiences = audiences;
 	self.audienceSelectedValue = ko.observable();
 	self.audienceSelected = (function (e)
@@ -170,8 +170,10 @@ function applicationModel()
 				{
 					//			if (direct_booking == 0 || (direct_booking == 1 && self.date().length < 1))
 					{
-						self.date.push({id: [start, end
-							].join(""), from_: formatSingleDate(start), to_: formatSingleDate(end), formatedPeriode: formatDate(start, end)});  /*repeat: self.repeat(),*/
+						self.date.push({
+							id: [start, end
+							].join(""), from_: formatSingleDate(start), to_: formatSingleDate(end), formatedPeriode: formatDate(start, end)
+						});  /*repeat: self.repeat(),*/
 					}
 
 					setTimeout(function ()
@@ -180,7 +182,7 @@ function applicationModel()
 						self.bookingStartTime("");
 						self.bookingEndTime("");
 						$(".applicationSelectedDates").html("");
-						if( typeof(post_handle_order_table) === 'function')
+						if (typeof (post_handle_order_table) === 'function')
 						{
 							post_handle_order_table();
 						}
@@ -224,7 +226,7 @@ $(document).ready(function ()
 		urlParams['building_id'] = building_id;
 	}
 
-	getJsonURL = phpGWLink('bookingfrontend/', {menuaction: "bookingfrontend.uiapplication.add", building_id: urlParams['building_id'], phpgw_return_as: "json"}, true);
+	getJsonURL = phpGWLink('bookingfrontend/', { menuaction: "bookingfrontend.uiapplication.add", building_id: urlParams['building_id'], phpgw_return_as: "json" }, true);
 	$.getJSON(getJsonURL, function (result)
 	{
 		activityId = result.application.activity_id;
@@ -232,8 +234,8 @@ $(document).ready(function ()
 		{
 			agegroup.push({
 				name: result.agegroups[i].name, agegroupLabel: result.agegroups[i].name,
-				inputCountMale: ko.observable("").extend({number: true}),
-				inputCountFemale: ko.observable("").extend({number: true}),
+				inputCountMale: ko.observable("").extend({ number: true }),
+				inputCountFemale: ko.observable("").extend({ number: true }),
 				malename: 'male[' + result.agegroups[i].id + ']',
 				femalename: 'female[' + result.agegroups[i].id + ']',
 				id: result.agegroups[i].id
@@ -261,10 +263,10 @@ $(document).ready(function ()
 			{
 				$("#audienceDropdownBtn").text(result.audience[i].name);
 			}
-			audiences.push({id: result.audience[i].id, name: result.audience[i].name})
+			audiences.push({ id: result.audience[i].id, name: result.audience[i].name })
 		}
 
-		getJsonURL = phpGWLink('bookingfrontend/', {menuaction: "bookingfrontend.uiresource.index_json", filter_building_id: urlParams['building_id'], sort: "name", phpgw_return_as: "json"}, true);
+		getJsonURL = phpGWLink('bookingfrontend/', { menuaction: "bookingfrontend.uiresource.index_json", filter_building_id: urlParams['building_id'], sort: "name", phpgw_return_as: "json" }, true);
 		$.getJSON(getJsonURL, function (result)
 		{
 			let direct_booking = 0;
@@ -295,17 +297,17 @@ $(document).ready(function ()
 					}
 					else
 					{
-						if(result.results[i].direct_booking && result.results[i].direct_booking < now)
+						if (result.results[i].direct_booking && result.results[i].direct_booking < now)
 						{
 							resource_name += ' *';
-							direct_booking +=1;
+							direct_booking += 1;
 						}
-						bookableresource.push({id: result.results[i].id, name: resource_name, selected: ko.observable(tempSelected)});
+						bookableresource.push({ id: result.results[i].id, name: resource_name, selected: ko.observable(tempSelected) });
 					}
 				}
 			}
 
-			if(direct_booking == 0)
+			if (direct_booking == 0)
 			{
 				$("#application_equipment").show();
 			}
@@ -430,7 +432,7 @@ function PopulatePostedDate()
 		{
 			var from_ = (initialDates[i].from_).replace(" ", "T");
 			var to_ = (initialDates[i].to_).replace(" ", "T");
-			am.date.push({from_: formatSingleDate(new Date(from_)), to_: formatSingleDate(new Date(to_)), formatedPeriode: formatDate(new Date(from_), new Date(to_))});
+			am.date.push({ from_: formatSingleDate(new Date(from_)), to_: formatSingleDate(new Date(to_)), formatedPeriode: formatDate(new Date(from_), new Date(to_)) });
 		}
 	}
 	else
@@ -439,7 +441,7 @@ function PopulatePostedDate()
 		{
 			if (urlParams['start'].length > 0 && urlParams['end'].length > 0)
 			{
-				am.date.push({from_: formatSingleDate(new Date(parseInt(urlParams['start']))), to_: formatSingleDate(new Date(parseInt(urlParams['end']))), /*repeat: false,*/ formatedPeriode: formatDate(new Date(parseInt(urlParams['start'])), new Date(parseInt(urlParams['end'])))});
+				am.date.push({ from_: formatSingleDate(new Date(parseInt(urlParams['start']))), to_: formatSingleDate(new Date(parseInt(urlParams['end']))), /*repeat: false,*/ formatedPeriode: formatDate(new Date(parseInt(urlParams['start'])), new Date(parseInt(urlParams['end']))) });
 			}
 		}
 	}
@@ -452,9 +454,9 @@ function populateApplicationDate()
 		let date = new Date(urlParams['fromDate']);
 		am.bookingDate(date);
 
-		let ye = new Intl.DateTimeFormat('en', {year: 'numeric'}).format(date);
-		let mo = new Intl.DateTimeFormat('en', {month: '2-digit'}).format(date);
-		let da = new Intl.DateTimeFormat('en', {day: '2-digit'}).format(date);
+		let ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date);
+		let mo = new Intl.DateTimeFormat('en', { month: '2-digit' }).format(date);
+		let da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date);
 		$(".datepicker-btn").val(`${da}/${mo}/${ye}`);
 	}
 }
@@ -469,88 +471,88 @@ var dateformat_datepicker = dateformat_backend.replace(/d/gi, "%d").replace(/m/g
 var d = new Date();
 var strDate = $.datepicker.formatDate('mm/dd/yy', new Date());
 
-YUI({lang: 'nb-no'}).use(
+YUI({ lang: 'nb-no' }).use(
 	'aui-datepicker',
 	function (Y)
 	{
 		new Y.DatePicker(
-		{
-			trigger: '.datepicker-btn',
-			popover: {
-				zIndex: 99999
-			},
-			//        mask: '%d/%m/%G',
-			mask: dateformat_datepicker,
-			calendar: {
-				minimumDate: new Date(strDate)
-			},
-			disabledDatesRule: 'minimumDate',
-			on: {
-				selectionChange: function (event)
-				{
-					new Date(event.newSelection);
-				//	console.log(event.newSelection);
-					$(".datepicker-btn").val(event.newSelection);
-					am.bookingDate(event.newSelection);
-					return false;
+			{
+				trigger: '.datepicker-btn',
+				popover: {
+					zIndex: 99999
+				},
+				//        mask: '%d/%m/%G',
+				mask: dateformat_datepicker,
+				calendar: {
+					minimumDate: new Date(strDate)
+				},
+				disabledDatesRule: 'minimumDate',
+				on: {
+					selectionChange: function (event)
+					{
+						new Date(event.newSelection);
+						//	console.log(event.newSelection);
+						$(".datepicker-btn").val(event.newSelection);
+						am.bookingDate(event.newSelection);
+						return false;
+					}
 				}
 			}
-		}
 		);
 	}
 );
 
-YUI({lang: 'nb-no'}).use(
+YUI({ lang: 'nb-no' }).use(
 	'aui-timepicker',
 	function (Y)
 	{
 		new Y.TimePicker(
-		{
-			trigger: '.bookingStartTime',
-			popover: {
-				zIndex: 99999
-			},
-			values: timepickerValues,
-			mask: 'kl. %H:%M',
-			popoverCssClass: "timepicker-popover yui3-widget popover yui3-widget-positioned yui3-widget-modal yui3-widget-stacked bookingStartTime-popover",
-			on: {
-				selectionChange: function (event)
-				{
-					new Date(event.newSelection);
-					$(this).val(event.newSelection);
-			//		console.log(event.newSelection);
-					am.bookingStartTime(event.newSelection);
-					//am.bookingDate(event.newSelection);
+			{
+				trigger: '.bookingStartTime',
+				popover: {
+					zIndex: 99999
+				},
+				values: timepickerValues,
+				mask: 'kl. %H:%M',
+				popoverCssClass: "timepicker-popover yui3-widget popover yui3-widget-positioned yui3-widget-modal yui3-widget-stacked bookingStartTime-popover",
+				on: {
+					selectionChange: function (event)
+					{
+						new Date(event.newSelection);
+						$(this).val(event.newSelection);
+						//		console.log(event.newSelection);
+						am.bookingStartTime(event.newSelection);
+						//am.bookingDate(event.newSelection);
+					}
 				}
 			}
-		}
 		);
 	}
 );
 
-YUI({lang: 'nb-no'}).use(
+YUI({ lang: 'nb-no' }).use(
 	'aui-timepicker',
 	function (Y)
 	{
 		new Y.TimePicker(
-		{
-			trigger: '.bookingEndTime',
-			popover: {
-				zIndex: 99999
-			},
-			values: timepickerValues,
-			mask: 'kl. %H:%M',
-			popoverCssClass: "timepicker-popover yui3-widget popover yui3-widget-positioned yui3-widget-modal yui3-widget-stacked bookingEndTime-popover",
-			on: {
-				selectionChange: function (event)
-				{
-					new Date(event.newSelection);
-					$(this).val(event.newSelection);
-					am.bookingEndTime(event.newSelection);
-					//am.bookingDate(event.newSelection);
+			{
+				trigger: '.bookingEndTime',
+				popover: {
+					zIndex: 99999
+				},
+				values: timepickerValues,
+				mask: 'kl. %H:%M',
+				popoverCssClass: "timepicker-popover yui3-widget popover yui3-widget-positioned yui3-widget-modal yui3-widget-stacked bookingEndTime-popover",
+				on: {
+					selectionChange: function (event)
+					{
+						new Date(event.newSelection);
+						$(this).val(event.newSelection);
+						am.bookingEndTime(event.newSelection);
+						//am.bookingDate(event.newSelection);
+					}
 				}
 			}
-		}
 		);
 	}
 );
@@ -641,7 +643,7 @@ function showAlert(message, className)
 	// Create Div
 	const attError = document.createElement("div");
 	// Alert
-//  attError.className = `alert ${className}`;
+	//  attError.className = `alert ${className}`;
 	attError.className = 'alert ' + className;
 	//Add Text
 	attError.appendChild(document.createTextNode(message));
@@ -693,8 +695,8 @@ if (attInput)
 				showAlert('Ugyldig filtype!', 'alert-danger')
 			}
 		}
-		// Checks if file size is greater than 2MB
-		if (attInput.files[0].size > 2000000)
+		// Checks if file size is greater than 20MB
+		if (attInput.files[0].size > 20000000)
 		{
 			error = true;
 			showAlert('Filen er for stor!', 'alert-danger')

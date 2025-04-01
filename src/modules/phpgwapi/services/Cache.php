@@ -750,10 +750,11 @@ class Cache
 	 *
 	 * @param string or array $message the message set to register
 	 * @param string $type the type (error/message) of message
+	 * @param string|null $title Optional message title (please use translation string in i18n format "module.key")
 	 * @param string|null $id Optional message ID
 	 * @return bool was the data stored in the session cache?
 	 */
-	public static function message_set($message, $type = 'message', $id = null)
+	public static function message_set($message, $type = 'message', $title = null, $id = null)
 	{
 		if (!$type == 'message')
 		{
@@ -791,10 +792,16 @@ class Cache
 
 			// For arrays, we could have different IDs per message
 			$msg_id = $id;
+			$msg_title = $title;
 
 			// If $id is an array, try to get the corresponding ID
 			if (is_array($id) && isset($id[$key])) {
 				$msg_id = $id[$key];
+			}
+
+			// If $title is an array, try to get the corresponding title
+			if (is_array($title) && isset($title[$key])) {
+				$msg_title = $title[$key];
 			}
 
 			// If we still don't have an ID, generate one
@@ -802,10 +809,17 @@ class Cache
 				$msg_id = self::generate_secret(8); // 16 character hex string
 			}
 
-			$receipt[$type][] = array(
+			$message_data = array(
 				'msg' => $msg,
 				'id' => $msg_id
 			);
+
+			// Add title if it's set
+			if ($msg_title !== null) {
+				$message_data['title'] = $msg_title;
+			}
+
+			$receipt[$type][] = $message_data;
 
 			// Add to our tracking array for subsequent messages in this batch
 			$existing_messages[] = $msg;

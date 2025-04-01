@@ -645,10 +645,6 @@ class bookingfrontend_vipps_helper
 
 	public function postToAccountingSystem()
 	{
-		require_once SRC_ROOT_PATH . '/modules/booking/inc/interfaces/AccountingSystemInterface.php';
-		require_once SRC_ROOT_PATH . '/modules/booking/inc/accounting/AccountingSystemFactory.php';
-		require_once SRC_ROOT_PATH . '/modules/booking/inc/accounting/VismaEnterpriseAccounting.php';
-
 		$soapplication = CreateObject('booking.soapplication');
 
 		// Hent config for å avgjøre hvilket regnskapssystem som skal brukes

@@ -8,6 +8,7 @@ import {Spinner} from "@digdir/designsystemet-react";
 import {useIsFetching, useQueryClient} from "@tanstack/react-query";
 
 interface LoadingIndicationWrapperProps extends PropsWithChildren {
+	loadingString: string
 }
 
 const LoadingIndicationWrapper: FC<LoadingIndicationWrapperProps> = (props) => {
@@ -30,7 +31,7 @@ const LoadingIndicationWrapper: FC<LoadingIndicationWrapperProps> = (props) => {
                 top: 5,
                 right: 5
             }}>
-                <Spinner aria-label='Henter kaffi'/>
+                <Spinner aria-label={props.loadingString}/>
             </div>
         }
         {props.children}

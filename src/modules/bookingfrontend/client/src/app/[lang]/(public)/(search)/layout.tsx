@@ -13,7 +13,7 @@ export default async function Layout(props: PropsWithChildren) {
 	const {t} = await getTranslation();
 
 	return (
-		<div className="container">
+		<div>
 			<ClientHeading>
 				<header className="page-heading">
 					<Heading data-size={"xl"}
@@ -23,8 +23,7 @@ export default async function Layout(props: PropsWithChildren) {
 				</header>
 			</ClientHeading>
 
-			{/* Information alert */}
-			<ServerMessages />
+
 
 			{/* Navigation tabs - with proper WCAG attributes */}
 			<ClientLayout serverSettings={serverSettings}/>

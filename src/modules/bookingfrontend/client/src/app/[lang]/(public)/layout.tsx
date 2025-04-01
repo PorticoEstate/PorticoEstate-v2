@@ -1,10 +1,11 @@
 // import '@digdir/designsystemet-css';
 // import '@digdir/designsystemet-theme';
-import {FC, PropsWithChildren} from "react";
+import React, {FC, PropsWithChildren} from "react";
 import styles from './layout.module.scss'
 import Header from "@/components/layout/header/header";
 import Footer from "@/components/layout/footer/footer";
 import Providers from "@/app/providers";
+import ServerMessages from "@/components/server-messages/server-messages";
 
 
 interface PublicLayoutProps extends PropsWithChildren {
@@ -18,6 +19,8 @@ const PublicLayout: FC<PublicLayoutProps> = (props) => {
     return (
         <Providers lang={props.params.lang}>
             <Header/>
+			{/* Information alert */}
+			<ServerMessages />
             <div className={styles.mainContent}>
                 {/*<InternalNav/>*/}
                 {props.children}

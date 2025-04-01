@@ -508,6 +508,10 @@ class booking_uiapplication extends booking_uicommon
 						'sortable' => false
 					),
 					array(
+						'key' => 'name',
+						'label' => lang('name')
+					),
+					array(
 						'key' => 'activity_name',
 						'label' => lang('Activity')
 					),

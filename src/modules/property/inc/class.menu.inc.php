@@ -599,13 +599,16 @@
 					'children'	 => $location_exception_children
 				);
 
-				$admin_children_location['config'] = array
-					(
-					'url'	 => phpgw::link('/index.php', array('menuaction' => 'property.uiadmin_location.config')),
-					'text'	 => lang('Config')
-				);
+			$admin_children_location['config'] = array(
+				'url'	 => phpgw::link('/index.php', array('menuaction' => 'property.uiadmin_location.config')),
+				'text'	 => lang('Config')
+			);
+			$admin_children_location['analyze_location'] = array(
+				'text'	=> lang('Analyze Location Hierarchy'),
+				'url'	=> phpgw::link('/index.php', array('menuaction' => 'property.uianalyze_location.index')),
+			);
 
-				$menus['admin'] = array(
+			$menus['admin'] = array(
 					'index'			 => array(
 						'text'		 => lang('Configuration'),
 						'url'		 => phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig.index',	'appname'	 => 'property')),

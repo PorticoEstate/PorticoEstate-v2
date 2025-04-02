@@ -44,17 +44,17 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
             <div className={styles.shoppingBasket}>
                 <div>
                     <h2>
-                        Søknader klar for innsending
+                        {t('bookingfrontend.applications_ready_for_submission')}
                     </h2>
                 </div>
                 <div>
                 <span>
-                    Her er en oversikt over dine søknader som er klar for innsending og godkjennelse.
+                    {t('bookingfrontend.applications_overview')}
                 </span>
                 </div>
-                {!isLoading && (basketData?.list.length || 0) === 0 && (<div>Du har ingenting i handlekurven</div>)}
+                {!isLoading && (basketData?.list.length || 0) === 0 && (<div>{t('bookingfrontend.empty_cart')}</div>)}
                 {isLoading && (
-                    <Spinner aria-label={'Laster handlekurv'}/>
+                    <Spinner aria-label={t('bookingfrontend.loading_cart')}/>
                 )}
 
                 {!isLoading && (basketData?.list.length || 0) > 0 && (

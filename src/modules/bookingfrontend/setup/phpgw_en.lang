@@ -59,6 +59,8 @@ application add	bookingfrontend	en	Application add
 Application basket	bookingfrontend	en	Application basket
 Application cart	bookingfrontend	en	Application cart
 applications	bookingfrontend	en	Applications
+applications_overview	bookingfrontend	en	Here is an overview of your applications that are ready for submission and approval.
+applications_ready_for_submission	bookingfrontend	en	Applications ready for submission
 Apply filter	bookingfrontend	en	Activate filter
 Apply for time	bookingfrontend	en	Apply for time
 apr	bookingfrontend	en	April
@@ -89,6 +91,7 @@ booking district	bookingfrontend	en	Booking district
 booking name	bookingfrontend	en	Booking name
 booking show	bookingfrontend	en	Internal allocation
 booking_calendar	bookingfrontend	en	Bookingcalendar
+booking_categories	bookingfrontend	en	Booking categories
 bookingfrontend host	bookingfrontend	en	Bookingfrontend host
 bookingfrontend settings	bookingfrontend	en	Bookingfrontend settings
 bookings	bookingfrontend	en	Bookings
@@ -145,6 +148,7 @@ choose rent object and rentperiod	bookingfrontend	en	Choose rent object and rent
 choose rent period	bookingfrontend	en	Choose rent period
 Choose resources	bookingfrontend	en	Choose resources
 choose target audience	bookingfrontend	en	Choose target audience
+choose_a	bookingfrontend	en	Choose a billing type
 chosen rent object	bookingfrontend	en	Chosen resources
 chosen rent period	bookingfrontend	en	Chosen rent period
 city	bookingfrontend	en	City
@@ -152,12 +156,15 @@ click to sort ascending	bookingfrontend	en	Click to sort ascending
 click to sort descending	bookingfrontend	en	Click to sort descending
 clock_short	bookingfrontend	en	Time
 Close	bookingfrontend	en	Close
+close_dialog	bookingfrontend	en	Close dialog
+close_message	bookingfrontend	en	Close message
 collect users	booking	en	Collect users
 Collects users from all applications and events	booking	en	Collects users from all applications and events
 Complete applications	bookingfrontend	en	Complete applications
 complete applications	bookingfrontend	en	Complete applications
 complete_applications	bookingfrontend	en	Complete applications
 Confirm e-mail address	bookingfrontend	en	Confirm e-mail address
+confirm_email	bookingfrontend	en	Confirm email
 CONFIRMED	bookingfrontend	en	Confirmed
 contact	bookingfrontend	en	Contact
 contact 1	bookingfrontend	en	Contact 1
@@ -167,6 +174,7 @@ Contact information name is to long. max 50 characters	bookingfrontend	en	Contac
 contact person	bookingfrontend	en	Contact person
 contact_email	bookingfrontend	en	Email
 contact_name	bookingfrontend	en	Contact name
+contact_phone	bookingfrontend	en	Phone
 contacts[0][email] contains an invalid email	bookingfrontend	en	Contacts[0][email] contains an invalid email
 contacts[1][email] contains an invalid email	bookingfrontend	en	Contacts[1][email] contains an invalid email
 continue	bookingfrontend	en	Continue
@@ -223,6 +231,7 @@ edit agegroup group	bookingfrontend	en	Edit agegroup group
 edit allocation	bookingfrontend	en	Edit allocation
 Edit allocation information	bookingfrontend	en	If you only need to change the allocation for a selected date, press the Change button below to mark the time as available, and the time will be shown as available in the calendar, and can be allocated to other clubs/organizations.
 Edit allocation information2	bookingfrontend	en	If you need to change more, you can select 'Out season' or 'Change to' and choose a date, you can also choose an interval (e.g., every other week).
+edit application	bookingfrontend	en	Edit application
 edit Audience group	bookingfrontend	en	Edit audience group
 edit booking	bookingfrontend	en	Edit booking
 edit data	bookingfrontend	en	Edit data
@@ -234,7 +243,9 @@ Edit System Message	bookingfrontend	en	Edit system message
 Edit until	bookingfrontend	en	Edit until
 edit_event	bookingfrontend	en	Edit Event
 editer	bookingfrontend	en	Editer
+empty_cart	bookingfrontend	en	You have nothing in your shopping cart
 end_time_in_past	bookingfrontend	en	End time cannot be in the past
+end_time_must_be_after_start_time	bookingfrontend	en	End time must be after start time
 end_time_outside_business_hours	bookingfrontend	en	End time must be within business hours
 enter_team_organization_name	bookingfrontend	en	Enter team/organization name
 enter_title	bookingfrontend	en	Please enter a title
@@ -252,6 +263,7 @@ Event was created	booking	en	The event was created
 Event/activity description	bookingfrontend	en	Event/activity description
 Event/activity homepage	bookingfrontend	en	Event/activity homepage
 event_building	bookingfrontend	en	Event / Building
+event_title	bookingfrontend	en	Event title
 events	bookingfrontend	en	Events
 every	bookingfrontend	en	every
 executiveofficer	bookingfrontend	en	Executiveofficer
@@ -316,6 +328,7 @@ Invalid from date	bookingfrontend	en	Invalid from date
 invoice	bookingfrontend	en	Invoice
 invoice information	bookingfrontend	en	Invoice information
 Invoice Instruction	bookingfrontend	en	Invoice instruction
+invoiced	bookingfrontend	en	Invoiced
 It is currently not possible to rent anything here	bookingfrontend	en	It is currently not possible to rent anything here
 jan	bookingfrontend	en	January
 jul	bookingfrontend	en	July
@@ -331,6 +344,10 @@ Lengt of shortname is to long, max 11 characters long	bookingfrontend	en	Lengt o
 Link to website	bookingfrontend	en	Link to website
 list_view	bookingfrontend	en	List
 Loading...	bookingfrontend	en	Loading...
+loading_cart	bookingfrontend	en	Loading shopping cart
+loading_resource_info	bookingfrontend	en	Loading resource information
+loading_user	bookingfrontend	en	Loading user
+loading_user_info	bookingfrontend	en	Loading user information
 location	bookingfrontend	en	Location
 locations	bookingfrontend	en	Facilities
 log off	bookingfrontend	en	Log off
@@ -371,6 +388,7 @@ modified	bookingfrontend	en	Modified
 month	bookingfrontend	en	Month
 more	bookingfrontend	en	More
 more info	bookingfrontend	en	More info
+multiple_time_slots	bookingfrontend	en	Multiple time slots
 my page	bookingfrontend	en	My page
 name	bookingfrontend	en	Name
 Name for event/activity	bookingfrontend	en	Name for event/activity
@@ -424,6 +442,7 @@ Organization shortname	bookingfrontend	en	Organization shortname
 organization type	bookingfrontend	en	Organization type
 organization_calendar	bookingfrontend	en	Organization Calendar
 organizations	bookingfrontend	en	Organizations
+organizer	bookingfrontend	en	Organizer
 organizer/responsible seeker	bookingfrontend	en	Organizer/responsible seeker
 other	bookingfrontend	en	Other
 Out season	bookingfrontend	en	Out season
@@ -478,6 +497,7 @@ Print as PDF	bookingfrontend	en	Print as pdf
 Privacy	bookingfrontend	en	Privacy
 Privacy statement	bookingfrontend	en	Privacy statement
 Private event	bookingfrontend	en	Private event
+private_event	bookingfrontend	en	Private person
 private_person	bookingfrontend	en	Private Person
 Project No.	bookingfrontend	en	Project no.
 Public schedule	bookingfrontend	en	Public schedule
@@ -493,6 +513,7 @@ reject application	bookingfrontend	en	Reject application
 rejected	bookingfrontend	en	Rejected
 remote authentication	bookingfrontend	en	Remote authentication
 remove date	bookingfrontend	en	Remove date
+remove_application	bookingfrontend	en	Remove application
 rent	bookingfrontend	en	Rent
 rent object	bookingfrontend	en	Rent object
 rent period	bookingfrontend	en	Rent period
@@ -512,10 +533,15 @@ resource	bookingfrontend	en	Resource
 resource name	bookingfrontend	en	Resource name
 resource schedule	bookingfrontend	en	Resource schedule
 resource type	bookingfrontend	en	Resource type
+resource_already_booked	bookingfrontend	en	This timeslot is not available. The resource is already booked for this time.
+resource_overlap_detected	bookingfrontend	en	Resource overlap detected. Please select different time or resources.
 resources	bookingfrontend	en	Resources
 Resources type	bookingfrontend	en	Facilities type
 responsible applicant	bookingfrontend	en	Responsible applicant
 Responsible Code	bookingfrontend	en	Responsible code
+responsible_city	bookingfrontend	en	City
+responsible_street	bookingfrontend	en	Street address
+responsible_zip_code	bookingfrontend	en	Postal code
 role	bookingfrontend	en	Role
 root permissions	bookingfrontend	en	Root permissions
 Sa	bookingfrontend	en	Saturday
@@ -545,6 +571,7 @@ select date	bookingfrontend	en	Select date
 select method	bookingfrontend	en	Select method
 select role...	bookingfrontend	en	Select role...
 select_all	bookingfrontend	en	Select All
+select_organization	bookingfrontend	en	Select or search for organization
 selected	bookingfrontend	en	Selected
 selected_time_must_be_in_future	bookingfrontend	en	The selected time must be in the future
 Send	bookingfrontend	en	Send
@@ -563,9 +590,11 @@ showing items	bookingfrontend	en	Showing items
 showing items {startRecord} - {endRecord} of {totalRecords}	bookingfrontend	en	Showing items {startrecord} - {endrecord} of {totalrecords}
 site title	bookingfrontend	en	Site title
 social security number	bookingfrontend	en	Social security number
+something_went_wrong	bookingfrontend	en	Something went wrong!
 square meter	bookingfrontend	en	Square meter
 Ssn	bookingfrontend	en	Ssn
 SSN not registred	common	en	Ssn not registred
+start_time	bookingfrontend	en	Start time
 start_time_in_past	bookingfrontend	en	Start time cannot be in the past
 start_time_must_be_before_end_time	bookingfrontend	en	Start time must be earlier than end time
 start_time_outside_business_hours	bookingfrontend	en	Start time must be within business hours
@@ -614,6 +643,7 @@ To time	bookingfrontend	en	To time
 to_date	bookingfrontend	en	To date
 total	bookingfrontend	en	Total
 Town part	bookingfrontend	en	Area/District
+try_again	bookingfrontend	en	Try again
 tu	bookingfrontend	en	Tu
 type	bookingfrontend	en	Type
 Unable to fill report	bookingfrontend	en	Unable to fill report
@@ -649,6 +679,7 @@ view_all_images	bookingfrontend	en	View all images
 we	bookingfrontend	en	We
 week	bookingfrontend	en	Week
 week template	bookingfrontend	en	Week template
+what	bookingfrontend	en	What
 what_is_aktiv_kommune	bookingfrontend	en	What is Aktiv kommune?
 when	bookingfrontend	en	When
 When clicking the Next-button you will be presented to a list of bookings that will be updated.	bookingfrontend	en	When clicking the next-button you will be presented to a list of bookings that will be updated.
@@ -672,4 +703,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
-resource_already_booked	bookingfrontend	en	This timeslot is not available. The resource is already booked for this time.

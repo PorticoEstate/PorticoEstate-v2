@@ -59,6 +59,8 @@ application add	bookingfrontend	nn	søknad
 Application basket	bookingfrontend	nn	Søknadskorg
 Application cart	bookingfrontend	nn	Handlekurv
 applications	bookingfrontend	nn	Søknadar
+applications_overview	bookingfrontend	nn	Her er ei oversikt over søknadane dine som er klare for innsending og godkjenning.
+applications_ready_for_submission	bookingfrontend	nn	Søknader klar for innsending
 Apply filter	bookingfrontend	nn	Aktiver filter
 Apply for time	bookingfrontend	nn	Søk om tid
 apr	bookingfrontend	nn	april
@@ -89,6 +91,7 @@ booking district	bookingfrontend	nn	Område/bydel
 booking name	bookingfrontend	nn	Namn på interntildeling
 booking show	bookingfrontend	nn	Interntildeling
 booking_calendar	bookingfrontend	nn	Bookingkalendar
+booking_categories	bookingfrontend	nn	Booking kategoriar
 bookingfrontend host	bookingfrontend	nn	Bookingfrontend vert
 bookingfrontend settings	bookingfrontend	nn	Bookingfrontend innstillingar
 bookings	bookingfrontend	nn	Interntildelingar
@@ -145,6 +148,7 @@ choose rent object and rentperiod	bookingfrontend	nn	Vel leigeobjekt og leigeper
 choose rent period	bookingfrontend	nn	Velg leigeperiode
 Choose resources	bookingfrontend	nn	Velg lokaler
 choose target audience	bookingfrontend	nn	Vel målgruppe for arrangement / aktiviteten
+choose_a	bookingfrontend	nn	Vel fakturatype
 chosen rent object	bookingfrontend	nn	Valde ressursar
 chosen rent period	bookingfrontend	nn	Valde leigeperioder
 city	bookingfrontend	nn	Poststad
@@ -152,12 +156,15 @@ click to sort ascending	bookingfrontend	nn	Klikk for å sortere stigande
 click to sort descending	bookingfrontend	nn	Klikk for å sortere synkande
 clock_short	bookingfrontend	nn	Kl
 Close	bookingfrontend	nn	Lukke
+close_dialog	bookingfrontend	nn	Lukk dialog
+close_message	bookingfrontend	nn	Lukk melding
 collect users	booking	nn	Legg til brukarar
 Collects users from all applications and events	booking	nn	Haustar brukarar frå alle søknader og arrangement
 Complete applications	bookingfrontend	nn	Fullfør søknad
 complete applications	bookingfrontend	nn	Fullfør søknad
 complete_applications	bookingfrontend	nn	Fullfør søknad
 Confirm e-mail address	bookingfrontend	nn	Stadfest e-postadressa
+confirm_email	bookingfrontend	nn	Stadfest e-post
 CONFIRMED	bookingfrontend	nn	STADFESTA
 contact	bookingfrontend	nn	Kontakt
 contact 1	bookingfrontend	nn	Kontakt 1
@@ -167,6 +174,7 @@ Contact information name is to long. max 50 characters	bookingfrontend	nn	Namnet
 contact person	bookingfrontend	nn	Kontaktperson
 contact_email	bookingfrontend	nn	E-post
 contact_name	bookingfrontend	nn	Namn
+contact_phone	bookingfrontend	nn	Telefon
 contacts[0][email] contains an invalid email	bookingfrontend	nn	Ugyldig e-post under ansvarleg gruppeleiar 1
 contacts[1][email] contains an invalid email	bookingfrontend	nn	Ugyldig e-post under ansvarleg gruppeleiar 2
 continue	bookingfrontend	nn	Fortsett
@@ -223,6 +231,7 @@ edit agegroup group	bookingfrontend	nn	Rediger aldersgruppe
 edit allocation	bookingfrontend	nn	Rediger tildeling
 Edit allocation information	bookingfrontend	nn	Skal du berre endra tildeling på valt dato, vel Endre-knappen nede for å vise tida som ledig og tiden blir vist som ledig i kalenderen, og kan tildeles andre klubber/org.
 Edit allocation information2	bookingfrontend	nn	Skal du endra fleire kan du velge 'Ut sesong' eller 'Endre til' og velg en dato, du kan også velge intervall (f.eks. annankvar veke).
+edit application	bookingfrontend	nn	Rediger søknad
 edit Audience group	bookingfrontend	nn	Rediger målgruppe
 edit booking	bookingfrontend	nn	Rediger interntildeling
 edit data	bookingfrontend	nn	Endre data
@@ -234,7 +243,9 @@ Edit System Message	bookingfrontend	nn	Rediger systemmelding
 Edit until	bookingfrontend	nn	Endre til
 edit_event	bookingfrontend	nn	Rediger arrangement
 editer	bookingfrontend	nn	Rediger
+empty_cart	bookingfrontend	nn	Du har ingenting i handlekorga
 end_time_in_past	bookingfrontend	nn	Sluttidspunktet kan ikkje vere i fortida
+end_time_must_be_after_start_time	bookingfrontend	nn	Sluttidspunktet må vere etter starttidspunktet
 end_time_outside_business_hours	bookingfrontend	nn	Sluttidspunktet må vere innanfor opningstider
 enter_team_organization_name	bookingfrontend	nn	Skriv namn på lag/organisasjon
 enter_title	bookingfrontend	nn	Angi ein tittel
@@ -252,6 +263,7 @@ Event was created	booking	nn	Arrangementet vart oppretta
 Event/activity description	bookingfrontend	nn	Kort beskrivelse av arrangementet / aktiviteten
 Event/activity homepage	bookingfrontend	nn	Heimeside for arrangementet / aktiviteten
 event_building	bookingfrontend	nn	Arrangement / bygning
+event_title	bookingfrontend	nn	Tittel på arrangementet
 events	bookingfrontend	nn	Arrangement
 every	bookingfrontend	nn	hver
 executiveofficer	bookingfrontend	nn	Saksbehandler
@@ -316,6 +328,7 @@ Invalid from date	bookingfrontend	nn	Ugyldig frådato
 invoice	bookingfrontend	nn	Faktura
 invoice information	bookingfrontend	nn	Fakturainformasjon
 Invoice Instruction	bookingfrontend	nn	Topptekst til faktura
+invoiced	bookingfrontend	nn	Fakturert
 It is currently not possible to rent anything here	bookingfrontend	nn	NB! Det er for tida ikkje mogeleg å leige noko her
 jan	bookingfrontend	nn	januar
 jul	bookingfrontend	nn	juli
@@ -331,6 +344,10 @@ Lengt of shortname is to long, max 11 characters long	bookingfrontend	nn	Kortnam
 Link to website	bookingfrontend	nn	Link til heimeside
 list_view	bookingfrontend	nn	Liste
 Loading...	bookingfrontend	nn	Lastar inn…
+loading_cart	bookingfrontend	nn	Lastar handlekorg
+loading_resource_info	bookingfrontend	nn	Lastar ressurs info
+loading_user	bookingfrontend	nn	Lastar brukar
+loading_user_info	bookingfrontend	nn	Lastar brukarinformasjon
 location	bookingfrontend	nn	Lokale
 locations	bookingfrontend	nn	Lokaler
 log off	bookingfrontend	nn	Logg ut
@@ -371,6 +388,7 @@ modified	bookingfrontend	nn	Endra
 month	bookingfrontend	nn	Månad
 more	bookingfrontend	nn	flere
 more info	bookingfrontend	nn	Meir informasjon
+multiple_time_slots	bookingfrontend	nn	Fleire tidspunkt
 my page	bookingfrontend	nn	Mi side
 name	bookingfrontend	nn	Namn
 Name for event/activity	bookingfrontend	nn	Namn på arrangementet / aktiviteten
@@ -424,6 +442,7 @@ Organization shortname	bookingfrontend	nn	Kortnamn
 organization type	bookingfrontend	nn	Organisasjonstype
 organization_calendar	bookingfrontend	nn	Organisasjonskalender
 organizations	bookingfrontend	nn	Organisasjonar
+organizer	bookingfrontend	nn	Arrangør
 organizer/responsible seeker	bookingfrontend	nn	Namn på arrangør eller ansvarleg søkjar
 other	bookingfrontend	nn	Anna
 Out season	bookingfrontend	nn	Ut denne sesongen
@@ -478,6 +497,7 @@ Print as PDF	bookingfrontend	nn	Skriv ut som PDF
 Privacy	bookingfrontend	nn	Personvern
 Privacy statement	bookingfrontend	nn	Personvern
 Private event	bookingfrontend	nn	Privat arrangement
+private_event	bookingfrontend	nn	Privatperson
 private_person	bookingfrontend	nn	Privatperson
 Project No.	bookingfrontend	nn	Prosjektnummar
 Public schedule	bookingfrontend	nn	Publikumsbading
@@ -493,6 +513,7 @@ reject application	bookingfrontend	nn	Avslå søknad
 rejected	bookingfrontend	nn	Avvist
 remote authentication	bookingfrontend	nn	Ekstern autentisering
 remove date	bookingfrontend	nn	Fjern dato
+remove_application	bookingfrontend	nn	Fjern søknad
 rent	bookingfrontend	nn	Leige
 rent object	bookingfrontend	nn	Leigeobjekt
 rent period	bookingfrontend	nn	Leigeperiode
@@ -512,10 +533,15 @@ resource	bookingfrontend	nn	Ressurs
 resource name	bookingfrontend	nn	Namn på ressurs
 resource schedule	bookingfrontend	nn	Ressurskalendar
 resource type	bookingfrontend	nn	Type
+resource_already_booked	bookingfrontend	nn	Dette tidspunktet er ikkje tilgjengeleg. Ressursen er allereie reservert for denne tida.
+resource_overlap_detected	bookingfrontend	nn	Ressurs-overlapping oppdaga. Ver venleg og vel anna tid eller ressursar.
 resources	bookingfrontend	nn	Ressursar
 Resources type	bookingfrontend	nn	Lokaler
 responsible applicant	bookingfrontend	nn	Ansvarleg søkjar
 Responsible Code	bookingfrontend	nn	Ansvarsstad
+responsible_city	bookingfrontend	nn	Poststad
+responsible_street	bookingfrontend	nn	Gateadresse
+responsible_zip_code	bookingfrontend	nn	Postnummer
 role	bookingfrontend	nn	Rolle
 root permissions	bookingfrontend	nn	Systemrettar
 Sa	bookingfrontend	nn	laurdag
@@ -545,6 +571,7 @@ select date	bookingfrontend	nn	Vel dato
 select method	bookingfrontend	nn	Vel ein metode
 select role...	bookingfrontend	nn	Vel rolle
 select_all	bookingfrontend	nn	Velg alle
+select_organization	bookingfrontend	nn	Vel eller søk etter organisasjon
 selected	bookingfrontend	nn	Valgt
 selected_time_must_be_in_future	bookingfrontend	nn	Det valde tidspunktet må vere i framtida
 Send	bookingfrontend	nn	Send
@@ -563,9 +590,11 @@ showing items	bookingfrontend	nn	Viser
 showing items {startRecord} - {endRecord} of {totalRecords}	bookingfrontend	nn	Viser {startRecord} - {endRecord} av {totalRecords}
 site title	bookingfrontend	nn	Tittel på sida
 social security number	bookingfrontend	nn	Fødselsnummer (11 siffer)
+something_went_wrong	bookingfrontend	nn	Noko gjekk gale!
 square meter	bookingfrontend	nn	Kvadratmeter
 Ssn	bookingfrontend	nn	Fødselsnummer (11 siffer)
 SSN not registred	common	nn	Du er ikkje registrert i Frivilligregisteret eller organisasjonen manglar organisasjonsnummer i AktivKommune
+start_time	bookingfrontend	nn	Starttidspunkt
 start_time_in_past	bookingfrontend	nn	Starttidspunktet kan ikkje vere i fortida
 start_time_must_be_before_end_time	bookingfrontend	nn	Starttida må vere tidlegare enn sluttida
 start_time_outside_business_hours	bookingfrontend	nn	Starttidspunktet må vere innanfor opningstider
@@ -614,6 +643,7 @@ To time	bookingfrontend	nn	Til kl
 to_date	bookingfrontend	nn	Til dato
 total	bookingfrontend	nn	Total
 Town part	bookingfrontend	nn	Område/bydel
+try_again	bookingfrontend	nn	Prøv igjen
 tu	bookingfrontend	nn	tys
 type	bookingfrontend	nn	Type
 Unable to fill report	bookingfrontend	nn	Klarte ikkje å fylle ut rapport
@@ -649,6 +679,7 @@ view_all_images	bookingfrontend	nn	Vis alle bilete
 we	bookingfrontend	nn	ons
 week	bookingfrontend	nn	uke
 week template	bookingfrontend	nn	Vekeplan
+what	bookingfrontend	nn	Kva
 what_is_aktiv_kommune	bookingfrontend	nn	Kva er Aktiv kommune?
 when	bookingfrontend	nn	Når
 When clicking the Next-button you will be presented to a list of bookings that will be updated.	bookingfrontend	nn	Etter at du har klikka på Neste-knappen får du ei oversikt over kva for bookingar som blir oppdatert.
@@ -672,4 +703,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	nn	Søknadene dine er godkjent, og en bekreftelse er sendt til deg på e-post.
 your_applications	bookingfrontend	nn	Dine søknader
 zip code	bookingfrontend	nn	Postnummer
-resource_already_booked	bookingfrontend	nn	Dette tidspunktet er ikkje tilgjengeleg. Ressursen er allereie reservert for denne tida.

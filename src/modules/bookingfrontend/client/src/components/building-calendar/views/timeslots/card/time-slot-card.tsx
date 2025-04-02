@@ -3,21 +3,25 @@ import { DateTime } from 'luxon';
 import styles from './time-slot-card.module.scss';
 import {IFreeTimeSlot} from "@/service/pecalendar.types";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import {Button} from "@digdir/designsystemet-react";
+import {Button, Spinner} from "@digdir/designsystemet-react";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {ColourIndex} from "@/service/hooks/Colours";
+import { usePartialApplications } from '@/service/hooks/api-hooks';
 
 interface TimeSlotCardProps {
 	slot: IFreeTimeSlot;
 	resourceId?: string;
 	onSelect: (slot: IFreeTimeSlot) => void;
+	isProcessing?: boolean;
 }
 
-const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect }) => {
+const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect, isProcessing = false }) => {
 	const startDateTime = DateTime.fromISO(slot.start_iso);
 	const endDateTime = DateTime.fromISO(slot.end_iso);
 	const t = useTrans();
+	const { data: partialApplications } = usePartialApplications();
 	const sameDay = startDateTime.hasSame(endDateTime, 'day');
+
 	const getStatusText = (overlap: IFreeTimeSlot['overlap']) => {
 		switch (overlap) {
 			case false:
@@ -28,9 +32,18 @@ const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect }) => 
 				return t('bookingfrontend.leased');
 		}
 	};
+
 	const formatDate = (date: DateTime) => {
 		return date.toFormat("d'.' LLL").toLowerCase();
 	};
+
+	const hasRemovableOverlap = slot.overlap &&
+		slot.overlap_reason === 'complete_overlap' &&
+		slot.overlap_type === 'complete' &&
+		slot.overlap_event?.type === 'application' &&
+		slot.overlap_event?.status === 'NEWPARTIAL1' &&
+		slot.overlap_event?.id !== undefined &&
+		partialApplications?.list.some(app => app.id === slot.overlap_event?.id);
 
 	return (
 		<div className={styles.card}>
@@ -64,9 +77,29 @@ const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect }) => 
 			</div>
 
 			<div className={styles.actionColumn}>
-				{slot.overlap === false && (
-					<Button className={styles.actionButton} variant={'primary'} data-size={'md'} onClick={() => onSelect(slot)}>
+				{isProcessing && (
+					<Spinner data-size={'md'} aria-label={t('common.loading')} />
+				)}
+				{!isProcessing && slot.overlap === false && (
+					<Button
+						className={styles.actionButton}
+						variant={'primary'}
+						data-size={'md'}
+						onClick={() => onSelect(slot)}
+						disabled={isProcessing}
+					>
 						{t('booking.select')}
+					</Button>
+				)}
+				{!isProcessing && hasRemovableOverlap && (
+					<Button
+						className={styles.actionButton}
+						data-color={'danger'}
+						data-size={'md'}
+						onClick={() => onSelect(slot)}
+						disabled={isProcessing}
+					>
+						{t('bookingfrontend.delete')}
 					</Button>
 				)}
 			</div>

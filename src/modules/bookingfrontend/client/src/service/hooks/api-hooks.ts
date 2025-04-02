@@ -92,81 +92,39 @@ export function useBuildingFreeTimeSlots({
 	initialFreeTime?: FreeTimeSlotsResponse;
 }) {
 	const queryClient = useQueryClient();
-	const weekStarts = weeks.map(d => d.set({weekday: 1}).startOf('day'));
-	const weekEnds = weekStarts.map(d => d.plus({ weeks: 1 }).endOf('day'));
+	// Get just the current week that includes the first date in the array
+	const currentWeek = weeks[0].set({weekday: 1}).startOf('day');
+	const weekEnd = currentWeek.plus({ weeks: 1 });
+	const weekKey = currentWeek.toFormat("y-MM-dd");
 
-	const getWeekCacheKey = (weekStart: string): readonly ['buildingFreeTime', number, string] => {
-		return ['buildingFreeTime', building_id, weekStart] as const;
-	};
-
+	// Set initial data if provided, but don't use cache for normal operation
 	useEffect(() => {
 		if (initialFreeTime) {
-			Object.entries(initialFreeTime).forEach(([resourceId, slots]) => {
-				weekStarts.forEach(weekStart => {
-					const weekKey = weekStart.toFormat("y-MM-dd");
-					const cacheKey = getWeekCacheKey(weekKey);
-					const weekSlots = slots.filter((slot: IFreeTimeSlot) => {
-						const slotDate = DateTime.fromISO(slot.start_iso);
-						return slotDate >= weekStart && slotDate < weekStart.plus({ weeks: 1 });
-					});
-
-					if (!queryClient.getQueryData(cacheKey)) {
-						queryClient.setQueryData(cacheKey, { [resourceId]: weekSlots });
-					}
-				});
-			});
+			// Just for initial server-side rendered data
+			queryClient.setQueryData(
+				['buildingFreeTime', building_id, weekKey],
+				initialFreeTime
+			);
 		}
-	}, [initialFreeTime, building_id, queryClient, weekStarts]);
+	}, [initialFreeTime, building_id, queryClient, weekKey]);
 
 	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
-		const uncachedWeeks = weekStarts.filter(weekStart => {
-			const cacheKey = getWeekCacheKey(weekStart.toFormat("y-MM-dd"));
-			return !queryClient.getQueryData(cacheKey);
-		});
-
-		if (uncachedWeeks.length === 0) {
-			const combinedData: FreeTimeSlotsResponse = {};
-			weekStarts.forEach(weekStart => {
-				const cacheKey = getWeekCacheKey(weekStart.toFormat("y-MM-dd"));
-				const weekData = queryClient.getQueryData<FreeTimeSlotsResponse>(cacheKey);
-				if (weekData) {
-					Object.entries(weekData).forEach(([resourceId, slots]) => {
-						if (!combinedData[resourceId]) combinedData[resourceId] = [];
-						combinedData[resourceId].push(...slots);
-					});
-				}
-			});
-			return combinedData;
-		}
-
-		const freeTimeData = await fetchFreeTimeSlotsForRange(
+		// Always fetch from API for just the current week
+		return await fetchFreeTimeSlotsForRange(
 			building_id,
-			uncachedWeeks[0],
-			uncachedWeeks[uncachedWeeks.length - 1].plus({ weeks: 1 }),
+			currentWeek,
+			weekEnd,
 			instance
 		);
-
-		uncachedWeeks.forEach(weekStart => {
-			const weekKey = weekStart.toFormat("y-MM-dd");
-			const weekEnd = weekStart.plus({ weeks: 1 });
-			const weekData: FreeTimeSlotsResponse = {};
-
-			Object.entries(freeTimeData).forEach(([resourceId, slots]) => {
-				weekData[resourceId] = slots.filter((slot: IFreeTimeSlot) => {
-					const slotDate = DateTime.fromISO(slot.start_iso);
-					return slotDate >= weekStart && slotDate < weekEnd;
-				});
-			});
-
-			queryClient.setQueryData(getWeekCacheKey(weekKey), weekData);
-		});
-
-		return freeTimeData;
 	};
 
 	return useQuery({
-		queryKey: ['buildingFreeTime', building_id, weekStarts.map(d => d.toFormat("y-MM-dd")).join(',')],
+		queryKey: ['buildingFreeTime', building_id, weekKey],
 		queryFn: fetchFreeTimeSlots,
+		staleTime: 0, // Consider data stale immediately
+		refetchOnMount: true, // Always refetch when component mounts
+		refetchOnWindowFocus: true, // Refetch when window regains focus
+		// cacheTime: 5 * 60 * 1000 // Cache for 5 minutes max
 	});
 }
 

@@ -82,6 +82,7 @@ class ApplicationService
 			$application->dates = $this->fetchDates($application->id);
 			$application->resources = $this->fetchResources($application->id);
 			$application->orders = $this->fetchOrders($application->id);
+			$application->articles = $this->fetchArticles($application->id);
 			$application->agegroups = $this->fetchAgeGroups($application->id);
 			$application->audience = $this->fetchTargetAudience($application->id);
 			$application->documents = $this->fetchDocuments($application->id);
@@ -762,10 +763,10 @@ class ApplicationService
 			return $order->serialize();
 		}, array_values($orders));
 	}
-	
+
 	/**
 	 * Fetch articles for an application in ArticleOrder format
-	 * 
+	 *
 	 * @param int $application_id The application ID
 	 * @return array Array of articles in ArticleOrder format
 	 */
@@ -787,7 +788,7 @@ class ApplicationService
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([':application_id' => $application_id]);
 		$results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-		
+
 		// Convert result rows to ArticleOrder format
 		$articles = [];
 		foreach ($results as $row) {
@@ -1171,7 +1172,7 @@ class ApplicationService
 
 	/**
 	 * Save articles for an application using the new ArticleOrder format
-	 * 
+	 *
 	 * @param int $applicationId The application ID
 	 * @param array $articles Array of ArticleOrder objects with id, quantity, and parent_id
 	 */
@@ -1180,10 +1181,10 @@ class ApplicationService
 		try {
 			// First delete existing purchase order lines for this application
 			$this->deleteExistingPurchaseOrderLines($applicationId);
-			
+
 			// Create a new purchase order if it doesn't exist
 			$purchase_order_id = $this->getOrCreatePurchaseOrder($applicationId);
-			
+
 			// Add each article as a purchase order line
 			foreach ($articles as $article) {
 				// Get article details from the mapping
@@ -1191,7 +1192,7 @@ class ApplicationService
 				if (!$mapping) {
 					continue; // Skip if mapping not found
 				}
-				
+
 				// Create the purchase order line
 				$line = [
 					'article_mapping_id' => $article['id'],
@@ -1200,24 +1201,24 @@ class ApplicationService
 					'ex_tax_price' => $mapping['price'] ?? 0, // Using price from mapping
 					'tax_code' => $mapping['tax_code'] ?? null
 				];
-				
+
 				$this->savePurchaseOrderLine($purchase_order_id, $line);
 			}
 		} catch (Exception $e) {
 			throw new Exception("Error saving application articles: " . $e->getMessage());
 		}
 	}
-	
+
 	/**
 	 * Get article mapping by ID
-	 * 
+	 *
 	 * @param int $mappingId The mapping ID
 	 * @return array|null The article mapping or null if not found
 	 */
 	private function getArticleMappingById(int $mappingId): ?array
 	{
 		// Query the mapping and also join price information
-		$sql = "SELECT am.*, p.price, am.tax_code 
+		$sql = "SELECT am.*, p.price, am.tax_code
 				FROM bb_article_mapping am
 				LEFT JOIN bb_article_price p ON p.article_mapping_id = am.id
 				WHERE am.id = :id
@@ -1225,13 +1226,13 @@ class ApplicationService
 				LIMIT 1";
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute(['id' => $mappingId]);
-		
+
 		return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
 	}
-	
+
 	/**
 	 * Delete existing purchase order lines for an application
-	 * 
+	 *
 	 * @param int $applicationId The application ID
 	 */
 	private function deleteExistingPurchaseOrderLines(int $applicationId): void
@@ -1241,20 +1242,20 @@ class ApplicationService
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute(['application_id' => $applicationId]);
 		$purchase_order = $stmt->fetch(PDO::FETCH_ASSOC);
-		
+
 		if (!$purchase_order) {
 			return; // No purchase order exists
 		}
-		
+
 		// Delete the lines - using the correct column name 'order_id' instead of 'purchase_order_id'
 		$sql = "DELETE FROM bb_purchase_order_line WHERE order_id = :order_id";
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute(['order_id' => $purchase_order['id']]);
 	}
-	
+
 	/**
 	 * Get existing purchase order or create a new one
-	 * 
+	 *
 	 * @param int $applicationId The application ID
 	 * @return int The purchase order ID
 	 */
@@ -1265,16 +1266,16 @@ class ApplicationService
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute(['application_id' => $applicationId]);
 		$purchase_order = $stmt->fetch(PDO::FETCH_ASSOC);
-		
+
 		if ($purchase_order) {
 			return (int)$purchase_order['id'];
 		}
-		
+
 		// Create a new purchase order
 		$sql = "INSERT INTO bb_purchase_order (application_id) VALUES (:application_id)";
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute(['application_id' => $applicationId]);
-		
+
 		return (int)$this->db->lastInsertId();
 	}
 
@@ -1348,13 +1349,13 @@ class ApplicationService
 		$unitPrice = $line['ex_tax_price'] ?? 0;
 		$quantity = $line['quantity'] ?? 0;
 		$amount = $unitPrice * $quantity;
-		
+
 		// Get tax rate information (assuming 25% if not specified)
 		$taxRate = 0.25; // Default tax rate
 		if (!empty($line['tax_code'])) {
 			// Could look up actual tax rate here if needed
 		}
-		
+
 		// Calculate tax amount
 		$tax = $amount * $taxRate;
 
@@ -1531,7 +1532,7 @@ class ApplicationService
 			{
 				$this->patchApplicationDates($data['id'], $data['dates']);
 			}
-			
+
 			// Handle articles if present (complete replacement)
 			if (isset($data['articles']))
 			{
@@ -1749,20 +1750,20 @@ class ApplicationService
 
 		// Use bobooking's check_if_resurce_is_taken for detailed checking
 		$bobooking = CreateObject('booking.bobooking');
-		
+
 		// Convert datetime strings to DateTime objects
-		$timezone = !empty($bobooking->userSettings['preferences']['common']['timezone']) ? 
+		$timezone = !empty($bobooking->userSettings['preferences']['common']['timezone']) ?
 			$bobooking->userSettings['preferences']['common']['timezone'] : 'UTC';
 		$DateTimeZone = new \DateTimeZone($timezone);
 		$fromDateTime = new \DateTime($from, $DateTimeZone);
 		$toDateTime = new \DateTime($to, $DateTimeZone);
-		
+
 		// Get events for the resource to check against using BuildingScheduleService
 		$events = $this->getResourceEventsForBookingCheck($resourceId, $fromDateTime, $toDateTime);
-		
+
 		// Use detailed check function
 		$overlap_result = $bobooking->check_if_resurce_is_taken($resource, $fromDateTime, $toDateTime, $events);
-		
+
 		// Process the overlap result
 		if (is_array($overlap_result)) {
 			// Detailed result with status, reason, type, and event
@@ -1774,7 +1775,7 @@ class ApplicationService
 			// Simple boolean result
 			$available = !$overlap_result;
 		}
-		
+
 		// Check booking limits if the timeslot is available
 		$limitInfo = null;
 		$ssn = $this->userHelper->ssn;
@@ -1807,13 +1808,13 @@ class ApplicationService
 			'supports_simple_booking' => true,
 			'limit_info' => $limitInfo
 		];
-		
+
 		// Add detailed overlap information if not available
 		if (!$available) {
 			$response['message'] = $this->getOverlapMessage($overlapReason, $overlapType);
 			$response['overlap_reason'] = $overlapReason;
 			$response['overlap_type'] = $overlapType;
-			
+
 			// Add event details if available
 			if ($overlapEvent) {
 				$response['overlap_event'] = $overlapEvent;
@@ -1827,7 +1828,7 @@ class ApplicationService
 
 	/**
 	 * Get a human-readable message for overlap reasons
-	 * 
+	 *
 	 * @param string|null $reason The overlap reason
 	 * @param string|null $type The overlap type
 	 * @return string The human-readable message
@@ -1856,10 +1857,10 @@ class ApplicationService
 
 	/**
 	 * Get resource events for booking availability check
-	 * 
+	 *
 	 * This method directly queries for blocks, events and applications (including NEWPARTIAL1)
 	 * to ensure accurate overlap detection
-	 * 
+	 *
 	 * @param int $resourceId The resource ID
 	 * @param \DateTime $from Start datetime
 	 * @param \DateTime $to End datetime
@@ -1869,14 +1870,14 @@ class ApplicationService
 	{
 		// Debug
 		error_log("Resource $resourceId check from " . $from->format('Y-m-d H:i:s') . " to " . $to->format('Y-m-d H:i:s'));
-		
+
 		// Format dates for SQL
 		$from_date = $from->format('Y-m-d H:i:s');
 		$to_date = $to->format('Y-m-d H:i:s');
-		
+
 		// Combine all events
 		$formattedEvents = [];
-		
+
 		try {
 			// First get all applications (INCLUDING NEWPARTIAL1)
 			// This should use the exact same date overlap algorithm as checkCollisionWithDebug
@@ -1891,7 +1892,7 @@ class ApplicationService
 						OR (ad.to_ BETWEEN :from_date AND :to_date)
 						OR (:from_date BETWEEN ad.from_ AND ad.to_)
 						OR (:to_date BETWEEN ad.from_ AND ad.to_))";
-					
+
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([
 				':resource_id' => $resourceId,
@@ -1899,8 +1900,8 @@ class ApplicationService
 				':to_date' => $to_date
 			]);
 			$applications = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-			
-			// Get blocks 
+
+			// Get blocks
 			$sql = "SELECT b.id, b.from_, b.to_, 'block' as type, b.session_id as status
 					FROM bb_block b
 					WHERE b.resource_id = :resource_id
@@ -1909,7 +1910,7 @@ class ApplicationService
 						OR (b.to_ BETWEEN :from_date AND :to_date)
 						OR (:from_date BETWEEN b.from_ AND b.to_)
 						OR (:to_date BETWEEN b.from_ AND b.to_))";
-					
+
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([
 				':resource_id' => $resourceId,
@@ -1917,7 +1918,7 @@ class ApplicationService
 				':to_date' => $to_date
 			]);
 			$blocks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-			
+
 			// Get events
 			$sql = "SELECT e.id, e.from_, e.to_, 'event' as type, 'ACCEPTED' as status
 					FROM bb_event e
@@ -1928,7 +1929,7 @@ class ApplicationService
 						OR (e.to_ BETWEEN :from_date AND :to_date)
 						OR (:from_date BETWEEN e.from_ AND e.to_)
 						OR (:to_date BETWEEN e.from_ AND e.to_))";
-					
+
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([
 				':resource_id' => $resourceId,
@@ -1936,7 +1937,7 @@ class ApplicationService
 				':to_date' => $to_date
 			]);
 			$events = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-			
+
 			// Process applications
 			foreach ($applications as $app) {
 				$formattedEvent = [
@@ -1949,7 +1950,7 @@ class ApplicationService
 				];
 				$formattedEvents[] = $formattedEvent;
 			}
-			
+
 			// Process blocks
 			foreach ($blocks as $block) {
 				$formattedEvent = [
@@ -1962,7 +1963,7 @@ class ApplicationService
 				];
 				$formattedEvents[] = $formattedEvent;
 			}
-			
+
 			// Process events
 			foreach ($events as $event) {
 				$formattedEvent = [
@@ -1975,14 +1976,14 @@ class ApplicationService
 				];
 				$formattedEvents[] = $formattedEvent;
 			}
-			
+
 			error_log("Found " . count($formattedEvents) . " events/blocks/applications for resource");
-			
+
 		} catch (\Exception $e) {
 			error_log("Error in getResourceEventsForBookingCheck: " . $e->getMessage());
 			// Even with an error, we continue with whatever events we found
 		}
-		
+
 		// Return in the expected format
 		return [
 			'results' => $formattedEvents
@@ -2071,18 +2072,18 @@ class ApplicationService
 			// CRITICAL SECURITY FIX - DIRECT OVERLAP CHECK
 			// First check directly if this time slot is already taken by ANY application (including NEWPARTIAL1)
 			// Note that we DO NOT filter by session_id to catch all applications regardless of session
-			$overlapCheckSql = "SELECT COUNT(*) as overlap_count 
+			$overlapCheckSql = "SELECT COUNT(*) as overlap_count
 				FROM bb_application a
 				JOIN bb_application_resource ar ON a.id = ar.application_id
 				JOIN bb_application_date ad ON a.id = ad.application_id
 				WHERE ar.resource_id = :resource_id
-				AND a.status NOT IN ('REJECTED') 
+				AND a.status NOT IN ('REJECTED')
 				AND a.active = 1
 				AND ((ad.from_ BETWEEN :from_date AND :to_date)
 					OR (ad.to_ BETWEEN :from_date AND :to_date)
 					OR (:from_date BETWEEN ad.from_ AND ad.to_)
 					OR (:to_date BETWEEN ad.from_ AND ad.to_))";
-				
+
 			// Execute the count query to check for any overlaps
 			$stmt = $this->db->prepare($overlapCheckSql);
 			$stmt->execute([
@@ -2090,20 +2091,20 @@ class ApplicationService
 				':from_date' => $from,
 				':to_date' => $to
 			]);
-			
+
 			$result = $stmt->fetch(\PDO::FETCH_ASSOC);
 			$overlapCount = (int)$result['overlap_count'];
-			
+
 			// If we found any overlapping applications, set a session message and reject the request
 			if ($overlapCount > 0) {
 					$errorMessage = lang('resource_already_booked');
-					
+
 					// Set message using Cache::message_set() like ApplicationController does
 					\App\modules\phpgwapi\services\Cache::message_set($errorMessage, 'error');
-					
+
 					// Log the overlap for debugging
 					error_log("BOOKING OVERLAP DETECTED: Resource ID {$resourceId}, time {$from} to {$to}");
-					
+
 					// Throw exception to stop the booking process
 					throw new \Exception($errorMessage);
 			}
@@ -2123,7 +2124,7 @@ class ApplicationService
 				$message = $availability['message'] ?? 'Timeslot is not available';
 				$reason = $availability['overlap_reason'] ?? null;
 				$type = $availability['overlap_type'] ?? null;
-				
+
 				if ($reason && $type) {
 					throw new \Exception("{$message}: {$reason} ({$type})");
 				} else {

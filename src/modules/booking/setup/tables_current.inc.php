@@ -1611,6 +1611,8 @@ $phpgw_baseline = array(
 			'captured' => array('type' => 'int', 'precision' => '8', 'nullable' => true),
 			'avs_response_code' => array('type' => 'varchar', 'precision' => '15', 'nullable' => true),
 			'avs_response_code_label' => array('type' => 'varchar', 'precision' => '35', 'nullable' => true),
+			'posted_to_accounting' => array('type' => 'int', 'precision' => '8', 'nullable' => true),
+			'refund_posted_to_accounting' => array('type' => 'int', 'precision' => '8', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(

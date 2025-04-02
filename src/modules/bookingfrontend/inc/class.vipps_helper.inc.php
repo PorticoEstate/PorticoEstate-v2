@@ -9,6 +9,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\security\Sessions;
 use App\Database\Db;
+use GuzzleHttp;
 
 
 class bookingfrontend_vipps_helper
@@ -38,6 +39,7 @@ class bookingfrontend_vipps_helper
 		$location_id		 = $location_obj->get_id('booking', 'run');
 		$custom_config		 = CreateObject('admin.soconfig', $location_id);
 		$custom_config_data	 = $custom_config->config_data['Vipps'];
+
 		$config				 = CreateObject('phpgwapi.config', 'booking')->read();
 
 		if (!empty($custom_config_data['debug']))
@@ -52,7 +54,6 @@ class bookingfrontend_vipps_helper
 		$this->msn				 = !empty($custom_config_data['msn']) ? $custom_config_data['msn'] : '';
 		$this->proxy			 = !empty($config['proxy']) ? $config['proxy'] : '';
 
-		require_once PHPGW_API_INC . '/guzzle/vendor/autoload.php';
 		$this->client = new GuzzleHttp\Client();
 
 		$this->accesstoken = $this->get_accesstoken();
@@ -639,5 +640,170 @@ class bookingfrontend_vipps_helper
 		}
 
 		return $ret;
+	}
+
+
+	public function postToAccountingSystem()
+	{
+		$soapplication = CreateObject('booking.soapplication');
+
+		// Hent config for å avgjøre hvilket regnskapssystem som skal brukes
+		$location_obj = new Locations();
+		$location_id = $location_obj->get_id('booking', 'run');
+		$custom_config = CreateObject('admin.soconfig', $location_id);
+		$accounting_config = $custom_config->config_data['Accounting'] ?? [];
+		$accounting_system = $accounting_config['system'] ?? 'visma_enterprise';
+
+		// Opprett regnskapssystem basert på konfigurasjon
+		try
+		{
+			$accounting = \App\modules\booking\helpers\accounting\AccountingSystemFactory::create(
+				$accounting_system,
+				$accounting_config,
+				$this->debug
+			);
+		}
+		catch (Exception $e)
+		{
+			if ($this->debug)
+			{
+				print_r("Failed to initialize accounting system: " . $e->getMessage());
+			}
+			return;
+		}
+
+		// Sjekk om regnskapssystemet er riktig konfigurert
+		if (!$accounting->isConfigured())
+		{
+			if ($this->debug)
+			{
+				print_r("Accounting system is not properly configured: " . $accounting->getLastError());
+			}
+			return;
+		}
+
+		// Hent alle transaksjoner som ikke er bokført
+		$result = $soapplication->get_unposted_transactions();
+		$unposted_transactions = $result['results'] ?? [];
+
+		foreach ($unposted_transactions as $transaction)
+		{
+			$remote_order_id = $transaction['remote_order_id'];
+			$amount = $transaction['amount'];
+			$description = $transaction['description'];
+			$date = $transaction['date'];
+
+			// Hent detaljer om transaksjonen fra Vipps
+			$payment_details = $this->get_payment_details($remote_order_id);
+
+			if ($payment_details['transactionInfo']['status'] === 'CAPTURE')
+			{
+				// Send transaksjonen til regnskapssystemet
+				$result = $accounting->postTransaction(
+					$amount / 100,
+					$description,
+					$date,
+					$remote_order_id
+				);
+
+				if ($result)
+				{
+					// Oppdater status i databasen for å markere som bokført
+					$soapplication->mark_as_posted($remote_order_id);
+
+					if ($this->debug)
+					{
+						print_r("Successfully posted transaction {$remote_order_id} to accounting system.");
+					}
+				}
+				else
+				{
+					if ($this->debug)
+					{
+						print_r("Failed to post transaction {$remote_order_id} to accounting system: " . $accounting->getLastError());
+					}
+				}
+			}
+			else
+			{
+				if ($this->debug)
+				{
+					print_r("Transaction {$remote_order_id} is not captured. Skipping.");
+				}
+			}
+		}
+		// Hent transaksjoner som er markert som refundert men ikke bokført
+		$result = $soapplication->get_unposted_refund_transactions();
+		$unposted_refunds = $result['results'] ?? [];
+
+		foreach ($unposted_refunds as $refund)
+		{
+			$remote_order_id = $refund['remote_order_id'];
+			$amount = $refund['amount'];
+			$description = $refund['description'];
+			$date = $refund['date'];
+			$original_transaction_id = $refund['original_transaction_id'] ?? null;
+
+			// Send refunderingen til regnskapssystemet
+			$result = $accounting->postRefundTransaction(
+				$amount / 100,
+				$description,
+				$date,
+				$remote_order_id,
+				$original_transaction_id
+			);
+
+			if ($result)
+			{
+				// Oppdater status i databasen for å markere refunderingen som bokført
+				$soapplication->mark_refund_as_posted($remote_order_id);
+
+				if ($this->debug)
+				{
+					print_r("Successfully posted refund for transaction {$remote_order_id} to accounting system.");
+				}
+			}
+			else
+			{
+				if ($this->debug)
+				{
+					print_r("Failed to post refund for transaction {$remote_order_id} to accounting system: " . $accounting->getLastError());
+				}
+			}
+		}
+		// Etter du har behandlet unposted_refund_transactions
+		// Finn betalinger som er bokført, men senere refundert og refunderingen er ikke bokført
+		$refunds_needing_posting = $soapplication->get_refunded_posted_payments();
+
+		// Bokfør disse refunderingene
+		foreach ($refunds_needing_posting as $refund)
+		{
+			// Send refunderingen til regnskapssystemet
+			$result = $accounting->postRefundTransaction(
+				$refund['amount'] / 100,
+				$refund['description'],
+				$refund['date'],
+				$refund['remote_order_id'],
+				$refund['original_transaction_id']
+			);
+
+			if ($result)
+			{
+				// Oppdater status i databasen for å markere refunderingen som bokført
+				$soapplication->mark_refund_as_posted($refund['remote_order_id']);
+
+				if ($this->debug)
+				{
+					print_r("Successfully posted refund for transaction {$refund['remote_order_id']} to accounting system.");
+				}
+			}
+			else
+			{
+				if ($this->debug)
+				{
+					print_r("Failed to post refund for transaction {$refund['remote_order_id']} to accounting system: " . $accounting->getLastError());
+				}
+			}
+		}
 	}
 }

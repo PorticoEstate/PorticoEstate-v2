@@ -371,7 +371,7 @@
 					. " JOIN bb_resource_service ON (bb_service.id = bb_resource_service.service_id)"
 					. " JOIN fm_ecomva ON (bb_article_mapping.tax_code = fm_ecomva.id)"
 					. " JOIN bb_article_group ON (bb_article_mapping.group_id = bb_article_group.id)"
-					. " WHERE article_cat_id = 2 {$filter}"
+					. " WHERE article_cat_id = 2 AND bb_service.id = 1 {$filter}"
 					. " ORDER BY bb_resource_service.resource_id, bb_service.name";
 				$this->db->query($sql, __LINE__, __FILE__);
 

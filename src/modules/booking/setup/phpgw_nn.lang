@@ -147,6 +147,7 @@ booking new	booking	nn	Ny interntildeling
 booking settings	booking	nn	Bookinginnstillinger
 Booking system settings	booking	nn	Systeminnstillingar i Bookingmodul
 booking_async_task_anonyminizer	booking	nn	Anonymiser kunderegister
+booking_async_task_postToAccountingSystem	booking	nn	Overfør bokføring til regnskapssystem
 booking_async_task_clean_up_old_posts	booking	nn	Deaktivere gamle søknader og sesongar
 booking_async_task_delete_access_log	booking	nn	Slette aksesslogg for anonym frontend-brukar
 booking_async_task_delete_expired_blocks	booking	nn	Slette ubrukte reservasjoner
@@ -697,7 +698,7 @@ price list	booking	nn	Prisliste
 primary admin	booking	nn	Kontaktperson 1
 primary contact	booking	nn	Kontaktperson 1
 Print as PDF	booking	nn	Skriv ut som PDF
-Private event	booking	nn	Arrangement
+Private event	booking	nn	Privat arrangement
 prizing	booking	nn	Prising
 Project No.	booking	nn	Prosjektnr.
 Public event	booking	nn	Offentleg arrangement

@@ -1,6 +1,6 @@
 <?php
 $setup_info['booking']['name'] = 'booking';
-$setup_info['booking']['version'] = '0.2.109';
+$setup_info['booking']['version'] = '0.2.111';
 $setup_info['booking']['app_order'] = 9;
 $setup_info['booking']['enable'] = 1;
 $setup_info['booking']['app_group'] = 'office';
@@ -120,5 +120,6 @@ $setup_info['booking']['hooks'] = [
 	'activity_edit' => 'booking.hook_helper.activity_edit',
 	'after_navbar'	=> 'booking.hook_helper.after_navbar',
 	'resource_add' => 'booking.hook_helper.resource_add',
+	'home' => 'booking.hook_helper.home',
 	'config'
 ];

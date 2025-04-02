@@ -419,6 +419,9 @@ HTML;
 			}
 		}
 
+		unset($_person_nr);
+		unset($entry);
+
 
 		$cols = array(
 			'navn', 'f_dato', 'beste_adresse', 'adressebeskyttelse', 'objekt_id', 'leie_id',

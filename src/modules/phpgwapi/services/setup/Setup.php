@@ -191,7 +191,7 @@
 
 			// In case the cookies are not included in $_REQUEST
 			$FormLogout   = $FormLogout ? $FormLogout : \Sanitizer::get_var('FormLogout',	'string', 'COOKIE');
-			$ConfigDomain = $ConfigDomain ? $ConfigDomain: \Sanitizer::get_var('ConfigDomain',	'string', 'COOKIE');
+			$ConfigDomain = $logindomain ? $logindomain: \Sanitizer::get_var('ConfigDomain',	'string', 'COOKIE');
 			$ConfigPW     = $ConfigPW ? $ConfigPW : \Sanitizer::get_var('ConfigPW',	'string', 'COOKIE');
 			$HeaderPW     = $HeaderPW ? $HeaderPW : \Sanitizer::get_var('HeaderPW',	'string', 'COOKIE');
 			$ConfigLang   = $ConfigLang ? $ConfigLang : \Sanitizer::get_var('ConfigLang',	'string', 'COOKIE', 'en');

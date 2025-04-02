@@ -101,16 +101,64 @@ $app->get('/swagger/spec', function ($request, $response) use ($container)
 	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
 	if (!$sessions->verify())
 	{
-		return $response->withStatus(401)->withJson(['error' => 'Authentication required']);
+		$response->getBody()->write(json_encode(['error' => 'Authentication required']));
+		return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
 	}
 
 	$userInfo = $sessions->get_user();
 	if (empty($userInfo['apps']['admin']['enabled']))
 	{
-		return $response->withStatus(403)->withJson(['error' => 'Admin privileges required']);
+		$response->getBody()->write(json_encode(['error' => 'Admin privileges required']));
+		return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
 	}
 
 	// Serve the spec
 	$swaggerController = new \App\modules\phpgwapi\controllers\SwaggerController();
 	return $swaggerController->getSpec($request, $response);
+});
+
+$app->get('/api/tables', function ($request, $response) use ($container)
+{
+    // Same authentication checks
+    $sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+    if (!$sessions->verify())
+    {
+        $response->getBody()->write(json_encode(['error' => 'Authentication required']));
+        return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
+    }
+
+    $userInfo = $sessions->get_user();
+    if (empty($userInfo['apps']['admin']['enabled']))
+    {
+        $response->getBody()->write(json_encode(['error' => 'Admin privileges required']));
+        return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+    }
+
+    // Serve the spec
+    $databaseController = new \App\modules\phpgwapi\controllers\DatabaseController();
+    return $databaseController->getTables($request, $response);
+});
+
+
+//get tabledata for specific table
+$app->get('/api/tabledata/{table}', function ($request, $response, $args) use ($container)
+{
+	// Same authentication checks
+	$sessions = \App\modules\phpgwapi\security\Sessions::getInstance();
+	if (!$sessions->verify())
+	{
+		$response->getBody()->write(json_encode(['error' => 'Authentication required']));
+		return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
+	}
+
+	$userInfo = $sessions->get_user();
+	if (empty($userInfo['apps']['admin']['enabled']))
+	{
+		$response->getBody()->write(json_encode(['error' => 'Admin privileges required']));
+		return $response->withStatus(403)->withHeader('Content-Type', 'application/json');
+	}
+
+	// Serve the spec
+	$databaseController = new \App\modules\phpgwapi\controllers\DatabaseController();
+	return $databaseController->getTableData($request, $response, $args);
 });

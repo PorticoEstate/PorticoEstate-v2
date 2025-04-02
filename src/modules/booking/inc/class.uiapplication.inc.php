@@ -773,7 +773,7 @@ class booking_uiapplication extends booking_uicommon
 		if ($this->is_assigned_to_current_user($application))
 		{
 			$payment		 = $this->bo->so->get_payment($payment_id);
-			$payment_method = $payment['payment_method'];
+			$payment_method = strtolower($payment['payment_method']);
 			$remote_order_id = $payment['remote_id'];
 			$amount = $payment['amount'] * 100;
 			$payment_helper = createObject("bookingfrontend.{$payment_method}_helper");

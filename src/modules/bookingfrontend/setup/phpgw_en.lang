@@ -672,3 +672,4 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
+resource_already_booked	bookingfrontend	en	This timeslot is not available. The resource is already booked for this time.

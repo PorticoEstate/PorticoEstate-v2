@@ -69,7 +69,7 @@ function useServerMessageMutation<TData = unknown, TError = unknown, TVariables 
 // 	require( 'console-stamp' )( console );
 // }
 interface UseScheduleOptions {
-    building_id: number;
+    building_id?: number;
     weeks: DateTime[];
     instance?: string;
     initialWeekSchedule?: Record<string, IEvent[]>
@@ -224,7 +224,7 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
         }
 
         // Fetch data for all uncached weeks at once
-        const scheduleData = await fetchBuildingSchedule(building_id, uncachedWeeks, instance);
+        const scheduleData = await fetchBuildingSchedule(building_id!, uncachedWeeks, instance);
         // Cache each week's data separately
         uncachedWeeks.forEach(weekStart => {
             const weekData: IEvent[] = scheduleData[weekStart] || [];
@@ -250,7 +250,9 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
     // Main query hook
     return useQuery({
         queryKey: ['buildingSchedule', building_id, keys.join(',')],
-        queryFn: fetchUncachedWeeks,
+        queryFn: building_id ===undefined? skipToken : fetchUncachedWeeks,
+		enabled: building_id !== undefined,
+
 		// staleTime: 10000
         // staleTime: 1000 * 60 * 5, // 5 minutes
         // cacheTime: 1000 * 60 * 30, // 30 minutes

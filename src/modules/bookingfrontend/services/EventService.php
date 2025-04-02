@@ -275,8 +275,15 @@ class EventService
 				$this->repository->saveEventAudience($eventId, $application['audience']);
 			}
 
-			if (!empty($application['agegroups'])) {
-				$this->repository->saveEventAgeGroups($eventId, $application['agegroups']);
+			// Only associate age groups if they exist and are valid
+			if (!empty($application['agegroups']) && is_array($application['agegroups'])) {
+				$validAgegroups = array_filter($application['agegroups'], function($ag) {
+					return !empty($ag['agegroup_id']);
+				});
+				
+				if (!empty($validAgegroups)) {
+					$this->repository->saveEventAgeGroups($eventId, $validAgegroups);
+				}
 			}
 
 			return $eventId;

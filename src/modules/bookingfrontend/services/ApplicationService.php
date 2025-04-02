@@ -226,27 +226,30 @@ class ApplicationService
 						}
 					}
 
-					// If direct booking eligible but has collision, skip this application
+					// If direct booking eligible but has collision, convert to regular booking instead of skipping
 					if ($hasCollision)
 					{
 						$collisionDebugInfo[$application['id']] = $applicationCollisionInfo;
-
-						$skippedApplications[] = [
-							'id' => $application['id'],
-							'reason' => 'Collision detected for direct booking application',
-							'collision_debug' => $applicationCollisionInfo
-						];
-						continue; // Skip to next application
+						
+						// Handle as regular booking instead of skipping
+						$updateData = array_merge($baseUpdateData, [
+							'status' => 'NEW',
+							'parent_id' => $application['id'] == $parent_id ? null : $parent_id
+						]);
+						
+						$this->patchApplicationMainData($updateData, $application['id']);
 					}
-
-					// No collision - proceed with direct booking
-					$updateData = array_merge($baseUpdateData, [
-						'status' => 'ACCEPTED',
-						'parent_id' => $application['id'] == $parent_id ? null : $parent_id
-					]);
-
-					$this->patchApplicationMainData($updateData, $application['id']);
-					$this->createEventForApplication($application['id']);
+					else
+					{
+						// No collision - proceed with direct booking
+						$updateData = array_merge($baseUpdateData, [
+							'status' => 'ACCEPTED',
+							'parent_id' => $application['id'] == $parent_id ? null : $parent_id
+						]);
+						
+						$this->patchApplicationMainData($updateData, $application['id']);
+						$this->createEventForApplication($application['id']);
+					}
 				} else
 				{
 					// Not eligible for direct booking - process normally

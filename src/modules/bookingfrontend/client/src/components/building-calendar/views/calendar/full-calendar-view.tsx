@@ -23,10 +23,11 @@ import {IUpdatePartialApplication} from "@/service/types/api/application.types";
 import {FCallEventConverter} from "@/components/building-calendar/util/event-converter";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useBookingUser, usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
-import {useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {useCurrentBuilding, useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {IEvent} from "@/service/pecalendar.types";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {Season} from "@/service/types/Building";
+import {useBuildingResources} from "@/service/api/building";
 
 interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
@@ -63,6 +64,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const updateMutation = useUpdatePartialApplication();
 	const {tempEvents: storedTempEvents} = useTempEvents();
 	const {enabledResources} = useEnabledResources();
+	const building = useCurrentBuilding()
+	const {data: resources} = useBuildingResources(building)
 	const t = useTrans();
 	const {data: user} = useBookingUser();
 
@@ -106,7 +109,6 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			endTime: slotMaxTime
 		};
 	}, [generateBusinessHours, slotMinTime, slotMaxTime]);
-
 
 
 	const calculateAbsoluteMinMaxTimes = useCallback(() => {
@@ -200,7 +202,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				// Add background for time before first opening
 				backgroundEvents.push({
 					start: date.startOf('day').toJSDate(),
-					end: date.set({ hour: parseInt(sortedBoundaries[0].from_.split(':')[0]),
+					end: date.set({
+						hour: parseInt(sortedBoundaries[0].from_.split(':')[0]),
 						minute: parseInt(sortedBoundaries[0].from_.split(':')[1])
 					}).toJSDate(),
 					display: 'background',
@@ -214,7 +217,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				// Add background for time after last closing
 				const lastBoundary = sortedBoundaries[sortedBoundaries.length - 1];
 				backgroundEvents.push({
-					start: date.set({ hour: parseInt(lastBoundary.to_.split(':')[0]),
+					start: date.set({
+						hour: parseInt(lastBoundary.to_.split(':')[0]),
 						minute: parseInt(lastBoundary.to_.split(':')[1])
 					}).toJSDate(),
 					end: date.plus({days: 1}).startOf('day').toJSDate(),
@@ -301,6 +305,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		const selectStart = DateTime.fromJSDate(span.start);
 		const selectEnd = DateTime.fromJSDate(span.end);
 
+		// Prevent selections in the past
+		const now = DateTime.now();
+		if (selectStart < now) {
+			return false;
+		}
+
 		// Get all events in the calendar
 		const allEvents = calendarApi.getEvents();
 
@@ -314,6 +324,14 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			return eventProps.type === 'event' || eventProps.type === 'booking' || eventProps.type === 'allocation' || eventProps.closed;
 		});
 
+		// Check for resources with deny_application_if_booked flag
+		const selectedResources = [...enabledResources].map(Number);
+		const resourcesWithDenyFlag = events
+			?.flatMap(event => event.resources)
+			.filter(res => selectedResources.includes(res.id) && resources?.find(r => r.id === res.id)?.deny_application_if_booked === 1);
+
+		const hasResourceWithDenyFlag = resourcesWithDenyFlag && resourcesWithDenyFlag.length > 0;
+
 		// Check for overlap with each event's actual times
 		return !relevantEvents.some(event => {
 			// Get actual start and end times from extendedProps
@@ -323,14 +341,22 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			// Check if the selection overlaps with this event
 			const overlap = !(selectEnd <= eventStart || selectStart >= eventEnd);
 
-			// If there's an overlap and it's an event type that blocks selection, return true
-			if (overlap && (event.extendedProps.type === 'event' || event.extendedProps.closed)) {
+			// If there's a resource with deny_application_if_booked=1, block overlaps with booking, allocation, or event
+			if (overlap && hasResourceWithDenyFlag &&
+				(event.extendedProps.type === 'booking' ||
+					event.extendedProps.type === 'allocation' ||
+					event.extendedProps.type === 'event')) {
+				return true;
+			}
+
+			// If there's no deny flag, use the standard rules (only block closed)
+			if (overlap && (event.extendedProps.closed)) {
 				return true;
 			}
 
 			return false;
 		});
-	}, []);
+	}, [enabledResources, events, resources]);
 
 	const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
 		const newEnd = resizeInfo.event.end;
@@ -404,7 +430,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			headerToolbar={false}
 			slotDuration={"00:30:00"}
 			themeSystem={'bootstrap'}
-
+			allDayText={t('bookingfrontend.all_day')}
 			firstDay={1}
 			eventClick={(clickInfo) => handleEventClick(clickInfo as any)}
 			datesSet={(dateInfo) => {

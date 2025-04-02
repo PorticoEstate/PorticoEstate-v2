@@ -1,8 +1,7 @@
 import React, {PropsWithChildren, useCallback, useEffect, useRef, useState} from 'react';
 import styles from './mobile-dialog.module.scss';
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faXmark, faExpand, faCompress } from '@fortawesome/free-solid-svg-icons';
+import { XMarkIcon, ExpandIcon, ShrinkIcon } from '@navikt/aksel-icons';
 import { Button, Tooltip } from '@digdir/designsystemet-react';
 import {useIsMobile} from "@/service/hooks/is-mobile";
 
@@ -150,7 +149,7 @@ const Dialog: React.FC<DialogProps> = ({
                                     className={'default'}
                                     data-size={'sm'}
                                 >
-                                    <FontAwesomeIcon icon={isFullscreen ? faCompress : faExpand} size={'lg'} />
+                                    {isFullscreen ? <ShrinkIcon fontSize="1.25rem" /> : <ExpandIcon fontSize="1.25rem" />}
                                 </Button>
                             </Tooltip>}
                             <Tooltip content={t('booking.close')} className={'text-body text-primary'}>
@@ -163,7 +162,7 @@ const Dialog: React.FC<DialogProps> = ({
                                     tabIndex={-1}
                                     data-size={'sm'}
                                 >
-                                    <FontAwesomeIcon icon={faXmark} size={'lg'} />
+                                    <XMarkIcon fontSize="1.25rem" />
                                 </Button>
                             </Tooltip>
                         </div>

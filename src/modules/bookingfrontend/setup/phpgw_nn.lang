@@ -43,6 +43,7 @@ again	booking	nn	Igjen
 age group	bookingfrontend	nn	Aldersgruppe
 agegroup	bookingfrontend	nn	Aldersgruppe
 Agegroups kan not be larger than 9999 peoples	bookingfrontend	nn	Det estimerte talet på deltakarar kan ikkje vere høgare enn 9999
+all_day	bookingfrontend	nn	Heile dagen
 allocation	bookingfrontend	nn	Tildeling
 Allocation deleted on	bookingfrontend	nn	Tildeling slette på
 allocation show	bookingfrontend	nn	Tildeling
@@ -233,6 +234,8 @@ Edit System Message	bookingfrontend	nn	Rediger systemmelding
 Edit until	bookingfrontend	nn	Endre til
 edit_event	bookingfrontend	nn	Rediger arrangement
 editer	bookingfrontend	nn	Rediger
+end_time_in_past	bookingfrontend	nn	Sluttidspunktet kan ikkje vere i fortida
+end_time_outside_business_hours	bookingfrontend	nn	Sluttidspunktet må vere innanfor opningstider
 enter_team_organization_name	bookingfrontend	nn	Skriv namn på lag/organisasjon
 enter_title	bookingfrontend	nn	Angi ein tittel
 entity %1 has been saved	bookingfrontend	nn	Post %1 er lagra
@@ -563,7 +566,9 @@ social security number	bookingfrontend	nn	Fødselsnummer (11 siffer)
 square meter	bookingfrontend	nn	Kvadratmeter
 Ssn	bookingfrontend	nn	Fødselsnummer (11 siffer)
 SSN not registred	common	nn	Du er ikkje registrert i Frivilligregisteret eller organisasjonen manglar organisasjonsnummer i AktivKommune
+start_time_in_past	bookingfrontend	nn	Starttidspunktet kan ikkje vere i fortida
 start_time_must_be_before_end_time	bookingfrontend	nn	Starttida må vere tidlegare enn sluttida
+start_time_outside_business_hours	bookingfrontend	nn	Starttidspunktet må vere innanfor opningstider
 status	bookingfrontend	nn	Status
 street	bookingfrontend	nn	Gate
 su	bookingfrontend	nn	sun
@@ -667,3 +672,4 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	nn	Søknadene dine er godkjent, og en bekreftelse er sendt til deg på e-post.
 your_applications	bookingfrontend	nn	Dine søknader
 zip code	bookingfrontend	nn	Postnummer
+resource_already_booked	bookingfrontend	nn	Dette tidspunktet er ikkje tilgjengeleg. Ressursen er allereie reservert for denne tida.

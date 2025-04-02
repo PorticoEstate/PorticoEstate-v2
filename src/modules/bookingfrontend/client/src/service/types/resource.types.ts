@@ -29,6 +29,7 @@ interface IResource {
     hidden_in_frontend: number | null;
     activate_prepayment: number | null;
     booking_buffer_deadline: number | null;
+    deny_application_if_booked: 0 | 1 | null;
     building_id: number | null;
     description_json:string;
 }

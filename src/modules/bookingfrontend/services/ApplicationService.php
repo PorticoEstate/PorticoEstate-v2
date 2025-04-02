@@ -491,7 +491,7 @@ class ApplicationService
             JOIN bb_application_date ad ON a.id = ad.application_id
             JOIN bb_resource r ON ar.resource_id = r.id
             WHERE ar.resource_id IN ($resource_ids_str)
-            AND a.status NOT IN ('REJECTED', 'NEWPARTIAL1')
+            AND a.status NOT IN ('REJECTED')
             AND a.active = 1
             AND ((ad.from_ BETWEEN :from_date AND :to_date)
                 OR (ad.to_ BETWEEN :from_date AND :to_date)
@@ -1741,12 +1741,44 @@ class ApplicationService
 			];
 		}
 
-		// Check for collisions
-		$collision = $this->checkCollision([$resourceId], $from, $to, $session_id);
+		// Initialize variables to store detailed overlap information
+		$available = true;
+		$overlapReason = null;
+		$overlapType = null;
+		$overlapEvent = null;
 
+		// Use bobooking's check_if_resurce_is_taken for detailed checking
+		$bobooking = CreateObject('booking.bobooking');
+		
+		// Convert datetime strings to DateTime objects
+		$timezone = !empty($bobooking->userSettings['preferences']['common']['timezone']) ? 
+			$bobooking->userSettings['preferences']['common']['timezone'] : 'UTC';
+		$DateTimeZone = new \DateTimeZone($timezone);
+		$fromDateTime = new \DateTime($from, $DateTimeZone);
+		$toDateTime = new \DateTime($to, $DateTimeZone);
+		
+		// Get events for the resource to check against using BuildingScheduleService
+		$events = $this->getResourceEventsForBookingCheck($resourceId, $fromDateTime, $toDateTime);
+		
+		// Use detailed check function
+		$overlap_result = $bobooking->check_if_resurce_is_taken($resource, $fromDateTime, $toDateTime, $events);
+		
+		// Process the overlap result
+		if (is_array($overlap_result)) {
+			// Detailed result with status, reason, type, and event
+			$available = !(bool)$overlap_result['status'];
+			$overlapReason = $overlap_result['reason'] ?? null;
+			$overlapType = $overlap_result['type'] ?? null;
+			$overlapEvent = $overlap_result['event'] ?? null;
+		} else {
+			// Simple boolean result
+			$available = !$overlap_result;
+		}
+		
+		// Check booking limits if the timeslot is available
 		$limitInfo = null;
 		$ssn = $this->userHelper->ssn;
-		if ($ssn && $resource['booking_limit_number'] > 0 && $resource['booking_limit_number_horizont'] > 0)
+		if ($available && $ssn && $resource['booking_limit_number'] > 0 && $resource['booking_limit_number_horizont'] > 0)
 		{
 			$currentBookings = $this->getUserBookingCount($resourceId, $ssn, $resource['booking_limit_number_horizont']);
 			$limitInfo = [
@@ -1762,16 +1794,198 @@ class ApplicationService
 					'available' => false,
 					'supports_simple_booking' => true,
 					'message' => "You have reached the maximum allowed bookings ({$resource['booking_limit_number']}) for this resource within {$resource['booking_limit_number_horizont']} days",
-					'limit_info' => $limitInfo
+					'limit_info' => $limitInfo,
+					'overlap_reason' => 'booking_limit_exceeded',
+					'overlap_type' => 'disabled'
 				];
 			}
 		}
 
-		return [
-			'available' => !$collision,
+		// Build the response with detailed information
+		$response = [
+			'available' => $available,
 			'supports_simple_booking' => true,
-			'message' => $collision ? 'Timeslot is not available' : 'Timeslot is available',
 			'limit_info' => $limitInfo
+		];
+		
+		// Add detailed overlap information if not available
+		if (!$available) {
+			$response['message'] = $this->getOverlapMessage($overlapReason, $overlapType);
+			$response['overlap_reason'] = $overlapReason;
+			$response['overlap_type'] = $overlapType;
+			
+			// Add event details if available
+			if ($overlapEvent) {
+				$response['overlap_event'] = $overlapEvent;
+			}
+		} else {
+			$response['message'] = 'Timeslot is available';
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Get a human-readable message for overlap reasons
+	 * 
+	 * @param string|null $reason The overlap reason
+	 * @param string|null $type The overlap type
+	 * @return string The human-readable message
+	 */
+	private function getOverlapMessage(?string $reason, ?string $type): string
+	{
+		if (!$reason) {
+			return 'Timeslot is not available';
+		}
+
+		switch ($reason) {
+			case 'time_in_past':
+				return 'Booking time is in the past';
+			case 'complete_overlap':
+				return 'Timeslot is already booked';
+			case 'complete_containment':
+				return 'Another booking exists within this timeslot';
+			case 'start_overlap':
+				return 'Timeslot overlaps with the start of another booking';
+			case 'end_overlap':
+				return 'Timeslot overlaps with the end of another booking';
+			default:
+				return 'Timeslot is not available: ' . $reason;
+		}
+	}
+
+	/**
+	 * Get resource events for booking availability check
+	 * 
+	 * This method directly queries for blocks, events and applications (including NEWPARTIAL1)
+	 * to ensure accurate overlap detection
+	 * 
+	 * @param int $resourceId The resource ID
+	 * @param \DateTime $from Start datetime
+	 * @param \DateTime $to End datetime
+	 * @return array Events formatted for check_if_resurce_is_taken
+	 */
+	private function getResourceEventsForBookingCheck(int $resourceId, \DateTime $from, \DateTime $to): array
+	{
+		// Debug
+		error_log("Resource $resourceId check from " . $from->format('Y-m-d H:i:s') . " to " . $to->format('Y-m-d H:i:s'));
+		
+		// Format dates for SQL
+		$from_date = $from->format('Y-m-d H:i:s');
+		$to_date = $to->format('Y-m-d H:i:s');
+		
+		// Combine all events
+		$formattedEvents = [];
+		
+		try {
+			// First get all applications (INCLUDING NEWPARTIAL1)
+			// This should use the exact same date overlap algorithm as checkCollisionWithDebug
+			$sql = "SELECT a.id, ad.from_, ad.to_, 'application' as type, a.status
+					FROM bb_application a
+					JOIN bb_application_resource ar ON a.id = ar.application_id
+					JOIN bb_application_date ad ON a.id = ad.application_id
+					WHERE ar.resource_id = :resource_id
+					AND a.active = 1
+					AND a.status != 'REJECTED'
+					AND ((ad.from_ BETWEEN :from_date AND :to_date)
+						OR (ad.to_ BETWEEN :from_date AND :to_date)
+						OR (:from_date BETWEEN ad.from_ AND ad.to_)
+						OR (:to_date BETWEEN ad.from_ AND ad.to_))";
+					
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([
+				':resource_id' => $resourceId,
+				':from_date' => $from_date,
+				':to_date' => $to_date
+			]);
+			$applications = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+			
+			// Get blocks 
+			$sql = "SELECT b.id, b.from_, b.to_, 'block' as type, b.session_id as status
+					FROM bb_block b
+					WHERE b.resource_id = :resource_id
+					AND b.active = 1
+					AND ((b.from_ BETWEEN :from_date AND :to_date)
+						OR (b.to_ BETWEEN :from_date AND :to_date)
+						OR (:from_date BETWEEN b.from_ AND b.to_)
+						OR (:to_date BETWEEN b.from_ AND b.to_))";
+					
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([
+				':resource_id' => $resourceId,
+				':from_date' => $from_date,
+				':to_date' => $to_date
+			]);
+			$blocks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+			
+			// Get events
+			$sql = "SELECT e.id, e.from_, e.to_, 'event' as type, 'ACCEPTED' as status
+					FROM bb_event e
+					JOIN bb_event_resource er ON e.id = er.event_id
+					WHERE er.resource_id = :resource_id
+					AND e.active = 1
+					AND ((e.from_ BETWEEN :from_date AND :to_date)
+						OR (e.to_ BETWEEN :from_date AND :to_date)
+						OR (:from_date BETWEEN e.from_ AND e.to_)
+						OR (:to_date BETWEEN e.from_ AND e.to_))";
+					
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([
+				':resource_id' => $resourceId,
+				':from_date' => $from_date,
+				':to_date' => $to_date
+			]);
+			$events = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+			
+			// Process applications
+			foreach ($applications as $app) {
+				$formattedEvent = [
+					'from_' => $app['from_'],
+					'to_' => $app['to_'],
+					'resources' => [$resourceId],
+					'type' => 'application',
+					'id' => $app['id'],
+					'status' => $app['status'] ?? null
+				];
+				$formattedEvents[] = $formattedEvent;
+			}
+			
+			// Process blocks
+			foreach ($blocks as $block) {
+				$formattedEvent = [
+					'from_' => $block['from_'],
+					'to_' => $block['to_'],
+					'resources' => [$resourceId],
+					'type' => 'block',
+					'id' => $block['id'],
+					'status' => $block['status'] ?? null
+				];
+				$formattedEvents[] = $formattedEvent;
+			}
+			
+			// Process events
+			foreach ($events as $event) {
+				$formattedEvent = [
+					'from_' => $event['from_'],
+					'to_' => $event['to_'],
+					'resources' => [$resourceId],
+					'type' => 'event',
+					'id' => $event['id'],
+					'status' => $event['status'] ?? 'ACCEPTED'
+				];
+				$formattedEvents[] = $formattedEvent;
+			}
+			
+			error_log("Found " . count($formattedEvents) . " events/blocks/applications for resource");
+			
+		} catch (\Exception $e) {
+			error_log("Error in getResourceEventsForBookingCheck: " . $e->getMessage());
+			// Even with an error, we continue with whatever events we found
+		}
+		
+		// Return in the expected format
+		return [
+			'results' => $formattedEvents
 		];
 	}
 
@@ -1854,6 +2068,45 @@ class ApplicationService
 				$startedTransaction = true;
 			}
 
+			// CRITICAL SECURITY FIX - DIRECT OVERLAP CHECK
+			// First check directly if this time slot is already taken by ANY application (including NEWPARTIAL1)
+			// Note that we DO NOT filter by session_id to catch all applications regardless of session
+			$overlapCheckSql = "SELECT COUNT(*) as overlap_count 
+				FROM bb_application a
+				JOIN bb_application_resource ar ON a.id = ar.application_id
+				JOIN bb_application_date ad ON a.id = ad.application_id
+				WHERE ar.resource_id = :resource_id
+				AND a.status NOT IN ('REJECTED') 
+				AND a.active = 1
+				AND ((ad.from_ BETWEEN :from_date AND :to_date)
+					OR (ad.to_ BETWEEN :from_date AND :to_date)
+					OR (:from_date BETWEEN ad.from_ AND ad.to_)
+					OR (:to_date BETWEEN ad.from_ AND ad.to_))";
+				
+			// Execute the count query to check for any overlaps
+			$stmt = $this->db->prepare($overlapCheckSql);
+			$stmt->execute([
+				':resource_id' => $resourceId,
+				':from_date' => $from,
+				':to_date' => $to
+			]);
+			
+			$result = $stmt->fetch(\PDO::FETCH_ASSOC);
+			$overlapCount = (int)$result['overlap_count'];
+			
+			// If we found any overlapping applications, set a session message and reject the request
+			if ($overlapCount > 0) {
+					$errorMessage = lang('resource_already_booked');
+					
+					// Set message using Cache::message_set() like ApplicationController does
+					\App\modules\phpgwapi\services\Cache::message_set($errorMessage, 'error');
+					
+					// Log the overlap for debugging
+					error_log("BOOKING OVERLAP DETECTED: Resource ID {$resourceId}, time {$from} to {$to}");
+					
+					// Throw exception to stop the booking process
+					throw new \Exception($errorMessage);
+			}
 
 			// Check if resource supports simple booking
 			$resource = $this->getSimpleBookingResource($resourceId);
@@ -1862,11 +2115,20 @@ class ApplicationService
 				throw new \Exception("Resource does not support simple booking");
 			}
 
-			// Check availability
+			// Check availability using detailed checking with BuildingScheduleService
 			$availability = $this->checkSimpleBookingAvailability($resourceId, $from, $to, $sessionId);
 			if (!$availability['available'])
 			{
-				throw new \Exception("Timeslot is not available");
+				// Use the detailed information we now have from checkSimpleBookingAvailability
+				$message = $availability['message'] ?? 'Timeslot is not available';
+				$reason = $availability['overlap_reason'] ?? null;
+				$type = $availability['overlap_type'] ?? null;
+				
+				if ($reason && $type) {
+					throw new \Exception("{$message}: {$reason} ({$type})");
+				} else {
+					throw new \Exception($message);
+				}
 			}
 
 

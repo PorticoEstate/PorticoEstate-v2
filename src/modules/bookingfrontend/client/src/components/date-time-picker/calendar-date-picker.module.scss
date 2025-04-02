@@ -11,6 +11,8 @@
     --dsc-button-size: var(--ds-size-12);
 
     --dsc-card-border-color: var(--ds-color-border-subtle);
+    
+    width: 100%;  /* Full width by default */
 
     &[data-variant='secondary'],
     &[data-variant='tertiary'] {
@@ -279,6 +281,10 @@
 
 .wrapper {
     width: 100%;
+    
+    :global(.ds-input) {
+        width: 100%;
+    }
 }
 
 .popper {

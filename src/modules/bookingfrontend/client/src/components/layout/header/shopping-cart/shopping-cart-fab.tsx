@@ -1,9 +1,8 @@
 'use client'
 
 import {FC, useRef, useState} from 'react';
-import {Badge, Button, Chip, Tag} from "@digdir/designsystemet-react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faShoppingBasket} from "@fortawesome/free-solid-svg-icons";
+import {Badge, Button} from "@digdir/designsystemet-react";
+import { ShoppingBasketIcon } from "@navikt/aksel-icons";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import styles from './shopping-cart-fab.module.scss';
 import ShoppingCartPopper from "@/components/layout/header/shopping-cart/shopping-cart-popper";
@@ -22,7 +21,7 @@ const ShoppingCartFab: FC<ShoppingCartFabProps> = (props) => {
                     className={`${styles.fab} ${(cartItems?.list.length ?? 0 > 0) ? '' : styles.hidden}`}
                     ref={popperAnchorEl} onClick={() => setOpen(true)}>
 
-                <FontAwesomeIcon size={'lg'} icon={faShoppingBasket}/>
+                <ShoppingBasketIcon fontSize="1.25rem" />
                 Handlekurv
                 <Badge
                     data-color="neutral"

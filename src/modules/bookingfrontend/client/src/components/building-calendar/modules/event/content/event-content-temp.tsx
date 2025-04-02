@@ -2,7 +2,7 @@ import React, {FC, useEffect, useMemo, useRef, useState} from 'react';
 import styles from './event-content.module.scss';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faClock} from "@fortawesome/free-regular-svg-icons";
-import {faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import { LayersIcon } from "@navikt/aksel-icons";
 import {formatEventTime} from "@/service/util";
 import {FCallTempEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
@@ -179,7 +179,7 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
 
             {!layout.showResourceList ? (
                 <div className={`${styles.resourceIcons} text-label`}>
-                    <FontAwesomeIcon icon={faLayerGroup}/>
+                    <LayersIcon fontSize="1.25rem" />
                     {renderColorCircles('medium')}
                 </div>
             ) : (

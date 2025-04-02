@@ -2,8 +2,7 @@ import {fetchBuildingResources} from "@/service/api/building";
 import {IBuilding} from "@/service/types/Building";
 import {Button} from "@digdir/designsystemet-react";
 import {getTranslation} from "@/app/i18n";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import { LayersIcon } from "@navikt/aksel-icons";
 import Link from "next/link";
 import styles from "@/components/building-page/resource-list/building-resources.module.scss";
 import React from "react";
@@ -28,7 +27,7 @@ const BuildingResources = async (props: BuildingResourcesProps) => {
                     <Button asChild key={res.id} variant={'secondary'} data-color={'accent'}
                             className={'default'}>
                         <Link href={'/resource/' + res.id}>
-                            <FontAwesomeIcon icon={faLayerGroup}/>{res.name}
+                            <LayersIcon fontSize="1.25rem" />{res.name}
                         </Link>
                     </Button>)}
 				</div>

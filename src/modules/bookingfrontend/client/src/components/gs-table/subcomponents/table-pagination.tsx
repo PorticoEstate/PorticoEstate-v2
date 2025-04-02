@@ -2,13 +2,12 @@
 import { Table } from '@tanstack/react-table';
 import styles from './table-pagination.module.scss';
 import { Button, Select } from '@digdir/designsystemet-react';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import {
-    faChevronLeft,
-    faChevronRight,
-    faAnglesLeft,
-    faAnglesRight
-} from '@fortawesome/free-solid-svg-icons';
+import { 
+    ChevronLeftIcon, 
+    ChevronRightIcon, 
+    ChevronLeftDoubleIcon, 
+    ChevronRightDoubleIcon 
+} from '@navikt/aksel-icons';
 import { useCallback } from 'react';
 
 interface TablePaginationProps<T> {
@@ -71,7 +70,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
                     onClick={() => handlePageChange(0)}
                     disabled={!getCanPreviousPage()}
                 >
-                    <FontAwesomeIcon icon={faAnglesLeft} />
+                    <ChevronLeftDoubleIcon fontSize="1.25rem" />
                 </Button>
                 <Button
                     variant="tertiary"
@@ -79,7 +78,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
                     onClick={() => handlePageChange(pageIndex - 1)}
                     disabled={!getCanPreviousPage()}
                 >
-                    <FontAwesomeIcon icon={faChevronLeft} />
+                    <ChevronLeftIcon fontSize="1.25rem" />
                 </Button>
                 <Button
                     variant="tertiary"
@@ -87,7 +86,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
                     onClick={() => handlePageChange(pageIndex + 1)}
                     disabled={!getCanNextPage()}
                 >
-                    <FontAwesomeIcon icon={faChevronRight} />
+                    <ChevronRightIcon fontSize="1.25rem" />
                 </Button>
                 <Button
                     variant="tertiary"
@@ -95,7 +94,7 @@ function TablePagination<T>({ table, setPageSize }: TablePaginationProps<T>) {
                     onClick={() => handlePageChange(getPageCount() - 1)}
                     disabled={!getCanNextPage()}
                 >
-                    <FontAwesomeIcon icon={faAnglesRight} />
+                    <ChevronRightDoubleIcon fontSize="1.25rem" />
                 </Button>
             </div>
         </div>

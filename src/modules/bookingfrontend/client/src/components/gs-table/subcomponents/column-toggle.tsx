@@ -3,8 +3,7 @@ import {Table, Column, VisibilityState} from '@tanstack/react-table';
 import styles from './column-toggle.module.scss';
 import type {ColumnDef} from "@/components/gs-table/table.types";
 import {Badge, Button} from "@digdir/designsystemet-react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faShoppingBasket, faSliders} from "@fortawesome/free-solid-svg-icons";
+import { CogIcon } from "@navikt/aksel-icons";
 
 interface ColumnToggleProps<T> {
     table: Table<T>;
@@ -83,7 +82,7 @@ function ColumnToggle<T>({table, tableColumns, columnVisibility}: ColumnTogglePr
                         // }}
                     >
                     </Badge>)}
-                    <FontAwesomeIcon icon={faSliders}/>
+                    <CogIcon fontSize="1.25rem" />
 
                 </Badge.Position>
 

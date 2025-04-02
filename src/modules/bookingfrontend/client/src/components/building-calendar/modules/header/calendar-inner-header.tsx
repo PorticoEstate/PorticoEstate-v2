@@ -1,15 +1,12 @@
 import React, {Dispatch, FC, MutableRefObject} from 'react';
 import {Badge, Button} from "@digdir/designsystemet-react";
-import {ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
+import {ChevronLeftIcon, ChevronRightIcon, LayersIcon, PlusIcon, TableIcon, CalendarIcon} from "@navikt/aksel-icons";
 import styles from './calendar-inner-header.module.scss';
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import FullCalendar from "@fullcalendar/react";
 import ButtonGroup from "@/components/button-group/button-group";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faCalendar} from "@fortawesome/free-regular-svg-icons";
-import {faLayerGroup, faPlus, faTableList} from "@fortawesome/free-solid-svg-icons";
 import {
 	useCalenderViewMode,
 	useEnabledResources,
@@ -102,8 +99,8 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			<Button variant={'secondary'} data-size={'sm'}
 					className={styles.mobileResourcesButton}
 				// className={'captialize'}
-					onClick={() => setResourcesHidden(!resourcesHidden)}><FontAwesomeIcon
-				icon={faLayerGroup}/>{t('booking.select')} {t('bookingfrontend.resources')}
+					onClick={() => setResourcesHidden(!resourcesHidden)}>
+					<LayersIcon fontSize="1.25rem" />{t('booking.select')} {t('bookingfrontend.resources')}
 				<Badge count={enabledResources.size} data-size={"md"} color={"danger"}></Badge>
 			</Button>
 
@@ -158,13 +155,13 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 							aria-current={'true'} data-size={'sm'}
 							className={'captialize'} onClick={() => {
 						props.setLastCalendarView()
-					}}><FontAwesomeIcon icon={faCalendar}/> <span
+					}}><CalendarIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
 					<Button variant={view === 'listWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
 							data-size={'sm'}
 							className={'captialize'} onClick={() => {
 						props.setView('listWeek')
-					}}><FontAwesomeIcon icon={faTableList}/> <span
+					}}><TableIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
 				</ButtonGroup>
 			}
@@ -174,7 +171,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}
 
-					<FontAwesomeIcon icon={faPlus}/>
+					<PlusIcon fontSize="1.25rem" />
 					{/*</Link>*/}
 
 				</Button>
@@ -185,5 +182,3 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 }
 
 export default CalendarInnerHeader
-
-

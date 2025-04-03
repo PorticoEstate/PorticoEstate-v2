@@ -80,7 +80,7 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
                 })}
             </List.Unordered>
         }
-        return <span><Badge count={application.dates?.length || 0} color={'neutral'}/> Flere tidspunkt</span>
+        return <span><Badge count={application.dates?.length || 0} color={'neutral'}/> {i18n.t('bookingfrontend.multiple_time_slots')}</span>
     }
 
     return (
@@ -92,11 +92,11 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
         >
             <Table.Head>
                 <Table.Row>
-                    <Table.HeaderCell>Start tidspunkt</Table.HeaderCell>
-                    <Table.HeaderCell>Hvor</Table.HeaderCell>
-                    <Table.HeaderCell>Hva</Table.HeaderCell>
-                    <Table.HeaderCell>Rediger</Table.HeaderCell>
-                    <Table.HeaderCell>Fjern søknad</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.start_time')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.where')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.what')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.edit')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.remove_application')}</Table.HeaderCell>
                 </Table.Row>
             </Table.Head>
             <Table.Body>

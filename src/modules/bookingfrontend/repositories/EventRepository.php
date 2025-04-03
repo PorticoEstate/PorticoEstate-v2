@@ -265,11 +265,16 @@ class EventRepository
 		$stmt = $this->db->prepare($sql);
 
 		foreach ($agegroups as $agegroup) {
+			// Skip if agegroup_id is not set or is null
+			if (empty($agegroup['agegroup_id'])) {
+				continue;
+			}
+			
 			$stmt->execute([
 				$eventId,
 				$agegroup['agegroup_id'],
-				$agegroup['male'],
-				$agegroup['female']
+				$agegroup['male'] ?? 0,
+				$agegroup['female'] ?? 0
 			]);
 		}
 	}

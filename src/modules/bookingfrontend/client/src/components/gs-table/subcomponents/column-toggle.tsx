@@ -4,6 +4,8 @@ import styles from './column-toggle.module.scss';
 import type {ColumnDef} from "@/components/gs-table/table.types";
 import {Badge, Button} from "@digdir/designsystemet-react";
 import { CogIcon } from "@navikt/aksel-icons";
+import {useIsMobile} from "@/service/hooks/is-mobile";
+import Dialog from "@/components/dialog/mobile-dialog";
 
 interface ColumnToggleProps<T> {
     table: Table<T>;
@@ -15,6 +17,7 @@ interface ColumnToggleProps<T> {
 function ColumnToggle<T>({table, tableColumns, columnVisibility}: ColumnToggleProps<T>) {
     const [isOpen, setIsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
+    const isMobile = useIsMobile();
 
 
     // Handle clicking outside to close
@@ -34,6 +37,11 @@ function ColumnToggle<T>({table, tableColumns, columnVisibility}: ColumnTogglePr
     // Get fresh column data
     const allColumns = table.getAllLeafColumns().filter(column => column.getCanHide())
     const hiddenColumnsCount = Object.values(columnVisibility).filter(v => !v).length;
+    
+    // Close both the dropdown and dialog
+    const handleClose = () => {
+        setIsOpen(false);
+    };
 
 
     // Memoize column render for performance
@@ -61,58 +69,65 @@ function ColumnToggle<T>({table, tableColumns, columnVisibility}: ColumnTogglePr
         );
     }, [columnVisibility]);
 
+    // Render column toggle UI
+    const renderColumnOptions = () => (
+        <>
+            <div className={styles.header}>
+                <h3>Toggle Columns</h3>
+                <button
+                    className={styles.resetButton}
+                    onClick={() => table.resetColumnVisibility()}
+                >
+                    Reset
+                </button>
+            </div>
+            <div className={styles.columns}>
+                {allColumns
+                    .filter(column => column.id !== 'select')
+                    .map(renderColumn)}
+            </div>
+        </>
+    );
+
     return (
         <div className={styles.columnToggle} ref={menuRef}>
             <Button variant="tertiary"
                     data-size={'sm'}
                     color={'neutral'}
                     onClick={() => setIsOpen(!isOpen)}
-                // className={styles.toggleButton}
                     title="Toggle columns"
             >
                 <Badge.Position placement="top-right">
-
                     {hiddenColumnsCount > 0 && (<Badge
                         color="info"
                         data-size={'sm'}
                         count={hiddenColumnsCount || undefined}
-                        // style={{
-                        //     right: '10%',
-                        //     top: '16%'
-                        // }}
                     >
                     </Badge>)}
                     <CogIcon fontSize="1.25rem" />
-
                 </Badge.Position>
-
-                {/*<Badge count={hiddenColumnsCount} size={'sm'}>*/}
-                {/*    <FontAwesomeIcon icon={faSliders} />*/}
-                {/*</Badge>*/}
-                {/*{hiddenColumnsCount > 0 && (*/}
-                {/*    <span className={styles.hiddenCount}>*/}
-                {/*        {hiddenColumnsCount}*/}
-                {/*    </span>*/}
-                {/*)}*/}
             </Button>
 
-            {isOpen && (
-                <div className={styles.menu}>
-                    <div className={styles.header}>
-                        <h3>Toggle Columns</h3>
-                        <button
-                            className={styles.resetButton}
-                            onClick={() => table.resetColumnVisibility()}
-                        >
-                            Reset
-                        </button>
+            {/* Mobile Dialog */}
+            {isMobile ? (
+                <Dialog 
+                    open={isOpen}
+                    onClose={handleClose}
+                    title="Column Visibility"
+                    showDefaultHeader={true}
+                    closeOnBackdropClick={true}
+                >
+                    <div className={styles.mobileDialogContent}>
+                        {renderColumnOptions()}
                     </div>
-                    <div className={styles.columns}>
-                        {allColumns
-                            .filter(column => column.id !== 'select')
-                            .map(renderColumn)}
+                </Dialog>
+            ) : (
+                /* Desktop Dropdown */
+                isOpen && (
+                    <div className={styles.menu}>
+                        {renderColumnOptions()}
                     </div>
-                </div>
+                )
             )}
         </div>
     );

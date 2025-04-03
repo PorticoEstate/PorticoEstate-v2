@@ -36,19 +36,19 @@ const UserLayout: FC<UserLayoutProps> = (props) => {
 		return;
 	}
 
-	if (path.length === 3 && path[2] === 'user' && !isMobile) {
+	if (path.length === 1 && pathname === 'user' && !isMobile) {
 		router.replace('/user' + links[0].relativePath)
 		return;
 	}
 
 	if (user.isLoading) {
-		return <Spinner aria-label={'Loading user'}/>
+		return <Spinner aria-label={t('bookingfrontend.loading_user')}/>
 	}
 
 	return (
 		<div>
-			{/* Show tabs for desktop, links for mobile */}
-			{isMobile && (<div className={`${styles.internalNavContainer} mx-standard`}>
+			{/* Show tabs for desktop, back arrow for mobile subpages */}
+			{isMobile && pathname !== 'user' && (<div className={`${styles.internalNavContainer} mx-standard`}>
 				<Link className={'link-text link-text-primary'} href={'/user'}>
 					<FontAwesomeIcon icon={faArrowLeft}/>
 					{t('common.back')}
@@ -74,11 +74,10 @@ const UserLayout: FC<UserLayoutProps> = (props) => {
 							})}
 						</Tabs.List>
 					</Tabs>
-					{/* Default to rendering details on /user route for desktop */}
-					{pathname === '/user' && <div>{props.children}</div>}
 				</div>
 			)}
-			<div>{props.children}</div>
+			{/* Only render children once */}
+			{(isMobile || pathname !== 'user') && <div>{props.children}</div>}
 		</div>
 	);
 }

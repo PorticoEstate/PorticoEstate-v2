@@ -20,6 +20,8 @@ interface DialogProps extends PropsWithChildren {
     footer?: ((attemptOnClose: () => void) => React.ReactNode) | React.ReactNode;
     /** Optional title content */
     title?: React.ReactNode;
+    /** Enable clicking background to close */
+    closeOnBackdropClick?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ interface DialogProps extends PropsWithChildren {
  * @param confirmOnClose - Prompts the user for confirmation before closing (default: false)
  * @param footer - Optional footer content to be rendered at the bottom of the dialog
  * @param title - Optional title content to be rendered in the header
+ * @param closeOnBackdropClick - Allows closing the dialog by clicking the backdrop (default: false)
  */
 const Dialog: React.FC<DialogProps> = ({
                                            open,
@@ -44,6 +47,7 @@ const Dialog: React.FC<DialogProps> = ({
                                            confirmOnClose = false,
                                            footer,
                                            title,
+                                           closeOnBackdropClick = false,
                                        }) => {
     const dialogRef = useRef<HTMLDialogElement | null>(null);
     const contentRef = useRef<HTMLDivElement | null>(null);
@@ -71,7 +75,7 @@ const Dialog: React.FC<DialogProps> = ({
 
     // Handle backdrop clicks
     const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
-        if (e.target === dialogRef.current) {
+        if (closeOnBackdropClick && e.target === dialogRef.current) {
             attemptClose();
         }
     };
@@ -139,7 +143,7 @@ const Dialog: React.FC<DialogProps> = ({
                     <div className={`${styles.dialogHeader} ${scrolled ? styles.scrolled : ''}`}>
                         <div className={styles.headerTitle}>{title  || ''}</div>
                         <div className={styles.headerButtons}>
-                            {!isMobile && <Tooltip content={isFullscreen ? t('common.exit_fullscreen') : t('common.enter_fullscreen')} className={'text-body text-primary'}>
+                            {!isMobile && <Tooltip content={isFullscreen ? t('common.exit_fullscreen') : t('common.enter_fullscreen')} className={'text-body '}>
                                 <Button
                                     icon={true}
                                     variant="tertiary"
@@ -152,7 +156,7 @@ const Dialog: React.FC<DialogProps> = ({
                                     {isFullscreen ? <ShrinkIcon fontSize="1.25rem" /> : <ExpandIcon fontSize="1.25rem" />}
                                 </Button>
                             </Tooltip>}
-                            <Tooltip content={t('booking.close')} className={'text-body text-primary'}>
+                            <Tooltip content={t('booking.close')} className={'text-body'}>
                                 <Button
                                     icon={true}
                                     variant="tertiary"

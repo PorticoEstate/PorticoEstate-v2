@@ -10,10 +10,11 @@ import styles from './checkout.module.scss';
 import {Spinner} from "@digdir/designsystemet-react";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {useCheckoutApplications} from "@/components/checkout/hooks/checkout-hooks";
-import {phpGWLink} from "@/service/util";
 import {useRouter} from "next/navigation";
+import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 
 const CheckoutContent: FC = () => {
+	const t = useTrans();
     const {data: applications, isLoading: partialsLoading} = usePartialApplications();
     const {data: user, isLoading: userLoading} = useBookingUser();
     const updateMutation = useUpdatePartialApplication();
@@ -76,7 +77,7 @@ const CheckoutContent: FC = () => {
     };
 
     if(userLoading || partialsLoading || checkoutMutation.isPending) {
-        return <Spinner aria-label={'laster brukerinfo'} />
+        return <Spinner aria-label={t('bookingfrontend.loading_user_info')} />
     }
     if(!user || !applications || applications.list.length === 0) {
         router.push('/');

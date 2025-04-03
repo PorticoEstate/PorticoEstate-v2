@@ -26,20 +26,57 @@ class LocationHierarchyAnalyzer
 	private $suggestions = [];
 	private $buildingMappings = []; // New property to store building mappings
 	private $entranceMappings = []; // New property to store entrance mappings
+	private $specificLoc1 = null; // Specific loc1 to analyze
 
 	/**
 	 * Constructor
+	 * @param string|null $specificLoc1 Optional specific loc1 to analyze
 	 */
-	public function __construct()
+	public function __construct($specificLoc1 = null)
 	{
 		$this->db = Db::getInstance();
+		$this->specificLoc1 = $specificLoc1;
+	}
+
+	/**
+	 * Ensure the location_mapping table exists
+	 */
+	private function ensureLocationMappingTableExists()
+	{
+		$sql = "
+		CREATE TABLE IF NOT EXISTS location_mapping (
+			id SERIAL PRIMARY KEY,
+			old_location_code VARCHAR(50),
+			new_location_code VARCHAR(50),
+			loc1 VARCHAR(6),
+			old_loc2 VARCHAR(2),
+			new_loc2 VARCHAR(2),
+			old_loc3 VARCHAR(2),
+			new_loc3 VARCHAR(2),
+			loc4 VARCHAR(3),
+			bygningsnr INTEGER,
+			street_id INTEGER,
+			street_number VARCHAR(10),
+			change_type VARCHAR(20),
+			update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)";
+		$this->db->query($sql, __LINE__, __FILE__);
 	}
 
 	/**
 	 * Run all analysis checks
+	 * 
+	 * @param string|null $specificLoc1 Optional specific loc1 to analyze
 	 */
-	public function analyzeAll()
+	public function analyzeAll($specificLoc1 = null)
 	{
+		// Update specificLoc1 if provided as parameter
+		if ($specificLoc1 !== null)
+		{
+			$this->specificLoc1 = $specificLoc1;
+		}
+
+		$this->ensureLocationMappingTableExists(); // Ensure the table exists
 		$this->collectStatistics();
 		$this->analyzeLocationStructure(); // New method to analyze the overall structure
 		$this->checkLocationCodes();
@@ -48,9 +85,43 @@ class LocationHierarchyAnalyzer
 		$this->checkIncorrectBuildingAssignments();
 		$this->checkIncorrectEntranceAssignments();
 		$this->checkOrphanedEntries();
+		$this->validateHierarchyPlacement(); // New method to validate hierarchy placement
 		$this->generateSuggestions();
 
 		$this->displayResults();
+	}
+
+	/**
+	 * Run analysis and return results without making changes
+	 * 
+	 * @param string|null $specificLoc1 Optional specific loc1 to analyze
+	 * @return array Analysis results
+	 */
+	public function analyzeAndPreview($specificLoc1 = null)
+	{
+		// Update specificLoc1 if provided as parameter
+		if ($specificLoc1 !== null)
+		{
+			$this->specificLoc1 = $specificLoc1;
+		}
+		$this->ensureLocationMappingTableExists(); // Ensure the table exists
+		$this->collectStatistics();
+		$this->analyzeLocationStructure(); // Analyze the overall structure
+		$this->checkLocationCodes();
+		$this->checkMissingBuildings();
+		$this->checkMissingEntrances();
+		$this->checkIncorrectBuildingAssignments();
+		$this->checkIncorrectEntranceAssignments();
+		$this->checkOrphanedEntries();
+		$this->validateHierarchyPlacement(); // Validate hierarchy placement
+		$this->generateSuggestions();
+
+		// Return the results for preview
+		return [
+			'statistics' => $this->statistics,
+			'issues' => $this->issues,
+			'suggestions' => $this->suggestions
+		];
 	}
 
 	/**
@@ -59,13 +130,15 @@ class LocationHierarchyAnalyzer
 	private function analyzeLocationStructure()
 	{
 		// Analyze building to location2 mappings based on bygningsnr
-		$sql = "WITH building_counts AS (
+		$sql = "
+		WITH building_counts AS (
 			SELECT 
 				loc1, 
 				bygningsnr,
 				COUNT(*) AS apartment_count
 			FROM fm_location4
-			WHERE bygningsnr IS NOT NULL
+			WHERE bygningsnr IS NOT NULL" . 
+			($this->specificLoc1 ? " AND loc1 = '{$this->specificLoc1}'" : "") . "
 			GROUP BY loc1, bygningsnr
 			ORDER BY loc1, bygningsnr
 		)
@@ -75,23 +148,25 @@ class LocationHierarchyAnalyzer
 			bc.apartment_count,
 			ROW_NUMBER() OVER (PARTITION BY bc.loc1 ORDER BY bc.bygningsnr) AS seq_num
 		FROM building_counts bc";
-		
+
 		$this->db->query($sql, __LINE__, __FILE__);
-		
-		while ($this->db->next_record()) {
+
+		while ($this->db->next_record())
+		{
 			$loc1 = $this->db->f('loc1');
 			$bygningsnr = $this->db->f('bygningsnr');
 			$seq_num = $this->db->f('seq_num');
-			
+
 			// Store the correct building mapping
 			$this->buildingMappings[$loc1][$bygningsnr] = [
 				'loc2' => str_pad($seq_num, 2, '0', STR_PAD_LEFT),
 				'apartment_count' => $this->db->f('apartment_count')
 			];
 		}
-		
+
 		// Analyze street address to location3 mappings
-		$sql = "WITH address_counts AS (
+		$sql = "
+		WITH address_counts AS (
 			SELECT 
 				loc1,
 				bygningsnr,
@@ -99,7 +174,8 @@ class LocationHierarchyAnalyzer
 				street_number,
 				COUNT(*) AS apartment_count
 			FROM fm_location4
-			WHERE street_id IS NOT NULL AND street_number IS NOT NULL AND bygningsnr IS NOT NULL
+			WHERE street_id IS NOT NULL AND street_number IS NOT NULL AND bygningsnr IS NOT NULL" . 
+			($this->specificLoc1 ? " AND loc1 = '{$this->specificLoc1}'" : "") . "
 			GROUP BY loc1, bygningsnr, street_id, street_number
 			ORDER BY loc1, bygningsnr, street_id, street_number
 		)
@@ -114,22 +190,24 @@ class LocationHierarchyAnalyzer
 				ORDER BY ac.street_id, ac.street_number
 			) AS seq_num
 		FROM address_counts ac";
-		
+
 		$this->db->query($sql, __LINE__, __FILE__);
-		
-		while ($this->db->next_record()) {
+
+		while ($this->db->next_record())
+		{
 			$loc1 = $this->db->f('loc1');
 			$bygningsnr = $this->db->f('bygningsnr');
 			$street_id = $this->db->f('street_id');
 			$street_number = $this->db->f('street_number');
 			$seq_num = $this->db->f('seq_num');
-			
+
 			// Get the loc2 for this building
-			$loc2 = isset($this->buildingMappings[$loc1][$bygningsnr]) 
-				? $this->buildingMappings[$loc1][$bygningsnr]['loc2'] 
+			$loc2 = isset($this->buildingMappings[$loc1][$bygningsnr])
+				? $this->buildingMappings[$loc1][$bygningsnr]['loc2']
 				: null;
-			
-			if ($loc2) {
+
+			if ($loc2)
+			{
 				// Store the correct entrance mapping
 				$this->entranceMappings[$loc1][$loc2][$street_id][$street_number] = [
 					'loc3' => str_pad($seq_num, 2, '0', STR_PAD_LEFT),
@@ -137,14 +215,17 @@ class LocationHierarchyAnalyzer
 				];
 			}
 		}
-		
+
 		// Calculate statistics on the mappings
 		$this->statistics['required_buildings'] = array_sum(array_map('count', $this->buildingMappings));
-		
+
 		$entranceCount = 0;
-		foreach ($this->entranceMappings as $loc1Data) {
-			foreach ($loc1Data as $loc2Data) {
-				foreach ($loc2Data as $streetData) {
+		foreach ($this->entranceMappings as $loc1Data)
+		{
+			foreach ($loc1Data as $loc2Data)
+			{
+				foreach ($loc2Data as $streetData)
+				{
 					$entranceCount += count($streetData);
 				}
 			}
@@ -157,36 +238,73 @@ class LocationHierarchyAnalyzer
 	 */
 	private function collectStatistics()
 	{
+		// Store the specific loc1 being analyzed (if any)
+		$this->statistics['specific_loc1'] = $this->specificLoc1;
+
 		// Count entries at each level
-		$this->db->query("SELECT COUNT(*) AS count FROM fm_location1", __LINE__, __FILE__);
+		$sql = "SELECT COUNT(*) AS count FROM fm_location1" . 
+			($this->specificLoc1 ? " WHERE loc1 = '{$this->specificLoc1}'" : "");
+		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$this->statistics['level1_count'] = $this->db->f('count');
 
-		$this->db->query("SELECT COUNT(*) AS count FROM fm_location2", __LINE__, __FILE__);
+		$sql = "SELECT COUNT(*) AS count FROM fm_location2" . 
+			($this->specificLoc1 ? " WHERE loc1 = '{$this->specificLoc1}'" : "");
+		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$this->statistics['level2_count'] = $this->db->f('count');
 
-		$this->db->query("SELECT COUNT(*) AS count FROM fm_location3", __LINE__, __FILE__);
+		$sql = "SELECT COUNT(*) AS count FROM fm_location3" . 
+			($this->specificLoc1 ? " WHERE loc1 = '{$this->specificLoc1}'" : "");
+		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$this->statistics['level3_count'] = $this->db->f('count');
 
-		$this->db->query("SELECT COUNT(*) AS count FROM fm_location4", __LINE__, __FILE__);
+		$sql = "SELECT COUNT(*) AS count FROM fm_location4" . 
+			($this->specificLoc1 ? " WHERE loc1 = '{$this->specificLoc1}'" : "");
+		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$this->statistics['level4_count'] = $this->db->f('count');
 
 		// Count unique building numbers
-		$this->db->query("SELECT COUNT(DISTINCT bygningsnr) AS count FROM fm_location4 WHERE bygningsnr IS NOT NULL", __LINE__, __FILE__);
+		$sql = "SELECT COUNT(DISTINCT bygningsnr) AS count FROM fm_location4 WHERE bygningsnr IS NOT NULL" . 
+			($this->specificLoc1 ? " AND loc1 = '{$this->specificLoc1}'" : "");
+		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$this->statistics['unique_buildings'] = $this->db->f('count');
 
-		// Count unique street addresses - FIXED query for PostgreSQL
-		$this->db->query("SELECT COUNT(*) AS count FROM (
+		// Count unique street addresses
+		$sql = "SELECT COUNT(*) AS count FROM (
 			SELECT DISTINCT street_id, street_number 
 			FROM fm_location4 
-			WHERE street_id IS NOT NULL AND street_number IS NOT NULL
-		) AS distinct_addresses", __LINE__, __FILE__);
+			WHERE street_id IS NOT NULL AND street_number IS NOT NULL" . 
+			($this->specificLoc1 ? " AND loc1 = '{$this->specificLoc1}'" : "") . "
+		) AS distinct_addresses";
+		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$this->statistics['unique_addresses'] = $this->db->f('count');
+
+		// Calculate required buildings based on unique building numbers
+		$sql = "SELECT COUNT(*) AS count FROM (
+			SELECT DISTINCT loc1, bygningsnr 
+			FROM fm_location4 
+			WHERE bygningsnr IS NOT NULL" . 
+			($this->specificLoc1 ? " AND loc1 = '{$this->specificLoc1}'" : "") . "
+		) AS distinct_combinations";
+		$this->db->query($sql, __LINE__, __FILE__);
+		$this->db->next_record();
+		$this->statistics['required_buildings'] = $this->db->f('count');
+
+		// Calculate required entrances based on unique street addresses
+		$sql = "SELECT COUNT(*) AS count FROM (
+			SELECT DISTINCT loc1, loc2, street_id, street_number 
+			FROM fm_location4 
+			WHERE street_id IS NOT NULL AND street_number IS NOT NULL" . 
+			($this->specificLoc1 ? " AND loc1 = '{$this->specificLoc1}'" : "") . "
+		) AS distinct_combinations";
+		$this->db->query($sql, __LINE__, __FILE__);
+		$this->db->next_record();
+		$this->statistics['required_entrances'] = $this->db->f('count');
 	}
 
 	/**
@@ -195,13 +313,15 @@ class LocationHierarchyAnalyzer
 	private function checkLocationCodes()
 	{
 		// Check level 2 codes
-		$sql = "SELECT l2.loc1, l2.loc2, l2.location_code, 
-                CONCAT(l1.location_code, '-', l2.loc2) AS expected_code
-                FROM fm_location2 l2
-                JOIN fm_location1 l1 ON l2.loc1 = l1.loc1
-                WHERE l2.location_code != CONCAT(l1.location_code, '-', l2.loc2)";
+		$sql = "
+		SELECT l2.loc1, l2.loc2, l2.location_code, 
+			CONCAT(l1.location_code, '-', l2.loc2) AS expected_code
+		FROM fm_location2 l2
+		JOIN fm_location1 l1 ON l2.loc1 = l1.loc1
+		WHERE l2.location_code != CONCAT(l1.location_code, '-', l2.loc2)" . 
+			($this->specificLoc1 ? " AND l2.loc1 = '{$this->specificLoc1}'" : "");
 		$this->db->query($sql, __LINE__, __FILE__);
-
+	
 		while ($this->db->next_record())
 		{
 			$this->issues[] = [
@@ -213,15 +333,17 @@ class LocationHierarchyAnalyzer
 				'expected_code' => $this->db->f('expected_code')
 			];
 		}
-
+	
 		// Check level 3 codes
-		$sql = "SELECT l3.loc1, l3.loc2, l3.loc3, l3.location_code, 
-                CONCAT(l2.location_code, '-', l3.loc3) AS expected_code
-                FROM fm_location3 l3
-                JOIN fm_location2 l2 ON l3.loc1 = l2.loc1 AND l3.loc2 = l2.loc2
-                WHERE l3.location_code != CONCAT(l2.location_code, '-', l3.loc3)";
+		$sql = "
+		SELECT l3.loc1, l3.loc2, l3.loc3, l3.location_code, 
+			CONCAT(l2.location_code, '-', l3.loc3) AS expected_code
+		FROM fm_location3 l3
+		JOIN fm_location2 l2 ON l3.loc1 = l2.loc1 AND l3.loc2 = l2.loc2
+		WHERE l3.location_code != CONCAT(l2.location_code, '-', l3.loc3)" . 
+			($this->specificLoc1 ? " AND l3.loc1 = '{$this->specificLoc1}'" : "");
 		$this->db->query($sql, __LINE__, __FILE__);
-
+	
 		while ($this->db->next_record())
 		{
 			$this->issues[] = [
@@ -234,15 +356,17 @@ class LocationHierarchyAnalyzer
 				'expected_code' => $this->db->f('expected_code')
 			];
 		}
-
+	
 		// Check level 4 codes
-		$sql = "SELECT l4.loc1, l4.loc2, l4.loc3, l4.loc4, l4.location_code, 
-                CONCAT(l3.location_code, '-', l4.loc4) AS expected_code
-                FROM fm_location4 l4
-                JOIN fm_location3 l3 ON l4.loc1 = l3.loc1 AND l4.loc2 = l3.loc2 AND l4.loc3 = l3.loc3
-                WHERE l4.location_code != CONCAT(l3.location_code, '-', l4.loc4)";
+		$sql = "
+		SELECT l4.loc1, l4.loc2, l4.loc3, l4.loc4, l4.location_code, 
+			CONCAT(l3.location_code, '-', l4.loc4) AS expected_code
+		FROM fm_location4 l4
+		JOIN fm_location3 l3 ON l4.loc1 = l3.loc1 AND l4.loc2 = l3.loc2 AND l4.loc3 = l3.loc3
+		WHERE l4.location_code != CONCAT(l3.location_code, '-', l4.loc4)" . 
+			($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "");
 		$this->db->query($sql, __LINE__, __FILE__);
-
+	
 		while ($this->db->next_record())
 		{
 			$this->issues[] = [
@@ -263,11 +387,12 @@ class LocationHierarchyAnalyzer
 	 */
 	private function checkMissingBuildings()
 	{
-		// Find building numbers that should have their own level 2 entries
-		$sql = "WITH building_counts AS (
+		$sql = "
+		WITH building_counts AS (
 			SELECT loc1, bygningsnr, COUNT(*) AS count
 			FROM fm_location4
-			WHERE bygningsnr IS NOT NULL
+			WHERE bygningsnr IS NOT NULL" . 
+			($this->specificLoc1 ? " AND loc1 = '{$this->specificLoc1}'" : "") . "
 			GROUP BY loc1, bygningsnr
 		)
 		SELECT 
@@ -284,7 +409,8 @@ class LocationHierarchyAnalyzer
 			SELECT DISTINCT l4.loc1, l4.bygningsnr, l2.loc2
 			FROM fm_location4 l4
 			JOIN fm_location2 l2 ON l4.loc1 = l2.loc1 AND l4.loc2 = l2.loc2
-			WHERE l4.bygningsnr IS NOT NULL
+			WHERE l4.bygningsnr IS NOT NULL" . 
+			($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "") . "
 		) AS l2_mapping ON bc.loc1 = l2_mapping.loc1 AND bc.bygningsnr = l2_mapping.bygningsnr";
 
 		$this->db->query($sql, __LINE__, __FILE__);
@@ -294,13 +420,14 @@ class LocationHierarchyAnalyzer
 			$loc1 = $this->db->f('loc1');
 			$bygningsnr = $this->db->f('bygningsnr');
 			$status = $this->db->f('status');
-			
+
 			// Get the correct loc2 from our mapping
-			$correct_loc2 = isset($this->buildingMappings[$loc1][$bygningsnr]) 
-				? $this->buildingMappings[$loc1][$bygningsnr]['loc2'] 
+			$correct_loc2 = isset($this->buildingMappings[$loc1][$bygningsnr])
+				? $this->buildingMappings[$loc1][$bygningsnr]['loc2']
 				: null;
-			
-			if ($status === 'missing' && $correct_loc2) {
+
+			if ($status === 'missing' && $correct_loc2)
+			{
 				$this->issues[] = [
 					'type' => 'missing_building',
 					'loc1' => $loc1,
@@ -317,8 +444,8 @@ class LocationHierarchyAnalyzer
 	 */
 	private function checkMissingEntrances()
 	{
-		// Enhanced query to find missing entrances based on street_id and street_number
-		$sql = "WITH address_counts AS (
+		$sql = "
+		WITH address_counts AS (
 			SELECT 
 				l4.loc1, 
 				l4.loc2, 
@@ -327,7 +454,8 @@ class LocationHierarchyAnalyzer
 				l4.street_number, 
 				COUNT(*) AS count
 			FROM fm_location4 l4
-			WHERE l4.street_id IS NOT NULL AND l4.street_number IS NOT NULL
+			WHERE l4.street_id IS NOT NULL AND l4.street_number IS NOT NULL" . 
+			($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "") . "
 			GROUP BY l4.loc1, l4.loc2, l4.bygningsnr, l4.street_id, l4.street_number
 		)
 		SELECT 
@@ -349,7 +477,8 @@ class LocationHierarchyAnalyzer
 			FROM fm_location4 l4
 			JOIN fm_location3 l3 
 				ON l4.loc1 = l3.loc1 AND l4.loc2 = l3.loc2 AND l4.loc3 = l3.loc3
-			WHERE l4.street_id IS NOT NULL AND l4.street_number IS NOT NULL
+			WHERE l4.street_id IS NOT NULL AND l4.street_number IS NOT NULL" . 
+			($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "") . "
 		) AS l3_mapping 
 			ON ac.loc1 = l3_mapping.loc1 AND ac.loc2 = l3_mapping.loc2 
 			AND ac.street_id = l3_mapping.street_id AND ac.street_number = l3_mapping.street_number";
@@ -364,18 +493,19 @@ class LocationHierarchyAnalyzer
 			$street_id = $this->db->f('street_id');
 			$street_number = $this->db->f('street_number');
 			$status = $this->db->f('status');
-			
+
 			// Get the correct loc2 from our building mapping
-			$correct_loc2 = isset($this->buildingMappings[$loc1][$bygningsnr]) 
-				? $this->buildingMappings[$loc1][$bygningsnr]['loc2'] 
+			$correct_loc2 = isset($this->buildingMappings[$loc1][$bygningsnr])
+				? $this->buildingMappings[$loc1][$bygningsnr]['loc2']
 				: $loc2;
-			
+
 			// Get the correct loc3 from our entrance mapping
-			$correct_loc3 = isset($this->entranceMappings[$loc1][$correct_loc2][$street_id][$street_number]) 
-				? $this->entranceMappings[$loc1][$correct_loc2][$street_id][$street_number]['loc3'] 
+			$correct_loc3 = isset($this->entranceMappings[$loc1][$correct_loc2][$street_id][$street_number])
+				? $this->entranceMappings[$loc1][$correct_loc2][$street_id][$street_number]['loc3']
 				: null;
-			
-			if ($status === 'missing' && $correct_loc3) {
+
+			if ($status === 'missing' && $correct_loc3)
+			{
 				$this->issues[] = [
 					'type' => 'missing_entrance',
 					'loc1' => $loc1,
@@ -395,15 +525,16 @@ class LocationHierarchyAnalyzer
 	 */
 	private function checkIncorrectBuildingAssignments()
 	{
-		// Enhanced query to find apartments assigned to the wrong building
-		$sql = "SELECT 
+		$sql = "
+		SELECT 
 			l4.location_code, 
 			l4.loc1, l4.loc2, l4.loc3, l4.loc4,
 			l4.bygningsnr,
 			l4.street_id,
 			l4.street_number
 		FROM fm_location4 l4
-		WHERE l4.bygningsnr IS NOT NULL";
+		WHERE l4.bygningsnr IS NOT NULL" . 
+		($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "");
 
 		$this->db->query($sql, __LINE__, __FILE__);
 
@@ -416,13 +547,14 @@ class LocationHierarchyAnalyzer
 			$bygningsnr = $this->db->f('bygningsnr');
 			$street_id = $this->db->f('street_id');
 			$street_number = $this->db->f('street_number');
-			
+
 			// Get the correct loc2 from our mapping
-			$correct_loc2 = isset($this->buildingMappings[$loc1][$bygningsnr]) 
-				? $this->buildingMappings[$loc1][$bygningsnr]['loc2'] 
+			$correct_loc2 = isset($this->buildingMappings[$loc1][$bygningsnr])
+				? $this->buildingMappings[$loc1][$bygningsnr]['loc2']
 				: $loc2;
-			
-			if ($loc2 !== $correct_loc2) {
+
+			if ($loc2 !== $correct_loc2)
+			{
 				$this->issues[] = [
 					'type' => 'incorrect_building',
 					'location_code' => $this->db->f('location_code'),
@@ -444,15 +576,16 @@ class LocationHierarchyAnalyzer
 	 */
 	private function checkIncorrectEntranceAssignments()
 	{
-		// Enhanced query to find apartments assigned to the wrong entrance
-		$sql = "SELECT 
+		$sql = "
+		SELECT 
 			l4.location_code, 
 			l4.loc1, l4.loc2, l4.loc3, l4.loc4,
 			l4.bygningsnr,
 			l4.street_id,
 			l4.street_number
 		FROM fm_location4 l4
-		WHERE l4.street_id IS NOT NULL AND l4.street_number IS NOT NULL AND l4.bygningsnr IS NOT NULL";
+		WHERE l4.street_id IS NOT NULL AND l4.street_number IS NOT NULL AND l4.bygningsnr IS NOT NULL" . 
+		($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "");
 
 		$this->db->query($sql, __LINE__, __FILE__);
 
@@ -465,19 +598,20 @@ class LocationHierarchyAnalyzer
 			$bygningsnr = $this->db->f('bygningsnr');
 			$street_id = $this->db->f('street_id');
 			$street_number = $this->db->f('street_number');
-			
+
 			// Get the correct loc2 from our building mapping
-			$correct_loc2 = isset($this->buildingMappings[$loc1][$bygningsnr]) 
-				? $this->buildingMappings[$loc1][$bygningsnr]['loc2'] 
+			$correct_loc2 = isset($this->buildingMappings[$loc1][$bygningsnr])
+				? $this->buildingMappings[$loc1][$bygningsnr]['loc2']
 				: $loc2;
-			
+
 			// Get the correct loc3 from our entrance mapping
-			$correct_loc3 = isset($this->entranceMappings[$loc1][$correct_loc2][$street_id][$street_number]) 
-				? $this->entranceMappings[$loc1][$correct_loc2][$street_id][$street_number]['loc3'] 
+			$correct_loc3 = isset($this->entranceMappings[$loc1][$correct_loc2][$street_id][$street_number])
+				? $this->entranceMappings[$loc1][$correct_loc2][$street_id][$street_number]['loc3']
 				: $loc3;
-			
+
 			// First check if the building is correct, if not this will be caught by incorrect_building
-			if ($loc2 === $correct_loc2 && $loc3 !== $correct_loc3) {
+			if ($loc2 === $correct_loc2 && $loc3 !== $correct_loc3)
+			{
 				$this->issues[] = [
 					'type' => 'incorrect_entrance',
 					'location_code' => $this->db->f('location_code'),
@@ -499,10 +633,11 @@ class LocationHierarchyAnalyzer
 	 */
 	private function checkOrphanedEntries()
 	{
-		// Check for level 2 entries without level 1 parents
-		$sql = "SELECT l2.* FROM fm_location2 l2
-                LEFT JOIN fm_location1 l1 ON l2.loc1 = l1.loc1
-                WHERE l1.loc1 IS NULL";
+		$sql = "
+		SELECT l2.* FROM fm_location2 l2
+		LEFT JOIN fm_location1 l1 ON l2.loc1 = l1.loc1
+		WHERE l1.loc1 IS NULL" . 
+		($this->specificLoc1 ? " AND l2.loc1 = '{$this->specificLoc1}'" : "");
 
 		$this->db->query($sql, __LINE__, __FILE__);
 
@@ -517,10 +652,11 @@ class LocationHierarchyAnalyzer
 			];
 		}
 
-		// Check for level 3 entries without level 2 parents
-		$sql = "SELECT l3.* FROM fm_location3 l3
-                LEFT JOIN fm_location2 l2 ON l3.loc1 = l2.loc1 AND l3.loc2 = l2.loc2
-                WHERE l2.loc2 IS NULL";
+		$sql = "
+		SELECT l3.* FROM fm_location3 l3
+		LEFT JOIN fm_location2 l2 ON l3.loc1 = l2.loc1 AND l3.loc2 = l2.loc2
+		WHERE l2.loc2 IS NULL" . 
+		($this->specificLoc1 ? " AND l3.loc1 = '{$this->specificLoc1}'" : "");
 
 		$this->db->query($sql, __LINE__, __FILE__);
 
@@ -536,10 +672,11 @@ class LocationHierarchyAnalyzer
 			];
 		}
 
-		// Check for level 4 entries without level 3 parents
-		$sql = "SELECT l4.* FROM fm_location4 l4
-                LEFT JOIN fm_location3 l3 ON l4.loc1 = l3.loc1 AND l4.loc2 = l3.loc2 AND l4.loc3 = l3.loc3
-                WHERE l3.loc3 IS NULL";
+		$sql = "
+		SELECT l4.* FROM fm_location4 l4
+		LEFT JOIN fm_location3 l3 ON l4.loc1 = l3.loc1 AND l4.loc2 = l3.loc2 AND l4.loc3 = l3.loc3
+		WHERE l3.loc3 IS NULL" . 
+		($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "");
 
 		$this->db->query($sql, __LINE__, __FILE__);
 
@@ -554,6 +691,102 @@ class LocationHierarchyAnalyzer
 				'loc3' => $this->db->f('loc3'),
 				'loc4' => $this->db->f('loc4')
 			];
+		}
+	}
+
+	/**
+	 * Validate the hierarchy placement for all levels
+	 */
+	private function validateHierarchyPlacement()
+	{
+		$sql = "
+		WITH hierarchy_validation AS (
+			SELECT 
+				l4.loc1,
+				l4.loc2 AS current_loc2,
+				l4.loc3 AS current_loc3,
+				l4.loc4,
+				l4.location_code AS current_location_code,
+				l4.bygningsnr,
+				l4.street_id,
+				l4.street_number,
+				-- Determine the expected loc2 based on bygningsnr
+				CASE 
+					WHEN EXISTS (
+						SELECT 1 
+						FROM fm_location2 l2 
+						WHERE l2.loc1 = l4.loc1 AND l2.loc2 = l4.loc2 AND l2.loc2_name LIKE '%Bygg%'
+					) THEN l4.loc2
+					ELSE (
+						SELECT bm.loc2 
+						FROM fm_location2 bm 
+						WHERE bm.loc1 = l4.loc1 AND bm.loc2 = (
+							SELECT lm.new_loc2 
+							FROM location_mapping lm 
+							WHERE lm.loc1 = l4.loc1 AND lm.bygningsnr = l4.bygningsnr
+							LIMIT 1
+							)
+						LIMIT 1
+					)
+				END AS expected_loc2,
+				-- Determine the expected loc3 based on street_id and street_number
+				CASE 
+					WHEN EXISTS (
+						SELECT 1 
+						FROM fm_location3 l3 
+						WHERE l3.loc1 = l4.loc1 AND l3.loc2 = l4.loc2 AND l3.loc3 = l4.loc3 AND l3.loc3_name LIKE '%Inngang%'
+					) THEN l4.loc3
+					ELSE (
+						SELECT em.loc3 
+						FROM fm_location3 em 
+						WHERE em.loc1 = l4.loc1 AND em.loc2 = l4.loc2 AND em.loc3 = (
+							SELECT lm.new_loc3 
+							FROM location_mapping lm 
+							WHERE lm.loc1 = l4.loc1 AND lm.new_loc2 = l4.loc2 
+							AND lm.street_id = l4.street_id AND lm.street_number = l4.street_number
+							LIMIT 1
+						)
+						LIMIT 1
+					)
+				END AS expected_loc3
+			FROM fm_location4 l4
+			WHERE 1=1" . 
+			($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "") . "
+		)
+		SELECT 
+			hv.loc1,
+			hv.current_loc2,
+			hv.expected_loc2,
+			hv.current_loc3,
+			hv.expected_loc3,
+			hv.loc4,
+			hv.current_location_code,
+			CASE 
+				WHEN hv.current_loc2 != hv.expected_loc2 THEN 'incorrect_building'
+				WHEN hv.current_loc3 != hv.expected_loc3 THEN 'incorrect_entrance'
+				ELSE NULL
+			END AS issue_type
+		FROM hierarchy_validation hv
+		WHERE hv.current_loc2 != hv.expected_loc2 OR hv.current_loc3 != hv.expected_loc3";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		while ($this->db->next_record())
+		{
+			$issueType = $this->db->f('issue_type');
+			if ($issueType)
+			{
+				$this->issues[] = [
+					'type' => $issueType,
+					'loc1' => $this->db->f('loc1'),
+					'current_loc2' => $this->db->f('current_loc2'),
+					'expected_loc2' => $this->db->f('expected_loc2'),
+					'current_loc3' => $this->db->f('current_loc3'),
+					'expected_loc3' => $this->db->f('expected_loc3'),
+					'loc4' => $this->db->f('loc4'),
+					'current_location_code' => $this->db->f('current_location_code')
+				];
+			}
 		}
 	}
 
@@ -608,7 +841,8 @@ class LocationHierarchyAnalyzer
 						WHERE lm.loc1 = l4.loc1 AND lm.bygningsnr = l4.bygningsnr
 						LIMIT 1
 					)
-				)
+				)" . 
+				($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "") . "
 			)
 			INSERT INTO fm_location2 (loc1, loc2, loc2_name, location_code, entry_date)
 			SELECT 
@@ -622,19 +856,22 @@ class LocationHierarchyAnalyzer
 			JOIN location_mapping lm ON nb.loc1 = lm.loc1 AND nb.bygningsnr = lm.bygningsnr
 			WHERE lm.change_type = 'missing_building';
 			";
-			
+
 			// Track the missing buildings
 			$buildingSql = "INSERT INTO location_mapping 
 				(loc1, bygningsnr, new_loc2, change_type) VALUES\n";
-			
+
 			$values = [];
-			foreach ($this->issues as $issue) {
-				if ($issue['type'] === 'missing_building') {
+			foreach ($this->issues as $issue)
+			{
+				if ($issue['type'] === 'missing_building')
+				{
 					$values[] = "('{$issue['loc1']}', {$issue['bygningsnr']}, '{$issue['correct_loc2']}', 'missing_building')";
 				}
 			}
-			
-			if (!empty($values)) {
+
+			if (!empty($values))
+			{
 				$this->suggestions[] = $buildingSql . implode(",\n", $values) . ";";
 			}
 		}
@@ -666,7 +903,8 @@ class LocationHierarchyAnalyzer
 						AND em.street_id = l4.street_id AND em.street_number = l4.street_number
 						LIMIT 1
 					)
-				)
+				)" . 
+				($this->specificLoc1 ? " AND l4.loc1 = '{$this->specificLoc1}'" : "") . "
 			)
 			INSERT INTO fm_location3 (loc1, loc2, loc3, loc3_name, location_code, entry_date)
 			SELECT 
@@ -683,57 +921,66 @@ class LocationHierarchyAnalyzer
 			JOIN fm_location2 l2 ON ne.loc1 = l2.loc1 AND ne.loc2 = l2.loc2
 			WHERE em.change_type = 'missing_entrance';
 			";
-			
+
 			// Track the missing entrances
 			$entranceSql = "INSERT INTO location_mapping 
 				(loc1, new_loc2, street_id, street_number, new_loc3, change_type) VALUES\n";
-			
+
 			$values = [];
-			foreach ($this->issues as $issue) {
-				if ($issue['type'] === 'missing_entrance') {
+			foreach ($this->issues as $issue)
+			{
+				if ($issue['type'] === 'missing_entrance')
+				{
 					$values[] = "('{$issue['loc1']}', '{$issue['loc2']}', {$issue['street_id']}, '{$issue['street_number']}', '{$issue['correct_loc3']}', 'missing_entrance')";
 				}
 			}
-			
-			if (!empty($values)) {
+
+			if (!empty($values))
+			{
 				$this->suggestions[] = $entranceSql . implode(",\n", $values) . ";";
 			}
 		}
 
 		// Fix incorrect building and entrance assignments
-		if ($this->getIssueCountByType('incorrect_building') > 0 || 
-			$this->getIssueCountByType('incorrect_entrance') > 0)
+		if (
+			$this->getIssueCountByType('incorrect_building') > 0 ||
+			$this->getIssueCountByType('incorrect_entrance') > 0
+		)
 		{
 			// Track the location changes
 			$locationSql = "INSERT INTO location_mapping 
 				(old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, loc4, bygningsnr, street_id, street_number, change_type) VALUES\n";
-			
+
 			$values = [];
-			foreach ($this->issues as $issue) {
-				if ($issue['type'] === 'incorrect_building') {
+			foreach ($this->issues as $issue)
+			{
+				if ($issue['type'] === 'incorrect_building')
+				{
 					// Get correct loc3
-					$correct_loc3 = isset($this->entranceMappings[$issue['loc1']][$issue['correct_loc2']][$issue['street_id']][$issue['street_number']]) 
-						? $this->entranceMappings[$issue['loc1']][$issue['correct_loc2']][$issue['street_id']][$issue['street_number']]['loc3'] 
+					$correct_loc3 = isset($this->entranceMappings[$issue['loc1']][$issue['correct_loc2']][$issue['street_id']][$issue['street_number']])
+						? $this->entranceMappings[$issue['loc1']][$issue['correct_loc2']][$issue['street_id']][$issue['street_number']]['loc3']
 						: $issue['loc3'];
-					
+
 					$old_code = $issue['location_code'];
 					$new_code = $issue['loc1'] . '-' . $issue['correct_loc2'] . '-' . $correct_loc3 . '-' . $issue['loc4'];
-					
-					$values[] = "('{$old_code}', '{$new_code}', '{$issue['loc1']}', '{$issue['loc2']}', '{$issue['correct_loc2']}', '{$issue['loc3']}', '{$correct_loc3}', '{$issue['loc4']}', {$issue['bygningsnr']}, " . 
-						($issue['street_id'] ? $issue['street_id'] : "NULL") . ", " . 
+
+					$values[] = "('{$old_code}', '{$new_code}', '{$issue['loc1']}', '{$issue['loc2']}', '{$issue['correct_loc2']}', '{$issue['loc3']}', '{$correct_loc3}', '{$issue['loc4']}', {$issue['bygningsnr']}, " .
+						($issue['street_id'] ? $issue['street_id'] : "NULL") . ", " .
 						($issue['street_number'] ? "'{$issue['street_number']}'" : "NULL") . ", 'incorrect_building')";
 				}
-				else if ($issue['type'] === 'incorrect_entrance') {
+				else if ($issue['type'] === 'incorrect_entrance')
+				{
 					$old_code = $issue['location_code'];
 					$new_code = $issue['loc1'] . '-' . $issue['loc2'] . '-' . $issue['correct_loc3'] . '-' . $issue['loc4'];
-					
+
 					$values[] = "('{$old_code}', '{$new_code}', '{$issue['loc1']}', '{$issue['loc2']}', '{$issue['loc2']}', '{$issue['loc3']}', '{$issue['correct_loc3']}', '{$issue['loc4']}', {$issue['bygningsnr']}, {$issue['street_id']}, '{$issue['street_number']}', 'incorrect_entrance')";
 				}
 			}
-			
-			if (!empty($values)) {
+
+			if (!empty($values))
+			{
 				$this->suggestions[] = $locationSql . implode(",\n", $values) . ";";
-				
+
 				// Update the location codes
 				$this->suggestions[] = "
 				-- Update apartments with their correct locations:
@@ -833,7 +1080,7 @@ class LocationHierarchyAnalyzer
 							$detailCount++;
 							if ($detailCount <= 10)
 							{ // Limit to 10 examples per type
-								$this->displayIssueDetail($issue);
+								echo $this->formatIssueDetail($issue) . $lineBreak;
 							}
 						}
 					}
@@ -864,39 +1111,43 @@ class LocationHierarchyAnalyzer
 	}
 
 	/**
-	 * Display details for a specific issue
+	 * Format issue details for display
+	 * 
+	 * @param array $issue The issue to format
+	 * @return string Formatted issue detail text
 	 */
-	private function displayIssueDetail($issue)
+	public function formatIssueDetail($issue)
 	{
-		$isWeb = isset($GLOBALS['phpgw_info']) && isset($_SERVER['REQUEST_METHOD']);
-		$lineBreak = $isWeb ? "<br>\n" : "\n";
+		$detail = "";
 
 		switch ($issue['type'])
 		{
 			case 'invalid_location_code':
-				echo "  Level {$issue['level']} location code invalid: {$issue['current_code']} should be {$issue['expected_code']}{$lineBreak}";
+				$detail = "  Level {$issue['level']} location code invalid: {$issue['current_code']} should be {$issue['expected_code']}";
 				break;
 
 			case 'missing_building':
-				echo "  Property {$issue['loc1']} needs a building for bygningsnr {$issue['bygningsnr']} (affects {$issue['apartment_count']} apartments){$lineBreak}";
+				$detail = "  Property {$issue['loc1']} needs a building for bygningsnr {$issue['bygningsnr']} (affects {$issue['apartment_count']} apartments)";
 				break;
 
 			case 'missing_entrance':
-				echo "  Building {$issue['loc1']}-{$issue['loc2']} needs an entrance for street address ID {$issue['street_id']}, number {$issue['street_number']} (affects {$issue['apartment_count']} apartments){$lineBreak}";
+				$detail = "  Building {$issue['loc1']}-{$issue['loc2']} needs an entrance for street address ID {$issue['street_id']}, number {$issue['street_number']} (affects {$issue['apartment_count']} apartments)";
 				break;
 
 			case 'incorrect_building':
-				echo "  Apartment {$issue['location_code']} with bygningsnr {$issue['bygningsnr']} is in building {$issue['loc2']} but should be in {$issue['correct_loc2']}{$lineBreak}";
+				$detail = "  Apartment {$issue['location_code']} with bygningsnr {$issue['bygningsnr']} is in building {$issue['loc2']} but should be in {$issue['correct_loc2']}";
 				break;
 
 			case 'incorrect_entrance':
-				echo "  Apartment {$issue['location_code']} with street address {$issue['street_id']}/{$issue['street_number']} is in entrance {$issue['loc3']} but should be in {$issue['correct_loc3']}{$lineBreak}";
+				$detail = "  Apartment {$issue['location_code']} with street address {$issue['street_id']}/{$issue['street_number']} is in entrance {$issue['loc3']} but should be in {$issue['correct_loc3']}";
 				break;
 
 			case 'orphaned_entry':
-				echo "  Level {$issue['level']} entry {$issue['location_code']} has no valid parent{$lineBreak}";
+				$detail = "  Level {$issue['level']} entry {$issue['location_code']} has no valid parent";
 				break;
 		}
+
+		return $detail;
 	}
 }
 

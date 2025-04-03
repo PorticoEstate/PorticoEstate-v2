@@ -7,29 +7,38 @@
     <xsl:variable name="lang_run_analysis">Run Analysis</xsl:variable>
     <xsl:variable name="lang_analysis_results">Analysis Results</xsl:variable>
     <xsl:variable name="lang_analysis_description">This tool analyzes the location hierarchy for inconsistencies and suggests fixes. It requires admin privileges.</xsl:variable>
+    <xsl:variable name="lang_loc1_input">Enter loc1 (optional):</xsl:variable>
     
     <div class="pure-form pure-form-aligned">
         <div class="pure-control-group">
-            <label><xsl:value-of select="$lang_analyze_location"/></label>
+            <label>
+                <xsl:value-of select="$lang_analyze_location"/>
+            </label>
         </div>
-        
         <div class="pure-control-group">
-            <p><xsl:value-of select="$lang_analysis_description"/></p>
+            <p>
+                <xsl:value-of select="$lang_analysis_description"/>
+            </p>
         </div>
-        
         <form method="post" action="">
+            <div class="pure-control-group">
+                <label for="loc1">
+                    <xsl:value-of select="$lang_loc1_input"/>
+                </label>
+                <input type="text" name="loc1" id="loc1" value="{selected_loc1}" placeholder="e.g., 1234" />
+            </div>
             <input type="hidden" name="run_analysis" value="yes" />
-            
             <div class="pure-controls">
                 <button type="submit" class="pure-button pure-button-primary">
                     <xsl:value-of select="$lang_run_analysis"/>
                 </button>
             </div>
         </form>
-        
         <xsl:if test="analysis_ran = true()">
             <div class="pure-control-group">
-                <h3><xsl:value-of select="$lang_analysis_results"/></h3>
+                <h3>
+                    <xsl:value-of select="$lang_analysis_results"/>
+                </h3>
                 <div class="analysis-results" style="background: #f8f8f8; border: 1px solid #ddd; padding: 10px; white-space: pre-wrap; font-family: monospace; max-height: 800px; overflow: auto;">
                     <xsl:value-of select="analysis_results" disable-output-escaping="yes"/>
                 </div>
@@ -37,4 +46,3 @@
         </xsl:if>
     </div>
 </xsl:template>
-

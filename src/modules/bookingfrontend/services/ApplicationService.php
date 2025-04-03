@@ -1302,8 +1302,8 @@ class ApplicationService
 		{
 			$stmt->execute([
 				':application_id' => $applicationId,
-				':from_' => $date['from_'],
-				':to_' => $date['to_']
+				':from_' => $this->formatDateForDatabase($date['from_']),
+				':to_' => $this->formatDateForDatabase($date['to_'])
 			]);
 		}
 	}

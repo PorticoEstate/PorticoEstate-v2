@@ -378,3 +378,13 @@ your search returned %1 matchs	common	no	ditt søk gav %1 treff
 your search returned 1 match	common	no	ditt søk gav 1 treff
 your settings have been updated	common	no	Dine innstillinger har blitt oppdatert
 user data.description	common	no	Se og rediger din brukerinformasjon
+personal information	common	no	Personlig informasjon
+address information	common	no	Adresseinformasjon
+save changes	common	no	Lagre endringer
+saving	common	no	Lagrer...
+phone_helper	common	no	Norske telefonnummer: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
+phone	common	no	Telefon
+homepage	common	no	Hjemmeside
+street	common	no	Gate
+zip_code	common	no	Postnummer
+city	common	no	Poststed

@@ -106,7 +106,7 @@ const normalizeEmptyValue = (key: keyof IBookingUser, value: unknown): string | 
 
 const fieldCategories: FieldCategory[] = [
     {
-        title: 'Personal Information',
+        title: 'common.personal information',
         fields: [
             {
                 label: 'common.name',
@@ -122,22 +122,22 @@ const fieldCategories: FieldCategory[] = [
 				masked: true
             },
             {
-                label: 'Phone',
+                label: 'common.phone',
                 key: 'phone',
                 editable: true,
                 type: 'tel',
                 placeholder: '+47 XXXXXXXX',
-                helperText: 'Norwegian numbers: +47 XXXXXXXX or 9XXXXXXX or 4XXXXXXX'
+                helperText: 'common.phone_helper'
             },
             {
-                label: 'Email',
+                label: 'common.email',
                 key: 'email',
                 editable: true,
                 type: 'email',
                 placeholder: 'email@example.com'
             },
             {
-                label: 'Homepage',
+                label: 'common.homepage',
                 key: 'homepage',
                 editable: true,
                 type: 'url',
@@ -146,23 +146,23 @@ const fieldCategories: FieldCategory[] = [
         ],
     },
     {
-        title: 'Address Information',
+        title: 'common.address information',
         fields: [
             {
-                label: 'Street',
+                label: 'common.street',
                 key: 'street',
                 editable: true,
                 type: 'text'
             },
             {
-                label: 'ZIP Code',
+                label: 'common.zip_code',
                 key: 'zip_code',
                 editable: true,
                 type: 'text',
                 placeholder: '0000'
             },
             {
-                label: 'City',
+                label: 'common.city',
                 key: 'city',
                 editable: true,
                 type: 'text'
@@ -302,7 +302,7 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
                 <form onSubmit={handleSubmit(onSubmit)}>
                     {fieldCategories.map((category) => (
                         <div key={category.title} className={styles.detailCategory}>
-                            <h3>{category.title}</h3>
+                            <h3>{t(category.title)}</h3>
                             <div>
                                 {category.fields.map((field) => (
                                     <div key={field.key}>
@@ -326,11 +326,11 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
                                                             disabled={field.readOnly || isSubmitting}
                                                             error={errors[field.key]?.message}
                                                         />
-                                                        {/*{field.helperText && (*/}
-                                                        {/*    <p>*/}
-                                                        {/*        {field.helperText}*/}
-                                                        {/*    </p>*/}
-                                                        {/*)}*/}
+                                                        {field.helperText && (
+                                                            <p>
+                                                                {t(field.helperText)}
+                                                            </p>
+                                                        )}
                                                         {errors[field.key] && (
                                                             <p>
                                                                 {errors[field.key]?.message}
@@ -364,13 +364,13 @@ const UserDetailsForm: React.FC<DetailsProps> = ({user, onUpdate}) => {
                                     onClick={handleCancel}
                                     disabled={isSubmitting}
                                 >
-                                    Cancel
+                                    {t('common.cancel')}
                                 </Button>
                                 <Button
                                     type="submit"
                                     disabled={!isDirty || isSubmitting}
                                 >
-                                    {isSubmitting ? 'Saving...' : 'Save Changes'}
+                                    {isSubmitting ? t('common.saving') : t('common.save changes')}
                                 </Button>
                             </Fragment>
                         )}

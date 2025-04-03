@@ -460,3 +460,13 @@ your search returned %1 matchs	common	nn	ditt søk gav %1 treff
 your search returned 1 match	common	nn	ditt søk gav 1 treff
 your settings have been updated	common	nn	Dine innstillinger er oppdatert
 user data.description	common	nn	Vis og rediger brukarinformasjonen din
+personal information	common	nn	Personleg informasjon
+address information	common	nn	Adresseinformasjon
+save changes	common	nn	Lagre endringar
+saving	common	nn	Lagrar...
+phone_helper	common	nn	Norske telefonnummer: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
+phone	common	nn	Telefon
+homepage	common	nn	Heimeside
+street	common	nn	Gate
+zip_code	common	nn	Postnummer
+city	common	nn	Poststad

@@ -25,10 +25,8 @@ RewriteRule ^ index.php [QSA,L]
 </FilesMatch>
 
 # Block access to .git directory and all its contents
-<DirectoryMatch "\.git">
-  Order allow,deny
-  Deny from all
-</DirectoryMatch>
+RewriteRule ^.git/ - [F,L]
+RewriteRule ^(.*/)?\.git/ - [F,L]
 
 # Protect configuration files
 <FilesMatch "\.(ini|log|sh|inc|bak|sql|git|svn|htaccess)$">

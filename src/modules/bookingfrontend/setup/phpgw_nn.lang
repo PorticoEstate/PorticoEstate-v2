@@ -6,7 +6,7 @@
 3 weeks	bookingfrontend	nn	3 veker
 4 weeks	bookingfrontend	nn	4 veker
 _organization	bookingfrontend	nn	Organisasjon
-A Case officer will review your application as soon as possible.	bookingfrontend	nn	Ein sakshandsamar vil handsame søknaden din så fort som mogleg.
+A Case officer will review your application as soon as possible.	bookingfrontend	nn	Ein saksbehandlar vil behandla søknaden din så fort som mogleg.
 About Aktive kommune	bookingfrontend	nn	Om Aktiv kommune
 About the service	bookingfrontend	nn	Om tjenesten
 accept application	bookingfrontend	nn	Godta søknad
@@ -130,8 +130,8 @@ Cancelation of bookings from	bookingfrontend	nn	Avbestilling av interntildelinga
 cancelled	bookingfrontend	nn	Avbestilt
 Cannot change end time	bookingfrontend	nn	Endring av sluttidspunkt feilet. Sluttdato kan ikke være før startdato
 Cannot change start time	bookingfrontend	nn	Endring av startidspunkt feilet. Startdato kan ikke være senere enn sluttdato
-case officer	bookingfrontend	nn	Sakshandsamar
-case_officer	bookingfrontend	nn	Sakshandsamar
+case officer	bookingfrontend	nn	Saksbehandlar
+case_officer	bookingfrontend	nn	Saksbehandlar
 category	bookingfrontend	nn	Kategori
 Change organization	common	nn	Bytt organisasjon
 Change the allocation	bookingfrontend	nn	Endre tildeling
@@ -431,7 +431,7 @@ number of participants is required	bookingfrontend	nn	Skriv kor mange som kan de
 Object No.	bookingfrontend	nn	objektnummer
 oct	bookingfrontend	nn	oktober
 of	bookingfrontend	nn	av
-officer	bookingfrontend	nn	Sakshandsamar
+officer	bookingfrontend	nn	Saksbehandlar
 Official organization	bookingfrontend	nn	Registrert i Brønnøysund
 old	bookingfrontend	nn	Gammal
 optional	booking	nn	(Valfri)
@@ -693,8 +693,8 @@ why	bookingfrontend	nn	Kvifor
 why?	bookingfrontend	nn	Kvifor?
 You are now about to update all bookings from this date and to the end of the season.	bookingfrontend	nn	Du er nå i ferd med å oppdatere alle bookingar frå datoen i dag og ut sesongen.
 You can't cancel event that has started, for help contacts site admin	bookingfrontend	nn	Du kan ikkje slette arrangement som er over
-You can't change resources to the event, for that contact administrator	bookingfrontend	nn	Du kan ikkje endre på ressursar. Då må du ta kontakt med sakshandsamar
-You can't extend the event, for that contact administrator	bookingfrontend	nn	Du kan ikkje sjølv utvide lengda på eit arrangement. Då må du ta kontakt med sakshandsamar.
+You can't change resources to the event, for that contact administrator	bookingfrontend	nn	Du kan ikkje endre på ressursar. Då må du ta kontakt med saksbehandlar
+You can't extend the event, for that contact administrator	bookingfrontend	nn	Du kan ikkje sjølv utvide lengda på eit arrangement. Då må du ta kontakt med saksbehandlar.
 You cant edit a booking that is older than 2 weeks	bookingfrontend	nn	Du kan ikkje redigere ei booking som er eldre enn 2 veker.
 you must accept to follow all terms and conditions of lease first	common	nn	Stadfest at du har lese vilkåra
 You must accept to follow all terms and conditions of lease first.	bookingfrontend	nn	Du må akseptere dei juridiske vilkåra først

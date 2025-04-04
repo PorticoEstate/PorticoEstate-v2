@@ -163,6 +163,13 @@
 							<xsl:text>&#10;</xsl:text>
 						</xsl:for-each>
 					</pre>
+					<h5>FM Location4 Updates</h5>
+					<pre>
+						<xsl:for-each select="sql_statements/location4_updates">
+							<xsl:value-of select="." />
+							<xsl:text>&#10;</xsl:text>
+						</xsl:for-each>
+					</pre>
 				</xsl:if>
 				<xsl:if test="not(sql_statements)">
 					<p>No SQL statements generated.</p>

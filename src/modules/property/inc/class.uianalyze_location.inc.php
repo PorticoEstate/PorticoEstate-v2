@@ -69,7 +69,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		if (isset($_POST['run_analysis']) && $_POST['run_analysis'] == 'yes')
 		{
 			$analysis_results = $this->analyzer->analyze($selected_loc1 ? $selected_loc1 : null);
-		
+			
 			
 			$data['statistics'] = $analysis_results['statistics'];
 			$data['issues'] = $analysis_results['issues'];

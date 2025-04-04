@@ -708,5 +708,5 @@ Your applications have now been processed and confirmation emails have been sent
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
 search_no_events_match	bookingfrontend	en	No events match your search
-search_events	bookingfrontend	en	Search Events
+search events	bookingfrontend	en	Search Events
 confirm_this_document	bookingfrontend	en	Confirm this document

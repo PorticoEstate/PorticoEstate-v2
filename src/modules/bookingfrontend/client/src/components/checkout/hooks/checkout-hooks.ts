@@ -26,6 +26,9 @@ export interface CheckoutFormData {
 
     // Optional parent application ID
     parent_id?: number;
+    
+    // Documents consent
+    documentsRead: boolean;
 }
 
 export interface CheckoutResponse {

@@ -18,11 +18,20 @@ import {IBookingUser} from "@/service/types/api.types";
 import {useMyOrganizations} from "@/service/hooks/organization";
 import {searchOrganizations, validateOrgNum} from "@/service/api/api-utils";
 import AsyncSelect from "react-select/async";
+import RegulationDocuments from './regulation-documents';
 
 interface BillingFormProps {
     onBillingChange: (data: BillingFormData) => void;
     onSubmit: () => void;
     user: IBookingUser;
+    documentsValidated?: boolean;
+    documentsSectionRef?: React.RefObject<HTMLDivElement>;
+    showDocumentsSection?: boolean;
+    documents?: any[];
+    checkedDocuments?: Record<number, boolean>;
+    onDocumentCheck?: (documentId: number, checked: boolean) => void;
+    areAllDocumentsChecked?: boolean;
+    showDocumentsError?: boolean;
 }
 
 type OrganizationOption = {
@@ -30,7 +39,19 @@ type OrganizationOption = {
     label: string;
 };
 
-const BillingForm: FC<BillingFormProps> = ({onBillingChange, onSubmit, user}) => {
+const BillingForm: FC<BillingFormProps> = ({
+    onBillingChange, 
+    onSubmit, 
+    user, 
+    documentsValidated = true,
+    documentsSectionRef,
+    showDocumentsSection = false,
+    documents = [],
+    checkedDocuments = {},
+    onDocumentCheck = () => {},
+    areAllDocumentsChecked = true,
+    showDocumentsError = false
+}) => {
     const t = useTrans();
     const {data: myOrganizations, isLoading: orgLoading} = useMyOrganizations();
     const {
@@ -50,6 +71,7 @@ const BillingForm: FC<BillingFormProps> = ({onBillingChange, onSubmit, user}) =>
             street: user?.street || '',
             zipCode: user?.zip_code || '',
             city: user?.city || '',
+            documentsRead: false,
         }
     });
     useEffect(() => {
@@ -62,6 +84,7 @@ const BillingForm: FC<BillingFormProps> = ({onBillingChange, onSubmit, user}) =>
             street: user?.street || '',
             zipCode: user?.zip_code || '',
             city: user?.city || '',
+            documentsRead: false,
         };
         onBillingChange(defaultValues);
     }, [user, onBillingChange]);
@@ -128,8 +151,22 @@ const BillingForm: FC<BillingFormProps> = ({onBillingChange, onSubmit, user}) =>
     };
 
 
+    // Custom submit handler that checks document validation
+    const submitForm = (data: BillingFormData) => {
+        // Always call onSubmit - it will handle document validation internally 
+        // and show errors if needed
+        onSubmit();
+    };
+    
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className={styles.checkoutForm}>
+        <form
+            onSubmit={(e) => {
+                // Prevent default form submission
+                e.preventDefault();
+                // Run form validation
+                handleSubmit(submitForm)(e);
+            }} 
+            className={styles.checkoutForm}>
             <h2>{t('bookingfrontend.billing_information')}</h2>
 
             <div className={styles.formFields}>
@@ -311,8 +348,27 @@ const BillingForm: FC<BillingFormProps> = ({onBillingChange, onSubmit, user}) =>
                 />
             </div>
 
+            {/* Display regulation documents if any are found */}
+            {showDocumentsSection && documents.length > 0 && (
+                <div ref={documentsSectionRef} className={styles.documentsInBilling}>
+                    <RegulationDocuments
+                        documents={documents}
+                        checkedDocuments={checkedDocuments}
+                        onDocumentCheck={onDocumentCheck}
+                        areAllChecked={areAllDocumentsChecked}
+                        showError={showDocumentsError}
+                    />
+                </div>
+            )}
+            
             <div className={styles.submitSection}>
-                <Button type="submit">
+                <Button 
+                    onClick={(e) => {
+                        e.preventDefault();
+                        // Directly call onSubmit to ensure document validation happens
+                        onSubmit();
+                    }}
+                >
                     {t('bookingfrontend.submit_application')}
                 </Button>
             </div>

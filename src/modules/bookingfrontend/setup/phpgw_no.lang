@@ -59,6 +59,7 @@ application add	bookingfrontend	no	Legg til søknad
 Application basket	bookingfrontend	no	Søknadskurv
 Application cart	bookingfrontend	no	Handlekurv
 applications	bookingfrontend	no	Søknader
+applications.description	bookingfrontend	no	Se og administrer dine søknader
 applications_overview	bookingfrontend	no	Her er en oversikt over dine søknader som er klar for innsending og godkjennelse.
 applications_ready_for_submission	bookingfrontend	no	Søknader klar for innsending
 Apply filter	bookingfrontend	no	Aktiver filter
@@ -206,6 +207,7 @@ dec	bookingfrontend	no	desember
 Decrease of from time overlap with existing booking	bookingfrontend	no	Kan ikke endre dato. Starttidspunkt overlapper med eksisterende interntildeling
 Decrease of to time overlap with existing booking	bookingfrontend	no	Kan ikke endre dato. Sluttidspunkt overlapper med eksisterende interntildeling
 delegate from	bookingfrontend	no	Delegert fra
+delegate from.description	bookingfrontend	no	Administrer delegasjoner fra organisasjoner
 delete	bookingfrontend	no	Slett
 Delete Event	bookingfrontend	no	Slett arrangement
 Delete information	bookingfrontend	no	Hvis du kun skal slette tildeling på valgt dato, velg Slett-knappen nederst og tiden blir vist som ledig i kalenderen, og kan tildeles andre klubber/org.
@@ -214,6 +216,7 @@ delete_rentobject	bookingfrontend	no	Slette leieobjekt
 delete_rentobject_body	bookingfrontend	no	Er du sikker på du vil slette dette utleieobjektet fra handlekurven?
 Deleted on	bookingfrontend	no	Avbestilling i
 description	bookingfrontend	no	Beskrivelse
+description not available	bookingfrontend	no	Beskrivelse ikke tilgjengelig
 deselect_all	bookingfrontend	no	Velg ingen
 district	bookingfrontend	no	Område
 Do you really want to collect users	booking	no	Vil du virkelig samle brukere?
@@ -328,6 +331,7 @@ Invalid from date	bookingfrontend	no	Ugyldig fradato
 invoice	bookingfrontend	no	Faktura
 invoice information	bookingfrontend	no	Fakturainformasjon
 Invoice Instruction	bookingfrontend	no	Topptekst til faktura
+invoice.description	bookingfrontend	no	Se dine fakturaer
 invoiced	bookingfrontend	no	Fakturert
 It is currently not possible to rent anything here	bookingfrontend	no	NB! Det er for tiden ikke mulig å leie noe her
 jan	bookingfrontend	no	januar
@@ -703,7 +707,6 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	no	Søknadene er godkjent, og en bekreftelse har blitt sendt til deg på e-post.
 your_applications	bookingfrontend	no	Dine søknader
 zip code	bookingfrontend	no	Postnummer
-description not available	bookingfrontend	no	Beskrivelse ikke tilgjengelig
-applications.description	bookingfrontend	no	Se og administrer dine søknader
-invoice.description	bookingfrontend	no	Se dine fakturaer
-delegate from.description	bookingfrontend	no	Administrer delegasjoner fra organisasjoner
+search_no_events_match	bookingfrontend	no	Ingen arrangementer matcher søket ditt
+search_events	bookingfrontend	no	Søk arrangementer
+confirm_this_document	bookingfrontend	no	Bekreft dette dokumentet

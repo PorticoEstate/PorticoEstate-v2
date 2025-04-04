@@ -22,6 +22,8 @@ interface CalendarDatePickerProps {
 	minDate?: Date;
 	/** If true, shows debug information (ISO string of the date) below the input */
 	showDebug?: boolean;
+	/** If true, always shows the year in the formatted date regardless of view (defaults to false) */
+	showYear?: boolean;
 }
 
 
@@ -228,7 +230,8 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 															 minTime,
 															 allowPastDates = false,
 															 minDate,
-															 showDebug = false
+															 showDebug = false,
+															 showYear = false
 														 }) => {
 	// Get current language from i18n
 	const { i18n } = useClientTranslation();
@@ -391,7 +394,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 						<Field.Affixes>
 							<Field.Affix><CalendarIcon title="a11y-title" fontSize="1.5rem"/></Field.Affix>
 							<Input className={"dateView"} onChange={() => {
-							}} value={formatSelectedDate()}/>
+							}} value={formatSelectedDate(showYear)}/>
 						</Field.Affixes>
 					</Field>
 				)}

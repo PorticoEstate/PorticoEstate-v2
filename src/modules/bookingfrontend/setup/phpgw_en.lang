@@ -59,6 +59,7 @@ application add	bookingfrontend	en	Application add
 Application basket	bookingfrontend	en	Application basket
 Application cart	bookingfrontend	en	Application cart
 applications	bookingfrontend	en	Applications
+applications.description	bookingfrontend	en	View and manage your applications
 applications_overview	bookingfrontend	en	Here is an overview of your applications that are ready for submission and approval.
 applications_ready_for_submission	bookingfrontend	en	Applications ready for submission
 Apply filter	bookingfrontend	en	Activate filter
@@ -206,6 +207,7 @@ dec	bookingfrontend	en	Dec
 Decrease of from time overlap with existing booking	bookingfrontend	en	Cannot change date. Start time overlaps with existing internal allocation
 Decrease of to time overlap with existing booking	bookingfrontend	en	Cannot change date. End time overlaps with an existing internal allocation
 delegate from	bookingfrontend	en	Delegate from
+delegate from.description	bookingfrontend	en	Manage delegations from organizations
 delete	bookingfrontend	en	Delete
 Delete Event	bookingfrontend	en	Delete event
 Delete information	bookingfrontend	en	Delete information
@@ -214,6 +216,7 @@ delete_rentobject	bookingfrontend	en	Delete rent object
 delete_rentobject_body	bookingfrontend	en	Are you sure you want to delete this rent object from your basket?
 Deleted on	bookingfrontend	en	Deleted on
 description	bookingfrontend	en	Description
+description not available	bookingfrontend	en	Description not available
 deselect_all	bookingfrontend	en	Deselect All
 district	bookingfrontend	en	District
 Do you really want to collect users	booking	en	Do you really want to collect users?
@@ -328,6 +331,7 @@ Invalid from date	bookingfrontend	en	Invalid from date
 invoice	bookingfrontend	en	Invoice
 invoice information	bookingfrontend	en	Invoice information
 Invoice Instruction	bookingfrontend	en	Invoice instruction
+invoice.description	bookingfrontend	en	View your invoices
 invoiced	bookingfrontend	en	Invoiced
 It is currently not possible to rent anything here	bookingfrontend	en	It is currently not possible to rent anything here
 jan	bookingfrontend	en	January
@@ -703,7 +707,6 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
-description not available	bookingfrontend	en	Description not available
-applications.description	bookingfrontend	en	View and manage your applications
-invoice.description	bookingfrontend	en	View your invoices
-delegate from.description	bookingfrontend	en	Manage delegations from organizations
+search_no_events_match	bookingfrontend	en	No events match your search
+search_events	bookingfrontend	en	Search Events
+confirm_this_document	bookingfrontend	en	Confirm this document

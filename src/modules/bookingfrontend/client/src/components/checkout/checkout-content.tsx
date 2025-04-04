@@ -86,10 +86,13 @@ const CheckoutContent: FC = () => {
     // Update billing details when document consent status changes
     useEffect(() => {
         if (billingDetails && billingDetails.documentsRead !== areAllDocumentsChecked) {
-            setBillingDetails(prev => ({
-                ...prev,
-                documentsRead: areAllDocumentsChecked
-            }));
+            setBillingDetails(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    documentsRead: areAllDocumentsChecked
+                };
+            });
         }
     }, [areAllDocumentsChecked]);
 

@@ -133,6 +133,7 @@ Booking application settings	booking	no	Booking søknads oppsett.
 booking async task generate payment	booking	no	Generer betalingskrav (ny)
 Booking Canceled Subject	booking	no	Interntildeling avbestilt e-post emne
 Booking changed	booking	no	En interntildeling har blitt endret
+booking confirmed	booking	no	Booking bekreftet
 Booking Delete information	booking	no	Hvis du skal slette booking på valgt dato, velg Slett-knappen nederst.
 Booking Delete information3	booking	no	Dersom tiden skal bli vist som ledig i kalenderen, krysser du av for slett tildeling.
 Booking deleted on	booking	no	Interntildeling er slettet på
@@ -145,11 +146,11 @@ booking new	booking	no	Ny interntildeling
 booking settings	booking	no	Booking innstillinger
 Booking system settings	booking	no	Systeminnstillinger i Bookingmodul
 booking_async_task_anonyminizer	booking	no	Anonymiser kunderegister
-booking_async_task_postToAccountingSystem	booking	no	Overfør bokføring til regnskapssystem
 booking_async_task_clean_up_old_posts	booking	no	Deaktivere gamle søknader og sesonger
 booking_async_task_delete_access_log	booking	no	Slette aksesslogg for anonym frontend-bruker
 booking_async_task_delete_expired_blocks	booking	no	Slette ubrukte reservasjoner
 booking_async_task_delete_participants	booking	no	Slette gamle deltagerregistreringer
+booking_async_task_postToAccountingSystem	booking	no	Overfør bokføring til regnskapssystem
 booking_async_task_send_access_request	booking	no	Send bestilling om tilgang til API for E-lås
 booking_async_task_send_reminder_enabled	booking	no	Send purremail til kontaktpersoner på tildelinger, interntildelinger og arrangementer
 booking_async_task_update_reservation_state_enabled	booking	no	Generer fakturagrunnlag
@@ -929,7 +930,6 @@ why?	booking	no	Hvorfor?
 your application has now been processed and a confirmation email has been sent to you.	booking	nn	Søknaden er behandlet, og en bekreftelse er sendt til deg på e-post.
 Your application has now been registered and a confirmation email has been sent to you.	booking	no	Søknaden har blitt sendt inn, og en bekreftelse har blitt sendt til deg på e-post.
 Your application with event details has been added. You can add another application, or finalise the application with contact details.	booking	no	Din søknad er lagt til. Du kan legge til en ny søknad, eller gå videre for å fullføre søknadsprosessen
-Your applications have now been registered and confirmation emails have been sent to you.	booking	no	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 Your applications have now been processed and confirmation emails have been sent to you.	booking	no	Søknadene er behandlet, og bekreftelser er sendt til deg på e-post.
+Your applications have now been registered and confirmation emails have been sent to you.	booking	no	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	no	Postnummer
-booking confirmed	booking	no	Booking bekreftet

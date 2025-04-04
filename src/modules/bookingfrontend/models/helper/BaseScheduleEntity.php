@@ -14,6 +14,7 @@ abstract class BaseScheduleEntity
     /**
      * @OA\Property(type="integer")
      * @Expose
+     * @Short
      */
     public $id;
 
@@ -27,6 +28,7 @@ abstract class BaseScheduleEntity
      * @OA\Property(type="string", format="date-time")
      * @Expose
      * @Timestamp
+     * @Short
      */
     public $from_;
 
@@ -34,6 +36,7 @@ abstract class BaseScheduleEntity
      * @OA\Property(type="string", format="date-time")
      * @Expose
      * @Timestamp
+     * @Short
      */
     public $to_;
 
@@ -56,6 +59,7 @@ abstract class BaseScheduleEntity
     /**
      * @OA\Property(type="string")
      * @Expose
+     * @Short
      */
     public $building_name;
 
@@ -68,6 +72,7 @@ abstract class BaseScheduleEntity
     /**
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Resource"))
      * @Expose
+	 * @Short
      * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Resource", short=true)
      */
     public $resources;

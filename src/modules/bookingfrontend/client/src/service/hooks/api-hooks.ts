@@ -7,19 +7,19 @@ import {
     UseQueryResult,
     MutationOptions
 } from "@tanstack/react-query";
-import {IBookingUser, IServerSettings} from "@/service/types/api.types";
+import {IBookingUser, IDocument, IServerSettings} from "@/service/types/api.types";
 import {
 	fetchArticlesForResources,
 	fetchBuildingAgeGroups, fetchBuildingAudience,
 	fetchBuildingSchedule, fetchBuildingSeasons,
 	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
 	fetchInvoices,
-	fetchPartialApplications, fetchSearchDataClient, fetchServerMessages, fetchServerSettings, patchBookingUser
+	fetchPartialApplications, fetchSearchDataClient, fetchServerMessages, fetchServerSettings, fetchUpcomingEvents, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
-import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
@@ -27,6 +27,7 @@ import {IServerMessage} from "@/service/types/api/server-messages.types";
 import { IArticle } from "../types/api/order-articles.types";
 import {ISearchDataAll, ISearchDataOptimized} from "@/service/types/api/search.types";
 import {fetchSearchData} from "@/service/api/api-utils-static";
+import {fetchBuildingDocuments, fetchResourceDocuments} from "@/service/api/building";
 
 /**
  * Custom hook that wraps useMutation and adds server message invalidation
@@ -779,6 +780,139 @@ export function useDeleteApplicationDocument() {
                 queryKey: ['partialApplications']
             });
         }
+    });
+}
+
+/**
+ * Hook to fetch upcoming events with React Query
+ */
+export function useUpcomingEvents(params: {
+    fromDate?: string;
+    toDate?: string;
+    buildingId?: number;
+    facilityTypeId?: number;
+    loggedInOnly?: boolean;
+    initialEvents?: IShortEvent[];
+}) {
+    const { fromDate, toDate, buildingId, facilityTypeId, loggedInOnly, initialEvents } = params;
+
+    // Create a query key array that will change when params change
+    // This ensures React Query knows when to refetch based on changed parameters
+    const queryKey = [
+        'upcomingEvents',
+        fromDate || '',
+        toDate || '',
+        buildingId || '',
+        facilityTypeId || '',
+        loggedInOnly ? 'true' : 'false'
+    ];
+
+    return useQuery({
+        queryKey: queryKey,
+        queryFn: () => fetchUpcomingEvents({
+            fromDate,
+            toDate,
+            buildingId,
+            facilityTypeId,
+            loggedInOnly
+        }),
+        initialData: initialEvents,
+        staleTime: 60 * 60 * 1000, // Data stays fresh for 1 hour
+        refetchOnWindowFocus: false // Disable refetch on window focus
+    });
+}
+
+export function useResourceRegulationDocuments(resources: { id: number, building_id?: number }[]) {
+    const queryClient = useQueryClient();
+    const resourceIds = resources.map(r => r.id);
+
+    // Extract unique building IDs from resources
+    const buildingIds = resources
+        .filter(r => r.building_id)
+        .map(r => r.building_id)
+        .filter((value, index, self) => self.indexOf(value) === index) as number[];
+
+    // Helper to get a unique key for documents from a specific resource
+    const getResourceDocsKey = (resourceId: number) => ['resourceDocuments', resourceId, 'regulation'];
+    // Helper to get a unique key for documents from a specific building
+    const getBuildingDocsKey = (buildingId: number) => ['buildingDocuments', buildingId, 'regulation'];
+
+    return useQuery({
+        queryKey: ['allRegulationDocuments', resourceIds.join(','), buildingIds.join(',')],
+        queryFn: async () => {
+            const allDocsPromises = [
+                // Fetch resource documents
+                ...resourceIds.map(async (resourceId) => {
+                    const cacheKey = getResourceDocsKey(resourceId);
+                    const cachedDocs = queryClient.getQueryData<IDocument[]>(cacheKey);
+
+                    if (cachedDocs) {
+                        return cachedDocs;
+                    }
+
+                    try {
+                        // Fetch regulation documents for this resource
+                        const docs = await fetchResourceDocuments(resourceId, 'regulation');
+
+                        // Add owner type to identify the document source
+                        const docsWithType = docs.map(doc => ({
+                            ...doc,
+                            owner_type: 'resource' as const
+                        }));
+
+                        // Cache the documents
+                        queryClient.setQueryData(cacheKey, docsWithType);
+
+                        return docsWithType;
+                    } catch (error) {
+                        console.error(`Error fetching documents for resource ${resourceId}:`, error);
+                        return [];
+                    }
+                }),
+
+                // Fetch building documents
+                ...buildingIds.map(async (buildingId) => {
+                    const cacheKey = getBuildingDocsKey(buildingId);
+                    const cachedDocs = queryClient.getQueryData<IDocument[]>(cacheKey);
+
+                    if (cachedDocs) {
+                        return cachedDocs;
+                    }
+
+                    try {
+                        // Fetch regulation documents for this building
+                        const docs = await fetchBuildingDocuments(buildingId, 'regulation');
+
+                        // Add owner type to identify the document source
+                        const docsWithType = docs.map(doc => ({
+                            ...doc,
+                            owner_type: 'building' as const
+                        }));
+
+                        // Cache the documents
+                        queryClient.setQueryData(cacheKey, docsWithType);
+
+                        return docsWithType;
+                    } catch (error) {
+                        console.error(`Error fetching documents for building ${buildingId}:`, error);
+                        return [];
+                    }
+                })
+            ];
+
+            // Wait for all document fetches to complete
+            const allDocuments = await Promise.all(allDocsPromises);
+
+            // Flatten and filter unique documents by ID
+            const flattenedDocs = allDocuments.flat();
+            const uniqueDocs = Array.from(
+                new Map(flattenedDocs.map(doc => [doc.id, doc])).values()
+            );
+
+            return uniqueDocs;
+        },
+        enabled: resourceIds.length > 0 || buildingIds.length > 0,
+        staleTime: 5 * 60 * 1000 // Consider data fresh for 5 minutes
     });
 }
 

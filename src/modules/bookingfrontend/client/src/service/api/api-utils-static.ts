@@ -1,6 +1,8 @@
 import {ISearchDataOptimized} from "@/service/types/api/search.types";
 import {phpGWLink} from "@/service/util";
 import { unstable_cache } from 'next/cache';
+import {IShortEvent} from '@/service/pecalendar.types';
+
 // Use Next.js cache function to memoize the fetch result
 export const fetchSearchData = unstable_cache(
 	async (): Promise<ISearchDataOptimized> => {
@@ -18,3 +20,34 @@ export const fetchSearchData = unstable_cache(
 	['search-data'], // A unique cache key
 	{ revalidate: 3600 }
 );
+
+/**
+ * Server-side function to fetch upcoming events
+ * This is used for initial data loading on the server
+ */
+export const fetchUpcomingEventsStatic = async (fromDate?: string, toDate?: string): Promise<IShortEvent[]> => {
+	// Build query parameters
+	const queryParams = new URLSearchParams();
+
+	if (fromDate) queryParams.append('fromDate', fromDate);
+	if (toDate) queryParams.append('toDate', toDate);
+
+	// Default limit
+	queryParams.append('limit', '1000');
+
+	const url = phpGWLink(['bookingfrontend', 'events', 'upcoming'], Object.fromEntries(queryParams.entries()));
+	const response = await fetch(url, {
+		headers: {
+			'Content-Type': 'application/json',
+			'Accept': 'application/json'
+		},
+		cache: 'no-store' // Ensure fresh data on each server load
+	});
+
+	if (!response.ok) {
+		console.error(`Failed to fetch upcoming events: ${response.status}`);
+		return []; // Return empty array rather than throwing to improve resilience
+	}
+
+	return await response.json() as IShortEvent[];
+};

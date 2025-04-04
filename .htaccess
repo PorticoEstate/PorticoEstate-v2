@@ -9,13 +9,6 @@ RewriteRule ^ index.php [QSA,L]
    SetEnvIf Origin "http(s)?://(www\.)?(google.com|maps.googleapis.com)$" AccessControlAllowOrigin=$0
    Header add Access-Control-Allow-Origin %{AccessControlAllowOrigin}e env=AccessControlAllowOrigin
    Header merge Vary Origin
-
-   # Security headers
-   Header set X-Content-Type-Options "nosniff"
-   Header set X-XSS-Protection "1; mode=block"
-   Header set X-Frame-Options "SAMEORIGIN"
-   Header set Referrer-Policy "strict-origin-when-cross-origin"
-   Header set Permissions-Policy "geolocation=self, microphone=(), camera=()"
 </IfModule>
 
 # Suppress .map file 404 errors

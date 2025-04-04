@@ -489,4 +489,32 @@ class OrganizationService
             throw new Exception("Error fetching organization list: " . $e->getMessage());
         }
     }
+    
+    /**
+     * Get a specific organization by ID
+     *
+     * @param int $id Organization ID
+     * @return Organization|null Organization model or null if not found
+     * @throws Exception If database error occurs
+     */
+    public function getOrganization(int $id): ?\App\modules\bookingfrontend\models\Organization
+    {
+        try {
+            $sql = "SELECT * FROM bb_organization WHERE id = :id";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $id]);
+            
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$result) {
+                return null;
+            }
+            
+            return new \App\modules\bookingfrontend\models\Organization($result);
+            
+        } catch (Exception $e) {
+            throw new Exception("Error fetching organization: " . $e->getMessage());
+        }
+    }
 }

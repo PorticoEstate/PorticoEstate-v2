@@ -440,4 +440,52 @@ class OrganizationController
             );
         }
     }
+    
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/organizations/{id}",
+     *     summary="Get a specific organization by ID",
+     *     tags={"Organizations"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Organization details",
+     *         @OA\JsonContent(ref="#/components/schemas/Organization")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Organization not found"
+     *     )
+     * )
+     */
+    public function getById(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+            
+            $organization = $this->organizationService->getOrganization($id);
+            
+            if (!$organization) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Organization not found'],
+                    404
+                );
+            }
+            
+            $response->getBody()->write(json_encode($organization));
+            return $response->withHeader('Content-Type', 'application/json');
+            
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
 }

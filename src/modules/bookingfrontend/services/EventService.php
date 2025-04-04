@@ -4,6 +4,8 @@ namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\models\Event;
+use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\repositories\EventRepository;
 use DateTime;
 use Exception;
@@ -280,7 +282,7 @@ class EventService
 				$validAgegroups = array_filter($application['agegroups'], function($ag) {
 					return !empty($ag['agegroup_id']);
 				});
-				
+
 				if (!empty($validAgegroups)) {
 					$this->repository->saveEventAgeGroups($eventId, $validAgegroups);
 				}
@@ -322,4 +324,139 @@ class EventService
 		return $dateString;
 	}
 
+	/**
+	 * Get upcoming events with organization details
+	 *
+	 * @param string|null $fromDate Start date filter
+	 * @param string|null $toDate End date filter
+	 * @param int|null $orgId Optional organization ID to filter by
+	 * @param int|null $buildingId Optional building ID to filter by
+	 * @param int|null $facilityTypeId Optional facility type ID to filter by
+	 * @param bool $loggedInOnly When true, shows only events for logged-in organization.
+	 *                           When false, shows both public events and logged-in organization's events.
+	 * @param int $start Pagination start
+	 * @param int|null $limit Pagination limit (null means no limit)
+	 * @return array Array of events with organization details
+	 */
+	public function getUpcomingEvents(
+		?string $fromDate = null,
+		?string $toDate = null,
+		?int $orgId = null,
+		?int $buildingId = null,
+		?int $facilityTypeId = null,
+		bool $loggedInOnly = false,
+		int $start = 0,
+		?int $limit = null
+	): array {
+		$orgInfo = null;
+		if ($orgId) {
+			// Get organization repository instance
+			$organizationRepository = new \App\modules\bookingfrontend\repositories\OrganizationRepository();
+			$orgInfo = $organizationRepository->getOrganizationById($orgId);
+		}
+
+		$loggedInAs = null;
+		$filterByOrganization = false;
+
+		// If user is logged in, get their organization number
+		if ($this->bouser->is_logged_in()) {
+			$loggedInAs = $this->bouser->orgnr;
+
+			// If loggedInOnly is true, only show events for logged in organization
+			if ($loggedInOnly) {
+				$filterByOrganization = true;
+			}
+		}
+
+		// Get events from repository
+		$eventsData = $this->repository->getUpcomingEvents(
+			$fromDate,
+			$toDate,
+			$orgInfo,
+			$buildingId,
+			$facilityTypeId,
+			$filterByOrganization,
+			$loggedInAs,
+			$start,
+			$limit
+		);
+
+		// Get organization repository to fetch organization details
+		$orgRepository = new \App\modules\bookingfrontend\repositories\OrganizationRepository();
+
+		// Cache for organization info to avoid repeated lookups
+		$organizations = [];
+
+		// Convert raw database records to Event model instances
+		$formattedEvents = [];
+
+		// Get user context for serialization - using same format as BuildingScheduleService
+		$userOrgs = $this->bouser->organizations
+			? array_column($this->bouser->organizations, 'orgnr')
+			: null;
+
+		// Process each event
+		foreach ($eventsData as $eventData) {
+			// Normalize keys if needed (from the SQL query)
+			if (isset($eventData['event_id'])) {
+				$eventData['id'] = $eventData['event_id'];
+				unset($eventData['event_id']);
+			}
+
+			// Map location_name to building_name if needed
+			if (isset($eventData['location_name']) && !isset($eventData['building_name'])) {
+				$eventData['building_name'] = $eventData['location_name'];
+				unset($eventData['location_name']);
+			}
+
+			// Map event_name to name if needed
+			if (isset($eventData['event_name']) && !isset($eventData['name'])) {
+				$eventData['name'] = $eventData['event_name'];
+				unset($eventData['event_name']);
+			}
+
+			// Get organization info using org_num (customer_organization_number)
+			$orgNum = $eventData['customer_organization_number'];
+			if (isset($organizations[$orgNum])) {
+				$organizationInfo = $organizations[$orgNum];
+			} else {
+				$organizationInfo = $orgRepository->getOrganizationByNumber($orgNum);
+				$organizations[$orgNum] = $organizationInfo;
+			}
+
+			// Add organization name to event data
+			if (empty($organizationInfo) || empty($organizationInfo['name'])) {
+				$eventData['customer_organization_name'] = ($eventData['organizer'] === '' ? 'Ingen' : $eventData['organizer']);
+			} else {
+				$eventData['customer_organization_name'] = $organizationInfo['name'];
+			}
+
+			// Process resources if available with complete data for proper serialization
+			$resources = [];
+			if (isset($eventData['resources']) && $eventData['resources']) {
+				$resourceData = json_decode($eventData['resources'], true);
+				if ($resourceData) {
+					foreach ($resourceData as $id => $name) {
+						$resourceEntity = new Resource([
+							'id' => $id,
+							'name' => $name,
+							'activity_id' => $eventData['activity_id'] ?? null,
+							'activity_name' => $eventData['activity_name'] ?? null,
+							'building_id' => $eventData['building_id'] ?? null
+						]);
+						$resources[] = $resourceEntity;
+					}
+				}
+			}
+
+			// Create Event model instance with data
+			$event = new Event($eventData);
+			$event->resources = $resources;
+
+			// Add to results using serialize method with consistent parameters matching BuildingScheduleService
+			$formattedEvents[] = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs], true);
+		}
+
+		return $formattedEvents;
+	}
 }

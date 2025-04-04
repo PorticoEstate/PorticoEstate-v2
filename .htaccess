@@ -24,6 +24,12 @@ RewriteRule ^ index.php [QSA,L]
   Deny from all
 </FilesMatch>
 
+# Block access to .git directory and all its contents
+<DirectoryMatch "\.git">
+  Order allow,deny
+  Deny from all
+</DirectoryMatch>
+
 # Protect configuration files
 <FilesMatch "\.(ini|log|sh|inc|bak|sql|git|svn|htaccess)$">
   Order allow,deny

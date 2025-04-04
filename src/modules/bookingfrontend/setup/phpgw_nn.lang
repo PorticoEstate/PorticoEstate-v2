@@ -708,5 +708,5 @@ Your applications have now been processed and confirmation emails have been sent
 your_applications	bookingfrontend	nn	Dine søknader
 zip code	bookingfrontend	nn	Postnummer
 search_no_events_match	bookingfrontend	nn	Ingen arrangement passar søket ditt
-search_events	bookingfrontend	nn	Søk arrangement
+search events	bookingfrontend	nn	Søk arrangement
 confirm_this_document	bookingfrontend	nn	Stadfest dette dokumentet

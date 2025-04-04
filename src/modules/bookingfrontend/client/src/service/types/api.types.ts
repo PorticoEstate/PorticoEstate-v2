@@ -202,5 +202,6 @@ export interface IDocument {
     category: 'picture' | 'regulation' | 'HMS_document' | 'picture_main' | 'drawing' | 'price_list' | 'other';
     owner_id: number;
     url: string;
+    owner_type?: 'resource' | 'building';
 }
 export type IDocumentCategoryQuery = IDocument['category'] | 'images';

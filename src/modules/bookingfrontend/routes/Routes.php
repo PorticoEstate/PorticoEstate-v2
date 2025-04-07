@@ -44,6 +44,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('', ResourceController::class . ':index');
 		$group->get('/{id}', ResourceController::class . ':getResource');
 		$group->get('/{id}/documents', ResourceController::class . ':getDocuments');
+		$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
 		$group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
 	});
@@ -53,11 +54,14 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->post('', OrganizationController::class . ':create');
 		$group->get('/lookup/{number}', OrganizationController::class . ':lookup');
 		$group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');
+		$group->get('/{id}/events', EventController::class . ':getOrganizationEvents');
 		$group->get('/list', OrganizationController::class . ':getList');
+		$group->get('/{id}', OrganizationController::class . ':getById');
 	});
 
 	$group->group('/events', function (RouteCollectorProxy $group)
 	{
+		$group->get('/upcoming', EventController::class . ':getUpcomingEvents');
 		$group->get('/{id}', EventController::class . ':getEventById');
 		$group->patch('/{id}', EventController::class . ':updateEvent');
 		$group->post('/{id}/pre-registration', EventController::class . ':preRegister');

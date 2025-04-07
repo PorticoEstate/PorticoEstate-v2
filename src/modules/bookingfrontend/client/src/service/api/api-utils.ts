@@ -4,7 +4,7 @@ import {IBookingUser, IServerSettings} from "@/service/types/api.types";
 import {IApplication} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
-import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
@@ -95,6 +95,8 @@ export async function fetchFreeTimeSlotsForRange(building_id: number, start: Dat
 		building_id,
 		start_date: start.toFormat('dd/LL-yyyy'),
 		end_date: end.toFormat('dd/LL-yyyy'),
+		detailed_overlap: true,
+		stop_on_end_date: true
 	}, true, instance);
 	const response = await fetch(url);
 	const result = await response.json();
@@ -217,3 +219,55 @@ export async function deletePartialApplication(id: number): Promise<void> {
 }
 
 
+/**
+ * Parameters for the upcoming events endpoint
+ */
+export interface UpcomingEventsParams {
+	/** Filter events from this date (format: YYYY-MM-DD) */
+	fromDate?: string;
+	/** Filter events up to this date (format: YYYY-MM-DD) */
+	toDate?: string;
+	/** Filter events by building ID */
+	buildingId?: number;
+	/** Filter events by facility type ID */
+	facilityTypeId?: number;
+	/** When true, shows only events for the logged-in organization */
+	loggedInOnly?: boolean;
+	/** Pagination start */
+	start?: number;
+	/** Pagination limit */
+	limit?: number;
+}
+
+/**
+ * Fetches upcoming events from the API
+ * @param params Optional parameters to filter the results
+ * @returns Promise with an array of IShortEvent objects
+ */
+export async function fetchUpcomingEvents(params?: UpcomingEventsParams): Promise<IShortEvent[]> {
+	// Build query parameters
+	const queryParams = new URLSearchParams();
+	console.log("FETCHING UPCOMMING EVENTS")
+	if (params?.fromDate) queryParams.append('fromDate', params.fromDate);
+	if (params?.toDate) queryParams.append('toDate', params.toDate);
+	if (params?.buildingId) queryParams.append('buildingId', params.buildingId.toString());
+	if (params?.facilityTypeId) queryParams.append('facilityTypeId', params.facilityTypeId.toString());
+	if (params?.loggedInOnly !== undefined) queryParams.append('loggedInOnly', params.loggedInOnly.toString());
+	if (params?.start !== undefined) queryParams.append('start', params.start.toString());
+	if (params?.limit !== undefined) queryParams.append('limit', params.limit.toString());
+
+
+	try {
+		const url =  phpGWLink(['bookingfrontend', 'events', 'upcoming'], Object.fromEntries( queryParams.entries() ))
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch upcoming events: ${response.status}`);
+		}
+
+		return await response.json() as IShortEvent[];
+	} catch (error) {
+		console.error('Error fetching upcoming events:', error);
+		throw error;
+	}
+}

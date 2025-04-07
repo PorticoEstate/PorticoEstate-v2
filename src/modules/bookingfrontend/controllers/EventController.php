@@ -342,4 +342,205 @@ class EventController
             );
         }
     }
+    
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/events/upcoming",
+     *     summary="Get upcoming events",
+     *     description="Returns a list of upcoming events with optional filters",
+     *     tags={"Events"},
+     *     @OA\Parameter(
+     *         name="fromDate",
+     *         in="query",
+     *         description="Filter events from this date (format: YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="toDate",
+     *         in="query",
+     *         description="Filter events up to this date (format: YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="buildingId",
+     *         in="query",
+     *         description="Filter events by building ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="facilityTypeId",
+     *         in="query",
+     *         description="Filter events by facility type ID",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="loggedInOnly",
+     *         in="query",
+     *         description="When true, shows only events for the logged-in organization. When false or not specified, shows both public events and logged-in organization's events.",
+     *         required=false,
+     *         @OA\Schema(type="boolean")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start",
+     *         in="query",
+     *         description="Pagination start",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Pagination limit",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of upcoming events",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Event")
+     *         )
+     *     )
+     * )
+     */
+    public function getUpcomingEvents(Request $request, Response $response): Response
+    {
+        $params = $request->getQueryParams();
+        
+        $fromDate = $params['fromDate'] ?? null;
+        $toDate = $params['toDate'] ?? null;
+        $buildingId = isset($params['buildingId']) ? (int)$params['buildingId'] : null;
+        $facilityTypeId = isset($params['facilityTypeId']) ? (int)$params['facilityTypeId'] : null;
+        // If loggedInOnly is explicitly set to true, only show user's private events
+        // Otherwise, include both public events and the user's private events
+        $loggedInOnly = isset($params['loggedInOnly']) 
+            ? filter_var($params['loggedInOnly'], FILTER_VALIDATE_BOOLEAN) 
+            : false; // Default to false to include public events + user's events
+        $start = isset($params['start']) ? (int)$params['start'] : 0;
+        $limit = isset($params['limit']) ? (int)$params['limit'] : null;
+        
+        try {
+            $events = $this->service->getUpcomingEvents(
+                $fromDate,
+                $toDate,
+                null, // No org ID, we'll use this in the organization events endpoint
+                $buildingId,
+                $facilityTypeId,
+                $loggedInOnly,
+                $start,
+                $limit
+            );
+            
+            $response->getBody()->write(json_encode($events));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+    
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/organizations/{id}/events",
+     *     summary="Get events for a specific organization",
+     *     description="Returns a list of events for the specified organization",
+     *     tags={"Events", "Organizations"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="Organization ID",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="fromDate",
+     *         in="query",
+     *         description="Filter events from this date (format: YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="toDate",
+     *         in="query",
+     *         description="Filter events up to this date (format: YYYY-MM-DD)",
+     *         required=false,
+     *         @OA\Schema(type="string", format="date")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start",
+     *         in="query",
+     *         description="Pagination start",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="limit",
+     *         in="query",
+     *         description="Pagination limit",
+     *         required=false,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of organization events",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Event")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Organization not found"
+     *     )
+     * )
+     */
+    public function getOrganizationEvents(Request $request, Response $response, array $args): Response
+    {
+        $orgId = (int)$args['id'];
+        $params = $request->getQueryParams();
+        
+        $fromDate = $params['fromDate'] ?? null;
+        $toDate = $params['toDate'] ?? null;
+        $start = isset($params['start']) ? (int)$params['start'] : 0;
+        $limit = isset($params['limit']) ? (int)$params['limit'] : null;
+        
+        // Check if organization exists
+        $organizationRepository = new \App\modules\bookingfrontend\repositories\OrganizationRepository();
+        $organization = $organizationRepository->getOrganizationById($orgId);
+        
+        if (!$organization) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Organization not found'],
+                404
+            );
+        }
+        
+        try {
+            $events = $this->service->getUpcomingEvents(
+                $fromDate,
+                $toDate,
+                $orgId,
+                null, // No building filter
+                null, // No facility type filter
+                false, // Don't filter by logged in organization only
+                $start,
+                $limit
+            );
+            
+            $response->getBody()->write(json_encode($events));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
 }

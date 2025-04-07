@@ -34,7 +34,7 @@ const ResourceInfoModalContent: FC<ResourceInfoPopperContentProps> = (props) => 
                         opacity: '75%',
                         top: 5,
                         right: 5
-                    }}><Spinner aria-label='Laster ressurs info'/></div>
+                    }}><Spinner aria-label={t('bookingfrontend.loading_resource_info')}/></div>
                 }
 
                 {!resource.isLoading && (<Fragment>

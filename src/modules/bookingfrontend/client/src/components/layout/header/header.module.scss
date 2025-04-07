@@ -30,23 +30,12 @@
     //}
     .logo {
         display: flex;
+		align-items: center;
+		gap: 1rem;
         .logoImg {
             width: 100%;
             flex: none;
             max-width: 12rem;
-
-            @include tablet {
-                display: none;
-            }
-
-            &.logoImgDesktop {
-                display: none;
-                max-width: 5rem;
-
-                @include tablet {
-                    display: flex;
-                }
-            }
         }
     }
 

@@ -75,7 +75,7 @@ const Invoices: FC<InvoicesProps> = (props) => {
             // },
         }),
         columnHelper.accessor('exported', {
-            header: 'Fakturert',
+            header: t('bookingfrontend.invoiced'),
             cell: info => {
                 const exported = info.getValue();
                 return exported ? t('common.yes') : t('common.no');

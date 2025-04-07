@@ -13,6 +13,7 @@ add %1 category for	common	en	Add %1 category for
 add category	common	en	Add category
 add sub	common	en	Add sub
 address book	common	en	Address book
+address information	common	en	Address information
 addressbook	common	en	Addressbook
 admin	common	en	Admin
 administration	common	en	Administration
@@ -85,6 +86,7 @@ choose language	common	en	Choose language
 choose the category	common	en	Choose the category
 choose the parent category	common	en	Choose the parent category
 christmas island	common	en	CHRISTMAS ISLAND
+city	common	en	City
 clear	common	en	Clear
 clear form	common	en	Clear Form
 close	common	en	Close
@@ -219,6 +221,7 @@ high	common	en	High
 highest	common	en	Highest
 holy see (vatican city state)	common	en	HOLY SEE (VATICAN CITY STATE)
 home	common	en	Home
+homepage	common	en	Homepage
 honduras	common	en	HONDURAS
 hong kong	common	en	HONG KONG
 hungary	common	en	HUNGARY
@@ -376,9 +379,12 @@ pattern for search in calendar	common	en	Pattern for Search in Calendar
 pattern for search in projects	common	en	Pattern for Search in Projects
 permissions to the files/users directory	common	en	permissions to the files/users directory
 personal	common	en	Personal
+personal information	common	en	Personal information
 peru	common	en	PERU
 philippines	common	en	PHILIPPINES
+phone	common	en	Phone
 phone number	common	en	phone number
+phone_helper	common	en	Norwegian numbers: +47 XXXXXXXX or 9XXXXXXX or 4XXXXXXX
 phpgw-created account	common	en	phpgw-created account
 phpgw-created group	common	en	phpgw-created group
 pitcairn	common	en	PITCAIRN
@@ -430,6 +436,8 @@ sao tome and principe	common	en	SAO TOME AND PRINCIPE
 saturday	common	en	Saturday
 saudi arabia	common	en	SAUDI ARABIA
 save	common	en	Save
+save changes	common	en	Save changes
+saving	common	en	Saving...
 search	common	en	Search
 section	common	en	Section
 select	common	en	Select
@@ -467,6 +475,7 @@ start	common	en	Start
 start date	common	en	Start date
 start time	common	en	Start time
 status	common	en	Status
+street	common	en	Street
 subject	common	en	Subject
 submit	common	en	Submit
 substitutions and their meanings:	common	en	Substitutions and their meanings:
@@ -529,6 +538,8 @@ use button to search for calendarevent	common	en	use Button to search for Calend
 use button to search for project	common	en	use Button to search for Project
 user	common	en	User
 user accounts	common	en	user accounts
+user data	common	en	User Data
+user data.description	common	en	View and edit your user information
 user groups	common	en	user groups
 username	common	en	Username
 users	common	en	users
@@ -571,3 +582,4 @@ your settings have been updated	common	en	Your settings have been Updated
 yugoslavia	common	en	YUGOSLAVIA
 zambia	common	en	ZAMBIA
 zimbabwe	common	en	ZIMBABWE
+zip_code	common	en	ZIP Code

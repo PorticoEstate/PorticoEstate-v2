@@ -1,4 +1,4 @@
-import React, {Fragment, useMemo, useState, FC, useCallback, useEffect} from 'react';
+import React, {Fragment, useMemo, useState, FC, useCallback, useEffect, useRef} from 'react';
 import {
     Button,
     Chip, Details,
@@ -23,7 +23,7 @@ import {
 	useBuildingAudience, useBuildingSeasons,
 	useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
 	usePartialApplications,
-	useUpdatePartialApplication, useUploadApplicationDocument
+	useUpdatePartialApplication, useUploadApplicationDocument, useBuildingSchedule
 } from "@/service/hooks/api-hooks";
 import {NewPartialApplication, IUpdatePartialApplication, IApplication} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
@@ -33,6 +33,8 @@ import {ApplicationFormData, applicationFormSchema} from './application-form';
 import {IBookingUser} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
 import {ArticleOrder} from "@/service/types/api/order-articles.types";
+import {isDevMode} from "@/service/util";
+import {IEvent} from "@/service/pecalendar.types";
 
 interface ApplicationCrudProps {
     selectedTempApplication?: Partial<FCallTempEvent>;
@@ -53,6 +55,7 @@ interface ApplicationCrudInnerProps extends ApplicationCrudProps {
     lastSubmittedData?: Partial<ApplicationFormData> | null;
     bookingUser?: IBookingUser;
 	seasons?: Season[];
+    events?: IEvent[];
 }
 
 const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
@@ -77,6 +80,10 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
         building_id ? +building_id : undefined
     );
     const {data: bookingUser, isLoading: userLoading} = useBookingUser();
+    const {data: events, isLoading: eventsLoading} = useBuildingSchedule({
+        building_id: building_id ? +building_id : undefined,
+        weeks: [DateTime.now()]
+    });
 
     const existingApplication = useMemo(() => {
         const applicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
@@ -94,7 +101,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
         return null;
     }
 
-    if (seasonsLoading||userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || existingApplication === undefined) {
+    if (seasonsLoading || userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || eventsLoading || existingApplication === undefined) {
         return null;
     }
 
@@ -117,6 +124,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
                 lastSubmittedData={lastSubmittedData}
                 bookingUser={bookingUser}
 				seasons={seasons}
+                events={events}
                 onSubmitSuccess={(data) => setLastSubmittedData(data)}
                 {...props}
             />
@@ -127,7 +135,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
     const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-    const {building, buildingResources, audience, agegroups, partials, existingApplication} = props;
+    const {building, buildingResources, audience, agegroups, partials, existingApplication, events} = props;
     const t = useTrans();
     const [isEditingResources, setIsEditingResources] = useState(false);
     const createMutation = useCreatePartialApplication();
@@ -135,6 +143,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const updateMutation = useUpdatePartialApplication();
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
+    const participantsSectionRef = useRef<HTMLDivElement>(null);
 	const [minTime, maxTime] = useMemo(() => {
 		let minTime = '24:00:00';
 		let maxTime = '00:00:00';
@@ -336,11 +345,18 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		getValues,
 		setError,
 		clearErrors,
-		formState: {errors, isDirty, dirtyFields}
+		formState: {errors, isDirty, dirtyFields, isSubmitted}
 	} = useForm<ApplicationFormData>({
 		resolver: zodResolver(applicationFormSchema),
 		defaultValues: defaultValues
     });
+
+    // Scroll to participant counts error if it exists after form submission
+    useEffect(() => {
+        if (isSubmitted && errors.agegroups?.['root']?.message && participantsSectionRef.current) {
+            participantsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [isSubmitted, errors.agegroups]);
 
     const selectedResources = watch('resources');
 	const startTime = watch('start');
@@ -351,7 +367,16 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	useEffect(() => {
 		if (!startTime) return;
 
-		if (!isWithinBusinessHours(startTime)) {
+		// Check if date is in the past
+		const now = new Date();
+		if (startTime < now) {
+			setError('start', {
+				type: 'manual',
+				message: t('bookingfrontend.start_time_in_past')
+			});
+		}
+		// Check if within business hours
+		else if (!isWithinBusinessHours(startTime)) {
 			setError('start', {
 				type: 'manual',
 				message: t('bookingfrontend.start_time_outside_business_hours')
@@ -364,7 +389,16 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	useEffect(() => {
 		if (!endTime) return;
 
-		if (!isWithinBusinessHours(endTime)) {
+		// Check if date is in the past
+		const now = new Date();
+		if (endTime < now) {
+			setError('end', {
+				type: 'manual',
+				message: t('bookingfrontend.end_time_in_past')
+			});
+		}
+		// Check if within business hours
+		else if (!isWithinBusinessHours(endTime)) {
 			setError('end', {
 				type: 'manual',
 				message: t('bookingfrontend.end_time_outside_business_hours')
@@ -377,26 +411,118 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
         return DateTime.fromJSDate(date).toFormat('yyyy-MM-dd\'T\'HH:mm');
     };
 
+    const checkEventOverlap = useCallback((startDate: Date, endDate: Date, resourceIds: string[]): boolean => {
+        // Get current events from context or props
+        if (!events) return false; // No events to check against
+
+        const selectStart = DateTime.fromJSDate(startDate);
+        const selectEnd = DateTime.fromJSDate(endDate);
+
+        // Prevent selections in the past
+        const now = DateTime.now();
+        if (selectStart < now) {
+            return false;
+        }
+
+        // Filter to only get actual events (not background events) for selected resources
+        const selectedResourceIds = resourceIds.map(Number);
+
+        // Check for resources with deny_application_if_booked flag
+        const resourcesWithDenyFlag = buildingResources
+            ?.filter(res => selectedResourceIds.includes(res.id) && res.deny_application_if_booked === 1);
+
+        const hasResourceWithDenyFlag = resourcesWithDenyFlag && resourcesWithDenyFlag.length > 0;
+
+        // If no resources have deny flag, allow the booking
+        if (!hasResourceWithDenyFlag) return true;
+
+        // Get all events for the selected resources
+        const relevantEvents = events
+            .filter(event => {
+                // Check if event has any of the selected resources
+                const eventHasSelectedResource = event.resources.some(res =>
+                    selectedResourceIds.includes(res.id)
+                );
+
+                // Skip if editing existing event
+                if (existingApplication && existingApplication.id === event.id) {
+                    return false;
+                }
+
+                return eventHasSelectedResource;
+            });
+
+        // Check for overlap with each event's times
+        const hasOverlap = relevantEvents.some(event => {
+            const eventStart = DateTime.fromISO(event.from_);
+            const eventEnd = DateTime.fromISO(event.to_);
+
+            // Check if the selection overlaps with this event
+            return !(selectEnd <= eventStart || selectStart >= eventEnd);
+        });
+
+        // If no overlap, return true (booking is allowed)
+        return !hasOverlap;
+    }, [events, buildingResources, existingApplication]);
+
     const onSubmit = async (data: ApplicationFormData) => {
         if (!building || !buildingResources) {
             return;
         }
+
+        // Check for dates in the past
+        const now = new Date();
+        const startInPast = data.start < now;
+        const endInPast = data.end < now;
+
+        // Check for times outside business hours
 		const startOutsideHours = !isWithinBusinessHours(data.start);
 		const endOutsideHours = !isWithinBusinessHours(data.end);
-		if (startOutsideHours || endOutsideHours) {
-			if (startOutsideHours) {
+
+        // Check if any selected resource denies applications if already booked
+        const selectedResources = buildingResources.filter(res => data.resources.some(id => +id === res.id));
+        const hasResourceWithDenyFlag = selectedResources.some(res => res.deny_application_if_booked === 1);
+
+		// Validate dates
+		if (startInPast || endInPast || startOutsideHours || endOutsideHours) {
+			if (startInPast) {
+				setError('start', {
+					type: 'manual',
+					message: t('bookingfrontend.start_time_in_past')
+				});
+			} else if (startOutsideHours) {
 				setError('start', {
 					type: 'manual',
 					message: t('bookingfrontend.start_time_outside_business_hours')
 				});
 			}
-			if (endOutsideHours) {
+
+			if (endInPast) {
+				setError('end', {
+					type: 'manual',
+					message: t('bookingfrontend.end_time_in_past')
+				});
+			} else if (endOutsideHours) {
 				setError('end', {
 					type: 'manual',
 					message: t('bookingfrontend.end_time_outside_business_hours')
 				});
 			}
 			return;
+		}
+
+		// If any resource has deny_application_if_booked=1, check for overlaps
+		if (hasResourceWithDenyFlag) {
+            // Use our checkEventOverlap function to check for overlaps
+            const noOverlap = checkEventOverlap(data.start, data.end, data.resources);
+
+            if (!noOverlap) {
+                setError('resources', {
+                    type: 'manual',
+                    message: t('bookingfrontend.resource_overlap_detected')
+                });
+                return;
+            }
 		}
 
         if (existingApplication) {
@@ -658,25 +784,27 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                         <h3>{existingApplication ? t('bookingfrontend.edit application') : t('bookingfrontend.new application')}</h3>
                     </div>
                 }
-                footer={<Fragment>
-                    {existingApplication && (
+                footer={
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        {existingApplication && (
+                            <Button
+                                variant="tertiary"
+                                color="danger"
+                                onClick={handleDelete}
+                                type="button"
+                            >
+                                {t('common.delete')}
+                            </Button>
+                        )}
                         <Button
-                            variant="tertiary"
-                            color="danger"
-                            onClick={handleDelete}
-                            type="button"
+                            variant="primary"
+                            type="submit"
+                            disabled={!(isDirty || !existingApplication)}
                         >
-                            {t('common.delete')}
+                            {t('common.save')}
                         </Button>
-                    )}
-                    <Button
-                        variant="primary"
-                        type="submit"
-                        disabled={!(isDirty || !existingApplication)}
-                    >
-                        {t('common.save')}
-                    </Button>
-                </Fragment>}
+                    </div>
+                }
             >
                 <section className={styles.eventForm}>
                     <div className={`${styles.formGroup}`}>
@@ -715,6 +843,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											onDateChange={onChange}
 											minTime={minTime}
 											maxTime={maxTime}
+											allowPastDates={existingApplication !== undefined}
+											showDebug={isDevMode()}
 										/>
 
 
@@ -744,6 +874,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											onDateChange={onChange}
 											minTime={minTime}
 											maxTime={maxTime}
+											allowPastDates={existingApplication !== undefined}
+											showDebug={isDevMode()}
 										/>
                                         {errors.end &&
                                             <span className={styles.error}>{errors.end.message}</span>}
@@ -817,7 +949,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                         />
                     </div>
 
-                    <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+                    <div className={`${styles.formGroup}`} style={{gridColumn: 1}} ref={participantsSectionRef}>
                         <div className={styles.resourcesHeader}
                              style={{flexDirection: 'column', alignItems: 'flex-start'}}>
                             <h4>{t('bookingfrontend.estimated number of participants')}</h4>
@@ -838,11 +970,18 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                             type="number"
                                             label={agegroup.name}
                                             {...field}
-                                            value={field.value}
+                                            value={field.value === 0 ? '' : field.value}
+                                            placeholder="0"
                                             min={0}
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
                                             description={agegroup.description}
-                                            onChange={(e) => field.onChange(Number(e.target.value))}
+                                            onChange={(e) => {
+                                                const value = e.target.value === '' ? 0 : Number(e.target.value);
+                                                field.onChange(value);
+                                            }}
                                             error={errors.agegroups?.[0]?.message ? t(errors.agegroups?.[0]?.message) : undefined}
+                                            className={styles.participantInput}
                                         />
                                     )}
                                 />

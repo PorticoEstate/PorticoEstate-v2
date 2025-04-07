@@ -22,7 +22,7 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
 
 	// Get start and end dates for initial free time slots
 	const startDate = initialDate.startOf('week');
-	const endDate = startDate.plus({ weeks: 2 }); // Fetch 2 weeks initially
+	const endDate = startDate.plus({ weeks: 1 }); // Fetch 2 weeks initially
 
 	try {
         const [initialFreeTime, building, buildingResources, seasons] = await Promise.all([

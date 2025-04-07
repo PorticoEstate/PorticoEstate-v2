@@ -247,6 +247,13 @@ class Resource
     public $description_json;
 
     /**
+     * @ORM\Column(type="smallint", nullable=true)
+     * @Expose
+     * @OA\Property(description="Whether to deny application if resource is already booked", type="integer", nullable=true)
+     */
+    public $deny_application_if_booked;
+
+    /**
      * @ORM\Column(type="integer", nullable=true)
      * @Expose
      * @Short

@@ -1,7 +1,5 @@
 'use client'
 import {FC, useMemo, useState} from 'react';
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faMapPin} from "@fortawesome/free-solid-svg-icons";
 import styles from './map-modal.module.scss'
 import {Button} from "@digdir/designsystemet-react";
 import MobileDialog from "@/components/dialog/mobile-dialog";

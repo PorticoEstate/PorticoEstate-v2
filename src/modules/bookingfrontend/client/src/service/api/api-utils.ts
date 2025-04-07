@@ -188,6 +188,17 @@ export async function fetchSearchDataClient(): Promise<ISearchDataOptimized> {
 	return result;
 }
 
+/**
+ * Fetches just the towns array from the API
+ * @returns Promise with an array of ISearchDataTown objects
+ */
+export async function fetchTowns(): Promise<ISearchDataTown[]> {
+	const url = phpGWLink(['bookingfrontend', 'towns']);
+	const response = await fetch(url);
+	const result = await response.json();
+	return result;
+}
+
 export async function fetchInvoices(): Promise<ICompletedReservation[]> {
     const url = phpGWLink(['bookingfrontend', 'invoices']);
     const response = await fetch(url);

@@ -1,40 +1,51 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
-import {useSearchData} from "@/service/hooks/api-hooks";
+import {useSearchData, useTowns} from "@/service/hooks/api-hooks";
 import {IBuilding} from "@/service/types/Building";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
 import styles from './resource-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
-import {ISearchDataBuilding, ISearchDataOptimized, ISearchResource} from '@/service/types/api/search.types';
+import {ISearchDataBuilding, ISearchDataOptimized, ISearchDataTown, ISearchResource} from '@/service/types/api/search.types';
 import ResourceResultItem from "@/components/search/resource/resource-result-item";
 
 interface ResourceSearchProps {
 	initialSearchData?: ISearchDataOptimized;
+	initialTowns?: ISearchDataTown[];
 }
 
 // Interface for localStorage search state
 interface StoredSearchState {
   textSearchQuery: string;
   date: string;
-  where: string;
+  where: number | '';
   timestamp: number;
 }
 
 const STORAGE_KEY = 'resource_search_state';
 const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
+const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTowns }) => {
     // Initialize state for search filters
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
     const [date, setDate] = useState<Date>(new Date());
-    const [where, setWhere] = useState<IBuilding['district'] | ''>('');
+    const [where, setWhere] = useState<number | ''>('');
 
     // Fetch all search data, using initialSearchData as default
-    const {data: searchData, isLoading, error} = useSearchData({
+    const {data: searchData, isLoading: isLoadingSearch, error: searchError} = useSearchData({
         initialData: initialSearchData
     });
+
+    // Fetch towns data separately using the dedicated endpoint
+    const {data: townsData, isLoading: isLoadingTowns, error: townsError} = useTowns({
+        initialData: initialTowns
+    });
+
     const t = useTrans();
+
+    // Determine overall loading and error state
+    const isLoading = isLoadingSearch || isLoadingTowns;
+    const error = searchError || townsError;
 
     // Load saved search state from localStorage on initial render
     useEffect(() => {
@@ -52,7 +63,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
                         if (parsedState.date) {
                             setDate(new Date(parsedState.date));
                         }
-                        setWhere(parsedState.where as IBuilding['district'] | '');
+                        setWhere(parsedState.where);
                     } else {
                         // Remove expired state
                         localStorage.removeItem(STORAGE_KEY);
@@ -65,16 +76,14 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
         }
     }, []);
 
-    // Extract unique districts from buildings
-    const districts = useMemo(() => {
-        if (!searchData?.buildings) return [];
+    // Get towns list from dedicated towns endpoint
+    const towns = useMemo(() => {
+        if (!townsData) return [];
 
-        const uniqueDistricts = Array.from(
-            new Set(searchData.buildings.map(building => building.district))
-        ).filter(Boolean);
-
-        return uniqueDistricts.sort();
-    }, [searchData?.buildings]);
+        // Towns array already contains unique towns with id and name
+        // Sort by name for display in dropdown
+        return [...townsData].sort((a, b) => a.name.localeCompare(b.name));
+    }, [townsData]);
 
     // Combine resources with their buildings
     const resourcesWithBuildings = useMemo(() => {
@@ -116,9 +125,9 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
         const resourceName = resource.name.toLowerCase();
         const buildingName = resource.building?.name?.toLowerCase() || '';
         const queryLower = query.toLowerCase();
-        
+
         // Find matching activity for this resource
-        const activityName = searchData?.activities.find(activity => 
+        const activityName = searchData?.activities.find(activity =>
             activity.id === resource.activity_id
         )?.name.toLowerCase() || '';
 
@@ -177,14 +186,14 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
             filtered = filtered.filter(resource => {
                 const resourceNameMatch = resource.name.toLowerCase().includes(query);
                 const buildingNameMatch = resource.building?.name?.toLowerCase().includes(query);
-                
+
                 // Find activity for this resource and check if it matches the query
-                const activityMatch = resource.activity_id ? 
-                    searchData?.activities.find(activity => 
-                        activity.id === resource.activity_id && 
+                const activityMatch = resource.activity_id ?
+                    searchData?.activities.find(activity =>
+                        activity.id === resource.activity_id &&
                         activity.name.toLowerCase().includes(query)
                     ) : null;
-                
+
                 return resourceNameMatch || buildingNameMatch || !!activityMatch;
             });
 
@@ -196,16 +205,21 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
             });
         }
 
-        // District filter
+        // Town filter - using building's town_id to filter
         if (where) {
-            filtered = filtered.filter(resource => resource.building?.district === where);
+            const townId = Number(where);
+
+            // Filter resources by buildings that have the selected town_id
+            filtered = filtered.filter(resource =>
+                resource.building && resource.building.town_id === townId
+            );
         }
 
         // Date availability filter would go here
         // For now, we're not implementing date filtering logic
 
         return filtered;
-    }, [resourcesWithBuildings, textSearchQuery, where]);
+    }, [resourcesWithBuildings, textSearchQuery, where, searchData?.towns]);
 
     // Handle date selection
     const handleDateChange = (newDate: Date | null) => {
@@ -288,18 +302,18 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
                         </Field>
                     </div>
 
-                    <div className={styles.districtFilter}>
+                    <div className={styles.townFilter}>
                         <Field>
                             <Label>{t('bookingfrontend.where')}</Label>
                             <Select
                                 value={where}
-                                onChange={(e) => setWhere(e.target.value)}
+                                onChange={(e) => setWhere(e.target.value ? +e.target.value : '')}
                             >
 
                                 <Select.Option value="">{t('booking.all')}</Select.Option>
-                                {districts.map(district => (
-                                    <Select.Option key={district} value={district}>
-                                        {district}
+                                {towns.map(town => (
+                                    <Select.Option key={town.id} value={town.id.toString()}>
+                                        {town.name}
                                     </Select.Option>
                                 ))}
                             </Select>
@@ -318,7 +332,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData }) => {
                             )}
                             {where && (
                                 <Chip.Removable data-color="brand1" onClick={() => setWhere('')}>
-                                    {t('bookingfrontend.town part')}: {where}
+                                    {t('bookingfrontend.town part')}: {towns.find(town => town.id === Number(where))?.name || ''}
                                 </Chip.Removable>
                             )}
                             <Button

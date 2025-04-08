@@ -2,13 +2,14 @@ import { useEffect, RefObject } from 'react';
 import { Dimensions } from './types';
 import { formatEventTime } from "@/service/util";
 import { FCallEvent, FCEventContentArg } from "@/components/building-calendar/building-calendar.types";
-import { determineLayoutType, setupCanvas } from './utils';
+import { determineLayoutType, setupCanvas, drawDebugOutline } from './utils';
 import { 
   renderTime, 
   renderTitle, 
   renderOrganizer, 
   renderResources 
 } from './renderers';
+import { DEBUG_CANVAS_DIMENSIONS, DEBUG_CANVAS_VISUAL } from './useCanvasDimensions';
 
 interface UseCanvasRenderParams {
   canvasRef: RefObject<HTMLCanvasElement>;
@@ -51,6 +52,16 @@ export function useCanvasRender({
     // Setup canvas with proper dimensions
     const actualDimensions = setupCanvas(canvas, containerWidth, containerHeight, devicePixelRatio);
     
+    if (DEBUG_CANVAS_DIMENSIONS) {
+      console.log(`Canvas render triggered:`, {
+        eventTitle: eventInfo.event.title,
+        eventId: eventInfo.event.id,
+        containerSize: { width: containerWidth, height: containerHeight },
+        actualDimensions,
+        devicePixelRatio
+      });
+    }
+    
     // Scale for high DPI displays
     ctx.scale(devicePixelRatio, devicePixelRatio);
     
@@ -62,10 +73,7 @@ export function useCanvasRender({
     ctx.clearRect(0, 0, actualDimensions.width, actualDimensions.height);
     
     // Determine layout based on container height
-    const layoutType = determineLayoutType(actualDimensions.height);
-    
-    // Basic styling
-    const paddingTop = 2;
+    const { layoutType, components, layoutConfig } = determineLayoutType(actualDimensions.height);
     
     // Get event data
     const eventData = eventInfo.event.extendedProps.source;
@@ -82,23 +90,72 @@ export function useCanvasRender({
       dimensions: actualDimensions,
       colours,
       layoutType,
+      layoutComponents: components,
+      layoutConfig, // Pass the full layout configuration
       devicePixelRatio
     };
     
-    // Draw time
-    let yPos = paddingTop + 12;
+    if (DEBUG_CANVAS_DIMENSIONS) {
+      console.log(`Canvas rendering components for event "${eventInfo.event.title}"`, {
+        eventId: eventInfo.event.id,
+        enabledComponents: components,
+        layout: layoutType,
+        actualDimensions,
+        hasResources: !!eventInfo.event.extendedProps.source.resources?.length
+      });
+    }
+    
+    // Start from the top of the canvas
+    let yPos = 0;
+    
+    // Draw time (includes its own internal padding)
     const { yPos: newYPos, displayTime } = renderTime(drawContext, timeText, yPos);
     yPos = newYPos;
     
-    // Draw title
+    // Draw title (includes its own internal padding)
     yPos = renderTitle(drawContext, eventInfo.event.title, displayTime, yPos);
     
-    // Draw organizer
+    // Draw organizer (includes its own internal padding)
     yPos = renderOrganizer(drawContext, eventData, yPos);
     
     // Draw resources
     const resources = eventInfo.event.extendedProps.source.resources;
-    renderResources(drawContext, resources, yPos, timeText, eventInfo.event.title);
+    
+    // Calculate available space for resources based on layout configuration
+    const isSideBySide = layoutConfig.sideBySideComponents?.time_resourceCircles === true;
+    
+    // If rendering side-by-side with time, adjust the available space
+    let resourcesX = 0;
+    let resourcesWidth = dimensions.width;
+    
+    if (isSideBySide && components.includes('time')) {
+      // When side-by-side, resource circles start after the time component
+      resourcesX = 35; // Time component takes 35px
+      resourcesWidth = dimensions.width - resourcesX;
+      
+      if (DEBUG_CANVAS_DIMENSIONS) {
+        console.log(`Adjusting resources space for side-by-side rendering`, {
+          totalWidth: dimensions.width,
+          timeWidth: 35,
+          resourcesX,
+          resourcesWidth
+        });
+      }
+    }
+    
+    renderResources(drawContext, resources, yPos, timeText, eventInfo.event.title, resourcesX, resourcesWidth);
+    
+    // Draw overall canvas debug outline
+    if (DEBUG_CANVAS_VISUAL) {
+      drawDebugOutline(
+        ctx, 
+        `${layoutType} (${actualDimensions.width}x${actualDimensions.height})`,
+        0, 
+        0, 
+        actualDimensions.width, 
+        actualDimensions.height
+      );
+    }
     
   }, [canvasRef, containerRef, eventInfo, colours, fontLoaded, dimensions.width, dimensions.height]);
 }

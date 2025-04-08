@@ -1,6 +1,10 @@
 import { useEffect, useState, RefObject } from 'react';
 import { Dimensions } from './types';
 
+// Debug flags for canvas rendering
+export const DEBUG_CANVAS_DIMENSIONS = true;
+export const DEBUG_CANVAS_VISUAL = true; // Enable visual debug outlines and labels
+
 /**
  * Hook to manage canvas dimensions and handle resizing
  */
@@ -26,6 +30,14 @@ export function useCanvasDimensions(
 
       // Only update if dimensions have actually changed
       if (width !== dimensions.width || height !== dimensions.height) {
+        if (DEBUG_CANVAS_DIMENSIONS) {
+          console.log(`Canvas resize: ${width}x${height}`, {
+            container: container.className,
+            containerSize: { w: container.offsetWidth, h: container.offsetHeight },
+            boundingRect: rect,
+            eventId: container.querySelector('.fc-event-title')?.textContent
+          });
+        }
         setDimensions({ width, height });
       }
     };

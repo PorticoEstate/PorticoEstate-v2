@@ -1,23 +1,101 @@
-import { CanvasDrawContext, Dimensions, LayoutType } from "./types";
+import { CanvasDrawContext, Dimensions, LayoutType, LayoutRule, ComponentType } from "./types";
 import { FCallEvent, FCEventContentArg } from "@/components/building-calendar/building-calendar.types";
+import { DEBUG_CANVAS_DIMENSIONS, DEBUG_CANVAS_VISUAL } from './useCanvasDimensions';
 
 /**
- * Determines the layout type based on container height
+ * Configurable layout rules
+ * - Order matters! Rules are evaluated in order, first match wins
+ * - maxHeight is the maximum container height for the rule to apply
+ * - components lists which elements should be rendered in this layout
  */
-export function determineLayoutType(height: number): LayoutType {
-  if (height <= 30) return 'minimal';
-  if (height <= 50) return 'short';
-  if (height <= 75) return 'medium';
-  if (height <= 100) return 'standard';
-  return 'large';
+export const LAYOUT_RULES: LayoutRule[] = [
+  {
+    name: 'minimal',
+    maxHeight: 30,
+    components: ['time', 'resourceCircles'],
+    description: 'Very compact view with time and resource circles side by side',
+    sideBySideComponents: {
+      time_resourceCircles: true // Time and resource circles should render side-by-side
+    }
+  },
+  {
+    name: 'short',
+    maxHeight: 50,
+    components: ['time', 'resourceCircles'],
+    description: 'Compact view with time and resource indicators side by side',
+    sideBySideComponents: {
+      time_resourceCircles: false // Components should stack vertically
+    }
+  },
+  {
+    name: 'medium',
+    maxHeight: 75,
+    components: ['time', 'title', 'resourceCircles'],
+    description: 'Medium view with time, title and resource indicators',
+    sideBySideComponents: {
+      time_resourceCircles: false // Components should stack vertically
+    }
+  },
+  {
+    name: 'standard',
+    maxHeight: 100,
+    components: ['time', 'title', 'organizer', 'resourceCircles'],
+    description: 'Standard view with time, title, organizer and resource indicators',
+    sideBySideComponents: {
+      time_resourceCircles: false // Components should stack vertically
+    }
+  },
+  {
+    name: 'large',
+    maxHeight: Infinity,
+    components: ['time', 'title', 'organizer', 'resourceList'],
+    description: 'Large view with all components and full resource list',
+    sideBySideComponents: {
+      time_resourceCircles: false // Components should stack vertically
+    }
+  }
+];
+
+/**
+ * Determines the layout rule based on container height
+ * Returns the rule name, components to display, and the full layout configuration
+ */
+export function determineLayoutType(height: number): { layoutType: LayoutType, components: ComponentType[], layoutConfig: LayoutRule } {
+  // Find the first rule that matches the height
+  const rule = LAYOUT_RULES.find(rule => height <= rule.maxHeight);
+
+  // Default to the last rule if none match (shouldn't happen with Infinity)
+  const selectedRule = rule || LAYOUT_RULES[LAYOUT_RULES.length - 1];
+
+  if (DEBUG_CANVAS_DIMENSIONS) {
+    console.log(`Layout determined: ${selectedRule.name}`, {
+      height,
+      selectedComponents: selectedRule.components,
+      description: selectedRule.description,
+      sideBySideConfig: selectedRule.sideBySideComponents || {},
+      allRules: LAYOUT_RULES.map(r => ({
+        name: r.name,
+        maxHeight: r.maxHeight === Infinity ? '∞' : r.maxHeight,
+        components: r.components.join(', '),
+        description: r.description,
+        sideBySideComponents: r.sideBySideComponents || {}
+      }))
+    });
+  }
+
+  return {
+    layoutType: selectedRule.name,
+    components: selectedRule.components,
+    layoutConfig: selectedRule
+  };
 }
 
 /**
  * Sets up the canvas with proper dimensions and scaling
  */
 export function setupCanvas(
-  canvas: HTMLCanvasElement, 
-  containerWidth: number, 
+  canvas: HTMLCanvasElement,
+  containerWidth: number,
   containerHeight: number,
   devicePixelRatio: number
 ): Dimensions {
@@ -41,9 +119,9 @@ export function setupCanvas(
  */
 export function drawTruncatedText(
   ctx: CanvasRenderingContext2D,
-  text: string, 
-  x: number, 
-  y: number, 
+  text: string,
+  x: number,
+  y: number,
   maxWidth: number
 ): void {
   if (!text) return;
@@ -102,8 +180,8 @@ export function drawTruncatedText(
  */
 export function drawRemainingCount(
   ctx: CanvasRenderingContext2D,
-  count: number, 
-  x: number, 
+  count: number,
+  x: number,
   y: number
 ): void {
   // Ensure exact same center point as resource circles
@@ -130,4 +208,34 @@ export function drawRemainingCount(
   // Draw each element
   ctx.fillText(plus, plusX, centerY);
   ctx.fillText(countText, countX, centerY + 1);
+}
+
+/**
+ * Draws a debug outline and label for a component
+ */
+export function drawDebugOutline(
+  ctx: CanvasRenderingContext2D,
+  componentName: string,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): void {
+  if (!DEBUG_CANVAS_VISUAL) return;
+
+  // Save current context state
+  ctx.save();
+
+  // Draw outline
+  ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x, y, width, height);
+
+  // Draw component name
+  ctx.font = '10px Arial';
+  ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+  ctx.fillText(componentName, x + 3, y + 10);
+
+  // Restore context state
+  ctx.restore();
 }

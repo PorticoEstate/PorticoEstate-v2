@@ -425,38 +425,44 @@ class LocationHierarchyAnalyzer
     {
         // Map each street number to its standard loc3 value for the building
         $streetNumberToStandardLoc3 = [];
-        
+
         // First pass - establish the standard loc3 for each street number by finding most common usage
-        foreach ($this->locationData as $entry) {
+        foreach ($this->locationData as $entry)
+        {
             $loc1 = $entry['loc1'];
             $loc2 = $entry['loc2'];
             $loc3 = $entry['loc3'];
             $streetNumber = $entry['street_number'];
-            
-            if (!isset($streetNumberToStandardLoc3[$loc1][$streetNumber])) {
+
+            if (!isset($streetNumberToStandardLoc3[$loc1][$streetNumber]))
+            {
                 $streetNumberToStandardLoc3[$loc1][$streetNumber] = [
                     'loc3_values' => [],
                     'standard_loc3' => null
                 ];
             }
-            
-            if (!isset($streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3])) {
+
+            if (!isset($streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3]))
+            {
                 $streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3] = 0;
             }
-            
+
             $streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3]++;
         }
-        
+
         // Determine the standard loc3 for each street number (the most frequently used one)
-        foreach ($streetNumberToStandardLoc3 as $loc1 => &$streetNumbers) {
-            foreach ($streetNumbers as $streetNumber => &$data) {
+        foreach ($streetNumberToStandardLoc3 as $loc1 => &$streetNumbers)
+        {
+            foreach ($streetNumbers as $streetNumber => &$data)
+            {
                 arsort($data['loc3_values']); // Sort by frequency, most common first
                 $data['standard_loc3'] = key($data['loc3_values']);
             }
         }
-        
+
         // Second pass - find and flag inconsistencies
-        foreach ($this->locationData as $entry) {
+        foreach ($this->locationData as $entry)
+        {
             $loc1 = $entry['loc1'];
             $loc2 = $entry['loc2'];
             $loc3 = $entry['loc3'];
@@ -464,10 +470,11 @@ class LocationHierarchyAnalyzer
             $streetNumber = $entry['street_number'];
             $streetId = $entry['street_id'];
             $bygningsnr = $entry['bygningsnr'];
-            
+
             $standardLoc3 = $streetNumberToStandardLoc3[$loc1][$streetNumber]['standard_loc3'];
-            
-            if ($loc3 !== $standardLoc3) {
+
+            if ($loc3 !== $standardLoc3)
+            {
                 $this->issues[] = [
                     'type' => 'inconsistent_street_number_loc3',
                     'loc1' => $loc1,
@@ -479,12 +486,12 @@ class LocationHierarchyAnalyzer
                     'bygningsnr' => $bygningsnr,
                     'correct_loc3' => $standardLoc3
                 ];
-                
+
                 $this->suggestions[] = "Location code '{$loc1}-{$loc2}-{$loc3}-{$loc4}' with street number '{$streetNumber}' should use loc3='{$standardLoc3}' instead of '{$loc3}'";
             }
         }
     }
-    
+
     /**
      * Generate SQL statements for the example dataset with inconsistent loc3 values
      * 
@@ -494,12 +501,14 @@ class LocationHierarchyAnalyzer
     {
         $sqlLoc4 = [];
         $sqlCorrections = [];
-        
+
         // Process issues of type 'inconsistent_street_number_loc3'
         $processedLocationCodes = [];
-        
-        foreach ($this->issues as $issue) {
-            if ($issue['type'] === 'inconsistent_street_number_loc3') {
+
+        foreach ($this->issues as $issue)
+        {
+            if ($issue['type'] === 'inconsistent_street_number_loc3')
+            {
                 $loc1 = $issue['loc1'];
                 $loc2 = $issue['loc2'];
                 $oldLoc3 = $issue['loc3'];
@@ -508,21 +517,21 @@ class LocationHierarchyAnalyzer
                 $streetId = $issue['street_id'];
                 $streetNumber = $issue['street_number'];
                 $bygningsnr = $issue['bygningsnr'];
-                
+
                 $oldLocationCode = "{$loc1}-{$loc2}-{$oldLoc3}-{$loc4}";
                 $newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
-                
+
                 // Skip if already processed
                 if (isset($processedLocationCodes[$oldLocationCode])) continue;
                 $processedLocationCodes[$oldLocationCode] = true;
-                
+
                 // Generate SQL for fm_location4 update
                 $sqlLoc4[] = "-- Update fm_location4 entry: {$oldLocationCode} -> {$newLocationCode}";
                 $sqlLoc4[] = "UPDATE fm_location4 
                               SET location_code = '{$newLocationCode}', 
                                   loc3 = '{$newLoc3}' 
                               WHERE location_code = '{$oldLocationCode}';";
-                
+
                 // Generate SQL for location_mapping
                 $sqlCorrections[] = "INSERT INTO location_mapping (
                                       old_location_code, new_location_code, loc1, 
@@ -536,7 +545,7 @@ class LocationHierarchyAnalyzer
                                   );";
             }
         }
-        
+
         return [
             'location4_updates' => $sqlLoc4,
             'corrections' => $sqlCorrections

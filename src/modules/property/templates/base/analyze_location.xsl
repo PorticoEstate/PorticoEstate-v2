@@ -10,6 +10,7 @@
 	<xsl:variable name="lang_suggestions">Suggestions</xsl:variable>
 	<xsl:variable name="lang_sql_statements">SQL Statements</xsl:variable>
 	<xsl:variable name="lang_loc1_input">Enter loc1 (optional):</xsl:variable>
+	<xsl:variable name="lang_next_location">Next Location</xsl:variable>
 	<div class="pure-form pure-form-aligned">
 		<div class="pure-control-group">
 			<label>
@@ -28,8 +29,19 @@
 				<button type="submit" class="pure-button pure-button-primary">
 					<xsl:value-of select="$lang_run_analysis" />
 				</button>
+				<button type="button" class="pure-button" onclick="incrementAndSubmit()">
+					<xsl:value-of select="$lang_next_location" />
+				</button>
 			</div>
 		</form>
+		<script>
+			function incrementAndSubmit() {
+				var loc1Input = document.getElementById('loc1');
+				var currentValue = parseInt(loc1Input.value) || 0;
+				loc1Input.value = currentValue + 1;
+				loc1Input.form.submit();
+			}
+		</script>
 		<xsl:if test="analysis_ran = true()">
 			<div class="pure-control-group">
 				<h3>
@@ -111,7 +123,7 @@
 						</xsl:for-each>
 					</table>
 				</xsl:if>
-				<xsl:if test="not(issues/issue)">
+				<xsl:if test="not(issues)">
 					<p>No issues found.</p>
 				</xsl:if>
 				<!-- Display Suggestions -->

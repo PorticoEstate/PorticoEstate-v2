@@ -564,6 +564,254 @@ class LocationHierarchyAnalyzer
 		];
 	}
 
+	/**
+	 * Generate SQL statements for fixing non-sequential loc3 values
+	 * 
+	 * @return array SQL statements for corrections
+	 */
+	public function generateCorrectionsNonSequentialLoc3()
+	{
+		$sqlLoc4 = [];
+		$sqlCorrections = [];
+		$sqlLoc3 = []; // Add array for fm_location3 inserts
+		$processedLocationCodes = [];
+		$processedLoc3 = []; // Track processed loc3 entries
+		
+		// Group all entries by loc1 and loc2
+		$entriesByLoc1Loc2 = [];
+		foreach ($this->locationData as $entry) {
+			$loc1 = $entry['loc1'];
+			$loc2 = $entry['loc2'];
+			
+			if (!isset($entriesByLoc1Loc2[$loc1][$loc2])) {
+				$entriesByLoc1Loc2[$loc1][$loc2] = [];
+			}
+			
+			$entriesByLoc1Loc2[$loc1][$loc2][] = $entry;
+		}
+		
+		// Find all loc1/loc2 combinations with non-sequential loc3 issues
+		$loc1Loc2WithIssues = [];
+		foreach ($this->issues as $issue) {
+			if ($issue['type'] === 'non_sequential_loc3') {
+				$loc1 = $issue['loc1'];
+				$loc2 = $issue['loc2'];
+				$loc1Loc2WithIssues["{$loc1}-{$loc2}"] = [
+					'loc1' => $loc1,
+					'loc2' => $loc2
+				];
+			}
+		}
+		
+		// Process each loc1/loc2 combination with issues
+		foreach ($loc1Loc2WithIssues as $key => $location) {
+			$loc1 = $location['loc1'];
+			$loc2 = $location['loc2'];
+			
+			if (!isset($entriesByLoc1Loc2[$loc1][$loc2])) {
+				continue; // Skip if no entries found
+			}
+			
+			 // First, group entries by street address (street_id + street_number)
+			$entriesByStreetAddress = [];
+			foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $entry) {
+				$streetKey = "{$entry['street_id']}_{$entry['street_number']}";
+				if (!isset($entriesByStreetAddress[$streetKey])) {
+					$entriesByStreetAddress[$streetKey] = [
+						'street_id' => $entry['street_id'],
+						'street_number' => $entry['street_number'],
+						'entries' => []
+					];
+				}
+				$entriesByStreetAddress[$streetKey]['entries'][] = $entry;
+			}
+			
+			// Sort street keys for consistent ordering
+			ksort($entriesByStreetAddress);
+			
+			// Now assign sequential loc3 values to each unique street address
+			$newLoc3Index = 1;
+			$streetToLoc3Map = []; // Map each street address to its new loc3 value
+			
+			foreach ($entriesByStreetAddress as $streetKey => $streetData) {
+				$newLoc3 = str_pad($newLoc3Index++, 2, '0', STR_PAD_LEFT);
+				$streetToLoc3Map[$streetKey] = $newLoc3;
+				
+				// Get street details for the loc3 name
+				$streetId = $streetData['street_id'];
+				$streetNumber = $streetData['street_number'];
+				$streetName = $this->get_street_name($streetId);
+				$fullAddress = "{$streetName} {$streetNumber}";
+				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}";
+				
+				// Skip if already processed
+				if (isset($processedLoc3[$newLocationCode])) continue;
+				$processedLoc3[$newLocationCode] = true;
+				
+				 // Check if this loc3 already exists in the database
+				$loc3Exists = isset($this->loc3References[$loc1][$loc2][$newLoc3]);
+				
+				// Only create new loc3 entries if they don't already exist
+				if (!$loc3Exists) {
+					$sqlLoc3[] = "-- Create new fm_location3 entry: {$newLocationCode} for {$fullAddress}";
+					$sqlLoc3[] = "INSERT INTO fm_location3 (location_code, loc1, loc2, loc3, loc3_name) 
+								VALUES ('{$newLocationCode}', '{$loc1}', '{$loc2}', '{$newLoc3}', '{$fullAddress}')
+								ON CONFLICT (loc1, loc2, loc3) DO NOTHING;";
+				}
+			 }
+			
+			// Now update each loc4 entry to use the new loc3 associated with its street address
+			foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $entry) {
+				$oldLoc3 = $entry['loc3'];
+				$loc4 = $entry['loc4'];
+				 $streetId = $entry['street_id'];
+				$streetNumber = $entry['street_number'];
+				$bygningsnr = $entry['bygningsnr'];
+				
+				$streetKey = "{$streetId}_{$streetNumber}";
+				
+				// Skip if we don't have a mapping for this street address
+				if (!isset($streetToLoc3Map[$streetKey])) {
+					continue;
+				}
+				
+				$newLoc3 = $streetToLoc3Map[$streetKey];
+				$oldLocationCode = "{$loc1}-{$loc2}-{$oldLoc3}-{$loc4}";
+				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
+				
+				// Skip if the location code doesn't change or already processed
+				if ($oldLocationCode === $newLocationCode || isset($processedLocationCodes[$oldLocationCode])) {
+					continue;
+				}
+				
+				$processedLocationCodes[$oldLocationCode] = true;
+				
+				// Generate SQL for fm_location4 update
+				$sqlLoc4[] = "-- Update fm_location4 entry: {$oldLocationCode} -> {$newLocationCode}";
+				$sqlLoc4[] = "UPDATE fm_location4 
+							SET location_code = '{$newLocationCode}', 
+								loc3 = '{$newLoc3}' 
+							WHERE location_code = '{$oldLocationCode}';";
+				
+				// Generate SQL for location_mapping
+				$sqlCorrections[] = "INSERT INTO location_mapping (
+									old_location_code, new_location_code, loc1, 
+									old_loc2, new_loc2, old_loc3, new_loc3, 
+									loc4, bygningsnr, street_id, street_number, change_type
+								) VALUES (
+									'{$oldLocationCode}', '{$newLocationCode}', '{$loc1}', 
+									'{$loc2}', '{$loc2}', '{$oldLoc3}', '{$newLoc3}', 
+									'{$loc4}', {$bygningsnr}, {$streetId}, '{$streetNumber}', 
+									'location_hierarchy_update'
+								);";
+			}
+		}
+		
+		return [
+			'location4_updates' => $sqlLoc4,
+			'corrections' => $sqlCorrections,
+			'location3_updates' => $sqlLoc3
+		];
+	}
+
+	/**
+	 * Generate SQL statements for fixing insufficient loc3 values
+	 * 
+	 * @return array SQL statements for creating missing loc3 entries
+	 */
+	public function generateCorrectionsInsufficientLoc3()
+	{
+		$sqlLoc3 = [];
+		
+		// Group all entries by loc1 and loc2
+		$streetsByLoc1Loc2 = [];
+		foreach ($this->locationData as $entry) {
+			$loc1 = $entry['loc1'];
+			$loc2 = $entry['loc2'];
+			$streetId = $entry['street_id'];
+			$streetNumber = $entry['street_number'];
+			
+			$streetKey = "{$streetId}_{$streetNumber}";
+			
+			if (!isset($streetsByLoc1Loc2[$loc1][$loc2])) {
+				$streetsByLoc1Loc2[$loc1][$loc2] = [];
+			}
+			
+			if (!isset($streetsByLoc1Loc2[$loc1][$loc2][$streetKey])) {
+				$streetsByLoc1Loc2[$loc1][$loc2][$streetKey] = [
+					'street_id' => $streetId,
+					'street_number' => $streetNumber
+				];
+			}
+		}
+		
+		// Find all loc1/loc2 combinations with insufficient_loc3 issues
+		foreach ($this->issues as $issue) {
+			if ($issue['type'] === 'insufficient_loc3') {
+				$loc1 = $issue['loc1'];
+				$loc2 = $issue['loc2'];
+				
+				if (!isset($streetsByLoc1Loc2[$loc1][$loc2])) {
+					continue; // Skip if no entries found
+				}
+				
+				// Find existing loc3 values to avoid duplicates
+				$existingLoc3Values = [];
+				foreach ($this->loc3References[$loc1][$loc2] ?? [] as $loc3 => $data) {
+					$existingLoc3Values[$loc3] = true;
+				}
+				
+				// Generate sequential loc3 values starting from max existing + 1
+				$maxLoc3 = 0;
+				if (!empty($existingLoc3Values)) {
+					$maxLoc3 = max(array_map('intval', array_keys($existingLoc3Values)));
+				}
+				
+				$nextLoc3 = $maxLoc3 + 1;
+				
+				// Sort street keys to ensure consistent ordering
+				ksort($streetsByLoc1Loc2[$loc1][$loc2]);
+				
+				// Create missing loc3 entries for each unique street
+				foreach ($streetsByLoc1Loc2[$loc1][$loc2] as $streetKey => $streetData) {
+					// Check if we already have a loc3 that references this street
+					$hasLoc3ForStreet = false;
+					foreach ($this->locationData as $entry) {
+						if ($entry['loc1'] === $loc1 && 
+							$entry['loc2'] === $loc2 && 
+							$entry['street_id'] === $streetData['street_id'] && 
+							$entry['street_number'] === $streetData['street_number']) {
+							$hasLoc3ForStreet = true;
+							break;
+						}
+					}
+					
+					// Skip if already has a loc3
+					if ($hasLoc3ForStreet) {
+						continue;
+					}
+					
+					$newLoc3 = str_pad($nextLoc3++, 2, '0', STR_PAD_LEFT);
+					$streetId = $streetData['street_id'];
+					$streetNumber = $streetData['street_number'];
+					$streetName = $this->get_street_name($streetId);
+					$fullAddress = "{$streetName} {$streetNumber}";
+					$locationCode = "{$loc1}-{$loc2}-{$newLoc3}";
+					
+					// Generate SQL for fm_location3 insert
+					$sqlLoc3[] = "-- Create missing loc3 entry for {$loc1}-{$loc2}, street: {$fullAddress}";
+					$sqlLoc3[] = "INSERT INTO fm_location3 (location_code, loc1, loc2, loc3, loc3_name) 
+								VALUES ('{$locationCode}', '{$loc1}', '{$loc2}', '{$newLoc3}', '{$fullAddress}')
+								ON CONFLICT (loc1, loc2, loc3) DO NOTHING;";
+				}
+			}
+		}
+		
+		return [
+			'missing_loc3' => $sqlLoc3
+		];
+	}
+
 	private function generateStatistics()
 	{
 		$statistics = [
@@ -799,16 +1047,26 @@ class LocationHierarchyAnalyzer
 		}
 
 		// Handle existing issues (conflicting_loc3, insufficient_loc3, etc.)
-		$inconsistent_street_number_loc3 =  $this->generateCorrectionsInconsistent_street_number_loc3();
+		$inconsistent_street_number_loc3 = $this->generateCorrectionsInconsistent_street_number_loc3();
+		$non_sequential_loc3 = $this->generateCorrectionsNonSequentialLoc3();
+		$insufficient_loc3 = $this->generateCorrectionsInsufficientLoc3();
 
 		if ($returnAsArray)
 		{
 			return [
 				'schema' => $sqlSchema,
 				'missing_loc2' => $sqlLoc2,
-				'missing_loc3' => $sqlLoc3,
-				'corrections' => array_merge($sqlCorrections, $inconsistent_street_number_loc3['corrections']),
-				'location4_updates' => array_merge($sqlLoc4, $inconsistent_street_number_loc3['location4_updates']),
+				'missing_loc3' => array_merge(
+					$sqlLoc3,
+					$insufficient_loc3['missing_loc3'],
+					$non_sequential_loc3['location3_updates'] ?? [] // Include loc3 updates for non-sequential issues
+				),
+				'corrections' => array_merge($sqlCorrections, 
+					$inconsistent_street_number_loc3['corrections'],
+					$non_sequential_loc3['corrections']),
+				'location4_updates' => array_merge($sqlLoc4, 
+					$inconsistent_street_number_loc3['location4_updates'],
+					$non_sequential_loc3['location4_updates']),
 			];
 		}
 	}

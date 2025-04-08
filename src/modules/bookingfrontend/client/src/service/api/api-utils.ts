@@ -8,7 +8,7 @@ import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
-import {ISearchDataOptimized} from "@/service/types/api/search.types";
+import {ISearchDataOptimized, ISearchDataTown} from "@/service/types/api/search.types";
 import {IArticle} from "@/service/types/api/order-articles.types";
 
 

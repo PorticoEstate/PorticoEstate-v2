@@ -25,7 +25,6 @@ class LocationHierarchyAnalyzer
     private $loc3References = [];
     private $issues = [];
     private $suggestions = [];
-    private $newLoc2Assignments = [];
 
     public function __construct()
     {
@@ -411,33 +410,6 @@ class LocationHierarchyAnalyzer
                 {
                     // ...existing logic for assigning new loc2 values...
                 }
-            }
-        }
-
-        // Store assignments for SQL generation
-        $this->newLoc2Assignments = $newLoc2Assignments;
-    }
-
-    private function printFindings()
-    {
-        echo "Findings:\n";
-        foreach ($this->issues as $issue)
-        {
-            if ($issue['type'] === 'missing_loc2')
-            {
-                echo "Missing loc2: loc1={$issue['loc1']}, loc2={$issue['loc2']}, bygningsnr={$issue['bygningsnr']}\n";
-            }
-            elseif ($issue['type'] === 'missing_loc3')
-            {
-                echo "Missing loc3: loc1={$issue['loc1']}, loc2={$issue['loc2']}, loc3={$issue['loc3']}, street_id={$issue['street_id']}, street_number={$issue['street_number']}\n";
-            }
-            elseif ($issue['type'] === 'conflicting_loc2')
-            {
-                echo "Conflicting loc2: loc1={$issue['loc1']}, bygningsnr={$issue['bygningsnr']}, loc2={$issue['loc2']}\n";
-            }
-            elseif ($issue['type'] === 'conflicting_loc3')
-            {
-                echo "Conflicting loc3: loc1={$issue['loc1']}, loc2={$issue['loc2']}, street_id={$issue['street_id']}, street_number={$issue['street_number']}, loc3={$issue['loc3']}\n";
             }
         }
     }

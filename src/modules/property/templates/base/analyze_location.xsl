@@ -93,6 +93,37 @@
 						</td>
 					</tr>
 				</table>
+				
+				<!-- Display Issues Summary -->
+				<h4>Issues Summary</h4>
+				<table class="pure-table pure-table-bordered">
+					<tr>
+						<th>Issue Type</th>
+						<th>Count</th>
+						<th>Description</th>
+					</tr>
+					<tr class="pure-table-odd">
+						<td>Total Issues</td>
+						<td>
+							<xsl:value-of select="statistics/total_issues" />
+						</td>
+						<td>Total number of issues found</td>
+					</tr>
+					<xsl:for-each select="statistics/issues_by_type/*">
+						<tr>
+							<td>
+								<xsl:value-of select="name()" />
+							</td>
+							<td>
+								<xsl:value-of select="." />
+							</td>
+							<td>
+								<xsl:value-of select="../../issue_descriptions/*[name() = name(current())]" />
+							</td>
+						</tr>
+					</xsl:for-each>
+				</table>
+				
 				<!-- Display Issues -->
 				<h4>
 					<xsl:value-of select="$lang_issues" />

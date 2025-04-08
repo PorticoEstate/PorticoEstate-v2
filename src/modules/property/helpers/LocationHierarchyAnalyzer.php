@@ -823,6 +823,36 @@ class LocationHierarchyAnalyzer
 			'unique_addresses' => count(array_unique(array_map(fn($entry) => "{$entry['street_id']}-{$entry['street_number']}", $this->locationData))),
 		];
 
+		// Count issues by type
+		$issueTypes = [];
+		$issueCount = 0;
+		
+		foreach ($this->issues as $issue) {
+			$type = $issue['type'];
+			if (!isset($issueTypes[$type])) {
+				$issueTypes[$type] = 0;
+			}
+			$issueTypes[$type]++;
+			$issueCount++;
+		}
+		
+		// Add issue statistics
+		$statistics['total_issues'] = $issueCount;
+		$statistics['issues_by_type'] = $issueTypes;
+		
+		// Add human-readable issue descriptions
+		$issueDescriptions = [
+			'missing_loc2_assignment' => 'Buildings missing loc2 assignment',
+			'multiple_buildings_in_loc2' => 'Multiple buildings in the same loc2',
+			'insufficient_loc2' => 'Insufficient loc2 values for buildings',
+			'conflicting_loc3' => 'Conflicting loc3 for same street address',
+			'non_sequential_loc3' => 'Non-sequential loc3 values',
+			'insufficient_loc3' => 'Insufficient loc3 values for entrances',
+			'inconsistent_street_number_loc3' => 'Inconsistent loc3 for same street number'
+		];
+		
+		$statistics['issue_descriptions'] = $issueDescriptions;
+
 		return $statistics;
 	}
 

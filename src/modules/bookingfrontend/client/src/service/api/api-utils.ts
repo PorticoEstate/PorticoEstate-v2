@@ -8,7 +8,7 @@ import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
-import {ISearchDataOptimized} from "@/service/types/api/search.types";
+import {ISearchDataOptimized, ISearchDataTown} from "@/service/types/api/search.types";
 import {IArticle} from "@/service/types/api/order-articles.types";
 
 
@@ -185,6 +185,17 @@ export async function fetchSearchDataClient(): Promise<ISearchDataOptimized> {
 	const response = await fetch(url);
 	const result = await response.json();
 	console.log("SEARCH DATA FETCHED")
+	return result;
+}
+
+/**
+ * Fetches just the towns array from the API
+ * @returns Promise with an array of ISearchDataTown objects
+ */
+export async function fetchTowns(): Promise<ISearchDataTown[]> {
+	const url = phpGWLink(['bookingfrontend', 'towns']);
+	const response = await fetch(url);
+	const result = await response.json();
 	return result;
 }
 

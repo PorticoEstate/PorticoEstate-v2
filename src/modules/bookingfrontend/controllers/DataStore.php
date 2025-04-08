@@ -120,11 +120,16 @@ class DataStore
 			}
 			$data['activities'] = $activities;
 			
-			// Buildings
+			// Buildings with town_id
 			$buildings = [];
-			$rows = $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
-				. " deactivate_sendmessage, extra_kalendar, name, location_code, street, zip_code, district, city"
-				. " FROM bb_building WHERE active=1");
+			$rows = $this->getRowsAsArray("SELECT bb_building.id, bb_building.activity_id, bb_building.deactivate_calendar, 
+                bb_building.deactivate_application, bb_building.deactivate_sendmessage, bb_building.extra_kalendar, 
+                bb_building.name, bb_building.location_code, bb_building.street, bb_building.zip_code, 
+                bb_building.district, bb_building.city, fm_part_of_town.id as town_id FROM"
+				. " bb_building LEFT JOIN fm_locations ON bb_building.location_code = fm_locations.location_code"
+				. " LEFT JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1"
+				. " LEFT JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id"
+				. " WHERE bb_building.active=1");
 			foreach ($rows as $row) {
 				$building = new Building($row);
 				$buildings[] = $building->serialize([], true);
@@ -145,12 +150,8 @@ class DataStore
 			}
 			$data['resources'] = $resources;
 			
-			// Towns (no model yet, use array)
-			$data['towns'] = $this->getRowsAsArray("SELECT DISTINCT bb_building.id as b_id, bb_building.name as b_name, fm_part_of_town.id, fm_part_of_town.name FROM"
-				. " bb_building JOIN fm_locations ON bb_building.location_code = fm_locations.location_code"
-				. " JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1"
-				. " JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id"
-				. " where bb_building.active=1");
+			// Towns - simplified structure with just id and name
+			$data['towns'] = $this->getRowsAsArray("SELECT id, name FROM fm_part_of_town");
 			
 			// Organizations
 			$organizations = [];

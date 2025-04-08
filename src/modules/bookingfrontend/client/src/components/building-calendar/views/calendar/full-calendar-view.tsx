@@ -16,7 +16,7 @@ import FullCalendar from "@fullcalendar/react";
 import EventContentTemp from "@/components/building-calendar/modules/event/content/event-content-temp";
 import EventContentList from "@/components/building-calendar/modules/event/content/event-content-list";
 import EventContentAllDay from "@/components/building-calendar/modules/event/content/event-content-all-day";
-import EventContent from "@/components/building-calendar/modules/event/content/event-content";
+import EventContent from "@/components/building-calendar/modules/event/content";
 import {DateSelectArg, DateSpanApi, DatesSetArg, EventDropArg, EventInput} from "@fullcalendar/core";
 import {EventImpl} from "@fullcalendar/core/internal";
 import {IUpdatePartialApplication} from "@/service/types/api/application.types";

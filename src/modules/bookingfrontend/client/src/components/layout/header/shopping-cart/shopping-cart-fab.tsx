@@ -24,12 +24,13 @@ const ShoppingCartFab: FC<ShoppingCartFabProps> = (props) => {
                 <ShoppingBasketIcon fontSize="1.25rem" />
                 Handlekurv
                 <Badge
-                    data-color="neutral"
+                    data-color="brand3"
                     data-size={'sm'}
+					className={styles.badge}
                     style={{
                         display: 'flex',
                         gap: 'var(--ds-spacing-2)',
-                        color: 'var(--ds-color-base-default)'
+                        // backgroundColor: 'var(--ds-color-base-default)'
                     }}
                     count={cartItems?.list.length ?? 0}
                 ></Badge>

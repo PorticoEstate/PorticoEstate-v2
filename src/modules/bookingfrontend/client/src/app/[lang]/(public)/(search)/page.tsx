@@ -15,7 +15,7 @@ const Search: FC<SearchProps> = async () => {
 
 	return (
 		<main>
-			<ResourceSearch initialSearchData={initialSearchData} />
+			<ResourceSearch initialSearchData={initialSearchData} initialTowns={initialSearchData.towns} />
 		</main>
 	);
 }

@@ -1,17 +1,18 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
-import {useSearchData, useUpcomingEvents} from "@/service/hooks/api-hooks";
+import {useSearchData, useTowns, useUpcomingEvents} from "@/service/hooks/api-hooks";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
 import styles from './event-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
-import {ISearchDataOptimized} from '@/service/types/api/search.types';
+import {ISearchDataOptimized, ISearchDataTown} from '@/service/types/api/search.types';
 import EventResultItem from "@/components/search/event/event-result-item";
 import {IShortEvent} from "@/service/pecalendar.types";
 
 interface EventSearchProps {
     initialSearchData?: ISearchDataOptimized;
     initialEvents?: IShortEvent[];
+    initialTowns?: ISearchDataTown[];
 }
 
 // We're using IShortEvent directly from pecalendar.types.ts
@@ -19,30 +20,37 @@ interface EventSearchProps {
 
 // Storage constants removed
 
-const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents }) => {
+const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents, initialTowns }) => {
     // Initialize state for search filters
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
     const [fromDate, setFromDate] = useState<Date>(new Date());
     const [toDate, setToDate] = useState<Date>(new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000))); // 7 days later
-    const [district, setDistrict] = useState<string>('');
+    const [townId, setTownId] = useState<number | ''>('');
 
     // Fetch all search data, using initialSearchData as default
     const {data: searchData, isLoading: isLoadingSearch, error: searchError} = useSearchData({
         initialData: initialSearchData
     });
+    
+    // Fetch towns data separately using the dedicated endpoint
+    const {data: townsData, isLoading: isLoadingTowns, error: townsError} = useTowns({
+        initialData: initialTowns
+    });
 
     const t = useTrans();
+    
+    // Determine overall loading and error state
+    const isLoading = isLoadingSearch || isLoadingTowns;
+    const error = searchError || townsError;
 
-    // Extract unique districts from buildings
-    const districts = useMemo(() => {
-        if (!searchData?.buildings) return [];
-
-        const uniqueDistricts = Array.from(
-            new Set(searchData.buildings.map(building => building.district))
-        ).filter(Boolean);
-
-        return uniqueDistricts.sort();
-    }, [searchData?.buildings]);
+    // Get towns list from towns data
+    const towns = useMemo(() => {
+        if (!townsData) return [];
+        
+        // Towns array already contains unique towns with id and name
+        // Sort by name for display in dropdown
+        return [...townsData].sort((a, b) => a.name.localeCompare(b.name));
+    }, [townsData]);
 
     // Use React Query hook for fetching events
     const fromDateIso = fromDate.toISOString().split('T')[0];
@@ -64,7 +72,7 @@ const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents })
         refetchEvents();
     }, [fromDateIso, toDateIso, refetchEvents]);
 
-    // Apply text and district filters to events
+    // Apply text and town filters to events
     const filteredEvents = useMemo(() => {
         if (!events.length) return [];
 
@@ -84,20 +92,20 @@ const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents })
             });
         }
 
-        // District filter
-        if (district && searchData?.buildings) {
-            // Find buildings in the selected district
-            const buildingsInDistrict = searchData.buildings
-                .filter(building => building.district === district)
+        // Town filter
+        if (townId && searchData?.buildings) {
+            // Find buildings in the selected town
+            const buildingsInTown = searchData.buildings
+                .filter(building => building.town_id === townId)
                 .map(building => building.id);
 
             filtered = filtered.filter(event =>
-                buildingsInDistrict?.includes(event.building_id)
+                buildingsInTown?.includes(event.building_id)
             );
         }
 
         return filtered;
-    }, [events, textSearchQuery, district, searchData?.buildings]);
+    }, [events, textSearchQuery, townId, searchData?.buildings]);
 
     // Handle date selection
     const handleFromDateChange = (newDate: Date | null) => {
@@ -121,7 +129,7 @@ const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents })
     // Clear all filters
     const clearFilters = () => {
         setTextSearchQuery('');
-        setDistrict('');
+        setTownId('');
         setFromDate(new Date());
         setToDate(new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000)));
     };
@@ -184,17 +192,17 @@ const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents })
                         </Field>
                     </div>
 
-                    <div className={styles.districtFilter}>
+                    <div className={styles.townFilter}>
                         <Field>
                             <Label>{t('bookingfrontend.where')}</Label>
                             <Select
-                                value={district}
-                                onChange={(e) => setDistrict(e.target.value)}
+                                value={townId}
+                                onChange={(e) => setTownId(e.target.value === '' ? '' : Number(e.target.value))}
                             >
                                 <Select.Option value="">{t('booking.all')}</Select.Option>
-                                {districts.map(district => (
-                                    <Select.Option key={district} value={district}>
-                                        {district}
+                                {towns.map(town => (
+                                    <Select.Option key={town.id} value={town.id.toString()}>
+                                        {town.name}
                                     </Select.Option>
                                 ))}
                             </Select>
@@ -202,7 +210,7 @@ const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents })
                     </div>
                 </div>
 
-                {(textSearchQuery || district !== '') && (
+                {(textSearchQuery || townId !== '') && (
                     <div className={styles.activeFilters}>
                         <span>{t('common.filter')}:</span>
                         <div className={styles.filterChips}>
@@ -211,9 +219,9 @@ const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents })
                                     {t('common.search')}: {textSearchQuery}
                                 </Chip.Removable>
                             )}
-                            {district && (
-                                <Chip.Removable data-color="brand1" onClick={() => setDistrict('')}>
-                                    {t('bookingfrontend.town part')}: {district}
+                            {townId !== '' && (
+                                <Chip.Removable data-color="brand1" onClick={() => setTownId('')}>
+                                    {t('bookingfrontend.town')}: {towns.find(t => t.id === townId)?.name}
                                 </Chip.Removable>
                             )}
                             <Button

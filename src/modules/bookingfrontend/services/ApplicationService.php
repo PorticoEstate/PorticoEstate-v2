@@ -13,6 +13,7 @@ use App\modules\bookingfrontend\models\OrderLine;
 use App\Database\Db;
 use App\modules\phpgwapi\services\Settings;
 use PDO;
+use Exception;
 
 require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 

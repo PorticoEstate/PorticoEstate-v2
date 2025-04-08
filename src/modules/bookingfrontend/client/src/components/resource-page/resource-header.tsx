@@ -1,4 +1,5 @@
 import {IBuilding} from "@/service/types/Building";
+import {ISearchDataTown} from "@/service/types/api/search.types";
 import {Buildings3Icon, LayersIcon} from "@navikt/aksel-icons";
 import styles from '../building-page/building-header.module.scss';
 import MapModal from "@/components/map-modal/map-modal";
@@ -10,10 +11,11 @@ import DividerCircle from "@/components/util/DividerCircle";
 interface ResourceHeaderProps {
 	resource: IShortResource | IResource;
 	building: IBuilding;
+	town?: ISearchDataTown;
 }
 
 const ResourceHeader = async (props: ResourceHeaderProps) => {
-	const {building, resource} = props
+	const {building, resource, town} = props
 	return (
 		<section className={`${styles.buildingHeader}`}>
 			<div className={styles.buildingName}>
@@ -25,7 +27,7 @@ const ResourceHeader = async (props: ResourceHeaderProps) => {
 			</div>
 			<div className={styles.infoLine}>
 				<span>{building.city}</span>
-				<span><DividerCircle/> {building.district}</span>
+				<span><DividerCircle/> {town?.name || building.district}</span>
 				<span><DividerCircle/> <MapModal city={building.city} street={building.street}
 												 zip={building.zip_code}/></span>
 			</div>

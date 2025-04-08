@@ -5,16 +5,11 @@ import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import styles from "./shopping-cart-content.module.scss";
-import {Badge, Button, Spinner, Table, List} from "@digdir/designsystemet-react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faArrowRightLong, faArrowUpRightFromSquare, faTrashCan} from "@fortawesome/free-solid-svg-icons";
-import {phpGWLink} from "@/service/util";
+import {Button, Spinner} from "@digdir/designsystemet-react";
+import {ArrowRightIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
-import {deletePartialApplication} from "@/service/api/api-utils";
-import ResourceCircles from "@/components/resource-circles/resource-circles";
-import {PencilIcon} from "@navikt/aksel-icons";
 import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping-cart-table";
 
 interface ShoppingCartContentProps {
@@ -73,7 +68,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
 
                         href={'/checkout'}
                         className={'link-text link-text-unset normal'}>
-                        {t('bookingfrontend.submit_application')} <FontAwesomeIcon icon={faArrowRightLong}/>
+                        {t('bookingfrontend.submit_application')} <ArrowRightIcon fontSize="1.5rem" />
                     </Link>
                     </Button>
                 </div>

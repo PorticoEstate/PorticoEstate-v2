@@ -14,32 +14,10 @@ interface ResourceParams {
 
 interface ResourceProps {
     params: ResourceParams;
+    initialDate?: string;
 }
 
 
-export async function generateMetadata(props: ResourceProps) {
-    // Convert the id to a number
-    const resourceId = parseInt(props.params.id, 10);
-
-    // Check if the buildingId is a valid number
-    if (isNaN(resourceId)) {
-        // If not a valid number, throw the notFound error
-        return notFound();
-    }
-
-    // Fetch the building
-    const resource = await fetchResource(resourceId);
-
-    // If building does not exist, throw the notFound error
-    if (!resource || resource.building_id === null || resource.building_id === undefined) {
-        return notFound();
-    }
-    const building = await fetchBuilding(resource.building_id);
-
-    return {
-        title: `${resource.name} - ${building.name}`,
-    }
-}
 
 const Resource = async (props: ResourceProps) => {
     // Convert the id to a number
@@ -77,7 +55,7 @@ const Resource = async (props: ResourceProps) => {
 				<TextAccordion text={resource.opening_hours} title={t('booking.opening hours')}/>
                 <TextAccordion text={resource.contact_info} title={t('bookingfrontend.contact information')}/>
             </section>
-                <BuildingCalendar building_id={`${building.id}`} resource_id={`${resourceId}`}/>
+                <BuildingCalendar building_id={`${building.id}`} resource_id={`${resourceId}`} initialDate={props.initialDate}/>
                 {/*<BuildingContact building={building}/>*/}
         </main>
 );

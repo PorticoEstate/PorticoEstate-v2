@@ -1,9 +1,8 @@
 import { useEffect, useState, RefObject } from 'react';
 import { Dimensions } from './types';
+import {DEBUG_CANVAS_DIMENSIONS} from "@/components/building-calendar/modules/event/content/canvas-render/utils";
 
-// Debug flags for canvas rendering
-export const DEBUG_CANVAS_DIMENSIONS = true;
-export const DEBUG_CANVAS_VISUAL = true; // Enable visual debug outlines and labels
+
 
 /**
  * Hook to manage canvas dimensions and handle resizing
@@ -12,7 +11,7 @@ export function useCanvasDimensions(
   containerRef: RefObject<HTMLDivElement>
 ): Dimensions {
   const [dimensions, setDimensions] = useState<Dimensions>({ width: 0, height: 0 });
-  
+
   useEffect(() => {
     if (!containerRef.current) return;
 

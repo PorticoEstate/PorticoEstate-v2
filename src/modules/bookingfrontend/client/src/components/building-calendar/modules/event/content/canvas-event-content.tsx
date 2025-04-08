@@ -1,14 +1,15 @@
 import React, { FC, memo, useRef } from 'react';
 import { FCallEvent, FCEventContentArg } from "@/components/building-calendar/building-calendar.types";
 import { useColours } from "@/service/hooks/Colours";
-import { 
-  CanvasEventContentProps, 
-  useCanvasDimensions, 
-  useFontLoaded, 
-  useCanvasRender 
+import {
+  CanvasEventContentProps,
+  useCanvasDimensions,
+  useFontLoaded,
+  useCanvasRender
 } from './canvas-render';
 
 import './canvas-event-content.css';
+import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
 /**
  * A canvas-based event content component that renders everything on a canvas for optimal performance.
@@ -18,11 +19,12 @@ const CanvasEventContent: FC<CanvasEventContentProps> = memo(function CanvasEven
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const colours = useColours();
-  
+  const tInstance = useTrans();
+
   // Use hooks to manage state and rendering
   const dimensions = useCanvasDimensions(containerRef);
   const fontLoaded = useFontLoaded('Roboto');
-  
+
   // Use canvas render hook to handle all drawing logic
   useCanvasRender({
     canvasRef,
@@ -30,7 +32,8 @@ const CanvasEventContent: FC<CanvasEventContentProps> = memo(function CanvasEven
     eventInfo,
     dimensions,
     fontLoaded,
-    colours
+    colours,
+    tInstance
   });
 
   return (

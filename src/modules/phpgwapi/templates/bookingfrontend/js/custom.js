@@ -15,33 +15,30 @@ $(document).ready(function ()
 
 	$("#template_selector").change(function ()
 	{
-		var template = $(this).val();
-		var isBeta = template === 'beta';
+		var selectedTemplate = $(this).val();
+		var version;
 		
-		// When beta is selected, use bookingfrontend_2 template with beta cookie
-		if (isBeta) {
-			template = 'bookingfrontend_2';
+		// Map template selection to version API format
+		if (selectedTemplate === 'bookingfrontend') {
+			version = 'original';
+		} else if (selectedTemplate === 'bookingfrontend_2') {
+			version = 'new';
+		} else if (selectedTemplate === 'beta') {
+			version = 'beta';
 		}
 		
-		var oArgs = {
-			menuaction: 'bookingfrontend.preferences.set'
-		};
-
-		var requestUrl = phpGWLink('bookingfrontend/', oArgs, true);
-
-		// Set the beta cookie if beta option was selected
-		// Set the beta cookie - explicitly use strings "true"/"false" for compatibility
-		document.cookie = "beta_client=" + (isBeta ? "true" : "false") + "; path=/; max-age=" + 60*60*24*365;
-
+		// Use the new version API
 		$.ajax({
 			type: 'POST',
 			dataType: 'json',
-			data: {template_set: template},
-			url: requestUrl,
+			contentType: 'application/json',
+			data: JSON.stringify({ version: version }),
+			url: '/bookingfrontend/version',
 			success: function (data)
 			{
-		//		console.log(data);
-				location.reload(true);
+				if (data && data.success) {
+					location.reload(true);
+				}
 			}
 		});
 	});

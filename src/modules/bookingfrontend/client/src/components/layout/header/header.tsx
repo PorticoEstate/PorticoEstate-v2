@@ -8,6 +8,7 @@ import logo_title from '/public/logo_title.svg';
 import Image from "next/image";
 import ShoppingCartFab from "@/components/layout/header/shopping-cart/shopping-cart-fab";
 import Link from "next/link";
+import VersionSwitcher from "@/app/i18n/version-switcher";
 
 
 interface HeaderProps {
@@ -37,6 +38,7 @@ const Header = async (props: HeaderProps) => {
             </Link>
             {/*${baseUrl}*/}
             <HeaderMenuContent>
+				<VersionSwitcher/>
                 <LanguageSwitcher/>
                 <ShoppingCartButton/>
                 <UserMenu/>

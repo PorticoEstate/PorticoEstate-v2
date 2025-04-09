@@ -9,6 +9,7 @@ use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\controllers\ResourceController;
+use App\modules\bookingfrontend\controllers\VersionController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
 use App\modules\bookingfrontend\helpers\LogoutHelper;
@@ -117,6 +118,9 @@ $app->group('/bookingfrontend/auth', function (RouteCollectorProxy $group) {
 	$group->post('/login', LoginController::class . ':login');
 	$group->post('/logout', LoginController::class . ':logout');
 })->add(new SessionsMiddleware($app->getContainer()));
+
+$app->post('/bookingfrontend/version', VersionController::class . ':setVersion')->add(new SessionsMiddleware($app->getContainer()));
+$app->get('/bookingfrontend/version', VersionController::class . ':getVersion')->add(new SessionsMiddleware($app->getContainer()));
 
 
 $app->get('/bookingfrontend/lang[/{lang}]', LangHelper::class . ':process');

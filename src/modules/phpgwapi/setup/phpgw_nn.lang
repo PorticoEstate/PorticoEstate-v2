@@ -269,6 +269,7 @@ my preferences	common	nn	Mine innstillinger
 name	common	nn	Namn
 name of the user, eg. %1	common	nn	Fullt navn på bruker, %1
 Never	common	nn	Aldri
+new	common	nn	Ny
 new account and login	common	nn	Registrering av ny brukar, og pålogging
 new attribute	common	nn	Ny egenskap
 new entry added sucessfully	common	nn	Ny entry er lagt til

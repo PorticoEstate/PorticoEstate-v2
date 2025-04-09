@@ -205,6 +205,33 @@ export async function fetchInvoices(): Promise<ICompletedReservation[]> {
     const result = await response.json();
     return result;
 }
+
+export interface VersionSettings {
+    success: boolean;
+    version: 'original' | 'new' | 'beta';
+    template_set: string;
+    beta_client: string;
+}
+
+export async function fetchVersionSettings(): Promise<VersionSettings> {
+    const url = phpGWLink(['bookingfrontend', 'version']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+export async function setVersionSettings(version: 'original' | 'new' | 'beta'): Promise<VersionSettings> {
+    const url = phpGWLink(['bookingfrontend', 'version']);
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ version })
+    });
+    const result = await response.json();
+    return result;
+}
 export async function fetchBuildingAgeGroups(building_id: number): Promise<IAgeGroup[]> {
     const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'agegroups']);
     const response = await fetch(url);

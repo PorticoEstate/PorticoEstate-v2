@@ -536,8 +536,9 @@ class LocationHierarchyAnalyzer
 				$oldLocationCode = "{$loc1}-{$loc2}-{$oldLoc3}-{$loc4}";
 				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
 
-				// Skip if already processed globally
-				if (isset($this->processedLocationCodes[$oldLocationCode]))
+				// Skip if already processed globally or if the values are actually the same
+				if (isset($this->processedLocationCodes[$oldLocationCode]) || 
+					$oldLoc3 === $newLoc3)
 				{
 					continue;
 				}
@@ -699,7 +700,10 @@ class LocationHierarchyAnalyzer
 				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
 
 				// Skip if the location code doesn't change or already processed globally
-				if ($oldLocationCode === $newLocationCode || isset($this->processedLocationCodes[$oldLocationCode]))
+				// Also skip if only the formatting changed but not the actual values
+				if ($oldLocationCode === $newLocationCode || 
+					isset($this->processedLocationCodes[$oldLocationCode]) ||
+					$oldLoc3 === $newLoc3)
 				{
 					continue;
 				}
@@ -1084,8 +1088,9 @@ class LocationHierarchyAnalyzer
 			$oldLocationCode = "{$loc1}-{$oldLoc2}-{$oldLoc3}-{$loc4}";
 			$newLocationCode = "{$loc1}-{$newLoc2}-{$newLoc3}-{$loc4}";
 
-			// Only generate update if location changed
-			if ($oldLocationCode !== $newLocationCode)
+			// Only generate update if location changed and values are actually different
+			if ($oldLocationCode !== $newLocationCode && 
+				($oldLoc2 !== $newLoc2 || $oldLoc3 !== $newLoc3))
 			{
 				// Skip if already processed
 				if (isset($this->processedLocationCodes[$oldLocationCode]))
@@ -1225,6 +1230,26 @@ class LocationHierarchyAnalyzer
 					$combinedCorrections[] = $sql;
 				}
 			}
+
+			// Add extra filters to ensure no false positives in the combined updates
+			foreach ($combinedLoc4Updates as $index => $sql)
+			{
+				// Skip comment lines
+				if (strpos($sql, '--') === 0) {
+					continue;
+				}
+				
+				// Check for updates where old and new are the same
+				if (preg_match("/SET location_code = '([^']+)'.*WHERE location_code = '([^']+)'/", $sql, $matches)) {
+					if ($matches[1] === $matches[2]) {
+						// This is a false positive - remove it
+						unset($combinedLoc4Updates[$index]);
+					}
+				}
+			}
+			
+			// Reindex array after removing items
+			$combinedLoc4Updates = array_values(array_filter($combinedLoc4Updates));
 
 			return [
 				'schema' => $sqlSchema,

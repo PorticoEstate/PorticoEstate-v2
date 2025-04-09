@@ -227,18 +227,22 @@ class ApplicationService
 						}
 					}
 
-					// If direct booking eligible but has collision, convert to regular booking instead of skipping
+					// If direct booking eligible but has collision, reject it and don't continue with it
 					if ($hasCollision)
 					{
 						$collisionDebugInfo[$application['id']] = $applicationCollisionInfo;
 						
-						// Handle as regular booking instead of skipping
+						// Reject the application with collision
 						$updateData = array_merge($baseUpdateData, [
-							'status' => 'NEW',
+							'status' => 'REJECTED',
 							'parent_id' => $application['id'] == $parent_id ? null : $parent_id
 						]);
 						
 						$this->patchApplicationMainData($updateData, $application['id']);
+						$skippedApplications[] = array_merge($application, $updateData);
+						
+						// Skip sending notification and adding to updated list
+						continue;
 					}
 					else
 					{
@@ -475,56 +479,72 @@ class ApplicationService
 			}
 		}
 
-		$resource_ids_str = implode(',', $resourceIds);
-
-		if (empty($resource_ids_str)) {
-			return [
-				'has_collision' => false,
-				'from' => $from,
-				'to' => $to,
-				'resource_ids' => $resources,
-				'extracted_ids' => $resourceIds,
-				'session_id' => $session_id,
-				'error' => 'No valid resource IDs found'
-			];
-		}
-
-		$sql = "SELECT a.id, a.name, a.status, ad.from_, ad.to_,
-            r.id as resource_id, r.name as resource_name
-            FROM bb_application a
-            JOIN bb_application_resource ar ON a.id = ar.application_id
-            JOIN bb_application_date ad ON a.id = ad.application_id
-            JOIN bb_resource r ON ar.resource_id = r.id
-            WHERE ar.resource_id IN ($resource_ids_str)
-            AND a.status NOT IN ('REJECTED')
-            AND a.active = 1
-            AND ((ad.from_ BETWEEN :from_date AND :to_date)
-                OR (ad.to_ BETWEEN :from_date AND :to_date)
-                OR (:from_date BETWEEN ad.from_ AND ad.to_)
-                OR (:to_date BETWEEN ad.from_ AND ad.to_))
-            AND (a.session_id IS NULL OR a.session_id != :session_id)";
-
-		$params = [
-			':from_date' => $from,
-			':to_date' => $to,
-			':session_id' => $session_id
-		];
-
-		$stmt = $this->db->prepare($sql);
-		$stmt->execute($params);
-		$collisions = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
+		// Use the provided check_collision function logic
+		$hasCollision = $this->check_collision($resourceIds, $from, $to, $session_id);
+		
+		// Debug information to return
 		return [
-			'has_collision' => !empty($collisions),
+			'has_collision' => $hasCollision,
 			'from' => $from,
 			'to' => $to,
 			'resource_ids' => $resources,
-			'session_id' => $session_id,
-			'sql' => $sql,
-			'params' => $params,
-			'collisions' => $collisions
+			'session_id' => $session_id
 		];
 	}
+
+	/**
+	 * Comprehensive collision check that checks blocks, allocations and events
+	 * 
+	 * @param array $resources Array of resource IDs
+	 * @param string $from_ Start time
+	 * @param string $to_ End time
+	 * @param string $session_id Current session ID
+	 * @return bool True if collision found, false otherwise
+	 */
+	private function check_collision($resources, $from_, $to_, $session_id = null)
+    {
+        $filter_block = '';
+        if ($session_id)
+        {
+            $filter_block = " AND session_id != '{$session_id}'";
+        }
+
+        $rids     = join(',', array_map("intval", $resources));
+        $sql     = "SELECT bb_block.id, 'block' as type
+                      FROM bb_block
+                      WHERE  bb_block.resource_id in ($rids)
+                      AND ((bb_block.from_ <= '$from_' AND bb_block.to_ > '$from_')
+                      OR (bb_block.from_ >= '$from_' AND bb_block.to_ <= '$to_')
+                      OR (bb_block.from_ < '$to_' AND bb_block.to_ >= '$to_')) AND active = 1 {$filter_block}
+                      UNION
+                      SELECT ba.id, 'allocation' as type
+                      FROM bb_allocation ba, bb_allocation_resource bar
+                      WHERE active = 1
+                      AND ba.id = bar.allocation_id
+                      AND bar.resource_id in ($rids)
+                      AND ((ba.from_ <= '$from_' AND ba.to_ > '$from_')
+                      OR (ba.from_ >= '$from_' AND ba.to_ <= '$to_')
+                      OR (ba.from_ < '$to_' AND ba.to_ >= '$to_'))
+                      UNION
+                      SELECT be.id, 'event' as type
+                      FROM bb_event be, bb_event_resource ber
+                      WHERE active = 1
+                      AND be.id = ber.event_id
+                      AND ber.resource_id in ($rids)
+                      AND ((be.from_ <= '$from_' AND be.to_ > '$from_')
+                      OR (be.from_ >= '$from_' AND be.to_ <= '$to_')
+                      OR (be.from_ < '$to_' AND be.to_ >= '$to_'))";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute();
+        $result = $stmt->fetch();
+
+        if (!$result)
+        {
+            return false;
+        }
+        return true;
+    }
 
 	/**
 	 * Original collision check method - now calls the debug version

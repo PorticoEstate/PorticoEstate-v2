@@ -6,6 +6,7 @@
 @import "../styles/link/link";
 @import "../styles/bs-containers/container.global";
 @import "../styles/hr.module";
+@import "../styles/digdir-utility/digdir-utility.module";
 
 
 body {
@@ -38,27 +39,35 @@ body {
 
 // Make select faded when disabled option selected
 select:not(:disabled):has(option:checked:disabled) {
-    color: color-mix(in srgb, currentColor var(--ds-disabled-opacity), transparent);
+	color: color-mix(in srgb, currentColor var(--ds-opacity-disabled), transparent);
+
 }
 
-.ds-details {
-    border-radius: 0;
-    user-select: none;
-    border-left: none;
-    border-right: none;
-    border-bottom: none;
-    border-top: var(--dsc-details-border);
-    background-color: inherit;
-    u-summary {
-        border-radius: 0;
-    }
-    u-summary:not([aria-expanded="true"]) {
-        background-color: inherit;
-    }
-    >*:not(u-summary) {
-        background-color: white;
-    }
+select option:not([disabled]) {
+	color: var(--dsc-input-color);
 }
+select option:disabled {
+	color: color-mix(in srgb, var(--dsc-input-color) var(--ds-opacity-disabled), transparent);
+}
+
+//.ds-details {
+//    border-radius: 0;
+//    user-select: none;
+//    border-left: none;
+//    border-right: none;
+//    border-bottom: none;
+//    border-top: var(--dsc-details-border);
+//    background-color: inherit;
+//    u-summary {
+//        border-radius: 0;
+//    }
+//    u-summary:not([aria-expanded="true"]) {
+//        background-color: inherit;
+//    }
+//    >*:not(u-summary) {
+//        background-color: white;
+//    }
+//}
 
 .fc-event-main {
     display: flex;

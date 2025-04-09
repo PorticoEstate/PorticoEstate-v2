@@ -15,7 +15,8 @@
         border: 1px solid #ccc;
     }
     &.withHeader {
-            padding: 1.5rem;
+		//padding-top: 0;
+            //padding:  0 1.5rem;
     }
     //@include mobile {
     //    min-height: 100vh;
@@ -23,10 +24,11 @@
     //}
     min-width: 300px;
     //padding: 0;
-
+	padding-left: 1.5rem;
+	padding-right: 1.5rem;
     .eventPopperContent, .eventPopperFooter, .eventPopperActions {
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
+        //padding-left: 1.5rem;
+        //padding-right: 1.5rem;
     }
 
     .eventPopperFooter {
@@ -76,18 +78,44 @@
         background-color: $grey-24;
         position: sticky;
         display: flex;
-        flex-direction: row-reverse;
+        //flex-direction: row-reverse;
         justify-content: space-between;
         align-items: center;
-        margin-top: 4px;
-        margin-bottom: 4px;
+        //margin-top: 4px;
+        //margin-bottom: 4px;
         top: 0;
         z-index: 1000;
         transition: box-shadow 0.3s ease;
+		.headerActions {
+			flex: 1;
+			display: flex;
+			justify-content: flex-end;
+
+		}
+		.headerContent {
+
+		}
+
+
+
         &.scrolled {
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
     }
+}
+
+.specList {
+	display: grid;
+	gap: 0 1rem;
+	grid-template-columns: min-content auto;
+	.specTitle {
+		display: flex;
+		flex-wrap: nowrap;
+		white-space: nowrap;
+	}
+	.specItem {
+		display: contents;
+	}
 }
 
 .resourcesList {

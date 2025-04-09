@@ -26,6 +26,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\controllers\Accounts\phpgwapi_user;
 use App\modules\phpgwapi\helpers\LoginUi;
+use App\modules\phpgwapi\controllers\OpenIDConnect;
 
 use Exception;
 use Sanitizer;
@@ -55,12 +56,25 @@ class CreateAccount
 			throw new Exception(lang('Access denied'));
 		}
 
+		$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
+
+		$this->login = $Auth->get_username(true);
+
 		if (isset($_SERVER["OIDC_groups"]))
 		{
 			$OIDC_groups = mb_convert_encoding(mb_convert_encoding($_SERVER["OIDC_groups"], 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1');
 			$ad_groups	= explode(",", $OIDC_groups);
-			$default_group_lid	 = !empty($this->serverSettings['default_group_lid']) ? $this->serverSettings['default_group_lid'] : 'Default';
-			if (!in_array($default_group_lid, $ad_groups))
+			$default_group_lid	 = !empty($this->serverSettings['default_group_lid']) ? $this->serverSettings['default_group_lid'] : 'default';
+			if (!in_array(strtolower($default_group_lid), array_map('strtolower', $ad_groups)))
+			{
+				throw new Exception(lang('missing membership: "%1" is not in the list', $default_group_lid));
+			}
+		}
+		else if (OpenIDConnect::getInstance()->isAuthenticated())
+		{
+			$ad_groups	= OpenIDConnect::getInstance()->get_groups();
+			$default_group_lid	 = !empty($this->serverSettings['default_group_lid']) ? $this->serverSettings['default_group_lid'] : 'default';
+			if (!in_array(strtolower($default_group_lid), array_map('strtolower', $ad_groups)))
 			{
 				throw new Exception(lang('missing membership: "%1" is not in the list', $default_group_lid));
 			}
@@ -70,16 +84,11 @@ class CreateAccount
 			throw new Exception(lang('Access denied'));
 		}
 
-		$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
-
-		$this->login = $Auth->get_username(true);
-
 		if (empty($this->login))
 		{
 			//reserve fallback
-			if (\Sanitizer::get_var('OIDC_pid', 'bool', 'SERVER'))
+			if (\Sanitizer::get_var('OIDC_pid', 'bool', 'SERVER') || Settings::getInstance()->get('flags')['openid_connect']['OIDC_pid'])
 			{
-				//throw new Exception('FIX me: OIDC_pid is set, redirect to login_ui?');
 				\phpgw::redirect_link('login_ui/', array('skip_remote' => true));
 			}
 			//fallback failed
@@ -125,6 +134,14 @@ class CreateAccount
 		$email	 = \Sanitizer::get_var('OIDC_email', 'string', 'SERVER');
 		$cellphone = '';
 
+		if (OpenIDConnect::getInstance()->isAuthenticated())
+		{
+			$userinfo = OpenIDConnect::getInstance()->get_userinfo();
+			$email = isset($userinfo->email) ? $userinfo->email : $userinfo->upn;
+			$firstname = $userinfo->given_name;
+			$lastname = $userinfo->family_name;
+		}
+
 		if ($_SERVER['REQUEST_METHOD'] == 'POST' && \Sanitizer::get_var('submitit', 'bool', 'POST'))
 		{
 			$submit = \Sanitizer::get_var('submitit', 'bool', 'POST');
@@ -148,9 +165,9 @@ class CreateAccount
 				$error[] = lang('You have to choose a login');
 			}
 
-			if (!preg_match("/^[0-9_a-z]*$/i", $login))
+			if (!preg_match("/^[0-9_a-z\-\.@]+$/i", $login))
 			{
-				$error[] = lang('Please submit just letters and numbers for your login');
+				$error[] = lang('Please submit only letters, numbers, and basic punctuation (.-@_) for your login');
 			}
 			if (!$password1)
 			{
@@ -272,6 +289,6 @@ class CreateAccount
 			$variables['additional_url']		 = \phpgw::link('/login_ui', array('create_mapping' => true));
 		}
 
-		$uilogin->phpgw_display_login($variables);
+		return $uilogin->phpgw_display_login($variables);
 	}
 }

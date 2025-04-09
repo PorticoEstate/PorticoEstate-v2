@@ -79,7 +79,8 @@ class Application
     /**
      * @OA\Property(type="string")
      * @Expose
-     * @Short
+	 * @EscapeString(mode="default")
+	 * @Short
      */
     public $building_name;
 
@@ -137,6 +138,7 @@ class Application
     /**
      * @OA\Property(type="string")
      * @Expose
+	 * @EscapeString(mode="default")
      */
     public $name;
 
@@ -232,6 +234,20 @@ class Application
      * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Document")
      */
     public array $documents;
+
+    /**
+     * @OA\Property(
+     *     type="array",
+     *     @OA\Items(
+     *         type="object",
+     *         @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *         @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *         @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *     )
+     * )
+     * @Expose
+     */
+    public array $articles;
 
     /**
      * @OA\Property(type="string")

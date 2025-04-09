@@ -1852,6 +1852,7 @@ li.check_item_case ul li .col_3 {
 .frm_update_case textarea {
   display: block;
   width: 98%;
+  min-height: 100px !important;
 }
 .frm_update_case input[type="submit"], .frm_update_case input[type="button"] {
   float: left;

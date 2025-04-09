@@ -1,11 +1,12 @@
+'use client';
 import { useState } from 'react';
 import OrganizationUpdate from './organization.update';
 import { Organization } from '@/service/types/api/organization.types';
 import OrganizationView from './organization.view';
 import { Button } from '@digdir/designsystemet-react';
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPen } from "@fortawesome/free-solid-svg-icons";
+import { PencilIcon } from '@navikt/aksel-icons';
+import { useOrganizationData } from '@/service/api/organization';
 
 interface OrganizationControllerProps {
     data: Organization;
@@ -14,27 +15,30 @@ interface OrganizationControllerProps {
 const OrganizatioController = ({ data }: OrganizationControllerProps) => {
     const t = useTrans();
     const [editing, setEditing] = useState(false);
+    const organization = useOrganizationData(data.id, data);
+    if (!organization.data) return null;
+
     return (
-        <>
-        <div>
-            <Button variant='secondary' onClick={() => setEditing(!editing)}>
-                {
-                    !editing
-                    ? <FontAwesomeIcon icon={faPen} />
-                    : null 
-                }
-                {
-                    editing 
-                    ? t('bookingfrontend.cancel')
-                    : t('bookingfrontend.edit organization')}
-            </Button>
-        </div>
-        {
-            editing 
-            ? <OrganizationUpdate org={data}/>
-            : <OrganizationView organization={data}/>
-        }
-        </>
+        <main>
+            <div>
+                <Button variant='secondary' onClick={() => setEditing(!editing)}>
+                    {
+                        !editing
+                        ? <PencilIcon />
+                        : null 
+                    }
+                    {
+                        editing 
+                        ? t('bookingfrontend.cancel')
+                        : t('bookingfrontend.edit organization')}
+                </Button>
+            </div>
+            {
+                editing 
+                ? <OrganizationUpdate org={organization.data}/>
+                : <OrganizationView data={organization.data}/>
+            }
+        </main>
     )
 }
 

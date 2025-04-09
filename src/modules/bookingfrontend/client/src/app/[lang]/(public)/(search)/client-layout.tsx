@@ -1,0 +1,86 @@
+'use client'
+import React, {FC, useMemo} from 'react';
+import {useRouter} from "next/navigation";
+import {Tabs} from "@digdir/designsystemet-react";
+import {InformationSquareIcon, ReceiptIcon, TasklistSendIcon} from "@navikt/aksel-icons";
+import {LinkTab} from '@/components/util/LinkTab';
+import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {IServerSettings} from "@/service/types/api.types";
+import {useCurrentPath} from "@/service/hooks/path-hooks";
+
+interface ClientLayoutProps {
+	serverSettings: IServerSettings
+}
+
+
+const searchPages: {
+	icon: typeof TasklistSendIcon;
+	value: string;
+	labelTag: string;
+	relativePath: string;
+	configValue?: string;
+}[] = [
+	{
+		relativePath: '/',
+		value: '/',
+		labelTag: 'bookingfrontend.rent',
+		icon: InformationSquareIcon,
+		configValue: 'booking'
+	},
+	{
+		relativePath: '/search/event',
+		value: '/event',
+		labelTag: 'bookingfrontend.event',
+		icon: TasklistSendIcon,
+		configValue: 'event'
+	},
+	{
+		relativePath: '/search/organization',
+		value: '/organization',
+		labelTag: 'bookingfrontend._organization',
+		icon: ReceiptIcon,
+		configValue: 'organization'
+	},
+];
+
+const ClientLayout: FC<ClientLayoutProps> = (props) => {
+	const actualPath = useCurrentPath();
+	const pathname = actualPath.replace('search', '') || '/';
+	const router = useRouter();
+	const t = useTrans();
+	const currentPath = searchPages.find(a => a.value === pathname);
+	const links = useMemo(() => {
+		return searchPages.filter(a =>
+			props.serverSettings.booking_config?.landing_sections?.find(section => section === a.configValue))
+	}, [props.serverSettings])
+
+	// PROTECT DISABLED PAGE
+	if(props.serverSettings.booking_config?.landing_sections && currentPath && !props.serverSettings.booking_config.landing_sections.find(section => section === currentPath?.configValue)) {
+		router.replace('/');
+	}
+
+
+	return (
+		<nav aria-label="Booking categories" style={{marginBottom: '1rem'}}>
+			<Tabs value={pathname}>
+				<Tabs.List>
+					{links.map((link) => {
+						const SVGIcon = link.icon;
+						// const fullPath = '/user' + link.relativePath;
+
+						return (
+							<LinkTab href={link.relativePath} value={link.value} key={link.relativePath}>
+								<SVGIcon fontSize='1.75rem' aria-hidden/>
+								{t(link.labelTag)}
+							</LinkTab>
+						)
+					})}
+				</Tabs.List>
+			</Tabs>
+		</nav>
+	);
+}
+
+export default ClientLayout
+
+

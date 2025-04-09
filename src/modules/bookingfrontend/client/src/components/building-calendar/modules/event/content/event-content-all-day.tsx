@@ -5,9 +5,9 @@ import {faUser, faLayerGroup} from "@fortawesome/free-solid-svg-icons";
 import {formatDateRange} from "@/service/util";
 import {FCallEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import {usePopperGlobalInfo} from "@/service/api/event-info";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
+import {IEventIsAPIEvent} from "@/service/pecalendar.types";
 
 interface EventContentAllDayProps {
     eventInfo: FCEventContentArg<FCallEvent>;
@@ -16,13 +16,13 @@ interface EventContentAllDayProps {
 const EventContentAllDay: FC<EventContentAllDayProps> = ({eventInfo}) => {
     const t = useTrans();
     const isMobile = useIsMobile();
-    const {data: infoData} = usePopperGlobalInfo(eventInfo.event.extendedProps.type, eventInfo.event.id);
+    const eventData = eventInfo.event.extendedProps.source;
 
     // const actualTimeText = formatEventTime(eventInfo.event);
     const actualStart = 'actualStart' in eventInfo.event.extendedProps ? eventInfo.event.extendedProps.actualStart : eventInfo.event.start;
     const actualEnd = 'actualEnd' in eventInfo.event.extendedProps ? eventInfo.event.extendedProps.actualEnd : eventInfo.event.end;
     const renderColorCircles = (maxCircles: number) => {
-        const resources = eventInfo.event.extendedProps.source.resources;
+        const resources = eventData.resources;
         const totalResources = resources.length;
         const circlesToShow = resources.slice(0, maxCircles);
         const remainingCount = totalResources - maxCircles;
@@ -61,15 +61,15 @@ const EventContentAllDay: FC<EventContentAllDayProps> = ({eventInfo}) => {
                     <FontAwesomeIcon icon={faLayerGroup}/>
                     {renderColorCircles(isMobile ? 1 : 3)}
                 </div>
-                {infoData?.organizer && (
+                {IEventIsAPIEvent(eventData) && eventData.organizer && (
 
                 <span className={styles.organizerDivider}>|</span>
                 )}
 
-                {infoData?.organizer && (
+                {IEventIsAPIEvent(eventData) && eventData.organizer && (
                     <div className={`text-small ${styles.organizer}`}>
                         <FontAwesomeIcon className="text-small"
-                                         icon={faUser}/> {infoData.organizer}
+                                         icon={faUser}/> {eventData.organizer}
                     </div>)}
 
 

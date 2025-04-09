@@ -68,6 +68,11 @@ class SessionsMiddleware implements MiddlewareInterface
 		$sessions = Sessions::getInstance();
 		$flags = Settings::getInstance()->get('flags');
 		$verified = $sessions->verify();
+		if(!$verified && !empty($_GET['api_mode']))
+		{
+			return $this->sendErrorResponse(['msg' => 'A valid session could not be found'], 401);
+		}
+
 		if ($currentApp == 'login' && isset($_POST['login']) && isset($_POST['passwd']))
 		{
 			$login = $request->getParsedBody()['login'];
@@ -114,7 +119,8 @@ class SessionsMiddleware implements MiddlewareInterface
 			if ($currentApp == 'mobilefrontend')
 			{
 				$process_login = new Login();
-				if ($process_login->login())
+				$result = $process_login->login();
+				if (!empty($result['session_id']))
 				{
 					Settings::getInstance()->set('flags', $flags);
 					return $handler->handle($request);
@@ -146,7 +152,8 @@ class SessionsMiddleware implements MiddlewareInterface
 			else
 			{
 				$process_login = new Login();
-				if ($process_login->login())
+				$result = $process_login->login();
+				if (!empty($result['session_id']))
 				{
 					if (!$currentApp)
 					{

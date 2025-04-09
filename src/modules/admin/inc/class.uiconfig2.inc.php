@@ -91,7 +91,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -215,7 +215,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -312,7 +312,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -353,7 +353,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -365,7 +365,8 @@ class admin_uiconfig2
 		}
 
 		phpgwapi_xslttemplates::getInstance()->add_file(array(
-			'config', 'nextmatchs',
+			'config',
+			'nextmatchs',
 			'search_field'
 		));
 
@@ -376,6 +377,15 @@ class admin_uiconfig2
 		//_debug_array($config_info);die();
 		foreach ($config_info as $entry)
 		{
+			if (is_array($entry['value']))
+			{
+				$text_value = implode(', ', $entry['value']);
+			}
+			else
+			{
+				$text_value = $entry['value'] ? $entry['value'] : lang('no value');
+			}
+
 			$content[] = array(
 				'name'						=> $entry['name'],
 				'link_value'				=> phpgw::link('/index.php', array('menuaction' => 'admin.uiconfig2.edit_value', 'section_id' => $section_id, 'attrib_id' => $entry['id'], 'id' => $entry['value_id'], 'location_id' => $this->location_id)),
@@ -384,7 +394,7 @@ class admin_uiconfig2
 				'lang_edit_config_text'		=> lang('edit the config'),
 				'text_edit'					=> lang('edit'),
 				'text_delete'				=> lang('delete'),
-				'text_value'				=> $entry['value'] ? $entry['value'] : lang('no value'),
+				'text_value'				=> $text_value,
 				'lang_delete_config_text'	=> lang('delete the config'),
 				'lang_value_text'			=> $entry['descr'] ? $entry['descr'] : lang('values for this config section'),
 			);
@@ -474,7 +484,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -547,9 +557,13 @@ class admin_uiconfig2
 		$section = $this->bo->read_single_section($section_id);
 
 
-		if ($values['input_type'] == 'listbox')
+		if (in_array($values['input_type'], ['listbox', 'radio', 'checkbox']))
 		{
 			$multiple_choice = true;
+		}
+		else
+		{
+			$multiple_choice = null;
 		}
 
 		$msgbox_data = $this->phpgwapi_common->msgbox_data($receipt);
@@ -599,7 +613,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -612,7 +626,8 @@ class admin_uiconfig2
 		}
 
 		phpgwapi_xslttemplates::getInstance()->add_file(array(
-			'config', 'nextmatchs',
+			'config',
+			'nextmatchs',
 			'search_field'
 		));
 
@@ -732,7 +747,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -806,7 +821,7 @@ class admin_uiconfig2
 		$section = $this->bo->read_single_section($section_id);
 		$attrib = $this->bo->read_single_attrib($section_id, $attrib_id);
 
-		if ($attrib['input_type'] == 'listbox')
+		if (in_array($attrib['input_type'], ['listbox', 'radio', 'checkbox']))
 		{
 			$choice_list = $this->bo->select_choice_list($section_id, $attrib_id, $values['value']);
 		}
@@ -867,7 +882,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -909,7 +924,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -953,7 +968,7 @@ class admin_uiconfig2
 	{
 		if (!$this->acl->check('run', ACL_READ, 'admin'))
 		{
-			$this->no_access();
+			phpgw::no_access();
 			return;
 		}
 
@@ -993,28 +1008,5 @@ class admin_uiconfig2
 
 		Settings::getInstance()->update('flags', ['app_header' => "{$this->currentapp}::{$this->acl_location}::" . lang('admin') . ' - ' . $appname . ': ' . $function_msg]);
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('delete' => $data));
-	}
-
-	function no_access($message = '')
-	{
-		phpgwapi_xslttemplates::getInstance()->add_file(array('no_access'));
-
-		$receipt['error'][] = array('msg' => lang('NO ACCESS'));
-		if ($message)
-		{
-			$receipt['error'][] = array('msg' => $message);
-		}
-
-		$msgbox_data = $this->phpgwapi_common->msgbox_data($receipt);
-
-		$data = array(
-			'msgbox_data'	=> $this->phpgwapi_common->msgbox($msgbox_data),
-			'message'		=> $message,
-		);
-
-		$msg	= lang('No access');
-
-		Settings::getInstance()->update('flags', ['app_header' => "{$this->currentapp}::{$this->acl_location}::" . lang('admin') . ' - ' . $appname . ': ' . $function_msg]);
-		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('no_access' => $data));
 	}
 }

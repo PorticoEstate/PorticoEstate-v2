@@ -4,12 +4,15 @@ import {IBookingUser, IServerSettings} from "@/service/types/api.types";
 import {IApplication} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
-import {IEvent} from "@/service/pecalendar.types";
-import {IAgeGroup, IAudience} from "@/service/types/Building";
+import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
+import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
+import {BrregOrganization, IOrganization, Organization} from "@/service/types/api/organization.types";
+import {IServerMessage} from "@/service/types/api/server-messages.types";
+import {ISearchDataOptimized} from "@/service/types/api/search.types";
+import {IArticle} from "@/service/types/api/order-articles.types";
 
 
-
-const FetchAuthOptions = (defaultOptions?: RequestInit) => {
+export const FetchAuthOptions = (defaultOptions?: RequestInit) => {
 
     let options = {};
 
@@ -68,20 +71,33 @@ export async function fetchBuildingSchedule(building_id: number, dates: string[]
 }
 
 
+export async function fetchBuildingSeasons(building_id: number, instance?: string): Promise<Season[]> {
 
-export async function fetchFreeTimeSlots(building_id: number, instance?: string) {
-    const currDate = DateTime.fromJSDate(new Date());
-    const maxEndDate = currDate.plus({months: BOOKING_MONTH_HORIZON}).endOf('month');
 
-    const url = phpGWLink('bookingfrontend/', {
-        menuaction: 'bookingfrontend.uibooking.get_freetime',
-        building_id,
-        start_date: currDate.toFormat('dd/LL-yyyy'),
-        end_date: maxEndDate.toFormat('dd/LL-yyyy'),
+    const url = phpGWLink(['bookingfrontend', 'buildings', building_id, 'seasons'], {
+        // menuaction: 'bookingfrontend.uibooking.building_schedule_pe',
+        // building_id,
+        // dates: dates,
     }, true, instance);
+
     const response = await fetch(url);
     const result = await response.json();
+    // console.log("fetchBuildingSchedule", result);
     return result;
+}
+
+
+
+export async function fetchFreeTimeSlotsForRange(building_id: number, start: DateTime, end: DateTime, instance?: string): Promise<Record<string, IFreeTimeSlot[]>> {
+	const url = phpGWLink('bookingfrontend/', {
+		menuaction: 'bookingfrontend.uibooking.get_freetime',
+		building_id,
+		start_date: start.toFormat('dd/LL-yyyy'),
+		end_date: end.toFormat('dd/LL-yyyy'),
+	}, true, instance);
+	const response = await fetch(url);
+	const result = await response.json();
+	return result;
 }
 
 
@@ -115,11 +131,58 @@ export async function fetchPartialApplications(): Promise<{ list: IApplication[]
 }
 
 
+
+export async function fetchMyOrganizations(): Promise<IOrganization[]> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', 'my']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result?.results;
+}
+
+export async function searchOrganizations(query: string): Promise<IOrganization[]> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', 'list'], {query: query});
+    const response = await fetch(url);
+    const result = await response.json();
+    return result?.results;
+}
+
+export async function validateOrgNum(org_num: string): Promise<BrregOrganization> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', 'lookup', org_num]);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+
 export async function fetchDeliveredApplications(): Promise<{ list: IApplication[], total_sum: number }> {
     const url = phpGWLink(['bookingfrontend', 'applications']);
     const response = await fetch(url);
     const result = await response.json();
     return result;
+}
+
+
+export async function fetchServerMessages(): Promise<IServerMessage[]> {
+    const url = phpGWLink(['bookingfrontend', 'user', 'messages']);
+    const response = await fetch(url, FetchAuthOptions());
+    const result = await response.json();
+    return result;
+}
+
+
+export async function fetchArticlesForResources(resource_ids: number[]): Promise<IArticle[]> {
+    const url = phpGWLink(['bookingfrontend', 'applications', 'articles'], {resources: resource_ids});
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+export async function fetchSearchDataClient(): Promise<ISearchDataOptimized> {
+	const url = phpGWLink(['bookingfrontend', 'searchdataalloptimised']);
+	const response = await fetch(url);
+	const result = await response.json();
+	console.log("SEARCH DATA FETCHED")
+	return result;
 }
 
 export async function fetchInvoices(): Promise<ICompletedReservation[]> {
@@ -151,5 +214,3 @@ export async function deletePartialApplication(id: number): Promise<void> {
 
     return result;
 }
-
-

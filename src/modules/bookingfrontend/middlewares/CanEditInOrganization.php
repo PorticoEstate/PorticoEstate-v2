@@ -26,7 +26,7 @@ class CanEditInOrganization implements MiddlewareInterface
         $route = $routeContext->getRoute();                                                                                                                                                                                                                                                             
         $orgId = $route->getArgument('id');
         
-        if (!$this->service->canEdit($orgId)) {
+        if (!$this->service->hasAccess($orgId)) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Forbidden'],
                 403

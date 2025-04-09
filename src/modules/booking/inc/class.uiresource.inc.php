@@ -753,7 +753,7 @@ class booking_uiresource extends booking_uicommon
 		$e_lock_system_id = Sanitizer::get_var('e_lock_system_id', 'int');
 		$e_lock_resource_id = Sanitizer::get_var('e_lock_resource_id', 'string');
 
-		if (!$e_lock_system_id || !$e_lock_resource_id)
+		if ($e_lock_system_id === null || $e_lock_system_id === '' || $e_lock_resource_id === null || $e_lock_resource_id === '')
 		{
 			return array(
 				'ok' => false,

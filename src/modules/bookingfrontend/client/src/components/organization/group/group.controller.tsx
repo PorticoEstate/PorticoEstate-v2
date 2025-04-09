@@ -4,10 +4,10 @@ import { useState } from 'react';
 import GroupUpdateController from './group.update';
 import GroupView from './group.view';
 import { Button } from '@digdir/designsystemet-react';
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPen, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+import { PencilIcon, ArrowLeftIcon } from '@navikt/aksel-icons';
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import { useRouter } from 'next/navigation'
+import { useGroupData } from '@/service/api/organization';
 
 interface GroupController {
     data: Group;
@@ -16,15 +16,15 @@ interface GroupController {
 const GroupController = ({ data }: GroupController) => {
     const router = useRouter();
     const [editing, setEditing] = useState(false);
+    const group = useGroupData(data.organization.id, data.id, data);
     const t = useTrans();
-
     const btn = (
         <Button variant='secondary' onClick={() => setEditing(!editing)}>
             { editing
                 ? t('bookingfrontend.cancel')
                 : (
                     <>
-                        <FontAwesomeIcon icon={faPen} />
+                        <PencilIcon />
                         <span>{t('bookingfrontend.edit')}</span>
                     </>
                 )
@@ -36,17 +36,21 @@ const GroupController = ({ data }: GroupController) => {
         <>
             { 
                 editing 
-                ? <GroupUpdateController group={data} button={btn}/>
+                ? <GroupUpdateController group={group.data} button={btn}/>
                 : (
                     <>
                         <div style={{display: 'flex'}}>
-                            <Button style={{marginRight: '0.5rem'}} variant='secondary' onClick={() => router.back()}>
-                                <FontAwesomeIcon icon={faArrowLeft} />
+                            <Button 
+                                style={{marginRight: '0.5rem'}} 
+                                variant='secondary' 
+                                onClick={() => router.back()}
+                            >
+                                <ArrowLeftIcon />
                                 {t('bookingfrontend.back')}
                             </Button>
                             {btn}
                         </div>
-                        <GroupView group={data}/>
+                        <GroupView group={group.data}/>
                     </>
                 )
             }

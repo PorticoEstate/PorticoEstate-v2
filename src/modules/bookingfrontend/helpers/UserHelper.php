@@ -6,7 +6,8 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Config;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
-
+use App\modules\phpgwapi\controllers\OpenIDConnect;
+use App\modules\phpgwapi\security\Sessions;
 
 class UserHelper
 {
@@ -418,6 +419,86 @@ class UserHelper
 		return $group;
 	}
 
+
+	/**
+	 * Get groups associated with the current user
+	 * Retrieves groups where the user is either an organization admin or delegate
+	 *
+	 * @return array List of groups the user has access to
+	 */
+	public function getUserGroups(): array
+	{
+		if (!$this->is_logged_in()) {
+			return [];
+		}
+
+		// Get organization IDs from user's organizations
+		$orgIds = [];
+
+		// Use the existing organizations property
+		if ($this->organizations) {
+			$orgIds = array_column($this->organizations, 'org_id');
+		}
+
+		// Also add organizations where user is directly the admin by SSN
+		if ($this->ssn) {
+			$sql = "SELECT id FROM bb_organization WHERE customer_ssn = :ssn";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([':ssn' => $this->ssn]);
+			$directOrgIds = array_column($stmt->fetchAll(\PDO::FETCH_ASSOC), 'id');
+
+			$orgIds = array_merge($orgIds, $directOrgIds);
+			$orgIds = array_unique($orgIds); // Remove duplicates
+		}
+
+		if (empty($orgIds)) {
+			return [];
+		}
+
+		// Get all groups for these organizations
+		$placeholders = implode(',', array_fill(0, count($orgIds), '?'));
+		$sql = "SELECT g.*, o.name as organization_name
+            FROM bb_group g
+            JOIN bb_organization o ON g.organization_id = o.id
+            WHERE g.organization_id IN ($placeholders)
+            AND g.active = 1
+            ORDER BY g.name";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute($orgIds);
+		$groups = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+		return $groups;
+	}
+
+	/**
+	 * Get groups for a specific organization
+	 *
+	 * @param int $organization_id The ID of the organization
+	 * @param bool $checkAccess Whether to check if the user has access to the organization
+	 * @return array List of groups belonging to the organization
+	 */
+	public function getOrganizationGroups(int $organization_id, bool $checkAccess = true): array
+	{
+		// Check if user has access to this organization if required
+		if ($checkAccess && !$this->is_organization_admin($organization_id)) {
+			return [];
+		}
+
+		$sql = "SELECT g.*, o.name as organization_name
+            FROM bb_group g
+            JOIN bb_organization o ON g.organization_id = o.id
+            WHERE g.organization_id = :organization_id
+            AND g.active = 1
+            ORDER BY g.name";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([':organization_id' => $organization_id]);
+		$groups = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+		return $groups;
+	}
+
 	protected function write_user_orgnr_to_session()
 	{
 		if (!$this->is_logged_in())
@@ -473,16 +554,108 @@ class UserHelper
 		return $flags['currentapp'];
 	}
 
+	public function process_callback()
+	{
+
+		$skip_redirect = true;
+
+		$this->validate_ssn_login($redirect = array(), $skip_redirect);
+
+		$after = json_decode(\Sanitizer::get_var('after', 'raw', 'COOKIE'), true);
+
+		$login_as_organization = \Sanitizer::get_var('login_as_organization', 'int', 'COOKIE');
+		Sessions::getInstance()->phpgw_setcookie('login_as_organization', '0');
+		Sessions::getInstance()->phpgw_setcookie('after', '', -3600);
+
+		if ($login_as_organization)
+		{
+			/**
+			 * Pick up the external login-info
+			 */
+			$bouser = new UserHelper();
+			$bouser->log_in();
+		}
+
+		// If 'after' contains a '/', treat it as a URI (e.g., /this/page?with=params)
+		if (strpos($after, '/') !== false || strpos($after, '?') !== false)
+		{
+			// Parse the URL to extract the path and query parameters
+			$parsed_url = parse_url($after);
+			$path = isset($parsed_url['path']) ? $parsed_url['path'] : '';
+			$query = isset($parsed_url['query']) ? $parsed_url['query'] : '';
+
+			// Convert the query string into an array
+			$query_params = [];
+			if (!empty($query))
+			{
+				parse_str($query, $query_params);
+			}
+			$query_params['rid'] = Sessions::getInstance()->generate_click_history();
+
+			// Sanitize and validate the path
+			if (filter_var($path, FILTER_SANITIZE_URL))
+			{
+				// Redirect to the extracted path with query parameters
+				\phpgw::redirect_link('/bookingfrontend' . $path, $query_params);
+				exit;
+			}
+		}
+		else if (!empty($after))
+		{
+			// If 'after' doesn't look like a URI, treat it as query params
+			$redirect_data = [];
+			parse_str($after, $redirect_data);
+			if (isset($redirect_data['click_history']))
+			{
+				unset($redirect_data['click_history']);
+			}
+			if ($redirect_data)
+			{
+				$redirect_data['rid'] = Sessions::getInstance()->generate_click_history();
+				// Redirect to /bookingfrontend/ with the provided query params
+				\phpgw::redirect_link('/bookingfrontend/', $redirect_data);
+				exit;
+			}
+			else
+			{
+				\phpgw::redirect_link('/bookingfrontend/');
+				exit;
+			}
+
+		}
+		else
+		{
+			\phpgw::redirect_link('/bookingfrontend/');
+		}
+	}
+
+	public function get_cached_user_data()
+	{
+		return Cache::session_get($this->get_module(), self::USERARRAY_SESSION_KEY);
+	}
+
 	/**
 	 * Validate external safe login - and return to me
 	 * @param array $redirect
 	 */
 	public function validate_ssn_login($redirect = array(), $skip_redirect = false)
 	{
+
+		$after = str_replace('&amp;', '&', urldecode(\Sanitizer::get_var('after', 'raw', 'GET')));
+
+		if ($after)
+		{
+			//convert the query string into an array: menuaction=bookingfrontend.uibuilding.show&id=46&click_history=44a37f06be01ecb798e1e7b2a782fb09
+			//parse_str($after, $after);
+
+			Sessions::getInstance()->phpgw_setcookie('after', json_encode($after), 0);
+		}
+
+
 		static $user_data = array();
 		if (!$user_data)
 		{
-			$user_data = Cache::session_get($this->get_module(), self::USERARRAY_SESSION_KEY);
+			$user_data = $this->get_cached_user_data();
 		}
 		if (!empty($user_data['ssn']))
 		{
@@ -493,19 +666,57 @@ class UserHelper
 		{
 			$ssn = $this->config->config_data['test_ssn'];
 			Cache::message_set('Warning: ssn is set by test-data', 'error');
-		} else 
-		if (!empty($_SERVER['HTTP_UID']))
-        {
-            $ssn = (string)$_SERVER['HTTP_UID'];
-        } 
+		}
+		else if (!empty($_SERVER['HTTP_UID']))
+		{
+			$ssn = (string)$_SERVER['HTTP_UID'];
+		}
 		if (!empty($_SERVER['OIDC_pid']))
-        {
-            $ssn = (string)$_SERVER['OIDC_pid'];
-        }
+		{
+			$ssn = (string)$_SERVER['OIDC_pid'];
+		}
 		if (!empty($_SERVER['REDIRECT_OIDC_pid']))
-        {
-            $ssn = (string)$_SERVER['REDIRECT_OIDC_pid'];
-        }
+		{
+			$ssn = (string)$_SERVER['REDIRECT_OIDC_pid'];
+		}
+
+		$location_obj = new \App\modules\phpgwapi\controllers\Locations();
+		$location_id	= $location_obj->get_id('admin', 'openid_connect');
+		if ($location_id)
+		{
+			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
+		}
+
+		/**
+		 * OpenID Connect
+		 */
+		$redirect_after_callback = '';
+		if (!empty($config_openid['common']['method_frontend']) && in_array('remote', $config_openid['common']['method_frontend']))
+		{
+			$get_ssn_callback = false;
+			//check for the url path contains /bookingfrontend/userhelper/callback
+			if (strpos($_SERVER['REQUEST_URI'], '/bookingfrontend/userhelper/callback') !== false)
+			{
+				$get_ssn_callback = true;
+			}
+
+			$type = 'remote';
+			$config_openid[$type]['redirect_uri'] = \phpgw::link('/bookingfrontend/userhelper/callback', ['type' => $type], false, true);
+			$OpenIDConnect = OpenIDConnect::getInstance($type, $config_openid);
+
+			if (!$get_ssn_callback)
+			{
+				Cache::session_set('bookingfrontend', 'redirect_after_callback', json_encode($redirect));
+				$OpenIDConnect->authenticate();
+				exit;
+			}
+			else
+			{
+				$ssn = $OpenIDConnect->get_username();
+				$redirect_after_callback = Cache::session_get('bookingfrontend', 'redirect_after_callback');
+				Cache::session_clear('bookingfrontend', 'redirect_after_callback');
+			}
+		}
 
 		if (isset($this->config->config_data['bypass_external_login']) && $this->config->config_data['bypass_external_login'])
 		{
@@ -599,6 +810,16 @@ class UserHelper
 		}
 
 		Cache::session_set($this->get_module(), self::USERARRAY_SESSION_KEY, $ret);
+
+		if ($redirect_after_callback)
+		{
+			$redirect = json_decode($redirect_after_callback, true);
+			if ($redirect)
+			{
+				\phpgw::redirect_link('/bookingfrontend/', $redirect);
+			}
+		}
+
 
 		return $ret;
 	}

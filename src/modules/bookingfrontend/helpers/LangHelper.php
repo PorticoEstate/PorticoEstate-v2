@@ -10,9 +10,33 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 
 use Sanitizer;
+use OpenApi\Annotations as OA;
 
 class LangHelper
 {
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/lang",
+     *     summary="Get language settings",
+     *     tags={"Translation"},
+     *     @OA\Parameter(
+     *         name="lang",
+     *         in="query",
+     *         description="Language code",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Language settings",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="key", type="string", description="Translation key"),
+     *             @OA\Property(property="value", type="string", description="Translation value")
+     *         )
+     *     )
+     * )
+     */
     public function process(Request $request, Response $response, array $args = []): Response
     {
         $userSettings = Settings::getInstance()->get('user');
@@ -23,11 +47,11 @@ class LangHelper
             ($request->getQueryParams()['lang'] ??
                 ($current_lang ?? "no"));
 
-        // Only set cookie if the language has changed
-        if ($selected_lang && $selected_lang !== $current_lang) {
-            $sessions = Sessions::getInstance();
-            $sessions->phpgw_setcookie('selected_lang', $selected_lang, (time() + (60 * 60 * 24 * 14)));
-        }
+//        // Only set cookie if the language has changed
+//        if ($selected_lang && $selected_lang !== $current_lang) {
+//            $sessions = Sessions::getInstance();
+//            $sessions->phpgw_setcookie('selected_lang', $selected_lang, (time() + (60 * 60 * 24 * 14)));
+//        }
 
         $userlang = $selected_lang ?: $userSettings['preferences']['common']['lang'];
 

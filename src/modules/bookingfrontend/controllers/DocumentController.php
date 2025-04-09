@@ -23,9 +23,16 @@ class DocumentController
 
     /**
      * @OA\Get(
-     *     path="/bookingfrontend/{ownertype="buildings"|"resources"}/{id}/documents",
+     *     path="/bookingfrontend/{ownertype}/{id}/documents",
      *     summary="Get documents for a specific owner",
      *     tags={"Buildings", "Resources"},
+     *     @OA\Parameter(
+     *         name="ownertype",
+     *         in="path",
+     *         description="Type of the owner (buildings or resources)",
+     *         required=true,
+     *         @OA\Schema(type="string", enum={"buildings", "resources"})
+     *     ),
      *     @OA\Parameter(
      *         name="id",
      *         in="path",

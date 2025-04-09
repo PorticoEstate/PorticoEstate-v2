@@ -3,13 +3,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@digdir/designsystemet-react";
 import { useForm } from "react-hook-form";
 import { Organization } from "@/service/types/api/organization.types";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { patchOrganizationRequest } from "@/service/api/organization";
+import { useQueryClient } from "@tanstack/react-query";
+import { updateOrganization } from "@/service/api/organization";
 import { patchOrganizationSchema, UpdatingOrganization } from "./schemas";
 import UpdateOrganizationForm from "./form/organization.update.form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
+import { FloppydiskIcon } from '@navikt/aksel-icons';
 
 interface OrganizationUpdateProps {
     org: Organization;
@@ -17,15 +16,7 @@ interface OrganizationUpdateProps {
 
 const OrganizationUpdate = ({ org }: OrganizationUpdateProps) => {
     const t = useTrans();
-    const queryClient = useQueryClient();
-
-    const patch = useMutation({
-        mutationFn: (data: any) => patchOrganizationRequest(org.id, data),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['organization', org.id] });
-        }
-    })
-
+    const patch = updateOrganization(org.id, useQueryClient());
     const {
         control,
         handleSubmit,
@@ -64,7 +55,6 @@ const OrganizationUpdate = ({ org }: OrganizationUpdateProps) => {
             ]
         }
     });
-
     const save = (org: UpdatingOrganization) => {
         patch.mutate(org);
     }
@@ -76,7 +66,7 @@ const OrganizationUpdate = ({ org }: OrganizationUpdateProps) => {
                 control={control}
             />
             <Button onClick={handleSubmit(save)}>
-                <FontAwesomeIcon icon={faFloppyDisk} />
+                <FloppydiskIcon />
                 {t('bookingfrontend.save')}
             </Button>
         </>

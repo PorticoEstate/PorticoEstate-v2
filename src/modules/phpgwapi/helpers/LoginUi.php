@@ -69,7 +69,7 @@
 		function check_logoutcode( $code )
 		{
 			$sessions = Sessions::getInstance();
-			$sessions->phpgw_setcookie(session_name());
+	
 			switch ($code)
 			{
 				case 1:
@@ -413,6 +413,7 @@
 			{
 				$this->tmpl->set_var('lightbox', true);
 			}
+
 			if (isset($_REQUEST['hide_lightbox']) && $_REQUEST['hide_lightbox'])
 			{
 				$onload = <<<JS
@@ -608,6 +609,7 @@ HTML;
 				$this->tmpl->parse('password_blocks', 'password_block');
 				$this->tmpl->parse('button_blocks', 'button_block');
 			}
-			$this->tmpl->pfp('loginout', 'login_form');
+			
+			return $this->tmpl->fp('loginout', 'login_form');
 		}
 	}

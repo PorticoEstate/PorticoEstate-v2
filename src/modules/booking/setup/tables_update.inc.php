@@ -7638,3 +7638,88 @@ function booking_upgrade0_2_106($oProc)
 		return $currentver;
 	}
 }
+
+/**
+ * Update booking version from 0.2.107 to 0.2.108
+ * 	'additional_invoice_information'
+ */
+$test[] = '0.2.107';
+function booking_upgrade0_2_107($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn(
+		'bb_article_mapping',
+		'article_alternative_code',
+		array('type' => 'varchar', 'precision' => '100', 'nullable' => true),
+	);
+
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.108';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.108';
+function booking_upgrade0_2_108($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$db = $oProc->m_odb;
+
+	$db->query("SELECT min(account_id) as account_id FROM phpgw_accounts WHERE account_type = 'u'", __LINE__, __FILE__);
+	$db->next_record();
+	$account_id = $db->f('account_id');
+
+	$sql = "SELECT id FROM bb_completed_reservation_export_file WHERE id = -1";
+	$db->query($sql, __LINE__, __FILE__);
+	if (!$db->next_record())
+	{
+		$db->query("INSERT INTO bb_completed_reservation_export_file (
+			id, filename, total_cost, type, total_items, created_on, created_by)
+			VALUES (-1, 'Arkivert', 0, 'internal', 0, NOW(), {$account_id})", __LINE__, __FILE__);
+	}
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.109';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.109';
+function booking_upgrade0_2_109($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn(
+		'bb_payment',
+		'posted_to_accounting',
+		array('type' => 'int', 'precision' => '8', 'nullable' => true),
+	);
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.110';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.110';
+function booking_upgrade0_2_110($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn(
+		'bb_payment',
+		'refund_posted_to_accounting',
+		array('type' => 'int', 'precision' => '8', 'nullable' => true),
+	);
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.111';
+		return $currentver;
+	}
+}

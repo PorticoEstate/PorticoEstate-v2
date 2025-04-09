@@ -13,6 +13,7 @@ use Psr\Http\Server\RequestHandlerInterface;
 use Throwable;
 use ErrorException;
 use App\modules\phpgwapi\services\Settings;
+use Sanitizer;
 
 $serverSettings  = Settings::getInstance()->get('server');
 
@@ -72,6 +73,8 @@ class ErrorHandler
 	private $userSettings;
 	private $Log;
 	private $db;
+	
+	private $path;
 
 	/**
 	 * ErrorHandler constructor.
@@ -100,6 +103,7 @@ class ErrorHandler
 		Sessions::getInstance()->verify();
 
 		$path = $request->getUri()->getPath();
+		$this->path = $path;
 		$routePath_arr = explode('/', $path);
 		$currentApp = $routePath_arr[1];
 		$flags = [
@@ -144,6 +148,7 @@ class ErrorHandler
 			return true;
 		}
 
+		$path = $this->path;
 		if (isset($this->serverSettings['log_levels']['global_level']))
 		{
 			switch ($this->serverSettings['log_levels']['global_level'])
@@ -190,10 +195,19 @@ class ErrorHandler
 
 		$bt = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS);
 
+		$IP_address = Sanitizer::get_ip_address(true);
+
+		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+		$referer = str_replace('?', "\n?", $referer);
+		$referer = str_replace('&', "\n&", $referer);
+		$parametres = $_GET;
+		$parametres = print_r($parametres, true);
+		$trace = "IP_address: {$IP_address}</b>\n Referer: {$referer} </b>\nParameters: {$parametres}</b>\nPath: {$path}</b>\n" . $this->phpgw_parse_backtrace($bt);
+
 		$log_args = array(
 			'file'	=> $error_file,
 			'line'	=> $error_line,
-			'text'	=> "$error_msg\n" . $this->phpgw_parse_backtrace($bt)
+			'text'	=> "$error_msg\n" . $trace
 		);
 		$message = '';
 		switch ($error_level)
@@ -205,7 +219,7 @@ class ErrorHandler
 				if (ini_get('display_errors'))
 				{
 					echo '<p class="msg">' . lang('ERROR: %1 in %2 at line %3', $error_msg, $error_file, $error_line) . "</p>\n";
-					die('<pre>' . $this->phpgw_parse_backtrace($bt) . "</pre>\n");
+					die('<pre>' . $trace . "</pre>\n");
 				}
 				else
 				{
@@ -216,7 +230,7 @@ class ErrorHandler
 				$log_args['severity'] = 'W';
 				$log->warn($log_args);
 				$message .= '<p class="msg">' . lang('Warning: %1 in %2 at line %3', $error_msg, $error_file, $error_line) . "</p>\n";
-				$message .= '<pre>' . $this->phpgw_parse_backtrace($bt) . "</pre>\n";
+				$message .= '<pre>' . $trace . "</pre>\n";
 				break;
 
 			case PHPGW_E_INFO:
@@ -236,7 +250,7 @@ class ErrorHandler
 				if (isset($this->serverSettings['log_levels']['global_level']) && $this->serverSettings['log_levels']['global_level'] == 'N')
 				{
 					$message .=  '<p>' . lang('Notice: %1 in %2 at line %3', $error_msg, $error_file, $error_line) . "</p>\n";
-					$message .=  '<pre>' . $this->phpgw_parse_backtrace($bt) . "</pre>\n";
+					$message .=  '<pre>' . $trace . "</pre>\n";
 				}
 				break;
 
@@ -245,7 +259,7 @@ class ErrorHandler
 				$log_args['severity'] = 'DP';
 				$log->deprecated($log_args);
 				$message .=  '<p class="msg">' . lang('deprecated: %1 in %2 at line %3', $error_msg, $error_file, $error_line) . "</p>\n";
-				$message .=  '<pre>' . $this->phpgw_parse_backtrace($bt) . "</pre>\n";
+				$message .=  '<pre>' . $trace . "</pre>\n";
 				break;
 		}
 
@@ -356,9 +370,20 @@ class ErrorHandler
 	 * Last resort exception handler
 	 *
 	 * @param object $e the Exception that was thrown
+	 * @param string $path the path where the error occurred
 	 */
 	function phpgw_handle_exception($e)
 	{
+		
+		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
+		$referer = str_replace('?', "\n?", $referer);
+		$referer = str_replace('&', "\n&", $referer);
+		$path = $this->path;
+		$IP_address = Sanitizer::get_ip_address(true);
+		$parametres = $_GET;
+		$parametres = print_r($parametres, true);
+		$trace = "IP_address: {$IP_address}</b>\nReferer: {$referer} </b>\nPath: {$path}</b>\nParameters: {$parametres}</b>\n" . $e->getTraceAsString();
+		
 		$tables = $this->db->table_names();
 		if (in_array('phpgw_log', $tables))
 		{
@@ -370,7 +395,7 @@ class ErrorHandler
 			}
 
 			$log->fatal(array(
-				'text'	=> "<b>Uncaught Exception:</b>\n" . $e->getMessage() . "\n" . $e->getTraceAsString(),
+				'text'	=> "<b>Uncaught Exception:</b>\n" . $e->getMessage() . "\n" . $trace,
 				'line'	=> $e->getline(),
 				'file'	=> $e->getfile()
 			));
@@ -410,7 +435,7 @@ HTML;
 		}
 
 		$msg = $e->getMessage();
-		$trace = $e->getTraceAsString();
+		$trace = $trace;
 		echo <<<HTML
 			<h1>{$error_header}:</h1>
 			<strong>{$msg}</strong>

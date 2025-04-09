@@ -7,6 +7,7 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\services\ApplicationService;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -173,10 +174,11 @@ class ApplicationController extends DocumentController
                 );
             }
 
-            $deleted = $this->applicationService->deletePartial($id);
 
-            return $response->withHeader('Content-Type', 'application/json')
-                ->write(json_encode(['deleted' => $deleted]));
+            $deleted = $this->applicationService->deletePartial($id);
+			$response->getBody()->write(json_encode(['deleted' => $deleted]));
+			return $response->withStatus(200)
+				->withHeader('Content-Type', 'application/json');
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -194,7 +196,19 @@ class ApplicationController extends DocumentController
      *     tags={"Applications"},
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/Application")
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/Application",
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                 )
+     *             )
+     *         )
      *     ),
      *     @OA\Response(
      *         response=201,
@@ -275,7 +289,19 @@ class ApplicationController extends DocumentController
      *     ),
      *     @OA\RequestBody(
      *         required=true,
-     *         @OA\JsonContent(ref="#/components/schemas/Application")
+     *         @OA\JsonContent(
+     *             ref="#/components/schemas/Application",
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
+     *                 )
+     *             )
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -315,11 +341,12 @@ class ApplicationController extends DocumentController
 
             $data['id'] = $id;
             $this->applicationService->savePartialApplication($data);
+			$response->getBody()->write(json_encode([
+				'message' => 'Application updated successfully'
+			]));
+			return $response->withStatus(200)
+				->withHeader('Content-Type', 'application/json');
 
-            return $response->withHeader('Content-Type', 'application/json')
-                ->write(json_encode([
-                    'message' => 'Application updated successfully'
-                ]));
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -366,6 +393,17 @@ class ApplicationController extends DocumentController
      *                     @OA\Property(property="id", type="integer"),
      *                     @OA\Property(property="from_", type="string", format="date-time"),
      *                     @OA\Property(property="to_", type="string", format="date-time")
+     *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="articles",
+     *                 type="array",
+     *                 description="Complete replacement of articles",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Article mapping ID"),
+     *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
+     *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
      *                 )
      *             )
      *         )
@@ -420,12 +458,11 @@ class ApplicationController extends DocumentController
 
             $data['id'] = $id;
             $this->applicationService->patchApplication($data);
-
-            return $response->withHeader('Content-Type', 'application/json')
-                ->withStatus(200)
-                ->write(json_encode([
-                    'message' => 'Application updated successfully'
-                ]));
+			$response->getBody()->write(json_encode([
+				'message' => 'Application updated successfully'
+			]));
+			return $response->withStatus(200)
+				->withHeader('Content-Type', 'application/json');
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -434,6 +471,198 @@ class ApplicationController extends DocumentController
             );
         }
     }
+
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/applications/partials/checkout",
+     *     summary="Update and finalize all partial applications with contact and organization info",
+     *     tags={"Applications"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
+     *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
+     *             @OA\Property(property="organizationNumber", type="string"),
+     *             @OA\Property(property="organizationName", type="string"),
+     *             @OA\Property(property="contactName", type="string"),
+     *             @OA\Property(property="contactEmail", type="string"),
+     *             @OA\Property(property="contactPhone", type="string"),
+     *             @OA\Property(property="street", type="string"),
+     *             @OA\Property(property="zipCode", type="string"),
+     *             @OA\Property(property="city", type="string"),
+     *             @OA\Property(property="eventTitle", type="string"),
+     *             @OA\Property(property="organizerName", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Applications updated successfully"
+     *     )
+     * )
+     */
+    public function checkoutPartials(Request $request, Response $response): Response
+    {
+        try {
+            $session = Sessions::getInstance();
+            $session_id = $session->get_session_id();
+
+            if (empty($session_id)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'No active session'],
+                    400
+                );
+            }
+
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
+
+            try {
+				// Update all partial applications
+				$result = $this->applicationService->checkoutPartials($session_id, $data);
+
+				// Add timestamp and session info for debugging
+				$result['debug_timestamp'] = date('Y-m-d H:i:s');
+				$result['debug_session_id'] = $session_id;
+				
+				// Add success message to cache
+				$message = count($result['updated']) > 1 ? 
+					lang('Your applications have now been processed and confirmation emails have been sent to you.') : 
+					lang('your application has now been processed and a confirmation email has been sent to you.');
+				$spam_filter_msg = lang('Please check your Spam Filter if you are missing mail.');
+				Cache::message_set("{$message}<br/>{$spam_filter_msg}");
+
+				$response->getBody()->write(json_encode([
+					'message' => 'Applications processed successfully',
+					'applications' => $result['updated'],
+					'skipped' => $result['skipped'],
+					'debug_info' => [
+						'collisions' => $result['debug_collisions'],
+						'timestamp' => $result['debug_timestamp'],
+						'session_id' => $result['debug_session_id']
+					]
+				]));
+				return $response->withHeader('Content-Type', 'application/json');
+
+            } catch (Exception $e) {
+                // Check if the error message contains validation errors
+                if (strpos($e->getMessage(), ',') !== false) {
+                    // This is likely a validation error with multiple messages
+                    return ResponseHelper::sendErrorResponse(
+                        ['errors' => explode(', ', $e->getMessage())],
+                        400
+                    );
+                }
+                throw $e;
+            }
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+
+	/**
+	 * @OA\Post(
+	 *     path="/bookingfrontend/applications/validate-checkout",
+	 *     summary="Validate if checkout of partial applications would succeed",
+	 *     tags={"Applications"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
+	 *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
+	 *             @OA\Property(property="organizationNumber", type="string"),
+	 *             @OA\Property(property="organizationName", type="string"),
+	 *             @OA\Property(property="contactName", type="string"),
+	 *             @OA\Property(property="contactEmail", type="string"),
+	 *             @OA\Property(property="contactPhone", type="string"),
+	 *             @OA\Property(property="street", type="string"),
+	 *             @OA\Property(property="zipCode", type="string"),
+	 *             @OA\Property(property="city", type="string"),
+	 *             @OA\Property(property="eventTitle", type="string"),
+	 *             @OA\Property(property="organizerName", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Validation results",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="valid", type="boolean"),
+	 *             @OA\Property(
+	 *                 property="applications",
+	 *                 type="array",
+	 *                 @OA\Items(
+	 *                     type="object",
+	 *                     @OA\Property(property="id", type="integer"),
+	 *                     @OA\Property(property="valid", type="boolean"),
+	 *                     @OA\Property(property="would_be_direct_booking", type="boolean"),
+	 *                     @OA\Property(
+	 *                         property="issues",
+	 *                         type="array",
+	 *                         @OA\Items(
+	 *                             type="object",
+	 *                             @OA\Property(property="type", type="string"),
+	 *                             @OA\Property(property="message", type="string")
+	 *                         )
+	 *                     )
+	 *                 )
+	 *             )
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Invalid data or no active session"
+	 *     )
+	 * )
+	 */
+	public function validateCheckout(Request $request, Response $response): Response
+	{
+		try {
+			$session = Sessions::getInstance();
+			$session_id = $session->get_session_id();
+
+			if (empty($session_id)) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'No active session'],
+					400
+				);
+			}
+
+			$data = json_decode($request->getBody()->getContents(), true);
+			if (!$data) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Invalid JSON data'],
+					400
+				);
+			}
+
+			// Validate checkout
+			$validationResults = $this->applicationService->validateCheckout($session_id, $data);
+
+			$validationResults['debug_timestamp'] = date('Y-m-d H:i:s');
+			$validationResults['debug_session_id'] = $session_id;
+
+			$response->getBody()->write(json_encode($validationResults));
+			return $response->withHeader('Content-Type', 'application/json');
+
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(
+				['error' => $e->getMessage()],
+				500
+			);
+		}
+	}
 
 
     /**
@@ -718,4 +947,174 @@ class ApplicationController extends DocumentController
         return false;
     }
 
+
+	/**
+	 * @OA\Post(
+	 *     path="/bookingfrontend/applications/simple",
+	 *     summary="Create a simple application booking for a specific timeslot",
+	 *     tags={"Applications"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             required={"resource_id", "building_id", "from", "to"},
+	 *             @OA\Property(property="resource_id", type="integer"),
+	 *             @OA\Property(property="building_id", type="integer"),
+	 *             @OA\Property(property="from", type="integer", description="Start timestamp in seconds"),
+	 *             @OA\Property(property="to", type="integer", description="End timestamp in seconds")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=201,
+	 *         description="Simple application created",
+	 *         @OA\JsonContent(
+	 *             type="object",
+	 *             @OA\Property(property="id", type="integer"),
+	 *             @OA\Property(property="message", type="string"),
+	 *             @OA\Property(property="status", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Invalid input or timeslot unavailable"
+	 *     )
+	 * )
+	 */
+	public function createSimpleApplication(Request $request, Response $response): Response
+	{
+		try {
+			$session = Sessions::getInstance();
+			$session_id = $session->get_session_id();
+
+			if (empty($session_id)) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'No active session'],
+					400
+				);
+			}
+
+			$data = json_decode($request->getBody()->getContents(), true);
+			if (!$data) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Invalid JSON data'],
+					400
+				);
+			}
+
+			// Validate required fields
+			$requiredFields = ['resource_id', 'building_id', 'from', 'to'];
+			foreach ($requiredFields as $field) {
+				if (!isset($data[$field])) {
+					return ResponseHelper::sendErrorResponse(
+						['error' => "Missing required field: {$field}"],
+						400
+					);
+				}
+			}
+
+
+			// FIXED CONVERSION: Properly convert milliseconds to date strings
+			// Debug before conversion
+			error_log("Timestamps received: from={$data['from']}, to={$data['to']}");
+			$osloTz = new \DateTimeZone('Europe/Oslo');
+			// Convert from milliseconds to seconds if needed
+			$fromTimestamp = is_numeric($data['from']) ? (int)$data['from'] : 0;
+			$toTimestamp = is_numeric($data['to']) ? (int)$data['to'] : 0;
+
+			// If these look like milliseconds (13 digits), convert to seconds
+			if ($fromTimestamp > 10000000000) {
+				$fromTimestamp = (int)($fromTimestamp / 1000);
+			}
+			if ($toTimestamp > 10000000000) {
+				$toTimestamp = (int)($toTimestamp / 1000);
+			}
+
+			// Create DateTime objects with Oslo timezone
+			$fromDate = new \DateTime('@' . $fromTimestamp); // Create with UTC
+			$fromDate->setTimezone($osloTz);                 // Convert to Oslo
+
+			$toDate = new \DateTime('@' . $toTimestamp);     // Create with UTC
+			$toDate->setTimezone($osloTz);                   // Convert to Oslo
+
+			// Format for database with Oslo timezone
+			$from = $fromDate->format('Y-m-d H:i:s');
+			$to = $toDate->format('Y-m-d H:i:s');
+
+			// Check if resource supports simple booking and is available
+			$result = $this->applicationService->createSimpleBooking(
+				(int)$data['resource_id'],
+				(int)$data['building_id'],
+				$from,
+				$to,
+				$session_id
+			);
+
+			$responseData = [
+				'id' => $result['id'],
+				'message' => 'Simple application created successfully',
+				'status' => $result['status']
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withStatus(201)
+				->withHeader('Content-Type', 'application/json');
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(
+				['error' => "Error creating simple application: " . $e->getMessage()],
+				500
+			);
+		}
+	}
+
+
+
+
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/applications/articles",
+	 *     summary="Get available articles for resources",
+	 *     tags={"Applications"},
+	 *     @OA\Parameter(
+	 *         name="resources[]",
+	 *         in="query",
+	 *         required=true,
+	 *         @OA\Schema(type="array", @OA\Items(type="integer"))
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="List of articles",
+	 *         @OA\JsonContent(
+	 *             type="array",
+	 *              @OA\Items(type="object")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function getArticlesByResources(Request $request, Response $response): Response
+	{
+		try
+		{
+			$resources = $request->getQueryParams()['resources'] ?? [];
+
+			if (empty($resources))
+			{
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Resources parameter is required'],
+					400
+				);
+			}
+
+			// Get articles by resources
+			$articles = $this->applicationService->getArticlesByResources($resources);
+
+			$response->getBody()->write(json_encode($articles));
+			return $response->withHeader('Content-Type', 'application/json');
+		} catch (Exception $e)
+		{
+			return ResponseHelper::sendErrorResponse(
+				['error' => "Error fetching articles: " . $e->getMessage()],
+				500
+			);
+		}
+	}
 }

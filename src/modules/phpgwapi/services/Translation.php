@@ -79,12 +79,14 @@ class Translation
 
 		$this->preferences = isset(Settings::getInstance()->get('user')['preferences']) ? Settings::getInstance()->get('user')['preferences'] : $preferences;
 
-		$userlang = isset($this->preferences['default_lang']) && $this->preferences['default_lang'] ? $this->preferences['default_lang'] : 'en';
+		$userlang = isset($this->serverSettings['default_lang']) && $this->serverSettings['default_lang'] ? $this->serverSettings['default_lang'] : 'en';
 		if (isset($this->preferences['common']['lang']))
 		{
 			$userlang = $this->preferences['common']['lang'];
 		}
 
+		$selected_lang = \Sanitizer::get_var('selected_lang', 'string', 'COOKIE');
+		$userlang = $selected_lang ? $selected_lang : $userlang;
 		$this->set_userlang($userlang, true);
 
 		if (

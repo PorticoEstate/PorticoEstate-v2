@@ -27,7 +27,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		'cancel' => true,
 		'get_freetime' => true,
 		'get_freetime_limit' => true,
-		'ical'	=> true
+		'ical' => true
 	);
 
 	var $organization_bo, $system_message_bo;
@@ -62,24 +62,25 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		$start_date = Sanitizer::get_var('start_date', 'date');
 		$end_date = Sanitizer::get_var('end_date', 'date');
+		
+		// Get the detailed_overlap parameter (default to false)
+		$detailed_overlap = Sanitizer::get_var('detailed_overlap', 'bool', 'REQUEST', false);
 
 		$weekdays = array();
-		$timezone	 = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
+		$timezone = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
 
 		try
 		{
-			$DateTimeZone	 = new DateTimeZone($timezone);
-		}
-		catch (Exception $ex)
+			$DateTimeZone = new DateTimeZone($timezone);
+		} catch (Exception $ex)
 		{
 			throw $ex;
 		}
 
 		try
 		{
-			$freetime = $this->bo->get_free_events($building_id, $resource_id, new DateTime(date('Y-m-d', $start_date), $DateTimeZone), new DateTime(date('Y-m-d', $end_date), $DateTimeZone), $weekdays);
-		}
-		catch (Exception $exc)
+			$freetime = $this->bo->get_free_events($building_id, $resource_id, new DateTime(date('Y-m-d', $start_date), $DateTimeZone), new DateTime(date('Y-m-d', $end_date), $DateTimeZone), $weekdays, false, false, $detailed_overlap);
+		} catch (Exception $exc)
 		{
 			return "booking_bobooking::get_free_events() - " . $exc->getMessage();
 		}
@@ -104,14 +105,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		$start_date = Sanitizer::get_var('start_date', 'date');
 		$end_date = Sanitizer::get_var('end_date', 'date');
+		
+		// Get the detailed_overlap parameter (default to false)
+		$detailed_overlap = Sanitizer::get_var('detailed_overlap', 'bool', 'REQUEST', false);
 
 		$weekdays = array();
 
 		try
 		{
-			$freetime = $this->bo->get_free_events($building_id, $resource_ids, new DateTime(date('Y-m-d', $start_date)), new DateTime(date('Y-m-d', $end_date)), $weekdays, true, $all_simple_bookings);
-		}
-		catch (Exception $exc)
+			$freetime = $this->bo->get_free_events($building_id, $resource_ids, new DateTime(date('Y-m-d', $start_date)), new DateTime(date('Y-m-d', $end_date)), $weekdays, true, $all_simple_bookings, $detailed_overlap);
+		} catch (Exception $exc)
 		{
 			return "booking_bobooking::get_free_events() - " . $exc->getMessage();
 		}
@@ -128,8 +131,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		{
 			// Split the comma-separated string into an array
 			$dates = explode(',', $dates_csv);
-		}
-		elseif (!$dates || !is_array($dates))
+		} elseif (!$dates || !is_array($dates))
 		{
 			$dates = array(Sanitizer::get_var('date', 'string', 'REQUEST', ''));
 		}
@@ -207,7 +209,6 @@ class bookingfrontend_uibooking extends booking_uibooking
 	}
 
 
-
 	public function building_schedule()
 	{
 		$dates = Sanitizer::get_var('dates');
@@ -239,7 +240,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		}
 		$data = array(
 			'ResultSet' => array(
-				"totalResultsAvailable" =>  count($results),
+				"totalResultsAvailable" => count($results),
 				"Result" => $results
 			)
 		);
@@ -295,7 +296,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		$data = array(
 			'ResultSet' => array(
-				"totalResultsAvailable" =>  count($results),
+				"totalResultsAvailable" => count($results),
 				"Result" => $results
 			)
 		);
@@ -354,14 +355,13 @@ class bookingfrontend_uibooking extends booking_uibooking
 		if (!empty($resources))
 		{
 			$towns = $this->building_bo->get_towns_for_buildings(array_column($resources, 'building_id'));
-		}
-		else
+		} else
 		{
 			$towns = array();
 		}
 		$data = array(
 			'ResultSet' => array(
-				"totalResultsAvailable" =>  count($results),
+				"totalResultsAvailable" => count($results),
 				"Result" => $results
 			),
 			'resources' => array_values($resources),
@@ -381,8 +381,28 @@ class bookingfrontend_uibooking extends booking_uibooking
 		$from_org = Sanitizer::get_var('from_org', 'boolean', "REQUEST", false);
 		$allocation_id = Sanitizer::get_var('allocation_id', 'int');
 		#The string replace is a workaround for a problem at Bergen Kommune
+
+		$timezone = !empty($this->userSettings['preferences']['common']['timezone']) ?
+			$this->userSettings['preferences']['common']['timezone'] : 'UTC';
+
 		$booking['from_'] = str_replace('%3A', ':', Sanitizer::get_var('from_', 'string', 'GET'));
 		$booking['to_'] = str_replace('%3A', ':', Sanitizer::get_var('to_', 'string', 'GET'));
+
+		// Add Unix timestamp support with timezone
+		if (is_numeric($booking['from_']) && strlen($booking['from_']) === 10)
+		{
+			$dt = new DateTime();
+			$dt->setTimestamp((int)$booking['from_']);
+			$dt->setTimezone(new DateTimeZone($timezone));
+			$booking['from_'] = $dt->format('Y-m-d H:i:s');
+		}
+		if (is_numeric($booking['to_']) && strlen($booking['to_']) === 10)
+		{
+			$dt = new DateTime();
+			$dt->setTimestamp((int)$booking['to_']);
+			$dt->setTimezone(new DateTimeZone($timezone));
+			$booking['to_'] = $dt->format('Y-m-d H:i:s');
+		}
 		foreach ($booking['from_'] as $k => $v)
 		{
 			$booking['from_'][$k] = pretty_timestamp($booking['from_'][$k]);
@@ -411,8 +431,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 			$booking['application_id'] = $allocation['application_id'];
 			array_set_default($booking, 'resources', array(Sanitizer::get_var('resource')));
 			array_set_default($booking, 'resource_ids', Sanitizer::get_var('resource_ids'));
-		}
-		else
+		} else
 		{
 			$season = $this->season_bo->read_single($_POST['season_id']);
 		}
@@ -463,7 +482,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 				$step++;
 			}
 
-			if ($errors  && Sanitizer::get_var('repeat_until', 'bool'))
+			if ($errors && Sanitizer::get_var('repeat_until', 'bool'))
 			{
 				$_POST['repeat_until'] = date("Y-m-d", phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']));
 			}
@@ -478,8 +497,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 						'id' => $allocation['organization_id'],
 						'date' => date("Y-m-d", strtotime($booking['from_']))
 					));
-				}
-				else
+				} else
 				{
 					self::redirect(array(
 						'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -487,16 +505,14 @@ class bookingfrontend_uibooking extends booking_uibooking
 						'date' => date("Y-m-d", strtotime($booking['from_']))
 					));
 				}
-			}
-			else if (($_POST['recurring'] == 'on' || $_POST['outseason'] == 'on') && !$errors && $step > 1)
+			} else if (($_POST['recurring'] == 'on' || $_POST['outseason'] == 'on') && !$errors && $step > 1)
 			{
 				if (Sanitizer::get_var('repeat_until', 'bool'))
 				{
 					$repeat_until = phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']) + 60 * 60 * 24;
 					/*hack to preserve dateformat for next step*/
 					$_POST['repeat_until'] = date("Y-m-d", phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']));
-				}
-				else
+				} else
 				{
 					$repeat_until = strtotime($season['to_']) + 60 * 60 * 24;
 					$_POST['repeat_until'] = $season['to_'];
@@ -522,8 +538,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 					{
 						$invalid_dates[$i]['from_'] = $fromdate;
 						$invalid_dates[$i]['to_'] = $todate;
-					}
-					else
+					} else
 					{
 						$valid_dates[$i]['from_'] = $fromdate;
 						$valid_dates[$i]['to_'] = $todate;
@@ -544,8 +559,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 							'id' => $allocation['organization_id'],
 							'date' => date("Y-m-d", strtotime($booking['from_']))
 						));
-					}
-					else
+					} else
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -583,8 +597,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 				'id' => $allocation['organization_id'],
 				'date' => date("Y-m-d", strtotime($booking['from_']))
 			));
-		}
-		else
+		} else
 		{
 			$booking['cancel_link'] = self::link(array(
 				'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -654,8 +667,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 					'res_names' => $res_names
 				)
 			);
-		}
-		else if ($step == 2)
+		} else if ($step == 2)
 		{
 			self::render_template_xsl(
 				'booking_new_preview',
@@ -697,8 +709,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		if ($interval->days > 0)
 		{
 			$when = pretty_timestamp($booking['from_']) . ' - ' . pretty_timestamp($booking['to_']);
-		}
-		else
+		} else
 		{
 			$end = new DateTime($booking['to_']);
 			$when = pretty_timestamp($booking['from_']) . ' - ' . $end->format('H:i');
@@ -793,8 +804,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 							'id' => $_POST['organization_id'],
 							'date' => $temp_date
 						));
-					}
-					else
+					} else
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -803,8 +813,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 						));
 					}
 				}
-			}
-			else
+			} else
 			{
 				$step++;
 
@@ -821,8 +830,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 					if ($_POST['recurring'] == 'on')
 					{
 						$repeat_until = strtotime($_POST['repeat_until']) + 60 * 60 * 24;
-					}
-					else
+					} else
 					{
 						$repeat_until = strtotime($season['to_']) + 60 * 60 * 24;
 						$_POST['repeat_until'] = $season['to_'];
@@ -924,8 +932,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 				'id' => $group['organization_id'],
 				'date' => date("Y-m-d", strtotime($booking['from_']))
 			));
-		}
-		else
+		} else
 		{
 			$booking['cancel_link'] = self::link(array(
 				'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -974,8 +981,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 					'outseason' => $_POST['outseason'],
 				)
 			);
-		}
-		else if ($step >= 2)
+		} else if ($step >= 2)
 		{
 			self::render_template_xsl(
 				'booking_edit_preview',
@@ -1282,7 +1288,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 				$system_message['building_name'] = $this->bo->so->get_building($system_message['building_id']);
 				$system_message['created'] = $date->format('Y-m-d  H:m');
 				//					$system_message = array_merge($system_message, extract_values($_POST, array('message')));
-				$system_message['message']		 = Sanitizer::get_var('message', 'html');
+				$system_message['message'] = Sanitizer::get_var('message', 'html');
 				$system_message['type'] = 'cancelation';
 				$system_message['status'] = 'NEW';
 				$system_message['name'] = $booking['group_name'];
@@ -1311,8 +1317,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 						'id' => $organization_id,
 						'date' => date("Y-m-d", strtotime($original_from))
 					));
-				}
-				else
+				} else
 				{
 					self::redirect(array(
 						'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -1339,8 +1344,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 			self::rich_text_editor('field-message');
 			self::render_template_xsl('booking_cancel', array('booking' => $booking));
-		}
-		else
+		} else
 		{
 			$outseason = Sanitizer::get_var('outseason', 'string');
 			$recurring = Sanitizer::get_var('recurring', 'string');
@@ -1365,8 +1369,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 			if ($config->config_data['split_pool'] == 'yes')
 			{
 				$split = 1;
-			}
-			else
+			} else
 			{
 				$split = 0;
 			}
@@ -1403,8 +1406,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 						$inf_del = "Booking";
 						$maildata['allocation'] = 0;
 						$this->bo->so->delete_booking($id);
-					}
-					else
+					} else
 					{
 						$allocation_id = $booking['allocation_id'];
 						$this->bo->so->delete_booking($id);
@@ -1414,8 +1416,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 							$inf_del = "Booking";
 							$maildata['allocation'] = 0;
 							$errors['booking'] = lang('Could not delete allocation due to a booking still use it');
-						}
-						else
+						} else
 						{
 							$inf_del = "Booking and allocation";
 							$maildata['allocation'] = 1;
@@ -1431,7 +1432,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 					$system_message['building_name'] = $this->bo->so->get_building($system_message['building_id']);
 					$system_message['created'] = $date->format('Y-m-d  H:m');
 					//						$system_message = array_merge($system_message, extract_values($_POST, array('message')));
-					$system_message['message']		 = Sanitizer::get_var('message', 'html');
+					$system_message['message'] = Sanitizer::get_var('message', 'html');
 					$system_message['type'] = 'cancelation';
 					$system_message['status'] = 'NEW';
 					$system_message['name'] = $booking['group_name'];
@@ -1456,8 +1457,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 							'id' => $allocation['organization_id'],
 							'date' => date("Y-m-d", strtotime($original_from))
 						));
-					}
-					else
+					} else
 					{
 						self::redirect(array(
 							'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -1465,15 +1465,13 @@ class bookingfrontend_uibooking extends booking_uibooking
 							'date' => date("Y-m-d", strtotime($original_from))
 						));
 					}
-				}
-				else
+				} else
 				{
 					$step++;
 					if ($_POST['recurring'] == 'on')
 					{
 						$repeat_until = strtotime($_POST['repeat_until']) + 60 * 60 * 24;
-					}
-					else
+					} else
 					{
 						$repeat_until = strtotime($season['to_']) + 60 * 60 * 24;
 						$_POST['repeat_until'] = $season['to_'];
@@ -1501,8 +1499,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 						if ($id)
 						{
 							$aid = $this->bo->so->check_allocation($id);
-						}
-						else
+						} else
 						{
 							$aid = $this->bo->so->check_for_booking($booking);
 						}
@@ -1523,8 +1520,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 							{
 								$allocation_keep[$i]['from_'] = $fromdate;
 								$allocation_keep[$i]['to_'] = $todate;
-							}
-							else
+							} else
 							{
 								$allocation_delete[$i]['from_'] = $fromdate;
 								$allocation_delete[$i]['to_'] = $todate;
@@ -1555,7 +1551,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 						$system_message['building_name'] = $this->bo->so->get_building($system_message['building_id']);
 						$system_message['created'] = $date->format('Y-m-d  H:m');
 						//							$system_message = array_merge($system_message, extract_values($_POST, array('message')));
-						$system_message['message']		 = Sanitizer::get_var('message', 'html');
+						$system_message['message'] = Sanitizer::get_var('message', 'html');
 						$system_message['type'] = 'cancelation';
 						$system_message['status'] = 'NEW';
 						$system_message['name'] = $booking['group_name'];
@@ -1583,8 +1579,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 								'id' => $allocation['organization_id'],
 								'date' => date("Y-m-d", strtotime($original_from))
 							));
-						}
-						else
+						} else
 						{
 							self::redirect(array(
 								'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -1600,8 +1595,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 			if ($config->config_data['user_can_delete_allocations'] != 'yes')
 			{
 				$user_can_delete_allocations = 0;
-			}
-			else
+			} else
 			{
 				$user_can_delete_allocations = 1;
 			}
@@ -1620,8 +1614,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 					'id' => $allocation['organization_id'],
 					'date' => date("Y-m-d", strtotime($original_from))
 				));
-			}
-			else
+			} else
 			{
 				$booking['cancel_link'] = self::link(array(
 					'menuaction' => 'bookingfrontend.uibuilding.show',
@@ -1651,8 +1644,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 					'delete_allocation' => $delete_allocation,
 					'user_can_delete_allocations' => $user_can_delete_allocations
 				));
-			}
-			elseif ($step == 2)
+			} elseif ($step == 2)
 			{
 				self::render_template_xsl('booking_delete_preview', array(
 					'booking' => $booking,
@@ -1681,8 +1673,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		if ($config['user_can_delete_bookings'] != 'yes')
 		{
 			$user_can_delete_bookings = 0;
-		}
-		else
+		} else
 		{
 			$user_can_delete_bookings = 1;
 		}
@@ -1702,7 +1693,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 			$res_ids[] = $res['id'];
 		}
 		$booking['resource_info'] = join(', ', $res_names);
-		$booking['resource_ids']	 = $res_ids;
+		$booking['resource_ids'] = $res_ids;
 		$booking['building_link'] = self::link(array(
 			'menuaction' => 'bookingfrontend.uibuilding.show',
 			'id' => $booking['building_id']
@@ -1739,9 +1730,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 			if ($booking['application_id'] != null)
 			{
-				$booking['copy_link']	 = self::link(array(
-					'menuaction'	 => 'bookingfrontend.uiapplication.add',
-					'application_id'	 => $booking['application_id']
+				$booking['copy_link'] = self::link(array(
+					'menuaction' => 'bookingfrontend.uiapplication.add',
+					'application_id' => $booking['application_id']
 				));
 			}
 		}
@@ -1750,8 +1741,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		if ($interval->days > 0)
 		{
 			$when = pretty_timestamp($booking['from_']) . ' - ' . pretty_timestamp($booking['to_']);
-		}
-		else
+		} else
 		{
 			$end = new DateTime($booking['to_']);
 			$when = pretty_timestamp($booking['from_']) . ' - ' . $end->format('H:i');
@@ -1781,20 +1771,33 @@ class bookingfrontend_uibooking extends booking_uibooking
 		self::render_template_xsl('booking_info', array('booking' => $booking, 'user_can_delete_bookings' => $user_can_delete_bookings));
 		phpgwapi_xslttemplates::getInstance()->set_output('wml'); // Evil hack to disable page chrome
 	}
+
 	public function info_json()
 	{
 		$config = CreateObject('phpgwapi.config', 'booking')->read();
 		$user_can_delete_bookings = $config['user_can_delete_bookings'] === 'yes' ? 1 : 0;
 
-		// Retrieve multiple allocation IDs
+		// Retrieve multiple booking IDs
 		$ids = Sanitizer::get_var('ids', 'string');
-		if ($ids && !is_array($ids))
+
+		if (is_array($ids))
 		{
+			// ids is already an array, keep as is
+		} elseif ($ids)
+		{
+			// Convert comma-separated string to array
 			$ids = explode(',', $ids);
-		}
-		elseif (!$ids || !is_array($ids))
+		} else
 		{
-			$ids = array(Sanitizer::get_var('id', 'int'));
+			// No ids provided, try single id
+			$ids = array(Sanitizer::get_var('id'));
+		}
+
+		// Filter out empty values and ensure we have at least one valid ID
+		$ids = array_filter($ids);
+		if (empty($ids))
+		{
+			phpgw::no_access('booking', lang('missing id'));
 		}
 		$bookings_info = [];
 		foreach ($ids as $id)
@@ -1835,7 +1838,6 @@ class bookingfrontend_uibooking extends booking_uibooking
 	}
 
 
-
 	private function calculate_resource_info($resourceIds)
 	{
 		$resources = $this->resource_bo->so->read([
@@ -1858,8 +1860,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		if ($interval->days > 0)
 		{
 			$when = pretty_timestamp($from) . ' - ' . pretty_timestamp($to);
-		}
-		else
+		} else
 		{
 			$end = new DateTime($to);
 			$when = pretty_timestamp($from) . ' - ' . $end->format('H:i');
@@ -1876,28 +1877,41 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 	private function info_determine_edit_link($booking)
 	{
-		if ($booking['from_'] > Date('Y-m-d H:i:s'))
+		// Check if user is logged in AND is a group admin for this booking
+		$bouser = new UserHelper();
+
+		if ($bouser->is_logged_in() && $bouser->is_group_admin($booking['group_id']))
 		{
-			return self::link([
-				'menuaction' => 'bookingfrontend.uibooking.edit',
-				'id' => $booking['id'],
-				'resource_ids' => $booking['resource_ids'],
-				'from_org' => Sanitizer::get_var('from_org', 'boolean', 'REQUEST', false)
-			]);
+			if ($booking['from_'] > Date('Y-m-d H:i:s'))
+			{
+				return self::link([
+					'menuaction' => 'bookingfrontend.uibooking.edit',
+					'id' => $booking['id'],
+					'resource_ids' => $booking['resource_ids'],
+					'from_org' => Sanitizer::get_var('from_org', 'boolean', 'REQUEST', false)
+				]);
+			}
 		}
 		return null; // No edit link if condition not met
 	}
 
 	private function info_determine_cancel_link($booking, $user_can_delete_bookings)
 	{
-		if ($booking['from_'] > Date('Y-m-d H:i:s') && $user_can_delete_bookings)
+		// Check if user is logged in AND is a group admin for this booking
+		$bouser = new UserHelper();
+
+		if ($bouser->is_logged_in() && $bouser->is_group_admin($booking['group_id']))
 		{
-			return self::link([
-				'menuaction' => 'bookingfrontend.uibooking.cancel',
-				'id' => $booking['id'],
-				'resource_ids' => $booking['resource_ids'],
-				'from_org' => Sanitizer::get_var('from_org', 'boolean', 'REQUEST', false)
-			]);
+			if ($booking['from_'] > Date('Y-m-d H:i:s') && $user_can_delete_bookings)
+			{
+				return self::link([
+					'menuaction' => 'bookingfrontend.uibooking.cancel',
+					'id' => $booking['id'],
+					'resource_ids' => $booking['resource_ids'],
+					'from_org' => Sanitizer::get_var('from_org', 'boolean', 'REQUEST', false)
+
+				]);
+			}
 		}
 		return null; // No cancel link if condition not met
 	}
@@ -1908,16 +1922,16 @@ class bookingfrontend_uibooking extends booking_uibooking
 	 */
 	function ical()
 	{
-		$booking	 = $this->bo->read_single(Sanitizer::get_var('id', 'int'));
+		$booking = $this->bo->read_single(Sanitizer::get_var('id', 'int'));
 		Settings::getInstance()->update('flags', ['noheader' => true, 'nofooter' => true, 'xslt_app' => false]);
 
 		$start = $booking['from_'];
 		$end = $booking['to_'];
 
-		$cal_name	 = !empty($this->serverSettings['site_title']) ? $this->serverSettings['site_title'] : $this->serverSettings['system_name'];
+		$cal_name = !empty($this->serverSettings['site_title']) ? $this->serverSettings['site_title'] : $this->serverSettings['system_name'];
 
-		$timezone	 = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
-		$unique_id	 = !empty($this->serverSettings['site_title']) ? $this->serverSettings['site_title'] : $this->serverSettings['system_name'];
+		$timezone = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
+		$unique_id = !empty($this->serverSettings['site_title']) ? $this->serverSettings['site_title'] : $this->serverSettings['system_name'];
 
 		$vcalendar = Vcalendar::factory([Vcalendar::UNIQUE_ID => $unique_id,])
 			// with calendaring info
@@ -1929,7 +1943,6 @@ class bookingfrontend_uibooking extends booking_uibooking
 		// {
 		// 	$ical->setXprop(Vcalendar::X_WR_CALDESC, $cal_desc);
 		// }
-
 
 
 		$xprop = $vcalendar->getXprop(Vcalendar::X_WR_TIMEZONE);
@@ -1972,8 +1985,8 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		$vcalendarString = // apply appropriate Vtimezone with Standard/DayLight components
 			$vcalendar->vtimezonePopulate()
-			// and create the (string) calendar
-			->createCalendar();
+				// and create the (string) calendar
+				->createCalendar();
 
 		$filesize = filesize($vcalendarString);
 		$filename = 'cal.ics';
@@ -1988,8 +2001,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		if ($config['user_can_delete_bookings'] != 'yes')
 		{
 			$user_can_delete_bookings = 0;
-		}
-		else
+		} else
 		{
 			$user_can_delete_bookings = 1;
 		}
@@ -2012,8 +2024,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 		if ($interval->days > 0)
 		{
 			$when = pretty_timestamp($booking['from_']) . ' - ' . pretty_timestamp($booking['to_']);
-		}
-		else
+		} else
 		{
 			$end = new DateTime($booking['to_']);
 			$when = pretty_timestamp($booking['from_']) . ' - ' . $end->format('H:i');
@@ -2050,44 +2061,44 @@ class bookingfrontend_uibooking extends booking_uibooking
 		$booking['participanttext'] = !empty($config['participanttext']) ? $config['participanttext'] : '';
 
 		phpgw::import_class('phpgwapi.phpqrcode');
-		$code_text					 = $participant_registration_link;
-		$filename					 = $this->serverSettings['temp_dir'] . '/' . md5($code_text) . '.png';
+		$code_text = $participant_registration_link;
+		$filename = $this->serverSettings['temp_dir'] . '/' . md5($code_text) . '.png';
 		QRcode::png($code_text, $filename);
-		$booking['encoded_qr']	 = 'data:image/png;base64,' . base64_encode(file_get_contents($filename));
+		$booking['encoded_qr'] = 'data:image/png;base64,' . base64_encode(file_get_contents($filename));
 
-		$get_participants_link =  phpgw::link('/index.php', array(
-			'menuaction'				 => 'booking.uiparticipant.index',
-			'filter_reservation_id'		 => $booking['id'],
-			'filter_reservation_type'	 => 'booking',
+		$get_participants_link = phpgw::link('/index.php', array(
+			'menuaction' => 'booking.uiparticipant.index',
+			'filter_reservation_id' => $booking['id'],
+			'filter_reservation_type' => 'booking',
 		));
 
 		$booking['get_participants_link'] = $get_participants_link;
 
-		$datatable_def	 = array();
+		$datatable_def = array();
 		if ((new UserHelper())->is_logged_in())
 		{
 			$datatable_def[] = array(
-				'container'	 => 'datatable-container_0',
+				'container' => 'datatable-container_0',
 				'requestUrl' => json_encode(self::link(array(
-					'menuaction'				 => 'bookingfrontend.uiparticipant.index',
-					'filter_reservation_id'		 => $booking['id'],
-					'filter_reservation_type'	 => 'booking',
-					'phpgw_return_as'			 => 'json'
+					'menuaction' => 'bookingfrontend.uiparticipant.index',
+					'filter_reservation_id' => $booking['id'],
+					'filter_reservation_type' => 'booking',
+					'phpgw_return_as' => 'json'
 				))),
 				'ColumnDefs' => array(
 					array(
-						'key'		 => 'phone',
-						'label'		 => lang('participants'),
-						'sortable'	 => true,
+						'key' => 'phone',
+						'label' => lang('participants'),
+						'sortable' => true,
 					),
 					array(
-						'key'		 => 'quantity',
-						'label'		 => lang('quantity'),
-						'sortable'	 => true,
+						'key' => 'quantity',
+						'label' => lang('quantity'),
+						'sortable' => true,
 					)
 				),
-				'data'		 => json_encode(array()),
-				'config'	 => array(
+				'data' => json_encode(array()),
+				'config' => array(
 					array('disableFilter' => true),
 					array('disablePagination' => true)
 				)
@@ -2099,9 +2110,9 @@ class bookingfrontend_uibooking extends booking_uibooking
 			'booking_show',
 			'datatable_inline'
 		), array(
-			'booking'					 => $booking,
-			'user_can_delete_bookings'	 => $user_can_delete_bookings,
-			'datatable_def'				 => $datatable_def
+			'booking' => $booking,
+			'user_can_delete_bookings' => $user_can_delete_bookings,
+			'datatable_def' => $datatable_def
 		));
 	}
 }

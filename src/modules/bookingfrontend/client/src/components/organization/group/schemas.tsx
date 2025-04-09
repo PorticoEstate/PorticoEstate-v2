@@ -20,32 +20,31 @@ const phoneRegex = new RegExp(
 export const groupLeaderSchema: z.ZodType<CreateOrConnectLeader> = z
     .object({
         name: z
-            .string({ message: "bookingfrontend.field_required" })
-            .min(5, { message: "bookingfrontend.name_is_too_short" })
+            .string({ message: "bookingfrontend.field_is_required" })
+            .min(5, { message: "bookingfrontend.field_is_too_short" })
             .max(255),
         email: z
-            .string({ message: "bookingfrontend.field_required" })
+            .string({ message: "bookingfrontend.field_is_required" })
             .email({ message: "bookingfrontend.invalid_email" }),
         phone: z
-            .string({ message: "bookingfrontend.field_required" })
+            .string({ message: "bookingfrontend.field_is_required" })
             .regex(phoneRegex, 'bookingfrontend.invalid_phone_number'),
     });
 export const groupLeaderUpdate = groupLeaderSchema.extend({
-    id: z.number().readonly()
+    id: z.optional(z.number().readonly())
 })
 export const groupDataSchema: z.ZodType<CreatingGroup> = z
     .object({
         name: z
-            .string({ message: "bookingfrontend.field_required" })
-            .min(5, { message: "bookingfrontend.name_is_too_short" })
+            .string({ message: "bookingfrontend.field_is_required" })
+            .min(5, { message: "bookingfrontend.field_is_too_short" })
             .max(255),
         shortname: z
-            .string({ message: "bookingfrontend.field_required" })
-            .min(5, { message: "bookingfrontend.name_is_too_short" })
-            .max(255),
-        activity_id: z.number({ message: "bookingfrontend.field_required" }),
+            .string({ message: "bookingfrontend.field_is_required" })
+            .max(11, { message: 'bookingfrontend.field_is_too_long' }),
+        activity_id: z.number({ message: "bookingfrontend.field_is_required" }),
         description: z
-            .string({ message: "bookingfrontend.field_required" })
+            .string({ message: "bookingfrontend.field_is_required" })
             .min(5, { message: "bookingfrontend.enter_description" })
             .max(255),
     })
@@ -56,6 +55,6 @@ export const createGroupFormSchema: z.ZodType<CreatingGroup> = z
     });
 export const updateGroupFormSchema: z.ZodType<CreatingGroup> = z
     .object({
-        groupLeaders: z.array(groupLeaderUpdate).max(2),
+        groupLeaders: z.array(groupLeaderUpdate).min(1).max(2),
         groupData: groupDataSchema
     });

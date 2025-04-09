@@ -13,48 +13,53 @@ use Slim\Psr7\Response;
 class LoginHelper
 {
 
-	public static function organization()
-	{
+    public static function organization()
+    {
+        
+		Sessions::getInstance()->phpgw_setcookie('login_as_organization', '1');
 
+		//If external login is enabled, callback will be handled by UserHelper::process_callback()
+		
 		if(self::login())
-		{
-			require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
-			/**
-			 * Pick up the external login-info
-			 */
-			$bouser = new UserHelper();
-			$bouser->log_in();
+        {
+            require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
+            /**
+             * Pick up the external login-info
+             */
+            $bouser = new UserHelper();
+            $bouser->log_in();
 
-			$redirect =	json_decode(Cache::session_get('bookingfrontend', 'redirect'), true);
+            $redirect = json_decode(Cache::session_get('bookingfrontend', 'redirect'), true);
 
-			if (!empty($config['debug_local_login']))
-			{
-				echo "<p>redirect:</p>";
+            if (!empty($config['debug_local_login']))
+            {
+                echo "<p>redirect:</p>";
 
-				_debug_array($redirect);
-				die();
-			}
+                _debug_array($redirect);
+                die();
+            }
 
-			if (is_array($redirect) && count($redirect))
-			{
-				$redirect_data = array();
-				foreach ($redirect as $key => $value)
-				{
-					$redirect_data[$key] = Sanitizer::clean_value($value);
-				}
+            if (is_array($redirect) && count($redirect))
+            {
+                $redirect_data = array();
+                foreach ($redirect as $key => $value)
+                {
+                    $redirect_data[$key] = Sanitizer::clean_value($value);
+                }
 
-				$redirect_data['second_redirect'] = true;
+                $redirect_data['second_redirect'] = true;
+                $redirect_data['rid'] = Sessions::getInstance()->generate_click_history();
 
-				$sessid = Sanitizer::get_var('sessionid', 'string', 'GET');
-				if ($sessid)
-				{
-					$redirect_data['sessionid'] = $sessid;
-					$redirect_data['kp3'] = Sanitizer::get_var('kp3', 'string', 'GET');
-				}
+                $sessid = Sanitizer::get_var('sessionid', 'string', 'GET');
+                if ($sessid)
+                {
+                    $redirect_data['sessionid'] = $sessid;
+                    $redirect_data['kp3'] = Sanitizer::get_var('kp3', 'string', 'GET');
+                }
 
-				Cache::session_clear('bookingfrontend', 'redirect');
-				\phpgw::redirect_link('/bookingfrontend/', $redirect_data);
-			}
+                Cache::session_clear('bookingfrontend', 'redirect');
+                \phpgw::redirect_link('/bookingfrontend/', $redirect_data);
+            }
 
             // Decode the 'after' parameter
             $after = urldecode(Sanitizer::get_var('after', 'raw', 'GET'));
@@ -73,6 +78,7 @@ class LoginHelper
                 {
                     parse_str($query, $query_params);
                 }
+                $query_params['rid'] = Sessions::getInstance()->generate_click_history();
 
                 // Sanitize and validate the path
                 if (filter_var($path, FILTER_SANITIZE_URL))
@@ -87,6 +93,7 @@ class LoginHelper
                 // If 'after' doesn't look like a URI, treat it as query params
                 $redirect_data = [];
                 parse_str($after, $redirect_data);
+                $redirect_data['rid'] = Sessions::getInstance()->generate_click_history();
 
                 // Redirect to /bookingfrontend/ with the provided query params
                 \phpgw::redirect_link('/bookingfrontend/', $redirect_data);
@@ -94,12 +101,12 @@ class LoginHelper
             }
 
             // If 'after' is not provided or invalid, redirect to a default path
-            \phpgw::redirect_link('/bookingfrontend/');
+            \phpgw::redirect_link('/bookingfrontend/', ['rid' => Sessions::getInstance()->generate_click_history()]);
             exit;
-		}
-		\phpgw::redirect_link('/bookingfrontend/');
-		exit;
-	}
+        }
+        \phpgw::redirect_link('/bookingfrontend/');
+        exit;
+    }
 
 	private static function login()
 	{

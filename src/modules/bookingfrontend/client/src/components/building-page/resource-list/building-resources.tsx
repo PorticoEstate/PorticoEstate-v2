@@ -4,9 +4,10 @@ import {Button} from "@digdir/designsystemet-react";
 import {getTranslation} from "@/app/i18n";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faLayerGroup} from "@fortawesome/free-solid-svg-icons";
-import ClientPHPGWLink from "@/components/layout/header/ClientPHPGWLink";
-import ResourceContainer from "@/components/building-page/resource-list/resource-container";
 import Link from "next/link";
+import styles from "@/components/building-page/resource-list/building-resources.module.scss";
+import React from "react";
+import GSAccordion from "@/components/gs-accordion/g-s-accordion";
 
 interface BuildingResourcesProps {
     building: IBuilding;
@@ -16,29 +17,24 @@ const BuildingResources = async (props: BuildingResourcesProps) => {
     const resources = await fetchBuildingResources(props.building.id, true)
     const {t} = await getTranslation()
     return (
-        <div className={'mx-standard'}>
+		<GSAccordion data-color={'neutral'}>
+			<GSAccordion.Heading>
+				<h3>{t('bookingfrontend.rental_resources')}</h3>
+			</GSAccordion.Heading>
+			<GSAccordion.Content>
+				<div className={styles.resourcesGrid}>
 
-            <hr className={`my-2`}/>
-            <ResourceContainer>
                 {resources.map((res) =>
-                    <Button asChild key={res.id} variant={'secondary'} data-color={'brand1'}
+                    <Button asChild key={res.id} variant={'secondary'} data-color={'accent'}
                             className={'default'}>
-                        {/*<ClientPHPGWLink strURL={'bookingfrontend/'} oArgs={{*/}
-                        {/*    menuaction: 'bookingfrontend.uiresource.show',*/}
-                        {/*    building_id: props.building.id,*/}
-                        {/*    id: res.id*/}
-                        {/*}}>*/}
                         <Link href={'/resource/' + res.id}>
                             <FontAwesomeIcon icon={faLayerGroup}/>{res.name}
                         </Link>
-
-
-                        {/*</ClientPHPGWLink>*/}
-
-
                     </Button>)}
-            </ResourceContainer>
-        </div>
+				</div>
+
+			</GSAccordion.Content>
+		</GSAccordion>
     );
 }
 

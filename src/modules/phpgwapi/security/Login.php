@@ -112,13 +112,13 @@ class Login
 	public function create_account()
 	{
 		$create_account = new \App\modules\phpgwapi\security\Sso\CreateAccount();
-		$create_account->display_create();
+		return $create_account->display_create();
 	}
 
 	public function create_mapping()
 	{
 		$CreateAccount = new \App\modules\phpgwapi\security\Sso\CreateMapping();
-		$CreateAccount->create_mapping();
+		return $CreateAccount->create_mapping();
 	}
 
 	public function get_cd()
@@ -138,7 +138,7 @@ class Login
 				$login .= "#{$this->logindomain}";
 			}
 			$this->_sessionid = $this->sessions->create($login, '');
-			return $this->_sessionid;
+			return array('session_id' => $this->_sessionid);
 		}
 
 		if ($this->serverSettings['auth_type'] == 'ntlm' && isset($_SERVER['REMOTE_USER']) && empty($_REQUEST['skip_remote']))
@@ -160,7 +160,7 @@ class Login
 			$this->_sessionid = $this->sessions->create($login, $passwd);
 
 			//----------------- End login ntlm
-			return $this->_sessionid;
+			return array('session_id' => $this->_sessionid);
 		}
 
 		# Apache + mod_ssl style SSL certificate authentication
@@ -200,7 +200,7 @@ class Login
 			unset($key);
 			unset($val);
 			unset($sslattributes);
-			return $this->_sessionid;
+			return array('session_id' => $this->_sessionid);
 		}
 
 		if ($this->serverSettings['auth_type'] == 'customsso' &&  empty($_REQUEST['skip_remote']))
@@ -222,23 +222,19 @@ class Login
 
 				$this->_sessionid = $this->sessions->create($login, '');
 			}
-			return $this->_sessionid;
+			return array('session_id' => $this->_sessionid);
 		}
 
 		/**
 		 * OpenID Connect
 		 */
-		else if (
-			in_array($this->serverSettings['auth_type'],  array('remoteuser', 'azure'))
-			&& (isset($_SERVER['OIDC_upn']) || isset($_SERVER['REMOTE_USER']) || isset($_SERVER['OIDC_pid']))
-			&& empty($_REQUEST['skip_remote'])
-		)
+		else if (in_array($this->serverSettings['auth_type'],  array('remoteuser', 'azure')) && empty($_REQUEST['skip_remote']))
 		{
 			//	print_r($this->serverSettings);
 
 			$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
 			$login = $Auth->get_username();
-
+		
 
 			if ($login)
 			{
@@ -247,22 +243,17 @@ class Login
 					$login .= "#{$this->logindomain}";
 				}
 
+				$groups = $Auth->get_groups();
+
 				/**
 				 * One last check...
 				 */
 				if (!\Sanitizer::get_var('OIDC_pid', 'string', 'SERVER'))
 				{
-					$ad_groups = array();
-					if (!empty($_SERVER["OIDC_groups"]))
-					{
-						$OIDC_groups = mb_convert_encoding(mb_convert_encoding($_SERVER["OIDC_groups"], 'ISO-8859-1', 'UTF-8'), 'UTF-8', 'ISO-8859-1');
-						$ad_groups	= explode(",", $OIDC_groups);
-					}
 					$default_group_lid	 = !empty($this->serverSettings['default_group_lid']) ? $this->serverSettings['default_group_lid'] : 'Default';
 					$default_group_lid = strtolower($default_group_lid);
-					$ad_groups = array_map('strtolower', $ad_groups);
 
-					if (!in_array($default_group_lid, $ad_groups))
+					if (!in_array(strtolower($default_group_lid), $groups))
 					{
 						throw new \Exception(lang('missing membership: "%1" is not in the list', $default_group_lid));
 					}
@@ -270,7 +261,8 @@ class Login
 
 				$this->_sessionid = $this->sessions->create($login, '');
 			}
-			else if (!$login || empty($this->_sessionid))
+
+			if (!$login || empty($this->_sessionid))
 			{
 				if (!empty($this->serverSettings['auto_create_acct']))
 				{
@@ -278,17 +270,17 @@ class Login
 					if ($this->serverSettings['mapping'] == 'id')
 					{
 						// Redirection to create the new account :
-						return $this->create_account();
+						return array('html' => $this->create_account());
 					}
 					else if ($this->serverSettings['mapping'] == 'table' || $this->serverSettings['mapping'] == 'all')
 					{
 						// Redirection to create a new mapping :
-						return $this->create_mapping();
+						return array('html' => $this->create_mapping());
 					}
 				}
 			}
 
-			return $this->_sessionid;
+			return array('session_id' => $this->_sessionid);
 		}
 
 		if (isset($_POST['login']) && $this->serverSettings['auth_type'] == 'sql')
@@ -324,7 +316,7 @@ class Login
 			{
 				\App\modules\phpgwapi\services\Cache::message_set($receipt, 'message');
 			}
-			return $this->_sessionid;
+			return array('session_id' => $this->_sessionid);
 		}
 	}
 }

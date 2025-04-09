@@ -6,7 +6,7 @@ use App\Database\Db;
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\User;
-use App\modules\phpgwapi\security\Sessions;
+use App\modules\phpgwapi\services\Cache;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -106,7 +106,11 @@ class BookingUserController
                 );
             }
 
+
             $userModel = new User($bouser);
+//            if (isset($userModel->ssn)) {
+//                $userModel->ssn = $this->maskSSN($userModel->ssn);
+//            }
             $serialized = $userModel->serialize();
 
             $response->getBody()->write(json_encode($serialized));
@@ -295,4 +299,194 @@ class BookingUserController
                 ->withStatus(500);
         }
     }
+    private function maskSSN(string $ssn): string {
+        if (empty($ssn)) {
+            return '';
+        }
+        // Keep first digits, replace last 5 with asterisks
+        return substr($ssn, 0, -5) . '*****';
+    }
+
+
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/user/messages",
+	 *     summary="Get system messages for the current user",
+	 *     tags={"User"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="System messages",
+	 *         @OA\JsonContent(
+	 *             type="array",
+	 *             @OA\Items(
+	 *                 @OA\Property(property="type", type="string", description="Message type (error, success, info, warning)"),
+	 *                 @OA\Property(property="text", type="string", description="Message text"),
+	 *                 @OA\Property(property="class", type="string", description="CSS class for styling")
+	 *             )
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function getMessages(Request $request, Response $response): Response
+	{
+		try {
+			// Fetch cached messages
+			$messages = Cache::session_get('phpgwapi', 'phpgw_messages');
+
+			// Process messages if they exist
+			$processed_messages = [];
+			if ($messages) {
+				require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
+				$phpgwapi_common = new \phpgwapi_common();
+				$msgbox_data = $phpgwapi_common->msgbox_data($messages);
+				$msgbox_data = $phpgwapi_common->msgbox($msgbox_data);
+
+				foreach ($msgbox_data as $message) {
+					// Convert internal message format to API response format
+					$type = 'info'; // Default type
+					if (strpos($message['msgbox_class'], 'alert-danger') !== false) {
+						$type = 'error';
+					} elseif (strpos($message['msgbox_class'], 'alert-success') !== false) {
+						$type = 'success';
+					} elseif (strpos($message['msgbox_class'], 'alert-warning') !== false) {
+						$type = 'warning';
+					}
+
+					$messageData = [
+						'type' => $type,
+						'text' => $message['msgbox_text'],
+						'class' => $message['msgbox_class']
+					];
+
+					// Add the message ID if it exists
+					if (isset($message['msgbox_id'])) {
+						$messageData['id'] = $message['msgbox_id'];
+					}
+
+					$processed_messages[] = $messageData;
+				}
+
+				// Optionally clear messages after retrieving them
+				// Uncomment if you want to clear messages after they've been fetched once
+				// Cache::session_clear('phpgwapi', 'phpgw_messages');
+			}
+
+			// Return the processed messages
+			$response->getBody()->write(json_encode($processed_messages));
+			return $response
+				->withHeader('Content-Type', 'application/json')
+				->withStatus(200);
+		} catch (Exception $e) {
+			// Log the error but don't expose internal details
+			error_log("Error fetching messages: " . $e->getMessage());
+
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Internal server error'],
+				500
+			);
+		}
+	}
+
+	/**
+	 * @OA\Delete(
+	 *     path="/bookingfrontend/user/messages/{id}",
+	 *     summary="Delete a specific message by ID",
+	 *     tags={"User"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         required=true,
+	 *         description="ID of the message to delete",
+	 *         @OA\Schema(type="string")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Message deleted successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean"),
+	 *             @OA\Property(property="message", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Message not found"
+	 *     )
+	 * )
+	 */
+	public function deleteMessage(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$messageId = $args['id'];
+
+			if (empty($messageId)) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Message ID is required'],
+					400
+				);
+			}
+
+			// Fetch cached messages
+			$messages = Cache::session_get('phpgwapi', 'phpgw_messages');
+
+			if (!$messages) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'No messages found'],
+					404
+				);
+			}
+
+			$messageFound = false;
+
+			// Loop through message types (error, message)
+			foreach (['error', 'message'] as $type) {
+				if (!isset($messages[$type]) || !is_array($messages[$type])) {
+					continue;
+				}
+
+				// Filter out the message with the specified ID
+				$filtered = [];
+				foreach ($messages[$type] as $msg) {
+					if (!isset($msg['id']) || $msg['id'] !== $messageId) {
+						$filtered[] = $msg;
+					} else {
+						$messageFound = true;
+					}
+				}
+
+				// Update the messages array with filtered results
+				if (count($filtered) !== count($messages[$type])) {
+					$messages[$type] = $filtered;
+				}
+			}
+
+			if (!$messageFound) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'Message not found with the specified ID'],
+					404
+				);
+			}
+
+			// Save the updated messages back to the session
+			Cache::session_set('phpgwapi', 'phpgw_messages', $messages);
+
+			// Return success response
+			$response->getBody()->write(json_encode([
+				'success' => true,
+				'message' => 'Message deleted successfully'
+			]));
+
+			return $response
+				->withHeader('Content-Type', 'application/json')
+				->withStatus(200);
+
+		} catch (Exception $e) {
+			// Log the error but don't expose internal details
+			error_log("Error deleting message: " . $e->getMessage());
+
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Internal server error'],
+				500
+			);
+		}
+	}
 }

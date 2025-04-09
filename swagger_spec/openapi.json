@@ -1,0 +1,4000 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Portico API",
+        "description": "Portico API",
+        "contact": {
+            "email": "sigurdne@gmail.com"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http:\/\/localhost:8080"
+        }
+    ],
+    "paths": {
+        "\/bookingfrontend\/applications\/partials": {
+            "get": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Get partial applications for the current session",
+                "operationId": "8489f035f1f94146e70d53555467d0f3",
+                "responses": {
+                    "200": {
+                        "description": "List of partial applications",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "list": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Application"
+                                            }
+                                        },
+                                        "total_sum": {
+                                            "type": "number"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Create a new partial application",
+                "operationId": "3d126fa4c4750395086ef2925b7273a8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/Application"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Partial application created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or missing session"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/applications\/{id}": {
+            "delete": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Delete a partial application",
+                "operationId": "1061a929dbb022b93a95bb1a17b114d1",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the application to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Application successfully deleted",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "deleted": {
+                                            "type": "boolean"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input"
+                    },
+                    "404": {
+                        "description": "Application not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/applications\/partials\/{id}": {
+            "put": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Replace an existing partial application",
+                "operationId": "23a1a01ab1c44eeadfbdaadcff201d14",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "$ref": "#\/components\/schemas\/Application"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Application updated successfully"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Partially update an application",
+                "operationId": "d0a47dfdd68eca028af0a3885f82db8d",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the application to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "status": {
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "contact_name": {
+                                        "type": "string"
+                                    },
+                                    "contact_email": {
+                                        "type": "string"
+                                    },
+                                    "contact_phone": {
+                                        "type": "string"
+                                    },
+                                    "resources": {
+                                        "description": "Complete replacement of resources",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "dates": {
+                                        "description": "Update existing dates (with id) or create new ones (without id)",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "type": "integer"
+                                                },
+                                                "from_": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                },
+                                                "to_": {
+                                                    "type": "string",
+                                                    "format": "date-time"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "articles": {
+                                        "description": "Complete replacement of articles",
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "id": {
+                                                    "description": "Article mapping ID",
+                                                    "type": "integer"
+                                                },
+                                                "quantity": {
+                                                    "description": "Quantity ordered",
+                                                    "type": "integer"
+                                                },
+                                                "parent_id": {
+                                                    "description": "Optional parent mapping ID for sub-items",
+                                                    "type": "integer",
+                                                    "nullable": true
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Application updated successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input"
+                    },
+                    "404": {
+                        "description": "Application not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/applications\/partials\/checkout": {
+            "post": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Update and finalize all partial applications with contact and organization info",
+                "operationId": "61722f210756f8ca8695554009d6d700",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "customerType",
+                                    "contactName",
+                                    "contactEmail",
+                                    "contactPhone"
+                                ],
+                                "properties": {
+                                    "customerType": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ssn",
+                                            "organization_number"
+                                        ]
+                                    },
+                                    "organizationNumber": {
+                                        "type": "string"
+                                    },
+                                    "organizationName": {
+                                        "type": "string"
+                                    },
+                                    "contactName": {
+                                        "type": "string"
+                                    },
+                                    "contactEmail": {
+                                        "type": "string"
+                                    },
+                                    "contactPhone": {
+                                        "type": "string"
+                                    },
+                                    "street": {
+                                        "type": "string"
+                                    },
+                                    "zipCode": {
+                                        "type": "string"
+                                    },
+                                    "city": {
+                                        "type": "string"
+                                    },
+                                    "eventTitle": {
+                                        "type": "string"
+                                    },
+                                    "organizerName": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Applications updated successfully"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/applications\/validate-checkout": {
+            "post": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Validate if checkout of partial applications would succeed",
+                "operationId": "c951771c01451f93947c5573b6dc83cf",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "customerType",
+                                    "contactName",
+                                    "contactEmail",
+                                    "contactPhone"
+                                ],
+                                "properties": {
+                                    "customerType": {
+                                        "type": "string",
+                                        "enum": [
+                                            "ssn",
+                                            "organization_number"
+                                        ]
+                                    },
+                                    "organizationNumber": {
+                                        "type": "string"
+                                    },
+                                    "organizationName": {
+                                        "type": "string"
+                                    },
+                                    "contactName": {
+                                        "type": "string"
+                                    },
+                                    "contactEmail": {
+                                        "type": "string"
+                                    },
+                                    "contactPhone": {
+                                        "type": "string"
+                                    },
+                                    "street": {
+                                        "type": "string"
+                                    },
+                                    "zipCode": {
+                                        "type": "string"
+                                    },
+                                    "city": {
+                                        "type": "string"
+                                    },
+                                    "eventTitle": {
+                                        "type": "string"
+                                    },
+                                    "organizerName": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Validation results",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "valid": {
+                                            "type": "boolean"
+                                        },
+                                        "applications": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "valid": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "would_be_direct_booking": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "issues": {
+                                                        "type": "array",
+                                                        "items": {
+                                                            "properties": {
+                                                                "type": {
+                                                                    "type": "string"
+                                                                },
+                                                                "message": {
+                                                                    "type": "string"
+                                                                }
+                                                            },
+                                                            "type": "object"
+                                                        }
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid data or no active session"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/applications\/{id}\/documents": {
+            "post": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Upload documents for an application",
+                "description": "Upload one or more documents to an application. Only the application owner or delegates can upload documents.",
+                "operationId": "903454f1e5e420a531ddcb002cd382a8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the application",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart\/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "files[]": {
+                                        "description": "The files to upload",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "format": "binary"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Documents successfully uploaded",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "document_ids": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No files provided"
+                    },
+                    "403": {
+                        "description": "Unauthorized to upload documents to this application"
+                    },
+                    "404": {
+                        "description": "Application not found"
+                    }
+                },
+                "security": [
+                    {
+                        "oidc": []
+                    }
+                ]
+            }
+        },
+        "\/bookingfrontend\/applications\/document\/{id}": {
+            "delete": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Delete a document from an application",
+                "description": "Delete a specific document. Only the application owner or delegates can delete documents.",
+                "operationId": "e6d630dcea6c7a7af7cfd946b3838664",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the document to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Document successfully deleted"
+                    },
+                    "403": {
+                        "description": "Unauthorized to delete this document"
+                    },
+                    "404": {
+                        "description": "Document or associated application not found"
+                    }
+                },
+                "security": [
+                    {
+                        "oidc": []
+                    }
+                ]
+            }
+        },
+        "\/bookingfrontend\/applications\/simple": {
+            "post": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Create a simple application booking for a specific timeslot",
+                "operationId": "6d7589b160e353a0e5947e1c42683b20",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "resource_id",
+                                    "building_id",
+                                    "from",
+                                    "to"
+                                ],
+                                "properties": {
+                                    "resource_id": {
+                                        "type": "integer"
+                                    },
+                                    "building_id": {
+                                        "type": "integer"
+                                    },
+                                    "from": {
+                                        "description": "Start timestamp in seconds",
+                                        "type": "integer"
+                                    },
+                                    "to": {
+                                        "description": "End timestamp in seconds",
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Simple application created",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "status": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or timeslot unavailable"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/applications\/articles": {
+            "get": {
+                "tags": [
+                    "Applications"
+                ],
+                "summary": "Get available articles for resources",
+                "operationId": "0189b3463044599ce25e64b969c55b16",
+                "parameters": [
+                    {
+                        "name": "resources[]",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "integer"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of articles",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/user": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get authenticated user details",
+                "operationId": "5c8f77c2dd04c8c2470b745bbb7e8f72",
+                "responses": {
+                    "200": {
+                        "description": "User details",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Update user details",
+                "operationId": "a4a75223d438bac3cdd0444b72ac22c9",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "homepage": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "street": {
+                                        "type": "string"
+                                    },
+                                    "zip_code": {
+                                        "type": "string"
+                                    },
+                                    "city": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "User updated successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "user": {
+                                            "$ref": "#\/components\/schemas\/User"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input"
+                    },
+                    "401": {
+                        "description": "User not authenticated"
+                    },
+                    "403": {
+                        "description": "Forbidden - Cannot update other users"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/user\/messages": {
+            "get": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get system messages for the current user",
+                "operationId": "f845ac54d0ebe83d7a44b2d33e6034f8",
+                "responses": {
+                    "200": {
+                        "description": "System messages",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "type": {
+                                                "description": "Message type (error, success, info, warning)",
+                                                "type": "string"
+                                            },
+                                            "text": {
+                                                "description": "Message text",
+                                                "type": "string"
+                                            },
+                                            "class": {
+                                                "description": "CSS class for styling",
+                                                "type": "string"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/user\/messages\/{id}": {
+            "delete": {
+                "tags": [
+                    "User"
+                ],
+                "summary": "Delete a specific message by ID",
+                "operationId": "6c26604ad50227502b5b6a10f183ee8e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the message to delete",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Message deleted successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Message not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/buildings": {
+            "get": {
+                "tags": [
+                    "Buildings"
+                ],
+                "summary": "Get a list of all buildings",
+                "operationId": "92e88be22288b82cbaff0716a1854251",
+                "parameters": [
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Starting index for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0
+                        }
+                    },
+                    {
+                        "name": "results",
+                        "in": "query",
+                        "description": "Number of results per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A list of buildings",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/Building"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/buildings\/{id}": {
+            "get": {
+                "tags": [
+                    "Buildings"
+                ],
+                "summary": "Get a specific building by ID",
+                "operationId": "5b22b9f0d2dcf99e6b7cb5db4003376c",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the building to fetch",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Building details",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/Building"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Building not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/buildings\/{id}\/schedule": {
+            "get": {
+                "tags": [
+                    "Buildings"
+                ],
+                "summary": "Get schedules for a single date or multiple weeks",
+                "operationId": "1d994e76b14af1d76e232df46296e8cb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Building ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "description": "Single date to get schedule for (format: YYYY-MM-DD)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date",
+                            "example": "2025-03-17"
+                        }
+                    },
+                    {
+                        "name": "dates[]",
+                        "in": "query",
+                        "description": "Array of dates to get schedules for (overrides single date if both provided)",
+                        "required": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "date",
+                                "example": "2025-03-17"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Building schedules mapped by week start date",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "description": "Weekly schedule array keyed by week start date (Monday)",
+                                        "type": "array",
+                                        "items": {
+                                            "oneOf": [
+                                                {
+                                                    "$ref": "#\/components\/schemas\/Event"
+                                                },
+                                                {
+                                                    "$ref": "#\/components\/schemas\/Booking"
+                                                },
+                                                {
+                                                    "$ref": "#\/components\/schemas\/Allocation"
+                                                }
+                                            ]
+                                        }
+                                    }
+                                },
+                                "example": {
+                                    "2025-03-17": [
+                                        {
+                                            "type": "allocation",
+                                            "organization_id": 733,
+                                            "season_id": 1024,
+                                            "id_string": "497574",
+                                            "additional_invoice_information": "",
+                                            "organization_name": "Skjold Nesttun Janitsjar",
+                                            "organization_shortname": "",
+                                            "id": 497574,
+                                            "active": 1,
+                                            "from_": "2025-03-23T17:00:00+01:00",
+                                            "to_": "2025-03-23T18:00:00+01:00",
+                                            "completed": 0,
+                                            "building_name": "Fana kulturhus",
+                                            "skip_bas": 0,
+                                            "resources": [
+                                                {
+                                                    "id": 125,
+                                                    "name": "Kultursalen",
+                                                    "activity_id": 1
+                                                },
+                                                {
+                                                    "id": 106,
+                                                    "name": "Sm\u00e5salen",
+                                                    "activity_id": 1
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "type": "booking",
+                                            "group_id": 995,
+                                            "allocation_id": 497594,
+                                            "season_id": 1024,
+                                            "activity_id": 1,
+                                            "reminder": 1,
+                                            "secret": "265a4cc74c8c2e371e4ecd8698499f2b",
+                                            "group_name": "Skjold Nesttun Janitsjar",
+                                            "activity_name": "Kultur",
+                                            "id": 215652,
+                                            "active": 1,
+                                            "from_": "2025-03-20T16:00:00+01:00",
+                                            "to_": "2025-03-20T20:00:00+01:00",
+                                            "completed": 0,
+                                            "building_name": "Fana kulturhus",
+                                            "skip_bas": 0,
+                                            "resources": [
+                                                {
+                                                    "id": 482,
+                                                    "name": "Anretning",
+                                                    "activity_id": 1
+                                                },
+                                                {
+                                                    "id": 125,
+                                                    "name": "Kultursalen",
+                                                    "activity_id": 1
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid date format",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid date format: 2025-13-45"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Building not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Building not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/buildings\/{id}\/agegroups": {
+            "get": {
+                "tags": [
+                    "Buildings"
+                ],
+                "summary": "Get age groups for a building's activities",
+                "operationId": "f7b29cbceff813085c9d557efd62745a",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the building",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of age groups",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/AgeGroup"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Building not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/buildings\/{id}\/audience": {
+            "get": {
+                "tags": [
+                    "Buildings"
+                ],
+                "summary": "Get target audience for a building's activities",
+                "operationId": "5fa31a26b632170f5dfe8a9b96dfe686",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the building",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of target audiences",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/Audience"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Building not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/buildings\/{id}\/seasons": {
+            "get": {
+                "tags": [
+                    "Buildings"
+                ],
+                "summary": "Get seasons for a building",
+                "operationId": "567ef49b9d4a15a530ccb947f3352c63",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the building",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Start date (defaults to today)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-03-17T00:00:00+01:00"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "End date (optional)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time",
+                            "example": "2025-06-17T23:59:59+02:00"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of seasons with associated resources and boundaries",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/Season"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Building not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Building not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/completedreservations": {
+            "get": {
+                "tags": [
+                    "CompletedReservations"
+                ],
+                "summary": "Get completed reservations for the current user",
+                "operationId": "fe139ae2c5f374c9f873edde0de28ca5",
+                "responses": {
+                    "200": {
+                        "description": "List of completed reservations",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/CompletedReservation"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "User not authenticated"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/searchdataall": {
+            "get": {
+                "tags": [
+                    "Search Data"
+                ],
+                "summary": "Get various search data",
+                "operationId": "6c965589d8280230d7be6ace902a47f7",
+                "responses": {
+                    "200": {
+                        "description": "Successful response",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "activities": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Activity"
+                                            }
+                                        },
+                                        "buildings": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Building"
+                                            }
+                                        },
+                                        "building_resources": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/BuildingResource"
+                                            }
+                                        },
+                                        "facilities": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Facility"
+                                            }
+                                        },
+                                        "resources": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Resource"
+                                            }
+                                        },
+                                        "resource_activities": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/ResourceActivity"
+                                            }
+                                        },
+                                        "resource_facilities": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/ResourceFacility"
+                                            }
+                                        },
+                                        "resource_categories": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/ResourceCategory"
+                                            }
+                                        },
+                                        "resource_category_activity": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/ResourceCategoryActivity"
+                                            }
+                                        },
+                                        "towns": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Town"
+                                            }
+                                        },
+                                        "organizations": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Organization"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/{ownertype}\/{id}\/documents": {
+            "get": {
+                "tags": [
+                    "Buildings",
+                    "Resources"
+                ],
+                "summary": "Get documents for a specific owner",
+                "operationId": "4f262c0bfa886438b40668f01d87d066",
+                "parameters": [
+                    {
+                        "name": "ownertype",
+                        "in": "path",
+                        "description": "Type of the owner (buildings or resources)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "buildings",
+                                "resources"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the owner",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "description": "Type of documents to retrieve. Can be 'images' for all image types, or specific document categories. Multiple types can be comma-separated.",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "example": "images,regulation,price_list"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of documents",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#\/components\/schemas\/Document"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/documents\/{id}\/download": {
+            "get": {
+                "tags": [
+                    "Buildings"
+                ],
+                "summary": "Download a specific document",
+                "operationId": "285ff88cb73536774cf3bcda871583b3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the document to download",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Document file",
+                        "headers": {
+                            "Content-Type": {
+                                "description": "MIME type of the document",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            },
+                            "Content-Disposition": {
+                                "description": "Attachment with filename",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Document not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/events\/{id}": {
+            "get": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Get a specific event by ID",
+                "operationId": "5e575740ae141410a6e69c719c8699fe",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the event to fetch",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The requested event",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/Event"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No active session"
+                    },
+                    "404": {
+                        "description": "Event not found"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Partially update an Event",
+                "operationId": "b21ac3fc92f771c97010b01861a8a3fe",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the Event to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "from_": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "to_": {
+                                        "type": "string",
+                                        "format": "date-time"
+                                    },
+                                    "organizer": {
+                                        "type": "string"
+                                    },
+                                    "participant_limit": {
+                                        "type": "integer"
+                                    },
+                                    "resource_ids": {
+                                        "description": "Complete replacement of resources",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Event updated successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "No active session"
+                    },
+                    "403": {
+                        "description": "Forbidden"
+                    },
+                    "404": {
+                        "description": "Event not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/auth\/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Initialize anonymous session",
+                "description": "Creates anonymous session using configured credentials",
+                "operationId": "c6b25fbbf4338cea02ab1982f159efcb",
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "sessionId": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Authentication failed",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/auth\/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout current session",
+                "description": "Destroys current session and handles external logout",
+                "operationId": "7907066fe44ccad20dcd80bbf9dabb74",
+                "responses": {
+                    "200": {
+                        "description": "Logout successful",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "description": "Whether logout was successful",
+                                            "type": "boolean"
+                                        },
+                                        "external_logout_url": {
+                                            "description": "URL for external logout if configured",
+                                            "type": "string",
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/organizations": {
+            "post": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Create a new organization",
+                "operationId": "a60db003ce06afd9da2c9f52c05cb906",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "organization_number"
+                                ],
+                                "properties": {
+                                    "organization_number": {
+                                        "description": "Norwegian organization number",
+                                        "type": "string"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "activity_id": {
+                                        "type": "integer"
+                                    },
+                                    "contacts": {
+                                        "type": "array",
+                                        "items": {
+                                            "properties": {
+                                                "name": {
+                                                    "type": "string"
+                                                },
+                                                "email": {
+                                                    "type": "string"
+                                                },
+                                                "phone": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Organization created successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "type": "integer"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/organizations\/lookup\/{number}": {
+            "get": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Look up organization details from Br\u00f8nn\u00f8ysund Register",
+                "operationId": "1e04afc10d8dbc01a5c9b50f7e85bf47",
+                "parameters": [
+                    {
+                        "name": "number",
+                        "in": "path",
+                        "description": "Norwegian organization number",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^\\d{9}$"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Organization details found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "navn": {
+                                            "type": "string"
+                                        },
+                                        "organisasjonsnummer": {
+                                            "type": "string"
+                                        },
+                                        "hjemmeside": {
+                                            "type": "string",
+                                            "nullable": true
+                                        },
+                                        "postadresse": {
+                                            "properties": {
+                                                "adresse": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "postnummer": {
+                                                    "type": "string"
+                                                },
+                                                "poststed": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Organization not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/organizations\/{id}": {
+            "put": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Update an organization's details",
+                "operationId": "3b0c16731efc9517d2a18542bb092997",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Organization ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string"
+                                    },
+                                    "homepage": {
+                                        "type": "string"
+                                    },
+                                    "description": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Organization updated successfully"
+                    },
+                    "403": {
+                        "description": "Not authorized to modify this organization"
+                    }
+                },
+                "security": [
+                    {
+                        "oidc": []
+                    }
+                ]
+            }
+        },
+        "\/bookingfrontend\/organizations\/{id}\/delegates": {
+            "post": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Add a delegate to an organization",
+                "operationId": "03e7d2851ab872fc44d5d82dd3828df8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Organization ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "ssn"
+                                ],
+                                "properties": {
+                                    "ssn": {
+                                        "description": "Norwegian social security number",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "204": {
+                        "description": "Delegate added successfully"
+                    },
+                    "400": {
+                        "description": "Invalid input"
+                    },
+                    "403": {
+                        "description": "Not authorized to add delegates to this organization"
+                    }
+                },
+                "security": [
+                    {
+                        "oidc": []
+                    }
+                ]
+            }
+        },
+        "\/bookingfrontend\/organizations\/my": {
+            "get": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Get organizations for authenticated user",
+                "operationId": "e65dc84ab4169ade1e0ca7167956b2b6",
+                "responses": {
+                    "200": {
+                        "description": "List of organizations",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "results": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "organization_number": {
+                                                        "type": "string"
+                                                    },
+                                                    "is_delegate": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "active": {
+                                                        "type": "integer"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "total_records": {
+                                            "type": "integer"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not authenticated"
+                    }
+                },
+                "security": [
+                    {
+                        "oidc": []
+                    }
+                ]
+            }
+        },
+        "\/bookingfrontend\/organizations\/list": {
+            "get": {
+                "tags": [
+                    "Organizations"
+                ],
+                "summary": "Get paginated list of organizations for select2",
+                "operationId": "b70723dc3224e3894f2e3b0eb9fa4c45",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "query",
+                        "in": "query",
+                        "description": "Search query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of organizations",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "results": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "string"
+                                                    },
+                                                    "text": {
+                                                        "type": "string"
+                                                    },
+                                                    "disabled": {
+                                                        "type": "boolean"
+                                                    },
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "organization_number": {
+                                                        "type": "string"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        },
+                                        "pagination": {
+                                            "properties": {
+                                                "more": {
+                                                    "type": "boolean"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/resources": {
+            "get": {
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Get a list of active and visible resources",
+                "operationId": "cfe261b62d6acba90bda3450f03e9b93",
+                "parameters": [
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Start index for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "results",
+                        "in": "query",
+                        "description": "Number of results per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort field",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "short",
+                        "in": "query",
+                        "description": "If set to 1, returns only a subset of fields",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "name": "dir",
+                        "in": "query",
+                        "description": "Sort direction (asc or desc)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A list of active and visible resources",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "total_records": {
+                                            "type": "integer"
+                                        },
+                                        "start": {
+                                            "type": "integer"
+                                        },
+                                        "sort": {
+                                            "type": "string"
+                                        },
+                                        "dir": {
+                                            "type": "string"
+                                        },
+                                        "results": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Resource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/resources\/{id}": {
+            "get": {
+                "tags": [
+                    "Resources"
+                ],
+                "summary": "Get a specific resource by ID",
+                "operationId": "16fd0d48e0161c72239513f54564fc3f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the resource to fetch",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The requested resource",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/Resource"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Resource not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/buildings\/{id}\/resources": {
+            "get": {
+                "tags": [
+                    "Buildings",
+                    "Resources"
+                ],
+                "summary": "Get a list of active and visible resources for a specific building",
+                "operationId": "766f5f184244090509898be2a7b67fb0",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID of the building",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "start",
+                        "in": "query",
+                        "description": "Start index for pagination",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "results",
+                        "in": "query",
+                        "description": "Number of results per page",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "short",
+                        "in": "query",
+                        "description": "If set to 1, returns only a subset of fields",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "name": "sort",
+                        "in": "query",
+                        "description": "Sort field",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "dir",
+                        "in": "query",
+                        "description": "Sort direction (asc or desc)",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "asc",
+                                "desc"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "A list of active and visible resources for the specified building",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "total_records": {
+                                            "type": "integer"
+                                        },
+                                        "start": {
+                                            "type": "integer"
+                                        },
+                                        "sort": {
+                                            "type": "string"
+                                        },
+                                        "dir": {
+                                            "type": "string"
+                                        },
+                                        "results": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#\/components\/schemas\/Resource"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Building not found"
+                    }
+                }
+            }
+        },
+        "\/bookingfrontend\/lang": {
+            "get": {
+                "tags": [
+                    "Translation"
+                ],
+                "summary": "Get language settings",
+                "operationId": "a895f8d701e4d31f0a3086f6de89fb4d",
+                "parameters": [
+                    {
+                        "name": "lang",
+                        "in": "query",
+                        "description": "Language code",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Language settings",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "key": {
+                                            "description": "Translation key",
+                                            "type": "string"
+                                        },
+                                        "value": {
+                                            "description": "Translation value",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/login": {
+            "post": {
+                "tags": [
+                    "API"
+                ],
+                "summary": "Authenticate user and create session",
+                "description": "Process login request",
+                "operationId": "cae6706f5bc34bffc8becb14da0486ad",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/x-www-form-urlencoded": {
+                            "schema": {
+                                "properties": {
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "passwd": {
+                                        "type": "string"
+                                    },
+                                    "logindomain": {
+                                        "type": "string"
+                                    },
+                                    "section": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "session_name": {
+                                            "type": "string"
+                                        },
+                                        "session_id": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/refreshsession": {
+            "get": {
+                "tags": [
+                    "API"
+                ],
+                "summary": "Refresh session and verify login status",
+                "description": "Refresh session information",
+                "operationId": "7aa854aec3bd66534327b8909e8a5f13",
+                "responses": {
+                    "200": {
+                        "description": "Session is valid",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "session_id": {
+                                            "type": "string"
+                                        },
+                                        "fullname": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Not logged in",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/logout": {
+            "get": {
+                "tags": [
+                    "API"
+                ],
+                "summary": "Log out current user",
+                "description": "Log out a user",
+                "operationId": "8ee1a271ffe281dc5850db62a3bedcea",
+                "responses": {
+                    "200": {
+                        "description": "Logout status",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/api\/tables": {
+            "get": {
+                "tags": [
+                    "Database"
+                ],
+                "summary": "Get a list of public tables in the database",
+                "description": "This endpoint returns a list of public tables in the database, including metadata about their columns.",
+                "operationId": "getTables",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "name": {
+                                                "description": "Table name",
+                                                "type": "string"
+                                            },
+                                            "columns": {
+                                                "description": "Table columns",
+                                                "type": "array",
+                                                "items": {
+                                                    "properties": {
+                                                        "name": {
+                                                            "description": "Column name",
+                                                            "type": "string"
+                                                        },
+                                                        "type": {
+                                                            "description": "Column type",
+                                                            "type": "string"
+                                                        },
+                                                        "length": {
+                                                            "description": "Column length",
+                                                            "type": "integer",
+                                                            "nullable": true
+                                                        },
+                                                        "nullable": {
+                                                            "description": "Whether the column allows NULL values",
+                                                            "type": "boolean"
+                                                        },
+                                                        "default": {
+                                                            "description": "Default value for the column",
+                                                            "type": "string",
+                                                            "nullable": true
+                                                        },
+                                                        "primary_key": {
+                                                            "description": "Whether the column is a primary key",
+                                                            "type": "boolean"
+                                                        },
+                                                        "unique_key": {
+                                                            "description": "Whether the column has a unique constraint",
+                                                            "type": "boolean"
+                                                        },
+                                                        "has_default": {
+                                                            "description": "Whether the column has a default value",
+                                                            "type": "boolean"
+                                                        }
+                                                    },
+                                                    "type": "object"
+                                                }
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/api\/tabledata\/{table}": {
+            "get": {
+                "tags": [
+                    "Database"
+                ],
+                "summary": "Get data from a specific table",
+                "description": "This endpoint returns data from a specific table in the database. The structure of the returned dataset will depend on the chosen table.",
+                "operationId": "getTableData",
+                "parameters": [
+                    {
+                        "name": "table",
+                        "in": "path",
+                        "description": "Table name",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "description": "Page number",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 1,
+                            "minimum": 1
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Number of items per page. If set to a negative value, the entire dataset will be returned in one go.",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 10
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation. The structure of the returned dataset will depend on the chosen table.",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "description": "Array of records. The structure of each record will depend on the chosen table.",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "additionalProperties": true
+                                            }
+                                        },
+                                        "pagination": {
+                                            "description": "Pagination details",
+                                            "properties": {
+                                                "page": {
+                                                    "description": "Current page number",
+                                                    "type": "integer"
+                                                },
+                                                "limit": {
+                                                    "description": "Number of items per page",
+                                                    "type": "integer"
+                                                },
+                                                "total": {
+                                                    "description": "Total number of records",
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Table not found or no records found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "description": "Error message",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Table not public",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "description": "Error message",
+                                            "type": "string"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "AgeGroup": {
+                "title": "AgeGroup",
+                "description": "Age Group model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "activity_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "sort": {
+                        "type": "integer"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "active": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "Allocation": {
+                "title": "Allocation",
+                "description": "Allocation model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "active": {
+                        "type": "integer"
+                    },
+                    "from_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "completed": {
+                        "type": "integer"
+                    },
+                    "application_id": {
+                        "type": "integer"
+                    },
+                    "building_name": {
+                        "type": "string"
+                    },
+                    "skip_bas": {
+                        "type": "integer"
+                    },
+                    "resources": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Resource"
+                        }
+                    },
+                    "type": {
+                        "description": "Entity type identifier",
+                        "type": "string",
+                        "example": "allocation"
+                    },
+                    "organization_id": {
+                        "type": "integer"
+                    },
+                    "season_id": {
+                        "type": "integer"
+                    },
+                    "id_string": {
+                        "type": "string"
+                    },
+                    "additional_invoice_information": {
+                        "type": "string"
+                    },
+                    "organization_name": {
+                        "type": "string"
+                    },
+                    "organization_shortname": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Application": {
+                "title": "Application",
+                "description": "Application model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "id_string": {
+                        "type": "string"
+                    },
+                    "active": {
+                        "type": "integer"
+                    },
+                    "display_in_dashboard": {
+                        "type": "integer"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "secret": {
+                        "type": "string"
+                    },
+                    "created": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "modified": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "building_name": {
+                        "type": "string"
+                    },
+                    "building_id": {
+                        "type": "integer"
+                    },
+                    "frontend_modified": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "owner_id": {
+                        "type": "integer"
+                    },
+                    "case_officer_id": {
+                        "type": "integer"
+                    },
+                    "activity_id": {
+                        "type": "integer"
+                    },
+                    "customer_identifier_type": {
+                        "type": "string"
+                    },
+                    "customer_ssn": {
+                        "type": "string"
+                    },
+                    "customer_organization_number": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "organizer": {
+                        "type": "string"
+                    },
+                    "homepage": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "equipment": {
+                        "type": "string"
+                    },
+                    "contact_name": {
+                        "type": "string"
+                    },
+                    "contact_email": {
+                        "type": "string"
+                    },
+                    "contact_phone": {
+                        "type": "string"
+                    },
+                    "agegroups": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "agegroup_id": {
+                                    "type": "integer"
+                                },
+                                "male": {
+                                    "type": "integer"
+                                },
+                                "female": {
+                                    "type": "integer"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "audience": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    },
+                    "dates": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Date"
+                        }
+                    },
+                    "resources": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Resource"
+                        }
+                    },
+                    "orders": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Order"
+                        }
+                    },
+                    "documents": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Document"
+                        }
+                    },
+                    "articles": {
+                        "type": "array",
+                        "items": {
+                            "properties": {
+                                "id": {
+                                    "description": "Article mapping ID",
+                                    "type": "integer"
+                                },
+                                "quantity": {
+                                    "description": "Quantity ordered",
+                                    "type": "integer"
+                                },
+                                "parent_id": {
+                                    "description": "Optional parent mapping ID for sub-items",
+                                    "type": "integer",
+                                    "nullable": true
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "responsible_street": {
+                        "type": "string"
+                    },
+                    "responsible_zip_code": {
+                        "type": "string"
+                    },
+                    "responsible_city": {
+                        "type": "string"
+                    },
+                    "session_id": {
+                        "type": "string"
+                    },
+                    "agreement_requirements": {
+                        "type": "string"
+                    },
+                    "external_archive_key": {
+                        "type": "string"
+                    },
+                    "customer_organization_name": {
+                        "type": "string"
+                    },
+                    "customer_organization_id": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "Article": {
+                "title": "Article",
+                "description": "Article model for resources and services",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "article_id": {
+                        "type": "string"
+                    },
+                    "parent_mapping_id": {
+                        "type": "integer"
+                    },
+                    "resource_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "unit": {
+                        "type": "string"
+                    },
+                    "tax_code": {
+                        "type": "integer"
+                    },
+                    "tax_percent": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "group_id": {
+                        "type": "integer"
+                    },
+                    "article_remark": {
+                        "type": "string"
+                    },
+                    "article_group_name": {
+                        "type": "string"
+                    },
+                    "article_group_remark": {
+                        "type": "string"
+                    },
+                    "ex_tax_price": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "tax": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "price": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "price_remark": {
+                        "type": "string"
+                    },
+                    "unit_price": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "selected_quantity": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "selected_sum": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "selected_article_quantity": {
+                        "type": "string"
+                    },
+                    "mandatory": {
+                        "type": "integer"
+                    },
+                    "lang_unit": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Audience": {
+                "title": "Audience",
+                "description": "Target Audience model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "activity_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "sort": {
+                        "type": "integer"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "active": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "Booking": {
+                "title": "Booking",
+                "description": "Booking model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "active": {
+                        "type": "integer"
+                    },
+                    "from_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "completed": {
+                        "type": "integer"
+                    },
+                    "application_id": {
+                        "type": "integer"
+                    },
+                    "building_name": {
+                        "type": "string"
+                    },
+                    "skip_bas": {
+                        "type": "integer"
+                    },
+                    "resources": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Resource"
+                        }
+                    },
+                    "type": {
+                        "description": "Entity type identifier",
+                        "type": "string",
+                        "example": "booking"
+                    },
+                    "group_id": {
+                        "type": "integer"
+                    },
+                    "allocation_id": {
+                        "type": "integer"
+                    },
+                    "season_id": {
+                        "type": "integer"
+                    },
+                    "activity_id": {
+                        "type": "integer"
+                    },
+                    "reminder": {
+                        "type": "integer"
+                    },
+                    "secret": {
+                        "type": "string"
+                    },
+                    "sms_total": {
+                        "type": "integer"
+                    },
+                    "group_name": {
+                        "type": "string"
+                    },
+                    "activity_name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "BookingfrontendConfig": {
+                "title": "BookingfrontendConfig",
+                "description": "Bookingfrontend Configuration model",
+                "properties": {
+                    "anonymous_passwd": {
+                        "type": "string"
+                    },
+                    "anonymous_user": {
+                        "type": "string"
+                    },
+                    "authentication_method": {
+                        "type": "string"
+                    },
+                    "develope_mode": {
+                        "type": "string"
+                    },
+                    "footer_info": {
+                        "type": "string"
+                    },
+                    "footer_privacy_link": {
+                        "type": "string"
+                    },
+                    "site_title": {
+                        "type": "string"
+                    },
+                    "soap_password": {
+                        "type": "string"
+                    },
+                    "test_ssn": {
+                        "type": "string"
+                    },
+                    "usecookies": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Building": {
+                "title": "Building",
+                "description": "Building model",
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier for the building",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "description": "Name of the building",
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "homepage": {
+                        "description": "Homepage of the building",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "phone": {
+                        "description": "Contact phone number",
+                        "type": "string",
+                        "maxLength": 50
+                    },
+                    "email": {
+                        "description": "Contact email",
+                        "type": "string",
+                        "maxLength": 255,
+                        "nullable": true
+                    },
+                    "active": {
+                        "description": "Status of the building, 1 for active, 0 for inactive",
+                        "type": "integer"
+                    },
+                    "street": {
+                        "description": "Street address of the building",
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "zip_code": {
+                        "description": "Zip code of the building",
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "city": {
+                        "description": "City where the building is located",
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "district": {
+                        "description": "District or part of town",
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "location_code": {
+                        "description": "Location code of the building",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "deactivate_calendar": {
+                        "description": "Whether the calendar is deactivated, 0 or 1",
+                        "type": "integer"
+                    },
+                    "deactivate_application": {
+                        "description": "Whether applications are deactivated, 0 or 1",
+                        "type": "integer"
+                    },
+                    "deactivate_sendmessage": {
+                        "description": "Whether sending messages is deactivated, 0 or 1",
+                        "type": "integer"
+                    },
+                    "tilsyn_name": {
+                        "description": "Name of the inspector",
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "tilsyn_email": {
+                        "description": "Email of the inspector",
+                        "type": "string",
+                        "maxLength": 255,
+                        "nullable": true
+                    },
+                    "tilsyn_phone": {
+                        "description": "Phone number of the inspector",
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "calendar_text": {
+                        "description": "Text for the calendar",
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "tilsyn_name2": {
+                        "description": "Second name of the inspector",
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "tilsyn_email2": {
+                        "description": "Second email of the inspector",
+                        "type": "string",
+                        "maxLength": 255,
+                        "nullable": true
+                    },
+                    "tilsyn_phone2": {
+                        "description": "Second phone number of the inspector",
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "extra_kalendar": {
+                        "description": "Whether there is an extra calendar, 0 or 1",
+                        "type": "integer"
+                    },
+                    "activity_id": {
+                        "description": "Activity ID associated with the building",
+                        "type": "integer"
+                    },
+                    "opening_hours": {
+                        "description": "Opening hours of the building",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "description_json": {
+                        "description": "Description in JSON format",
+                        "type": "object",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "CompletedReservation": {
+                "title": "CompletedReservation",
+                "description": "CompletedReservation model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "reservation_type": {
+                        "type": "string",
+                        "maxLength": 70
+                    },
+                    "reservation_id": {
+                        "type": "integer"
+                    },
+                    "season_id": {
+                        "type": "integer"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "from_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "organization_id": {
+                        "type": "integer"
+                    },
+                    "customer_type": {
+                        "type": "string",
+                        "maxLength": 70
+                    },
+                    "customer_organization_number": {
+                        "type": "string",
+                        "maxLength": 9
+                    },
+                    "customer_ssn": {
+                        "type": "string",
+                        "maxLength": 12
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "building_name": {
+                        "type": "string"
+                    },
+                    "article_description": {
+                        "type": "string",
+                        "maxLength": 35
+                    },
+                    "building_id": {
+                        "type": "integer"
+                    },
+                    "exported": {
+                        "type": "integer"
+                    },
+                    "customer_identifier_type": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "export_file_id": {
+                        "type": "integer"
+                    },
+                    "invoice_file_order_id": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "customer_number": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Delegate": {
+                "title": "Delegate",
+                "description": "Delegate model",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "org_id": {
+                        "type": "number"
+                    },
+                    "organization_number": {
+                        "type": "string"
+                    },
+                    "active": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "Document": {
+                "title": "Document",
+                "description": "Document model representing images and other files",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "category": {
+                        "type": "string",
+                        "enum": [
+                            "picture",
+                            "regulation",
+                            "HMS_document",
+                            "picture_main",
+                            "drawing",
+                            "price_list",
+                            "other"
+                        ]
+                    },
+                    "owner_id": {
+                        "type": "integer"
+                    },
+                    "owner_type": {
+                        "type": "string",
+                        "enum": [
+                            "building",
+                            "resource",
+                            "application"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "Event": {
+                "title": "Event",
+                "description": "Event model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "active": {
+                        "type": "integer"
+                    },
+                    "from_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "cost": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "completed": {
+                        "type": "integer"
+                    },
+                    "application_id": {
+                        "type": "integer"
+                    },
+                    "building_name": {
+                        "type": "string"
+                    },
+                    "skip_bas": {
+                        "type": "integer"
+                    },
+                    "resources": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Resource"
+                        }
+                    },
+                    "type": {
+                        "description": "Entity type identifier",
+                        "type": "string",
+                        "example": "event"
+                    },
+                    "activity_id": {
+                        "type": "integer"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "contact_name": {
+                        "type": "string"
+                    },
+                    "contact_email": {
+                        "type": "string"
+                    },
+                    "contact_phone": {
+                        "type": "string"
+                    },
+                    "reminder": {
+                        "type": "integer"
+                    },
+                    "secret": {
+                        "type": "string"
+                    },
+                    "customer_identifier_type": {
+                        "type": "string"
+                    },
+                    "customer_organization_number": {
+                        "type": "string"
+                    },
+                    "customer_ssn": {
+                        "type": "string"
+                    },
+                    "customer_internal": {
+                        "type": "integer"
+                    },
+                    "is_public": {
+                        "type": "integer"
+                    },
+                    "customer_organization_id": {
+                        "type": "integer"
+                    },
+                    "customer_organization_name": {
+                        "type": "string"
+                    },
+                    "id_string": {
+                        "type": "string"
+                    },
+                    "building_id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "organizer": {
+                        "type": "string"
+                    },
+                    "homepage": {
+                        "type": "string"
+                    },
+                    "equipment": {
+                        "type": "string"
+                    },
+                    "access_requested": {
+                        "type": "integer"
+                    },
+                    "participant_limit": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
+            "Order": {
+                "title": "Order",
+                "description": "Order model",
+                "properties": {
+                    "order_id": {
+                        "type": "integer"
+                    },
+                    "sum": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/OrderLine"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "OrderLine": {
+                "title": "OrderLine",
+                "description": "OrderLine model",
+                "properties": {
+                    "order_id": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "integer"
+                    },
+                    "parent_mapping_id": {
+                        "type": "integer"
+                    },
+                    "article_mapping_id": {
+                        "type": "integer"
+                    },
+                    "quantity": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "unit_price": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "overridden_unit_price": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "amount": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "unit": {
+                        "type": "string"
+                    },
+                    "tax_code": {
+                        "type": "integer"
+                    },
+                    "tax": {
+                        "type": "number",
+                        "format": "float"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "type": "object"
+            },
+            "Resource": {
+                "title": "Resource",
+                "description": "Resource model",
+                "properties": {
+                    "id": {
+                        "description": "Unique identifier for the resource",
+                        "type": "integer"
+                    },
+                    "name": {
+                        "description": "Name of the resource",
+                        "type": "string",
+                        "maxLength": 150
+                    },
+                    "activity_id": {
+                        "description": "Activity ID associated with the resource",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "active": {
+                        "description": "Whether the resource is active",
+                        "type": "integer"
+                    },
+                    "sort": {
+                        "description": "Sort order of the resource",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "organizations_ids": {
+                        "description": "IDs of organizations associated with the resource",
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "json_representation": {
+                        "description": "JSON representation of the resource",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "rescategory_id": {
+                        "description": "Resource category ID",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "opening_hours": {
+                        "description": "Opening hours of the resource",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "contact_info": {
+                        "description": "Contact information for the resource",
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "direct_booking": {
+                        "description": "Direct booking information",
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "booking_day_default_lenght": {
+                        "description": "Default booking length in days",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "booking_dow_default_start": {
+                        "description": "Default start day of week for booking",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "booking_time_default_start": {
+                        "description": "Default start time for booking",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "booking_time_default_end": {
+                        "description": "Default end time for booking",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "simple_booking": {
+                        "description": "Whether simple booking is enabled",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "direct_booking_season_id": {
+                        "description": "Direct booking season ID",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "simple_booking_start_date": {
+                        "description": "Start date for simple booking",
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "simple_booking_end_date": {
+                        "description": "End date for simple booking",
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "booking_month_horizon": {
+                        "description": "Booking month horizon",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "booking_day_horizon": {
+                        "description": "Booking day horizon",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "capacity": {
+                        "description": "Capacity of the resource",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "deactivate_calendar": {
+                        "description": "Whether the calendar is deactivated",
+                        "type": "integer"
+                    },
+                    "deactivate_application": {
+                        "description": "Whether the application is deactivated",
+                        "type": "integer"
+                    },
+                    "booking_time_minutes": {
+                        "description": "Booking time in minutes",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "booking_limit_number": {
+                        "description": "Booking limit number",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "booking_limit_number_horizont": {
+                        "description": "Booking limit number horizon",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "hidden_in_frontend": {
+                        "description": "Whether the resource is hidden in frontend",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "activate_prepayment": {
+                        "description": "Whether prepayment is activated",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "booking_buffer_deadline": {
+                        "description": "Booking buffer deadline",
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "description_json": {
+                        "description": "Description in JSON format",
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "building_id": {
+                        "description": "ID of the building this resource belongs to",
+                        "type": "integer",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "Season": {
+                "title": "Season",
+                "description": "Season model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "building_id": {
+                        "type": "integer"
+                    },
+                    "from_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "active": {
+                        "type": "integer"
+                    },
+                    "status": {
+                        "type": "string"
+                    },
+                    "wday": {
+                        "type": "integer"
+                    },
+                    "resources": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Resource"
+                        }
+                    },
+                    "boundaries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/SeasonBoundary"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "User": {
+                "title": "User",
+                "description": "Expanded User model",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "ssn": {
+                        "type": "string"
+                    },
+                    "orgnr": {
+                        "type": "string"
+                    },
+                    "orgname": {
+                        "type": "string"
+                    },
+                    "customer_number": {
+                        "type": "string"
+                    },
+                    "org_id": {
+                        "type": "integer"
+                    },
+                    "is_logged_in": {
+                        "type": "boolean"
+                    },
+                    "homepage": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "street": {
+                        "type": "string"
+                    },
+                    "zip_code": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string"
+                    },
+                    "delegates": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#\/components\/schemas\/Delegate"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Date": {
+                "title": "Date",
+                "description": "Date model for application",
+                "properties": {
+                    "from_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "to_": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "id": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "session_auth": {
+                "type": "apiKey",
+                "in": "cookie",
+                "name": "sessionphpgwsessid"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Applications",
+            "description": "API Endpoints for Applications"
+        },
+        {
+            "name": "User",
+            "description": "API Endpoints for User"
+        },
+        {
+            "name": "Buildings",
+            "description": "API Endpoints for Buildings"
+        },
+        {
+            "name": "CompletedReservations",
+            "description": "API Endpoints for Completed Reservations"
+        },
+        {
+            "name": "Events",
+            "description": "API Endpoints for Events"
+        },
+        {
+            "name": "Authentication",
+            "description": "API Endpoints for authentication"
+        },
+        {
+            "name": "Organizations",
+            "description": "API Endpoints for Organizations"
+        },
+        {
+            "name": "Resources",
+            "description": "API Endpoints for Resources"
+        },
+        {
+            "name": "Search Data",
+            "description": "Search Data"
+        },
+        {
+            "name": "Translation",
+            "description": "Translation"
+        },
+        {
+            "name": "API",
+            "description": "API"
+        },
+        {
+            "name": "Database",
+            "description": "Database"
+        }
+    ]
+}

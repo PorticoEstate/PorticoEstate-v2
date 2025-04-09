@@ -31,13 +31,20 @@ class bookingfrontend_uievent extends booking_uievent
 		$this->application_ui = new booking_uiapplication();
 	}
 
-	private function _is_event_owner($event, $bouser, $skip_redirect = false)
+	private function _is_event_owner($event, $bouser, $skip_redirect = false, $just_checking = false)
 	{
-		$external_login_info = $bouser->validate_ssn_login(array(
-			'menuaction' => 'bookingfrontend.uievent.cancel',
-			'id' => $event['id'],
-			'resource_ids' => $event['resource_ids']
-		), $skip_redirect);
+		if($just_checking)
+		{
+			$external_login_info = $bouser->get_cached_user_data();
+		}
+		else
+		{
+			$external_login_info = $bouser->validate_ssn_login(array(
+				'menuaction' => 'bookingfrontend.uievent.cancel',
+				'id' => $event['id'],
+				'resource_ids' => $event['resource_ids']
+			), $skip_redirect);
+		}
 
 
 		if (!empty($event['application_id']))
@@ -723,7 +730,7 @@ class bookingfrontend_uievent extends booking_uievent
 		}
 		$event['when'] = $when;
 		$bouser = new UserHelper();
-		if ($this->_is_event_owner($event, $bouser, true))
+		if ($this->_is_event_owner($event, $bouser, true, true))
 		{
 			if ($event['from_'] > Date('Y-m-d H:i:s'))
 			{
@@ -781,21 +788,27 @@ class bookingfrontend_uievent extends booking_uievent
 
 	public function info_json()
 	{
-		// Retrieve multiple allocation IDs
 		$ids = Sanitizer::get_var('ids', 'string');
-		if ($ids && !is_array($ids))
+
+		if (is_array($ids))
 		{
+			// ids is already an array, keep as is
+		} elseif ($ids)
+		{
+			// Convert comma-separated string to array
 			$ids = explode(',', $ids);
-		}
-		elseif (!$ids || !is_array($ids))
+		} else
 		{
-			$ids = array(Sanitizer::get_var('id', 'int'));
+			// No ids provided, try single id
+			$ids = array(Sanitizer::get_var('id'));
 		}
+
+		// Filter out empty values and ensure we have at least one valid ID
+		$ids = array_filter($ids);
 		if (empty($ids))
 		{
 			phpgw::no_access('booking', lang('missing id'));
 		}
-
 		$config = CreateObject('phpgwapi.config', 'booking')->read();
 		$user_can_delete_events = $config['user_can_delete_events'] === 'yes' ? 1 : 0;
 
@@ -847,7 +860,7 @@ class bookingfrontend_uievent extends booking_uievent
 	function filterEventForPublic($event)
 	{
 		$bouser = new UserHelper();
-		if ($bouser->is_logged_in() && $this->_is_event_owner($event, $bouser))
+		if ($bouser->is_logged_in() && $this->_is_event_owner($event, $bouser, true, true))
 		{
 			return $event;
 		}
@@ -953,7 +966,7 @@ class bookingfrontend_uievent extends booking_uievent
 	{
 		$bouser = new UserHelper();
 
-		if ($bouser->is_logged_in() && $this->_is_event_owner($event, $bouser) && $event['from_'] > Date('Y-m-d H:i:s'))
+		if ($bouser->is_logged_in() && $this->_is_event_owner($event, $bouser,true, true) && $event['from_'] > Date('Y-m-d H:i:s'))
 		{
 			return self::link([
 				'menuaction' => 'bookingfrontend.uievent.edit',
@@ -969,7 +982,7 @@ class bookingfrontend_uievent extends booking_uievent
 	{
 		$bouser = new UserHelper();
 
-		if ($bouser->is_logged_in() && $this->_is_event_owner($event, $bouser) && $event['from_'] > Date('Y-m-d H:i:s') && $user_can_delete_events)
+		if ($bouser->is_logged_in() && $this->_is_event_owner($event, $bouser, true, true) && $event['from_'] > Date('Y-m-d H:i:s') && $user_can_delete_events)
 		{
 			return self::link([
 				'menuaction' => 'bookingfrontend.uievent.cancel',

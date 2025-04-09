@@ -290,6 +290,38 @@ class booking_socompleted_reservation_export extends booking_socommon
 		return $receipt;
 	}
 
+	function archive($entry)
+	{
+		$export_reservations = &$this->get_completed_reservations_for($entry);
+
+		if (!$export_reservations)
+		{
+			throw new LogicException('Nothing to export');
+		}
+
+		$entry['from_'] = $export_reservations[0]['to_'];
+		$entry['to_'] = $export_reservations[count($export_reservations) - 1]['to_'];
+		$entry['total_cost'] = $this->calculate_total_cost($export_reservations);
+		$entry['total_items'] = count(array_filter($export_reservations, array(
+			$this,
+			'not_free'
+		)));
+
+		$this->db->transaction_begin();
+
+		$receipt = parent::add($entry);
+		$entry['id'] = $receipt['id'];
+		$this->update_completed_reservations_archived_state($entry, $export_reservations);
+
+		if (!($this->db->transaction_commit()))
+		{
+			throw new UnexpectedValueException('Transaction failed.');
+		}
+
+		return $receipt;
+	}
+
+
 	public function &get_completed_reservations_for($entity)
 	{
 		$filters = array();
@@ -355,6 +387,10 @@ class booking_socompleted_reservation_export extends booking_socommon
 	protected function update_completed_reservations_exported_state($entity, &$reservations)
 	{
 		return $this->completed_reservation_so->update_exported_state_of($reservations, $entity['id']);
+	}
+	protected function update_completed_reservations_archived_state($entity, &$reservations)
+	{
+		return $this->completed_reservation_so->update_archived_state_of($reservations, $entity['id']);
 	}
 
 	protected function get_customer_identifier_value_for(&$reservation)
@@ -1138,15 +1174,14 @@ class booking_socompleted_reservation_export extends booking_socommon
 					if ($order_line['parent_mapping_id'] == 0)
 					{
 						$article_name = $order_line['name']  . ' - ' . $reservation['description'];
-						//		$_article_code = $account_codes['article'];
-						$_article_code = $order_line['article_code'];
 					}
 					else
 					{
 						$article_name = $order_line['name'];
-						$_article_code = $order_line['article_code'];
 					}
 
+					$_article_code = $order_line['article_code'];
+					$_article_alternative_code = $order_line['article_alternative_code'];
 
 					if ($order_line['tax_percent'])
 					{
@@ -2538,8 +2573,16 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 						$pris_inkl_mva = (float)$order_line['unit_price'] + $unit_tax;
 
+						$_article_code = $order_line['article_code'];
+						$_article_alternative_code = $order_line['article_alternative_code'];
+
+						if ($type == 'internal' && $_article_alternative_code)
+						{
+							$_article_code = $_article_alternative_code;
+						}
+
 						$_item['art_descr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $order_line['name']), 0, 35), 35, ' '); //35 chars long
-						$_item['article']	 = str_pad(substr(strtoupper($order_line['article_code']), 0, 15), 15, ' ');
+						$_item['article']	 = str_pad(substr(strtoupper($_article_code), 0, 15), 15, ' ');
 						$_item['amount']	 = $this->format_cost(($order_line['amount']));
 						$_item['tax_code']	 = str_pad($order_line['tax_code'], 2, ' ', STR_PAD_LEFT);
 						$_item['value_1']	 = str_pad($order_line['quantity'] * 100, 17, 0, STR_PAD_LEFT); //Units. Multiplied by 100.
@@ -2708,8 +2751,16 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 						$pris_inkl_mva = (float)$order_line['unit_price'] + $unit_tax;
 
+						$_article_code = $order_line['article_code'];
+						$_article_alternative_code = $order_line['article_alternative_code'];
+
+						if ($type == 'internal' && $_article_alternative_code)
+						{
+							$_article_code = $_article_alternative_code;
+						}
+
 						$_item['art_descr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $order_line['name']), 0, 35), 35, ' '); //35 chars long
-						$_item['article']	 = str_pad(substr(strtoupper($order_line['article_code']), 0, 15), 15, ' ');
+						$_item['article']	 = str_pad(substr(strtoupper($_article_code), 0, 15), 15, ' ');
 						$_item['amount']	 = $this->format_cost(($order_line['amount']));
 						$_item['tax_code']	 = str_pad($order_line['tax_code'], 2, ' ', STR_PAD_LEFT);
 						$_item['value_1']	 = str_pad($order_line['quantity'] * 100, 17, 0, STR_PAD_LEFT); //Units. Multiplied by 100.

@@ -1,23 +1,23 @@
 'use client'
-import { useState } from 'react';
 import { Button, Textfield } from "@digdir/designsystemet-react";
-import { Controller } from "react-hook-form";
+import { Controller, useFieldArray } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
+import { PlusIcon, MinusIcon } from '@navikt/aksel-icons';
+import leaders from '../styles/group.update.module.scss';
 
 interface ContactForm {
     control: any;
     errors: any;
-    resetField: any;
 }
 interface GroupleaderForm {
-    number: 0 | 1;
+    number: number;
     control: any;
     errors: any;
+    key: any
+    remove: () => void;
 }
 
-export const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) => {
+export const GroupleaderForm = ({ number, control, errors, remove }: GroupleaderForm) => {
     const t = useTrans();
 
     let errObj = errors.groupLeaders;
@@ -25,8 +25,14 @@ export const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) =>
     else errObj = {}
 
     return (
-        <div>
-        <h3>{t('bookingfrontend.group_leader')} {number + 1}</h3>
+        <div key={`groupleader-${number}`}>
+        <div className={leaders.groupleader_header}>
+            <h3>{t('bookingfrontend.group_leader')} {number + 1}</h3>
+            <Button variant='tertiary' onClick={remove}>
+                <MinusIcon />
+                {t('bookingfrontend.remove_groupleader')}
+            </Button>
+        </div>
         <div>
             <Controller 
                 name={`groupLeaders[${number}].name`}
@@ -78,45 +84,40 @@ export const GroupleaderForm = ({ number, control, errors }: GroupleaderForm) =>
     )
 }
 
-const ContactsForm = ({ control, errors, resetField }: ContactForm) => {
-    const [leadersCount, setCount] = useState(0);
+const ContactsForm = ({ control, errors }: ContactForm) => {
+    const { fields, remove, insert } = useFieldArray({
+        name: `groupLeaders`,
+        control,
+    });
     const t = useTrans();
-
-    const onMinus = () => {
-        resetField('groupLeaders[1]');
-        setCount(0);
+    
+    const onPlus = () => {
+        if (fields.length >= 2) return;
+        insert(fields.length, { name: '', phone: '', email: '' });
     }
 
     return (
-        <>
-            <GroupleaderForm 
-                errors={errors}
-                control={control}
-                number={0}
-            />
-            { 
-                 leadersCount !== 1
-                 ? <Button variant='tertiary' onClick={() => setCount(1)}>
-                        <FontAwesomeIcon icon={faPlus} />
-                       {t('bookingfrontend.add_groupleader')}
-                   </Button>
-                 : null  
+        <div className={leaders.group_leader_container}>
+            { errors.groupLeaders?.message }
+            { fields.map((field, i) => {
+                return <GroupleaderForm
+                    remove={() => remove(i)}
+                    key={field.id}
+                    errors={errors}
+                    control={control} 
+                    number={i}
+                    />
             }
-            { 
-                leadersCount === 1
-                ? <GroupleaderForm errors={errors} control={control} number={1}/> 
-                : null
-            }
+            )}
             {
-              
-              leadersCount === 1
-              ? <Button variant='tertiary' onClick={onMinus}>
-                    <FontAwesomeIcon icon={faMinus} />
-                    {t('bookingfrontend.remove_groupleader')}
-                </Button>
-              : null
+                fields.length < 2 && (
+                    <Button variant='tertiary' onClick={onPlus}>
+                        <PlusIcon />
+                        {t('bookingfrontend.add_groupleader')}
+                    </Button>
+                )
             }
-        </>
+        </div>
     );
 }
 

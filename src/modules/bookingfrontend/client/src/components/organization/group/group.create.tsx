@@ -1,5 +1,6 @@
 'use client'
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@digdir/designsystemet-react";
 import { useForm } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
@@ -8,25 +9,23 @@ import { createGroup } from "@/service/api/organization";
 import { useActivityList } from "@/service/api/activity";
 import ContactsForm from "./form/contact.form";
 import GroupFormBase from "./form/base.form";
-import { Organization } from "@/service/types/api/organization.types";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
+import { FloppydiskIcon } from '@navikt/aksel-icons';
 import { useRouter } from "next/navigation";
 
 import styles from './styles/group.create.module.scss'
 
 interface GroupFormProps {
-    data: Organization;
+    orgId: number;
+    orgName: string;
 }
 
-const GroupCreate = ({ data }: GroupFormProps) => {
+const GroupCreate = ({ orgId, orgName }: GroupFormProps) => {
     const router = useRouter();
-    const { data: activities } = useActivityList(data.id);
+    const { data: activities } = useActivityList(orgId);
     const t = useTrans();
     const {
         control,
         handleSubmit,
-        resetField,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(createGroupFormSchema),
@@ -40,10 +39,11 @@ const GroupCreate = ({ data }: GroupFormProps) => {
             groupLeaders: []
         }
     });
-    const create = createGroup(data.id);
+    const create = createGroup(orgId, useQueryClient());
 
     const save = (data: CreatingGroup) => {
         create.mutate(data);
+        router.back();
     }
 
     return (
@@ -53,7 +53,7 @@ const GroupCreate = ({ data }: GroupFormProps) => {
                     {t('bookingfrontend.cancel')}
                 </Button>
                 <Button onClick={handleSubmit(save)}>
-                    <FontAwesomeIcon icon={faFloppyDisk} />
+                    <FloppydiskIcon />
                     {t('bookingfrontend.save')}
                 </Button>
             </div>
@@ -69,13 +69,12 @@ const GroupCreate = ({ data }: GroupFormProps) => {
             <GroupFormBase 
                 control={control}
                 errors={errors}
-                orgName={data.name}
+                orgName={orgName}
                 activities={activities}
             />
             <ContactsForm
                 control={control}
                 errors={errors}
-                resetField={resetField}
             />
         </main>
     )

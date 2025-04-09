@@ -348,7 +348,8 @@ class BookingConfig
     public $invoice_last_id;
 
     /**
-     * @OA\Property(type="string")
+	 * @OA\Property(type="array", @OA\Items(type="string"))
+	 * @Expose
      */
     public $landing_sections;
 
@@ -420,6 +421,7 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
      */
     public $user_can_delete_allocations;
 

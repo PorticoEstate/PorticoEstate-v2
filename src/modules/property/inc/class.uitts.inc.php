@@ -2733,7 +2733,7 @@ HTML;
 		// end approval
 		// -------- end order section
 
-		$additional_notes	 = $this->bo->read_additional_notes($id);
+		$_additional_notes	 = $this->bo->read_additional_notes($id);
 		$record_history		 = $this->bo->read_record_history($id);
 
 		$notes = array(
@@ -2747,11 +2747,11 @@ HTML;
 			)
 		);
 
-		$additional_notes = array_merge($notes, $additional_notes);
+		$_additional_notes = array_merge($notes, $_additional_notes);
 
 		if (isset($this->userSettings['preferences']['common']['yui_table_nowrap']) && $this->userSettings['preferences']['common']['yui_table_nowrap'])
 		{
-			foreach ($additional_notes as &$_note)
+			foreach ($_additional_notes as &$_note)
 			{
 				$_note['value_note'] = wordwrap($_note['value_note'], 40);
 			}
@@ -2782,13 +2782,13 @@ HTML;
 				'resizeable' => true,
 				'formatter'	 => 'FormatterCenter'
 			);
-			foreach ($additional_notes as &$note)
+			foreach ($_additional_notes as &$note)
 			{
 				$note['order_text'] = '<input type="checkbox" name="values[order_text][]" value="' . str_replace('"', "'", $note['value_note']) . '" title="' . lang('Check to add text to order') . '">';
 			}
 		}
 
-		if ($this->apps['frontend']['enabled'])
+		//		if ($this->apps['frontend']['enabled'])
 		{
 			$note_def[] = array(
 				'key'		 => 'publish_note',
@@ -2797,14 +2797,21 @@ HTML;
 				'resizeable' => true,
 				'formatter'	 => 'FormatterCenter'
 			);
-			foreach ($additional_notes as &$note)
+			foreach ($_additional_notes as &$note)
 			{
-				$_checked				 = $note['value_publish'] ? 'checked' : '';
-				$note['publish_note']	 = "<input type='checkbox' {$_checked}  name='values[publish_note][]' value='{$id}_{$note['value_id']}' title='" . lang('Check to publish text at frontend') . "'>";
+				if ($note['value_id'])
+				{
+					$_checked				 = $note['value_publish'] ? 'checked' : '';
+					$note['publish_note']	 = "<input type='checkbox' {$_checked}  name='values[publish_note][]' value='{$id}_{$note['value_id']}' title='" . lang('Check to publish text at frontend') . "'>";
+				}
+				else
+				{
+					$note['publish_note'] = '<span class="checked-indicator">&check;</span>';
+				}
 			}
 		}
 
-		foreach ($additional_notes as &$note)
+		foreach ($_additional_notes as &$note)
 		{
 			if (!preg_match("/(<\/p>|<\/span>|<\/table>)/i", $note['value_note']))
 			{
@@ -2812,6 +2819,46 @@ HTML;
 				$note['value_note']	 = nl2br($note['value_note']);
 			}
 		}
+
+		unset($note);
+
+		$additional_notes = array();
+		if ($this->simple)
+		{
+			$i = 1;
+			foreach ($_additional_notes as $note)
+			{
+				if ($note['value_publish'])
+				{
+					$note['value_count'] = $i++;
+					$additional_notes[] = $note;
+				}
+			}
+		}
+		else
+		{
+			$i = 0;
+			$j = 1;
+			foreach ($_additional_notes as $note)
+			{
+				if ($note['value_publish'])
+				{
+					$i++;
+					$j = 1;
+				}
+				else
+				{
+					if ($i)
+					{
+						$j++;
+					}
+				}
+				$i = max(array(1, $i));
+				$note['value_count'] = "{$i}.{$j}";
+				$additional_notes[] = $note;
+			}
+		}
+
 
 		$datatable_def = array();
 

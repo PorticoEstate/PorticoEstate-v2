@@ -1,6 +1,7 @@
 import {IBuilding} from "@/service/types/Building";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faBuilding, faCircle, faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import {faCircle, faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import {Buildings3Icon} from "@navikt/aksel-icons";
 import styles from '../building-page/building-header.module.scss';
 import {getTranslation} from "@/app/i18n";
 import MapModal from "@/components/map-modal/map-modal";
@@ -36,7 +37,7 @@ const ResourceHeader = async (props: ResourceHeaderProps) => {
             <div style={{display: 'flex', marginTop: '1rem'}}>
                 <Button asChild variant={'secondary'} color={'neutral'}
                         className={'default'}>
-                    <Link href={'/building/' + building.id}><FontAwesomeIcon icon={faBuilding}/>{building.name}</Link>
+                    <Link href={'/building/' + building.id}><Buildings3Icon fontSize="20px"/>{building.name}</Link>
 
                 </Button>
             </div>

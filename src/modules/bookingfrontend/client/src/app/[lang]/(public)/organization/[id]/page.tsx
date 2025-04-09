@@ -1,6 +1,7 @@
 import {FC} from "react";
 import { notFound } from "next/navigation";
-import OrganizationWrapper from "@/components/organization/organization.wrapper";
+import { fetchOrganization } from "@/service/api/organization";
+import OrganizationController from "@/components/organization/organization.controller";
 
 interface OrganizationParams {
     id: string;
@@ -21,8 +22,10 @@ export async function generateMetadata(props: OrganizationProps) {
 const Organization: FC<OrganizationProps> = async (props: OrganizationProps) => {
     const orgId = parseInt(props.params.id, 10);
     if (isNaN(orgId)) return notFound();
+    const organization = await fetchOrganization(orgId);
+    if (!organization) return notFound();
 
-    return <OrganizationWrapper id={orgId}/>;
+    return <OrganizationController data={organization}/>;
 }
 
 export default Organization;

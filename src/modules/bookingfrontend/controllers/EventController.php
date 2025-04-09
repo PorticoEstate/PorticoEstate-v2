@@ -99,7 +99,7 @@ class EventController
      *             type="object",
      *             @OA\Property(property="name", type="string"),
      *             @OA\Property(property="from_", type="string", format="date-time"),
-     *             @OA\Property(property="to_", type="string", format="date-time")
+     *             @OA\Property(property="to_", type="string", format="date-time"),
      *             @OA\Property(property="organizer", type="string"),
      *             @OA\Property(property="participant_limit", type="integer"),
      *             @OA\Property(
@@ -111,11 +111,11 @@ class EventController
      *         )
      *      ),
      *      @OA\Response(
-     *         response=201,
+     *         response=200,
      *         description="Event updated successfully",
      *         @OA\JsonContent(
      *             type="object",
-     *             @OA\Property(property="id", type="integer")
+     *             @OA\Property(property="id", type="integer"),
      *             @OA\Property(property="message", type="string")
      *         )
      *     ),

@@ -1,6 +1,7 @@
 import {FC} from "react";
 import { notFound } from "next/navigation";
-import ServerToClientAdapter from "@/components/organization/group/group.wrapper";
+import GroupCreate from "@/components/organization/group/group.create";
+import { fetchOrganization } from "@/service/api/organization";
 
 interface GroupParams {
     id: string;
@@ -19,11 +20,13 @@ export async function generateMetadata(props: GroupProps) {
     }
 }
 
-const GroupCreate: FC<GroupProps> = async (props: GroupProps) => {
+const GroupCreatePage: FC<GroupProps> = async (props: GroupProps) => {
     const orgId = parseInt(props.params.id, 10);
     if (isNaN(orgId)) return notFound();
+    const organization = await fetchOrganization(orgId);
+    if (!organization) return notFound();
     
-    return <ServerToClientAdapter orgId={orgId}/>;
+    return <GroupCreate orgName={organization.name} orgId={orgId}/>;
 }
 
-export default GroupCreate;
+export default GroupCreatePage;

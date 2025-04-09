@@ -23,22 +23,6 @@ class OrganizationRepository
         return !!$stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    private function sqlPrepare($table, $data)
-    {
-        $params = [':id' => $data['id']];
-        $updateFields = [];
-
-        foreach ($data as $field => $value) {
-            $updateFields[] = "$field = :$field";
-            $params[":$field"] = $value;
-        }
-
-        $sql = "UPDATE bb_$table SET " . implode(', ', $updateFields) .
-        " WHERE id = :id
-        RETURNING id
-        ";
-        return ['sql' => $sql, 'params' => $params];
-    }
     private function sqlPrepareContactTable($table, $ownerId, $data)
     {
         $params = [':id' => $data['id']];
@@ -81,8 +65,12 @@ class OrganizationRepository
     }
     public function getDelegateById(int $id)
     {
-        $sql = "SELECT * from bb_delegate
-        WHERE id=:id";
+        $sql = "SELECT d.id, d.name, d.email, d.phone, 
+        json_build_object('id', org.id, 'name', org.name) as organization 
+        FROM bb_delegate d 
+        JOIN bb_organization as org
+        ON org.id = d.organization_id
+        WHERE d.id=:id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $id]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -231,7 +219,7 @@ class OrganizationRepository
             'organization_id' => $id,
             'description' => $data['description'],
             'name' => $data['name'],
-            'shortname' => $data['shortName'],
+            'shortname' => $data['shortname'],
             'activity_id' => $data['activity_id'] 
         ]);
         return $stmt->fetch(PDO::FETCH_ASSOC);
@@ -241,7 +229,6 @@ class OrganizationRepository
         $sql = "INSERT INTO 
         bb_group_contact(name, phone, email, group_id)
         VALUES(:name, :phone, :email, :groupId)";
-
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
             'name' => $data['name'],
@@ -335,11 +322,13 @@ class OrganizationRepository
         $stmt->execute($params);
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
-    
-    public function patchOrganization(int $id, array $data) 
+
+    public function deleteGroupLeader($groupId, $leaderId) 
     {
-        $data['id'] = $id;
-        ['sql' => $sql, 'params' => $params] = $this->sqlPrepare('organization', $data);
+        $params = [':id' => $leaderId, ':groupId' => $groupId];
+        $sql = "DELETE FROM bb_group_contact 
+        WHERE id = :id AND group_id = :groupId
+        RETURNING id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetch(PDO::FETCH_ASSOC);

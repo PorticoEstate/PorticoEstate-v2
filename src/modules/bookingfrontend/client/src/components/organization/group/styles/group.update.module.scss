@@ -1,9 +1,15 @@
 .group_leader_container > div {
     margin-bottom: 1rem;
-    & > div {
+    & > div {        
         margin-top: 0.7rem;
         & > div {
             margin-bottom: 0.5rem;
         }
     }
+}
+
+.groupleader_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }

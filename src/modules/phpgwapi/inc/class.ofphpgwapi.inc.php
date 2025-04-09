@@ -151,7 +151,8 @@ class phpgwapi_ofphpgwapi extends phpgwapi_object_factory
 				return new \App\modules\phpgwapi\services\Vfs\Vfs();
 			case 'xslttemplates':
 				$root = ($p1 !== '_UNDEF_') ? $p1 : '.';
-				return phpgwapi_xslttemplates::getInstance($root);
+				$skip_singleton = ($p2 !== '_UNDEF_') ? $p2 : null;
+				return phpgwapi_xslttemplates::getInstance($root, $skip_singleton);
 			default:
 				return parent::createObject(
 					$class,

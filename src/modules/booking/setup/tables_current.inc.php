@@ -1468,6 +1468,7 @@ $phpgw_baseline = array(
 			'article_cat_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
 			'article_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
 			'article_code' => array('type' => 'varchar', 'precision' => '100', 'nullable' => false),
+			'article_alternative_code' => array('type' => 'varchar', 'precision' => '100', 'nullable' => true),
 			'unit' => array('type' => 'varchar', 'precision' => '12', 'nullable' => false),
 			'tax_code' => array('type' => 'int', 'precision' => 4, 'nullable' => false),
 			'deactivate_in_frontend' => array('type' => 'int', 'precision' => 2, 'nullable' => True),
@@ -1610,6 +1611,8 @@ $phpgw_baseline = array(
 			'captured' => array('type' => 'int', 'precision' => '8', 'nullable' => true),
 			'avs_response_code' => array('type' => 'varchar', 'precision' => '15', 'nullable' => true),
 			'avs_response_code_label' => array('type' => 'varchar', 'precision' => '35', 'nullable' => true),
+			'posted_to_accounting' => array('type' => 'int', 'precision' => '8', 'nullable' => true),
+			'refund_posted_to_accounting' => array('type' => 'int', 'precision' => '8', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(

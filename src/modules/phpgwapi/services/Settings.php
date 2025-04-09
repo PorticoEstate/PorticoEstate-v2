@@ -76,7 +76,7 @@ class Settings
 		$this->config_data['server']['versions'] =  $setup_info['phpgwapi']['versions'];
 
 
-		$this->config_data['server']['db_type'] = $this->db->get_config()['db_type'];
+		$this->config_data['server']['db_type'] = $this->db->get_config()['db_type']??'';
 		$this->config_data['server']['isConnected'] = $this->db->isConnected();
 
 		//		_debug_array($this->config_data);die();
@@ -107,7 +107,7 @@ class Settings
 		}
 
 		//check if the temp_dir is set and is writable
-		if ($modules[0] == 'phpgwapi' && (empty($this->config_data['temp_dir']) || !is_writable($this->config_data['temp_dir'])))
+		if ($modules[0] == 'phpgwapi' && (empty($this->config_data['server']['temp_dir']) || !is_writable($this->config_data['server']['temp_dir'])))
 		{
 			$this->config_data['server']['temp_dir'] = '/tmp';
 		}

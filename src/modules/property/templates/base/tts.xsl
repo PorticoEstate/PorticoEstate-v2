@@ -328,6 +328,12 @@
 		#submitbox {
 		display: none;
 		}
+		.checked-indicator {
+			 color: #198754; /* Bootstrap success color */
+			 font-weight: bold;
+			 font-size: 2em;
+		}
+
 
 	</style>
 	<script type="text/javascript">

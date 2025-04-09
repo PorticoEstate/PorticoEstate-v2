@@ -4,8 +4,7 @@ import { Textfield, Textarea, Dropdown, Label, Button } from "@digdir/designsyst
 import { Controller } from "react-hook-form";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { ShortActivity } from "@/service/types/api/organization.types";
-import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { ChevronDownIcon, ChevronUpIcon } from '@navikt/aksel-icons';
 
 interface GroupFormBaseProps {
     control: any;
@@ -72,8 +71,8 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                             }
                             {
                                 activityList
-                                ? <FontAwesomeIcon icon={faCaretUp} />
-                                : <FontAwesomeIcon icon={faCaretDown} />
+                                ? <ChevronUpIcon />
+                                : <ChevronDownIcon />
                             }
                         </Button>
                         <Dropdown 
@@ -91,6 +90,11 @@ const GroupFormBase = ({ control, errors, orgName, activities, currentActivity }
                                 )) }
                             </Dropdown.List>
                         </Dropdown>
+                        { errors.groupData?.activity_id && (
+                            <p className="ds-validation-message">
+                                {t(errors.groupData?.activity_id?.message)}
+                            </p>
+                        )}
                     </div>
                 )}
             />

@@ -6,8 +6,7 @@ import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { useActivityList } from "@/service/api/activity";
 import { Organization, ShortActivity } from "@/service/types/api/organization.types";
 import { OrganizationContactForm } from "./organizaiton.contact.form";
-import { faCaretUp, faCaretDown } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { ChevronDownIcon, ChevronUpIcon } from '@navikt/aksel-icons';
 import styles from '../styles/organization.update.module.scss';
 
 interface UpdateOrganizationProps {
@@ -190,8 +189,8 @@ const UpdateOrganizationForm = ({ organization, errors, control }: UpdateOrganiz
                             }
                             {
                                 activityList
-                                ? <FontAwesomeIcon icon={faCaretUp} />
-                                : <FontAwesomeIcon icon={faCaretDown} />
+                                ? <ChevronUpIcon />
+                                : <ChevronDownIcon />
                             }
                         </Button>
                         <Dropdown 

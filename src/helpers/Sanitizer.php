@@ -172,9 +172,9 @@ class Sanitizer
 		return self::clean_value($value, $value_type, $default);
 	}
 
-	public static function get_ip_address()
+	public static function get_ip_address_fallback()
 	{
-		$ip_keys = array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED', 'REMOTE_ADDR');
+		$ip_keys = array('HTTP_CLIENT_IP', 'HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED', 'HTTP_X_CLUSTER_CLIENT_IP', 'HTTP_FORWARDED_FOR', 'HTTP_FORWARDED');
 		foreach ($ip_keys as $key)
 		{
 			if (array_key_exists($key, $_SERVER) === true)
@@ -184,29 +184,166 @@ class Sanitizer
 					// trim for safety measures
 					$ip = trim($ip);
 					// attempt to validate IP
-					if (self::validate_ip($ip))
+					if (self::validate_ip($ip, false))
 					{
 						return $ip;
 					}
 				}
 			}
 		}
-		return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : false;
 	}
 
-	/**
-	 * Ensures an ip address is both a valid IP and does not fall within
-	 * a private network range.
-	 */
-	public static function validate_ip($ip)
+
+	public static function get_ip_address($strict = false)
 	{
-		if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false)
+		$remote_addr = false;
+
+		// Most reliable source - directly from server
+		if (!empty($_SERVER['REMOTE_ADDR']) && self::validate_ip($_SERVER['REMOTE_ADDR'], $strict))
+		{
+			$remote_addr = $_SERVER['REMOTE_ADDR'];
+
+			// Check for trusted proxy configuration
+			$settings = \App\modules\phpgwapi\services\Settings::getInstance()->get('server');
+			$trusted_proxies = isset($settings['trusted_proxies']) ?
+				array_map('trim', explode(',', $settings['trusted_proxies'])) : [];
+			// Only process proxy headers if the direct client is a trusted proxy
+			if (self::is_trusted_proxy($remote_addr, $trusted_proxies) && !empty($_SERVER['HTTP_X_FORWARDED_FOR']))
+			{
+				// Get the IP chain from X-Forwarded-For
+				$ip_chain = array_map('trim', explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']));
+
+				// Get the leftmost IP that isn't a trusted proxy (the original client)
+				foreach ($ip_chain as $ip)
+				{
+					if (self::validate_ip($ip, $strict) && !self::is_trusted_proxy($ip, $trusted_proxies))
+					{
+						return $ip;
+					}
+				}
+			}
+
+		}
+
+		// Fallback to other methods
+		if (!$remote_addr)
+		{
+			$remote_addr = self::get_ip_address_fallback();
+		}
+		return $remote_addr;
+
+		// Support both IPv4 and IPv6
+	}
+	/**
+	 * Check if an IP address is in the trusted proxy list
+	 * 
+	 * @param string $ip IP address to check
+	 * @param array $trusted_proxies List of trusted proxy IPs/CIDRs
+	 * @return bool True if IP is a trusted proxy
+	 */
+	public static function is_trusted_proxy($ip, array $trusted_proxies)
+	{
+		if (empty($trusted_proxies))
 		{
 			return false;
 		}
+
+		// Direct IP match
+		if (in_array($ip, $trusted_proxies))
+		{
+			return true;
+		}
+
+		// Check CIDR ranges
+		foreach ($trusted_proxies as $proxy)
+		{
+			// Check if entry is in CIDR format (contains /)
+			if (strpos($proxy, '/') !== false)
+			{
+				if (self::ip_in_cidr_range($ip, $proxy))
+				{
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+	/**
+	 * Check if an IP is within a CIDR range
+	 * 
+	 * @param string $ip IP address to check
+	 * @param string $cidr CIDR range (e.g. 192.168.1.0/24)
+	 * @return bool True if IP is in range
+	 */
+	public static function ip_in_cidr_range($ip, $cidr)
+	{
+		list($subnet, $mask) = explode('/', $cidr);
+
+		// Convert IP addresses to binary strings
+		$ip_binary = inet_pton($ip);
+		$subnet_binary = inet_pton($subnet);
+
+		if ($ip_binary === false || $subnet_binary === false)
+		{
+			return false;
+		}
+
+		// Get length in bits of IP address
+		$ip_bits = 8 * strlen($ip_binary);
+
+		// Verify mask is valid
+		if ($mask < 0 || $mask > $ip_bits)
+		{
+			return false;
+		}
+
+		// Calculate how many bytes to compare (full bytes only)
+		$bytes_to_compare = floor($mask / 8);
+
+		// Compare full bytes
+		if ($bytes_to_compare > 0)
+		{
+			$result = substr_compare($ip_binary, $subnet_binary, 0, $bytes_to_compare);
+			if ($result !== 0)
+			{
+				return false;
+			}
+		}
+
+		// Check remaining bits if mask is not divisible by 8
+		$bits_to_compare = $mask % 8;
+		if ($bits_to_compare > 0 && $bytes_to_compare < strlen($ip_binary))
+		{
+			// Get the bits from the first non-matching byte
+			$ip_byte = ord(substr($ip_binary, $bytes_to_compare, 1));
+			$subnet_byte = ord(substr($subnet_binary, $bytes_to_compare, 1));
+
+			// Create a mask for the partial byte: e.g. for 3 bits, use 0xE0 (11100000)
+			$mask_byte = -1 << (8 - $bits_to_compare);
+
+			return ($ip_byte & $mask_byte) === ($subnet_byte & $mask_byte);
+		}
+
 		return true;
 	}
 
+	public static function validate_ip($ip, $strict = true)
+	{
+		// For production - filter private ranges
+		if ($strict)
+		{
+			return filter_var(
+				$ip,
+				FILTER_VALIDATE_IP,
+				FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE
+			) !== false;
+		}
+
+		// For development - accept all valid IPs including private ranges
+		return filter_var($ip, FILTER_VALIDATE_IP) !== false;
+	}
+	
 	/**
 	 * Test (and sanitise) the value of a variable
 	 *

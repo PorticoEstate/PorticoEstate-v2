@@ -5,17 +5,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { createDelegateFormSchema, CreatingDelegate } from "./schemas";
 import { createDelegate } from "@/service/api/organization";
-import { Organization } from "@/service/types/api/organization.types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from 'next/navigation'
 import styles from './styles/delegater.form.module.scss';
-
+import { Organization } from "@/service/types/api/organization.types";
+ 
 interface DelegateFormProps {
-    data: Organization;
+    organization: Organization;
 }
 
-const DelegateCreate = ({ data }: DelegateFormProps) => {
+const DelegateCreate = ({ organization }: DelegateFormProps) => {
     const router = useRouter();
     const t = useTrans();
     const {
@@ -26,11 +26,18 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
         mode: 'onChange',
         resolver: zodResolver(createDelegateFormSchema),
     });
-    const create = createDelegate(data.id);
+
+    const create = createDelegate(organization.id);
 
     const save = (data: CreatingDelegate) => {
         create.mutate(data);
     }
+
+    if (create.isSuccess) {
+        router.push(`/organization/${organization.id}`);
+        return null;
+    }
+
     return (
         <main className={styles.delegate_create} >
             <div className={styles.buttons_group}>
@@ -71,7 +78,7 @@ const DelegateCreate = ({ data }: DelegateFormProps) => {
             />
             <Textfield 
                 readOnly
-                value={data.name}
+                value={organization.name}
                 label={t('bookingfrontend.organization_name')}
             />
             <Controller 

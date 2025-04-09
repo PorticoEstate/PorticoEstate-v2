@@ -93,9 +93,14 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                 <Dropdown.List>
 
                     <Dropdown.Item>
-                        <Dropdown.Button onClick={handleLogout}>
-                            {t('common.logout')}
-                        </Dropdown.Button>
+						<Dropdown.Button asChild>
+							<a
+								href={phpGWLink(['bookingfrontend', 'logout/'])}
+
+								className={'link-text link-text-unset normal'}>
+								{t('common.logout')}
+							</a>
+						</Dropdown.Button>
 
                     </Dropdown.Item>
                 </Dropdown.List>
@@ -111,8 +116,14 @@ const UserMenu: FC<UserMenuProps> = (props) => {
         <Dropdown>
             <Dropdown.List>
                 <Dropdown.Item>
-                    <Dropdown.Button onClick={handleLogin}>
-                        <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
+                    <Dropdown.Button asChild>
+
+                        <a
+                            href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
+
+                            className={'link-text link-text-unset normal'}>
+                            <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
+                        </a>
                     </Dropdown.Button>
                 </Dropdown.Item>
                 <Divider/>

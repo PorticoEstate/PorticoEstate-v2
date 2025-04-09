@@ -16,3 +16,5 @@ Dockerfile.local
 .idea
 *.local
 structure.txt
+
+.env

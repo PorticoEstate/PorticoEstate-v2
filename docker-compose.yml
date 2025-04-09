@@ -38,11 +38,12 @@ services:
             # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
         networks:
             - internal
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
 
     nextjs:
         build:
-            context: ./src/modules/bookingfrontend/client
-            dockerfile: Dockerfile.nextjs
+            dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs
             args:
                 - NEXT_ENV=${NEXT_ENV:-production}
                 - http_proxy=${http_proxy}
@@ -54,4 +55,5 @@ services:
 
 networks:
     internal:
-        driver: bridge
+        name: portico_internal
+        external: true

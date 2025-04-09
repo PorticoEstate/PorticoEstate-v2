@@ -3,19 +3,19 @@ import { Controller, useForm } from "react-hook-form";
 import { Button, Textfield } from "@digdir/designsystemet-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UpdatingDelegate, updateDelegateFormSchema } from "./schemas";
-import { patchDelegate } from "@/service/api/organization";
+import { patchDelegate, patchDelegateRequest } from "@/service/api/organization";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
-import { ViewDelegate } from "@/service/types/api/organization.types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
 import { useRouter } from 'next/navigation'
 import styles from './styles/delegater.form.module.scss';
+import { ViewDelegate } from "@/service/types/api/organization.types";
 
 interface DelegateUpdateProps {
-    data: ViewDelegate;
+    delegate: ViewDelegate;
 }
 
-const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
+const DelegateUpdate = ({ delegate }: DelegateUpdateProps) => {
     const router = useRouter();
     const t = useTrans();
     const {
@@ -24,15 +24,14 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
         formState: { errors },
     } = useForm({
         mode: 'onChange',
-        resolver: zodResolver(updateDelegateFormSchema),
+        resolver: zodResolver(updateDelegateFormSchema),   
         defaultValues: {
-            name: data.name,
-            email: data.email,
-            phone: data.phone
+            name: delegate.name,
+            email: delegate.email,
+            phone: delegate.phone
         }
     });
-    const update = patchDelegate(data.id);
-
+    const update = patchDelegate(delegate.organization.id, delegate.id);
     const updateCb = (data: UpdatingDelegate) => {
         update.mutate(data);
     }
@@ -74,7 +73,7 @@ const DelegateUpdate = ({ data }: DelegateUpdateProps) => {
            <Textfield             
                 readOnly
                 label={t('bookingfrontend.organization_company')}
-                value={data.organization}
+                value={delegate.organization.name}
             />
             <Controller 
                 name='phone'

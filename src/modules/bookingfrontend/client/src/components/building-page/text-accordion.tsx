@@ -60,8 +60,8 @@ const TextAccordion = (props: TextAccordionProps) => {
         return null;
     }
     return (
-        <GSAccordion>
-                <GSAccordion.Heading>
+		<GSAccordion data-color={'neutral'}>
+		<GSAccordion.Heading>
                     <h3>{props.title}</h3>
                 </GSAccordion.Heading>
                 <GSAccordion.Content>{parse(unescapeHTML(props.text))}</GSAccordion.Content>

@@ -37,7 +37,7 @@ fi
 # Install necessary packages
 RUN apt-get update && apt-get install -y software-properties-common \
     apt-utils libcurl4-openssl-dev libicu-dev libxslt-dev libpq-dev \
-    zlib1g-dev libpng-dev libfreetype-dev libjpeg62-turbo-dev \ 
+    zlib1g-dev libpng-dev libfreetype-dev libjpeg62-turbo-dev \
     libc-client-dev libkrb5-dev libzip-dev libonig-dev \
     git \
     less vim-tiny \
@@ -73,7 +73,7 @@ RUN pecl install apcu && docker-php-ext-enable apcu
 RUN pecl install redis && docker-php-ext-enable redis
 
 # Add APCu configuration
-RUN echo "apc.shm_size=128M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
+RUN echo "apc.shm_size=64M" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
     && echo "apc.enabled=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini \
     && echo "apc.enable_cli=1" >> /usr/local/etc/php/conf.d/docker-php-ext-apcu.ini
 
@@ -83,7 +83,7 @@ RUN docker-php-ext-install opcache
 
 # Add OPcache configuration
 RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
-    && echo "opcache.memory_consumption=128" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
+    && echo "opcache.memory_consumption=64" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
     && echo "opcache.interned_strings_buffer=8" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
     && echo "opcache.max_accelerated_files=10000" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
     && echo "opcache.revalidate_freq=2" >> /usr/local/etc/php/conf.d/docker-php-ext-opcache.ini \
@@ -117,17 +117,18 @@ RUN echo 'session.use_only_cookies=On' >> /usr/local/etc/php/php.ini
 RUN echo 'short_open_tag=Off' >> /usr/local/etc/php/php.ini
 RUN echo 'request_order = "GPCS"' >> /usr/local/etc/php/php.ini
 RUN echo 'variables_order = "GPCS"' >> /usr/local/etc/php/php.ini
-RUN echo 'memory_limit = 5048M' >> /usr/local/etc/php/php.ini
+RUN echo 'memory_limit = 512M' >> /usr/local/etc/php/php.ini
 RUN echo 'max_input_vars = 5000' >> /usr/local/etc/php/php.ini
 RUN echo 'error_reporting = E_ALL & ~E_NOTICE' >> /usr/local/etc/php/php.ini
-RUN echo 'post_max_size = 20M' >> /usr/local/etc/php/php.ini
-RUN echo 'upload_max_filesize = 8M' >> /usr/local/etc/php/php.ini
+RUN echo 'post_max_size = 55M' >> /usr/local/etc/php/php.ini
+RUN echo 'upload_max_filesize = 50M' >> /usr/local/etc/php/php.ini
 
 # Install Java
-RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg && \
-    echo "deb [arch=amd64] https://packages.microsoft.com/debian/$(cat /etc/debian_version | cut -d. -f1)/prod $(lsb_release -cs) main" > /etc/apt/sources.list.d/mssql-release.list
+RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg
 
-RUN apt-get update && apt-get install -y msopenjdk-21 unzip
+RUN wget https://packages.microsoft.com/config/debian/$(cat /etc/debian_version | cut -d. -f1)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+RUN dpkg -i packages-microsoft-prod.deb
+RUN apt-get update && apt-get install -y msopenjdk-21
 
 ## Verify Java installation
 RUN java -version
@@ -140,6 +141,7 @@ RUN mkdir -p /run/php && chown www-data:www-data /run/php
 
 # Update PHP-FPM configuration to use Unix socket
 RUN sed -i 's|^listen = .*|listen = /run/php/php-fpm.sock|' /usr/local/etc/php-fpm.d/www.conf \
+    && sed -i 's|^pm.max_children.*|pm.max_children = 20|' /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.owner = www-data' >> /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.group = www-data' >> /usr/local/etc/php-fpm.d/www.conf \
     && echo 'listen.mode = 0660' >> /usr/local/etc/php-fpm.d/www.conf
@@ -174,6 +176,12 @@ RUN a2enmod headers
 RUN a2enmod ssl
 RUN a2enmod proxy
 RUN a2enmod proxy_http
+
+# Set Apache LogFormat to combined format
+RUN echo 'LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined' > /etc/apache2/conf-available/custom-log-format.conf \
+    && echo 'CustomLog ${APACHE_LOG_DIR}/access.log combined' >> /etc/apache2/conf-available/custom-log-format.conf \
+    && a2enconf custom-log-format
+
 
 # Copy Apache configuration
 COPY apache-config.conf /etc/apache2/sites-available/000-default.conf

@@ -21,13 +21,13 @@ export function phpGWLink(
     let newURL = urlParts[0];
 
     // Helper function to safely join URL parts without double slashes
-    function safeJoinURL(base: string, path: string): string {
-        return base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
-    }
+	function safeJoinURL(base: string, path: string): string {
+		return base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');
+	}
 
     if (Array.isArray(strURL)) {
-        const path = strURL.map(s => s.toString().replace(/^\/+|\/+$/g, '')).join('/');
-        newURL = safeJoinURL(newURL, path);
+		const path = strURL.map(s => s.toString().replace(/^\/+/g, '')).join('/');
+		newURL = safeJoinURL(newURL, path);
     } else {
         newURL = safeJoinURL(newURL, strURL.toString());
     }
@@ -123,3 +123,12 @@ export function formatDateRange(from: DateTime | Date , to: DateTime | Date, wit
 }
 
 
+
+export function isFutureDate(date: DateTime): boolean {
+	const now = DateTime.utc(); // Current time in UTC
+	return date.isValid && date > now;
+}
+
+export function isDevMode (): boolean {
+	return process.env.NODE_ENV === 'development';
+}

@@ -191,7 +191,7 @@
 
 			// In case the cookies are not included in $_REQUEST
 			$FormLogout   = $FormLogout ? $FormLogout : \Sanitizer::get_var('FormLogout',	'string', 'COOKIE');
-			$ConfigDomain = $ConfigDomain ? $ConfigDomain: \Sanitizer::get_var('ConfigDomain',	'string', 'COOKIE');
+			$ConfigDomain = $logindomain ? $logindomain: \Sanitizer::get_var('ConfigDomain',	'string', 'COOKIE');
 			$ConfigPW     = $ConfigPW ? $ConfigPW : \Sanitizer::get_var('ConfigPW',	'string', 'COOKIE');
 			$HeaderPW     = $HeaderPW ? $HeaderPW : \Sanitizer::get_var('HeaderPW',	'string', 'COOKIE');
 			$ConfigLang   = $ConfigLang ? $ConfigLang : \Sanitizer::get_var('ConfigLang',	'string', 'COOKIE', 'en');
@@ -703,28 +703,28 @@
 
 			if(count($locations))
 			{
-				$inQuery = implode(',', array_fill(0, count($locations), '?'));
-				$stmt = $this->db->prepare("DELETE FROM phpgw_cust_choice WHERE location_id IN ($inQuery)");
+				$inQuery_locations = implode(',', array_fill(0, count($locations), '?'));
+				$stmt = $this->db->prepare("DELETE FROM phpgw_cust_choice WHERE location_id IN ($inQuery_locations)");
 				$stmt->execute($locations);
-				$stmt = $this->db->prepare("DELETE FROM phpgw_cust_attribute WHERE location_id IN ($inQuery)");
+				$stmt = $this->db->prepare("DELETE FROM phpgw_cust_attribute WHERE location_id IN ($inQuery_locations)");
 				$stmt->execute($locations);
-				$stmt = $this->db->prepare("DELETE FROM phpgw_acl WHERE location_id IN ($inQuery)");
+				$stmt = $this->db->prepare("DELETE FROM phpgw_acl WHERE location_id IN ($inQuery_locations)");
 				$stmt->execute($locations);
 
-				$stmt = $this->db->prepare("SELECT id FROM phpgw_config2_section WHERE location_id IN ($inQuery)");
+				$stmt = $this->db->prepare("SELECT id FROM phpgw_config2_section WHERE location_id IN ($inQuery_locations)");
 				$stmt->execute($locations);
 				$sections = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
 
 				if($sections)
 				{
-					$inQuery = implode(',', array_fill(0, count($sections), '?'));
-					$stmt = $this->db->prepare("DELETE FROM phpgw_config2_value WHERE section_id IN ($inQuery)");
+					$inQuery_sections = implode(',', array_fill(0, count($sections), '?'));
+					$stmt = $this->db->prepare("DELETE FROM phpgw_config2_value WHERE section_id IN ($inQuery_sections)");
 					$stmt->execute($sections);
-					$stmt = $this->db->prepare("DELETE FROM phpgw_config2_choice WHERE section_id IN ($inQuery)");
+					$stmt = $this->db->prepare("DELETE FROM phpgw_config2_choice WHERE section_id IN ($inQuery_sections)");
 					$stmt->execute($sections);
-					$stmt = $this->db->prepare("DELETE FROM phpgw_config2_attrib WHERE section_id IN ($inQuery)");
+					$stmt = $this->db->prepare("DELETE FROM phpgw_config2_attrib WHERE section_id IN ($inQuery_sections)");
 					$stmt->execute($sections);
-					$stmt = $this->db->prepare("DELETE FROM phpgw_config2_section WHERE location_id IN ($inQuery)");
+					$stmt = $this->db->prepare("DELETE FROM phpgw_config2_section WHERE location_id IN ($inQuery_locations)");
 					$stmt->execute($locations);
 				}
 			}

@@ -17,7 +17,7 @@ class EventRepository
 
     public function getEventById(int $id): Event
     {
-        $sql = "SELECT ev.*, act.name as activity_name, 
+        $sql = "SELECT ev.*, act.name as activity_name,
         (
             SELECT jsonb_object_agg(res.id, res.name) from bb_event_resource as evres
             JOIN bb_resource as res
@@ -65,7 +65,7 @@ class EventRepository
 
     public function resourceIds(int $id)
     {
-        $sql = 
+        $sql =
             "SELECT array_to_json(ARRAY_AGG(resource_id)) as event_resources from bb_event_resource
             WHERE event_id = :event_id";
         $stmt = $this->db->prepare($sql);
@@ -75,8 +75,8 @@ class EventRepository
 
     public function deleteResources(array $resourceIds)
     {
-        $deleteSql = 
-        "DELETE FROM bb_event_resource 
+        $deleteSql =
+        "DELETE FROM bb_event_resource
         WHERE resource_id IN (" . implode(', ', $resourceIds) . ")";
         $insertStmt = $this->db->prepare($deleteSql);
         $insertStmt->execute();
@@ -88,7 +88,6 @@ class EventRepository
         $insertSql .= implode(', ', array_map(function($value) {
             return "($value[id], $value[resourceId])";
         }, $resourceIds));
-        
         $insertStmt = $this->db->prepare($insertSql);
         $insertStmt->execute();
     }
@@ -141,7 +140,6 @@ class EventRepository
             $params['to'] = $to;
         }
         $sql .= "WHERE event_id = :eventId";
-        
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
     }
@@ -154,8 +152,8 @@ class EventRepository
             'phone',
             'quantity'
         ];
-        $sql = 
-        "INSERT INTO bb_participant(" . implode(', ', $fields) . 
+        $sql =
+        "INSERT INTO bb_participant(" . implode(', ', $fields) .
         ") VALUES('event', :eventId, :phone, :quantity)";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
@@ -165,8 +163,8 @@ class EventRepository
         ]);
     }
 
-    public function insertInRegistration($id, $data) 
-    {   
+    public function insertInRegistration($id, $data)
+    {
         $insertFields = [
             'reservation_type',
             'reservation_id',
@@ -186,7 +184,7 @@ class EventRepository
     }
 
     private function updateRegistration(int $id, string $phone, string $fieldName, $value)
-    { 
+    {
         $sql = "UPDATE bb_participant SET $fieldName=:$fieldName"
         . " WHERE reservation_type='event'"
         . " AND reservation_id=:eventId"
@@ -198,7 +196,7 @@ class EventRepository
             $fieldName =>  $value
         ]);
     }
-    public function outRegistration($id, $data) 
+    public function outRegistration($id, $data)
     {
        return $this->updateRegistration($id, $data['phone'], 'to_', $data['to_']);
     }
@@ -206,4 +204,81 @@ class EventRepository
     {
         return $this->updateRegistration($id, $data['phone'], 'from_', $data['from_']);
     }
+
+
+
+	/**
+	 * Create an event from application data
+	 */
+	public function createEvent(array $eventData): int
+	{
+		$columns = array_keys($eventData);
+		$placeholders = array_fill(0, count($columns), '?');
+
+		$sql = "INSERT INTO bb_event (" . implode(', ', $columns) . ")
+                VALUES (" . implode(', ', $placeholders) . ")";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array_values($eventData));
+
+		return $this->db->lastInsertId();
+	}
+
+	/**
+	 * Associate resources with an event
+	 */
+	public function saveEventResources(int $eventId, array $resources): void
+	{
+		$sql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (?, ?)";
+		$stmt = $this->db->prepare($sql);
+
+		foreach ($resources as $resourceId) {
+			if (is_array($resourceId) && isset($resourceId['id'])) {
+				$stmt->execute([$eventId, $resourceId['id']]);
+			} else {
+				$stmt->execute([$eventId, $resourceId]);
+			}
+		}
+	}
+
+	/**
+	 * Associate target audience with an event
+	 */
+	public function saveEventAudience(int $eventId, array $audience): void
+	{
+		$sql = "INSERT INTO bb_event_targetaudience (event_id, targetaudience_id) VALUES (?, ?)";
+		$stmt = $this->db->prepare($sql);
+
+		foreach ($audience as $audienceId) {
+			$stmt->execute([$eventId, $audienceId]);
+		}
+	}
+
+	/**
+	 * Associate age groups with an event
+	 */
+	public function saveEventAgeGroups(int $eventId, array $agegroups): void
+	{
+		$sql = "INSERT INTO bb_event_agegroup (event_id, agegroup_id, male, female) VALUES (?, ?, ?, ?)";
+		$stmt = $this->db->prepare($sql);
+
+		foreach ($agegroups as $agegroup) {
+			$stmt->execute([
+				$eventId,
+				$agegroup['agegroup_id'],
+				$agegroup['male'],
+				$agegroup['female']
+			]);
+		}
+	}
+
+	/**
+	 * Update ID string (legacy format support)
+	 */
+	public function updateIdString(): void
+	{
+		$sql = "UPDATE bb_event SET id_string = cast(id AS varchar)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute();
+	}
 }

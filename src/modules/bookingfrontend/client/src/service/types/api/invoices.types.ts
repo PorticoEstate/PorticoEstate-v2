@@ -15,10 +15,10 @@ export interface ICompletedReservation {
     cost: number;
 
     /** Start date/time of the reservation */
-    from_: string;
+    from_: TDateISO;
 
     /** End date/time of the reservation */
-    to_: string;
+    to_: TDateISO;
 
     /** Optional ID of the organization */
     organization_id?: number;

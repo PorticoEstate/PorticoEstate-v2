@@ -323,12 +323,19 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			}
 			return eventProps.type === 'event' || eventProps.type === 'booking' || eventProps.type === 'allocation' || eventProps.closed;
 		});
+		const unixTime = Date.now() / 1000;
+		const checkDirectBooking = (res?: IResource) => {
+			if(!res || !res.direct_booking) {
+				return false;
+			}
+			return unixTime > res.direct_booking;
+		}
 
 		// Check for resources with deny_application_if_booked flag
 		const selectedResources = [...enabledResources].map(Number);
 		const resourcesWithDenyFlag = events
 			?.flatMap(event => event.resources)
-			.filter(res => selectedResources.includes(res.id) && resources?.find(r => r.id === res.id)?.deny_application_if_booked === 1);
+			.filter(res => selectedResources.includes(res.id) && (resources?.find(r => r.id === res.id)?.deny_application_if_booked === 1 || checkDirectBooking(resources?.find(r => r.id === res.id))));
 
 		const hasResourceWithDenyFlag = resourcesWithDenyFlag && resourcesWithDenyFlag.length > 0;
 

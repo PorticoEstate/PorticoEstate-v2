@@ -310,19 +310,23 @@ $separator	 = strpos($self_uri, '?') ? '&' : '?';
 $self_uri	 = str_replace(array("{$separator}lang=no", "{$separator}lang=en"), '', $self_uri);
 
 // Check for beta client cookie
-$beta_client = Sanitizer::get_var('beta_client', 'bool', 'COOKIE');
-$beta_selected = $beta_client ? ' checked' : '';
+$beta_client_raw = Sanitizer::get_var('beta_client', 'raw', 'COOKIE');
+$beta_client = ($beta_client_raw === 'true');
 
-switch ($userSettings['preferences']['common']['template_set'])
-{
-	case 'bookingfrontend_2':
-		$selected_bookingfrontend_2	 = ' checked';
-		$selected_bookingfrontend	 = '';
-		break;
-	case 'bookingfrontend':
-		$selected_bookingfrontend_2	 = '';
-		$selected_bookingfrontend	 = ' checked';
-		break;
+// Initialize all selection states to empty
+$selected_bookingfrontend = '';
+$selected_bookingfrontend_2 = '';
+$beta_selected = '';
+
+// Determine which option should be selected
+if ($userSettings['preferences']['common']['template_set'] === 'bookingfrontend') {
+	$selected_bookingfrontend = ' checked';
+} else if ($userSettings['preferences']['common']['template_set'] === 'bookingfrontend_2') {
+	if ($beta_client) {
+		$beta_selected = ' checked';
+	} else {
+		$selected_bookingfrontend_2 = ' checked';
+	}
 }
 $about	 = "https://www.aktiv-kommune.no/";
 $faq	 = "https://www.aktiv-kommune.no/manual/";

@@ -338,19 +338,23 @@ $separator = strpos($self_uri, '?') ? '&' : '?';
 $self_uri = str_replace(array("{$separator}lang=no", "{$separator}lang=en"), '', $self_uri);
 
 // Check for beta client cookie
-$beta_client = Sanitizer::get_var('beta_client', 'bool', 'COOKIE');
-$beta_selected = $beta_client ? ' selected = "selected"' : '';
+$beta_client_raw = Sanitizer::get_var('beta_client', 'raw', 'COOKIE');
+$beta_client = ($beta_client_raw === 'true');
 
-switch ($userSettings['preferences']['common']['template_set'])
-{
-	case 'bookingfrontend_2':
+// Initialize all selection states to empty
+$selected_bookingfrontend = '';
+$selected_bookingfrontend_2 = '';
+$beta_selected = '';
+
+// Determine which option should be selected
+if ($userSettings['preferences']['common']['template_set'] === 'bookingfrontend') {
+	$selected_bookingfrontend = ' selected = "selected"';
+} else if ($userSettings['preferences']['common']['template_set'] === 'bookingfrontend_2') {
+	if ($beta_client) {
+		$beta_selected = ' selected = "selected"';
+	} else {
 		$selected_bookingfrontend_2 = ' selected = "selected"';
-		$selected_bookingfrontend = '';
-		break;
-	case 'bookingfrontend':
-		$selected_bookingfrontend_2 = '';
-		$selected_bookingfrontend = ' selected = "selected"';
-		break;
+	}
 }
 
 if ($config_frontend['develope_mode'])

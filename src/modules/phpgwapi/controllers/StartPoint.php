@@ -411,6 +411,10 @@ class StartPoint
 				case 'bookingfrontend_2':
 					$userSettings['preferences']['common']['template_set'] = $template_set;
 					break;
+//				case 'bookingfrontend_3':
+//					$userSettings['preferences']['common']['template_set'] = $template_set;
+//					// TODO: menu action from request,
+//					break;
 				default: // respect the global setting
 					break;
 			}
@@ -428,17 +432,19 @@ class StartPoint
 		$phpgwapi_common = new \phpgwapi_common();
 
 		$this->validate_object_method();
-
+		
 		// Check for beta client redirect - ONLY for GET requests and not for JSON returns
 		if ($app == 'bookingfrontend' && $_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
 			$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
-			$beta_client = Sanitizer::get_var('beta_client', 'bool', 'COOKIE');
-
+			// Explicitly check for the string "true" since the Sanitizer might not convert it properly
+			$beta_client_raw = Sanitizer::get_var('beta_client', 'raw', 'COOKIE');
+			$beta_client = ($beta_client_raw === 'true');
+			
 			// Handle homepage redirect with no menuaction
 			if ($beta_client && $template_set == 'bookingfrontend_2' && !isset($_GET['menuaction'])) {
 				\phpgw::redirect_link('/bookingfrontend/client/no/');
 			}
-
+			
 			// Handle redirects with menuaction
 			if ($beta_client && $template_set == 'bookingfrontend_2' && isset($_GET['menuaction'])) {
 				$menuaction = $_GET['menuaction'];
@@ -447,7 +453,7 @@ class StartPoint
 					'bookingfrontend.uiresource.show' => '/bookingfrontend/client/no/resource/%id%',
 					// Add more mappings as needed
 				];
-
+				
 				// Special case for authenticated user pages
 				if ($menuaction === 'bookingfrontend.uiuser.show') {
 					// Check if user is authenticated
@@ -459,7 +465,7 @@ class StartPoint
 						}
 					}
 				}
-
+				
 				foreach ($redirectMap as $action => $redirectUrl) {
 					if (strpos($menuaction, $action) === 0) {
 						// Replace placeholders with actual values
@@ -483,15 +489,18 @@ class StartPoint
 				// Check for beta client when no menuaction is provided and default to homepage
 				if ($_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
 					$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
-					$beta_client = Sanitizer::get_var('beta_client', 'bool', 'COOKIE');
-
+					// Explicitly check for the string "true" since the Sanitizer might not convert it properly
+					$beta_client_raw = Sanitizer::get_var('beta_client', 'raw', 'COOKIE');
+					$beta_client = ($beta_client_raw === 'true');
+					
 					if ($beta_client && $template_set == 'bookingfrontend_2') {
 						\phpgw::redirect_link('/bookingfrontend/client/no/');
 					}
 				}
-
+				
 				$this->class = 'uisearch';
-			}			else if ($app == 'activitycalendarfrontend')
+			}
+			else if ($app == 'activitycalendarfrontend')
 			{
 				$this->class = 'uiactivity';
 				$this->method = 'add';

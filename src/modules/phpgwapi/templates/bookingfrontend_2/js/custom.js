@@ -30,6 +30,7 @@ $(document).ready(function ()
 		var requestUrl = phpGWLink('bookingfrontend/', oArgs, true);
 
 		// Set the beta cookie if beta option was selected
+		// Set the beta cookie - explicitly use strings "true"/"false" for compatibility
 		document.cookie = "beta_client=" + (isBeta ? "true" : "false") + "; path=/; max-age=" + 60*60*24*365;
 
 		$.ajax({
@@ -63,6 +64,7 @@ $(document).ready(function ()
 		var requestUrl = phpGWLink('bookingfrontend/', oArgs, true);
 
 		// Set the beta cookie if beta option was selected
+		// Set the beta cookie - explicitly use strings "true"/"false" for compatibility
 		document.cookie = "beta_client=" + (isBeta ? "true" : "false") + "; path=/; max-age=" + 60*60*24*365;
 
 		$.ajax({

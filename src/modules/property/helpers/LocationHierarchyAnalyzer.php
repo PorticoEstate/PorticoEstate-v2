@@ -34,7 +34,7 @@ class LocationHierarchyAnalyzer
 
 	public function analyze($filterLoc1 = null)
 	{
-		$this->processedLocationCodes = []; // Reset the tracking variable
+		$this->resetState(); // Ensure clean state for each analysis
 		$this->loadData($filterLoc1);
 		$this->analyzeData();
 
@@ -485,9 +485,25 @@ class LocationHierarchyAnalyzer
 			$streetId = $entry['street_id'];
 			$bygningsnr = $entry['bygningsnr'];
 
+			// Skip if the street number doesn't have a standard loc3 for this loc1
+			if (!isset($streetNumberToStandardLoc3[$loc1][$streetNumber]['standard_loc3'])) {
+				continue;
+			}
+
 			$standardLoc3 = $streetNumberToStandardLoc3[$loc1][$streetNumber]['standard_loc3'];
 
-			if ($loc3 !== $standardLoc3)
+			// Only consider it an issue if:
+			// 1. The current loc3 is different from the standard
+			// 2. The standard loc3 has significantly more occurrences than the current loc3
+			// This prevents false positives when there's no clear "standard" loc3
+			$currentCount = $streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3] ?? 0;
+			$standardCount = $streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$standardLoc3];
+			
+			// Normalize loc3 values for comparison to handle formatting differences
+			$normalizedLoc3 = str_pad(intval($loc3), 2, '0', STR_PAD_LEFT);
+			$normalizedStandardLoc3 = str_pad(intval($standardLoc3), 2, '0', STR_PAD_LEFT);
+
+			if ($normalizedLoc3 !== $normalizedStandardLoc3 && $standardCount > $currentCount)
 			{
 				$this->issues[] = [
 					'type' => 'inconsistent_street_number_loc3',
@@ -517,9 +533,6 @@ class LocationHierarchyAnalyzer
 		$sqlCorrections = [];
 
 		// Process issues of type 'inconsistent_street_number_loc3'
-		// Use the class property instead of a local variable
-		// $processedLocationCodes = []; -- Remove this line
-
 		foreach ($this->issues as $issue)
 		{
 			if ($issue['type'] === 'inconsistent_street_number_loc3')
@@ -537,8 +550,12 @@ class LocationHierarchyAnalyzer
 				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
 
 				// Skip if already processed globally or if the values are actually the same
+				// Use normalized values for comparison to catch formatting differences
+				$normalizedOldLoc3 = str_pad(intval($oldLoc3), 2, '0', STR_PAD_LEFT);
+				$normalizedNewLoc3 = str_pad(intval($newLoc3), 2, '0', STR_PAD_LEFT);
+				
 				if (isset($this->processedLocationCodes[$oldLocationCode]) || 
-					$oldLoc3 === $newLoc3)
+					$normalizedOldLoc3 === $normalizedNewLoc3)
 				{
 					continue;
 				}
@@ -1232,25 +1249,70 @@ class LocationHierarchyAnalyzer
 			}
 
 			// Add extra filters to ensure no false positives in the combined updates
+			$filteredUpdates = [];
 			foreach ($combinedLoc4Updates as $index => $sql)
 			{
-				// Skip comment lines
+				// Skip comment lines and add them directly
 				if (strpos($sql, '--') === 0) {
+					$filteredUpdates[] = $sql;
 					continue;
 				}
 				
-				// Check for updates where old and new are the same
-				if (preg_match("/SET location_code = '([^']+)'.*WHERE location_code = '([^']+)'/", $sql, $matches)) {
-					if ($matches[1] === $matches[2]) {
-						// This is a false positive - remove it
-						unset($combinedLoc4Updates[$index]);
+				// Check for updates where values aren't actually changing
+				// Use a more flexible regex that doesn't hardcode column names
+				if (preg_match("/SET location_code = '([^']+)'(?:,\s*\w+ = '[^']+')*\s*WHERE location_code = '([^']+)'/", $sql, $matches)) {
+					$newLocationCode = $matches[1];
+					$oldLocationCode = $matches[2];
+					
+					// Skip if location codes are identical
+					if ($newLocationCode === $oldLocationCode) {
+						continue;
 					}
+					
+					// Extract the old location parts and compare with new
+					$oldParts = explode('-', $oldLocationCode);
+					$newParts = explode('-', $newLocationCode);
+					
+					// If all parts of the location code are the same, skip this update
+					if (count($oldParts) === count($newParts) && 
+						$oldParts[0] === $newParts[0] && 
+						$oldParts[1] === $newParts[1] && 
+						$oldParts[2] === $newParts[2] && 
+						$oldParts[3] === $newParts[3]) {
+						continue;
+					}
+					
+					// Only keep SQL that actually changes something
+					$filteredUpdates[] = $sql;
+				} else {
+					$filteredUpdates[] = $sql;
 				}
 			}
 			
-			// Reindex array after removing items
-			$combinedLoc4Updates = array_values(array_filter($combinedLoc4Updates));
-
+			// Deep check for duplicate location code entries with slightly different formatting
+			$locationCodeMap = [];
+			$finalUpdates = [];
+			
+			foreach ($filteredUpdates as $sql) {
+				// Skip comment lines
+				if (strpos($sql, '--') === 0) {
+					$finalUpdates[] = $sql;
+					continue;
+				}
+				
+				if (preg_match("/WHERE location_code = '([^']+)'/", $sql, $matches)) {
+					$oldLocationCode = $matches[1];
+					$normalizedLocationCode = $this->normalizeLocationCode($oldLocationCode);
+					
+					if (!isset($locationCodeMap[$normalizedLocationCode])) {
+						$locationCodeMap[$normalizedLocationCode] = true;
+						$finalUpdates[] = $sql;
+					}
+				} else {
+					$finalUpdates[] = $sql;
+				}
+			}
+			
 			return [
 				'schema' => $sqlSchema,
 				'missing_loc2' => $sqlLoc2,
@@ -1260,9 +1322,47 @@ class LocationHierarchyAnalyzer
 					$non_sequential_loc3['location3_updates'] ?? []
 				),
 				'corrections' => $combinedCorrections,
-				'location4_updates' => $combinedLoc4Updates,
+				'location4_updates' => $finalUpdates,
 			];
 		}
+	}
+
+	/**
+	 * Normalize a location code to ensure consistent comparison
+	 * 
+	 * @param string $locationCode The location code to normalize
+	 * @return string The normalized location code
+	 */
+	private function normalizeLocationCode($locationCode)
+	{
+		// Split into parts
+		$parts = explode('-', $locationCode);
+		if (count($parts) !== 4) {
+			return $locationCode;
+		}
+		
+		// Ensure each part is standardized
+		$normalizedParts = [
+			$parts[0],                                   // loc1 stays as-is
+			str_pad(intval($parts[1]), 2, '0', STR_PAD_LEFT), // loc2 as 2-digit zero-padded
+			str_pad(intval($parts[2]), 2, '0', STR_PAD_LEFT), // loc3 as 2-digit zero-padded
+			str_pad(intval($parts[3]), 3, '0', STR_PAD_LEFT)  // loc4 as 3-digit zero-padded
+		];
+		
+		return implode('-', $normalizedParts);
+	}
+
+	/**
+	 * Reset the analyzer state to ensure consistent behavior between runs
+	 */
+	public function resetState()
+	{
+		$this->processedLocationCodes = [];
+		$this->issues = [];
+		$this->suggestions = [];
+		$this->locationData = [];
+		$this->loc2References = [];
+		$this->loc3References = [];
 	}
 
 	/**

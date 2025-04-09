@@ -526,9 +526,9 @@ class LocationHierarchyAnalyzer
 				$oldLoc3 = $issue['loc3'];
 				$loc4 = $issue['loc4'];
 				$newLoc3 = $issue['correct_loc3'];
-				$streetId = $issue['street_id'];
-				$streetNumber = $issue['street_number'];
-				$bygningsnr = $issue['bygningsnr'];
+				$streetId = (int)$issue['street_id'];
+				$streetNumber = $issue['street_number'] ?? 'N/A';
+				$bygningsnr = (int)$issue['bygningsnr'];
 
 				$oldLocationCode = "{$loc1}-{$loc2}-{$oldLoc3}-{$loc4}";
 				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
@@ -664,9 +664,9 @@ class LocationHierarchyAnalyzer
 			foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $entry) {
 				$oldLoc3 = $entry['loc3'];
 				$loc4 = $entry['loc4'];
-				 $streetId = $entry['street_id'];
-				$streetNumber = $entry['street_number'];
-				$bygningsnr = $entry['bygningsnr'];
+				$streetId = (int)$entry['street_id'];
+				$streetNumber = $entry['street_number'] ?? 'N/A';
+				$bygningsnr = (int)$entry['bygningsnr'];
 				
 				$streetKey = "{$streetId}_{$streetNumber}";
 				
@@ -908,7 +908,7 @@ class LocationHierarchyAnalyzer
 			bygningsnr INTEGER,
 			street_id INTEGER,
 			street_number VARCHAR(10),
-			change_type VARCHAR(20),
+			change_type VARCHAR(100),
 			update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 		)";
 
@@ -1030,9 +1030,9 @@ class LocationHierarchyAnalyzer
 			$oldLoc2 = $entry['loc2'];
 			$oldLoc3 = $entry['loc3'];
 			$loc4 = $entry['loc4'];
-			$bygningsnr = $entry['bygningsnr'];
-			$streetId = $entry['street_id'];
-			$streetNumber = $entry['street_number'];
+			$bygningsnr = (int)$entry['bygningsnr'];
+			$streetId = (int)$entry['street_id'];
+			$streetNumber = $entry['street_number'] ?? 'N/A';
 
 			// Determine the new loc2 and loc3 values
 			$newLoc2 = isset($buildingToLoc2Map[$loc1][$bygningsnr]) ?
@@ -1144,5 +1144,54 @@ class LocationHierarchyAnalyzer
 			return $street_names[$street_id];
 		}
 		return 'Unknown Street';
+	}
+
+	/**
+	 * Execute selected SQL statements
+	 * 
+	 * @param string $loc1 The loc1 value
+	 * @param array $sqlTypes Array of SQL types to execute
+	 * @param array $sqlStatements All SQL statements from analysis
+	 * @return array Results of SQL execution
+	 */
+	public function executeSqlStatements($loc1, $sqlTypes, $sqlStatements)
+	{
+		$results = [];
+
+		foreach ($sqlTypes as $sqlType)
+		{
+			if (!isset($sqlStatements[$sqlType]))
+			{
+				continue;
+			}
+
+			$statementsToExecute = $sqlStatements[$sqlType];
+			$count = 0;
+
+			foreach ($statementsToExecute as $sql)
+			{
+				// Skip comments
+				if (strpos($sql, '--') === 0)
+				{
+					continue;
+				}
+
+				// Execute SQL
+				try
+				{
+					$this->db->query($sql, __LINE__, __FILE__);
+					$count++;
+				}
+				catch (\Exception $e)
+				{
+					// Log error but continue
+					error_log("Error executing SQL: " . $e->getMessage());
+				}
+			}
+
+			$results[$sqlType] = $count;
+		}
+
+		return $results;
 	}
 }

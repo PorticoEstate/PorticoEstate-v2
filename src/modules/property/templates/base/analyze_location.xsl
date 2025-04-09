@@ -11,7 +11,7 @@
 	<xsl:variable name="lang_sql_statements">SQL Statements</xsl:variable>
 	<xsl:variable name="lang_loc1_input">Enter loc1 (optional):</xsl:variable>
 	<xsl:variable name="lang_next_location">Next Location</xsl:variable>
-	<div class="pure-form pure-form-aligned">
+	<div class="pure-form pure-form-stacked">
 		<div class="pure-control-group">
 			<label>
 				<xsl:value-of select="$lang_analyze_location" />
@@ -178,6 +178,71 @@
 					<xsl:value-of select="$lang_sql_statements" />
 				</h4>
 				<xsl:if test="sql_statements">
+					<!-- Add SQL execution form -->
+					<form method="post" action="" class="pure-form">
+						<input type="hidden" name="loc1" value="{selected_loc1}" />
+						<input type="hidden" name="execute_sql" value="yes" />
+						
+						<fieldset>
+							<legend>Execute SQL statements</legend>
+								<div class="">
+									<label for="create_schema" class="pure-checkbox">
+										<input type="checkbox" id="create_schema" name="sql_types[]" value="schema" />
+										Create mapping table
+									</label>
+									<label for="fix_loc2" class="pure-checkbox">
+										<input type="checkbox" id="fix_loc2" name="sql_types[]" value="missing_loc2" />
+										Fix missing loc2 entries
+									</label>
+									<label for="fix_loc3" class="pure-checkbox">
+										<input type="checkbox" id="fix_loc3" name="sql_types[]" value="missing_loc3" />
+										Fix missing loc3 entries
+									</label>
+									<label for="fix_loc4" class="pure-checkbox">
+										<input type="checkbox" id="fix_loc4" name="sql_types[]" value="location4_updates" />
+										Update location4 entries
+									</label>
+									<label for="create_mapping" class="pure-checkbox">
+										<input type="checkbox" id="create_mapping" name="sql_types[]" value="corrections" />
+										Create mapping records
+									</label>
+									<label for="select_all" class="pure-checkbox">
+										<input type="checkbox" id="select_all" onclick="toggleAllSql(this)" />
+										Select all
+									</label>
+								</div>
+							<button type="submit" class="pure-button pure-button-primary">Execute Selected SQL</button>
+						</fieldset>
+					</form>
+					
+					<script>
+		<![CDATA[
+						// Function to toggle all checkboxes]]			
+						function toggleAllSql(source) {
+							var checkboxes = document.querySelectorAll('input[name="sql_types[]"]');
+							for (var i = 0; i < checkboxes.length; i++) {
+								checkboxes[i].checked = source.checked;
+							}
+						}
+
+		]]>
+					</script>
+					
+					<!-- Display SQL execution results if any -->
+					<xsl:if test="sql_execution_results">
+						<div class="pure-alert pure-alert-success">
+							<h5>SQL Execution Results</h5>
+							<ul>
+								<xsl:for-each select="sql_execution_results/*">
+									<li>
+										<strong><xsl:value-of select="name()" />:</strong>
+										<xsl:value-of select="." /> statements executed
+									</li>
+								</xsl:for-each>
+							</ul>
+						</div>
+					</xsl:if>
+					
 					<h5>Schema</h5>
 					<pre>
 						<xsl:for-each select="sql_statements/schema">
@@ -220,4 +285,11 @@
 			</div>
 		</xsl:if>
 	</div>
+	
+	<style>
+		.stacked-controls .pure-checkbox {
+			display: block;
+			margin-bottom: 0.5em;
+		}
+	</style>
 </xsl:template>

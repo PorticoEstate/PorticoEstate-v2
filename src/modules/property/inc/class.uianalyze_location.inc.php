@@ -77,6 +77,20 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			$data['sql_statements'] = $analysis_results['sql_statements'];
 			$data['analysis_ran'] = true;
 		}
+		else if (isset($_POST['execute_sql']) && $_POST['execute_sql'] == 'yes' && !empty($_POST['sql_types']))
+		{
+			// Run analysis first to get the SQL statements
+			$analysis_results = $this->analyzer->analyze($selected_loc1 ? $selected_loc1 : null);
+			
+			$data['statistics'] = $analysis_results['statistics'];
+			$data['issues'] = $analysis_results['issues'];
+			$data['suggestions'] = $analysis_results['suggestions'];
+			$data['sql_statements'] = $analysis_results['sql_statements'];
+			$data['analysis_ran'] = true;
+			
+			// Execute selected SQL statements
+			$data['sql_execution_results'] = $this->executeSqlStatements($selected_loc1, $_POST['sql_types'], $analysis_results['sql_statements']);
+		}
 		else
 		{
 			$data['analysis_ran'] = false;
@@ -84,7 +98,20 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('analyze' => $data));
 	}
+	
+	/**
+	 * Execute selected SQL statements
+	 * 
+	 * @param string $loc1 The loc1 value
+	 * @param array $sqlTypes Array of SQL types to execute
+	 * @param array $sqlStatements All SQL statements from analysis
+	 * @return array Results of SQL execution
+	 */
+	private function executeSqlStatements($loc1, $sqlTypes, $sqlStatements)
+	{
+		return $this->analyzer->executeSqlStatements($loc1, $sqlTypes, $sqlStatements);
 
+	}
 
 	/**
 	 * Check if the current user is an admin

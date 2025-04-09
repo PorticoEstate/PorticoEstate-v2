@@ -337,6 +337,10 @@ $self_uri = $_SERVER['REQUEST_URI'];
 $separator = strpos($self_uri, '?') ? '&' : '?';
 $self_uri = str_replace(array("{$separator}lang=no", "{$separator}lang=en"), '', $self_uri);
 
+// Check for beta client cookie
+$beta_client = Sanitizer::get_var('beta_client', 'bool', 'COOKIE');
+$beta_selected = $beta_client ? ' selected = "selected"' : '';
+
 switch ($userSettings['preferences']['common']['template_set'])
 {
 	case 'bookingfrontend_2':
@@ -356,6 +360,7 @@ if ($config_frontend['develope_mode'])
 		   <select id = "template_selector" class="btn btn-link btn-sm nav-link dropdown-toggle" style="padding-top: .315rem;-webkit-appearance: none;-moz-appearance: none;">
 			<option class="nav-link" value="bookingfrontend"{$selected_bookingfrontend}>Original</option>
 			<option class="nav-link" value="bookingfrontend_2"{$selected_bookingfrontend_2}>Ny</option>
+			<option class="nav-link" value="beta"{$beta_selected}>Beta</option>
 		   </select>
 		</li>
 HTML;

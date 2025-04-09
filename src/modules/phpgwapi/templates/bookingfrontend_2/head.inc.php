@@ -309,6 +309,10 @@ $self_uri	 = $_SERVER['REQUEST_URI'];
 $separator	 = strpos($self_uri, '?') ? '&' : '?';
 $self_uri	 = str_replace(array("{$separator}lang=no", "{$separator}lang=en"), '', $self_uri);
 
+// Check for beta client cookie
+$beta_client = Sanitizer::get_var('beta_client', 'bool', 'COOKIE');
+$beta_selected = $beta_client ? ' checked' : '';
+
 switch ($userSettings['preferences']['common']['template_set'])
 {
 	case 'bookingfrontend_2':
@@ -329,6 +333,7 @@ if ($config_frontend['develope_mode'])
 	$version_ingress = lang('which_version_do_you_want');
 	$version_old = lang('old');
 	$version_new = lang('new');
+	$version_beta = lang('beta');
 	$template_selector = <<<HTML
               <div>
                 <h3>{$version_title}</h3>
@@ -339,9 +344,14 @@ if ($config_frontend['develope_mode'])
                     {$version_old}
                     <span class="choice__radio"></span>
                   </label>
-                  <label class="choice mb-5">
+                  <label class="choice mb-3">
                     <input type="radio" id="template_bookingfrontend_2" name="select_template" value="bookingfrontend_2" {$selected_bookingfrontend_2} />
                     {$version_new}
+                    <span class="choice__radio"></span>
+                  </label>
+                  <label class="choice mb-5">
+                    <input type="radio" id="template_beta" name="select_template" value="beta" {$beta_selected} />
+                    {$version_beta}
                     <span class="choice__radio"></span>
                   </label>
                 </form>

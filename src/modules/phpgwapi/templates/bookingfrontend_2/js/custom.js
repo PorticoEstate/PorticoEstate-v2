@@ -13,14 +13,57 @@ $(document).ready(function ()
 		$('#headcon').removeClass('header_borderline');
 	}
 
-	$("#template_selector").change(function ()
-	{
+	// Handle template selection change
+	$('input[name="select_template"]').change(function() {
 		var template = $(this).val();
+		var isBeta = template === 'beta';
+		
+		// When beta is selected, use bookingfrontend_2 template with beta cookie
+		if (isBeta) {
+			template = 'bookingfrontend_2';
+		}
+		
 		var oArgs = {
 			menuaction: 'bookingfrontend.preferences.set'
 		};
 
 		var requestUrl = phpGWLink('bookingfrontend/', oArgs, true);
+
+		// Set the beta cookie if beta option was selected
+		document.cookie = "beta_client=" + (isBeta ? "true" : "false") + "; path=/; max-age=" + 60*60*24*365;
+
+		$.ajax({
+			type: 'POST',
+			dataType: 'json',
+			data: {template_set: template},
+			url: requestUrl,
+			success: function (data)
+			{
+		//		console.log(data);
+				location.reload(true);
+			}
+		});
+	});
+
+	// Legacy compatibility with dropdown selector
+	$("#template_selector").change(function ()
+	{
+		var template = $(this).val();
+		var isBeta = template === 'beta';
+		
+		// When beta is selected, use bookingfrontend_2 template with beta cookie
+		if (isBeta) {
+			template = 'bookingfrontend_2';
+		}
+		
+		var oArgs = {
+			menuaction: 'bookingfrontend.preferences.set'
+		};
+
+		var requestUrl = phpGWLink('bookingfrontend/', oArgs, true);
+
+		// Set the beta cookie if beta option was selected
+		document.cookie = "beta_client=" + (isBeta ? "true" : "false") + "; path=/; max-age=" + 60*60*24*365;
 
 		$.ajax({
 			type: 'POST',

@@ -346,7 +346,15 @@ class LocationHierarchyAnalyzer
 					'second_loc2' => $loc2
 				];
 
-				$this->suggestions[] = "Building with ID '{$bygningsnr}' appears in both loc2='{$loc2ByBuilding[$loc1][$bygningsnr]}' and loc2='{$loc2}' in loc1='{$loc1}'. Please verify the correct assignment.";
+				// Track duplicate building suggestions to prevent duplicates
+				static $reportedDuplicateBuildings = [];
+				$buildingKey = "{$loc1}_{$bygningsnr}";
+				
+				// Only add suggestion if this building hasn't been reported yet
+				if (!isset($reportedDuplicateBuildings[$buildingKey])) {
+					$this->suggestions[] = "Building with ID '{$bygningsnr}' appears in both loc2='{$loc2ByBuilding[$loc1][$bygningsnr]}' and loc2='{$loc2}' in loc1='{$loc1}'. Please verify the correct assignment.";
+					$reportedDuplicateBuildings[$buildingKey] = true;
+				}
 			}
 
 			// Track existing loc2 values

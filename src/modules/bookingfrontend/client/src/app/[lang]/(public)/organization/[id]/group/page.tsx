@@ -2,6 +2,7 @@ import {FC} from "react";
 import { notFound } from "next/navigation";
 import GroupCreate from "@/components/organization/group/group.create";
 import { fetchOrganization } from "@/service/api/organization";
+import AuthGuard from "@/components/user/auth-guard";
 
 interface GroupParams {
     id: string;
@@ -26,7 +27,9 @@ const GroupCreatePage: FC<GroupProps> = async (props: GroupProps) => {
     const organization = await fetchOrganization(orgId);
     if (!organization) return notFound();
     
-    return <GroupCreate orgName={organization.name} orgId={orgId}/>;
+    return <AuthGuard>
+        <GroupCreate orgName={organization.name} orgId={orgId}/>
+        </AuthGuard>
 }
 
 export default GroupCreatePage;

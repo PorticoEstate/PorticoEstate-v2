@@ -73,6 +73,7 @@ export const fetchDelegateData = async (orgId: number, delegateId: number): Prom
     ]);
     const res = await fetch(url, FetchAuthOptions());
     const body = await res.json();
+    if (body.error) return body;
     return {
         ...body,
         organization: JSON.parse(body.organization)
@@ -152,13 +153,10 @@ export const fetchGroupData = async (orgId: number, groupId: number): Promise<Gr
         groupId
     ]);
     const res = await fetch(url, FetchAuthOptions());
-    const { data } = await res.json();
-    
-    if (!res.ok) {
-        throw new Error();
-    }
+    const result = await res.json();
+    if (!res.ok) return result;
 
-    return JSON.parse(data);
+    return JSON.parse(result.data);
 }
 export const createGroupRequest = async (orgId: number, data: CreatingGroup) => {
     const url = phpGWLink([

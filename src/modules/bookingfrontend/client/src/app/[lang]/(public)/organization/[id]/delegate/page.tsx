@@ -3,6 +3,7 @@ import {FC} from "react";
 import { notFound } from "next/navigation";
 import DelegateCreate from "@/components/organization/delegate/delegate.create";
 import { fetchOrganization } from "@/service/api/organization";
+import AuthGuard from "@/components/user/auth-guard";
 
 interface DelegateParams {
     id: string;
@@ -27,7 +28,9 @@ const DelegateCreatePage: FC<DelegateProps> = async (props: DelegateProps) => {
     const organization = await fetchOrganization(orgId);
     if (!organization) return notFound();
     
-    return <DelegateCreate organization={organization} />
+    return <AuthGuard>
+        <DelegateCreate organization={organization} />
+    </AuthGuard>
 }
 
 export default DelegateCreatePage;

@@ -2,6 +2,7 @@ import {FC} from "react";
 import { notFound } from "next/navigation";
 import { fetchOrganization } from "@/service/api/organization";
 import OrganizationController from "@/components/organization/organization.controller";
+import AuthGuard from "@/components/user/auth-guard";
 
 interface OrganizationParams {
     id: string;
@@ -25,7 +26,9 @@ const Organization: FC<OrganizationProps> = async (props: OrganizationProps) => 
     const organization = await fetchOrganization(orgId);
     if (!organization) return notFound();
 
-    return <OrganizationController data={organization}/>;
+    return <AuthGuard>
+        <OrganizationController data={organization} />
+    </AuthGuard>
 }
 
 export default Organization;

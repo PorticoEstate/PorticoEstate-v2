@@ -2,6 +2,7 @@ import {FC} from "react";
 import { notFound } from "next/navigation";
 import { fetchGroupData } from "@/service/api/organization";
 import GroupController from "@/components/organization/group/group.controller";
+import AuthGuard from "@/components/user/auth-guard";
 
 interface GroupParams {
     id: string;
@@ -30,7 +31,9 @@ const GroupView: FC<GroupProps> = async (props: GroupProps) => {
     const group = await fetchGroupData(orgId, groupId);
     if (!group) return notFound();
     
-    return <GroupController data={group}/>
+    return <AuthGuard>
+        <GroupController data={group}/>
+        </AuthGuard>
 }
 
 export default GroupView;

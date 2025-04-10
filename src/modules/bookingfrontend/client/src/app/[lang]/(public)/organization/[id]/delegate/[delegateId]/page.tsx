@@ -2,6 +2,7 @@ import {FC} from "react";
 import { notFound } from "next/navigation";
 import DelegateUpdate from "@/components/organization/delegate/delegate.update";
 import { fetchDelegateData } from "@/service/api/organization";
+import AuthGuard from "@/components/user/auth-guard";
 
 interface DelegateParams {
     delegateId: string;
@@ -29,7 +30,9 @@ const DelegateView: FC<DelegateProps> = async (props: DelegateProps) => {
     const delegate = await fetchDelegateData(orgId, delegateId);
     if (!delegate) return notFound();
     
-    return <DelegateUpdate delegate={delegate} />;
+    return <AuthGuard>
+        <DelegateUpdate delegate={delegate} />
+    </AuthGuard>
 }
 
 export default DelegateView;

@@ -27,6 +27,7 @@ class LocationHierarchyAnalyzer
 	private $suggestions = [];
 	private $processedLocationCodes = [];
 	private $currentFilterLoc1 = null; // Properly declare the property
+	private $entryToBygningsnrMap = []; // Property to store the mapping
 
 	public function __construct()
 	{
@@ -115,8 +116,9 @@ class LocationHierarchyAnalyzer
 		$syntheticBygningsnr = -1; // Used for entries without a bygningsnr
 		$highestLoc2ByLoc1 = []; // Initialize the array to track highest loc2 per loc1
 		$entryToBygningsnrMap = []; // Map to track synthetic bygningsnr assignments
+		$streetToSyntheticBygningsnr = []; // Map to track synthetic bygningsnr by street address
 
-		 // First, find the highest loc2 value from fm_location2 references
+		// First, find the highest loc2 value from fm_location2 references
 		foreach ($this->loc2References as $loc1 => $loc2Values) {
 			foreach (array_keys($loc2Values) as $loc2) {
 				if (!isset($highestLoc2ByLoc1[$loc1]) || intval($loc2) > intval($highestLoc2ByLoc1[$loc1])) {
@@ -124,6 +126,42 @@ class LocationHierarchyAnalyzer
 				}
 			}
 		}
+
+		 // First pass: Assign synthetic bygningsnr to entries with empty bygningsnr, 
+		// reusing the same synthetic ID for the same street address within the same loc1
+		foreach ($this->locationData as $index => &$entry)
+		{
+			$loc1 = $entry['loc1'];
+			$streetId = $entry['street_id'];
+			$streetNumber = $entry['street_number'];
+			$streetKey = "{$streetId}_{$streetNumber}";
+			
+			// If bygningsnr is empty, try to reuse an existing synthetic one or create a new one
+			if (empty($entry['bygningsnr']))
+			{
+				if (isset($streetToSyntheticBygningsnr[$loc1][$streetKey]))
+				{
+					// Reuse existing synthetic bygningsnr for this street address in this loc1
+					$bygningsnr = $streetToSyntheticBygningsnr[$loc1][$streetKey];
+				}
+				else
+				{
+					// Create a new synthetic bygningsnr
+					$bygningsnr = "synthetic_{$syntheticBygningsnr}";
+					$syntheticBygningsnr--;
+					$streetToSyntheticBygningsnr[$loc1][$streetKey] = $bygningsnr;
+				}
+				
+				$entryToBygningsnrMap[$index] = $bygningsnr;
+			}
+			else
+			{
+				$entryToBygningsnrMap[$index] = $entry['bygningsnr'];
+			}
+			$entry['bygningsnr'] = $entryToBygningsnrMap[$index]; // Update entry with the assigned bygningsnr
+		}
+
+		unset($entry); // Unset reference to avoid accidental modifications later
 
 		// Group data by loc1 and bygningsnr for loc2 validation and find highest loc2
 		foreach ($this->locationData as $index => $entry)
@@ -137,20 +175,8 @@ class LocationHierarchyAnalyzer
 				$highestLoc2ByLoc1[$loc1] = $loc2;
 			}
 
-			// Handle empty bygningsnr by generating a synthetic one unique to this entry
-			if (empty($entry['bygningsnr']))
-			{
-				$bygningsnr = "synthetic_{$syntheticBygningsnr}";
-				$syntheticBygningsnr--;
-				
-				// Store the mapping for this entry
-				$entryToBygningsnrMap[$index] = $bygningsnr;
-			}
-			else
-			{
-				$bygningsnr = $entry['bygningsnr'];
-				$entryToBygningsnrMap[$index] = $bygningsnr;
-			}
+			 // Use the already assigned bygningsnr (which might be synthetic)
+			$bygningsnr = $entryToBygningsnrMap[$index];
 
 			if (!isset($loc2ByBuilding[$loc1][$bygningsnr]))
 			{
@@ -221,11 +247,13 @@ class LocationHierarchyAnalyzer
 		$uniqueBygningsnrPerLoc1 = [];
 		$loc2ToBuildings = [];
 
-		foreach ($this->locationData as $entry)
+		foreach ($this->locationData as $index => $entry)
 		{
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
-			$bygningsnr = $entry['bygningsnr'];
+			
+			// Use the mapped bygningsnr (which might be synthetic)
+			$bygningsnr = $this->entryToBygningsnrMap[$index] ?? $entry['bygningsnr'];
 
 			if (!isset($uniqueBygningsnrPerLoc1[$loc1]))
 			{
@@ -408,14 +436,15 @@ class LocationHierarchyAnalyzer
 		}
 
 		// Group street addresses by loc1/loc2 combination
-		foreach ($this->locationData as $entry)
+		foreach ($this->locationData as $index => $entry)
 		{
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
 			$loc3 = $entry['loc3'];
 			$streetId = $entry['street_id'];
 			$streetNumber = $entry['street_number'];
-			$bygningsnr = $entry['bygningsnr'];
+			// Use the mapped bygningsnr (which might be synthetic)
+			$bygningsnr = $this->entryToBygningsnrMap[$index] ?? $entry['bygningsnr'];
 
 			$streetKey = "{$streetId}_{$streetNumber}";
 
@@ -485,8 +514,8 @@ class LocationHierarchyAnalyzer
 				$numStreets = count($streets);
 				if ($numStreets > 1)
 				{
-					// Check for inconsistent street number to loc3 mappings within the same loc1-loc2
-					$this->analyzeStreetNumberToLoc3Consistency($uniqueStreetAddressesPerLoc2);
+					 // Pass the mapping to the method instead of relying on the class property
+					$this->analyzeStreetNumberToLoc3Consistency($uniqueStreetAddressesPerLoc2, $entryToBygningsnrMap);
 				}
 			}
 		}
@@ -500,8 +529,9 @@ class LocationHierarchyAnalyzer
 	 * Identifies cases where the same street number should have the same loc3 value
 	 * 
 	 * @param array $uniqueStreetAddressesPerLoc2 Array of street addresses grouped by loc1/loc2
+	 * @param array $entryToBygningsnrMap Mapping of entry indices to bygningsnr values
 	 */
-	private function analyzeStreetNumberToLoc3Consistency($uniqueStreetAddressesPerLoc2)
+	private function analyzeStreetNumberToLoc3Consistency($uniqueStreetAddressesPerLoc2, $entryToBygningsnrMap)
 	{
 		// Map each street number to its standard loc3 value for the building
 		// This needs to be grouped by BOTH loc1 AND loc2 to prevent false positives
@@ -555,8 +585,8 @@ class LocationHierarchyAnalyzer
 			$streetNumber = $entry['street_number'];
 			$streetId = $entry['street_id'];
 			
-			// Use the mapped bygningsnr (which might be synthetic)
-			$bygningsnr = $this->entryToBygningsnrMap[$index] ?? $entry['bygningsnr'];
+			// Use the passed mapping instead of the class property
+			$bygningsnr = $entryToBygningsnrMap[$index] ?? $entry['bygningsnr'];
 
 			// Skip if the street number doesn't have a standard loc3 for this loc1+loc2
 			if (!isset($standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['standard_loc3']))
@@ -665,7 +695,7 @@ class LocationHierarchyAnalyzer
 								) VALUES (
 									'{$oldLocationCode}', '{$newLocationCode}', '{$loc1}', 
 									'{$loc2}', '{$loc2}', '{$oldLoc3}', '{$newLoc3}', 
-									'{$loc4}', {$bygningsnr}, {$streetId}, '{$streetNumber}', 
+									'{$loc4}', '{$bygningsnr}', {$streetId}, '{$streetNumber}', 
 									'location_hierarchy_update'
 								);";
 			}
@@ -796,13 +826,15 @@ class LocationHierarchyAnalyzer
 			}
 
 			// Now update each loc4 entry to use the new loc3 associated with its street address
-			foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $entry)
+			foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $index => $entry)
 			{
 				$oldLoc3 = $entry['loc3'];
 				$loc4 = $entry['loc4'];
 				$streetId = (int)$entry['street_id'];
 				$streetNumber = $entry['street_number'] ?? 'N/A';
-				$bygningsnr = (int)$entry['bygningsnr'];
+				
+				// Use the mapped bygningsnr (which might be synthetic)
+				$bygningsnr = $this->entryToBygningsnrMap[$index] ?? (int)$entry['bygningsnr'];
 
 				$streetKey = "{$streetId}_{$streetNumber}";
 
@@ -845,7 +877,7 @@ class LocationHierarchyAnalyzer
 								) VALUES (
 									'{$oldLocationCode}', '{$newLocationCode}', '{$loc1}', 
 									'{$loc2}', '{$loc2}', '{$oldLoc3}', '{$newLoc3}', 
-									'{$loc4}', {$bygningsnr}, {$streetId}, '{$streetNumber}', 
+									'{$loc4}', '{$bygningsnr}', {$streetId}, '{$streetNumber}', 
 									'location_hierarchy_update'
 								);";
 			}
@@ -1097,7 +1129,7 @@ class LocationHierarchyAnalyzer
 			old_loc3 VARCHAR(2),
 			new_loc3 VARCHAR(2),
 			loc4 VARCHAR(3),
-			bygningsnr INTEGER,
+			bygningsnr VARCHAR(15),
 			street_id INTEGER,
 			street_number VARCHAR(10),
 			change_type VARCHAR(100),
@@ -1216,13 +1248,16 @@ class LocationHierarchyAnalyzer
 		}
 
 		// Now, generate SQL for updating fm_location4 entries
-		foreach ($this->locationData as $entry)
+		foreach ($this->locationData as $index => $entry)
 		{
 			$loc1 = $entry['loc1'];
 			$oldLoc2 = $entry['loc2'];
 			$oldLoc3 = $entry['loc3'];
 			$loc4 = $entry['loc4'];
-			$bygningsnr = (int)$entry['bygningsnr'];
+			
+			// Use the mapped bygningsnr (which might be synthetic)
+			$bygningsnr = $this->entryToBygningsnrMap[$index] ?? (int)$entry['bygningsnr'];
+			
 			$streetId = (int)$entry['street_id'];
 			$streetNumber = $entry['street_number'] ?? 'N/A';
 
@@ -1265,7 +1300,7 @@ class LocationHierarchyAnalyzer
 								) VALUES (
 									'{$oldLocationCode}', '{$newLocationCode}', '{$loc1}', 
 									'{$oldLoc2}', '{$newLoc2}', '{$oldLoc3}', '{$newLoc3}', 
-									'{$loc4}', {$bygningsnr}, {$streetId}, '{$streetNumber}', 
+									'{$loc4}', '{$bygningsnr}', {$streetId}, '{$streetNumber}', 
 									'location_hierarchy_update'
 								);";
 			}
@@ -1515,6 +1550,7 @@ class LocationHierarchyAnalyzer
 		$this->loc2References = [];
 		$this->loc3References = [];
 		$this->currentFilterLoc1 = null; // Reset this too
+		$this->entryToBygningsnrMap = []; // Reset this too
 
 		// Clear any static caches that might persist between calls
 		static $street_names = null;

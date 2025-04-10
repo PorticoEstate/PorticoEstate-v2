@@ -68,8 +68,16 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 		if (isset($_POST['run_analysis']) && $_POST['run_analysis'] == 'yes')
 		{
-			$analysis_results = $this->analyzer->analyze($selected_loc1 ? $selected_loc1 : null);
+			// Create a fresh analyzer instance for each analysis
+			$this->analyzer = new LocationHierarchyAnalyzer();
 			
+			// If a specific loc1 is selected, analyze just that one
+			// Otherwise analyze all loc1 values separately and combine results
+			if ($selected_loc1) {
+				$analysis_results = $this->analyzer->analyze($selected_loc1);
+			} else {
+				$analysis_results = $this->analyzer->analyzeAllLoc1Separately();
+			}
 			
 			$data['statistics'] = $analysis_results['statistics'];
 			$data['issues'] = $analysis_results['issues'];
@@ -79,8 +87,15 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		}
 		else if (isset($_POST['execute_sql']) && $_POST['execute_sql'] == 'yes' && !empty($_POST['sql_types']))
 		{
+			// Create a fresh analyzer instance for each SQL execution too
+			$this->analyzer = new LocationHierarchyAnalyzer();
+			
 			// Run analysis first to get the SQL statements
-			$analysis_results = $this->analyzer->analyze($selected_loc1 ? $selected_loc1 : null);
+			if ($selected_loc1) {
+				$analysis_results = $this->analyzer->analyze($selected_loc1);
+			} else {
+				$analysis_results = $this->analyzer->analyzeAllLoc1Separately();
+			}
 			
 			$data['statistics'] = $analysis_results['statistics'];
 			$data['issues'] = $analysis_results['issues'];

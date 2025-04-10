@@ -25,18 +25,28 @@ class LocationHierarchyAnalyzer
 	private $loc3References = [];
 	private $issues = [];
 	private $suggestions = [];
-	private $processedLocationCodes = []; // Add a class property to track processed location codes
+	private $processedLocationCodes = [];
+	private $currentFilterLoc1 = null; // Properly declare the property
 
 	public function __construct()
 	{
 		$this->db = Db::getInstance();
 	}
 
+	/**
+	 * Analyze location hierarchy and generate recommendations
+	 * 
+	 * @param string|null $filterLoc1 Optional loc1 value to filter analysis
+	 * @return array Analysis results
+	 */
 	public function analyze($filterLoc1 = null)
 	{
 		$this->resetState(); // Ensure clean state for each analysis
 		$this->loadData($filterLoc1);
 		$this->analyzeData();
+		
+		// Store the filter for later use in SQL generation
+		$this->currentFilterLoc1 = $filterLoc1;
 
 		return [
 			'statistics' => $this->generateStatistics(),
@@ -438,9 +448,11 @@ class LocationHierarchyAnalyzer
 	private function analyzeStreetNumberToLoc3Consistency($uniqueStreetAddressesPerLoc2)
 	{
 		// Map each street number to its standard loc3 value for the building
-		$streetNumberToStandardLoc3 = [];
+		// This needs to be grouped by BOTH loc1 AND loc2 to prevent false positives
+		$standardLoc3ByLocAndStreet = [];
 
 		// First pass - establish the standard loc3 for each street number by finding most common usage
+		// Group by loc1, loc2, AND street number to prevent cross-contamination
 		foreach ($this->locationData as $entry)
 		{
 			$loc1 = $entry['loc1'];
@@ -448,29 +460,32 @@ class LocationHierarchyAnalyzer
 			$loc3 = $entry['loc3'];
 			$streetNumber = $entry['street_number'];
 
-			if (!isset($streetNumberToStandardLoc3[$loc1][$streetNumber]))
+			if (!isset($standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]))
 			{
-				$streetNumberToStandardLoc3[$loc1][$streetNumber] = [
+				$standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber] = [
 					'loc3_values' => [],
 					'standard_loc3' => null
 				];
 			}
 
-			if (!isset($streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3]))
+			if (!isset($standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['loc3_values'][$loc3]))
 			{
-				$streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3] = 0;
+				$standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['loc3_values'][$loc3] = 0;
 			}
 
-			$streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3]++;
+			$standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['loc3_values'][$loc3]++;
 		}
 
 		// Determine the standard loc3 for each street number (the most frequently used one)
-		foreach ($streetNumberToStandardLoc3 as $loc1 => &$streetNumbers)
+		foreach ($standardLoc3ByLocAndStreet as $loc1 => &$loc2Data)
 		{
-			foreach ($streetNumbers as $streetNumber => &$data)
+			foreach ($loc2Data as $loc2 => &$streetNumbers)
 			{
-				arsort($data['loc3_values']); // Sort by frequency, most common first
-				$data['standard_loc3'] = key($data['loc3_values']);
+				foreach ($streetNumbers as $streetNumber => &$data)
+				{
+					arsort($data['loc3_values']); // Sort by frequency, most common first
+					$data['standard_loc3'] = key($data['loc3_values']);
+				}
 			}
 		}
 
@@ -485,26 +500,31 @@ class LocationHierarchyAnalyzer
 			$streetId = $entry['street_id'];
 			$bygningsnr = $entry['bygningsnr'];
 
-			// Skip if the street number doesn't have a standard loc3 for this loc1
-			if (!isset($streetNumberToStandardLoc3[$loc1][$streetNumber]['standard_loc3'])) {
+			// Skip if the street number doesn't have a standard loc3 for this loc1+loc2
+			if (!isset($standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['standard_loc3'])) {
 				continue;
 			}
 
-			$standardLoc3 = $streetNumberToStandardLoc3[$loc1][$streetNumber]['standard_loc3'];
-
+			$standardLoc3 = $standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['standard_loc3'];
+			
 			// Only consider it an issue if:
 			// 1. The current loc3 is different from the standard
 			// 2. The standard loc3 has significantly more occurrences than the current loc3
-			// This prevents false positives when there's no clear "standard" loc3
-			$currentCount = $streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$loc3] ?? 0;
-			$standardCount = $streetNumberToStandardLoc3[$loc1][$streetNumber]['loc3_values'][$standardLoc3];
+			$currentCount = $standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['loc3_values'][$loc3] ?? 0;
+			$standardCount = $standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['loc3_values'][$standardLoc3];
 			
 			// Normalize loc3 values for comparison to handle formatting differences
 			$normalizedLoc3 = str_pad(intval($loc3), 2, '0', STR_PAD_LEFT);
 			$normalizedStandardLoc3 = str_pad(intval($standardLoc3), 2, '0', STR_PAD_LEFT);
-
+			
 			if ($normalizedLoc3 !== $normalizedStandardLoc3 && $standardCount > $currentCount)
 			{
+				// Debug info for transparency
+				// Add additional verification to ensure we're not creating false positives
+				if ($normalizedLoc3 === $normalizedStandardLoc3) {
+					continue; // Double check that we don't flag entries with semantically equal loc3 values
+				}
+				
 				$this->issues[] = [
 					'type' => 'inconsistent_street_number_loc3',
 					'loc1' => $loc1,
@@ -525,9 +545,10 @@ class LocationHierarchyAnalyzer
 	/**
 	 * Generate SQL statements for the example dataset with inconsistent loc3 values
 	 * 
+	 * @param string|null $filterLoc1 Optional loc1 to filter issues by
 	 * @return array SQL statements for corrections
 	 */
-	public function generateCorrectionsInconsistent_street_number_loc3()
+	public function generateCorrectionsInconsistent_street_number_loc3($filterLoc1 = null)
 	{
 		$sqlLoc4 = [];
 		$sqlCorrections = [];
@@ -537,6 +558,11 @@ class LocationHierarchyAnalyzer
 		{
 			if ($issue['type'] === 'inconsistent_street_number_loc3')
 			{
+				// Apply filter if provided
+				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1) {
+					continue;
+				}
+				
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];
 				$oldLoc3 = $issue['loc3'];
@@ -591,21 +617,25 @@ class LocationHierarchyAnalyzer
 	/**
 	 * Generate SQL statements for fixing non-sequential loc3 values
 	 * 
+	 * @param string|null $filterLoc1 Optional loc1 to filter issues by
 	 * @return array SQL statements for corrections
 	 */
-	public function generateCorrectionsNonSequentialLoc3()
+	public function generateCorrectionsNonSequentialLoc3($filterLoc1 = null)
 	{
 		$sqlLoc4 = [];
 		$sqlCorrections = [];
 		$sqlLoc3 = []; // Add array for fm_location3 inserts
-		// Remove the local tracking variable
-		// $processedLocationCodes = [];
 		$processedLoc3 = []; // Keep this for loc3 entries which is separate
 
 		// Group all entries by loc1 and loc2
 		$entriesByLoc1Loc2 = [];
 		foreach ($this->locationData as $entry)
 		{
+			// Apply filter if provided
+			if ($filterLoc1 && $entry['loc1'] !== $filterLoc1) {
+				continue;
+			}
+			
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
 
@@ -623,6 +653,11 @@ class LocationHierarchyAnalyzer
 		{
 			if ($issue['type'] === 'non_sequential_loc3')
 			{
+				// Apply filter if provided
+				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1) {
+					continue;
+				}
+				
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];
 				$loc1Loc2WithIssues["{$loc1}-{$loc2}"] = [
@@ -759,9 +794,10 @@ class LocationHierarchyAnalyzer
 	/**
 	 * Generate SQL statements for fixing insufficient loc3 values
 	 * 
-	 * @return array SQL statements for creating missing loc3 entries
+	 * @param string|null $filterLoc1 Optional loc1 to filter issues by
+	 * @return array SQL statements for corrections
 	 */
-	public function generateCorrectionsInsufficientLoc3()
+	public function generateCorrectionsInsufficientLoc3($filterLoc1 = null)
 	{
 		$sqlLoc3 = [];
 
@@ -769,6 +805,11 @@ class LocationHierarchyAnalyzer
 		$streetsByLoc1Loc2 = [];
 		foreach ($this->locationData as $entry)
 		{
+			// Apply filter if provided
+			if ($filterLoc1 && $entry['loc1'] !== $filterLoc1) {
+				continue;
+			}
+			
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
 			$streetId = $entry['street_id'];
@@ -795,6 +836,11 @@ class LocationHierarchyAnalyzer
 		{
 			if ($issue['type'] === 'insufficient_loc3')
 			{
+				// Apply filter if provided
+				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1) {
+					continue;
+				}
+				
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];
 
@@ -914,6 +960,12 @@ class LocationHierarchyAnalyzer
 		return $statistics;
 	}
 
+	/**
+	 * Generate SQL statements based on the analysis results
+	 * 
+	 * @param bool $returnAsArray Whether to return as an array or a string
+	 * @return array|string SQL statements for corrections
+	 */
 	private function generateSQLStatements($returnAsArray = false)
 	{
 		$sqlLoc2 = [];
@@ -1137,9 +1189,10 @@ class LocationHierarchyAnalyzer
 		}
 
 		// Handle existing issues (conflicting_loc3, insufficient_loc3, etc.)
-		$inconsistent_street_number_loc3 = $this->generateCorrectionsInconsistent_street_number_loc3();
-		$non_sequential_loc3 = $this->generateCorrectionsNonSequentialLoc3();
-		$insufficient_loc3 = $this->generateCorrectionsInsufficientLoc3();
+		 // Use the stored filter value instead of recalculating
+		$inconsistent_street_number_loc3 = $this->generateCorrectionsInconsistent_street_number_loc3($this->currentFilterLoc1);
+		$non_sequential_loc3 = $this->generateCorrectionsNonSequentialLoc3($this->currentFilterLoc1);
+		$insufficient_loc3 = $this->generateCorrectionsInsufficientLoc3($this->currentFilterLoc1);
 
 		if ($returnAsArray)
 		{
@@ -1363,6 +1416,11 @@ class LocationHierarchyAnalyzer
 		$this->locationData = [];
 		$this->loc2References = [];
 		$this->loc3References = [];
+		$this->currentFilterLoc1 = null; // Reset this too
+		
+		// Clear any static caches that might persist between calls
+		static $street_names = null;
+		$street_names = [];
 	}
 
 	/**
@@ -1457,5 +1515,133 @@ class LocationHierarchyAnalyzer
 		}
 
 		return $results;
+	}
+
+	/**
+	 * Fetch all unique loc1 values from the database
+	 * 
+	 * @return array Array of unique loc1 values
+	 */
+	public function getAllLoc1Values()
+	{
+		$loc1Values = [];
+		$sql = "SELECT DISTINCT loc1 FROM fm_location4 ORDER BY loc1";
+		$this->db->query($sql, __LINE__, __FILE__);
+		
+		while ($this->db->next_record()) {
+			$loc1Values[] = $this->db->f('loc1');
+		}
+		
+		return $loc1Values;
+	}
+
+	/**
+	 * Analyze all loc1 values separately and combine the results
+	 * This prevents false positives when analyzing across different loc1 values
+	 * 
+	 * @return array Combined analysis results
+	 */
+	public function analyzeAllLoc1Separately()
+	{
+		$loc1Values = $this->getAllLoc1Values();
+		
+		// Set up combined results containers
+		$combinedIssues = [];
+		$combinedSuggestions = [];
+		$combinedSqlStatements = [
+			'schema' => [],
+			'missing_loc2' => [],
+			'missing_loc3' => [],
+			'corrections' => [],
+			'location4_updates' => []
+		];
+		
+		// Track loc1 counts for statistics
+		$totalLevel1Count = count($loc1Values);
+		$totalLevel2Count = 0;
+		$totalLevel3Count = 0;
+		$totalLevel4Count = 0;
+		$totalBuildings = 0;
+		$totalAddresses = 0;
+		$totalIssues = 0;
+		$issueTypes = [];
+		
+		// Analyze each loc1 separately
+		foreach ($loc1Values as $loc1) {
+			$results = $this->analyze($loc1);
+			
+			// Combine issues and suggestions
+			$combinedIssues = array_merge($combinedIssues, $results['issues']);
+			$combinedSuggestions = array_merge($combinedSuggestions, $results['suggestions']);
+			
+			// Combine SQL statements
+			if (isset($results['sql_statements']['schema']) && !empty($results['sql_statements']['schema'])) {
+				$combinedSqlStatements['schema'] = $results['sql_statements']['schema'];
+			}
+			
+			$combinedSqlStatements['missing_loc2'] = array_merge(
+				$combinedSqlStatements['missing_loc2'], 
+				$results['sql_statements']['missing_loc2'] ?? []
+			);
+			
+			$combinedSqlStatements['missing_loc3'] = array_merge(
+				$combinedSqlStatements['missing_loc3'], 
+				$results['sql_statements']['missing_loc3'] ?? []
+			);
+			
+			$combinedSqlStatements['corrections'] = array_merge(
+				$combinedSqlStatements['corrections'], 
+				$results['sql_statements']['corrections'] ?? []
+			);
+			
+			$combinedSqlStatements['location4_updates'] = array_merge(
+				$combinedSqlStatements['location4_updates'], 
+				$results['sql_statements']['location4_updates'] ?? []
+			);
+			
+			// Combine statistics
+			$totalLevel2Count += $results['statistics']['level2_count'];
+			$totalLevel3Count += $results['statistics']['level3_count'];
+			$totalLevel4Count += $results['statistics']['level4_count'];
+			$totalBuildings += $results['statistics']['unique_buildings'];
+			$totalAddresses += $results['statistics']['unique_addresses'];
+			$totalIssues += $results['statistics']['total_issues'];
+			
+			// Combine issue type counts
+			foreach ($results['statistics']['issues_by_type'] as $type => $count) {
+				if (!isset($issueTypes[$type])) {
+					$issueTypes[$type] = 0;
+				}
+				$issueTypes[$type] += $count;
+			}
+		}
+		
+		// Create combined statistics
+		$combinedStatistics = [
+			'level1_count' => $totalLevel1Count,
+			'level2_count' => $totalLevel2Count,
+			'level3_count' => $totalLevel3Count,
+			'level4_count' => $totalLevel4Count,
+			'unique_buildings' => $totalBuildings,
+			'unique_addresses' => $totalAddresses,
+			'total_issues' => $totalIssues,
+			'issues_by_type' => $issueTypes,
+			'issue_descriptions' => [
+				'missing_loc2_assignment' => 'Buildings missing loc2 assignment',
+				'multiple_buildings_in_loc2' => 'Multiple buildings in the same loc2',
+				'insufficient_loc2' => 'Insufficient loc2 values for buildings',
+				'conflicting_loc3' => 'Conflicting loc3 for same street address',
+				'non_sequential_loc3' => 'Non-sequential loc3 values',
+				'insufficient_loc3' => 'Insufficient loc3 values for entrances',
+				'inconsistent_street_number_loc3' => 'Inconsistent loc3 for same street number'
+			]
+		];
+		
+		return [
+			'statistics' => $combinedStatistics,
+			'issues' => $combinedIssues,
+			'suggestions' => $combinedSuggestions,
+			'sql_statements' => $combinedSqlStatements,
+		];
 	}
 }

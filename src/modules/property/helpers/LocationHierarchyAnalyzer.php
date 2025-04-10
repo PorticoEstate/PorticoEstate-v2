@@ -337,14 +337,23 @@ class LocationHierarchyAnalyzer
 			}
 			else if ($loc2ByBuilding[$loc1][$bygningsnr] !== $loc2)
 			{
-				// Found the same bygningsnr in different loc2 values - this is an issue
-				$this->issues[] = [
-					'type' => 'duplicate_bygningsnr',
-					'loc1' => $loc1,
-					'bygningsnr' => $bygningsnr,
-					'first_loc2' => $loc2ByBuilding[$loc1][$bygningsnr],
-					'second_loc2' => $loc2
-				];
+					// Track duplicate building issues to prevent duplicates
+				static $reportedDuplicateBuildingIssues = [];
+				$buildingKey = "{$loc1}_{$bygningsnr}";
+				
+				// Only add issue if this building hasn't been reported yet
+				if (!isset($reportedDuplicateBuildingIssues[$buildingKey])) {
+					$this->issues[] = [
+						'type' => 'duplicate_bygningsnr',
+						'loc1' => $loc1,
+						'bygningsnr' => $bygningsnr,
+						'first_loc2' => $loc2ByBuilding[$loc1][$bygningsnr],
+						'second_loc2' => $loc2
+					];
+					
+					// Mark this building as reported for issues
+					$reportedDuplicateBuildingIssues[$buildingKey] = true;
+				}
 
 				// Track duplicate building suggestions to prevent duplicates
 				static $reportedDuplicateBuildings = [];

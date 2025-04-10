@@ -44,7 +44,7 @@ class LocationHierarchyAnalyzer
 		$this->resetState(); // Ensure clean state for each analysis
 		$this->loadData($filterLoc1);
 		$this->analyzeData();
-		
+
 		// Store the filter for later use in SQL generation
 		$this->currentFilterLoc1 = $filterLoc1;
 
@@ -112,17 +112,48 @@ class LocationHierarchyAnalyzer
 		$loc2ByBuilding = [];
 		$existingLoc2 = [];
 		$loc2Assignments = [];
+		$syntheticBygningsnr = -1; // Used for entries without a bygningsnr
+		$highestLoc2ByLoc1 = []; // Initialize the array to track highest loc2 per loc1
 
-		// Group data by loc1 and bygningsnr for loc2 validation
+		// Group data by loc1 and bygningsnr for loc2 validation and find highest loc2
 		foreach ($this->locationData as $entry)
 		{
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
-			$bygningsnr = $entry['bygningsnr'];
+
+			// Keep track of the highest loc2 value for each loc1
+			if (!isset($highestLoc2ByLoc1[$loc1]) || intval($loc2) > intval($highestLoc2ByLoc1[$loc1]))
+			{
+				$highestLoc2ByLoc1[$loc1] = $loc2;
+			}
+
+			// Handle empty bygningsnr by generating a synthetic one unique to this entry
+			if (empty($entry['bygningsnr']))
+			{
+				$bygningsnr = "synthetic_{$syntheticBygningsnr}";
+				$syntheticBygningsnr--;
+			}
+			else
+			{
+				$bygningsnr = $entry['bygningsnr'];
+			}
 
 			if (!isset($loc2ByBuilding[$loc1][$bygningsnr]))
 			{
 				$loc2ByBuilding[$loc1][$bygningsnr] = $loc2;
+			}
+			else if ($loc2ByBuilding[$loc1][$bygningsnr] !== $loc2)
+			{
+				// Found the same bygningsnr in different loc2 values - this is an issue
+				$this->issues[] = [
+					'type' => 'duplicate_bygningsnr',
+					'loc1' => $loc1,
+					'bygningsnr' => $bygningsnr,
+					'first_loc2' => $loc2ByBuilding[$loc1][$bygningsnr],
+					'second_loc2' => $loc2
+				];
+
+				$this->suggestions[] = "Building with ID '{$bygningsnr}' appears in both loc2='{$loc2ByBuilding[$loc1][$bygningsnr]}' and loc2='{$loc2}' in loc1='{$loc1}'. Please verify the correct assignment.";
 			}
 
 			// Track existing loc2 values
@@ -136,10 +167,18 @@ class LocationHierarchyAnalyzer
 		// Assign loc2 values incrementally for missing entries
 		foreach ($loc2ByBuilding as $loc1 => $buildings)
 		{
-			$nextLoc2 = max(array_map('intval', array_keys($existingLoc2[$loc1]))) + 1;
+			// Find the next available loc2 number, starting from the highest + 1
+			$highestLoc2Value = isset($highestLoc2ByLoc1[$loc1]) ? intval($highestLoc2ByLoc1[$loc1]) : 0;
+			$nextLoc2 = $highestLoc2Value + 1;
 
 			foreach ($buildings as $bygningsnr => $loc2)
 			{
+				// If this is a synthetic ID, don't create a loc2 entry for it
+				if (strpos($bygningsnr, 'synthetic_') === 0)
+				{
+					continue;
+				}
+
 				if (!isset($existingLoc2[$loc1][$loc2]))
 				{
 					$loc2Assignments[$loc1][$bygningsnr] = str_pad($nextLoc2, 2, '0', STR_PAD_LEFT);
@@ -501,30 +540,32 @@ class LocationHierarchyAnalyzer
 			$bygningsnr = $entry['bygningsnr'];
 
 			// Skip if the street number doesn't have a standard loc3 for this loc1+loc2
-			if (!isset($standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['standard_loc3'])) {
+			if (!isset($standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['standard_loc3']))
+			{
 				continue;
 			}
 
 			$standardLoc3 = $standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['standard_loc3'];
-			
+
 			// Only consider it an issue if:
 			// 1. The current loc3 is different from the standard
 			// 2. The standard loc3 has significantly more occurrences than the current loc3
 			$currentCount = $standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['loc3_values'][$loc3] ?? 0;
 			$standardCount = $standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['loc3_values'][$standardLoc3];
-			
+
 			// Normalize loc3 values for comparison to handle formatting differences
 			$normalizedLoc3 = str_pad(intval($loc3), 2, '0', STR_PAD_LEFT);
 			$normalizedStandardLoc3 = str_pad(intval($standardLoc3), 2, '0', STR_PAD_LEFT);
-			
+
 			if ($normalizedLoc3 !== $normalizedStandardLoc3 && $standardCount > $currentCount)
 			{
 				// Debug info for transparency
 				// Add additional verification to ensure we're not creating false positives
-				if ($normalizedLoc3 === $normalizedStandardLoc3) {
+				if ($normalizedLoc3 === $normalizedStandardLoc3)
+				{
 					continue; // Double check that we don't flag entries with semantically equal loc3 values
 				}
-				
+
 				$this->issues[] = [
 					'type' => 'inconsistent_street_number_loc3',
 					'loc1' => $loc1,
@@ -559,10 +600,11 @@ class LocationHierarchyAnalyzer
 			if ($issue['type'] === 'inconsistent_street_number_loc3')
 			{
 				// Apply filter if provided
-				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1) {
+				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1)
+				{
 					continue;
 				}
-				
+
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];
 				$oldLoc3 = $issue['loc3'];
@@ -579,9 +621,11 @@ class LocationHierarchyAnalyzer
 				// Use normalized values for comparison to catch formatting differences
 				$normalizedOldLoc3 = str_pad(intval($oldLoc3), 2, '0', STR_PAD_LEFT);
 				$normalizedNewLoc3 = str_pad(intval($newLoc3), 2, '0', STR_PAD_LEFT);
-				
-				if (isset($this->processedLocationCodes[$oldLocationCode]) || 
-					$normalizedOldLoc3 === $normalizedNewLoc3)
+
+				if (
+					isset($this->processedLocationCodes[$oldLocationCode]) ||
+					$normalizedOldLoc3 === $normalizedNewLoc3
+				)
 				{
 					continue;
 				}
@@ -632,10 +676,11 @@ class LocationHierarchyAnalyzer
 		foreach ($this->locationData as $entry)
 		{
 			// Apply filter if provided
-			if ($filterLoc1 && $entry['loc1'] !== $filterLoc1) {
+			if ($filterLoc1 && $entry['loc1'] !== $filterLoc1)
+			{
 				continue;
 			}
-			
+
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
 
@@ -654,10 +699,11 @@ class LocationHierarchyAnalyzer
 			if ($issue['type'] === 'non_sequential_loc3')
 			{
 				// Apply filter if provided
-				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1) {
+				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1)
+				{
 					continue;
 				}
-				
+
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];
 				$loc1Loc2WithIssues["{$loc1}-{$loc2}"] = [
@@ -753,9 +799,11 @@ class LocationHierarchyAnalyzer
 
 				// Skip if the location code doesn't change or already processed globally
 				// Also skip if only the formatting changed but not the actual values
-				if ($oldLocationCode === $newLocationCode || 
+				if (
+					$oldLocationCode === $newLocationCode ||
 					isset($this->processedLocationCodes[$oldLocationCode]) ||
-					$oldLoc3 === $newLoc3)
+					$oldLoc3 === $newLoc3
+				)
 				{
 					continue;
 				}
@@ -806,10 +854,11 @@ class LocationHierarchyAnalyzer
 		foreach ($this->locationData as $entry)
 		{
 			// Apply filter if provided
-			if ($filterLoc1 && $entry['loc1'] !== $filterLoc1) {
+			if ($filterLoc1 && $entry['loc1'] !== $filterLoc1)
+			{
 				continue;
 			}
-			
+
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
 			$streetId = $entry['street_id'];
@@ -837,10 +886,11 @@ class LocationHierarchyAnalyzer
 			if ($issue['type'] === 'insufficient_loc3')
 			{
 				// Apply filter if provided
-				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1) {
+				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1)
+				{
 					continue;
 				}
-				
+
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];
 
@@ -916,13 +966,24 @@ class LocationHierarchyAnalyzer
 
 	private function generateStatistics()
 	{
+		// Count entries with missing bygningsnr
+		$missingBygningsnr = 0;
+		foreach ($this->locationData as $entry)
+		{
+			if (empty($entry['bygningsnr']))
+			{
+				$missingBygningsnr++;
+			}
+		}
+
 		$statistics = [
 			'level1_count' => count(array_unique(array_column($this->locationData, 'loc1'))),
 			'level2_count' => count(array_unique(array_map(fn($entry) => "{$entry['loc1']}-{$entry['loc2']}", $this->locationData))),
 			'level3_count' => count(array_unique(array_map(fn($entry) => "{$entry['loc1']}-{$entry['loc2']}-{$entry['loc3']}", $this->locationData))),
 			'level4_count' => count($this->locationData),
-			'unique_buildings' => count(array_unique(array_column($this->locationData, 'bygningsnr'))),
+			'unique_buildings' => count(array_filter(array_unique(array_column($this->locationData, 'bygningsnr')))), // Exclude empty values
 			'unique_addresses' => count(array_unique(array_map(fn($entry) => "{$entry['street_id']}-{$entry['street_number']}", $this->locationData))),
+			'missing_bygningsnr' => $missingBygningsnr,
 		];
 
 		// Count issues by type
@@ -952,7 +1013,8 @@ class LocationHierarchyAnalyzer
 			'conflicting_loc3' => 'Conflicting loc3 for same street address',
 			'non_sequential_loc3' => 'Non-sequential loc3 values',
 			'insufficient_loc3' => 'Insufficient loc3 values for entrances',
-			'inconsistent_street_number_loc3' => 'Inconsistent loc3 for same street number'
+			'inconsistent_street_number_loc3' => 'Inconsistent loc3 for same street number',
+			'duplicate_bygningsnr' => 'Same building ID (bygningsnr) appears in multiple loc2 values'
 		];
 
 		$statistics['issue_descriptions'] = $issueDescriptions;
@@ -1158,8 +1220,10 @@ class LocationHierarchyAnalyzer
 			$newLocationCode = "{$loc1}-{$newLoc2}-{$newLoc3}-{$loc4}";
 
 			// Only generate update if location changed and values are actually different
-			if ($oldLocationCode !== $newLocationCode && 
-				($oldLoc2 !== $newLoc2 || $oldLoc3 !== $newLoc3))
+			if (
+				$oldLocationCode !== $newLocationCode &&
+				($oldLoc2 !== $newLoc2 || $oldLoc3 !== $newLoc3)
+			)
 			{
 				// Skip if already processed
 				if (isset($this->processedLocationCodes[$oldLocationCode]))
@@ -1189,7 +1253,7 @@ class LocationHierarchyAnalyzer
 		}
 
 		// Handle existing issues (conflicting_loc3, insufficient_loc3, etc.)
-		 // Use the stored filter value instead of recalculating
+		// Use the stored filter value instead of recalculating
 		$inconsistent_street_number_loc3 = $this->generateCorrectionsInconsistent_street_number_loc3($this->currentFilterLoc1);
 		$non_sequential_loc3 = $this->generateCorrectionsNonSequentialLoc3($this->currentFilterLoc1);
 		$insufficient_loc3 = $this->generateCorrectionsInsufficientLoc3($this->currentFilterLoc1);
@@ -1306,66 +1370,80 @@ class LocationHierarchyAnalyzer
 			foreach ($combinedLoc4Updates as $index => $sql)
 			{
 				// Skip comment lines and add them directly
-				if (strpos($sql, '--') === 0) {
+				if (strpos($sql, '--') === 0)
+				{
 					$filteredUpdates[] = $sql;
 					continue;
 				}
-				
+
 				// Check for updates where values aren't actually changing
 				// Use a more flexible regex that doesn't hardcode column names
-				if (preg_match("/SET location_code = '([^']+)'(?:,\s*\w+ = '[^']+')*\s*WHERE location_code = '([^']+)'/", $sql, $matches)) {
+				if (preg_match("/SET location_code = '([^']+)'(?:,\s*\w+ = '[^']+')*\s*WHERE location_code = '([^']+)'/", $sql, $matches))
+				{
 					$newLocationCode = $matches[1];
 					$oldLocationCode = $matches[2];
-					
+
 					// Skip if location codes are identical
-					if ($newLocationCode === $oldLocationCode) {
+					if ($newLocationCode === $oldLocationCode)
+					{
 						continue;
 					}
-					
+
 					// Extract the old location parts and compare with new
 					$oldParts = explode('-', $oldLocationCode);
 					$newParts = explode('-', $newLocationCode);
-					
+
 					// If all parts of the location code are the same, skip this update
-					if (count($oldParts) === count($newParts) && 
-						$oldParts[0] === $newParts[0] && 
-						$oldParts[1] === $newParts[1] && 
-						$oldParts[2] === $newParts[2] && 
-						$oldParts[3] === $newParts[3]) {
+					if (
+						count($oldParts) === count($newParts) &&
+						$oldParts[0] === $newParts[0] &&
+						$oldParts[1] === $newParts[1] &&
+						$oldParts[2] === $newParts[2] &&
+						$oldParts[3] === $newParts[3]
+					)
+					{
 						continue;
 					}
-					
+
 					// Only keep SQL that actually changes something
 					$filteredUpdates[] = $sql;
-				} else {
+				}
+				else
+				{
 					$filteredUpdates[] = $sql;
 				}
 			}
-			
+
 			// Deep check for duplicate location code entries with slightly different formatting
 			$locationCodeMap = [];
 			$finalUpdates = [];
-			
-			foreach ($filteredUpdates as $sql) {
+
+			foreach ($filteredUpdates as $sql)
+			{
 				// Skip comment lines
-				if (strpos($sql, '--') === 0) {
+				if (strpos($sql, '--') === 0)
+				{
 					$finalUpdates[] = $sql;
 					continue;
 				}
-				
-				if (preg_match("/WHERE location_code = '([^']+)'/", $sql, $matches)) {
+
+				if (preg_match("/WHERE location_code = '([^']+)'/", $sql, $matches))
+				{
 					$oldLocationCode = $matches[1];
 					$normalizedLocationCode = $this->normalizeLocationCode($oldLocationCode);
-					
-					if (!isset($locationCodeMap[$normalizedLocationCode])) {
+
+					if (!isset($locationCodeMap[$normalizedLocationCode]))
+					{
 						$locationCodeMap[$normalizedLocationCode] = true;
 						$finalUpdates[] = $sql;
 					}
-				} else {
+				}
+				else
+				{
 					$finalUpdates[] = $sql;
 				}
 			}
-			
+
 			return [
 				'schema' => $sqlSchema,
 				'missing_loc2' => $sqlLoc2,
@@ -1390,10 +1468,11 @@ class LocationHierarchyAnalyzer
 	{
 		// Split into parts
 		$parts = explode('-', $locationCode);
-		if (count($parts) !== 4) {
+		if (count($parts) !== 4)
+		{
 			return $locationCode;
 		}
-		
+
 		// Ensure each part is standardized
 		$normalizedParts = [
 			$parts[0],                                   // loc1 stays as-is
@@ -1401,7 +1480,7 @@ class LocationHierarchyAnalyzer
 			str_pad(intval($parts[2]), 2, '0', STR_PAD_LEFT), // loc3 as 2-digit zero-padded
 			str_pad(intval($parts[3]), 3, '0', STR_PAD_LEFT)  // loc4 as 3-digit zero-padded
 		];
-		
+
 		return implode('-', $normalizedParts);
 	}
 
@@ -1417,7 +1496,7 @@ class LocationHierarchyAnalyzer
 		$this->loc2References = [];
 		$this->loc3References = [];
 		$this->currentFilterLoc1 = null; // Reset this too
-		
+
 		// Clear any static caches that might persist between calls
 		static $street_names = null;
 		$street_names = [];
@@ -1527,11 +1606,12 @@ class LocationHierarchyAnalyzer
 		$loc1Values = [];
 		$sql = "SELECT DISTINCT loc1 FROM fm_location4 ORDER BY loc1";
 		$this->db->query($sql, __LINE__, __FILE__);
-		
-		while ($this->db->next_record()) {
+
+		while ($this->db->next_record())
+		{
 			$loc1Values[] = $this->db->f('loc1');
 		}
-		
+
 		return $loc1Values;
 	}
 
@@ -1544,7 +1624,7 @@ class LocationHierarchyAnalyzer
 	public function analyzeAllLoc1Separately()
 	{
 		$loc1Values = $this->getAllLoc1Values();
-		
+
 		// Set up combined results containers
 		$combinedIssues = [];
 		$combinedSuggestions = [];
@@ -1555,7 +1635,7 @@ class LocationHierarchyAnalyzer
 			'corrections' => [],
 			'location4_updates' => []
 		];
-		
+
 		// Track loc1 counts for statistics
 		$totalLevel1Count = count($loc1Values);
 		$totalLevel2Count = 0;
@@ -1565,40 +1645,42 @@ class LocationHierarchyAnalyzer
 		$totalAddresses = 0;
 		$totalIssues = 0;
 		$issueTypes = [];
-		
+
 		// Analyze each loc1 separately
-		foreach ($loc1Values as $loc1) {
+		foreach ($loc1Values as $loc1)
+		{
 			$results = $this->analyze($loc1);
-			
+
 			// Combine issues and suggestions
 			$combinedIssues = array_merge($combinedIssues, $results['issues']);
 			$combinedSuggestions = array_merge($combinedSuggestions, $results['suggestions']);
-			
+
 			// Combine SQL statements
-			if (isset($results['sql_statements']['schema']) && !empty($results['sql_statements']['schema'])) {
+			if (isset($results['sql_statements']['schema']) && !empty($results['sql_statements']['schema']))
+			{
 				$combinedSqlStatements['schema'] = $results['sql_statements']['schema'];
 			}
-			
+
 			$combinedSqlStatements['missing_loc2'] = array_merge(
-				$combinedSqlStatements['missing_loc2'], 
+				$combinedSqlStatements['missing_loc2'],
 				$results['sql_statements']['missing_loc2'] ?? []
 			);
-			
+
 			$combinedSqlStatements['missing_loc3'] = array_merge(
-				$combinedSqlStatements['missing_loc3'], 
+				$combinedSqlStatements['missing_loc3'],
 				$results['sql_statements']['missing_loc3'] ?? []
 			);
-			
+
 			$combinedSqlStatements['corrections'] = array_merge(
-				$combinedSqlStatements['corrections'], 
+				$combinedSqlStatements['corrections'],
 				$results['sql_statements']['corrections'] ?? []
 			);
-			
+
 			$combinedSqlStatements['location4_updates'] = array_merge(
-				$combinedSqlStatements['location4_updates'], 
+				$combinedSqlStatements['location4_updates'],
 				$results['sql_statements']['location4_updates'] ?? []
 			);
-			
+
 			// Combine statistics
 			$totalLevel2Count += $results['statistics']['level2_count'];
 			$totalLevel3Count += $results['statistics']['level3_count'];
@@ -1606,16 +1688,18 @@ class LocationHierarchyAnalyzer
 			$totalBuildings += $results['statistics']['unique_buildings'];
 			$totalAddresses += $results['statistics']['unique_addresses'];
 			$totalIssues += $results['statistics']['total_issues'];
-			
+
 			// Combine issue type counts
-			foreach ($results['statistics']['issues_by_type'] as $type => $count) {
-				if (!isset($issueTypes[$type])) {
+			foreach ($results['statistics']['issues_by_type'] as $type => $count)
+			{
+				if (!isset($issueTypes[$type]))
+				{
 					$issueTypes[$type] = 0;
 				}
 				$issueTypes[$type] += $count;
 			}
 		}
-		
+
 		// Create combined statistics
 		$combinedStatistics = [
 			'level1_count' => $totalLevel1Count,
@@ -1636,7 +1720,7 @@ class LocationHierarchyAnalyzer
 				'inconsistent_street_number_loc3' => 'Inconsistent loc3 for same street number'
 			]
 		];
-		
+
 		return [
 			'statistics' => $combinedStatistics,
 			'issues' => $combinedIssues,

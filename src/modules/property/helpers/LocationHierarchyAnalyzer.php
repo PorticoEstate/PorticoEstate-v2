@@ -998,73 +998,87 @@ class LocationHierarchyAnalyzer
 					$sqlLoc3[] = "INSERT INTO fm_location3 (location_code, loc1, loc2, loc3, loc3_name) 
 								VALUES ('{$newLocationCode}', '{$loc1}', '{$loc2}', '{$newLoc3}', '{$fullAddress}')
 								ON CONFLICT (loc1, loc2, loc3) DO NOTHING;";
-					}
-				}
-
-				// Now update each loc4 entry to use the new loc3 associated with its street address
-				foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $index => $entry)
-				{
-					$oldLoc3 = $entry['loc3'];
-					$loc4 = $entry['loc4'];
-					$streetId = (int)$entry['street_id'];
-					$streetNumber = $entry['street_number'] ?? 'N/A';
-
-					// Use the mapped bygningsnr (which might be synthetic)
-					$bygningsnr = $this->entryToBygningsnrMap[$index] ?? (int)$entry['bygningsnr'];
-
-					$streetKey = "{$streetId}_{$streetNumber}";
-
-					// Skip if we don't have a mapping for this street address
-					if (!isset($streetToLoc3Map[$streetKey]))
-					{
-						continue;
-					}
-
-					$newLoc3 = $streetToLoc3Map[$streetKey];
-					$oldLocationCode = "{$loc1}-{$loc2}-{$oldLoc3}-{$loc4}";
-					$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
-
-					// Skip if the location code doesn't change or already processed globally
-					// Also skip if only the formatting changed but not the actual values
-					if (
-						$oldLocationCode === $newLocationCode ||
-						isset($this->processedLocationCodes[$oldLocationCode]) ||
-						$oldLoc3 === $newLoc3
-					)
-					{
-						continue;
-					}
-
-					$this->processedLocationCodes[$oldLocationCode] = true;
-
-
-					// Generate SQL for fm_location4 update
-					$sqlLoc4[] = "-- Update fm_location4 entry: {$oldLocationCode} -> {$newLocationCode}";
-					$sqlLoc4[] = "UPDATE fm_location4 
-								SET location_code = '{$newLocationCode}', 
-									loc3 = '{$newLoc3}' 
-								WHERE location_code = '{$oldLocationCode}';";
-
-					// Generate SQL for location_mapping
-					$sqlCorrections[] = "INSERT INTO location_mapping (
-										old_location_code, new_location_code, loc1, 
-										old_loc2, new_loc2, old_loc3, new_loc3, 
-										loc4, bygningsnr, street_id, street_number, change_type
-									) VALUES (
-										'{$oldLocationCode}', '{$newLocationCode}', '{$loc1}', 
-										'{$loc2}', '{$loc2}', '{$oldLoc3}', '{$newLoc3}', 
-										'{$loc4}', '{$bygningsnr}', {$streetId}, '{$streetNumber}', 
-										'location_hierarchy_update'
-									);";
 				}
 			}
 
-			return [
-				'location4_updates' => $sqlLoc4,
-				'corrections' => $sqlCorrections,
-				'location3_updates' => $sqlLoc3
-			];
+			// Now update each loc4 entry to use the new loc3 associated with its street address
+			foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $entryIndex => $entry)
+			{
+				$oldLoc3 = $entry['loc3'];
+				$loc4 = $entry['loc4'];
+				$streetId = (int)$entry['street_id'];
+				$streetNumber = $entry['street_number'] ?? 'N/A';
+
+					// Find the correct bygningsnr for this entry
+				// Note: We shouldn't use array index directly but instead find the entry in the original data
+				$bygningsnr = '';
+				foreach ($this->locationData as $originalIndex => $originalEntry) {
+					if ($originalEntry['loc1'] == $loc1 && 
+					    $originalEntry['loc2'] == $loc2 && 
+					    $originalEntry['loc3'] == $oldLoc3 && 
+					    $originalEntry['loc4'] == $loc4) {
+						$bygningsnr = $this->entryToBygningsnrMap[$originalIndex] ?? $originalEntry['bygningsnr'];
+						break;
+					}
+				}
+				// If we couldn't find the original entry, use the bygningsnr from current entry
+				if (empty($bygningsnr)) {
+					$bygningsnr = $entry['bygningsnr'] ?? 'unknown';
+				}
+
+				$streetKey = "{$streetId}_{$streetNumber}";
+
+				// Skip if we don't have a mapping for this street address
+				if (!isset($streetToLoc3Map[$streetKey]))
+				{
+					continue;
+				}
+
+				$newLoc3 = $streetToLoc3Map[$streetKey];
+				$oldLocationCode = "{$loc1}-{$loc2}-{$oldLoc3}-{$loc4}";
+				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
+
+				// Skip if the location code doesn't change or already processed globally
+				// Also skip if only the formatting changed but not the actual values
+				if (
+					$oldLocationCode === $newLocationCode ||
+					isset($this->processedLocationCodes[$oldLocationCode]) ||
+					$oldLoc3 === $newLoc3
+				)
+				{
+					continue;
+				}
+
+				$this->processedLocationCodes[$oldLocationCode] = true;
+
+				// Generate SQL for fm_location4 update
+				$sqlLoc4[] = "-- Update fm_location4 entry: {$oldLocationCode} -> {$newLocationCode}";
+				$sqlLoc4[] = "UPDATE fm_location4 
+							SET location_code = '{$newLocationCode}', 
+								loc3 = '{$newLoc3}' 
+							WHERE location_code = '{$oldLocationCode}';";
+
+				// Generate SQL for location_mapping to track the changes
+				$sqlCorrections[] = "INSERT INTO location_mapping (
+									old_location_code, new_location_code, loc1, 
+									old_loc2, new_loc2, old_loc3, new_loc3, 
+									loc4, bygningsnr, street_id, street_number, change_type
+								) VALUES (
+									'{$oldLocationCode}', '{$newLocationCode}', '{$loc1}', 
+									'{$loc2}', '{$loc2}', '{$oldLoc3}', '{$newLoc3}', 
+									'{$loc4}', '{$bygningsnr}', {$streetId}, '{$streetNumber}', 
+									'location_hierarchy_update'
+								);";
+			}
 		}
+
+		// Return the combined SQL statements AFTER processing all loc1/loc2 combinations
+		return [
+			'location4_updates' => $sqlLoc4,
+			'corrections' => $sqlCorrections,
+			'location3_updates' => $sqlLoc3
+		];
+	}
 
 	/**
 	 * Generate SQL statements for fixing insufficient loc3 values

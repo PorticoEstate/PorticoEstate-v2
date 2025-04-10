@@ -307,7 +307,7 @@ class LocationHierarchyAnalyzer
 			}
 
 			// Use the already assigned bygningsnr (which might be synthetic)
-			$bygningsnr = $entryToBygningsnrMap[$index];
+			$bygningsnr = $this->entryToBygningsnrMap[$index] ?? $entry['bygningsnr'];
 
 			if (!isset($loc2ByBuilding[$loc1][$bygningsnr]))
 			{

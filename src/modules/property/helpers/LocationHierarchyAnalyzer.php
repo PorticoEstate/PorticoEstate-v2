@@ -114,9 +114,19 @@ class LocationHierarchyAnalyzer
 		$loc2Assignments = [];
 		$syntheticBygningsnr = -1; // Used for entries without a bygningsnr
 		$highestLoc2ByLoc1 = []; // Initialize the array to track highest loc2 per loc1
+		$entryToBygningsnrMap = []; // Map to track synthetic bygningsnr assignments
+
+		 // First, find the highest loc2 value from fm_location2 references
+		foreach ($this->loc2References as $loc1 => $loc2Values) {
+			foreach (array_keys($loc2Values) as $loc2) {
+				if (!isset($highestLoc2ByLoc1[$loc1]) || intval($loc2) > intval($highestLoc2ByLoc1[$loc1])) {
+					$highestLoc2ByLoc1[$loc1] = $loc2;
+				}
+			}
+		}
 
 		// Group data by loc1 and bygningsnr for loc2 validation and find highest loc2
-		foreach ($this->locationData as $entry)
+		foreach ($this->locationData as $index => $entry)
 		{
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
@@ -132,10 +142,14 @@ class LocationHierarchyAnalyzer
 			{
 				$bygningsnr = "synthetic_{$syntheticBygningsnr}";
 				$syntheticBygningsnr--;
+				
+				// Store the mapping for this entry
+				$entryToBygningsnrMap[$index] = $bygningsnr;
 			}
 			else
 			{
 				$bygningsnr = $entry['bygningsnr'];
+				$entryToBygningsnrMap[$index] = $bygningsnr;
 			}
 
 			if (!isset($loc2ByBuilding[$loc1][$bygningsnr]))
@@ -476,6 +490,9 @@ class LocationHierarchyAnalyzer
 				}
 			}
 		}
+
+		// Make the mapping available to other methods that need to look up possibly synthetic bygningsnr values
+		$this->entryToBygningsnrMap = $entryToBygningsnrMap;
 	}
 
 	/**
@@ -529,7 +546,7 @@ class LocationHierarchyAnalyzer
 		}
 
 		// Second pass - find and flag inconsistencies
-		foreach ($this->locationData as $entry)
+		foreach ($this->locationData as $index => $entry)
 		{
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
@@ -537,7 +554,9 @@ class LocationHierarchyAnalyzer
 			$loc4 = $entry['loc4'];
 			$streetNumber = $entry['street_number'];
 			$streetId = $entry['street_id'];
-			$bygningsnr = $entry['bygningsnr'];
+			
+			// Use the mapped bygningsnr (which might be synthetic)
+			$bygningsnr = $this->entryToBygningsnrMap[$index] ?? $entry['bygningsnr'];
 
 			// Skip if the street number doesn't have a standard loc3 for this loc1+loc2
 			if (!isset($standardLoc3ByLocAndStreet[$loc1][$loc2][$streetNumber]['standard_loc3']))
@@ -574,7 +593,7 @@ class LocationHierarchyAnalyzer
 					'loc4' => $loc4,
 					'street_id' => $streetId,
 					'street_number' => $streetNumber,
-					'bygningsnr' => $bygningsnr,
+					'bygningsnr' => $bygningsnr, // This now uses the potentially synthetic ID
 					'correct_loc3' => $standardLoc3
 				];
 
@@ -1372,8 +1391,8 @@ class LocationHierarchyAnalyzer
 				// Skip comment lines and add them directly
 				if (strpos($sql, '--') === 0)
 				{
-					$filteredUpdates[] = $sql;
-					continue;
+						$filteredUpdates[] = $sql;
+						continue;
 				}
 
 				// Check for updates where values aren't actually changing

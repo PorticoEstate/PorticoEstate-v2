@@ -263,7 +263,8 @@ class LocationHierarchyAnalyzer
 			}
 			$entry['bygningsnr'] = $entryToBygningsnrMap[$index]; // Update entry with the assigned bygningsnr
 		}
-
+		// Make the mapping available to other methods that need to look up possibly synthetic bygningsnr values
+		$this->entryToBygningsnrMap = $entryToBygningsnrMap;
 	}
 	
 	
@@ -274,6 +275,7 @@ class LocationHierarchyAnalyzer
 		$loc2Assignments = [];
 		$highestLoc2ByLoc1 = []; // Initialize the array to track highest loc2 per loc1
 
+		$entryToBygningsnrMap = $this->entryToBygningsnrMap; // Use the mapping from validateBygningsnr
 		// First, find the highest loc2 value from fm_location2 references
 		foreach ($this->loc2References as $loc1 => $loc2Values)
 		{
@@ -652,8 +654,6 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
-		// Make the mapping available to other methods that need to look up possibly synthetic bygningsnr values
-		$this->entryToBygningsnrMap = $entryToBygningsnrMap;
 	}
 
 	/**

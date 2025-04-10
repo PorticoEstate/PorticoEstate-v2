@@ -1967,3 +1967,15 @@ class LocationHierarchyAnalyzer
 		];
 	}
 }
+
+// The two issue types track opposite problems:
+
+// 1. 'duplicate_bygningsnr' - When ONE building ID appears in MULTIPLE loc2 values
+// This occurs when the same building exists in different loc2 sections
+// Created when: $loc2ByBuilding[$loc1][$bygningsnr] !== $loc2
+// Example: Building ID '139276655' appears in both loc2='01' and loc2='03'
+
+// 2. 'multiple_buildings_in_loc2' - When MULTIPLE building IDs appear in ONE loc2 value
+// This occurs when different buildings are incorrectly grouped under the same loc2
+// Created when: count($buildings) > 1
+// Example: Loc2='01' contains buildings '139276655', '139276656', '139276657'

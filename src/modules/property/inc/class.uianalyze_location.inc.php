@@ -84,6 +84,9 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			$data['suggestions'] = $analysis_results['suggestions'];
 			$data['sql_statements'] = $analysis_results['sql_statements'];
 			$data['analysis_ran'] = true;
+			
+			// Pass the automatically determined fixed location codes to the template
+			$data['fixed_location_codes'] = $analysis_results['fixed_location_codes'] ?? [];
 		}
 		else if (isset($_POST['execute_sql']) && $_POST['execute_sql'] == 'yes' && !empty($_POST['sql_types']))
 		{

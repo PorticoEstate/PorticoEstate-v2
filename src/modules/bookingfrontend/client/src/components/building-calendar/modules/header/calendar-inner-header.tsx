@@ -14,6 +14,7 @@ import {
 } from "@/components/building-calendar/calendar-context";
 import {DateTime} from "luxon";
 import {useIsMobile} from "@/service/hooks/is-mobile";
+import {usePartialApplications} from "@/service/hooks/api-hooks";
 
 interface CalendarInnerHeaderProps {
 
@@ -35,6 +36,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 	const calendarViewMode = useCalenderViewMode();
 	const isMobile = useIsMobile();
 
+	const partials = usePartialApplications();
 
 	const c = calendarRef.current;
 
@@ -132,14 +134,14 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 
 			{/* Hide day/week buttons when in calendar mode on mobile */}
 			{!(isMobile && calendarViewMode === 'calendar') && (
-				<ButtonGroup className={styles.modeSelectTime}>
-					<Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} data-color={'brand1'}
+				<ButtonGroup data-color='accent' className={styles.modeSelectTime}>
+					<Button variant={view === 'timeGridDay' ? 'primary' : 'tertiary'} data-color={'accent'}
 							data-size={'sm'}
-							className={'captialize'}
+							className={'captialize subtle'}
 							onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
-					<Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
+					<Button variant={view === 'timeGridWeek' ? 'primary' : 'tertiary'} data-color={'accent'}
 							data-size={'sm'}
-							className={'captialize'}
+							className={'captialize subtle'}
 							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
 					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
 					{/*        className={'captialize'}*/}
@@ -149,17 +151,17 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 
 			{
 				calendarViewMode === 'calendar' &&
-				<ButtonGroup className={styles.modeSelect}>
-					<Button variant={view !== 'listWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
+				<ButtonGroup data-color='accent' className={styles.modeSelect}>
+					<Button variant={view !== 'listWeek' ? 'primary' : 'tertiary'}
 							aria-active={'true'}
 							aria-current={'true'} data-size={'sm'}
-							className={'captialize'} onClick={() => {
+							className={'captialize subtle'} onClick={() => {
 						props.setLastCalendarView()
 					}}><CalendarIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
-					<Button variant={view === 'listWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
+					<Button variant={view === 'listWeek' ? 'primary' : 'tertiary'}
 							data-size={'sm'}
-							className={'captialize'} onClick={() => {
+							className={'captialize subtle'} onClick={() => {
 						props.setView('listWeek')
 					}}><TableIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
@@ -167,7 +169,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			}
 			{
 				calendarViewMode === 'calendar' &&
-				<Button variant={'secondary'} data-color={'brand1'} onClick={props.createNew} data-size={'sm'} className={styles.orderButton}>
+				<Button variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'} data-color={'accent'} onClick={props.createNew} data-size={'sm'} className={styles.orderButton}>
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}
 

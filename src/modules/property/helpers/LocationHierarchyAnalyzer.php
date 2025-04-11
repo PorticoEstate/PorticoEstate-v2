@@ -75,121 +75,144 @@ class LocationHierarchyAnalyzer
 		// Maps for tracking the correct sequential numbering
 		$correctLoc2ByBuilding = []; // loc1 → bygningsnr → expected loc2
 		$correctLoc3ByStreet = []; // loc1 → loc2 → street_key → expected loc3
-		
+
 		// First pass: Build ideal location assignments
 		$buildingsByLoc1 = []; // loc1 → [bygningsnr1, bygningsnr2, ...]
 		$streetsByLoc1Loc2 = []; // loc1 → loc2 → [street_key1, street_key2, ...]
-		
+
 		// Group buildings by loc1, separating real and synthetic buildings
-		$realBuildingsByLoc1 = []; 
+		$realBuildingsByLoc1 = [];
 		$syntheticBuildingsByLoc1 = [];
-		
+
 		// First, collect all buildings by loc1
-		foreach ($this->locationData as $index => $entry) {
+		foreach ($this->locationData as $index => $entry)
+		{
 			$loc1 = $entry['loc1'];
 			$bygningsnr = $entry['bygningsnr'];
-			
-			if (!isset($realBuildingsByLoc1[$loc1])) {
+
+			if (!isset($realBuildingsByLoc1[$loc1]))
+			{
 				$realBuildingsByLoc1[$loc1] = [];
 				$syntheticBuildingsByLoc1[$loc1] = [];
 			}
-			
+
 			// Separate real buildings from synthetic ones
-			if (empty($bygningsnr) || strpos($bygningsnr, 'synth') === 0 || 
-				strpos($bygningsnr, 'synthetic_') === 0 || 
-				strpos($bygningsnr, 'empty_') === 0) {
-				if (!in_array($bygningsnr, $syntheticBuildingsByLoc1[$loc1])) {
+			if (
+				empty($bygningsnr) || strpos($bygningsnr, 'synth') === 0 ||
+				strpos($bygningsnr, 'synthetic_') === 0 ||
+				strpos($bygningsnr, 'empty_') === 0
+			)
+			{
+				if (!in_array($bygningsnr, $syntheticBuildingsByLoc1[$loc1]))
+				{
 					$syntheticBuildingsByLoc1[$loc1][] = $bygningsnr;
 				}
-			} else {
-				if (!in_array($bygningsnr, $realBuildingsByLoc1[$loc1])) {
+			}
+			else
+			{
+				if (!in_array($bygningsnr, $realBuildingsByLoc1[$loc1]))
+				{
 					$realBuildingsByLoc1[$loc1][] = $bygningsnr;
 				}
 			}
 		}
-		
+
 		// Combine real and synthetic buildings, prioritizing real ones first
-		foreach ($realBuildingsByLoc1 as $loc1 => $realBuildings) {
+		foreach ($realBuildingsByLoc1 as $loc1 => $realBuildings)
+		{
 			$buildingsByLoc1[$loc1] = array_merge($realBuildings, $syntheticBuildingsByLoc1[$loc1]);
 		}
-		
+
 		// Assign correct loc2 values for buildings (starting from '01')
-		foreach ($buildingsByLoc1 as $loc1 => $buildings) {
+		foreach ($buildingsByLoc1 as $loc1 => $buildings)
+		{
 			$loc2Index = 1;
-			
-			foreach ($buildings as $bygningsnr) {
+
+			foreach ($buildings as $bygningsnr)
+			{
 				$correctLoc2 = str_pad($loc2Index++, 2, '0', STR_PAD_LEFT);
 				$correctLoc2ByBuilding[$loc1][$bygningsnr] = $correctLoc2;
 			}
 		}
-		
+
 		// Group streets by loc1/loc2
-		foreach ($this->locationData as $index => $entry) {
+		foreach ($this->locationData as $index => $entry)
+		{
 			$loc1 = $entry['loc1'];
 			$bygningsnr = $entry['bygningsnr'];
 			$streetKey = "{$entry['street_id']}_{$entry['street_number']}";
-			
+
 			// Get the correct loc2 for this building
-			if (!isset($correctLoc2ByBuilding[$loc1][$bygningsnr])) {
+			if (!isset($correctLoc2ByBuilding[$loc1][$bygningsnr]))
+			{
 				continue; // Skip if no proper loc2 assignment
 			}
 			$correctLoc2 = $correctLoc2ByBuilding[$loc1][$bygningsnr];
-			
-			if (!isset($streetsByLoc1Loc2[$loc1][$correctLoc2])) {
+
+			if (!isset($streetsByLoc1Loc2[$loc1][$correctLoc2]))
+			{
 				$streetsByLoc1Loc2[$loc1][$correctLoc2] = [];
 			}
-			if (!in_array($streetKey, $streetsByLoc1Loc2[$loc1][$correctLoc2])) {
+			if (!in_array($streetKey, $streetsByLoc1Loc2[$loc1][$correctLoc2]))
+			{
 				$streetsByLoc1Loc2[$loc1][$correctLoc2][] = $streetKey;
 			}
 		}
-		
+
 		// Assign correct loc3 values for streets (starting from '01')
-		foreach ($streetsByLoc1Loc2 as $loc1 => $loc2Data) {
-			foreach ($loc2Data as $loc2 => $streets) {
+		foreach ($streetsByLoc1Loc2 as $loc1 => $loc2Data)
+		{
+			foreach ($loc2Data as $loc2 => $streets)
+			{
 				sort($streets); // Sort for consistent ordering
 				$loc3Index = 1;
-				
-				foreach ($streets as $streetKey) {
+
+				foreach ($streets as $streetKey)
+				{
 					$correctLoc3 = str_pad($loc3Index++, 2, '0', STR_PAD_LEFT);
 					$correctLoc3ByStreet[$loc1][$loc2][$streetKey] = $correctLoc3;
 				}
 			}
 		}
-		
-			// Track which locations should be fixed
+
+		// Track which locations should be fixed
 		$fixedLocations = [];
-		
+
 		// Only fix the first location for each loc1
 		$loc1FirstRecords = [];
-		
-		foreach ($this->locationData as $index => $entry) {
+
+		foreach ($this->locationData as $index => $entry)
+		{
 			$loc1 = $entry['loc1'];
 			$locationCode = "{$loc1}-{$entry['loc2']}-{$entry['loc3']}-{$entry['loc4']}";
-			
-			if (!isset($loc1FirstRecords[$loc1])) {
+
+			if (!isset($loc1FirstRecords[$loc1]))
+			{
 				$loc1FirstRecords[$loc1] = $locationCode;
 				$this->fixedLocationCodes[$locationCode] = true;
 			}
 		}
-		
+
 		// Safety check for very large datasets
 		$totalLocations = count($this->locationData);
 		$fixedLocations = count($this->fixedLocationCodes);
 		$movableLocations = $totalLocations - $fixedLocations;
 		$absoluteMaxMoves = 1000; // Hard limit for safety
-		
-		if ($movableLocations > $absoluteMaxMoves) {
-				// Code to prioritize additional locations to fix
-				// (Keep existing implementation)
+
+		if ($movableLocations > $absoluteMaxMoves)
+		{
+			// Code to prioritize additional locations to fix
+			// (Keep existing implementation)
 		}
-		
+
 		// Debug output
 		$fixedCount = count($this->fixedLocationCodes);
 		$movableCount = $totalLocations - $fixedCount;
 		error_log("Fixed locations: $fixedCount, Movable locations: $movableCount");
-		
+
 		// Optionally log which ones are fixed
-		if (isset($_GET['debug']) && $_GET['debug'] === 'true') {
+		if (isset($_GET['debug']) && $_GET['debug'] === 'true')
+		{
 			error_log("Fixed location codes: " . implode(', ', array_keys($this->fixedLocationCodes)));
 		}
 	}
@@ -286,8 +309,8 @@ class LocationHierarchyAnalyzer
 		// Make the mapping available to other methods that need to look up possibly synthetic bygningsnr values
 		$this->entryToBygningsnrMap = $entryToBygningsnrMap;
 	}
-	
-	
+
+
 	private function analyzeData()
 	{
 		$loc2ByBuilding = [];
@@ -337,12 +360,13 @@ class LocationHierarchyAnalyzer
 			}
 			else if ($loc2ByBuilding[$loc1][$bygningsnr] !== $loc2)
 			{
-					// Track duplicate building issues to prevent duplicates
+				// Track duplicate building issues to prevent duplicates
 				static $reportedDuplicateBuildingIssues = [];
 				$buildingKey = "{$loc1}_{$bygningsnr}";
-				
+
 				// Only add issue if this building hasn't been reported yet
-				if (!isset($reportedDuplicateBuildingIssues[$buildingKey])) {
+				if (!isset($reportedDuplicateBuildingIssues[$buildingKey]))
+				{
 					$this->issues[] = [
 						'type' => 'duplicate_bygningsnr',
 						'loc1' => $loc1,
@@ -350,7 +374,7 @@ class LocationHierarchyAnalyzer
 						'first_loc2' => $loc2ByBuilding[$loc1][$bygningsnr],
 						'second_loc2' => $loc2
 					];
-					
+
 					// Mark this building as reported for issues
 					$reportedDuplicateBuildingIssues[$buildingKey] = true;
 				}
@@ -358,9 +382,10 @@ class LocationHierarchyAnalyzer
 				// Track duplicate building suggestions to prevent duplicates
 				static $reportedDuplicateBuildings = [];
 				$buildingKey = "{$loc1}_{$bygningsnr}";
-				
+
 				// Only add suggestion if this building hasn't been reported yet
-				if (!isset($reportedDuplicateBuildings[$buildingKey])) {
+				if (!isset($reportedDuplicateBuildings[$buildingKey]))
+				{
 					$this->suggestions[] = "Building with ID '{$bygningsnr}' appears in both loc2='{$loc2ByBuilding[$loc1][$bygningsnr]}' and loc2='{$loc2}' in loc1='{$loc1}'. Please verify the correct assignment.";
 					$reportedDuplicateBuildings[$buildingKey] = true;
 				}
@@ -589,20 +614,20 @@ class LocationHierarchyAnalyzer
 		// First, map street numbers to loc3 values to check if structure is already correct
 		foreach ($this->locationData as $entry)
 		{
-				$loc1 = $entry['loc1'];
-				$loc2 = $entry['loc2'];
-				$loc3 = $entry['loc3'];
-				$streetNumber = $entry['street_number'];
+			$loc1 = $entry['loc1'];
+			$loc2 = $entry['loc2'];
+			$loc3 = $entry['loc3'];
+			$streetNumber = $entry['street_number'];
 
-				if (!isset($streetNumbersByLoc3[$loc1][$loc2][$loc3]))
-				{
-					$streetNumbersByLoc3[$loc1][$loc2][$loc3] = [];
-				}
+			if (!isset($streetNumbersByLoc3[$loc1][$loc2][$loc3]))
+			{
+				$streetNumbersByLoc3[$loc1][$loc2][$loc3] = [];
+			}
 
-				if (!in_array($streetNumber, $streetNumbersByLoc3[$loc1][$loc2][$loc3]))
-				{
-					$streetNumbersByLoc3[$loc1][$loc2][$loc3][] = $streetNumber;
-				}
+			if (!in_array($streetNumber, $streetNumbersByLoc3[$loc1][$loc2][$loc3]))
+			{
+				$streetNumbersByLoc3[$loc1][$loc2][$loc3][] = $streetNumber;
+			}
 		}
 
 		// Group street addresses by loc1/loc2 combination
@@ -690,7 +715,6 @@ class LocationHierarchyAnalyzer
 				}
 			}
 		}
-
 	}
 
 	/**
@@ -1009,20 +1033,25 @@ class LocationHierarchyAnalyzer
 				$streetId = (int)$entry['street_id'];
 				$streetNumber = $entry['street_number'] ?? 'N/A';
 
-					// Find the correct bygningsnr for this entry
+				// Find the correct bygningsnr for this entry
 				// Note: We shouldn't use array index directly but instead find the entry in the original data
 				$bygningsnr = '';
-				foreach ($this->locationData as $originalIndex => $originalEntry) {
-					if ($originalEntry['loc1'] == $loc1 && 
-					    $originalEntry['loc2'] == $loc2 && 
-					    $originalEntry['loc3'] == $oldLoc3 && 
-					    $originalEntry['loc4'] == $loc4) {
+				foreach ($this->locationData as $originalIndex => $originalEntry)
+				{
+					if (
+						$originalEntry['loc1'] == $loc1 &&
+						$originalEntry['loc2'] == $loc2 &&
+						$originalEntry['loc3'] == $oldLoc3 &&
+						$originalEntry['loc4'] == $loc4
+					)
+					{
 						$bygningsnr = $this->entryToBygningsnrMap[$originalIndex] ?? $originalEntry['bygningsnr'];
 						break;
 					}
 				}
 				// If we couldn't find the original entry, use the bygningsnr from current entry
-				if (empty($bygningsnr)) {
+				if (empty($bygningsnr))
+				{
 					$bygningsnr = $entry['bygningsnr'] ?? 'unknown';
 				}
 
@@ -1437,59 +1466,59 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
-			// Now, generate SQL for updating fm_location4 entries
-			foreach ($this->locationData as $index => $entry)
+		// Now, generate SQL for updating fm_location4 entries
+		foreach ($this->locationData as $index => $entry)
+		{
+			$loc1 = $entry['loc1'];
+			$oldLoc2 = $entry['loc2'];
+			$oldLoc3 = $entry['loc3'];
+			$loc4 = $entry['loc4'];
+
+			// Use the mapped bygningsnr (which might be synthetic)
+			$bygningsnr = $this->entryToBygningsnrMap[$index] ?? (int)$entry['bygningsnr'];
+
+			$streetId = (int)$entry['street_id'];
+			$streetNumber = $entry['street_number'] ?? 'N/A';
+
+			// Determine the new loc2 and loc3 values
+			$newLoc2 = isset($buildingToLoc2Map[$loc1][$bygningsnr]) ?
+				$buildingToLoc2Map[$loc1][$bygningsnr] : $oldLoc2;
+
+			$streetKey = "{$streetId}_{$streetNumber}";
+			$newLoc3 = isset($streetToLoc3Map[$loc1][$newLoc2][$streetKey]) ?
+				$streetToLoc3Map[$loc1][$newLoc2][$streetKey] : (isset($streetToLoc3Map[$loc1][$newLoc2]['default']) ?
+					$streetToLoc3Map[$loc1][$newLoc2]['default'] : $oldLoc3);
+
+			$oldLocationCode = "{$loc1}-{$oldLoc2}-{$oldLoc3}-{$loc4}";
+			$newLocationCode = "{$loc1}-{$newLoc2}-{$newLoc3}-{$loc4}";
+
+			// Skip fixed location codes
+			if (isset($this->fixedLocationCodes[$oldLocationCode]))
 			{
-				$loc1 = $entry['loc1'];
-				$oldLoc2 = $entry['loc2'];
-				$oldLoc3 = $entry['loc3'];
-				$loc4 = $entry['loc4'];
+				continue;
+			}
 
-				// Use the mapped bygningsnr (which might be synthetic)
-				$bygningsnr = $this->entryToBygningsnrMap[$index] ?? (int)$entry['bygningsnr'];
-
-				$streetId = (int)$entry['street_id'];
-				$streetNumber = $entry['street_number'] ?? 'N/A';
-
-				// Determine the new loc2 and loc3 values
-				$newLoc2 = isset($buildingToLoc2Map[$loc1][$bygningsnr]) ?
-					$buildingToLoc2Map[$loc1][$bygningsnr] : $oldLoc2;
-
-				$streetKey = "{$streetId}_{$streetNumber}";
-				$newLoc3 = isset($streetToLoc3Map[$loc1][$newLoc2][$streetKey]) ?
-					$streetToLoc3Map[$loc1][$newLoc2][$streetKey] : (isset($streetToLoc3Map[$loc1][$newLoc2]['default']) ?
-						$streetToLoc3Map[$loc1][$newLoc2]['default'] : $oldLoc3);
-
-				$oldLocationCode = "{$loc1}-{$oldLoc2}-{$oldLoc3}-{$loc4}";
-				$newLocationCode = "{$loc1}-{$newLoc2}-{$newLoc3}-{$loc4}";
-
-				// Skip fixed location codes
-				if (isset($this->fixedLocationCodes[$oldLocationCode]))
+			// Only generate update if location changed and values are actually different
+			if (
+				$oldLocationCode !== $newLocationCode &&
+				($oldLoc2 !== $newLoc2 || $oldLoc3 !== $newLoc3)
+			)
+			{
+				// Skip if already processed
+				if (isset($this->processedLocationCodes[$oldLocationCode]))
 				{
 					continue;
 				}
+				$this->processedLocationCodes[$oldLocationCode] = true;
 
-				// Only generate update if location changed and values are actually different
-				if (
-					$oldLocationCode !== $newLocationCode &&
-					($oldLoc2 !== $newLoc2 || $oldLoc3 !== $newLoc3)
-				)
-				{
-					// Skip if already processed
-					if (isset($this->processedLocationCodes[$oldLocationCode]))
-					{
-						continue;
-					}
-					$this->processedLocationCodes[$oldLocationCode] = true;
-
-					$sqlLoc4[] = "-- Update fm_location4 entry: {$oldLocationCode} -> {$newLocationCode}";
-					$sqlLoc4[] = "UPDATE fm_location4 
+				$sqlLoc4[] = "-- Update fm_location4 entry: {$oldLocationCode} -> {$newLocationCode}";
+				$sqlLoc4[] = "UPDATE fm_location4 
 								SET location_code = '{$newLocationCode}', 
 									loc2 = '{$newLoc2}', 
 									loc3 = '{$newLoc3}' 
 								WHERE location_code = '{$oldLocationCode}';";
 
-					$sqlCorrections[] = "INSERT INTO location_mapping (
+				$sqlCorrections[] = "INSERT INTO location_mapping (
 										old_location_code, new_location_code, loc1, 
 										old_loc2, new_loc2, old_loc3, new_loc3, 
 										loc4, bygningsnr, street_id, street_number, change_type
@@ -1499,8 +1528,8 @@ class LocationHierarchyAnalyzer
 										'{$loc4}', '{$bygningsnr}', {$streetId}, '{$streetNumber}', 
 										'location_hierarchy_update'
 									);";
-				}
 			}
+		}
 
 		// Handle existing issues (conflicting_loc3, insufficient_loc3, etc.)
 		// Use the stored filter value instead of recalculating
@@ -1894,17 +1923,17 @@ class LocationHierarchyAnalyzer
 			{
 				$duplicates[$bygningsnr][$loc1] = 1;
 			}
-
 		}
 		// Flatten the duplicates array for easier access
-		$duplicates = array_map(function ($loc1Data) {
+		$duplicates = array_map(function ($loc1Data)
+		{
 			return array_keys($loc1Data);
 		}, $duplicates);
 
 
 		foreach ($duplicates as $bygningsnr => $loc1Array)
 		{
-			if(count($loc1Array) > 1)
+			if (count($loc1Array) > 1)
 			{
 				$duplicates[$bygningsnr] = implode(', ', $loc1Array);
 			}
@@ -1913,7 +1942,7 @@ class LocationHierarchyAnalyzer
 				unset($duplicates[$bygningsnr]);
 			}
 		}
-		
+
 		return $duplicates;
 	}
 	/**
@@ -2030,7 +2059,7 @@ class LocationHierarchyAnalyzer
 					'type' => 'duplicate_bygningsnr_loc1',
 					'bygningsnr' => $bygningsnr,
 					'loc1' => $loc1String,
-					'description' => "Building ID '{$bygningsnr}' appears in multiple loc1 values: " .$loc1String
+					'description' => "Building ID '{$bygningsnr}' appears in multiple loc1 values: " . $loc1String
 				];
 			}
 			$combinedStatistics['issues_by_type']['duplicate_bygningsnr_loc1'] = count($duplicatesBygningsnr);

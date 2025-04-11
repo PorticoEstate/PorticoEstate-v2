@@ -17,8 +17,6 @@ export const fetchOrganization = async (orgId: number): Promise<Organization> =>
     //TODO: Split requests for groups and delegaters
     return {
         ...data,
-        groups: JSON.parse(data.groups),
-        delegaters: JSON.parse(data.delegaters),
         contacts: JSON.parse(data.contacts),
         activity: JSON.parse(data.activity),
         show_in_portal: !!data.show_in_portal,
@@ -124,21 +122,38 @@ export const createDelegateRequest = async (orgId: number, data: CreatingDelegat
     }
     return await res.json();
 }
-export const useDelegateData = (orgId: number, delegateId: number) => {
+export const useDelegateList = (orgId: number) => {
     return useQuery({
-        queryKey: ['delegate', delegateId],
-        retry: 2,
-        queryFn: () => fetchDelegateData(orgId, delegateId)
+        queryKey: ['delegates', orgId],
+        queryFn: async () => {
+            const url = phpGWLink([
+                'bookingfrontend',
+                'organizations',
+                orgId,
+                'delegates'
+            ]);
+            const res = await fetch(url, FetchAuthOptions());
+            const body = await res.json();
+            if (body.error) return body;
+            return JSON.parse(body.data);
+        }
     })
 }
-export const patchDelegate = (orgId: number, delegateId: number) => {
+export const patchDelegate = (orgId: number, delegateId: number, client: QueryClient) => {
     return useMutation({
         mutationFn: (data: UpdatingDelegate) => patchDelegateRequest(orgId, delegateId, data),
+        onSuccess: () => {
+            client.invalidateQueries({ queryKey: ['delegate', delegateId] });
+            client.invalidateQueries({ queryKey: ['delegates', orgId] });
+        }
     })
 }
-export const createDelegate = (orgId: number) => {
+export const createDelegate = (orgId: number, client: QueryClient) => {
     return useMutation({
         mutationFn: (data: CreatingDelegate) => createDelegateRequest(orgId, data),
+        onSuccess: () => {
+            client.invalidateQueries({ queryKey: ['delegates', orgId] });
+        }
     });
 }
 
@@ -283,6 +298,23 @@ export const useGroupData = (orgId: number, groupId: number, initialData: Group)
         initialData,
         retry: 2,
         queryFn: () => fetchGroupData(orgId, groupId),
+    })
+}
+export const useGroupList = (orgId: number) => {
+    return useQuery({
+        queryKey: ['groups', orgId],
+        queryFn: async () => {
+            const url = phpGWLink([
+                'bookingfrontend',
+                'organizations',
+                orgId,
+                'groups'
+            ]);
+            const res = await fetch(url, FetchAuthOptions());
+            const body = await res.json();
+            if (body.error) return body;
+            return JSON.parse(body.data);
+        }
     })
 }
 export const createGroup = (orgId: number, client: QueryClient) => {

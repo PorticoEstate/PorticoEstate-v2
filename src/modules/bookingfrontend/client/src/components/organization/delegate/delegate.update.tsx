@@ -3,11 +3,12 @@ import { Controller, useForm } from "react-hook-form";
 import { Button, Textfield } from "@digdir/designsystemet-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UpdatingDelegate, updateDelegateFormSchema } from "./schemas";
-import { patchDelegate, patchDelegateRequest } from "@/service/api/organization";
+import { patchDelegate } from "@/service/api/organization";
 import { useTrans } from "@/app/i18n/ClientTranslationProvider";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from "@tanstack/react-query";
 import styles from './styles/delegater.form.module.scss';
 import { ViewDelegate } from "@/service/types/api/organization.types";
 
@@ -31,7 +32,8 @@ const DelegateUpdate = ({ delegate }: DelegateUpdateProps) => {
             phone: delegate.phone
         }
     });
-    const update = patchDelegate(delegate.organization.id, delegate.id);
+    const cl = useQueryClient();
+    const update = patchDelegate(delegate.organization.id, delegate.id, cl);
     const updateCb = (data: UpdatingDelegate) => {
         update.mutate(data);
     }

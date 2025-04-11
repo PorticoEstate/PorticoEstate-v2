@@ -1,7 +1,7 @@
 'use client';
 import { Details, Link, Button } from '@digdir/designsystemet-react';
 import { default as NXLink } from "next/link";
-import { Organization } from "@/service/types/api/organization.types";
+import { Delegate, Group, Organization } from "@/service/types/api/organization.types";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import { LaptopIcon, PlusIcon, PersonPlusIcon, Buildings3Icon } from '@navikt/aksel-icons';
 import styles from './styles/organization.view.module.scss';
@@ -9,6 +9,8 @@ import MapModal from '../map-modal/map-modal';
 
 interface OrganizationView {
     data: Organization;
+    groups: Group[];
+    delegates: Delegate[];
 }
 
 const OrganizationContacts = ({ email, phone }) => {
@@ -38,9 +40,8 @@ const OrganizationContacts = ({ email, phone }) => {
     )
 }
 
-const OrganizationView = ({ data }: OrganizationView) => {
+const OrganizationView = ({ data, delegates, groups }: OrganizationView) => {
     const t = useTrans();
-
     return (
         <main className={styles.main_container}>
             <div className={styles.header}>
@@ -84,7 +85,7 @@ const OrganizationView = ({ data }: OrganizationView) => {
                 <Details>
                     <Details.Summary>{t('bookingfrontend.delegaters')}</Details.Summary>
                     <Details.Content>
-                        {data.delegaters.map((delegate) => (
+                        {delegates.map((delegate) => (
                             <div key={delegate.id} className={styles.listed_delegate}>
                                 <NXLink 
                                     href={`/organization/${data.id}/delegate/${delegate.id}`}
@@ -114,7 +115,7 @@ const OrganizationView = ({ data }: OrganizationView) => {
                 <Details>
                     <Details.Summary>{t('bookingfrontend.groups')}</Details.Summary>
                     <Details.Content>
-                        {data.groups.map((group) => (
+                        {groups.map((group) => (
                             <div key={group.id} className={styles.listed_group}>
                                 <NXLink 
                                     href={`/organization/${data.id}/group/${group.id}`}
@@ -123,7 +124,7 @@ const OrganizationView = ({ data }: OrganizationView) => {
                                         <span>{group.name}</span>
                                     </Link>
                                 </NXLink>
-                                <span>{group.contact[0].name}</span>
+                                <span>{group.contact}</span>
                             </div>
                         ))}
                         <NXLink href={`/organization/${data.id}/group`}>

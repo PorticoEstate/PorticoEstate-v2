@@ -6,7 +6,7 @@ import OrganizationView from './organization.view';
 import { Button } from '@digdir/designsystemet-react';
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import { PencilIcon } from '@navikt/aksel-icons';
-import { useOrganizationData } from '@/service/api/organization';
+import { useDelegateList, useGroupList, useOrganizationData } from '@/service/api/organization';
 
 interface OrganizationControllerProps {
     data: Organization;
@@ -16,6 +16,9 @@ const OrganizatioController = ({ data }: OrganizationControllerProps) => {
     const t = useTrans();
     const [editing, setEditing] = useState(false);
     const organization = useOrganizationData(data.id, data);
+    const delegateList = useDelegateList(data.id);
+    const groupList = useGroupList(data.id);
+    if (delegateList.isLoading || groupList.isLoading) return null;
     if (!organization.data) return null;
 
     return (
@@ -36,7 +39,11 @@ const OrganizatioController = ({ data }: OrganizationControllerProps) => {
             {
                 editing 
                 ? <OrganizationUpdate org={organization.data}/>
-                : <OrganizationView data={organization.data}/>
+                : <OrganizationView 
+                    delegates={delegateList.data} 
+                    groups={groupList.data}
+                    data={organization.data}
+                    />
             }
         </main>
     )

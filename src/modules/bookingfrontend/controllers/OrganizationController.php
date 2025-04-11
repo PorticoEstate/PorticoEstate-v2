@@ -559,6 +559,51 @@ class OrganizationController
         }
     }
 
+    public function getDelegates(Request $request, Response $response, array $args): Response
+    {
+        $id = (int)$args['id'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        } 
+
+        try {
+            $result = $this->organizationService->getDelegates($id);
+            return ResponseHelper::sendJson($response, $result);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    public function getGroups(Request $request, Response $response, array $args): Response
+    {
+        $id = (int)$args['id'];
+        $session = Sessions::getInstance();
+        $session_id = $session->get_session_id();
+
+        if (empty($session_id)) {
+            $response->getBody()->write(json_encode(['error' => 'No active session']));
+            return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+        } 
+
+        try {
+            $result = $this->organizationService->getGroups($id);
+            return ResponseHelper::sendJson($response, $result);
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+
     /**
      * @OA\Get(
      *     path="/bookingfrontend/organizations/my",

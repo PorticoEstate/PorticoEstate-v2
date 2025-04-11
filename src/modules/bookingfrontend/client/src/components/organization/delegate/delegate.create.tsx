@@ -7,7 +7,8 @@ import { createDelegateFormSchema, CreatingDelegate } from "./schemas";
 import { createDelegate } from "@/service/api/organization";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faFloppyDisk } from "@fortawesome/free-solid-svg-icons";
-import { useRouter } from 'next/navigation'
+import { useRouter } from 'next/navigation';
+import { useQueryClient } from "@tanstack/react-query";
 import styles from './styles/delegater.form.module.scss';
 import { Organization } from "@/service/types/api/organization.types";
  
@@ -26,8 +27,8 @@ const DelegateCreate = ({ organization }: DelegateFormProps) => {
         mode: 'onChange',
         resolver: zodResolver(createDelegateFormSchema),
     });
-
-    const create = createDelegate(organization.id);
+    const cl = useQueryClient();
+    const create = createDelegate(organization.id, cl);
 
     const save = (data: CreatingDelegate) => {
         create.mutate(data);

@@ -110,41 +110,6 @@ class OrganizationRepository
         FROM bb_activity AS act
         WHERE act.id = org.activity_id";
 
-        $delegaterSql = "SELECT json_agg(json_build_object(
-            'id', del.id,
-            'name', del.name,
-            'email', del.email,
-            'phone', del.phone
-        ))
-        FROM bb_delegate as del
-        WHERE del.organization_id = org.id";
-
-        $groupsSql = "
-        SELECT json_agg(json_build_object(
-            'id', gr.id,
-            'name', gr.name,
-            'description', gr.description,
-            'active', gr.active,
-            'contact', 
-                (SELECT json_agg(json_build_object(
-                    'id', contact.id,
-                    'name', contact.name,
-                    'phone', contact.phone,
-                    'email', contact.email
-                )) 
-                FROM bb_group_contact as contact 
-                Where contact.group_id = gr.id),
-            'activity', json_build_object(
-                'id', act.id,
-                'name', act.name
-            )
-        )) as arr 
-        FROM public.bb_group as gr
-        JOIN bb_activity as act
-        ON act.id = gr.activity_id
-        WHERE organization_id = :orgId
-        ";
-
         $buildingSql = "
         SELECT json_agg(json_build_object('id', bld.id, 'name', bld.name)) FROM public.bb_building as bld
         WHERE bld.id IN (
@@ -156,8 +121,8 @@ class OrganizationRepository
         ";
 
         $sql = "SELECT 
-        org.*, ($buildingSql) as buildings, ($delegaterSql) as delegaters, ($activitySql) as activity, 
-        ($groupsSql) as groups, ($orgContactSql) as contacts
+        org.*, ($buildingSql) as buildings, ($activitySql) as activity, 
+        ($orgContactSql) as contacts
         FROM bb_organization as org
         WHERE id = :orgId
         ";
@@ -168,6 +133,39 @@ class OrganizationRepository
         if (!$data) return null;
 
         return $data;
+    }
+
+    public function getGroups($orgId)
+    {
+        $groupsSql = "
+        SELECT json_agg(json_build_object(
+            'id', gr.id,
+            'name', gr.name, 
+            'active', gr.active,
+            'contact', ( select c.name from bb_group_contact as c where c.group_id = gr.id LIMIT 1  )
+        )) as data
+        FROM public.bb_group as gr
+        WHERE organization_id = :orgId
+        ";
+        $stmt = $this->db->prepare($groupsSql);
+        $stmt->execute([':orgId' => $orgId]);
+        return $stmt->fetch();
+    }
+
+
+    public function getDelegates($orgId)
+    {
+        $delegatersSql = "SELECT json_agg(json_build_object(
+            'id', del.id,
+            'name', del.name,
+            'email', del.email,
+            'phone', del.phone
+        )) as data
+        FROM bb_delegate as del
+        WHERE del.organization_id = :orgId";
+        $stmt = $this->db->prepare($delegatersSql);
+        $stmt->execute([':orgId' => $orgId]);
+        return $stmt->fetch();
     }
 
     public function patchDelegate(int $delegateId, array $data)

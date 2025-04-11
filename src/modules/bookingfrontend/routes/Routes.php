@@ -75,7 +75,9 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 			$group->patch('/delegate/{delegateId}', OrganizationController::class . ':patchDelegate');
 			$group->patch('/group/{groupId}', OrganizationController::class . ':patchGroup');
 			$group->post('/delegate', OrganizationController::class . ':createDelegate');
+			$group->get('/delegates', OrganizationController::class . ':getDelegates');
 			$group->post('/group', OrganizationController::class . ':createGroup');
+			$group->get('/groups', OrganizationController::class . ':getGroups');
 			$group->post('/group/{groupId}/leader', OrganizationController::class . ':addGroupLeader');
 			$group->delete('/group/{groupId}/leader/{leaderId}', OrganizationController::class . ':deleteGroupLeader');
 			$group->post('/group/{groupId}/leaders', OrganizationController::class . ':updateGroupLeaders');

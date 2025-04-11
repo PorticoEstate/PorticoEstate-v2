@@ -79,6 +79,14 @@ class OrganizationService
         $delegateId = $this->repository->insertDelegate($id, $data);
         return $delegateId;
     }
+    public function getDelegates(int $id)
+    {
+        return $this->repository->getDelegates($id);
+    }
+    public function getGroups(int $id)
+    {
+        return $this->repository->getGroups($id);
+    }
 
     public function createGroup(int $id, array $data)
     {

@@ -34,30 +34,28 @@ const ToastContainer: React.FC = () => {
       </div>
 
       {/* Shopping Cart FAB */}
-      {!!showShoppingCart && (
-        <div className={styles.fabContainer}>
-          <Button
-            variant={'primary'}
-            className={styles.fab}
-            ref={fabButtonRef}
-            onClick={() => setFabOpen(true)}
-          >
-            <ShoppingBasketIcon fontSize="1.25rem" />
-            Handlekurv
-            <Badge
-              data-color="brand3"
-              data-size={'sm'}
-              className={styles.badge}
-              style={{
-                display: 'flex',
-                gap: 'var(--ds-spacing-2)',
-              }}
-              count={cartItems?.list.length ?? 0}
-            ></Badge>
-          </Button>
-          <ShoppingCartPopper anchor={fabButtonRef.current} open={isFabOpen} setOpen={setFabOpen}/>
-        </div>
-      )}
+      <div className={`${styles.fabContainer} ${!showShoppingCart ? styles.hidden : ''}`}>
+        <Button
+          variant={'primary'}
+          className={styles.fab}
+          ref={fabButtonRef}
+          onClick={() => setFabOpen(true)}
+        >
+          <ShoppingBasketIcon fontSize="1.25rem" />
+          Handlekurv
+          <Badge
+            data-color="brand3"
+            data-size={'sm'}
+            className={styles.badge}
+            style={{
+              display: 'flex',
+              gap: 'var(--ds-spacing-2)',
+            }}
+            count={cartItems?.list.length ?? 0}
+          ></Badge>
+        </Button>
+        <ShoppingCartPopper anchor={fabButtonRef.current} open={isFabOpen} setOpen={setFabOpen}/>
+      </div>
     </div>
   );
 };

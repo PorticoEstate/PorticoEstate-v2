@@ -849,11 +849,6 @@ class LocationHierarchyAnalyzer
 		{
 			if ($issue['type'] === 'inconsistent_street_number_loc3')
 			{
-				// Apply filter if provided
-				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1)
-				{
-					continue;
-				}
 
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];
@@ -925,11 +920,6 @@ class LocationHierarchyAnalyzer
 		$entriesByLoc1Loc2 = [];
 		foreach ($this->locationData as $entry)
 		{
-			// Apply filter if provided
-			if ($filterLoc1 && $entry['loc1'] !== $filterLoc1)
-			{
-				continue;
-			}
 
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
@@ -948,11 +938,6 @@ class LocationHierarchyAnalyzer
 		{
 			if ($issue['type'] === 'non_sequential_loc3')
 			{
-				// Apply filter if provided
-				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1)
-				{
-					continue;
-				}
 
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];
@@ -1124,11 +1109,6 @@ class LocationHierarchyAnalyzer
 		$streetsByLoc1Loc2 = [];
 		foreach ($this->locationData as $entry)
 		{
-			// Apply filter if provided
-			if ($filterLoc1 && $entry['loc1'] !== $filterLoc1)
-			{
-				continue;
-			}
 
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
@@ -1156,11 +1136,6 @@ class LocationHierarchyAnalyzer
 		{
 			if ($issue['type'] === 'insufficient_loc3')
 			{
-				// Apply filter if provided
-				if ($filterLoc1 && $issue['loc1'] !== $filterLoc1)
-				{
-					continue;
-				}
 
 				$loc1 = $issue['loc1'];
 				$loc2 = $issue['loc2'];

@@ -423,14 +423,31 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 			if (!eventId || !dateId || !existingEvent) {
 				console.log("missing data", eventId, dateId, existingEvent)
+				return;
+			}
 
+			// Check for overlap before updating
+			const span: DateSpanApi = {
+				start: newStart,
+				end: newEnd,
+				allDay: false,
+				startStr: newStart.toISOString(),
+				endStr: newEnd.toISOString()
+			};
+			
+			// Only proceed with the update if there's no overlap
+			const hasNoOverlap = checkEventOverlap(span, resizeInfo.event as EventImpl);
+			
+			if (!hasNoOverlap) {
+				// If there's an overlap, revert the event to its original position
+				resizeInfo.revert();
 				return;
 			}
 
 			const updatedApplication: IUpdatePartialApplication = {
 				id: eventId,
 			}
-			// if(existingEvent.dates.length > 1) {
+			
 			updatedApplication.dates = existingEvent.dates.map(date => {
 				if (date.id && date && +dateId === +date.id) {
 					return {
@@ -443,28 +460,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			})
 
 			updateMutation.mutate({id: existingEvent.id, application: updatedApplication});
-			// onClose();
-			// return;
-			// if (currentTempEvent && resizeInfo.event.id === currentTempEvent.id) {
-			//     setCurrentTempEvent({
-			//         ...currentTempEvent,
-			//         end: resizeInfo.event.end as Date,
-			//         start: resizeInfo.event.start as Date
-			//     });
-			//     return;
-			// }
-			// setStoredTempEvents(prev => ({
-			//     ...prev,
-			//     [resizeInfo.event.id]: {
-			//         ...prev[resizeInfo.event.id],
-			//         start: resizeInfo.event.start as Date,
-			//         end: resizeInfo.event.end as Date
-			//     }
-			// }))
-
 		}
 
-	}, [partials?.list, updateMutation]);
+	}, [partials?.list, updateMutation, checkEventOverlap]);
 
 	const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
 

@@ -55,7 +55,7 @@ export const LAYOUT_RULES: LayoutRule[] = [
   },
   {
     name: 'standard',
-    maxHeight: 100,
+    maxHeight: 106,
     components: ['time', 'title', 'organizer', 'resourceCircles'],
     description: 'Standard view with time, title, organizer and resource indicators',
     horizontalRendering: false // Stack components vertically

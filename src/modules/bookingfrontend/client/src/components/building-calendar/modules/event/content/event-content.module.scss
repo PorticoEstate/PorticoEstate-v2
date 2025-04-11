@@ -131,6 +131,12 @@
         grid-area: to_time;
     }
 
+    .titleContainer {
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+    }
+
     .title {
         display: inline-block;
         max-width: 100%; /* Ensure the span does not exceed its container */
@@ -142,6 +148,18 @@
         //flex-grow: 1; /* Grow to fill available space */
         min-width: 0; /* Ensures the ellipsis works in flexbox */
         font-weight: 500;
+    }
+
+    .subtitleText {
+        display: inline-block;
+        max-width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: middle;
+        min-width: 0;
+        font-size: 0.85em;
+        //color: $gray-600;
     }
 
     .organizer {

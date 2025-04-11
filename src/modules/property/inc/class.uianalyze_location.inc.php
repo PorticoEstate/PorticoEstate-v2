@@ -70,21 +70,24 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		{
 			// Create a fresh analyzer instance for each analysis
 			$this->analyzer = new LocationHierarchyAnalyzer();
-			
+
 			// If a specific loc1 is selected, analyze just that one
 			// Otherwise analyze all loc1 values separately and combine results
-			if ($selected_loc1) {
+			if ($selected_loc1)
+			{
 				$analysis_results = $this->analyzer->analyze($selected_loc1);
-			} else {
+			}
+			else
+			{
 				$analysis_results = $this->analyzer->analyzeAllLoc1Separately();
 			}
-			
+
 			$data['statistics'] = $analysis_results['statistics'];
 			$data['issues'] = $analysis_results['issues'];
 			$data['suggestions'] = $analysis_results['suggestions'];
 			$data['sql_statements'] = $analysis_results['sql_statements'];
 			$data['analysis_ran'] = true;
-			
+
 			// Pass the automatically determined fixed location codes to the template
 			$data['fixed_location_codes'] = $analysis_results['fixed_location_codes'] ?? [];
 		}
@@ -92,20 +95,23 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		{
 			// Create a fresh analyzer instance for each SQL execution too
 			$this->analyzer = new LocationHierarchyAnalyzer();
-			
+
 			// Run analysis first to get the SQL statements
-			if ($selected_loc1) {
+			if ($selected_loc1)
+			{
 				$analysis_results = $this->analyzer->analyze($selected_loc1);
-			} else {
+			}
+			else
+			{
 				$analysis_results = $this->analyzer->analyzeAllLoc1Separately();
 			}
-			
+
 			$data['statistics'] = $analysis_results['statistics'];
 			$data['issues'] = $analysis_results['issues'];
 			$data['suggestions'] = $analysis_results['suggestions'];
 			$data['sql_statements'] = $analysis_results['sql_statements'];
 			$data['analysis_ran'] = true;
-			
+
 			// Execute selected SQL statements
 			$data['sql_execution_results'] = $this->executeSqlStatements($selected_loc1, $_POST['sql_types'], $analysis_results['sql_statements']);
 		}
@@ -116,7 +122,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('analyze' => $data));
 	}
-	
+
 	/**
 	 * Execute selected SQL statements
 	 * 
@@ -128,7 +134,6 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 	private function executeSqlStatements($loc1, $sqlTypes, $sqlStatements)
 	{
 		return $this->analyzer->executeSqlStatements($loc1, $sqlTypes, $sqlStatements);
-
 	}
 
 	/**

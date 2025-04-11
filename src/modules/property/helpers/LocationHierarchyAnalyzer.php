@@ -1868,6 +1868,55 @@ class LocationHierarchyAnalyzer
 	}
 
 	/**
+	 * Fetch all duplicates of bygningsnr across loc1 values
+	 * I want to know if bygningsnr exists in multiple loc1 values
+	 */
+	public function fetchDuplicatesBygningsnr()
+	{
+		$duplicates = [];
+
+
+		$sql = "SELECT bygningsnr, loc1, COUNT(*) as count 
+				FROM fm_location4  WHERE bygningsnr IS NOT NULL
+				GROUP BY bygningsnr, loc1 
+				HAVING COUNT(*) > 1";
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		while ($this->db->next_record())
+		{
+			$bygningsnr = $this->db->f('bygningsnr');
+			$loc1 = $this->db->f('loc1');
+			if (isset($duplicates[$bygningsnr][$loc1]))
+			{
+				$duplicates[$bygningsnr][$loc1]++;
+			}
+			else
+			{
+				$duplicates[$bygningsnr][$loc1] = 1;
+			}
+
+		}
+		// Flatten the duplicates array for easier access
+		$duplicates = array_map(function ($loc1Data) {
+			return array_keys($loc1Data);
+		}, $duplicates);
+
+
+		foreach ($duplicates as $bygningsnr => $loc1Array)
+		{
+			if(count($loc1Array) > 1)
+			{
+				$duplicates[$bygningsnr] = implode(', ', $loc1Array);
+			}
+			else
+			{
+				unset($duplicates[$bygningsnr]);
+			}
+		}
+		
+		return $duplicates;
+	}
+	/**
 	 * Analyze all loc1 values separately and combine the results
 	 * This prevents false positives when analyzing across different loc1 values
 	 * 
@@ -1951,7 +2000,6 @@ class LocationHierarchyAnalyzer
 				$issueTypes[$type] += $count;
 			}
 		}
-
 		// Create combined statistics
 		$combinedStatistics = [
 			'level1_count' => $totalLevel1Count,
@@ -1972,7 +2020,23 @@ class LocationHierarchyAnalyzer
 				'inconsistent_street_number_loc3' => 'Inconsistent loc3 for same street number'
 			]
 		];
-
+		$duplicatesBygningsnr = $this->fetchDuplicatesBygningsnr();
+		if (!empty($duplicatesBygningsnr))
+		{
+			// Add duplicate bygningsnr issues
+			foreach ($duplicatesBygningsnr as $bygningsnr => $loc1String)
+			{
+				$combinedIssues[] = [
+					'type' => 'duplicate_bygningsnr_loc1',
+					'bygningsnr' => $bygningsnr,
+					'loc1' => $loc1String,
+					'description' => "Building ID '{$bygningsnr}' appears in multiple loc1 values: " .$loc1String
+				];
+			}
+			$combinedStatistics['issues_by_type']['duplicate_bygningsnr_loc1'] = count($duplicatesBygningsnr);
+			$combinedStatistics['total_issues'] += count($duplicatesBygningsnr);
+			$combinedStatistics['issue_descriptions']['duplicate_bygningsnr_loc1'] = 'Same building ID (bygningsnr) appears in multiple loc1 values';
+		}
 		return [
 			'statistics' => $combinedStatistics,
 			'issues' => $combinedIssues,

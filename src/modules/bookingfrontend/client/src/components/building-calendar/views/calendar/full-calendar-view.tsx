@@ -528,6 +528,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			select={handleDateSelect}
 			dateClick={handleDateClick}
 			events={calendarVisEvents}
+			eventClassNames={({event}) => {
+				if (event.extendedProps?.type === 'temporary') {
+					return `${styles.event} ${styles['event-temporary']}`;
+				}
+				return '';
+			}}
 			// editable={true}
 			// selectOverlap={(stillEvent, movingEvent) => {
 			//     console.log(stillEvent);

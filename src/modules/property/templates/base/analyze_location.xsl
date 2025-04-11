@@ -190,6 +190,11 @@
 										<input type="checkbox" id="create_schema" name="sql_types[]" value="schema" />
 										Create mapping table
 									</label>
+									<label for="create_mapping" class="pure-checkbox">
+										<input type="checkbox" id="create_mapping" name="sql_types[]" value="corrections" />
+										Create mapping records									
+									</label>
+
 									<label for="fix_loc2" class="pure-checkbox">
 										<input type="checkbox" id="fix_loc2" name="sql_types[]" value="missing_loc2" />
 										Fix missing loc2 entries
@@ -202,10 +207,7 @@
 										<input type="checkbox" id="fix_loc4" name="sql_types[]" value="location4_updates" />
 										Update location4 entries
 									</label>
-									<label for="create_mapping" class="pure-checkbox">
-										<input type="checkbox" id="create_mapping" name="sql_types[]" value="corrections" />
-										Create mapping records
-									</label>
+
 									<label for="select_all" class="pure-checkbox">
 										<input type="checkbox" id="select_all" onclick="toggleAllSql(this)" />
 										Select all

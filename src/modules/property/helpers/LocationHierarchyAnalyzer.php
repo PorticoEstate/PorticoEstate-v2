@@ -338,6 +338,13 @@ class LocationHierarchyAnalyzer
 			$loc1 = $entry['loc1'];
 			$loc2 = $entry['loc2'];
 
+			// Track existing loc2 values
+			if (!isset($existingLoc2[$loc1]))
+			{
+				$existingLoc2[$loc1] = [];
+			}
+			$existingLoc2[$loc1][$loc2] = true;
+
 			// Skip duplicate building detection for fixed location codes
 			$locationCode = "{$loc1}-{$loc2}-{$entry['loc3']}-{$entry['loc4']}";
 			if (isset($this->fixedLocationCodes[$locationCode]))
@@ -391,12 +398,6 @@ class LocationHierarchyAnalyzer
 				}
 			}
 
-			// Track existing loc2 values
-			if (!isset($existingLoc2[$loc1]))
-			{
-				$existingLoc2[$loc1] = [];
-			}
-			$existingLoc2[$loc1][$loc2] = true;
 		}
 
 		// Assign loc2 values incrementally for missing entries
@@ -1212,8 +1213,13 @@ class LocationHierarchyAnalyzer
 					{
 						continue;
 					}
-
 					$newLoc3 = str_pad($nextLoc3++, 2, '0', STR_PAD_LEFT);
+
+					if (isset($this->loc3References[$loc1][$loc2][$newLoc3]))
+					{
+						continue; // Skip if loc3 already exists in the database
+					}
+
 					$streetId = $streetData['street_id'];
 					$streetNumber = $streetData['street_number'];
 					$streetName = $this->get_street_name($streetId);
@@ -1430,8 +1436,16 @@ class LocationHierarchyAnalyzer
 				// Only create if it's a new assignment
 				if (isset($createdLoc2Entries[$loc1][$loc2]) && $createdLoc2Entries[$loc1][$loc2] == $bygningsnr)
 				{
-					$sqlLoc2[] = "INSERT INTO fm_location2 (loc1, loc2, bygningsnr) 
-								VALUES ('{$loc1}', '{$loc2}', '{$bygningsnr}')
+					if(isset($this->loc2References[$loc1][$loc2]))
+					{
+						// Skip if loc2 already exists in the database
+						continue;
+					}
+					
+					$locationCode = "{$loc1}-{$loc2}";
+
+					$sqlLoc2[] = "INSERT INTO fm_location2 (location_code, loc1, loc2, loc2_name) 
+								VALUES ('{$locationCode}', '{$loc1}', '{$loc2}', 'Bygningsnr:{$bygningsnr}')
 								ON CONFLICT (loc1, loc2) DO NOTHING;";
 				}
 			}
@@ -1444,6 +1458,11 @@ class LocationHierarchyAnalyzer
 			{
 				foreach ($streets as $streetKey => $loc3)
 				{
+					if (isset($this->loc3References[$loc1][$loc2][$loc3]))
+					{
+						continue; // Skip if loc3 already exists in the database
+					}
+					
 					if ($streetKey === 'default')
 					{
 						$locationCode = "{$loc1}-{$loc2}-{$loc3}";

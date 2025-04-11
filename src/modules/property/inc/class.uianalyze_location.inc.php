@@ -120,6 +120,26 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 			$data['analysis_ran'] = false;
 		}
 
+
+		//if sql is executed, we need to re-run the analysis to get the updated statistics
+		if (isset($data['sql_execution_results']) && $data['sql_execution_results'])
+		{
+			if ($selected_loc1)
+			{
+				$analysis_results = $this->analyzer->analyze($selected_loc1);
+			}
+			else
+			{
+				$analysis_results = $this->analyzer->analyzeAllLoc1Separately();
+			}
+
+			$data['statistics'] = $analysis_results['statistics'];
+			$data['issues'] = $analysis_results['issues'];
+			$data['suggestions'] = $analysis_results['suggestions'];
+			$data['sql_statements'] = $analysis_results['sql_statements'];
+			$data['analysis_ran'] = true;
+		}
+
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('analyze' => $data));
 	}
 

@@ -9,6 +9,8 @@ import LoadingIndicationWrapper from "@/components/loading-wrapper/LoadingIndica
 import {ReactQueryDevtools} from "@tanstack/react-query-devtools";
 import QueryProvider from "@/app/queryProvider";
 import {getTranslation} from "@/app/i18n";
+import { ToastProvider } from "@/components/toast/toast-context";
+import ToastContainer from "@/components/toast/toast";
 
 const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang}) => {
     // NOTE: Avoid useState when initializing the query client if you don't
@@ -24,12 +26,15 @@ const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang
         <LoadingProvider>
             <ClientTranslationProvider lang={lang} initialTranslations={translations}>
                 <QueryProvider>
-                    <PrefetchWrapper>
-                        <LoadingIndicationWrapper loadingString={t('common.loading')}>
-                            {children}
-                        </LoadingIndicationWrapper>
-                        <ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'} />
-                    </PrefetchWrapper>
+                    <ToastProvider>
+                        <PrefetchWrapper>
+                            <LoadingIndicationWrapper loadingString={t('common.loading')}>
+                                {children}
+								<ToastContainer />
+                            </LoadingIndicationWrapper>
+                            <ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'} />
+                        </PrefetchWrapper>
+                    </ToastProvider>
                 </QueryProvider>
             </ClientTranslationProvider>
         </LoadingProvider>
@@ -37,5 +42,3 @@ const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang
 }
 
 export default Providers;
-
-

@@ -14,7 +14,7 @@ import {
 	fetchBuildingSchedule, fetchBuildingSeasons,
 	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
 	fetchInvoices,
-	fetchPartialApplications, fetchSearchDataClient, fetchServerMessages, fetchServerSettings, fetchTowns, fetchUpcomingEvents, patchBookingUser
+	fetchOrganizations, fetchPartialApplications, fetchSearchDataClient, fetchServerMessages, fetchServerSettings, fetchTowns, fetchUpcomingEvents, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
@@ -25,7 +25,7 @@ import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
 import { IArticle } from "../types/api/order-articles.types";
-import {ISearchDataAll, ISearchDataOptimized, ISearchDataTown} from "@/service/types/api/search.types";
+import {ISearchDataAll, ISearchDataOptimized, ISearchDataTown, ISearchOrganization} from "@/service/types/api/search.types";
 import {fetchSearchData} from "@/service/api/api-utils-static";
 import {fetchBuildingDocuments, fetchResourceDocuments} from "@/service/api/building";
 
@@ -412,6 +412,25 @@ export function useTowns(options?: {
 		{
 			queryKey: ['towns'],
 			queryFn: () => fetchTowns(), // Fetch function
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour (cached)
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			initialData: options?.initialData, // Use server-side fetched data if available
+		}
+	);
+}
+
+/**
+ * Hook to fetch organizations data using the dedicated endpoint
+ * @param options - Query options including initialData for server-side rendering
+ */
+export function useOrganizations(options?: {
+	initialData?: ISearchOrganization[]
+}): UseQueryResult<ISearchOrganization[]> {
+	return useQuery(
+		{
+			queryKey: ['organizations'],
+			queryFn: () => fetchOrganizations(), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
 			staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour (cached)
 			refetchOnWindowFocus: false, // Do not refetch on window focus by default

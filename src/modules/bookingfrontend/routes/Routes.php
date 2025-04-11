@@ -53,6 +53,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 
 	$group->group('/organizations', function (RouteCollectorProxy $group) {
 		$group->get('/my', OrganizationController::class . ':getMyOrganizations');
+		$group->get('', DataStore::class . ':getOrganizations');
 		$group->post('', OrganizationController::class . ':create');
 		$group->get('/lookup/{number}', OrganizationController::class . ':lookup');
 		$group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');

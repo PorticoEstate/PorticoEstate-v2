@@ -1,4 +1,4 @@
-import {ISearchDataOptimized} from "@/service/types/api/search.types";
+import {ISearchDataOptimized, ISearchOrganization} from "@/service/types/api/search.types";
 import {phpGWLink} from "@/service/util";
 import { unstable_cache } from 'next/cache';
 import {IShortEvent} from '@/service/pecalendar.types';
@@ -51,3 +51,25 @@ export const fetchUpcomingEventsStatic = async (fromDate?: string, toDate?: stri
 
 	return await response.json() as IShortEvent[];
 };
+
+/**
+ * Server-side function to fetch organizations data
+ * This is used for initial data loading on the server
+ * Uses Next.js cache function to memoize the fetch result for 1 hour
+ */
+export const fetchOrganizationsStatic = unstable_cache(
+	async (): Promise<ISearchOrganization[]> => {
+		const url = phpGWLink(['bookingfrontend', 'organizations']);
+		const response = await fetch(url);
+
+		if (!response.ok) {
+			throw new Error(`Failed to fetch organizations data: ${response.status}`);
+		}
+
+		const result = await response.json();
+		console.log("ORGANIZATIONS DATA FETCHED - Should only see this once per hour");
+		return result;
+	},
+	['organizations-data'], // A unique cache key
+	{ revalidate: 3600 }
+);

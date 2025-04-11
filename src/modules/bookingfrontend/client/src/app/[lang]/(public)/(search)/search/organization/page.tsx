@@ -1,8 +1,7 @@
 import {FC} from 'react';
 import OrganizationSearch from '@/components/search/organization/organization-search';
 import {getTranslation} from '@/app/i18n';
-import { fetchSearchData } from "@/service/api/api-utils-static";
-import { ISearchDataOptimized } from "@/service/types/api/search.types";
+import { fetchOrganizationsStatic } from "@/service/api/api-utils-static";
 
 // Revalidate the page every 1 hour
 export const revalidate = 3600;
@@ -26,15 +25,15 @@ interface OrganizationSearchPageProps {
 }
 
 const OrganizationSearchPage: FC<OrganizationSearchPageProps> = async ({params}) => {
-	// Fetch search data server-side
-	const initialSearchData: ISearchDataOptimized = await fetchSearchData();
+	// Fetch organizations data server-side with caching
+	const initialOrganizations = await fetchOrganizationsStatic();
 
 	return (
 		<div>
 			{/*<Heading level={1} data-size="large">*/}
 			{/*  {t('bookingfrontend.search_organizations')}*/}
 			{/*</Heading>*/}
-			<OrganizationSearch initialSearchData={initialSearchData}/>
+			<OrganizationSearch initialOrganizations={initialOrganizations}/>
 		</div>
 	);
 };

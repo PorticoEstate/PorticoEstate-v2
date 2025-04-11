@@ -14,7 +14,6 @@ export interface ISearchDataAll {
 	resource_categories: unknown[];
 	resource_category_activity: unknown[];
 	towns: ISearchDataTown[];
-	organizations: ISearchOrganization[];
 }
 
 /**

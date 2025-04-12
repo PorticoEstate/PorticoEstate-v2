@@ -913,185 +913,91 @@ class LocationHierarchyAnalyzer
 	{
 		$sqlLoc4 = [];
 		$sqlCorrections = [];
-		$sqlLoc3 = []; // Add array for fm_location3 inserts
-		$processedLoc3 = []; // Keep this for loc3 entries which is separate
 
-		// Group all entries by loc1 and loc2
-		$entriesByLoc1Loc2 = [];
-		foreach ($this->locationData as $entry)
-		{
-
+		// Group all entries by loc1
+		$entriesByLoc1 = [];
+		foreach ($this->locationData as $entry) {
 			$loc1 = $entry['loc1'];
-			$loc2 = $entry['loc2'];
-
-			if (!isset($entriesByLoc1Loc2[$loc1][$loc2]))
-			{
-				$entriesByLoc1Loc2[$loc1][$loc2] = [];
+			if (!isset($entriesByLoc1[$loc1])) {
+				$entriesByLoc1[$loc1] = [];
 			}
-
-			$entriesByLoc1Loc2[$loc1][$loc2][] = $entry;
+			$entriesByLoc1[$loc1][] = $entry;
 		}
 
-		// Find all loc1/loc2 combinations with non-sequential loc3 issues
-		$loc1Loc2WithIssues = [];
-		foreach ($this->issues as $issue)
-		{
-			if ($issue['type'] === 'non_sequential_loc3')
-			{
-
-				$loc1 = $issue['loc1'];
-				$loc2 = $issue['loc2'];
-				$loc1Loc2WithIssues["{$loc1}-{$loc2}"] = [
-					'loc1' => $loc1,
-					'loc2' => $loc2
-				];
-			}
-		}
-
-		// Process each loc1/loc2 combination with issues
-		foreach ($loc1Loc2WithIssues as $key => $location)
-		{
-			$loc1 = $location['loc1'];
-			$loc2 = $location['loc2'];
-
-			if (!isset($entriesByLoc1Loc2[$loc1][$loc2]))
-			{
-				continue; // Skip if no entries found
-			}
-
-			// First, group entries by street address (street_id + street_number)
-			$entriesByStreetAddress = [];
-			foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $entry)
-			{
-				$streetKey = "{$entry['street_id']}_{$entry['street_number']}";
-				if (!isset($entriesByStreetAddress[$streetKey]))
-				{
-					$entriesByStreetAddress[$streetKey] = [
-						'street_id' => $entry['street_id'],
-						'street_number' => $entry['street_number'],
-						'entries' => []
-					];
+		// Process each loc1 separately
+		foreach ($entriesByLoc1 as $loc1 => $entries) {
+			// Group entries by bygningsnr
+			$entriesByBygningsnr = [];
+			foreach ($entries as $entry) {
+				$bygningsnr = $entry['bygningsnr'];
+				if (!isset($entriesByBygningsnr[$bygningsnr])) {
+					$entriesByBygningsnr[$bygningsnr] = [];
 				}
-				$entriesByStreetAddress[$streetKey]['entries'][] = $entry;
+				$entriesByBygningsnr[$bygningsnr][] = $entry;
 			}
 
-			// Sort street keys for consistent ordering
-			ksort($entriesByStreetAddress);
+				// Reuse existing loc2 values for each bygningsnr
+				$processedLoc3 = [];
+				foreach ($entriesByBygningsnr as $bygningsnr => $buildingEntries) {
+					// Find an existing loc2 for this bygningsnr
+					$existingLoc2 = null;
+					foreach ($buildingEntries as $entry) {
+						if (isset($this->loc2References[$loc1][$entry['loc2']])) {
+							$existingLoc2 = $entry['loc2'];
+							break;
+						}
+					}
 
-			// Now assign sequential loc3 values to each unique street address
-			$newLoc3Index = 1;
-			$streetToLoc3Map = []; // Map each street address to its new loc3 value
+					// If no existing loc2 is found, skip processing
+					if (!$existingLoc2) {
+						continue;
+					}
 
-			foreach ($entriesByStreetAddress as $streetKey => $streetData)
-			{
-				$newLoc3 = str_pad($newLoc3Index++, 2, '0', STR_PAD_LEFT);
-				$streetToLoc3Map[$streetKey] = $newLoc3;
+					$newLoc3Index = 1;
+					foreach ($buildingEntries as $entry) {
+						$oldLoc2 = $entry['loc2'];
+						$oldLoc3 = $entry['loc3'];
+						$loc4 = $entry['loc4'];
+						$streetId = $entry['street_id'];
+						$streetNumber = $entry['street_number'];
 
-				// Get street details for the loc3 name
-				$streetId = $streetData['street_id'];
-				$streetNumber = $streetData['street_number'];
-				$streetName = $this->get_street_name($streetId);
-				$fullAddress = "{$streetName} {$streetNumber}";
-				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}";
+						$newLoc3 = str_pad($newLoc3Index++, 2, '0', STR_PAD_LEFT);
+						$oldLocationCode = "{$loc1}-{$oldLoc2}-{$oldLoc3}-{$loc4}";
+						$newLocationCode = "{$loc1}-{$existingLoc2}-{$newLoc3}-{$loc4}";
 
-				// Skip if already processed
-				if (isset($processedLoc3[$newLocationCode])) continue;
-				$processedLoc3[$newLocationCode] = true;
+						// Skip if already processed
+						if (isset($processedLoc3[$newLocationCode])) {
+							continue;
+						}
+						$processedLoc3[$newLocationCode] = true;
 
-				// Check if this loc3 already exists in the database
-				$loc3Exists = isset($this->loc3References[$loc1][$loc2][$newLoc3]);
+						// Generate SQL for fm_location4 update
+						$sqlLoc4[] = "-- Update fm_location4 entry: {$oldLocationCode} -> {$newLocationCode}";
+						$sqlLoc4[] = "UPDATE fm_location4 
+									SET location_code = '{$newLocationCode}', 
+										loc2 = '{$existingLoc2}', 
+										loc3 = '{$newLoc3}' 
+									WHERE location_code = '{$oldLocationCode}';";
 
-				// Only create new loc3 entries if they don't already exist
-				if (!$loc3Exists)
-				{
-					$sqlLoc3[] = "-- Create new fm_location3 entry: {$newLocationCode} for {$fullAddress}";
-					$sqlLoc3[] = "INSERT INTO fm_location3 (location_code, loc1, loc2, loc3, loc3_name) 
-								VALUES ('{$newLocationCode}', '{$loc1}', '{$loc2}', '{$newLoc3}', '{$fullAddress}')
-								ON CONFLICT (loc1, loc2, loc3) DO NOTHING;";
-				}
-			}
-
-			// Now update each loc4 entry to use the new loc3 associated with its street address
-			foreach ($entriesByLoc1Loc2[$loc1][$loc2] as $entryIndex => $entry)
-			{
-				$oldLoc3 = $entry['loc3'];
-				$loc4 = $entry['loc4'];
-				$streetId = (int)$entry['street_id'];
-				$streetNumber = $entry['street_number'] ?? 'N/A';
-
-				// Find the correct bygningsnr for this entry
-				// Note: We shouldn't use array index directly but instead find the entry in the original data
-				$bygningsnr = '';
-				foreach ($this->locationData as $originalIndex => $originalEntry)
-				{
-					if (
-						$originalEntry['loc1'] == $loc1 &&
-						$originalEntry['loc2'] == $loc2 &&
-						$originalEntry['loc3'] == $oldLoc3 &&
-						$originalEntry['loc4'] == $loc4
-					)
-					{
-						$bygningsnr = $this->entryToBygningsnrMap[$originalIndex] ?? $originalEntry['bygningsnr'];
-						break;
+						// Generate SQL for location_mapping
+						$sqlCorrections[] = "INSERT INTO location_mapping (
+											old_location_code, new_location_code, loc1, 
+											old_loc2, new_loc2, old_loc3, new_loc3, 
+											loc4, bygningsnr, street_id, street_number, change_type
+										) VALUES (
+											'{$oldLocationCode}', '{$newLocationCode}', '{$loc1}', 
+											'{$oldLoc2}', '{$existingLoc2}', '{$oldLoc3}', '{$newLoc3}', 
+											'{$loc4}', '{$bygningsnr}', {$streetId}, '{$streetNumber}', 
+											'location_hierarchy_update'
+										);";
 					}
 				}
-				// If we couldn't find the original entry, use the bygningsnr from current entry
-				if (empty($bygningsnr))
-				{
-					$bygningsnr = $entry['bygningsnr'] ?? 'unknown';
-				}
-
-				$streetKey = "{$streetId}_{$streetNumber}";
-
-				// Skip if we don't have a mapping for this street address
-				if (!isset($streetToLoc3Map[$streetKey]))
-				{
-					continue;
-				}
-
-				$newLoc3 = $streetToLoc3Map[$streetKey];
-				$oldLocationCode = "{$loc1}-{$loc2}-{$oldLoc3}-{$loc4}";
-				$newLocationCode = "{$loc1}-{$loc2}-{$newLoc3}-{$loc4}";
-
-				// Skip if the location code doesn't change or already processed globally
-				// Also skip if only the formatting changed but not the actual values
-				if (
-					$oldLocationCode === $newLocationCode ||
-					isset($this->processedLocationCodes[$oldLocationCode]) ||
-					$oldLoc3 === $newLoc3
-				)
-				{
-					continue;
-				}
-
-				$this->processedLocationCodes[$oldLocationCode] = true;
-
-				// Generate SQL for fm_location4 update
-				$sqlLoc4[] = "-- Update fm_location4 entry: {$oldLocationCode} -> {$newLocationCode}";
-				$sqlLoc4[] = "UPDATE fm_location4 
-							SET location_code = '{$newLocationCode}', 
-								loc3 = '{$newLoc3}' 
-							WHERE location_code = '{$oldLocationCode}';";
-
-				// Generate SQL for location_mapping to track the changes
-				$sqlCorrections[] = "INSERT INTO location_mapping (
-									old_location_code, new_location_code, loc1, 
-									old_loc2, new_loc2, old_loc3, new_loc3, 
-									loc4, bygningsnr, street_id, street_number, change_type
-								) VALUES (
-									'{$oldLocationCode}', '{$newLocationCode}', '{$loc1}', 
-									'{$loc2}', '{$loc2}', '{$oldLoc3}', '{$newLoc3}', 
-									'{$loc4}', '{$bygningsnr}', {$streetId}, '{$streetNumber}', 
-									'location_hierarchy_update'
-								);";
 			}
-		}
 
-		// Return the combined SQL statements AFTER processing all loc1/loc2 combinations
+		// Return the combined SQL statements
 		return [
 			'location4_updates' => $sqlLoc4,
 			'corrections' => $sqlCorrections,
-			'location3_updates' => $sqlLoc3
 		];
 	}
 

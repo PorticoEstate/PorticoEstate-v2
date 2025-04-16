@@ -1,0 +1,189 @@
+bacground:
+
+CREATE TABLE IF NOT EXISTS public.fm_location1
+(
+    location_code character varying(4) COLLATE pg_catalog."default" NOT NULL,
+    loc1 character varying(6) COLLATE pg_catalog."default" NOT NULL,
+    loc1_name character varying(100) COLLATE pg_catalog."default",
+    CONSTRAINT fm_location1_pkey PRIMARY KEY (loc1)
+)
+
+CREATE TABLE IF NOT EXISTS public.fm_location2
+(
+    location_code character varying(7) COLLATE pg_catalog."default" NOT NULL,
+    loc1 character varying(6) COLLATE pg_catalog."default" NOT NULL,
+    loc2 character varying(2) COLLATE pg_catalog."default" NOT NULL,
+    loc2_name character varying(100) COLLATE pg_catalog."default",
+    CONSTRAINT fm_location2_pkey PRIMARY KEY (loc1, loc2)
+)
+CREATE TABLE IF NOT EXISTS public.fm_location3
+(
+	location_code character varying(10) COLLATE pg_catalog."default" NOT NULL,
+	loc1 character varying(6) COLLATE pg_catalog."default" NOT NULL,
+	loc2 character varying(2) COLLATE pg_catalog."default" NOT NULL,
+	loc3 character varying(2) COLLATE pg_catalog."default" NOT NULL,
+	loc3_name character varying(100) COLLATE pg_catalog."default",
+	CONSTRAINT fm_location3_pkey PRIMARY KEY (loc1, loc2, loc3)
+)
+CREATE TABLE IF NOT EXISTS public.fm_location4
+(
+	location_code character varying(15) COLLATE pg_catalog."default" NOT NULL,
+	loc1 character varying(6) COLLATE pg_catalog."default" NOT NULL,
+	loc2 character varying(2) COLLATE pg_catalog."default" NOT NULL,
+	loc3 character varying(2) COLLATE pg_catalog."default" NOT NULL,
+	loc4 character varying(3) COLLATE pg_catalog."default" NOT NULL,
+	bygningsnr character varying(15) COLLATE pg_catalog."default",
+	street_id integer,
+	street_number character varying(10) COLLATE pg_catalog."default",
+	CONSTRAINT fm_location4_pkey PRIMARY KEY (loc1, loc2, loc3, loc4)
+)
+
+		// Add table creation statement
+		$sqlSchema[] = "CREATE TABLE IF NOT EXISTS location_mapping (
+			id SERIAL PRIMARY KEY,
+			old_location_code VARCHAR(50),
+			new_location_code VARCHAR(50),
+			loc1 VARCHAR(6),
+			old_loc2 VARCHAR(2),
+			new_loc2 VARCHAR(2),
+			old_loc3 VARCHAR(2),
+			new_loc3 VARCHAR(2),
+			loc4 VARCHAR(3),
+			bygningsnr VARCHAR(15),
+			street_id INTEGER,
+			street_number VARCHAR(10),
+			change_type VARCHAR(100),
+			update_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		)";
+
+
+
+
+Rules:
+There are 4 levels
+fm_location1 Property with primary key loc1, and a superkey location_code loc1
+fm_location2 Building with primary key loc1, loc2 and a superkey location_code loc1-loc2
+fm_location3 Entrance with primary key loc1, loc2, loc3 and a superkey location_code loc1-loc2-loc3
+fm_location4 Apartment with primary key loc1, loc2, loc3, loc4 and a superkey location_code loc1-loc2-loc3-loc4
+
+fm_location4 has the information of 'bygningsnr' and a kombination of street_id and street_number
+
+For each loc1 (Property) there shall be at least one loc2 (Building) starting with '01' for each bygningsnr 
+For each loc2 within loc1, there shall be at least one loc3 (Entrance) starting with '01' for each kombination of street_id and street_number
+
+The entries in fm_location4 shall be related to the correct entry in fm_location3 by foregn keys loc1, loc2, loc3.
+Entries in fm_location4 shall be related to the entry in fm_location3 which correspond to the correct kombination of street_id and street_number.
+Entries in fm_location3 shall be related to the entry in fm_location2 which correspond to the correct bygningsnr from fm_location4
+
+The analyse shall ensure correct relations across the hierarchy.
+
+Missing entries in fm_location2 and fm_location3 shall be created, and skipped if they already exist.
+If a location for entries in fm_location4 do not follow the rule it should be moved into correct location by updating fm_location4 and add a entry to location_mapping for analyse review.
+
+The analyse shall be performed individually for each loc1 and summarized.
+If bygningsnr is missing from a loc4 entry, the bygningsnr should be substituted with a syntheticBygningsnr for each combination of street_id and street_number.
+
+When doing the analyse: 
+1) tag the loc2 level with the corresponding bygningsnr from the loc4 level, using the syntheticBygningsnr if missing.
+2) tag the loc3 level with the corresponding kombination of street_id and street_number.
+3) if the correct loc2 or loc3 is not referenced correctly in loc4 level, but they can be found in the database: use it it before adding a new one.
+3) only move the location on loc4 if it is misplaced.
+
+
+optionally create the table location_mapping on checked checkbox 'create_schema'
+
+example dataset:
+location_code	loc1	loc2	loc3	loc4	bygningsnr	street_id	street_number
+"5660-01-01-001"	"5660"	"01"	"01"	"001"	300756443	3821	"96 D"
+"5660-01-01-002"	"5660"	"01"	"01"	"002"	300756442	3821	"96 E"
+"5660-01-01-003"	"5660"	"01"	"01"	"003"	300756484	3821	"80 D"
+"5660-01-01-004"	"5660"	"01"	"01"	"004"	300756470	3821	"82 C"
+"5660-01-01-005"	"5660"	"01"	"01"	"005"	300756459	3821	"84 B"
+"5660-01-01-006"	"5660"	"01"	"01"	"006"	300756457	3821	"84 D"
+"5660-01-01-007"	"5660"	"01"	"01"	"007"	300756455	3821	"84 E"
+"5660-01-01-008"	"5660"	"01"	"01"	"008"	300756482	3821	"80 B"
+"5660-01-01-009"	"5660"	"01"	"01"	"009"	300756472	3821	"82 B"
+"5660-01-01-010"	"5660"	"01"	"01"	"010"	300756458	3821	"84 C"
+"5660-01-01-011"	"5660"	"01"	"01"	"011"	300756434	3821	"88 B"
+
+
+example dataset:
+location_code	loc1	loc2	loc2_name
+"5618-01"	"5618"	"01"	"Sundts veg 166"
+"5618-02"	"5618"	"02"	"Sundts veg 168"
+"5618-03"	"5618"	"03"	"Sundts veg 170"
+"5618-04"	"5618"	"04"	"Sundts veg 176"
+"5618-05"	"5618"	"05"	"Sundts veg 180"
+"5618-06"	"5618"	"06"	"Sundts veg 182"
+"5618-07"	"5618"	"07"	"Sundts veg 186"
+"5618-08"	"5618"	"08"	"Sundts veg 83"
+
+location_code	loc1	loc2	loc3	loc3_name
+"5618-01-01"	"5618"	"01"	"01"	"Sundts veg 166"
+"5618-02-01"	"5618"	"02"	"01"	"Sundts veg 168"
+"5618-03-01"	"5618"	"03"	"01"	"Sundts veg 170"
+"5618-04-01"	"5618"	"04"	"01"	"Sundts veg 176"
+"5618-05-01"	"5618"	"05"	"01"	"Sundts veg 180"
+"5618-06-01"	"5618"	"06"	"01"	"Sundts veg 182"
+"5618-07-01"	"5618"	"07"	"01"	"Sundts veg 186"
+"5618-08-01"	"5618"	"08"	"01"	"Sundts veg 83"
+
+location_code	loc1	loc2	loc3	loc4	bygningsnr	street_id	street_number
+"5618-01-01-001"	"5618"	"01"	"01"	"001"	300699719	4218	"166"
+"5618-01-01-002"	"5618"	"01"	"01"	"002"	300699719	4218	"168"
+"5618-01-01-003"	"5618"	"01"	"01"	"003"	300699719	4218	"170"
+"5618-01-01-004"	"5618"	"01"	"01"	"004"	300699719	4218	"170"
+"5618-01-01-005"	"5618"	"01"	"01"	"005"	300699719	4218	"176"
+"5618-01-01-006"	"5618"	"01"	"01"	"006"	300699944	4218	"180"
+"5618-01-01-007"	"5618"	"01"	"01"	"007"	300699942	4218	"182"
+"5618-01-01-008"	"5618"	"01"	"01"	"008"	300699939	4218	"186"
+"5618-08-01-009"	"5618"	"08"	"01"	"009"	300577683	4218	"83"
+"5618-08-01-010"	"5618"	"08"	"01"	"010"	300577683	4218	"83"
+"5618-08-01-011"	"5618"	"08"	"01"	"011"	300577683	4218	"83"
+
+location_code	loc1	loc2	loc3	loc4	bygningsnr	street_id	street_number
+"5080-01-01-001"	"5080"	"01"	"01"	"001"	139747003	798	"64"
+"5080-01-01-002"	"5080"	"01"	"01"	"002"	139747003	798	"64"
+"5080-01-01-003"	"5080"	"01"	"01"	"003"	139747003	798	"64"
+"5080-01-01-004"	"5080"	"01"	"01"	"004"	139747003	798	"64"
+"5080-01-01-005"	"5080"	"01"	"01"	"005"	139747003	798	"64"
+"5080-01-02-006"	"5080"	"01"	"02"	"006"	139747003	798	"66"
+"5080-01-02-007"	"5080"	"01"	"02"	"007"	139747003	798	"66"
+"5080-01-02-008"	"5080"	"01"	"02"	"008"	139747003	798	"66"
+"5080-01-02-009"	"5080"	"01"	"02"	"009"	139747003	798	"66"
+"5080-01-02-010"	"5080"	"01"	"02"	"010"	139747003	798	"66"
+"5080-01-02-011"	"5080"	"01"	"02"	"011"	139747003	798	"66"
+"5080-01-02-012"	"5080"	"01"	"02"	"012"	139747003	798	"66"
+"5080-01-02-013"	"5080"	"01"	"02"	"013"	139747003	798	"66"
+"5080-01-03-014"	"5080"	"01"	"03"	"014"	139747003	798	"68"
+"5080-01-03-015"	"5080"	"01"	"03"	"015"	139747003	798	"68"
+"5080-01-03-016"	"5080"	"01"	"03"	"016"	139747003	798	"68"
+"5080-01-03-017"	"5080"	"01"	"03"	"017"	139747003	798	"68"
+"5080-01-03-018"	"5080"	"01"	"03"	"018"	139747003	798	"68"
+"5080-01-03-019"	"5080"	"01"	"03"	"019"	139747003	798	"68"
+"5080-01-03-020"	"5080"	"01"	"03"	"020"	139747003	798	"68"
+"5080-01-03-021"	"5080"	"01"	"03"	"021"	139747003	798	"68"
+"5080-01-04-022"	"5080"	"01"	"04"	"022"	139747003	798	"70"
+"5080-01-04-023"	"5080"	"01"	"04"	"023"	139747003	798	"70"
+"5080-01-04-024"	"5080"	"01"	"04"	"024"	139747003	798	"70"
+"5080-01-04-025"	"5080"	"01"	"04"	"025"	139747003	798	"70"
+"5080-01-04-026"	"5080"	"01"	"04"	"026"	139747003	798	"70"
+"5080-01-04-027"	"5080"	"01"	"04"	"027"	139747003	798	"70"
+"5080-01-04-028"	"5080"	"01"	"04"	"028"	139747003	798	"70"
+"5080-01-04-029"	"5080"	"01"	"04"	"029"	139747003	798	"70"
+"5080-01-05-030"	"5080"	"01"	"05"	"030"	139747003	798	"72"
+"5080-01-05-031"	"5080"	"01"	"05"	"031"	139747003	798	"72"
+"5080-01-05-032"	"5080"	"01"	"05"	"032"	139747003	798	"72"
+"5080-01-05-033"	"5080"	"01"	"05"	"033"	139747003	798	"72"
+"5080-01-05-034"	"5080"	"01"	"05"	"034"	139747003	798	"72"
+"5080-01-05-035"	"5080"	"01"	"05"	"035"	139747003	798	"72"
+"5080-01-05-036"	"5080"	"01"	"05"	"036"	139747003	798	"72"
+"5080-01-05-037"	"5080"	"01"	"05"	"037"	139747003	798	"72"
+"5080-01-06-038"	"5080"	"01"	"06"	"038"	139747003	798	"74"
+"5080-01-06-039"	"5080"	"01"	"06"	"039"	139747003	798	"74"
+"5080-01-06-040"	"5080"	"01"	"06"	"040"	139747003	798	"74"
+"5080-01-06-041"	"5080"	"01"	"06"	"041"	139747003	798	"74"
+"5080-01-06-042"	"5080"	"01"	"06"	"042"	139747003	798	"74"
+"5080-01-06-043"	"5080"	"01"	"06"	"043"	139747003	798	"74"
+"5080-01-06-044"	"5080"	"01"	"06"	"044"	139747003	798	"74"
+"5080-01-06-045"	"5080"	"01"	"06"	"045"	139747003	798	"74"

@@ -16,7 +16,6 @@ class LocationHierarchyAnalyzer
 	private $issues = [];
 	private $suggestions = [];
 	private $sqlStatements = [];
-	private $fixedLocationCodes = [];
 	private $entryToBygningsnrMap = [];
 	private $processedLocationCodes = [];
 	private $currentFilterLoc1 = null;
@@ -68,8 +67,14 @@ class LocationHierarchyAnalyzer
 			$bygningsnr = $row['bygningsnr'];
 			$loc2 = $requiredLoc2[$loc1][$bygningsnr];
 			$streetkey = "{$row['street_id']}_{$row['street_number']}";
-			if (!isset($loc2StreetCombos[$loc1][$loc2])) $loc2StreetCombos[$loc1][$loc2] = [];
-			if (!in_array($streetkey, $loc2StreetCombos[$loc1][$loc2])) $loc2StreetCombos[$loc1][$loc2][] = $streetkey;
+			if (!isset($loc2StreetCombos[$loc1][$loc2]))
+			{
+				$loc2StreetCombos[$loc1][$loc2] = [];
+			} 
+			if (!in_array($streetkey, $loc2StreetCombos[$loc1][$loc2]))
+			{
+				 $loc2StreetCombos[$loc1][$loc2][] = $streetkey;
+			}
 		}
 		$requiredLoc3 = []; // loc1 => loc2 => streetkey => loc3
 		foreach ($loc2StreetCombos as $loc1 => $loc2s)
@@ -180,7 +185,6 @@ class LocationHierarchyAnalyzer
 			'issues' => $this->issues,
 			'suggestions' => $this->suggestions,
 			'sql_statements' => $this->sqlStatements,
-			'fixed_location_codes' => [], // Not used in this rewrite
 		];
 	}
 
@@ -208,8 +212,7 @@ class LocationHierarchyAnalyzer
 				'missing_loc3' => [],
 				'location4_updates' => [],
 				'corrections' => [],
-			],
-			'fixed_location_codes' => [],
+				],
 		];
 		foreach ($loc1s as $loc1)
 		{
@@ -220,7 +223,10 @@ class LocationHierarchyAnalyzer
 				{
 					foreach ($res['statistics']['issues_by_type'] as $type => $cnt)
 					{
-						if (!isset($all['statistics']['issues_by_type'][$type])) $all['statistics']['issues_by_type'][$type] = 0;
+						if (!isset($all['statistics']['issues_by_type'][$type]))
+						{
+							$all['statistics']['issues_by_type'][$type] = 0;
+						}
 						$all['statistics']['issues_by_type'][$type] += $cnt;
 					}
 				}
@@ -272,7 +278,10 @@ class LocationHierarchyAnalyzer
 		$this->loc2Refs = [];
 		$this->loc3Refs = [];
 		$sql = "SELECT loc1, loc2, loc3, loc4, bygningsnr, street_id, street_number FROM fm_location4";
-		if ($filterLoc1) $sql .= " WHERE loc1 = '{$filterLoc1}'";
+		if ($filterLoc1) 
+		{
+			$sql .= " WHERE loc1 = '{$filterLoc1}'";
+		}
 		$sql .= " ORDER BY loc1, loc4, loc2, loc3";
 		$this->db->query($sql, __LINE__, __FILE__);
 		while ($this->db->next_record())
@@ -288,7 +297,10 @@ class LocationHierarchyAnalyzer
 			];
 		}
 		$sql = "SELECT loc1, loc2 FROM fm_location2";
-		if ($filterLoc1) $sql .= " WHERE loc1 = '{$filterLoc1}'";
+		if ($filterLoc1)
+		{
+			$sql .= " WHERE loc1 = '{$filterLoc1}'";
+		}
 		$sql .= " ORDER BY loc1, loc2";
 		$this->db->query($sql, __LINE__, __FILE__);
 		while ($this->db->next_record())
@@ -296,7 +308,10 @@ class LocationHierarchyAnalyzer
 			$this->loc2Refs[$this->db->f('loc1')][$this->db->f('loc2')] = true;
 		}
 		$sql = "SELECT loc1, loc2, loc3 FROM fm_location3";
-		if ($filterLoc1) $sql .= " WHERE loc1 = '{$filterLoc1}'";
+		if ($filterLoc1)
+		{
+			$sql .= " WHERE loc1 = '{$filterLoc1}'";
+		}
 		$sql .= " ORDER BY loc1, loc2, loc3";
 		$this->db->query($sql, __LINE__, __FILE__);
 		while ($this->db->next_record())
@@ -347,7 +362,10 @@ class LocationHierarchyAnalyzer
 	private function get_street_name($street_id)
 	{
 		static $cache = [];
-		if (isset($cache[$street_id])) return $cache[$street_id];
+		if (isset($cache[$street_id]))
+		{
+			return $cache[$street_id];
+		}
 		$sql = "SELECT descr FROM fm_streetaddress WHERE id = {$street_id}";
 		$this->db->query($sql, __LINE__, __FILE__);
 		$cache[$street_id] = $this->db->next_record() ? $this->db->f('descr') : 'Unknown Street';
@@ -369,11 +387,17 @@ class LocationHierarchyAnalyzer
 
 		foreach ($sqlTypes as $sqlType)
 		{
-			if (!isset($sqlStatements[$sqlType])) continue;
+			if (!isset($sqlStatements[$sqlType]))
+			{
+				continue;
+			}
 			$count = 0;
 			foreach ($sqlStatements[$sqlType] as $sql)
 			{
-				if (strpos($sql, '--') === 0) continue;
+				if (strpos($sql, '--') === 0) 
+				{
+					continue;
+				}
 				try
 				{
 					$this->db->query($sql, __LINE__, __FILE__);
@@ -400,7 +424,6 @@ class LocationHierarchyAnalyzer
 		$this->issues = [];
 		$this->suggestions = [];
 		$this->sqlStatements = [];
-		$this->fixedLocationCodes = [];
 		$this->entryToBygningsnrMap = [];
 		$this->processedLocationCodes = [];
 		$this->currentFilterLoc1 = null;

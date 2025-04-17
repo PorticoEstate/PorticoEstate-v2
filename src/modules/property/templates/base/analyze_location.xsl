@@ -207,6 +207,10 @@
 										<input type="checkbox" id="fix_loc4" name="sql_types[]" value="location4_updates" />
 										Update location4 entries
 									</label>
+									<label for="update_location_from_mapping" class="pure-checkbox">
+										<input type="checkbox" id="update_location_from_mapping" name="sql_types[]" value="update_location_from_mapping" />
+										Update all tables from mapping
+									</label>
 
 									<label for="select_all" class="pure-checkbox">
 										<input type="checkbox" id="select_all" onclick="toggleAllSql(this)" />
@@ -276,6 +280,13 @@
 					<h5>FM Location4 Updates</h5>
 					<pre>
 						<xsl:for-each select="sql_statements/location4_updates">
+							<xsl:value-of select="." />
+							<xsl:text>&#10;</xsl:text>
+						</xsl:for-each>
+					</pre>
+					<h5>Update all tables from mapping</h5>
+					<pre>
+						<xsl:for-each select="sql_statements/update_location_from_mapping">
 							<xsl:value-of select="." />
 							<xsl:text>&#10;</xsl:text>
 						</xsl:for-each>

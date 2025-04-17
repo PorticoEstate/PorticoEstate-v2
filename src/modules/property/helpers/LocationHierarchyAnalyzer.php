@@ -168,6 +168,9 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
+		 // Add update statements for all tables with location_code and loc1, loc2, loc3, loc4 columns
+		$this->createUpdateStatements();
+
 		// 5. Statistics
 		$statistics = [
 			'level1_count' => count(array_unique(array_column($this->locationData, 'loc1'))),
@@ -242,7 +245,46 @@ class LocationHierarchyAnalyzer
 				$all['sql_statements'][$k] = array_merge($all['sql_statements'][$k], $res['sql_statements'][$k] ?? []);
 			}
 		}
+		$all['sql_statements']['update_location_from_mapping'] = $this->createUpdateStatements();
 		return $all;
+	}
+
+	/**
+	 * create update statements for all tables with location_code
+	 * and loc1, loc2, loc3, loc4 columns using the mapping table
+	 */
+	private function createUpdateStatements()
+	{
+		static $sqlStatements = [];
+		if (!empty($sqlStatements))
+		{
+			$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
+			return $sqlStatements;
+		}
+		$tables = $this->findLocationCodeTables();
+		foreach ($tables as $table => $columns)
+		{
+			$sql = "UPDATE {$table} SET location_code = location_mapping.new_location_code";
+			if (in_array('loc1', $columns))
+			{
+				$sql .= ", loc1 = location_mapping.loc1";
+			}
+			if (in_array('loc2', $columns))
+			{
+				$sql .= ", loc2 = location_mapping.new_loc2";
+			}
+			if (in_array('loc3', $columns))
+			{
+				$sql .= ", loc3 = location_mapping.new_loc3";
+			}
+			if (in_array('loc4', $columns))
+			{
+				$sql .= ", loc4 = location_mapping.loc4";
+			}
+			$sql .= " FROM location_mapping WHERE {$table}.location_code = location_mapping.old_location_code;";
+			$sqlStatements[] = $sql;
+		}
+		$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
 	}
 
 	/**
@@ -427,5 +469,22 @@ class LocationHierarchyAnalyzer
 		$this->entryToBygningsnrMap = [];
 		$this->processedLocationCodes = [];
 		$this->currentFilterLoc1 = null;
+	}
+
+	/**
+	 * Find all tables that have a location_code column.
+	 */
+	private function findLocationCodeTables()
+	{
+		$tables = [];
+		$sql = "SELECT table_name, column_name FROM information_schema.columns
+		 WHERE column_name IN ('location_code', 'loc1', 'loc2', 'loc3', 'loc4')
+		 AND table_name NOT IN ('fm_location4', 'fm_location3', 'fm_location2', 'fm_location1', 'location_mapping')";
+		$this->db->query($sql, __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$tables[$this->db->f('table_name')][] = $this->db->f('column_name');
+		}
+		return $tables;
 	}
 }

@@ -75,6 +75,7 @@ aug	bookingfrontend	en	August
 available	bookingfrontend	en	Available
 back	bookingfrontend	en	Back
 Back to user list	booking	en	Back to user list
+beta_version	bookingfrontend	en	Beta version
 billing	bookingfrontend	en	Billing
 billing_information	bookingfrontend	en	Billing information
 billing_information_contact_person	bookingfrontend	en	Billing information for contact person
@@ -166,6 +167,7 @@ complete applications	bookingfrontend	en	Complete applications
 complete_applications	bookingfrontend	en	Complete applications
 Confirm e-mail address	bookingfrontend	en	Confirm e-mail address
 confirm_email	bookingfrontend	en	Confirm email
+confirm_this_document	bookingfrontend	en	Confirm this document
 CONFIRMED	bookingfrontend	en	Confirmed
 contact	bookingfrontend	en	Contact
 contact 1	bookingfrontend	en	Contact 1
@@ -553,9 +555,11 @@ saved data	bookingfrontend	en	Saved data
 schedule	bookingfrontend	en	Schedule
 Search available resources	bookingfrontend	en	Search for available facilities
 Search building, resource, organization	bookingfrontend	en	Search building, resource, organization
+search events	bookingfrontend	en	Search Events
 Search results	bookingfrontend	en	Search results
 search_clear_filters	bookingfrontend	en	Clear filters
 search_for_like_minded_people	bookingfrontend	en	Are you looking for someone interested in the same things as you? Search by the name of a team or organization, or filter by activity or area
+search_no_events_match	bookingfrontend	en	No events match your search
 search_no_organizations_match	bookingfrontend	en	No organizations match your search
 search_no_resources_match	bookingfrontend	en	No resources match your search
 search_organizations	bookingfrontend	en	Search Organizations
@@ -707,6 +711,4 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
-search_no_events_match	bookingfrontend	en	No events match your search
-search events	bookingfrontend	en	Search Events
-confirm_this_document	bookingfrontend	en	Confirm this document
+no_overlap	bookingfrontend	en	{{res}} does not allow overlapping bookings.

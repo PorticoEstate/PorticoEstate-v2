@@ -4,6 +4,9 @@ export interface IBuilding {
     /** Unique identifier for the building */
     id: number;
 
+	/** Town id link */
+    town_id: number;
+
     /** Name of the building */
     name: string;
 

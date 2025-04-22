@@ -1,12 +1,12 @@
 import React, {FC, useMemo} from 'react';
 import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
-import {ISearchDataActivity, ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
+import {ISearchDataActivity, ISearchDataBuilding, ISearchDataTown, ISearchResource} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {LayersIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 import DividerCircle from "@/components/util/DividerCircle";
-import {useSearchData} from "@/service/hooks/api-hooks";
+import {useSearchData, useTowns} from "@/service/hooks/api-hooks";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface ResourceResultItemProps {
@@ -16,7 +16,9 @@ interface ResourceResultItemProps {
 const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 	const t = useTrans();
 	const {data: searchData} = useSearchData();
+	const {data: towns} = useTowns();
 	const isMobile = useIsMobile();
+	
 	// Find activity associated with this resource
 	const activity = useMemo(() =>
 		resource.activity_id ?
@@ -24,13 +26,19 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 			undefined,
 		[resource.activity_id, searchData?.activities]
 	);
+	
+	// Find the town for this building by town_id
+	const town = useMemo(() => {
+		if (!towns || !resource.building?.town_id) return null;
+		return towns.find(t => t.id === resource.building?.town_id);
+	}, [towns, resource.building?.town_id]);
 
 	const tags = useMemo(() => {
 		const tagElements = [
 			<DigdirLink key='building-link' asChild className={styles.buildingLink} data-color='brand1'>
 				<Link href={'/building/' + resource.building?.id}>{resource.building?.name}</Link>
 			</DigdirLink>,
-			resource.building?.district
+			town?.name // Display town name instead of district
 		];
 
 		// // Add activity tag if available
@@ -39,7 +47,7 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 		// }
 
 		return tagElements.filter(a => !!a);
-	}, [resource, activity]);
+	}, [resource, town, activity]);
 
 	return (
 		<Card

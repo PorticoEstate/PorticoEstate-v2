@@ -16,7 +16,7 @@ import FullCalendar from "@fullcalendar/react";
 import EventContentTemp from "@/components/building-calendar/modules/event/content/event-content-temp";
 import EventContentList from "@/components/building-calendar/modules/event/content/event-content-list";
 import EventContentAllDay from "@/components/building-calendar/modules/event/content/event-content-all-day";
-import EventContent from "@/components/building-calendar/modules/event/content/event-content";
+import EventContent from "@/components/building-calendar/modules/event/content";
 import {DateSelectArg, DateSpanApi, DatesSetArg, EventDropArg, EventInput} from "@fullcalendar/core";
 import {EventImpl} from "@fullcalendar/core/internal";
 import {IUpdatePartialApplication} from "@/service/types/api/application.types";
@@ -28,6 +28,7 @@ import {IEvent} from "@/service/pecalendar.types";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {Season} from "@/service/types/Building";
 import {useBuildingResources} from "@/service/api/building";
+import { useToast } from "@/components/toast/toast-context";
 
 interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
@@ -68,6 +69,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const {data: resources} = useBuildingResources(building)
 	const t = useTrans();
 	const {data: user} = useBookingUser();
+	const { addToast } = useToast();
 
 	useEffect(() => {
 		if (calendarRef.current) {
@@ -308,6 +310,16 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		// Prevent selections in the past
 		const now = DateTime.now();
 		if (selectStart < now) {
+			// Only show toast for actual user selection attempts, not for validation calls
+			if (span.end && span.start) { // This indicates a complete user selection
+				addToast({
+					type: 'info',
+					// title: t('bookingfrontend.error'),
+					text: t('bookingfrontend.start_time_in_past'),
+					autoHide: true,
+					messageId: 'start_time_in_past' // Unique ID for this type of error
+				});
+			}
 			return false;
 		}
 
@@ -323,17 +335,25 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			}
 			return eventProps.type === 'event' || eventProps.type === 'booking' || eventProps.type === 'allocation' || eventProps.closed;
 		});
+		const unixTime = Date.now() / 1000;
+		const checkDirectBooking = (res?: IResource) => {
+			if(!res || !res.direct_booking) {
+				return false;
+			}
+			return unixTime > res.direct_booking;
+		}
 
 		// Check for resources with deny_application_if_booked flag
 		const selectedResources = [...enabledResources].map(Number);
-		const resourcesWithDenyFlag = events
+		let resourcesWithDenyFlagArr = events
 			?.flatMap(event => event.resources)
-			.filter(res => selectedResources.includes(res.id) && resources?.find(r => r.id === res.id)?.deny_application_if_booked === 1);
-
+			.filter(res => selectedResources.includes(res.id) && (resources?.find(r => r.id === res.id)?.deny_application_if_booked === 1 || checkDirectBooking(resources?.find(r => r.id === res.id))));
+		const resourcesWithDenyFlag = [...new Set(resourcesWithDenyFlagArr?.map(a => a.id))];
 		const hasResourceWithDenyFlag = resourcesWithDenyFlag && resourcesWithDenyFlag.length > 0;
 
 		// Check for overlap with each event's actual times
-		return !relevantEvents.some(event => {
+		let overlapEventName = '';
+		const hasNoOverlap = !relevantEvents.some(event => {
 			// Get actual start and end times from extendedProps
 			const eventStart = DateTime.fromJSDate(event.extendedProps.actualStart || event.start!);
 			const eventEnd = DateTime.fromJSDate(event.extendedProps.actualEnd || event.end!);
@@ -346,6 +366,10 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				(event.extendedProps.type === 'booking' ||
 					event.extendedProps.type === 'allocation' ||
 					event.extendedProps.type === 'event')) {
+				// Store the overlapping event name if available
+				if (event.title) {
+					overlapEventName = event.title;
+				}
 				return true;
 			}
 
@@ -356,7 +380,34 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 			return false;
 		});
-	}, [enabledResources, events, resources]);
+
+		// If we have an overlap, show a toast notification ONLY on final user selection
+		if (!hasNoOverlap && span.end && span.start) { // This indicates a complete selection
+			// Include the overlapping event name in the message if available
+			let message = <span>{t('bookingfrontend.resource_overlap_detected')}</span>;
+
+
+			// Create a unique messageId based on the overlapping resources and event
+			const resourceNames = resourcesWithDenyFlag?.map(resource => {
+				const res = resources?.find(r => r.id === resource);
+				return res?.name || resource.toString();
+			});
+			if (resourceNames) {
+				message = <span>{message}<br />{t('bookingfrontend.no_overlap', {res: resourceNames.join(', ')})}</span>
+			}
+			const messageId = `overlap_${resourceNames.join('_')}_${overlapEventName || 'unknown'}`;
+
+			addToast({
+				type: 'info',
+				// title: t('bookingfrontend.booking_conflict'),
+				text: message,
+				autoHide: true,
+				messageId: messageId
+			});
+		}
+
+		return hasNoOverlap;
+	}, [enabledResources, events, resources, addToast, t]);
 
 	const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
 		const newEnd = resizeInfo.event.end;
@@ -372,14 +423,31 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 			if (!eventId || !dateId || !existingEvent) {
 				console.log("missing data", eventId, dateId, existingEvent)
+				return;
+			}
 
+			// Check for overlap before updating
+			const span: DateSpanApi = {
+				start: newStart,
+				end: newEnd,
+				allDay: false,
+				startStr: newStart.toISOString(),
+				endStr: newEnd.toISOString()
+			};
+			
+			// Only proceed with the update if there's no overlap
+			const hasNoOverlap = checkEventOverlap(span, resizeInfo.event as EventImpl);
+			
+			if (!hasNoOverlap) {
+				// If there's an overlap, revert the event to its original position
+				resizeInfo.revert();
 				return;
 			}
 
 			const updatedApplication: IUpdatePartialApplication = {
 				id: eventId,
 			}
-			// if(existingEvent.dates.length > 1) {
+			
 			updatedApplication.dates = existingEvent.dates.map(date => {
 				if (date.id && date && +dateId === +date.id) {
 					return {
@@ -392,28 +460,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			})
 
 			updateMutation.mutate({id: existingEvent.id, application: updatedApplication});
-			// onClose();
-			// return;
-			// if (currentTempEvent && resizeInfo.event.id === currentTempEvent.id) {
-			//     setCurrentTempEvent({
-			//         ...currentTempEvent,
-			//         end: resizeInfo.event.end as Date,
-			//         start: resizeInfo.event.start as Date
-			//     });
-			//     return;
-			// }
-			// setStoredTempEvents(prev => ({
-			//     ...prev,
-			//     [resizeInfo.event.id]: {
-			//         ...prev[resizeInfo.event.id],
-			//         start: resizeInfo.event.start as Date,
-			//         end: resizeInfo.event.end as Date
-			//     }
-			// }))
-
 		}
 
-	}, [partials?.list, updateMutation]);
+	}, [partials?.list, updateMutation, checkEventOverlap]);
 
 	const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
 
@@ -477,6 +526,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			select={handleDateSelect}
 			dateClick={handleDateClick}
 			events={calendarVisEvents}
+			eventClassNames={({event}) => {
+				if (event.extendedProps?.type === 'temporary') {
+					return `${styles.event} ${styles['event-temporary']}`;
+				}
+				return '';
+			}}
 			// editable={true}
 			// selectOverlap={(stillEvent, movingEvent) => {
 			//     console.log(stillEvent);
@@ -502,5 +557,3 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 }
 
 export default FullCalendarView
-
-

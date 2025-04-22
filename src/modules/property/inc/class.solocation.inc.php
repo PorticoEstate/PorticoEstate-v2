@@ -931,7 +931,7 @@ class property_solocation
 			$where			 = 'AND';
 		}
 
-		if ($cat_id)
+		if ($cat_id && $cat_id != -1)
 		{
 			if (is_array($cat_id))
 			{
@@ -948,6 +948,11 @@ class property_solocation
 				$filtermethod	 .= " {$where} fm_location{$type_id}.category='{$cat_id}'";
 			}
 			$where = 'AND';
+		}
+		else if ($cat_id == -1)
+		{
+			$filtermethod	 .= " $where 1=1";
+			$where			 = 'AND';
 		}
 		else
 		{

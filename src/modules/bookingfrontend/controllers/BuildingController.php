@@ -38,6 +38,48 @@ class BuildingController extends DocumentController
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->buildingScheduleService = new BuildingScheduleService();
 	}
+	
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/towns",
+	 *     summary="Get a list of all towns",
+	 *     tags={"Towns"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="A list of towns with id and name",
+	 *         @OA\JsonContent(
+	 *             type="array",
+	 *             @OA\Items(
+	 *                 @OA\Property(property="id", type="integer"),
+	 *                 @OA\Property(property="name", type="string")
+	 *             )
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Server error",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function getTowns(Request $request, Response $response): Response
+	{
+		try {
+			$sql = "SELECT id, name FROM fm_part_of_town ORDER BY name";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute();
+			$towns = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+			
+			$response->getBody()->write(json_encode($towns));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$error = "Error fetching towns: " . $e->getMessage();
+			$response->getBody()->write(json_encode(['error' => $error]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
 
 	private function getUserRoles()
 	{
@@ -84,7 +126,11 @@ class BuildingController extends DocumentController
 		$start = isset($queryParams['start']) ? (int)$queryParams['start'] : 0;
 		$perPage = isset($queryParams['results']) ? (int)$queryParams['results'] : $maxMatches;
 
-		$sql = "SELECT * FROM bb_building ORDER BY id";
+		$sql = "SELECT bb_building.*, fm_part_of_town.id as town_id FROM bb_building 
+          LEFT JOIN fm_locations ON bb_building.location_code = fm_locations.location_code
+          LEFT JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1
+          LEFT JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id
+          ORDER BY bb_building.id";
 		if ($perPage > 0)
 		{
 			$sql .= " LIMIT :limit OFFSET :start";
@@ -147,7 +193,11 @@ class BuildingController extends DocumentController
 
 		try
 		{
-			$sql = "SELECT * FROM bb_building WHERE id = :id";
+			$sql = "SELECT bb_building.*, fm_part_of_town.id as town_id FROM bb_building 
+          LEFT JOIN fm_locations ON bb_building.location_code = fm_locations.location_code
+          LEFT JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1
+          LEFT JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id
+          WHERE bb_building.id = :id";
 			$stmt = $this->db->prepare($sql);
 			$stmt->bindParam(':id', $buildingId, \PDO::PARAM_INT);
 			$stmt->execute();

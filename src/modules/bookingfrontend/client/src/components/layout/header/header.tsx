@@ -6,8 +6,9 @@ import ShoppingCartButton from "@/components/layout/header/shopping-cart/shoppin
 import logo_icon from '/public/logo_icon.svg';
 import logo_title from '/public/logo_title.svg';
 import Image from "next/image";
-import ShoppingCartFab from "@/components/layout/header/shopping-cart/shopping-cart-fab";
+// Shopping cart FAB is now managed by the toast system
 import Link from "next/link";
+import VersionSwitcher from "@/app/i18n/version-switcher";
 
 
 interface HeaderProps {
@@ -37,10 +38,10 @@ const Header = async (props: HeaderProps) => {
             </Link>
             {/*${baseUrl}*/}
             <HeaderMenuContent>
+				<VersionSwitcher/>
                 <LanguageSwitcher/>
                 <ShoppingCartButton/>
                 <UserMenu/>
-                <ShoppingCartFab/>
             </HeaderMenuContent>
         </nav>
     );

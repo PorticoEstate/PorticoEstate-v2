@@ -8,7 +8,7 @@ import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
-import {ISearchDataOptimized} from "@/service/types/api/search.types";
+import {ISearchDataOptimized, ISearchDataTown, ISearchOrganization} from "@/service/types/api/search.types";
 import {IArticle} from "@/service/types/api/order-articles.types";
 
 
@@ -188,9 +188,58 @@ export async function fetchSearchDataClient(): Promise<ISearchDataOptimized> {
 	return result;
 }
 
+/**
+ * Fetches just the organizations from the dedicated endpoint
+ * @returns Promise with an array of ISearchOrganization objects
+ */
+export async function fetchOrganizations(): Promise<ISearchOrganization[]> {
+	const url = phpGWLink(['bookingfrontend', 'organizations']);
+	const response = await fetch(url);
+	const result = await response.json();
+	return result;
+}
+
+/**
+ * Fetches just the towns array from the API
+ * @returns Promise with an array of ISearchDataTown objects
+ */
+export async function fetchTowns(): Promise<ISearchDataTown[]> {
+	const url = phpGWLink(['bookingfrontend', 'towns']);
+	const response = await fetch(url);
+	const result = await response.json();
+	return result;
+}
+
 export async function fetchInvoices(): Promise<ICompletedReservation[]> {
     const url = phpGWLink(['bookingfrontend', 'invoices']);
     const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+export interface VersionSettings {
+    success: boolean;
+    version: 'original' | 'new' | 'beta';
+    template_set: string;
+    beta_client: string;
+}
+
+export async function fetchVersionSettings(): Promise<VersionSettings> {
+    const url = phpGWLink(['bookingfrontend', 'version']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+export async function setVersionSettings(version: 'original' | 'new' | 'beta'): Promise<VersionSettings> {
+    const url = phpGWLink(['bookingfrontend', 'version']);
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ version })
+    });
     const result = await response.json();
     return result;
 }
@@ -209,13 +258,41 @@ export async function fetchBuildingAudience(building_id: number): Promise<IAudie
 
 export async function deletePartialApplication(id: number): Promise<void> {
     const queryClient = getQueryClient();
-    queryClient.resetQueries({queryKey: ['partialApplications']})
-    const url = phpGWLink(['bookingfrontend', 'applications', id]);
-    const response = await fetch(url, {method: 'DELETE'});
-    const result = await response.json();
-    queryClient.refetchQueries({queryKey: ['partialApplications']})
 
-    return result;
+    // Get current cart data before API call
+    const currentData = queryClient.getQueryData<{ list: IApplication[], total_sum: number }>(['partialApplications']);
+
+    // If we have current data, update it optimistically
+    if (currentData) {
+        queryClient.setQueryData(['partialApplications'], {
+            ...currentData,
+            list: currentData.list.filter(item => item.id !== id),
+            total_sum: currentData.total_sum // Maintain current sum
+        });
+    }
+
+    // Make the API call
+    const url = phpGWLink(['bookingfrontend', 'applications', id]);
+
+    try {
+        const response = await fetch(url, {method: 'DELETE'});
+        const result = await response.json();
+
+        // Refetch to ensure data consistency after successful delete
+        queryClient.refetchQueries({queryKey: ['partialApplications']});
+
+        return result;
+    } catch (error) {
+        // If there was an error, roll back to original data
+        if (currentData) {
+            queryClient.setQueryData(['partialApplications'], currentData);
+        }
+
+        // Refetch to ensure data consistency
+        queryClient.refetchQueries({queryKey: ['partialApplications']});
+
+        throw error;
+    }
 }
 
 

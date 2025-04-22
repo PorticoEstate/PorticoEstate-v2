@@ -5,9 +5,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: visibility 0s, opacity 0.5s linear;
-    &.hidden {
-        visibility: hidden;
-        opacity: 0;
-    }
+	z-index: 99999;
+}
+
+.badge {
+	--dsc-badge-background: var(--ds-color-neutral-surface-default);
 }

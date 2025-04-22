@@ -1,0 +1,83 @@
+.floatingContainer {
+	position: fixed;
+	bottom: 20px;
+	right: 20px;
+	z-index: 9999;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: var(--ds-size-2);
+
+	/* Respect the max content width on ultra-wide screens */
+	@media (min-width: 1920px) {
+		/* For ultra-wide screens, keep the toast closer to the content */
+		right: calc(50vw - 940px);
+	}
+}
+
+.toastContainer {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: var(--ds-size-2);
+	//max-width: 280px;
+	max-width: 600px;
+	margin-bottom: 10px; /* Space between toast container and FAB */
+}
+
+.alert {
+	animation: slideIn 0.3s ease-out forwards;
+	box-shadow: var(--fds-shadow-medium);
+	display: flex;
+	align-items: flex-start;
+	padding: 8px 12px 8px 36px;
+	width: auto;
+	height: min-content;
+}
+
+.fabContainer {
+	display: flex;
+	justify-content: flex-end;
+	animation: slideIn 0.3s ease-out forwards;
+	transition: visibility 0.3s, opacity 0.5s linear;
+	
+	&.hidden {
+		visibility: hidden;
+		opacity: 0;
+	}
+}
+
+.fab {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: visibility 0s, opacity 0.5s linear;
+}
+
+.badge {
+	--dsc-badge-background: var(--ds-color-neutral-surface-default);
+}
+
+.toastAnimation {
+	animation: slideIn 0.3s ease-out forwards;
+}
+
+@keyframes slideIn {
+	from {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}

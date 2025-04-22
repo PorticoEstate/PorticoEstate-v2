@@ -14,7 +14,6 @@ export interface ISearchDataAll {
 	resource_categories: unknown[];
 	resource_category_activity: unknown[];
 	towns: ISearchDataTown[];
-	organizations: ISearchOrganization[];
 }
 
 /**
@@ -43,8 +42,8 @@ export interface ISearchResource {
 }
 
 export interface ISearchDataTown {
-	b_id: number; // Link -> building->id
-	b_name: string; // Link -> building->name
+	// b_id: number; // Link -> building->id
+	// b_name: string; // Link -> building->name
 	id: number;
 	name: string;
 }
@@ -60,7 +59,7 @@ export interface ISearchDataActivity {
 	active: 1 | 0;
 }
 
-export interface ISearchDataBuilding extends Pick<IBuilding,'id' | 'activity_id' | 'deactivate_calendar' | 'deactivate_application' | 'deactivate_sendmessage' | 'extra_kalendar' | 'name' | 'location_code' | 'street' | 'zip_code' | 'district' | 'city'
+export interface ISearchDataBuilding extends Pick<IBuilding,'id' | 'town_id' | 'activity_id' | 'deactivate_calendar' | 'deactivate_application' | 'deactivate_sendmessage' | 'extra_kalendar' | 'name' | 'location_code' | 'street' | 'zip_code' | 'district' | 'city'
 > {}
 
 export interface ISearchOrganization {

@@ -39,6 +39,7 @@ export interface FCallTempEvent {
     end?: Date;
     allDay: boolean
     editable: boolean,
+	// className: string[] | string;
     extendedProps: {
         type: 'temporary',
         resources: (string | number)[],

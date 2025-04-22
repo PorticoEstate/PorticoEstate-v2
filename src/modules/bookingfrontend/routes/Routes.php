@@ -9,6 +9,7 @@ use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\controllers\ResourceController;
+use App\modules\bookingfrontend\controllers\VersionController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
 use App\modules\bookingfrontend\helpers\LogoutHelper;
@@ -26,6 +27,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
 	$group->get('/searchdataalloptimised[/{params:.*}]', DataStore::class . ':SearchDataAllOptimised');
 	$group->get('/availableresources[/{params:.*}]', DataStore::class . ':getAvailableResources');
+	$group->get('/towns', BuildingController::class . ':getTowns');
 	$group->group('/buildings', function (RouteCollectorProxy $group)
 	{
 		$group->get('', BuildingController::class . ':index');
@@ -51,6 +53,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 
 	$group->group('/organizations', function (RouteCollectorProxy $group) {
 		$group->get('/my', OrganizationController::class . ':getMyOrganizations');
+		$group->get('', DataStore::class . ':getOrganizations');
 		$group->post('', OrganizationController::class . ':create');
 		$group->get('/lookup/{number}', OrganizationController::class . ':lookup');
 		$group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');
@@ -116,6 +119,9 @@ $app->group('/bookingfrontend/auth', function (RouteCollectorProxy $group) {
 	$group->post('/login', LoginController::class . ':login');
 	$group->post('/logout', LoginController::class . ':logout');
 })->add(new SessionsMiddleware($app->getContainer()));
+
+$app->post('/bookingfrontend/version', VersionController::class . ':setVersion')->add(new SessionsMiddleware($app->getContainer()));
+$app->get('/bookingfrontend/version', VersionController::class . ':getVersion')->add(new SessionsMiddleware($app->getContainer()));
 
 
 $app->get('/bookingfrontend/lang[/{lang}]', LangHelper::class . ':process');

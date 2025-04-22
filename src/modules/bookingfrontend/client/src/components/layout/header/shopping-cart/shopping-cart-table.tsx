@@ -1,25 +1,18 @@
 import React, { FC, useState } from 'react';
 import { Button, Table, List, Badge } from "@digdir/designsystemet-react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import { IApplication } from "@/service/types/api/application.types";
 import { deletePartialApplication } from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
-import { PencilIcon } from "@navikt/aksel-icons";
+import { PencilIcon, TrashIcon } from "@navikt/aksel-icons";
 import styles from "./shopping-cart-content.module.scss";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import {DateTime} from "luxon";
-import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 
 interface ShoppingCartTableProps {
     basketData: IApplication[];
     openEdit: (item: IApplication) => void;
 }
-
-
-
-
-
 
 const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [string, string] => {
     const localizedFromDate = fromDate.setLocale(i18n.language);
@@ -92,6 +85,7 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
         >
             <Table.Head>
                 <Table.Row>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.title')}</Table.HeaderCell>
                     <Table.HeaderCell>{i18n.t('bookingfrontend.start_time')}</Table.HeaderCell>
                     <Table.HeaderCell>{i18n.t('bookingfrontend.where')}</Table.HeaderCell>
                     <Table.HeaderCell>{i18n.t('bookingfrontend.what')}</Table.HeaderCell>
@@ -108,6 +102,7 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
                         }
                         setExpandedId(item.id);
                     }}>
+                        <Table.Cell>{item.name}</Table.Cell>
                         <Table.Cell>{getStartTime(item)}</Table.Cell>
                         <Table.Cell>{item.building_name}</Table.Cell>
                         <Table.Cell>
@@ -128,7 +123,7 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
                         </Table.Cell>
                         <Table.Cell>
                             <Button variant="tertiary" onClick={() => deletePartialApplication(item.id)}>
-                                <FontAwesomeIcon icon={faTrashCan}/>
+                                <TrashIcon />
                             </Button>
                         </Table.Cell>
                     </Table.Row>

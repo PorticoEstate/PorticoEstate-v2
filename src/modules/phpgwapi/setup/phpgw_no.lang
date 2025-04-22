@@ -219,6 +219,7 @@ my preferences	common	no	Mine innstillinger
 name	common	no	Navn
 name of the user, eg. %1	common	no	Fullt navn på bruker, %1
 Never	common	no	Aldri
+new	common	no	Ny
 new account	login	no	Registrer ny bruker
 new account and login	login	no	Registrer ny bruker, og logg inn
 new account and login	common	no	Registrering av ny bruker, og pålogging
@@ -251,6 +252,7 @@ of total	common	no	Av totalt
 ok	common	no	OK
 only yours	common	no	kun dine
 organisation	common	no	Organsisasjon
+original	common	no	Original
 outdated browser: %1	common	no	Utdatert nettleser: %1
 page prepared in %1 seconds.	common	no	Side produsert på %1 sekunder
 password	common	no	Passord

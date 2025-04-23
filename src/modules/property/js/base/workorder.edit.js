@@ -111,7 +111,7 @@ function receive_order(workorder_id)
 
 function check_and_submit_valid_session()
 {
-	var oArgs = {menuaction: 'property.bocommon.confirm_session'};
+	var oArgs = { menuaction: 'property.bocommon.confirm_session' };
 	var strURL = phpGWLink('index.php', oArgs, true);
 
 	$.ajax({
@@ -160,12 +160,13 @@ function set_tab(active_tab)
 
 this.showlightbox_manual_invoice = function (workorder_id)
 {
-	var oArgs = {menuaction: 'property.uiworkorder.add_invoice', order_id: workorder_id};
+	var oArgs = { menuaction: 'property.uiworkorder.add_invoice', order_id: workorder_id };
 	var sUrl = phpGWLink('index.php', oArgs);
 
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true
-			//	closejs:function(){closeJS_local()}
+		//	closejs:function(){closeJS_local()}
 	});
 }
 
@@ -194,7 +195,7 @@ this.fetch_vendor_contract = function ()
 
 	if ($("#vendor_id").val() != vendor_id)
 	{
-		var oArgs = {menuaction: 'property.uiworkorder.get_vendor_contract', vendor_id: $("#vendor_id").val()};
+		var oArgs = { menuaction: 'property.uiworkorder.get_vendor_contract', vendor_id: $("#vendor_id").val() };
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 		var htmlString = "";
 
@@ -227,7 +228,12 @@ this.fetch_vendor_contract = function ()
 
 					$.each(obj, function (i)
 					{
-						htmlString += "<option value='" + obj[i].id + "'>" + obj[i].name + "</option>";
+						let seleced = '';
+						if (i == 0 && data.length == 2)
+						{
+							seleced = 'selected ="selected"';
+						}
+						htmlString += "<option value='" + obj[i].id + "' " + seleced + ">" + obj[i].name + "</option>";
 					});
 
 					$("#vendor_contract_id").html(htmlString);
@@ -250,16 +256,16 @@ JqueryPortico.FormatterActive = function (key, oData)
 	return "<div align=\"center\">" + oData['active'] + oData['active_orig'] + "</div>";
 };
 
-var oArgs = {menuaction: 'property.uiworkorder.get_eco_service'};
+var oArgs = { menuaction: 'property.uiworkorder.get_eco_service' };
 var strURL = phpGWLink('index.php', oArgs, true);
 JqueryPortico.autocompleteHelper(strURL, 'service_name', 'service_id', 'service_container');
 
-var oArgs = {menuaction: 'property.uiworkorder.get_ecodimb'};
+var oArgs = { menuaction: 'property.uiworkorder.get_ecodimb' };
 var strURL = phpGWLink('index.php', oArgs, true);
 JqueryPortico.autocompleteHelper(strURL, 'ecodimb_name', 'ecodimb', 'ecodimb_container');
 
 
-var oArgs = {menuaction: 'property.uiworkorder.get_unspsc_code'};
+var oArgs = { menuaction: 'property.uiworkorder.get_unspsc_code' };
 var strURL = phpGWLink('index.php', oArgs, true);
 JqueryPortico.autocompleteHelper(strURL, 'unspsc_code_name', 'unspsc_code', 'unspsc_code_container');
 
@@ -272,21 +278,21 @@ $(document).ready(function ()
 
 	check_button_names();
 
-//	$('form[name=form]').submit(function (e)
-//	{
-//		e.preventDefault();
-//
-//		if (!validate_form())
-//		{
-//			return;
-//		}
-//		check_and_submit_valid_session();
-//	});
+	//	$('form[name=form]').submit(function (e)
+	//	{
+	//		e.preventDefault();
+	//
+	//		if (!validate_form())
+	//		{
+	//			return;
+	//		}
+	//		check_and_submit_valid_session();
+	//	});
 
 	$("#datatable-container_2 tbody").on('click', 'tr', function ()
 	{
 		var voucher_id = $('td', this).eq(0).text();
-		var oArgs = {menuaction: 'property.uiproject.get_attachment', voucher_id: voucher_id};
+		var oArgs = { menuaction: 'property.uiproject.get_attachment', voucher_id: voucher_id };
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 		JqueryPortico.updateinlineTableHelper('datatable-container_6', requestUrl);
 	});
@@ -297,9 +303,10 @@ $(document).ready(function ()
 		width: '100%'
 	});
 
-	$('#order_cat_id').on('select2:open', function (e) {
+	$('#order_cat_id').on('select2:open', function (e)
+	{
 
-		$(".select2-search__field").each(function()
+		$(".select2-search__field").each(function ()
 		{
 			if ($(this).attr("aria-controls") == 'select2-order_cat_id-results')
 			{
@@ -353,10 +360,10 @@ $(document).ready(function ()
 		validatorFunction: function (value, $el, config, languaje, $form)
 		{
 			var b_account_name = $('#b_account_name').val();
-			if(b_account_name)
+			if (b_account_name)
 			{
-//				var cat_id = $("#order_cat_id").val();
-//				validate_order_category({id: cat_id});
+				//				var cat_id = $("#order_cat_id").val();
+				//				validate_order_category({id: cat_id});
 				return true;
 			}
 			else
@@ -376,7 +383,7 @@ $(document).ready(function ()
 			var cat_id = $("#order_cat_id").val();
 			var validatet_category = $('#validatet_category').val();
 
-			if(cat_id && validatet_category)
+			if (cat_id && validatet_category)
 			{
 				$('#select2-order_cat_id-container').addClass('valid');
 				$('#select2-order_cat_id-container').removeClass('error');
@@ -402,7 +409,7 @@ $(document).ready(function ()
 
 		var b_account_id = $('#b_account_id').val();
 
-		var oArgs = {menuaction: 'property.boworkorder.get_category', cat_id: data.id, b_account_id: b_account_id};
+		var oArgs = { menuaction: 'property.boworkorder.get_category', cat_id: data.id, b_account_id: b_account_id };
 		var requestUrl = phpGWLink('index.php', oArgs, true);
 
 		$.ajax({
@@ -428,7 +435,7 @@ $(document).ready(function ()
 					}
 				}
 			},
-			complete:function ()
+			complete: function ()
 			{
 
 			}
@@ -440,16 +447,16 @@ $(document).ready(function ()
 	$("#order_cat_id").change(function ()
 	{
 		var cat_id = $(this).val();
-		validate_order_category({id: cat_id});
+		validate_order_category({ id: cat_id });
 	});
 
-	validate_change_budget_account = function()
+	validate_change_budget_account = function ()
 	{
 		var cat_id = $("#order_cat_id").val();
-		validate_order_category({id: cat_id});
+		validate_order_category({ id: cat_id });
 	}
 
-	var oArgs = {menuaction: 'property.uiworkorder.get_b_account'};
+	var oArgs = { menuaction: 'property.uiworkorder.get_b_account' };
 	var strURL = phpGWLink('index.php', oArgs, true);
 	JqueryPortico.autocompleteHelper(strURL, 'b_account_name', 'b_account_id', 'b_account_container', null, null, null, validate_change_budget_account);
 
@@ -543,7 +550,7 @@ $(document).ready(function ()
 		}
 		e.preventDefault();
 		parent.closeJS_remote();
-//		parent.hide_popupBox();
+		//		parent.hide_popupBox();
 	});
 
 	var test = document.getElementById('save_button');
@@ -663,7 +670,7 @@ function populateTableChkApproval(ecodimb)
 
 	$("#order_received_amount").val(order_received_amount);
 
-	var oArgs = {menuaction: 'property.uitts.check_purchase_right', ecodimb: ecodimb, amount: total_amount, project_id: project_id, order_id: order_id};
+	var oArgs = { menuaction: 'property.uitts.check_purchase_right', ecodimb: ecodimb, amount: total_amount, project_id: project_id, order_id: order_id };
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 	var htmlString = "";
 
@@ -763,7 +770,7 @@ window.on_location_updated = function (location_code)
 		return;
 	}
 
-	var oArgs = {menuaction: 'property.uilocation.get_delivery_address', loc1: location_code};
+	var oArgs = { menuaction: 'property.uilocation.get_delivery_address', loc1: location_code };
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 
 	$.ajax({
@@ -785,7 +792,7 @@ window.on_location_updated = function (location_code)
 window.get_location_exception = function (location_code)
 {
 
-	var oArgs = {menuaction: 'property.uilocation.get_location_exception', location_code: location_code};
+	var oArgs = { menuaction: 'property.uilocation.get_location_exception', location_code: location_code };
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 
 	$.ajax({
@@ -827,7 +834,8 @@ window.get_location_exception = function (location_code)
 this.fileuploader = function ()
 {
 	var sUrl = phpGWLink('index.php', multi_upload_parans);
-	TINY.box.show({iframe: sUrl, boxid: 'frameless', width:Math.round($(window).width()*0.9), height:Math.round($(window).height()*0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
+	TINY.box.show({
+		iframe: sUrl, boxid: 'frameless', width: Math.round($(window).width() * 0.9), height: Math.round($(window).height() * 0.9), fixed: false, maskid: 'darkmask', maskopacity: 40, mask: true, animate: true,
 		close: true,
 		closejs: function ()
 		{
@@ -838,11 +846,11 @@ this.fileuploader = function ()
 
 this.refresh_files = function ()
 {
-	var oArgs = {menuaction: 'property.uiworkorder.get_files', id: order_id};
+	var oArgs = { menuaction: 'property.uiworkorder.get_files', id: order_id };
 	var strURL = phpGWLink('index.php', oArgs, true);
 	JqueryPortico.updateinlineTableHelper('datatable-container_1', strURL);
 
-	oArgs = {menuaction: 'property.uiworkorder.get_files_attachments', id: order_id};
+	oArgs = { menuaction: 'property.uiworkorder.get_files_attachments', id: order_id };
 	strURL = phpGWLink('index.php', oArgs, true);
 	refresh_glider(strURL);
 

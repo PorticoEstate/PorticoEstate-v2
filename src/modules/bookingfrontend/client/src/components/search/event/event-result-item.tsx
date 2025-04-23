@@ -51,8 +51,8 @@ const EventResultItem: FC<EventResultItemProps> = ({event}) => {
             className={styles.eventCard}
         >
             <div className={styles.cardContent}>
-                <DigdirLink asChild data-color='accent'>
-                    <Link href={`/event/${event.id}`} className={styles.titleLink}>
+                {/*<DigdirLink asChild data-color='accent'>*/}
+                {/*    <Link href={`/event/${event.id}`} className={styles.titleLink}>*/}
                         <div className={styles.eventHeadingContainer}>
                             <Heading level={3} data-size="xs" className={styles.eventIcon}>
                                 <CalendarIcon fontSize="1em"/>
@@ -61,8 +61,8 @@ const EventResultItem: FC<EventResultItemProps> = ({event}) => {
                                 {eventName}
                             </Heading>
                         </div>
-                    </Link>
-                </DigdirLink>
+                    {/*</Link>*/}
+                {/*</DigdirLink>*/}
 
                 <Paragraph data-size={isMobile ? 'xs' : "sm"} className={styles.eventTags}>
                     {tags.map((tag, index) => {

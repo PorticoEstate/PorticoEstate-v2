@@ -16,6 +16,8 @@ export interface ISearchDataAll {
 	towns: ISearchDataTown[];
 }
 
+
+
 /**
  * Optimized search data interface with only the fields used by React components
  */
@@ -26,6 +28,13 @@ export interface ISearchDataOptimized {
 	resources: ISearchResource[];
 	towns: ISearchDataTown[];
 	organizations: ISearchOrganization[];
+	facilities: ISearchDataFacility[];
+	resource_activities: ISearchDataResourceActivity[];
+	resource_facilities: ISearchDataResourceFacility[];
+	resource_categories: ISearchDataResourceCategory[];
+	resource_category_activity: ISearchDataResourceCategoryActivity[];
+
+
 }
 
 /**
@@ -39,6 +48,7 @@ export interface ISearchResource {
 	simple_booking: number | null;
 	deactivate_calendar: number;
 	deactivate_application: number;
+	rescategory_id: number | null; // Link to resource category
 }
 
 export interface ISearchDataTown {
@@ -75,4 +85,31 @@ export interface ISearchOrganization {
 	city?: string;
 	activity_id?: number;
 	show_in_portal: boolean;
+}
+
+
+export interface ISearchDataFacility {
+	id: number;
+	name: string;
+}
+
+export interface ISearchDataResourceActivity {
+	resource_id: number; // Link from resource
+	activity_id: number; // link to activity
+}
+
+export interface ISearchDataResourceFacility {
+	resource_id: number; // Link from resource
+	facility_id: number; // link to facility
+}
+
+export interface ISearchDataResourceCategory {
+	id: number;
+	name: number;
+	parent_id: number; // link to parent ResCategory
+}
+
+export interface ISearchDataResourceCategoryActivity {
+	rescategory_id: number; // Link from resource category
+	activity_id: number; // link to activity
 }

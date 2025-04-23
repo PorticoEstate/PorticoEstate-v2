@@ -885,7 +885,7 @@ class property_boworkorder
 		}
 		if ($workorder['verified_transfered'])
 		{
-//			return;
+			return;
 		}
 
 		$transfer_action = 'resend_workorder';

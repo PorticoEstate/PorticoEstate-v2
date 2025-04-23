@@ -337,7 +337,7 @@ if ($config_frontend['develope_mode'])
 	$version_ingress = lang('which_version_do_you_want');
 	$version_old = lang('old');
 	$version_new = lang('new');
-	$version_beta = lang('beta');
+	$version_beta = lang('beta_version');
 	$template_selector = <<<HTML
               <div>
                 <h3>{$version_title}</h3>

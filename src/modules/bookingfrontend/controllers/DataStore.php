@@ -72,6 +72,36 @@ class DataStore
 	public function SearchDataAll(Request $request, Response $response): Response
 	{
 		try {
+			// Get all resources
+			$resourceRows = $this->getRowsAsArray("SELECT * from bb_resource where active=1 and hidden_in_frontend=0 and deactivate_calendar=0");
+			
+			// Get the latest participant limits for all resources
+			$currentDate = date('Y-m-d H:i:s');
+			$participantLimits = $this->getRowsAsArray("SELECT pl.resource_id, pl.quantity
+          FROM bb_participant_limit pl
+          INNER JOIN (
+              SELECT resource_id, MAX(from_) as latest_from
+              FROM bb_participant_limit
+              WHERE from_ <= :currentDate
+              GROUP BY resource_id
+          ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
+			[':currentDate' => $currentDate]);
+			
+			// Create a map of resource_id to participant limit quantity
+			$participantLimitMap = [];
+			foreach ($participantLimits as $pl) {
+				$participantLimitMap[$pl['resource_id']] = $pl['quantity'];
+			}
+			
+			// Add participant limit to resources
+			$resources = [];
+			foreach ($resourceRows as $row) {
+				if (isset($participantLimitMap[$row['id']])) {
+					$row['participant_limit'] = $participantLimitMap[$row['id']];
+				}
+				$resources[] = $row;
+			}
+			
 			$data = [
 				'activities' => $this->getRowsAsArray("SELECT * from bb_activity where active=1"),
 				'buildings' => $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
@@ -80,7 +110,7 @@ class DataStore
 				. " FROM bb_building WHERE active=1"),
 				'building_resources' => $this->getRowsAsArray("SELECT * from bb_building_resource"),
 				'facilities' => $this->getRowsAsArray("SELECT * from bb_facility where active=1"),
-				'resources' => $this->getRowsAsArray("SELECT * from bb_resource where active=1 and hidden_in_frontend=0 and deactivate_calendar=0"),
+				'resources' => $resources,
 				'resource_activities' => $this->getRowsAsArray("SELECT * from bb_resource_activity"),
 				'resource_facilities' => $this->getRowsAsArray("SELECT * from bb_resource_facility"),
 				'resource_categories' => $this->getRowsAsArray("SELECT * from bb_rescategory where active=1"),
@@ -142,13 +172,51 @@ class DataStore
 			// Resources
 			$resources = [];
 			$rows = $this->getRowsAsArray("SELECT id, name, activity_id, active, simple_booking, deactivate_calendar,
-              deactivate_application
+              deactivate_application, rescategory_id
               FROM bb_resource WHERE active=1 AND hidden_in_frontend=0 AND deactivate_calendar=0");
+			
+			// Get the latest participant limits for all resources
+			$currentDate = date('Y-m-d H:i:s');
+			$participantLimits = $this->getRowsAsArray("SELECT pl.resource_id, pl.quantity
+              FROM bb_participant_limit pl
+              INNER JOIN (
+                  SELECT resource_id, MAX(from_) as latest_from
+                  FROM bb_participant_limit
+                  WHERE from_ <= :currentDate
+                  GROUP BY resource_id
+              ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
+			[':currentDate' => $currentDate]);
+			
+			// Create a map of resource_id to participant limit quantity
+			$participantLimitMap = [];
+			foreach ($participantLimits as $pl) {
+				$participantLimitMap[$pl['resource_id']] = $pl['quantity'];
+			}
+			
 			foreach ($rows as $row) {
 				$resource = new Resource($row);
+				// Set participant_limit if available, otherwise leave as null
+				if (isset($participantLimitMap[$resource->id])) {
+					$resource->participant_limit = $participantLimitMap[$resource->id];
+				}
 				$resources[] = $resource->serialize([], true);
 			}
 			$data['resources'] = $resources;
+
+			// Resource activities
+			$data['resource_activities'] = $this->getRowsAsArray("SELECT * from bb_resource_activity");
+
+			// Resource facilities
+			$data['resource_facilities'] = $this->getRowsAsArray("SELECT * from bb_resource_facility");
+
+			// Resource categories
+			$data['resource_categories'] = $this->getRowsAsArray("SELECT id, name, parent_id from bb_rescategory where active=1");
+
+			// Facilities
+			$data['facilities'] = $this->getRowsAsArray("SELECT id, name from bb_facility where active=1");
+
+			// Resource category activity
+			$data['resource_category_activity'] = $this->getRowsAsArray("SELECT * from bb_rescategory_activity");
 
 			// Towns - simplified structure with just id and name
 			$data['towns'] = $this->getRowsAsArray("SELECT id, name FROM fm_part_of_town");

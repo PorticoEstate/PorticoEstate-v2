@@ -9,20 +9,25 @@ import { SeverityColors } from "@digdir/designsystemet-react/colors";
 import { usePartialApplications } from "@/service/hooks/api-hooks";
 import { ShoppingBasketIcon } from "@navikt/aksel-icons";
 import ShoppingCartPopper from "@/components/layout/header/shopping-cart/shopping-cart-popper";
+import { usePathname } from "next/navigation";
 
 const ToastContainer: React.FC = () => {
   const { toasts, removeToast, setFabButtonRef, setFabOpen, isFabOpen } = useToast();
   const { data: cartItems } = usePartialApplications();
   const fabButtonRef = useRef<HTMLButtonElement>(null);
   const t = useTrans();
+  const pathname = usePathname();
 
   // Register the FAB button ref with the context
   useEffect(() => {
     setFabButtonRef(fabButtonRef);
   }, [setFabButtonRef]);
 
+  // Check if current page is checkout
+  const isCheckoutPage = pathname?.includes('/checkout');
+
   // Determine if the shopping cart FAB should be shown
-  const showShoppingCart = cartItems?.list.length && cartItems.list.length > 0;
+  const showShoppingCart = !isCheckoutPage && cartItems?.list.length && cartItems.list.length > 0;
 
   return (
     <div className={styles.floatingContainer}>

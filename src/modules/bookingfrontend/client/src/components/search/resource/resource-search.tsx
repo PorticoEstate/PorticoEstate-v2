@@ -1,25 +1,28 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
 import {useSearchData, useTowns} from "@/service/hooks/api-hooks";
-import {IBuilding} from "@/service/types/Building";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
 import styles from './resource-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import {ISearchDataBuilding, ISearchDataOptimized, ISearchDataTown, ISearchResource} from '@/service/types/api/search.types';
 import ResourceResultItem from "@/components/search/resource/resource-result-item";
+import FilterModal from './filter-modal';
+import {FilterIcon} from '@navikt/aksel-icons';
 
 interface ResourceSearchProps {
-	initialSearchData?: ISearchDataOptimized;
-	initialTowns?: ISearchDataTown[];
+    initialSearchData?: ISearchDataOptimized;
+    initialTowns?: ISearchDataTown[];
 }
 
 // Interface for localStorage search state
 interface StoredSearchState {
-  textSearchQuery: string;
-  date: string;
-  where: number | '';
-  timestamp: number;
+    textSearchQuery: string;
+    date: string;
+    where: number | '';
+    selectedActivities: number[];
+    selectedFacilities: number[];
+    timestamp: number;
 }
 
 const STORAGE_KEY = 'resource_search_state';
@@ -30,6 +33,9 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
     const [date, setDate] = useState<Date>(new Date());
     const [where, setWhere] = useState<number | ''>('');
+    const [filtersModalOpen, setFiltersModalOpen] = useState<boolean>(false);
+    const [selectedActivities, setSelectedActivities] = useState<number[]>([]);
+    const [selectedFacilities, setSelectedFacilities] = useState<number[]>([]);
 
     // Fetch all search data, using initialSearchData as default
     const {data: searchData, isLoading: isLoadingSearch, error: searchError} = useSearchData({
@@ -64,6 +70,12 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                             setDate(new Date(parsedState.date));
                         }
                         setWhere(parsedState.where);
+                        if (parsedState.selectedActivities) {
+                            setSelectedActivities(parsedState.selectedActivities);
+                        }
+                        if (parsedState.selectedFacilities) {
+                            setSelectedFacilities(parsedState.selectedFacilities);
+                        }
                     } else {
                         // Remove expired state
                         localStorage.removeItem(STORAGE_KEY);
@@ -169,12 +181,13 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 
         return highestScore;
     };
+
     // Apply all filters to resources and sort by relevance
     const filteredResources = useMemo(() => {
         if (!resourcesWithBuildings.length) return [];
 
         // If no filters are applied, return empty array (don't show results by default)
-        if (!textSearchQuery.trim() && !where) {
+        if (!textSearchQuery.trim() && !where && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return [];
         }
 
@@ -215,11 +228,69 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
             );
         }
 
+        // Activity filter - resource must have ALL selected activities (AND logic)
+        if (selectedActivities.length > 0) {
+            filtered = filtered.filter(resource => {
+                const matchingActivities = new Set<number>();
+
+                // Check direct resource.activity_id match
+                if (resource.activity_id && selectedActivities.includes(resource.activity_id)) {
+                    matchingActivities.add(resource.activity_id);
+                }
+
+                // Check resource_activities direct connections
+                const resourceActivities = searchData?.resource_activities.filter(
+                    ra => ra.resource_id === resource.id
+                );
+
+                resourceActivities?.forEach(ra => {
+                    if (selectedActivities.includes(ra.activity_id)) {
+                        matchingActivities.add(ra.activity_id);
+                    }
+                });
+
+                // Check resource category activity connections
+                if (resource.rescategory_id) {
+                    // Get all activities linked to this resource's category
+                    const categoryActivities = searchData?.resource_category_activity.filter(
+                        rca => rca.rescategory_id === resource.rescategory_id
+                    );
+
+                    // Add any matching activities from the resource's category
+                    categoryActivities?.forEach(ca => {
+                        if (selectedActivities.includes(ca.activity_id)) {
+                            matchingActivities.add(ca.activity_id);
+                        }
+                    });
+                }
+
+                // Resource must have ALL selected activities
+                return selectedActivities.every(activityId =>
+                    matchingActivities.has(activityId)
+                );
+            });
+        }
+
+        // Facility filter - resource must have ALL selected facilities (AND logic)
+        if (selectedFacilities.length > 0) {
+            filtered = filtered.filter(resource => {
+                // Check resource_facilities connection
+                const resourceFacilities = searchData?.resource_facilities.filter(
+                    rf => rf.resource_id === resource.id
+                );
+
+                // Resource must have ALL selected facilities
+                return selectedFacilities.every(facilityId =>
+                    resourceFacilities?.some(rf => rf.facility_id === facilityId)
+                );
+            });
+        }
+
         // Date availability filter would go here
         // For now, we're not implementing date filtering logic
 
         return filtered;
-    }, [resourcesWithBuildings, textSearchQuery, where, searchData?.towns]);
+    }, [resourcesWithBuildings, textSearchQuery, where, selectedActivities, selectedFacilities, searchData]);
 
     // Handle date selection
     const handleDateChange = (newDate: Date | null) => {
@@ -233,23 +304,40 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         setTextSearchQuery('');
         setWhere('');
         setDate(new Date());
+        setSelectedActivities([]);
+        setSelectedFacilities([]);
 
         // Clear localStorage when filters are reset
         if (typeof window !== 'undefined') {
             localStorage.removeItem(STORAGE_KEY);
+
+            // Create a clean state to ensure complete reset
+            const cleanState: StoredSearchState = {
+                textSearchQuery: '',
+                date: new Date().toISOString(),
+                where: '',
+                selectedActivities: [],
+                selectedFacilities: [],
+                timestamp: Date.now()
+            };
+
+            // Store the clean state
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanState));
         }
     };
 
     // Save search state to localStorage whenever it changes
     useEffect(() => {
-        // Only save if there's actually something to save
-        if (textSearchQuery || where !== '') {
+        // Save state even if only activities or facilities are selected
+        if (textSearchQuery || where !== '' || selectedActivities.length > 0 || selectedFacilities.length > 0) {
             if (typeof window !== 'undefined') {
                 try {
                     const stateToSave: StoredSearchState = {
                         textSearchQuery,
                         date: date.toISOString(),
                         where,
+                        selectedActivities,
+                        selectedFacilities,
                         timestamp: Date.now()
                     };
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
@@ -258,7 +346,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                 }
             }
         }
-    }, [textSearchQuery, date, where]);
+    }, [textSearchQuery, date, where, selectedActivities, selectedFacilities]);
 
     if (isLoading) {
         return (
@@ -278,100 +366,165 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         );
     }
 
+    // Render active filter chips
+    const renderActiveFilters = () => {
+        if (!textSearchQuery && where === '' && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+            return null;
+        }
+
+        return (
+            <div className={styles.activeFilters}>
+                <span>{t('common.filter')}:</span>
+                <div className={styles.filterChips}>
+                    {textSearchQuery && (
+                        <Chip.Removable data-color="brand1" onClick={() => setTextSearchQuery('')}>
+                            {t('common.search')}: {textSearchQuery}
+                        </Chip.Removable>
+                    )}
+                    {where && (
+                        <Chip.Removable data-color="brand1" onClick={() => setWhere('')}>
+                            {t('bookingfrontend.town part')}: {towns.find(town => town.id === Number(where))?.name || ''}
+                        </Chip.Removable>
+                    )}
+                    {selectedActivities.map(activityId => {
+                        const activity = searchData?.activities.find(a => a.id === activityId);
+                        return activity ? (
+                            <Chip.Removable
+                                key={`activity-${activityId}`}
+                                data-color="brand1"
+                                onClick={() => setSelectedActivities(prev => prev.filter(id => id !== activityId))}
+                            >
+                                {t('bookingfrontend.activity')}: {activity.name}
+                            </Chip.Removable>
+                        ) : null;
+                    })}
+                    {selectedFacilities.map(facilityId => {
+                        const facility = searchData?.facilities.find(f => f.id === facilityId);
+                        return facility ? (
+                            <Chip.Removable
+                                key={`facility-${facilityId}`}
+                                data-color="brand1"
+                                onClick={() => setSelectedFacilities(prev => prev.filter(id => id !== facilityId))}
+                            >
+                                {t('booking.facility')}: {facility.name}
+                            </Chip.Removable>
+                        ) : null;
+                    })}
+                    <Button
+                        variant="tertiary"
+                        data-size="sm"
+                        onClick={clearFilters}
+                    >
+                        {t('bookingfrontend.search_clear_filters')}
+                    </Button>
+                </div>
+            </div>
+        );
+    };
+
+    // Render search results section
+    const renderSearchResults = () => {
+        if (!textSearchQuery.trim() && !where && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+            return (
+                <div className={styles.noResults}>
+                    <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
+                </div>
+            );
+        }
+
+        if (filteredResources.length === 0) {
+            return (
+                <div className={styles.noResults}>
+                    <p>{t('bookingfrontend.search_no_resources_match')}</p>
+                    <Button
+                        variant="secondary"
+                        onClick={clearFilters}
+                    >
+                        {t('bookingfrontend.search_clear_filters')}
+                    </Button>
+                </div>
+            );
+        }
+
+        return (
+            <div className={styles.resourceGrid}>
+                {filteredResources.map(resource => (
+                    <ResourceResultItem key={resource.id} resource={resource}/>
+                ))}
+            </div>
+        );
+    };
+
     return (
         <div className={styles.resourceSearchContainer}>
+            {/* Search Filter Section */}
             <section id="resource-filter" className={styles.filterSection}>
-                <div className={styles.searchInputs}>
-                    <div className={styles.searchField}>
-                        <Textfield
-                            label={t('common.search')}
-                            value={textSearchQuery}
-                            onChange={(e) => setTextSearchQuery(e.target.value)}
-                            placeholder={t('bookingfrontend.search available resources')}
-                        />
-                    </div>
+				<div className={styles.searchInputs}>
+					<div className={styles.searchField}>
+						<Textfield
+							label={t('common.search')}
+							value={textSearchQuery}
+							onChange={(e) => setTextSearchQuery(e.target.value)}
+							placeholder={t('bookingfrontend.search available resources')}
+						/>
+					</div>
 
-                    <div className={styles.dateFilter}>
-                        <Field>
-                            <Label>{t('bookingfrontend.when')}</Label>
-                            <CalendarDatePicker
-                                currentDate={date}
-                                onDateChange={handleDateChange}
-                                view="timeGridDay"
-                            />
-                        </Field>
-                    </div>
+					<div className={styles.dateFilter}>
+						<Field>
+							<Label>{t('bookingfrontend.when')}</Label>
+							<CalendarDatePicker
+								currentDate={date}
+								onDateChange={handleDateChange}
+								view="timeGridDay"
+							/>
+						</Field>
+					</div>
 
-                    <div className={styles.townFilter}>
-                        <Field>
-                            <Label>{t('bookingfrontend.where')}</Label>
-                            <Select
-                                value={where}
-                                onChange={(e) => setWhere(e.target.value ? +e.target.value : '')}
-                            >
+					<div className={styles.townFilter}>
+						<Field>
+							<Label>{t('bookingfrontend.where')}</Label>
+							<Select
+								value={where}
+								onChange={(e) => setWhere(e.target.value ? +e.target.value : '')}
+							>
+								<Select.Option value="">{t('booking.all')}</Select.Option>
+								{towns.map(town => (
+									<Select.Option key={town.id} value={town.id.toString()}>
+										{town.name}
+									</Select.Option>
+								))}
+							</Select>
+						</Field>
+					</div>
+					<div className={styles.moreFiltersContainer}>
+						<Button
+							variant="secondary"
+							onClick={() => setFiltersModalOpen(true)}
+						>
+							<FilterIcon/> {t('bookingfrontend.more_filters')}
+						</Button>
+						<FilterModal
+							open={filtersModalOpen}
+							onClose={() => setFiltersModalOpen(false)}
+							searchData={searchData}
+							selectedActivities={selectedActivities}
+							setSelectedActivities={setSelectedActivities}
+							selectedFacilities={selectedFacilities}
+							setSelectedFacilities={setSelectedFacilities}
+						/>
+					</div>
+				</div>
 
-                                <Select.Option value="">{t('booking.all')}</Select.Option>
-                                {towns.map(town => (
-                                    <Select.Option key={town.id} value={town.id.toString()}>
-                                        {town.name}
-                                    </Select.Option>
-                                ))}
-                            </Select>
-                        </Field>
-                    </div>
-                </div>
 
-                {(textSearchQuery || where !== '') && (
-                    <div className={styles.activeFilters}>
-                        <span>{t('common.filter')}:</span>
-                        <div className={styles.filterChips}>
-                            {textSearchQuery && (
-                                <Chip.Removable data-color="brand1" onClick={() => setTextSearchQuery('')}>
-                                    {t('common.search')}: {textSearchQuery}
-                                </Chip.Removable>
-                            )}
-                            {where && (
-                                <Chip.Removable data-color="brand1" onClick={() => setWhere('')}>
-                                    {t('bookingfrontend.town part')}: {towns.find(town => town.id === Number(where))?.name || ''}
-                                </Chip.Removable>
-                            )}
-                            <Button
-                                variant="tertiary"
-                                data-size="sm"
-                                onClick={clearFilters}
-                            >
-                                {t('bookingfrontend.search_clear_filters')}
-                            </Button>
-                        </div>
-                    </div>
-                )}
-            </section>
+				{renderActiveFilters()}
+			</section>
 
-            <section id="resource-results" className={styles.resultsSection}>
-                {!textSearchQuery.trim() && !where ? (
-                    <div className={styles.noResults}>
-                        <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
-                    </div>
-                ) : filteredResources.length > 0 ? (
-                    <div className={styles.resourceGrid}>
-                        {filteredResources.map(resource => (
-                            <ResourceResultItem key={resource.id} resource={resource}/>
-                        ))}
-                    </div>
-                ) : (
-                    <div className={styles.noResults}>
-                        <p>{t('bookingfrontend.search_no_resources_match')}</p>
-                        <Button
-                            variant="secondary"
-                            onClick={clearFilters}
-                        >
-                            {t('bookingfrontend.search_clear_filters')}
-                        </Button>
-                    </div>
-                )}
-            </section>
-        </div>
-    );
-}
+			{/* Search Results Section */}
+			<section id="resource-results" className={styles.resultsSection}>
+				{renderSearchResults()}
+			</section>
+		</div>
+	);
+};
 
 export default ResourceSearch;

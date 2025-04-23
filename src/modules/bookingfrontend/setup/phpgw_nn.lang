@@ -154,6 +154,7 @@ choose_a	bookingfrontend	nn	Vel fakturatype
 chosen rent object	bookingfrontend	nn	Valde ressursar
 chosen rent period	bookingfrontend	nn	Valde leigeperioder
 city	bookingfrontend	nn	Poststad
+clear	bookingfrontend	nn	Tøm
 click to sort ascending	bookingfrontend	nn	Klikk for å sortere stigande
 click to sort descending	bookingfrontend	nn	Klikk for å sortere synkande
 clock_short	bookingfrontend	nn	Kl
@@ -281,6 +282,7 @@ fetching data	bookingfrontend	nn	Henter data…
 Field %1 is required	bookingfrontend	nn	Feltet '%1' må fylles ut
 Field %1: Invalid format	bookingfrontend	nn	Feltet '%1': ugyldig format
 filnavn	bookingfrontend	nn	Dokument
+filter	bookingfrontend	nn	Filter
 Find available	bookingfrontend	nn	Finn tilgjengelig
 Find available resources	bookingfrontend	nn	Søk etter leieobjekter
 find_event_or_activity	bookingfrontend	nn	Finn arrangement eller aktivitet
@@ -394,6 +396,7 @@ modified	bookingfrontend	nn	Endra
 month	bookingfrontend	nn	Månad
 more	bookingfrontend	nn	flere
 more info	bookingfrontend	nn	Meir informasjon
+more_filters	bookingfrontend	nn	Fleire filter
 multiple_time_slots	bookingfrontend	nn	Fleire tidspunkt
 my page	bookingfrontend	nn	Mi side
 name	bookingfrontend	nn	Namn
@@ -430,6 +433,7 @@ no records found.	bookingfrontend	nn	Ingen treff
 No rent object chosen	bookingfrontend	nn	Ingen leieobjekt er valgt
 No valid identification returned from login	common	nn	Ingen gyldig identifikasjon returnert frå innlogging.
 no_documents_to_accept	bookingfrontend	nn	Det er ingen dokument å godkjenne for denne søknaden.
+no_overlap	bookingfrontend	nn	{{res}} tillater ikkje overlappande bookingar.
 no_resources_found	bookingfrontend	nn	Ingen ressursar funne for den valde datoen
 nov	bookingfrontend	nn	november
 number of participants	bookingfrontend	nn	Tal på deltakarar
@@ -557,7 +561,9 @@ Search available resources	bookingfrontend	nn	Søk etter tilgjengelige lokaler
 Search building, resource, organization	bookingfrontend	nn	Søk anlegg, lokale, organisasjon
 search events	bookingfrontend	nn	Søk arrangement
 Search results	bookingfrontend	nn	Søkeresultat
+search_activities	bookingfrontend	nn	Søk aktivitetar
 search_clear_filters	bookingfrontend	nn	Nullstill filter
+search_facilities	bookingfrontend	nn	Søk fasilitetar
 search_for_like_minded_people	bookingfrontend	nn	Er du på jakt etter nokon som er interessert i det same som deg? Søk på namn til lag eller organisasjon, eller filtrer på aktivitet eller område
 search_no_events_match	bookingfrontend	nn	Ingen arrangement passar søket ditt
 search_no_organizations_match	bookingfrontend	nn	Ingen organisasjonar passar søket ditt
@@ -711,4 +717,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	nn	Søknadene dine er godkjent, og en bekreftelse er sendt til deg på e-post.
 your_applications	bookingfrontend	nn	Dine søknader
 zip code	bookingfrontend	nn	Postnummer
-no_overlap	bookingfrontend	nn	{{res}} tillater ikkje overlappande bookingar.

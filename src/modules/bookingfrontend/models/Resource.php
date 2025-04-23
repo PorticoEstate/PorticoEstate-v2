@@ -79,6 +79,7 @@ class Resource
     /**
      * @ORM\Column(type="integer", nullable=true)
      * @Expose
+	 * @Short
      * @OA\Property(description="Resource category ID", type="integer", nullable=true)
      */
     public $rescategory_id;
@@ -182,6 +183,14 @@ class Resource
      * @OA\Property(description="Capacity of the resource", type="integer", nullable=true)
      */
     public $capacity;
+
+    /**
+     * @ORM\Transient
+     * @Expose
+	 * @Short
+     * @OA\Property(description="Current participant limit of the resource", type="integer", nullable=true)
+     */
+    public $participant_limit;
 
     /**
      * @ORM\Column(type="integer")

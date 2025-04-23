@@ -21,6 +21,7 @@ interface IResource {
     simple_booking_end_date: number | null;
     booking_day_horizon: number | null;
     capacity: number | null;
+    participant_limit: number | null;
     deactivate_calendar: number;
     deactivate_application: number;
     booking_time_minutes: number | null;

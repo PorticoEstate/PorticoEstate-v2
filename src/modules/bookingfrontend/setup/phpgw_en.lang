@@ -154,6 +154,7 @@ choose_a	bookingfrontend	en	Choose a billing type
 chosen rent object	bookingfrontend	en	Chosen resources
 chosen rent period	bookingfrontend	en	Chosen rent period
 city	bookingfrontend	en	City
+clear	bookingfrontend	en	Clear
 click to sort ascending	bookingfrontend	en	Click to sort ascending
 click to sort descending	bookingfrontend	en	Click to sort descending
 clock_short	bookingfrontend	en	Time
@@ -281,6 +282,7 @@ fetching data	bookingfrontend	en	Fetching data
 Field %1 is required	bookingfrontend	en	Field %1 is required
 Field %1: Invalid format	bookingfrontend	en	Field %1: invalid format
 filnavn	bookingfrontend	en	Filename
+filter	bookingfrontend	en	Filter
 Find available	bookingfrontend	en	Find available
 Find available resources	bookingfrontend	en	Find available resources
 find_event_or_activity	bookingfrontend	en	Find event or activity
@@ -394,6 +396,7 @@ modified	bookingfrontend	en	Modified
 month	bookingfrontend	en	Month
 more	bookingfrontend	en	More
 more info	bookingfrontend	en	More info
+more_filters	bookingfrontend	en	More filters
 multiple_time_slots	bookingfrontend	en	Multiple time slots
 my page	bookingfrontend	en	My page
 name	bookingfrontend	en	Name
@@ -430,6 +433,7 @@ no records found.	bookingfrontend	en	No records found.
 No rent object chosen	bookingfrontend	en	No rent object chosen
 No valid identification returned from login	common	en	No valid identification returned from login
 no_documents_to_accept	bookingfrontend	en	There are no documents to accept for this application.
+no_overlap	bookingfrontend	en	{{res}} does not allow overlapping bookings.
 no_resources_found	bookingfrontend	en	No resources found for the given date
 nov	bookingfrontend	en	November
 number of participants	bookingfrontend	en	Number of participants
@@ -557,7 +561,9 @@ Search available resources	bookingfrontend	en	Search for available facilities
 Search building, resource, organization	bookingfrontend	en	Search building, resource, organization
 search events	bookingfrontend	en	Search Events
 Search results	bookingfrontend	en	Search results
+search_activities	bookingfrontend	en	Search activities
 search_clear_filters	bookingfrontend	en	Clear filters
+search_facilities	bookingfrontend	en	Search facilities
 search_for_like_minded_people	bookingfrontend	en	Are you looking for someone interested in the same things as you? Search by the name of a team or organization, or filter by activity or area
 search_no_events_match	bookingfrontend	en	No events match your search
 search_no_organizations_match	bookingfrontend	en	No organizations match your search
@@ -711,4 +717,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
-no_overlap	bookingfrontend	en	{{res}} does not allow overlapping bookings.

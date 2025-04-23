@@ -8,6 +8,9 @@ import {ColumnDef} from "@/components/gs-table/table.types";
 import {createColumnHelper} from "@tanstack/table-core";
 import {DateTime} from "luxon";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
+import {default as NXLink} from "next/link";
+import {phpGWLink} from "@/service/util";
+import {Link} from "@digdir/designsystemet-react";
 
 interface ApplicationsProps {
 }
@@ -40,6 +43,26 @@ const Applications: FC<ApplicationsProps> = (props) => {
                 size: 0.5
             },
             enableHiding: false, // disable hiding for this column
+            cell: info => {
+                const id = info.getValue();
+                const secret = info.row.original.secret;
+                return (
+					<Link
+						asChild
+						color={'neutral'}
+					>
+						<NXLink href={phpGWLink('bookingfrontend/', {
+							menuaction: 'bookingfrontend.uiapplication.show',
+							id: id,
+							secret: secret || ''
+						}, false)}
+								target={'_blank'}
+						>
+							{id}
+						</NXLink>
+					</Link>
+                );
+            },
         }),
 
         columnHelper.accessor('created', {

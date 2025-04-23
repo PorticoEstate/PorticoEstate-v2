@@ -12,6 +12,7 @@
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\property\helpers\LocationHierarchyAnalyzer;
+use App\modules\property\helpers\LocationHierarchyDocumentAnalyzer;
 use App\modules\phpgwapi\security\Acl;
 
 phpgw::import_class('phpgwapi.uicommon_jquery');
@@ -25,11 +26,14 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 
 	var $public_functions = array(
 		'index' => true,
+		'documents' => true,
 	);
 
 	public function __construct()
 	{
 		parent::__construct();
+
+		self::set_active_menu('admin::property::location::analyze_location');
 
 		$this->bo = new property_bolocation();
 		$this->account = $this->userSettings['account_id'];
@@ -141,6 +145,12 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		}
 
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array('analyze' => $data));
+	}
+
+	public function documents()
+	{
+		$analyzer = new LocationHierarchyDocumentAnalyzer();
+		$analyzer->analyze();
 	}
 
 	/**

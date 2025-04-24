@@ -267,7 +267,13 @@ class ApplicationController extends DocumentController
             ];
 
             // Broadcast notification through WebSocket
-            $this->broadcastPartialApplicationCreated($id, $data);
+            try {
+                $resourceId = isset($data['resources']) && !empty($data['resources']) ? $data['resources'][0] : null;
+                WebSocketHelper::notifyPartialApplicationCreated($id, $resourceId);
+            } catch (Exception $e) {
+                // Log but don't interrupt flow
+                error_log("WebSocket notification error: " . $e->getMessage());
+            }
 
             $response->getBody()->write(json_encode($responseData));
             return $response->withStatus(201)

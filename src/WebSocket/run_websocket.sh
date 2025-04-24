@@ -16,7 +16,9 @@ if [ ! -d /var/www/html/vendor/cboden/ratchet ]; then
 fi
 
 # Run the WebSocket server in the background
-php /var/www/html/src/WebSocket/server.php > /var/log/apache2/websocket.log 2>&1 &
+# Use full path to PHP to avoid "command not found" errors
+# Explicitly disable xdebug to prevent debugger pauses
+/usr/local/bin/php -dxdebug.mode=off -dxdebug.start_with_request=no /var/www/html/src/WebSocket/server.php > /var/log/apache2/websocket.log 2>&1 &
 pid=$!
 
 # Verify the process is running

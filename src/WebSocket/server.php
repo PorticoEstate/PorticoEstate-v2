@@ -12,7 +12,25 @@ use Psr\Log\LoggerInterface;
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
 ini_set('error_log', '/var/log/apache2/websocket_error.log');
-error_reporting(E_ALL);
+// Suppress deprecation warnings which are common with Ratchet on PHP 8.4+
+error_reporting(E_ALL & ~E_DEPRECATED);
+
+// Disable xdebug in production mode
+if (extension_loaded('xdebug')) {
+    ini_set('xdebug.remote_enable', 0);
+    ini_set('xdebug.remote_autostart', 0);
+    ini_set('xdebug.remote_connect_back', 0);
+    ini_set('xdebug.idekey', '');
+    
+    // For Xdebug 3
+    ini_set('xdebug.mode', 'off');
+    ini_set('xdebug.start_with_request', 'no');
+    
+    // More aggressive disabling
+    if (function_exists('xdebug_disable')) {
+        xdebug_disable();
+    }
+}
 
 // Make sure we have Composer autoload
 $autoloadPath = dirname(__DIR__, 2) . '/vendor/autoload.php';
@@ -39,10 +57,13 @@ $logger = new class implements LoggerInterface {
 // Create EventLoop
 $loop = Factory::create();
 
-// Set up our WebSocket server
+// Set up our WebSocket server for WebSocket connections
 $webSocket = new WebSocketServer($logger);
 $wsServer = new WsServer($webSocket);
-$http = new HttpServer($wsServer);
+$wsHttpServer = new HttpServer($wsServer);
+
+// Note: Separate HTTP server for API endpoints is disabled due to missing React HTTP component
+// We'll use the broadcast method directly in WebSocketServer class instead
 
 // Listen on all interfaces on port 8080
 try {
@@ -72,32 +93,61 @@ try {
     echo "Operating system: " . PHP_OS . PHP_EOL;
     echo "Server software: " . ($_SERVER['SERVER_SOFTWARE'] ?? 'Unknown') . PHP_EOL;
     
-    // Create the socket with explicit options
+    // Create WebSocket server on port 8080
     $context = [];
     $socket = new SocketServer($socketAddress, $context, $loop);
-    $server = new IoServer($http, $socket, $loop);
+    $server = new IoServer($wsHttpServer, $socket, $loop);
+    
+    echo "WebSocket server listening on port 8080" . PHP_EOL;
 
     echo "SUCCESS: WebSocket server started on 0.0.0.0:8080" . PHP_EOL;
     
     // Write a status file that can be checked
     file_put_contents('/tmp/websocket_running', date('Y-m-d H:i:s'));
+    
+    // Set up a timer to check for notification files every second
+    $loop->addPeriodicTimer(1, function() use ($webSocket) {
+        $webSocket->checkNotificationFiles();
+    });
+    
+    // Send server ping to all clients every 55 seconds to keep connections alive
+    $loop->addPeriodicTimer(55, function() use ($webSocket) {
+        $webSocket->sendServerPing();
+    });
 } catch (\Exception $e) {
     echo "ERROR starting WebSocket server: " . $e->getMessage() . PHP_EOL;
     echo "Stack trace: " . $e->getTraceAsString() . PHP_EOL;
     
     // Try alternate port if 8080 is occupied
     try {
-        echo "Trying alternate port 8081..." . PHP_EOL;
-        $socket = new SocketServer('0.0.0.0:8081', [], $loop);
-        $server = new IoServer($http, $socket, $loop);
+        echo "Trying alternate ports..." . PHP_EOL;
+        // WebSocket on 8082
+        $wsSocket = new SocketServer('0.0.0.0:8082', [], $loop);
+        $wsServer = new IoServer($wsHttpServer, $wsSocket, $loop);
         
-        // Update Apache config to use port 8081
+        // HTTP API on 8083
+        $httpSocket = new SocketServer('0.0.0.0:8083', [], $loop);
+        IoServer::factory($httpServer, $httpSocket);
+        
+        echo "WebSocket server listening on port 8082" . PHP_EOL;
+        echo "HTTP API server listening on port 8083" . PHP_EOL;
+        
+        // Update Apache config to use alternate port
         $apacheConfig = '/etc/apache2/sites-enabled/000-default.conf';
         if (file_exists($apacheConfig)) {
             $config = file_get_contents($apacheConfig);
-            $config = str_replace('ws://slim:8080', 'ws://slim:8081', $config);
+            $config = str_replace('ws://slim:8080', 'ws://slim:8082', $config);
             file_put_contents($apacheConfig, $config);
-            echo "Updated Apache config to use port 8081" . PHP_EOL;
+            echo "Updated Apache config to use port 8082" . PHP_EOL;
+            
+            // Also update the WebSocketHelper class if we can find it
+            $wsHelper = '/var/www/html/src/modules/bookingfrontend/helpers/WebSocketHelper.php';
+            if (file_exists($wsHelper)) {
+                $helperContent = file_get_contents($wsHelper);
+                $helperContent = str_replace('protected static $port = 8081', 'protected static $port = 8083', $helperContent);
+                file_put_contents($wsHelper, $helperContent);
+                echo "Updated WebSocketHelper to use port 8083" . PHP_EOL;
+            }
         }
         
         echo "SUCCESS: WebSocket server started on 0.0.0.0:8081" . PHP_EOL;

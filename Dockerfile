@@ -50,6 +50,7 @@ RUN apt-get update && apt-get install -y software-properties-common \
     iputils-ping \
     net-tools \
     psmisc \
+    supervisor \
     wkhtmltopdf
 
 RUN touch /etc/cron.d/cronjob && chmod 0644 /etc/cron.d/cronjob
@@ -189,6 +190,9 @@ RUN echo 'LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\
 
 # Copy Apache configuration
 COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
+
+# Copy Supervisor configuration
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

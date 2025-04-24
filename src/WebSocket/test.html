@@ -107,6 +107,20 @@
                     // Use the client library
                     wsClient = createWebSocketClient(wsUrl);
                     
+                    // Set up event listeners for reconnection
+                    window.addEventListener('portico:reconnecting', function() {
+                        addMessage('Reconnecting to WebSocket server...');
+                    });
+                    
+                    // Update wsClient reference when porticoWsClient changes
+                    const checkForUpdatedClient = setInterval(function() {
+                        if (window.porticoWsClient !== wsClient) {
+                            wsClient = window.porticoWsClient;
+                            addMessage('WebSocket client reconnected');
+                            clearInterval(checkForUpdatedClient);
+                        }
+                    }, 1000);
+                    
                     // Success is handled by the client library events
                     addMessage(`Connection attempt initiated to ${wsUrl}`);
                 } catch (error) {

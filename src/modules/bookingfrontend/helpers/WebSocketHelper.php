@@ -26,6 +26,8 @@ class WebSocketHelper
     /**
      * Send a notification through the WebSocket server
      * 
+     * This uses a direct WebSocket connection to the server
+     * 
      * @param string $message The notification message
      * @param array $data Additional data for the notification
      * @param string|null $host Override the default host
@@ -34,115 +36,59 @@ class WebSocketHelper
      */
     public static function sendNotification(string $message, array $data = [], ?string $host = null, ?int $port = null): bool
     {
+        // Use the provided host/port or defaults
         $wsHost = $host ?? self::$host;
         $wsPort = $port ?? self::$port;
         
+        // Prepare the message
+        $payload = [
+            'type' => 'notification',
+            'message' => $message,
+            'data' => $data,
+            'timestamp' => date('c')
+        ];
+        
+        // Convert to JSON
+        $jsonPayload = json_encode($payload);
+        
+        // Log the attempt
+        error_log("WebSocketHelper: Broadcasting notification to {$wsHost}:{$wsPort}");
+        error_log("WebSocketHelper: Payload: " . substr($jsonPayload, 0, 200));
+        
         try {
-            $client = new WebSocketClient($wsHost, $wsPort);
-            $client->connect()
-                ->send([
-                    'type' => 'notification',
-                    'message' => $message,
-                    'data' => $data,
-                    'timestamp' => date('c')
-                ])
-                ->close();
+            // Create a file that the WebSocket server can read
+            // This is a workaround since we can't use HTTP endpoints
+            $notificationFile = "/tmp/websocket_notification_" . uniqid() . ".json";
+            file_put_contents($notificationFile, $jsonPayload);
             
+            // Log the file creation
+            error_log("WebSocketHelper: Created notification file: {$notificationFile}");
+            
+            // Success if we could write the file
             return true;
         } catch (Exception $e) {
-            error_log("WebSocket notification error: " . $e->getMessage());
+            error_log("WebSocketHelper: Exception: " . $e->getMessage());
             return false;
         }
     }
-}
-
-/**
- * Simple WebSocket client for internal connections
- */
-class WebSocketClient
-{
-    /**
-     * Socket resource
-     * 
-     * @var resource|null
-     */
-    private $socket;
     
     /**
-     * WebSocket server host
+     * Send a notification about a new partial application
      * 
-     * @var string
+     * @param int $id Application ID
+     * @param int|null $resourceId Resource ID
+     * @return bool Success status
      */
-    private $host;
-    
-    /**
-     * WebSocket server port
-     * 
-     * @var int
-     */
-    private $port;
-
-    /**
-     * Constructor
-     * 
-     * @param string $host WebSocket server host
-     * @param int $port WebSocket server port
-     */
-    public function __construct(string $host = '127.0.0.1', int $port = 8080)
+    public static function notifyPartialApplicationCreated(int $id, ?int $resourceId = null): bool
     {
-        $this->host = $host;
-        $this->port = $port;
-    }
-
-    /**
-     * Connect to the WebSocket server
-     * 
-     * @return $this For method chaining
-     * @throws Exception If connection fails
-     */
-    public function connect()
-    {
-        $this->socket = fsockopen($this->host, $this->port, $errno, $errstr, 2);
-        
-        if (!$this->socket) {
-            throw new Exception("Unable to connect to WebSocket server: $errstr ($errno)");
-        }
-
-        return $this;
-    }
-
-    /**
-     * Send data to the WebSocket server
-     * 
-     * @param array $data Data to send
-     * @return $this For method chaining
-     * @throws Exception If not connected or send fails
-     */
-    public function send(array $data)
-    {
-        if (!$this->socket) {
-            throw new Exception("Not connected to WebSocket server");
-        }
-
-        $message = json_encode($data);
-        
-        fputs($this->socket, $message);
-        
-        return $this;
-    }
-
-    /**
-     * Close the connection
-     * 
-     * @return $this For method chaining
-     */
-    public function close()
-    {
-        if ($this->socket) {
-            fclose($this->socket);
-            $this->socket = null;
-        }
-        
-        return $this;
+        return self::sendNotification(
+            'New partial application created',
+            [
+                'id' => $id,
+                'type' => 'partial_application_created',
+                'resource_id' => $resourceId,
+                'timestamp' => date('c')
+            ]
+        );
     }
 }

@@ -12,8 +12,13 @@ log() {
     echo "$1"
 }
 
+# Use full PHP path to avoid command not found errors
+# Also disable xdebug to prevent debugger interruptions
+PHP_PATH="/usr/local/bin/php"
+PHP_CMD="$PHP_PATH -dxdebug.mode=off -dxdebug.start_with_request=no"
+
 # Check if WebSocket server is running
-if pgrep -f "php /var/www/html/src/WebSocket/server.php" > /dev/null; then
+if pgrep -f "${PHP_PATH} /var/www/html/src/WebSocket/server.php" > /dev/null; then
     # Check if it's actually listening on port 8080
     if netstat -tlpn | grep 8080 > /dev/null; then
         log "WebSocket server is running and listening on port 8080"
@@ -26,7 +31,7 @@ if pgrep -f "php /var/www/html/src/WebSocket/server.php" > /dev/null; then
             else
                 log "WARNING: Port 8080 is not accepting connections, restarting server..."
                 # Kill and restart
-                pkill -f "php /var/www/html/src/WebSocket/server.php" > /dev/null 2>&1
+                pkill -f "${PHP_PATH} /var/www/html/src/WebSocket/server.php" > /dev/null 2>&1
                 sleep 1
                 /var/www/html/src/WebSocket/run_websocket.sh
             fi
@@ -37,7 +42,7 @@ if pgrep -f "php /var/www/html/src/WebSocket/server.php" > /dev/null; then
         log "WebSocket server process is running but NOT listening on port 8080, restarting..."
         
         # Kill and restart
-        pkill -f "php /var/www/html/src/WebSocket/server.php" > /dev/null 2>&1
+        pkill -f "${PHP_PATH} /var/www/html/src/WebSocket/server.php" > /dev/null 2>&1
         sleep 1
         /var/www/html/src/WebSocket/run_websocket.sh
     fi
@@ -45,7 +50,7 @@ else
     log "WebSocket server is not running, restarting..."
     
     # Kill any zombie processes
-    pkill -f "php /var/www/html/src/WebSocket/server.php" > /dev/null 2>&1
+    pkill -f "${PHP_PATH} /var/www/html/src/WebSocket/server.php" > /dev/null 2>&1
     
     # Wait a moment
     sleep 1
@@ -55,7 +60,7 @@ else
     
     # Check if it started successfully
     sleep 3
-    if pgrep -f "php /var/www/html/src/WebSocket/server.php" > /dev/null; then
+    if pgrep -f "${PHP_PATH} /var/www/html/src/WebSocket/server.php" > /dev/null; then
         # Also check if it's listening
         if netstat -tlpn | grep 8080 > /dev/null; then
             log "WebSocket server restarted successfully and is listening on port 8080"
@@ -63,7 +68,7 @@ else
         else
             log "WebSocket server restarted but is NOT listening on port 8080"
             # Try one more restart
-            pkill -f "php /var/www/html/src/WebSocket/server.php" > /dev/null 2>&1
+            pkill -f "${PHP_PATH} /var/www/html/src/WebSocket/server.php" > /dev/null 2>&1
             sleep 1
             /var/www/html/src/WebSocket/run_websocket.sh
             sleep 3

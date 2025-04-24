@@ -70,8 +70,9 @@ $datbaseProvider->register($app);
 $webSocketProvider->register($container);
 
 // Register WebSocket routes class
-$container->set(Routes::class, function() {
-    return new Routes();
+$container->set(Routes::class, function($c) {
+    // Get the WebSocketServer instance from the container
+    return new Routes($c->get(\App\WebSocket\WebSocketServer::class));
 });
 
 //require all routes

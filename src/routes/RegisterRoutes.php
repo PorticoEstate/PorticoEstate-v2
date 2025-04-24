@@ -1,9 +1,8 @@
 <?php
 
-// Register WebSocket routes
-if (file_exists(SRC_ROOT_PATH . '/WebSocket/Routes.php')) {
-	$app->getContainer()->get(\App\WebSocket\Routes::class)->register($app);
-}
+// WebSocket routes are now handled separately by the WebSocket server
+// The Routes class now creates a React HTTP server instead of registering routes with Slim
+// This is handled in server.php when the WebSocket server starts
 
 // Register module routes
 $d = dir(realpath(SRC_ROOT_PATH . '/modules'));

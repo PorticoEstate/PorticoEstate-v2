@@ -35,6 +35,17 @@ const createWebSocketClient = (customUrl = null) => {
             document.getElementById('connection-status').textContent = 'Connected';
             document.getElementById('connection-status').style.color = 'green';
         }
+        
+        // Start sending ping messages every 30 seconds to keep the connection alive
+        setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'ping',
+                    timestamp: new Date().toISOString()
+                }));
+                console.log('Ping sent');
+            }
+        }, 30000);
     };
     
     ws.onmessage = function(event) {
@@ -50,6 +61,16 @@ const createWebSocketClient = (customUrl = null) => {
                 console.log('Chat message:', data.message);
                 // Trigger custom event for chat message
                 window.dispatchEvent(new CustomEvent('portico:chat', { detail: data }));
+            } else if (data.type === 'pong') {
+                console.log('Received pong from server');
+                // No need to do anything with pongs
+            } else if (data.type === 'server_ping') {
+                console.log('Received server ping');
+                // Send a pong response back to the server
+                ws.send(JSON.stringify({
+                    type: 'pong',
+                    timestamp: new Date().toISOString()
+                }));
             } else {
                 // Generic message event
                 window.dispatchEvent(new CustomEvent('portico:message', { detail: data }));
@@ -61,13 +82,30 @@ const createWebSocketClient = (customUrl = null) => {
         }
     };
     
-    ws.onclose = function() {
-        console.log('WebSocket connection closed');
+    ws.onclose = function(event) {
+        console.log('WebSocket connection closed', event.code, event.reason);
         // Update UI elements if they exist
         if (document.getElementById('connection-status')) {
-            document.getElementById('connection-status').textContent = 'Disconnected';
-            document.getElementById('connection-status').style.color = 'red';
+            document.getElementById('connection-status').textContent = 'Disconnected - Reconnecting...';
+            document.getElementById('connection-status').style.color = 'orange';
         }
+        
+        // Try to reconnect after 5 seconds
+        console.log('Attempting to reconnect in 5 seconds...');
+        setTimeout(() => {
+            console.log('Reconnecting...');
+            
+            // Trigger a custom event so the page knows we're reconnecting
+            window.dispatchEvent(new CustomEvent('portico:reconnecting'));
+            
+            // Create a new connection
+            const newClient = createWebSocketClient(wsUrl);
+            
+            // Replace the current client with the new one
+            if (window.porticoWsClient) {
+                window.porticoWsClient = newClient;
+            }
+        }, 5000);
     };
     
     ws.onerror = function(error) {
@@ -79,7 +117,8 @@ const createWebSocketClient = (customUrl = null) => {
         }
     };
     
-    return {
+    // Create the client object
+    const client = {
         sendMessage: function(type, message, additionalData = {}) {
             if (ws.readyState === WebSocket.OPEN) {
                 const data = {
@@ -109,6 +148,11 @@ const createWebSocketClient = (customUrl = null) => {
             return states[ws.readyState] || 'UNKNOWN';
         }
     };
+    
+    // Store the client in a global variable for reconnection
+    window.porticoWsClient = client;
+    
+    return client;
 };
 
 // Usage examples:

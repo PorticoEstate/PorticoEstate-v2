@@ -40,7 +40,21 @@ services:
             - internal
         extra_hosts:
             - "host.docker.internal:host-gateway"
-
+    websocket:
+        build:
+            context: .
+            dockerfile: Dockerfile.websocket
+        working_dir: /var/www/html
+        volumes:
+        - .:/var/www/html
+        networks:
+        - internal
+        ports:
+        - "8081:8081"
+    redis:
+        image: redis:alpine
+        networks:
+        - internal
     nextjs:
         build:
             dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs

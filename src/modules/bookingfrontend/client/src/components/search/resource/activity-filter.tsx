@@ -34,24 +34,7 @@ const ActivityFilterWithLimit: FC<ActivityFilterWithLimitProps> = ({
         );
     }, [activitiesWithResources, searchQuery]);
 
-    // Create a set of all activity IDs to check for valid parents
-    const activityIds = new Set(filteredActivities.map(a => a.id));
-
-    // Group activities by parent_id
-    const parentActivities = filteredActivities.filter(a => a.parent_id === 0 || a.parent_id === undefined);
-    const childActivitiesMap = new Map<number, typeof filteredActivities>();
-
-    // Group child activities by their parent
-    filteredActivities
-        .filter(a => a.parent_id !== 0 && a.parent_id !== undefined)
-        .forEach(activity => {
-            if (!childActivitiesMap.has(activity.parent_id)) {
-                childActivitiesMap.set(activity.parent_id, []);
-            }
-            childActivitiesMap.get(activity.parent_id)?.push(activity);
-        });
-
-    // Create a structure to track all activities for counting and limiting
+    // Define ActivityGroup type
     type ActivityGroup = {
         parentActivity: ISearchDataActivity | null;
         isNoGroup: boolean;
@@ -59,50 +42,72 @@ const ActivityFilterWithLimit: FC<ActivityFilterWithLimitProps> = ({
         hasSelected: boolean; // Track if this group has any selected activities
     };
 
-    const activityGroups: ActivityGroup[] = [];
+    // Memoize activity groups to prevent recalculation on every render
+    const activityGroups = useMemo(() => {
+        // Create a set of all activity IDs to check for valid parents
+        const activityIds = new Set(filteredActivities.map(a => a.id));
 
-    // Identify activities with parent_id that doesn't exist in our activity list
-    // This happens when the parent activity doesn't exist or isn't active
-    const activitiesWithInvalidParents = filteredActivities
-        .filter(a =>
-            a.parent_id !== 0 &&
-            a.parent_id !== undefined &&
-            !activityIds.has(a.parent_id) &&
-            !parentActivities.some(p => p.id === a.parent_id)
-        );
+        // Group activities by parent_id
+        const parentActivities = filteredActivities.filter(a => a.parent_id === 0 || a.parent_id === undefined);
+        const childActivitiesMap = new Map<number, typeof filteredActivities>();
 
-    // Add parent activities with their children
-    parentActivities.forEach(parentActivity => {
-        const children = childActivitiesMap.get(parentActivity.id) || [];
+        // Group child activities by their parent
+        filteredActivities
+            .filter(a => a.parent_id !== 0 && a.parent_id !== undefined)
+            .forEach(activity => {
+                if (!childActivitiesMap.has(activity.parent_id)) {
+                    childActivitiesMap.set(activity.parent_id, []);
+                }
+                childActivitiesMap.get(activity.parent_id)?.push(activity);
+            });
 
-        // Check if parent or any children are selected
-        const parentIsSelected = selectedActivities.includes(parentActivity.id);
-        const anyChildrenSelected = children.some(child =>
-            selectedActivities.includes(child.id)
-        );
+        const groups: ActivityGroup[] = [];
 
-        activityGroups.push({
-            parentActivity,
-            isNoGroup: false,
-            children,
-            hasSelected: parentIsSelected || anyChildrenSelected
+        // Identify activities with parent_id that doesn't exist in our activity list
+        // This happens when the parent activity doesn't exist or isn't active
+        const activitiesWithInvalidParents = filteredActivities
+            .filter(a =>
+                a.parent_id !== 0 &&
+                a.parent_id !== undefined &&
+                !activityIds.has(a.parent_id) &&
+                !parentActivities.some(p => p.id === a.parent_id)
+            );
+
+        // Add parent activities with their children
+        parentActivities.forEach(parentActivity => {
+            const children = childActivitiesMap.get(parentActivity.id) || [];
+
+            // Check if parent or any children are selected
+            const parentIsSelected = selectedActivities.includes(parentActivity.id);
+            const anyChildrenSelected = children.some(child =>
+                selectedActivities.includes(child.id)
+            );
+
+            groups.push({
+                parentActivity,
+                isNoGroup: false,
+                children,
+                hasSelected: parentIsSelected || anyChildrenSelected
+            });
         });
-    });
 
-    // Add no-group activities
-    if (activitiesWithInvalidParents.length > 0) {
-        // Check if any no-group activities are selected
-        const anyNoGroupSelected = activitiesWithInvalidParents.some(activity =>
-            selectedActivities.includes(activity.id)
-        );
+        // Add no-group activities
+        if (activitiesWithInvalidParents.length > 0) {
+            // Check if any no-group activities are selected
+            const anyNoGroupSelected = activitiesWithInvalidParents.some(activity =>
+                selectedActivities.includes(activity.id)
+            );
 
-        activityGroups.push({
-            parentActivity: null,
-            isNoGroup: true,
-            children: activitiesWithInvalidParents,
-            hasSelected: anyNoGroupSelected
-        });
-    }
+            groups.push({
+                parentActivity: null,
+                isNoGroup: true,
+                children: activitiesWithInvalidParents,
+                hasSelected: anyNoGroupSelected
+            });
+        }
+
+        return groups;
+    }, [filteredActivities, selectedActivities]);
 
     // Initial sorting when modal opens
     const [initialSortComplete, setInitialSortComplete] = useState(false);
@@ -139,7 +144,7 @@ const ActivityFilterWithLimit: FC<ActivityFilterWithLimitProps> = ({
         if (initialSortComplete) {
             setSortedGroups(activityGroups);
         }
-    }, [activityGroups, searchQuery]);
+    }, [initialSortComplete, searchQuery, filteredActivities]);
 
     // Count total activity items (counting each parent + each child separately)
     const countTotalItems = (groups: ActivityGroup[]): number => {

@@ -175,6 +175,7 @@ this.fetch_vendor_email = function ()
 	if (document.getElementById('vendor_id').value)
 	{
 		base_java_url['vendor_id'] = document.getElementById('vendor_id').value;
+		base_java_url['preselect_one'] = true;
 	}
 
 	if (document.getElementById('vendor_id').value != vendor_id)

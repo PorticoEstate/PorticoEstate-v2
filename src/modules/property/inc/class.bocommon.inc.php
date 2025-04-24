@@ -2559,6 +2559,7 @@ class property_bocommon
 		}
 
 		$preselect = Sanitizer::get_var('preselect', 'bool');
+		$preselect_one = Sanitizer::get_var('preselect_one', 'bool');
 
 		$vendor_email = execMethod('property.sowo_hour.get_email', $vendor_id);
 
@@ -2575,6 +2576,12 @@ class property_bocommon
 		$title			 = lang('The address to which this order will be sendt');
 
 		$checked = $preselect ? 'checked="checked"' : '';
+
+		$count_email = count($vendor_email);
+		if ($count_email == 1 && $preselect_one)
+		{
+			$checked = 'checked="checked"';
+		}
 
 		foreach ($vendor_email as $_entry)
 		{

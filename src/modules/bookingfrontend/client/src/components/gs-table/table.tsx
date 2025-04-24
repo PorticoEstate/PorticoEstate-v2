@@ -18,6 +18,7 @@ import TableSearch from "@/components/gs-table/subcomponents/table-search";
 import ColumnToggle from "@/components/gs-table/subcomponents/column-toggle";
 import TablePagination from "./subcomponents/table-pagination";
 import TableExport from "@/components/gs-table/subcomponents/table-export";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 
 // Fuzzy filter function
@@ -140,7 +141,7 @@ function Table<T>({
                       exportFileName
                   }: TableProps<T>) {
 
-
+    const isMobile = useIsMobile();
     const storedSettings = loadStoredSettings(storageId);
     const [sorting, setSorting] = useState<SortingState>(defaultSort);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
@@ -303,17 +304,19 @@ function Table<T>({
     }), [enableSearch, table, searchPlaceholder, utilityHeader, exportFileName, selectedRows, rowSelection, tableColumns, columnVisibility]);
 
     return (
-        <div className={`gs-table ${styles.tableContainer}`}>
+        <div className={`gs-table ${styles.tableContainer}`} data-is-mobile={isMobile}>
             {!!utilityHeader && (
                 <TableUtilityHeader {...combinedUtilityHeader} />
             )}
-            <div className={styles.table} style={{gridTemplateColumns: gridTemplateColumns}}>
+            <div className={`${styles.table} ${isMobile ? styles.tableMobile : ''}`} 
+                 style={{gridTemplateColumns: isMobile ? undefined : gridTemplateColumns}}>
                 <TableHeader
                     headerGroups={table.getHeaderGroups()}
-                    gridTemplateColumns={gridTemplateColumns}
+                    gridTemplateColumns={isMobile ? undefined : gridTemplateColumns}
                     renderExpandedContent={!!renderExpandedContent || !!renderRowButton}
                     icon={!!icon}
                     iconPadding={iconPadding}
+                    isMobile={isMobile}
                 />
                 {data.length === 0 && empty ? (
                     empty
@@ -322,11 +325,12 @@ function Table<T>({
                         <TableRow
                             key={row.id}
                             row={row}
-                            gridTemplateColumns={gridTemplateColumns}
+                            gridTemplateColumns={isMobile ? undefined : gridTemplateColumns}
                             icon={icon}
                             renderExpandedContent={renderExpandedContent}
                             renderRowButton={renderRowButton}
                             rowStyle={rowStyle}
+                            isMobile={isMobile}
                         />
                     ))
                 )}

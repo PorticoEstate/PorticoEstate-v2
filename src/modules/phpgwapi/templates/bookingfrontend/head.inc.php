@@ -337,16 +337,24 @@ $self_uri = $_SERVER['REQUEST_URI'];
 $separator = strpos($self_uri, '?') ? '&' : '?';
 $self_uri = str_replace(array("{$separator}lang=no", "{$separator}lang=en"), '', $self_uri);
 
-switch ($userSettings['preferences']['common']['template_set'])
-{
-	case 'bookingfrontend_2':
+// Check for beta client cookie
+$beta_client_raw = Sanitizer::get_var('beta_client', 'raw', 'COOKIE');
+$beta_client = ($beta_client_raw === 'true');
+
+// Initialize all selection states to empty
+$selected_bookingfrontend = '';
+$selected_bookingfrontend_2 = '';
+$beta_selected = '';
+
+// Determine which option should be selected
+if ($userSettings['preferences']['common']['template_set'] === 'bookingfrontend') {
+	$selected_bookingfrontend = ' selected = "selected"';
+} else if ($userSettings['preferences']['common']['template_set'] === 'bookingfrontend_2') {
+	if ($beta_client) {
+		$beta_selected = ' selected = "selected"';
+	} else {
 		$selected_bookingfrontend_2 = ' selected = "selected"';
-		$selected_bookingfrontend = '';
-		break;
-	case 'bookingfrontend':
-		$selected_bookingfrontend_2 = '';
-		$selected_bookingfrontend = ' selected = "selected"';
-		break;
+	}
 }
 
 if ($config_frontend['develope_mode'])
@@ -356,6 +364,7 @@ if ($config_frontend['develope_mode'])
 		   <select id = "template_selector" class="btn btn-link btn-sm nav-link dropdown-toggle" style="padding-top: .315rem;-webkit-appearance: none;-moz-appearance: none;">
 			<option class="nav-link" value="bookingfrontend"{$selected_bookingfrontend}>Original</option>
 			<option class="nav-link" value="bookingfrontend_2"{$selected_bookingfrontend_2}>Ny</option>
+			<option class="nav-link" value="beta"{$beta_selected}>Beta</option>
 		   </select>
 		</li>
 HTML;

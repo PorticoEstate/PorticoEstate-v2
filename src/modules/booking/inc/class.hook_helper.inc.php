@@ -168,7 +168,11 @@ class booking_hook_helper
 
 	function home()
 	{
-		$this->home_vipps_transactions();
+		//Just a test for now
+		if($this->userSettings['lid'] == 'hc483')
+		{
+			$this->home_vipps_transactions();
+		}
 	}
 	private function get_controls($app_id)
 	{

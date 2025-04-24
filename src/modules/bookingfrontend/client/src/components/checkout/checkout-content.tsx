@@ -1,7 +1,7 @@
 'use client'
-import React, {FC, useState} from 'react';
+import React, {FC, useState, useMemo, useEffect} from 'react';
 import CartSection from "./cart-section";
-import {useBookingUser, usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
+import {useBookingUser, usePartialApplications, useUpdatePartialApplication, useResourceRegulationDocuments} from "@/service/hooks/api-hooks";
 import { CheckoutEventDetailsData } from './checkout-event-details-schema';
 import { BillingFormData } from './billing-form-schema';
 import CheckoutEventDetails from "@/components/checkout/checkout-event-details";
@@ -10,10 +10,12 @@ import styles from './checkout.module.scss';
 import {Spinner} from "@digdir/designsystemet-react";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {useCheckoutApplications} from "@/components/checkout/hooks/checkout-hooks";
-import {phpGWLink} from "@/service/util";
 import {useRouter} from "next/navigation";
+import { useTrans } from '@/app/i18n/ClientTranslationProvider';
+import RegulationDocuments from './regulation-documents';
 
 const CheckoutContent: FC = () => {
+	const t = useTrans();
     const {data: applications, isLoading: partialsLoading} = usePartialApplications();
     const {data: user, isLoading: userLoading} = useBookingUser();
     const updateMutation = useUpdatePartialApplication();
@@ -27,32 +29,97 @@ const CheckoutContent: FC = () => {
     }>();
     const router = useRouter();
 
+    // Extract all resources from applications with their building IDs
+    const resources = useMemo(() => {
+        if (!applications?.list) return [];
 
-    const handleSubmit = async () => {
+        const resourceMap = new Map<number, { id: number, building_id?: number }>();
+
+        applications.list.forEach(app => {
+            if (app.resources && Array.isArray(app.resources)) {
+                app.resources.forEach(resource => {
+                    if (resource.id) {
+                        resourceMap.set(resource.id, {
+                            id: resource.id,
+                            building_id: resource.building_id ?? undefined
+                        });
+                    }
+                });
+            }
+        });
+
+        return Array.from(resourceMap.values());
+    }, [applications]);
+
+    // Fetch regulation documents for all resources
+    const { data: regulationDocuments, isLoading: docsLoading } = useResourceRegulationDocuments(resources);
+
+    // State to track individual document checkboxes
+    const [checkedDocuments, setCheckedDocuments] = useState<Record<number, boolean>>({});
+    
+    // State to track if we should show document error
+    const [showDocumentsError, setShowDocumentsError] = useState(false);
+    
+    // Reference for the documents section
+    const documentsSectionRef = React.useRef<HTMLDivElement>(null);
+
+    // Custom handler for individual document consent changes
+    const handleDocumentConsentChange = (documentId: number, checked: boolean) => {
+        setCheckedDocuments(prev => ({
+            ...prev,
+            [documentId]: checked
+        }));
+        
+        // If user is checking a document, clear the error state
+        if (checked) {
+            setShowDocumentsError(false);
+        }
+    };
+
+    // Check if all documents are checked
+    const areAllDocumentsChecked = useMemo(() => {
+        if (!regulationDocuments || regulationDocuments.length === 0) return true;
+
+        return regulationDocuments.every(doc => checkedDocuments[doc.id] === true);
+    }, [regulationDocuments, checkedDocuments]);
+
+    // Update billing details when document consent status changes
+    useEffect(() => {
+        if (billingDetails && billingDetails.documentsRead !== areAllDocumentsChecked) {
+            setBillingDetails(prev => {
+                if (!prev) return prev;
+                return {
+                    ...prev,
+                    documentsRead: areAllDocumentsChecked
+                };
+            });
+        }
+    }, [areAllDocumentsChecked]);
+
+    const handleFormSubmit = async () => {
         if (!eventDetails || !applications || !billingDetails) {
             console.log('missing Data', eventDetails, billingDetails);
             return;
         }
+        
+        // Check if documents need to be confirmed
+        if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
+            // Show error state
+            setShowDocumentsError(true);
+            
+            // Scroll to documents section
+            if (documentsSectionRef.current) {
+                documentsSectionRef.current.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+            
+            // Don't submit the form
+            return;
+        }
 
         try {
-            // First update all applications with event details
-            // await Promise.all(applications.list.map(application =>
-            //     updateMutation.mutateAsync({
-            //         id: application.id,
-            //         application: {
-            //             id: application.id,
-            //             name: eventDetails.title,
-            //             organizer: eventDetails.organizerName
-            //         }
-            //     })
-            // ));
-
-            // TODO: Handle billing details submission
-            const finalData = {
-                ...eventDetails,
-                ...billingDetails,
-            };
-
             checkoutMutation.mutateAsync({
                 eventTitle: eventDetails.title,
                 organizerName: eventDetails.organizerName,
@@ -62,37 +129,52 @@ const CheckoutContent: FC = () => {
                 contactPhone: billingDetails.contactPhone,
                 street: billingDetails.street,
                 zipCode: billingDetails.zipCode,
-                city: billingDetails.city
+                city: billingDetails.city,
+                documentsRead: billingDetails.documentsRead
             }).then(() => {
                 router.push('/user/applications');
             })
-            // const returnUrl = encodeURI(window.location.href.split('bookingfrontend')[1]);
-            // const loginUrl = phpGWLink(['bookingfrontend', '/'], { after: returnUrl });
-            // console.log(finalData);
         } catch (error) {
             console.error('Error updating applications:', error);
             // TODO: Handle error (show error message to user)
         }
     };
 
-    if(userLoading || partialsLoading || checkoutMutation.isPending) {
-        return <Spinner aria-label={'laster brukerinfo'} />
+    if(userLoading || partialsLoading || checkoutMutation.isPending || docsLoading) {
+        return <Spinner aria-label={t('bookingfrontend.loading_user_info')} />
     }
+
     if(!user || !applications || applications.list.length === 0) {
         router.push('/');
-
         return ''
-
     }
 
     return (
         <div className={styles.content}>
             <CheckoutEventDetails user={user} partials={applications.list} onDetailsChange={setEventDetails} />
             <CartSection applications={applications.list} setCurrentApplication={setCurrentApplication} />
-            <BillingForm user={user} onBillingChange={setBillingDetails} onSubmit={handleSubmit} />
+
+            <BillingForm 
+                user={user} 
+                onBillingChange={setBillingDetails} 
+                onSubmit={handleFormSubmit} 
+                documentsValidated={!regulationDocuments?.length || areAllDocumentsChecked}
+                documentsSectionRef={documentsSectionRef}
+                showDocumentsSection={true}
+                documents={regulationDocuments || []}
+                checkedDocuments={checkedDocuments}
+                onDocumentCheck={handleDocumentConsentChange}
+                areAllDocumentsChecked={areAllDocumentsChecked}
+                showDocumentsError={showDocumentsError}
+            />
+
             {currentApplication && (
-                <ApplicationCrud onClose={() => setCurrentApplication(undefined)} applicationId={currentApplication.application_id} date_id={currentApplication.date_id}
-                                 building_id={currentApplication.building_id} />
+                <ApplicationCrud
+                    onClose={() => setCurrentApplication(undefined)}
+                    applicationId={currentApplication.application_id}
+                    date_id={currentApplication.date_id}
+                    building_id={currentApplication.building_id}
+                />
             )}
         </div>
     );

@@ -5,11 +5,9 @@ import {ILanguage, languages} from '@/app/i18n/settings';
 import Dialog from "@/components/dialog/mobile-dialog";
 import {Button} from "@digdir/designsystemet-react";
 import {useParams, usePathname, useRouter} from "next/navigation";
-import Link from "next/link";
 import ReactCountryFlag from "react-country-flag";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faChevronDown} from "@fortawesome/free-solid-svg-icons";
 import {phpGWLink} from "@/service/util";
+import {ChevronDownIcon} from "@navikt/aksel-icons";
 
 // Create a utility function to refresh translations
 const refreshPage = () => {
@@ -75,7 +73,7 @@ const LanguageSwitcher: React.FC = () => {
 				data-size={'sm'}
 			>
 				<ReactCountryFlag countryCode={currentLang.countryCode} svg
-				/> <FontAwesomeIcon icon={faChevronDown}/>
+				/> <ChevronDownIcon width="1.875rem" height="1.875rem" />
 			</Button>
 			<Dialog open={isOpen} onClose={() => setIsOpen(false)}>
 

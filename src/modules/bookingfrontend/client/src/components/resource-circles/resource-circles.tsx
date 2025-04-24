@@ -1,6 +1,5 @@
 import React, {FC, useState} from 'react';
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import { LayersIcon } from "@navikt/aksel-icons";
 import styles from "./resource-circles.module.scss";
 import {IShortResource} from "@/service/pecalendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
@@ -38,7 +37,7 @@ const ResourceCircles: FC<ResourceCirclesProps> = (props) => {
         {resources.map((res) => <List.Item key={res.id} className={"text-body"}><ColourCircle resourceId={res.id}/> {res.name}</List.Item>)}
     </List.Unordered>) : (
         <div className={styles.colorCircles}>
-            <FontAwesomeIcon icon={faLayerGroup}/>
+            <LayersIcon fontSize="1.25rem" />
             {circlesToShow.map((res, index) => (
                 <ColourCircle resourceId={res.id} key={index} className={styles.colorCircle} size={size}/>
             ))}

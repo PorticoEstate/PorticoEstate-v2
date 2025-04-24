@@ -9,6 +9,7 @@ use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\controllers\ResourceController;
+use App\modules\bookingfrontend\controllers\VersionController;
 use App\modules\bookingfrontend\helpers\LangHelper;
 use App\modules\bookingfrontend\helpers\LoginHelper;
 use App\modules\bookingfrontend\helpers\LogoutHelper;
@@ -26,6 +27,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->get('/searchdataall[/{params:.*}]', DataStore::class . ':SearchDataAll');
 	$group->get('/searchdataalloptimised[/{params:.*}]', DataStore::class . ':SearchDataAllOptimised');
 	$group->get('/availableresources[/{params:.*}]', DataStore::class . ':getAvailableResources');
+	$group->get('/towns', BuildingController::class . ':getTowns');
 	$group->group('/buildings', function (RouteCollectorProxy $group)
 	{
 		$group->get('', BuildingController::class . ':index');
@@ -44,20 +46,25 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('', ResourceController::class . ':index');
 		$group->get('/{id}', ResourceController::class . ':getResource');
 		$group->get('/{id}/documents', ResourceController::class . ':getDocuments');
+		$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
 		$group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
 	});
 
 	$group->group('/organizations', function (RouteCollectorProxy $group) {
 		$group->get('/my', OrganizationController::class . ':getMyOrganizations');
+		$group->get('', DataStore::class . ':getOrganizations');
 		$group->post('', OrganizationController::class . ':create');
 		$group->get('/lookup/{number}', OrganizationController::class . ':lookup');
 		$group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');
+		$group->get('/{id}/events', EventController::class . ':getOrganizationEvents');
 		$group->get('/list', OrganizationController::class . ':getList');
+		$group->get('/{id}', OrganizationController::class . ':getById');
 	});
 
 	$group->group('/events', function (RouteCollectorProxy $group)
 	{
+		$group->get('/upcoming', EventController::class . ':getUpcomingEvents');
 		$group->get('/{id}', EventController::class . ':getEventById');
 		$group->patch('/{id}', EventController::class . ':updateEvent');
 		$group->post('/{id}/pre-registration', EventController::class . ':preRegister');
@@ -104,6 +111,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->patch('', BookingUserController::class . ':update');
 		$group->get('/messages', BookingUserController::class . ':getMessages');
 		$group->delete('/messages/{id}', BookingUserController::class . ':deleteMessage');
+		$group->get('/messages/test', BookingUserController::class . ':createTestMessage');
 	});
 })->add(new SessionsMiddleware($app->getContainer()));
 
@@ -111,6 +119,9 @@ $app->group('/bookingfrontend/auth', function (RouteCollectorProxy $group) {
 	$group->post('/login', LoginController::class . ':login');
 	$group->post('/logout', LoginController::class . ':logout');
 })->add(new SessionsMiddleware($app->getContainer()));
+
+$app->post('/bookingfrontend/version', VersionController::class . ':setVersion')->add(new SessionsMiddleware($app->getContainer()));
+$app->get('/bookingfrontend/version', VersionController::class . ':getVersion')->add(new SessionsMiddleware($app->getContainer()));
 
 
 $app->get('/bookingfrontend/lang[/{lang}]', LangHelper::class . ':process');

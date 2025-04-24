@@ -1,26 +1,46 @@
+.wrapper {
+	display: flex;
+	justify-content: flex-end;
+}
+
 .buttonGroup {
-  display: flex;
- button {
-     align-items: center;
- }
-  :first-child {
-    //first button
-    border-bottom-right-radius: 0;
-    border-top-right-radius: 0;
-  }
+	display: flex;
+	width: fit-content;
+	--dsc-button-border-width: var(--ds-border-width-default);
+	--dsc-button-border-style: solid;
+	--dsc-button-border-color: var(--ds-color-border-strong);
+	--dsc-button-gap: var(--ds-size-2);
+	--dsc-button-padding: 4px;
+	border-color: var(--dsc-button-border-color);
+	border-radius: var(--ds-border-radius-default);
+	border-style: var(--dsc-button-border-style);
+	border-width: var(--dsc-button-border-width);
+	padding: var(--dsc-button-padding);
+	//--dsc-button-color: var(--ds-color-text-default);
+	//--dsc-button-color--hover: var(--ds-color-text-default);
 
-  :last-child {
-    //last button
+	button {
+		align-items: center;
+	}
 
-    border-bottom-left-radius: 0;
-    border-top-left-radius: 0;
-  }
+	:first-child {
+		//first button
+		//border-bottom-right-radius: 0;
+		//border-top-right-radius: 0;
+	}
 
- :not(:first-child):not(:last-child) {
-    //middle buttons
+	:last-child {
+		//last button
 
-    border-right: none;
-    border-left: none;
-    border-radius: 0;
-  }
+		//border-bottom-left-radius: 0;
+		//border-top-left-radius: 0;
+	}
+
+	:not(:first-child):not(:last-child) {
+		//middle buttons
+
+		border-right: none;
+		border-left: none;
+		border-radius: 0;
+	}
 }

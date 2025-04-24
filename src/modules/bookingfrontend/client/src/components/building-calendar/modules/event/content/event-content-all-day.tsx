@@ -1,7 +1,8 @@
 import React, {FC} from 'react';
 import styles from './event-content.module.scss';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faUser, faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import {faUser} from "@fortawesome/free-solid-svg-icons";
+import { LayersIcon } from "@navikt/aksel-icons";
 import {formatDateRange} from "@/service/util";
 import {FCallEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
@@ -58,7 +59,7 @@ const EventContentAllDay: FC<EventContentAllDayProps> = ({eventInfo}) => {
 
                 <div className={`${styles.resourceIcons} text-label`}>
 
-                    <FontAwesomeIcon icon={faLayerGroup}/>
+                    <LayersIcon fontSize="1.25rem" />
                     {renderColorCircles(isMobile ? 1 : 3)}
                 </div>
                 {IEventIsAPIEvent(eventData) && eventData.organizer && (

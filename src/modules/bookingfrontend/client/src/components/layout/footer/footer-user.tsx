@@ -4,8 +4,7 @@ import {useBookingUser, useLogout} from "@/service/hooks/api-hooks";
 import Link from "next/link";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {phpGWLink} from "@/service/util";
-import {faSignInAlt, faSignOutAlt, faUser} from "@fortawesome/free-solid-svg-icons";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { EnterIcon, PersonFillIcon, LeaveIcon } from "@navikt/aksel-icons";
 import {useSearchParams} from "next/navigation";
 import {useQueryClient} from "@tanstack/react-query";
 
@@ -44,7 +43,7 @@ const FooterUser: FC<FooterUserProps> = (props) => {
             <li>
                 <Link href={phpGWLink('bookingfrontend/', {menuaction: 'bookingfrontend.uiuser.show'}, false)}
                       rel="noopener noreferrer" className="link-text link-text-secondary normal">
-                    <FontAwesomeIcon icon={faUser}/> {t('bookingfrontend.my page')}
+                    <PersonFillIcon fontSize="1.25rem" /> {t('bookingfrontend.my page')}
                 </Link>
             </li>
 
@@ -54,12 +53,12 @@ const FooterUser: FC<FooterUserProps> = (props) => {
                     <Link href={phpGWLink(['bookingfrontend', 'logout'])}
                           rel="noopener noreferrer"
                           className="link-text link-text-secondary normal">
-                        <FontAwesomeIcon icon={faSignOutAlt}/> {bookingUser.orgnr} :: {t('common.logout')}
+                        <LeaveIcon fontSize="1.25rem" /> {bookingUser.orgnr} :: {t('common.logout')}
                     </Link>
                 ) : (
                     <Link href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
                           rel="noopener noreferrer" className="link-text link-text-secondary normal">
-                        <FontAwesomeIcon icon={faSignInAlt}/> {t('bookingfrontend.organization')}
+                        <EnterIcon fontSize="1.25rem" /> {t('bookingfrontend.organization')}
                     </Link>
                 )}
 
@@ -71,7 +70,7 @@ const FooterUser: FC<FooterUserProps> = (props) => {
                         id: bookingUser.org_id!
                     }, false)}
                           rel="noopener noreferrer" className="link-text link-text-secondary normal">
-                        <FontAwesomeIcon icon={faSignInAlt}/> {bookingUser.orgname}
+                        <EnterIcon fontSize="1.25rem" /> {bookingUser.orgname}
                     </Link>)}
             </li>
             {/*{org_info_view}*/}
@@ -81,7 +80,7 @@ const FooterUser: FC<FooterUserProps> = (props) => {
                     menuaction: 'booking.uiapplication.index',
                 }, false)} target="_blank"
                       rel="noopener noreferrer" className="link-text link-text-secondary normal">
-                    <FontAwesomeIcon icon={faSignInAlt}/> {t('bookingfrontend.executiveofficer')}
+                    <EnterIcon fontSize="1.25rem" /> {t('bookingfrontend.executiveofficer')}
                 </Link>
             </li>
         </ul>

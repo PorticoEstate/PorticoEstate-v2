@@ -1809,6 +1809,11 @@ HTML;
 				if (isset($error['id'])) {
 					$msg_data['msgbox_id'] = $error['id'];
 				}
+				
+				// Include title if available
+				if (isset($error['title'])) {
+					$msg_data['msgbox_title'] = $error['title'];
+				}
 
 				$msgbox_data[] = $msg_data;
 			}
@@ -1835,6 +1840,11 @@ HTML;
 				// Include ID if available
 				if (isset($message['id'])) {
 					$msg_data['msgbox_id'] = $message['id'];
+				}
+				
+				// Include title if available
+				if (isset($message['title'])) {
+					$msg_data['msgbox_title'] = $message['title'];
 				}
 
 				$msgbox_data[] = $msg_data;

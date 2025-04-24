@@ -21,6 +21,7 @@ interface IResource {
     simple_booking_end_date: number | null;
     booking_day_horizon: number | null;
     capacity: number | null;
+    participant_limit: number | null;
     deactivate_calendar: number;
     deactivate_application: number;
     booking_time_minutes: number | null;
@@ -29,6 +30,7 @@ interface IResource {
     hidden_in_frontend: number | null;
     activate_prepayment: number | null;
     booking_buffer_deadline: number | null;
+    deny_application_if_booked: 0 | 1 | null;
     building_id: number | null;
     description_json:string;
 }

@@ -659,6 +659,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 				'order'		 => 'descr'
 			)
 		);
+		array_unshift($values_combo_box[0], array('id' => '-1', 'name' => lang('all')));
 		array_unshift($values_combo_box[0], array('id' => '', 'name' => lang('no category')));
 		$combos[]			 = array(
 			'type'	 => 'filter',

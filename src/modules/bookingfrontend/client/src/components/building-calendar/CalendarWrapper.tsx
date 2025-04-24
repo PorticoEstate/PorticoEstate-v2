@@ -7,7 +7,7 @@ import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {DatesSetArg} from "@fullcalendar/core";
 import {IBuilding, Season} from "@/service/types/Building";
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
-import {useBuildingFreeTimeSlots, useBuildingSchedule} from "@/service/hooks/api-hooks";
+import {useBuildingSchedule} from "@/service/hooks/api-hooks";
 import CalendarProvider from "@/components/building-calendar/calendar-context";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 import {useQueryClient} from "@tanstack/react-query";
@@ -46,13 +46,6 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
     const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!resourceId && !(window.innerWidth < 601));
     const [resourcesHidden, setSResourcesHidden] = useState<boolean>(!!resourceId || window.innerWidth < 601);
 	const [dates, setDates] = useState<DateTime[]>([DateTime.fromJSDate(initialDate)]);
-
-	const {data: freeTimeSlots} = useBuildingFreeTimeSlots({
-		building_id: buildingId,
-		weeks: dates,
-		instance: undefined,
-		initialFreeTime
-	});
 
 	const {data: _, isLoading, isStale} = useBuilding(building.id, undefined, building);
 

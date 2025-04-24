@@ -539,13 +539,55 @@ class ApplicationController extends DocumentController
 				// Add timestamp and session info for debugging
 				$result['debug_timestamp'] = date('Y-m-d H:i:s');
 				$result['debug_session_id'] = $session_id;
+
+				// Determine message based on direct booking and count
+				// Check if at least one application is a direct booking
+				$has_direct_booking = false;
+				foreach ($result['updated'] as $app) {
+					if ($app['status'] === 'ACCEPTED') {
+						$has_direct_booking = true;
+						break;
+					}
+				}
+
+				// Define message sets based on direct booking status
+				if ($has_direct_booking) {
+					$messages = array(
+						'one' => array(
+							'registered' => "Your application has now been processed and a confirmation email has been sent to you.",
+							'review' => ""
+						),
+						'multiple' => array(
+							'registered' => "Your applications have now been processed and confirmation emails have been sent to you.",
+							'review' => ""
+						)
+					);
+				} else {
+					$messages = array(
+						'one' => array(
+							'registered' => "Your application has now been registered and a confirmation email has been sent to you.",
+							'review' => "A Case officer will review your application as soon as possible."
+						),
+						'multiple' => array(
+							'registered' => "Your applications have now been registered and confirmation emails have been sent to you.",
+							'review' => "A Case officer will review your applications as soon as possible."
+						)
+					);
+				}
+
+				// Choose message set based on count
+				$msgset = count($result['updated']) > 1 ? 'multiple' : 'one';
 				
-				// Add success message to cache
-				$message = count($result['updated']) > 1 ? 
-					lang('Your applications have now been processed and confirmation emails have been sent to you.') : 
-					lang('your application has now been processed and a confirmation email has been sent to you.');
-				$spam_filter_msg = lang('Please check your Spam Filter if you are missing mail.');
-				Cache::message_set("{$message}<br/>{$spam_filter_msg}");
+				// Build message array
+				$message_arr = array();
+				$message_arr[] = lang($messages[$msgset]['registered']);
+				if ($messages[$msgset]['review']) {
+					$message_arr[] = lang($messages[$msgset]['review']);
+				}
+				$message_arr[] = lang("Please check your Spam Filter if you are missing mail.");
+				
+				// Set message in cache
+				Cache::message_set(implode("<br/>", $message_arr), 'message', 'booking.booking confirmed');
 
 				$response->getBody()->write(json_encode([
 					'message' => 'Applications processed successfully',

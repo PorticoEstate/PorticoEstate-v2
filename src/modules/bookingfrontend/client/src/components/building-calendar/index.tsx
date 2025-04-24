@@ -7,14 +7,15 @@ import NotFound from "next/dist/client/components/not-found-error";
 interface BuildingCalendarProps {
     building_id: string;
     resource_id?: string;
+    initialDate?: string; // ISO date string format
 }
 
 const BuildingCalendar = async (props: BuildingCalendarProps) => {
-    const {building_id, resource_id} = props;
+    const {building_id, resource_id, initialDate: initialDateStr} = props;
 
 
     const buildingId = parseInt(building_id, 10);
-    const initialDate = DateTime.now();
+    const initialDate = initialDateStr ? DateTime.fromISO(initialDateStr) : DateTime.now();
     const weeksToFetch = [
         initialDate.set({weekday: 1}).startOf('day').toFormat("y-MM-dd"),
         initialDate.set({weekday: 1}).startOf('day').plus({week: 1}).toFormat("y-MM-dd"),
@@ -22,7 +23,7 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
 
 	// Get start and end dates for initial free time slots
 	const startDate = initialDate.startOf('week');
-	const endDate = startDate.plus({ weeks: 2 }); // Fetch 2 weeks initially
+	const endDate = startDate.plus({ weeks: 1 }); // Fetch 2 weeks initially
 
 	try {
         const [initialFreeTime, building, buildingResources, seasons] = await Promise.all([

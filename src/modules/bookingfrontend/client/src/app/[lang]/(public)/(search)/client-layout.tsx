@@ -2,7 +2,11 @@
 import React, {FC, useMemo} from 'react';
 import {useRouter} from "next/navigation";
 import {Tabs} from "@digdir/designsystemet-react";
-import {InformationSquareIcon, ReceiptIcon, TasklistSendIcon} from "@navikt/aksel-icons";
+import {
+	Buildings2Icon,
+	CalendarIcon,
+	TenancyIcon
+} from "@navikt/aksel-icons";
 import {LinkTab} from '@/components/util/LinkTab';
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {IServerSettings} from "@/service/types/api.types";
@@ -14,7 +18,7 @@ interface ClientLayoutProps {
 
 
 const searchPages: {
-	icon: typeof TasklistSendIcon;
+	icon: typeof Buildings2Icon;
 	value: string;
 	labelTag: string;
 	relativePath: string;
@@ -24,21 +28,21 @@ const searchPages: {
 		relativePath: '/',
 		value: '/',
 		labelTag: 'bookingfrontend.rent',
-		icon: InformationSquareIcon,
+		icon: Buildings2Icon,
 		configValue: 'booking'
 	},
 	{
 		relativePath: '/search/event',
 		value: '/event',
 		labelTag: 'bookingfrontend.event',
-		icon: TasklistSendIcon,
+		icon: CalendarIcon,
 		configValue: 'event'
 	},
 	{
 		relativePath: '/search/organization',
 		value: '/organization',
 		labelTag: 'bookingfrontend._organization',
-		icon: ReceiptIcon,
+		icon: TenancyIcon,
 		configValue: 'organization'
 	},
 ];
@@ -61,7 +65,7 @@ const ClientLayout: FC<ClientLayoutProps> = (props) => {
 
 
 	return (
-		<nav aria-label="Booking categories" style={{marginBottom: '1rem'}}>
+		<nav aria-label={t('bookingfrontend.booking_categories')} style={{marginBottom: '1rem'}}>
 			<Tabs value={pathname}>
 				<Tabs.List>
 					{links.map((link) => {
@@ -82,5 +86,3 @@ const ClientLayout: FC<ClientLayoutProps> = (props) => {
 }
 
 export default ClientLayout
-
-

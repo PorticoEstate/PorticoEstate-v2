@@ -1,21 +1,20 @@
 import React, {Dispatch, FC, MutableRefObject} from 'react';
 import {Badge, Button} from "@digdir/designsystemet-react";
-import {ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
+import {ChevronLeftIcon, ChevronRightIcon, LayersIcon, PlusIcon, TableIcon, CalendarIcon} from "@navikt/aksel-icons";
 import styles from './calendar-inner-header.module.scss';
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import FullCalendar from "@fullcalendar/react";
 import ButtonGroup from "@/components/button-group/button-group";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faCalendar} from "@fortawesome/free-regular-svg-icons";
-import {faLayerGroup, faPlus, faTableList} from "@fortawesome/free-solid-svg-icons";
 import {
 	useCalenderViewMode,
 	useEnabledResources,
 	useResourcesHidden,
 } from "@/components/building-calendar/calendar-context";
 import {DateTime} from "luxon";
+import {useIsMobile} from "@/service/hooks/is-mobile";
+import {usePartialApplications} from "@/service/hooks/api-hooks";
 
 interface CalendarInnerHeaderProps {
 
@@ -35,7 +34,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 	const {enabledResources} = useEnabledResources();
 	const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
 	const calendarViewMode = useCalenderViewMode();
+	const isMobile = useIsMobile();
 
+	const partials = usePartialApplications();
 
 	const c = calendarRef.current;
 
@@ -100,8 +101,8 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			<Button variant={'secondary'} data-size={'sm'}
 					className={styles.mobileResourcesButton}
 				// className={'captialize'}
-					onClick={() => setResourcesHidden(!resourcesHidden)}><FontAwesomeIcon
-				icon={faLayerGroup}/>{t('booking.select')} {t('bookingfrontend.resources')}
+					onClick={() => setResourcesHidden(!resourcesHidden)}>
+					<LayersIcon fontSize="1.25rem" />{t('booking.select')} {t('bookingfrontend.resources')}
 				<Badge count={enabledResources.size} data-size={"md"} color={"danger"}></Badge>
 			</Button>
 
@@ -131,49 +132,48 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 				</Button>
 			</div>
 
-			<ButtonGroup className={styles.modeSelectTime}>
-				<Button variant={view === 'timeGridDay' ? 'primary' : 'secondary'} data-color={'brand1'}
-						data-size={'sm'}
-						className={'captialize'}
-
-						onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
-				<Button variant={view === 'timeGridWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
-						data-size={'sm'}
-						className={'captialize'}
-
-						onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-				{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
-				{/*        className={'captialize'}*/}
-
-				{/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
-
-			</ButtonGroup>
+			{/* Hide day/week buttons when in calendar mode on mobile */}
+			{!(isMobile && calendarViewMode === 'calendar') && (
+				<ButtonGroup data-color='accent' className={styles.modeSelectTime}>
+					<Button variant={view === 'timeGridDay' ? 'primary' : 'tertiary'} data-color={'accent'}
+							data-size={'sm'}
+							className={'captialize subtle'}
+							onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
+					<Button variant={view === 'timeGridWeek' ? 'primary' : 'tertiary'} data-color={'accent'}
+							data-size={'sm'}
+							className={'captialize subtle'}
+							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
+					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
+					{/*        className={'captialize'}*/}
+					{/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
+					</ButtonGroup>
+				)}
 
 			{
 				calendarViewMode === 'calendar' &&
-				<ButtonGroup className={styles.modeSelect}>
-					<Button variant={view !== 'listWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
+				<ButtonGroup data-color='accent' className={styles.modeSelect}>
+					<Button variant={view !== 'listWeek' ? 'primary' : 'tertiary'}
 							aria-active={'true'}
 							aria-current={'true'} data-size={'sm'}
-							className={'captialize'} onClick={() => {
+							className={'captialize subtle'} onClick={() => {
 						props.setLastCalendarView()
-					}}><FontAwesomeIcon icon={faCalendar}/> <span
+					}}><CalendarIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
-					<Button variant={view === 'listWeek' ? 'primary' : 'secondary'} data-color={'brand1'}
+					<Button variant={view === 'listWeek' ? 'primary' : 'tertiary'}
 							data-size={'sm'}
-							className={'captialize'} onClick={() => {
+							className={'captialize subtle'} onClick={() => {
 						props.setView('listWeek')
-					}}><FontAwesomeIcon icon={faTableList}/> <span
+					}}><TableIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
 				</ButtonGroup>
 			}
 			{
 				calendarViewMode === 'calendar' &&
-				<Button variant={'secondary'} data-color={'brand1'} onClick={props.createNew} data-size={'sm'} className={styles.orderButton}>
+				<Button variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'} data-color={'accent'} onClick={props.createNew} data-size={'sm'} className={styles.orderButton}>
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}
 
-					<FontAwesomeIcon icon={faPlus}/>
+					<PlusIcon fontSize="1.25rem" />
 					{/*</Link>*/}
 
 				</Button>
@@ -184,5 +184,3 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 }
 
 export default CalendarInnerHeader
-
-

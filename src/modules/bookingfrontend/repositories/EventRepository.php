@@ -208,7 +208,6 @@ class EventRepository
     }
 
 
-
 	/**
 	 * Create an event from application data
 	 */
@@ -265,11 +264,16 @@ class EventRepository
 		$stmt = $this->db->prepare($sql);
 
 		foreach ($agegroups as $agegroup) {
+			// Skip if agegroup_id is not set or is null
+			if (empty($agegroup['agegroup_id'])) {
+				continue;
+			}
+			
 			$stmt->execute([
 				$eventId,
 				$agegroup['agegroup_id'],
-				$agegroup['male'],
-				$agegroup['female']
+				$agegroup['male'] ?? 0,
+				$agegroup['female'] ?? 0
 			]);
 		}
 	}
@@ -282,5 +286,147 @@ class EventRepository
 		$sql = "UPDATE bb_event SET id_string = cast(id AS varchar)";
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute();
+	}
+	
+	/**
+	 * Get upcoming events from a given date
+	 *
+	 * @param string|null $fromDate Start date filter
+	 * @param string|null $toDate End date filter
+	 * @param array|null $orgInfo Optional organization info to filter by
+	 * @param int|null $buildingId Optional building ID to filter by
+	 * @param int|null $facilityTypeId Optional facility type ID to filter by
+	 * @param bool|null $filterByOrganization Whether to filter by organization
+	 * @param string|null $loggedInAs Organization number of logged in user
+	 * @param int $start Pagination start
+	 * @param int|null $limit Pagination limit (null means no limit)
+	 * @return array Array of events matching the criteria
+	 */
+	public function getUpcomingEvents(
+		?string $fromDate = null,
+		?string $toDate = null,
+		?array $orgInfo = null,
+		?int $buildingId = null,
+		?int $facilityTypeId = null,
+		?bool $filterByOrganization = false,
+		?string $loggedInAs = null,
+		int $start = 0,
+		?int $limit = null
+	): array {
+		$params = [];
+		$now = date('Y-m-d');
+		$conditions = ["bb_event.active = 1"];
+		
+		// If from date is specified, add it to conditions
+		if ($fromDate) {
+			$conditions[] = "bb_event.from_ >= :from_date";
+			$params[':from_date'] = $fromDate;
+		} else {
+			$conditions[] = "bb_event.from_ >= :now";
+			$params[':now'] = $now;
+		}
+		
+		// If to date is specified, add it to conditions
+		if ($toDate) {
+			$conditions[] = "bb_event.to_ <= :to_date";
+			$params[':to_date'] = $toDate;
+		}
+		
+		// Handle organization filtering
+		if (!empty($orgInfo)) {
+			$orgConditions = [];
+			
+			// Filter by organization number if provided
+			if (!empty($orgInfo['organization_number'])) {
+				$orgConditions[] = "bb_event.customer_organization_number = :org_number";
+				$params[':org_number'] = $orgInfo['organization_number'];
+			}
+			
+			// Filter by organization name if provided
+			if (!empty($orgInfo['name'])) {
+				$orgConditions[] = "bb_event.organizer = :org_name";
+				$params[':org_name'] = $orgInfo['name'];
+			}
+			
+			if (!empty($orgConditions)) {
+				$conditions[] = "(" . implode(" OR ", $orgConditions) . ")";
+			}
+		}
+		
+		// If building ID is specified, add it to conditions
+		if ($buildingId) {
+			$conditions[] = "bb_event.building_id = :building_id";
+			$params[':building_id'] = $buildingId;
+		}
+		
+		// If facility type ID is specified, add it to conditions
+		if ($facilityTypeId) {
+			$conditions[] = "bb_rescategory.id = :facility_type_id";
+			$params[':facility_type_id'] = $facilityTypeId;
+		}
+		
+		// Handle visibility and logged-in filtering exactly like the original
+		if ($filterByOrganization && $loggedInAs) {
+			// Only show user's own events if explicitly filtering by organization only
+			$conditions[] = "bb_event.customer_organization_number = :logged_in_org";
+			$params[':logged_in_org'] = $loggedInAs;
+		} else if ($loggedInAs) {
+			// Show public events AND user's own events (most common case)
+			$conditions[] = "(bb_event.include_in_list = 1 OR bb_event.customer_organization_number = :logged_in_org)";
+			$params[':logged_in_org'] = $loggedInAs;
+		} else {
+			// Not logged in, only show public events
+			$conditions[] = "bb_event.include_in_list = 1";
+		}
+		
+		$conditionsString = implode(' AND ', $conditions);
+		
+		// Base SQL with full event information to allow proper serialization
+		$baseSelectSql = "SELECT DISTINCT ON (bb_event.id, bb_event.from_)
+			bb_event.*,
+			act.name as activity_name,
+			bb_resource.name as resource_name,
+			bb_rescategory.name as resource_type,
+			(
+				SELECT jsonb_object_agg(res.id, res.name) from bb_event_resource as evres
+				JOIN bb_resource as res
+				ON res.id = evres.resource_id
+				WHERE evres.event_id = bb_event.id
+			) as resources";
+		
+		// Query with appropriate joins based on conditions
+		// Always join resource tables to match the original implementation
+		$sql = "{$baseSelectSql}
+			FROM bb_event
+			INNER JOIN bb_building ON bb_event.building_id = bb_building.id
+			INNER JOIN bb_event_resource ON bb_event.id = bb_event_resource.event_id
+			INNER JOIN bb_resource ON bb_event_resource.resource_id = bb_resource.id
+			INNER JOIN bb_rescategory ON bb_resource.rescategory_id = bb_rescategory.id
+            LEFT JOIN bb_activity act ON bb_event.activity_id = act.id
+			WHERE {$conditionsString}
+			ORDER BY bb_event.from_ ASC";
+		
+		
+		// Add limit clause only if limit is specified
+		if ($limit !== null) {
+			$sql .= " LIMIT :limit OFFSET :start";
+		} else {
+			$sql .= " OFFSET :start";
+		}
+		
+		$stmt = $this->db->prepare($sql);
+		
+		// Bind parameters
+		foreach ($params as $key => $value) {
+			$stmt->bindValue($key, $value);
+		}
+		
+		$stmt->bindValue(':start', $start, PDO::PARAM_INT);
+		if ($limit !== null) {
+			$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+		}
+		
+		$stmt->execute();
+		return $stmt->fetchAll(PDO::FETCH_ASSOC);
 	}
 }

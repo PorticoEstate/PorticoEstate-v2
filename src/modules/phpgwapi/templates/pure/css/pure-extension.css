@@ -101,9 +101,6 @@ p.conflicts {margin: 0;color: #000;}
     text-align: center;
 }
 
-.date-container .close-btn:before {
-    content: "×";
-}
 
 .date-container .close-btn:hover {
     color: #333;

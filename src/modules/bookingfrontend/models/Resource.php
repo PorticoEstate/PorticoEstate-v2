@@ -79,6 +79,7 @@ class Resource
     /**
      * @ORM\Column(type="integer", nullable=true)
      * @Expose
+	 * @Short
      * @OA\Property(description="Resource category ID", type="integer", nullable=true)
      */
     public $rescategory_id;
@@ -184,6 +185,14 @@ class Resource
     public $capacity;
 
     /**
+     * @ORM\Transient
+     * @Expose
+	 * @Short
+     * @OA\Property(description="Current participant limit of the resource", type="integer", nullable=true)
+     */
+    public $participant_limit;
+
+    /**
      * @ORM\Column(type="integer")
      * @Expose
      * @OA\Property(description="Whether the calendar is deactivated", type="integer")
@@ -245,6 +254,13 @@ class Resource
      * @OA\Property(description="Description in JSON format", type="object", nullable=true)
      */
     public $description_json;
+
+    /**
+     * @ORM\Column(type="smallint", nullable=true)
+     * @Expose
+     * @OA\Property(description="Whether to deny application if resource is already booked", type="integer", nullable=true)
+     */
+    public $deny_application_if_booked;
 
     /**
      * @ORM\Column(type="integer", nullable=true)

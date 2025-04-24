@@ -1444,7 +1444,14 @@ class property_uiworkorder extends phpgwapi_uicommon_jquery
 			$_budget_amount	 = $this->bo->get_budget_amount($id);
 			$sosubstitute	 = CreateObject('property.sosubstitute');
 
-			if (isset($values['approval']) && $values['approval'] && $config->config_data['workorder_approval'])
+			$workorder_status = execMethod('property.bogeneric.read_single', array(
+				'id'			 => $values['status'],
+				'location_info'	 => array(
+					'type' => 'workorder_status'
+				)
+			));
+
+			if (empty($workorder_status['closed']) && !empty($values['approval'])  && $config->config_data['workorder_approval'])
 			{
 				if (empty($this->serverSettings['smtp_server']))
 				{

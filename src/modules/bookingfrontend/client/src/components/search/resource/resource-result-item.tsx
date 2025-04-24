@@ -1,27 +1,54 @@
 import React, {FC, useMemo} from 'react';
 import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
-import {ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
+import {ISearchDataActivity, ISearchDataBuilding, ISearchDataTown, ISearchResource} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {LayersIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 import DividerCircle from "@/components/util/DividerCircle";
+import {useSearchData, useTowns} from "@/service/hooks/api-hooks";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface ResourceResultItemProps {
 	resource: ISearchResource & { building?: ISearchDataBuilding };
 }
 
-
-
-
 const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 	const t = useTrans();
+	const {data: searchData} = useSearchData();
+	const {data: towns} = useTowns();
+	const isMobile = useIsMobile();
+	
+	// Find activity associated with this resource
+	const activity = useMemo(() =>
+		resource.activity_id ?
+			searchData?.activities.find(a => a.id === resource.activity_id) :
+			undefined,
+		[resource.activity_id, searchData?.activities]
+	);
+	
+	// Find the town for this building by town_id
+	const town = useMemo(() => {
+		if (!towns || !resource.building?.town_id) return null;
+		return towns.find(t => t.id === resource.building?.town_id);
+	}, [towns, resource.building?.town_id]);
 
-	const tags = useMemo(() =>
+	const tags = useMemo(() => {
+		const tagElements = [
+			<DigdirLink key='building-link' asChild className={styles.buildingLink} data-color='brand1'>
+				<Link href={'/building/' + resource.building?.id}>{resource.building?.name}</Link>
+			</DigdirLink>,
+			town?.name // Display town name instead of district
+		];
 
-		[<DigdirLink key='building-link' asChild className={styles.buildingLink} data-color='brand1'><Link
-			   href={'/building/' + resource.building?.id}>{resource.building?.name}</Link></DigdirLink>, resource.building?.district]
-			.filter(a => !!a), [resource]);
+		// // Add activity tag if available
+		// if (activity) {
+		// 	tagElements.push(activity.name);
+		// }
+
+		return tagElements.filter(a => !!a);
+	}, [resource, town, activity]);
+
 	return (
 		<Card
 			data-color="neutral"
@@ -42,7 +69,7 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 				</DigdirLink>
 
 
-				<Paragraph data-size="sm" className={styles.resourceTags}>
+				<Paragraph data-size={isMobile ? 'xs' : "sm"} className={styles.resourceTags}>
 					{tags.map((tag, index) => {
 						if (index === 0) {
 							return <span key={'tag' + index}>{tag}</span>

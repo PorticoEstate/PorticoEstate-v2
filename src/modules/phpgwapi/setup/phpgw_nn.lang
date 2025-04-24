@@ -23,6 +23,7 @@ add files	common	nn	Legg til filer
 add section	common	nn	Legg til seksjon
 add sub	common	nn	Legg til underkategori
 address book	common	nn	Adressebok
+address information	common	nn	Adresseinformasjon
 addressbook	common	nn	Adressebok
 admin	common	nn	Admin
 administration	common	nn	Administrasjon
@@ -70,10 +71,12 @@ choose "Log out" if you want to end the session	common	nn	Velg "Logg ut" om du v
 choose language	common	nn	Byt språk
 choose the category	common	nn	Vel kategorien
 choose the parent category	common	nn	Vel foreldrekategorien
+city	common	nn	Poststad
 clear	common	nn	Clear
 clear cache	common	nn	Slett cache (minne)
 clear form	common	nn	Tøm skjema
 close	common	nn	Lukk
+close_dialog	common	nn	Lukk
 collection	common	nn	Samling..
 color	common	nn	Farge
 color selector	common	nn	Fargevelger
@@ -82,6 +85,7 @@ column search	common	nn	Kolonnesøk
 configuration	common	nn	Konfigurasjon
 configure access permissions	common	nn	Tilgangskontroll
 confirm password	common	nn	Bekreft passord
+confirm_close	common	nn	Er du sikker på at du vil lukke? Ulagra endringar vil gå tapt.
 contact	common	nn	Kontakt
 copy	common	nn	Kopiér
 create	common	nn	Lag
@@ -139,6 +143,7 @@ end date	common	nn	Sluttdato
 end time	common	nn	Sluttid
 enter the attribute id	common	nn	Angi egenskap-id
 enter the attribute value for this entity	common	nn	Angi egenskap verdi for denne posten
+enter_fullscreen	common	nn	Opne i fullskjerm
 entry has been deleted sucessfully	common	nn	Entry har blitt slettet
 entry updated sucessfully	common	nn	Entry er oppdatert
 error	common	nn	Feil
@@ -148,6 +153,7 @@ error renaming %1 %2 directory	common	nn	Feil ved endring av namn på %1 %2 kata
 error_occurred	common	nn	Det oppstod ein feil
 error_report_system	common	nn	Feilmelding (om systemet)
 exit	common	nn	Avslutt
+exit_fullscreen	common	nn	Avslutt fullskjerm
 expires	common	nn	Utløpsdato
 false	common	nn	Usann
 fatal error	common	nn	Fatal feil
@@ -198,6 +204,7 @@ highest	common	nn	Høgast
 history	common	nn	Historie
 home	common	nn	Heim
 home screen message	common	nn	Melding på heimeside
+homepage	common	nn	Heimeside
 hour	common	nn	Time
 inactive	common	nn	Inaktiv
 inactive and hidden	common	nn	Inaktiv og gøymd
@@ -232,6 +239,7 @@ link	common	nn	Link
 list groups	common	nn	gruppeliste
 list users	common	nn	brukarliste
 listbox	common	nn	Nedtrekksliste
+loading	common	nn	Lastar
 Loading...	common	nn	Laster...
 login	common	nn	Login
 login	login	nn	Login
@@ -258,9 +266,10 @@ monday	common	nn	Måndag
 muliple checkbox	common	nn	Merkebokser
 muliple radio	common	nn	Flervalgs radio
 my preferences	common	nn	Mine innstillinger
-name	common	nn	Navn
+name	common	nn	Namn
 name of the user, eg. %1	common	nn	Fullt navn på bruker, %1
 Never	common	nn	Aldri
+new	common	nn	Ny
 new account and login	common	nn	Registrering av ny brukar, og pålogging
 new attribute	common	nn	Ny egenskap
 new entry added sucessfully	common	nn	Ny entry er lagt til
@@ -327,7 +336,10 @@ pattern for search in projects	common	nn	Mønster for søk i prosjekt
 percent	common	nn	Prosent
 permissions to the files/users directory	common	nn	løyve til filer/brukarar-katalog
 personal	common	nn	Personleg
+personal information	common	nn	Personleg informasjon
+phone	common	nn	Telefon
 phone number	common	nn	telefonnummer
+phone_helper	common	nn	Norske telefonnummer: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
 please %1 by hand	common	nn	Ver venleg %1 manuelt
 please enter a name	common	nn	Ver venleg skriv inn eit namn!
 please run setup to become current	common	nn	Ver venleg køyr setup for å bli oppdatert
@@ -363,7 +375,9 @@ right	common	nn	Rettighet
 rows selected	common	nn	rader er valgt
 saturday	common	nn	Laurdag
 save	common	nn	Lagre
+save changes	common	nn	Lagre endringar
 save the attribute	common	nn	Lagre egenskap
+saving	common	nn	Lagrar...
 scale	common	nn	Scale
 search	common	nn	Søk
 select a location!	common	nn	Velg en lokasjon
@@ -399,6 +413,7 @@ start upload	common	nn	Start opplasting
 status	common	nn	Status
 statustext	common	nn	Statustekst
 statustext not entered!	common	nn	Statustekst er ikke angitt!
+street	common	nn	Gate
 submit	common	nn	Submit
 sunday	common	nn	Søndag
 the api is current	common	nn	API er oppdatert
@@ -427,6 +442,7 @@ use a valid username and password to gain access to %1	login	nn	Angi et gyldig b
 use cookies	login	nn	use cookies
 User access	common	nn	Brukertilgang
 user data	common	nn	Brukerdata
+user data.description	common	nn	Vis og rediger brukarinformasjonen din
 username	common	nn	Brukernavn
 Username already taken	common	nn	Brukarnamnet er allereie registrert
 users	common	nn	Brukere
@@ -454,3 +470,4 @@ your message has been sent	common	nn	Din melding har blitt sent
 your search returned %1 matchs	common	nn	ditt søk gav %1 treff
 your search returned 1 match	common	nn	ditt søk gav 1 treff
 your settings have been updated	common	nn	Dine innstillinger er oppdatert
+zip_code	common	nn	Postnummer

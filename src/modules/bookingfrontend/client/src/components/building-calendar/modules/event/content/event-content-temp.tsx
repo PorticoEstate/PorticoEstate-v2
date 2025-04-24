@@ -2,7 +2,7 @@ import React, {FC, useEffect, useMemo, useRef, useState} from 'react';
 import styles from './event-content.module.scss';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faClock} from "@fortawesome/free-regular-svg-icons";
-import {faLayerGroup} from "@fortawesome/free-solid-svg-icons";
+import { LayersIcon } from "@navikt/aksel-icons";
 import {formatEventTime} from "@/service/util";
 import {FCallTempEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
@@ -18,8 +18,10 @@ interface EventContentTempProps {
 const SHORT_EVENT_HEIGHT = 46;
 const MEDIUM_EVENT_HEIGHT = 91;
 const LONG_EVENT_HEIGHT = 112;
-const HEADER_HEIGHT = 116;
+const HEADER_HEIGHT = 116; // Base header height
+const SUBTITLE_EXTRA_HEIGHT = 16; // Additional height for subtitle
 const TITLE_THRESHOLD = 60;
+const SUBTITLE_THRESHOLD = 122; // Threshold for showing subtitle
 
 const PX_TO_MINUTES_RATIO = 1.03448275862;
 
@@ -33,6 +35,7 @@ interface LayoutState {
     visibleResources: number;
     visibleCircles: number;
     showTitle: boolean;
+    showSubtitle: boolean;
     showResourceList: boolean;
     virtualDurationMinutes: number;
 }
@@ -45,6 +48,7 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
         visibleResources: 0,
         visibleCircles: 0,
         showTitle: false,
+        showSubtitle: false,
         showResourceList: false,
         virtualDurationMinutes: 0
     });
@@ -87,10 +91,14 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
 
             let maxVisibleResources = 0;
             let showTitle = virtualDurationMinutes > TITLE_THRESHOLD;
+            let showSubtitle = virtualDurationMinutes > SUBTITLE_THRESHOLD;
             let showResourceList = false;
 
+            // Calculate header height based on whether subtitle is shown
+            const effectiveHeaderHeight = HEADER_HEIGHT + (showSubtitle ? SUBTITLE_EXTRA_HEIGHT : 0);
+
             if (virtualDurationMinutes > MEDIUM_EVENT_HEIGHT) {
-                const availableHeight = eventHeight - HEADER_HEIGHT;
+                const availableHeight = eventHeight - effectiveHeaderHeight;
                 maxVisibleResources = Math.floor((availableHeight + resourceItemGap) / (resourceItemHeight + resourceItemGap));
                 // Only show resource list if we can display at least one resource
                 showResourceList = maxVisibleResources > 0;
@@ -101,6 +109,7 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
                 visibleResources: Math.max(0, maxVisibleResources),
                 visibleCircles: Math.max(0, maxVisibleCircles),
                 showTitle,
+                showSubtitle,
                 showResourceList,
                 virtualDurationMinutes
             });
@@ -174,12 +183,17 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
             </span>
 
             {layout.showTitle && (
-                <div className={styles.title}>{eventInfo.event.title}</div>
+                <div className={styles.titleContainer}>
+                    <div className={styles.title}>{t('bookingfrontend.new application')}</div>
+                    {layout.showSubtitle && (
+                        <div className={styles.subtitleText}>{eventInfo.event.title}</div>
+                    )}
+                </div>
             )}
 
             {!layout.showResourceList ? (
                 <div className={`${styles.resourceIcons} text-label`}>
-                    <FontAwesomeIcon icon={faLayerGroup}/>
+                    <LayersIcon fontSize="1.25rem" />
                     {renderColorCircles('medium')}
                 </div>
             ) : (

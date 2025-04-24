@@ -1,15 +1,17 @@
 'use client'
 import React, {FC} from 'react';
 import {useDeleteServerMessage, useServerMessages} from "@/service/hooks/api-hooks";
-import {Alert, Button, Paragraph} from "@digdir/designsystemet-react";
+import {Alert, Button, Heading, Paragraph} from "@digdir/designsystemet-react";
 import {SeverityColors} from "@digdir/designsystemet-react/colors";
 import styles from "./server-messages.module.scss";
 import {XMarkIcon} from "@navikt/aksel-icons";
+import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 interface ServerMessagesProps {
 }
 
 const ServerMessages: FC<ServerMessagesProps> = (props) => {
 	const {data: messages} = useServerMessages();
+	const t = useTrans();
 	const deleteMessages = useDeleteServerMessage();
 	if(!messages || messages.length === 0) return null;
 	return (
@@ -24,15 +26,15 @@ const ServerMessages: FC<ServerMessagesProps> = (props) => {
 				return (
 					<Alert data-color={color} className={styles.messageCard} key={message.id}>
 						<div>
-							{/*<Heading level={2} data-size='xs' style={{*/}
-							{/*	marginBottom: 'var(--ds-size-2)'*/}
-							{/*}}>*/}
-							{/*	Har du husket å bestille passtime?*/}
-							{/*</Heading>*/}
+							{message.title && <Heading level={2} data-size='xs' style={{
+								marginBottom: 'var(--ds-size-2)'
+							}}>
+								{t(message.title)}
+							</Heading>}
 							<Paragraph dangerouslySetInnerHTML={{ __html: message.text }}>
 							</Paragraph>
 						</div>
-						<Button icon data-color='neutral' variant='tertiary' aria-label='Lukk melding' onClick={() => {deleteMessages.mutate(message.id)}}>
+						<Button icon data-color='neutral' variant='tertiary' aria-label={t('bookingfrontend.close_message')} onClick={() => {deleteMessages.mutate(message.id)}}>
 							<XMarkIcon aria-hidden />
 						</Button>
 
@@ -46,5 +48,3 @@ const ServerMessages: FC<ServerMessagesProps> = (props) => {
 }
 
 export default ServerMessages
-
-

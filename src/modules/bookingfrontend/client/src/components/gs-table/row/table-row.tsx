@@ -1,6 +1,6 @@
-import {ReactElement, CSSProperties} from 'react';
-import {Row, flexRender} from '@tanstack/react-table';
-import {ColumnDef} from '../table.types';
+import { ReactElement, CSSProperties } from 'react';
+import { Row, flexRender } from '@tanstack/react-table';
+import { ColumnDef } from '../table.types';
 import RowExpand from './row-expand';
 import styles from '../table.module.scss';
 
@@ -11,6 +11,7 @@ interface TableRowProps<T> {
     renderExpandedContent?: (data: T) => ReactElement;
     renderRowButton?: (data: T) => ReactElement;
     rowStyle?: (data: T) => CSSProperties | undefined;
+    isMobile?: boolean;
 }
 
 function TableRow<T>(props: TableRowProps<T>): ReactElement {
@@ -20,71 +21,43 @@ function TableRow<T>(props: TableRowProps<T>): ReactElement {
         icon,
         renderExpandedContent,
         renderRowButton,
-        rowStyle
+        rowStyle,
+        isMobile = false
     } = props;
 
-    // Determine if we need the extra column for button/expand
     const hasExtraColumn = renderRowButton || renderExpandedContent;
-
+    
     return (
-        <div
-            className={`${styles.tableRowContainer} ${styles.tableRow}`}
-            key={row.id}
-            style={{
-                // gridTemplateAreas: renderExpandedContent
-                //     ? `"line action" "content content"`
-                //     : `"line action"`,
-                // gap: "0 0.5rem",
-                // ...(rowStyle?.(row.original) || {})
-                display: 'contents'
+        <div 
+            className={`${styles.tableRowContainer} ${styles.tableRow}`} 
+            style={{ 
+                display: isMobile ? 'grid' : 'contents',
+                gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : undefined,
+                gap: isMobile ? '0.5rem' : undefined,
+                ...(rowStyle?.(row.original) || {})
             }}
         >
-            {/*{icon && (*/}
-            {/*    <div style={{*/}
-            {/*        margin: '0.5rem',*/}
-            {/*        marginRight: '16px',*/}
-            {/*        marginLeft: '0',*/}
-            {/*        display: 'flex',*/}
-            {/*        justifyContent: 'center',*/}
-            {/*        alignItems: 'center'*/}
-            {/*    }}>*/}
-            {/*        {icon(row.original)}*/}
-            {/*    </div>*/}
-            {/*)}*/}
-
-            {/*<div*/}
-            {/*    className={styles.tableRow}*/}
-            {/*    style={{*/}
-            {/*        gridTemplateColumns,*/}
-            {/*        gridArea: 'line'*/}
-            {/*    }}*/}
-            {/*>*/}
             {row.getVisibleCells().map(cell => {
                 const meta = (cell.column.columnDef as ColumnDef<T>).meta;
                 const header = cell.column.columnDef.header;
-                const headerContent = typeof header === 'string'
-                    ? header
-                    : cell.column.id;
+                const headerContent = typeof header === 'string' ? header : cell.column.id;
+                const isSelectionCell = cell.column.id === 'select';
+                const isWideCell = meta?.size && typeof meta.size === 'number' && meta.size > 1;
 
                 return (
-                    <div
-                        key={cell.id}
-                        className={`${styles.centerCol} ${
-                            meta?.size && typeof meta.size === 'number' && meta.size > 1 ? styles.bigCol : ''
-                        }`}
+                    <div 
+                        key={cell.id} 
+                        className={`${styles.centerCol} ${isWideCell ? styles.bigCol : ''}`}
                         style={{
-                            justifyContent: meta?.align === 'end'
-                                ? 'flex-end'
-                                : meta?.align === 'center'
-                                    ? 'center'
-                                    : 'flex-start',
+                            gridColumn: isMobile && isWideCell ? '1 / span 2' : undefined,
+                            justifyContent: isSelectionCell ? 'center' : 
+                                          meta?.align === 'end' ? 'flex-end' : 
+                                          meta?.align === 'center' ? 'center' : 'flex-start'
                         }}
                     >
-                        {!meta?.smallHideTitle && (
-                            <div className={`heading-s ${styles.columnName}`}>
-                                    <span className={styles.capitalize}>
-                                        {headerContent}
-                                    </span>
+                        {isMobile && !isSelectionCell && (
+                            <div className={styles.columnName}>
+                                <span className={styles.capitalize}>{headerContent}</span>
                             </div>
                         )}
                         {flexRender(
@@ -94,31 +67,29 @@ function TableRow<T>(props: TableRowProps<T>): ReactElement {
                     </div>
                 );
             })}
-            {/*</div>*/}
-
 
             {hasExtraColumn && (renderRowButton ? (
-                <div
-                    key={'action'}
-                    className={`${styles.centerCol}`}
+                <div 
+                    key="action" 
+                    className={styles.centerCol}
                     style={{
-                        justifyContent: 'flex-start',
+                        gridColumn: isMobile ? '1 / span 2' : undefined
                     }}
                 >
                     {renderRowButton(row.original)}
                 </div>
             ) : renderExpandedContent ? (
-                <RowExpand>
-                    {renderExpandedContent(row.original)}
-                </RowExpand>
+                <div 
+                    key="expand" 
+                    style={{
+                        gridColumn: isMobile ? '1 / span 2' : undefined
+                    }}
+                >
+                    <RowExpand>
+                        {renderExpandedContent(row.original)}
+                    </RowExpand>
+                </div>
             ) : null)}
-
-
-            {/*{renderExpandedContent && (*/}
-            {/*    <div className={styles.expandedContent} style={{ gridArea: 'content' }}>*/}
-            {/*        {renderExpandedContent(row.original)}*/}
-            {/*    </div>*/}
-            {/*)}*/}
         </div>
     );
 }

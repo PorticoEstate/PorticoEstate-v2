@@ -1,0 +1,11 @@
+/* Custom PhotoSwipe styles to fix duplicate image issue */
+
+/* Hide placeholder images that cause the duplicate effect */
+.pswp__img--placeholder {
+    opacity: 0 !important;
+}
+
+/* Only apply this once the image has loaded */
+.pswp__img--secondary-loaded .pswp__img--placeholder {
+    display: none !important;
+}

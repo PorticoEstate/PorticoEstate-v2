@@ -1,9 +1,8 @@
 'use client'
 import React, {FC, useEffect, useState} from 'react';
 import {useBookingUser, useLogin, useLogout} from "@/service/hooks/api-hooks";
-import {Button, Divider, Dropdown} from "@digdir/designsystemet-react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faChevronDown, faFutbol, faSignInAlt, faUser} from "@fortawesome/free-solid-svg-icons";
+import {Divider, Dropdown} from "@digdir/designsystemet-react";
+import { EnterIcon, PersonFillIcon, ChevronDownIcon, TenancyIcon } from "@navikt/aksel-icons";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {phpGWLink} from "@/service/util";
 import Link from "next/link";
@@ -53,7 +52,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
     if (bookingUser?.is_logged_in) {
         return (<Dropdown.TriggerContext>
             <Dropdown.Trigger variant={'tertiary'} color={'accent'} data-size={'sm'}>
-                <FontAwesomeIcon icon={faUser}/> {bookingUser.name} <FontAwesomeIcon icon={faChevronDown}/>
+                <PersonFillIcon width="1.875rem" height="1.875rem" /> {bookingUser.name} <ChevronDownIcon fontSize="1.25rem" />
             </Dropdown.Trigger>
             <Dropdown>
                 <Dropdown.List>
@@ -61,7 +60,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                         <Dropdown.Button asChild>
                             <Link href={'/user'}
                                   className={'link-text link-text-unset normal'}>
-                                <FontAwesomeIcon icon={faUser}/> {t('bookingfrontend.my page')}
+                                <PersonFillIcon fontSize="1.25rem" /> {t('bookingfrontend.my page')}
                             </Link>
                         </Dropdown.Button>
                     </Dropdown.Item>
@@ -78,7 +77,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                                         id: delegate.org_id
                                     }, false)}
                                           className={'link-text link-text-unset normal'}>
-                                        <FontAwesomeIcon icon={faFutbol}/> {delegate.name}
+                                        <TenancyIcon fontSize="1.25rem" /> {delegate.name}
                                     </Link>
                                 </Dropdown.Button>
 
@@ -111,7 +110,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
     // if(1==1) {
     return (<Dropdown.TriggerContext>
         <Dropdown.Trigger variant={'tertiary'} color={'accent'} data-size={'sm'}>
-            <FontAwesomeIcon icon={faSignInAlt}/> {t('common.login')}
+            <EnterIcon width="1.875rem" height="1.875rem" /> {t('common.login')}
         </Dropdown.Trigger>
         <Dropdown>
             <Dropdown.List>
@@ -122,7 +121,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                             href={phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(window.location.href.split('bookingfrontend')[1])})}
 
                             className={'link-text link-text-unset normal'}>
-                            <FontAwesomeIcon icon={faSignInAlt}/> Privatperson
+                            <EnterIcon width="1.25rem" height="1.25rem" /> {t('bookingfrontend.private_person')}
                         </a>
                     </Dropdown.Button>
                 </Dropdown.Item>
@@ -135,7 +134,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                             menuaction: 'booking.uiapplication.index',
                         }, false)}
                               className={'link-text link-text-unset normal'}>
-                            <FontAwesomeIcon icon={faSignInAlt}/> Saksbehandler
+                            <EnterIcon width="1.25rem" height="1.25rem" /> {t('bookingfrontend.case_officer')}
                         </Link>
                     </Dropdown.Button>
                 </Dropdown.Item>

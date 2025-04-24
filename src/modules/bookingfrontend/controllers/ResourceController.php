@@ -10,6 +10,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
+use App\modules\bookingfrontend\helpers\ResponseHelper;
 
 /**
  * @OA\Tag(
@@ -21,12 +22,14 @@ class ResourceController extends DocumentController
 {
     private $db;
     private $userSettings;
+    private $buildingScheduleService;
 
     public function __construct(ContainerInterface $container)
     {
         parent::__construct(Document::OWNER_RESOURCE);
         $this->db = Db::getInstance();
         $this->userSettings = Settings::getInstance()->get('user');
+        $this->buildingScheduleService = new \App\modules\bookingfrontend\services\BuildingScheduleService();
     }
 
     private function getUserRoles()
@@ -107,9 +110,22 @@ class ResourceController extends DocumentController
         $sort = in_array($sort, $allowedSortFields) ? $sort : 'id';
         $dir = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
 
-        $sql = "SELECT r.*, br.building_id
+        // Get current date for participant limit filtering
+        $currentDate = date('Y-m-d H:i:s');
+        
+        $sql = "SELECT r.*, br.building_id, pl.quantity as participant_limit
                 FROM bb_resource r
                 LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                LEFT JOIN (
+                    SELECT pl.resource_id, pl.quantity 
+                    FROM bb_participant_limit pl
+                    INNER JOIN (
+                        SELECT resource_id, MAX(from_) as latest_from
+                        FROM bb_participant_limit
+                        WHERE from_ <= :current_date
+                        GROUP BY resource_id
+                    ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from
+                ) pl ON r.id = pl.resource_id
                 WHERE r.active = 1 AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)
                 ORDER BY r.$sort $dir";
 
@@ -121,6 +137,7 @@ class ResourceController extends DocumentController
         try
         {
             $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':current_date', $currentDate);
             if ($perPage > 0)
             {
                 $stmt->bindParam(':limit', $perPage, \PDO::PARAM_INT);
@@ -183,15 +200,28 @@ class ResourceController extends DocumentController
     {
         $resourceId = (int)$args['id'];
 
-        $sql = "SELECT r.*, br.building_id
+        $currentDate = date('Y-m-d H:i:s');
+        
+        $sql = "SELECT r.*, br.building_id, pl.quantity as participant_limit
                 FROM bb_resource r
                 LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                LEFT JOIN (
+                    SELECT pl.resource_id, pl.quantity 
+                    FROM bb_participant_limit pl
+                    INNER JOIN (
+                        SELECT resource_id, MAX(from_) as latest_from
+                        FROM bb_participant_limit
+                        WHERE from_ <= :current_date
+                        GROUP BY resource_id
+                    ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from
+                ) pl ON r.id = pl.resource_id
                 WHERE r.id = :id";
 
         try
         {
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $resourceId, \PDO::PARAM_INT);
+            $stmt->bindParam(':current_date', $currentDate);
             $stmt->execute();
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -310,9 +340,21 @@ class ResourceController extends DocumentController
         $sort = in_array($sort, $allowedSortFields) ? $sort : 'id';
         $dir = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
 
-        $sql = "SELECT r.*, br.building_id
+        $currentDate = date('Y-m-d H:i:s');
+        
+        $sql = "SELECT r.*, br.building_id, pl.quantity as participant_limit
                 FROM bb_resource r
                 JOIN bb_building_resource br ON r.id = br.resource_id
+                LEFT JOIN (
+                    SELECT pl.resource_id, pl.quantity 
+                    FROM bb_participant_limit pl
+                    INNER JOIN (
+                        SELECT resource_id, MAX(from_) as latest_from
+                        FROM bb_participant_limit
+                        WHERE from_ <= :current_date
+                        GROUP BY resource_id
+                    ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from
+                ) pl ON r.id = pl.resource_id
                 WHERE br.building_id = :building_id
                 AND r.active = 1
                 AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)
@@ -327,6 +369,7 @@ class ResourceController extends DocumentController
         {
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':building_id', $buildingId, \PDO::PARAM_INT);
+            $stmt->bindParam(':current_date', $currentDate);
             if ($perPage > 0)
             {
                 $stmt->bindParam(':limit', $perPage, \PDO::PARAM_INT);
@@ -386,5 +429,124 @@ class ResourceController extends DocumentController
         $stmt->bindParam(':building_id', $buildingId, \PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchColumn();
+    }
+    
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/resources/{id}/schedule",
+     *     summary="Get a schedule for a specific resource within a date range",
+     *     tags={"Resources"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the resource",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="start_date",
+     *         in="query",
+     *         description="Start date for the schedule (format: YYYY-MM-DD)",
+     *         required=true,
+     *         @OA\Schema(type="string", format="date", example="2025-03-17")
+     *     ),
+     *     @OA\Parameter(
+     *         name="end_date",
+     *         in="query",
+     *         description="End date for the schedule (format: YYYY-MM-DD)",
+     *         required=true,
+     *         @OA\Schema(type="string", format="date", example="2025-03-24")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Resource schedule for the specified date range",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 oneOf={
+     *                     @OA\Schema(ref="#/components/schemas/Event"),
+     *                     @OA\Schema(ref="#/components/schemas/Booking"),
+     *                     @OA\Schema(ref="#/components/schemas/Allocation")
+     *                 }
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid date format or missing parameters",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string", example="Invalid date format or missing parameters")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Resource not found",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string", example="Resource not found")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Server error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="error", type="string")
+     *         )
+     *     )
+     * )
+     */
+    public function getResourceSchedule(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $resourceId = (int)$args['id'];
+            $queryParams = $request->getQueryParams();
+            
+            // Check if required parameters are provided
+            if (!isset($queryParams['start_date']) || !isset($queryParams['end_date'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Both start_date and end_date parameters are required'],
+                    400
+                );
+            }
+            
+            // Verify resource exists
+            $sql = "SELECT r.id FROM bb_resource r WHERE r.id = :id AND r.active = 1";
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id', $resourceId, \PDO::PARAM_INT);
+            $stmt->bindParam(':current_date', $currentDate);
+            $stmt->execute();
+            
+            if (!$stmt->fetch()) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Resource not found or not active'],
+                    404
+                );
+            }
+            
+            // Convert dates to DateTime objects
+            try {
+                $startDate = new \DateTime($queryParams['start_date']);
+                $startDate->setTime(0, 0, 0);
+                
+                $endDate = new \DateTime($queryParams['end_date']);
+                $endDate->setTime(23, 59, 59);
+            } catch (\Exception $e) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid date format. Use YYYY-MM-DD format.'],
+                    400
+                );
+            }
+            
+            // Get schedule from service
+            $schedule = $this->buildingScheduleService->getResourceSchedule($resourceId, $startDate, $endDate);
+            
+            $response->getBody()->write(json_encode($schedule));
+            return $response->withHeader('Content-Type', 'application/json');
+            
+        } catch (\Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error fetching resource schedule: ' . $e->getMessage()],
+                500
+            );
+        }
     }
 }

@@ -24,7 +24,7 @@ const PopperContentSharedWrapper: FC<PopperContentSharedProps> = (props) => {
 							<Button
 								icon={true}
 								variant="tertiary"
-								aria-label="Close dialog"
+								aria-label={t('bookingfrontend.close_dialog')}
 								onClick={() => props.onClose()}
 								className={'default'}
 								data-size={'sm'}

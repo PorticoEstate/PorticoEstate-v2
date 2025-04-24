@@ -18,11 +18,28 @@ export async function generateStaticParams() {
 
 export async function generateMetadata(): Promise<Metadata> {
     const serverSettings = await fetchServerSettings();
+	const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
     return {
         title: {
             template: `%s - ${serverSettings.site_title}`,
             default: `${serverSettings.site_title}`, // a default is required when creating a template
         },
+		icons: {
+			icon: [
+				{ url: `${basePath}/favicon-32x32.png`, sizes: '32x32', type: 'image/png' },
+				{ url: `${basePath}/favicon-192x192.png`, sizes: '192x192', type: 'image/png' },
+			],
+			apple: [
+				{ url: `${basePath}/apple-touch-icon.png`, sizes: '180x180', type: 'image/png' },
+			],
+			other: [
+				{
+					rel: 'msapplication-TileImage',
+					url: `${basePath}/mstile-270x270.png`,
+				},
+			],
+		},
+
     }
 }
 

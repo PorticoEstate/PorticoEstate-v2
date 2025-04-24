@@ -4,35 +4,73 @@ import {
     useMutation,
     useQuery,
     useQueryClient,
-    UseQueryResult
+    UseQueryResult,
+    MutationOptions
 } from "@tanstack/react-query";
-import {IBookingUser, IServerSettings} from "@/service/types/api.types";
+import {IBookingUser, IDocument, IServerSettings} from "@/service/types/api.types";
 import {
 	fetchArticlesForResources,
 	fetchBuildingAgeGroups, fetchBuildingAudience,
 	fetchBuildingSchedule, fetchBuildingSeasons,
 	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
 	fetchInvoices,
-	fetchPartialApplications, fetchSearchDataClient, fetchServerMessages, fetchServerSettings, patchBookingUser
+	fetchOrganizations, fetchPartialApplications, fetchSearchDataClient, fetchServerMessages, fetchServerSettings, fetchTowns, fetchUpcomingEvents, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
-import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
 import { IArticle } from "../types/api/order-articles.types";
-import {ISearchDataAll, ISearchDataOptimized} from "@/service/types/api/search.types";
+import {ISearchDataAll, ISearchDataOptimized, ISearchDataTown, ISearchOrganization} from "@/service/types/api/search.types";
 import {fetchSearchData} from "@/service/api/api-utils-static";
+import {fetchBuildingDocuments, fetchResourceDocuments} from "@/service/api/building";
+
+/**
+ * Custom hook that wraps useMutation and adds server message invalidation
+ * @param options The mutation options
+ * @returns The mutation result with server message invalidation added
+ */
+function useServerMessageMutation<TData = unknown, TError = unknown, TVariables = void, TContext = unknown>(
+    options: MutationOptions<TData, TError, TVariables, TContext>
+) {
+    const queryClient = useQueryClient();
+    const originalOnSuccess = options.onSuccess;
+    const originalOnSettled = options.onSettled;
+
+    return useMutation<TData, TError, TVariables, TContext>({
+        ...options,
+        onSuccess: (data, variables, context) => {
+            // First call the original onSuccess if it exists
+            if (originalOnSuccess) {
+                originalOnSuccess(data, variables, context);
+            }
+
+            // Then invalidate server messages
+            queryClient.invalidateQueries({ queryKey: ['serverMessages'] });
+        },
+        onSettled: (data, error, variables, context) => {
+            // First call the original onSettled if it exists
+            if (originalOnSettled) {
+                originalOnSettled(data, error, variables, context);
+            }
+
+            // Then invalidate server messages if not already done in onSuccess
+            // This ensures messages are refreshed even after errors
+            queryClient.invalidateQueries({ queryKey: ['serverMessages'] });
+        }
+    });
+}
 // require('log-timestamp');
 //
 // if(typeof window !== "undefined") {
 // 	require( 'console-stamp' )( console );
 // }
 interface UseScheduleOptions {
-    building_id: number;
+    building_id?: number;
     weeks: DateTime[];
     instance?: string;
     initialWeekSchedule?: Record<string, IEvent[]>
@@ -55,81 +93,39 @@ export function useBuildingFreeTimeSlots({
 	initialFreeTime?: FreeTimeSlotsResponse;
 }) {
 	const queryClient = useQueryClient();
-	const weekStarts = weeks.map(d => d.set({weekday: 1}).startOf('day'));
-	const weekEnds = weekStarts.map(d => d.plus({ weeks: 1 }).endOf('day'));
+	// Get just the current week that includes the first date in the array
+	const currentWeek = weeks[0].set({weekday: 1}).startOf('day');
+	const weekEnd = currentWeek.plus({ weeks: 1 });
+	const weekKey = currentWeek.toFormat("y-MM-dd");
 
-	const getWeekCacheKey = (weekStart: string): readonly ['buildingFreeTime', number, string] => {
-		return ['buildingFreeTime', building_id, weekStart] as const;
-	};
-
+	// Set initial data if provided, but don't use cache for normal operation
 	useEffect(() => {
 		if (initialFreeTime) {
-			Object.entries(initialFreeTime).forEach(([resourceId, slots]) => {
-				weekStarts.forEach(weekStart => {
-					const weekKey = weekStart.toFormat("y-MM-dd");
-					const cacheKey = getWeekCacheKey(weekKey);
-					const weekSlots = slots.filter((slot: IFreeTimeSlot) => {
-						const slotDate = DateTime.fromISO(slot.start_iso);
-						return slotDate >= weekStart && slotDate < weekStart.plus({ weeks: 1 });
-					});
-
-					if (!queryClient.getQueryData(cacheKey)) {
-						queryClient.setQueryData(cacheKey, { [resourceId]: weekSlots });
-					}
-				});
-			});
+			// Just for initial server-side rendered data
+			queryClient.setQueryData(
+				['buildingFreeTime', building_id, weekKey],
+				initialFreeTime
+			);
 		}
-	}, [initialFreeTime, building_id, queryClient, weekStarts]);
+	}, [initialFreeTime, building_id, queryClient, weekKey]);
 
 	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
-		const uncachedWeeks = weekStarts.filter(weekStart => {
-			const cacheKey = getWeekCacheKey(weekStart.toFormat("y-MM-dd"));
-			return !queryClient.getQueryData(cacheKey);
-		});
-
-		if (uncachedWeeks.length === 0) {
-			const combinedData: FreeTimeSlotsResponse = {};
-			weekStarts.forEach(weekStart => {
-				const cacheKey = getWeekCacheKey(weekStart.toFormat("y-MM-dd"));
-				const weekData = queryClient.getQueryData<FreeTimeSlotsResponse>(cacheKey);
-				if (weekData) {
-					Object.entries(weekData).forEach(([resourceId, slots]) => {
-						if (!combinedData[resourceId]) combinedData[resourceId] = [];
-						combinedData[resourceId].push(...slots);
-					});
-				}
-			});
-			return combinedData;
-		}
-
-		const freeTimeData = await fetchFreeTimeSlotsForRange(
+		// Always fetch from API for just the current week
+		return await fetchFreeTimeSlotsForRange(
 			building_id,
-			uncachedWeeks[0],
-			uncachedWeeks[uncachedWeeks.length - 1].plus({ weeks: 1 }),
+			currentWeek,
+			weekEnd,
 			instance
 		);
-
-		uncachedWeeks.forEach(weekStart => {
-			const weekKey = weekStart.toFormat("y-MM-dd");
-			const weekEnd = weekStart.plus({ weeks: 1 });
-			const weekData: FreeTimeSlotsResponse = {};
-
-			Object.entries(freeTimeData).forEach(([resourceId, slots]) => {
-				weekData[resourceId] = slots.filter((slot: IFreeTimeSlot) => {
-					const slotDate = DateTime.fromISO(slot.start_iso);
-					return slotDate >= weekStart && slotDate < weekEnd;
-				});
-			});
-
-			queryClient.setQueryData(getWeekCacheKey(weekKey), weekData);
-		});
-
-		return freeTimeData;
 	};
 
 	return useQuery({
-		queryKey: ['buildingFreeTime', building_id, weekStarts.map(d => d.toFormat("y-MM-dd")).join(',')],
+		queryKey: ['buildingFreeTime', building_id, weekKey],
 		queryFn: fetchFreeTimeSlots,
+		staleTime: 0, // Consider data stale immediately
+		refetchOnMount: true, // Always refetch when component mounts
+		refetchOnWindowFocus: true, // Refetch when window regains focus
+		// cacheTime: 5 * 60 * 1000 // Cache for 5 minutes max
 	});
 }
 
@@ -187,7 +183,7 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
         }
 
         // Fetch data for all uncached weeks at once
-        const scheduleData = await fetchBuildingSchedule(building_id, uncachedWeeks, instance);
+        const scheduleData = await fetchBuildingSchedule(building_id!, uncachedWeeks, instance);
         // Cache each week's data separately
         uncachedWeeks.forEach(weekStart => {
             const weekData: IEvent[] = scheduleData[weekStart] || [];
@@ -213,7 +209,9 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
     // Main query hook
     return useQuery({
         queryKey: ['buildingSchedule', building_id, keys.join(',')],
-        queryFn: fetchUncachedWeeks,
+        queryFn: building_id ===undefined? skipToken : fetchUncachedWeeks,
+		enabled: building_id !== undefined,
+
 		// staleTime: 10000
         // staleTime: 1000 * 60 * 5, // 5 minutes
         // cacheTime: 1000 * 60 * 30, // 30 minutes
@@ -265,7 +263,7 @@ export function useBookingUser() {
 export function useLogin() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useServerMessageMutation({
         mutationFn: async () => {
             const url = phpGWLink(['bookingfrontend', 'auth', 'login']);
             const response = await fetch(url, {
@@ -290,7 +288,7 @@ export function useLogin() {
 export function useLogout() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useServerMessageMutation({
         mutationFn: async () => {
             const url = phpGWLink(['bookingfrontend', 'auth', 'logout']);
             const response = await fetch(url, {
@@ -322,7 +320,7 @@ export function useLogout() {
 export function useUpdateBookingUser() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useServerMessageMutation({
         mutationFn: patchBookingUser,
         onMutate: async (newData: Partial<IBookingUser>) => {
             // Cancel any outgoing refetches to avoid overwriting optimistic update
@@ -403,12 +401,50 @@ export function useSearchData(options?: {
 	);
 }
 
+/**
+ * Hook to fetch just towns data using the dedicated endpoint
+ * @param options - Query options including initialData for server-side rendering
+ */
+export function useTowns(options?: {
+	initialData?: ISearchDataTown[]
+}): UseQueryResult<ISearchDataTown[]> {
+	return useQuery(
+		{
+			queryKey: ['towns'],
+			queryFn: () => fetchTowns(), // Fetch function
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour (cached)
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			initialData: options?.initialData, // Use server-side fetched data if available
+		}
+	);
+}
+
+/**
+ * Hook to fetch organizations data using the dedicated endpoint
+ * @param options - Query options including initialData for server-side rendering
+ */
+export function useOrganizations(options?: {
+	initialData?: ISearchOrganization[]
+}): UseQueryResult<ISearchOrganization[]> {
+	return useQuery(
+		{
+			queryKey: ['organizations'],
+			queryFn: () => fetchOrganizations(), // Fetch function
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour (cached)
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			initialData: options?.initialData, // Use server-side fetched data if available
+		}
+	);
+}
+
 
 
 export function useDeleteServerMessage() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
+	return useServerMessageMutation({
 		mutationFn: async (id: string) => {
 			const url = phpGWLink(['bookingfrontend', 'user','messages', id]);
 			const response = await fetch(url, {method: 'DELETE'});
@@ -462,7 +498,7 @@ export function useInvoices(): UseQueryResult<ICompletedReservation[]> {
 export function useCreatePartialApplication() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useServerMessageMutation({
         mutationFn: async (newApplication: Partial<NewPartialApplication>) => {
             const url = phpGWLink(['bookingfrontend', 'applications', 'partials']);
             const data = {
@@ -493,7 +529,7 @@ export function useCreatePartialApplication() {
 export function useUpdatePartialApplication() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useServerMessageMutation({
         mutationFn: async ({id, application}: { id: number, application: IUpdatePartialApplication }) => {
             const url = phpGWLink(['bookingfrontend', 'applications', 'partials', id]);
             const data: Omit<IUpdatePartialApplication, 'resources' | 'agegroups'> & {
@@ -557,7 +593,7 @@ export function useUpdatePartialApplication() {
 export function useDeletePartialApplication() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useServerMessageMutation({
         mutationFn: async (id: number) => {
             const url = phpGWLink(['bookingfrontend', 'applications', id]);
             const response = await fetch(url, {method: 'DELETE'});
@@ -608,17 +644,17 @@ export function useDeletePartialApplication() {
 export function useCreateSimpleApplication() {
 	const queryClient = useQueryClient();
 
-	return useMutation({
-		mutationFn: async (params: IFreeTimeSlot) => {
+	return useServerMessageMutation({
+		mutationFn: async (params: { timeslot: IFreeTimeSlot, building_id: number }) => {
 			const url = phpGWLink(['bookingfrontend', 'applications', 'simple']);
 
 			const response = await fetch(url, {
 				method: 'POST',
 				body: JSON.stringify({
-					from: params.start,
-					to: params.end,
-					resource_id: params.applicationLink.resource_id,
-					building_id: params.applicationLink.building_id,
+					from: params.timeslot.start,
+					to: params.timeslot.end,
+					resource_id: params.timeslot.resource_id,
+					building_id: params.building_id,
 				}),
 				headers: {
 					'Content-Type': 'application/json',
@@ -633,24 +669,39 @@ export function useCreateSimpleApplication() {
 
 			return response.json();
 		},
-		// onMutate: async (params) => {
-		// 	// Cancel any outgoing refetches to avoid overwriting optimistic update
-		// 	await queryClient.cancelQueries({queryKey: ['partialApplications']});
-		//
-		// 	// Snapshot current applications
-		// 	const previousApplications = queryClient.getQueryData<{
-		// 		list: IApplication[],
-		// 		total_sum: number
-		// 	}>(['partialApplications']);
-		//
-		// 	// We could add optimistic update here, but since we don't know the ID yet,
-		// 	// it's safer to wait for the real response and just invalidate
-		//
-		// 	return { previousApplications };
-		// },
-		onSuccess: () => {
+		onSuccess: (data, variables) => {
 			// Invalidate and refetch partial applications queries
 			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+
+			// Invalidate timeslots to refresh available slots after booking
+			const buildingId = variables.building_id;
+			if (buildingId) {
+				// Most thorough approach - invalidate ALL buildingFreeTime queries for this building
+				queryClient.invalidateQueries({
+					predicate: (query) => {
+						const queryKey = query.queryKey;
+						return (
+							Array.isArray(queryKey) &&
+							queryKey[0] === 'buildingFreeTime' &&
+							(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
+						);
+					}
+				});
+
+				// Force a refresh of any combined queries that may use comma-separated week keys
+				setTimeout(() => {
+					queryClient.refetchQueries({
+						predicate: (query) => {
+							const queryKey = query.queryKey;
+							return (
+								Array.isArray(queryKey) &&
+								queryKey[0] === 'buildingFreeTime' &&
+								query.queryKey.length > 2
+							);
+						}
+					});
+				}, 100);
+			}
 		},
 	});
 }
@@ -718,7 +769,7 @@ interface UploadDocumentParams {
 export function useUploadApplicationDocument() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useServerMessageMutation({
         mutationFn: async ({id, files}: UploadDocumentParams) => {
             const url = phpGWLink(['bookingfrontend', 'applications', id, 'documents']);
             const response = await fetch(url, {
@@ -750,7 +801,7 @@ export function useUploadApplicationDocument() {
 export function useDeleteApplicationDocument() {
     const queryClient = useQueryClient();
 
-    return useMutation({
+    return useServerMessageMutation({
         mutationFn: async (documentId: number) => {
             const url = phpGWLink(['bookingfrontend', 'applications', 'document', documentId]);
             const response = await fetch(url, {
@@ -767,6 +818,139 @@ export function useDeleteApplicationDocument() {
                 queryKey: ['partialApplications']
             });
         }
+    });
+}
+
+/**
+ * Hook to fetch upcoming events with React Query
+ */
+export function useUpcomingEvents(params: {
+    fromDate?: string;
+    toDate?: string;
+    buildingId?: number;
+    facilityTypeId?: number;
+    loggedInOnly?: boolean;
+    initialEvents?: IShortEvent[];
+}) {
+    const { fromDate, toDate, buildingId, facilityTypeId, loggedInOnly, initialEvents } = params;
+
+    // Create a query key array that will change when params change
+    // This ensures React Query knows when to refetch based on changed parameters
+    const queryKey = [
+        'upcomingEvents',
+        fromDate || '',
+        toDate || '',
+        buildingId || '',
+        facilityTypeId || '',
+        loggedInOnly ? 'true' : 'false'
+    ];
+
+    return useQuery({
+        queryKey: queryKey,
+        queryFn: () => fetchUpcomingEvents({
+            fromDate,
+            toDate,
+            buildingId,
+            facilityTypeId,
+            loggedInOnly
+        }),
+        initialData: initialEvents,
+        staleTime: 60 * 60 * 1000, // Data stays fresh for 1 hour
+        refetchOnWindowFocus: false // Disable refetch on window focus
+    });
+}
+
+export function useResourceRegulationDocuments(resources: { id: number, building_id?: number }[]) {
+    const queryClient = useQueryClient();
+    const resourceIds = resources.map(r => r.id);
+
+    // Extract unique building IDs from resources
+    const buildingIds = resources
+        .filter(r => r.building_id)
+        .map(r => r.building_id)
+        .filter((value, index, self) => self.indexOf(value) === index) as number[];
+
+    // Helper to get a unique key for documents from a specific resource
+    const getResourceDocsKey = (resourceId: number) => ['resourceDocuments', resourceId, 'regulation'];
+    // Helper to get a unique key for documents from a specific building
+    const getBuildingDocsKey = (buildingId: number) => ['buildingDocuments', buildingId, 'regulation'];
+
+    return useQuery({
+        queryKey: ['allRegulationDocuments', resourceIds.join(','), buildingIds.join(',')],
+        queryFn: async () => {
+            const allDocsPromises = [
+                // Fetch resource documents
+                ...resourceIds.map(async (resourceId) => {
+                    const cacheKey = getResourceDocsKey(resourceId);
+                    const cachedDocs = queryClient.getQueryData<IDocument[]>(cacheKey);
+
+                    if (cachedDocs) {
+                        return cachedDocs;
+                    }
+
+                    try {
+                        // Fetch regulation documents for this resource
+                        const docs = await fetchResourceDocuments(resourceId, 'regulation');
+
+                        // Add owner type to identify the document source
+                        const docsWithType = docs.map(doc => ({
+                            ...doc,
+                            owner_type: 'resource' as const
+                        }));
+
+                        // Cache the documents
+                        queryClient.setQueryData(cacheKey, docsWithType);
+
+                        return docsWithType;
+                    } catch (error) {
+                        console.error(`Error fetching documents for resource ${resourceId}:`, error);
+                        return [];
+                    }
+                }),
+
+                // Fetch building documents
+                ...buildingIds.map(async (buildingId) => {
+                    const cacheKey = getBuildingDocsKey(buildingId);
+                    const cachedDocs = queryClient.getQueryData<IDocument[]>(cacheKey);
+
+                    if (cachedDocs) {
+                        return cachedDocs;
+                    }
+
+                    try {
+                        // Fetch regulation documents for this building
+                        const docs = await fetchBuildingDocuments(buildingId, 'regulation');
+
+                        // Add owner type to identify the document source
+                        const docsWithType = docs.map(doc => ({
+                            ...doc,
+                            owner_type: 'building' as const
+                        }));
+
+                        // Cache the documents
+                        queryClient.setQueryData(cacheKey, docsWithType);
+
+                        return docsWithType;
+                    } catch (error) {
+                        console.error(`Error fetching documents for building ${buildingId}:`, error);
+                        return [];
+                    }
+                })
+            ];
+
+            // Wait for all document fetches to complete
+            const allDocuments = await Promise.all(allDocsPromises);
+
+            // Flatten and filter unique documents by ID
+            const flattenedDocs = allDocuments.flat();
+            const uniqueDocs = Array.from(
+                new Map(flattenedDocs.map(doc => [doc.id, doc])).values()
+            );
+
+            return uniqueDocs;
+        },
+        enabled: resourceIds.length > 0 || buildingIds.length > 0,
+        staleTime: 5 * 60 * 1000 // Consider data fresh for 5 minutes
     });
 }
 

@@ -2,8 +2,7 @@
 import {FC, useRef, useState} from 'react';
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import {Badge, Button} from "@digdir/designsystemet-react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faShoppingBasket} from "@fortawesome/free-solid-svg-icons";
+import { ShoppingBasketIcon } from "@navikt/aksel-icons";
 import ShoppingCartPopper from "@/components/layout/header/shopping-cart/shopping-cart-popper";
 
 interface ShoppingCartButtonProps {
@@ -35,7 +34,7 @@ const ShoppingCartButton: FC<ShoppingCartButtonProps> = (props) => {
                         //     top: '16%'
                         // }}
                     />)}
-                    <FontAwesomeIcon size={'lg'} icon={faShoppingBasket}/>
+                    <ShoppingBasketIcon width="1.875rem" height="1.875rem" />
                 </Badge.Position>
 
             </div>

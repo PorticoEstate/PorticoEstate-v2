@@ -261,6 +261,29 @@
 	padding: 2rem;
 	text-align: center;
 }
+.welcome {
+	display: flex;
+	flex-direction: column;
+	//align-items: center;
+	//justify-content: center;
+	min-height: 200px;
+	//gap: 1rem;
+	//padding: 2rem;
+	//text-align: center;
+	p {
+	margin-bottom: 0;
+	}
+	.welcomeList {
+		margin-top: var(--dsc-list-margin-top);
+		list-style: none;
+		padding: 0;
+		li {
+			display: flex;
+			align-items: center;
+		}
+
+	}
+}
 
 .noResults {
 	background-color: var(--ds-color-background-subtle);

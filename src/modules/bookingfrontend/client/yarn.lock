@@ -93,15 +93,15 @@
     "@babel/helper-validator-identifier" "^7.24.7"
     to-fast-properties "^2.0.0"
 
-"@digdir/designsystemet-css@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-css/-/designsystemet-css-1.0.1.tgz#5860ab1c7f7b98fe0d36d44d8547f97353091bda"
-  integrity sha512-USrmwkanygIpAO4Qdzrsc5vfOIj2fjco9ppTkPKxO8k79OqCMiq9c29FwVbiRzMZvBtWln8/E7Fi0e0lYWpnGg==
+"@digdir/designsystemet-css@1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-css/-/designsystemet-css-1.0.3.tgz#7eb5866c4d8fb0ff4a01873014b59a8a36db1d18"
+  integrity sha512-9WiE6XmGI8OfFmf1XyhrNpDRIMNFpPyqx5ij5AYqF6zqfqJ02DQelERenoDKJOIjcF6+gd33xzlOPAX8wJ485A==
 
-"@digdir/designsystemet-react@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-react/-/designsystemet-react-1.0.1.tgz#f5c811058090724825ab6e7dd99420677cccc043"
-  integrity sha512-l7afzSQ69q39IQqHav8IvGQ8NtVlm7RDmFT87quN47Jv407H5RCI4sO5Y15U4UT7EBiT+xb4PIcLIIms9guhsA==
+"@digdir/designsystemet-react@1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@digdir/designsystemet-react/-/designsystemet-react-1.0.3.tgz#77c10115f9537f6ec63c783c8ab239dd37842091"
+  integrity sha512-bYqUhVI6mXQIpJQiYM1EA/AlC6OR5f98I4gXANUKqbnpbrpt2wAqP/81n42PgsYyxgHWY+NGDqLpGH5LL4twlQ==
   dependencies:
     "@floating-ui/dom" "^1.6.10"
     "@floating-ui/react" "0.26.23"
@@ -669,7 +669,7 @@
 
 "@porticoestate/design-tokens@github:PorticoEstate/digdir-design-tokens":
   version "1.0.1"
-  resolved "https://codeload.github.com/PorticoEstate/digdir-design-tokens/tar.gz/a91f1781d869c2eb9965b840182fc667003030e4"
+  resolved "https://codeload.github.com/PorticoEstate/digdir-design-tokens/tar.gz/c7598db2beb823fe5f03b96be0fb4953952a2b62"
 
 "@radix-ui/react-compose-refs@1.1.1":
   version "1.1.1"

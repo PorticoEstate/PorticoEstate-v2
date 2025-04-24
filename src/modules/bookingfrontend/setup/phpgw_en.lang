@@ -570,6 +570,11 @@ search_no_organizations_match	bookingfrontend	en	No organizations match your sea
 search_no_resources_match	bookingfrontend	en	No resources match your search
 search_organizations	bookingfrontend	en	Search Organizations
 search_use_filters_to_search	bookingfrontend	en	Use filters to find resources
+search_welcome_description	bookingfrontend	en	Here you can search for premises, facilities or equipment.
+search_welcome_examples	bookingfrontend	en	You can for example search for children's birthday party, football or meeting room.
+search_welcome_filter_hint	bookingfrontend	en	You can also filter by the activities you want under 'More filters'.
+search_welcome_greeting	bookingfrontend	en	Welcome!
+search_welcome_other_searches	bookingfrontend	en	If you're looking for events or organizations, you can select this above the search field.
 season	bookingfrontend	en	Season
 season name	bookingfrontend	en	Season name
 seasons	bookingfrontend	en	Seasons

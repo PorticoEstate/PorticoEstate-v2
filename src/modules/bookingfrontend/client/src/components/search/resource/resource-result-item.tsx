@@ -18,7 +18,7 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 	const {data: searchData} = useSearchData();
 	const {data: towns} = useTowns();
 	const isMobile = useIsMobile();
-	
+
 	// Find activity associated with this resource
 	const activity = useMemo(() =>
 		resource.activity_id ?
@@ -26,7 +26,7 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 			undefined,
 		[resource.activity_id, searchData?.activities]
 	);
-	
+
 	// Find the town for this building by town_id
 	const town = useMemo(() => {
 		if (!towns || !resource.building?.town_id) return null;
@@ -51,8 +51,9 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource}) => {
 
 	return (
 		<Card
-			data-color="neutral"
+			// data-color="neutral"
 			className={styles.resourceCard}
+			variant='default'
 		>
 			<div className={styles.cardContent}>
 				<DigdirLink asChild data-color='accent'>

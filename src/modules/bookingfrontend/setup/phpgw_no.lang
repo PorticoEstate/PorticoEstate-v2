@@ -570,6 +570,11 @@ search_no_organizations_match	bookingfrontend	no	Ingen organisasjoner matcher s�
 search_no_resources_match	bookingfrontend	no	Ingen ressurser matcher søket ditt
 search_organizations	bookingfrontend	no	Søk organisasjoner
 search_use_filters_to_search	bookingfrontend	no	Bruk filtre for å finne ressurser
+search_welcome_description	bookingfrontend	no	Her kan du søke etter lokaler, anlegg eller utstyr.
+search_welcome_examples	bookingfrontend	no	Du kan for eksempel søke på barnebursdag, fotball eller møterom.
+search_welcome_filter_hint	bookingfrontend	no	Du kan også filtrere på den aktiviteter du ønsker under "Flere filter".
+search_welcome_greeting	bookingfrontend	no	Velkommen!
+search_welcome_other_searches	bookingfrontend	no	Dersom du er på jakt etter arrangementer eller organisasjoner, kan du velge dette over søkefeltet.
 season	bookingfrontend	no	Sesong
 season name	bookingfrontend	no	Navn på sesong
 seasons	bookingfrontend	no	Sesonger

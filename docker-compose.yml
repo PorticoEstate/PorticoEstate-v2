@@ -51,6 +51,8 @@ services:
         - internal
         ports:
         - "8081:8081"
+        environment:
+        - REDIS_URL=redis://redis:6379
     redis:
         image: redis:alpine
         networks:

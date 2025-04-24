@@ -47,6 +47,8 @@ $notificationServer = new NotificationServer();
 
 $loop = React\EventLoop\Loop::get();
 
+$redisUrl = getenv('REDIS_URL') ?: 'redis://redis:6379';
+
 $factory = new Clue\React\Redis\Factory($loop);
 $factory->createClient('redis://redis:6379')->then(function (Clue\React\Redis\Client $client) use ($notificationServer)
 {

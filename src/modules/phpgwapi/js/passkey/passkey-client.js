@@ -405,6 +405,31 @@ function prepareCreationOptions(creationOptions)
         };
     }
 
+    // Ensure RP ID is valid and matches the current domain or a valid parent domain
+    if (creationOptions.rp && creationOptions.rp.id)
+    {
+        // Check if the RP ID is valid for the current domain
+        const currentDomain = window.location.hostname;
+        const isValidRpId = currentDomain === creationOptions.rp.id ||
+            currentDomain.endsWith('.' + creationOptions.rp.id);
+
+        if (!isValidRpId)
+        {
+            console.warn(`Potential RP ID mismatch! Current domain: ${currentDomain}, RP ID: ${creationOptions.rp.id}`);
+            console.log("This might cause the registration to fail due to security restrictions.");
+
+            // In dev mode, attempt to fix the RP ID
+            if (PasskeyUtils.isDevMode())
+            {
+                console.log("Dev mode: Adjusting RP ID to match current domain");
+                creationOptions.rp.id = currentDomain;
+            }
+        } else
+        {
+            console.log("RP ID validation passed: " + creationOptions.rp.id);
+        }
+    }
+
     // Set timeout to allow enough time for user interaction
     if (!creationOptions.timeout)
     {
@@ -571,7 +596,7 @@ function prepareAuthenticationResponse(credential)
  * @param {string} username - username to associate with the passkey
  * @param {string} registrationOptionsUrl - URL to fetch registration options
  * @param {string} registrationVerifyUrl - URL to verify registration
- * @returns {Promise<boolean>} true if registration succeeded
+ * @returns {Promise<boolean|Object>} true if registration succeeded, or error object with details
  */
 async function registerPasskey(username, registrationOptionsUrl, registrationVerifyUrl)
 {
@@ -583,6 +608,7 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         window.passkeyUsername = username;
 
         // Step 1: Get registration options from server
+        console.log("Fetching registration options from:", registrationOptionsUrl);
         const optionsResponse = await fetch(registrationOptionsUrl, {
             method: 'GET',
             headers: {
@@ -602,7 +628,7 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         try
         {
             optionsJson = await optionsResponse.json();
-            console.log("Received registration options from server");
+            console.log("Received registration options from server:", JSON.stringify(optionsJson));
         } catch (e)
         {
             console.error("Failed to parse JSON from server response:", e);
@@ -610,6 +636,10 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         }
 
         const creationOptions = prepareCreationOptions(optionsJson);
+
+        // Debug log the RP ID to ensure it matches the domain
+        console.log("Effective domain (from window.location.hostname):", window.location.hostname);
+        console.log("RP ID being used:", creationOptions.rp?.id);
 
         // Apply security key testing mode if enabled (after creationOptions is initialized)
         if (window.securityKeyTesting)
@@ -643,9 +673,28 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         console.log("Calling navigator.credentials.create() with prepared options");
 
         // Step 3: Create credential with WebAuthn API
-        const credential = await navigator.credentials.create({
-            publicKey: creationOptions
-        });
+        let credential;
+        try
+        {
+            credential = await navigator.credentials.create({
+                publicKey: creationOptions
+            });
+        } catch (creationError)
+        {
+            console.error("Error during credential creation:", creationError);
+
+            // Check for common errors and give more helpful messages
+            if (creationError.name === 'NotAllowedError')
+            {
+                throw new Error("Operation was denied by the user or the security key - did you cancel the prompt?");
+            } else if (creationError.name === 'SecurityError')
+            {
+                throw new Error("The operation failed for security reasons - the RP ID might not match the domain");
+            } else
+            {
+                throw new Error(`WebAuthn credential creation failed: ${creationError.name}: ${creationError.message}`);
+            }
+        }
 
         if (!credential)
         {
@@ -660,8 +709,18 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         // Add username to the response so the server knows which user this credential belongs to
         response.username = username;
 
+        // Log the response being sent to the server (excluding large binary data)
+        console.log("Sending credential to server:", {
+            id: response.id,
+            type: response.type,
+            rawId_length: response.rawId ? response.rawId.length : 'undefined',
+            username: response.username,
+            clientDataJSON_length: response.response?.clientDataJSON ? response.response.clientDataJSON.length : 'undefined',
+            attestationObject_length: response.response?.attestationObject ? response.response.attestationObject.length : 'undefined'
+        });
+
         // Step 5: Send response to server for verification
-        console.log("Sending credential to server for verification");
+        console.log("Sending credential to server for verification at:", registrationVerifyUrl);
         const verifyResponse = await fetch(registrationVerifyUrl, {
             method: 'POST',
             headers: {
@@ -671,26 +730,40 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
             body: JSON.stringify(response)
         });
 
+        // Log the status of the server response
+        console.log("Server verification response status:", verifyResponse.status);
+
         if (!verifyResponse.ok)
         {
             let errorMessage = `Verification failed with status: ${verifyResponse.status}`;
+            let errorDetails = {};
+
             try
             {
                 const errorData = await verifyResponse.json();
+                console.error("Server verification error details:", errorData);
                 errorMessage = errorData.message || errorMessage;
+                errorDetails = errorData;
             } catch (e)
             {
                 // If we can't parse JSON, use the text response
                 const errorText = await verifyResponse.text();
+                console.error("Server verification error text:", errorText);
                 errorMessage += ` - ${errorText.substring(0, 100)}`;
             }
 
             console.error("Server verification failed:", errorMessage);
-            throw new Error(errorMessage);
+
+            // Return detailed error information
+            const error = new Error(errorMessage);
+            error.details = errorDetails;
+            error.status = verifyResponse.status;
+            throw error;
         }
 
         console.log("Server verification completed successfully");
         const verifyData = await verifyResponse.json();
+        console.log("Verification response data:", verifyData);
 
         // Clean up the global variable
         delete window.passkeyUsername;

@@ -28,29 +28,40 @@ class Auth_Passkeys
         $this->db = \App\Database\Db::getInstance();
         $this->serverSettings = Settings::getInstance()->get('server');
 
-        // Determine Relying Party ID (usually the domain name)
+        // Determine Relying Party ID (usually the domain name without protocol or port)
         // Ensure this matches the domain the user sees in the browser
-        $this->rpId = parse_url($_SERVER['HTTP_HOST'] ?? 'http://localhost', PHP_URL_HOST);
-        if (!$this->rpId)
-        {
-            // Fallback or throw error if host cannot be determined
-            $this->rpId = 'localhost';
-            error_log('Warning: Could not determine RP ID from HTTP_HOST, defaulting to localhost');
+        // Get host from HTTP_HOST or SERVER_NAME, fallback to localhost
+        $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+        
+        // Remove port number if present
+        if (strpos($host, ':') !== false) {
+            $host = strtok($host, ':');
         }
-
-        // Get allowed origins (e.g., from settings or hardcoded)
-        // Should include the full origin (scheme + host + port if non-standard)
-        $allowedOrigins = [sprintf('https://%s', $this->rpId)];
-        // Add http://localhost for development if needed, but be careful in production
-        if ($this->rpId === 'localhost')
-        {
-            $allowedOrigins[] = 'http://localhost'; // Add appropriate port if needed
+        
+        // Use the effective domain (strip subdomains if needed)
+        // For example: portal.example.com -> example.com or localhost -> localhost
+        $parts = explode('.', $host);
+        if (count($parts) > 2 && !in_array($parts[count($parts)-1], ['localhost', 'local', 'test'])) {
+            // Consider using the eTLD+1 (e.g., example.com) for production
+            // This allows credentials to work across subdomains
+            $this->rpId = $parts[count($parts)-2] . '.' . $parts[count($parts)-1];
+            
+            // Log that we're using the effective domain
+            error_log("Using effective domain as rpId: {$this->rpId} (original host: {$host})");
+        } else {
+            // For localhost or simple domains, use as-is
+            $this->rpId = $host;
         }
-        // You might fetch this from Settings::get('webauthn_allowed_origins') or similar
-
+        
+        // Rather than constructing origins with schemes, let the library handle it
+        // The library will automatically construct the proper allowed origins
+        error_log("WebAuthn configuration - rpId: {$this->rpId}");
+        
         try
         {
-            $this->webAuthn = new WebAuthn($this->appName, $this->rpId);
+            // Pass null as the third parameter to let the library handle allowed origins
+            // Based on the error message, it seems the library has an issue with the format
+            $this->webAuthn = new WebAuthn($this->appName, $this->rpId, null);
             // Add root certificate(s) if you want to verify attestation
             // $this->webAuthn->addRootCertificates('path/to/certificates.pem'); 
         }
@@ -111,8 +122,8 @@ class Auth_Passkeys
             // It handles Base64URL decoding internally if data starts with '{' or is json
 
             $credentialData = $this->webAuthn->processCreate(
-                $clientDataJSON,
-                $attestationObject,
+                base64_decode($clientDataJSON),
+                base64_decode($attestationObject),
                 $_SESSION['webauthn_challenge'] ?? null, // Challenge from session
                 $requireResidentKey, // requireResidentKey
                 true,  // requireUserVerification

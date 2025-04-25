@@ -35,8 +35,8 @@ class Passkey_Management_Controller
 		require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
 		$this->db = \App\Database\Db::getInstance();
 		$this->phpgwapi_common = new \phpgwapi_common();
-		
-		$root = SRC_ROOT_PATH ."/modules/phpgwapi/templates/base";
+
+		$root = SRC_ROOT_PATH . "/modules/phpgwapi/templates/base";
 
 		$this->template = Template::getInstance($root);
 		$this->template->set_file('head', 'passkey_management.tpl');
@@ -153,10 +153,10 @@ class Passkey_Management_Controller
 		}
 
 
-		 // Set app header and update flags
-        $this->flags['app_header'] = lang('Passkey Management');
-        $this->flags['currentapp'] = 'preferences';
-        Settings::getInstance()->set('flags', $this->flags);
+		// Set app header and update flags
+		$this->flags['app_header'] = lang('Passkey Management');
+		$this->flags['currentapp'] = 'preferences';
+		Settings::getInstance()->set('flags', $this->flags);
 
 		// Add the page to the framework
 		$this->phpgwapi_common->phpgw_header(true);
@@ -211,6 +211,22 @@ class Passkey_Management_Controller
 			return $this->jsonError($response, 'Invalid request data', 400);
 		}
 
+		// Log received data for debugging
+		error_log("Passkey registration verification - Received data: " . json_encode([
+			'id' => $params['id'] ?? 'missing',
+			'clientDataJSON_length' => isset($params['response']['clientDataJSON']) ? strlen($params['response']['clientDataJSON']) : 'missing',
+			'attestationObject_length' => isset($params['response']['attestationObject']) ? strlen($params['response']['attestationObject']) : 'missing',
+			'account_id' => $this->account_id,
+			'device_name' => $deviceName
+		]));
+
+		// Check if webauthn_challenge exists in session
+		if (!isset($_SESSION['webauthn_challenge']) || empty($_SESSION['webauthn_challenge']))
+		{
+			error_log("Passkey registration failed: No challenge found in session");
+			return $this->jsonError($response, 'Challenge not found or expired. Please try again.', 400);
+		}
+
 		try
 		{
 			// Verify with WebAuthn
@@ -229,11 +245,13 @@ class Passkey_Management_Controller
 			}
 			else
 			{
-				return $this->jsonError($response, 'Failed to register passkey');
+				error_log("Passkey registration failed: WebAuthn verification returned false");
+				return $this->jsonError($response, 'Failed to register passkey - verification returned false');
 			}
 		}
 		catch (\Exception $e)
 		{
+			error_log("Passkey registration error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
 			return $this->jsonError($response, 'Error: ' . $e->getMessage());
 		}
 	}

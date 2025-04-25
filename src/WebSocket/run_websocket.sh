@@ -18,17 +18,16 @@ fi
 # Run the WebSocket server in the background
 # Use full path to PHP to avoid "command not found" errors
 # Explicitly disable xdebug to prevent debugger pauses
-/usr/local/bin/php -dxdebug.mode=off -dxdebug.start_with_request=no /var/www/html/src/WebSocket/server.php > /var/log/apache2/websocket.log 2>&1 &
+# Use 'tee' to send output to both the log file and stdout
+/usr/local/bin/php -dxdebug.mode=off -dxdebug.start_with_request=no /var/www/html/src/WebSocket/server.php 2>&1 | tee /var/log/apache2/websocket.log &
 pid=$!
 
 # Verify the process is running
 if ps -p $pid > /dev/null; then
     echo "WebSocket server started with PID: $pid"
-    echo "WebSocket server log: /var/log/apache2/websocket.log"
+    echo "WebSocket logs are being sent to both stdout and /var/log/apache2/websocket.log"
     # Give it a moment to start up
     sleep 2
-    # Show the first few lines of the log
-    head -n 10 /var/log/apache2/websocket.log
 else
     echo "Failed to start WebSocket server!"
     echo "Check logs for details: /var/log/apache2/websocket.log"

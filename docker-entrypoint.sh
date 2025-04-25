@@ -41,6 +41,11 @@ mkdir -p /var/log/supervisor
 # Enable required modules for WebSocket
 a2enmod proxy proxy_http proxy_wstunnel rewrite
 
+# Start a background process to tail the WebSocket log to stdout
+mkdir -p /var/log/apache2
+touch /var/log/apache2/websocket.log
+(tail -f /var/log/apache2/websocket.log | sed 's/^/WEBSOCKET: /' &)
+
 # Start all services with Supervisor
 echo "Starting all services with Supervisor..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

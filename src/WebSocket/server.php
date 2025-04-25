@@ -4,6 +4,7 @@ use Ratchet\Server\IoServer;
 use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use App\WebSocket\WebSocketServer;
+use App\WebSocket\Services\RedisService;
 use React\EventLoop\Factory;
 use React\Socket\SocketServer;
 use Psr\Log\LoggerInterface;
@@ -39,7 +40,12 @@ if (!file_exists($autoloadPath)) {
 }
 require $autoloadPath;
 
-// Create a custom logger
+// WebSocket server configuration constants
+define('WSS_LOG_ENABLED', true);           // Master switch for all logging
+define('WSS_DEBUG_LOG_ENABLED', false);    // Enable for detailed debug logs
+define('WSS_LOG_TO_DOCKER', true);         // Enable for Docker log integration
+
+// Create a custom logger that outputs to stdout
 $logger = new class implements LoggerInterface {
     public function emergency($message, array $context = []): void { $this->log('EMERGENCY', $message, $context); }
     public function alert($message, array $context = []): void { $this->log('ALERT', $message, $context); }
@@ -48,9 +54,25 @@ $logger = new class implements LoggerInterface {
     public function warning($message, array $context = []): void { $this->log('WARNING', $message, $context); }
     public function notice($message, array $context = []): void { $this->log('NOTICE', $message, $context); }
     public function info($message, array $context = []): void { $this->log('INFO', $message, $context); }
-    public function debug($message, array $context = []): void { $this->log('DEBUG', $message, $context); }
+    public function debug($message, array $context = []): void { 
+        // Only log debug messages if debug logging is enabled
+        if (WSS_DEBUG_LOG_ENABLED) {
+            $this->log('DEBUG', $message, $context); 
+        }
+    }
     public function log($level, $message, array $context = []): void {
-        echo "[" . date('Y-m-d H:i:s') . "] [{$level}] {$message}" . PHP_EOL;
+        // Skip logging if disabled
+        if (!WSS_LOG_ENABLED) {
+            return;
+        }
+        
+        // Add timestamp, level, and process ID to the log format
+        $pid = getmypid();
+        $timestamp = date('Y-m-d H:i:s');
+        $contextStr = !empty($context) ? ' ' . json_encode($context) : '';
+        
+        // Output to stdout (which can be redirected by supervisord)
+        echo "[{$timestamp}] [{$level}] [PID:{$pid}] {$message}{$contextStr}" . PHP_EOL;
     }
 };
 
@@ -59,8 +81,20 @@ $loop = Factory::create();
 
 // Set up our WebSocket server for WebSocket connections
 $webSocket = new WebSocketServer($logger);
+
+// Configure WsServer to pass the original HTTP request to the WebSocket server
+// This enables access to cookies and headers
 $wsServer = new WsServer($webSocket);
-$wsHttpServer = new HttpServer($wsServer);
+
+// Enable subprotocol negotiation (optional)
+$wsServer->enableKeepAlive($loop, 30); // Send ping every 30 seconds
+
+// Make sure httpRequest is available to the server
+$wsHttpServer = new HttpServer(
+    // HttpServer should pass the original request to the WsServer
+    // This ensures cookies are accessible
+    $wsServer
+);
 
 // Note: Separate HTTP server for API endpoints is disabled due to missing React HTTP component
 // We'll use the broadcast method directly in WebSocketServer class instead
@@ -92,6 +126,46 @@ try {
     echo "PHP version: " . PHP_VERSION . PHP_EOL;
     echo "Operating system: " . PHP_OS . PHP_EOL;
     echo "Server software: " . ($_SERVER['SERVER_SOFTWARE'] ?? 'Unknown') . PHP_EOL;
+
+    // Modify the logger to also write important messages to STDERR for Docker logs if enabled
+    if (WSS_LOG_TO_DOCKER) {
+        $originalLogger = $logger;
+        $logger = new class($originalLogger) implements LoggerInterface {
+            private $innerLogger;
+            
+            public function __construct(LoggerInterface $innerLogger) {
+                $this->innerLogger = $innerLogger;
+            }
+            
+            public function emergency($message, array $context = []): void { $this->log('EMERGENCY', $message, $context); }
+            public function alert($message, array $context = []): void { $this->log('ALERT', $message, $context); }
+            public function critical($message, array $context = []): void { $this->log('CRITICAL', $message, $context); }
+            public function error($message, array $context = []): void { $this->log('ERROR', $message, $context); }
+            public function warning($message, array $context = []): void { $this->log('WARNING', $message, $context); }
+            public function notice($message, array $context = []): void { $this->log('NOTICE', $message, $context); }
+            public function info($message, array $context = []): void { $this->log('INFO', $message, $context); }
+            public function debug($message, array $context = []): void { 
+                // Only forward debug messages if debug logging is enabled
+                if (WSS_DEBUG_LOG_ENABLED) {
+                    $this->log('DEBUG', $message, $context);
+                }
+            }
+            
+            public function log($level, $message, array $context = []): void {
+                // Forward to inner logger
+                $this->innerLogger->log($level, $message, $context);
+                
+                // Only write errors and warnings to stderr for Docker logs
+                if (in_array($level, ['EMERGENCY', 'ALERT', 'CRITICAL', 'ERROR', 'WARNING'])) {
+                    $formattedContext = !empty($context) ? ' ' . json_encode($context) : '';
+                    $dockerMessage = "[" . date('Y-m-d H:i:s') . "] [{$level}] WSS: {$message}{$formattedContext}" . PHP_EOL;
+                    
+                    // Write to stderr (appears in Docker logs)
+                    fwrite(STDERR, $dockerMessage);
+                }
+            }
+        };
+    }
     
     // Create WebSocket server on port 8080
     $context = [];
@@ -105,7 +179,7 @@ try {
     // Write a status file that can be checked
     file_put_contents('/tmp/websocket_running', date('Y-m-d H:i:s'));
     
-    // Set up a timer to check for notification files every second
+    // Set up a timer to check for notification files every second (as fallback)
     $loop->addPeriodicTimer(1, function() use ($webSocket) {
         $webSocket->checkNotificationFiles();
     });
@@ -114,6 +188,153 @@ try {
     $loop->addPeriodicTimer(55, function() use ($webSocket) {
         $webSocket->sendServerPing();
     });
+    
+    // Set up Redis Pub/Sub if Redis is available
+    if ($webSocket->isRedisEnabled()) {
+        try {
+            // Use Clue Redis React for non-blocking Redis pub/sub
+            $factory = new \Clue\React\Redis\Factory($loop);
+            $redisClient = null;
+            
+            $factory->createClient('redis://' . (getenv('REDIS_HOST') ?: 'redis') . ':' . (getenv('REDIS_PORT') ?: 6379))
+                ->then(function (\Clue\React\Redis\Client $client) use ($webSocket, $logger, &$redisClient) {
+                    $redisClient = $client;
+                    $logger->info("Redis pub/sub connection established");
+                    
+                    // Subscribe to general notifications channel
+                    $client->subscribe('notifications');
+                    
+                    // Subscribe to session messages channel
+                    $client->subscribe('session_messages');
+                    
+                    // Handle messages
+                    $client->on('message', function ($channel, $payload) use ($webSocket, $logger) {
+                        // Parse the payload for logging and processing
+                        $data = json_decode($payload, true);
+                        $messageType = $data['type'] ?? 'unknown';
+                        
+                        if ($channel === 'notifications') {
+                            // Handle general notifications
+                            $notificationType = $data['data']['type'] ?? 'general';
+                            $message = $data['message'] ?? 'No message';
+                            
+                            // Log detailed information
+                            $logger->info("Redis notification received", [
+                                'channel' => $channel,
+                                'type' => $messageType,
+                                'notificationType' => $notificationType,
+                                'message' => $message,
+                                'payload_length' => strlen($payload),
+                                'timestamp' => date('c')
+                            ]);
+                            
+                            // Add source information
+                            if (is_array($data)) {
+                                $data['source'] = 'redis';
+                                $data['received_at'] = date('c');
+                                $payload = json_encode($data);
+                            }
+                            
+                            // Log client count and broadcast
+                            $clientCount = $webSocket->getClientCount();
+                            $logger->info("Broadcasting Redis message to {$clientCount} clients");
+                            
+                            // Broadcast to all clients
+                            $webSocket->broadcastNotification($payload);
+                            
+                        } elseif ($channel === 'session_messages') {
+                            // Handle session-targeted messages
+                            if ($messageType === 'session_targeted' && isset($data['sessionId'])) {
+                                $sessionId = $data['sessionId'];
+                                $message = $data['message'] ?? 'No message';
+                                
+                                // Simplify logging to focus on most important information
+                                $logger->info("Redis session message received", [
+                                    'sessionId' => substr($sessionId, 0, 8) . '...',
+                                    'type' => $data['data']['type'] ?? $messageType,
+                                    'message_count' => isset($data['data']['messages']) ? count($data['data']['messages']) : 0,
+                                    'timestamp' => date('c')
+                                ]);
+                                
+                                // Send to specific session room
+                                // Pass data directly to avoid additional nesting
+                                $payload = json_encode($data['data'] ?? $data);
+                                $success = $webSocket->sendToSessionRoom($sessionId, $payload);
+                                
+                                $logger->info("Session message delivery", [
+                                    'success' => $success,
+                                    'sessionId' => substr($sessionId, 0, 8) . '...'
+                                ]);
+                            } else {
+                                $logger->warning("Invalid session message format", [
+                                    'type' => $messageType,
+                                    'hasSessionId' => isset($data['sessionId'])
+                                ]);
+                            }
+                        }
+                    });
+                }, function (\Exception $e) use ($logger) {
+                    $logger->error("Redis pub/sub connection failed", [
+                        'error' => $e->getMessage()
+                    ]);
+                });
+        } catch (\Exception $e) {
+            $logger->error("Redis pub/sub setup failed", [
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+    
+    // Check for session-specific notification files
+    $loop->addPeriodicTimer(2, function() use ($webSocket, $logger) {
+        // Look for session message files
+        $files = glob('/tmp/websocket_session_*.json');
+        
+        if (!empty($files)) {
+            $logger->info("Processing session message files", [
+                'count' => count($files)
+            ]);
+            
+            foreach ($files as $file) {
+                try {
+                    $content = file_get_contents($file);
+                    
+                    if ($content) {
+                        $data = json_decode($content, true);
+                        
+                        if (isset($data['sessionId'])) {
+                            $sessionId = $data['sessionId'];
+                            
+                            $logger->info("Processing session message file", [
+                                'file' => basename($file),
+                                'sessionId' => substr($sessionId, 0, 8) . '...'
+                            ]);
+                            
+                            // Send to specific session room
+                            $webSocket->sendToSessionRoom($sessionId, $data);
+                        }
+                        
+                        // Delete the file after processing
+                        unlink($file);
+                    }
+                } catch (\Exception $e) {
+                    $logger->error("Session file processing error", [
+                        'file' => basename($file),
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+        }
+    });
+    
+    // Display log configuration status
+    if (WSS_LOG_ENABLED) {
+        echo "[" . date('Y-m-d H:i:s') . "] [INFO] Logging is ENABLED" . PHP_EOL;
+        echo "[" . date('Y-m-d H:i:s') . "] [INFO] Debug logging is " . (WSS_DEBUG_LOG_ENABLED ? "ENABLED" : "DISABLED") . PHP_EOL;
+        echo "[" . date('Y-m-d H:i:s') . "] [INFO] Docker log integration is " . (WSS_LOG_TO_DOCKER ? "ENABLED" : "DISABLED") . PHP_EOL;
+    } else {
+        echo "[" . date('Y-m-d H:i:s') . "] [INFO] Logging is DISABLED" . PHP_EOL;
+    }
 } catch (\Exception $e) {
     echo "ERROR starting WebSocket server: " . $e->getMessage() . PHP_EOL;
     echo "Stack trace: " . $e->getTraceAsString() . PHP_EOL;

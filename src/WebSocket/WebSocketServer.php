@@ -5,173 +5,331 @@ namespace App\WebSocket;
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 use Psr\Log\LoggerInterface;
+use App\WebSocket\Services\RedisService;
+use App\WebSocket\Services\NotificationService;
+use App\WebSocket\Services\SessionService;
+use App\WebSocket\Services\ConnectionService;
+use App\WebSocket\Services\RoomService;
+use App\WebSocket\Interfaces\WebSocketHandler;
 
-class WebSocketServer implements MessageComponentInterface
+class WebSocketServer implements MessageComponentInterface, WebSocketHandler
 {
-    protected $clients;
-    protected $logger;
+    private $logger;
+    private $redisService;
+    private $notificationService;
+    private $sessionService;
+    private $connectionService;
+    private $roomService;
 
     public function __construct(LoggerInterface $logger)
     {
-        $this->clients = new \SplObjectStorage;
         $this->logger = $logger;
-    }
-
-    public function onOpen(ConnectionInterface $conn)
-    {
-        $this->clients->attach($conn);
-        $this->logger->info("New connection! ({$conn->resourceId})");
-    }
-
-    public function onMessage(ConnectionInterface $from, $msg)
-    {
-        $numRecv = count($this->clients) - 1;
-        $this->logger->info(sprintf('Connection %d sending message "%s" to %d other connection%s', 
-            $from->resourceId, $msg, $numRecv, $numRecv == 1 ? '' : 's'));
-
-        $data = json_decode($msg, true);
         
-        // Process message based on type
-        if (isset($data['type'])) {
-            switch ($data['type']) {
-                case 'chat':
-                    $this->broadcastMessage($from, $msg);
-                    break;
-                case 'notification':
-                    $this->broadcastNotification($msg);
-                    break;
-                case 'ping':
-                    // Reply with a pong directly to the client to keep the connection alive
-                    $from->send(json_encode([
-                        'type' => 'pong',
-                        'timestamp' => date('c')
-                    ]));
-                    $this->logger->info("Ping received from client {$from->resourceId}, sent pong response");
-                    break;
-                default:
-                    $this->broadcastMessage($from, $msg);
-            }
-        } else {
-            $this->broadcastMessage($from, $msg);
-        }
-    }
-
-    protected function broadcastMessage(ConnectionInterface $from, $msg)
-    {
-        foreach ($this->clients as $client) {
-            if ($from !== $client) {
-                $client->send($msg);
-            }
-        }
+        // Initialize services
+        $this->connectionService = new ConnectionService($logger);
+        $this->redisService = new RedisService($logger);
+        $this->sessionService = new SessionService($logger);
+        $this->roomService = new RoomService($logger);
+        $this->notificationService = new NotificationService(
+            $logger, 
+            $this->connectionService->getClients()
+        );
     }
 
     /**
-     * Broadcast a notification to all connected clients
-     * 
-     * @param string|array $msg The message to broadcast (JSON string or array)
+     * Handle new connections
+     *
+     * @param ConnectionInterface $conn
      * @return void
      */
-    public function broadcastNotification($msg)
+    public function onOpen(ConnectionInterface $conn): void
     {
-        // Convert array to JSON if needed
-        if (is_array($msg)) {
-            $msg = json_encode($msg);
-        }
+        // Extract session data
+        $this->sessionService->extractSessionData($conn);
         
-        $this->logger->info("Broadcasting notification to " . count($this->clients) . " clients");
+        // Add connection
+        $this->connectionService->addConnection($conn);
         
-        foreach ($this->clients as $client) {
-            try {
-                $client->send($msg);
-            } catch (\Exception $e) {
-                $this->logger->error("Error sending to client {$client->resourceId}: " . $e->getMessage());
-            }
-        }
-    }
-    
-    /**
-     * Check for notification files in the temporary directory
-     * 
-     * This is a workaround for not having an HTTP server
-     * 
-     * @return void
-     */
-    public function checkNotificationFiles()
-    {
-        $this->logger->info("Checking for notification files");
-        $files = glob('/tmp/websocket_notification_*.json');
-        
-        if (!empty($files)) {
-            $this->logger->info("Found " . count($files) . " notification files");
+        // Check if booking session exists
+        if (!isset($conn->bookingSessionId)) {
+            $this->logger->warning("Client connected without booking session", [
+                'clientId' => $conn->resourceId
+            ]);
             
-            foreach ($files as $file) {
-                try {
-                    $content = file_get_contents($file);
-                    $this->logger->info("Processing notification file: " . basename($file));
-                    
-                    if ($content) {
-                        // Broadcast the notification
-                        $this->broadcastNotification($content);
-                        
-                        // Delete the file
-                        unlink($file);
-                        $this->logger->info("Processed and deleted notification file: " . basename($file));
-                    }
-                } catch (\Exception $e) {
-                    $this->logger->error("Error processing notification file {$file}: " . $e->getMessage());
-                }
-            }
+            // Send reconnect request
+            $conn->send(json_encode([
+                'type' => 'reconnect_required',
+                'message' => 'Booking session not found. Please reconnect.',
+                'code' => 'NO_BOOKING_SESSION',
+                'timestamp' => date('c')
+            ]));
+            
+            // We'll keep the connection but request the client to reconnect
+            // This gives the client time to handle the message before reconnecting
+        }
+        
+        // Add to a session-based room if session ID is available
+        if (isset($conn->sessionId)) {
+            $roomId = $this->roomService->createRoomIdFromSession($conn->sessionId);
+            $this->roomService->joinRoom($roomId, $conn);
+            
+            // Store room ID in connection for easier access
+            $conn->roomId = $roomId;
+            
+            $this->logger->info("Client added to session room", [
+                'clientId' => $conn->resourceId,
+                'roomId' => $roomId,
+                'sessionType' => isset($conn->bookingSessionId) ? 'booking' : 'standard'
+            ]);
         }
     }
-    
+
     /**
-     * Send a server ping to all clients to keep connections alive
-     * 
+     * Handle incoming messages
+     *
+     * @param ConnectionInterface $from
+     * @param mixed $msg
+     * @return void
+     */
+    public function onMessage(ConnectionInterface $from, $msg): void
+    {
+        $data = json_decode($msg, true);
+        $messageType = $data['type'] ?? 'unknown';
+        
+        // Enrich message with user context if available
+        $enrichedData = $this->sessionService->enrichMessageWithUserContext($from, $data);
+        
+        // If data was enriched, re-encode the message
+        if ($enrichedData !== $data) {
+            $msg = json_encode($enrichedData);
+            $data = $enrichedData;
+        }
+        
+        // Log the message
+        $logContext = $this->sessionService->getSessionLogContext($from, $messageType);
+        $logContext['recipients'] = $this->connectionService->getClientCount() - 1;
+        $logContext['contentLength'] = strlen($msg);
+        
+        $this->logger->info("Message received", $logContext);
+        
+        // Check if this message is intended for a specific room
+        if ($messageType === 'room_message' && isset($data['roomId'])) {
+            $roomId = $data['roomId'];
+            
+            // Check if client is in the specified room
+            $clientRooms = $this->roomService->getConnectionRooms($from);
+            
+            if (in_array($roomId, $clientRooms)) {
+                // Send to all clients in the room except sender
+                $this->roomService->broadcastToRoom($roomId, $from, $msg);
+                
+                $this->logger->info("Room message sent", [
+                    'clientId' => $from->resourceId,
+                    'roomId' => $roomId
+                ]);
+                return;
+            } else {
+                // Client tried to send to a room they're not in
+                $this->logger->warning("Unauthorized room message", [
+                    'clientId' => $from->resourceId,
+                    'roomId' => $roomId
+                ]);
+                
+                // Send an error response to the client
+                $from->send(json_encode([
+                    'type' => 'error',
+                    'message' => 'Not authorized to send to this room',
+                    'code' => 'ROOM_ACCESS_DENIED',
+                    'timestamp' => date('c')
+                ]));
+                return;
+            }
+        }
+        
+        // Handle session-specific messages
+        if ($messageType === 'session_message' && isset($from->roomId)) {
+            $roomId = $from->roomId;
+            
+            // Override the message type for consistency in logs
+            $data['type'] = 'room_message';
+            $data['roomId'] = $roomId;
+            $msg = json_encode($data);
+            
+            // Send to all clients in the session room except sender
+            $this->roomService->broadcastToRoom($roomId, $from, $msg);
+            
+            $this->logger->info("Session message sent", [
+                'clientId' => $from->resourceId,
+                'roomId' => $roomId,
+                'sessionType' => isset($from->bookingSessionId) ? 'booking' : 'standard'
+            ]);
+            return;
+        }
+        
+        // Process standard message types
+        $this->notificationService->processMessage($from, $msg);
+    }
+
+    /**
+     * Handle closed connections
+     *
+     * @param ConnectionInterface $conn
+     * @return void
+     */
+    public function onClose(ConnectionInterface $conn): void
+    {
+        // If connection was in rooms, handle room departure
+        if (isset($conn->roomId)) {
+            // Simply remove from all rooms without notifications
+            $this->roomService->leaveAllRooms($conn);
+        }
+        
+        // Remove connection from the server
+        $this->connectionService->removeConnection($conn);
+    }
+
+    /**
+     * Handle connection errors
+     *
+     * @param ConnectionInterface $conn
+     * @param \Exception $e
+     * @return void
+     */
+    public function onError(ConnectionInterface $conn, \Exception $e): void
+    {
+        $this->connectionService->handleError($conn, $e);
+    }
+
+    /**
+     * Check for notification files
+     *
+     * @return void
+     */
+    public function checkNotificationFiles(): void
+    {
+        $this->notificationService->checkNotificationFiles();
+    }
+
+    /**
+     * Send a server ping to all connected clients
+     *
      * @return void
      */
     public function sendServerPing(): void
     {
-        $this->logger->info("Sending server ping to " . count($this->clients) . " clients");
-        
-        $pingMessage = json_encode([
-            'type' => 'server_ping',
-            'timestamp' => date('c')
-        ]);
-        
-        foreach ($this->clients as $client) {
-            try {
-                $client->send($pingMessage);
-            } catch (\Exception $e) {
-                $this->logger->error("Error sending ping to client {$client->resourceId}: " . $e->getMessage());
-                // Close the connection if we can't send a ping
-                try {
-                    $client->close();
-                } catch (\Exception $e) {
-                    // Ignore close errors
-                }
-            }
-        }
+        $this->notificationService->sendServerPing();
+    }
+
+    /**
+     * Broadcast a notification to all connected clients
+     *
+     * @param mixed $msg
+     * @return void
+     */
+    public function broadcastNotification($msg): void
+    {
+        $this->notificationService->broadcastNotification($msg);
     }
     
     /**
-     * Get the count of connected clients
-     * 
-     * @return int Number of connected clients
+     * Send a notification to a specific session room
+     *
+     * @param string $sessionId Session identifier
+     * @param array|string $msg The message to send
+     * @return bool Success status
+     */
+    public function sendToSessionRoom(string $sessionId, $msg): bool
+    {
+        // Create room ID from session
+        $roomId = $this->roomService->createRoomIdFromSession($sessionId);
+        
+        // Check if room exists
+        if (!$this->roomService->roomExists($roomId)) {
+            $this->logger->info("Session room not found", [
+                'roomId' => $roomId,
+                'sessionId' => substr($sessionId, 0, 8) . '...' // Log only part of session ID for security
+            ]);
+            return false;
+        }
+        
+        // Convert message to JSON if it's an array
+        if (is_array($msg)) {
+            // Don't add roomId for server_message type to keep it clean for client
+            if ($msg['type'] !== 'server_message' && !isset($msg['roomId'])) {
+                $msg['roomId'] = $roomId;
+            }
+            
+            $msg = json_encode($msg);
+        } else if (is_string($msg) && $msg[0] === '{') {
+            // If it's already a JSON string, try to parse it to check for server_message
+            try {
+                $data = json_decode($msg, true);
+                if ($data && isset($data['type']) && $data['type'] !== 'server_message' && !isset($data['roomId'])) {
+                    $data['roomId'] = $roomId;
+                    $msg = json_encode($data);
+                }
+            } catch (\Exception $e) {
+                // If parsing fails, continue with the original message
+            }
+        }
+        
+        // Send to room
+        $sent = $this->roomService->sendToRoom($roomId, $msg);
+        
+        return $sent > 0;
+    }
+
+    /**
+     * Get the number of connected clients
+     *
+     * @return int
      */
     public function getClientCount(): int
     {
-        return count($this->clients);
+        return $this->connectionService->getClientCount();
     }
 
-    public function onClose(ConnectionInterface $conn)
+    /**
+     * Check if Redis is enabled
+     *
+     * @return bool
+     */
+    public function isRedisEnabled(): bool
     {
-        $this->clients->detach($conn);
-        $this->logger->info("Connection {$conn->resourceId} has disconnected");
+        return $this->redisService->isEnabled();
     }
 
-    public function onError(ConnectionInterface $conn, \Exception $e)
+    /**
+     * Send a notification using Redis pub/sub
+     * Can be called statically from other parts of the application
+     * 
+     * @param array|string $data Notification data to send
+     * @param string $channel Redis channel to use (default: notifications)
+     * @return bool Success status
+     */
+    public static function sendRedisNotification($data, string $channel = 'notifications'): bool
     {
-        $this->logger->error("An error has occurred: {$e->getMessage()}");
-        $conn->close();
+        return RedisService::sendNotification($data, $channel);
+    }
+    
+    /**
+     * Get all rooms in the system
+     *
+     * @return array Room information
+     */
+    public function getRooms(): array
+    {
+        $rooms = [];
+        $roomIds = $this->roomService->getAllRoomIds();
+        
+        foreach ($roomIds as $roomId) {
+            $rooms[] = [
+                'id' => $roomId,
+                'clients' => $this->roomService->getRoomSize($roomId),
+                'isSessionRoom' => strpos($roomId, 'session_') === 0
+            ];
+        }
+        
+        return $rooms;
     }
 }

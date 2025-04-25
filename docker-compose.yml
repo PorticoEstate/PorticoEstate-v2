@@ -12,6 +12,8 @@ x-common-variables: &common-variables
 volumes:
     logs:
         driver: local
+    redis_data:
+        driver: local
 services:
     slim:
         container_name: portico_api
@@ -29,6 +31,8 @@ services:
         environment:
             <<: *common-variables
             docker: "true"
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
         ports:
             - "8088:80"
             - "8080:8080"  # WebSocket port
@@ -41,6 +45,20 @@ services:
             - internal
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        depends_on:
+            - redis
+
+    redis:
+        image: redis:alpine
+        container_name: portico_redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - internal
+        command: redis-server --appendonly yes
 
     nextjs:
         build:

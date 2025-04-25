@@ -35,7 +35,7 @@ services:
             REDIS_PORT: 6379
         ports:
             - "8088:80"
-            - "8080:8080"  # WebSocket port
+#            - "8080:8080"  # WebSocket port
         volumes:
             - .:/var/www/html
             - ./logs:/var/log/apache2

@@ -1024,6 +1024,48 @@ class booking_uiapplication extends booking_uicommon
 			}
 		}
 
+		// --- WebSocket notification ---
+		$notification = [
+			'type' => 'block_set',
+			'resource_id' => $resource_id,
+			'from' => $from_,
+			'to' => $to_,
+			'user' => $this->userSettings['account_id'],
+			'timestamp' => time()
+		];
+		// Send notification to WebSocket server (adjust URL/port as needed)
+
+		try
+		{
+			$redis = new Predis\Client(['scheme' => 'tcp', 'host' => 'redis', 'port' => 6379]);
+			$redis->publish('notifications', json_encode($notification));
+		}
+		catch (\Exception $e)
+		{
+			// Optionally log the error, but do not break the main application flow
+			error_log('Redis publish failed: ' . $e->getMessage());
+		}
+		// --- End WebSocket notification ---
+
+
+		// -- example of how to use the WebSocket server from the client side --
+		// const ws = new WebSocket('ws://your-server:8081'); // Use your actual server/port
+		//
+		// ws.onopen = function() {
+		//     console.log('WebSocket connection established');
+		// };
+		//
+		// ws.onmessage = function(event) {
+		//     const data = JSON.parse(event.data);
+		//     // Handle the notification (e.g., show an alert or update the UI)
+		//     alert('Notification: ' + data.type + ' for resource ' + data.resource_id);
+		// };
+		//
+		// ws.onclose = function() {
+		//     console.log('WebSocket connection closed');
+		// };
+
+
 		return array(
 			'status' => $status,
 			'message'	=> $message

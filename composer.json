@@ -24,7 +24,10 @@
 		"amnuts/opcache-gui": "^3.5",
 		"jumbojett/openid-connect-php": "^1.0",
 		"doctrine/annotations": "^2.0",
-		"swagger-api/swagger-ui": "^5.20"
+		"swagger-api/swagger-ui": "^5.20",
+		"cboden/ratchet": "^0.4.4",
+		"clue/redis-react": "^2.8",
+		"predis/predis": "^2.3"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "^9.0"

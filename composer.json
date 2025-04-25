@@ -28,9 +28,7 @@
 		"cboden/ratchet": "^0.4.4",
 		"clue/redis-react": "^2.8",
 		"predis/predis": "^2.3",
-		"web-auth/webauthn-lib": "*",
-		"web-auth/webauthn-framework": "^5.2",
-		"spomky-labs/base64url": "^2.0"
+		"lbuchs/webauthn": "^2.0"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "^9.0"

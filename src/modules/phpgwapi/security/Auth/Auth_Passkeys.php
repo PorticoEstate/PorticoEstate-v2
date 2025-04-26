@@ -459,6 +459,7 @@ class Auth_Passkeys
 
                 // Always update the last_used timestamp regardless of sign count
                 $this->updateCredentialLastUsed($credentialIdDecoded);
+                $debug[] = "Updated last_used timestamp for credential";
 
                 // Try manual verification first
                 if ($this->manuallyVerifyWebAuthnAssertion(
@@ -750,50 +751,45 @@ class Auth_Passkeys
         $credentialIdBase64Url = $buffer->jsonSerialize();
 
         try {
-            // First, find the account and identify the index of the passkey in the array
-            $sql = "SELECT account_id, account_data, 
-                   jsonb_array_position(account_data->'passkeys', 
-                                      jsonb_build_object('credential_id', :credential_id::text)::jsonb) as key_index
+            // Get the account data containing this credential ID
+            $sql = "SELECT account_id, account_data
                    FROM phpgw_accounts_data 
                    WHERE account_data @> :search_json::jsonb";
             
             $stmt = $this->db->prepare($sql);
             $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
-            $stmt->execute([
-                ':search_json' => $searchJson,
-                ':credential_id' => $credentialIdBase64Url
-            ]);
+            $stmt->execute([':search_json' => $searchJson]);
             
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row && isset($row['key_index']) && $row['key_index'] >= 0) {
+            if ($row) {
                 $account_id = (int)$row['account_id'];
-                $keyIndex = (int)$row['key_index'];
+                $account_data = json_decode($row['account_data'], true);
                 
-                // Update multiple fields of the specific passkey using nested jsonb_set calls
-                $updateSql = "UPDATE phpgw_accounts_data 
-                              SET account_data = jsonb_set(
-                                  jsonb_set(
-                                      account_data, 
-                                      '{passkeys,' || :key_index || ',sign_count}', 
-                                      :sign_count::jsonb,
-                                      true
-                                  ),
-                                  '{passkeys,' || :key_index || ',last_used}', 
-                                  :last_used::jsonb,
-                                  true
-                              )
-                              WHERE account_id = :account_id";
-                
-                $updateStmt = $this->db->prepare($updateSql);
-                return $updateStmt->execute([
-                    ':key_index' => $keyIndex,
-                    ':sign_count' => json_encode($newSignCount),
-                    ':last_used' => json_encode(date('c')),
-                    ':account_id' => $account_id
-                ]);
+                // Find the passkey in the array
+                if (isset($account_data['passkeys']) && is_array($account_data['passkeys'])) {
+                    foreach ($account_data['passkeys'] as $index => $passkey) {
+                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url) {
+                            // Update the sign count and last_used fields
+                            $account_data['passkeys'][$index]['sign_count'] = $newSignCount;
+                            $account_data['passkeys'][$index]['last_used'] = date('c');
+                            
+                            // Update the account data in the database
+                            $updateSql = "UPDATE phpgw_accounts_data 
+                                         SET account_data = :account_data
+                                         WHERE account_id = :account_id";
+                            
+                            $updateStmt = $this->db->prepare($updateSql);
+                            error_log("Updating sign count and last_used for credential ID {$credentialIdBase64Url}");
+                            return $updateStmt->execute([
+                                ':account_data' => json_encode($account_data),
+                                ':account_id' => $account_id
+                            ]);
+                        }
+                    }
+                }
             }
             
-            error_log("Passkey not found or index not determined for credential ID {$credentialIdBase64Url}");
+            error_log("Passkey not found for credential ID {$credentialIdBase64Url}");
             return false;
         } catch (\Exception $e) {
             error_log("Error updating sign count for credential ID {$credentialIdBase64Url}: " . $e->getMessage());
@@ -815,44 +811,44 @@ class Auth_Passkeys
         $credentialIdBase64Url = $buffer->jsonSerialize();
 
         try {
-            // First, find the account and identify the index of the passkey in the array
-            $sql = "SELECT account_id, account_data, 
-                   jsonb_array_position(account_data->'passkeys', 
-                                      jsonb_build_object('credential_id', :credential_id::text)::jsonb) as key_index
+            // Get the account data containing this credential ID
+            $sql = "SELECT account_id, account_data
                    FROM phpgw_accounts_data 
                    WHERE account_data @> :search_json::jsonb";
             
             $stmt = $this->db->prepare($sql);
             $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
-            $stmt->execute([
-                ':search_json' => $searchJson,
-                ':credential_id' => $credentialIdBase64Url
-            ]);
+            $stmt->execute([':search_json' => $searchJson]);
             
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row && isset($row['key_index']) && $row['key_index'] >= 0) {
+            if ($row) {
                 $account_id = (int)$row['account_id'];
-                $keyIndex = (int)$row['key_index'];
+                $account_data = json_decode($row['account_data'], true);
                 
-                // Update only the last_used field of the specific passkey
-                $updateSql = "UPDATE phpgw_accounts_data 
-                              SET account_data = jsonb_set(
-                                  account_data, 
-                                  '{passkeys,' || :key_index || ',last_used}', 
-                                  :last_used::jsonb,
-                                  true
-                              )
-                              WHERE account_id = :account_id";
-                
-                $updateStmt = $this->db->prepare($updateSql);
-                return $updateStmt->execute([
-                    ':key_index' => $keyIndex,
-                    ':last_used' => json_encode(date('c')),
-                    ':account_id' => $account_id
-                ]);
+                // Find the passkey in the array
+                if (isset($account_data['passkeys']) && is_array($account_data['passkeys'])) {
+                    foreach ($account_data['passkeys'] as $index => $passkey) {
+                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url) {
+                            // Update only the last_used field
+                            $account_data['passkeys'][$index]['last_used'] = date('c');
+                            
+                            // Update the account data in the database
+                            $updateSql = "UPDATE phpgw_accounts_data 
+                                         SET account_data = :account_data
+                                         WHERE account_id = :account_id";
+                            
+                            $updateStmt = $this->db->prepare($updateSql);
+                            error_log("Updating last_used timestamp for credential ID {$credentialIdBase64Url}");
+                            return $updateStmt->execute([
+                                ':account_data' => json_encode($account_data),
+                                ':account_id' => $account_id
+                            ]);
+                        }
+                    }
+                }
             }
             
-            error_log("Passkey not found or index not determined for credential ID {$credentialIdBase64Url}");
+            error_log("Passkey not found for credential ID {$credentialIdBase64Url}");
             return false;
         } catch (\Exception $e) {
             error_log("Error updating last_used for credential ID {$credentialIdBase64Url}: " . $e->getMessage());
@@ -958,28 +954,6 @@ class Auth_Passkeys
     public function getWebAuthnInstance(): WebAuthn
     {
         return $this->webAuthn;
-    }
-
-    /**
-     * Manually verify WebAuthn signature to bypass library's challenge validation
-     * @param string $clientDataJSON Client data JSON
-     * @param string $authenticatorData Authenticator data
-     * @param string $signature Signature to verify
-     * @param string $publicKey PEM formatted public key
-     * @return bool True if the signature is valid
-     */
-    private function verifySignature(string $clientDataJSON, string $authenticatorData, string $signature, string $publicKey): bool
-    {
-        // Calculate the client data hash (SHA-256)
-        $clientDataHash = hash('sha256', $clientDataJSON, true);
-
-        // Concatenate authenticator data and client data hash
-        $signedData = $authenticatorData . $clientDataHash;
-
-        // The public key is in PEM format - openssl can use it directly
-        $verify = openssl_verify($signedData, $signature, $publicKey, OPENSSL_ALGO_SHA256);
-
-        return $verify === 1;
     }
 
     /**

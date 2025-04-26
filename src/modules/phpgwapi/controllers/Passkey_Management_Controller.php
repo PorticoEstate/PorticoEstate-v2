@@ -42,11 +42,14 @@ class Passkey_Management_Controller
 		$this->template->set_file('head', 'passkey_management.tpl');
 
 
+
 		$this->auth_passkeys = new Auth_Passkeys();
 
 		// Get settings
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->userSettings = Settings::getInstance()->get('user');
+		Settings::getInstance()->update('flags', [
+			'currentapp' => 'preferences']);
 		$this->flags = Settings::getInstance()->get('flags');
 
 		// Get current user's account ID and username
@@ -174,10 +177,13 @@ class Passkey_Management_Controller
 	 */
 	private function format_datetime(string $datetime_str): string
 	{
-		try {
+		try
+		{
 			$datetime = new \DateTime($datetime_str);
 			return $datetime->format($this->serverSettings['dateformat'] ?? 'Y-m-d H:i:s');
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			error_log("Error formatting datetime: " . $e->getMessage());
 			return $datetime_str; // Return original string if parsing fails
 		}

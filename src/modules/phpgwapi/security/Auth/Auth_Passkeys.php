@@ -159,9 +159,12 @@ class Auth_Passkeys
         {
             // Handle RFC 1342 encoded format: =?BINARY?B\?(.*?)\?=/', $challenge, $matches))
             {
-                if (preg_match('/=\?BINARY\?B\\?(.*?)\\?=/', $challenge, $matches)) {
+                if (preg_match('/=\?BINARY\?B\\?(.*?)\\?=/', $challenge, $matches))
+                {
                     $raw = base64_decode($matches[1]);
-                } else {
+                }
+                else
+                {
                     throw new \Exception('Invalid challenge format: Unable to extract binary data');
                 }
                 $_SESSION['webauthn_challenge'] = $raw;
@@ -708,22 +711,26 @@ class Auth_Passkeys
         // Set to use Base64URL encoding (instead of RFC 1342-like format)
         ByteBuffer::$useBase64UrlEncoding = true;
         $credentialIdBase64Url = $buffer->jsonSerialize();
-        
+
         // Use JSONB operators for efficient querying
         $sql = "SELECT account_id, account_data 
                 FROM phpgw_accounts_data 
                 WHERE account_data @> :search_json::jsonb";
-        
+
         $stmt = $this->db->prepare($sql);
         $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
         $stmt->execute([':search_json' => $searchJson]);
-        
+
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row) {
+        if ($row)
+        {
             $account_data = json_decode($row['account_data'], true);
-            if (isset($account_data['passkeys'])) {
-                foreach ($account_data['passkeys'] as $key) {
-                    if ($key['credential_id'] === $credentialIdBase64Url) {
+            if (isset($account_data['passkeys']))
+            {
+                foreach ($account_data['passkeys'] as $key)
+                {
+                    if ($key['credential_id'] === $credentialIdBase64Url)
+                    {
                         return [
                             'account_id' => (int)$row['account_id'],
                             'public_key' => $key['public_key'], // PEM format
@@ -750,34 +757,39 @@ class Auth_Passkeys
         ByteBuffer::$useBase64UrlEncoding = true;
         $credentialIdBase64Url = $buffer->jsonSerialize();
 
-        try {
+        try
+        {
             // Get the account data containing this credential ID
             $sql = "SELECT account_id, account_data
                    FROM phpgw_accounts_data 
                    WHERE account_data @> :search_json::jsonb";
-            
+
             $stmt = $this->db->prepare($sql);
             $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
             $stmt->execute([':search_json' => $searchJson]);
-            
+
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row) {
+            if ($row)
+            {
                 $account_id = (int)$row['account_id'];
                 $account_data = json_decode($row['account_data'], true);
-                
+
                 // Find the passkey in the array
-                if (isset($account_data['passkeys']) && is_array($account_data['passkeys'])) {
-                    foreach ($account_data['passkeys'] as $index => $passkey) {
-                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url) {
+                if (isset($account_data['passkeys']) && is_array($account_data['passkeys']))
+                {
+                    foreach ($account_data['passkeys'] as $index => $passkey)
+                    {
+                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url)
+                        {
                             // Update the sign count and last_used fields
                             $account_data['passkeys'][$index]['sign_count'] = $newSignCount;
                             $account_data['passkeys'][$index]['last_used'] = date('c');
-                            
+
                             // Update the account data in the database
                             $updateSql = "UPDATE phpgw_accounts_data 
                                          SET account_data = :account_data
                                          WHERE account_id = :account_id";
-                            
+
                             $updateStmt = $this->db->prepare($updateSql);
                             error_log("Updating sign count and last_used for credential ID {$credentialIdBase64Url}");
                             return $updateStmt->execute([
@@ -788,10 +800,12 @@ class Auth_Passkeys
                     }
                 }
             }
-            
+
             error_log("Passkey not found for credential ID {$credentialIdBase64Url}");
             return false;
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e)
+        {
             error_log("Error updating sign count for credential ID {$credentialIdBase64Url}: " . $e->getMessage());
             return false;
         }
@@ -810,33 +824,38 @@ class Auth_Passkeys
         ByteBuffer::$useBase64UrlEncoding = true;
         $credentialIdBase64Url = $buffer->jsonSerialize();
 
-        try {
+        try
+        {
             // Get the account data containing this credential ID
             $sql = "SELECT account_id, account_data
                    FROM phpgw_accounts_data 
                    WHERE account_data @> :search_json::jsonb";
-            
+
             $stmt = $this->db->prepare($sql);
             $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
             $stmt->execute([':search_json' => $searchJson]);
-            
+
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row) {
+            if ($row)
+            {
                 $account_id = (int)$row['account_id'];
                 $account_data = json_decode($row['account_data'], true);
-                
+
                 // Find the passkey in the array
-                if (isset($account_data['passkeys']) && is_array($account_data['passkeys'])) {
-                    foreach ($account_data['passkeys'] as $index => $passkey) {
-                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url) {
+                if (isset($account_data['passkeys']) && is_array($account_data['passkeys']))
+                {
+                    foreach ($account_data['passkeys'] as $index => $passkey)
+                    {
+                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url)
+                        {
                             // Update only the last_used field
                             $account_data['passkeys'][$index]['last_used'] = date('c');
-                            
+
                             // Update the account data in the database
                             $updateSql = "UPDATE phpgw_accounts_data 
                                          SET account_data = :account_data
                                          WHERE account_id = :account_id";
-                            
+
                             $updateStmt = $this->db->prepare($updateSql);
                             error_log("Updating last_used timestamp for credential ID {$credentialIdBase64Url}");
                             return $updateStmt->execute([
@@ -847,10 +866,12 @@ class Auth_Passkeys
                     }
                 }
             }
-            
+
             error_log("Passkey not found for credential ID {$credentialIdBase64Url}");
             return false;
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e)
+        {
             error_log("Error updating last_used for credential ID {$credentialIdBase64Url}: " . $e->getMessage());
             return false;
         }

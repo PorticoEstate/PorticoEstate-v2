@@ -101,7 +101,7 @@ class LoginHelper
 			{
 				phpgw::redirect_link('/home/', array('cd' => 'yes'));
 			}
-			if(!empty($result['html']))
+			if (!empty($result['html']))
 			{
 				$response = $response->withHeader('Content-Type', 'text/html');
 				$response->getBody()->write($result['html']);
@@ -199,7 +199,7 @@ HTML;
 		if (!Sanitizer::get_var('hide_lightbox', 'bool'))
 		{
 			$partial_url	   = '/login_ui';
-//			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
+			//			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
 
 			$variables['lang_login']  = lang('login');
 			$variables['partial_url'] = $partial_url;
@@ -236,11 +236,15 @@ HTML;
 			{
 
 				$result = $Login->login();
+				if (!empty($result['html']))
+				{
+					$html = $result['html'];
+				}
 				if (!empty($result['session_id']))
 				{
 					$this->redirect();
 				}
-				else
+				if (empty($result['html']))
 				{
 					$html = $LoginUi->phpgw_display_login($variables, $Login->get_cd());
 				}
@@ -248,7 +252,7 @@ HTML;
 		}
 
 		$response = $response->withHeader('Content-Type', 'text/html');
-		if($html)
+		if ($html)
 		{
 			$response->getBody()->write($html);
 		}

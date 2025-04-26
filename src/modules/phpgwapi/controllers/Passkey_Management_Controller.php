@@ -114,11 +114,11 @@ class Passkey_Management_Controller
 			foreach ($passkeys as $passkey)
 			{
 				$created_date = !empty($passkey['added']) ?
-					DateHelper::date_full($passkey['added']) :
+					$this->format_datetime($passkey['added']) :
 					lang('Unknown');
 
 				$last_used = isset($passkey['last_used']) && !empty($passkey['last_used']) ?
-					DateHelper::date_full($passkey['last_used']) :
+					$this->format_datetime($passkey['last_used']) :
 					lang('Never');
 
 				$device_name = htmlspecialchars($passkey['device_name'] ?: lang('Unnamed Device'));
@@ -164,6 +164,23 @@ class Passkey_Management_Controller
 		$this->phpgwapi_common->phpgw_footer();
 
 		return $response;
+	}
+
+	/**
+	 * Format a datetime string to a human-readable format
+	 * 
+	 * @param string $datetime_str ISO 8601 datetime string (e.g., '2023-04-26T14:30:00+00:00')
+	 * @return string Formatted datetime string
+	 */
+	private function format_datetime(string $datetime_str): string
+	{
+		try {
+			$datetime = new \DateTime($datetime_str);
+			return $datetime->format($this->serverSettings['dateformat'] ?? 'Y-m-d H:i:s');
+		} catch (\Exception $e) {
+			error_log("Error formatting datetime: " . $e->getMessage());
+			return $datetime_str; // Return original string if parsing fails
+		}
 	}
 
 	/**

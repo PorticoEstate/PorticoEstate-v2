@@ -29,6 +29,10 @@
 
 namespace App\modules\phpgwapi\security;
 
+// Enable error logging for this script
+ini_set('log_errors', 'On');
+ini_set('error_log', '/var/log/apache2/error.log');
+
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Hooks;
@@ -128,6 +132,13 @@ class Login
 
 	public function login()
 	{
+		// Handle passkey authentication when selected
+		$login_type = \Sanitizer::get_var('type', 'string', 'GET');
+		if ($login_type === 'passkey')
+		{
+			return $this->auth_passkey();
+		}
+
 		if ($this->serverSettings['auth_type'] == 'http' && isset($_SERVER['PHP_AUTH_USER']))
 		{
 			$login	 = $_SERVER['PHP_AUTH_USER'];
@@ -234,7 +245,7 @@ class Login
 
 			$Auth = new \App\modules\phpgwapi\security\Auth\Auth();
 			$login = $Auth->get_username();
-		
+
 
 			if ($login)
 			{
@@ -317,6 +328,365 @@ class Login
 				\App\modules\phpgwapi\services\Cache::message_set($receipt, 'message');
 			}
 			return array('session_id' => $this->_sessionid);
+		}
+	}
+
+	/**
+	 * Authenticate via passkey (FIDO2/WebAuthn)
+	 * 
+	 * @return array|null Authentication result
+	 */
+	protected function auth_passkey(): ?array
+	{
+		$db = \App\Database\Db::getInstance(); // Initialize database connection
+
+		if (empty($_POST['data']))
+		{
+			// Simple WebAuthn form that doesn't rely on server-side challenge generation
+			$html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Simplified Passkey Login</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+	<style>
+		body {
+			background-color: #f8f9fa;
+			padding-top: 40px;
+		}
+		.login-container {
+			max-width: 400px;
+			margin: 0 auto;
+			padding: 15px;
+			background: white;
+			border-radius: 8px;
+			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+		}
+		.login-header {
+			text-align: center;
+			margin-bottom: 30px;
+		}
+		#status-message {
+			margin-top: 20px;
+		}
+		.loading-spinner {
+			display: none;
+			text-align: center;
+			margin: 20px 0;
+		}
+		.back-button {
+			margin-top: 20px;
+			text-align: center;
+		}
+	</style>
+</head>
+<body>
+	<div class="container">
+		<div class="login-container">
+			<div class="login-header">
+				<h3>Login with Passkey</h3>
+				<p>Use your device security (fingerprint, face recognition, or PIN) to login.</p>
+			</div>
+
+			<div class="text-center">
+				<button id="passkey-button" class="btn btn-primary btn-lg">
+					Continue with Passkey
+				</button>
+			</div>
+
+			<div id="loading-spinner" class="loading-spinner">
+				<div class="spinner-border text-primary" role="status">
+					<span class="visually-hidden">Loading...</span>
+				</div>
+				<p>Waiting for your verification...</p>
+			</div>
+
+			<div id="status-message" class="alert d-none"></div>
+
+			<div class="back-button">
+				<a href="login.php" class="btn btn-link">Back to login options</a>
+			</div>
+		</div>
+	</div>
+
+	<script>
+	document.addEventListener('DOMContentLoaded', function() {
+		const passkeyButton = document.getElementById('passkey-button');
+		const loadingSpinner = document.getElementById('loading-spinner');
+		const statusMessage = document.getElementById('status-message');
+		
+		// Function to show status messages
+		function showStatus(message, type) {
+			statusMessage.textContent = message;
+			statusMessage.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-info');
+			statusMessage.classList.add('alert-' + type);
+		}
+
+		// Check if WebAuthn is supported by the browser
+		if (!window.PublicKeyCredential) {
+			showStatus('Your browser does not support passkeys. Please use a modern browser.', 'danger');
+			passkeyButton.disabled = true;
+			return;
+		}
+
+		// Helper function: Convert a base64url string to an ArrayBuffer
+		function base64UrlToBuffer(base64url) {
+			const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+			const padLen = (4 - (base64.length % 4)) % 4;
+			const padded = base64 + '='.repeat(padLen);
+			const binary = atob(padded);
+			const buffer = new ArrayBuffer(binary.length);
+			const bytes = new Uint8Array(buffer);
+			for (let i = 0; i < binary.length; i++) {
+				bytes[i] = binary.charCodeAt(i);
+			}
+			return buffer;
+		}
+
+		// Helper function: Convert an ArrayBuffer to a base64url string
+		function bufferToBase64Url(buffer) {
+			const bytes = new Uint8Array(buffer);
+			let binary = '';
+			for (let i = 0; i < bytes.byteLength; i++) {
+				binary += String.fromCharCode(bytes[i]);
+			}
+			const base64 = btoa(binary);
+			return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+		}
+
+		// Handle the button click to start authentication
+		passkeyButton.addEventListener('click', async function() {
+			try {
+				passkeyButton.disabled = true;
+				loadingSpinner.style.display = 'block';
+				showStatus('Starting authentication...', 'info');
+				
+				// Generate a random challenge on the client side
+				const challenge = new Uint8Array(32);
+				window.crypto.getRandomValues(challenge);
+				
+				// Create a simplified publicKey request
+				const publicKeyOptions = {
+					challenge: challenge.buffer,
+					timeout: 60000,
+					userVerification: 'preferred',
+					rpId: window.location.hostname,
+				};
+				
+				console.log('Starting WebAuthn authentication with client-side challenge');
+				
+				// Start authentication request
+				const credential = await navigator.credentials.get({
+					publicKey: publicKeyOptions,
+					mediation: 'optional'
+				});
+				
+				showStatus('Processing authentication...', 'info');
+				
+				// Prepare response to send to server
+				const response = {
+					id: credential.id,
+					rawId: bufferToBase64Url(credential.rawId),
+					response: {
+						clientDataJSON: bufferToBase64Url(credential.response.clientDataJSON),
+						authenticatorData: bufferToBase64Url(credential.response.authenticatorData),
+						signature: bufferToBase64Url(credential.response.signature),
+						userHandle: credential.response.userHandle ? bufferToBase64Url(credential.response.userHandle) : null
+					},
+					type: credential.type,
+					clientChallenge: bufferToBase64Url(challenge.buffer)
+				};
+				
+				// Submit the response
+				const form = document.createElement('form');
+				form.method = 'POST';
+				form.action = 'login.php?type=passkey';
+				
+				const dataInput = document.createElement('input');
+				dataInput.type = 'hidden';
+				dataInput.name = 'data';
+				dataInput.value = JSON.stringify(response);
+				
+				form.appendChild(dataInput);
+				document.body.appendChild(form);
+				form.submit();
+			} catch (error) {
+				console.error('Authentication error:', error);
+				loadingSpinner.style.display = 'none';
+				passkeyButton.disabled = false;
+				showStatus(error.message || 'Authentication failed. Please try again.', 'danger');
+			}
+		});
+	});
+	</script>
+</body>
+</html>
+HTML;
+
+			return [
+				'html' => $html
+			];
+		}
+		else
+		{
+			// Process passkey authentication from client
+			try
+			{
+				// Parse credential data from POST
+				$response = json_decode($_POST['data'], true);
+
+				if (!$response || !isset($response['id']) || !isset($response['response']))
+				{
+					return null; // Invalid data
+				}
+
+				// Initialize the Auth_Passkeys class
+				$auth_passkeys = new \App\modules\phpgwapi\security\Auth\Auth_Passkeys();
+
+				// Get credential details from the response
+				$clientDataJSON = $response['response']['clientDataJSON'];
+				$authenticatorData = $response['response']['authenticatorData'];
+				$signature = $response['response']['signature'];
+				$credentialId = $response['rawId'];
+				$userHandle = $response['response']['userHandle'] ?? null;
+
+				// Skip using the session for challenge - instead set it directly from the client
+				if (isset($response['clientChallenge']))
+				{
+					// Decode the client challenge
+					$clientChallenge = \App\modules\phpgwapi\security\Auth\Auth_Passkeys::base64url_decode($response['clientChallenge']);
+					// Store it in the session for the Auth_Passkeys class to use
+					$_SESSION['webauthn_challenge'] = $clientChallenge;
+				}
+
+				try
+				{
+					// Try to authenticate with the provided credentials
+					$username = $auth_passkeys->processAuthentication(
+						$clientDataJSON,
+						$authenticatorData,
+						$signature,
+						$credentialId,
+						$userHandle
+					);
+
+					if (!empty($username))
+					{
+						// Authentication successful - look up user account
+						$sql = "SELECT account_id, account_lid FROM phpgw_accounts WHERE account_lid = :username AND account_status = 'A'";
+						$stmt = $db->prepare($sql);
+						$stmt->execute([':username' => $username]);
+						$account = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+						if ($account)
+						{
+							// Set up session
+
+							$result = $this->sessions->create($account['account_lid'], '', true);
+
+							if ($result)
+							{
+								// Success! Return session ID
+								return [
+									'session_id' => $this->sessions->get_session_id()
+								];
+							}
+						}
+
+						// If we get here, there was a problem with the account or session creation
+						throw new \Exception('Account validation failed or session could not be created.');
+					}
+					else
+					{
+						throw new \Exception('Passkey authentication failed.');
+					}
+				}
+				catch (\Exception $e)
+				{
+					// Authentication failed - show detailed error
+					$debug_info = isset($GLOBALS['webauthn_debug']) ? $GLOBALS['webauthn_debug'] : [];
+
+					$html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Authentication Error</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body>
+	<div class="container mt-5">
+		<div class="card">
+			<div class="card-header bg-danger text-white">
+				<h4>Authentication Failed</h4>
+			</div>
+			<div class="card-body">
+				<p>Credential verification error: {$e->getMessage()}</p>
+				
+				<div class="bg-light p-3 mb-3">
+					<h5>Debug Information:</h5>
+					<pre>
+Authentication Debug Info:
+-------------------------
+<?php echo implode("\n", $debug_info); ?>
+					</pre>
+				</div>
+				
+				<div class="mt-4">
+					<a href="login.php?type=passkey" class="btn btn-primary">Try Again</a>
+					<a href="login.php" class="btn btn-secondary ms-2">Back to Login</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
+HTML;
+
+					return [
+						'html' => $html
+					];
+				}
+			}
+			catch (\Exception $e)
+			{
+				// General error handling
+				$html = <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Authentication Error</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body>
+	<div class="container mt-5">
+		<div class="card">
+			<div class="card-header bg-danger text-white">
+				<h4>Authentication Failed</h4>
+			</div>
+			<div class="card-body">
+				<p>Error: {$e->getMessage()}</p>
+				
+				<div class="mt-4">
+					<a href="login.php?type=passkey" class="btn btn-primary">Try Again</a>
+					<a href="login.php" class="btn btn-secondary ms-2">Back to Login</a>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
+HTML;
+
+				return [
+					'html' => $html
+				];
+			}
 		}
 	}
 }

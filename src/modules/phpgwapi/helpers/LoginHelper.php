@@ -130,6 +130,10 @@ HTML;
 				<option value="{$type}">{$method_name}</option>
 HTML;
 			}
+			// Add passkey login option
+			$options .= <<<HTML
+			<option value="passkey">Passkey (Passwordless)</option>
+HTML;
 			$options .= <<<HTML
 			<option value="sql">Brukernavn/Passord</option>
 HTML;

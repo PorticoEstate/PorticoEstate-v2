@@ -92,43 +92,47 @@ class Auth_Passkeys
     {
         $existingCredentialIds = $this->getCredentialIdsForUser($account_id);
 
-        // Note: lbuchs/webauthn uses the user ID directly (must be binary string)
-        // We are using the account_id as the user ID here.
-        $userIdBinary = (string)$account_id;
-
+        // Create user ID as a random value with the actual account ID
+        // This prevents guessing of user IDs while still maintaining
+        // the ability to link to internal accounts
+        $randomBytes = random_bytes(16);
+        $userId = $account_id . '_' . bin2hex($randomBytes);
+        
+        // Generate registration options with proper security settings
         $options = $this->webAuthn->getCreateArgs(
-            $userIdBinary,
-            $username,
-            $displayName,
-            60 * 4, // Timeout
-            true, // Require resident key (passkey)
-            true, // Require user verification
-            $existingCredentialIds // Exclude existing credentials for this user
+            $userId,  // User ID
+            $username, // Username
+            $displayName, // Display name
+            60 * 3, // Timeout in seconds
+            true, // Prevent re-registration of existing credentials
+            $existingCredentialIds // Existing credentials to exclude
         );
 
-        // Force the challenge to be a proper base64url string using our helper
-        if (isset($options->challenge))
-        {
-            $options->challenge = $this->ensureProperChallengeFormat($options->challenge);
-            // Log the processed challenge for debugging
-            error_log("WebAuthn challenge after processing: " . $options->challenge);
+        // Create a challenge with expiration
+        $rawChallenge = $this->webAuthn->getChallenge()->getBinaryString();
+        $_SESSION['webauthn_challenge'] = [
+            'value' => $rawChallenge,
+            'expires' => time() + 300 // 5 minute expiration
+        ];
+
+        // Ensure proper challenge format
+        $options->challenge = self::base64url_encode($rawChallenge);
+
+        // Enforce secure authenticator settings
+        if (!isset($options->authenticatorSelection)) {
+            $options->authenticatorSelection = new \stdClass();
         }
-
-        // Process excludeCredentials to ensure they're proper base64url strings
-        if (isset($options->excludeCredentials) && is_array($options->excludeCredentials))
-        {
-            foreach ($options->excludeCredentials as &$credential)
-            {
-                if (isset($credential->id))
-                {
-                    $credential->id = $this->ensureProperChallengeFormat($credential->id);
-                }
-            }
-        }
-
-        // Output the final options for debugging
-        error_log("WebAuthn registration options after processing: " . json_encode($options));
-
+        
+        // Prefer platform authenticators but allow cross-platform if needed
+        $options->authenticatorSelection->authenticatorAttachment = null; // Accept any type
+        
+        // Require user verification
+        $options->authenticatorSelection->userVerification = 'required';
+        
+        // Encourage resident keys for better UX
+        $options->authenticatorSelection->residentKey = 'preferred';
+        $options->authenticatorSelection->requireResidentKey = false;
+        
         return $options;
     }
 
@@ -279,10 +283,26 @@ class Auth_Passkeys
                 throw new \Exception('Failed to decode WebAuthn response data');
             }
 
+            // Extract the challenge value from the session
+            $sessionChallenge = null;
+            if (isset($_SESSION['webauthn_challenge'])) {
+                if (is_array($_SESSION['webauthn_challenge']) && isset($_SESSION['webauthn_challenge']['value'])) {
+                    // New format with expiration
+                    $sessionChallenge = $_SESSION['webauthn_challenge']['value'];
+                } else {
+                    // Legacy format (direct string)
+                    $sessionChallenge = $_SESSION['webauthn_challenge'];
+                }
+            }
+
+            if (!$sessionChallenge) {
+                throw new \Exception('No valid challenge found in session');
+            }
+
             $credentialData = $this->webAuthn->processCreate(
                 $clientDataJSONDecoded,
                 $attestationObjectDecoded,
-                $_SESSION['webauthn_challenge'] ?? null, // Challenge from session
+                $sessionChallenge, // Use the extracted challenge value, not the array
                 $requireResidentKey, // requireResidentKey
                 true,  // requireUserVerification
                 false // checkOrigin - Already checked by library constructor based on allowedOrigins
@@ -327,62 +347,6 @@ class Auth_Passkeys
     }
 
     /**
-     * Generates arguments for navigator.credentials.get()
-     * @param int|null $account_id Optional: If provided, only allows credentials for this user
-     * @return \stdClass Options for navigator.credentials.get()
-     */
-    public function getAuthenticationArgs(?int $account_id = null): \stdClass
-    {
-        $allowedCredentialIds = [];
-        if ($account_id !== null)
-        {
-            $allowedCredentialIds = $this->getCredentialIdsForUser($account_id);
-        }
-
-        // Create a new challenge for this authentication
-        $options = $this->webAuthn->getGetArgs(
-            $allowedCredentialIds, // Allow specific credentials (can be empty to allow any)
-            60 * 4 // Timeout
-        );
-
-        // Make sure challenge is explicitly set in the session for auth verification
-        $rawChallenge = $this->webAuthn->getChallenge()->getBinaryString();
-        $_SESSION['webauthn_challenge'] = $rawChallenge;
-
-        // Make sure challenge is explicitly set in options
-        if (!isset($options->challenge) || empty($options->challenge))
-        {
-            error_log("WebAuthn challenge not set in options - setting it manually");
-            $options->challenge = self::base64url_encode($rawChallenge);
-        }
-        else
-        {
-            // Still encode the existing challenge properly
-            $options->challenge = $this->ensureProperChallengeFormat($options->challenge);
-        }
-
-        // Log the processed challenge for debugging
-        error_log("WebAuthn challenge after processing: " . $options->challenge);
-
-        // Process credential IDs to ensure they're proper base64url strings
-        if (isset($options->allowCredentials) && is_array($options->allowCredentials))
-        {
-            foreach ($options->allowCredentials as &$credential)
-            {
-                if (isset($credential->id))
-                {
-                    $credential->id = self::base64url_encode(ByteBuffer::fromBase64Url($credential->id)->getBinaryString());
-                }
-            }
-        }
-
-        // Output the final options for debugging
-        error_log("WebAuthn authentication options after processing: " . json_encode($options));
-
-        return $options;
-    }
-
-    /**
      * Processes the response from navigator.credentials.get() and returns account data on success
      * @param string $clientDataJSON Base64URL encoded clientDataJSON
      * @param string $authenticatorData Base64URL encoded authenticatorData
@@ -393,13 +357,8 @@ class Auth_Passkeys
      */
     public function processAuthentication(string $clientDataJSON, string $authenticatorData, string $signature, string $credentialId, ?string $userHandle): array
     {
-        $debug = []; // Debug array to collect information
-
         try
         {
-            // Add debug logging
-            $debug[] = "Challenge in session: " . (isset($_SESSION['webauthn_challenge']) ? 'present (' . strlen($_SESSION['webauthn_challenge']) . ' bytes)' : 'missing');
-
             // Properly decode Base64URL strings to binary
             $clientDataJSONDecoded = self::base64url_decode($clientDataJSON);
             $authenticatorDataDecoded = self::base64url_decode($authenticatorData);
@@ -414,85 +373,55 @@ class Auth_Passkeys
                 throw new \Exception('Invalid client data: challenge not found');
             }
 
+            // Get session challenge
+            if (!$this->isValidSessionChallenge()) {
+                throw new \Exception('Challenge not found or expired');
+            }
+
+            // Get the challenge from session with proper structure
+            $sessionChallengeData = $_SESSION['webauthn_challenge'];
+            $sessionChallenge = $sessionChallengeData['value'];
+            
             // Get client challenge
             $clientChallenge = $clientDataArray['challenge'];
             $clientChallengeBinary = self::base64url_decode($clientChallenge);
-            $sessionChallenge = $_SESSION['webauthn_challenge'] ?? null;
-
-            $debug[] = "Client challenge (base64url): " . $clientChallenge;
-            $debug[] = "Client challenge length: " . strlen($clientChallengeBinary) . " bytes";
-
-            if ($sessionChallenge)
-            {
-                $debug[] = "Session challenge length: " . strlen($sessionChallenge) . " bytes";
-                $sessionChallengeBase64 = self::base64url_encode($sessionChallenge);
-                $debug[] = "Session challenge (base64url): " . $sessionChallengeBase64;
-                $debug[] = "Challenge match: " . ($clientChallenge === $sessionChallengeBase64 ? 'YES' : 'NO');
-            }
-            else
-            {
-                $debug[] = "Session challenge is missing";
-            }
-
-            // Store the debug info in a global variable to access in the error template
-            $GLOBALS['webauthn_debug'] = $debug;
-
-            // Bypass session challenge validation - use client challenge directly
-            $_SESSION['webauthn_challenge'] = $clientChallengeBinary;
-
-            // Get the credential source from our storage
+            
+            // Get credential source from database
             $credentialSource = $this->getCredentialSourceById($credentialIdDecoded);
             if (!$credentialSource)
             {
-                $debug[] = "Credential ID not found in database";
-                $GLOBALS['webauthn_debug'] = $debug;
                 throw new \Exception('Credential ID not found');
             }
-
-            $debug[] = "Found credential for account_id: " . $credentialSource['account_id'];
-            $GLOBALS['webauthn_debug'] = $debug;
+            
+            // Verify the client challenge matches the session challenge
+            $sessionChallengeBase64 = self::base64url_encode($sessionChallenge);
+            if (!hash_equals($clientChallenge, $sessionChallengeBase64)) {
+                throw new \Exception('Challenge verification failed');
+            }
 
             try
             {
-                // Process the authentication with a two-step approach:
-                // 1. Try our own manual verification
-                // 2. Fall back to library with challenge bypass if needed
-
-                $debug[] = "Attempting manual WebAuthn verification...";
-
-                // Always update the last_used timestamp regardless of sign count
-                $this->updateCredentialLastUsed($credentialIdDecoded);
-                $debug[] = "Updated last_used timestamp for credential";
-
-                // Try manual verification first
+                // Verify WebAuthn assertion
                 if ($this->manuallyVerifyWebAuthnAssertion(
                     $clientDataJSONDecoded,
                     $authenticatorDataDecoded,
                     $signatureDecoded,
                     $credentialSource['public_key'],
-                    $clientChallengeBinary
+                    $sessionChallenge
                 ))
                 {
-                    $debug[] = "Manual WebAuthn verification successful!";
-
                     // Extract sign count from authenticator data
                     $newSignCount = 0;
                     if (strlen($authenticatorDataDecoded) >= 37)
                     {
                         $countBytes = substr($authenticatorDataDecoded, 33, 4);
                         $newSignCount = unpack('N', $countBytes)[1];
-                        $debug[] = "Extracted sign count: " . $newSignCount;
                     }
 
                     // Update the sign count if needed
                     if ($newSignCount > $credentialSource['sign_count'])
                     {
                         $this->updateCredentialCounter($credentialIdDecoded, $newSignCount);
-                        $debug[] = "Updated sign count to: " . $newSignCount;
-                    }
-                    else
-                    {
-                        $debug[] = "Sign count unchanged: " . $newSignCount;
                     }
 
                     // Update last login timestamp
@@ -504,38 +433,23 @@ class Auth_Passkeys
                     // Clear challenge from session after successful use
                     unset($_SESSION['webauthn_challenge']);
 
-                    $debug[] = "Authentication successful for user: " . ($account['account_lid'] ?? 'unknown');
-                    $GLOBALS['webauthn_debug'] = $debug;
                     return $account;
                 }
 
-                // Manual verification failed, try library with challenge bypass
-                $debug[] = "Manual verification failed, trying library with challenge bypass...";
-
-                // Use the library but with modified parameters to work around validation issues
+                // If manual verification fails, try the library with strict challenge checking
                 $signCount = $this->webAuthn->processGet(
                     $clientDataJSONDecoded,
                     $authenticatorDataDecoded,
                     $signatureDecoded,
-                    $credentialSource['public_key'], // Stored PEM public key
-                    $credentialSource['sign_count'], // Stored sign count
-                    null, // Skip challenge validation by passing null
-                    false, // Disable origin check
-                    false  // Disable RP ID check
+                    $credentialSource['public_key'],
+                    $credentialSource['sign_count'],
+                    $sessionChallenge // Use the proper session challenge
                 );
-
-                // If we get here, validation worked with challenge bypass
-                $debug[] = "WebAuthn library validation successful with sign count: " . $signCount;
 
                 // Update the sign count if needed
                 if ($signCount > $credentialSource['sign_count'])
                 {
                     $this->updateCredentialCounter($credentialIdDecoded, $signCount);
-                    $debug[] = "Updated sign count to: " . $signCount;
-                }
-                else
-                {
-                    $debug[] = "Sign count unchanged: " . $signCount;
                 }
 
                 // Update last login timestamp
@@ -543,50 +457,278 @@ class Auth_Passkeys
 
                 // Get the account data associated with this credential
                 $account = $this->getAccountById($credentialSource['account_id']);
-
+                
                 // Clear challenge from session after successful use
                 unset($_SESSION['webauthn_challenge']);
 
-                $debug[] = "Authentication successful for user: " . ($account['account_lid'] ?? 'unknown');
-                $GLOBALS['webauthn_debug'] = $debug;
                 return $account;
             }
             catch (\Exception $innerEx)
             {
-                $debug[] = "Manual verification failed: " . $innerEx->getMessage();
-                $GLOBALS['webauthn_debug'] = $debug;
-
-                // Fall back to library's processGet as a last resort
-                $signCount = $this->webAuthn->processGet(
-                    $clientDataJSONDecoded,
-                    $authenticatorDataDecoded,
-                    $signatureDecoded,
-                    $credentialSource['public_key'], // Stored PEM public key
-                    $credentialSource['sign_count'], // Stored sign count
-                    null, // Skip challenge validation
-                    false, // Disable origin check
-                    false  // Disable RP ID check
-                );
-
-                // If we get here, validation worked with challenge bypass
-                $this->updateCredentialCounter($credentialIdDecoded, $signCount);
-                $this->update_lastlogin($credentialSource['account_id'], $_SERVER['REMOTE_ADDR'] ?? '');
-
-                // Get the account data associated with this credential
-                $account = $this->getAccountById($credentialSource['account_id']);
-                
-                unset($_SESSION['webauthn_challenge']);
-
-                $debug[] = "Authentication successful via fallback for user: " . ($account['account_lid'] ?? 'unknown');
-                $GLOBALS['webauthn_debug'] = $debug;
-                return $account;
+                throw new \Exception('WebAuthn assertion verification failed: ' . $innerEx->getMessage());
             }
         }
         catch (\Exception $e)
         {
-            $debug[] = "Error: " . $e->getMessage();
-            $GLOBALS['webauthn_debug'] = $debug;
+            // Log minimal error information
+            error_log('Authentication error: ' . $e->getMessage());
             return [];
+        }
+    }
+    
+    /**
+     * Check if the current challenge in session is valid and not expired
+     * @return bool
+     */
+    private function isValidSessionChallenge(): bool
+    {
+        if (!isset($_SESSION['webauthn_challenge'])) {
+            return false;
+        }
+        
+        // Check for new format with expiration
+        if (is_array($_SESSION['webauthn_challenge'])) {
+            if (!isset($_SESSION['webauthn_challenge']['value']) || 
+                !isset($_SESSION['webauthn_challenge']['expires'])) {
+                return false;
+            }
+            
+            // Check if challenge has expired
+            return $_SESSION['webauthn_challenge']['expires'] > time();
+        }
+        
+        // Legacy format (just a string value) - consider valid but migrate to new format
+        // This provides backward compatibility
+        $challenge = $_SESSION['webauthn_challenge'];
+        $_SESSION['webauthn_challenge'] = [
+            'value' => $challenge,
+            'expires' => time() + 300 // 5 minute expiration
+        ];
+        
+        return true;
+    }
+    
+    /**
+     * Get account information by account ID
+     * @param int $account_id
+     * @return array Account information or empty array if not found
+     */
+    public function getAccountById(int $account_id): array
+    {
+        try {
+            $sql = "SELECT account_id, account_lid, account_status 
+                   FROM phpgw_accounts 
+                   WHERE account_id = :account_id";
+                   
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':account_id' => $account_id]);
+            $account = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $account ?: [];
+        } catch (\Exception $e) {
+            error_log('Error retrieving account information: ' . $e->getMessage());
+            return [];
+        }
+    }
+    
+    /**
+     * Updates the counter for a credential
+     * @param string $rawCredentialId Raw binary credential ID
+     * @param int $newSignCount New sign count value
+     * @return bool Success status
+     */
+    private function updateCredentialCounter(string $rawCredentialId, int $newSignCount): bool
+    {
+        // Create a ByteBuffer and use jsonSerialize to get the Base64URL string
+        $buffer = new ByteBuffer($rawCredentialId);
+        // Set to use Base64URL encoding
+        ByteBuffer::$useBase64UrlEncoding = true;
+        $credentialIdBase64Url = $buffer->jsonSerialize();
+
+        try
+        {
+            // Get the account data containing this credential ID using parameterized query
+            $sql = "SELECT account_id, account_data
+                   FROM phpgw_accounts_data 
+                   WHERE account_data @> :search_json::jsonb";
+
+            $stmt = $this->db->prepare($sql);
+            $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
+            $stmt->execute([':search_json' => $searchJson]);
+
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row)
+            {
+                $account_id = (int)$row['account_id'];
+                $account_data = json_decode($row['account_data'], true);
+
+                // Find the passkey in the array
+                if (isset($account_data['passkeys']) && is_array($account_data['passkeys']))
+                {
+                    foreach ($account_data['passkeys'] as $index => $passkey)
+                    {
+                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url)
+                        {
+                            // Update the sign count and last_used fields
+                            $account_data['passkeys'][$index]['sign_count'] = $newSignCount;
+                            $account_data['passkeys'][$index]['last_used'] = date('c');
+
+                            // Update the account data in the database
+                            $updateSql = "UPDATE phpgw_accounts_data 
+                                         SET account_data = :account_data
+                                         WHERE account_id = :account_id";
+
+                            $updateStmt = $this->db->prepare($updateSql);
+                            
+                            return $updateStmt->execute([
+                                ':account_data' => json_encode($account_data),
+                                ':account_id' => $account_id
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+        catch (\Exception $e)
+        {
+            error_log('Error updating credential counter: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Updates the last_used timestamp for a given credential.
+     * @param string $rawCredentialId Raw binary credential ID
+     * @return bool Success status
+     */
+    private function updateCredentialLastUsed(string $rawCredentialId): bool
+    {
+        // Create a ByteBuffer and use jsonSerialize to get the Base64URL string
+        $buffer = new ByteBuffer($rawCredentialId);
+        // Set to use Base64URL encoding
+        ByteBuffer::$useBase64UrlEncoding = true;
+        $credentialIdBase64Url = $buffer->jsonSerialize();
+
+        try
+        {
+            // Get the account data containing this credential ID
+            $sql = "SELECT account_id, account_data
+                   FROM phpgw_accounts_data 
+                   WHERE account_data @> :search_json::jsonb";
+
+            $stmt = $this->db->prepare($sql);
+            $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
+            $stmt->execute([':search_json' => $searchJson]);
+
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row)
+            {
+                $account_id = (int)$row['account_id'];
+                $account_data = json_decode($row['account_data'], true);
+
+                // Find the passkey in the array
+                if (isset($account_data['passkeys']) && is_array($account_data['passkeys']))
+                {
+                    foreach ($account_data['passkeys'] as $index => $passkey)
+                    {
+                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url)
+                        {
+                            // Update only the last_used field
+                            $account_data['passkeys'][$index]['last_used'] = date('c');
+
+                            // Update the account data in the database
+                            $updateSql = "UPDATE phpgw_accounts_data 
+                                         SET account_data = :account_data
+                                         WHERE account_id = :account_id";
+
+                            $updateStmt = $this->db->prepare($updateSql);
+                            error_log("Updating last_used timestamp for credential ID {$credentialIdBase64Url}");
+                            return $updateStmt->execute([
+                                ':account_data' => json_encode($account_data),
+                                ':account_id' => $account_id
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            error_log("Passkey not found for credential ID {$credentialIdBase64Url}");
+            return false;
+        }
+        catch (\Exception $e)
+        {
+            error_log("Error updating last_used for credential ID {$credentialIdBase64Url}: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Remove a passkey credential for a user.
+     * @param int $account_id
+     * @param string $credentialIdBase64Url Base64URL encoded credential ID to remove
+     * @return bool
+     */
+    public function remove_passkey(int $account_id, string $credentialIdBase64Url): bool
+    {
+        try {
+            // Sanitize and validate the credential ID
+            $credentialIdBase64Url = trim($credentialIdBase64Url);
+            if (empty($credentialIdBase64Url)) {
+                return false;
+            }
+            
+            // Verify this credential belongs to the given account
+            $sql = "SELECT account_data FROM phpgw_accounts_data 
+                   WHERE account_id = :account_id AND 
+                   account_data @> :search_json::jsonb";
+                   
+            $stmt = $this->db->prepare($sql);
+            $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
+            $stmt->execute([
+                ':account_id' => $account_id,
+                ':search_json' => $searchJson
+            ]);
+            
+            // If no match was found, return false
+            if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+                return false;
+            }
+            
+            // Fetch the current account data
+            $sql = 'SELECT account_data FROM phpgw_accounts_data WHERE account_id = :account_id';
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':account_id' => $account_id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $account_data = $row ? json_decode($row['account_data'], true) : [];
+            if (!isset($account_data['passkeys'])) {
+                return false; // No passkeys to remove
+            }
+
+            $initialCount = count($account_data['passkeys']);
+            $account_data['passkeys'] = array_values(array_filter(
+                $account_data['passkeys'],
+                fn($item) => $item['credential_id'] !== $credentialIdBase64Url
+            ));
+            $removed = count($account_data['passkeys']) < $initialCount;
+
+            if ($removed) {
+                $sql = 'UPDATE phpgw_accounts_data 
+                       SET account_data = :account_data 
+                       WHERE account_id = :account_id';
+                $stmt = $this->db->prepare($sql);
+                return $stmt->execute([
+                    ':account_data' => json_encode($account_data),
+                    ':account_id' => $account_id
+                ]);
+            }
+
+            return false;
+        } catch (\Exception $e) {
+            error_log('Error removing passkey: ' . $e->getMessage());
+            return false;
         }
     }
 
@@ -746,207 +888,6 @@ class Auth_Passkeys
     }
 
     /**
-     * Updates the signature counter for a given credential.
-     * @param string $rawCredentialId Raw binary credential ID
-     * @param int $newSignCount The new counter value after successful authentication
-     * @return bool Success status
-     */
-    private function updateCredentialCounter(string $rawCredentialId, int $newSignCount): bool
-    {
-        // Create a ByteBuffer and use jsonSerialize to get the Base64URL string
-        $buffer = new ByteBuffer($rawCredentialId);
-        // Set to use Base64URL encoding
-        ByteBuffer::$useBase64UrlEncoding = true;
-        $credentialIdBase64Url = $buffer->jsonSerialize();
-
-        try
-        {
-            // Get the account data containing this credential ID
-            $sql = "SELECT account_id, account_data
-                   FROM phpgw_accounts_data 
-                   WHERE account_data @> :search_json::jsonb";
-
-            $stmt = $this->db->prepare($sql);
-            $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
-            $stmt->execute([':search_json' => $searchJson]);
-
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row)
-            {
-                $account_id = (int)$row['account_id'];
-                $account_data = json_decode($row['account_data'], true);
-
-                // Find the passkey in the array
-                if (isset($account_data['passkeys']) && is_array($account_data['passkeys']))
-                {
-                    foreach ($account_data['passkeys'] as $index => $passkey)
-                    {
-                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url)
-                        {
-                            // Update the sign count and last_used fields
-                            $account_data['passkeys'][$index]['sign_count'] = $newSignCount;
-                            $account_data['passkeys'][$index]['last_used'] = date('c');
-
-                            // Update the account data in the database
-                            $updateSql = "UPDATE phpgw_accounts_data 
-                                         SET account_data = :account_data
-                                         WHERE account_id = :account_id";
-
-                            $updateStmt = $this->db->prepare($updateSql);
-                            error_log("Updating sign count and last_used for credential ID {$credentialIdBase64Url}");
-                            return $updateStmt->execute([
-                                ':account_data' => json_encode($account_data),
-                                ':account_id' => $account_id
-                            ]);
-                        }
-                    }
-                }
-            }
-
-            error_log("Passkey not found for credential ID {$credentialIdBase64Url}");
-            return false;
-        }
-        catch (\Exception $e)
-        {
-            error_log("Error updating sign count for credential ID {$credentialIdBase64Url}: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Updates the last_used timestamp for a given credential.
-     * @param string $rawCredentialId Raw binary credential ID
-     * @return bool Success status
-     */
-    private function updateCredentialLastUsed(string $rawCredentialId): bool
-    {
-        // Create a ByteBuffer and use jsonSerialize to get the Base64URL string
-        $buffer = new ByteBuffer($rawCredentialId);
-        // Set to use Base64URL encoding
-        ByteBuffer::$useBase64UrlEncoding = true;
-        $credentialIdBase64Url = $buffer->jsonSerialize();
-
-        try
-        {
-            // Get the account data containing this credential ID
-            $sql = "SELECT account_id, account_data
-                   FROM phpgw_accounts_data 
-                   WHERE account_data @> :search_json::jsonb";
-
-            $stmt = $this->db->prepare($sql);
-            $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
-            $stmt->execute([':search_json' => $searchJson]);
-
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            if ($row)
-            {
-                $account_id = (int)$row['account_id'];
-                $account_data = json_decode($row['account_data'], true);
-
-                // Find the passkey in the array
-                if (isset($account_data['passkeys']) && is_array($account_data['passkeys']))
-                {
-                    foreach ($account_data['passkeys'] as $index => $passkey)
-                    {
-                        if (isset($passkey['credential_id']) && $passkey['credential_id'] === $credentialIdBase64Url)
-                        {
-                            // Update only the last_used field
-                            $account_data['passkeys'][$index]['last_used'] = date('c');
-
-                            // Update the account data in the database
-                            $updateSql = "UPDATE phpgw_accounts_data 
-                                         SET account_data = :account_data
-                                         WHERE account_id = :account_id";
-
-                            $updateStmt = $this->db->prepare($updateSql);
-                            error_log("Updating last_used timestamp for credential ID {$credentialIdBase64Url}");
-                            return $updateStmt->execute([
-                                ':account_data' => json_encode($account_data),
-                                ':account_id' => $account_id
-                            ]);
-                        }
-                    }
-                }
-            }
-
-            error_log("Passkey not found for credential ID {$credentialIdBase64Url}");
-            return false;
-        }
-        catch (\Exception $e)
-        {
-            error_log("Error updating last_used for credential ID {$credentialIdBase64Url}: " . $e->getMessage());
-            return false;
-        }
-    }
-
-    /**
-     * Remove a passkey credential for a user.
-     * @param int $account_id
-     * @param string $credentialIdBase64Url Base64URL encoded credential ID to remove
-     * @return bool
-     */
-    public function remove_passkey(int $account_id, string $credentialIdBase64Url): bool
-    {
-        $sql = 'SELECT account_data FROM phpgw_accounts_data WHERE account_id = :account_id';
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':account_id' => $account_id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        $account_data = $row ? json_decode($row['account_data'], true) : [];
-        if (!isset($account_data['passkeys']))
-        {
-            return false; // No passkeys to remove
-        }
-
-        $initialCount = count($account_data['passkeys']);
-        $account_data['passkeys'] = array_values(array_filter(
-            $account_data['passkeys'],
-            fn($item) => $item['credential_id'] !== $credentialIdBase64Url
-        ));
-        $removed = count($account_data['passkeys']) < $initialCount;
-
-        if ($removed)
-        {
-            $sql = 'UPDATE phpgw_accounts_data SET account_data = :account_data WHERE account_id = :account_id';
-            $stmt = $this->db->prepare($sql);
-            return $stmt->execute([
-                ':account_data' => json_encode($account_data),
-                ':account_id' => $account_id
-            ]);
-        }
-
-        return false; // Credential ID not found
-    }
-
-    /**
-     * Gets the username (account_lid) for a given account ID.
-     * @param int $account_id
-     * @return string|null
-     */
-    private function getUsernameByAccountId(int $account_id): ?string
-    {
-        $sql = 'SELECT account_lid FROM phpgw_accounts WHERE account_id = :account_id';
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':account_id' => $account_id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row['account_lid'] ?? null;
-    }
-
-    /**
-     * Gets the account data for a given account ID.
-     * @param int $account_id
-     * @return array|null
-     */
-    private function getAccountById(int $account_id): ?array
-    {
-        $sql = 'SELECT account_id, account_lid, account_status FROM phpgw_accounts WHERE account_id = :account_id';
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([':account_id' => $account_id]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row ?: null;
-    }
-
-    /**
      * Update last login (reuse from previous implementation)
      * @param int $account_id
      * @param string $ip
@@ -999,7 +940,7 @@ class Auth_Passkeys
      * @param string $authenticatorData Raw authenticator data
      * @param string $signature Raw signature bytes
      * @param string $publicKey PEM formatted public key
-     * @param string $clientChallenge Client-provided challenge binary
+     * @param string $challenge Expected challenge (binary)
      * @return bool True if verification succeeds
      */
     private function manuallyVerifyWebAuthnAssertion(
@@ -1007,57 +948,59 @@ class Auth_Passkeys
         string $authenticatorData,
         string $signature,
         string $publicKey,
-        string $clientChallenge
+        string $challenge
     ): bool
     {
         try
         {
             // 1. Parse clientDataJSON
             $clientDataArray = json_decode($clientDataJSON, true);
-            if (!$clientDataArray)
-            {
+            if (!$clientDataArray || !isset($clientDataArray['type']) || !isset($clientDataArray['challenge'])) {
                 return false;
             }
 
             // 2. Verify that the type is webauthn.get
-            if (!isset($clientDataArray['type']) || $clientDataArray['type'] !== 'webauthn.get')
-            {
+            if ($clientDataArray['type'] !== 'webauthn.get') {
                 return false;
             }
 
-            // 3. Verify challenge matches (already done in processAuthentication)
-
-            // 4. Get the RP ID from authenticator data (first 32 bytes is SHA-256 hash of RP ID)
-            $rpIdHash = substr($authenticatorData, 0, 32);
-
-            // 5. Verify user presence flag is set
-            $flags = ord($authenticatorData[32]);
-            if (!($flags & 0x01))
-            {
-                // User presence flag (bit 0) must be set
+            // 3. Verify challenge matches what we expect (using constant-time comparison)
+            $expectedChallenge = self::base64url_encode($challenge);
+            if (!hash_equals($expectedChallenge, $clientDataArray['challenge'])) {
                 return false;
             }
 
-            // 6. Calculate client data hash
+            // 4. Prepare client data hash
             $clientDataHash = hash('sha256', $clientDataJSON, true);
 
-            // 7. Verify signature using OpenSSL
-            // Data to verify is authenticatorData + clientDataHash
-            $dataToVerify = $authenticatorData . $clientDataHash;
+            // 5. Prepare the signature base
+            $signatureBase = $authenticatorData . $clientDataHash;
 
-            // Verify the signature
-            $result = openssl_verify(
-                $dataToVerify,
-                $signature,
-                $publicKey,
-                OPENSSL_ALGO_SHA256
-            );
+            // 6. Verify the signature
+            $key = openssl_pkey_get_public($publicKey);
+            if (!$key) {
+                return false;
+            }
 
-            return $result === 1;
+            // Determine algorithm based on key type
+            $keyDetails = openssl_pkey_get_details($key);
+            if (!$keyDetails) {
+                return false;
+            }
+
+            // Use appropriate verification method based on key type
+            if (isset($keyDetails['ec'])) {
+                // EC key (like P-256)
+                return openssl_verify($signatureBase, $signature, $key, OPENSSL_ALGO_SHA256) === 1;
+            } elseif (isset($keyDetails['rsa'])) {
+                // RSA key
+                return openssl_verify($signatureBase, $signature, $key, OPENSSL_ALGO_SHA256) === 1;
+            }
+
+            return false;
         }
         catch (\Exception $e)
         {
-            // Log any errors that occur during manual verification
             error_log('Manual WebAuthn verification error: ' . $e->getMessage());
             return false;
         }

@@ -1,68 +1,52 @@
 /**
- * Passkey Client JS
- * 
- * This file provides client-side functions for working with WebAuthn/Passkeys
+ * Passkey Client JS library for WebAuthn operations
+ * Secure implementation for browser-based WebAuthn operations
  */
 
-// Create a namespace to avoid undefined errors and global scope pollution
+/**
+ * Utility functions for encoding/decoding between different formats
+ */
 const PasskeyUtils = {
     /**
-     * Convert a base64url string to an ArrayBuffer
-     * @param {string} base64url - base64url encoded string
-     * @returns {ArrayBuffer} decoded array buffer
-     */
-    base64urlToArrayBuffer: function (base64url)
-    {
-        if (!base64url)
-        {
-            return new ArrayBuffer(0);
-        }
-        try
-        {
-            const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-            const padLen = (4 - (base64.length % 4)) % 4;
-            const padded = base64.padEnd(base64.length + padLen, '=');
-            const binary = atob(padded);
-            const buffer = new ArrayBuffer(binary.length);
-            const bytes = new Uint8Array(buffer);
-
-            for (let i = 0; i < binary.length; i++)
-            {
-                bytes[i] = binary.charCodeAt(i);
-            }
-            return buffer;
-        } catch (error)
-        {
-            return new ArrayBuffer(0);
-        }
-    },
-
-    /**
-     * Convert an ArrayBuffer to a base64url string
-     * @param {ArrayBuffer} buffer - array buffer to encode
-     * @returns {string} base64url encoded string
+     * Convert an ArrayBuffer to a Base64Url string
+     * @param {ArrayBuffer} buffer - The buffer to convert
+     * @returns {string} Base64Url encoded string
      */
     arrayBufferToBase64url: function (buffer)
     {
-        if (!buffer)
+        const bytes = new Uint8Array(buffer);
+        let str = '';
+        for (const byte of bytes)
         {
-            return "";
+            str += String.fromCharCode(byte);
         }
-        try
-        {
-            const bytes = new Uint8Array(buffer);
-            let binary = '';
-            for (let i = 0; i < bytes.byteLength; i++)
-            {
-                binary += String.fromCharCode(bytes[i]);
-            }
+        // Base64 encode and convert to base64url format
+        return btoa(str)
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/, '');
+    },
 
-            const base64 = btoa(binary);
-            return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-        } catch (error)
+    /**
+     * Convert a Base64Url string to an ArrayBuffer
+     * @param {string} base64url - The Base64Url string to convert
+     * @returns {ArrayBuffer} Decoded ArrayBuffer
+     */
+    base64urlToArrayBuffer: function (base64url)
+    {
+        // Convert base64url to base64
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        // Add padding if needed
+        const paddedBase64 = base64.padEnd(base64.length + (4 - (base64.length % 4 || 4)) % 4, '=');
+        // Decode base64 to binary string
+        const binaryString = atob(paddedBase64);
+        // Convert binary string to ArrayBuffer
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++)
         {
-            return "";
+            bytes[i] = binaryString.charCodeAt(i);
         }
+        return bytes.buffer;
     }
 };
 
@@ -72,154 +56,126 @@ const PasskeyUtils = {
  */
 async function isPlatformAuthenticatorAvailable()
 {
-    // First check if WebAuthn is supported by this browser
-    if (!window.PublicKeyCredential)
+    // First check if WebAuthn is available
+    if (typeof PublicKeyCredential === 'undefined')
     {
+        console.log('WebAuthn API is not available in this browser');
         return false;
     }
 
-    // Check if conditional mediation (passkey autofill) is supported
-    let conditionalMediationAvailable = false;
-    if (typeof PublicKeyCredential.isConditionalMediationAvailable === 'function')
-    {
-        try
-        {
-            conditionalMediationAvailable = await PublicKeyCredential.isConditionalMediationAvailable();
-        } catch (error)
-        {
-            // Silently fail and continue
-        }
-    }
-
-    // Check if platform authenticator is available
-    try
-    {
-        const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-        return available || conditionalMediationAvailable;
-    } catch (error)
-    {
-        return false;
-    }
+    // Always return true if basic WebAuthn is supported
+    // This allows all modern browsers to work even if they don't support
+    // the specific platform authenticator check method
+    return true;
 }
 
 /**
  * Prepare WebAuthn creation options by converting base64url strings to ArrayBuffers
  * @param {Object} creationOptions - options from server
+ * @param {string} username - the username for registration
  * @returns {Object} prepared options for navigator.credentials.create()
  */
-function prepareCreationOptions(creationOptions)
+function prepareCreationOptions(creationOptions, username)
 {
-    // Handle case where response is wrapped in a 'publicKey' property
-    if (creationOptions.publicKey && typeof creationOptions.publicKey === 'object')
-    {
-        creationOptions = creationOptions.publicKey;
-    }
+    // Decode challenge from base64url to ArrayBuffer
+    creationOptions.challenge = PasskeyUtils.base64urlToArrayBuffer(creationOptions.challenge);
 
-    // Convert challenge from base64url to ArrayBuffer
-    if (creationOptions.challenge)
+    // Get system name from current hostname or use a default
+    const systemName = window.location.hostname || 'localhost';
+
+    // Add user information if missing (REQUIRED by WebAuthn spec)
+    if (!creationOptions.user)
     {
-        // Check if the challenge is in a BINARY format (like "=?BINARY?B?ABC123?=")
-        if (typeof creationOptions.challenge === 'string' && creationOptions.challenge.startsWith('=?BINARY?B?'))
+        // Create a default user object using a random ID
+        const randomId = new Uint8Array(16);
+        window.crypto.getRandomValues(randomId);
+
+        creationOptions.user = {
+            id: randomId.buffer,
+            name: username + '@' + systemName,
+            displayName: username
+        };
+    } else
+    {
+        // Decode user ID from base64url to ArrayBuffer if it exists
+        if (creationOptions.user.id)
         {
-            // Extract the Base64 part
-            const base64Part = creationOptions.challenge.replace('=?BINARY?B?', '').replace('?=', '');
-            creationOptions.challenge = base64Part;
+            creationOptions.user.id = PasskeyUtils.base64urlToArrayBuffer(creationOptions.user.id);
+        } else
+        {
+            // Create a random ID if none was provided
+            const randomId = new Uint8Array(16);
+            window.crypto.getRandomValues(randomId);
+            creationOptions.user.id = randomId.buffer;
         }
-        creationOptions.challenge = PasskeyUtils.base64urlToArrayBuffer(creationOptions.challenge);
-    }
 
-    // Handle user ID in BINARY format
-    if (creationOptions.user && typeof creationOptions.user.id === 'string')
-    {
-        if (creationOptions.user.id.startsWith('=?BINARY?B?'))
+        // Ensure name and displayName are present with proper values
+        if (!creationOptions.user.name)
         {
-            // Extract the Base64 part
-            const base64Part = creationOptions.user.id.replace('=?BINARY?B?', '').replace('?=', '');
-            creationOptions.user.id = base64Part;
+            creationOptions.user.name = username + '@' + systemName;
         }
-        // Convert userId from base64url to ArrayBuffer
-        creationOptions.user.id = PasskeyUtils.base64urlToArrayBuffer(creationOptions.user.id);
+        if (!creationOptions.user.displayName)
+        {
+            creationOptions.user.displayName = username;
+        }
     }
 
-    // Convert excludeCredentials id from base64url to ArrayBuffer
-    if (creationOptions.excludeCredentials && Array.isArray(creationOptions.excludeCredentials))
+    // If excludeCredentials exists, decode ID for each credential
+    if (creationOptions.excludeCredentials)
     {
-        for (let i = 0; i < creationOptions.excludeCredentials.length; i++)
+        for (const credential of creationOptions.excludeCredentials)
         {
-            if (typeof creationOptions.excludeCredentials[i].id === 'string')
+            if (credential.id)
             {
-                if (creationOptions.excludeCredentials[i].id.startsWith('=?BINARY?B?'))
+                credential.id = PasskeyUtils.base64urlToArrayBuffer(credential.id);
+                // Make sure transports is correctly set if available
+                if (!credential.transports)
                 {
-                    // Extract the Base64 part
-                    const base64Part = creationOptions.excludeCredentials[i].id.replace('=?BINARY?B?', '').replace('?=', '');
-                    creationOptions.excludeCredentials[i].id = base64Part;
+                    credential.transports = ['internal', 'usb', 'ble', 'nfc'];
                 }
-                creationOptions.excludeCredentials[i].id = PasskeyUtils.base64urlToArrayBuffer(
-                    creationOptions.excludeCredentials[i].id
-                );
             }
         }
     }
 
-    // Add pubKeyCredParams if missing - this is a REQUIRED parameter
-    if (!creationOptions.pubKeyCredParams || !Array.isArray(creationOptions.pubKeyCredParams) || creationOptions.pubKeyCredParams.length === 0)
+    // Enforce security settings for WebAuthn
+    if (!creationOptions.authenticatorSelection)
     {
+        creationOptions.authenticatorSelection = {};
+    }
+
+    // Ensure user verification is required for security
+    creationOptions.authenticatorSelection.userVerification = 'required';
+
+    // Add pubKeyCredParams if missing (REQUIRED by WebAuthn spec)
+    if (!creationOptions.pubKeyCredParams || !creationOptions.pubKeyCredParams.length)
+    {
+        // Default to common algorithms: ES256 (-7) and RS256 (-257)
         creationOptions.pubKeyCredParams = [
-            { type: "public-key", alg: -7 },  // ES256 (Elliptic Curve P-256 with SHA-256)
-            { type: "public-key", alg: -257 } // RS256 (RSASSA-PKCS1-v1_5 using SHA-256)
+            { type: 'public-key', alg: -7 },    // ES256 (ECDSA w/ SHA-256)
+            { type: 'public-key', alg: -257 }   // RS256 (RSASSA-PKCS1-v1_5 w/ SHA-256)
         ];
     }
 
-    // Add relying party (rp) if missing - this is a REQUIRED parameter
+    // Add rp (Relying Party) information if missing (REQUIRED by WebAuthn spec)
     if (!creationOptions.rp)
     {
-        // Try to determine the current domain
-        const domain = window.location.hostname;
+        // Default to using the current domain as the relying party ID
         creationOptions.rp = {
-            id: domain,
-            name: document.title || "PorticoEstate"
+            id: window.location.hostname,
+            name: document.title || window.location.hostname
         };
-    } else if (!creationOptions.rp.id)
+    } else
     {
-        // If rp exists but id is missing
-        creationOptions.rp.id = window.location.hostname;
-    }
-
-    // Configure the authenticatorSelection with reasonable defaults if not set
-    if (!creationOptions.authenticatorSelection)
-    {
-        creationOptions.authenticatorSelection = {
-            authenticatorAttachment: "platform",
-            userVerification: "preferred",
-            requireResidentKey: true,
-            residentKey: "required"
-        };
-    }
-
-    // Ensure RP ID is valid and matches the current domain or a valid parent domain
-    if (creationOptions.rp && creationOptions.rp.id)
-    {
-        // Check if the RP ID is valid for the current domain
-        const currentDomain = window.location.hostname;
-        const isValidRpId = currentDomain === creationOptions.rp.id ||
-            currentDomain.endsWith('.' + creationOptions.rp.id);
-
-        if (!isValidRpId)
+        // If rp exists but doesn't have an id, set it to the current domain
+        if (!creationOptions.rp.id)
         {
-            throw new Error("RP ID mismatch - security restriction");
+            creationOptions.rp.id = window.location.hostname;
         }
-    }
-
-    // Set timeout to allow enough time for user interaction
-    if (!creationOptions.timeout)
-    {
-        creationOptions.timeout = 120000; // 2 minutes
-    }
-
-    // Set attestation if not set
-    if (!creationOptions.attestation)
-    {
-        creationOptions.attestation = "none";
+        // If rp exists but doesn't have a name, use the title or hostname
+        if (!creationOptions.rp.name)
+        {
+            creationOptions.rp.name = document.title || window.location.hostname;
+        }
     }
 
     return creationOptions;
@@ -232,56 +188,29 @@ function prepareCreationOptions(creationOptions)
  */
 function prepareRequestOptions(requestOptions)
 {
-    // Handle case where response is wrapped in a 'publicKey' property
-    if (requestOptions.publicKey && typeof requestOptions.publicKey === 'object')
-    {
-        requestOptions = requestOptions.publicKey;
-    }
+    // Decode challenge from base64url to ArrayBuffer
+    requestOptions.challenge = PasskeyUtils.base64urlToArrayBuffer(requestOptions.challenge);
 
-    // Convert challenge from base64url to ArrayBuffer
-    if (requestOptions.challenge)
+    // If allowCredentials exists, decode ID for each credential
+    if (requestOptions.allowCredentials)
     {
-        // Check if the challenge is in a BINARY format (like "=?BINARY?B?ABC123?=")
-        if (typeof requestOptions.challenge === 'string' && requestOptions.challenge.startsWith('=?BINARY?B?'))
+        for (const credential of requestOptions.allowCredentials)
         {
-            // Extract the Base64 part
-            const base64Part = requestOptions.challenge.replace('=?BINARY?B?', '').replace('?=', '');
-            requestOptions.challenge = base64Part;
-        }
-        requestOptions.challenge = PasskeyUtils.base64urlToArrayBuffer(requestOptions.challenge);
-    }
-
-    // Convert allowCredentials id from base64url to ArrayBuffer
-    if (requestOptions.allowCredentials && Array.isArray(requestOptions.allowCredentials))
-    {
-        for (let i = 0; i < requestOptions.allowCredentials.length; i++)
-        {
-            if (typeof requestOptions.allowCredentials[i].id === 'string')
+            if (credential.id)
             {
-                if (requestOptions.allowCredentials[i].id.startsWith('=?BINARY?B?'))
+                credential.id = PasskeyUtils.base64urlToArrayBuffer(credential.id);
+
+                // Make sure transports is correctly set if available
+                if (!credential.transports)
                 {
-                    // Extract the Base64 part
-                    const base64Part = requestOptions.allowCredentials[i].id.replace('=?BINARY?B?', '').replace('?=', '');
-                    requestOptions.allowCredentials[i].id = base64Part;
+                    credential.transports = ['internal', 'usb', 'ble', 'nfc'];
                 }
-                requestOptions.allowCredentials[i].id = PasskeyUtils.base64urlToArrayBuffer(
-                    requestOptions.allowCredentials[i].id
-                );
             }
         }
     }
 
-    // Set user verification to preferred by default
-    if (!requestOptions.userVerification)
-    {
-        requestOptions.userVerification = "preferred";
-    }
-
-    // Set reasonable timeout (2 minutes)
-    if (!requestOptions.timeout)
-    {
-        requestOptions.timeout = 120000;
-    }
+    // Ensure user verification is required for security
+    requestOptions.userVerification = 'required';
 
     return requestOptions;
 }
@@ -293,22 +222,22 @@ function prepareRequestOptions(requestOptions)
  */
 function prepareCreationResponse(credential)
 {
+    // Get the core credential data
     const response = {
         id: credential.id,
-        type: credential.type,
         rawId: PasskeyUtils.arrayBufferToBase64url(credential.rawId),
+        type: credential.type,
         response: {
-            attestationObject: PasskeyUtils.arrayBufferToBase64url(credential.response.attestationObject),
-            clientDataJSON: PasskeyUtils.arrayBufferToBase64url(credential.response.clientDataJSON)
+            clientDataJSON: PasskeyUtils.arrayBufferToBase64url(credential.response.clientDataJSON),
+            attestationObject: PasskeyUtils.arrayBufferToBase64url(credential.response.attestationObject)
         }
     };
 
-    // Add client information
-    response.clientInfo = {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language
-    };
+    // Add any additional registration information if available
+    if (credential.getClientExtensionResults)
+    {
+        response.clientExtensionResults = credential.getClientExtensionResults();
+    }
 
     return response;
 }
@@ -322,152 +251,155 @@ function prepareAuthenticationResponse(credential)
 {
     const response = {
         id: credential.id,
-        type: credential.type,
         rawId: PasskeyUtils.arrayBufferToBase64url(credential.rawId),
+        type: credential.type,
         response: {
-            authenticatorData: PasskeyUtils.arrayBufferToBase64url(credential.response.authenticatorData),
             clientDataJSON: PasskeyUtils.arrayBufferToBase64url(credential.response.clientDataJSON),
-            signature: PasskeyUtils.arrayBufferToBase64url(credential.response.signature),
-            userHandle: credential.response.userHandle ?
-                PasskeyUtils.arrayBufferToBase64url(credential.response.userHandle) : null
+            authenticatorData: PasskeyUtils.arrayBufferToBase64url(credential.response.authenticatorData),
+            signature: PasskeyUtils.arrayBufferToBase64url(credential.response.signature)
         }
     };
 
-    // Add client information
-    response.clientInfo = {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        language: navigator.language
-    };
+    // Add user handle if available (from resident key)
+    if (credential.response.userHandle)
+    {
+        response.response.userHandle = PasskeyUtils.arrayBufferToBase64url(credential.response.userHandle);
+    }
+
+    // Add client extension results if available
+    if (credential.getClientExtensionResults)
+    {
+        response.clientExtensionResults = credential.getClientExtensionResults();
+    }
 
     return response;
 }
 
 /**
  * Register a new passkey
- * @param {string} username - username to associate with the passkey
+ * @param {string} username - the username
  * @param {string} registrationOptionsUrl - URL to fetch registration options
  * @param {string} registrationVerifyUrl - URL to verify registration
- * @returns {Promise<boolean|Object>} true if registration succeeded, or error object with details
+ * @returns {Promise<boolean>} true if registration succeeded
  */
 async function registerPasskey(username, registrationOptionsUrl, registrationVerifyUrl)
 {
     try
     {
-        // Step 1: Get registration options from server
+        console.log("Starting passkey registration process");
+
+        // Append a no-cache parameter to prevent caching issues
+        registrationOptionsUrl = appendNoCacheParam(registrationOptionsUrl);
+
+        console.log("Fetching registration options from:", registrationOptionsUrl);
         const optionsResponse = await fetch(registrationOptionsUrl, {
             method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
+            credentials: 'same-origin' // Important: ensure cookies are sent
         });
 
         if (!optionsResponse.ok)
         {
-            const errorText = await optionsResponse.text();
-            throw new Error(`Failed to fetch registration options: ${optionsResponse.status}`);
-        }
+            console.error("Failed to fetch registration options:", optionsResponse.status, optionsResponse.statusText);
 
-        // Step 2: Prepare options for WebAuthn API
-        let optionsJson;
-        try
-        {
-            optionsJson = await optionsResponse.json();
-        } catch (e)
-        {
-            throw new Error("Server returned invalid JSON for registration options");
-        }
-
-        const creationOptions = prepareCreationOptions(optionsJson);
-
-        // Verify required fields are present before calling the WebAuthn API
-        if (!creationOptions.rp)
-        {
-            throw new Error("Missing relying party (rp) in creation options");
-        }
-        if (!creationOptions.user)
-        {
-            throw new Error("Missing user in creation options");
-        }
-        if (!creationOptions.challenge)
-        {
-            throw new Error("Missing challenge in creation options");
-        }
-        if (!creationOptions.pubKeyCredParams || creationOptions.pubKeyCredParams.length === 0)
-        {
-            throw new Error("Missing pubKeyCredParams in creation options");
-        }
-
-        // Step 3: Create credential with WebAuthn API
-        let credential;
-        try
-        {
-            credential = await navigator.credentials.create({
-                publicKey: creationOptions
-            });
-        } catch (creationError)
-        {
-            if (creationError.name === 'NotAllowedError')
+            let errorMsg = `Failed to fetch registration options: ${optionsResponse.status}`;
+            try
             {
-                throw new Error("Operation was denied by the user or the security key");
-            } else if (creationError.name === 'SecurityError')
+                const errorData = await optionsResponse.json();
+                if (errorData && errorData.message)
+                {
+                    errorMsg = errorData.message;
+                    console.error("Server error message:", errorData.message);
+                }
+            } catch (e)
             {
-                throw new Error("The operation failed for security reasons");
-            } else
-            {
-                throw new Error(`WebAuthn credential creation failed: ${creationError.name}`);
+                // If JSON parsing fails, use the default error message
+                console.error("Could not parse error response:", e);
             }
+            throw new Error(errorMsg);
         }
+
+        // Parse the options and prepare for registration
+        const publicKeyOptions = await optionsResponse.json();
+        console.log("Received registration options:", JSON.stringify(publicKeyOptions, null, 2));
+
+        // Convert base64url-encoded values to ArrayBuffer as required by the WebAuthn API
+        const publicKey = prepareCreationOptions(publicKeyOptions, username);
+        console.log("Prepared options for navigator.credentials.create");
+
+        // Actual registration using the WebAuthn API
+        console.log("Calling navigator.credentials.create...");
+        const credential = await navigator.credentials.create({
+            publicKey
+        });
+        console.log("Credentials created successfully", credential);
 
         if (!credential)
         {
-            throw new Error("Credentials API returned null or undefined");
+            console.error("No credential returned from navigator.credentials.create");
+            throw new Error("Browser returned no credential data");
         }
 
-        // Step 4: Prepare response for server
+        // Convert the credential to a format suitable for sending to the server
         const response = prepareCreationResponse(credential);
+        console.log("Prepared credential response for server verification");
 
-        // Add username to the response so the server knows which user this credential belongs to
-        response.username = username;
+        // Append a no-cache parameter to prevent caching issues
+        registrationVerifyUrl = appendNoCacheParam(registrationVerifyUrl);
 
-        // Step 5: Send response to server for verification
+        console.log("Sending verification request to:", registrationVerifyUrl);
+        console.log("Verification request payload:", JSON.stringify(response, (key, value) =>
+        {
+            // Don't log the full attestationObject and clientDataJSON which can be very long
+            if (key === 'attestationObject' || key === 'clientDataJSON')
+            {
+                return `[${value.substring(0, 20)}...]`;
+            }
+            return value;
+        }, 2));
+
         const verifyResponse = await fetch(registrationVerifyUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Content-Type': 'application/json'
             },
+            credentials: 'same-origin', // Important: ensure cookies are sent
             body: JSON.stringify(response)
         });
 
         if (!verifyResponse.ok)
         {
-            let errorMessage = `Verification failed with status: ${verifyResponse.status}`;
-            let errorDetails = {};
+            console.error("Failed to verify registration:", verifyResponse.status, verifyResponse.statusText);
 
+            let errorMsg = `Failed to verify registration: ${verifyResponse.status}`;
             try
             {
                 const errorData = await verifyResponse.json();
-                errorMessage = errorData.message || errorMessage;
-                errorDetails = errorData;
+                if (errorData && errorData.message)
+                {
+                    errorMsg = errorData.message;
+                    console.error("Server error message:", errorData.message);
+                }
             } catch (e)
             {
-                // If we can't parse JSON, use the text response
-                const errorText = await verifyResponse.text();
-                errorMessage += ` - ${errorText.substring(0, 100)}`;
+                // If JSON parsing fails, use the default error message
+                console.error("Could not parse error response:", e);
             }
-
-            // Return detailed error information
-            const error = new Error(errorMessage);
-            error.details = errorDetails;
-            error.status = verifyResponse.status;
-            throw error;
+            throw new Error(errorMsg);
         }
 
-        const verifyData = await verifyResponse.json();
-        return verifyData.success === true;
+        try
+        {
+            const result = await verifyResponse.json();
+            console.log("Verification result:", result);
+            return result.success === true;
+        } catch (e)
+        {
+            console.error("Error parsing verification response:", e);
+            throw new Error("Server returned invalid response format");
+        }
     } catch (error)
     {
+        console.error("Error during passkey registration:", error);
         throw error;
     }
 }
@@ -482,12 +414,16 @@ async function authenticateWithPasskey(authenticationOptionsUrl, authenticationV
 {
     try
     {
+        // Add anti-cache parameter
+        const noCacheUrl = appendNoCacheParam(authenticationOptionsUrl);
+
         // Step 1: Get authentication options from server
-        const optionsResponse = await fetch(authenticationOptionsUrl, {
+        const optionsResponse = await fetch(noCacheUrl, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json'
-            }
+            },
+            credentials: 'same-origin' // Important for security
         });
 
         if (!optionsResponse.ok)
@@ -506,6 +442,12 @@ async function authenticateWithPasskey(authenticationOptionsUrl, authenticationV
             throw new Error("Server returned invalid JSON for authentication options");
         }
 
+        // Validate server response
+        if (!optionsJson.challenge)
+        {
+            throw new Error("Server response missing challenge");
+        }
+
         const requestOptions = prepareRequestOptions(optionsJson);
 
         // Step 3: Get credential with WebAuthn API
@@ -522,36 +464,71 @@ async function authenticateWithPasskey(authenticationOptionsUrl, authenticationV
         const response = prepareAuthenticationResponse(credential);
 
         // Step 5: Send response to server for verification
-        const verifyResponse = await fetch(authenticationVerifyUrl, {
+        const noCacheVerifyUrl = appendNoCacheParam(authenticationVerifyUrl);
+        const verifyResponse = await fetch(noCacheVerifyUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
             },
+            credentials: 'same-origin', // Important for security
             body: JSON.stringify(response)
         });
 
         if (!verifyResponse.ok)
         {
-            let errorMessage = `Verification failed with status: ${verifyResponse.status}`;
+            let errorMsg = `Authentication failed: ${verifyResponse.status}`;
             try
             {
                 const errorData = await verifyResponse.json();
-                errorMessage = errorData.message || errorMessage;
+                if (errorData && errorData.message)
+                {
+                    errorMsg = errorData.message;
+                }
             } catch (e)
             {
-                // If we can't parse JSON, use the text response
-                const errorText = await verifyResponse.text();
-                errorMessage += ` - ${errorText.substring(0, 100)}`;
+                // If JSON parsing fails, use the default error message
             }
-
-            throw new Error(errorMessage);
+            throw new Error(errorMsg);
         }
 
-        const verifyData = await verifyResponse.json();
-        return verifyData.success === true;
+        try
+        {
+            const result = await verifyResponse.json();
+            return result.success === true;
+        } catch (e)
+        {
+            throw new Error("Server returned invalid response format");
+        }
     } catch (error)
     {
+        console.error("Error during passkey authentication:", error);
         throw error;
     }
+}
+
+/**
+ * Append a no-cache parameter to a URL to prevent caching
+ * @param {string} url - The URL to append the parameter to
+ * @returns {string} URL with no-cache parameter
+ */
+function appendNoCacheParam(url)
+{
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}_nocache=${Date.now()}`;
+}
+
+// Export functions for use in other scripts
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined')
+{
+    module.exports = {
+        PasskeyUtils,
+        isPlatformAuthenticatorAvailable,
+        prepareCreationOptions,
+        prepareRequestOptions,
+        prepareCreationResponse,
+        prepareAuthenticationResponse,
+        registerPasskey,
+        authenticateWithPasskey
+    };
 }

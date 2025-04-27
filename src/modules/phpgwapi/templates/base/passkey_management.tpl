@@ -40,6 +40,7 @@
                 </div>
                 <div class="card-body">
                     <form id="register-passkey-form">
+                        <input type="hidden" name="csrf_token" id="csrf-token" value="{csrf_token}">
                         <div class="form-group mb-3">
                             <label for="passkey-name">{lang_passkey_name}</label>
                             <input type="text" class="form-control" id="passkey-name" 
@@ -75,85 +76,141 @@ document.addEventListener('DOMContentLoaded', function() {
     const passkeyNameInput = document.getElementById('passkey-name');
     const registrationStatus = document.getElementById('registration-status');
     const deleteButtons = document.querySelectorAll('.delete-passkey-button');
+    const csrfToken = document.getElementById('csrf-token').value;
     
     // Show checking message
     compatibilityCheck.style.display = 'block';
     
     // Check if WebAuthn is supported by the browser
-    isPlatformAuthenticatorAvailable().then(function(supported) {
+    isPlatformAuthenticatorAvailable()
+    .then(function(supported) {
         // Hide checking message
         compatibilityCheck.style.display = 'none';
         
-        if (!supported) {
-            notSupportedMessage.style.display = 'block';
-        } else {
-            passkeyContent.style.display = 'block';
+        // The check was simplified in passkey-client.js to reduce false negatives,
+        // so we should always show the passkey content if we make it here
+        passkeyContent.style.display = 'block';
             
-            // Register button click handler
-            registerButton.addEventListener('click', function() {
-                const deviceName = passkeyNameInput.value.trim();
-                if (!deviceName) {
-                    showStatus('error', '{lang_error_passkey_name_required}');
-                    return;
+        // Register button click handler
+        registerButton.addEventListener('click', function() {
+            const deviceName = passkeyNameInput.value.trim();
+            if (!deviceName) {
+                showStatus('error', '{lang_error_passkey_name_required}');
+                return;
+            }
+            
+            registerButton.disabled = true;
+            showStatus('info', '{lang_registering_passkey}');
+            
+            // Add CSRF token to requests
+            registerPasskey(
+                '{username}', 
+                '{webserver_url}/passkey/register/options?csrf_token=' + encodeURIComponent(csrfToken), 
+                '{webserver_url}/passkey/register/verify?device_name=' + encodeURIComponent(deviceName) + '&csrf_token=' + encodeURIComponent(csrfToken)
+            ).then(function(success) {
+                if (success) {
+                    showStatus('success', '{lang_passkey_registered_success}');
+                    passkeyNameInput.value = '';
+                    // Refresh the page to show the new passkey
+                    setTimeout(function() { window.location.reload(); }, 1500);
+                } else {
+                    showStatus('error', '{lang_passkey_registration_failed}');
                 }
-                
-                registerButton.disabled = true;
-                showStatus('info', '{lang_registering_passkey}');
-                
-                registerPasskey(
-                    '{username}', 
-                    '{webserver_url}/passkey/register/options', 
-                    '{webserver_url}/passkey/register/verify?device_name=' + encodeURIComponent(deviceName)
-                ).then(function(success) {
-                    if (success) {
-                        showStatus('success', '{lang_passkey_registered_success}');
-                        passkeyNameInput.value = '';
-                        // Refresh the page to show the new passkey
-                        setTimeout(function() { window.location.reload(); }, 1500);
-                    } else {
-                        showStatus('error', '{lang_passkey_registration_failed}');
-                    }
-                    registerButton.disabled = false;
-                }).catch(function(error) {
-                    showStatus('error', '{lang_passkey_registration_error}: ' + error.message);
-                    registerButton.disabled = false;
-                });
+                registerButton.disabled = false;
+            }).catch(function(error) {
+                showStatus('error', '{lang_passkey_registration_error}: ' + error.message);
+                registerButton.disabled = false;
             });
-            
-            // Delete button click handlers
-            deleteButtons.forEach(function(button) {
-                button.addEventListener('click', function() {
-                    if (confirm('{lang_confirm_delete_passkey}')) {
-                        var credentialId = this.getAttribute('data-credential-id');
-                        
-                        fetch('{webserver_url}/passkey/delete', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({ credential_id: credentialId }),
-                        }).then(function(response) {
-                            if (response.ok) {
-                                window.location.reload();
-                            } else {
-                                response.json().then(function(data) {
-                                    alert(data.message || '{lang_delete_failed}');
-                                });
-                            }
-                        }).catch(function(error) {
-                            alert('{lang_delete_error}: ' + error.message);
-                        });
-                    }
-                });
+        });
+        
+        // Delete button click handlers
+        deleteButtons.forEach(function(button) {
+            button.addEventListener('click', function() {
+                if (confirm('{lang_confirm_delete_passkey}')) {
+                    var credentialId = this.getAttribute('data-credential-id');
+                    
+                    fetch('{webserver_url}/passkey/delete?csrf_token=' + encodeURIComponent(csrfToken), {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
+                        },
+                        body: JSON.stringify({ 
+                            credential_id: credentialId
+                        }),
+                        credentials: 'same-origin' // Important: ensure cookies are sent
+                    }).then(function(response) {
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            response.json().then(function(data) {
+                                alert(data.message || '{lang_delete_failed}');
+                            }).catch(function() {
+                                alert('{lang_delete_error}');
+                            });
+                        }
+                    }).catch(function() {
+                        alert('{lang_delete_error}');
+                    });
+                }
             });
-        }
+        });
+    })
+    .catch(function(error) {
+        // Hide checking message
+        compatibilityCheck.style.display = 'none';
+        console.error('Error checking WebAuthn support:', error);
+        
+        // Even if there was an error in the check, we'll try to show the UI anyway
+        // as many browsers will still work with passkeys despite errors in detection
+        passkeyContent.style.display = 'block';
     });
     
+    // Function to show status messages with proper sanitization
     function showStatus(type, message) {
-        registrationStatus.innerHTML = '<div class="alert alert-' + 
-            (type === 'error' ? 'danger' : (type === 'info' ? 'info' : 'success')) + 
-            '">' + message + '</div>';
+        registrationStatus.textContent = '';
         registrationStatus.style.display = 'block';
+        registrationStatus.className = 'alert mt-3';
+        
+        // Sanitize message by using textContent instead of innerHTML
+        const sanitizedMessage = document.createTextNode(message);
+        
+        if (type === 'success') {
+            registrationStatus.classList.add('alert-success');
+        } else if (type === 'error') {
+            registrationStatus.classList.add('alert-danger');
+        } else {
+            registrationStatus.classList.add('alert-info');
+        }
+        
+        registrationStatus.appendChild(sanitizedMessage);
+        
+        // Auto-hide after 10 seconds for non-error messages
+        if (type !== 'error') {
+            setTimeout(function() {
+                registrationStatus.style.display = 'none';
+            }, 10000);
+        }
     }
+    
+    // Initialize activity timeout for security
+    let inactivityTimeout;
+    const resetInactivityTimer = function() {
+        clearTimeout(inactivityTimeout);
+        inactivityTimeout = setTimeout(function() {
+            // Show warning that the session might expire
+            if (confirm('Your session has been inactive. Would you like to refresh the page?')) {
+                window.location.reload();
+            }
+        }, 15 * 60 * 1000); // 15 minutes
+    };
+    
+    // Set up inactivity detection
+    ['mousedown', 'keypress', 'scroll', 'touchstart'].forEach(function(event) {
+        document.addEventListener(event, resetInactivityTimer, true);
+    });
+    
+    // Initial timer start
+    resetInactivityTimer();
 });
 </script>

@@ -398,7 +398,7 @@ function prepareCreationOptions(creationOptions)
     {
         console.log("Adding authenticatorSelection with default values");
         creationOptions.authenticatorSelection = {
-            authenticatorAttachment: "platform", //PasskeyUtils.isDevMode() ? "cross-platform" : "platform",
+            authenticatorAttachment: PasskeyUtils.isDevMode() ? "cross-platform" : "platform",
             userVerification: PasskeyUtils.isDevMode() ? "discouraged" : "preferred",
             requireResidentKey: true,
             residentKey: "required"
@@ -645,7 +645,7 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         if (window.securityKeyTesting)
         {
             creationOptions.authenticatorSelection = {
-                authenticatorAttachment: "platform",// "cross-platform",
+                authenticatorAttachment: "cross-platform",
                 userVerification: "required"
             };
             creationOptions.timeout = 120000; // 2 minutes

@@ -338,19 +338,17 @@ class Login
 	 */
 	protected function auth_passkey(): ?array
 	{
-		$db = \App\Database\Db::getInstance(); // Initialize database connection
-
 		if (empty($_POST['data']))
 		{
-				// Refactored WebAuthn form that uses passkey-client.js
-				$html = <<<HTML
+			// Refactored WebAuthn form that uses passkey-client.js
+			$html = <<<HTML
 <!DOCTYPE html>
 <html>
 <head>
 	<title>{$this->serverSettings['site_title']} - Login with Passkey</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+	<link href="/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
 	<style>
 		body {
 			background-color: #f8f9fa;
@@ -382,7 +380,7 @@ class Login
 		}
 	</style>
 	<!-- Include the passkey client library -->
-	<script src="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/passkey/passkey-client.js"></script>
+	<script src="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/passkey/passkey-client.js?n={$this->serverSettings['cache_refresh_token']}"></script>
 </head>
 <body>
 	<div class="container">
@@ -408,7 +406,7 @@ class Login
 			<div id="status-message" class="alert d-none"></div>
 
 			<div class="back-button">
-				<a href="login.php" class="btn btn-link">Back to login options</a>
+				<a href="login_ui" class="btn btn-link">Back to login options</a>
 			</div>
 		</div>
 	</div>
@@ -433,63 +431,63 @@ class Login
 			return;
 		}
 
-			// Handle the button click to start authentication
-			passkeyButton.addEventListener('click', async function() {
-				try {
-					passkeyButton.disabled = true;
-					loadingSpinner.style.display = 'block';
-					showStatus('Starting authentication...', 'info');
-					
-					// Generate a random challenge on the client side
-					const challenge = new Uint8Array(32);
-					window.crypto.getRandomValues(challenge);
-					
-					// Create a simplified publicKey request using the same options format
-					// that the prepareRequestOptions function in passkey-client.js expects
-					const publicKeyOptions = {
-						challenge: challenge.buffer,
-						timeout: 60000,
-						userVerification: 'preferred',
-						rpId: window.location.hostname
-					};
-					
-					console.log('Starting WebAuthn authentication with client-side challenge');
-					
-					// Start authentication request
-					const credential = await navigator.credentials.get({
-						publicKey: publicKeyOptions,
-						mediation: 'optional'
-					});
-					
-					showStatus('Processing authentication...', 'info');
-					
-					// Prepare response using the utility functions from passkey-client.js
-					const response = prepareAuthenticationResponse(credential);
-					
-					// Add client challenge to the response
-					response.clientChallenge = PasskeyUtils.arrayBufferToBase64url(challenge.buffer);
-					
-					// Submit the form with the response data
-					const form = document.createElement('form');
-					form.method = 'POST';
-					form.action = 'login.php?type=passkey';
-					
-					const dataInput = document.createElement('input');
-					dataInput.type = 'hidden';
-					dataInput.name = 'data';
-					dataInput.value = JSON.stringify(response);
-					
-					form.appendChild(dataInput);
-					document.body.appendChild(form);
-					form.submit();
-				} catch (error) {
-					console.error('Authentication error:', error);
-					loadingSpinner.style.display = 'none';
-					passkeyButton.disabled = false;
-					showStatus(error.message || 'Authentication failed. Please try again.', 'danger');
-				}
-			});
+		// Handle the button click to start authentication
+		passkeyButton.addEventListener('click', async function() {
+			try {
+				passkeyButton.disabled = true;
+				loadingSpinner.style.display = 'block';
+				showStatus('Starting authentication...', 'info');
+				
+				// Generate a random challenge on the client side
+				const challenge = new Uint8Array(32);
+				window.crypto.getRandomValues(challenge);
+				
+				// Create a simplified publicKey request using the same options format
+				// that the prepareRequestOptions function in passkey-client.js expects
+				const publicKeyOptions = {
+					challenge: challenge.buffer,
+					timeout: 60000,
+					userVerification: 'preferred',
+					rpId: window.location.hostname
+				};
+				
+				console.log('Starting WebAuthn authentication with client-side challenge');
+				
+				// Start authentication request
+				const credential = await navigator.credentials.get({
+					publicKey: publicKeyOptions,
+					mediation: 'optional'
+				});
+				
+				showStatus('Processing authentication...', 'info');
+				
+				// Prepare response using the utility functions from passkey-client.js
+				const response = prepareAuthenticationResponse(credential);
+				
+				// Add client challenge to the response
+				response.clientChallenge = PasskeyUtils.arrayBufferToBase64url(challenge.buffer);
+				
+				// Submit the form with the response data
+				const form = document.createElement('form');
+				form.method = 'POST';
+				form.action = 'login.php?type=passkey';
+				
+				const dataInput = document.createElement('input');
+				dataInput.type = 'hidden';
+				dataInput.name = 'data';
+				dataInput.value = JSON.stringify(response);
+				
+				form.appendChild(dataInput);
+				document.body.appendChild(form);
+				form.submit();
+			} catch (error) {
+				console.error('Authentication error:', error);
+				loadingSpinner.style.display = 'none';
+				passkeyButton.disabled = false;
+				showStatus(error.message || 'Authentication failed. Please try again.', 'danger');
+			}
 		});
+	});
 	</script>
 </body>
 </html>
@@ -501,7 +499,6 @@ HTML;
 		}
 		else
 		{
-			// The rest of the function remains unchanged
 			// Process passkey authentication from client
 			try
 			{
@@ -535,7 +532,8 @@ HTML;
 				try
 				{
 					// Try to authenticate with the provided credentials
-					$username = $auth_passkeys->processAuthentication(
+					// This now returns account data if successful or empty array if failed
+					$account = $auth_passkeys->processAuthentication(
 						$clientDataJSON,
 						$authenticatorData,
 						$signature,
@@ -543,34 +541,25 @@ HTML;
 						$userHandle
 					);
 
-					if (!empty($username))
+					if (!empty($account) && $account['account_status'] === 'A')
 					{
-						// Authentication successful - look up user account
-						$sql = "SELECT account_id, account_lid FROM phpgw_accounts WHERE account_lid = :username AND account_status = 'A'";
-						$stmt = $db->prepare($sql);
-						$stmt->execute([':username' => $username]);
-						$account = $stmt->fetch(\PDO::FETCH_ASSOC);
+						// Set up session
+						$result = $this->sessions->create($account['account_lid'], '', true);
 
-						if ($account)
+						if ($result)
 						{
-							// Set up session
-							$result = $this->sessions->create($account['account_lid'], '', true);
-
-							if ($result)
-							{
-								// Success! Return session ID
-								return [
-									'session_id' => $this->sessions->get_session_id()
-								];
-							}
+							// Success! Return session ID
+							return [
+								'session_id' => $this->sessions->get_session_id()
+							];
 						}
-
-						// If we get here, there was a problem with the account or session creation
-						throw new \Exception('Account validation failed or session could not be created.');
+						
+						// If we get here, there was a problem with the session creation
+						throw new \Exception('Session could not be created.');
 					}
 					else
 					{
-						throw new \Exception('Passkey authentication failed.');
+						throw new \Exception('Passkey authentication failed or account is inactive.');
 					}
 				}
 				catch (\Exception $e)
@@ -585,7 +574,7 @@ HTML;
 	<title>Authentication Error</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+	<link href="/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
 </head>
 <body>
 	<div class="container mt-5">
@@ -607,7 +596,7 @@ Authentication Debug Info:
 				
 				<div class="mt-4">
 					<a href="login.php?type=passkey" class="btn btn-primary">Try Again</a>
-					<a href="login.php" class="btn btn-secondary ms-2">Back to Login</a>
+					<a href="login_ui" class="btn btn-secondary ms-2">Back to Login</a>
 				</div>
 			</div>
 		</div>
@@ -631,7 +620,7 @@ HTML;
 	<title>Authentication Error</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+	<link href="/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
 </head>
 <body>
 	<div class="container mt-5">
@@ -644,7 +633,7 @@ HTML;
 				
 				<div class="mt-4">
 					<a href="login.php?type=passkey" class="btn btn-primary">Try Again</a>
-					<a href="login.php" class="btn btn-secondary ms-2">Back to Login</a>
+					<a href="login_ui" class="btn btn-secondary ms-2">Back to Login</a>
 				</div>
 			</div>
 		</div>

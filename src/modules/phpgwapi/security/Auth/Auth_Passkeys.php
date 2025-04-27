@@ -383,15 +383,15 @@ class Auth_Passkeys
     }
 
     /**
-     * Processes the response from navigator.credentials.get() and returns the username on success
+     * Processes the response from navigator.credentials.get() and returns account data on success
      * @param string $clientDataJSON Base64URL encoded clientDataJSON
      * @param string $authenticatorData Base64URL encoded authenticatorData
      * @param string $signature Base64URL encoded signature
      * @param string $credentialId Base64URL encoded credential ID provided by the client
      * @param string|null $userHandle Base64URL encoded userHandle (if available, from resident key)
-     * @return string Username if valid, empty string otherwise
+     * @return array Account information (account_id, account_lid, account_status) or empty array on failure
      */
-    public function processAuthentication(string $clientDataJSON, string $authenticatorData, string $signature, string $credentialId, ?string $userHandle): string
+    public function processAuthentication(string $clientDataJSON, string $authenticatorData, string $signature, string $credentialId, ?string $userHandle): array
     {
         $debug = []; // Debug array to collect information
 
@@ -498,15 +498,15 @@ class Auth_Passkeys
                     // Update last login timestamp
                     $this->update_lastlogin($credentialSource['account_id'], $_SERVER['REMOTE_ADDR'] ?? '');
 
-                    // Get the username associated with this credential
-                    $username = $this->getUsernameByAccountId($credentialSource['account_id']);
+                    // Get the account data associated with this credential
+                    $account = $this->getAccountById($credentialSource['account_id']);
 
                     // Clear challenge from session after successful use
                     unset($_SESSION['webauthn_challenge']);
 
-                    $debug[] = "Authentication successful for user: " . $username;
+                    $debug[] = "Authentication successful for user: " . ($account['account_lid'] ?? 'unknown');
                     $GLOBALS['webauthn_debug'] = $debug;
-                    return $username ?? '';
+                    return $account;
                 }
 
                 // Manual verification failed, try library with challenge bypass
@@ -541,15 +541,15 @@ class Auth_Passkeys
                 // Update last login timestamp
                 $this->update_lastlogin($credentialSource['account_id'], $_SERVER['REMOTE_ADDR'] ?? '');
 
-                // Get the username associated with this credential
-                $username = $this->getUsernameByAccountId($credentialSource['account_id']);
+                // Get the account data associated with this credential
+                $account = $this->getAccountById($credentialSource['account_id']);
 
                 // Clear challenge from session after successful use
                 unset($_SESSION['webauthn_challenge']);
 
-                $debug[] = "Authentication successful for user: " . $username;
+                $debug[] = "Authentication successful for user: " . ($account['account_lid'] ?? 'unknown');
                 $GLOBALS['webauthn_debug'] = $debug;
-                return $username ?? '';
+                return $account;
             }
             catch (\Exception $innerEx)
             {
@@ -572,19 +572,21 @@ class Auth_Passkeys
                 $this->updateCredentialCounter($credentialIdDecoded, $signCount);
                 $this->update_lastlogin($credentialSource['account_id'], $_SERVER['REMOTE_ADDR'] ?? '');
 
-                $username = $this->getUsernameByAccountId($credentialSource['account_id']);
+                // Get the account data associated with this credential
+                $account = $this->getAccountById($credentialSource['account_id']);
+                
                 unset($_SESSION['webauthn_challenge']);
 
-                $debug[] = "Authentication successful via fallback for user: " . $username;
+                $debug[] = "Authentication successful via fallback for user: " . ($account['account_lid'] ?? 'unknown');
                 $GLOBALS['webauthn_debug'] = $debug;
-                return $username ?? '';
+                return $account;
             }
         }
         catch (\Exception $e)
         {
             $debug[] = "Error: " . $e->getMessage();
             $GLOBALS['webauthn_debug'] = $debug;
-            return '';
+            return [];
         }
     }
 
@@ -930,6 +932,19 @@ class Auth_Passkeys
         return $row['account_lid'] ?? null;
     }
 
+    /**
+     * Gets the account data for a given account ID.
+     * @param int $account_id
+     * @return array|null
+     */
+    private function getAccountById(int $account_id): ?array
+    {
+        $sql = 'SELECT account_id, account_lid, account_status FROM phpgw_accounts WHERE account_id = :account_id';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':account_id' => $account_id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
 
     /**
      * Update last login (reuse from previous implementation)

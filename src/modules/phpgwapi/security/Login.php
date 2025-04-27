@@ -342,12 +342,12 @@ class Login
 
 		if (empty($_POST['data']))
 		{
-			// Simple WebAuthn form that doesn't rely on server-side challenge generation
-			$html = <<<HTML
+				// Refactored WebAuthn form that uses passkey-client.js
+				$html = <<<HTML
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Simplified Passkey Login</title>
+	<title>{$this->serverSettings['site_title']} - Login with Passkey</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
@@ -381,6 +381,8 @@ class Login
 			text-align: center;
 		}
 	</style>
+	<!-- Include the passkey client library -->
+	<script src="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/passkey/passkey-client.js"></script>
 </head>
 <body>
 	<div class="container">
@@ -431,95 +433,63 @@ class Login
 			return;
 		}
 
-		// Helper function: Convert a base64url string to an ArrayBuffer
-		function base64UrlToBuffer(base64url) {
-			const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-			const padLen = (4 - (base64.length % 4)) % 4;
-			const padded = base64 + '='.repeat(padLen);
-			const binary = atob(padded);
-			const buffer = new ArrayBuffer(binary.length);
-			const bytes = new Uint8Array(buffer);
-			for (let i = 0; i < binary.length; i++) {
-				bytes[i] = binary.charCodeAt(i);
-			}
-			return buffer;
-		}
-
-		// Helper function: Convert an ArrayBuffer to a base64url string
-		function bufferToBase64Url(buffer) {
-			const bytes = new Uint8Array(buffer);
-			let binary = '';
-			for (let i = 0; i < bytes.byteLength; i++) {
-				binary += String.fromCharCode(bytes[i]);
-			}
-			const base64 = btoa(binary);
-			return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-		}
-
-		// Handle the button click to start authentication
-		passkeyButton.addEventListener('click', async function() {
-			try {
-				passkeyButton.disabled = true;
-				loadingSpinner.style.display = 'block';
-				showStatus('Starting authentication...', 'info');
-				
-				// Generate a random challenge on the client side
-				const challenge = new Uint8Array(32);
-				window.crypto.getRandomValues(challenge);
-				
-				// Create a simplified publicKey request
-				const publicKeyOptions = {
-					challenge: challenge.buffer,
-					timeout: 60000,
-					userVerification: 'preferred',
-					rpId: window.location.hostname,
-				};
-				
-				console.log('Starting WebAuthn authentication with client-side challenge');
-				
-				// Start authentication request
-				const credential = await navigator.credentials.get({
-					publicKey: publicKeyOptions,
-					mediation: 'optional'
-				});
-				
-				showStatus('Processing authentication...', 'info');
-				
-				// Prepare response to send to server
-				const response = {
-					id: credential.id,
-					rawId: bufferToBase64Url(credential.rawId),
-					response: {
-						clientDataJSON: bufferToBase64Url(credential.response.clientDataJSON),
-						authenticatorData: bufferToBase64Url(credential.response.authenticatorData),
-						signature: bufferToBase64Url(credential.response.signature),
-						userHandle: credential.response.userHandle ? bufferToBase64Url(credential.response.userHandle) : null
-					},
-					type: credential.type,
-					clientChallenge: bufferToBase64Url(challenge.buffer)
-				};
-				
-				// Submit the response
-				const form = document.createElement('form');
-				form.method = 'POST';
-				form.action = 'login.php?type=passkey';
-				
-				const dataInput = document.createElement('input');
-				dataInput.type = 'hidden';
-				dataInput.name = 'data';
-				dataInput.value = JSON.stringify(response);
-				
-				form.appendChild(dataInput);
-				document.body.appendChild(form);
-				form.submit();
-			} catch (error) {
-				console.error('Authentication error:', error);
-				loadingSpinner.style.display = 'none';
-				passkeyButton.disabled = false;
-				showStatus(error.message || 'Authentication failed. Please try again.', 'danger');
-			}
+			// Handle the button click to start authentication
+			passkeyButton.addEventListener('click', async function() {
+				try {
+					passkeyButton.disabled = true;
+					loadingSpinner.style.display = 'block';
+					showStatus('Starting authentication...', 'info');
+					
+					// Generate a random challenge on the client side
+					const challenge = new Uint8Array(32);
+					window.crypto.getRandomValues(challenge);
+					
+					// Create a simplified publicKey request using the same options format
+					// that the prepareRequestOptions function in passkey-client.js expects
+					const publicKeyOptions = {
+						challenge: challenge.buffer,
+						timeout: 60000,
+						userVerification: 'preferred',
+						rpId: window.location.hostname
+					};
+					
+					console.log('Starting WebAuthn authentication with client-side challenge');
+					
+					// Start authentication request
+					const credential = await navigator.credentials.get({
+						publicKey: publicKeyOptions,
+						mediation: 'optional'
+					});
+					
+					showStatus('Processing authentication...', 'info');
+					
+					// Prepare response using the utility functions from passkey-client.js
+					const response = prepareAuthenticationResponse(credential);
+					
+					// Add client challenge to the response
+					response.clientChallenge = PasskeyUtils.arrayBufferToBase64url(challenge.buffer);
+					
+					// Submit the form with the response data
+					const form = document.createElement('form');
+					form.method = 'POST';
+					form.action = 'login.php?type=passkey';
+					
+					const dataInput = document.createElement('input');
+					dataInput.type = 'hidden';
+					dataInput.name = 'data';
+					dataInput.value = JSON.stringify(response);
+					
+					form.appendChild(dataInput);
+					document.body.appendChild(form);
+					form.submit();
+				} catch (error) {
+					console.error('Authentication error:', error);
+					loadingSpinner.style.display = 'none';
+					passkeyButton.disabled = false;
+					showStatus(error.message || 'Authentication failed. Please try again.', 'danger');
+				}
+			});
 		});
-	});
 	</script>
 </body>
 </html>
@@ -531,6 +501,7 @@ HTML;
 		}
 		else
 		{
+			// The rest of the function remains unchanged
 			// Process passkey authentication from client
 			try
 			{
@@ -583,7 +554,6 @@ HTML;
 						if ($account)
 						{
 							// Set up session
-
 							$result = $this->sessions->create($account['account_lid'], '', true);
 
 							if ($result)

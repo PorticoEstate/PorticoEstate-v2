@@ -320,7 +320,7 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
 
         // Parse the options and prepare for registration
         const publicKeyOptions = await optionsResponse.json();
-        console.log("Received registration options:", JSON.stringify(publicKeyOptions, null, 2));
+        console.log("Received registration options:", sanitizeForLogging(publicKeyOptions));
 
         // Convert base64url-encoded values to ArrayBuffer as required by the WebAuthn API
         const publicKey = prepareCreationOptions(publicKeyOptions, username);
@@ -331,7 +331,7 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         const credential = await navigator.credentials.create({
             publicKey
         });
-        console.log("Credentials created successfully", credential);
+        console.log("Credentials created successfully", sanitizeForLogging(credential));
 
         if (!credential)
         {
@@ -347,15 +347,7 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         registrationVerifyUrl = appendNoCacheParam(registrationVerifyUrl);
 
         console.log("Sending verification request to:", registrationVerifyUrl);
-        console.log("Verification request payload:", JSON.stringify(response, (key, value) =>
-        {
-            // Don't log the full attestationObject and clientDataJSON which can be very long
-            if (key === 'attestationObject' || key === 'clientDataJSON')
-            {
-                return `[${value.substring(0, 20)}...]`;
-            }
-            return value;
-        }, 2));
+        console.log("Verification request payload:", sanitizeForLogging(response));
 
         const verifyResponse = await fetch(registrationVerifyUrl, {
             method: 'POST',
@@ -390,7 +382,7 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         try
         {
             const result = await verifyResponse.json();
-            console.log("Verification result:", result);
+            console.log("Verification result:", sanitizeForLogging(result));
             return result.success === true;
         } catch (e)
         {
@@ -406,88 +398,103 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
 
 /**
  * Authenticate with a passkey
- * @param {string} authenticationOptionsUrl - URL to fetch authentication options
- * @param {string} authenticationVerifyUrl - URL to verify authentication
+ * @param {string} authenticateOptionsUrl - URL to fetch authentication options
+ * @param {string} authenticateVerifyUrl - URL to verify authentication
  * @returns {Promise<boolean>} true if authentication succeeded
  */
-async function authenticateWithPasskey(authenticationOptionsUrl, authenticationVerifyUrl)
+async function authenticateWithPasskey(authenticateOptionsUrl, authenticateVerifyUrl)
 {
     try
     {
-        // Add anti-cache parameter
-        const noCacheUrl = appendNoCacheParam(authenticationOptionsUrl);
+        console.log("Starting passkey authentication process");
 
-        // Step 1: Get authentication options from server
-        const optionsResponse = await fetch(noCacheUrl, {
+        // Append a no-cache parameter to prevent caching issues
+        authenticateOptionsUrl = appendNoCacheParam(authenticateOptionsUrl);
+
+        console.log("Fetching authentication options from:", authenticateOptionsUrl);
+        const optionsResponse = await fetch(authenticateOptionsUrl, {
             method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            },
-            credentials: 'same-origin' // Important for security
+            credentials: 'same-origin' // Important: ensure cookies are sent
         });
 
         if (!optionsResponse.ok)
         {
-            const errorText = await optionsResponse.text();
-            throw new Error(`Failed to fetch authentication options: ${optionsResponse.status}`);
+            console.error("Failed to fetch authentication options:", optionsResponse.status, optionsResponse.statusText);
+
+            let errorMsg = `Failed to fetch authentication options: ${optionsResponse.status}`;
+            try
+            {
+                const errorData = await optionsResponse.json();
+                if (errorData && errorData.message)
+                {
+                    errorMsg = errorData.message;
+                    console.error("Server error message:", errorData.message);
+                }
+            } catch (e)
+            {
+                // If JSON parsing fails, use the default error message
+                console.error("Could not parse error response:", e);
+            }
+            throw new Error(errorMsg);
         }
 
-        // Step 2: Prepare options for WebAuthn API
-        let optionsJson;
-        try
-        {
-            optionsJson = await optionsResponse.json();
-        } catch (e)
-        {
-            throw new Error("Server returned invalid JSON for authentication options");
-        }
+        // Parse the options and prepare for authentication
+        const publicKeyOptions = await optionsResponse.json();
+        console.log("Received authentication options:", sanitizeForLogging(publicKeyOptions));
 
-        // Validate server response
-        if (!optionsJson.challenge)
-        {
-            throw new Error("Server response missing challenge");
-        }
+        // Convert base64url-encoded values to ArrayBuffer as required by the WebAuthn API
+        const publicKey = prepareRequestOptions(publicKeyOptions);
+        console.log("Prepared options for navigator.credentials.get");
 
-        const requestOptions = prepareRequestOptions(optionsJson);
-
-        // Step 3: Get credential with WebAuthn API
+        // Actual authentication using the WebAuthn API
+        console.log("Calling navigator.credentials.get...");
         const credential = await navigator.credentials.get({
-            publicKey: requestOptions
+            publicKey
         });
+        console.log("Credentials retrieved successfully", sanitizeForLogging(credential));
 
         if (!credential)
         {
-            throw new Error("Credentials API returned null or undefined");
+            console.error("No credential returned from navigator.credentials.get");
+            throw new Error("Browser returned no credential data");
         }
 
-        // Step 4: Prepare response for server
+        // Convert the credential to a format suitable for sending to the server
         const response = prepareAuthenticationResponse(credential);
+        console.log("Prepared credential response for server verification");
 
-        // Step 5: Send response to server for verification
-        const noCacheVerifyUrl = appendNoCacheParam(authenticationVerifyUrl);
-        const verifyResponse = await fetch(noCacheVerifyUrl, {
+        // Append a no-cache parameter to prevent caching issues
+        authenticateVerifyUrl = appendNoCacheParam(authenticateVerifyUrl);
+
+        console.log("Sending verification request to:", authenticateVerifyUrl);
+        console.log("Verification request payload:", sanitizeForLogging(response));
+
+        const verifyResponse = await fetch(authenticateVerifyUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Content-Type': 'application/json'
             },
-            credentials: 'same-origin', // Important for security
+            credentials: 'same-origin', // Important: ensure cookies are sent
             body: JSON.stringify(response)
         });
 
         if (!verifyResponse.ok)
         {
-            let errorMsg = `Authentication failed: ${verifyResponse.status}`;
+            console.error("Failed to verify authentication:", verifyResponse.status, verifyResponse.statusText);
+
+            let errorMsg = `Failed to verify authentication: ${verifyResponse.status}`;
             try
             {
                 const errorData = await verifyResponse.json();
                 if (errorData && errorData.message)
                 {
                     errorMsg = errorData.message;
+                    console.error("Server error message:", errorData.message);
                 }
             } catch (e)
             {
                 // If JSON parsing fails, use the default error message
+                console.error("Could not parse error response:", e);
             }
             throw new Error(errorMsg);
         }
@@ -495,9 +502,11 @@ async function authenticateWithPasskey(authenticationOptionsUrl, authenticationV
         try
         {
             const result = await verifyResponse.json();
+            console.log("Verification result:", sanitizeForLogging(result));
             return result.success === true;
         } catch (e)
         {
+            console.error("Error parsing verification response:", e);
             throw new Error("Server returned invalid response format");
         }
     } catch (error)
@@ -516,6 +525,62 @@ function appendNoCacheParam(url)
 {
     const separator = url.includes('?') ? '&' : '?';
     return `${url}${separator}_nocache=${Date.now()}`;
+}
+
+/**
+ * Sanitize objects for logging to remove sensitive data
+ * @param {Object} data - Data to sanitize
+ * @param {Array} sensitiveKeys - Keys to sanitize (optional)
+ * @returns {Object} Sanitized data safe for logging
+ */
+function sanitizeForLogging(data, sensitiveKeys = [])
+{
+    // Default sensitive keys if not provided
+    const keysToSanitize = sensitiveKeys.length ? sensitiveKeys : [
+        'challenge', 'rawId', 'id', 'attestationObject', 'clientDataJSON', 
+        'signature', 'authenticatorData', 'userHandle', 'privateKey', 'keyHandle',
+        'key', 'token', 'secret', 'password', 'credential'
+    ];
+    
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
+    
+    // Handle array type
+    if (Array.isArray(data)) {
+        return data.map(item => sanitizeForLogging(item, keysToSanitize));
+    }
+    
+    // Clone the object to avoid modifying the original
+    const sanitized = {};
+    
+    for (const [key, value] of Object.entries(data)) {
+        // If this is a sensitive key with a string value, mask it
+        if (keysToSanitize.includes(key) && value) {
+            if (typeof value === 'string') {
+                // Show just first few chars to help with debugging
+                sanitized[key] = value.length > 8 
+                    ? `${value.substring(0, 4)}...${value.substring(value.length - 4)}` 
+                    : '[REDACTED]';
+            } else if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+                sanitized[key] = '[BINARY_DATA_REDACTED]';
+            } else if (typeof value === 'object') {
+                sanitized[key] = '[OBJECT_REDACTED]';
+            } else {
+                sanitized[key] = '[REDACTED]';
+            }
+        } 
+        // Recursively sanitize objects
+        else if (value && typeof value === 'object') {
+            sanitized[key] = sanitizeForLogging(value, keysToSanitize);
+        } 
+        // Pass through non-sensitive values
+        else {
+            sanitized[key] = value;
+        }
+    }
+    
+    return sanitized;
 }
 
 // Export functions for use in other scripts

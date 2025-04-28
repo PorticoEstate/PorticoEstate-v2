@@ -11,8 +11,8 @@
 namespace App\modules\phpgwapi\security\Auth;
 
 // Enable error logging for this script
-ini_set('log_errors', 'On');
-ini_set('error_log', '/home/hc483/Api/logs/error.log');
+//ini_set('log_errors', 'On');
+
 
 use lbuchs\WebAuthn\WebAuthn;
 use lbuchs\WebAuthn\Binary\ByteBuffer;

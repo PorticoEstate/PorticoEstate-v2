@@ -191,7 +191,15 @@ class Passkey_Management_Controller
 		try
 		{
 			$datetime = new \DateTime($datetime_str);
-			return $datetime->format($this->serverSettings['dateformat'] ?? 'Y-m-d H:i:s');
+			
+			// Apply user's timezone preference
+			if (isset($this->userSettings['preferences']['common']['timezone'])) {
+				$user_timezone = $this->userSettings['preferences']['common']['timezone'];
+				$datetime->setTimezone(new \DateTimeZone($user_timezone));
+			}
+
+			$dateformat = $this->userSettings['preferences']['common']['dateformat'] ?? 'Y-m-d H:i:s';
+			return $datetime->format($dateformat . ' H:i:s');
 		}
 		catch (\Exception $e)
 		{

@@ -345,7 +345,7 @@ class Login
 	<title>{$this->serverSettings['site_title']} - Login with Passkey</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
+	<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
 	<style>
 		body {
 			background-color: #f8f9fa;
@@ -571,7 +571,7 @@ HTML;
 	<title>Authentication Error</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
+	<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
 </head>
 <body>
 	<div class="container mt-5">
@@ -617,7 +617,7 @@ HTML;
 	<title>Authentication Error</title>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<link href="/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
+	<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
 </head>
 <body>
 	<div class="container mt-5">

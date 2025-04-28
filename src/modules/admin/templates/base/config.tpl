@@ -100,8 +100,8 @@
 				<td><input size="8" name="newsettings[redis_host]" value="{value_redis_host}" class="pure-u-1" /></td>
 			</tr>
 			<tr class="pure-table-odd">
-				<td>{lang_redis_database}: (0 - 15)</td>
-				<td><input type="number" min="0" max="15" name="newsettings[redis_database]"
+				<td>{lang_redis_database}: (1 - 15)</td>
+				<td><input type="number" min="1" max="15" name="newsettings[redis_database]"
 						value="{value_redis_database}" class="pure-u-1" /></td>
 			</tr>
 			<tr class="pure-table-odd">

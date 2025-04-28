@@ -58,8 +58,8 @@ services:
             docker: "true"
             REDIS_HOST: redis
             REDIS_PORT: 6379
-        ports:
-            - "8080:8080"  # WebSocket port
+#        ports:
+#            - "8080:8080"  # WebSocket port
         volumes:
             - .:/var/www/html
             - ./logs:/var/log/websocket
@@ -72,8 +72,8 @@ services:
         image: redis:alpine
         container_name: portico_redis
         restart: unless-stopped
-        ports:
-            - "6379:6379"
+#        ports:
+#            - "6379:6379"
         volumes:
             - redis_data:/data
         networks:

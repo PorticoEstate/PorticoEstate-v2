@@ -194,6 +194,7 @@ class NotificationService
 
     /**
      * Send a server ping to all clients to keep connections alive
+     * This happens every 4 minutes, and the client should respond with a pong
      * 
      * @return void
      */
@@ -283,6 +284,29 @@ class NotificationService
                         'message' => $data['message'] ?? 'no content'
                     ]);
                     $this->broadcastNotification($message);
+                    break;
+                case 'entity_event':
+                    // This is a specific entity event, which should be processed accordingly
+                    $entityType = $data['entityType'] ?? null;
+                    $entityId = $data['entityId'] ?? null;
+                    $eventType = $data['eventType'] ?? 'update';
+                    
+                    if ($entityType && $entityId) {
+                        $this->logger->info("Entity event message", [
+                            'clientId' => $from->resourceId,
+                            'entityType' => $entityType,
+                            'entityId' => $entityId,
+                            'eventType' => $eventType
+                        ]);
+                        
+                        // The message will be broadcast to all clients in the WebSocketServer.php 
+                        // which handles the specific room logic
+                        $this->broadcastMessage($from, $message);
+                    } else {
+                        $this->logger->warning("Invalid entity event message - missing entityType or entityId", [
+                            'clientId' => $from->resourceId
+                        ]);
+                    }
                     break;
                 case 'ping':
                     // Reply with a pong directly to the client to keep the connection alive

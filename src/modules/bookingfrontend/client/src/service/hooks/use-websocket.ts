@@ -28,7 +28,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     customUrl = null,
     autoReconnect = true,
     reconnectInterval = 5000,
-    pingInterval = 30000,
+    pingInterval = 600000, // Changed from 30000 (30s) to 600000 (10min)
     onOpen,
     onMessage,
     onClose,
@@ -46,8 +46,13 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
 
     // Use relative URL when in browser environment
     if (typeof window !== 'undefined') {
+      // In Docker environment, the WebSocket server is available at websocket:8080
+      // The proxy should forward /wss to the WebSocket container
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      
+      // Use the same host but with the WebSocket endpoint
       const host = window.location.host;
+      
       return `${protocol}//${host}/wss`;
     }
 
@@ -244,11 +249,51 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
     }
   }, [status, connect]);
 
+  // Function to subscribe to an entity
+  const subscribeToEntity = useCallback((entityType: string, entityId: string | number) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.error('WebSocket is not connected');
+      return false;
+    }
+
+    const data = {
+      type: 'subscribe',
+      entityType,
+      entityId,
+      timestamp: new Date().toISOString()
+    };
+
+    wsRef.current.send(JSON.stringify(data));
+    console.log('Entity subscription sent:', data);
+    return true;
+  }, []);
+
+  // Function to unsubscribe from an entity
+  const unsubscribeFromEntity = useCallback((entityType: string, entityId: string | number) => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
+      console.error('WebSocket is not connected');
+      return false;
+    }
+
+    const data = {
+      type: 'unsubscribe',
+      entityType,
+      entityId,
+      timestamp: new Date().toISOString()
+    };
+
+    wsRef.current.send(JSON.stringify(data));
+    console.log('Entity unsubscription sent:', data);
+    return true;
+  }, []);
+
   return {
     status,
     lastMessage,
     sendMessage,
     closeConnection,
-    reconnect: connect
+    reconnect: connect,
+    subscribeToEntity,
+    unsubscribeFromEntity
   };
 };

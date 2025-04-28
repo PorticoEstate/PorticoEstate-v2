@@ -35,7 +35,6 @@ services:
             REDIS_PORT: 6379
         ports:
             - "8088:80"
-#            - "8080:8080"  # WebSocket port
         volumes:
             - .:/var/www/html
             - ./logs:/var/log/apache2
@@ -45,6 +44,27 @@ services:
             - internal
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        depends_on:
+            - redis
+            - websocket
+
+    websocket:
+        container_name: portico_websocket
+        build:
+            context: .
+            dockerfile: Dockerfile.websocket
+        working_dir: /var/www/html
+        environment:
+            docker: "true"
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+        ports:
+            - "8080:8080"  # WebSocket port
+        volumes:
+            - .:/var/www/html
+            - ./logs:/var/log/websocket
+        networks:
+            - internal
         depends_on:
             - redis
 

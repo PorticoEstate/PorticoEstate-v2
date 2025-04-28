@@ -32,7 +32,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   customUrl,
   autoReconnect = true,
   reconnectInterval = 5000,
-  pingInterval = 30000,
+  pingInterval = 600000, // Changed from 30000 (30s) to 600000 (10min)
 }) => {
   const [status, setStatus] = useState<WebSocketStatus>('CLOSED');
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
@@ -111,7 +111,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                   timestamp: new Date().toISOString()
                 }));
               }
-            }, pingInterval || 30000);
+            }, pingInterval || 600000);
 
             // Store interval ID for cleanup
             setTimeout(() => {
@@ -478,7 +478,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     timestamp: new Date().toISOString()
                   }));
                 }
-              }, pingInterval || 30000);
+              }, pingInterval || 600000);
 
               setIsReady(true);
               // Reset reconnection flag
@@ -705,7 +705,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     timestamp: new Date().toISOString()
                   }));
                 }
-              }, pingInterval || 30000);
+              }, pingInterval || 600000);
 
               // Reset reconnection flag
               isReconnectingRef.current = false;

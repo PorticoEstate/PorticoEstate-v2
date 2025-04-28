@@ -112,6 +112,60 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
         
         $this->logger->info("Message received", $logContext);
         
+        // Handle entity subscription
+        if ($messageType === 'subscribe' && isset($data['entityType']) && isset($data['entityId'])) {
+            $entityType = $data['entityType'];
+            $entityId = $data['entityId'];
+            $roomId = $this->roomService->createRoomIdFromEntity($entityType, $entityId);
+            
+            // Join the entity room
+            $this->roomService->joinRoom($roomId, $from);
+            
+            $this->logger->info("Client subscribed to entity", [
+                'clientId' => $from->resourceId,
+                'entityType' => $entityType,
+                'entityId' => $entityId,
+                'roomId' => $roomId
+            ]);
+            
+            // Send confirmation to the client
+            $from->send(json_encode([
+                'type' => 'subscription_confirmation',
+                'entityType' => $entityType,
+                'entityId' => $entityId,
+                'status' => 'subscribed',
+                'timestamp' => date('c')
+            ]));
+            return;
+        }
+        
+        // Handle entity unsubscription
+        if ($messageType === 'unsubscribe' && isset($data['entityType']) && isset($data['entityId'])) {
+            $entityType = $data['entityType'];
+            $entityId = $data['entityId'];
+            $roomId = $this->roomService->createRoomIdFromEntity($entityType, $entityId);
+            
+            // Leave the entity room
+            $this->roomService->leaveRoom($roomId, $from);
+            
+            $this->logger->info("Client unsubscribed from entity", [
+                'clientId' => $from->resourceId,
+                'entityType' => $entityType,
+                'entityId' => $entityId,
+                'roomId' => $roomId
+            ]);
+            
+            // Send confirmation to the client
+            $from->send(json_encode([
+                'type' => 'subscription_confirmation',
+                'entityType' => $entityType,
+                'entityId' => $entityId,
+                'status' => 'unsubscribed',
+                'timestamp' => date('c')
+            ]));
+            return;
+        }
+        
         // Check if this message is intended for a specific room
         if ($messageType === 'room_message' && isset($data['roomId'])) {
             $roomId = $data['roomId'];
@@ -212,6 +266,8 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
 
     /**
      * Send a server ping to all connected clients
+     * This happens every 4 minutes to keep connections alive
+     * The client should respond with a pong message
      *
      * @return void
      */
@@ -266,6 +322,70 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 $data = json_decode($msg, true);
                 if ($data && isset($data['type']) && $data['type'] !== 'server_message' && !isset($data['roomId'])) {
                     $data['roomId'] = $roomId;
+                    $msg = json_encode($data);
+                }
+            } catch (\Exception $e) {
+                // If parsing fails, continue with the original message
+            }
+        }
+        
+        // Send to room
+        $sent = $this->roomService->sendToRoom($roomId, $msg);
+        
+        return $sent > 0;
+    }
+    
+    /**
+     * Send a notification to a specific entity room
+     *
+     * @param string $entityType Type of entity (resource, building, application, etc.)
+     * @param int|string $entityId Entity identifier
+     * @param array|string $msg The message to send
+     * @return bool Success status
+     */
+    public function sendToEntityRoom(string $entityType, $entityId, $msg): bool
+    {
+        // Create room ID from entity
+        $roomId = $this->roomService->createRoomIdFromEntity($entityType, $entityId);
+        
+        // Check if room exists
+        if (!$this->roomService->roomExists($roomId)) {
+            $this->logger->info("Entity room not found", [
+                'roomId' => $roomId,
+                'entityType' => $entityType,
+                'entityId' => $entityId
+            ]);
+            return false;
+        }
+        
+        // Convert message to JSON if it's an array
+        if (is_array($msg)) {
+            // Add entity info to the message
+            if (!isset($msg['entityType'])) {
+                $msg['entityType'] = $entityType;
+            }
+            if (!isset($msg['entityId'])) {
+                $msg['entityId'] = $entityId;
+            }
+            if (!isset($msg['roomId'])) {
+                $msg['roomId'] = $roomId;
+            }
+            
+            $msg = json_encode($msg);
+        } else if (is_string($msg) && $msg[0] === '{') {
+            // If it's already a JSON string, try to parse it to add entity info
+            try {
+                $data = json_decode($msg, true);
+                if ($data) {
+                    if (!isset($data['entityType'])) {
+                        $data['entityType'] = $entityType;
+                    }
+                    if (!isset($data['entityId'])) {
+                        $data['entityId'] = $entityId;
+                    }
+                    if (!isset($data['roomId'])) {
+                        $data['roomId'] = $roomId;
+                    }
                     $msg = json_encode($data);
                 }
             } catch (\Exception $e) {

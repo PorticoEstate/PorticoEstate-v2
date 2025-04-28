@@ -319,4 +319,16 @@ class RoomService
         // Create a hashed room ID for security (we don't want to expose raw session IDs)
         return 'session_' . substr(md5($sessionId), 0, 10);
     }
+    
+    /**
+     * Create a room ID for an entity (resource, building, application, etc.)
+     * 
+     * @param string $entityType Type of entity (resource, building, application, etc.)
+     * @param int|string $entityId Entity ID
+     * @return string Entity room ID
+     */
+    public function createRoomIdFromEntity(string $entityType, $entityId): string
+    {
+        return 'entity_' . $entityType . '_' . $entityId;
+    }
 }

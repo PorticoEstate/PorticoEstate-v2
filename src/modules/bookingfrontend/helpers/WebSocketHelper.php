@@ -11,11 +11,12 @@ use App\WebSocket\Services\RedisService;
 class WebSocketHelper
 {
     /**
-     * WebSocket server host (default is localhost)
+     * WebSocket server host
+     * Default is websocket service name for Docker or localhost for development
      * 
      * @var string
      */
-    protected static $host = '127.0.0.1';
+    protected static $host;
     
     /**
      * WebSocket server port
@@ -64,6 +65,44 @@ class WebSocketHelper
      * @return bool True if sent successfully, false otherwise
      * @throws Exception If message is missing required fields
      */
+    /**
+     * Get WebSocket host
+     * 
+     * @return string The WebSocket host
+     */
+    protected static function getHost()
+    {
+        if (self::$host) {
+            return self::$host;
+        }
+        
+        // If in Docker environment, use the container name
+        if (getenv('docker') === 'true') {
+            self::$host = 'websocket';
+        } else {
+            // For local development, try to detect host
+            self::$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            self::$host = preg_replace('/:\d+$/', '', self::$host); // Remove port if present
+        }
+        
+        return self::$host;
+    }
+
+    /**
+     * Get WebSocket URL
+     * 
+     * @param bool $secure Whether to use secure WebSocket (wss)
+     * @return string The complete WebSocket URL
+     */
+    public static function getWebSocketUrl(bool $secure = false): string
+    {
+        $protocol = $secure ? 'wss' : 'ws';
+        $host = self::getHost();
+        $port = self::$port;
+        
+        return "{$protocol}://{$host}:{$port}";
+    }
+
     public static function sendNotification(string $message, array $data = [], ?string $host = null, ?int $port = null): bool
     {
         // Validate required fields
@@ -78,10 +117,6 @@ class WebSocketHelper
             error_log($errorMsg);
             throw new Exception($errorMsg);
         }
-        
-        // Use the provided host/port or defaults
-        $wsHost = $host ?? self::$host;
-        $wsPort = $port ?? self::$port;
         
         // Prepare the message
         $payload = [

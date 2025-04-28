@@ -86,8 +86,8 @@ $webSocket = new WebSocketServer($logger);
 // This enables access to cookies and headers
 $wsServer = new WsServer($webSocket);
 
-// Enable subprotocol negotiation (optional)
-$wsServer->enableKeepAlive($loop, 30); // Send ping every 30 seconds
+// Enable protocol-level WebSocket ping/pong frames for better connection management
+$wsServer->enableKeepAlive($loop, 30); // Send protocol-level ping every 30 seconds
 
 // Make sure httpRequest is available to the server
 $wsHttpServer = new HttpServer(
@@ -184,8 +184,8 @@ try {
         $webSocket->checkNotificationFiles();
     });
     
-    // Send server ping to all clients every 55 seconds to keep connections alive
-    $loop->addPeriodicTimer(55, function() use ($webSocket) {
+    // Send server ping to all clients every 240 seconds (4 minutes) to keep connections alive
+    $loop->addPeriodicTimer(240, function() use ($webSocket) {
         $webSocket->sendServerPing();
     });
     
@@ -214,6 +214,55 @@ try {
                         $messageType = $data['type'] ?? 'unknown';
                         
                         if ($channel === 'notifications') {
+                            // Handle entity-targeted notifications
+                            if (isset($data['target']) && $data['target'] === 'entity' && 
+                                isset($data['entityType']) && isset($data['entityId'])) {
+                                // Get entity info
+                                $entityType = $data['entityType'];
+                                $entityId = $data['entityId'];
+                                
+                                $logger->info("Entity-targeted Redis notification received", [
+                                    'entityType' => $entityType,
+                                    'entityId' => $entityId,
+                                    'type' => $messageType,
+                                    'timestamp' => date('c')
+                                ]);
+                                
+                                // Send to entity room
+                                $success = $webSocket->sendToEntityRoom($entityType, $entityId, $payload);
+                                
+                                $logger->info("Entity message delivery", [
+                                    'success' => $success,
+                                    'entityType' => $entityType,
+                                    'entityId' => $entityId
+                                ]);
+                                
+                                return;
+                            }
+                            
+                            // Handle session-targeted notifications
+                            else if (isset($data['target']) && $data['target'] === 'session' && 
+                                isset($data['sessionId'])) {
+                                // Get session info
+                                $sessionId = $data['sessionId'];
+                                
+                                $logger->info("Session-targeted Redis notification received", [
+                                    'sessionId' => substr($sessionId, 0, 8) . '...',
+                                    'type' => $messageType,
+                                    'timestamp' => date('c')
+                                ]);
+                                
+                                // Send to session room
+                                $success = $webSocket->sendToSessionRoom($sessionId, $payload);
+                                
+                                $logger->info("Session message delivery", [
+                                    'success' => $success,
+                                    'sessionId' => substr($sessionId, 0, 8) . '...'
+                                ]);
+                                
+                                return;
+                            }
+                            
                             // Handle general notifications
                             $notificationType = $data['data']['type'] ?? 'general';
                             $message = $data['message'] ?? 'No message';

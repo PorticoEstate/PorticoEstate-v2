@@ -7,7 +7,7 @@ const CACHE_NAME = 'websocket-cache-v1';
 // WebSocket connection
 let ws = null;
 let reconnectInterval = 5000; // 5 seconds
-let pingInterval = 30000; // 30 seconds
+let pingInterval = 600000; // 10 minutes
 let pingIntervalId = null;
 let reconnectTimeoutId = null;
 let isConnecting = false;
@@ -46,6 +46,13 @@ function connectWebSocket() {
   try {
     ws = new WebSocket(wsUrl);
     
+    // Add event listener for ping events - this is for protocol-level WebSocket ping frames
+    // Note: The WebSocket API should automatically respond with pong frames
+    ws.addEventListener('ping', (event) => {
+      log('Received protocol-level ping');
+      // No need to explicitly respond as browser handles this automatically
+    });
+    
     ws.onopen = (event) => {
       log('WebSocket connection established');
       isConnecting = false;
@@ -76,6 +83,25 @@ function connectWebSocket() {
     ws.onmessage = (event) => {
       log('Message received:', event.data);
       try {
+        // First check if this is a binary message (WebSocket protocol ping)
+        if (event.data instanceof ArrayBuffer) {
+          // This is a protocol-level ping, respond with a pong
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            // Send pong response (WebSocket API handles this internally)
+            log('Received WebSocket protocol ping (binary)');
+          }
+          return; // Don't broadcast binary messages/protocol pings
+        }
+        
+        // Check for string "ping" message (some servers send this instead of a proper ping frame)
+        if (event.data === "ping") {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send("pong");
+            log('Received plain text ping, responded with pong');
+          }
+          return; // Don't broadcast ping/pong messages
+        }
+        
         const data = JSON.parse(event.data);
         
         // Handle specific message types

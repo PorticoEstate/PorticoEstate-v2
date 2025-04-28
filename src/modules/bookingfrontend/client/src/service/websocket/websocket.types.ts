@@ -17,7 +17,6 @@ export interface IWSNotificationMessage extends IWebSocketMessageBase {
   notificationType?: string;
 }
 
-
 // Interface for a new/changed server message
 export interface IWSServerNewMessage extends IWebSocketMessageBase {
   type: 'server_message';
@@ -43,6 +42,37 @@ export interface IWSReconnectMessage extends IWebSocketMessageBase {
   message?: string;
 }
 
+// Interface for entity subscription message
+export interface IWSEntitySubscribeMessage extends IWebSocketMessageBase {
+  type: 'subscribe';
+  entityType: string;
+  entityId: number | string;
+}
+
+// Interface for entity unsubscription message
+export interface IWSEntityUnsubscribeMessage extends IWebSocketMessageBase {
+  type: 'unsubscribe';
+  entityType: string;
+  entityId: number | string;
+}
+
+// Interface for subscription confirmation message
+export interface IWSSubscriptionConfirmMessage extends IWebSocketMessageBase {
+  type: 'subscription_confirmation';
+  entityType: string;
+  entityId: number | string;
+  status: 'subscribed' | 'unsubscribed';
+}
+
+// Interface for entity event message
+export interface IWSEntityEventMessage extends IWebSocketMessageBase {
+  type: 'entity_event';
+  entityType: string;
+  entityId: number | string;
+  eventType: 'create' | 'update' | 'delete' | 'reservation' | string;
+  data?: any;
+}
+
 // Union type for all possible WebSocket messages
 export type WebSocketMessage = 
   | IWSNotificationMessage 
@@ -50,6 +80,10 @@ export type WebSocketMessage =
   | IWSServerDeletedMessage
   | IWSPingMessage 
   | IWSReconnectMessage
+  | IWSEntitySubscribeMessage
+  | IWSEntityUnsubscribeMessage
+  | IWSSubscriptionConfirmMessage
+  | IWSEntityEventMessage
   | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
 
 export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR';

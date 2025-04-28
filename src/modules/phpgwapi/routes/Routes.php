@@ -162,3 +162,21 @@ $app->get('/api/tabledata/{table}', function ($request, $response, $args) use ($
 	$databaseController = new \App\modules\phpgwapi\controllers\DatabaseController();
 	return $databaseController->getTableData($request, $response, $args);
 });
+
+/**
+ * Routes for passkey management
+ */
+$app->group('/passkey', function ($group)
+{
+	// Main passkey management page
+	$group->get('', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:index');
+
+	// API endpoint for registration options
+	$group->get('/register/options', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:getRegistrationOptions');
+
+	// API endpoint for registration verification
+	$group->post('/register/verify', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:verifyRegistration');
+
+	// API endpoint for deleting a passkey
+	$group->post('/delete', 'App\modules\phpgwapi\controllers\Passkey_Management_Controller:deletePasskey');
+})->add(new SessionsMiddleware($app->getContainer()));

@@ -101,7 +101,7 @@ class LoginHelper
 			{
 				phpgw::redirect_link('/home/', array('cd' => 'yes'));
 			}
-			if(!empty($result['html']))
+			if (!empty($result['html']))
 			{
 				$response = $response->withHeader('Content-Type', 'text/html');
 				$response->getBody()->write($result['html']);
@@ -116,7 +116,7 @@ class LoginHelper
 			$config_openid = (new \App\modules\phpgwapi\services\ConfigLocation($location_id))->read();
 		}
 
-		if ($login_type !== 'sql' && empty($_POST) && !empty($config_openid['common']['method_backend']) && empty($_REQUEST['skip_remote']))
+		if ($login_type !== 'sql' && empty($_POST)  && empty($_REQUEST['skip_remote']))
 		{
 			$lang_sign_in = lang('Sign in');
 			$lang_select_login_method = lang('Select login method');
@@ -130,6 +130,10 @@ HTML;
 				<option value="{$type}">{$method_name}</option>
 HTML;
 			}
+			// Add passkey login option
+			$options .= <<<HTML
+			<option value="passkey">Passkey (Passwordless)</option>
+HTML;
 			$options .= <<<HTML
 			<option value="sql">Brukernavn/Passord</option>
 HTML;
@@ -195,7 +199,7 @@ HTML;
 		if (!Sanitizer::get_var('hide_lightbox', 'bool'))
 		{
 			$partial_url	   = '/login_ui';
-//			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
+			//			$phpgw_url_for_sso = '/phpgwapi/inc/sso/login_server.php';
 
 			$variables['lang_login']  = lang('login');
 			$variables['partial_url'] = $partial_url;
@@ -232,11 +236,15 @@ HTML;
 			{
 
 				$result = $Login->login();
+				if (!empty($result['html']))
+				{
+					$html = $result['html'];
+				}
 				if (!empty($result['session_id']))
 				{
 					$this->redirect();
 				}
-				else
+				if (empty($result['html']))
 				{
 					$html = $LoginUi->phpgw_display_login($variables, $Login->get_cd());
 				}
@@ -244,7 +252,7 @@ HTML;
 		}
 
 		$response = $response->withHeader('Content-Type', 'text/html');
-		if($html)
+		if ($html)
 		{
 			$response->getBody()->write($html);
 		}

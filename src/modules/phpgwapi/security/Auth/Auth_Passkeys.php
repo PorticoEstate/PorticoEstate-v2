@@ -43,23 +43,9 @@ class Auth_Passkeys
             $host = strtok($host, ':');
         }
 
-        // Use the effective domain (strip subdomains if needed)
-        // For example: portal.example.com -> example.com or localhost -> localhost
-        $parts = explode('.', $host);
-        if (count($parts) > 2 && !in_array($parts[count($parts) - 1], ['localhost', 'local', 'test']))
-        {
-            // Consider using the eTLD+1 (e.g., example.com) for production
-            // This allows credentials to work across subdomains
-            $this->rpId = $parts[count($parts) - 2] . '.' . $parts[count($parts) - 1];
-
-            // Log that we're using the effective domain
-            error_log("Using effective domain as rpId: {$this->rpId} (original host: {$host})");
-        }
-        else
-        {
-            // For localhost or simple domains, use as-is
-            $this->rpId = $host;
-        }
+        // Always use the full hostname as the rpId
+        $this->rpId = $host;
+        error_log("Using full host as rpId: {$this->rpId}");
 
         // Rather than constructing origins with schemes, let the library handle it
         // The library will automatically construct the proper allowed origins

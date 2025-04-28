@@ -29,9 +29,6 @@
 
 namespace App\modules\phpgwapi\security;
 
-// Enable error logging for this script
-ini_set('log_errors', 'On');
-ini_set('error_log', '/var/log/apache2/error.log');
 
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Settings;

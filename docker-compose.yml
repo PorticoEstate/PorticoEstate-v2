@@ -31,7 +31,6 @@ services:
             docker: "true"
         ports:
             - "8088:80"
-            - "443:443"
         volumes:
             - .:/var/www/html
             - ./logs:/var/log/apache2

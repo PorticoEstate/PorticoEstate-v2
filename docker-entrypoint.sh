@@ -14,10 +14,6 @@ export SLIM_SERVER
 # Pass environment variables to Apache
 echo "SetEnv NEXTJS_SERVER ${NEXTJS_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 
-# Enable SSL module and site
-a2enmod ssl
-make-ssl-cert generate-default-snakeoil --force-overwrite
-
 # Start PHP-FPM
 php-fpm &
 

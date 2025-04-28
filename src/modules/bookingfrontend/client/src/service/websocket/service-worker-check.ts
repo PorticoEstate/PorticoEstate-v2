@@ -41,11 +41,11 @@ export async function checkServiceWorkerSupport(): Promise<{
 		// Service worker path is always fixed for this application
 		const scope = '/bookingfrontend/client/';
 		const wsSwUrl = new URL('/bookingfrontend/client/websocket-sw.js', window.location.origin).href;
-		
+
 		// Get all existing registrations
 		const registrations = await navigator.serviceWorker.getRegistrations();
 		let existingRegistration = null;
-		
+
 		// Look for existing registrations that match our scope
 		for (const registration of registrations) {
 			if (registration.scope.includes(scope)) {
@@ -58,10 +58,10 @@ export async function checkServiceWorkerSupport(): Promise<{
 		// If we already have a registration, verify it's responding
 		if (existingRegistration && existingRegistration.active) {
 			console.log('Using existing service worker registration');
-			
+
 			// Create a messaging channel to verify the service worker is responding
 			const messageChannel = new MessageChannel();
-			
+
 			// Set up a promise to await the test response
 			const testPromise = new Promise<boolean>((resolve, reject) => {
 				// Time out after 2 seconds
@@ -69,7 +69,7 @@ export async function checkServiceWorkerSupport(): Promise<{
 					messageChannel.port1.onmessage = null;
 					reject(new Error('Service worker test timed out'));
 				}, 2000);
-				
+
 				// Handle response from service worker
 				messageChannel.port1.onmessage = (event) => {
 					if (event.data && event.data.type === 'test_response') {
@@ -77,14 +77,14 @@ export async function checkServiceWorkerSupport(): Promise<{
 						resolve(event.data.success === true);
 					}
 				};
-				
+
 				// Send test message to service worker
-				existingRegistration.active.postMessage({ 
+				existingRegistration.active?.postMessage({
 					type: 'test',
 					testOnly: true
 				}, [messageChannel.port2]);
 			});
-			
+
 			try {
 				// Check if existing service worker responds correctly
 				const testResult = await testPromise;
@@ -102,16 +102,16 @@ export async function checkServiceWorkerSupport(): Promise<{
 		// If we don't have a working service worker, register a new one
 		try {
 			console.log('Registering new service worker using scope:', scope);
-			
+
 			// Register the service worker
 			const registration = await navigator.serviceWorker.register(wsSwUrl, {scope: scope});
-			
+
 			// Wait for the service worker to be ready
 			await navigator.serviceWorker.ready;
-			
+
 			// Create a messaging channel to communicate with the service worker
 			const messageChannel = new MessageChannel();
-			
+
 			// Set up a promise to await the test response
 			const testPromise = new Promise<boolean>((resolve, reject) => {
 				// Time out after 2 seconds
@@ -119,7 +119,7 @@ export async function checkServiceWorkerSupport(): Promise<{
 					messageChannel.port1.onmessage = null;
 					reject(new Error('Service worker test timed out'));
 				}, 2000);
-				
+
 				// Handle response from service worker
 				messageChannel.port1.onmessage = (event) => {
 					if (event.data && event.data.type === 'test_response') {
@@ -127,10 +127,10 @@ export async function checkServiceWorkerSupport(): Promise<{
 						resolve(event.data.success === true);
 					}
 				};
-				
+
 				// Send test message to service worker
 				if (registration.active) {
-					registration.active.postMessage({ 
+					registration.active.postMessage({
 						type: 'test',
 						testOnly: true
 					}, [messageChannel.port2]);
@@ -139,7 +139,7 @@ export async function checkServiceWorkerSupport(): Promise<{
 					reject(new Error('Service worker not active'));
 				}
 			});
-			
+
 			// Wait for test to complete
 			const testResult = await testPromise;
 			if (!testResult) {

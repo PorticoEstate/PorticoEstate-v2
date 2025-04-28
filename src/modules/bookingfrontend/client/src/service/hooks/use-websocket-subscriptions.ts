@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
+import {useEffect, useRef, useCallback, useState} from 'react';
 import { WebSocketService } from '../websocket/websocket-service';
 import { WebSocketMessage } from '../websocket/websocket.types';
 import { SubscriptionCallback } from '../websocket/subscription-manager';
 
 /**
  * A React hook for subscribing to entity rooms via WebSocket
- * 
+ *
  * @param entityType Type of entity (e.g., 'resource', 'building')
  * @param entityId ID of the entity
  * @param callback Callback function to execute when events for this entity occur
@@ -51,7 +51,7 @@ export const useEntitySubscription = (
 
 /**
  * A React hook for subscribing to WebSocket message types
- * 
+ *
  * @param messageType Type of message to subscribe to
  * @param callback Callback function to execute when messages of this type are received
  * @returns Unsubscribe function
@@ -92,7 +92,7 @@ export const useMessageTypeSubscription = (
 
 /**
  * A React hook to subscribe to multiple entity rooms at once
- * 
+ *
  * @param subscriptions Array of entity subscriptions with callbacks
  * @returns Object containing subscription status
  */
@@ -142,7 +142,7 @@ export const useMultiEntitySubscription = (
 
 /**
  * A React hook to get entity-specific events as they occur
- * 
+ *
  * @param entityType Type of entity (e.g., 'resource', 'building')
  * @param entityId ID of the entity
  * @returns The latest entity event message and a clearEvent function
@@ -152,7 +152,7 @@ export const useEntityEvents = (
   entityId: number | string
 ) => {
   const [lastEvent, setLastEvent] = useState<WebSocketMessage | null>(null);
-  
+
   const handleEntityEvent = useCallback((message: WebSocketMessage) => {
     setLastEvent(message);
   }, []);

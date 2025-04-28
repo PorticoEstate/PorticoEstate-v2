@@ -78,88 +78,23 @@ class SessionService
     }
     
     /**
-     * Extract user information from the bookingfrontend session
+     * Check if the session exists (simplified version without extracting user data)
      *
      * @param string $bookingSessionId Session ID
-     * @return array|null User info if found
+     * @return array Basic session info
      */
-    private function extractUserInfoFromSession(string $bookingSessionId): ?array
+    private function extractUserInfoFromSession(string $bookingSessionId): array
     {
-        try {
-            // Start PHP session with the provided session ID
-            if (session_status() === PHP_SESSION_NONE) {
-                session_id($bookingSessionId);
-                session_name('bookingfrontendsession');
-                session_start();
-                
-                // Check if the session contains user data
-                if (isset($_SESSION['phpgw_cache'])) {
-                    // Try to extract organization info
-                    $orgId = null;
-                    $orgnr = null;
-                    
-                    // Generate cache keys manually since we can't access protected methods
-                    $orgIdKey = 'phpgw_bookingfrontend_org_id';
-                    $orgnrKey = 'phpgw_bookingfrontend_orgnr';
-                    $userArrayKey = 'phpgw_bookingfrontend_userarray';
-                    
-                    if (isset($_SESSION['phpgw_cache'][$orgIdKey])) {
-                        $orgId = $_SESSION['phpgw_cache'][$orgIdKey];
-                        // We can't easily decrypt values without the Cache class helper methods,
-                        // so we'll just store the raw values for now
-                    }
-                    
-                    if (isset($_SESSION['phpgw_cache'][$orgnrKey])) {
-                        $orgnr = $_SESSION['phpgw_cache'][$orgnrKey];
-                        // Raw value without decryption
-                    }
-                    
-                    // Try to get user data array
-                    if (isset($_SESSION['phpgw_cache'][$userArrayKey])) {
-                        $userData = $_SESSION['phpgw_cache'][$userArrayKey];
-                        // Raw value without decryption
-                        
-                        // If userData is already an array (shouldn't happen without decryption)
-                        if (is_array($userData) && isset($userData['ssn'])) {
-                            $userInfo = [
-                                'ssn' => substr($userData['ssn'], 0, 6) . '****', // Mask the SSN for logging
-                                'hasSSN' => true,
-                                'orgId' => $orgId,
-                                'orgnr' => $orgnr,
-                            ];
-                        } else {
-                            // Since we can't decrypt, we'll just note that session data was found
-                            $userInfo = [
-                                'sessionFound' => true,
-                                'hasRawOrgId' => !empty($orgId),
-                                'hasRawOrgnr' => !empty($orgnr),
-                                'hasRawUserData' => !empty($userData)
-                            ];
-                        }
-                        
-                        // Close the session to not interfere with other processes
-                        session_write_close();
-                        
-                        return $userInfo;
-                    }
-                }
-                
-                // Close the session to not interfere with other processes
-                session_write_close();
-            }
-        } catch (\Exception $e) {
-            $this->logger->error("Error extracting user info from session", [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ]);
-        }
-        
-        return null;
+        // We're not actually extracting user data anymore - just returning 
+        // basic session validation info without accessing the session
+        return [
+            'sessionFound' => true,
+            'sessionId' => substr($bookingSessionId, 0, 8) . '****' // Masked session ID
+        ];
     }
     
     /**
-     * Enrich a message with user context
+     * Enrich a message with basic session info
      *
      * @param ConnectionInterface $from Connection
      * @param array $data Message data
@@ -167,21 +102,16 @@ class SessionService
      */
     public function enrichMessageWithUserContext(ConnectionInterface $from, array $data): array
     {
-        // Add user context to the message if available
-        if (isset($from->userInfo)) {
+        // Add basic session info to the message if available
+        if (isset($from->sessionId)) {
             $messageType = $data['type'] ?? 'unknown';
             
-            // Add user context to the message for broadcasting if appropriate
+            // Add session info to the message for broadcasting if appropriate
             if ($messageType !== 'ping' && $messageType !== 'pong') {
-                $data['userContext'] = [
-                    'authenticated' => true,
-                    'hasSession' => true
+                $data['sessionContext'] = [
+                    'hasSession' => true,
+                    'sessionType' => isset($from->bookingSessionId) ? 'booking' : 'standard'
                 ];
-                
-                // If we have organization info, include it
-                if (isset($from->userInfo['orgnr'])) {
-                    $data['userContext']['orgnr'] = $from->userInfo['orgnr'];
-                }
             }
         }
         
@@ -189,7 +119,7 @@ class SessionService
     }
     
     /**
-     * Log user session information for a message
+     * Log basic session information for a message
      *
      * @param ConnectionInterface $from Connection
      * @param string $messageType Message type
@@ -197,13 +127,7 @@ class SessionService
      */
     public function getSessionLogContext(ConnectionInterface $from, string $messageType = 'unknown'): array
     {
-        // Build user context for logging
-        $userContext = [];
-        if (isset($from->userInfo)) {
-            $userContext['userInfo'] = $from->userInfo;
-        }
-        
-        // Add session info to log context
+        // Add session info to log context (simplified)
         $sessionContext = [];
         if (isset($from->sessionId)) {
             $sessionContext['hasSession'] = true;
@@ -213,6 +137,6 @@ class SessionService
         return array_merge([
             'clientId' => $from->resourceId,
             'type' => $messageType,
-        ], $sessionContext, $userContext);
+        ], $sessionContext);
     }
 }

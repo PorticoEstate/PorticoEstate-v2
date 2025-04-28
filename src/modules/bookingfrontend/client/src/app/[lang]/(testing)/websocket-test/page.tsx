@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { WebSocketStatusIndicator } from '@/service/websocket/websocket-context';
-import { WebSocketDemo, NotificationExample } from '@/components/websocket-demo';
+import { WebSocketDemo, NotificationExample, RoomSubscriptionDemo } from '@/components/websocket-demo';
 import { Heading, Paragraph, Link, Button } from '@digdir/designsystemet-react';
 import { ServiceWorkerDebug } from './debug';
 import { WebSocketModeSwitcher } from './mode-switcher';
@@ -60,6 +60,7 @@ export default function WebSocketTestPage() {
       <div style={{display: 'flex', flexDirection: 'column', gap: '2rem'}}>
         <WebSocketDemo/>
         <NotificationExample/>
+        <RoomSubscriptionDemo/>
         <ServiceWorkerDebug/>
       </div>
     </div>

@@ -12,6 +12,20 @@ const nextConfig = {
             },
         ],
     },
+    async headers() {
+        return [
+            {
+                // This header applies to all routes, including service workers
+                source: '/:path*',
+                headers: [
+                    {
+                        key: 'Service-Worker-Allowed',
+                        value: '/',
+                    },
+                ],
+            },
+        ];
+    },
 };
 
 export default nextConfig;

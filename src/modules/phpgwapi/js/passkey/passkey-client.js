@@ -47,6 +47,28 @@ const PasskeyUtils = {
             bytes[i] = binaryString.charCodeAt(i);
         }
         return bytes.buffer;
+    },
+
+    /**
+     * Decode RFC 1342 encoded binary (=?BINARY?B?...?=) to ArrayBuffer
+     * @param {string} str
+     * @returns {ArrayBuffer|null}
+     */
+    decodeRFC1342: function (str)
+    {
+        const match = str.match(/^=\?BINARY\?B\?(.+)\?=$/);
+        if (match)
+        {
+            const base64 = match[1];
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++)
+            {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        return null;
     }
 };
 
@@ -77,55 +99,96 @@ async function isPlatformAuthenticatorAvailable()
  */
 function prepareCreationOptions(creationOptions, username)
 {
-    // Decode challenge from base64url to ArrayBuffer
-    creationOptions.challenge = PasskeyUtils.base64urlToArrayBuffer(creationOptions.challenge);
+    // Deep clone the creationOptions to avoid modifying the original
+    const options = JSON.parse(JSON.stringify(creationOptions));
+
+    // Check if there are two authenticatorSelection objects (one at root, one in publicKey)
+    // This is a common issue in some WebAuthn implementations
+    if (options.authenticatorSelection && options.publicKey && options.publicKey.authenticatorSelection)
+    {
+        // Merge the authenticatorSelection objects, preferring the publicKey one
+        const merged = {
+            ...options.authenticatorSelection,
+            ...options.publicKey.authenticatorSelection
+        };
+
+        // Set only one authenticatorSelection in the publicKey
+        options.publicKey.authenticatorSelection = merged;
+
+        // Remove the root level one to avoid conflicts
+        delete options.authenticatorSelection;
+    }
+
+    // Use publicKey property if it exists
+    const publicKey = options.publicKey || options;
+
+    // Decode challenge from base64url or RFC 1342 to ArrayBuffer
+    let challengeBuf = null;
+    if (typeof publicKey.challenge === 'string')
+    {
+        challengeBuf = PasskeyUtils.decodeRFC1342(publicKey.challenge);
+        if (challengeBuf)
+        {
+            publicKey.challenge = challengeBuf;
+        } else
+        {
+            publicKey.challenge = PasskeyUtils.base64urlToArrayBuffer(publicKey.challenge);
+        }
+    }
 
     // Get system name from current hostname or use a default
     const systemName = window.location.hostname || 'localhost';
 
     // Add user information if missing (REQUIRED by WebAuthn spec)
-    if (!creationOptions.user)
+    if (!publicKey.user)
     {
         // Create a default user object using a random ID
         const randomId = new Uint8Array(16);
         window.crypto.getRandomValues(randomId);
 
-        creationOptions.user = {
+        publicKey.user = {
             id: randomId.buffer,
             name: username + '@' + systemName,
             displayName: username
         };
     } else
     {
-        // Decode user ID from base64url to ArrayBuffer if it exists
-        if (creationOptions.user.id)
+        // Decode user ID from base64url or RFC 1342 to ArrayBuffer if it exists
+        if (publicKey.user.id && typeof publicKey.user.id === 'string')
         {
-            creationOptions.user.id = PasskeyUtils.base64urlToArrayBuffer(creationOptions.user.id);
-        } else
+            let userIdBuf = PasskeyUtils.decodeRFC1342(publicKey.user.id);
+            if (userIdBuf)
+            {
+                publicKey.user.id = userIdBuf;
+            } else
+            {
+                publicKey.user.id = PasskeyUtils.base64urlToArrayBuffer(publicKey.user.id);
+            }
+        } else if (!publicKey.user.id)
         {
             // Create a random ID if none was provided
             const randomId = new Uint8Array(16);
             window.crypto.getRandomValues(randomId);
-            creationOptions.user.id = randomId.buffer;
+            publicKey.user.id = randomId.buffer;
         }
 
         // Ensure name and displayName are present with proper values
-        if (!creationOptions.user.name)
+        if (!publicKey.user.name)
         {
-            creationOptions.user.name = username + '@' + systemName;
+            publicKey.user.name = username + '@' + systemName;
         }
-        if (!creationOptions.user.displayName)
+        if (!publicKey.user.displayName)
         {
-            creationOptions.user.displayName = username;
+            publicKey.user.displayName = username;
         }
     }
 
     // If excludeCredentials exists, decode ID for each credential
-    if (creationOptions.excludeCredentials)
+    if (publicKey.excludeCredentials)
     {
-        for (const credential of creationOptions.excludeCredentials)
+        for (const credential of publicKey.excludeCredentials)
         {
-            if (credential.id)
+            if (credential.id && typeof credential.id === 'string')
             {
                 credential.id = PasskeyUtils.base64urlToArrayBuffer(credential.id);
                 // Make sure transports is correctly set if available
@@ -138,47 +201,51 @@ function prepareCreationOptions(creationOptions, username)
     }
 
     // Enforce security settings for WebAuthn
-    if (!creationOptions.authenticatorSelection)
+    if (!publicKey.authenticatorSelection)
     {
-        creationOptions.authenticatorSelection = {};
+        publicKey.authenticatorSelection = {};
     }
 
     // Ensure user verification is required for security
-    creationOptions.authenticatorSelection.userVerification = 'required';
+    publicKey.authenticatorSelection.userVerification = 'required';
+
+    // Set consistent values for residentKey and requireResidentKey
+    publicKey.authenticatorSelection.residentKey = 'preferred';
+    publicKey.authenticatorSelection.requireResidentKey = false;
 
     // Add pubKeyCredParams if missing (REQUIRED by WebAuthn spec)
-    if (!creationOptions.pubKeyCredParams || !creationOptions.pubKeyCredParams.length)
+    if (!publicKey.pubKeyCredParams || !publicKey.pubKeyCredParams.length)
     {
         // Default to common algorithms: ES256 (-7) and RS256 (-257)
-        creationOptions.pubKeyCredParams = [
+        publicKey.pubKeyCredParams = [
             { type: 'public-key', alg: -7 },    // ES256 (ECDSA w/ SHA-256)
             { type: 'public-key', alg: -257 }   // RS256 (RSASSA-PKCS1-v1_5 w/ SHA-256)
         ];
     }
 
     // Add rp (Relying Party) information if missing (REQUIRED by WebAuthn spec)
-    if (!creationOptions.rp)
+    if (!publicKey.rp)
     {
         // Default to using the current domain as the relying party ID
-        creationOptions.rp = {
+        publicKey.rp = {
             id: window.location.hostname,
             name: document.title || window.location.hostname
         };
     } else
     {
         // If rp exists but doesn't have an id, set it to the current domain
-        if (!creationOptions.rp.id)
+        if (!publicKey.rp.id)
         {
-            creationOptions.rp.id = window.location.hostname;
+            publicKey.rp.id = window.location.hostname;
         }
         // If rp exists but doesn't have a name, use the title or hostname
-        if (!creationOptions.rp.name)
+        if (!publicKey.rp.name)
         {
-            creationOptions.rp.name = document.title || window.location.hostname;
+            publicKey.rp.name = document.title || window.location.hostname;
         }
     }
 
-    return creationOptions;
+    return options.publicKey || options;
 }
 
 /**
@@ -319,12 +386,18 @@ async function registerPasskey(username, registrationOptionsUrl, registrationVer
         }
 
         // Parse the options and prepare for registration
-        const publicKeyOptions = await optionsResponse.json();
+        const responseData = await optionsResponse.json();
         //   console.log("Received registration options:", JSON.stringify(publicKeyOptions, null, 2));
 
         // Convert base64url-encoded values to ArrayBuffer as required by the WebAuthn API
-        const publicKey = prepareCreationOptions(publicKeyOptions, username);
-        // console.log("Prepared options for navigator.credentials.create");
+        const publicKey = prepareCreationOptions(responseData, username);
+
+        console.log("Prepared options for navigator.credentials.create:", JSON.stringify({
+            rp: publicKey.rp,
+            userVerification: publicKey.authenticatorSelection.userVerification,
+            residentKey: publicKey.authenticatorSelection.residentKey,
+            requireResidentKey: publicKey.authenticatorSelection.requireResidentKey
+        }));
 
         // Actual registration using the WebAuthn API
         console.log("Calling navigator.credentials.create...");

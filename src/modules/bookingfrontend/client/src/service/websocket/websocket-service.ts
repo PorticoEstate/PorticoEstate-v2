@@ -75,8 +75,8 @@ export class WebSocketService {
 
 					// If the connection was re-established, resubscribe to rooms
 					if ((oldStatus !== 'OPEN' && message.status === 'OPEN') ||
-					    (oldStatus === 'CLOSED' && message.status === 'OPEN') ||
-					    (oldStatus === 'RECONNECTING' && message.status === 'OPEN')) {
+						(oldStatus === 'CLOSED' && message.status === 'OPEN') ||
+						(oldStatus === 'RECONNECTING' && message.status === 'OPEN')) {
 						// Allow a short delay to ensure service worker is fully ready to process messages
 						setTimeout(() => {
 							this.resubscribeToRooms();
@@ -163,11 +163,13 @@ export class WebSocketService {
 					}
 				} catch (registerError) {
 					console.error('Failed to register WebSocket service worker:', registerError);
-					
+
 					// Check if it's a security-related error
-					const errorMessage = registerError.message || '';
-					const isSecurityError = errorMessage.includes('security') || 
-						errorMessage.includes('SSL') || 
+					const errorMessage = 'message' in (registerError as Object) ? (registerError as {
+						message: string
+					}).message : '';
+					const isSecurityError = errorMessage.includes('security') ||
+						errorMessage.includes('SSL') ||
 						errorMessage.includes('certificate');
 
 					if (isSecurityError) {
@@ -175,7 +177,7 @@ export class WebSocketService {
 					} else {
 						console.warn('Falling back to direct WebSocket connection due to service worker registration failure');
 					}
-					
+
 					// Try to fetch the service worker file to see if it exists
 					try {
 						const response = await fetch(`${this.basePath}/websocket-sw.js`);
@@ -185,7 +187,7 @@ export class WebSocketService {
 					} catch (fetchError) {
 						console.error('Could not fetch service worker file:', fetchError);
 					}
-					
+
 					// Signal that we need to use direct WebSocket connection
 					this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 					return false;
@@ -650,7 +652,7 @@ export class WebSocketService {
 
 		// Add to pending subscriptions if not connected
 		if (this.status !== 'OPEN') {
-			this.pendingSubscriptions.push({ entityType, entityId });
+			this.pendingSubscriptions.push({entityType, entityId});
 		}
 
 		// Register callback if provided

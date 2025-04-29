@@ -4,9 +4,8 @@ import React, {createContext, useContext, ReactNode, useState, useEffect, useCal
 import { WebSocketMessage, WebSocketStatus, ServiceWorkerWebSocketOptions, IWSServerDeletedMessage } from './websocket.types';
 import { WebSocketService } from './websocket-service';
 import { hasServiceWorkerAPI } from './service-worker-check';
-import { getWebSocketUrl } from './util';
+import { getWebSocketUrl, wsLog as wslogbase } from './util';
 import { useQueryClient } from '@tanstack/react-query';
-import { IServerMessage } from '../types/api/server-messages.types';
 import { SubscriptionManager } from './subscription-manager';
 
 interface WebSocketContextValue {
@@ -17,6 +16,8 @@ interface WebSocketContextValue {
   closeConnection: () => void;
   isReady: boolean;
 }
+
+const wsLog = (message: string, data: any = null) => wslogbase('WSContext', message, data)
 
 const WebSocketContext = createContext<WebSocketContextValue | undefined>(undefined);
 
@@ -153,7 +154,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                   // This ensures message subscriptions work even without service worker
                   const subscriptionManager = SubscriptionManager.getInstance();
                   subscriptionManager.handleMessage(data);
-                  
+
                   // Also use the standard message handler for backward compatibility
                   handleMessage(data);
                 }
@@ -240,18 +241,20 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     // Attempt to initialize the WebSocket service with error handling
     const initWebSocketService = async () => {
+      wsLog('Starting WebSocket service initialization...');
       try {
         const success = await wsService.initialize(options);
-        
+
         // If service worker initialization succeeded
         if (success) {
+          wsLog('WebSocket service initialization successful!');
           setIsReady(success);
-        } 
+        }
         // If service worker initialization failed, check if fallback is needed
         else if (status === 'FALLBACK_REQUIRED') {
           console.warn('Service worker initialization failed, falling back to direct WebSocket connection');
           // Don't set isReady yet - the direct connection will handle this
-          
+
           // Let the existing direct WebSocket code handle it by setting status to CONNECTING
           // This will trigger the useEffect that watches for CONNECTING status
           setStatus('CONNECTING');
@@ -365,11 +368,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       case 'pong':
       case 'server_ping': {
         // Ping/pong messages are primarily handled directly in the WebSocket handlers
-        
+
         // Handle entity-specific ping
         if (data.type === 'ping' && 'entityType' in data && 'entityId' in data) {
           console.log(`Received entity ping for ${data.entityType} ${data.entityId}`);
-          
+
           // The subscription manager will handle sending the pong response
           // This is processed in subscription-manager.ts
         } else {
@@ -492,7 +495,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                   // This ensures message subscriptions work even without service worker
                   const subscriptionManager = SubscriptionManager.getInstance();
                   subscriptionManager.handleMessage(data);
-                  
+
                   // For all other messages use the standard handler for backward compatibility
                   handleMessage(data);
                 }
@@ -639,17 +642,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   useEffect(() => {
     // If status is CONNECTING and we don't have an active WebSocket reference, connect
     if (status === 'CONNECTING') {
-      console.log('Status changed to CONNECTING, initiating connection');
+      wsLog('Status changed to CONNECTING, initiating connection');
 
       // In case there is a stale socket reference, clean it up
       if (wsRef.current) {
         try {
-          console.log('Cleaning up existing websocket reference before reconnecting');
+          wsLog('Cleaning up existing websocket reference before reconnecting');
           const ws = wsRef.current;
           wsRef.current = null;
           ws.close();
         } catch (error) {
-          console.error('Error cleaning up existing WebSocket:', error);
+          wsLog('Error cleaning up existing WebSocket:', error);
         }
       }
 
@@ -694,12 +697,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
               try {
                 const data = JSON.parse(event.data) as WebSocketMessage;
                 setLastMessage(data);
-                
+
                 // Process through subscription manager for direct WebSocket mode
                 // This ensures message subscriptions work even without service worker
                 const subscriptionManager = SubscriptionManager.getInstance();
                 subscriptionManager.handleMessage(data);
-                
+
                 // Also use standard handler for backward compatibility
                 handleMessage(data);
               } catch (e) {

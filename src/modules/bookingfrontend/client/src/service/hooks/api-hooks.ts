@@ -167,10 +167,10 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
 			const cacheKey = getWeekCacheKey(weekStart);
 			const d = queryClient.getQueryData(cacheKey);
 
-			console.log("Query state", cacheKey, queryClient.getQueryState(cacheKey), d);
+			// console.log("Query state", cacheKey, queryClient.getQueryState(cacheKey), d);
 			return !d;
 		});
-		console.log('weeks', uncachedWeeks);
+		// console.log('weeks', uncachedWeeks);
         if (uncachedWeeks.length === 0) {
             // If all weeks are cached, combine and return cached data
             const combinedData: IEvent[] = [];
@@ -190,7 +190,7 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
         uncachedWeeks.forEach(weekStart => {
             const weekData: IEvent[] = scheduleData[weekStart] || [];
             const cacheKey = getWeekCacheKey(weekStart);
-            console.log("uncachedWeek", weekStart);
+            // console.log("uncachedWeek", weekStart);
 
             queryClient.setQueryData(cacheKey, weekData, {});
         });

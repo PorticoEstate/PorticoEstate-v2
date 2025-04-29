@@ -1,5 +1,10 @@
 'use client';
 
+import {wsLog as wslogbase} from "@/service/websocket/util";
+
+const wsLog = (message: string, data: any = null) => wslogbase('WSChecker', message, data)
+
+
 /**
  * Comprehensive check for service worker support in the current environment
  * This function checks not just the existence of the API but whether it's
@@ -49,7 +54,7 @@ export async function checkServiceWorkerSupport(): Promise<{
 		// Look for existing registrations that match our scope
 		for (const registration of registrations) {
 			if (registration.scope.includes(scope)) {
-				console.log('Found existing service worker with matching scope:', registration.scope);
+				wsLog('Found existing service worker with matching scope:', registration.scope);
 				existingRegistration = registration;
 				break;
 			}
@@ -57,7 +62,7 @@ export async function checkServiceWorkerSupport(): Promise<{
 
 		// If we already have a registration, verify it's responding
 		if (existingRegistration && existingRegistration.active) {
-			console.log('Using existing service worker registration');
+			wsLog('Using existing service worker registration');
 
 			// Create a messaging channel to verify the service worker is responding
 			const messageChannel = new MessageChannel();
@@ -90,7 +95,7 @@ export async function checkServiceWorkerSupport(): Promise<{
 				const testResult = await testPromise;
 				if (testResult) {
 					// Existing service worker is working fine
-					console.log('Existing service worker is responsive');
+					wsLog('Existing service worker is responsive');
 					return {supported: true};
 				}
 			} catch (error) {
@@ -101,7 +106,7 @@ export async function checkServiceWorkerSupport(): Promise<{
 
 		// If we don't have a working service worker, register a new one
 		try {
-			console.log('Registering new service worker using scope:', scope);
+			wsLog('Registering new service worker using scope:', scope);
 
 			// Register the service worker
 			const registration = await navigator.serviceWorker.register(wsSwUrl, {scope: scope});

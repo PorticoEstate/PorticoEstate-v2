@@ -1,6 +1,9 @@
 'use client';
 
 // This file handles service worker registration specifically for the WebSocket service worker
+import {wsLog as wslogbase} from "@/service/websocket/util";
+
+const wsLog = (message: string, data: any = null) => wslogbase('WSRegistration', message, data)
 
 /**
  * Register the WebSocket service worker
@@ -29,15 +32,32 @@ export async function registerWebSocketServiceWorker(): Promise<boolean> {
 	try {
 		const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
 
-		// For service workers, we should use a path relative to the origin
-		// This works better with proxies than absolute URLs
+		// For service workers, we need to ensure we're using the correct path
+		// that matches how the static file is served
 		const swURL = `${basePath}/websocket-sw.js`;
+
+		// Use URL object to ensure we have a fully-qualified URL for checking
+		const fullSwURL = new URL(swURL, window.location.origin).href;
 
 		// First verify the service worker file exists
 		try {
-			const swFileCheck = await fetch(swURL);
+			wsLog('Checking service worker file at:', fullSwURL);
+			const swFileCheck = await fetch(fullSwURL, {
+				// Add cache busting to avoid cached responses
+				cache: 'no-cache',
+				// Add a header to help debug in network tab
+				headers: { 'X-Requested-With': 'SW-Registration-Check' }
+			});
+
 			if (!swFileCheck.ok) {
 				console.error(`Service worker file not found: ${swFileCheck.status} ${swFileCheck.statusText}`);
+				return false;
+			}
+
+			// Additional check for correct MIME type
+			const contentType = swFileCheck.headers.get('content-type');
+			if (!contentType || !contentType.includes('javascript')) {
+				console.error(`Service worker has incorrect MIME type: ${contentType}`);
 				return false;
 			}
 		} catch (fetchError) {
@@ -52,12 +72,12 @@ export async function registerWebSocketServiceWorker(): Promise<boolean> {
 		);
 
 		if (existingRegistration) {
-			console.log('WebSocket Service Worker already registered');
+			wsLog('WebSocket Service Worker already registered');
 
 			// Check if it needs updating
 			try {
 				await existingRegistration.update();
-				console.log('WebSocket Service Worker updated');
+				wsLog('WebSocket Service Worker updated');
 			} catch (updateError) {
 				console.warn('Failed to update existing service worker:', updateError);
 			}
@@ -65,27 +85,28 @@ export async function registerWebSocketServiceWorker(): Promise<boolean> {
 			return true;
 		}
 
-		// Register the service worker with absolute URL
-		console.log('Registering WebSocket Service Worker...', swURL);
-		// Use the same scope that service-worker-check.ts expects (/bookingfrontend/client/)
-		const scope = '/bookingfrontend/client/';
-		console.log('Using service worker scope:', scope);
-		const registration = await navigator.serviceWorker.register(swURL, {
+		// Register the service worker with correct URL and scope
+		// Use scope that matches the basePath to ensure proper control
+		const scope = `${basePath}/`;
+		wsLog('Registering WebSocket Service Worker...', fullSwURL);
+		wsLog('Using service worker scope:', scope);
+
+		const registration = await navigator.serviceWorker.register(fullSwURL, {
 			scope: scope
 		});
 
-		console.log('WebSocket Service Worker registered with scope:', registration.scope);
+		wsLog('WebSocket Service Worker registered with scope:', registration.scope);
 
 		// Wait for the service worker to become installed
 		if (registration.installing) {
-			console.log('Service worker installing...');
+			wsLog('Service worker installing...');
 			return new Promise<boolean>((resolve) => {
 				registration.installing?.addEventListener('statechange', (event) => {
 					const sw = event.target as ServiceWorker;
-					console.log('Service worker state changed:', sw.state);
+					wsLog('Service worker state changed:', sw.state);
 
 					if (sw.state === 'activated') {
-						console.log('Service worker activated successfully');
+						wsLog('Service worker activated successfully');
 						resolve(true);
 					} else if (sw.state === 'redundant') {
 						console.error('Service worker became redundant during installation');
@@ -130,7 +151,7 @@ export async function unregisterWebSocketServiceWorker(): Promise<boolean> {
 
 		if (wsRegistration) {
 			const result = await wsRegistration.unregister();
-			console.log('WebSocket Service Worker unregistered:', result);
+			wsLog('WebSocket Service Worker unregistered:', result);
 			return result;
 		}
 

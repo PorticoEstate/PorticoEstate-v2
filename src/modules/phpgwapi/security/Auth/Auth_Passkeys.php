@@ -83,7 +83,7 @@ class Auth_Passkeys
         // the ability to link to internal accounts
         $randomBytes = random_bytes(16);
         $userId = $account_id . '_' . bin2hex($randomBytes);
-        
+
         // Generate registration options with proper security settings
         $options = $this->webAuthn->getCreateArgs(
             $userId,  // User ID
@@ -104,21 +104,28 @@ class Auth_Passkeys
         // Ensure proper challenge format
         $options->challenge = self::base64url_encode($rawChallenge);
 
-        // Enforce secure authenticator settings
-        if (!isset($options->authenticatorSelection)) {
+        // Remove any root-level authenticatorSelection property if present
+        if (isset($options->authenticatorSelection))
+        {
+            // Overwrite with a new stdClass to avoid legacy/mismatched fields
             $options->authenticatorSelection = new \stdClass();
         }
-        
-        // Prefer platform authenticators but allow cross-platform if needed
+        else
+        {
+            $options->authenticatorSelection = new \stdClass();
+        }
+        // Set only the correct fields for authenticatorSelection
         $options->authenticatorSelection->authenticatorAttachment = null; // Accept any type
-        
-        // Require user verification
         $options->authenticatorSelection->userVerification = 'required';
-        
-        // Encourage resident keys for better UX
         $options->authenticatorSelection->residentKey = 'preferred';
         $options->authenticatorSelection->requireResidentKey = false;
-        
+
+        // Ensure user.id is base64url encoded (not RFC 1342)
+        if (isset($options->user) && isset($options->user->id))
+        {
+            $options->user->id = self::base64url_encode($options->user->id);
+        }
+
         return $options;
     }
 
@@ -271,17 +278,22 @@ class Auth_Passkeys
 
             // Extract the challenge value from the session
             $sessionChallenge = null;
-            if (isset($_SESSION['webauthn_challenge'])) {
-                if (is_array($_SESSION['webauthn_challenge']) && isset($_SESSION['webauthn_challenge']['value'])) {
+            if (isset($_SESSION['webauthn_challenge']))
+            {
+                if (is_array($_SESSION['webauthn_challenge']) && isset($_SESSION['webauthn_challenge']['value']))
+                {
                     // New format with expiration
                     $sessionChallenge = $_SESSION['webauthn_challenge']['value'];
-                } else {
+                }
+                else
+                {
                     // Legacy format (direct string)
                     $sessionChallenge = $_SESSION['webauthn_challenge'];
                 }
             }
 
-            if (!$sessionChallenge) {
+            if (!$sessionChallenge)
+            {
                 throw new \Exception('No valid challenge found in session');
             }
 
@@ -360,28 +372,30 @@ class Auth_Passkeys
             }
 
             // Get session challenge
-            if (!$this->isValidSessionChallenge()) {
+            if (!$this->isValidSessionChallenge())
+            {
                 throw new \Exception('Challenge not found or expired');
             }
 
             // Get the challenge from session with proper structure
             $sessionChallengeData = $_SESSION['webauthn_challenge'];
             $sessionChallenge = $sessionChallengeData['value'];
-            
+
             // Get client challenge
             $clientChallenge = $clientDataArray['challenge'];
             $clientChallengeBinary = self::base64url_decode($clientChallenge);
-            
+
             // Get credential source from database
             $credentialSource = $this->getCredentialSourceById($credentialIdDecoded);
             if (!$credentialSource)
             {
                 throw new \Exception('Credential ID not found');
             }
-            
+
             // Verify the client challenge matches the session challenge
             $sessionChallengeBase64 = self::base64url_encode($sessionChallenge);
-            if (!hash_equals($clientChallenge, $sessionChallengeBase64)) {
+            if (!hash_equals($clientChallenge, $sessionChallengeBase64))
+            {
                 throw new \Exception('Challenge verification failed');
             }
 
@@ -443,7 +457,7 @@ class Auth_Passkeys
 
                 // Get the account data associated with this credential
                 $account = $this->getAccountById($credentialSource['account_id']);
-                
+
                 // Clear challenge from session after successful use
                 unset($_SESSION['webauthn_challenge']);
 
@@ -461,28 +475,33 @@ class Auth_Passkeys
             return [];
         }
     }
-    
+
     /**
      * Check if the current challenge in session is valid and not expired
      * @return bool
      */
     private function isValidSessionChallenge(): bool
     {
-        if (!isset($_SESSION['webauthn_challenge'])) {
+        if (!isset($_SESSION['webauthn_challenge']))
+        {
             return false;
         }
-        
+
         // Check for new format with expiration
-        if (is_array($_SESSION['webauthn_challenge'])) {
-            if (!isset($_SESSION['webauthn_challenge']['value']) || 
-                !isset($_SESSION['webauthn_challenge']['expires'])) {
+        if (is_array($_SESSION['webauthn_challenge']))
+        {
+            if (
+                !isset($_SESSION['webauthn_challenge']['value']) ||
+                !isset($_SESSION['webauthn_challenge']['expires'])
+            )
+            {
                 return false;
             }
-            
+
             // Check if challenge has expired
             return $_SESSION['webauthn_challenge']['expires'] > time();
         }
-        
+
         // Legacy format (just a string value) - consider valid but migrate to new format
         // This provides backward compatibility
         $challenge = $_SESSION['webauthn_challenge'];
@@ -490,10 +509,10 @@ class Auth_Passkeys
             'value' => $challenge,
             'expires' => time() + 300 // 5 minute expiration
         ];
-        
+
         return true;
     }
-    
+
     /**
      * Get account information by account ID
      * @param int $account_id
@@ -501,22 +520,25 @@ class Auth_Passkeys
      */
     public function getAccountById(int $account_id): array
     {
-        try {
+        try
+        {
             $sql = "SELECT account_id, account_lid, account_status 
                    FROM phpgw_accounts 
                    WHERE account_id = :account_id";
-                   
+
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':account_id' => $account_id]);
             $account = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             return $account ?: [];
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e)
+        {
             error_log('Error retrieving account information: ' . $e->getMessage());
             return [];
         }
     }
-    
+
     /**
      * Updates the counter for a credential
      * @param string $rawCredentialId Raw binary credential ID
@@ -565,7 +587,7 @@ class Auth_Passkeys
                                          WHERE account_id = :account_id";
 
                             $updateStmt = $this->db->prepare($updateSql);
-                            
+
                             return $updateStmt->execute([
                                 ':account_data' => json_encode($account_data),
                                 ':account_id' => $account_id
@@ -658,30 +680,33 @@ class Auth_Passkeys
      */
     public function remove_passkey(int $account_id, string $credentialIdBase64Url): bool
     {
-        try {
+        try
+        {
             // Sanitize and validate the credential ID
             $credentialIdBase64Url = trim($credentialIdBase64Url);
-            if (empty($credentialIdBase64Url)) {
+            if (empty($credentialIdBase64Url))
+            {
                 return false;
             }
-            
+
             // Verify this credential belongs to the given account
             $sql = "SELECT account_data FROM phpgw_accounts_data 
                    WHERE account_id = :account_id AND 
                    account_data @> :search_json::jsonb";
-                   
+
             $stmt = $this->db->prepare($sql);
             $searchJson = json_encode(['passkeys' => [['credential_id' => $credentialIdBase64Url]]]);
             $stmt->execute([
                 ':account_id' => $account_id,
                 ':search_json' => $searchJson
             ]);
-            
+
             // If no match was found, return false
-            if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            if (!$stmt->fetch(PDO::FETCH_ASSOC))
+            {
                 return false;
             }
-            
+
             // Fetch the current account data
             $sql = 'SELECT account_data FROM phpgw_accounts_data WHERE account_id = :account_id';
             $stmt = $this->db->prepare($sql);
@@ -689,7 +714,8 @@ class Auth_Passkeys
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             $account_data = $row ? json_decode($row['account_data'], true) : [];
-            if (!isset($account_data['passkeys'])) {
+            if (!isset($account_data['passkeys']))
+            {
                 return false; // No passkeys to remove
             }
 
@@ -700,7 +726,8 @@ class Auth_Passkeys
             ));
             $removed = count($account_data['passkeys']) < $initialCount;
 
-            if ($removed) {
+            if ($removed)
+            {
                 $sql = 'UPDATE phpgw_accounts_data 
                        SET account_data = :account_data 
                        WHERE account_id = :account_id';
@@ -712,7 +739,9 @@ class Auth_Passkeys
             }
 
             return false;
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e)
+        {
             error_log('Error removing passkey: ' . $e->getMessage());
             return false;
         }
@@ -941,18 +970,21 @@ class Auth_Passkeys
         {
             // 1. Parse clientDataJSON
             $clientDataArray = json_decode($clientDataJSON, true);
-            if (!$clientDataArray || !isset($clientDataArray['type']) || !isset($clientDataArray['challenge'])) {
+            if (!$clientDataArray || !isset($clientDataArray['type']) || !isset($clientDataArray['challenge']))
+            {
                 return false;
             }
 
             // 2. Verify that the type is webauthn.get
-            if ($clientDataArray['type'] !== 'webauthn.get') {
+            if ($clientDataArray['type'] !== 'webauthn.get')
+            {
                 return false;
             }
 
             // 3. Verify challenge matches what we expect (using constant-time comparison)
             $expectedChallenge = self::base64url_encode($challenge);
-            if (!hash_equals($expectedChallenge, $clientDataArray['challenge'])) {
+            if (!hash_equals($expectedChallenge, $clientDataArray['challenge']))
+            {
                 return false;
             }
 
@@ -964,21 +996,26 @@ class Auth_Passkeys
 
             // 6. Verify the signature
             $key = openssl_pkey_get_public($publicKey);
-            if (!$key) {
+            if (!$key)
+            {
                 return false;
             }
 
             // Determine algorithm based on key type
             $keyDetails = openssl_pkey_get_details($key);
-            if (!$keyDetails) {
+            if (!$keyDetails)
+            {
                 return false;
             }
 
             // Use appropriate verification method based on key type
-            if (isset($keyDetails['ec'])) {
+            if (isset($keyDetails['ec']))
+            {
                 // EC key (like P-256)
                 return openssl_verify($signatureBase, $signature, $key, OPENSSL_ALGO_SHA256) === 1;
-            } elseif (isset($keyDetails['rsa'])) {
+            }
+            elseif (isset($keyDetails['rsa']))
+            {
                 // RSA key
                 return openssl_verify($signatureBase, $signature, $key, OPENSSL_ALGO_SHA256) === 1;
             }

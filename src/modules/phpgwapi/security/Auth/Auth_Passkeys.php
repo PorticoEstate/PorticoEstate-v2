@@ -78,55 +78,85 @@ class Auth_Passkeys
     {
         $existingCredentialIds = $this->getCredentialIdsForUser($account_id);
 
-        // Create user ID as a random value with the actual account ID
-        // This prevents guessing of user IDs while still maintaining
-        // the ability to link to internal accounts
+        // Create user ID as a random value + account ID (base64url encoded)
         $randomBytes = random_bytes(16);
-        $userId = $account_id . '_' . bin2hex($randomBytes);
+        $rawUserId = $account_id . '_' . bin2hex($randomBytes);
+        $userIdBase64Url = self::base64url_encode($rawUserId);
 
-        // Generate registration options with proper security settings
+        // Generate registration options
+        // Note: The lbuchs/webauthn library might set some defaults we need to override
         $options = $this->webAuthn->getCreateArgs(
-            $userId,  // User ID
-            $username, // Username
-            $displayName, // Display name
-            60 * 3, // Timeout in seconds
-            true, // Prevent re-registration of existing credentials
-            $existingCredentialIds // Existing credentials to exclude
+            $userIdBase64Url, // Use base64url encoded user ID
+            $username,
+            $displayName,
+            60 * 3, // Timeout
+            true, // Prevent re-registration
+            $existingCredentialIds // Exclude existing
         );
 
-        // Create a challenge with expiration
+        // Generate and store the challenge (raw binary in session, base64url for client)
         $rawChallenge = $this->webAuthn->getChallenge()->getBinaryString();
         $_SESSION['webauthn_challenge'] = [
             'value' => $rawChallenge,
             'expires' => time() + 300 // 5 minute expiration
         ];
+        $challengeBase64Url = self::base64url_encode($rawChallenge);
 
-        // Ensure proper challenge format
-        $options->challenge = self::base64url_encode($rawChallenge);
+        // --- Start Correcting the Options Structure ---
 
-        // Remove any root-level authenticatorSelection property if present
-        if (isset($options->authenticatorSelection))
-        {
-            // Overwrite with a new stdClass to avoid legacy/mismatched fields
-            $options->authenticatorSelection = new \stdClass();
+        // Create a clean stdClass object for the final response
+        $finalOptions = new \stdClass();
+
+        // Build the publicKey object correctly
+        $finalOptions->publicKey = new \stdClass();
+
+        // 1. Set Relying Party (rp)
+        $finalOptions->publicKey->rp = $options->rp; // Use rp from library
+
+        // 2. Set User Information (ensure ID is base64url)
+        $finalOptions->publicKey->user = new \stdClass();
+        $finalOptions->publicKey->user->id = $userIdBase64Url; // Already base64url
+        $finalOptions->publicKey->user->name = $username;
+        $finalOptions->publicKey->user->displayName = $displayName;
+
+        // 3. Set Challenge (base64url)
+        $finalOptions->publicKey->challenge = $challengeBase64Url; // Use base64url challenge
+
+        // 4. Set pubKeyCredParams
+        $finalOptions->publicKey->pubKeyCredParams = $options->pubKeyCredParams; // Use params from library
+
+        // 5. Set Timeout
+        $finalOptions->publicKey->timeout = $options->timeout; // Use timeout from library
+
+        // 6. Set ExcludeCredentials (ensure IDs are base64url)
+        $finalOptions->publicKey->excludeCredentials = [];
+        foreach ($existingCredentialIds as $rawId) {
+            $finalOptions->publicKey->excludeCredentials[] = (object)[
+                'type' => 'public-key',
+                'id' => self::base64url_encode($rawId) // Encode existing IDs to base64url
+            ];
         }
-        else
-        {
-            $options->authenticatorSelection = new \stdClass();
-        }
-        // Set only the correct fields for authenticatorSelection
-        $options->authenticatorSelection->authenticatorAttachment = null; // Accept any type
-        $options->authenticatorSelection->userVerification = 'required';
-        $options->authenticatorSelection->residentKey = 'preferred';
-        $options->authenticatorSelection->requireResidentKey = false;
 
-        // Ensure user.id is base64url encoded (not RFC 1342)
-        if (isset($options->user) && isset($options->user->id))
-        {
-            $options->user->id = self::base64url_encode($options->user->id);
+        // 7. Set Authenticator Selection (Consistent & Secure Values)
+        $finalOptions->publicKey->authenticatorSelection = new \stdClass();
+        $finalOptions->publicKey->authenticatorSelection->authenticatorAttachment = null; // Allow any
+        $finalOptions->publicKey->authenticatorSelection->userVerification = 'required';
+        $finalOptions->publicKey->authenticatorSelection->residentKey = 'preferred';
+        $finalOptions->publicKey->authenticatorSelection->requireResidentKey = false;
+
+        // 8. Set Attestation
+        $finalOptions->publicKey->attestation = $options->attestation ?? 'indirect'; // Use library default or 'indirect'
+
+        // 9. Set Extensions (if any)
+        if (isset($options->extensions)) {
+            $finalOptions->publicKey->extensions = $options->extensions;
         }
 
-        return $options;
+        // --- End Correcting the Options Structure ---
+
+        // Return ONLY the correctly structured object
+        // Do NOT return the original $options or add root-level properties
+        return $finalOptions;
     }
 
     /**

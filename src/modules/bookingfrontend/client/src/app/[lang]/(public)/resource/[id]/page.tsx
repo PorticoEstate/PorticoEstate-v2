@@ -7,6 +7,7 @@ import {getTranslation} from "@/app/i18n";
 import BuildingCalendar from "@/components/building-calendar";
 import BuildingPhotos from "@/components/building-page/building-photos/building-photos";
 import {fetchTowns} from "@/service/api/api-utils";
+import ResourceSubscriptionTest from "@/components/resource-page/resource-subscription-test";
 
 interface ResourceParams {
     id: string;
@@ -32,13 +33,13 @@ const Resource = async (props: ResourceProps) => {
     // Fetch the building
     const resource = await fetchResource(resourceId);
 
-
+	console.log(resourceId);
     // If building does not exist, throw the notFound error
     if (!resource || resource.building_id === null || resource.building_id === undefined) {
         return notFound();
     }
     const building = await fetchBuilding(resource.building_id);
-    
+
     // Fetch towns data to get the town for this building
     const towns = await fetchTowns();
     const town = towns.find(t => t.id === building.town_id);
@@ -54,6 +55,11 @@ const Resource = async (props: ResourceProps) => {
                 <DescriptionAccordion description_json={resource.description_json}/>
 				<TextAccordion text={resource.opening_hours} title={t('booking.opening hours')}/>
                 <TextAccordion text={resource.contact_info} title={t('bookingfrontend.contact information')}/>
+
+                {/* Test component for resource ID 482 */}
+                {/*{resourceId === 482 && (*/}
+                {/*    <ResourceSubscriptionTest resourceId={resourceId} />*/}
+                {/*)}*/}
             </section>
                 <BuildingCalendar building_id={`${building.id}`} resource_id={`${resourceId}`} initialDate={props.initialDate}/>
                 {/*<BuildingContact building={building}/>*/}

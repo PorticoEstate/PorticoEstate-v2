@@ -12,6 +12,8 @@ x-common-variables: &common-variables
 volumes:
     logs:
         driver: local
+    redis_data:
+        driver: local
 services:
     slim:
         container_name: portico_api
@@ -29,6 +31,8 @@ services:
         environment:
             <<: *common-variables
             docker: "true"
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
         ports:
             - "8088:80"
         volumes:
@@ -40,23 +44,42 @@ services:
             - internal
         extra_hosts:
             - "host.docker.internal:host-gateway"
+        depends_on:
+            - redis
+            - websocket
+
     websocket:
+        container_name: portico_websocket
         build:
             context: .
             dockerfile: Dockerfile.websocket
         working_dir: /var/www/html
-        volumes:
-        - .:/var/www/html
-        networks:
-        - internal
-        ports:
-        - "8081:8081"
         environment:
-        - REDIS_URL=redis://redis:6379
+            docker: "true"
+            REDIS_HOST: redis
+            REDIS_PORT: 6379
+#        ports:
+#            - "8080:8080"  # WebSocket port
+        volumes:
+            - .:/var/www/html
+            - ./logs:/var/log/websocket
+        networks:
+            - internal
+        depends_on:
+            - redis
+
     redis:
         image: redis:alpine
+        container_name: portico_redis
+        restart: unless-stopped
+#        ports:
+#            - "6379:6379"
+        volumes:
+            - redis_data:/data
         networks:
-        - internal
+            - internal
+        command: redis-server --appendonly yes
+
     nextjs:
         build:
             dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs

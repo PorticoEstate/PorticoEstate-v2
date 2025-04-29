@@ -110,8 +110,16 @@ class Auth_Passkeys
         // Build the publicKey object correctly
         $finalOptions->publicKey = new \stdClass();
 
-        // 1. Set Relying Party (rp)
-        $finalOptions->publicKey->rp = $options->rp; // Use rp from library
+        // 1. Set Relying Party (rp) - Ensure it's not null
+        if (isset($options->rp) && is_object($options->rp)) {
+            $finalOptions->publicKey->rp = $options->rp;
+        } else {
+            // Fallback if library didn't provide it (should not happen with correct setup)
+            $finalOptions->publicKey->rp = (object)[
+                'id' => $this->rpId,
+                'name' => $this->appName
+            ];
+        }
 
         // 2. Set User Information (ensure ID is base64url)
         $finalOptions->publicKey->user = new \stdClass();
@@ -122,11 +130,23 @@ class Auth_Passkeys
         // 3. Set Challenge (base64url)
         $finalOptions->publicKey->challenge = $challengeBase64Url; // Use base64url challenge
 
-        // 4. Set pubKeyCredParams
-        $finalOptions->publicKey->pubKeyCredParams = $options->pubKeyCredParams; // Use params from library
+        // 4. Set pubKeyCredParams - Ensure it's not null
+        if (isset($options->pubKeyCredParams) && is_array($options->pubKeyCredParams)) {
+            $finalOptions->publicKey->pubKeyCredParams = $options->pubKeyCredParams;
+        } else {
+            // Fallback to common algorithms if library didn't provide
+            $finalOptions->publicKey->pubKeyCredParams = [
+                (object)['type' => 'public-key', 'alg' => -7],  // ES256
+                (object)['type' => 'public-key', 'alg' => -257] // RS256
+            ];
+        }
 
-        // 5. Set Timeout
-        $finalOptions->publicKey->timeout = $options->timeout; // Use timeout from library
+        // 5. Set Timeout - Ensure it's not null
+        if (isset($options->timeout) && is_numeric($options->timeout)) {
+            $finalOptions->publicKey->timeout = $options->timeout;
+        } else {
+            $finalOptions->publicKey->timeout = 180000; // Default to 180 seconds (3 minutes)
+        }
 
         // 6. Set ExcludeCredentials (ensure IDs are base64url)
         $finalOptions->publicKey->excludeCredentials = [];

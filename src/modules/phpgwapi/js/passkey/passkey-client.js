@@ -47,6 +47,28 @@ const PasskeyUtils = {
             bytes[i] = binaryString.charCodeAt(i);
         }
         return bytes.buffer;
+    },
+
+    /**
+     * Decode RFC 1342 encoded binary (=?BINARY?B?...?=) to ArrayBuffer
+     * @param {string} str
+     * @returns {ArrayBuffer|null}
+     */
+    decodeRFC1342: function (str)
+    {
+        const match = str.match(/^=\?BINARY\?B\?(.+)\?=$/);
+        if (match)
+        {
+            const base64 = match[1];
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++)
+            {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        return null;
     }
 };
 
@@ -77,8 +99,15 @@ async function isPlatformAuthenticatorAvailable()
  */
 function prepareCreationOptions(creationOptions, username)
 {
-    // Decode challenge from base64url to ArrayBuffer
-    creationOptions.challenge = PasskeyUtils.base64urlToArrayBuffer(creationOptions.challenge);
+    // Decode challenge from base64url or RFC 1342 to ArrayBuffer
+    let challengeBuf = PasskeyUtils.decodeRFC1342(creationOptions.challenge);
+    if (challengeBuf)
+    {
+        creationOptions.challenge = challengeBuf;
+    } else
+    {
+        creationOptions.challenge = PasskeyUtils.base64urlToArrayBuffer(creationOptions.challenge);
+    }
 
     // Get system name from current hostname or use a default
     const systemName = window.location.hostname || 'localhost';
@@ -97,10 +126,17 @@ function prepareCreationOptions(creationOptions, username)
         };
     } else
     {
-        // Decode user ID from base64url to ArrayBuffer if it exists
+        // Decode user ID from base64url or RFC 1342 to ArrayBuffer if it exists
         if (creationOptions.user.id)
         {
-            creationOptions.user.id = PasskeyUtils.base64urlToArrayBuffer(creationOptions.user.id);
+            let userIdBuf = PasskeyUtils.decodeRFC1342(creationOptions.user.id);
+            if (userIdBuf)
+            {
+                creationOptions.user.id = userIdBuf;
+            } else
+            {
+                creationOptions.user.id = PasskeyUtils.base64urlToArrayBuffer(creationOptions.user.id);
+            }
         } else
         {
             // Create a random ID if none was provided

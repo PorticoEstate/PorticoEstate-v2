@@ -20,19 +20,35 @@ export const useEntitySubscription = (
 ) => {
   const unsubscribeFnRef = useRef<(() => void) | undefined>(undefined);
   const wsService = WebSocketService.getInstance();
+  const callbackRef = useRef(callback);
+  
+  // Update the callback ref when it changes
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+  
+  // Stable callback that uses the ref
+  const stableCallback = useCallback((message: WebSocketMessage) => {
+    callbackRef.current(message);
+  }, []); // No dependencies for the stable callback
 
   useEffect(() => {
-    // Subscribe when component mounts
-    unsubscribeFnRef.current = wsService.subscribeToRoom(entityType, entityId, callback);
+    // Only subscribe if not already subscribed to the same entity
+    if (!unsubscribeFnRef.current) {
+      console.log(`Subscribing to ${entityType} ${entityId}`);
+      unsubscribeFnRef.current = wsService.subscribeToRoom(entityType, entityId, stableCallback);
+    }
 
-    // Unsubscribe when component unmounts
+    // Unsubscribe when component unmounts or entityType/entityId changes
     return () => {
       if (unsubscribeFnRef.current) {
+        console.log(`Unsubscribing from ${entityType} ${entityId}`);
         unsubscribeFnRef.current();
+        unsubscribeFnRef.current = undefined;
+        // No explicit unsubscribe needed - server will detect inactive subscriptions via ping-pong
       }
-      wsService.unsubscribeFromRoom(entityType, entityId);
     };
-  }, [entityType, entityId, callback]);
+  }, [entityType, entityId, wsService, stableCallback]);
 
   // Manual unsubscribe function
   const unsubscribe = useCallback(() => {
@@ -40,8 +56,8 @@ export const useEntitySubscription = (
       unsubscribeFnRef.current();
       unsubscribeFnRef.current = undefined;
     }
-    wsService.unsubscribeFromRoom(entityType, entityId);
-  }, [entityType, entityId]);
+    // No explicit unsubscribe needed - server will detect inactive subscriptions via ping-pong
+  }, []);
 
   return {
     unsubscribe,
@@ -50,22 +66,31 @@ export const useEntitySubscription = (
 };
 
 /**
- * A React hook for subscribing to WebSocket message types
+ * A React hook for subscribing to WebSocket message types with type safety
+ * Message type is automatically inferred based on the messageType string
  *
+ * @template T Type of message to subscribe to (string literal)
  * @param messageType Type of message to subscribe to
  * @param callback Callback function to execute when messages of this type are received
- * @returns Unsubscribe function
+ * @returns Unsubscribe function and subscription status
  */
-export const useMessageTypeSubscription = (
-  messageType: string,
-  callback: SubscriptionCallback
+export const useMessageTypeSubscription = <T extends WebSocketMessage['type']>(
+  messageType: T,
+  callback: (message: Extract<WebSocketMessage, { type: T }>) => void
 ) => {
   const unsubscribeFnRef = useRef<(() => void) | undefined>(undefined);
   const wsService = WebSocketService.getInstance();
 
+  // Type safe wrapper for the callback
+  const typedCallback = useCallback((message: WebSocketMessage) => {
+    // This cast is safe because we're filtering by type in the subscription
+    // and the Extract utility type ensures we only get messages of the correct type
+    callback(message as Extract<WebSocketMessage, { type: T }>);
+  }, [callback]);
+
   useEffect(() => {
     // Subscribe when component mounts
-    unsubscribeFnRef.current = wsService.subscribeToMessageType(messageType, callback);
+    unsubscribeFnRef.current = wsService.subscribeToMessageType(messageType, typedCallback);
 
     // Unsubscribe when component unmounts
     return () => {
@@ -74,7 +99,7 @@ export const useMessageTypeSubscription = (
         unsubscribeFnRef.current = undefined;
       }
     };
-  }, [messageType, callback]);
+  }, [messageType, typedCallback]);
 
   // Manual unsubscribe function
   const unsubscribe = useCallback(() => {
@@ -127,7 +152,7 @@ export const useMultiEntitySubscription = (
         const unsubFn = unsubscribeFnsRef.current.get(key);
         if (unsubFn) {
           unsubFn();
-          wsService.unsubscribeFromRoom(sub.entityType, sub.entityId);
+          // No explicit unsubscribe needed - server will detect inactive subscriptions via ping-pong
         }
       });
       unsubscribeFnsRef.current.clear();

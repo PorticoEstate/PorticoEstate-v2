@@ -6,7 +6,7 @@ import { IServerMessage } from '../types/api/server-messages.types';
 // Base interface for all WebSocket messages
 export interface IWebSocketMessageBase {
   type: string;
-  action?: 'new' | 'changed' | 'deleted';
+  action?: 'new' | 'changed' | 'deleted' | string;
   timestamp: string;
 }
 
@@ -34,6 +34,8 @@ export interface IWSServerDeletedMessage extends IWebSocketMessageBase {
 // Interface for a ping/pong message
 export interface IWSPingMessage extends IWebSocketMessageBase {
   type: 'ping' | 'pong' | 'server_ping';
+  entityType?: string;
+  entityId?: number | string;
 }
 
 // Interface for a reconnect required message
@@ -73,20 +75,32 @@ export interface IWSEntityEventMessage extends IWebSocketMessageBase {
   data?: any;
 }
 
+// Interface for room message
+export interface IWSRoomMessage extends IWebSocketMessageBase {
+  type: 'room_message';
+  roomId: string;
+  entityType: string;
+  entityId: number | string;
+  action: string;
+  message: string;
+  data?: any;
+}
+
 // Union type for all possible WebSocket messages
-export type WebSocketMessage = 
-  | IWSNotificationMessage 
+export type WebSocketMessage =
+  | IWSNotificationMessage
   | IWSServerNewMessage
   | IWSServerDeletedMessage
-  | IWSPingMessage 
+  | IWSPingMessage
   | IWSReconnectMessage
   | IWSEntitySubscribeMessage
   | IWSEntityUnsubscribeMessage
   | IWSSubscriptionConfirmMessage
   | IWSEntityEventMessage
-  | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
+  | IWSRoomMessage;
+  // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
 
-export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR';
+export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR' | 'FALLBACK_REQUIRED';
 
 // Interface for WebSocket service worker communication
 export interface ServiceWorkerWebSocketOptions {

@@ -4,6 +4,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
 use Kigkonsult\Icalcreator\Vcalendar;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 
 
 phpgw::import_class('booking.uibooking');

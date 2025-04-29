@@ -176,7 +176,32 @@ class ApplicationController extends DocumentController
             }
 
 
+            // Store building and resource data for notifications before deletion
+            $buildingId = $application['building_id'] ?? null;
+            $resourceIds = $application['resources'] ?? [];
+            $resourceId = !empty($resourceIds) && is_array($resourceIds) ? $resourceIds[0] : null;
+            $from = $application['from_'] ?? null;
+            $to = $application['to_'] ?? null;
+            
             $deleted = $this->applicationService->deletePartial($id);
+            
+            // Send WebSocket notifications about the freed timeslot
+            if ($deleted && $buildingId && $resourceId && $from && $to) {
+                try {
+                    // Notify the relevant entity rooms that overlap status has changed
+                    $this->notifyTimeslotChanged(
+                        (int)$buildingId,
+                        (int)$resourceId,
+                        $from,
+                        $to,
+                        $id
+                    );
+                } catch (Exception $wsException) {
+                    // Log but don't interrupt the response flow
+                    error_log("WebSocket notification error in deletePartial: " . $wsException->getMessage());
+                }
+            }
+            
 			$response->getBody()->write(json_encode(['deleted' => $deleted]));
 			return $response->withStatus(200)
 				->withHeader('Content-Type', 'application/json');
@@ -1106,6 +1131,15 @@ class ApplicationController extends DocumentController
 				'message' => 'Simple application created successfully',
 				'status' => $result['status']
 			];
+			
+			// Notify about the timeslot change to update overlap status
+			$this->notifyTimeslotChanged(
+				(int)$data['building_id'],
+				(int)$data['resource_id'],
+				$from,
+				$to,
+				$result['id']
+			);
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withStatus(201)
@@ -1193,6 +1227,53 @@ class ApplicationController extends DocumentController
                 'New partial application created', 
                 $notificationData
             );
+        } catch (Exception $e) {
+            // Log error but don't interrupt the main request flow
+            error_log("WebSocket notification error: " . $e->getMessage());
+        }
+    }
+    
+    /**
+     * Sends WebSocket notifications to entity rooms when timeslot reservation changes
+     * Notifies both the building and resource rooms about the changed overlap status
+     * 
+     * @param int $buildingId The building ID
+     * @param int $resourceId The resource ID
+     * @param string $from Start datetime
+     * @param string $to End datetime
+     * @param int $applicationId Application ID that caused the change
+     * @return void
+     */
+    protected function notifyTimeslotChanged(int $buildingId, int $resourceId, string $from, string $to, int $applicationId): void
+    {
+        try {
+            // Prepare data for both notifications
+            $eventData = [
+                'application_id' => $applicationId,
+                'from' => $from,
+                'to' => $to,
+                'change_type' => 'overlap_status'
+            ];
+            
+            // Notify the building room - this will only go to clients subscribed to this entity
+            WebSocketHelper::sendEntityNotification(
+                'building',
+                $buildingId,
+                'Timeslot reservation changed',
+                'updated',
+                $eventData
+            );
+            
+            // Notify the resource room - this will only go to clients subscribed to this entity
+            WebSocketHelper::sendEntityNotification(
+                'resource',
+                $resourceId,
+                'Timeslot reservation changed',
+                'updated',
+                $eventData
+            );
+            
+            error_log("WebSocket notifications sent for timeslot reservation: building_id={$buildingId}, resource_id={$resourceId}");
         } catch (Exception $e) {
             // Log error but don't interrupt the main request flow
             error_log("WebSocket notification error: " . $e->getMessage());

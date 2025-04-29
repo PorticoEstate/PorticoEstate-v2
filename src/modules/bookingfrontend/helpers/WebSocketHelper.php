@@ -305,4 +305,58 @@ class WebSocketHelper
         
         return self::sendNotification($message, $updateData);
     }
+    
+    /**
+     * Send a notification to a specific entity room (building, resource, etc.)
+     * This ensures the message is properly formatted for entity room routing
+     * 
+     * @param string $entityType Type of entity (e.g. 'building', 'resource')
+     * @param int|string $entityId ID of the entity
+     * @param string $message Message description
+     * @param string $action Action that occurred (e.g. 'updated', 'changed')
+     * @param array $data Additional data to include
+     * @return bool Success status
+     */
+    public static function sendEntityNotification(string $entityType, $entityId, string $message, string $action, array $data = []): bool
+    {
+        // Validate action
+        $validActions = ['updated', 'created', 'deleted', 'changed', 'new'];
+        if (!in_array($action, $validActions)) {
+            $errorMsg = "WebSocketHelper Error: Invalid entity action '{$action}'. Must be one of: " . implode(', ', $validActions);
+            error_log($errorMsg);
+            throw new Exception($errorMsg);
+        }
+        
+        // Create a room message for the entity using the room_message type
+        // This uses the same room structure as subscriptions
+        $roomId = 'entity_' . $entityType . '_' . $entityId;
+        
+        $payload = [
+            'type' => 'room_message',  // Using room_message type instead of entity_event
+            'roomId' => $roomId,       // Target the specific entity room
+            'entityType' => $entityType, // Keep these for backward compatibility
+            'entityId' => $entityId,
+            'action' => $action,
+            'message' => $message,
+            'data' => $data,
+            'timestamp' => date('c')
+        ];
+        
+        error_log("WebSocketHelper: Sending room message to {$entityType} room for ID {$entityId}");
+        
+        // Send directly to Redis with a special room_messages channel for better message routing
+        return self::sendRedisNotification($payload, 'room_messages');
+    }
+    
+    /**
+     * Helper method to send notification via Redis
+     * 
+     * @param array $payload The message payload
+     * @param string $channel The Redis channel (default: notifications)
+     * @return bool Success status
+     */
+    private static function sendRedisNotification(array $payload, string $channel = 'notifications'): bool
+    {
+        return RedisService::sendNotification($payload, $channel);
+    }
 }

@@ -1,12 +1,14 @@
 'use client';
 
-import { 
-  WebSocketMessage, 
-  IWSEntityEventMessage, 
-  IWSSubscriptionConfirmMessage, 
-  IWSEntitySubscribeMessage, 
-  IWSEntityUnsubscribeMessage 
+import {
+  WebSocketMessage,
+  IWSEntityEventMessage,
+  IWSSubscriptionConfirmMessage,
+  IWSEntitySubscribeMessage,
+  IWSEntityUnsubscribeMessage,
+  IWSRoomMessage
 } from './websocket.types';
+import { WebSocketService } from './websocket-service';
 
 export interface EntitySubscription {
   entityType: string;
@@ -47,46 +49,51 @@ export class SubscriptionManager {
    * @returns Unsubscribe function
    */
   subscribeToEntity(
-    entityType: string, 
-    entityId: number | string, 
+    entityType: string,
+    entityId: number | string,
     callback: SubscriptionCallback
   ): () => void {
     const subscriptionKey = this.getEntityKey(entityType, entityId);
-    
+
     if (!this.entitySubscriptions.has(subscriptionKey)) {
       this.entitySubscriptions.set(subscriptionKey, new Set());
     }
-    
+
     this.entitySubscriptions.get(subscriptionKey)!.add(callback);
-    
+
     // Track active subscription
     this.activeSubscriptions.add(subscriptionKey);
-    
+
     return () => {
       this.unsubscribeFromEntity(entityType, entityId, callback);
     };
   }
 
   /**
-   * Unsubscribe from events for a specific entity
+   * Unsubscribe from events for a specific entity - internal use only
+   * (Used by the subscribeToEntity's returned unsubscribe function)
    * @param entityType Type of entity
    * @param entityId ID of the entity
    * @param callback The callback to remove
    */
   unsubscribeFromEntity(
-    entityType: string, 
-    entityId: number | string, 
+    entityType: string,
+    entityId: number | string,
     callback: SubscriptionCallback
   ): void {
     const subscriptionKey = this.getEntityKey(entityType, entityId);
     const callbacks = this.entitySubscriptions.get(subscriptionKey);
-    
+
     if (callbacks) {
       callbacks.delete(callback);
-      
+
       if (callbacks.size === 0) {
         this.entitySubscriptions.delete(subscriptionKey);
         this.activeSubscriptions.delete(subscriptionKey);
+
+        // No need to send unsubscribe message to server
+        // Server will detect inactive subscriptions via ping-pong mechanism
+        console.log(`Last subscriber removed for ${entityType} ${entityId}, server will detect via ping-pong`);
       }
     }
   }
@@ -98,15 +105,15 @@ export class SubscriptionManager {
    * @returns Unsubscribe function
    */
   subscribeToMessageType(
-    messageType: string, 
+    messageType: string,
     callback: SubscriptionCallback
   ): () => void {
     if (!this.messageSubscriptions.has(messageType)) {
       this.messageSubscriptions.set(messageType, new Set());
     }
-    
+
     this.messageSubscriptions.get(messageType)!.add(callback);
-    
+
     return () => {
       this.unsubscribeFromMessageType(messageType, callback);
     };
@@ -118,14 +125,14 @@ export class SubscriptionManager {
    * @param callback The callback to remove
    */
   unsubscribeFromMessageType(
-    messageType: string, 
+    messageType: string,
     callback: SubscriptionCallback
   ): void {
     const callbacks = this.messageSubscriptions.get(messageType);
-    
+
     if (callbacks) {
       callbacks.delete(callback);
-      
+
       if (callbacks.size === 0) {
         this.messageSubscriptions.delete(messageType);
       }
@@ -141,10 +148,10 @@ export class SubscriptionManager {
     if (message.type === 'entity_event') {
       const entityMessage = message as IWSEntityEventMessage;
       const subscriptionKey = this.getEntityKey(
-        entityMessage.entityType, 
+        entityMessage.entityType,
         entityMessage.entityId
       );
-      
+
       const callbacks = this.entitySubscriptions.get(subscriptionKey);
       if (callbacks) {
         callbacks.forEach(callback => {
@@ -156,15 +163,36 @@ export class SubscriptionManager {
         });
       }
     }
-    
+
+    // Handle room messages (similar to entity event but with different structure)
+    else if (message.type === 'room_message') {
+      const roomMessage = message as IWSRoomMessage;
+      const subscriptionKey = this.getEntityKey(
+        roomMessage.entityType,
+        roomMessage.entityId
+      );
+
+      // Forward to entity subscribers
+      const callbacks = this.entitySubscriptions.get(subscriptionKey);
+      if (callbacks) {
+        callbacks.forEach(callback => {
+          try {
+            callback(message);
+          } catch (error) {
+            console.error(`Error in room message callback:`, error);
+          }
+        });
+      }
+    }
+
     // Handle subscription confirmation messages
     else if (message.type === 'subscription_confirmation') {
       const confirmMessage = message as IWSSubscriptionConfirmMessage;
       const subscriptionKey = this.getEntityKey(
-        confirmMessage.entityType, 
+        confirmMessage.entityType,
         confirmMessage.entityId
       );
-      
+
       const callbacks = this.entitySubscriptions.get(subscriptionKey);
       if (callbacks) {
         callbacks.forEach(callback => {
@@ -176,7 +204,26 @@ export class SubscriptionManager {
         });
       }
     }
-    
+
+    // Handle entity ping messages and respond with pong
+    else if (message.type === 'ping' && 'entityType' in message && 'entityId' in message) {
+      const entityType = message.entityType as string;
+      const entityId = message.entityId as number | string;
+      const subscriptionKey = this.getEntityKey(entityType, entityId);
+
+      // If we have subscribers for this entity, respond with a pong
+      if (this.entitySubscriptions.has(subscriptionKey)) {
+        // Get the WebSocket service to send the pong response
+        const wsService = WebSocketService.getInstance();
+        wsService.sendMessage('pong', `Pong response for ${entityType} ${entityId}`, {
+          entityType,
+          entityId
+        });
+
+        console.log(`Ping received for ${entityType} ${entityId}, sent pong response`);
+      }
+    }
+
     // Handle message type subscriptions for all message types
     const typeCallbacks = this.messageSubscriptions.get(message.type);
     if (typeCallbacks) {
@@ -187,6 +234,11 @@ export class SubscriptionManager {
           console.error(`Error in message type subscription callback:`, error);
         }
       });
+    // } else if (message.type !== 'ping' && message.type !== 'pong') {
+    } else {
+      // Only log errors for non-ping/pong messages to reduce noise
+      // Ping/pong messages are expected to sometimes have no subscribers
+      console.log(`No subscription callbacks for message type: ${message.type}`, message);
     }
   }
 
@@ -196,7 +248,7 @@ export class SubscriptionManager {
    */
   getActiveEntitySubscriptions(): EntitySubscription[] {
     const subscriptions: EntitySubscription[] = [];
-    
+
     this.activeSubscriptions.forEach(key => {
       const [entityType, entityId] = key.split(':');
       subscriptions.push({
@@ -204,7 +256,7 @@ export class SubscriptionManager {
         entityId: /^\d+$/.test(entityId) ? parseInt(entityId) : entityId
       });
     });
-    
+
     return subscriptions;
   }
 

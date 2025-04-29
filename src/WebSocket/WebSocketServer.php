@@ -20,6 +20,16 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     private $sessionService;
     private $connectionService;
     private $roomService;
+    
+    /**
+     * Get the roomService
+     *
+     * @return RoomService
+     */
+    public function getRoomService(): RoomService
+    {
+        return $this->roomService;
+    }
 
     public function __construct(LoggerInterface $logger)
     {
@@ -44,6 +54,9 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
      */
     public function onOpen(ConnectionInterface $conn): void
     {
+        // Store connection time for duration tracking
+        $conn->connectTime = time();
+        
         // Extract session data
         $this->sessionService->extractSessionData($conn);
         
@@ -220,7 +233,48 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             return;
         }
         
-        // Process standard message types
+        // Handle entity_event messages
+        if ($messageType === 'entity_event' && isset($data['entityType']) && isset($data['entityId'])) {
+            $entityType = $data['entityType'];
+            $entityId = $data['entityId'];
+            $roomId = $this->roomService->createRoomIdFromEntity($entityType, $entityId);
+            
+            // Check if entity room exists
+            if ($this->roomService->roomExists($roomId)) {
+                $this->logger->info("Entity event message routing to room", [
+                    'clientId' => $from->resourceId,
+                    'entityType' => $entityType,
+                    'entityId' => $entityId,
+                    'roomId' => $roomId
+                ]);
+                
+                // Broadcast to entity room
+                $this->roomService->broadcastToRoom($roomId, $from, $msg);
+                return;
+            } else {
+                $this->logger->warning("Entity event for non-existent room", [
+                    'clientId' => $from->resourceId,
+                    'entityType' => $entityType,
+                    'entityId' => $entityId
+                ]);
+            }
+        }
+        
+        // Handle room ping responses
+        if ($messageType === 'room_ping_response' && isset($data['roomId'])) {
+            $roomId = $data['roomId'];
+            
+            // Update the connection's activity timestamp for this room
+            $this->roomService->updateConnectionActivity($roomId, $from);
+            
+            $this->logger->debug("Room ping response received", [
+                'clientId' => $from->resourceId,
+                'roomId' => $roomId
+            ]);
+            return;
+        }
+        
+        // Process other standard message types
         $this->notificationService->processMessage($from, $msg);
     }
 
@@ -232,9 +286,30 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
      */
     public function onClose(ConnectionInterface $conn): void
     {
+        // Collect information about the connection for logging
+        $clientInfo = [
+            'clientId' => $conn->resourceId,
+            'remoteAddress' => $conn->remoteAddress ?? 'unknown',
+            'httpHeaders' => isset($conn->httpRequest) ? 'available' : 'none',
+            'closeCode' => property_exists($conn, 'closeCode') ? $conn->closeCode : 'unknown',
+            'closeReason' => property_exists($conn, 'closeReason') ? $conn->closeReason : 'unknown',
+            'sessionId' => isset($conn->sessionId) ? substr($conn->sessionId, 0, 8) . '...' : 'none',
+            'wasInRooms' => isset($conn->roomId),
+            'roomCount' => $this->roomService->getConnectionRooms($conn) ? count($this->roomService->getConnectionRooms($conn)) : 0,
+            'connectionDuration' => isset($conn->connectTime) ? (time() - $conn->connectTime) . ' seconds' : 'unknown'
+        ];
+        
+        $this->logger->info("Connection closing with details", $clientInfo);
+        
         // If connection was in rooms, handle room departure
-        if (isset($conn->roomId)) {
-            // Simply remove from all rooms without notifications
+        if (isset($conn->roomId) || $clientInfo['roomCount'] > 0) {
+            $roomsInfo = $this->roomService->getConnectionRooms($conn);
+            $this->logger->info("Leaving rooms", [
+                'clientId' => $conn->resourceId,
+                'rooms' => $roomsInfo
+            ]);
+            
+            // Remove from all rooms
             $this->roomService->leaveAllRooms($conn);
         }
         
@@ -251,6 +326,23 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
      */
     public function onError(ConnectionInterface $conn, \Exception $e): void
     {
+        // Log additional context about the connection state
+        $clientInfo = [
+            'clientId' => $conn->resourceId,
+            'remoteAddress' => $conn->remoteAddress ?? 'unknown',
+            'sessionActive' => isset($conn->sessionId),
+            'hasBookingSession' => isset($conn->bookingSessionId),
+            'wasInRooms' => $this->roomService->getConnectionRooms($conn) ? count($this->roomService->getConnectionRooms($conn)) > 0 : false,
+            'errorMessage' => $e->getMessage(),
+            'errorCode' => $e->getCode(),
+            'errorFile' => $e->getFile(),
+            'errorLine' => $e->getLine(),
+            'errorTrace' => array_slice($e->getTrace(), 0, 3)  // First 3 frames of stack trace
+        ];
+        
+        $this->logger->error("WebSocket connection error with details", $clientInfo);
+        
+        // Let the connection service handle the error (which includes closing the connection)
         $this->connectionService->handleError($conn, $e);
     }
 

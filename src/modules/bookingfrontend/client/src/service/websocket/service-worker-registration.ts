@@ -67,8 +67,8 @@ export async function registerWebSocketServiceWorker(): Promise<boolean> {
 
 		// Register the service worker with absolute URL
 		console.log('Registering WebSocket Service Worker...', swURL);
-		// Use root scope to allow the service worker to intercept all requests
-		const scope = '/';
+		// Use the same scope that service-worker-check.ts expects (/bookingfrontend/client/)
+		const scope = '/bookingfrontend/client/';
 		console.log('Using service worker scope:', scope);
 		const registration = await navigator.serviceWorker.register(swURL, {
 			scope: scope

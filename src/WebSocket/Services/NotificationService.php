@@ -286,27 +286,12 @@ class NotificationService
                     $this->broadcastNotification($message);
                     break;
                 case 'entity_event':
-                    // This is a specific entity event, which should be processed accordingly
-                    $entityType = $data['entityType'] ?? null;
-                    $entityId = $data['entityId'] ?? null;
-                    $eventType = $data['eventType'] ?? 'update';
-                    
-                    if ($entityType && $entityId) {
-                        $this->logger->info("Entity event message", [
-                            'clientId' => $from->resourceId,
-                            'entityType' => $entityType,
-                            'entityId' => $entityId,
-                            'eventType' => $eventType
-                        ]);
-                        
-                        // The message will be broadcast to all clients in the WebSocketServer.php 
-                        // which handles the specific room logic
-                        $this->broadcastMessage($from, $message);
-                    } else {
-                        $this->logger->warning("Invalid entity event message - missing entityType or entityId", [
-                            'clientId' => $from->resourceId
-                        ]);
-                    }
+                    // Entity events are now handled directly in WebSocketServer
+                    // to ensure proper room-based routing
+                    $this->logger->info("Entity event message - skipping NotificationService processing", [
+                        'clientId' => $from->resourceId,
+                        'message' => 'Entity events are now routed through WebSocketServer'
+                    ]);
                     break;
                 case 'ping':
                     // Reply with a pong directly to the client to keep the connection alive
@@ -317,6 +302,13 @@ class NotificationService
                     $this->logger->info("Ping-Pong", [
                         'clientId' => $from->resourceId,
                         'action' => 'pong sent'
+                    ]);
+                    break;
+                case 'room_ping_response':
+                    // Room ping responses are handled in WebSocketServer
+                    $this->logger->debug("Room ping response received via NotificationService", [
+                        'clientId' => $from->resourceId,
+                        'action' => 'forwarded to WebSocketServer'
                     ]);
                     break;
                 default:

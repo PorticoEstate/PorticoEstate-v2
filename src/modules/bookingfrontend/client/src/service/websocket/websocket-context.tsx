@@ -7,6 +7,7 @@ import { hasServiceWorkerAPI } from './service-worker-check';
 import { getWebSocketUrl } from './util';
 import { useQueryClient } from '@tanstack/react-query';
 import { IServerMessage } from '../types/api/server-messages.types';
+import { SubscriptionManager } from './subscription-manager';
 
 interface WebSocketContextValue {
   status: WebSocketStatus;
@@ -148,6 +149,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 }
                 // For all other messages, use the standard handler
                 else {
+                  // Process through subscription manager for direct WebSocket mode
+                  // This ensures message subscriptions work even without service worker
+                  const subscriptionManager = SubscriptionManager.getInstance();
+                  subscriptionManager.handleMessage(data);
+                  
+                  // Also use the standard message handler for backward compatibility
                   handleMessage(data);
                 }
               }, 0);
@@ -235,9 +242,21 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     const initWebSocketService = async () => {
       try {
         const success = await wsService.initialize(options);
-        setIsReady(success);
-
-        if (!success) {
+        
+        // If service worker initialization succeeded
+        if (success) {
+          setIsReady(success);
+        } 
+        // If service worker initialization failed, check if fallback is needed
+        else if (status === 'FALLBACK_REQUIRED') {
+          console.warn('Service worker initialization failed, falling back to direct WebSocket connection');
+          // Don't set isReady yet - the direct connection will handle this
+          
+          // Let the existing direct WebSocket code handle it by setting status to CONNECTING
+          // This will trigger the useEffect that watches for CONNECTING status
+          setStatus('CONNECTING');
+        }
+        else {
           console.error('Failed to initialize WebSocket service worker');
           setStatus('ERROR');
         }
@@ -297,72 +316,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       }
 
       case 'server_message': {
-        // Handle server messages by directly updating the query cache when possible
-        console.log(`Received server message [action: ${data.action}]`);
-
-        // Different handling based on the action type
-        switch (data.action) {
-          case 'new': {
-            // New server messages - add to the cache directly
-            console.log('New server messages received:', data.messages);
-
-            // Update the cache directly instead of invalidating
-            queryClient.setQueryData<IServerMessage[]>(['serverMessages'], (oldMessages) => {
-              if (!oldMessages) return data.messages;
-
-              // Add the new messages to the existing messages
-              // Note: In case of duplicates by ID, new messages will replace old ones
-              const messageMap = new Map([
-                ...oldMessages.map(msg => [msg.id, msg]),
-                ...data.messages.map((msg: IServerMessage) => [msg.id, msg])
-              ]);
-
-              return Array.from(messageMap.values());
-            });
-            break;
-          }
-
-          case 'changed': {
-            // Changed server messages - update in the cache directly
-            console.log('Server messages changed:', data.messages);
-
-            // Update the cache directly instead of invalidating
-            queryClient.setQueryData<IServerMessage[]>(['serverMessages'], (oldMessages) => {
-              if (!oldMessages) return data.messages;
-
-              // Create a map for easy lookup
-              const messageMap = new Map(oldMessages.map(msg => [msg.id, msg]));
-
-              // Update changed messages
-              data.messages.forEach((message: IServerMessage) => {
-                messageMap.set(message.id, message);
-              });
-
-              return Array.from(messageMap.values());
-            });
-            break;
-          }
-
-          case 'deleted': {
-            // Message IDs to delete
-            const messageIds = (data as IWSServerDeletedMessage).message_ids;
-            console.log('Server messages deleted:', messageIds);
-
-            // Update the cache directly instead of invalidating
-            queryClient.setQueryData<IServerMessage[]>(['serverMessages'], (oldMessages) => {
-              if (!oldMessages) return [];
-
-              // Filter out the deleted messages
-              return oldMessages.filter(msg => !messageIds.includes(msg.id));
-            });
-            break;
-          }
-
-          default:
-            console.warn(`Unknown server_message action: ${data.action}`);
-            // Fall back to invalidation for unknown actions
-            queryClient.invalidateQueries({ queryKey: ['serverMessages'] });
-        }
+        // Server message handling has been moved to useServerMessages hook
+        // This just ensures messages are forwarded through the subscription system
+        // Events are handled in a dedicated hook now
+        console.log(`Received server message [action: ${data.action}], forwarding to subscribers`);
         break;
       }
 
@@ -408,8 +365,23 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       case 'pong':
       case 'server_ping': {
         // Ping/pong messages are primarily handled directly in the WebSocket handlers
-        // But we could do additional logging or handling here if needed
-        // console.log(`Received ${data.type} message`);
+        
+        // Handle entity-specific ping
+        if (data.type === 'ping' && 'entityType' in data && 'entityId' in data) {
+          console.log(`Received entity ping for ${data.entityType} ${data.entityId}`);
+          
+          // The subscription manager will handle sending the pong response
+          // This is processed in subscription-manager.ts
+        } else {
+          // Regular ping/pong handling
+          // console.log(`Received ${data.type} message`);
+        }
+        break;
+      }
+
+      case 'room_message': {
+        // Room messages are handled by subscription callbacks
+        console.log(`Received room message [action: ${data.action}]`, data);
         break;
       }
 
@@ -516,7 +488,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 }
                 // Handle other message types
                 else {
-                  // For all other messages use the standard handler
+                  // Process through subscription manager for direct WebSocket mode
+                  // This ensures message subscriptions work even without service worker
+                  const subscriptionManager = SubscriptionManager.getInstance();
+                  subscriptionManager.handleMessage(data);
+                  
+                  // For all other messages use the standard handler for backward compatibility
                   handleMessage(data);
                 }
               } catch (e) {
@@ -717,6 +694,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
               try {
                 const data = JSON.parse(event.data) as WebSocketMessage;
                 setLastMessage(data);
+                
+                // Process through subscription manager for direct WebSocket mode
+                // This ensures message subscriptions work even without service worker
+                const subscriptionManager = SubscriptionManager.getInstance();
+                subscriptionManager.handleMessage(data);
+                
+                // Also use standard handler for backward compatibility
                 handleMessage(data);
               } catch (e) {
                 console.error('Error parsing WebSocket message:', e);

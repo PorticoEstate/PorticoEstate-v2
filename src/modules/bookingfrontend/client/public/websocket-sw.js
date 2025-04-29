@@ -226,6 +226,18 @@ function connectWebSocket() {
             timestamp: new Date().toISOString()
           }));
           return; // Don't broadcast pings
+        } else if (data.type === 'ping' && data.entityType && data.entityId) {
+          // This is an entity-specific ping, broadcast it to clients to let them respond
+          // The subscription manager in the client will handle sending the pong if needed
+          log(`Received entity ping for ${data.entityType} ${data.entityId}`);
+          
+          // Forward these pings to clients so they can respond if they have a subscription
+          broadcastToClients({
+            type: 'websocket_message',
+            data: data,
+            timestamp: new Date().toISOString()
+          });
+          return; // Continue processing
         } else if (data.type === 'reconnect_required') {
           // Handle server-requested reconnection
           log('Server requested reconnection:', data.message);
@@ -520,11 +532,24 @@ self.addEventListener('message', (event) => {
         // Special case for testing service worker functionality
         // This message is sent when we just want to verify service worker support
         log(`Service worker test request from client ${clientId}`);
-        event.source.postMessage({
-          type: 'test_response',
-          success: true,
-          timestamp: new Date().toISOString()
-        });
+        
+        // Check if message comes with a port for response
+        if (event.ports && event.ports.length > 0) {
+          // Send response through the provided message port
+          log('Responding through message port');
+          event.ports[0].postMessage({
+            type: 'test_response',
+            success: true,
+            timestamp: new Date().toISOString()
+          });
+        } else {
+          // Fallback to standard message response
+          event.source.postMessage({
+            type: 'test_response',
+            success: true,
+            timestamp: new Date().toISOString()
+          });
+        }
         
         // If this was just a test, we can remove this client immediately
         if (message.testOnly === true) {

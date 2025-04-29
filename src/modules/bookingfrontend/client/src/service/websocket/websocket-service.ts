@@ -8,10 +8,10 @@ import {
 	IWSEntitySubscribeMessage,
 	IWSEntityUnsubscribeMessage
 } from './websocket.types';
-import { 
-	SubscriptionManager, 
-	EntitySubscription, 
-	SubscriptionCallback 
+import {
+	SubscriptionManager,
+	EntitySubscription,
+	SubscriptionCallback
 } from './subscription-manager';
 
 // Toggle for client-side logging
@@ -72,9 +72,9 @@ export class WebSocketService {
 					const oldStatus = this.status;
 					this.status = message.status;
 					this.dispatchEvent('status', {status: message.status});
-					
+
 					// If the connection was re-established, resubscribe to rooms
-					if ((oldStatus !== 'OPEN' && message.status === 'OPEN') || 
+					if ((oldStatus !== 'OPEN' && message.status === 'OPEN') ||
 					    (oldStatus === 'CLOSED' && message.status === 'OPEN') ||
 					    (oldStatus === 'RECONNECTING' && message.status === 'OPEN')) {
 						// Allow a short delay to ensure service worker is fully ready to process messages
@@ -84,10 +84,9 @@ export class WebSocketService {
 					}
 				} else if (message.type === 'websocket_message') {
 					this.lastMessage = message.data;
-					
 					// Process the message through the subscription manager
 					this.subscriptionManager.handleMessage(message.data);
-					
+
 					// Also dispatch to general event listeners
 					this.dispatchEvent('message', {data: message.data});
 				} else if (message.type === 'websocket_error') {
@@ -112,8 +111,11 @@ export class WebSocketService {
 			return false;
 		}
 
+		// Check for service worker support
 		if (!('serviceWorker' in navigator)) {
-			console.error('Service Workers are not supported in this browser');
+			console.warn('Service Workers are not supported in this browser - falling back to direct WebSocket');
+			// Signal that we need to use direct WebSocket connection
+			this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 			return false;
 		}
 
@@ -127,18 +129,18 @@ export class WebSocketService {
 				}
 				this.status = 'OPEN';
 				this.isInitialized = true;
-				
+
 				// Resubscribe to any rooms we need
 				setTimeout(() => {
 					this.resubscribeToRooms();
 				}, 500);
-				
+
 				// Start client heartbeat to prevent disconnection
 				this.startHeartbeat();
-				
+
 				return true;
 			}
-			
+
 			// First check if the service worker is already registered
 			const registrations = await navigator.serviceWorker.getRegistrations();
 			const existingRegistration = registrations.find(
@@ -161,6 +163,19 @@ export class WebSocketService {
 					}
 				} catch (registerError) {
 					console.error('Failed to register WebSocket service worker:', registerError);
+					
+					// Check if it's a security-related error
+					const errorMessage = registerError.message || '';
+					const isSecurityError = errorMessage.includes('security') || 
+						errorMessage.includes('SSL') || 
+						errorMessage.includes('certificate');
+
+					if (isSecurityError) {
+						console.warn('Falling back to direct WebSocket connection due to security/certificate issues');
+					} else {
+						console.warn('Falling back to direct WebSocket connection due to service worker registration failure');
+					}
+					
 					// Try to fetch the service worker file to see if it exists
 					try {
 						const response = await fetch(`${this.basePath}/websocket-sw.js`);
@@ -170,6 +185,9 @@ export class WebSocketService {
 					} catch (fetchError) {
 						console.error('Could not fetch service worker file:', fetchError);
 					}
+					
+					// Signal that we need to use direct WebSocket connection
+					this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 					return false;
 				}
 			}
@@ -183,6 +201,8 @@ export class WebSocketService {
 				const activationPromise = new Promise<boolean>((resolve) => {
 					const timeout = setTimeout(() => {
 						console.error('Service worker activation timed out');
+						// Signal fallback is needed
+						this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 						resolve(false);
 					}, 5000); // 5 second timeout
 
@@ -210,6 +230,8 @@ export class WebSocketService {
 				const controllerPromise = new Promise<boolean>((resolve) => {
 					const timeout = setTimeout(() => {
 						console.error('Service worker controller change timed out');
+						// Signal fallback is needed
+						this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 						resolve(false);
 					}, 3000); // 3 second timeout
 
@@ -236,21 +258,23 @@ export class WebSocketService {
 			return this.isInitialized;
 		} catch (error) {
 			console.error('Service Worker initialization failed:', error);
+			// Signal that we need to use direct WebSocket connection
+			this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 			return false;
 		}
 	}
-	
+
 	// Check if there's already an active WebSocket connection
 	private async checkConnectionStatus(): Promise<WebSocketStatus> {
 		if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
 			return 'CLOSED';
 		}
-		
+
 		// If no controller, connection cannot be open
 		if (!navigator.serviceWorker.controller) {
 			return 'CLOSED';
 		}
-		
+
 		// Create a promise to handle the response
 		return new Promise<WebSocketStatus>((resolve) => {
 			// Set up a one-time message handler
@@ -261,16 +285,16 @@ export class WebSocketService {
 					resolve(event.data.status);
 				}
 			};
-			
+
 			// Set a timeout in case we don't get a response
 			const timeout = setTimeout(() => {
 				navigator.serviceWorker.removeEventListener('message', messageHandler);
 				resolve('CLOSED');
 			}, 1000);
-			
+
 			// Add the listener
 			navigator.serviceWorker.addEventListener('message', messageHandler);
-			
+
 			// Send ping message to get current status
 			if (navigator.serviceWorker.controller) {
 				navigator.serviceWorker.controller.postMessage({
@@ -293,18 +317,18 @@ export class WebSocketService {
 					console.log('Existing WebSocket connection detected, skipping connection request');
 				}
 				this.status = 'OPEN';
-				
+
 				// Resubscribe after a short delay to ensure everything is ready
 				setTimeout(() => {
 					this.resubscribeToRooms();
 				}, 500);
-				
+
 				// Start client heartbeat to prevent disconnection
 				this.startHeartbeat();
-				
+
 				return;
 			}
-			
+
 			if (!navigator.serviceWorker.controller) {
 				if (WEBSOCKET_CLIENT_DEBUG) {
 					console.warn('No service worker controller available yet');
@@ -327,7 +351,7 @@ export class WebSocketService {
 						reconnectInterval: options.reconnectInterval,
 						pingInterval: options.pingInterval
 					});
-					
+
 					// Start client heartbeat to prevent disconnection
 					this.startHeartbeat();
 				});
@@ -342,7 +366,7 @@ export class WebSocketService {
 					reconnectInterval: options.reconnectInterval,
 					pingInterval: options.pingInterval
 				});
-				
+
 				// Start client heartbeat to prevent disconnection
 				this.startHeartbeat();
 			}
@@ -361,18 +385,18 @@ export class WebSocketService {
 					console.log('Existing WebSocket connection detected in fallback, skipping connection request');
 				}
 				this.status = 'OPEN';
-				
+
 				// Resubscribe after a short delay
 				setTimeout(() => {
 					this.resubscribeToRooms();
 				}, 500);
-				
+
 				// Start client heartbeat to prevent disconnection
 				this.startHeartbeat();
-				
+
 				return;
 			}
-			
+
 			if (navigator.serviceWorker.controller) {
 				this.sendMessageToServiceWorker({
 					type: 'connect',
@@ -380,7 +404,7 @@ export class WebSocketService {
 					reconnectInterval: options.reconnectInterval,
 					pingInterval: options.pingInterval
 				});
-				
+
 				// Start client heartbeat to prevent disconnection
 				this.startHeartbeat();
 			} else {
@@ -390,14 +414,14 @@ export class WebSocketService {
 			console.error('Error in direct connection attempt:', error);
 		}
 	}
-	
+
 	// Start a heartbeat to keep the client active in the service worker
 	private startHeartbeat() {
 		// Clear any existing heartbeat
 		if (this.heartbeatInterval) {
 			clearInterval(this.heartbeatInterval);
 		}
-		
+
 		// Send a ping every 30 seconds (less than the 2-minute inactive threshold)
 		this.heartbeatInterval = setInterval(() => {
 			if (this.isInitialized && this.status !== 'CLOSED') {
@@ -416,7 +440,7 @@ export class WebSocketService {
 			}
 		}, 30000); // 30 seconds
 	}
-	
+
 	// Stop the heartbeat
 	private stopHeartbeat() {
 		if (this.heartbeatInterval) {
@@ -590,7 +614,7 @@ export class WebSocketService {
 		try {
 			// Close connection first
 			this.close();
-			
+
 			// Make sure heartbeat is stopped
 			this.stopHeartbeat();
 
@@ -614,8 +638,8 @@ export class WebSocketService {
 	 * @returns Unsubscribe function if callback provided, otherwise undefined
 	 */
 	subscribeToRoom(
-		entityType: string, 
-		entityId: number | string, 
+		entityType: string,
+		entityId: number | string,
 		callback?: SubscriptionCallback
 	): (() => void) | undefined {
 		// Send subscribe message to server
@@ -623,45 +647,20 @@ export class WebSocketService {
 			entityType,
 			entityId
 		});
-		
+
 		// Add to pending subscriptions if not connected
 		if (this.status !== 'OPEN') {
 			this.pendingSubscriptions.push({ entityType, entityId });
 		}
-		
+
 		// Register callback if provided
 		if (callback) {
 			return this.subscriptionManager.subscribeToEntity(entityType, entityId, callback);
 		}
 	}
 
-	/**
-	 * Unsubscribe from a room (entity)
-	 * @param entityType The type of entity
-	 * @param entityId The ID of the entity
-	 * @param callback Optional callback function to remove (if not provided, all callbacks will remain)
-	 */
-	unsubscribeFromRoom(
-		entityType: string, 
-		entityId: number | string, 
-		callback?: SubscriptionCallback
-	): void {
-		// Send unsubscribe message to server
-		this.sendMessage('unsubscribe', `Unsubscribing from ${entityType} ${entityId}`, {
-			entityType,
-			entityId
-		});
-		
-		// Remove from pending subscriptions if disconnected
-		this.pendingSubscriptions = this.pendingSubscriptions.filter(sub => 
-			!(sub.entityType === entityType && sub.entityId.toString() === entityId.toString())
-		);
-		
-		// Unregister callback if provided
-		if (callback) {
-			this.subscriptionManager.unsubscribeFromEntity(entityType, entityId, callback);
-		}
-	}
+	// The unsubscribeFromRoom method has been removed.
+	// The server detects inactive subscriptions via ping-pong mechanism.
 
 	/**
 	 * Subscribe to messages of a specific type
@@ -670,7 +669,7 @@ export class WebSocketService {
 	 * @returns Unsubscribe function
 	 */
 	subscribeToMessageType(
-		messageType: string, 
+		messageType: string,
 		callback: SubscriptionCallback
 	): () => void {
 		return this.subscriptionManager.subscribeToMessageType(messageType, callback);
@@ -682,7 +681,7 @@ export class WebSocketService {
 	 * @param callback The callback function to remove
 	 */
 	unsubscribeFromMessageType(
-		messageType: string, 
+		messageType: string,
 		callback: SubscriptionCallback
 	): void {
 		this.subscriptionManager.unsubscribeFromMessageType(messageType, callback);
@@ -692,47 +691,47 @@ export class WebSocketService {
 	 * Resubscribe to all rooms if connection was lost and reestablished
 	 */
 	private resubscribeToRooms(): void {
-		// First, get all active subscriptions from the manager
+		// Get all active subscriptions from the manager
 		const activeSubscriptions = this.subscriptionManager.getActiveEntitySubscriptions();
-		
-		// Then add any pending subscriptions that might not have made it through
+
+		// Add any pending subscriptions that might not have made it through
 		let allSubscriptions = [...activeSubscriptions, ...this.pendingSubscriptions];
-		
+
 		// Remove duplicates (same entity type and ID)
 		const uniqueSubscriptions = new Map<string, EntitySubscription>();
 		allSubscriptions.forEach(sub => {
 			const key = `${sub.entityType}:${sub.entityId}`;
 			uniqueSubscriptions.set(key, sub);
 		});
-		
+
 		allSubscriptions = Array.from(uniqueSubscriptions.values());
-		
+
 		// Clear pending subscriptions as we're going to resubscribe to all
 		this.pendingSubscriptions = [];
-		
+
 		// Log resubscription attempt
 		if (WEBSOCKET_CLIENT_DEBUG) {
 			console.log(`Resubscribing to ${allSubscriptions.length} rooms`);
 		}
-		
+
 		// Send subscribe messages for all subscriptions with slight delay between each
 		// to prevent overwhelming the service worker
 		if (allSubscriptions.length > 0) {
 			const resubscribeWithDelay = (index: number) => {
 				if (index >= allSubscriptions.length) return;
-				
+
 				const sub = allSubscriptions[index];
 				this.sendMessage('subscribe', `Resubscribing to ${sub.entityType} ${sub.entityId}`, {
 					entityType: sub.entityType,
 					entityId: sub.entityId
 				});
-				
+
 				// Schedule next subscription with a small delay
 				setTimeout(() => {
 					resubscribeWithDelay(index + 1);
 				}, 50);
 			};
-			
+
 			// Start the sequential resubscription
 			resubscribeWithDelay(0);
 		}

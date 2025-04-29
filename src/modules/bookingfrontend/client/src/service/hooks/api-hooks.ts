@@ -28,6 +28,8 @@ import { IArticle } from "../types/api/order-articles.types";
 import {ISearchDataAll, ISearchDataOptimized, ISearchDataTown, ISearchOrganization} from "@/service/types/api/search.types";
 import {fetchSearchData} from "@/service/api/api-utils-static";
 import {fetchBuildingDocuments, fetchResourceDocuments} from "@/service/api/building";
+import { useMessageTypeSubscription } from './use-websocket-subscriptions';
+import { IWSServerDeletedMessage, IWSServerNewMessage } from '../websocket/websocket.types';
 
 /**
  * Custom hook that wraps useMutation and adds server message invalidation
@@ -371,6 +373,80 @@ export function useApplications(): UseQueryResult<{ list: IApplication[], total_
     );
 }
 export function useServerMessages(): UseQueryResult<IServerMessage[]> {
+    const queryClient = useQueryClient();
+
+    // Subscribe to server_message WebSocket messages with type safety
+    useMessageTypeSubscription('server_message', (data) => {
+        console.log(`Received server message [action: ${data.action}]`);
+
+        // Different handling based on the action type
+        switch (data.action) {
+            case 'new': {
+                // New server messages - add to the cache directly
+                console.log('New server messages received:', data.messages);
+
+                // Update the cache directly instead of invalidating
+                queryClient.setQueryData<IServerMessage[]>(['serverMessages'], (oldMessages: IServerMessage[] | undefined) => {
+                    if (!oldMessages) return data.messages;
+
+                    // Add the new messages to the existing messages
+                    // Note: In case of duplicates by ID, new messages will replace old ones
+                    const messageMap = new Map<string, IServerMessage>();
+					for (const oldMessage of oldMessages) {
+						messageMap.set(oldMessage.id, oldMessage);
+					}
+					for (const message of data.messages) {
+						messageMap.set(message.id, message);
+					}
+
+                    return Array.from(messageMap.values());
+                });
+                break;
+            }
+
+            case 'changed': {
+                // Changed server messages - update in the cache directly
+                console.log('Server messages changed:', data.messages);
+
+                // Update the cache directly instead of invalidating
+                queryClient.setQueryData<IServerMessage[]>(['serverMessages'], (oldMessages: IServerMessage[] | undefined) => {
+                    if (!oldMessages) return data.messages;
+
+                    // Create a map for easy lookup
+                    const messageMap = new Map<string, IServerMessage>(oldMessages.map(msg => [msg.id, msg]));
+
+                    // Update changed messages
+                    data.messages.forEach((message: IServerMessage) => {
+                        messageMap.set(message.id, message);
+                    });
+
+                    return Array.from(messageMap.values());
+                });
+                break;
+            }
+
+            case 'deleted': {
+                // Message IDs to delete
+                const messageIds = data.message_ids;
+                console.log('Server messages deleted:', messageIds);
+
+                // Update the cache directly instead of invalidating
+                queryClient.setQueryData<IServerMessage[]>(['serverMessages'], (oldMessages: IServerMessage[] | undefined) => {
+                    if (!oldMessages) return [];
+
+                    // Filter out the deleted messages
+                    return oldMessages.filter(msg => !messageIds.includes(msg.id));
+                });
+                break;
+            }
+
+            default:
+                console.warn(`Unknown server_message action:`, data);
+                // Fall back to invalidation for unknown actions
+                queryClient.invalidateQueries({ queryKey: ['serverMessages'] });
+        }
+    });
+
     return useQuery(
         {
             queryKey: ['serverMessages'],

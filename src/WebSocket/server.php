@@ -189,6 +189,38 @@ try {
         $webSocket->sendServerPing();
     });
     
+    // Send ping to all entity rooms every 240 seconds (4 minutes)
+    // This helps detect inactive clients and clean them up
+    $loop->addPeriodicTimer(240, function() use ($webSocket, $logger) {
+        $rooms = $webSocket->getRooms();
+        $entityRooms = array_filter($rooms, function($room) {
+            return !$room['isSessionRoom'] && strpos($room['id'], 'entity_') === 0;
+        });
+        
+        if (count($entityRooms) > 0) {
+            $logger->info("Pinging entity rooms", [
+                'roomCount' => count($entityRooms)
+            ]);
+            
+            foreach ($entityRooms as $room) {
+                $webSocket->getRoomService()->pingRoom($room['id']);
+            }
+        }
+    });
+    
+    // Clean up inactive room connections every 480 seconds (8 minutes)
+    $loop->addPeriodicTimer(480, function() use ($webSocket, $logger) {
+        $logger->info("Cleaning up inactive room connections");
+        $stats = $webSocket->getRoomService()->cleanupInactiveConnections(480); // 8 minutes threshold
+        
+        if ($stats['connectionsRemoved'] > 0) {
+            $logger->info("Inactive connections cleanup complete", [
+                'connectionsRemoved' => $stats['connectionsRemoved'],
+                'roomsCleaned' => count($stats['roomsCleaned'])
+            ]);
+        }
+    });
+    
     // Set up Redis Pub/Sub if Redis is available
     if ($webSocket->isRedisEnabled()) {
         try {
@@ -207,21 +239,54 @@ try {
                     // Subscribe to session messages channel
                     $client->subscribe('session_messages');
                     
+                    // Subscribe to room messages channel for entity room messages
+                    $client->subscribe('room_messages');
+                    
                     // Handle messages
                     $client->on('message', function ($channel, $payload) use ($webSocket, $logger) {
                         // Parse the payload for logging and processing
                         $data = json_decode($payload, true);
                         $messageType = $data['type'] ?? 'unknown';
                         
+                        // Handle room_messages channel
+                        if ($channel === 'room_messages') {
+                            if ($messageType === 'room_message' && isset($data['roomId'])) {
+                                $roomId = $data['roomId'];
+                                
+                                $logger->info("Room message received via Redis", [
+                                    'roomId' => $roomId,
+                                    'type' => $messageType,
+                                    'timestamp' => date('c')
+                                ]);
+                                
+                                // Send message to the specific room
+                                if ($webSocket->getRoomService()->roomExists($roomId)) {
+                                    $sent = $webSocket->getRoomService()->sendToRoom($roomId, $payload);
+                                    
+                                    $logger->info("Room message delivery", [
+                                        'success' => $sent > 0,
+                                        'roomId' => $roomId,
+                                        'recipients' => $sent
+                                    ]);
+                                } else {
+                                    $logger->warning("Room not found for message", [
+                                        'roomId' => $roomId
+                                    ]);
+                                }
+                                
+                                return;
+                            }
+                        }
+                        
                         if ($channel === 'notifications') {
-                            // Handle entity-targeted notifications
+                            // Handle entity-targeted notifications (legacy format)
                             if (isset($data['target']) && $data['target'] === 'entity' && 
                                 isset($data['entityType']) && isset($data['entityId'])) {
                                 // Get entity info
                                 $entityType = $data['entityType'];
                                 $entityId = $data['entityId'];
                                 
-                                $logger->info("Entity-targeted Redis notification received", [
+                                $logger->info("Entity-targeted Redis notification received (legacy format)", [
                                     'entityType' => $entityType,
                                     'entityId' => $entityId,
                                     'type' => $messageType,

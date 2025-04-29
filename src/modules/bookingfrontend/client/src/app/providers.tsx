@@ -11,6 +11,8 @@ import QueryProvider from "@/app/queryProvider";
 import {getTranslation} from "@/app/i18n";
 import { ToastProvider } from "@/components/toast/toast-context";
 import ToastContainer from "@/components/toast/toast";
+import { WebSocketProvider } from "@/service/websocket/websocket-context";
+import ServiceWorkerProvider from "@/service/websocket/service-worker-provider";
 
 const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang}) => {
     // NOTE: Avoid useState when initializing the query client if you don't
@@ -22,18 +24,23 @@ const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang
 
     // Get the translations object to pass to the client
     const translations = (i18n.getResourceBundle(lang, 'translation') || {}) as Record<string, string>;
+    
     return (
         <LoadingProvider>
             <ClientTranslationProvider lang={lang} initialTranslations={translations}>
                 <QueryProvider>
                     <ToastProvider>
-                        <PrefetchWrapper>
-                            <LoadingIndicationWrapper loadingString={t('common.loading')}>
-                                {children}
-								<ToastContainer />
-                            </LoadingIndicationWrapper>
-                            <ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'} />
-                        </PrefetchWrapper>
+                        <ServiceWorkerProvider>
+                            <WebSocketProvider>
+                                <PrefetchWrapper>
+                                    <LoadingIndicationWrapper loadingString={t('common.loading')}>
+                                        {children}
+                                        <ToastContainer />
+                                    </LoadingIndicationWrapper>
+                                    <ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'} />
+                                </PrefetchWrapper>
+                            </WebSocketProvider>
+                        </ServiceWorkerProvider>
                     </ToastProvider>
                 </QueryProvider>
             </ClientTranslationProvider>

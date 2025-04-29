@@ -522,6 +522,28 @@ class BookingUserController
 
 			// Save the updated messages back to the session
 			Cache::session_set('phpgwapi', 'phpgw_messages', $messages);
+			
+			// Send WebSocket notification about the deleted message
+			try {
+				if (class_exists('\\App\\modules\\bookingfrontend\\helpers\\WebSocketHelper')) {
+					$sessionId = session_id();
+					if (!empty($sessionId)) {
+						$helper = new \App\modules\bookingfrontend\helpers\WebSocketHelper();
+						$helper::sendToSession(
+							$sessionId, 
+							'server_message', 
+							[
+								'type' => 'server_message',
+								'action' => 'deleted',
+								'message_ids' => [$messageId] // Send the specific message ID that was deleted
+							]
+						);
+						error_log("WebSocket notification sent for deleted message ID: " . $messageId);
+					}
+				}
+			} catch (\Exception $e) {
+				error_log("Error sending WebSocket notification for deleted message: " . $e->getMessage());
+			}
 
 			// Return success response
 			$response->getBody()->write(json_encode([

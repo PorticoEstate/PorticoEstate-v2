@@ -3,6 +3,8 @@
 use Slim\Factory\AppFactory;
 use DI\ContainerBuilder;
 use App\providers\DatabaseServiceProvider;
+use App\providers\WebSocketServiceProvider;
+use App\WebSocket\Routes;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -62,8 +64,16 @@ $app->add(function ($request, $handler)
 
 // Register service providers
 $datbaseProvider = new DatabaseServiceProvider();
+$webSocketProvider = new WebSocketServiceProvider();
 
 $datbaseProvider->register($app);
+$webSocketProvider->register($container);
+
+// Register WebSocket routes class
+$container->set(Routes::class, function($c) {
+    // Get the WebSocketServer instance from the container
+    return new Routes($c->get(\App\WebSocket\WebSocketServer::class));
+});
 
 //require all routes
 require_once __DIR__ . '/src/routes/RegisterRoutes.php';

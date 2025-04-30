@@ -49,6 +49,21 @@ export async function createDirectWebSocketFallback(
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+        
+        // Automatically respond to server_ping messages with pong
+        if (data.type === 'server_ping') {
+          try {
+            ws.send(JSON.stringify({
+              type: 'pong',
+              timestamp: new Date().toISOString(),
+              reply_to: data.id || null
+            }));
+            wsLog('Sent pong response to server_ping');
+          } catch (error) {
+            wsLog('Error sending pong response to server_ping:', error);
+          }
+        }
+        
         if (onMessage) onMessage(data);
       } catch (error) {
         wsLog('Error parsing WebSocket message:', error);

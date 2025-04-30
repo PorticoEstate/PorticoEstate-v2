@@ -552,6 +552,17 @@ function broadcastToClients(message) {
 self.addEventListener('install', (event) => {
   log('Service Worker installed');
 
+  // Check if this is Firefox
+  const isFirefox = typeof self !== 'undefined' && 
+    typeof self.navigator !== 'undefined' && 
+    self.navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    
+  if (isFirefox) {
+    log('Firefox browser detected in service worker - using optimized installation', {
+      userAgent: self.navigator.userAgent
+    });
+  }
+
   // Force activation without waiting for all clients to close
   event.waitUntil(self.skipWaiting());
 });
@@ -559,8 +570,47 @@ self.addEventListener('install', (event) => {
 // Event listener for when the service worker is activated
 self.addEventListener('activate', (event) => {
   log('Service Worker activated');
+  
+  // Check if this is Firefox
+  const isFirefox = typeof self !== 'undefined' && 
+    typeof self.navigator !== 'undefined' && 
+    self.navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    
+  if (isFirefox) {
+    log('Firefox browser detected in service worker - using optimized activation', {
+      userAgent: self.navigator.userAgent
+    });
+  }
 
-  // Claim all clients to ensure the service worker is in control
+  // Immediately attempt to claim clients
+  // This is particularly important for Firefox which sometimes has activation issues
+  self.clients.claim().then(() => {
+    log('Clients claimed successfully');
+    
+    // In Firefox, we'll do an immediate client broadcast to ensure proper initialization
+    if (isFirefox) {
+      // Broadcast a status update to all clients
+      self.clients.matchAll().then(clients => {
+        log(`Broadcasting status update to ${clients.length} clients (Firefox)`);
+        clients.forEach(client => {
+          try {
+            client.postMessage({
+              type: 'websocket_status',
+              status: ws ? 'OPEN' : 'CLOSED',
+              timestamp: new Date().toISOString(),
+              browser: 'firefox'
+            });
+          } catch (error) {
+            logError('Error broadcasting to client during activation:', error);
+          }
+        });
+      });
+    }
+  }).catch(error => {
+    logError('Error claiming clients:', error);
+  });
+  
+  // Ensure this operation completes
   event.waitUntil(self.clients.claim());
 });
 

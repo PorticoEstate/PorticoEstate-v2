@@ -149,6 +149,22 @@ export class WebSocketService {
 			console.error('Cannot initialize WebSocket service worker in a non-browser environment');
 			return false;
 		}
+			
+		// Firefox detection - check if the browser is Firefox
+		const isFirefox = typeof navigator !== 'undefined' && 
+			navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+			
+		// Log Firefox detection
+		if (isFirefox && WEBSOCKET_CLIENT_DEBUG) {
+			console.log('Firefox browser detected, using enhanced compatibility mode');
+		}
+        
+		// Check if service worker is explicitly disabled in options
+		if (options.disableServiceWorker) {
+			console.log('Service Worker explicitly disabled by configuration - using direct WebSocket');
+			this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
+			return false;
+		}
 
 		// Check for service worker support
 		if (!('serviceWorker' in navigator)) {
@@ -255,7 +271,19 @@ export class WebSocketService {
 			} else {
 				// Set up a timeout for activation
 				const activationPromise = new Promise<boolean>((resolve) => {
-					// Increase timeout to 10 seconds
+					// Detect Firefox for extended timeout
+					const isFirefox = typeof navigator !== 'undefined' && 
+						navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+					
+					// Firefox needs longer timeout as it's less aggressive with service worker activation
+					const timeoutDuration = isFirefox ? 20000 : 10000; // 20 seconds for Firefox, 10 for others
+					
+					if (isFirefox) {
+						wsLog('Firefox detected - using extended service worker activation timeout', {
+							timeoutDuration: `${timeoutDuration/1000}s`
+						});
+					}
+					
 					const timeout = setTimeout(() => {
 						wsLog('Service worker activation timed out, attempting to use existing registration');
 						// Even if activation times out, we can still try to use the registration
@@ -271,7 +299,8 @@ export class WebSocketService {
 							resolve(true);
 						} else {
 							wsLog('Service worker activation timed out and no active registration', {
-								registrations: 'Checking existing registrations...'
+								registrations: 'Checking existing registrations...',
+								browser: isFirefox ? 'Firefox' : 'Other'
 							});
 
 							// Try to find any available registrations as a last resort
@@ -285,11 +314,21 @@ export class WebSocketService {
 									})) : 'none');
 							});
 
-							// Signal fallback is needed
+							// For Firefox, we'll try a more aggressive recovery approach
+							if (isFirefox) {
+								wsLog('Firefox-specific recovery: attempting to connect anyway');
+								// This is risky but necessary for Firefox - we'll try connecting even without a fully activated service worker
+								this.connectToServiceWorker(options);
+								this.isInitialized = true;
+								resolve(true);
+								return;
+							}
+
+							// For other browsers, signal fallback is needed
 							this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 							resolve(false);
 						}
-					}, 10000); // 10 second timeout
+					}, timeoutDuration);
 
 					// Check if it's already active, which could happen in some browsers
 					if (this.serviceWorkerRegistration?.active) {
@@ -914,6 +953,42 @@ export class WebSocketService {
 	 * Resubscribe to all rooms if connection was lost and reestablished
 	 */
 	private resubscribeToRooms(): void {
+		// Detect Firefox for special handling
+		const isFirefox = typeof navigator !== 'undefined' && 
+			navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+		
+		// Track resubscription attempts to prevent infinite loops in Firefox
+		if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+			const resubAttemptKey = 'wsResubscriptionAttempts';
+			const now = Date.now();
+			const lastAttemptTimeKey = 'wsLastResubscriptionAttempt';
+			const lastAttemptTime = parseInt(sessionStorage.getItem(lastAttemptTimeKey) || '0', 10);
+			const timeSinceLastAttempt = now - lastAttemptTime;
+			
+			// Reset counter if it's been more than 2 minutes since last attempt
+			if (timeSinceLastAttempt > 120000) {
+				sessionStorage.setItem(resubAttemptKey, '1');
+			} else {
+				// Increment attempt counter
+				const attempts = parseInt(sessionStorage.getItem(resubAttemptKey) || '0', 10) + 1;
+				sessionStorage.setItem(resubAttemptKey, attempts.toString());
+				
+				// If too many attempts in a short period, especially in Firefox, throttle
+				if (attempts > 10 && isFirefox) {
+					wsLog(`Firefox detected with ${attempts} resubscription attempts in ${timeSinceLastAttempt/1000}s - throttling`, {
+						timeSinceLastAttempt: `${timeSinceLastAttempt}ms`,
+						browser: 'Firefox'
+					});
+					
+					// Don't resubscribe - we're in a resubscription loop
+					return;
+				}
+			}
+			
+			// Update last attempt time
+			sessionStorage.setItem(lastAttemptTimeKey, now.toString());
+		}
+				
 		// Get all active subscriptions from the manager
 		const activeSubscriptions = this.subscriptionManager.getActiveEntitySubscriptions();
 
@@ -934,9 +1009,12 @@ export class WebSocketService {
 
 		// Log resubscription attempt
 		if (WEBSOCKET_CLIENT_DEBUG) {
-			console.log(`Resubscribing to ${allSubscriptions.length} rooms`);
+			console.log(`Resubscribing to ${allSubscriptions.length} rooms${isFirefox ? ' (Firefox)' : ''}`);
 		}
 
+		// For Firefox, we'll use a much longer delay between subscriptions to prevent issues
+		const subscriptionDelay = isFirefox ? 300 : 50; // 300ms for Firefox, 50ms for others
+		
 		// Send subscribe messages for all subscriptions with slight delay between each
 		// to prevent overwhelming the service worker
 		if (allSubscriptions.length > 0) {
@@ -949,14 +1027,16 @@ export class WebSocketService {
 					entityId: sub.entityId
 				});
 
-				// Schedule next subscription with a small delay
+				// Schedule next subscription with browser-specific delay
 				setTimeout(() => {
 					resubscribeWithDelay(index + 1);
-				}, 50);
+				}, subscriptionDelay);
 			};
 
-			// Start the sequential resubscription
-			resubscribeWithDelay(0);
+			// Start the sequential resubscription with a small initial delay for Firefox
+			setTimeout(() => {
+				resubscribeWithDelay(0);
+			}, isFirefox ? 500 : 0);
 		}
 	}
 }

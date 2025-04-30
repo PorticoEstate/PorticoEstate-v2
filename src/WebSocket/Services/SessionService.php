@@ -55,11 +55,18 @@ class SessionService
                 $userInfo = $this->extractUserInfoFromSession($bookingSessionId);
             }
             
-            // Store cookies and session in connection for later use
+            // Extract User-Agent for browser information
+            $userAgent = 'unknown';
+            if (isset($conn->httpRequest) && $conn->httpRequest->hasHeader('User-Agent')) {
+                $userAgent = $conn->httpRequest->getHeader('User-Agent')[0];
+            }
+            
+            // Store cookies, session, and user-agent in connection for later use
             $conn->cookies = $cookies;
             $conn->sessionId = $sessionId;
             $conn->bookingSessionId = $bookingSessionId;
             $conn->userInfo = $userInfo;
+            $conn->userAgent = $userAgent;
             
             // Log the extracted data with limited session ID info for security
             $maskedSessionId = $sessionId ? substr($sessionId, 0, 8) . '...' : null;
@@ -70,7 +77,8 @@ class SessionService
                 'bookingSessionId' => $maskedBookingSessionId,
                 'hasBookingSession' => !empty($bookingSessionId),
                 'userInfo' => $userInfo,
-                'cookiesCount' => count($cookies)
+                'cookiesCount' => count($cookies),
+                'userAgent' => $userAgent
             ]);
         } else {
             $this->logger->info("No cookies found in connection request");

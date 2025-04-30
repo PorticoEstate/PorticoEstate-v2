@@ -234,8 +234,8 @@ export class SubscriptionManager {
           console.error(`Error in message type subscription callback:`, error);
         }
       });
-    // } else if (message.type !== 'ping' && message.type !== 'pong') {
-    } else {
+    } else if (message.type !== 'ping' && message.type !== 'pong' && 
+              message.type !== 'server_ping' && message.type !== 'server_pong') {
       // Only log errors for non-ping/pong messages to reduce noise
       // Ping/pong messages are expected to sometimes have no subscribers
       console.log(`No subscription callbacks for message type: ${message.type}`, message);

@@ -27,6 +27,7 @@ interface WebSocketProviderProps {
   autoReconnect?: boolean;
   reconnectInterval?: number;
   pingInterval?: number;
+  disableServiceWorker?: boolean;
 }
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
@@ -35,6 +36,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   autoReconnect = true,
   reconnectInterval = 5000,
   pingInterval = 600000, // Changed from 30000 (30s) to 600000 (10min)
+  disableServiceWorker = false,
 }) => {
   const [status, setStatus] = useState<WebSocketStatus>('CLOSED');
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
@@ -58,161 +60,189 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
     if (typeof window === 'undefined') return; // Skip on server-side rendering
 
+    // Setup function for direct WebSocket connection as fallback
+    const setupDirectWebSocket = () => {
+      // StrictMode protection - prevent creating a new connection if one already exists and is open
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        console.log('Direct WebSocket connection already exists and is open, skipping creation');
+        return;
+      }
+
+      // If we have a reference but it's not in OPEN state, clean it up before creating a new one
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.OPEN) {
+        console.log('Existing WebSocket is not in OPEN state, cleaning up before reconnecting');
+        try {
+          wsRef.current.close();
+        } catch (e) {
+          console.error('Error closing non-open WebSocket:', e);
+        }
+        wsRef.current = null;
+      }
+
+      try {
+        const wsUrl = customUrl || getDefaultWebSocketUrl();
+        if (!wsUrl) {
+          console.error('No WebSocket URL available');
+          setStatus('ERROR');
+          return;
+        }
+
+        console.log('Creating new direct WebSocket connection');
+        // Create a new WebSocket connection
+        const ws = new WebSocket(wsUrl);
+        isInitializedRef.current = true;
+
+        // Set up WebSocket event handlers
+        ws.onopen = () => {
+          console.log('Direct WebSocket connection established');
+          setStatus('OPEN');
+
+          // Setup ping interval
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+          }
+          pingIntervalRef.current = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'ping',
+                timestamp: new Date().toISOString()
+              }));
+            }
+          }, pingInterval || 600000);
+
+          // Store interval ID for cleanup
+          setTimeout(() => {
+            // This is a hack to avoid the "cannot update state during render" error
+            setIsReady(true);
+          }, 0);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data) as WebSocketMessage;
+            setTimeout(() => {
+              setLastMessage(data);
+
+              // Specialized handling for reconnect_required in the initial setup
+              if (data.type === 'reconnect_required') {
+                console.log('Server requested reconnection:', data.message);
+
+                // Clear existing ping interval
+                if (pingIntervalRef.current) {
+                  clearInterval(pingIntervalRef.current);
+                  pingIntervalRef.current = null;
+                }
+
+                // Close current connection
+                ws.close();
+                wsRef.current = null;
+
+                // Trigger reconnection after a brief delay
+                setStatus('RECONNECTING');
+                setTimeout(() => {
+                  setStatus('CONNECTING');
+                }, 1000);
+              }
+              // Handle server_ping directly in the WebSocket handler
+              else if (data.type === 'server_ping') {
+                // For direct connection mode, immediately respond with a pong
+                try {
+                  ws.send(JSON.stringify({
+                    type: 'pong',
+                    timestamp: new Date().toISOString(),
+                    reply_to: data.id || null
+                  }));
+                } catch (error) {
+                  console.error('Error sending pong response to server_ping:', error);
+                }
+                
+                // Process through subscription manager for direct WebSocket mode
+                const subscriptionManager = SubscriptionManager.getInstance();
+                subscriptionManager.handleMessage(data);
+
+                // Also use the standard message handler
+                handleMessage(data);
+              }
+              // For all other messages, use the standard handler
+              else {
+                // Process through subscription manager for direct WebSocket mode
+                // This ensures message subscriptions work even without service worker
+                const subscriptionManager = SubscriptionManager.getInstance();
+                subscriptionManager.handleMessage(data);
+
+                // Also use the standard message handler for backward compatibility
+                handleMessage(data);
+              }
+            }, 0);
+          } catch (e) {
+            console.error('Error parsing WebSocket message:', e);
+          }
+        };
+
+        ws.onclose = (event) => {
+          console.log('Direct WebSocket connection closed', event.code, event.reason);
+          setStatus('CLOSED');
+
+          // Important: Set wsRef to null if the connection is actually closed
+          // This ensures we don't have a reference to a closed socket
+          if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSED) {
+            console.log('Setting websocket reference to null since connection is closed');
+            wsRef.current = null;
+          }
+
+          // Reconnect if needed
+          if (autoReconnect) {
+            console.log(`Attempting to reconnect in ${reconnectInterval || 5000}ms`);
+            setStatus('RECONNECTING');
+
+            // Only setup a new reconnection if not already reconnecting
+            setTimeout(() => {
+              if (!isReconnectingRef.current) {
+                setupDirectWebSocket();
+              } else {
+                console.log('Reconnection already in progress, skipping additional reconnect attempt');
+              }
+            }, reconnectInterval || 5000);
+          } else {
+            // Reset initialization flags when not auto-reconnecting
+            isInitializedRef.current = false;
+            isReconnectingRef.current = false;
+          }
+        };
+
+        ws.onerror = () => {
+          console.error('Direct WebSocket error');
+          setStatus('ERROR');
+          // Reset reconnection flag on error
+          isReconnectingRef.current = false;
+        };
+
+        // Store the WebSocket instance in a ref for later use
+        wsRef.current = ws;
+      } catch (error) {
+        console.error('Failed to setup direct WebSocket:', error);
+        setStatus('ERROR');
+        isInitializedRef.current = false;
+        isReconnectingRef.current = false;
+      }
+    };
+
+    // Check if service worker is explicitly disabled via prop
+    if (disableServiceWorker) {
+      console.log('Service Worker explicitly disabled via disableServiceWorker prop - using direct WebSocket');
+      // Setup a direct WebSocket connection as fallback
+      setupDirectWebSocket();
+      return;
+    }
+
     // Perform a basic check for service worker support
     const swSupported = hasServiceWorkerAPI();
 
     // If service workers aren't supported, use direct WebSocket
     if (!swSupported) {
       console.warn('Service Workers are not supported in this browser - using direct WebSocket fallback');
-
+      
       // Setup a direct WebSocket connection as fallback
-      const setupDirectWebSocket = () => {
-        // StrictMode protection - prevent creating a new connection if one already exists and is open
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          console.log('Direct WebSocket connection already exists and is open, skipping creation');
-          return;
-        }
-
-        // If we have a reference but it's not in OPEN state, clean it up before creating a new one
-        if (wsRef.current && wsRef.current.readyState !== WebSocket.OPEN) {
-          console.log('Existing WebSocket is not in OPEN state, cleaning up before reconnecting');
-          try {
-            wsRef.current.close();
-          } catch (e) {
-            console.error('Error closing non-open WebSocket:', e);
-          }
-          wsRef.current = null;
-        }
-
-        try {
-          const wsUrl = customUrl || getDefaultWebSocketUrl();
-          if (!wsUrl) {
-            console.error('No WebSocket URL available');
-            setStatus('ERROR');
-            return;
-          }
-
-          console.log('Creating new direct WebSocket connection');
-          // Create a new WebSocket connection
-          const ws = new WebSocket(wsUrl);
-          isInitializedRef.current = true;
-
-          // Set up WebSocket event handlers
-          ws.onopen = () => {
-            console.log('Direct WebSocket connection established');
-            setStatus('OPEN');
-
-            // Setup ping interval
-            if (pingIntervalRef.current) {
-              clearInterval(pingIntervalRef.current);
-            }
-            pingIntervalRef.current = setInterval(() => {
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'ping',
-                  timestamp: new Date().toISOString()
-                }));
-              }
-            }, pingInterval || 600000);
-
-            // Store interval ID for cleanup
-            setTimeout(() => {
-              // This is a hack to avoid the "cannot update state during render" error
-              setIsReady(true);
-            }, 0);
-          };
-
-          ws.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data) as WebSocketMessage;
-              setTimeout(() => {
-                setLastMessage(data);
-
-                // Specialized handling for reconnect_required in the initial setup
-                if (data.type === 'reconnect_required') {
-                  console.log('Server requested reconnection:', data.message);
-
-                  // Clear existing ping interval
-                  if (pingIntervalRef.current) {
-                    clearInterval(pingIntervalRef.current);
-                    pingIntervalRef.current = null;
-                  }
-
-                  // Close current connection
-                  ws.close();
-                  wsRef.current = null;
-
-                  // Trigger reconnection after a brief delay
-                  setStatus('RECONNECTING');
-                  setTimeout(() => {
-                    setStatus('CONNECTING');
-                  }, 1000);
-                }
-                // For all other messages, use the standard handler
-                else {
-                  // Process through subscription manager for direct WebSocket mode
-                  // This ensures message subscriptions work even without service worker
-                  const subscriptionManager = SubscriptionManager.getInstance();
-                  subscriptionManager.handleMessage(data);
-
-                  // Also use the standard message handler for backward compatibility
-                  handleMessage(data);
-                }
-              }, 0);
-            } catch (e) {
-              console.error('Error parsing WebSocket message:', e);
-            }
-          };
-
-          ws.onclose = (event) => {
-            console.log('Direct WebSocket connection closed', event.code, event.reason);
-            setStatus('CLOSED');
-
-            // Important: Set wsRef to null if the connection is actually closed
-            // This ensures we don't have a reference to a closed socket
-            if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSED) {
-              console.log('Setting websocket reference to null since connection is closed');
-              wsRef.current = null;
-            }
-
-            // Reconnect if needed
-            if (autoReconnect) {
-              console.log(`Attempting to reconnect in ${reconnectInterval || 5000}ms`);
-              setStatus('RECONNECTING');
-
-              // Only setup a new reconnection if not already reconnecting
-              setTimeout(() => {
-                if (!isReconnectingRef.current) {
-                  setupDirectWebSocket();
-                } else {
-                  console.log('Reconnection already in progress, skipping additional reconnect attempt');
-                }
-              }, reconnectInterval || 5000);
-            } else {
-              // Reset initialization flags when not auto-reconnecting
-              isInitializedRef.current = false;
-              isReconnectingRef.current = false;
-            }
-          };
-
-          ws.onerror = () => {
-            console.error('Direct WebSocket error');
-            setStatus('ERROR');
-            // Reset reconnection flag on error
-            isReconnectingRef.current = false;
-          };
-
-          // Store the WebSocket instance in a ref for later use
-          wsRef.current = ws;
-        } catch (error) {
-          console.error('Failed to setup direct WebSocket:', error);
-          setStatus('ERROR');
-          isInitializedRef.current = false;
-          isReconnectingRef.current = false;
-        }
-      };
-
-      // Initialize the direct WebSocket connection
       setupDirectWebSocket();
       return;
     }
@@ -222,7 +252,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       url: customUrl || getDefaultWebSocketUrl(),
       autoReconnect,
       reconnectInterval,
-      pingInterval
+      pingInterval,
+      disableServiceWorker
     };
 
     // Set up event listeners
@@ -299,7 +330,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       // during development, so we don't want to reset these flags unless necessary
       // This is managed automatically by React's useEffect cleanup mechanism
     };
-  }, [wsService, customUrl, autoReconnect, reconnectInterval, pingInterval]);
+  }, [wsService, customUrl, autoReconnect, reconnectInterval, pingInterval, disableServiceWorker]);
 
   // Handle global message processing - define this before handleReconnection to break circular dependency
   const handleMessage = useCallback((data: WebSocketMessage) => {
@@ -366,7 +397,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
       case 'ping':
       case 'pong':
-      case 'server_ping': {
+      case 'server_ping':
+      case 'server_pong': {
         // Ping/pong messages are primarily handled directly in the WebSocket handlers
 
         // Handle entity-specific ping
@@ -375,6 +407,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
           // The subscription manager will handle sending the pong response
           // This is processed in subscription-manager.ts
+        } else if (data.type === 'server_ping' && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          // For direct connection mode, we should respond to server_ping with a pong
+          try {
+            wsRef.current.send(JSON.stringify({
+              type: 'pong',
+              timestamp: new Date().toISOString(),
+              reply_to: data.id || null
+            }));
+          } catch (error) {
+            console.error('Error sending pong response to server_ping:', error);
+          }
         } else {
           // Regular ping/pong handling
           // console.log(`Received ${data.type} message`);
@@ -488,6 +531,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                   setTimeout(() => {
                     setStatus('CONNECTING');
                   }, 1000);
+                }
+                // Handle server_ping directly in the WebSocket handler
+                else if (data.type === 'server_ping') {
+                  // For direct connection mode, immediately respond with a pong
+                  try {
+                    ws.send(JSON.stringify({
+                      type: 'pong',
+                      timestamp: new Date().toISOString(),
+                      reply_to: data.id || null
+                    }));
+                  } catch (error) {
+                    console.error('Error sending pong response to server_ping:', error);
+                  }
+                  
+                  // Process through subscription manager for direct WebSocket mode
+                  const subscriptionManager = SubscriptionManager.getInstance();
+                  subscriptionManager.handleMessage(data);
+
+                  // Also use the standard message handler
+                  handleMessage(data);
                 }
                 // Handle other message types
                 else {
@@ -624,7 +687,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     const swSupported = hasServiceWorkerAPI();
 
     // If using direct WebSocket fallback
-    if (wsRef.current || !swSupported) {
+    if (wsRef.current || !swSupported || disableServiceWorker) {
       // Use our handleReconnection function for direct WebSocket connections
       handleReconnection();
     }
@@ -633,10 +696,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       wsService.reconnect({
         url: customUrl || getDefaultWebSocketUrl(),
         reconnectInterval,
-        pingInterval
+        pingInterval,
+        disableServiceWorker
       });
     }
-  }, [wsService, customUrl, reconnectInterval, pingInterval, handleReconnection]);
+  }, [wsService, customUrl, reconnectInterval, pingInterval, handleReconnection, disableServiceWorker]);
 
   // Handle reconnection when status changes to CONNECTING
   useEffect(() => {
@@ -659,8 +723,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       // Initialize a new connection
       const swSupported = hasServiceWorkerAPI();
 
-      // For direct WebSocket mode
-      if (!swSupported) {
+      // For direct WebSocket mode or if service worker is disabled
+      if (!swSupported || disableServiceWorker) {
         // If we're using direct WebSocket, call setupDirectWebSocket which we defined in the mount effect
         const wsUrl = customUrl || getDefaultWebSocketUrl();
         if (wsUrl) {
@@ -697,6 +761,20 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
               try {
                 const data = JSON.parse(event.data) as WebSocketMessage;
                 setLastMessage(data);
+
+                // Handle server_ping directly in the WebSocket handler
+                if (data.type === 'server_ping') {
+                  // For direct connection mode, immediately respond with a pong
+                  try {
+                    ws.send(JSON.stringify({
+                      type: 'pong',
+                      timestamp: new Date().toISOString(),
+                      reply_to: data.id || null
+                    }));
+                  } catch (error) {
+                    console.error('Error sending pong response to server_ping:', error);
+                  }
+                }
 
                 // Process through subscription manager for direct WebSocket mode
                 // This ensures message subscriptions work even without service worker
@@ -756,11 +834,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         wsService.reconnect({
           url: customUrl || getDefaultWebSocketUrl(),
           reconnectInterval,
-          pingInterval
+          pingInterval,
+          disableServiceWorker
         });
       }
     }
-  }, [status, customUrl, pingInterval, reconnectInterval, autoReconnect, wsService, handleMessage]);
+  }, [status, customUrl, pingInterval, reconnectInterval, autoReconnect, wsService, handleMessage, disableServiceWorker]);
 
   const value = {
     status,

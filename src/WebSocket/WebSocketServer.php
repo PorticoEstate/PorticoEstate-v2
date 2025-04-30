@@ -60,13 +60,25 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
         // Extract session data
         $this->sessionService->extractSessionData($conn);
         
+        // Log detailed connection information including browser details
+        $this->logger->info("New connection!", [
+            'clientId' => $conn->resourceId,
+            'ipAddress' => $conn->remoteAddress ?? 'unknown',
+            'totalClients' => $this->connectionService->getClientCount() + 1, // +1 for this new connection
+            'hasSession' => isset($conn->sessionId),
+            'hasBookingSession' => isset($conn->bookingSessionId),
+            'hasUserInfo' => isset($conn->userInfo),
+            'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown'
+        ]);
+        
         // Add connection
         $this->connectionService->addConnection($conn);
         
         // Check if booking session exists
         if (!isset($conn->bookingSessionId)) {
             $this->logger->warning("Client connected without booking session", [
-                'clientId' => $conn->resourceId
+                'clientId' => $conn->resourceId,
+                'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown'
             ]);
             
             // Send reconnect request
@@ -286,14 +298,14 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             }
             
             // Log pong with detailed information
-            $this->logger->info("Pong received from client", [
+            $this->logger->info("Ping-Pong", [
                 'clientId' => $from->resourceId,
-                'pingId' => $data['id'] ?? 'unknown',
+                'action' => 'pong received',
+                'pongId' => $data['id'] ?? 'unknown',
                 'replyTo' => $data['reply_to'] ?? 'unknown',
                 'sessionActive' => isset($from->sessionId),
-                'hasBookingSession' => isset($from->bookingSessionId),
-                'rtt' => $rtt !== null ? $rtt . 'ms' : 'unknown',
-                'timestamp' => date('c')
+                'browser' => isset($from->userAgent) ? $from->userAgent : 'unknown',
+                'rtt' => $rtt !== null ? $rtt . 'ms' : 'unknown'
             ]);
             
             return;
@@ -311,10 +323,18 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
      */
     public function onClose(ConnectionInterface $conn): void
     {
-        // Collect information about the connection for logging
+        // Log a more concise connection closed message first
+        $this->logger->info("Connection closed", [
+            'clientId' => $conn->resourceId,
+            'ipAddress' => $conn->remoteAddress ?? 'unknown',
+            'remainingClients' => $this->connectionService->getClientCount() - 1 // -1 for this connection being removed
+        ]);
+        
+        // Collect detailed information about the connection for logging
         $clientInfo = [
             'clientId' => $conn->resourceId,
             'remoteAddress' => $conn->remoteAddress ?? 'unknown',
+            'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown',
             'httpHeaders' => isset($conn->httpRequest) ? 'available' : 'none',
             'closeCode' => property_exists($conn, 'closeCode') ? $conn->closeCode : 'unknown',
             'closeReason' => property_exists($conn, 'closeReason') ? $conn->closeReason : 'unknown',
@@ -324,7 +344,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             'connectionDuration' => isset($conn->connectTime) ? (time() - $conn->connectTime) . ' seconds' : 'unknown'
         ];
         
-        $this->logger->info("Connection closing with details", $clientInfo);
+        $this->logger->debug("Connection closing with details", $clientInfo);
         
         // If connection was in rooms, handle room departure
         if (isset($conn->roomId) || $clientInfo['roomCount'] > 0) {

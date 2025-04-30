@@ -7,6 +7,7 @@ import {wsLog as wslogbase} from "@/service/websocket/util";
 
 interface ServiceWorkerProviderProps {
 	children: ReactNode;
+	disableServiceWorker?: boolean;
 }
 const wsLog = (message: string, data: any = null) => wslogbase('WSProvider', message, data)
 
@@ -14,13 +15,20 @@ const wsLog = (message: string, data: any = null) => wslogbase('WSProvider', mes
  * Provider component that handles WebSocket Service Worker registration
  * This component must be a client component (use client directive)
  */
-export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children}) => {
+export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children, disableServiceWorker}) => {
 	const [isRegistered, setIsRegistered] = useState(false);
 	const [fallbackToDirectMode, setFallbackToDirectMode] = useState(false);
 
 	useEffect(() => {
 		// Skip if we're not in a browser environment
 		if (typeof window === 'undefined') return;
+
+		// If service worker is explicitly disabled via prop
+		if (disableServiceWorker) {
+			wsLog('Direct mode requested via disableServiceWorker prop');
+			setFallbackToDirectMode(true);
+			return;
+		}
 
 		// If URL has direct=true, don't even try service workers
 		const urlParams = new URLSearchParams(window.location.search);

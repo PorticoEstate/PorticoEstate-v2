@@ -108,6 +108,7 @@ export interface ServiceWorkerWebSocketOptions {
   autoReconnect?: boolean;
   reconnectInterval?: number;
   pingInterval?: number;
+  disableServiceWorker?: boolean;
 }
 
 // Events that can be dispatched

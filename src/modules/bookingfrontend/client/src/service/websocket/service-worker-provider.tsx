@@ -3,10 +3,12 @@
 import {FC, ReactNode, useEffect, useState} from 'react';
 import {registerWebSocketServiceWorker, isWebSocketServiceWorkerActive} from './service-worker-registration';
 import {checkServiceWorkerSupport} from './service-worker-check';
+import {wsLog as wslogbase} from "@/service/websocket/util";
 
 interface ServiceWorkerProviderProps {
 	children: ReactNode;
 }
+const wsLog = (message: string, data: any = null) => wslogbase('WSProvider', message, data)
 
 /**
  * Provider component that handles WebSocket Service Worker registration
@@ -23,7 +25,7 @@ export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children}
 		// If URL has direct=true, don't even try service workers
 		const urlParams = new URLSearchParams(window.location.search);
 		if (urlParams.get('direct') === 'true' || urlParams.get('direct') === '1') {
-			console.log('Direct mode requested via URL parameter');
+			wsLog('Direct mode requested via URL parameter');
 			setFallbackToDirectMode(true);
 			return;
 		}
@@ -50,7 +52,7 @@ export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children}
 					const isActive = await isWebSocketServiceWorkerActive();
 
 					if (isActive) {
-						console.log('WebSocket service worker is already active');
+						wsLog('WebSocket service worker is already active');
 						setIsRegistered(true);
 						return;
 					}
@@ -60,7 +62,7 @@ export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children}
 					setIsRegistered(success);
 
 					if (success) {
-						console.log('WebSocket service worker registered successfully');
+						wsLog('WebSocket service worker registered successfully');
 					} else {
 						console.error('Failed to register WebSocket service worker');
 						// If registration failed, we'll fall back to direct mode

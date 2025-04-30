@@ -153,7 +153,6 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 				calendarViewMode === 'calendar' &&
 				<ButtonGroup data-color='accent' className={styles.modeSelect}>
 					<Button variant={view !== 'listWeek' ? 'primary' : 'tertiary'}
-							aria-active={'true'}
 							aria-current={'true'} data-size={'sm'}
 							className={'captialize subtle'} onClick={() => {
 						props.setLastCalendarView()

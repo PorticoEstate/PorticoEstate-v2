@@ -13,9 +13,8 @@ import {
 	EntitySubscription,
 	SubscriptionCallback
 } from './subscription-manager';
-
-// Toggle for client-side logging
-export const WEBSOCKET_CLIENT_DEBUG = false;
+import {WEBSOCKET_CLIENT_DEBUG, wsLog as wslogbase} from './util';
+const wsLog = (message: string, data: any = null) => wslogbase('WSService', message, data)
 
 // WebSocket Service Class
 export class WebSocketService {
@@ -154,9 +153,12 @@ export class WebSocketService {
 				this.serviceWorkerRegistration = existingRegistration;
 			} else {
 				try {
-					// Register a new service worker
-					this.serviceWorkerRegistration = await navigator.serviceWorker.register('/websocket-sw.js', {
-						scope: '/'
+					// Register a new service worker with correct base path
+					const swURL = `${this.basePath}/websocket-sw.js`;
+					const scope = `${this.basePath}/`;
+					console.log('Registering new service worker using scope:', scope);
+					this.serviceWorkerRegistration = await navigator.serviceWorker.register(swURL, {
+						scope: scope
 					});
 					if (WEBSOCKET_CLIENT_DEBUG) {
 						console.log('WebSocket Service Worker registered with scope:', this.serviceWorkerRegistration.scope);
@@ -178,14 +180,26 @@ export class WebSocketService {
 						console.warn('Falling back to direct WebSocket connection due to service worker registration failure');
 					}
 
-					// Try to fetch the service worker file to see if it exists
+					// Try to verify the service worker file MIME type
 					try {
-						const response = await fetch(`${this.basePath}/websocket-sw.js`);
-						if (!response.ok) {
-							console.error('Service worker file not found or not accessible:', response.status, response.statusText);
+						// Import the verifier function dynamically to avoid circular dependencies
+						const { verifyServiceWorkerMimeType } = await import('./service-worker-fallback');
+						const swUrl = `${this.basePath}/websocket-sw.js`;
+
+						const isValid = await verifyServiceWorkerMimeType(swUrl);
+						if (!isValid) {
+							console.error('Service worker file has invalid MIME type or is not accessible');
+							// Store the error in session storage so we can skip service worker on future page loads
+							if (typeof sessionStorage !== 'undefined') {
+								sessionStorage.setItem('sw_error', 'invalid_script');
+							}
 						}
 					} catch (fetchError) {
-						console.error('Could not fetch service worker file:', fetchError);
+						console.error('Could not verify service worker file:', fetchError);
+						// Store the error in session storage
+						if (typeof sessionStorage !== 'undefined') {
+							sessionStorage.setItem('sw_error', 'fetch_error');
+						}
 					}
 
 					// Signal that we need to use direct WebSocket connection
@@ -201,14 +215,71 @@ export class WebSocketService {
 			} else {
 				// Set up a timeout for activation
 				const activationPromise = new Promise<boolean>((resolve) => {
+					// Increase timeout to 10 seconds
 					const timeout = setTimeout(() => {
-						console.error('Service worker activation timed out');
-						// Signal fallback is needed
-						this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
-						resolve(false);
-					}, 5000); // 5 second timeout
+						wsLog('Service worker activation timed out, attempting to use existing registration');
+						// Even if activation times out, we can still try to use the registration
+						// if it's in the correct state
+						if (this.serviceWorkerRegistration?.active) {
+							wsLog('Found active service worker despite timeout, proceeding with connection', {
+								scriptURL: this.serviceWorkerRegistration.active.scriptURL,
+								state: this.serviceWorkerRegistration.active.state,
+								timestamp: Date.now()
+							});
+							this.connectToServiceWorker(options);
+							this.isInitialized = true;
+							resolve(true);
+						} else {
+							wsLog('Service worker activation timed out and no active registration', {
+								registrations: 'Checking existing registrations...'
+							});
 
-					this.serviceWorkerRegistration?.addEventListener('activate', () => {
+							// Try to find any available registrations as a last resort
+							navigator.serviceWorker.getRegistrations().then(regs => {
+								wsLog('Found service worker registrations:', regs.length > 0 ?
+									regs.map(r => ({
+										scriptURL: r.active?.scriptURL,
+										state: r.active?.state,
+										installing: !!r.installing,
+										waiting: !!r.waiting
+									})) : 'none');
+							});
+
+							// Signal fallback is needed
+							this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
+							resolve(false);
+						}
+					}, 10000); // 10 second timeout
+
+					// Check if it's already active, which could happen in some browsers
+					if (this.serviceWorkerRegistration?.active) {
+						wsLog('Service worker already active, no need to wait for activation', {
+							scriptURL: this.serviceWorkerRegistration.active.scriptURL,
+							state: this.serviceWorkerRegistration.active.state,
+							timestamp: Date.now()
+						});
+						clearTimeout(timeout);
+						this.connectToServiceWorker(options);
+						this.isInitialized = true;
+						resolve(true);
+						return;
+					}
+
+					// Otherwise wait for activation event
+					this.serviceWorkerRegistration?.addEventListener('activate', (event) => {
+						wsLog('Service worker activated via event listener', {
+							timestamp: Date.now(),
+							event: 'activate'
+						});
+
+						// Try to get details about the activated worker
+						if (this.serviceWorkerRegistration?.active) {
+							wsLog('Activated worker details', {
+								scriptURL: this.serviceWorkerRegistration.active.scriptURL,
+								state: this.serviceWorkerRegistration.active.state
+							});
+						}
+
 						clearTimeout(timeout);
 						this.connectToServiceWorker(options);
 						this.isInitialized = true;
@@ -230,18 +301,63 @@ export class WebSocketService {
 
 				// Set up a promise that resolves when controller is available
 				const controllerPromise = new Promise<boolean>((resolve) => {
+					// Check if controller is already available
+					if (navigator.serviceWorker.controller) {
+						console.log('Service worker controller already available, proceeding immediately');
+						this.connectToServiceWorker(options);
+						this.isInitialized = true;
+						resolve(true);
+						return;
+					}
+
+					// Increase timeout to 5 seconds
 					const timeout = setTimeout(() => {
-						console.error('Service worker controller change timed out');
-						// Signal fallback is needed
-						this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
-						resolve(false);
-					}, 3000); // 3 second timeout
+						wsLog('Service worker controller change timed out, attempting to proceed anyway', {
+							timeout: 5000,
+							hasController: !!navigator.serviceWorker.controller,
+							controller: navigator.serviceWorker.controller ? {
+								scriptURL: navigator.serviceWorker.controller.scriptURL,
+								state: navigator.serviceWorker.controller.state
+							} : null
+						});
+
+						// Check for any registrations that might be available
+						navigator.serviceWorker.getRegistrations().then(regs => {
+							wsLog('Available service worker registrations after controller timeout:',
+								regs.map(r => ({
+									active: r.active ? {
+										scriptURL: r.active.scriptURL,
+										state: r.active.state
+									} : null,
+									installing: !!r.installing,
+									waiting: !!r.waiting,
+									scope: r.scope
+								}))
+							);
+						});
+
+						// Even if controller change times out, try forcing a connection
+						this.connectToServiceWorker(options);
+						this.isInitialized = true;
+						resolve(true);
+					}, 5000); // 5 second timeout
 
 					navigator.serviceWorker.addEventListener('controllerchange', () => {
 						clearTimeout(timeout);
-						if (WEBSOCKET_CLIENT_DEBUG) {
-							console.log('Service worker controller now available');
+						wsLog('Service worker controller now available via event');
+
+						// Get and log controller information for debugging
+						const controller = navigator.serviceWorker.controller;
+						if (controller) {
+							wsLog('Controller details:', {
+								scriptURL: controller.scriptURL,
+								state: controller.state,
+								timestamp: Date.now()
+							});
+						} else {
+							wsLog('Controller event fired but controller is null/undefined!');
 						}
+
 						this.connectToServiceWorker(options);
 						this.isInitialized = true;
 						resolve(true);
@@ -269,6 +385,12 @@ export class WebSocketService {
 	// Check if there's already an active WebSocket connection
 	private async checkConnectionStatus(): Promise<WebSocketStatus> {
 		if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+			return 'CLOSED';
+		}
+
+		// Check if we have persistent service worker errors
+		if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('sw_error')) {
+			console.log('Cached service worker error found, not checking connection status');
 			return 'CLOSED';
 		}
 
@@ -311,13 +433,14 @@ export class WebSocketService {
 
 	// Connect to the service worker and initialize WebSocket
 	private async connectToServiceWorker(options: ServiceWorkerWebSocketOptions) {
+		wsLog('Attempting to connect to service worker with options:', options);
 		try {
 			// Check if connection is already active before attempting to connect
+			wsLog('Checking connection status before attempting to connect');
 			const status = await this.checkConnectionStatus();
+			wsLog(`Connection status check result: ${status}`);
 			if (status === 'OPEN') {
-				if (WEBSOCKET_CLIENT_DEBUG) {
-					console.log('Existing WebSocket connection detected, skipping connection request');
-				}
+				wsLog('Existing WebSocket connection detected, skipping connection request');
 				this.status = 'OPEN';
 
 				// Resubscribe after a short delay to ensure everything is ready

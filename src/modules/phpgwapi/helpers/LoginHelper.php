@@ -142,7 +142,7 @@ HTML;
 <!DOCTYPE html>
 	<html>
 	<head>
-		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+		<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
 		<script>
 			document.addEventListener('DOMContentLoaded', function() {
 				const selectElement = document.getElementById('type');
@@ -311,12 +311,12 @@ HTML;
 			$sectionOptions .= "<option value=\"$section\">$section</option>";
 		}
 
-		$html = '
+		$html = <<<HTML
             <!DOCTYPE html>
             <html>
             <head>
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
-            </head>
+		 		<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
+           </head>
             <body>
                 <div class="container">
                     <form method="POST" action="./login">
@@ -331,13 +331,13 @@ HTML;
                         <div class="mb-3">
                             <label for="logindomain">Domain:</label>
                             <select class="form-select" id="logindomain" name="logindomain">
-                                ' . $domainOptions . '
+                                {$domainOptions}
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="section">Section:</label>
                             <select class="form-select" id="section" name="section">
-                                ' . $sectionOptions . '
+                                {$sectionOptions}
                             </select>
                         </div>
                         <button type="submit" class="btn btn-primary">Submit</button>
@@ -345,7 +345,7 @@ HTML;
                 </div>
             </body>
             </html>
-        ';
+HTML;
 		$response = $response->withHeader('Content-Type', 'text/html');
 		$response->getBody()->write($html);
 		return $response;

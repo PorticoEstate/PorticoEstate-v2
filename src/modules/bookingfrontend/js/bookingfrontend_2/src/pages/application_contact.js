@@ -75,7 +75,7 @@ class ApplicationModel {
             return ApplicationCart.applicationCartItems()
         });
         this.applicationCartTotalSum = ko.computed(() => {
-			return this.applicationCartItems().flatMap(item => item.orders.map(order => order.sum)).reduce((a, b) => a + b, 0)
+			return this.applicationCartItems()?.flatMap(item => item.orders?.map(order => order.sum))?.reduce((a, b) => a + b, 0) || 0
             // return ApplicationCart.applicationCartItems()
         });
         this.applicationCartItemsEmpty = ko.computed(() => {

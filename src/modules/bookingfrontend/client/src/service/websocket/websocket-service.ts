@@ -90,6 +90,46 @@ export class WebSocketService {
 					this.dispatchEvent('message', {data: message.data});
 				} else if (message.type === 'websocket_error') {
 					this.dispatchEvent('error', {error: message.error});
+				} else if (message.type === 'ack') {
+					// Handle service worker acknowledgment
+					// This is for keepalive tracking and diagnostic purposes
+					wsLog(`Received acknowledgment from service worker`, {
+						receivedType: message.receivedType,
+						timestamp: message.timestamp,
+						clientId: message.clientId,
+						hasHeartbeatInfo: !!message.heartbeat_id
+					});
+					
+					// Update heartbeat tracking if this is acknowledging a heartbeat ping
+					if (message.heartbeat_id && message.heartbeat_count && typeof sessionStorage !== 'undefined') {
+						const lastHeartbeatKey = `lastHeartbeat_${message.heartbeat_id}`;
+						sessionStorage.setItem(lastHeartbeatKey, message.heartbeat_count.toString());
+						
+						// Reset missed heartbeats counter
+						if (parseInt(sessionStorage.getItem('missedHeartbeats') || '0', 10) > 0) {
+							sessionStorage.setItem('missedHeartbeats', '0');
+							wsLog('Reset missed heartbeats counter after successful acknowledgment');
+						}
+					}
+					
+					// We're removing the auto-ping response from acknowledgments
+					// This was causing a ping flood by creating a feedback loop
+					// The regular heartbeat interval is sufficient for keepalive
+					/*
+					if (!message.ack_response) {
+						// Send delayed ping to avoid overwhelming the service worker
+						setTimeout(() => {
+							// Only send if we're still initialized
+							if (this.isInitialized) {
+								this.sendMessageToServiceWorker({
+									type: 'ping',
+									timestamp: new Date().toISOString(),
+									ack_response: true
+								});
+							}
+						}, 1000); // 1 second delay
+					}
+					*/
 				}
 			});
 		}
@@ -547,23 +587,81 @@ export class WebSocketService {
 			clearInterval(this.heartbeatInterval);
 		}
 
-		// Send a ping every 30 seconds (less than the 2-minute inactive threshold)
+		const heartbeatId = Math.random().toString(36).substring(2, 10);
+		let heartbeatCount = 0;
+		const heartbeatInterval = 30000; // 30 seconds (increased from 15 seconds to reduce message frequency)
+		
+		// Log heartbeat setup
+		wsLog(`Starting client heartbeat ${heartbeatId} with interval ${heartbeatInterval/1000}s`);
+		
+		// Send a ping every 30 seconds (less than the 3-minute inactive threshold)
 		this.heartbeatInterval = setInterval(() => {
 			if (this.isInitialized && this.status !== 'CLOSED') {
-				if (WEBSOCKET_CLIENT_DEBUG) {
-					console.log('Sending client heartbeat to prevent disconnection');
+				heartbeatCount++;
+				
+				// Add more detailed heartbeat information
+				const heartbeatMessage = {
+					type: 'ping',
+					heartbeat_id: heartbeatId,
+					count: heartbeatCount,
+					timestamp: new Date().toISOString()
+				};
+				
+				wsLog(`Sending client heartbeat #${heartbeatCount}`, heartbeatMessage);
+				
+				// Track last heartbeat acknowledged status
+				const lastHeartbeatKey = `lastHeartbeat_${heartbeatId}`;
+				let missedHeartbeats = 0;
+				
+				// Check if we're missing too many heartbeats
+				if (typeof sessionStorage !== 'undefined') {
+					const missedCount = sessionStorage.getItem('missedHeartbeats') || '0';
+					missedHeartbeats = parseInt(missedCount, 10);
+					
+					if (missedHeartbeats > 3) {
+						wsLog(`Too many missed heartbeats (${missedHeartbeats}), attempting reconnection`, {
+							heartbeatId,
+							timestamp: new Date().toISOString()
+						});
+						
+						// Reset counter
+						sessionStorage.setItem('missedHeartbeats', '0');
+						
+						// Force reconnection
+						this.reconnect();
+						return;
+					}
 				}
-				this.sendMessageToServiceWorker({
-					type: 'ping'
-				});
+				
+				// Set up a one-time handler to check if heartbeat is acknowledged
+				setTimeout(() => {
+					// If last heartbeat timestamp doesn't match, increment missed count
+					if (typeof sessionStorage !== 'undefined') {
+						const lastHeartbeat = sessionStorage.getItem(lastHeartbeatKey);
+						if (lastHeartbeat !== heartbeatCount.toString()) {
+							// Increment missed heartbeats
+							sessionStorage.setItem('missedHeartbeats', (missedHeartbeats + 1).toString());
+							wsLog(`Heartbeat #${heartbeatCount} not acknowledged, missed count: ${missedHeartbeats + 1}`);
+						}
+					}
+				}, 5000); // Check after 5 seconds
+				
+				// Send the heartbeat
+				this.sendMessageToServiceWorker(heartbeatMessage);
+				
+				// Store the sent heartbeat count
+				if (typeof sessionStorage !== 'undefined') {
+					sessionStorage.setItem(lastHeartbeatKey, heartbeatCount.toString());
+				}
 			} else {
 				// If we're disconnected, stop the heartbeat
 				if (this.heartbeatInterval) {
+					wsLog(`Stopping heartbeat ${heartbeatId} after ${heartbeatCount} beats - connection closed`);
 					clearInterval(this.heartbeatInterval);
 					this.heartbeatInterval = null;
 				}
 			}
-		}, 30000); // 30 seconds
+		}, heartbeatInterval);
 	}
 
 	// Stop the heartbeat

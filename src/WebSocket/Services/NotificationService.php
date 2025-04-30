@@ -194,24 +194,26 @@ class NotificationService
 
     /**
      * Send a server ping to all clients to keep connections alive
-     * This happens every 4 minutes, and the client should respond with a pong
+     * This happens every minute, and the client should respond with a pong
      * 
      * @return void
      */
     public function sendServerPing(): void
     {
         $clientCount = count($this->clients);
+        $startTime = microtime(true);
         
-        // Only log if there are clients
+        // Enhanced logging for keepalive diagnostics
+        $this->logger->info("Starting server ping process", [
+            'recipients' => $clientCount,
+            'timestamp' => date('c')
+        ]);
+        
         if ($clientCount > 0) {
-            $this->logger->info("Server ping", [
-                'recipients' => $clientCount,
-                'timestamp' => date('c')
-            ]);
-            
             $pingMessage = json_encode([
                 'type' => 'server_ping',
-                'timestamp' => date('c')
+                'timestamp' => date('c'),
+                'id' => uniqid('ping_')  // Add a unique ID to track individual pings
             ]);
             
             $successCount = 0;
@@ -221,11 +223,22 @@ class NotificationService
                 try {
                     $client->send($pingMessage);
                     $successCount++;
+                    
+                    // Add connection info to diagnostic data
+                    if (isset($client->resourceId)) {
+                        $this->logger->debug("Ping sent to client", [
+                            'clientId' => $client->resourceId,
+                            'sessionActive' => isset($client->sessionId),
+                            'hasBookingSession' => isset($client->bookingSessionId),
+                            'connectionAge' => isset($client->connectTime) ? (time() - $client->connectTime) . 's' : 'unknown'
+                        ]);
+                    }
                 } catch (\Exception $e) {
                     $failCount++;
                     $this->logger->error("Ping failure", [
                         'clientId' => $client->resourceId,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
+                        'errorCode' => $e->getCode()
                     ]);
                     
                     // Close the connection if we can't send a ping
@@ -237,14 +250,18 @@ class NotificationService
                 }
             }
             
-            // Log summary
-            if ($failCount > 0) {
-                $this->logger->info("Ping summary", [
-                    'success' => $successCount,
-                    'failed' => $failCount,
-                    'total' => $clientCount
-                ]);
-            }
+            // Calculate elapsed time
+            $elapsed = (microtime(true) - $startTime) * 1000; // in ms
+            
+            // Always log summary for keepalive diagnostics
+            $this->logger->info("Ping summary", [
+                'success' => $successCount,
+                'failed' => $failCount,
+                'total' => $clientCount,
+                'elapsed_ms' => round($elapsed, 2)
+            ]);
+        } else {
+            $this->logger->info("No clients connected for ping");
         }
     }
 
@@ -294,15 +311,34 @@ class NotificationService
                     ]);
                     break;
                 case 'ping':
+                    // Generate a unique pong ID to track responses
+                    $pongId = uniqid('pong_');
+                    
                     // Reply with a pong directly to the client to keep the connection alive
                     $from->send(json_encode([
                         'type' => 'pong',
-                        'timestamp' => date('c')
+                        'timestamp' => date('c'),
+                        'id' => $pongId,
+                        'reply_to' => $data['id'] ?? null, // Echo back the ping ID if any
+                        'heartbeat_id' => $data['heartbeat_id'] ?? null // Track client heartbeat ID
                     ]));
-                    $this->logger->info("Ping-Pong", [
+                    
+                    // Enhanced logging with ping details
+                    $pingInfo = [
                         'clientId' => $from->resourceId,
-                        'action' => 'pong sent'
-                    ]);
+                        'action' => 'pong sent',
+                        'pongId' => $pongId,
+                        'replyTo' => $data['id'] ?? 'unknown',
+                        'sessionActive' => isset($from->sessionId)
+                    ];
+                    
+                    // Add heartbeat info if present
+                    if (isset($data['heartbeat_id'])) {
+                        $pingInfo['heartbeat_id'] = $data['heartbeat_id'];
+                        $pingInfo['heartbeat_count'] = $data['count'] ?? 'unknown';
+                    }
+                    
+                    $this->logger->info("Ping-Pong", $pingInfo);
                     break;
                 case 'room_ping_response':
                     // Room ping responses are handled in WebSocketServer

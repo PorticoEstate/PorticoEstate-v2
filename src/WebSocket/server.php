@@ -184,8 +184,10 @@ try {
         $webSocket->checkNotificationFiles();
     });
     
-    // Send server ping to all clients every 240 seconds (4 minutes) to keep connections alive
-    $loop->addPeriodicTimer(240, function() use ($webSocket) {
+    // Send server ping to all clients every 60 seconds (1 minute) to keep connections alive
+    // Reduced from 4 minutes to ensure more frequent keepalive checks
+    $loop->addPeriodicTimer(60, function() use ($webSocket, $logger) {
+        $logger->info("Sending server ping to all clients");
         $webSocket->sendServerPing();
     });
     

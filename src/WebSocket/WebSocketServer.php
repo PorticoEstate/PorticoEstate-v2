@@ -269,8 +269,33 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             
             $this->logger->debug("Room ping response received", [
                 'clientId' => $from->resourceId,
-                'roomId' => $roomId
+                'roomId' => $roomId,
+                'pingId' => $data['pingId'] ?? 'unknown'
             ]);
+            return;
+        }
+        
+        // Handle pong responses from client
+        if ($messageType === 'pong') {
+            // Calculate round-trip time if client_timestamp is provided
+            $clientTime = $data['client_timestamp'] ?? null;
+            $rtt = null;
+            
+            if ($clientTime) {
+                $rtt = time() * 1000 - $clientTime; // in milliseconds
+            }
+            
+            // Log pong with detailed information
+            $this->logger->info("Pong received from client", [
+                'clientId' => $from->resourceId,
+                'pingId' => $data['id'] ?? 'unknown',
+                'replyTo' => $data['reply_to'] ?? 'unknown',
+                'sessionActive' => isset($from->sessionId),
+                'hasBookingSession' => isset($from->bookingSessionId),
+                'rtt' => $rtt !== null ? $rtt . 'ms' : 'unknown',
+                'timestamp' => date('c')
+            ]);
+            
             return;
         }
         

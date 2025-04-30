@@ -10,7 +10,7 @@ const CACHE_NAME = 'websocket-cache-v1';
 // WebSocket connection
 let ws = null;
 let reconnectInterval = 5000; // 5 seconds
-let pingInterval = 60000; // 1 minute (reduced from 10 minutes)
+let pingInterval = 60000; // 1 minute (reduced from 10 minutes) - DO NOT CHANGE THIS VALUE
 let pingIntervalId = null;
 let reconnectTimeoutId = null;
 let isConnecting = false;
@@ -20,7 +20,8 @@ let lastPongTime = null;
 let pingStats = {
   sent: 0,
   received: 0,
-  lastRoundTripTime: 0
+  lastRoundTripTime: 0,
+  lastPingId: null
 };
 
 // Client tracking
@@ -50,6 +51,9 @@ function startClientTracking() {
   if (clientActivityInterval) {
     clearInterval(clientActivityInterval);
   }
+  
+  // Start a ping watchdog to ensure ping interval is running
+  startPingWatchdog();
 
   clientActivityInterval = setInterval(() => {
     const now = Date.now();
@@ -58,7 +62,8 @@ function startClientTracking() {
     // Log current client state before checking
     log(`Checking client activity status`, {
       'clientCount': activeClients.size,
-      'timestamp': new Date(now).toISOString()
+      'timestamp': new Date(now).toISOString(),
+      'pingsActive': !!pingIntervalId
     });
 
     // Increased inactive threshold from 2 minutes to 3 minutes
@@ -163,6 +168,106 @@ function updateClientActivity(clientId) {
   }
 }
 
+// Start ping watchdog to ensure ping interval is running
+let pingWatchdogInterval = null;
+function startPingWatchdog() {
+  if (pingWatchdogInterval) {
+    clearInterval(pingWatchdogInterval);
+  }
+  
+  // Check every 2 minutes that our ping interval is working
+  pingWatchdogInterval = setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      // Check when the last ping was sent
+      const now = Date.now();
+      const timeSinceLastPing = lastPingTime ? now - lastPingTime : null;
+      
+      log('Ping watchdog check', {
+        pingIntervalActive: !!pingIntervalId,
+        lastPingTime: lastPingTime ? new Date(lastPingTime).toISOString() : 'never',
+        timeSinceLastPing: timeSinceLastPing ? `${timeSinceLastPing}ms` : 'N/A',
+        expectedInterval: `${pingInterval}ms`
+      });
+      
+      // If it's been more than twice the ping interval since the last ping, restart the ping interval
+      if (timeSinceLastPing && timeSinceLastPing > (pingInterval * 2)) {
+        logError('Ping interval appears to be stuck - last ping was too long ago', {
+          timeSinceLastPing: `${timeSinceLastPing}ms`,
+          expectedInterval: `${pingInterval}ms`
+        });
+        
+        // Restart ping interval
+        startPingInterval();
+      }
+      
+      // If ping interval is not active at all, restart it
+      if (!pingIntervalId) {
+        logError('Ping interval not active but connection is open - restarting pings');
+        startPingInterval();
+      }
+    }
+  }, 120000); // Check every 2 minutes
+}
+
+// Function to start the ping interval (extracted for reuse)
+function startPingInterval() {
+  // Clear any existing ping interval
+  if (pingIntervalId) {
+    clearInterval(pingIntervalId);
+    pingIntervalId = null;
+  }
+  
+  // Only start if we have an open connection
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    log(`Starting ping interval for every ${pingInterval/1000} seconds`);
+    
+    // Send an initial ping right away
+    sendPingToServer();
+    
+    // Then set up the regular interval
+    pingIntervalId = setInterval(() => {
+      sendPingToServer();
+    }, pingInterval);
+  }
+}
+
+// Function to send a ping to the server
+function sendPingToServer() {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    const pingId = `ping_${Date.now()}`;
+    lastPingTime = Date.now();
+    pingStats.sent++;
+    pingStats.lastPingId = pingId;
+
+    // Send the ping
+    try {
+      ws.send(JSON.stringify({
+        type: 'ping',
+        timestamp: new Date().toISOString(),
+        id: pingId
+      }));
+
+      // Log ping stats with more details
+      log('Ping sent to server', {
+        id: pingId,
+        sent: pingStats.sent,
+        received: pingStats.received,
+        interval: `${pingInterval/1000}s`,
+        lastRTT: pingStats.lastRoundTripTime ? `${pingStats.lastRoundTripTime}ms` : 'N/A',
+        time: new Date().toISOString()
+      });
+    } catch (err) {
+      logError('Error sending ping:', err);
+    }
+  } else {
+    // Log warning if we can't send the ping
+    logError('Cannot send ping: WebSocket not open', {
+      readyState: ws ? ws.readyState : 'null',
+      wsExists: !!ws
+    });
+  }
+}
+
 // Clean up connection resources
 function cleanupConnection() {
   ws = null;
@@ -175,6 +280,11 @@ function cleanupConnection() {
   if (reconnectTimeoutId) {
     clearTimeout(reconnectTimeoutId);
     reconnectTimeoutId = null;
+  }
+  
+  if (pingWatchdogInterval) {
+    clearInterval(pingWatchdogInterval);
+    pingWatchdogInterval = null;
   }
 
   isConnecting = false;
@@ -210,33 +320,13 @@ function connectWebSocket() {
       log('WebSocket connection established');
       isConnecting = false;
 
-      // Setup ping interval
-      if (pingIntervalId) {
-        clearInterval(pingIntervalId);
+      // Initialize the ping interval using our centralized function
+      startPingInterval();
+      
+      // Ensure the ping watchdog is running
+      if (!pingWatchdogInterval) {
+        startPingWatchdog();
       }
-
-      pingIntervalId = setInterval(() => {
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          const pingId = `ping_${Date.now()}`;
-          lastPingTime = Date.now();
-          pingStats.sent++;
-
-          ws.send(JSON.stringify({
-            type: 'ping',
-            timestamp: new Date().toISOString(),
-            id: pingId
-          }));
-
-          // Log ping stats
-          log('Ping sent', {
-            id: pingId,
-            sent: pingStats.sent,
-            received: pingStats.received,
-            interval: `${pingInterval/1000}s`,
-            lastRTT: pingStats.lastRoundTripTime ? `${pingStats.lastRoundTripTime}ms` : 'N/A'
-          });
-        }
-      }, pingInterval);
 
       // Notify all clients that the connection is open
       broadcastToClients({
@@ -474,6 +564,12 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
+// Rate limiting for client messages
+const messageRateLimit = {
+  pingTimestamps: {}, // Tracks last ping timestamp by client ID
+  minPingInterval: 5000 // Minimum time between pings (5 seconds)
+};
+
 // Handle messages from clients
 self.addEventListener('message', (event) => {
   try {
@@ -482,6 +578,30 @@ self.addEventListener('message', (event) => {
 
     // Register or update client activity
     updateClientActivity(clientId);
+
+    // Rate limit pings to prevent flooding
+    if (message?.type === 'ping') {
+      const now = Date.now();
+      const lastPing = messageRateLimit.pingTimestamps[clientId] || 0;
+      const timeSinceLast = now - lastPing;
+      
+      // If this client is sending pings too rapidly, ignore some of them
+      if (lastPing > 0 && timeSinceLast < messageRateLimit.minPingInterval) {
+        // Log the rate limiting but only if it's happening frequently
+        if (timeSinceLast < 1000) {  // Less than 1 second between pings is definitely too fast
+          log(`Rate limiting ping from client ${clientId}`, {
+            timeSinceLast: `${timeSinceLast}ms`,
+            minInterval: `${messageRateLimit.minPingInterval}ms`
+          });
+        }
+        
+        // We'll still update client activity but not process the ping further
+        return;
+      }
+      
+      // Update last ping timestamp
+      messageRateLimit.pingTimestamps[clientId] = now;
+    }
 
     // Always send a quick acknowledgment back to the client
     // This helps keep the client registration active

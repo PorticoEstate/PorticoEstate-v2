@@ -15,34 +15,6 @@ CreateUrlParams(window.location.search);
 
 ko.validation.locale('nb-NO');
 
-function initiate_payment(method) {
-    if (payment_initated) {
-        alert('payment_initated');
-        return;
-    }
-
-    var parameter = {
-        menuaction: "bookingfrontend." + method + "_helper.initiate"
-    };
-
-    var getJsonURL = phpGWLink('bookingfrontend/', parameter, true);
-
-    $(".application_id").each(function (index) {
-        getJsonURL += '&application_id[]=' + $(this).val();
-    });
-
-    $.getJSON(getJsonURL, function (result) {
-        console.log(result);
-        if (typeof (result.url) !== 'undefined') {
-            var url = result.url;
-            window.location.replace(url);
-        } else {
-            alert('Funkar inte');
-        }
-    });
-    payment_initated = true;
-}
-
 function check_payment_status() {
 
     if (!payment_order_id) {
@@ -99,8 +71,12 @@ class ApplicationModel {
         const defaultTypeApplication = document.getElementById('customer_identifier_type_hidden_field').value;
         this.typeApplicationRadio = ko.observable(defaultTypeApplication || 'ssn');
         this.applicationCartItems = ko.computed(() => {
-            console.log(ApplicationCart.applicationCartItems())
+            // console.log('items', ApplicationCart.applicationCartItems())
             return ApplicationCart.applicationCartItems()
+        });
+        this.applicationCartTotalSum = ko.computed(() => {
+			return this.applicationCartItems().flatMap(item => item.orders.map(order => order.sum)).reduce((a, b) => a + b, 0)
+            // return ApplicationCart.applicationCartItems()
         });
         this.applicationCartItemsEmpty = ko.computed(() => {
             if (ApplicationCart.applicationCartItemsEmpty()) {
@@ -122,6 +98,36 @@ class ApplicationModel {
     deleteItem(e) {
         ApplicationCart.deleteItem(e);
     }
+
+	initiate_payment(method) {
+		console.log("Payment initiated: " + method + "")
+		if (payment_initated) {
+			alert('payment_initated');
+			return;
+		}
+
+		var parameter = {
+			menuaction: "bookingfrontend." + method + "_helper.initiate"
+		};
+
+		var getJsonURL = phpGWLink('bookingfrontend/', parameter, true);
+
+		$(".application_id").each(function (index) {
+			getJsonURL += '&application_id[]=' + $(this).val();
+		});
+
+		$.getJSON(getJsonURL, function (result) {
+			console.log(result);
+			if (typeof (result.url) !== 'undefined') {
+				var url = result.url;
+				window.location.replace(url);
+			} else {
+				alert('Funkar inte');
+			}
+		});
+		payment_initated = true;
+	}
+
     addNewOrganization() {
         this.customerOrganizationNumberFallback('');
         this.customerOrganizationName('');

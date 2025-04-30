@@ -112,8 +112,10 @@ export class WebSocketService {
 						}
 					}
 					
-					// Respond with another ping to keep the connection active
-					// Only send if this is not already a response to an acknowledgment
+					// We're removing the auto-ping response from acknowledgments
+					// This was causing a ping flood by creating a feedback loop
+					// The regular heartbeat interval is sufficient for keepalive
+					/*
 					if (!message.ack_response) {
 						// Send delayed ping to avoid overwhelming the service worker
 						setTimeout(() => {
@@ -127,6 +129,7 @@ export class WebSocketService {
 							}
 						}, 1000); // 1 second delay
 					}
+					*/
 				}
 			});
 		}
@@ -586,12 +589,12 @@ export class WebSocketService {
 
 		const heartbeatId = Math.random().toString(36).substring(2, 10);
 		let heartbeatCount = 0;
-		const heartbeatInterval = 15000; // 15 seconds (reduced from 30 seconds for more frequent activity updates)
+		const heartbeatInterval = 30000; // 30 seconds (increased from 15 seconds to reduce message frequency)
 		
 		// Log heartbeat setup
 		wsLog(`Starting client heartbeat ${heartbeatId} with interval ${heartbeatInterval/1000}s`);
 		
-		// Send a ping every 30 seconds (less than the 2-minute inactive threshold)
+		// Send a ping every 30 seconds (less than the 3-minute inactive threshold)
 		this.heartbeatInterval = setInterval(() => {
 			if (this.isInitialized && this.status !== 'CLOSED') {
 				heartbeatCount++;

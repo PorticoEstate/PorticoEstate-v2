@@ -108,11 +108,15 @@ export function isSecurityError(error: any): boolean {
 
 /**
  * Determine if we should use a direct WebSocket connection instead of a service worker
+ * @param disableServiceWorker Optional flag to explicitly disable service worker
  * @returns Promise resolving to true if direct connection should be used
  */
-export async function shouldUseDirectConnection(): Promise<boolean> {
+export async function shouldUseDirectConnection(disableServiceWorker?: boolean): Promise<boolean> {
   // Check if running in a browser
   if (typeof window === 'undefined') return false;
+  
+  // Check if service worker is explicitly disabled
+  if (disableServiceWorker) return true;
 
   // Check if service workers are supported at all
   if (!('serviceWorker' in navigator)) return true;

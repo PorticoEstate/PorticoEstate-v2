@@ -36,6 +36,7 @@ export interface IWSPingMessage extends IWebSocketMessageBase {
   type: 'ping' | 'pong' | 'server_ping';
   entityType?: string;
   entityId?: number | string;
+  id?: any;
 }
 
 // Interface for a reconnect required message

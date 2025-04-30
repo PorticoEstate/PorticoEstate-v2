@@ -155,7 +155,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 } catch (error) {
                   console.error('Error sending pong response to server_ping:', error);
                 }
-                
+
                 // Process through subscription manager for direct WebSocket mode
                 const subscriptionManager = SubscriptionManager.getInstance();
                 subscriptionManager.handleMessage(data);
@@ -236,12 +236,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     }
 
     // Perform a basic check for service worker support
-    const swSupported = hasServiceWorkerAPI();
+    const swSupported = hasServiceWorkerAPI(disableServiceWorker);
 
     // If service workers aren't supported, use direct WebSocket
     if (!swSupported) {
       console.warn('Service Workers are not supported in this browser - using direct WebSocket fallback');
-      
+
       // Setup a direct WebSocket connection as fallback
       setupDirectWebSocket();
       return;
@@ -397,8 +397,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
       case 'ping':
       case 'pong':
-      case 'server_ping':
-      case 'server_pong': {
+      case 'server_ping': {
         // Ping/pong messages are primarily handled directly in the WebSocket handlers
 
         // Handle entity-specific ping
@@ -544,7 +543,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                   } catch (error) {
                     console.error('Error sending pong response to server_ping:', error);
                   }
-                  
+
                   // Process through subscription manager for direct WebSocket mode
                   const subscriptionManager = SubscriptionManager.getInstance();
                   subscriptionManager.handleMessage(data);
@@ -684,10 +683,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
   // Reconnect the WebSocket
   const reconnect = useCallback(() => {
-    const swSupported = hasServiceWorkerAPI();
+    const swSupported = hasServiceWorkerAPI(disableServiceWorker);
 
     // If using direct WebSocket fallback
-    if (wsRef.current || !swSupported || disableServiceWorker) {
+    if (wsRef.current || !swSupported) {
       // Use our handleReconnection function for direct WebSocket connections
       handleReconnection();
     }
@@ -721,10 +720,10 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       }
 
       // Initialize a new connection
-      const swSupported = hasServiceWorkerAPI();
+      const swSupported = hasServiceWorkerAPI(disableServiceWorker);
 
-      // For direct WebSocket mode or if service worker is disabled
-      if (!swSupported || disableServiceWorker) {
+      // For direct WebSocket mode
+      if (!swSupported) {
         // If we're using direct WebSocket, call setupDirectWebSocket which we defined in the mount effect
         const wsUrl = customUrl || getDefaultWebSocketUrl();
         if (wsUrl) {

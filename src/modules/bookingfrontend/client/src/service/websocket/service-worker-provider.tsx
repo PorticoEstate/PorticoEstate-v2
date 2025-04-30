@@ -39,7 +39,7 @@ export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children,
 		}
 
 		// Comprehensive check for service worker support
-		checkServiceWorkerSupport().then(result => {
+		checkServiceWorkerSupport(disableServiceWorker).then(result => {
 			if (!result.supported) {
 				console.warn(`Service Workers are not supported: ${result.reason}`);
 				setIsRegistered(false); // Mark as not registered, but continue

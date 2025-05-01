@@ -19,6 +19,7 @@ use App\helpers\Template;
 use App\modules\phpgwapi\services\Hooks;
 use App\modules\phpgwapi\services\Translation;
 use App\modules\phpgwapi\services\Config;
+use App\modules\phpgwapi\services\Twig;
 
 
 class admin_uiconfig
@@ -180,15 +181,10 @@ HTML;
 				break;
 		}
 
-		$t = Template::getInstance();
-		$t->set_root($this->phpgwapi_common->get_tpl_dir($appname));
-
-		$t->set_file(array('config' => 'config.tpl'));
-		$t->set_block('config', 'body', 'body');
-
+		// Initialize Twig environment for the admin module
+		$twigService = Twig::getInstance();
 
 		$c = new Config($config_appname);
-
 		$c->read();
 
 		if ($c->config_data)
@@ -207,7 +203,6 @@ HTML;
 			/* Load hook file with functions to validate each config (one/none/all) */
 			$this->hooks->single('config_validate', $appname);
 
-			//while (list($key,$config) = each($_POST['newsettings']))
 			if (is_array($_POST['newsettings']))
 			{
 				foreach ($_POST['newsettings'] as $key => $config)
@@ -265,123 +260,87 @@ HTML;
 			}
 		}
 
-		if (isset($errors) && $errors)
-		{
-			$t->set_var(array(
-				'error'			 => lang('Error: %1', $errors),
-				'error_class'	 => 'error'
-			));
-			unset($errors);
-			unset($GLOBALS['config_error']);
-		}
-		else
-		{
-			$t->set_var(array(
-				'error'			 => '',
-				'error_class'	 => ''
-			));
-		}
-
-
-		$t->set_var(array(
-			'action_url'	 => phpgw::link('/index.php', array(
+		// Initialize template variables
+		$templateVars = [
+			'action_url' => phpgw::link('/index.php', array(
 				'menuaction' => 'admin.uiconfig.index',
 				'appname' => $appname
 			)),
-			'lang_cancel'	 => lang('cancel'),
-			'lang_submit'	 => lang('save'),
-			'title'			 => lang('Site Configuration'),
-		));
+			'lang_cancel' => lang('cancel'),
+			'lang_submit' => lang('save'),
+			'title' => lang('Site Configuration'),
+			'error' => $errors ? lang('Error: %1', $errors) : '',
+			'error_class' => $errors ? 'error' : ''
+		];
 
-		//		$t->unknown_regexp = 'loose';
-		$vars = $t->get_undefined('body');
-		//		$t->unknown_regexp = '';
-
+		// Setup all the language variables
 		$this->hooks->single('config', $appname);
-
-		if (is_array($vars))
-		{
-			foreach ($vars as $value)
-			{
-				$valarray	 = explode('_', $value);
-				$type		 = $valarray[0];
-				$new		 = array();
-				$newval		 = '';
-
-				while ($chunk = next($valarray))
-				{
-					$new[] = $chunk;
-				}
-				$newval = implode(' ', $new);
-
-				switch ($type)
-				{
-					case 'lang':
-						$t->set_var($value, $this->translation->translate($newval, array(), false, $appname));
-						break;
-					case 'value':
-						$newval = preg_replace('/ /', '_', $newval);
-						/* Don't show passwords in the form */
-						if (!isset($current_config[$newval]) || preg_match('/passwd/', $value) || preg_match('/password/', $value) || preg_match('/root_pw/', $value))
-						{
-							$t->set_var($value, '');
+        
+		// Legacy template used to gather undefined variables from the template
+		// We'll scan for variables with these prefixes and add them to the Twig context
+		$varPrefixes = ['lang_', 'value_', 'selected_'];
+		
+		// Get the original template to extract variable names
+		$originalTplPath = $this->phpgwapi_common->get_tpl_dir($appname) . '/config.tpl';
+		if (file_exists($originalTplPath)) {
+			$templateContent = file_get_contents($originalTplPath);
+			
+			// Extract variables with {variable_name} pattern
+			preg_match_all('/{([a-zA-Z0-9_]+)}/', $templateContent, $matches);
+			
+			if (!empty($matches[1])) {
+				foreach ($matches[1] as $varName) {
+					$prefix = substr($varName, 0, 5);
+					
+					// Handle different variable types
+					if ($prefix === 'lang_') {
+						// Language variables
+						$key = substr($varName, 5);
+						$templateVars[$varName] = $this->translation->translate($key, array(), false, $appname);
+					} 
+					else if ($prefix === 'value') {
+						// Config values
+						$key = substr($varName, 6); // Skip 'value_'
+						$configKey = str_replace(' ', '_', $key);
+						
+						// Don't show passwords in the form
+						if (!isset($current_config[$configKey]) || 
+							preg_match('/passwd/', $varName) || 
+							preg_match('/password/', $varName) || 
+							preg_match('/root_pw/', $varName)) {
+							$templateVars[$varName] = '';
+						} else {
+							$templateVars[$varName] = $current_config[$configKey] ?? '';
 						}
-						else
-						{
-							$t->set_var($value, (isset($current_config[$newval]) ? $current_config[$newval] : ''));
+					}
+					else if (strpos($varName, 'selected_') === 0) {
+						// Handle selected_ variables for dropdowns
+						$parts = explode('_', substr($varName, 9)); // Skip 'selected_'
+						if (count($parts) >= 2) {
+							$setting = array_pop($parts);
+							$configKey = implode('_', $parts);
+							$templateVars[$varName] = (isset($current_config[$configKey]) && $current_config[$configKey] == $setting) ? 'selected' : '';
 						}
-						break;
-					case 'checked':
-						/* '+' is used as a delimiter for the check value */
-						list($newvalue, $check) = preg_split('/\+/', $newval);
-						$newval = preg_replace('/ /', '_', $newvalue);
-						if ($current_config[$newval] == $check)
-						{
-							$t->set_var($value, ' checked');
-						}
-						else
-						{
-							$t->set_var($value, '');
-						}
-						break;
-					case 'selected':
-						$configs = array();
-						$config	 = '';
-						$newvals = explode(' ', $newval);
-						$setting = end($newvals);
-						for ($i = 0; $i < (count($newvals) - 1); $i++)
-						{
-							$configs[] = $newvals[$i];
-						}
-						$config = implode('_', $configs);
-						/* echo $config . '=' . $current_config[$config]; */
-						if (isset($current_config[$config]) && $current_config[$config] == $setting)
-						{
-							$t->set_var($value, ' selected');
-						}
-						else
-						{
-							$t->set_var($value, '');
-						}
-						break;
-					case 'hook':
-						$newval = preg_replace('/ /', '_', $newval);
-						if (function_exists($newval))
-						{
-							$t->set_var($value, $newval($current_config));
-						}
-						else
-						{
-							$t->set_var($value, '');
-						}
-						break;
-					default:
-						$t->set_var($value, '');
-						break;
+					}
 				}
 			}
 		}
+
+		// Add any hook variables
+		foreach ($templateVars as $key => $value) {
+			if (strpos($key, 'hook_') === 0) {
+				$hookName = substr($key, 5);
+				$hookName = str_replace(' ', '_', $hookName);
+				
+				if (function_exists($hookName)) {
+					$templateVars[$key] = $hookName($current_config);
+				}
+			}
+		}
+
 		$this->phpgwapi_common->phpgw_header(true);
-		$t->pfp('out', 'config');
+		
+		// Render the Twig template with all variables
+		echo $twigService->render('config.html.twig', $templateVars, 'admin');
 	}
 }

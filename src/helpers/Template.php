@@ -27,6 +27,7 @@
 
 namespace App\helpers;
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\Twig;
 
 class Template
 {
@@ -1064,4 +1065,49 @@ class Template
 	{
 		echo $this->finish($this->parse($target, $handle, $append));
 	}
+
+    /**
+     * Get a Twig instance configured for the current app
+     * 
+     * @param string $app Application name
+     * @return \Twig\Environment
+     */
+    public static function getTwig($app = null)
+    {
+        if (is_null($app)) {
+            $flags = Settings::getInstance()->get('flags');
+            $app = $flags['currest_app'] ?? '';
+        }
+        
+        return Twig::getInstance()->getEnvironment($app);
+    }
+    
+    /**
+     * Render a template with Twig
+     * 
+     * @param string $template Template name
+     * @param array $data Data to pass to the template
+     * @param string $app Application name
+     * @return string Rendered template
+     */
+    public static function renderTwig($template, $data = [], $app = null)
+    {
+        // Add namespace prefix if an app is specified and template doesn't already have one
+        if ($app !== null && !str_starts_with($template, '@')) {
+            $template = "@{$app}/{$template}";
+        }
+        
+        try {
+            return self::getTwig()->render($template, $data);
+        } catch (\Twig\Error\LoaderError $e) {
+            // If namespace approach fails, try without namespace
+            try {
+                return self::getTwig()->render($template, $data);
+            } catch (\Exception $e2) {
+                // Log the error and return an error message
+                _debug_array("Twig render error: " . $e2->getMessage());
+                return "<!-- Error rendering template '{$template}': " . htmlspecialchars($e2->getMessage()) . " -->";
+            }
+        }
+    }
 }

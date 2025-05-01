@@ -43,6 +43,7 @@
 
 use App\modules\phpgwapi\services\Settings;
 use App\helpers\Template;
+use App\modules\phpgwapi\services\Twig;
 
 
 class admin_uimainscreen
@@ -138,24 +139,16 @@ class admin_uimainscreen
 		$this->flags['menu_selection'] .= '::admin::mainscreen';
 		Settings::getInstance()->set('flags', $this->flags);
 
-
-
-		$template = new Template();
-		$template->set_root(PHPGW_APP_TPL);
-		$template->set_file(array('message' => 'mainscreen_message.tpl'));
-		$template->set_block('message', 'form', 'form');
-		$template->set_block('message', 'row', 'row');
-		$template->set_block('message', 'row_2', 'row_2');
-
 		$this->phpgwapi_common->phpgw_header(true);
 		$select_lang = Sanitizer::get_var('select_lang', 'string', 'POST');
 		$section     = Sanitizer::get_var('section', 'string', 'POST');
 
 		$db = \App\Database\Db::getInstance();
+		$message = '';
 
 		if (Sanitizer::get_var('update', 'bool', 'POST'))
 		{
-			$message = Sanitizer::get_var('message', 'string', 'POST');
+			$message_content = Sanitizer::get_var('message', 'string', 'POST');
 
 			// Prepare and execute the DELETE statement
 			$deleteStmt = $db->prepare("DELETE FROM phpgw_lang WHERE message_id = :message_id AND app_name = :app_name AND lang = :lang");
@@ -171,56 +164,74 @@ class admin_uimainscreen
 				'message_id' => $section . "_message",
 				'app_name' => $section,
 				'lang' => $select_lang,
-				'message' => $message
+				'message' => $message_content
 			]);
 			
 			$message = '<center>' . lang('message has been updated') . '</center>';
 		}
 
-		$tr_class = '';
+		// Prepare template data for Twig
+		$templateData = [
+			'header_lang' => '',
+			'form_action' => phpgw::link('/index.php', array('menuaction' => 'admin.uimainscreen.index')),
+			'error_message' => $message,
+			'select_lang' => $select_lang,
+			'section' => $section,
+			'rows' => ''
+		];
+
+		$rows = '';
+
 		if (empty($select_lang))
 		{
-			$template->set_var('header_lang', lang('Main screen message'));
-			$template->set_var('form_action', phpgw::link('/index.php', array('menuaction' => 'admin.uimainscreen.index')));
-			$template->set_var('tr_class', 'th');
-			$template->set_var('value', '&nbsp;');
-			$template->fp('rows', 'row_2', True);
+			$templateData['header_lang'] = lang('Main screen message');
+			
+			// First row - empty header
+			$rows .= $this->renderTwigBlock('row_2', [
+				'tr_class' => 'th',
+				'value' => '&nbsp;'
+			]);
 
-			$tr_class = $this->nextmatchs->alternate_row_class($tr_class);
-			$template->set_var('tr_class', $tr_class);
-
-			$select_lang = '<select name="select_lang">';
+			// Language selection row
+			$tr_class = $this->nextmatchs->alternate_row_class('');
+			$select_lang_html = '<select name="select_lang">';
 			$db->query("SELECT lang,phpgw_languages.lang_name,phpgw_languages.lang_id FROM phpgw_lang,phpgw_languages WHERE "
 				. "phpgw_lang.lang=phpgw_languages.lang_id GROUP BY lang,phpgw_languages.lang_name,"
 				. "phpgw_languages.lang_id ORDER BY lang");
 			while ($db->next_record())
 			{
-				$select_lang .= '<option value="' . $db->f('lang') . '">' . $db->f('lang_id')
+				$select_lang_html .= '<option value="' . $db->f('lang') . '">' . $db->f('lang_id')
 					. ' - ' . $db->f('lang_name') . '</option>';
 			}
-			$select_lang .= '</select>';
-			$template->set_var('label', lang('Language'));
-			$template->set_var('value', $select_lang);
-			$template->fp('rows', 'row', True);
+			$select_lang_html .= '</select>';
+			$rows .= $this->renderTwigBlock('row', [
+				'tr_class' => $tr_class,
+				'label' => lang('Language'),
+				'value' => $select_lang_html
+			]);
 
+			// Section selection row
 			$tr_class = $this->nextmatchs->alternate_row_class($tr_class);
-			$template->set_var('tr_class', $tr_class);
 			$select_section = '<select name="section"><option value="mainscreen">' . lang('Main screen')
 				. '</option><option value="loginscreen">' . lang("Login screen") . '</option>'
 				. '</select>';
-			$template->set_var('label', lang('Section'));
-			$template->set_var('value', $select_section);
-			$template->fp('rows', 'row', True);
+			$rows .= $this->renderTwigBlock('row', [
+				'tr_class' => $tr_class,
+				'label' => lang('Section'),
+				'value' => $select_section
+			]);
 
+			// Submit button row
 			$tr_class = $this->nextmatchs->alternate_row_class($tr_class);
-			$template->set_var('tr_class', $tr_class);
-			$template->set_var('value', '<input type="submit" name="submit" value="' . lang('Submit')
-				. '"><input type="submit" name="cancel" value="' . lang('cancel') . '">');
-			$template->fp('rows', 'row_2', True);
+			$rows .= $this->renderTwigBlock('row_2', [
+				'tr_class' => $tr_class,
+				'value' => '<input type="submit" name="submit" value="' . lang('Submit')
+				. '"><input type="submit" name="cancel" value="' . lang('cancel') . '">'
+			]);
 		}
 		else
 		{
-
+			// Display the message editor for the selected language and section
 			$stmt = $db->prepare("SELECT content FROM phpgw_lang WHERE lang=:lang AND message_id=:message_id");
 			$stmt->execute([
 				'lang' => $select_lang,
@@ -232,37 +243,57 @@ class admin_uimainscreen
 
 			if ($section == 'mainscreen')
 			{
-				$template->set_var('header_lang', lang('Edit main screen message'));
+				$templateData['header_lang'] = lang('Edit main screen message');
 			}
 			else
 			{
-				$template->set_var('header_lang', lang('Edit login screen message'));
+				$templateData['header_lang'] = lang('Edit login screen message');
 			}
 
-			$template->set_var('form_action', phpgw::link('/index.php', array('menuaction' => 'admin.uimainscreen.index')));
-			$template->set_var('select_lang', $select_lang);
-			$template->set_var('section', $section);
-			$template->set_var('tr_class', 'th');
-			$template->set_var('value', '&nbsp;');
-			$template->fp('rows', 'row_2', True);
+			// Empty header row
+			$rows .= $this->renderTwigBlock('row_2', [
+				'tr_class' => 'th',
+				'value' => '&nbsp;'
+			]);
 
-			$tr_class = $this->nextmatchs->alternate_row_class($tr_class);
-			$template->set_var('tr_class', $tr_class);
-			$template->set_var('value', '<textarea name="message" cols="50" rows="10" wrap="virtual">' . stripslashes($current_message) . '</textarea>');
-			$template->fp('rows', 'row_2', True);
+			// Textarea for message
+			$tr_class = $this->nextmatchs->alternate_row_class('');
+			$rows .= $this->renderTwigBlock('row_2', [
+				'tr_class' => $tr_class,
+				'value' => '<textarea name="message" cols="50" rows="10" wrap="virtual">' . stripslashes($current_message) . '</textarea>'
+			]);
 
+			// Update/Cancel buttons
 			$tr_class = $this->nextmatchs->alternate_row_class($tr_class);
-			$template->set_var('tr_class', $tr_class);
-			$template->set_var(
-				'value',
-				'<input type="submit" name="update" value="' . lang('Update')
+			$rows .= $this->renderTwigBlock('row_2', [
+				'tr_class' => $tr_class,
+				'value' => '<input type="submit" name="update" value="' . lang('Update')
 					. '"><input type="submit" name="cancel" value="' . lang('cancel') . '">'
-			);
-			$template->fp('rows', 'row_2', True);
+			]);
 		}
 
-		$template->set_var('lang_cancel', lang('Cancel'));
-		$template->set_var('error_message', $message);
-		$template->pfp('out', 'form');
+		$templateData['rows'] = $rows;
+		
+		// Render the Twig template
+		echo Template::renderTwig('mainscreen_message.html.twig', $templateData, 'admin');
+	}
+	
+	/**
+	 * Helper method to render a Twig block
+	 * 
+	 * @param string $blockName Name of the block to render
+	 * @param array $data Data for the block
+	 * @return string The rendered HTML
+	 */
+	private function renderTwigBlock($blockName, $data)
+	{
+		try {
+			// First attempt with admin namespace
+			return Template::renderTwig("{$blockName}", $data, 'admin');
+		} catch (\Exception $e) {
+			// Fallback to direct block rendering without namespace
+			$twig = Twig::getInstance();
+			return $twig->renderBlock('mainscreen_message.html.twig', $blockName, $data);
+		}
 	}
 }

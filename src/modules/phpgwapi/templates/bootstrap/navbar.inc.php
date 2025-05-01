@@ -3,6 +3,7 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
 use App\helpers\Template;
+use App\helpers\twig\TwigTemplate;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Hooks;
 use App\modules\phpgwapi\services\Translation;
@@ -50,7 +51,6 @@ function parse_navbar($force = False)
 	$home_icon		= 'icon icon-home';
 	$about_url	= phpgw::link('/about.php', array('app' => $flags['currentapp']));
 	$about_text	= lang('about');
-	//		$var['logout_url']	= phpgw::link('/logout_ui');
 	$var['logout_text']	= lang('logout');
 	$var['user_fullname'] = $user_fullname;
 	$preferences_url = phpgw::link('/preferences/index.php');
@@ -77,9 +77,8 @@ function parse_navbar($force = False)
 	   </select>
 HTML;
 
-	$template = new Template(PHPGW_TEMPLATE_DIR);
-
-	$template->set_file('navbar', 'navbar.tpl');
+	$templateDir = PHPGW_TEMPLATE_DIR;
+	$twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 
 	$var['current_app_title'] = isset($flags['app_header']) ? $flags['app_header'] : lang($flags['currentapp']);
 	$flags['menu_selection'] = isset($flags['menu_selection']) ? $flags['menu_selection'] : '';
@@ -497,8 +496,19 @@ HTML;
 HTML;
 	}
 
-	$template->set_var($var);
-	$template->pfp('out', 'navbar');
+	// Use Twig to render the template
+	if (file_exists($twigDir . '/navbar.twig')) {
+		$twig = new \Twig\Environment(new \Twig\Loader\FilesystemLoader([$twigDir]), [
+			'debug' => true,
+			'cache' => $serverSettings['temp_dir'] . '/twig_cache',
+			'auto_reload' => true,
+		]);
+		
+		echo $twig->render('navbar.twig', $var);
+	} else {
+			// Fallback message if the Twig template doesn't exist
+			echo "Error: Twig template not found at {$twigDir}/navbar.twig";
+	}
 
 	if (Sanitizer::get_var('phpgw_return_as') != 'json' && $global_message = Cache::system_get('phpgwapi', 'phpgw_global_message'))
 	{
@@ -685,8 +695,8 @@ function parse_footer_end()
 		return true;
 	}
 
-	$template = new Template(PHPGW_TEMPLATE_DIR);
-	$template->set_file('footer', 'footer.tpl');
+	$templateDir = PHPGW_TEMPLATE_DIR;
+	$twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 
 	$version = isset($serverSettings['versions']['system']) ? $serverSettings['versions']['system'] : $serverSettings['versions']['phpgwapi'];
 
@@ -715,9 +725,19 @@ function parse_footer_end()
 		'javascript_end' => $phpgwapi_common->get_javascript_end($cache_refresh_token)
 	);
 
-	$template->set_var($var);
-
-	$template->pfp('out', 'footer');
+	// Use Twig to render the template
+	if (file_exists($twigDir . '/footer.twig')) {
+		$twig = new \Twig\Environment(new \Twig\Loader\FilesystemLoader([$twigDir]), [
+			'debug' => true,
+			'cache' => $serverSettings['temp_dir'] . '/twig_cache',
+			'auto_reload' => true,
+		]);
+		
+		echo $twig->render('footer.twig', $var);
+	} else {
+		// Fallback message if the Twig template doesn't exist
+		echo "Error: Twig template not found at {$twigDir}/footer.twig";
+	}
 
 	$footer_included = true;
 }

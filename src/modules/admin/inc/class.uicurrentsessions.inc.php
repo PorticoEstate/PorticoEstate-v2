@@ -17,12 +17,10 @@ use App\helpers\Template;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
-
+use App\modules\phpgwapi\services\Twig;
 
 class admin_uicurrentsessions
 {
-	private $template;
-
 	private $bo;
 	private $acl;
 	private $userSettings;
@@ -41,17 +39,11 @@ class admin_uicurrentsessions
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->flags = Settings::getInstance()->get('flags');
-
-
 	}
 
 	private function header()
 	{
-
 		(new \phpgwapi_common())->phpgw_header(true);
-
-		$this->template = new Template();
-		$this->template->set_root(PHPGW_APP_TPL);
 	}
 
 	private function store_location($info)
@@ -95,7 +87,6 @@ class admin_uicurrentsessions
 		$this->flags['app_header'] = lang('Admin') . ' - ' . lang('List of current users');
 		Settings::getInstance()->set('flags', $this->flags);
 
-
 		$can_kill = false;
 		$lang_kill = '';
 		if (!$this->acl->check('current_sessions_access', Acl::DELETE, 'admin'))
@@ -107,7 +98,8 @@ class admin_uicurrentsessions
 		$total = $this->bo->total();
 		$nextmatchs = createobject('phpgwapi.nextmatchs');
 
-		$header = array(
+		// Prepare the data for Twig template
+		$templateData = [
 			'left_next_matchs'	=> $nextmatchs->left('/admin/currentusers.php', $info['start'], $total),
 			'right_next_matchs' => $nextmatchs->right('/admin/currentusers.php', $info['start'], $total),
 			'sort_loginid'		=> $nextmatchs->show_sort_order($info['sort'], 'lid', $info['order'], '/admin/currentusers.php', lang('LoginID')),
@@ -115,19 +107,16 @@ class admin_uicurrentsessions
 			'sort_login_time'	=> $nextmatchs->show_sort_order($info['sort'], 'logints', $info['order'], '/admin/currentusers.php', lang('Login Time')),
 			'sort_action'		=> $nextmatchs->show_sort_order($info['sort'], 'action', $info['order'], '/admin/currentusers.php', lang('Action')),
 			'sort_idle'			=> $nextmatchs->show_sort_order($info['sort'], 'dla', $info['order'], '/admin/currentusers.php', lang('idle')),
-			'lang_kill'			=> $lang_kill
-		);
+			'lang_kill'			=> $lang_kill,
+			'rows'              => []
+		];
 
 		$this->header();
-		$this->template->set_file('current', 'currentusers.tpl');
-		$this->template->set_block('current', 'rows', 'row');
-		$this->template->set_block('current', 'list', 'list');
 
-		$this->template->set_var($header);
-
-		$tr_class = '';
-
+		// Process the session values for the template
 		$values = $this->bo->list_sessions($info['start'], $info['order'], $info['sort']);
+		$tr_class = '';
+		
 		foreach ($values as $value)
 		{
 			$tr_class = $nextmatchs->alternate_row_class($tr_class);
@@ -144,11 +133,12 @@ class admin_uicurrentsessions
 				$value['kill'] = "<a href=\"{$kill_url}\">{$lang_kill}</a>";
 			}
 
-			$this->template->set_var($value);
-			$this->template->parse('row', 'rows', true);
+			// Add this row to the rows array
+			$templateData['rows'][] = $value;
 		}
 
-		$this->template->pfp('out', 'list');
+		// Render the template with Twig
+		echo Twig::getInstance()->renderBlock('currentusers.html.twig', 'list', $templateData, 'admin');
 	}
 
 	public function kill()
@@ -163,12 +153,16 @@ class admin_uicurrentsessions
 		Settings::getInstance()->set('flags', $this->flags);
 
 		$this->header();
-		$this->template->set_file('form', 'kill_session.tpl');
 
-		$this->template->set_var('lang_message', lang('Are you sure you want to kill this session ?'));
-		$this->template->set_var('link_no', '<a href="' . phpgw::link('/index.php', array('menuaction' => 'admin.uicurrentsessions.list_sessions')) . '">' . lang('No') . '</a>');
-		$this->template->set_var('link_yes', '<a href="' . phpgw::link('/index.php', array('menuaction' => 'admin.bocurrentsessions.kill', 'ksession' => $_GET['ksession'])) . '">' . lang('Yes') . '</a>');
+		// Prepare data for Twig template
+		$templateData = [
+			'lang_title' => lang('Confirmation'),
+			'lang_message' => lang('Are you sure you want to kill this session ?'),
+			'link_no' => '<a href="' . phpgw::link('/index.php', array('menuaction' => 'admin.uicurrentsessions.list_sessions')) . '">' . lang('No') . '</a>',
+			'link_yes' => '<a href="' . phpgw::link('/index.php', array('menuaction' => 'admin.bocurrentsessions.kill', 'ksession' => $_GET['ksession'])) . '">' . lang('Yes') . '</a>'
+		];
 
-		$this->template->pfp('out', 'form');
+		// Render the template with Twig
+		echo Twig::getInstance()->renderBlock('kill_session.html.twig', 'form', $templateData, 'admin');
 	}
 }

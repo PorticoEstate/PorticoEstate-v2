@@ -31,6 +31,7 @@ class admin_uiconfig
 	);
 	private $appname;
 	private $serverSettings;
+	private $userSettings;
 	private $flags;
 	private $hooks;
 	private $translation;
@@ -42,6 +43,7 @@ class admin_uiconfig
 	{
 		$appname = Sanitizer::get_var('appname', 'string');
 		$this->serverSettings = Settings::getInstance()->get('server');
+		$this->userSettings = Settings::getInstance()->get('user');
 		$this->flags = Settings::getInstance()->get('flags');
 		Settings::getInstance()->update('flags', ['currentapp' => $appname]);
 		$this->apps = Settings::getInstance()->get('apps');
@@ -281,7 +283,10 @@ HTML;
 		$varPrefixes = ['lang_', 'value_', 'selected_'];
 		
 		// Get the original template to extract variable names
+		
 		$originalTplPath = $this->phpgwapi_common->get_tpl_dir($appname) . '/config.tpl';
+//		$originalTplPath = str_replace($this->userSettings['preferences']['common']['template_set'], 'base', $originalTplPath);
+
 		if (file_exists($originalTplPath)) {
 			$templateContent = file_get_contents($originalTplPath);
 			

@@ -1,57 +1,57 @@
-{# Accesslog template #}
+{# Access log template #}
+
 {% block list %}
-<table class="pure-table">
-	<tr valign="bottom">
-		<td style="text-align: center;" colspan="2">
-			{{ lang_last_x_logins }}
-		</td>
-		<td style="text-align: right;" colspan="2">
-			{{ select_user }}
-		</td>
-	</tr>
-	<tr>
-		{{ nextmatchs_left }}&nbsp;{{ nextmatchs_right }}
-	</tr>
-</table>
-{{ showing }}
-
-<table border="0" width="95%"  class="pure-table pure-table-bordered">
-	<thead
+	<table class="pure-table">
+		<tr valign="bottom">
+			<td style="text-align: center;" colspan="2">
+				{{ lang_last_x_logins|raw }}
+			</td>
+			<td style="text-align: right;" colspan="2">
+				{{ select_user|raw }}
+			</td>
+		</tr>
 		<tr>
-	<th width="10%">{{ lang_loginid }}</th>
-	<th width="15%">{{ lang_ip }}</th>
-	<th width="20%">{{ lang_login }}</th>
-	<th width="30%">{{ lang_logout }}</th>
-	<th>{{ lang_total }}</th>
-</tr>
-</thead>
-<tbody
-	{{ rows_access }}
-	<tr class="th">
-<td colspan="5" align="left">{{ footer_total }}</td>
-</tr>
-</tbody>
-<tfoot>
-	<tr class="th">
-		<td colspan="5" align="left">{{ lang_percent }}</td>
-	</tr>
-</tfoot>
-</table>
+			{{ nextmatchs_left|raw }}&nbsp;{{ nextmatchs_right|raw }}
+		</tr>
+	</table>
+	{{ showing|raw }}
 
+	<table border="0" width="95%" class="pure-table pure-table-bordered">
+		<thead>
+			<tr>
+				<th width="10%">{{ lang('LoginID') }}</th>
+				<th width="15%">{{ lang('IP') }}</th>
+				<th width="20%">{{ lang('Login') }}</th>
+				<th width="30%">{{ lang('Logout') }}</th>
+				<th>{{ lang('Total') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+			{{ rows_access|raw }}
+			<tr class="th">
+				<td colspan="5" align="left">{{ footer_total }}</td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr class="th">
+				<td colspan="5" align="left">{{ lang_percent }}</td>
+			</tr>
+		</tfoot>
+	</table>
 {% endblock %}
 
 {% block row %}
-<tr class="{{ tr_class }}">
-	<td>{{ row_loginid }}</td>
-	<td>{{ row_ip }}</td>
-	<td>{{ row_li }}</td>
-	<td>{{ row_lo }}&nbsp;</td>
-	<td>{{ row_total }}&nbsp;</td>
-</tr>
+	<tr class="{{ tr_class }}">
+		<td>{{ row_loginid }}</td>
+		<td>{{ row_ip }}</td>
+		<td>{{ row_li }}</td>
+		<td>{{ row_lo|raw }}&nbsp;</td>
+		<td>{{ row_total|raw }}&nbsp;</td>
+	</tr>
 {% endblock %}
 
 {% block row_empty %}
-<tr class="{{ tr_class }}">
-	<td align="center" colspan="5">{{ row_message }}</td>
-</tr>
+	<tr class="{{ tr_class }}">
+		<td align="center" colspan="5">{{ row_message }}</td>
+	</tr>
 {% endblock %}

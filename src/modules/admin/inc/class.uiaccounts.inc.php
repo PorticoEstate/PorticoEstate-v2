@@ -2010,6 +2010,7 @@ class admin_uiaccounts extends phpgwapi_uicommon_jquery
 	function sync_accounts_contacts()
 	{
 		$this->flags['menu_selection'] .= '::sync_account';
+		Settings::getInstance()->set('flags', $this->flags);
 
 		if (!$this->_acl->check('run', Acl::READ, 'admin'))
 		{
@@ -2087,6 +2088,7 @@ class admin_uiaccounts extends phpgwapi_uicommon_jquery
 		}
 
 		$this->flags['menu_selection'] = 'admin::admin::global_message';
+		Settings::getInstance()->set('flags', $this->flags);
 
 		if (Sanitizer::get_var('message', 'string') && Sanitizer::get_var('confirm', 'bool'))
 		{
@@ -2124,6 +2126,7 @@ class admin_uiaccounts extends phpgwapi_uicommon_jquery
 	function home_screen_message()
 	{
 		$this->flags['menu_selection'] = 'admin::admin::home_screen_message';
+		Settings::getInstance()->set('flags', $this->flags);
 
 		if (!$this->_acl->check('run', Acl::READ, 'admin'))
 		{
@@ -2179,6 +2182,7 @@ class admin_uiaccounts extends phpgwapi_uicommon_jquery
 	public function clear_cache()
 	{
 		$this->flags['menu_selection'] .= '::clear_cache';
+		Settings::getInstance()->set('flags', $this->flags);
 
 		$account_id = Sanitizer::get_var('account_id', 'int');
 

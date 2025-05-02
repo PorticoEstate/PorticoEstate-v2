@@ -99,15 +99,16 @@ class TwigTemplate
      */
     public function __construct($root = ".", $unknowns = "remove")
     {
-        if ($root == '.' && defined('PHPGW_APP_TPL')) {
+        if ($root == '.' && defined('PHPGW_APP_TPL'))
+        {
             $root = PHPGW_APP_TPL;
         }
-        
+
         $this->serverSettings = Settings::getInstance()->get('server');
-        
+
         $this->set_root($root);
         $this->set_unknowns($unknowns);
-        
+
         // Initialize Twig with the template root
         $this->loader = new FilesystemLoader($this->root);
         $this->twig = new Environment($this->loader, [
@@ -115,7 +116,7 @@ class TwigTemplate
             'cache' => $this->serverSettings['temp_dir'] . '/twig_cache',
             'auto_reload' => true,
         ]);
-        
+
         // Add support for the legacy block system
         $this->twig->addFunction(new TwigFunction('legacy_block', [$this, 'renderBlock']));
     }
@@ -129,7 +130,8 @@ class TwigTemplate
      */
     public static function getInstance($root = ".", $unknowns = "remove"): TwigTemplate
     {
-        if (self::$instance === null) {
+        if (self::$instance === null)
+        {
             self::$instance = new self($root, $unknowns);
         }
         return self::$instance;
@@ -144,16 +146,21 @@ class TwigTemplate
      */
     public function set_root($root = null, $attempt = 0)
     {
-        if (is_null($root)) {
+        if (is_null($root))
+        {
             $flags = \App\modules\phpgwapi\services\Settings::getInstance()->get('flags');
             $root = SRC_ROOT_PATH . $flags['currest_app'] . '/Templates';
         }
 
-        if (!is_dir($root)) {
-            if ($attempt == 1) {
+        if (!is_dir($root))
+        {
+            if ($attempt == 1)
+            {
                 $this->halt("set_root: $root is not a directory.");
                 return false;
-            } else {
+            }
+            else
+            {
                 $new_root = preg_replace("/\/{$this->serverSettings['template_set']}\$/", '/base', $root);
                 $this->set_root($new_root, 1);
             }
@@ -162,7 +169,8 @@ class TwigTemplate
         $this->root = $root;
 
         // Update Twig loader if it exists
-        if (isset($this->loader)) {
+        if (isset($this->loader))
+        {
             $this->loader->setPaths([$this->root]);
         }
 
@@ -189,15 +197,21 @@ class TwigTemplate
      */
     public function set_file($varname, $filename = "")
     {
-        if (!is_array($varname)) {
-            if ($filename == "") {
+        if (!is_array($varname))
+        {
+            if ($filename == "")
+            {
                 $this->halt("set_file: For varname $varname filename is empty.");
                 return false;
             }
             $this->file[$varname] = $this->filename($filename);
-        } else {
-            foreach ($varname as $v => $f) {
-                if ($f == "") {
+        }
+        else
+        {
+            foreach ($varname as $v => $f)
+            {
+                if ($f == "")
+                {
                     $this->halt("set_file: For varname $v filename is empty.");
                     return false;
                 }
@@ -217,37 +231,40 @@ class TwigTemplate
      */
     public function set_block($parent, $varname, $name = "")
     {
-        if (!$this->loadfile($parent)) {
+        if (!$this->loadfile($parent))
+        {
             $this->halt("set_block: unable to load $parent.");
             return false;
         }
-        
-        if ($name == "") {
+
+        if ($name == "")
+        {
             $name = $varname;
         }
 
         $contents = $this->get_var($parent);
-        
+
         // Extract the block content using regex (similar to legacy template)
         $reg = "/[ \t]*<!--\s+BEGIN $varname\s+-->\s*?\n?(\s*.*?\n?)\s*<!--\s+END $varname\s+-->\s*?\n?/sm";
-        
+
         preg_match_all($reg, $contents, $matches);
-        
-        if (!isset($matches[1][0])) {
+
+        if (!isset($matches[1][0]))
+        {
             $this->halt("set_block: unable to set block $varname.");
             return false;
         }
-        
+
         // Store the block content for later use
         $this->set_var($varname, $matches[1][0]);
-        
+
         // Replace the block in the parent with a placeholder
         $contents = preg_replace($reg, "{{ legacy_block('$name') }}", $contents);
         $this->set_var($parent, $contents);
-        
+
         // Remember this block for the renderBlock function
         $this->blocks[$name] = $varname;
-        
+
         return true;
     }
 
@@ -261,20 +278,32 @@ class TwigTemplate
      */
     public function set_var($varname, $value = "", $append = false)
     {
-        if (!is_array($varname)) {
-            if (!empty($varname)) {
-                if ($append && isset($this->varvals[$varname])) {
+        if (!is_array($varname))
+        {
+            if (!empty($varname))
+            {
+                if ($append && isset($this->varvals[$varname]))
+                {
                     $this->varvals[$varname] .= $value;
-                } else {
+                }
+                else
+                {
                     $this->varvals[$varname] = $value;
                 }
             }
-        } else {
-            foreach ($varname as $k => $v) {
-                if (!empty($k)) {
-                    if ($append && isset($this->varvals[$k])) {
+        }
+        else
+        {
+            foreach ($varname as $k => $v)
+            {
+                if (!empty($k))
+                {
+                    if ($append && isset($this->varvals[$k]))
+                    {
                         $this->varvals[$k] .= $v;
-                    } else {
+                    }
+                    else
+                    {
                         $this->varvals[$k] = $v;
                     }
                 }
@@ -290,13 +319,19 @@ class TwigTemplate
      */
     public function clear_var($varname)
     {
-        if (!is_array($varname)) {
-            if (!empty($varname)) {
+        if (!is_array($varname))
+        {
+            if (!empty($varname))
+            {
                 $this->set_var($varname, "");
             }
-        } else {
-            foreach ($varname as $v) {
-                if (!empty($v)) {
+        }
+        else
+        {
+            foreach ($varname as $v)
+            {
+                if (!empty($v))
+                {
                     $this->set_var($v, "");
                 }
             }
@@ -311,13 +346,19 @@ class TwigTemplate
      */
     public function unset_var($varname)
     {
-        if (!is_array($varname)) {
-            if (!empty($varname)) {
+        if (!is_array($varname))
+        {
+            if (!empty($varname))
+            {
                 unset($this->varvals[$varname]);
             }
-        } else {
-            foreach ($varname as $v) {
-                if (!empty($v)) {
+        }
+        else
+        {
+            foreach ($varname as $v)
+            {
+                if (!empty($v))
+                {
                     unset($this->varvals[$v]);
                 }
             }
@@ -332,11 +373,15 @@ class TwigTemplate
      */
     public function get_var($varname)
     {
-        if (!is_array($varname)) {
+        if (!is_array($varname))
+        {
             return isset($this->varvals[$varname]) ? $this->varvals[$varname] : "";
-        } else {
+        }
+        else
+        {
             $result = array();
-            foreach ($varname as $v) {
+            foreach ($varname as $v)
+            {
                 $result[$v] = isset($this->varvals[$v]) ? $this->varvals[$v] : "";
             }
             return $result;
@@ -351,22 +396,29 @@ class TwigTemplate
      */
     public function subst($varname)
     {
-        if (!$this->loadfile($varname)) {
+        if (!$this->loadfile($varname))
+        {
             $this->halt("subst: unable to load $varname.");
             return false;
         }
 
         // For Twig templates, we can use a Twig template string
         $template_content = $this->get_var($varname);
-        
+
         // Special case for complete twig templates
-        if (strpos($template_content, '{% extends') === 0 || 
-            strpos($template_content, '{# twig #}') === 0) {
+        if (
+            strpos($template_content, '{% extends') === 0 ||
+            strpos($template_content, '{# twig #}') === 0
+        )
+        {
             // This is a full Twig template with extends or marked with {# twig #}
-            try {
+            try
+            {
                 $template = $this->twig->createTemplate($template_content);
                 return $template->render($this->varvals);
-            } catch (\Exception $e) {
+            }
+            catch (\Exception $e)
+            {
                 $this->halt("Twig template error: " . $e->getMessage());
                 return false;
             }
@@ -375,11 +427,14 @@ class TwigTemplate
         // Legacy template - use simple variable replacement
         // Convert to Twig syntax for simple variable replacement
         $twig_content = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '{{ $1 }}', $template_content);
-        
-        try {
+
+        try
+        {
             $template = $this->twig->createTemplate($twig_content);
             return $template->render($this->varvals);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e)
+        {
             $this->halt("Twig template error: " . $e->getMessage());
             return false;
         }
@@ -407,19 +462,29 @@ class TwigTemplate
      */
     public function parse($target, $varname, $append = false)
     {
-        if (!is_array($varname)) {
+        if (!is_array($varname))
+        {
             $str = $this->subst($varname);
-            if ($append) {
+            if ($append)
+            {
                 $this->set_var($target, $this->get_var($target) . $str);
-            } else {
+            }
+            else
+            {
                 $this->set_var($target, $str);
             }
-        } else {
-            foreach ($varname as $v) {
+        }
+        else
+        {
+            foreach ($varname as $v)
+            {
                 $str = $this->subst($v);
-                if ($append) {
+                if ($append)
+                {
                     $this->set_var($target, $this->get_var($target) . $str);
-                } else {
+                }
+                else
+                {
                     $this->set_var($target, $str);
                 }
             }
@@ -461,7 +526,8 @@ class TwigTemplate
     public function finish($str)
     {
         // Apply the undefined variable policy
-        switch ($this->unknowns) {
+        switch ($this->unknowns)
+        {
             case "keep":
                 // Do nothing - keep undefined variables
                 break;
@@ -512,26 +578,34 @@ class TwigTemplate
      */
     protected function filename($filename, $root = '', $attempt = 0)
     {
-        if ($root == '') {
+        if ($root == '')
+        {
             $root = $this->root;
         }
-        
-        if (substr($filename, 0, 1) != '/') {
+
+        if (substr($filename, 0, 1) != '/')
+        {
             $new_filename = $root . '/' . $filename;
-        } else {
+        }
+        else
+        {
             $new_filename = $filename;
         }
 
         // Check if file exists, try base template if not
-        if (!file_exists($new_filename)) {
-            if ($attempt == 1) {
+        if (!file_exists($new_filename))
+        {
+            if ($attempt == 1)
+            {
                 $this->halt("filename: file $new_filename does not exist.");
-            } else {
+            }
+            else
+            {
                 $new_root = preg_replace("/\/templates\/{$this->serverSettings['template_set']}\$/", '/templates/base', $root);
                 $new_filename = $this->filename($filename, $new_root, 1);
             }
         }
-        
+
         return $new_filename;
     }
 
@@ -543,33 +617,37 @@ class TwigTemplate
      */
     protected function loadfile($varname)
     {
-        if (!isset($this->file[$varname])) {
+        if (!isset($this->file[$varname]))
+        {
             // Not a file variable
             return true;
         }
 
-        if (isset($this->varvals[$varname])) {
+        if (isset($this->varvals[$varname]))
+        {
             // Already loaded
             return true;
         }
 
         $filename = $this->file[$varname];
-        
+
         // Load the file contents
         $str = @file_get_contents($filename);
-        if (empty($str)) {
+        if (empty($str))
+        {
             $this->halt("loadfile: While loading $varname, $filename does not exist or is empty.");
             return false;
         }
 
         // Add filename comments if enabled
-        if ($this->filename_comments) {
+        if ($this->filename_comments)
+        {
             $str = "<!-- START FILE $filename -->\n$str<!-- END FILE $filename -->\n";
         }
 
         // Set the variable value to the file contents
         $this->set_var($varname, $str);
-        
+
         return true;
     }
 
@@ -596,11 +674,13 @@ class TwigTemplate
     {
         $this->last_error = $msg;
 
-        if ($this->halt_on_error != "no") {
+        if ($this->halt_on_error != "no")
+        {
             $this->haltmsg($msg);
         }
 
-        if ($this->halt_on_error == "yes") {
+        if ($this->halt_on_error == "yes")
+        {
             die("<b>Halted.</b>");
         }
 

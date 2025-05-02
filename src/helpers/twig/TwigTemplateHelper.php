@@ -20,25 +20,30 @@ class TwigTemplateHelper
     {
         // Copy all regular variables
         $twigVars = $vars;
-        
+
         // Convert block arrays into arrays suitable for Twig loops
-        foreach ($blocks as $blockName => $itemName) {
-            if (isset($vars[$itemName]) && is_string($vars[$itemName])) {
+        foreach ($blocks as $blockName => $itemName)
+        {
+            if (isset($vars[$itemName]) && is_string($vars[$itemName]))
+            {
                 // This is a simple block - no need for special handling
                 continue;
             }
-            
+
             // If the block data is an array, convert it to a format suitable for Twig loops
-            if (isset($vars[$itemName]) && is_array($vars[$itemName])) {
+            if (isset($vars[$itemName]) && is_array($vars[$itemName]))
+            {
                 $twigVars[$blockName] = $vars[$itemName];
-            } else {
+            }
+            else
+            {
                 $twigVars[$blockName] = [];
             }
         }
-        
+
         return $twigVars;
     }
-    
+
     /**
      * Check if a Twig template exists for the given template file
      *
@@ -51,14 +56,15 @@ class TwigTemplateHelper
         // Convert template filename to a Twig template filename
         $twigFile = str_replace('.tpl', '.twig', $templateFile);
         $twigPath = $twigDir . '/' . $twigFile;
-        
-        if (file_exists($twigPath)) {
+
+        if (file_exists($twigPath))
+        {
             return $twigPath;
         }
-        
+
         return null;
     }
-    
+
     /**
      * Create a modified Template class instance that checks for Twig templates first
      *
@@ -73,7 +79,7 @@ class TwigTemplateHelper
         // the legacy Template and TwigTemplate based on configuration
         return new Template($templateDir, $unknowns);
     }
-    
+
     /**
      * Create a TwigTemplate instance
      *

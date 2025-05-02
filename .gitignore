@@ -3,6 +3,7 @@
 /config/header.inc.php
 /vendor/*
 /logs/*
+/src/cache/*
 /nbproject/*
 /nbproject/private/
 /composer.lock

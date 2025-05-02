@@ -15,9 +15,10 @@ class Twig
     private static $instance;
     private $twig;
     private $loader;
-	private $flags;
-	private $userSettings;
-    
+    private $flags;
+    private $userSettings;
+    private $serverSettings;
+
     /**
      * Get singleton instance
      * 
@@ -25,123 +26,123 @@ class Twig
      */
     public static function getInstance()
     {
-        if (self::$instance === null) {
+        if (self::$instance === null)
+        {
             self::$instance = new self();
         }
         return self::$instance;
     }
-    
+
     /**
      * Private constructor to enforce singleton pattern
      */
     private function __construct()
     {
-		$this->flags = Settings::getInstance()->get('flags');
-		$this->userSettings = Settings::getInstance()->get('user');
+        $this->flags = Settings::getInstance()->get('flags');
+        $this->userSettings = Settings::getInstance()->get('user');
+        $this->serverSettings = Settings::getInstance()->get('server');
+
+        // Initialize the Twig loader
 
 
-		// Create loader with a base path
-		$this->loader = new FilesystemLoader();
-        
+        // Create loader with a base path
+        $this->loader = new FilesystemLoader();
+
         // Initialize Twig environment
-        $cacheDir = PHPGW_SERVER_ROOT . '/var/cache/twig';
-        if (!is_dir($cacheDir)) {
+        $cacheDir = SRC_ROOT_PATH . '/cache/twig';
+        if (!is_dir($cacheDir))
+        {
             mkdir($cacheDir, 0755, true);
         }
-        
+
         $this->twig = new Environment($this->loader, [
             'cache' => $cacheDir,
             'debug' => true,
             'auto_reload' => true
         ]);
-        
+
         // Add debug extension
         $this->twig->addExtension(new DebugExtension());
-        
+
         // Register paths for all modules
         $this->registerModulePaths();
     }
-    
+
     /**
      * Register template paths for all modules
      */
     private function registerModulePaths()
     {
         // Register the base template directory without a namespace
-        $basePath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/base/twig';
-        if (is_dir($basePath)) {
-            $this->loader->addPath($basePath);
+        $basePath = PHPGW_SERVER_ROOT . '/phpgwapi/templates';
+        if (is_dir($basePath . '/base'))
+        {
+            $this->loader->addPath($basePath . '/base');
         }
-        
+
+        if (is_dir($basePath . '/' . $this->serverSettings['template_set']))
+        {
+            $this->loader->addPath($basePath . '/' . $this->serverSettings['template_set']);
+        }
+
         // Register module template directories with their module name as namespace
         $modulesDir = PHPGW_SERVER_ROOT;
-        if (is_dir($modulesDir)) {
-            $modules = scandir($modulesDir);
-            
-            foreach ($modules as $module) {
-                // Skip special directories
-                if ($module === '.' || $module === '..') {
-                    continue;
-                }
-                
+
+
+        if (is_dir($modulesDir))
+       {
+            $modules = array_keys($this->userSettings['apps']);
+
+            foreach ($modules as $module)
+            {
+ 
                 $modulePath = $modulesDir . '/' . $module;
-                
+
                 // Only process directories
-                if (!is_dir($modulePath)) {
+                if (!is_dir($modulePath))
+                {
                     continue;
                 }
-                
+
                 // Register module's template directory with module name as namespace
-                
+
                 // First check for Twig templates
-                $moduleTemplateDir = $modulePath . '/templates/twig';
-                if (is_dir($moduleTemplateDir)) {
+                $moduleTemplateDir = $modulePath . '/templates/' . $this->serverSettings['template_set'];
+                if (is_dir($moduleTemplateDir))
+                {
                     // Always add both the original module name and lowercase version for compatibility
                     $this->loader->addPath($moduleTemplateDir, $module);
                     $this->loader->addPath($moduleTemplateDir, strtolower($module));
                     // Also add as a general path (without namespace)
                     $this->loader->addPath($moduleTemplateDir);
                 }
-                
+
                 // Also check for templates in the 'base' directory
                 $moduleBaseTemplateDir = $modulePath . '/templates/base';
-                if (is_dir($moduleBaseTemplateDir)) {
+                if (is_dir($moduleBaseTemplateDir))
+                {
                     // Add base directory as a fallback path for this namespace
                     // Always add both the original module name and lowercase version for compatibility
                     $this->loader->addPath($moduleBaseTemplateDir, $module);
-                    $this->loader->addPath($moduleBaseTemplateDir, strtolower($module));
+                    //          $this->loader->addPath($moduleBaseTemplateDir, strtolower($module));
                     // Also add as a general path (without namespace)
                     $this->loader->addPath($moduleBaseTemplateDir);
                 }
-                
-                // Specifically ensure the admin module's templates are registered
-                if (strtolower($module) === 'admin') {
-                    // Force register all subdirectories of admin/templates as fallbacks
-                    $adminTemplatesDir = $modulePath . '/templates';
-                    if (is_dir($adminTemplatesDir)) {
-                        $templateDirs = scandir($adminTemplatesDir);
-                        foreach ($templateDirs as $templateDir) {
-                            if ($templateDir === '.' || $templateDir === '..' || !is_dir($adminTemplatesDir . '/' . $templateDir)) {
-                                continue;
-                            }
-                            $fullPath = $adminTemplatesDir . '/' . $templateDir;
-                            $this->loader->addPath($fullPath, 'admin');
-                        }
-                    }
-                }
             }
         }
-        
+/*
         // Debug output - list all registered namespaces and paths
         $namespaces = $this->loader->getNamespaces();
-        _debug_array("Registered Twig namespaces: " . implode(", ", $namespaces));
-        
-        foreach ($namespaces as $namespace) {
+       _debug_array("Registered Twig namespaces: " . implode(", ", $namespaces));
+
+        foreach ($namespaces as $namespace)
+        {
             $paths = $this->loader->getPaths($namespace);
             _debug_array("Paths for namespace '{$namespace}': " . implode(", ", $paths));
         }
+*/
     }
-    
+
     /**
      * Render a template with given variables
      * 
@@ -157,14 +158,14 @@ class Twig
             'user' => isset($this->userSettings['fullname']) ? $this->userSettings['fullname'] : [],
             'app' => isset($this->flags['currentapp']) ? $this->flags['currentapp'] : '',
         ];
-        
+
         // Merge globals with the provided variables
         $vars = array_merge($globals, $vars);
-        
+
         // Render and return the template
         return $this->twig->render($template, $vars);
     }
-    
+
     /**
      * Render a specific block from a template
      * 
@@ -182,34 +183,40 @@ class Twig
             'user' => isset($this->userSettings['fullname']) ? $this->userSettings['fullname'] : [],
             'app' => isset($this->flags['currentapp']) ? $this->flags['currentapp'] : '',
         ];
-        
+
         // Merge globals with the provided variables
         $vars = array_merge($globals, $vars);
-        
-        try {
+
+        try
+        {
             // First try loading with the namespace prefix if provided
-            if ($namespace !== null && !str_starts_with($template, '@')) {
-                try {
+            if ($namespace !== null && !str_starts_with($template, '@'))
+            {
+                try
+                {
                     $templatePath = "@{$namespace}/{$template}";
                     $templateObj = $this->twig->load($templatePath);
                     return $templateObj->renderBlock($blockName, $vars);
-                } catch (\Twig\Error\LoaderError $e) {
+                }
+                catch (\Twig\Error\LoaderError $e)
+                {
                     // If namespace doesn't work, try without namespace
                     _debug_array("Failed to load template with namespace: " . $e->getMessage());
                 }
             }
-            
+
             // Try loading without namespace
             $templateObj = $this->twig->load($template);
             return $templateObj->renderBlock($blockName, $vars);
-            
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e)
+        {
             // Log the error and return an error message
             _debug_array("Twig renderBlock error: " . $e->getMessage());
             return "<!-- Error rendering block '{$blockName}': " . htmlspecialchars($e->getMessage()) . " -->";
         }
     }
-    
+
     /**
      * Get the Twig environment instance
      * 

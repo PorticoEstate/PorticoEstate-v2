@@ -166,7 +166,7 @@ class admin_uimainscreen
 				'lang' => $select_lang,
 				'message' => $message_content
 			]);
-			
+
 			$message = '<center>' . lang('message has been updated') . '</center>';
 		}
 
@@ -185,7 +185,7 @@ class admin_uimainscreen
 		if (empty($select_lang))
 		{
 			$templateData['header_lang'] = lang('Main screen message');
-			
+
 			// First row - empty header
 			$rows .= $this->renderTwigBlock('row_2', [
 				'tr_class' => 'th',
@@ -226,7 +226,7 @@ class admin_uimainscreen
 			$rows .= $this->renderTwigBlock('row_2', [
 				'tr_class' => $tr_class,
 				'value' => '<input type="submit" name="submit" value="' . lang('Submit')
-				. '"><input type="submit" name="cancel" value="' . lang('cancel') . '">'
+					. '"><input type="submit" name="cancel" value="' . lang('cancel') . '">'
 			]);
 		}
 		else
@@ -273,11 +273,11 @@ class admin_uimainscreen
 		}
 
 		$templateData['rows'] = $rows;
-		
+
 		// Render the Twig template
 		echo Template::renderTwig('mainscreen_message.html.twig', $templateData, 'admin');
 	}
-	
+
 	/**
 	 * Helper method to render a Twig block
 	 * 
@@ -287,13 +287,25 @@ class admin_uimainscreen
 	 */
 	private function renderTwigBlock($blockName, $data)
 	{
-		try {
-			// First attempt with admin namespace
-			return Template::renderTwig("{$blockName}", $data, 'admin');
-		} catch (\Exception $e) {
-			// Fallback to direct block rendering without namespace
+		try
+		{
 			$twig = Twig::getInstance();
-			return $twig->renderBlock('mainscreen_message.html.twig', $blockName, $data);
+			// First ensure the template is loaded by explicitly specifying its path and namespace
+			return $twig->renderBlock('mainscreen_message.html.twig', $blockName, $data, 'admin');
+		}
+		catch (\Exception $e)
+		{
+			// Fall back to direct concatenation if Twig rendering fails
+			if ($blockName === 'row_2')
+			{
+				return '<tr><td colspan="2" class="center">' . $data['value'] . '</td></tr>';
+			}
+			else if ($blockName === 'row')
+			{
+				return '<tr class="' . $data['tr_class'] . '"><td class="center">' . $data['label'] .
+					'</td><td class="center">' . $data['value'] . '</td></tr>';
+			}
+			return '<!-- Error rendering block: ' . $blockName . ' -->';
 		}
 	}
 }

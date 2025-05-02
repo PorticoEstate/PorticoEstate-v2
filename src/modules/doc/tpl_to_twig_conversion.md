@@ -284,6 +284,22 @@ This document outlines the rules and patterns for converting legacy TPL template
   {% endif %}
   ```
 
+### 23. content generation by plugin hooks
+Convert `{hook_keyname}` to `{{ hook('keyname') }}`
+- Convert any variables with prefix 'hook_' using the hook function
+- This is used for dynamic content generation by plugin hooks
+- Example:
+  ```
+  // TPL
+  <select>
+  {hook_project_approval_status}
+  </select>
+  
+  // Twig
+  <select>
+  {{ hook('project_approval_status') }}
+  </select>
+
 ## Example of Full Template Conversion
 
 ### Legacy TPL Template:

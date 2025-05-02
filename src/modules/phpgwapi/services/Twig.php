@@ -72,7 +72,8 @@ class Twig
             $text = str_replace('_', ' ', $text);
             return lang($text);
         }));
-        
+        $this->twig->addFunction(new TwigFunction('hook', [$this, 'renderHook']));
+
         // Add a filter to replace underscores with spaces
         $this->twig->addFilter(new TwigFilter('replace_underscores', function($text) {
             return str_replace('_', ' ', $text);
@@ -80,6 +81,42 @@ class Twig
 
         // Register paths for all modules
         $this->registerModulePaths();
+    }
+
+    /**
+     * Render a hook
+     * 
+     * @param string $hookName Name of the hook
+     * @param array $args Arguments to pass to the hook
+     * @return string Rendered output of the hook
+     */
+    public function renderHook(string $hookName, array $args = []): string
+    {
+        $currentApp = $this->flags['currentapp'];
+
+        static $config = [];
+        if (empty($config))
+        {
+            $c = new \App\modules\phpgwapi\services\Config($currentApp);
+            $c->read();
+
+            if ($c->config_data)
+            {
+                $config = $c->config_data;
+            }
+        }
+
+        // Check if the hook exists and is callable
+        if (is_callable($hookName))
+        {
+            return call_user_func($hookName, $config);
+        }
+        else
+        {
+            // Log an error if the hook is not callable
+            error_log("Hook '{$hookName}' is not callable.");
+            return '';
+        }
     }
 
     /**
@@ -106,6 +143,7 @@ class Twig
         if (is_dir($modulesDir))
        {
             $modules = array_keys($this->userSettings['apps']);
+            $modules = [$this->flags['currentapp']];
 
             foreach ($modules as $module)
             {
@@ -125,10 +163,9 @@ class Twig
                 if (is_dir($moduleTemplateDir))
                 {
                     // Always add both the original module name and lowercase version for compatibility
-                    $this->loader->addPath($moduleTemplateDir, $module);
-                    $this->loader->addPath($moduleTemplateDir, strtolower($module));
+        //            $this->loader->addPath($moduleTemplateDir, $module);
                     // Also add as a general path (without namespace)
-                    $this->loader->addPath($moduleTemplateDir);
+       //             $this->loader->addPath($moduleTemplateDir);
                 }
 
                 // Also check for templates in the 'base' directory

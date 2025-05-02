@@ -119,6 +119,7 @@ class TwigTemplate
 
         // Add support for the legacy block system
         $this->twig->addFunction(new TwigFunction('legacy_block', [$this, 'renderBlock']));
+
     }
 
     /**
@@ -663,6 +664,7 @@ class TwigTemplate
         $varname = isset($this->blocks[$name]) ? $this->blocks[$name] : $name;
         return isset($this->varvals[$varname]) ? $this->varvals[$varname] : '';
     }
+
 
     /**
      * Error handling

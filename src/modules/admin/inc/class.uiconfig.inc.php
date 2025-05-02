@@ -284,15 +284,14 @@ HTML;
 		
 		// Get the original template to extract variable names
 		
-		$originalTplPath = $this->phpgwapi_common->get_tpl_dir($appname) . '/config.tpl';
-//		$originalTplPath = str_replace($this->userSettings['preferences']['common']['template_set'], 'base', $originalTplPath);
+		$originalTplPath = $this->phpgwapi_common->get_tpl_dir($appname) . '/config.html.twig';
+		$originalTplPath = str_replace($this->userSettings['preferences']['common']['template_set'], 'base', $originalTplPath);
 
 		if (file_exists($originalTplPath)) {
 			$templateContent = file_get_contents($originalTplPath);
-			
+
 			// Extract variables with {variable_name} pattern
-			preg_match_all('/{([a-zA-Z0-9_]+)}/', $templateContent, $matches);
-			
+			preg_match_all('/{{\s*([a-zA-Z0-9_]+)(?:\s*\|[^}]*)?\s*}}/', $templateContent, $matches);			
 			if (!empty($matches[1])) {
 				foreach ($matches[1] as $varName) {
 					$prefix = substr($varName, 0, 5);
@@ -346,6 +345,6 @@ HTML;
 		$this->phpgwapi_common->phpgw_header(true);
 		
 		// Render the Twig template with all variables
-		echo $twigService->render('config.html.twig', $templateVars, 'admin');
+		echo $twigService->render('config.html.twig', $templateVars, $config_appname);
 	}
 }

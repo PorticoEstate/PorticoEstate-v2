@@ -140,50 +140,118 @@ HTML;
 
 			$html = <<<HTML
 <!DOCTYPE html>
-	<html>
-	<head>
-		<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
-		<script>
-			document.addEventListener('DOMContentLoaded', function() {
-				const selectElement = document.getElementById('type');
-				const form = document.getElementById('login-form');
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{$lang_sign_in} - {$this->serverSettings['site_title']}</title>
+	<link href="{$this->serverSettings['webserver_url']}/src/modules/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css?n={$this->serverSettings['cache_refresh_token']}" type="text/css" rel="StyleSheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<style>
+		body {
+			background-color: #f8f9fa;
+			height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.login-container {
+			max-width: 450px;
+			width: 100%;
+			padding: 15px;
+		}
+		.login-card {
+			border-radius: 10px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+			background-color: white;
+			padding: 30px;
+			transition: all 0.3s ease;
+		}
+		.login-card:hover {
+			box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+		}
+		.logo-area {
+			text-align: center;
+			margin-bottom: 25px;
+		}
+		.logo-icon {
+			font-size: 48px;
+			color: #0d6efd;
+			margin-bottom: 15px;
+		}
+		h1 {
+			font-size: 24px;
+			color: #333;
+			text-align: center;
+			margin-bottom: 25px;
+		}
+		.form-select {
+			padding: 12px;
+			height: auto;
+			border-radius: 6px;
+			border: 1px solid #ced4da;
+		}
+		.form-select:focus {
+			box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+		}
+		.copyright {
+			text-align: center;
+			margin-top: 20px;
+			font-size: 12px;
+			color: #6c757d;
+		}
+	</style>
+	<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			const selectElement = document.getElementById('type');
+			const form = document.getElementById('login-form');
 
-				// Function to reset the select box to its default value
-				function resetSelectBox() {
-					selectElement.value = '';
+			// Function to reset the select box to its default value
+			function resetSelectBox() {
+				selectElement.value = '';
+			}
+
+			// Function to check the selected option and submit the form
+			function checkSelectedOption() {
+				if (selectElement.value !== '') {
+					form.submit();
 				}
+			}
 
-				// Function to check the selected option and submit the form
-				function checkSelectedOption() {
-					if (selectElement.value !== '') {
-						form.submit();
-					}
-				}
+			// Reset the select box on page load
+			resetSelectBox();
 
-				// Reset the select box on page load
-				resetSelectBox();
+			// Add event listener to the select element
+			selectElement.addEventListener('change', checkSelectedOption);
 
-				// Add event listener to the select element
-				selectElement.addEventListener('change', checkSelectedOption);
-
-				// Reset the select box when the user clicks the "back" button
-				window.addEventListener('pageshow', resetSelectBox);
-			});
-		</script>
-	</head>
-	<body>
-		<div class="container">
-			<h1>{$lang_sign_in} {$this->serverSettings['site_title']}</h1>
+			// Reset the select box when the user clicks the "back" button
+			window.addEventListener('pageshow', resetSelectBox);
+		});
+	</script>
+</head>
+<body>
+	<div class="login-container">
+		<div class="login-card">
+			<div class="logo-area">
+				<div class="logo-icon">
+					<i class="fas fa-lock"></i>
+				</div>
+				<h1>{$lang_sign_in} {$this->serverSettings['site_title']}</h1>
+			</div>
 			<form id="login-form" method="GET" action="./login.php">
-				<div class="mb-3">
-					<label for="type" class="form-label">Logg inn med:</label>
+				<div class="mb-4">
+					<label for="type" class="form-label fw-bold">Logg inn med:</label>
 					<select id="type" name="type" class="form-select">
 						{$options}
 					</select>
 				</div>
 			</form>
 		</div>
-	</body>
+		<!-- <div class="copyright">
+			&copy; <?php echo date('Y'); ?> {$this->serverSettings['site_title']}
+		</div> -->
+	</div>
+</body>
 </html>
 HTML;
 

@@ -142,7 +142,6 @@ class Twig
 
         if (is_dir($modulesDir))
        {
-            $modules = array_keys($this->userSettings['apps']);
             $modules = [$this->flags['currentapp']];
 
             foreach ($modules as $module)

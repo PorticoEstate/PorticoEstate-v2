@@ -1,0 +1,163 @@
+{# Setup database blocks template #}
+
+{# DB Stage 1 - Database does not exist #}
+{% block db_stage_1 %}
+<div class="db-stage db-stage-1">
+    <h4>{{ dbnotexist }}</h4>
+    <div class="instructions">
+        <p>{{ makesure }}</p>
+        <p>{{ instr }}</p>
+        <form method="post" action="setup">
+            <table>
+                <tr>
+                    <td>{{ db_root }}:</td>
+                    <td><input type="text" name="db_root" value="{{ db_root }}"></td>
+                </tr>
+                <tr>
+                    <td>{{ lang('Password') }}:</td>
+                    <td><input type="password" name="db_pass"></td>
+                </tr>
+            </table>
+            <p>{{ createdb }}</p>
+			<input type="hidden" name="action" value="Create Database">
+            <input class="button" type="submit" name="label" value="{{ create_database }}">
+        </form>
+		<form method="POST" action="setup"> <br>
+		<input class="button" type="submit" value="Re-Check my database">
+		</form>
+    </div>
+    <div class="status">
+        <p><img src="{{ notcomplete }}" alt="{{ lang('Not Complete') }}"> {{ oncesetup }}</p>
+    </div>
+</div>
+{% endblock %}
+
+{# DB Stage 2 - Pre-beta version detected #}
+{% block db_stage_2 %}
+<div class="db-stage db-stage-2">
+    <div class="warning-box">
+        <p>{{ prebeta|raw }}</p>
+    </div>
+    <div class="status">
+        <p><img src="{{ notcomplete }}" alt="{{ lang('Not Complete') }}"></p>
+    </div>
+</div>
+{% endblock %}
+
+{# DB Stage 3 - Database exists but no apps installed #}
+{% block db_stage_3 %}
+<div class="db-stage db-stage-3">
+    <h4>{{ dbexists }}</h4>
+    <div class="instructions">
+        <p>{{ proceed }}</p>
+        <form method="post" action="setup">
+		<input type="hidden" name="oldversion" value="new">
+		    <input type="hidden" name="action" value="Install">
+			<p>{{ dbexists }}</p>
+            <input class="button" type="submit" name="label" value="{{ install }}">
+            <p>{{ coreapps }}</p>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{# DB Stage 4 - Database with old version detected #}
+{% block db_stage_4 %}
+<div class="db-stage db-stage-4">
+    <h4>{{ oldver|raw }}</h4>
+    <div class="instructions">
+        <p>{{ automatic|raw }}</p>
+        <p class="warning">{{ backupwarn }}</p>
+        
+        <form method="post" action="setup">
+ 		<input type="hidden" name="oldversion" value="{oldver}">
+		<input type="hidden" name="useglobalconfigsettings">
+		<input type="hidden" name="action" value="Upgrade">
+           <input class="button" type="submit" name="label" value="{{ upgrade }}">
+        </form>
+        
+        <hr>
+        
+        <p>{{ goto }}:</p>
+        <ul>
+            <li><a href="config">{{ configuration }}</a></li>
+            <li><a href="applications">{{ applications }}</a></li>
+            <li><a href="lang">{{ language_management }}</a></li>
+        </ul>
+        
+        <hr>
+        
+        <form method="post" action="setup">
+            <input class="button" type="submit" name="action" value="{{ uninstall_all_applications }}">
+            <p>{{ dont_touch_my_data }}</p>
+            <p class="warning">{{ dropwarn }}</p>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{# DB Stage 5 - Uninstall confirmation #}
+{% block db_stage_5 %}
+<div class="db-stage db-stage-5">
+    <h3 class="warning">{{ are_you_sure }}</h3>
+    <div class="actions">
+        <form method="post" action="setup">
+			<input type="hidden" name="oldversion" value="new">
+	        <input type="hidden" name="action" value="REALLY Uninstall all applications">
+            <input class="button" type="submit" name="label" value="{{ really_uninstall_all_applications }}">
+            <p class="warning">{{ dropwarn }}</p>
+        </form>
+        
+        <form method="post" action="setup">
+            <input class="button" type="submit" name="cancel" value="{{ cancel }}">
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{# DB Stage 6 - Processing operation #}
+{% block db_stage_6_pre %}
+<div class="db-stage db-stage-6-pre">
+    <table>
+        <tr>
+            <td>{{ status }}:</td>
+            <td><img src="{{ notcomplete }}" alt="{{ lang('Not Complete') }}"></td>
+        </tr>
+    </table>
+    
+    <h4>{{ tblchange }}</h4>
+    <div class="progress-output">
+{% endblock %}
+
+{% block db_stage_6_post %}
+    </div>
+    
+    <div class="success-message">
+        <p>{{ tableshave }} {{ subaction|default('') }}</p>
+        <form method="post" action="setup">
+            <input class="button" type="submit" name="check" value="{{ re-check_my_installation }}">
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{# DB Stage 10 - All tables current #}
+{% block db_stage_10 %}
+<div class="db-stage db-stage-10">
+    <h4>{{ tablescurrent }}</h4>
+        
+    <form method="post" action="setup">
+		<input type="hidden" name="oldversion" value="new"> <br>
+        <input type="hidden" name="action" value="Uninstall all applications">
+        <input class="button" type="submit" name="label" value="{{ uninstall_all_applications }}">
+        <p class="warning">{{ insanity }} - {{ dropwarn }}</p>
+    </form>
+</div>
+{% endblock %}
+
+{# DB Stage Default - Database does not exist (basic message) #}
+{% block db_stage_default %}
+<div class="db-stage db-stage-default">
+    <h4>{{ dbnotexist }}</h4>
+</div>
+{% endblock %}

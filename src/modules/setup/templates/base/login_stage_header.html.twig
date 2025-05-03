@@ -1,0 +1,48 @@
+{# Setup/Config Admin Login stage header template #}
+<tr class="th">
+    <td colspan="2">
+        &nbsp;<b>{{ lang('Setup/Config Admin Login') }}</b>
+    </td>
+</tr>
+<tr class="row_on">
+    <td colspan="2" class="feedback">{{ ConfigLoginMSG|raw }}</td>
+</tr>
+<tr class="row_on">
+    <td colspan="2">
+        <form action="setup" method="POST" name="config">
+        {% block multi_domain %}
+        <table>
+        <tr>
+            <td>
+                {{ lang('Domain') }}: 
+            </td>
+            <td>
+                <select name="FormDomain">{{ domains|raw }}</select>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                {{ lang('Password') }}:
+            </td>
+            <td>
+                <input type="password" name="FormPW" value="">
+            </td>
+        </tr>
+        </table>
+        {% endblock %}
+
+        {# stupid separator #}
+
+        {% block single_domain %}
+        <input type="password" name="FormPW" value="">
+        <input type="hidden" name="FormDomain" value="{{ default_domain_zero }}">
+        {% endblock %}
+{{ lang_select|raw }}
+        <input type="hidden" name="ConfigLogin" value="Login">
+        <input type="submit" name="submit" value="{{ lang('Login') }}">
+        </form>
+    </td>
+</tr>
+<tr class="row_on">
+    <td colspan="2">&nbsp;</td>
+</tr>

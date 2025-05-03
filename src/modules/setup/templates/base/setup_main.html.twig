@@ -1,0 +1,123 @@
+{# Setup main template #}
+
+{% if subtitle %}
+<div class="section-header">
+    <h2>{{ subtitle }}</h2>
+    <p>{{ submsg|raw }}</p>
+    {% if subaction %}
+    <p><strong>{{ subaction }}</strong></p>
+    {% endif %}
+</div>
+{% endif %}
+
+{# SVN Block #}
+{% if svn_stage == 1 or svn_stage == 2 %}
+<div class="section">
+    <h3>SVN Management</h3>
+    <div class="stage-box">
+        {% if svn_stage == 1 %}
+        <form method="post" action="index">
+            <p>{{ svn_data.svnwarn }}</p>
+            <table>
+                <tr>
+                    <td>{{ svn_data.sudo_user_label }}</td>
+                    <td><input type="text" name="sudo_user" value=""></td>
+                </tr>
+                <tr>
+                    <td>{{ svn_data.sudo_password_label }}</td>
+                    <td><input type="password" name="sudo_password" value=""></td>
+                </tr>
+            </table>
+            <input type="submit" name="action_svn" value="{{ svn_data.check_for_svn_update }}">
+        </form>
+        
+        {% if svn_data.svn_message %}
+        <div class="svn-message">
+            {{ svn_data.svn_message|raw }}
+        </div>
+        {% endif %}
+        
+        {% elseif svn_stage == 2 %}
+        <form method="post" action="index">
+            <p>{{ svn_data.svnwarn }}</p>
+            <table>
+                <tr>
+                    <td>{{ svn_data.sudo_user }}</td>
+                    <td><input type="text" name="sudo_user" value="{{ svn_data.value_sudo_user }}"></td>
+                </tr>
+                <tr>
+                    <td>{{ svn_data.sudo_password }}</td>
+                    <td><input type="password" name="sudo_password" value="{{ svn_data.value_sudo_password }}"></td>
+                </tr>
+            </table>
+            <input type="submit" name="action_svn" value="{{ svn_data.perform_svn_update }}">
+            <input type="submit" name="execute" value="{{ svn_data.execute }}">
+        </form>
+        
+        {% if svn_data.svn_message %}
+        <div class="svn-message">
+            {{ svn_data.svn_message|raw }}
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+{# Database Setup Section #}
+<div class="section">
+    <div class="section-header">
+        <h3>
+		<img src="{{ config_db.img }}" alt="{{ config_db.alt }}">
+		{{ db_step_text }}
+		</h3>
+        
+    </div>
+    <div class="stage-box">
+        {{ db_stage_content|raw }}
+    </div>
+</div>
+
+{# Configuration Section #}
+<div class="section">
+    <div class="section-header">
+        <h3>
+        <img src="{{ config_status.img }}" alt="{{ config_status.alt }}">
+		{{ config_step_text }}
+		</h3>
+    </div>
+    <div class="stage-box">
+        {{ config_status.table_data|raw }}
+        {% if config_status.ldap_table_data != '&nbsp;' %}
+        <div class="ldap-section">
+            {{ config_status.ldap_table_data|raw }}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Language Section #}
+<div class="section">
+    <div class="section-header">
+        <h3>
+        <img src="{{ lang_status.img }}" alt="{{ lang_status.alt }}">
+		{{ lang_step_text }}
+		</h3>
+    </div>
+    <div class="stage-box">
+        {{ lang_status.table_data|raw }}
+    </div>
+</div>
+
+{# Applications Section #}
+<div class="section">
+    <div class="section-header">
+        <h3>
+		<img src="{{ apps_status.img }}" alt="{{ apps_status.alt }}">
+		{{ apps_step_text }}
+		</h3>
+    </div>
+    <div class="stage-box">
+        {{ apps_status.table_data|raw }}
+    </div>
+</div>

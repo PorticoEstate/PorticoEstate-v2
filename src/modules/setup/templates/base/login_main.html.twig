@@ -1,0 +1,58 @@
+{# Setup login template #}
+{% block login_form %}
+<div class="setup-login">
+    <h2>{{ title }}</h2>
+    
+    {% if ConfigLoginMSG %}
+    <div class="login-message">
+        {{ ConfigLoginMSG|raw }}
+    </div>
+    {% endif %}
+    
+    <form method="post" action="index">
+        <table class="login-table">
+            {% if domains %}
+            <tr>
+                <td>{{ lang('Domain') }}:</td>
+                <td>
+                    <select name="FormDomain">
+                        {{ domains|raw }}
+                    </select>
+                </td>
+            </tr>
+            {% endif %}
+            
+            <tr>
+                <td>{{ lang('Username') }}:</td>
+                <td><input type="text" name="FormUser" value=""></td>
+            </tr>
+            <tr>
+                <td>{{ lang('Password') }}:</td>
+                <td><input type="password" name="FormPW" value=""></td>
+            </tr>
+            <tr>
+                <td>{{ lang('Language') }}:</td>
+                <td>
+                    {{ lang_select|raw }}
+                </td>
+            </tr>
+            <tr>
+                <td>&nbsp;</td>
+                <td><input class="button" type="submit" name="login" value="{{ lang('Login') }}"></td>
+            </tr>
+        </table>
+    </form>
+    
+    {% if HeaderLoginMSG %}
+    <div class="header-login-message">
+        {{ HeaderLoginMSG|raw }}
+    </div>
+    {% endif %}
+    
+    {% if HeaderLoginWarning %}
+    <div class="header-login-warning">
+        {{ HeaderLoginWarning|raw }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

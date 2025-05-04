@@ -1,26 +1,29 @@
 {# Setup_main template #}
 <!-- begin setup_main.tpl -->
-<!-- begin the svn section -->
+
 <table border="0" width="100%" cellspacing="0" cellpadding="2" style="{border: 1px solid #000000;}">
-<tr class="th">
+
+<!-- begin the svn section -->
+<!--<tr class="th">
 	<td align="left" colspan="2">{{ svn_step_text }}</td>
 </tr>
 
-{{ V_svn_filled_block }}
+{{ V_svn_filled_block |raw }}
+-->
 <!-- end the svn section -->
 
 <!-- begin the db section -->
 <tr class="th">
-	<td align="left">{{ db_step_text }}</td>
+	<td align="left">{{ db_step_text |raw }}</td>
 	<td align="right">&nbsp;</td>
 </tr>
 
-{{ V_db_filled_block }}
+{{ V_db_filled_block |raw }}
 <!-- end the db section -->
 
 <!-- begin the config section -->
 <tr class="th">
-	<td align="left">{{ config_step_text }}</td>
+	<td align="left">{{ config_step_text |raw }}</td>
 	<td align="right">&nbsp;</td>
 </tr>
 <tr>
@@ -28,27 +31,27 @@
 		<img src="{{ config_status_img }}" alt="{{ config_status_alt }}" border="0">
 	</td>
 	<td>
-		{{ config_table_data }}
+		{{ config_table_data |raw }}
 	</td>
 </tr>
 <tr>
 	<td>&nbsp;</td>
 	<td>
-		{{ ldap_table_data }}
+		{{ ldap_table_data |raw }}
 	</td>
 </tr>
 <!-- end the config section -->
 <!-- begin the lang section -->
 <tr class="th">
-	<td align="left">{{ lang('step_text') }}</td>
+	<td align="left">{{ lang.step_text |raw }}</td>
 	<td align="right">&nbsp;</td>
 </tr>
 <tr>
 	<td align="center">
-		<img src="{{ lang('status_img') }}" alt="{{ lang('status_alt') }}" border="0">
+		<img src="{{ lang.status_img }}" alt="{{ lang.status_alt }}" border="0">
 	</td>
 	<td>
-		{{ lang('table_data') }}
+		{{ lang.table_data |raw }}
 	</td>
 </tr>
 <!-- end the lang section -->
@@ -62,7 +65,7 @@
 		<img src="{{ apps_status_img }}" alt="{{ apps_status_alt }}" border="0">
 	</td>
 	<td>
-		{{ apps_table_data }}
+		{{ apps_table_data |raw }}
 	</td>
 </tr>
 <!-- end the apps section -->

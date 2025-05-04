@@ -222,7 +222,7 @@ class Twig
      * @param string $template Template name (with or without namespace)
      * @param string $blockName Name of the block to render
      * @param array $vars Variables to pass to the template
-     * @param string $namespace Optional namespace for the template
+     * @param string|null $namespace Optional namespace for the template
      * @return string Rendered block
      */
     public function renderBlock(string $template, string $blockName, array $vars = [], string|null $namespace = null): string

@@ -6,8 +6,8 @@
  */
 
 // Configuration
-$sourceDir = 'src/modules/property/templates/base/';
-$targetDir = 'src/modules/property/templates/base/';
+$sourceDir = 'src/modules/setup/templates/base/';
+$targetDir = 'src/modules/setup/templates/base/';
 
 // Create target directory if it doesn't exist
 if (!is_dir($targetDir)) {

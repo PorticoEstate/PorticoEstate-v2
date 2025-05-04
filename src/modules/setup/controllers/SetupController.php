@@ -177,7 +177,7 @@ class SetupController
 		$css = '';
 		if (is_file(dirname(__DIR__, 2) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
 		{
-//			$css = file_get_contents(dirname(__DIR__, 2) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
+			$css = file_get_contents(dirname(__DIR__, 2) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
 		}
 
 		// Check header and authentication
@@ -210,7 +210,6 @@ class SetupController
 
 		$this->setup->loaddb();
 
-		// Database actions
 		$setup_info = $this->detection->get_versions();
 		$setup_data['stage']['db'] = $this->detection->check_db();
 		if ($setup_data['stage']['db'] != 1)
@@ -232,18 +231,19 @@ class SetupController
 		$submsg = '';
 		$subaction = '';
 		$setup_data['stage']['svn'] = 1; //default
+		$svn_block_data = [];
 
 		switch (\Sanitizer::get_var('action_svn'))
 		{
 			case 'check_for_svn_update':
 				$subtitle = $this->setup->lang('check for update');
-				$submsg = $this->setup->lang('At your request, this script is going to attempt to check for updates from the svn server');
+				$submsg = $this->setup->lang('At your request, this script is going to attempt to check for updates from github');
 				$setup_data['currentver']['phpgwapi'] = 'check_for_svn_update';
 				$setup_data['stage']['svn'] = 2;
 				break;
 			case 'perform_svn_update':
 				$subtitle = $this->setup->lang('uppdating code');
-				$submsg = $this->setup->lang('At your request, this script is going to attempt updating the system from the svn server') . '.';
+				$submsg = $this->setup->lang('At your request, this script is going to attempt updating the system from github');
 				$setup_data['currentver']['phpgwapi'] = 'perform_svn_update';
 				$setup_data['stage']['svn'] = 1; // alternate
 				break;
@@ -328,7 +328,7 @@ class SetupController
 
 				if (isset($setup_data['currentver']['phpgwapi']) && $setup_data['currentver']['phpgwapi'] == 'perform_svn_update')
 				{
-					// SVN update logic would go here
+					// Github update logic would go here
 					$svn_block_data['svn_message'] = ''; // Message from SVN update
 				}
 				break;
@@ -339,9 +339,9 @@ class SetupController
 					'value_sudo_user' => \Sanitizer::get_var('sudo_user'),
 					'value_sudo_password' => \Sanitizer::get_var('sudo_password'),
 					'sudo_password' => $this->setup->lang('password for %1', getenv('APACHE_RUN_USER')),
-					'perform_svn_update' => $this->setup->lang('perform svn update'),
+					'perform_svn_update' => $this->setup->lang('perform github update'),
 					'execute' => $this->setup->lang('execute'),
-					'svnwarn' => $this->setup->lang('will try to perform a svn up'),
+					'svnwarn' => $this->setup->lang('will try to perform a git pull'),
 					'svn_message' => '',
 				];
 
@@ -358,17 +358,29 @@ class SetupController
 		$db_block_data = [];
 		$db_stage_content = '';
 
+		// Set up images paths
+
+		// Add common image variables to all DB blocks
+		$commonBlockData = [
+			'img_incomplete' => $incomplete,
+			'img_completed' => $completed,
+			'notcomplete' => $this->setup->lang('not complete'),
+			'completed' => $this->setup->lang('completed'),
+			'subtitle' => $subtitle,
+			'submsg' => $submsg,
+			'subaction' => $subaction
+		];
+
 		switch ($setup_data['stage']['db'])
 		{
 			case 1:
-				$db_block_data = [
+				$db_block_data = array_merge($commonBlockData, [
 					'dbnotexist' => $this->setup->lang('Your Database is not working!'),
 					'makesure' => $this->setup->lang('makesure'),
-					'notcomplete' => $this->setup->lang('not complete'),
 					'oncesetup' => $this->setup->lang('Once the database is setup correctly'),
 					'createdb' => $this->setup->lang('Or we can attempt to create the database for you:'),
 					'create_database' => $this->setup->lang('Create database'),
-				];
+				]);
 
 				switch ($db_config['db_type'])
 				{
@@ -383,31 +395,30 @@ class SetupController
 						break;
 				}
 
-				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_1', $db_block_data);
+				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_1', $db_block_data);
 				break;
 
 			case 2:
-				$db_block_data = [
-					'prebeta' => $this->setup->lang('You appear to be running a pre-beta version of phpGroupWare.<br />These versions are no longer supported, and there is no upgrade path for them in setup.<br /> You may wish to first upgrade to 0.9.10 (the last version to support pre-beta upgrades) <br />and then upgrade from there with the current version.'),
-					'notcomplete' => $this->setup->lang('not complete')
-				];
+				$db_block_data = array_merge($commonBlockData, [
+					'prebeta' => $this->setup->lang('You appear to be running a pre-beta version of phpGroupWare.<br />These versions are no longer supported, and there is no upgrade path for them in setup.<br /> You may wish to first upgrade to 0.9.10 (the last version to support pre-beta upgrades) <br />and then upgrade from there with the current version.')
+				]);
 
-				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_2', $db_block_data);
+				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_2', $db_block_data);
 				break;
 
 			case 3:
-				$db_block_data = [
+				$db_block_data = array_merge($commonBlockData, [
 					'dbexists' => $this->setup->lang('Your database is working, but you dont have any applications installed'),
 					'install' => $this->setup->lang('Install'),
 					'proceed' => $this->setup->lang('We can proceed'),
 					'coreapps' => $this->setup->lang('all core tables and the admin and preferences applications')
-				];
+				]);
 
-				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_3', $db_block_data);
+				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_3', $db_block_data);
 				break;
 
 			case 4:
-				$db_block_data = [
+				$db_block_data = array_merge($commonBlockData, [
 					'oldver' => $this->setup->lang('You appear to be running version %1 of phpGroupWare', $setup_info['phpgwapi']['currentver']),
 					'automatic' => $this->setup->lang('We will automatically update your tables/records to %1', $setup_info['phpgwapi']['version']),
 					'backupwarn' => $this->setup->lang('backupwarn'),
@@ -419,30 +430,29 @@ class SetupController
 					'uninstall_all_applications' => $this->setup->lang('Uninstall all applications'),
 					'dont_touch_my_data' => $this->setup->lang('Dont touch my data'),
 					'dropwarn' => $this->setup->lang('Your tables may be altered and you may lose data')
-				];
+				]);
 
-				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_4', $db_block_data);
+				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_4', $db_block_data);
 				break;
 
 			case 5:
-				$db_block_data = [
+				$db_block_data = array_merge($commonBlockData, [
 					'are_you_sure' => $this->setup->lang('ARE YOU SURE?'),
 					'really_uninstall_all_applications' => $this->setup->lang('REALLY Uninstall all applications'),
 					'dropwarn' => $this->setup->lang('Your tables will be dropped and you will lose data'),
 					'cancel' => $this->setup->lang('cancel')
-				];
+				]);
 
-				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_5', $db_block_data);
+				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_5', $db_block_data);
 				break;
 
 			case 6:
-				$pre_data = [
+				$pre_data = array_merge($commonBlockData, [
 					'status' => $this->setup->lang('Status'),
-					'notcomplete' => $this->setup->lang('not complete'),
 					'tblchange' => $this->setup->lang('Table Change Messages')
-				];
+				]);
 
-				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_6_pre', $pre_data);
+				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_6_pre', $pre_data);
 
 				// Process database operations
 				$this->db->set_halt_on_error('yes');
@@ -482,42 +492,34 @@ class SetupController
 				$this->db->set_halt_on_error('no');
 				$this->db->transaction_commit();
 
-				$post_data = [
+				$post_data = array_merge($commonBlockData, [
 					'tableshave' => $this->setup->lang('If you did not receive any errors, your applications have been'),
 					're-check_my_installation' => $this->setup->lang('Re-Check My Installation')
-				];
+				]);
 
-				$db_stage_content .= $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_6_post', $post_data);
+				$db_stage_content .= $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_6_post', $post_data);
 				break;
 
 			case 10:
-				$db_block_data = [
+				$db_block_data = array_merge($commonBlockData, [
 					'tablescurrent' => $this->setup->lang('Your applications are current'),
 					'uninstall_all_applications' => $this->setup->lang('Uninstall all applications'),
 					'insanity' => $this->setup->lang('Insanity'),
 					'dropwarn' => $this->setup->lang('Your tables will be dropped and you will lose data'),
 					'deletetables' => $this->setup->lang('Uninstall all applications')
-				];
+				]);
 
-				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_10', $db_block_data);
-
-				$config_db = [
-					'img' => $completed,
-					'alt' => $this->setup->lang('completed'),
-				];
-
+				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_10', $db_block_data);
 				break;
 
 			default:
-				$db_block_data = [
-					'dbnotexist' => $this->setup->lang('Your database does not exist')
-				];
+				$db_block_data = array_merge($commonBlockData, [
+					'dbnotexist' => $this->setup->lang('Your database does not exist'),
+					'create_one_now' => $this->setup->lang('Create one now')
+				]);
 
-				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'db_stage_default', $db_block_data);
-				$config_db = [
-					'img' => $incomplete,
-					'alt' => $this->setup->lang('not completed'),
-				];
+				$db_stage_content = $this->twig->renderBlock('setup_db_blocks.html.twig', 'B_db_stage_default', $db_block_data);
+				break;
 		}
 
 		// Update settings
@@ -764,6 +766,52 @@ class SetupController
 			$setup_data['header_msg'] = '';
 		}
 
+		$langData = [
+			'status_img' => $lang_status['img'],
+			'status_alt' => $lang_status['alt'],
+			'table_data' => $lang_status['table_data'],
+			'step_text' => $lang_step_text
+		];
+
+		// Process GIT section
+		$svn_step_text = $this->setup->lang('Step 0 - GIT pull');
+		$svn_filled_block = '';
+		
+		// Setup common GIT block data
+		$svnCommonData = [
+			'img_completed' => $completed,
+			'completed' => $this->setup->lang('completed'),
+			'img_incomplete' => $incomplete,
+			'notcomplete' => $this->setup->lang('not complete'),
+			'svnwarn' => isset($svn_block_data['svnwarn']) ? $svn_block_data['svnwarn'] : $this->setup->lang('Note that this will modify your files directly')
+		];
+		
+		// Render the appropriate SVN block based on the stage
+		switch ($setup_data['stage']['svn']) {
+			case 1:
+				$svnBlockData = array_merge($svnCommonData, [
+					'check_for_svn_update' => $this->setup->lang('check update'),
+					'sudo_user' => $this->setup->lang('sudo user'),
+					'sudo_password' => $this->setup->lang('password for %1', getenv('APACHE_RUN_USER')),
+					'svn_message' => isset($svn_block_data['svn_message']) ? $svn_block_data['svn_message'] : ''
+				]);
+				$svn_filled_block = $this->twig->renderBlock('setup_svn_blocks.html.twig', 'B_svn_stage_1', $svnBlockData);
+				break;
+				
+			case 2:
+				$svnBlockData = array_merge($svnCommonData, [
+					'perform_svn_update' => $this->setup->lang('perform svn update'),
+					'execute' => $this->setup->lang('execute'),
+					'sudo_user' => $this->setup->lang('sudo user'),
+					'value_sudo_user' => \Sanitizer::get_var('sudo_user'),
+					'value_sudo_password' => \Sanitizer::get_var('sudo_password'),
+					'sudo_password' => $this->setup->lang('password for %1', getenv('APACHE_RUN_USER')),
+					'svn_message' => isset($svn_block_data['svn_message']) ? $svn_block_data['svn_message'] : ''
+				]);
+				$svn_filled_block = $this->twig->renderBlock('setup_svn_blocks.html.twig', 'B_svn_stage_2', $svnBlockData);
+				break;
+		}
+
 		// Prepare final data for rendering
 		$templateData = [
 			'title' => $setup_data['header_msg'],
@@ -773,29 +821,28 @@ class SetupController
 			'subaction' => $subaction,
 			'img_incomplete' => $incomplete,
 			'img_completed' => $completed,
+			'svn_step_text' => $svn_step_text,
+//			'V_svn_filled_block' => $svn_filled_block,
 			'db_step_text' => $this->setup->lang('Step 1 - Simple Application Management'),
+			'V_db_filled_block' => $db_stage_content,
 			'config_step_text' => $config_step_text,
-			'lang_step_text' => $lang_step_text,
+			'config_status_img' => $config_status['img'],
+			'config_status_alt' => $config_status['alt'],
+			'config_table_data' => $config_status['table_data'],
+			'ldap_table_data' => $config_status['ldap_table_data'],
+			'lang' => $langData,
 			'apps_step_text' => $apps_step_text,
-			//		'svn_stage' => $setup_data['stage']['svn'],
-			//		'svn_data' => $svn_block_data,
-			'db_stage_content' => $db_stage_content,
-			'config_status' => $config_status,
-			'config_db' => $config_db,
-			'lang_status' => $lang_status,
-			'apps_status' => $apps_status,
+			'apps_status_img' => $apps_status['img'], 
+			'apps_status_alt' => $apps_status['alt'],
+			'apps_table_data' => $apps_status['table_data'],
 			'configdomain' => $this->db->get_domain() . '(' . $db_config['db_type'] . ')',
-			'lang_cookies_must_be_enabled' => $this->setup->lang('<b>NOTE:</b> You must have cookies enabled to use setup and header admin!'),
-			'lang' => function ($text)
-			{
-				return $this->setup->lang($text);
-			}
+			'lang_cookies_must_be_enabled' => $this->setup->lang('<b>NOTE:</b> You must have cookies enabled to use setup and header admin!')
 		];
 
 		// Render the template
-		$content = $this->twig->render('head.html.twig', $templateData);
+		$content = $this->twig->render('head.html.twig', ['title' => isset($setup_data['header_msg']) ? $setup_data['header_msg'] : 'Setup', 'css' => $css]);
 		$content .= $this->twig->render('setup_main.html.twig', $templateData);
-		$content .= $this->twig->render('footer.html.twig', $templateData);
+		$content .= $this->twig->render('footer.html.twig', []);
 
 		// Return the response
 		$response = new \Slim\Psr7\Response();

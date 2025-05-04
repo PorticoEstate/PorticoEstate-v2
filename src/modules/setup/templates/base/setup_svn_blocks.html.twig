@@ -1,20 +1,21 @@
-{# Setup SVN blocks template #}
+{# Setup_svn_blocks template #}
+<!-- begin setup_svn_blocks.tpl -->
 
-{# ================================== #}
+&nbsp; <!-- ================================== --> &nbsp; 
 
-{% block svn_stage_1 %}
+{% block B_svn_stage_1 %}
 <tr>
 	<td align="center">
 		<img src="{{ img_completed }}" alt="{{ completed }}" border="0">
 	</td>
 	<td>
-		{{ check_for_svn_update|raw }}
+		{{ check_for_svn_update }}
 		<form method="POST" action="index.php">
 		<input type="hidden" name="action_svn" value="check_for_svn_update">
 		<table>
 			<tr>
 				<td>
-					{{ sudo_user|raw }}:
+					{{ sudo_user }}:
 				</td>
 				<td>
 					<input type="text" name="sudo_user" value="">
@@ -22,54 +23,56 @@
 			</tr>
 			<tr>
 				<td>
-					{{ sudo_password|raw }}:
+					{{ sudo_password }}:
 				</td>
 				<td>
 					<input type="password" name="sudo_password" value="">
 				</td>
 			</tr>
 		</table>
-		<input type="submit" name="label" value="{{ check_for_svn_update }}"><br>({{ svnwarn|raw }})
+		<input type="submit" name="label" value="{{ check_for_svn_update }}"><br>({{ svnwarn }})
 		</form>
-		{{ svn_message|raw }}
+		{{ svn_message }}
 	</td>
 </tr>
 {% endblock %}
 
-{# ================================== #}
+&nbsp; <!-- ================================== --> &nbsp; 
 
-{% block svn_stage_2 %}
+{% block B_svn_stage_2 %}
 <tr>
 	<td align="center">
 		<img src="{{ img_completed }}" alt="{{ completed }}" border="0">
 	</td>
 	<td>
-		{{ perform_svn_update|raw }}
+		{{ perform_svn_update }}
 		<form method="POST" action="index.php">
-		{{ execute|raw }}:
+		{{ execute }}:
         <input type="hidden" name="action_svn" value="perform_svn_update">
 		<table>
 			<tr>
 				<td>
-					{{ sudo_user|raw }}:
+					{{ sudo_user }}:
 				</td>
 				<td>
-					<input type="text" name="sudo_user" value="{{ value_sudo_user }}">
+					<input type="text" name="sudo_user" value="{{ value_sudo_user|raw }}">
 				</td>
 			</tr>
 			<tr>
 				<td>
-					{{ sudo_password|raw }}:
+					{{ sudo_password }}:
 				</td>
 				<td>
-					<input type="password" name="sudo_password" value="{{ value_sudo_password }}">
+					<input type="password" name="sudo_password" value="{{ value_sudo_password|raw }}">
 				</td>
 			</tr>
 		</table>
 
-		<input type="submit" name="label" value="{{ perform_svn_update }}"><br>({{ svnwarn|raw }})
+		<input type="submit" name="label" value="{{ perform_svn_update }}"><br>({{ svnwarn }})
 		</form>
-		{{ svn_message|raw }}
+		{{ svn_message }}
 	</td>
 </tr>
 {% endblock %}
+
+<!-- end setup_svn_blocks.tpl -->

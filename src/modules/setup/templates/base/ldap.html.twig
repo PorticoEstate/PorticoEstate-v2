@@ -1,0 +1,99 @@
+{# Ldap template #}
+{% block header %}
+ <form action="{{ action_url }}" method="POST">
+  <table border="0" align="center" width="70%">
+   <tr bgcolor="#486591">
+     <td colspan="2">&nbsp;<font color="#fefefe">{{ description }}<br>&nbsp;</font></td>
+   </tr>
+{% endblock %}
+
+{% block jump %}
+  <table border="0" align="center" width="70%">
+   <tr bgcolor="#e6e6e6">
+    <td colspan="2"><a href="{{ ldapmodify }}">{{ lang('ldapmodify') }}</a></td>
+   </tr>
+   <tr bgcolor="#e6e6e6">
+    <td colspan="2"><a href="{{ ldapimport }}">{{ lang('ldapimport') }}</a></td>
+   </tr>
+   <tr bgcolor="#e6e6e6">
+    <td colspan="2"><a href="{{ ldapexport }}">{{ lang('ldapexport') }}</a></td>
+   </tr>
+   <tr bgcolor="#e6e6e6">
+    <td colspan="2"><a href="{{ ldapdummy }}">{{ lang('ldapdummy') }}</a></td>
+   </tr>
+{% endblock %}
+
+{% block user_list %}
+   <tr bgcolor="#e6e6e6">
+    <td align="left" valign="top">
+     &nbsp;{{ select_users|raw }}
+    </td>
+    <td align="center">
+     <select name="users[]" multiple size="8">
+{{ users }}
+     </select>
+    </td>
+   </tr>
+{% endblock %}
+
+{% block admin_list %}
+   <tr bgcolor="#e6e6e6">
+    <td align="left" valign="top">
+     &nbsp;{{ select_admins|raw }}
+    </td>
+    <td align="center">
+     <select name="admins[]" multiple size="8">
+{{ admins }}
+     </select>
+    </td>
+   </tr>
+{% endblock %}
+
+{% block group_list %}
+   <tr bgcolor="#e6e6e6">
+    <td align="left" valign="top">
+     &nbsp;{{ select_groups|raw }}
+    </td>
+    <td align="center">
+     <select name="ldapgroups[]" multiple size="5">
+{{ ldapgroups }}
+     </select>
+    </td>
+   </tr>
+{% endblock %}
+
+{% block app_list %}
+   <tr bgcolor="#e6e6e6">
+    <td align="left" valign="top">
+     &nbsp;{{ select_apps|raw }}
+     <br>&nbsp;{{ note }}
+    </td>
+    <td>
+     <select name="s_apps[]" multiple size="10">
+{{ s_apps }}
+     </select>
+    </td>
+   </tr>
+{% endblock %}
+
+{% block submit %}
+   <tr bgcolor="#e6e6e6">
+    <td colspan="2" align="center">
+     <input type="submit" name="submit" value="{{ form_submit }}">
+      <input type="submit" name="cancel" value="{{ cancel }}">
+    </td>
+   </tr>
+{% endblock %}
+
+{% block cancel_only %}
+   <tr bgcolor="#e6e6e6">
+    <td colspan="2" align="center">
+      <input type="submit" name="cancel" value="{{ cancel }}">
+    </td>
+   </tr>
+{% endblock %}
+
+{% block footer %}
+  </table>
+ </form>
+{% endblock %}

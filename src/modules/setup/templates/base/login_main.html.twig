@@ -1,58 +1,50 @@
-{# Setup login template #}
-{% block login_form %}
-<div class="setup-login">
-    <h2>{{ title }}</h2>
-    
-    {% if ConfigLoginMSG %}
-    <div class="login-message">
-        {{ ConfigLoginMSG|raw }}
-    </div>
-    {% endif %}
-    
-    <form method="post" action="index">
-        <table class="login-table">
-            {% if domains %}
-            <tr>
-                <td>{{ lang('Domain') }}:</td>
-                <td>
-                    <select name="FormDomain">
-                        {{ domains|raw }}
-                    </select>
-                </td>
-            </tr>
-            {% endif %}
-            
-            <tr>
-                <td>{{ lang('Username') }}:</td>
-                <td><input type="text" name="FormUser" value=""></td>
-            </tr>
-            <tr>
-                <td>{{ lang('Password') }}:</td>
-                <td><input type="password" name="FormPW" value=""></td>
-            </tr>
-            <tr>
-                <td>{{ lang('Language') }}:</td>
-                <td>
-                    {{ lang_select|raw }}
-                </td>
-            </tr>
-            <tr>
-                <td>&nbsp;</td>
-                <td><input class="button" type="submit" name="login" value="{{ lang('Login') }}"></td>
-            </tr>
-        </table>
-    </form>
-    
-    {% if HeaderLoginMSG %}
-    <div class="header-login-message">
-        {{ HeaderLoginMSG|raw }}
-    </div>
-    {% endif %}
-    
-    {% if HeaderLoginWarning %}
-    <div class="header-login-warning">
-        {{ HeaderLoginWarning|raw }}
-    </div>
-    {% endif %}
-</div>
-{% endblock %}
+{# Login_main template #}
+<!-- begin login_main.tpl -->
+<p>&nbsp;</p>
+<table align="center" cellspacing="0" cellpadding="2" style="border: 1px solid #486591;">
+
+{{ V_login_stage_header|raw }}
+
+<tr class="th">
+    <td colspan="2">&nbsp;<b>{{ lang('Header Admin Login') }}</b>
+	</td>		
+</tr>
+
+{# Header Admin Login section #}
+
+<tr class="row_off">
+	<td colspan="2" class="feedback">{{ HeaderLoginMSG }}</td>
+</tr>
+<form action="setup/manageheader" method="POST" name="admin">
+<tr class="row_off">
+	<td> {{ lang('Password') }}: </td>
+	<td>
+		<input type="password" name="FormPW" value="">
+	</td>
+</tr>
+<tr class="row_off">
+	<td colspan="2">
+		{{ lang_select |raw }}
+		<input type="submit" name="Submit" value="Login">
+		<input type="hidden" name="HeaderLogin" value="Login">
+	</td>
+</tr>
+<tr class="row_off">
+	<td colspan="2">{{ HeaderLoginWarning }}</td>
+</tr>
+<tr class="row_off">
+	<td colspan="2">&nbsp;</td>
+</tr>
+</form>
+<tr class="th">
+        <td colspan="2">&nbsp;<b>{{ lang('Other Options') }}</b></td>
+</tr>
+ {# Other Options section #}
+<tr class="row_on">
+	<td colspan="2"><a href="login_ui"> {{ lang('Return to Portico Estate') }}: </a></td>
+</tr>
+<tr class="row_on">
+	<td colspan="2">&nbsp;</td>
+</tr>
+</table>
+<!-- end login_main.tpl -->

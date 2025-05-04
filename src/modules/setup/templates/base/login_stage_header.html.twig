@@ -1,48 +1,48 @@
-{# Setup/Config Admin Login stage header template #}
+{# Login_stage_header template #}
+<!-- begin login_stage_header.tpl -->
 <tr class="th">
-    <td colspan="2">
-        &nbsp;<b>{{ lang('Setup/Config Admin Login') }}</b>
-    </td>
+	<td colspan="2">
+		&nbsp;<b>Setup/Config Admin Login</b>
+	</td>
 </tr>
 <tr class="row_on">
-    <td colspan="2" class="feedback">{{ ConfigLoginMSG|raw }}</td>
+	<td colspan="2" class="feedback">{{ ConfigLoginMSG }}</td>
 </tr>
 <tr class="row_on">
-    <td colspan="2">
-        <form action="setup" method="POST" name="config">
-        {% block multi_domain %}
-        <table>
-        <tr>
-            <td>
-                {{ lang('Domain') }}: 
-            </td>
-            <td>
-                <select name="FormDomain">{{ domains|raw }}</select>
-            </td>
-        </tr>
-        <tr>
-            <td>
-                {{ lang('Password') }}:
-            </td>
-            <td>
-                <input type="password" name="FormPW" value="">
-            </td>
-        </tr>
-        </table>
-        {% endblock %}
+	<td colspan="2">
+		<form action="setup" method="POST" name="config">
+		{% block B_multi_domain %}
+		<table>
+		<tr>
+			<td> {{ lang('Domain') }}: </td>
+			<td>
+				<select name="FormDomain">{{ domains }}</select>
+			</td>
+		</tr>
+		<tr>
+			<td> {{ lang('Password') }}: </td>
+			<td>
+				<input type="password" name="FormPW" value="">
+			</td>
+		</tr>
+		</table>
+		{% endblock %}
 
-        {# stupid separator #}
+		<!-- &nbsp; stupid seperator -->
 
-        {% block single_domain %}
-        <input type="password" name="FormPW" value="">
-        <input type="hidden" name="FormDomain" value="{{ default_domain_zero }}">
-        {% endblock %}
-{{ lang_select|raw }}
-        <input type="hidden" name="ConfigLogin" value="Login">
-        <input type="submit" name="submit" value="{{ lang('Login') }}">
-        </form>
-    </td>
+		{% block B_single_domain %}
+		<input type="password" name="FormPW" value="">
+		<input type="hidden" name="FormDomain" value="{{ default_domain_zero }}">
+		{% endblock %}
+{{ lang('select') }}
+		<input type="hidden" name="ConfigLogin" value="Login">
+		<input type="submit" name="submit" value="Login">
+		</form>
+	</td>
 </tr>
 <tr class="row_on">
-    <td colspan="2">&nbsp;</td>
+	<td colspan="2">&nbsp;</td>
 </tr>
+
+<!-- end login_stage_header.tpl -->
+

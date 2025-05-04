@@ -1,0 +1,42 @@
+{# Applist template #}
+{% block appheader %}
+<p><b>{{ lang('applist') }}:</b><hr><p>
+<table width="60%" border="0" align="center" cellspacing="1" cellpadding="1">
+  <tr>
+    <td align="center">Select an application/module, or click 'Show all' to convert all tables.</td>
+  </tr>
+  <tr>
+    <td align="center"> {{ lang('The following apps have tables') }}: </td>
+  </tr>
+</table>
+<table width="60%" border="0" align="center" cellspacing="1" cellpadding="1">
+<form method="POST" action="{{ action_url }}">
+  <tr bgcolor="#DDDDDD">
+    <td>&nbsp;</td>
+    <td> {{ lang('Name') }}: </td>
+    <td colspan="2"> {{ lang('Title') }}: </td>
+  </tr>
+{% endblock %}
+
+{% block appitem %}
+  <tr bgcolor="#EEEEEE">
+    <td><input type="radio" name="appname" value="{{ appname }}"></td>
+    <td>{{ appname }}&nbsp;</td>
+    <td colspan="2">{{ apptitle }}&nbsp;</td>
+  </tr>
+{% endblock %}
+
+{% block appfooter %}
+</table>
+<table width="60%" border="0" align="center" cellspacing="1" cellpadding="1">
+  <tr>
+    <td align="left" width="7%">
+      <input type="submit" name="submit" value="{{ lang('submit') }}"></td>
+    <td align="left" width="7%">
+      <input type="submit" name="showall" value="{{ lang('showall') }}">
+    </td>
+	<td><input type="checkbox" name="download" value="1">{{ select_to_download_file|raw }}</td>
+  </tr>
+</form>
+</table>
+{% endblock %}

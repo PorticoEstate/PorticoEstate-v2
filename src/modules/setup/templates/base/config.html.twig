@@ -1,10 +1,14 @@
 {# Config template #}
+{% block header %}
 <form method="POST" action="{{ action_url }}">
 	<table class="pure-table pure-form">
 		<tr class="th">
 			<td colspan="2">&nbsp;{{ title }}</td>
 		</tr>
 
+{% endblock %}
+
+		{% block body %}
 		<tr class="th">
 			<td colspan="2">
 				&nbsp;<b>{{ lang('Path_information') }}</b>
@@ -13,28 +17,26 @@
 		</tr>
 		<tr>
 			<td>{{ lang('Enter_the_full_path_for_temporary_files') }}.<br>{{ lang('Examples') }} /tmp, C:\TEMP</td>
-			<td><input name="newsettings[temp_dir]" value="{{ value_temp_dir }}" size="40" class="pure-u-7-8"></td>
+			<td><input name="newsettings[temp_dir]" value="{{ value_temp_dir|raw }}" size="40" class="pure-u-7-8"></td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('Enter_the_full_path_for_users_and_group_files') }}.<br>{{ lang('Examples') }} /files, _E:\FILES}<br><strong>{{ lang('This_has_to_be_outside_the_webservers_document_root') }}</strong><br>{{ lang('or') }} http://webdav.domain.com (WebDAV):</td>
-			<td><input name="newsettings[files_dir]" value="{{ value_files_dir }}" size="40" class="pure-u-7-8">
+			<td><input name="newsettings[files_dir]" value="{{ value_files_dir|raw }}" size="40" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Enter_the_location_of_phpGroupWare\'s_URL') }}.<br>{{ lang('Example:') }} http://www.domain.com/portico {{ lang('or') }} /portico<br><b>{{ lang('No_trailing_slash') }}</b>:</td>
-			<td><input name="newsettings[webserver_url]" value="{{ value_webserver_url }}" size="40" class="pure-u-7-8">
+			<td>{lang_Enter_the_location_of_phpGroupWare's_URL}.<br>{lang_Example:} http://www.domain.com/portico {{ lang('or') }} /portico<br><b>{{ lang('No_trailing_slash') }}</b>:</td>
+			<td><input name="newsettings[webserver_url]" value="{{ value_webserver_url|raw }}" size="40" class="pure-u-7-8">
 			</td>
 		</tr>
 
-		<tr class="th">
-			<td colspan="2">&nbsp;<b>{{ lang('Host_information') }}</b></td>
-		</tr>
+		<tr class="th">\n        <td colspan="2">&nbsp;<b>{{ lang('{{ lang('Host_information') }}') }}</b></td>\n    </tr>\n\n    {# {{ lang('Host_information') }} section #}
 
 		<tr>
 			<td>{{ lang('Enter_the_hostname_of_the_machine_on_which_this_server_is_running') }}:</td>
-			<td><input name="newsettings[hostname]" value="{{ value_hostname }}" class="pure-u-7-8">
+			<td><input name="newsettings[hostname]" value="{{ value_hostname|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
@@ -44,86 +46,103 @@
 			<td>
 				<select name="newsettings[enforce_ssl]" class="pure-u-7-8">
 					<option value="">{{ lang('No') }}</option>
-					<option value="1"{% if selected_enforce_ssl_1 is defined %} selected="selected"{% endif %}>{{ lang('Yes') }}</option>
+					<option value="1"{{ selected_enforce_ssl_1|raw }}>{{ lang('Yes') }}</option>
 				</select>
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('cookie_domain_for_sessions_-_if_unsure_leave_empty') }}</td>
-			<td><input name="newsettings[cookie_domain]" value="{{ value_cookie_domain }}" class="pure-u-7-8">
+			<td>{lang_cookie_domain_for_sessions_-_if_unsure_leave_empty}</td>
+			<td><input name="newsettings[cookie_domain]" value="{{ value_cookie_domain|raw }}" class="pure-u-7-8">
 			</td>
+			<!--
+				 <td>
+				   <select name="newsettings[cookie_domain]">
+					 {{ hook_cookie_domain }}
+				   </select>
+				 </td>
+			-->
 		</tr>
-		
 		<tr>
 			<td>{{ lang('alternative_cookie_domain_for_sessions_') }}</td>
-			<td><input name="newsettings[alternative_cookie_domain]" value="{{ value_alternative_cookie_domain }}" class="pure-u-7-8">
+			<td><input name="newsettings[alternative_cookie_domain]" value="{{ value_alternative_cookie_domain|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('Enter_your_default_FTP_server') }}:</td>
-			<td><input name="newsettings[default_ftp_server]" value="{{ value_default_ftp_server }}" class="pure-u-7-8">
+			<td><input name="newsettings[default_ftp_server]" value="{{ value_default_ftp_server|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Attempt_to_use_correct_mimetype_for_FTP_instead_of_default_\'application/octet-stream\'') }}:</td>
+			<td>{lang_Attempt_to_use_correct_mimetype_for_FTP_instead_of_default_'application/octet-stream'}:</td>
 			<td>
 				<select name="newsettings[ftp_use_mime]" class="pure-u-7-8">
 					<option value="">{{ lang('No') }}</option>
-					<option value="True"{% if selected_ftp_use_mime_True is defined %} selected="selected"{% endif %}>{{ lang('Yes') }}</option>
+					<option value="True"{{ selected_ftp_use_mime_True|raw }}>{{ lang('Yes') }}</option>
 				</select>
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Datetime_port') }}.<br>{{ lang('If_using_port_13,_please_set_firewall_rules_appropriately_before_submitting_this_page') }}.({{ lang('Host') }}: time-a.nist.gov {{ lang('Port') }}: 13)</td>
+			<td>{{ lang('Datetime_port') }}.<br>{lang_If_using_port_13,_please_set_firewall_rules_appropriately_before_submitting_this_page}.({{ lang('Host') }}: time-a.nist.gov {{ lang('Port') }}: 13)</td>
 			<td>
 				<select name="newsettings[daytime_port]" class="pure-u-7-8">
-					<option value="00"{% if selected_daytime_port_00 is defined %} selected="selected"{% endif %}>{{ lang('00_(disable)') }}</option>
-					<option value="13"{% if selected_daytime_port_13 is defined %} selected="selected"{% endif %}>{{ lang('13_(ntp)') }}</option>
-					<option value="80"{% if selected_daytime_port_80 is defined %} selected="selected"{% endif %}>{{ lang('80_(http)') }}</option>
+					<option value="00"{{ selected_daytime_port_00|raw }}>{lang_00_(disable)}</option>
+					<option value="13"{{ selected_daytime_port_13|raw }}>{lang_13_(ntp)}</option>
+					<option value="80"{{ selected_daytime_port_80|raw }}>{lang_80_(http)}</option>
 				</select>
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('Enter_your_HTTP_proxy_server') }}:</td>
-			<td><input name="newsettings[httpproxy_server]" value="{{ value_httpproxy_server }}" class="pure-u-7-8">
+			<td><input name="newsettings[httpproxy_server]" value="{{ value_httpproxy_server|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('Enter_your_HTTP_proxy_server_port') }}:</td>
-			<td><input name="newsettings[httpproxy_port]" value="{{ value_httpproxy_port }}" class="pure-u-7-8">
+			<td><input name="newsettings[httpproxy_port]" value="{{ value_httpproxy_port|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
+		<!--
+		   <tr>
+			<td>{{ lang('Enter_the_site_username_for_peer_servers') }}.</td>
+			<td><input name="newsettings[site_username]" value="{{ value_site_username|raw }}"></td>
+		   </tr>
 
+		   <tr>
+			<td>{{ lang('Enter_the_site_password_for_peer_servers') }}.</td>
+			<td><input type="password" name="newsettings[site_password]" value="{{ value_site_password|raw }}"></td>
+		   </tr>
+		-->
 		<tr>
 			<td colspan="2">&nbsp;</td>
 		</tr>
 
-		{# from admin #}
+		<!-- from admin -->
 
-		<tr class="th">
-			<td colspan="2"><b>{{ lang('Authentication_/_Accounts') }}</b></td>
-		</tr>
+		<tr class="th">\n        <td colspan="2">&nbsp;<b>{{ lang('{lang_Authentication_/_Accounts}') }}</b></td>\n    </tr>\n\n    {# {lang_Authentication_/_Accounts} section #}
 
 		<tr>
 			<td>{{ lang('Select_which_type_of_authentication_you_are_using') }}:</td>
 			<td>
 				<select name="newsettings[auth_type]" class="pure-u-7-8">
-					<option value="sql"{% if selected_auth_type_sql is defined %} selected="selected"{% endif %}>SQL</option>
-					<option value="sqlssl"{% if selected_auth_type_sqlssl is defined %} selected="selected"{% endif %}>SQL / SSL</option>
-					<option value="ldap"{% if selected_auth_type_ldap is defined %} selected="selected"{% endif %}>LDAP</option>
-					<option value="mail"{% if selected_auth_type_mail is defined %} selected="selected"{% endif %}>Mail</option>
-					<option value="ntlm"{% if selected_auth_type_ntlm is defined %} selected="selected"{% endif %}>NTLM</option>
-					<option value="exchange"{% if selected_auth_type_exchange is defined %} selected="selected"{% endif %}>exchange</option>
-					<option value="ads"{% if selected_auth_type_ads is defined %} selected="selected"{% endif %}>ads</option>
-					<option value="remoteuser"{% if selected_auth_type_remoteuser is defined %} selected="selected"{% endif %}>Remote User</option>
-					<option value="customsso"{% if selected_auth_type_customsso is defined %} selected="selected"{% endif %}>Custom SSO</option>
-					<option value="azure"{% if selected_auth_type_azure is defined %} selected="selected"{% endif %}>Azure AD</option>
+					<option value="sql"{{ selected_auth_type_sql|raw }}> {{ lang('SQL') }}: </option>
+					<option value="sqlssl"{{ selected_auth_type_sqlssl|raw }}>SQL / SSL</option>
+					<option value="ldap"{{ selected_auth_type_ldap|raw }}> {{ lang('LDAP') }}: </option>
+					<option value="mail"{{ selected_auth_type_mail|raw }}> {{ lang('Mail') }}: </option>
+					<option value="ntlm"{{ selected_auth_type_ntlm|raw }}> {{ lang('NTLM') }}: </option>
+					<option value="exchange"{{ selected_auth_type_exchange|raw }}>exchange</option>
+					<option value="ads"{{ selected_auth_type_ads|raw }}>ads</option>
+					<option value="remoteuser"{{ selected_auth_type_remoteuser|raw }}> {{ lang('Remote User') }}: </option>
+					<option value="customsso"{{ selected_auth_type_customsso|raw }}> {{ lang('Custom SSO') }}: </option>
+					<option value="azure"{{ selected_auth_type_azure|raw }}> {{ lang('Azure AD') }}: </option>
+					<!-- <option value="http"{{ selected_auth_type_http|raw }}> {{ lang('HTTP') }}: </option> -->
+					<!-- <option value="nis"{{ selected_auth_type_nis|raw }}> {{ lang('NIS') }}: </option> -->
+					<!-- <option value="pam"{{ selected_auth_type_pam|raw }}>PAM (Not Ready)</option> -->
 				</select>
 			</td>
 		</tr>
@@ -132,42 +151,42 @@
 			<td>{{ lang('Select_if_you_want_a_fallback') }}</td>
 			<td>
 				<select name="newsettings[half_remote_user]" class="pure-u-7-8">
-					<option value=""{% if selected_half_remote_user_ is defined %} selected="selected"{% endif %}>{{ lang('Only_the_selected_Auth_Type') }}</option>
-					<option value="remoteuser"{% if selected_half_remote_user_remoteuser is defined %} selected="selected"{% endif %}>{{ lang('Allow_Remote_User_As_FallBack') }}</option>
+					<option value=""{{ selected_half_remote_user_|raw }}>{{ lang('Only_the_selected_Auth_Type') }}</option>
+					<option value="remoteuser"{{ selected_half_remote_user_remoteuser|raw }}>{{ lang('Allow_Remote_User_As_FallBack') }}</option>
 				</select>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Select_where_you_want_to_store/retrieve_user_accounts') }}:</td>
+			<td>{lang_Select_where_you_want_to_store/retrieve_user_accounts}:</td>
 			<td>
 				<select name="newsettings[account_repository]" class="pure-u-7-8">
-					<option value="sql"{% if selected_account_repository_sql is defined %} selected="selected"{% endif %}>SQL</option>
-					<option value="ldap"{% if selected_account_repository_ldap is defined %} selected="selected"{% endif %}>LDAP</option>
-					<option value="sqlldap"{% if selected_account_repository_sqlldap is defined %} selected="selected"{% endif %}>SQL - replicate changes to LDAP</option>
-					<option value="contacts"{% if selected_account_repository_contacts is defined %} selected="selected"{% endif %} style="text-decoration: line-through;">Contacts - DEPRECATED</option>
+					<option value="sql"{{ selected_account_repository_sql|raw }}> {{ lang('SQL') }}: </option>
+					<option value="ldap"{{ selected_account_repository_ldap|raw }}> {{ lang('LDAP') }}: </option>
+					<option value="sqlldap"{{ selected_account_repository_sqlldap|raw }}>SQL - replicate changes to LDAP</option>
+					<option value="contacts"{{ selected_account_repository_contacts|raw }} style="text-decoration: line-through;">Contacts - DEPRECATED</option>
 				</select>
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Minimum_account_id_(e.g._500_or_1000,_etc.)') }}:</td>
-			<td><input name="newsettings[account_min_id]" value="{{ value_account_min_id }}" class="pure-u-7-8">
+			<td>{lang_Minimum_account_id_(e.g._500_or_1000,_etc.)}:</td>
+			<td><input name="newsettings[account_min_id]" value="{{ value_account_min_id|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 		<tr>
-			<td>{{ lang('Maximum_account_id_(e.g._65535_or_1000000)') }}:</td>
-			<td><input name="newsettings[account_max_id]" value="{{ value_account_max_id }}" class="pure-u-7-8">
+			<td>{lang_Maximum_account_id_(e.g._65535_or_1000000)}:</td>
+			<td><input name="newsettings[account_max_id]" value="{{ value_account_max_id|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Minimum_group_id_(e.g._100_or_500,_etc.)_-_should_not_overlap_with_account_ids}') }}:</td>
-			<td><input name="newsettings[group_min_id]" value="{{ value_group_min_id }}" class="pure-u-7-8">
+			<td>{lang_Minimum_group_id_(e.g._100_or_500,_etc.)_-_should_not_overlap_with_account_ids}}:</td>
+			<td><input name="newsettings[group_min_id]" value="{{ value_group_min_id|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 		<tr>
-			<td>{{ lang('Maximum_group_id_(e.g._499_or_999)_-_should_not_overlap_with_account_ids') }}:</td>
-			<td><input name="newsettings[group_max_id]" value="{{ value_group_max_id }}" class="pure-u-7-8">
+			<td>{lang_Maximum_group_id_(e.g._499_or_999)_-_should_not_overlap_with_account_ids}:</td>
+			<td><input name="newsettings[group_max_id]" value="{{ value_group_max_id|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
@@ -176,29 +195,29 @@
 			<td>
 				<select name="newsettings[auto_create_acct]" class="pure-u-7-8">
 					<option value="">{{ lang('No') }}</option>
-					<option value="True"{% if selected_auto_create_acct_True is defined %} selected="selected"{% endif %}>{{ lang('Yes') }}</option>
+					<option value="True"{{ selected_auto_create_acct_True|raw }}>{{ lang('Yes') }}</option>
 				</select>
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Auto-created_user_accounts_expire') }}:</td>
+			<td>{lang_Auto-created_user_accounts_expire}:</td>
 			<td>
 				<select name="newsettings[auto_create_expire]" class="pure-u-7-8">
-					<option value="604800"{% if selected_auto_create_expire_604800 is defined %} selected="selected"{% endif %}>{{ lang('one_week') }}</option>
-					<option value="1209600"{% if selected_auto_create_expire_1209600 is defined %} selected="selected"{% endif %}>{{ lang('two_weeks') }}</option>
-					<option value="2592000"{% if selected_auto_create_expire_2592000 is defined %} selected="selected"{% endif %}>{{ lang('one_month') }}</option>
-					<option value="never"{% if selected_auto_create_expire_never is defined %} selected="selected"{% endif %}>{{ lang('Never') }}</option>
+					<option value="604800"{{ selected_auto_create_expire_604800|raw }}>{{ lang('one_week') }}</option>
+					<option value="1209600"{{ selected_auto_create_expire_1209600|raw }}>{{ lang('two_weeks') }}</option>
+					<option value="2592000"{{ selected_auto_create_expire_2592000|raw }}>{{ lang('one_month') }}</option>
+					<option value="never"{{ selected_auto_create_expire_never|raw }}>{{ lang('Never') }}</option>
 				</select>
 			</td>
 		</tr>
 
 
 		<tr>
-			<td>{{ lang('Add_auto-created_users_to_this_group_(\'Default\'_will_be_attempted_if_this_is_empty.)') }}:</td>
+			<td>{lang_Add_auto-created_users_to_this_group_('Default'_will_be_attempted_if_this_is_empty.)}:</td>
 			<td>
 				<select name="newsettings[default_group_lid]" class="pure-u-7-8">
-					{{ hook_required_group|raw }}
+					{{ hook_required_group }}
 				</select>
 			</td>
 		</tr>
@@ -207,8 +226,8 @@
 			<td>{{ lang('If_no_ACL_records_for_user_or_any_group_the_user_is_a_member_of') }}:</td>
 			<td>
 				<select name="newsettings[acl_default]" class="pure-u-7-8">
-					<option value="deny"{% if selected_acl_default_deny is defined %} selected="selected"{% endif %}>{{ lang('Deny_Access') }}</option>
-					<option value="grant"{% if selected_acl_default_grant is defined %} selected="selected"{% endif %}>{{ lang('Grant_Access') }}</option>
+					<option value="deny"{{ selected_acl_default_deny|raw }}>{{ lang('Deny_Access') }}</option>
+					<option value="grant"{{ selected_acl_default_grant|raw }}>{{ lang('Grant_Access') }}</option>
 				</select>
 			</td>
 		</tr>
@@ -217,7 +236,7 @@
 			<td>{{ lang('password_encryption_type') }}:</td>
 			<td>
 				<select name="newsettings[encryption_type]" class="pure-u-7-8">
-					{{ hook_passwdhashes|raw }}
+					{{ hook_passwdhashes }}
 				</select>
 			</td>
 		</tr>
@@ -226,7 +245,7 @@
 			<td>{{ lang('password_password_level') }}:</td>
 			<td>
 				<select name="newsettings[password_level]" class="pure-u-7-8">
-					{{ hook_passwdlevels|raw }}
+					{{ hook_passwdlevels }}
 				</select>
 			</td>
 		</tr>
@@ -240,55 +259,55 @@
 		<tr>
 
 		<tr>
-			<td>{{ lang('Do_you_want_to_manage_homedirectory_and_loginshell_attributes?') }}:</td>
+			<td>{lang_Do_you_want_to_manage_homedirectory_and_loginshell_attributes?}:</td>
 			<td>
 				<select name="newsettings[ldap_extra_attributes]" class="pure-u-7-8">
 					<option value="">{{ lang('No') }}</option>
-					<option value="True"{% if selected_ldap_extra_attributes_True is defined %} selected="selected"{% endif %}>{{ lang('Yes') }}</option>
+					<option value="True"{{ selected_ldap_extra_attributes_True|raw }}>{{ lang('Yes') }}</option>
 				</select>
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('LDAP_Default_homedirectory_prefix_(e.g._/home_for_/home/username)') }}:</td>
-			<td><input name="newsettings[ldap_account_home]" value="{{ value_ldap_account_home }}" autocomplete="off"
+			<td>{lang_LDAP_Default_homedirectory_prefix_(e.g._/home_for_/home/username)}:</td>
+			<td><input name="newsettings[ldap_account_home]" value="{{ value_ldap_account_home|raw }}" autocomplete="off"
 					   readonly="readonly" onfocus="this.removeAttribute('readonly');" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('LDAP_Default_shell_(e.g._/bin/bash)') }}:</td>
-			<td><input name="newsettings[ldap_account_shell]" value="{{ value_ldap_account_shell }}" class="pure-u-7-8">
+			<td>{lang_LDAP_Default_shell_(e.g._/bin/bash)}:</td>
+			<td><input name="newsettings[ldap_account_shell]" value="{{ value_ldap_account_shell|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('LDAP_host') }}:</td>
-			<td><input name="newsettings[ldap_host]" value="{{ value_ldap_host }}" class="pure-u-7-8">
+			<td><input name="newsettings[ldap_host]" value="{{ value_ldap_host|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('LDAP_accounts_context') }}:</td>
-			<td><input name="newsettings[ldap_context]" value="{{ value_ldap_context }}" size="40" class="pure-u-7-8">
+			<td><input name="newsettings[ldap_context]" value="{{ value_ldap_context|raw }}" size="40" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('LDAP_groups_context') }}:</td>
-			<td><input name="newsettings[ldap_group_context]" value="{{ value_ldap_group_context }}" size="40" class="pure-u-7-8">
+			<td><input name="newsettings[ldap_group_context]" value="{{ value_ldap_group_context|raw }}" size="40" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('LDAP_rootdn') }}:</td>
-			<td><input name="newsettings[ldap_root_dn]" value="{{ value_ldap_root_dn }}" size="40" class="pure-u-7-8">
+			<td><input name="newsettings[ldap_root_dn]" value="{{ value_ldap_root_dn|raw }}" size="40" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('LDAP_root_password') }}:</td>
-			<td><input name="newsettings[ldap_root_pw]" type="password" value="{{ value_ldap_root_pw }}" class="pure-u-7-8">
+			<td><input name="newsettings[ldap_root_pw]" type="password" value="{{ value_ldap_root_pw|raw }}" class="pure-u-7-8">
 			</td>
 		</tr>
 
@@ -296,24 +315,22 @@
 			<td colspan="2">&nbsp;</td>
 		</tr>
 
-		<tr class="th">
-			<td colspan="2"><b>{{ lang('If_using_Remote_User') }}:</b></td>
-		</tr>
+		<tr class="th">\n        <td colspan="2">&nbsp;<b>{{ lang('{{ lang('If_using_Remote_User') }}:') }}</b></td>\n    </tr>\n\n    {# {{ lang('If_using_Remote_User') }}: section #}
 
 		<tr>
 			<td>{{ lang('mapping_kind') }}:</td>
 			<td>
 				<select name="newsettings[mapping]" class="pure-u-7-8">
-					<option value="id"{% if selected_mapping_id is defined %} selected="selected"{% endif %}>{{ lang('Unique_ID') }}</option>
-					<option value="table"{% if selected_mapping_table is defined %} selected="selected"{% endif %}>{{ lang('Table_mapping') }}</option>
-					<option value="all"{% if selected_mapping_all is defined %} selected="selected"{% endif %}>{{ lang('All') }}</option>
+					<option value="id"{{ selected_mapping_id|raw }}>{{ lang('Unique_ID') }}</option>
+					<option value="table"{{ selected_mapping_table|raw }}>{{ lang('Table_mapping') }}</option>
+					<option value="all"{{ selected_mapping_all|raw }}>{{ lang('All') }}</option>
 				</select>
 			</td>
 		</tr>
 
 		<tr>
 			<td>{{ lang('mapping_field') }}:</td>
-			<td><input name="newsettings[mapping_field]" value="{{ value_mapping_field }}" size="40" class="pure-u-7-8">
+			<td><input name="newsettings[mapping_field]" value="{{ value_mapping_field|raw }}" size="40" class="pure-u-7-8">
 			</td>
 		</tr>
 
@@ -321,30 +338,28 @@
 			<td colspan="2">&nbsp;</td>
 		</tr>
 
-		<tr class="th">
-			<td colspan="2"><b>{{ lang('Mcrypt_settings_(requires_mcrypt_PHP_extension)') }}</b></td>
-		</tr>
+		<tr class="th">\n        <td colspan="2">&nbsp;<b>{{ lang('{lang_Mcrypt_settings_(requires_mcrypt_PHP_extension)}') }}</b></td>\n    </tr>\n\n    {# {lang_Mcrypt_settings_(requires_mcrypt_PHP_extension)} section #}
 
 		<tr>
 			<td>{{ lang('Enter_some_random_text_for_app_session_encryption') }}:</td>
-			<td><input name="newsettings[encryptkey]" value="{{ value_encryptkey }}" size="40" class="pure-u-7-8">
+			<td><input name="newsettings[encryptkey]" value="{{ value_encryptkey|raw }}" size="40" class="pure-u-7-8">
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Mcrypt_algorithm_(default_TRIPLEDES)') }}:</td>
+			<td>{lang_Mcrypt_algorithm_(default_TRIPLEDES)}:</td>
 			<td>
 				<select name="newsettings[mcrypt_algo]" class="pure-u-7-8">
-					{{ hook_encryptalgo|raw }}
+					{{ hook_encryptalgo }}
 				</select>
 			</td>
 		</tr>
 
 		<tr>
-			<td>{{ lang('Mcrypt_mode_(default_CBC)') }}:</td>
+			<td>{lang_Mcrypt_mode_(default_CBC)}:</td>
 			<td>
 				<select name="newsettings[mcrypt_mode]" class="pure-u-7-8">
-					{{ hook_encryptmode|raw }}
+					{{ hook_encryptmode }}
 				</select>
 			</td>
 		</tr>
@@ -352,37 +367,40 @@
 		<tr>
 			<td colspan="2">&nbsp;</td>
 		</tr>
-		<tr class="th">
-			<td colspan="2"><b>{{ lang('Additional_settings') }}</b></td>
-		</tr>
+		<tr class="th">\n        <td colspan="2">&nbsp;<b>{{ lang('{{ lang('Additional_settings') }}') }}</b></td>\n    </tr>\n\n    {# {{ lang('Additional_settings') }} section #}
 		<tr>
 			<td>
-				{{ lang('Select_where_you_want_to_store/retrieve_filesystem_information') }}:
+				{lang_Select_where_you_want_to_store/retrieve_filesystem_information}:
 				<br>
-				({{ lang('file_type,_size,_version,_etc.') }})
+				({lang_file_type,_size,_version,_etc.})
 			</td>
 			<td>
 				<select name="newsettings[file_repository]" class="pure-u-7-8">
-					<option value="sql"{% if selected_file_repository_sql is defined %} selected="selected"{% endif %}>SQL</option>
-					<option value="dav"{% if selected_file_repository_dav is defined %} selected="selected"{% endif %}>WebDAV</option>
+					<option value="sql"{{ selected_file_repository_sql|raw }}> {{ lang('SQL') }}: </option>
+					<option value="dav"{{ selected_file_repository_dav|raw }}> {{ lang('WebDAV') }}: </option>
 				</select>
 			</td>
 		</tr>
 		<tr>
 			<td>
-				{{ lang('Select_where_you_want_to_store/retrieve_file_contents') }}:
+				{lang_Select_where_you_want_to_store/retrieve_file_contents}:
 				<br>
-				({{ lang('Recommended:_Filesystem') }})
+				({lang_Recommended:_Filesystem})
 			</td>
 			<td>
 				<select name="newsettings[file_store_contents]" class="pure-u-7-8">
-					<option value="filesystem"{% if selected_file_store_contents_filesystem is defined %} selected="selected"{% endif %}>Filesystem</option>
-					<option value="sql"{% if selected_file_store_contents_sql is defined %} selected="selected"{% endif %}>SQL</option>
-					<option value="braArkiv"{% if selected_file_store_contents_braArkiv is defined %} selected="selected"{% endif %}>braArkiv</option>
+					<option value="filesystem"{{ selected_file_store_contents_filesystem|raw }}> {{ lang('Filesystem') }}: </option>
+					<option value="sql"{{ selected_file_store_contents_sql|raw }}> {{ lang('SQL') }}: </option>
+					<option value="braArkiv"{{ selected_file_store_contents_braArkiv|raw }}>braArkiv</option>
 				</select>
 			</td>
 		</tr>
 
+		<!-- end from admin -->
+
+		{% endblock %}
+
+		{% block footer %}
 		<tr class="th">
 			<td colspan="2">
 				&nbsp;
@@ -394,3 +412,6 @@
 		<input type="submit" name="cancel" value="Cancel" class="pure-button"/>
 	</div>
 </form>
+{% endblock %}
+
+

@@ -1,0 +1,87 @@
+{# Schema template #}
+{% block header %}
+<br>
+<div align="center">
+<table border="0" width="70%" cellspacing="0" cellpadding="2">
+  <tr>
+    <td align="center">{{ description }}</td>
+  </tr>
+</table>
+<table border="0" width="70%">
+{% endblock %}
+
+{% block app_header %}
+<form method="POST" action="{{ action_url }}">
+  <tr>
+    <td colspan="4" bgcolor="#486591"><center><font color="#fefefe">{{ appdata }}</font></center></td>
+    <td colspan="1" bgcolor="#486591"><center><font color="#fefefe">{{ actions }}</font></center></td>
+  </tr>
+  <tr bgcolor="#99cccc">
+    <td colspan="2">{{ app_info }}</td>
+    <td align="center">{{ app_title }}</td>
+    <td align="center">{{ app_version }}</td>
+    <td align="center">{{ app_install }}</td>
+  </tr>
+{% endblock %}
+
+{% block apps %}
+  <tr bgcolor="{{ bg_color }}">
+    <td><a href="schematoy.php?detail={{ appname }}"><img src="../src/modules/phpgwapi/templates/base/images/{{ instimg }}" alt="{{ instalt }}" border="0"></a></td>
+    <td>{{ appinfo }}&nbsp;</td>
+    <td>{{ apptitle }}&nbsp;</td>
+    <td align="center"><select name="version[{{ appname }}]">{{ select_version|raw }}</select></td>
+    <td bgcolor="#CCFFCC" align="center">{{ install }}</td>
+  </tr>
+{% endblock %}
+
+{% block detail %}
+  <tr bgcolor="{{ bg_color }}">
+    <td>{{ name }}&nbsp;</td><td>{{ details }}&nbsp;</td>
+  </tr>
+{% endblock %}
+
+{% block table %}
+  <tr bgcolor="{{ bg_color }}">
+    <td>{{ tables }}</td>
+  </tr>
+{% endblock %}
+
+{% block hook %}
+  <tr bgcolor="{{ bg_color }}">
+    <td>{{ hooks }}</td>
+  </tr>
+{% endblock %}
+
+{% block dep %}
+  <tr bgcolor="{{ bg_color }}">
+    <td>{{ deps }}</td>
+  </tr>
+{% endblock %}
+
+{% block resolve %}
+  <tr bgcolor="{{ bg_color }}">
+    <td>{{ resolution }}</td>
+  </tr>
+{% endblock %}
+
+{% block submit %}
+{goback]
+{% endblock %}
+
+{% block app_footer %}
+</table>
+<table border="0" width="70%" cellspacing="0" cellpadding="2">
+  <tr>
+    <td colspan="2" align="center">
+      <input type="submit" name="submit" value="{{ submit }}">
+      <input type="submit" name="cancel" value="{{ cancel }}">
+    </td>
+  </tr>
+</table>
+</form>
+{% endblock %}
+
+{% block footer %}
+</table>
+</div>
+{% endblock %}

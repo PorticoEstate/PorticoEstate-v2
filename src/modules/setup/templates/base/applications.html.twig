@@ -1,5 +1,4 @@
 {# Applications template #}
-
 {% block header %}
 <script type="text/javascript">
 function check_all(strTargetAction)
@@ -30,48 +29,48 @@ function check_all(strTargetAction)
 <form action="../setup/applications" method="post" id="apps">
 <table id="apps">
 	<thead>
-		<tr class="th">
-			<td colspan="2">{{ app_info }}</td>
-			<td>{{ app_status }}</td>
-			<td>{{ app_currentver }}</td>
-			<td>{{ app_version }}</td>
-			<td class="checkcell">
+		<tr>
+			<th colspan="2">{{ app_info }}</th>
+			<th>{{ app_status }}</th>
+			<th>{{ app_currentver }}</th>
+			<th>{{ app_version }}</th>
+			<th class="checkcell">
 				{{ app_install }}<br>
 				<a href="javascript:check_all('install')"><img src="../src/modules/phpgwapi/templates/base/images/{{ check }}" title="{{ install_all }}" alt="{{ install_all }}"></a>
-			</td>
-			<td class="checkcell">
+			</th>
+			<th class="checkcell">
 				{{ app_upgrade }}<br>
-				<a href="javascript:check_all('upgrade')"><img src="../src/modules/phpgwapi/templates/base/images/{{ check }}" title="{{ upgrade_all }}" alt="{{ upgrade_all }}"></a>
-			</td>
-			<td>{{ app_resolve }}</td>
-			<td class="checkcell">
+				<a href="javascript:check_all('upgrade')"><img src="../src/modules/phpgwapi/templates/base/images/{{ check }}" title="{{ install_all }}" alt="{{ install_all }}"></a>
+			</th>
+			<th>{{ app_resolve }}</th>
+			<th class="checkcell">
 				{{ app_remove }}<br>
-				<a href="javascript:check_all('remove')"><img src="../src/modules/phpgwapi/templates/base/images/{{ check }}" title="{{ remove_all }}" alt="{{ remove_all }}"></a>
-			</td>
+				<a href="javascript:check_all('remove')"><img src="../src/modules/phpgwapi/templates/base/images/{{ check }}" title="{{ install_all }}" alt="{{ install_all }}"></a>
+			</th>
 		</tr>
 	</thead>
 	<tbody>
 {% endblock %}
 
 {% block apps %}
-	<tr class="{{ bg_class }}">
-		<td class="appicon"><a href="applications?detail={{ appname }}"><img src="../src/modules/phpgwapi/templates/base/images/{{ instimg }}" alt="{{ instalt }}" title="{{ instalt }}" border="0"></a></td>
-		<td><strong>{{ appname }}</strong></td>
-		<td>{{ appinfo|raw }}</td>
-		<td>{{ currentver|raw }}</td>
-		<td>{{ version|raw }}</td>
-		<td class="{{ row_install }} checkcell">{{ install | raw }}</td>
-		<td class="{{ row_upgrade }} checkcell">{{ upgrade | raw }}</td>
-		<td class="checkcell">{{ resolution|raw }}&nbsp;</td>
-		<td class="{{ row_remove }} checkcell">{{ remove | raw }}</td>
-	</tr>
+		<tr class="{{ bg_class }}">
+			<td class="appicon"><a href="applications?detail={{ appname }}"><img src="../src/modules/phpgwapi/templates/base/images/{{ instimg }}" alt="{{ instalt }}" title="{{ instalt }}" border="0"></a></td>
+			<td><strong>{{ appname }}</strong></td>
+			<td>{{ appinfo }}</td>
+			<td>{{ currentver }}</td>
+			<td>{{ version }}</td>
+			<td class="{{ row_install }} checkcell">{{ install }}</td>
+			<td class="{{ row_upgrade }} checkcell">{{ upgrade }}</td>
+			<td class="checkcell">{{ resolution }}&nbsp;</td>
+			<td class="{{ row_remove }} checkcell">{{ remove }}</td>
+		</tr>
 {% endblock %}
 
 {% block detail %}
-	<li>
-		<strong>{{ name }}</strong><br>
-		{{ details|raw }}
-	</li>
+		<li>
+			<strong>{{ name }}</strong><br>
+			{{ details }}
+		</li>
 {% endblock %}
 
 {% block table %}
@@ -99,7 +98,7 @@ function check_all(strTargetAction)
 {% endblock %}
 
 {% block submit %}
-{{ goback|raw }}
+{{ goback }}
 {% endblock %}
 
 {% block app_footer %}
@@ -126,7 +125,7 @@ function check_all(strTargetAction)
 {% endblock %}
 
 {% block footer %}
-	{{ footer_text|raw }}
+	{{ footer_text }}
 	<div class="banner"> </div>
 </div>
 {% endblock %}

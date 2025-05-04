@@ -1,5 +1,6 @@
 {# Login_stage_header template #}
 <!-- begin login_stage_header.tpl -->
+		{% block B_multi_domain %}
 <tr class="th">
 	<td colspan="2">
 		&nbsp;<b>Setup/Config Admin Login</b>
@@ -11,12 +12,11 @@
 <tr class="row_on">
 	<td colspan="2">
 		<form action="setup" method="POST" name="config">
-		{% block B_multi_domain %}
 		<table>
 		<tr>
 			<td> {{ lang('Domain') }}: </td>
 			<td>
-				<select name="FormDomain">{{ domains }}</select>
+				<select name="FormDomain">{{ domains|raw }}</select>
 			</td>
 		</tr>
 		<tr>
@@ -25,16 +25,13 @@
 				<input type="password" name="FormPW" value="">
 			</td>
 		</tr>
+		<tr>
+			<td colspan="2">
+				{{ lang('Select Language') }}:
+			</td>
+		</tr>
 		</table>
-		{% endblock %}
-
-		<!-- &nbsp; stupid seperator -->
-
-		{% block B_single_domain %}
-		<input type="password" name="FormPW" value="">
-		<input type="hidden" name="FormDomain" value="{{ default_domain_zero }}">
-		{% endblock %}
-{{ lang('select') }}
+{{ lang_select|raw }}
 		<input type="hidden" name="ConfigLogin" value="Login">
 		<input type="submit" name="submit" value="Login">
 		</form>
@@ -43,6 +40,35 @@
 <tr class="row_on">
 	<td colspan="2">&nbsp;</td>
 </tr>
+{% endblock %}
+
+		<!-- &nbsp; stupid seperator -->
+
+		{% block B_single_domain %}
+<tr class="th">
+	<td colspan="2">
+		&nbsp;<b>Setup/Config Admin Login</b>
+	</td>
+</tr>
+<tr class="row_on">
+	<td colspan="2" class="feedback">{{ ConfigLoginMSG }}</td>
+</tr>
+<tr class="row_on">
+	<td colspan="2">
+		<form action="setup" method="POST" name="config">
+		<input type="password" name="FormPW" value="">
+		<input type="hidden" name="FormDomain" value="{{ default_domain_zero }}">
+{{ lang_select|raw }}
+		<input type="hidden" name="ConfigLogin" value="Login">
+		<input type="submit" name="submit" value="Login">
+		</form>
+	</td>
+</tr>
+<tr class="row_on">
+	<td colspan="2">&nbsp;</td>
+</tr>
+{% endblock %}
+
 
 <!-- end login_stage_header.tpl -->
 

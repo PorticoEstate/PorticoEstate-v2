@@ -56,13 +56,13 @@ function check_all(strTargetAction)
 		<tr class="{{ bg_class }}">
 			<td class="appicon"><a href="applications?detail={{ appname }}"><img src="../src/modules/phpgwapi/templates/base/images/{{ instimg }}" alt="{{ instalt }}" title="{{ instalt }}" border="0"></a></td>
 			<td><strong>{{ appname }}</strong></td>
-			<td>{{ appinfo }}</td>
-			<td>{{ currentver }}</td>
-			<td>{{ version }}</td>
-			<td class="{{ row_install }} checkcell">{{ install }}</td>
-			<td class="{{ row_upgrade }} checkcell">{{ upgrade }}</td>
-			<td class="checkcell">{{ resolution }}&nbsp;</td>
-			<td class="{{ row_remove }} checkcell">{{ remove }}</td>
+			<td>{{ appinfo|raw }}</td>
+			<td>{{ currentver|raw }}</td>
+			<td>{{ version|raw }}</td>
+			<td class="{{ row_install }} checkcell">{{ install|raw }}</td>
+			<td class="{{ row_upgrade }} checkcell">{{ upgrade|raw }}</td>
+			<td class="checkcell">{{ resolution|raw }}&nbsp;</td>
+			<td class="{{ row_remove }} checkcell">{{ remove|raw }}</td>
 		</tr>
 {% endblock %}
 

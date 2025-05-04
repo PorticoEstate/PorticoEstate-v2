@@ -295,7 +295,7 @@ class ManageHeader
 				<pre id="header_contents">
 $newheader
 				</pre>
-				<form action="logout" method="post">
+				<form action="setup" method="post">
 					$lang_text<br>
 					<input type="hidden" name="FormLogout" value="header">
 					<input type="submit" name="junk" value="{$lang_continue}">

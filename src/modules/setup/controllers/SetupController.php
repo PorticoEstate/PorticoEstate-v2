@@ -65,22 +65,16 @@ class SetupController
 	{
 		$this->setup->auth('Config');
 
-		// Using Twig to render the logout page
-		$templateData = [
-			'pageTitle' => 'Logged Out',
-			'status' => 'Logged out',
-			'links' => [
-				['url' => '../setup/', 'text' => 'Click here to login to setup'],
-				['url' => '../setup', 'text' => 'Click here to login to Manageheader'],
-				['url' => '../login_ui', 'text' => 'Click here to login to UI'],
-				['url' => '../login', 'text' => 'Click here to login to API'],
-			]
-		];
 
-		$content = $this->twig->render('logout.html.twig', $templateData);
+		//write a Html text with status logged out - with link to login
+		$htmlText = '<p>Status: Logged out</p>';
+		$htmlText .= '<p><a href="../setup/">Click here to login to setup</a></p>';
+		$htmlText .= '<p><a href="../setup">Click here to login to Manageheader</a></p>';
+		$htmlText .= '<p><a href="../login_ui">Click here to login to UI</a></p>';
+		$htmlText .= '<p><a href="../login">Click here to login to API</a></p>';
 
 		$response = new \Slim\Psr7\Response();
-		$response->getBody()->write($content);
+		$response->getBody()->write($htmlText);
 		return $response;
 	}
 

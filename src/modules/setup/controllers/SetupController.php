@@ -835,8 +835,13 @@ class SetupController
 
 		// Render the template
 
-		//$content = $this->twig->render('head.html.twig', ['title' => isset($setup_data['header_msg']) ? $setup_data['header_msg'] : 'Setup', 'css' => $css]);
-		$content = $this->html->get_header($setup_data['header_msg'], false);
+		$content = $this->html->get_header(
+			$setup_data['header_msg'],
+			false,
+			'config',
+			$this->db->get_domain() . '(' . $db_config['db_type'] . ')'
+		);
+
 		$content .= $this->twig->render('setup_main.html.twig', $templateData);
 		$content .= $this->twig->render('footer.html.twig', []);
 

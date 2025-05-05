@@ -114,8 +114,143 @@ export function useBuildingFreeTimeSlots({
 	// Create a handler function that can be used in the subscription
 	const handleBuildingUpdate = useCallback((message: WebSocketMessage) => {
 		console.log(`Received building update for ${building_id}:`, message);
-		queryClient.invalidateQueries({ queryKey: ['buildingFreeTime', building_id] });
-	}, [building_id, queryClient]);
+
+		// Check if the message is a room_message with affected_timeslots
+		if (message.type === 'room_message' &&
+			message.entityType === 'building' &&
+			message.entityId === building_id &&
+			message.data?.affected_timeslots) {
+
+			// Get the affected_timeslots data
+			const { affected_timeslots, application_id, change_type } = message.data;
+
+			// Check if affected_timeslots is an object with resource IDs as keys
+			if (affected_timeslots && typeof affected_timeslots === 'object' && !Array.isArray(affected_timeslots)) {
+				console.log(`Received affected timeslots by resource for building ${building_id}`);
+
+				// Get the current cache data
+				const cacheKey = ['buildingFreeTime', building_id, weekKey];
+				const currentData = queryClient.getQueryData<FreeTimeSlotsResponse>(cacheKey);
+
+				if (currentData) {
+					// Create a copy of the current data to modify
+					const updatedData: FreeTimeSlotsResponse = JSON.parse(JSON.stringify(currentData));
+
+					// Iterate through each resource in affected_timeslots
+					Object.entries(affected_timeslots).forEach(([resourceId, timeslots]) => {
+						if (Array.isArray(timeslots) && updatedData[resourceId]) {
+							console.log(`Processing ${timeslots.length} timeslots for resource ${resourceId}`);
+							// Process each timeslot for this resource
+							timeslots.forEach(timeslot => {
+								// Find if we already have this timeslot in our cache
+								const existingIndex = updatedData[resourceId].findIndex(
+									slot => slot.start_iso === timeslot.start_iso &&
+										  slot.end_iso === timeslot.end_iso
+								);
+
+								if (existingIndex >= 0) {
+									// Update the existing timeslot with the new overlap information
+									updatedData[resourceId][existingIndex] = {
+										...updatedData[resourceId][existingIndex],
+										overlap: timeslot.overlap,
+										overlap_reason: timeslot.overlap_reason,
+										overlap_type: timeslot.overlap_type,
+										overlap_event: timeslot.overlap_event
+									};
+								} else {
+									// This is a new timeslot we don't have in our cache yet
+									// Add it to the array for this resource
+									updatedData[resourceId].push({
+										when: timeslot.when,
+										start: timeslot.start,
+										end: timeslot.end,
+										start_iso: timeslot.start_iso,
+										end_iso: timeslot.end_iso,
+										overlap: timeslot.overlap,
+										overlap_reason: timeslot.overlap_reason,
+										overlap_type: timeslot.overlap_type,
+										resource_id: parseInt(resourceId),
+										overlap_event: timeslot.overlap_event
+									});
+								}
+							});
+						}
+					});
+
+					// Update the cache with our modified data
+					queryClient.setQueryData(cacheKey, updatedData);
+					console.log('Updated timeslot cache with WebSocket data');
+				} else {
+					// If we don't have the data in cache yet, just invalidate
+					queryClient.invalidateQueries({ queryKey: ['buildingFreeTime', building_id] });
+				}
+			}
+			// Backward compatibility for array format (previous format)
+			else if (affected_timeslots && Array.isArray(affected_timeslots) && affected_timeslots.length > 0) {
+				console.log(`Received ${affected_timeslots.length} affected timeslots for building ${building_id} (old format)`);
+
+				// Get the current cache data
+				const cacheKey = ['buildingFreeTime', building_id, weekKey];
+				const currentData = queryClient.getQueryData<FreeTimeSlotsResponse>(cacheKey);
+
+				if (currentData) {
+					// Create a copy of the current data to modify
+					const updatedData = { ...currentData };
+
+					// Update the timeslots in the cache
+					affected_timeslots.forEach(timeslot => {
+						const resourceId = timeslot.resource_id?.toString();
+						if (resourceId && updatedData[resourceId]) {
+							// Find if we already have this timeslot in our cache
+							const existingIndex = updatedData[resourceId].findIndex(
+								slot => slot.start_iso === timeslot.start_iso &&
+									   slot.end_iso === timeslot.end_iso
+							);
+
+							if (existingIndex >= 0) {
+								// Update the existing timeslot with the new overlap information
+								updatedData[resourceId][existingIndex] = {
+									...updatedData[resourceId][existingIndex],
+									overlap: timeslot.overlap,
+									overlap_reason: timeslot.overlap_reason,
+									overlap_type: timeslot.overlap_type,
+									overlap_event: timeslot.overlap_event
+								};
+							} else {
+								// This is a new timeslot we don't have in our cache yet
+								// Add it to the array for this resource
+								updatedData[resourceId].push({
+									when: timeslot.when,
+									start: timeslot.start,
+									end: timeslot.end,
+									start_iso: timeslot.start_iso,
+									end_iso: timeslot.end_iso,
+									overlap: timeslot.overlap,
+									overlap_reason: timeslot.overlap_reason,
+									overlap_type: timeslot.overlap_type,
+									resource_id: timeslot.resource_id,
+									overlap_event: timeslot.overlap_event
+								});
+							}
+						}
+					});
+
+					// Update the cache with our modified data
+					queryClient.setQueryData(cacheKey, updatedData);
+					console.log('Updated timeslot cache with WebSocket data (old format)');
+				} else {
+					// If we don't have the data in cache yet, just invalidate
+					queryClient.invalidateQueries({ queryKey: ['buildingFreeTime', building_id] });
+				}
+			} else {
+				// If we don't have specific timeslot data, invalidate the query
+				queryClient.invalidateQueries({ queryKey: ['buildingFreeTime', building_id] });
+			}
+		} else {
+			// For other types of messages, just invalidate the query
+			queryClient.invalidateQueries({ queryKey: ['buildingFreeTime', building_id] });
+		}
+	}, [building_id, queryClient, weekKey]);
 
 	// Use the standard useEntitySubscription hook to subscribe to building updates
 	// The service will queue this subscription if WebSocket is not ready yet
@@ -772,35 +907,35 @@ export function useCreateSimpleApplication() {
 			// Invalidate and refetch partial applications queries
 			queryClient.invalidateQueries({queryKey: ['partialApplications']});
 
-			// Invalidate timeslots to refresh available slots after booking
-			const buildingId = variables.building_id;
-			if (buildingId) {
-				// Most thorough approach - invalidate ALL buildingFreeTime queries for this building
-				queryClient.invalidateQueries({
-					predicate: (query) => {
-						const queryKey = query.queryKey;
-						return (
-							Array.isArray(queryKey) &&
-							queryKey[0] === 'buildingFreeTime' &&
-							(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
-						);
-					}
-				});
-
-				// Force a refresh of any combined queries that may use comma-separated week keys
-				setTimeout(() => {
-					queryClient.refetchQueries({
-						predicate: (query) => {
-							const queryKey = query.queryKey;
-							return (
-								Array.isArray(queryKey) &&
-								queryKey[0] === 'buildingFreeTime' &&
-								query.queryKey.length > 2
-							);
-						}
-					});
-				}, 100);
-			}
+			// // Invalidate timeslots to refresh available slots after booking
+			// const buildingId = variables.building_id;
+			// if (buildingId) {
+			// 	// Most thorough approach - invalidate ALL buildingFreeTime queries for this building
+			// 	queryClient.invalidateQueries({
+			// 		predicate: (query) => {
+			// 			const queryKey = query.queryKey;
+			// 			return (
+			// 				Array.isArray(queryKey) &&
+			// 				queryKey[0] === 'buildingFreeTime' &&
+			// 				(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
+			// 			);
+			// 		}
+			// 	});
+			//
+			// 	// Force a refresh of any combined queries that may use comma-separated week keys
+			// 	setTimeout(() => {
+			// 		queryClient.refetchQueries({
+			// 			predicate: (query) => {
+			// 				const queryKey = query.queryKey;
+			// 				return (
+			// 					Array.isArray(queryKey) &&
+			// 					queryKey[0] === 'buildingFreeTime' &&
+			// 					query.queryKey.length > 2
+			// 				);
+			// 			}
+			// 		});
+			// 	}, 100);
+			// }
 		},
 	});
 }

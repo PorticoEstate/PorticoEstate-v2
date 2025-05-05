@@ -21,13 +21,32 @@ const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect, isPro
 	const t = useTrans();
 	const { data: partialApplications } = usePartialApplications();
 	const sameDay = startDateTime.hasSame(endDateTime, 'day');
+	if(slot.when === '09/05-2025 12:00 - 10/05-2025 15:00') {
+		console.log(slot);
+	}
+	const getStatusText = (slot: IFreeTimeSlot) => {
+		const { overlap, overlap_reason, overlap_type } = slot;
 
-	const getStatusText = (overlap: IFreeTimeSlot['overlap']) => {
 		switch (overlap) {
 			case false:
 				return t('bookingfrontend.available');
 			case 2:
+				// Enhanced status for reservation types
+				// if (overlap_reason) {
+				// 	switch (overlap_reason) {
+				// 		case 'complete_overlap':
+				// 			return t('bookingfrontend.reserved');
+				// 		case 'start_overlap':
+				// 			return t('bookingfrontend.partial_start_reserved');
+				// 		case 'end_overlap':
+				// 			return t('bookingfrontend.partial_end_reserved');
+				// 		default:
+				// 			return t('bookingfrontend.reserved');
+				// 	}
+				// }
 				return t('bookingfrontend.reserved');
+			case 3:
+				return t('bookingfrontend.past');
 			default:
 				return t('bookingfrontend.leased');
 		}
@@ -48,11 +67,11 @@ const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect, isPro
 	return (
 		<div className={styles.card}>
 			<div className={`${styles.statusColumn} ${styles[`status-${slot.overlap}`]}`}>
-				<div className={`${styles.status} ${styles[`status-${slot.overlap}`]}`}>
+				<div className={`${styles.status} ${styles[`status-${slot.overlap}`]} ${slot.overlap_type ? styles[`overlap-${slot.overlap_type}`] : ''}`}>
 					<ColourCircle
 						resourceId={resourceId ? +resourceId : ColourIndex.Hvit}
 						size={'medium'}
-					/>{getStatusText(slot.overlap)}
+					/>{getStatusText(slot)}
 				</div>
 			</div>
 

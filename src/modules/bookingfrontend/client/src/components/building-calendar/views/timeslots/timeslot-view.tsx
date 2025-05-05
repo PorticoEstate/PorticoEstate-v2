@@ -62,7 +62,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 		weeks,
 		instance: undefined,
 	});
-
+	console.log('freeTimeSlots', freeTimeSlots);
 	const currentResourceId = useMemo(() => {
 		if (enabledResources.size !== 1) return undefined;
 
@@ -77,7 +77,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 		// Get the slots for the single enabled resource
 		const resourceId = currentResourceId
 		const slots = freeTimeSlots[resourceId] || [];
-		
+
 		// Get the current date/time to filter out past slots
 		const now = DateTime.now();
 
@@ -106,12 +106,12 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 		return slots.filter(slot => {
 			const slotStart = DateTime.fromISO(slot.start_iso);
 			const slotEnd = DateTime.fromISO(slot.end_iso);
-			
+
 			// Filter out slots in the past
 			if (slotStart < now) {
 				return false;
 			}
-			
+
 			// Filter by the selected date range
 			return slotStart >= startOfRange && slotEnd <= endOfRange;
 		}).sort((a, b) => {
@@ -139,7 +139,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 			deletePartialApp.mutate(slot.overlap_event.id, {
 				onSuccess: () => {
 					// Refetch time slots to update the view
-					refetchTimeSlots();
+					// refetchTimeSlots();
 					setProcessingSlotId(null);
 				},
 				onError: () => {
@@ -151,7 +151,8 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 			createSimpleApp.mutate({timeslot: slot, building_id: props.building.id}, {
 				onSuccess: () => {
 					// Refetch time slots to update the view
-					refetchTimeSlots().then(() => setProcessingSlotId(null))
+					// refetchTimeSlots().then(() => setProcessingSlotId(null))
+					setProcessingSlotId(null)
 				},
 				onError: () => {
 					setProcessingSlotId(null);
@@ -176,7 +177,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 
 						return (
 							<TimeSlotCard
-								key={`${slot.start_iso}-${index}`}
+								key={`${slot.when}`}
 								slot={slot}
 								resourceId={currentResourceId}
 								onSelect={handleSlotAction}

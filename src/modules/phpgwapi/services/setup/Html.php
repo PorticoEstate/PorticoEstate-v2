@@ -160,7 +160,7 @@ class Html
 
 	function get_header($title = '', $nologoutbutton = False, $logoutfrom = 'config', $configdomain = '')
 	{
-			$serverSettings = Settings::getInstance()->get('server');
+		$serverSettings = Settings::getInstance()->get('server');
 		
 		// Get logout button
 		$btn_logout = '&nbsp;';

@@ -14,7 +14,7 @@ import {
 	fetchBuildingSchedule, fetchBuildingSeasons,
 	fetchDeliveredApplications, fetchFreeTimeSlotsForRange,
 	fetchInvoices,
-	fetchOrganizations, fetchPartialApplications, fetchSearchDataClient, fetchServerMessages, fetchServerSettings, fetchTowns, fetchUpcomingEvents, patchBookingUser
+	fetchOrganizations, fetchPartialApplications, fetchSearchDataClient, fetchServerMessages, fetchServerSettings, fetchSessionId, fetchTowns, fetchUpcomingEvents, patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
@@ -271,6 +271,19 @@ export function useBookingUser() {
     });
 }
 
+/**
+ * Hook to fetch session ID for the current user
+ * @returns A query result containing the session ID
+ */
+export function useSessionId() {
+    return useQuery<{ sessionId: string }>({
+        queryKey: ['sessionId'],
+        queryFn: fetchSessionId,
+        staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+        retry: 3,
+        retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    });
+}
 
 export function useLogin() {
     const queryClient = useQueryClient();

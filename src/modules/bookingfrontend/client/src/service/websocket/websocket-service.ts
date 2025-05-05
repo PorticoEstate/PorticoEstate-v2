@@ -715,6 +715,21 @@ export class WebSocketService {
 	// Send a message to the service worker
 	private sendMessageToServiceWorker(message: any): boolean {
 		try {
+			// First, check if navigator.serviceWorker exists
+			if (typeof navigator === 'undefined' || !navigator.serviceWorker) {
+				// In direct WebSocket mode or when service worker API is not available
+				console.warn('Service Worker API is not available - using direct WebSocket');
+				
+				// Ensure the message is properly routed in direct WebSocket mode
+				this.dispatchEvent('direct_message', {
+					type: 'direct_message',
+					data: message
+				});
+				
+				return true;
+			}
+			
+			// Normal service worker code path
 			if (navigator.serviceWorker.controller) {
 				navigator.serviceWorker.controller.postMessage(message);
 				return true;
@@ -754,6 +769,18 @@ export class WebSocketService {
 			}
 		} catch (error) {
 			console.error('Error sending message to service worker:', error);
+			
+			// In case of error, try to dispatch as direct message as fallback
+			if (typeof window !== 'undefined' && 
+				// @ts-ignore - This property is dynamically added by WebSocketContext in direct mode
+				window.__directWebSocketRef) {
+				this.dispatchEvent('direct_message', {
+					type: 'direct_message',
+					data: message
+				});
+				return true;
+			}
+			
 			return false;
 		}
 	}
@@ -839,49 +866,32 @@ export class WebSocketService {
 			timestamp: new Date().toISOString()
 		});
 
-		// Check for direct WebSocket mode - if we're using the direct WebSocket context
-		// or if no service worker controller is available, use the dispatchEvent mechanism
-		// instead of trying to send through the service worker.
-		// This ensures messages are properly handled in direct WebSocket mode.
-		const dispatchDirectly = (type === 'send' || type === 'subscribe') && (
-			// Check if we're in direct WebSocket mode by seeing if window.directWebSocketRef exists
+		// Check for direct WebSocket mode in these cases:
+		// 1. We're in direct WebSocket mode if window.__directWebSocketRef exists
+		// 2. navigator.serviceWorker is undefined (no SW support)
+		// 3. navigator.serviceWorker exists but no controller is available
+		const dispatchDirectly = 
+			// Check if we're in direct WebSocket mode by seeing if window.__directWebSocketRef exists
 			(typeof window !== 'undefined' &&
 				// @ts-ignore - This property is dynamically added by WebSocketContext in direct mode
 				window.__directWebSocketRef) ||
+			// Check if service worker API is not available
+			(typeof navigator === 'undefined' || !navigator.serviceWorker) ||
 			// Or if service worker controller is missing
 			(typeof navigator !== 'undefined' &&
 				'serviceWorker' in navigator &&
-				!navigator.serviceWorker.controller)
-		);
+				!navigator.serviceWorker.controller);
 
 		if (dispatchDirectly) {
 			// In direct WebSocket mode, we dispatch an event that the WebSocketContext will handle
 			wsLog('Using direct event dispatch in direct WebSocket mode', {type, data});
 
-
+			// Dispatch the message to be handled by the WebSocketContext
 			this.dispatchEvent('direct_message', {
 				type: 'direct_message',
 				data: data
 			});
-
-			// When in direct WebSocket mode, we don't need the wrapper around the data
-			// that the service worker expects. Instead, we should format the message as
-			// it would be sent directly over the WebSocket.
-			// if (type === 'send') {
-			// 	// For 'send' messages, send the unwrapped data directly
-			// 	this.dispatchEvent('direct_message', data);
-			// } else if (type === 'subscribe') {
-			// 	// For 'subscribe' messages, format it as the server expects
-			// 	this.dispatchEvent('direct_message', {
-			// 		type: 'subscribe',
-			// 		entityType: additionalData.entityType,
-			// 		entityId: additionalData.entityId,
-			// 		timestamp: new Date().toISOString()
-			// 	});
-			// } else {
-			// 	// For other message types, pass through unchanged
-			// 	this.dispatchEvent('direct_message', data);
-			// }
+			
 			return true;
 		} else {
 			// Normal service worker mode

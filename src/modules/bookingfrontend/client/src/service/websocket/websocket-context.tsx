@@ -7,6 +7,7 @@ import { hasServiceWorkerAPI } from './service-worker-check';
 import { getWebSocketUrl, wsLog as wslogbase } from './util';
 import { useQueryClient } from '@tanstack/react-query';
 import { SubscriptionManager } from './subscription-manager';
+import { useWebSocketSession } from '../hooks/use-websocket-session';
 
 interface WebSocketContextValue {
   status: WebSocketStatus;
@@ -47,6 +48,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   // Add a ref to store the direct message listener function for cleanup
   const wsDirectMessageListenerRef = useRef<((event: any) => void) | null>(null);
   const queryClient = useQueryClient();
+  
+  // Initialize session management
+  useWebSocketSession();
 
 
   // Keep track of initialization state with a ref to handle StrictMode double-invocation
@@ -446,6 +450,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             isReconnectingRef.current = false;
           }
         }
+        break;
+      }
+      
+      case 'session_id_required': {
+        // This will now be handled by the useWebSocketSession hook
+        console.log('Received session_id_required message:', data.message);
         break;
       }
 

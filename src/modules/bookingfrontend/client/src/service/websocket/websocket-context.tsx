@@ -18,7 +18,7 @@ interface WebSocketContextValue {
   isReady: boolean;
 }
 
-const wsLog = (message: string, data: any = null, ...optionalParams: any[]) => wslogbase('WSContext', message, data, optionalParams)
+const wsLog = (message: string, ...optionalParams: any[]) => wslogbase('WSContext', message, optionalParams)
 
 const WebSocketContext = createContext<WebSocketContextValue | undefined>(undefined);
 

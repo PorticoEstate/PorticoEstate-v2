@@ -9,18 +9,15 @@ export const WEBSOCKET_CLIENT_DEBUG = false;
  * @param message The message to log
  * @param data Optional data to include with the log
  */
-export function wsLog(area: string, message: string, data?: any, ...optionalParams: any[]): void {
+export function wsLog(area: string, message: string, ...optionalParams: any[]): void {
   // Only log if debug is enabled
   if (!WEBSOCKET_CLIENT_DEBUG) return;
 
   const timestamp = new Date().toISOString().split('T')[1].substring(0, 12); // HH:MM:SS.mmm
   const prefix = `[${area} ${timestamp}]`;
 
-  if (data) {
-    console.log(prefix, message, data, optionalParams);
-  } else {
-    console.log(prefix, message, optionalParams);
-  }
+
+    console.log(prefix, message, ...optionalParams);
 }
 
 /**

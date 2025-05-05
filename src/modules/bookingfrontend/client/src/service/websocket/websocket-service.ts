@@ -1037,8 +1037,28 @@ export class WebSocketService {
 		}
 	}
 
-	// The unsubscribeFromRoom method has been removed.
-	// The server detects inactive subscriptions via ping-pong mechanism.
+	/**
+	 * Unsubscribe from a room (entity)
+	 * @param entityType The type of entity (e.g., 'resource', 'building')
+	 * @param entityId The ID of the entity
+	 */
+	unsubscribeFromRoom(
+		entityType: string,
+		entityId: number | string
+	): void {
+		// Send unsubscribe message to server
+		this.sendMessage('unsubscribe', `Unsubscribing from ${entityType} ${entityId}`, {
+			entityType,
+			entityId
+		});
+		
+		// Remove from pending subscriptions if exists
+		this.pendingSubscriptions = this.pendingSubscriptions.filter(sub => 
+			!(sub.entityType === entityType && sub.entityId === entityId)
+		);
+		
+		wsLog(`Explicitly unsubscribed from ${entityType} ${entityId}`);
+	}
 
 	/**
 	 * Subscribe to messages of a specific type

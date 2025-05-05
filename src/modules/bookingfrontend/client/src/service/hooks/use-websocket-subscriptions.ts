@@ -7,7 +7,7 @@ import { SubscriptionCallback } from '../websocket/subscription-manager';
 import {wsLog as wslogbase} from "@/service/websocket/util";
 
 
-const wsLog = (message: string, data: any = null, ...optionalParams: any[]) => wslogbase('WSSubscriptions', message, data, optionalParams)
+const wsLog = (message: string, ...optionalParams: any[]) => wslogbase('WSSubscriptions', message, optionalParams)
 
 
 /**
@@ -119,7 +119,9 @@ export const useEntitySubscription = (
         unsubscribeFnRef.current();
         unsubscribeFnRef.current = undefined;
         needsSubscriptionRef.current = false;
-        // No explicit unsubscribe needed - server will detect inactive subscriptions via ping-pong
+        
+        // Explicitly tell the server we're unsubscribing
+        wsService.unsubscribeFromRoom(entityType, entityId);
       }
     };
   }, [entityType, entityId, wsService, stableCallback]);
@@ -144,9 +146,11 @@ export const useEntitySubscription = (
       unsubscribeFnRef.current();
       unsubscribeFnRef.current = undefined;
       needsSubscriptionRef.current = false;
+      
+      // Explicitly tell the server we're unsubscribing
+      wsService.unsubscribeFromRoom(entityType, entityId);
     }
-    // No explicit unsubscribe needed - server will detect inactive subscriptions via ping-pong
-  }, []);
+  }, [entityType, entityId, wsService]);
 
   return {
     unsubscribe,
@@ -242,7 +246,8 @@ export const useMultiEntitySubscription = (
         const unsubFn = unsubscribeFnsRef.current.get(key);
         if (unsubFn) {
           unsubFn();
-          // No explicit unsubscribe needed - server will detect inactive subscriptions via ping-pong
+          // Explicitly tell the server we're unsubscribing
+          wsService.unsubscribeFromRoom(sub.entityType, sub.entityId);
         }
       });
       unsubscribeFnsRef.current.clear();

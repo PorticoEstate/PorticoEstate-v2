@@ -117,9 +117,13 @@ export class SubscriptionManager {
 				this.entitySubscriptions.delete(subscriptionKey);
 				this.activeSubscriptions.delete(subscriptionKey);
 
-				// No need to send unsubscribe message to server
-				// Server will detect inactive subscriptions via ping-pong mechanism
-				wsLog(`Last subscriber removed for ${entityType} ${entityId}, server will detect via ping-pong`);
+				// Send an explicit unsubscribe message to the server
+				const wsService = WebSocketService.getInstance();
+				wsService.sendMessage('unsubscribe', `Unsubscribing from ${entityType} ${entityId}`, {
+					entityType,
+					entityId
+				});
+				wsLog(`Last subscriber removed for ${entityType} ${entityId}, sent explicit unsubscribe message`);
 			}
 		}
 	}

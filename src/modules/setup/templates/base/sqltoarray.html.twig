@@ -21,7 +21,7 @@
       </pre>
     </td>
   </tr>
-<form method="GET" action="{{ action_url }}">
+<form method="GET" action="{{ action_url | raw }}">
   <tr>
     <td align="left" width="7%">
       <input type="submit" name="download" value="{{ lang('download') }}">

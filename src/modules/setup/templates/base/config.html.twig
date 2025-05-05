@@ -1,6 +1,6 @@
 {# Config template #}
 {% block header %}
-<form method="POST" action="{{ action_url }}">
+<form method="POST" action="{{ action_url | raw }}">
 	<table class="pure-table pure-form">
 		<tr class="th">
 			<td colspan="2">&nbsp;{{ title }}</td>

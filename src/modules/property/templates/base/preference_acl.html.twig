@@ -6,7 +6,7 @@
 	{{ nml }}
 		<td width="40%">
 		<div align="center">
-		<form method="POST" action="{{ action_url }}">
+		<form method="POST" action="{{ action_url | raw }}">
 		{{ common_hidden_vars }}
 		<input type="text" name="query" value="{{ search_value|raw }}">
 		<input type="submit" name="search" value="{{ search }}">
@@ -16,7 +16,7 @@
 	{{ nmr }}
 	</tr>
 </table>
-<form method="POST" action="{{ action_url }}">
+<form method="POST" action="{{ action_url | raw }}">
 	<table border="0" align="center" width="50%">
 	{{ row }}
 	</table>

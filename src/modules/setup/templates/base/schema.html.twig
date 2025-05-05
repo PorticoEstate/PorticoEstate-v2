@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block app_header %}
-<form method="POST" action="{{ action_url }}">
+<form method="POST" action="{{ action_url | raw }}">
   <tr>
     <td colspan="4" bgcolor="#486591"><center><font color="#fefefe">{{ appdata }}</font></center></td>
     <td colspan="1" bgcolor="#486591"><center><font color="#fefefe">{{ actions }}</font></center></td>

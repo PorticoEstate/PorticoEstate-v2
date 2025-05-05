@@ -3,7 +3,7 @@
 	<div class="{{ error_class }} msg">
 		{{ error }}
 	</div>
-	<form method="post" action="{{ action_url }}">
+	<form method="post" action="{{ action_url | raw }}">
 		<table class="pure-table pure-table-bordered pure-table-striped pure-form">
 			<thead>
 				<tr>

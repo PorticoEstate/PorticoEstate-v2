@@ -5,7 +5,7 @@
 <p>{{ description }}</p>
 <h2>{{ detailadmin }}</h2>
 <div id="setup_accounts">
-<form method="post" action="{{ action_url }}">
+<form method="post" action="{{ action_url | raw }}">
 	<table border="0">
 	<tr>
 		<td>{{ adminusername }}</td>

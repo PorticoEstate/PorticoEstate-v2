@@ -11,7 +11,7 @@
 <center>
 {{ error_message }}
 <table border="0" width="80%" cellpadding="2" cellspacing="2">
-<form method="POST" action="{{ action_url }}" name="app_form">
+<form method="POST" action="{{ action_url | raw }}" name="app_form">
 	<tr>
 		<td valign="top">{{ lang_select_addressmasters }}:</td>
 		<td>{{ accounts }}</td>

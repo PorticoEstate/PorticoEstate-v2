@@ -4,16 +4,18 @@ import { useEffect, useRef, useCallback } from 'react';
 import { WebSocketService } from '../websocket/websocket-service';
 import { useSessionId } from './api-hooks';
 import { WebSocketMessage, IWSSessionIdRequiredMessage } from '../websocket/websocket.types';
+import {wsLog as wslogbase} from "@/service/websocket/util";
+const wsLog = (message: string, data: any = null, ...optionalParams: any[]) => wslogbase('WSSocketSession', message, data, optionalParams)
 
 /**
  * Hook to manage WebSocket session updates
- * 
+ *
  * This hook will:
  * 1. Fetch the session ID from the server
  * 2. Listen for session_id_required messages from the WebSocket server
  * 3. Automatically update the session ID when required
  * 4. Periodically update the session ID every 5 minutes
- * 
+ *
  * @returns An object containing the session update status
  */
 export const useWebSocketSession = () => {
@@ -30,8 +32,8 @@ export const useWebSocketSession = () => {
       return;
     }
 
-    console.log('Updating WebSocket session ID');
-    
+    wsLog('Updating WebSocket session ID');
+
     // Send the update_session message with the current session ID
     wsService.sendMessage('update_session', 'Updating session ID', {
       sessionId: sessionData.sessionId
@@ -43,7 +45,7 @@ export const useWebSocketSession = () => {
 
   // Handler for session_id_required messages
   const handleSessionRequired = useCallback((message: IWSSessionIdRequiredMessage) => {
-    console.log('Session ID required:', message);
+    wsLog('Session ID required:', message);
     updateSessionId();
   }, [updateSessionId]);
 
@@ -74,7 +76,7 @@ export const useWebSocketSession = () => {
     const messageHandler = (event: { data: WebSocketMessage }) => {
       try {
         const message = event.data;
-        
+
         // Handle session_id_required messages
         if (message.type === 'session_id_required') {
           handleSessionRequired(message as IWSSessionIdRequiredMessage);

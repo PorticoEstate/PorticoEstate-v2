@@ -21,9 +21,7 @@ const TimeSlotCard: FC<TimeSlotCardProps> = ({ slot, resourceId, onSelect, isPro
 	const t = useTrans();
 	const { data: partialApplications } = usePartialApplications();
 	const sameDay = startDateTime.hasSame(endDateTime, 'day');
-	if(slot.when === '09/05-2025 12:00 - 10/05-2025 15:00') {
-		console.log(slot);
-	}
+
 	const getStatusText = (slot: IFreeTimeSlot) => {
 		const { overlap, overlap_reason, overlap_type } = slot;
 

@@ -97,7 +97,7 @@ export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children,
 	// If we need to fall back to direct mode, render just the children without the provider
 	if (fallbackToDirectMode) {
 		// Inform the console so it's clear what's happening
-		console.info('Using direct WebSocket connection (service worker disabled)');
+		wsLog('Using direct WebSocket connection (service worker disabled)');
 		return <>{children}</>;
 	}
 

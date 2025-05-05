@@ -1,7 +1,7 @@
 'use client';
 
 // Toggle for client-side WebSocket logging
-export const WEBSOCKET_CLIENT_DEBUG = true;
+export const WEBSOCKET_CLIENT_DEBUG = false;
 
 /**
  * Helper function for consistent WebSocket logging
@@ -9,7 +9,7 @@ export const WEBSOCKET_CLIENT_DEBUG = true;
  * @param message The message to log
  * @param data Optional data to include with the log
  */
-export function wsLog(area: string, message: string, data?: any): void {
+export function wsLog(area: string, message: string, data?: any, ...optionalParams: any[]): void {
   // Only log if debug is enabled
   if (!WEBSOCKET_CLIENT_DEBUG) return;
 
@@ -17,9 +17,9 @@ export function wsLog(area: string, message: string, data?: any): void {
   const prefix = `[${area} ${timestamp}]`;
 
   if (data) {
-    console.log(prefix, message, data);
+    console.log(prefix, message, data, optionalParams);
   } else {
-    console.log(prefix, message);
+    console.log(prefix, message, optionalParams);
   }
 }
 

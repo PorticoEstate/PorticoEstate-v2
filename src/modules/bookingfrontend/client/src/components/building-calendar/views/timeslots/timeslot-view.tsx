@@ -62,7 +62,6 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 		weeks,
 		instance: undefined,
 	});
-	console.log('freeTimeSlots', freeTimeSlots);
 	const currentResourceId = useMemo(() => {
 		if (enabledResources.size !== 1) return undefined;
 

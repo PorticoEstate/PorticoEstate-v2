@@ -39,6 +39,19 @@ export interface IWSPingMessage extends IWebSocketMessageBase {
   id?: any;
 }
 
+// Interface for a room ping/ping response message
+export interface IWSRoomPingMessage extends IWebSocketMessageBase {
+  type: 'room_ping';
+  roomId: string;
+  pingId?: string;
+}
+
+export interface IWSRoomPingResponseMessage extends IWebSocketMessageBase {
+  type: 'room_ping_response';
+  roomId: string;
+  pingId?: string;
+}
+
 // Interface for a reconnect required message
 export interface IWSReconnectMessage extends IWebSocketMessageBase {
   type: 'reconnect_required';
@@ -114,6 +127,8 @@ export type WebSocketMessage =
   | IWSServerNewMessage
   | IWSServerDeletedMessage
   | IWSPingMessage
+  | IWSRoomPingMessage
+  | IWSRoomPingResponseMessage
   | IWSReconnectMessage
   | IWSEntitySubscribeMessage
   | IWSEntityUnsubscribeMessage

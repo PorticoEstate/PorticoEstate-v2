@@ -33,7 +33,7 @@ const Resource = async (props: ResourceProps) => {
     // Fetch the building
     const resource = await fetchResource(resourceId);
 
-	console.log(resourceId);
+	// console.log(resourceId);
     // If building does not exist, throw the notFound error
     if (!resource || resource.building_id === null || resource.building_id === undefined) {
         return notFound();

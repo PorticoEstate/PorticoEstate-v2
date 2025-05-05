@@ -287,7 +287,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 	// Determine the minimum date
 	// If minDate is specifically set, use that
 	// Otherwise, use today's date unless allowPastDates is true
-	const effectiveMinDate = minDate ? minDate : allowPastDates ? undefined : new Date();
+	const effectiveMinDate = minDate ? minDate : allowPastDates ? undefined : new Date(new Date().setHours(0, 0, 0, 0));
 
 	// Format the min date for HTML inputs
 	const getMinDateString = () => {
@@ -366,6 +366,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = ({
 	return (
 		<div className={styles.datePicker}>
 			<DatePicker
+
 				selected={currentDate}
 				onChange={onDateChange}
 				showMonthYearPicker={view === 'dayGridMonth'}

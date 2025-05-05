@@ -199,9 +199,9 @@ class ManageHeader
 		$this->setup_tpl->set_block('T_setup_manage', 'manageheader', 'manageheader');
 		$this->setup_tpl->set_block('T_setup_manage', 'domain', 'domain');
 
-		if (is_file(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
+		if (is_file(dirname(__DIR__, 2) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
 		{
-			$css = file_get_contents(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
+			$css = file_get_contents(dirname(__DIR__, 2) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
 		}
 		else
 		{

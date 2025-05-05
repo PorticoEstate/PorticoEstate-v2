@@ -175,12 +175,18 @@ class Html
 
 		$api_version = isset($serverSettings['versions']['phpgwapi']) ? $serverSettings['versions']['phpgwapi'] : '';
 		$version = isset($serverSettings['versions']['system']) ? $serverSettings['versions']['system'] : $api_version;
-		
+
+		$css = '';
+		if (is_file(dirname(__DIR__, 3) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
+		{
+			$css = file_get_contents(dirname(__DIR__, 3) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
+		}
+
 		// Build template data
 		$templateData = [
 			'title' => $title,
 			'page_title' => $title,
-			'css' => '',
+			'css' => $css,
 			'lang_charset' => $this->setup->lang('charset'),
 			'th_bg' => '#486591',
 			'th_text' => '#FFFFFF',
@@ -249,6 +255,7 @@ class Html
 		$loginData = [
 			'ConfigLoginMSG' => isset($setup_data['ConfigLoginMSG']) ? $setup_data['ConfigLoginMSG'] : '&nbsp;',
 			'HeaderLoginMSG' => isset($setup_data['HeaderLoginMSG']) ? $setup_data['HeaderLoginMSG'] : '&nbsp;',
+			'HeaderLoginWarning' => isset($setup_data['HeaderLoginWarning']) ? $setup_data['HeaderLoginWarning'] : '&nbsp;',
 		];
 		
 		// Add domain selection logic for stage header 10

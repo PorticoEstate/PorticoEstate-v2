@@ -177,6 +177,9 @@ class SetupController
 		// Check header and authentication
 		$setup_data['stage']['header'] = $this->detection->check_header();
 
+		$setup_data['HeaderLoginWarning'] = $this->setup->lang('Warning: All your passwords (database, portido admin,...)<br /> will be shown in plain text after you log in for header administration.');
+		Settings::getInstance()->set('setup', $setup_data);
+
 		if ($setup_data['stage']['header'] == '1')
 		{
 			Header('Location: ../setup/manageheader');

@@ -186,16 +186,51 @@ class ApplicationController extends DocumentController
             $deleted = $this->applicationService->deletePartial($id);
             
             // Send WebSocket notifications about the freed timeslot
-            if ($deleted && $buildingId && $resourceId && $from && $to) {
+            if ($deleted) {
                 try {
-                    // Notify the relevant entity rooms that overlap status has changed
-                    $this->notifyTimeslotChanged(
-                        (int)$buildingId,
-                        (int)$resourceId,
-                        $from,
-                        $to,
-                        $id
-                    );
+                    // Notify about timeslot changes if we have the necessary data
+                    if ($buildingId && $resourceId && $from && $to) {
+                        // Notify the relevant entity rooms that overlap status has changed
+                        $this->notifyTimeslotChanged(
+                            (int)$buildingId,
+                            (int)$resourceId,
+                            $from,
+                            $to,
+                            $id
+                        );
+                    }
+                    
+                    // Send dedicated notifications to rooms about application deletion
+                    if ($buildingId) {
+                        WebSocketHelper::sendEntityNotification(
+                            'building',
+                            (int)$buildingId,
+                            'Application deleted',
+                            'deleted',
+                            [
+                                'application_id' => $id,
+                                'from' => $from,
+                                'to' => $to
+                            ]
+                        );
+                    }
+                    
+                    // Notify each resource's room about the application deletion
+                    if (is_array($resourceIds) && !empty($resourceIds)) {
+                        foreach ($resourceIds as $resId) {
+                            WebSocketHelper::sendEntityNotification(
+                                'resource',
+                                (int)$resId,
+                                'Application deleted',
+                                'deleted',
+                                [
+                                    'application_id' => $id,
+                                    'from' => $from,
+                                    'to' => $to
+                                ]
+                            );
+                        }
+                    }
                 } catch (Exception $wsException) {
                     // Log but don't interrupt the response flow
                     error_log("WebSocket notification error in deletePartial: " . $wsException->getMessage());

@@ -121,6 +121,13 @@ export interface IWSSessionIdRequiredMessage extends IWebSocketMessageBase {
   message: string;
 }
 
+// Interface for connection success message
+export interface IWSConnectionSuccessMessage extends IWebSocketMessageBase {
+  type: 'connection_success';
+  message: string;
+  roomId: string;
+}
+
 // Union type for all possible WebSocket messages
 export type WebSocketMessage =
   | IWSNotificationMessage
@@ -137,7 +144,8 @@ export type WebSocketMessage =
   | IWSRoomMessage
   | IWSSessionUpdateMessage
   | IWSSessionUpdateConfirmMessage
-  | IWSSessionIdRequiredMessage;
+  | IWSSessionIdRequiredMessage
+  | IWSConnectionSuccessMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
 
 export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR' | 'FALLBACK_REQUIRED';

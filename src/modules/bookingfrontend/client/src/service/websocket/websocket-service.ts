@@ -719,16 +719,16 @@ export class WebSocketService {
 			if (typeof navigator === 'undefined' || !navigator.serviceWorker) {
 				// In direct WebSocket mode or when service worker API is not available
 				console.warn('Service Worker API is not available - using direct WebSocket');
-				
+
 				// Ensure the message is properly routed in direct WebSocket mode
 				this.dispatchEvent('direct_message', {
 					type: 'direct_message',
 					data: message
 				});
-				
+
 				return true;
 			}
-			
+
 			// Normal service worker code path
 			if (navigator.serviceWorker.controller) {
 				navigator.serviceWorker.controller.postMessage(message);
@@ -769,9 +769,9 @@ export class WebSocketService {
 			}
 		} catch (error) {
 			console.error('Error sending message to service worker:', error);
-			
+
 			// In case of error, try to dispatch as direct message as fallback
-			if (typeof window !== 'undefined' && 
+			if (typeof window !== 'undefined' &&
 				// @ts-ignore - This property is dynamically added by WebSocketContext in direct mode
 				window.__directWebSocketRef) {
 				this.dispatchEvent('direct_message', {
@@ -780,7 +780,7 @@ export class WebSocketService {
 				});
 				return true;
 			}
-			
+
 			return false;
 		}
 	}
@@ -811,9 +811,13 @@ export class WebSocketService {
 
 	// Dispatch an event to all listeners
 	private dispatchEvent(type: string, data: any): void {
-		if (!this.eventListeners.has(type)) return;
-
+		if (!this.eventListeners.has(type)) {
+			wsLog(`No listeners for event type ${type}`, data);
+			return;
+		};
 		const listeners = this.eventListeners.get(type)!;
+
+		console.log('Dispatching event:', type, data, listeners);
 		listeners.forEach(callback => {
 			try {
 				callback(data);
@@ -870,7 +874,7 @@ export class WebSocketService {
 		// 1. We're in direct WebSocket mode if window.__directWebSocketRef exists
 		// 2. navigator.serviceWorker is undefined (no SW support)
 		// 3. navigator.serviceWorker exists but no controller is available
-		const dispatchDirectly = 
+		const dispatchDirectly =
 			// Check if we're in direct WebSocket mode by seeing if window.__directWebSocketRef exists
 			(typeof window !== 'undefined' &&
 				// @ts-ignore - This property is dynamically added by WebSocketContext in direct mode
@@ -891,7 +895,7 @@ export class WebSocketService {
 				type: 'direct_message',
 				data: data
 			});
-			
+
 			return true;
 		} else {
 			// Normal service worker mode
@@ -1051,12 +1055,12 @@ export class WebSocketService {
 			entityType,
 			entityId
 		});
-		
+
 		// Remove from pending subscriptions if exists
-		this.pendingSubscriptions = this.pendingSubscriptions.filter(sub => 
+		this.pendingSubscriptions = this.pendingSubscriptions.filter(sub =>
 			!(sub.entityType === entityType && sub.entityId === entityId)
 		);
-		
+
 		wsLog(`Explicitly unsubscribed from ${entityType} ${entityId}`);
 	}
 

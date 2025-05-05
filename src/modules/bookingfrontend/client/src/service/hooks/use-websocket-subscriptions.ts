@@ -5,6 +5,7 @@ import { WebSocketService } from '../websocket/websocket-service';
 import { WebSocketMessage, IWSRoomPingMessage, IWSRoomPingResponseMessage } from '../websocket/websocket.types';
 import { SubscriptionCallback } from '../websocket/subscription-manager';
 import {wsLog as wslogbase} from "@/service/websocket/util";
+import { useWebSocketContext } from '../websocket/websocket-context';
 
 
 const wsLog = (message: string, ...optionalParams: any[]) => wslogbase('WSSubscriptions', message, optionalParams)
@@ -28,26 +29,47 @@ export const useEntitySubscription = (
   const callbackRef = useRef(callback);
   // Track whether we need to attempt subscription when service becomes ready
   const needsSubscriptionRef = useRef(false);
+  // Use WebSocketContext to get current status including session connection state
+  const wsContext = useWebSocketContext();
   // Track the current status
-  const [serviceReady, setServiceReady] = useState(wsService.isReady());
+  const [serviceReady, setServiceReady] = useState(wsService.isReady() && wsContext.sessionConnected);
 
-  // Listen for websocket status changes
+  // Track both websocket status and session connection changes
   useEffect(() => {
+    // Update serviceReady based on both conditions:
+    // 1. WebSocket is ready and open
+    // 2. Session is connected (we've received connection_success)
+    const isFullyReady = wsService.isReady() && 
+                         wsContext.status === 'OPEN' && 
+                         wsContext.sessionConnected;
+    
+    setServiceReady(isFullyReady);
+    
+    // If we're fully ready now but weren't before, log the transition
+    if (isFullyReady) {
+      wsLog(`WebSocket session is fully connected, ready for entity subscriptions`);
+    }
+    
+    // Set up status change listener from WebSocketService for backward compatibility
     const statusListener = (event: { status: any }) => {
       const newStatus = event.status;
-      if (newStatus === 'OPEN') {
+      // We only set ready if both conditions are met
+      if (newStatus === 'OPEN' && wsContext.sessionConnected) {
         setServiceReady(true);
+      } else if (newStatus !== 'OPEN') {
+        // If the WebSocket is not open, we're definitely not ready
+        setServiceReady(false);
       }
     };
-
+    
     // Add event listener for status changes
     wsService.addEventListener('status', statusListener);
-
+    
     // Clean up
     return () => {
       wsService.removeEventListener('status', statusListener);
     };
-  }, [wsService]);
+  }, [wsService, wsContext.status, wsContext.sessionConnected]);
 
   // Update the callback ref when it changes
   useEffect(() => {
@@ -63,36 +85,14 @@ export const useEntitySubscription = (
   useEffect(() => {
     // Only subscribe if not already subscribed to the same entity
     if (!unsubscribeFnRef.current) {
-      wsLog(`Subscribing to ${entityType} ${entityId}`);
+      wsLog(`Preparing subscription to ${entityType} ${entityId}`);
 
-      // Special check for direct WebSocket mode
-      // In direct mode, the WebSocket might be OPEN but the service not marked as initialized
-      const isDirectWebSocketReady = (() => {
-        // Check if we're using direct WebSocket by looking at context status
-        // If the WebSocketContext shows OPEN but isReady() is false, we're likely in direct mode
+      // Check if WebSocket is ready AND session is connected
+      // This confirms a complete connection path to the server
+      if (wsService.isReady() && wsContext.status === 'OPEN' && wsContext.sessionConnected) {
+        wsLog(`WebSocket fully connected - Subscribing to ${entityType} ${entityId}`);
+        
         try {
-          if (typeof window !== 'undefined') {
-            // @ts-ignore - Access private status field to detect if the WebSocket is actually OPEN
-            const status = wsService['status'];
-            return status === 'OPEN' && !wsService.isReady();
-          }
-        } catch (e) {
-          // Ignore errors trying to access private fields
-        }
-        return false;
-      })();
-
-      // Try to subscribe if service is ready OR we're in direct WebSocket mode with an open connection
-      if (wsService.isReady() || isDirectWebSocketReady) {
-        try {
-          // If we're in direct WebSocket mode with ready connection but uninitialized service,
-          // force set the initialization flag
-          if (isDirectWebSocketReady) {
-            wsLog(`Detected direct WebSocket open but uninitialized for ${entityType} ${entityId}`);
-            // @ts-ignore - Force set the internal isInitialized flag
-            wsService['isInitialized'] = true;
-          }
-
           unsubscribeFnRef.current = wsService.subscribeToRoom(entityType, entityId, stableCallback);
           needsSubscriptionRef.current = false;
         } catch (error) {
@@ -100,8 +100,16 @@ export const useEntitySubscription = (
           needsSubscriptionRef.current = true;
         }
       } else {
-        wsLog(`Deferring subscription to ${entityType} ${entityId} until WebSocket is ready`);
-        // Mark that we need to subscribe when service becomes ready
+        // Log different messages based on what's missing
+        if (!wsService.isReady()) {
+          wsLog(`WebSocket service not initialized - deferring subscription to ${entityType} ${entityId}`);
+        } else if (wsContext.status !== 'OPEN') {
+          wsLog(`WebSocket not OPEN (status: ${wsContext.status}) - deferring subscription to ${entityType} ${entityId}`);
+        } else if (!wsContext.sessionConnected) {
+          wsLog(`WebSocket session not connected - deferring subscription to ${entityType} ${entityId}`);
+        }
+        
+        // Mark that we need to subscribe when everything is ready
         needsSubscriptionRef.current = true;
 
         // Add fake unsubscribe function that will be replaced when real subscription happens
@@ -126,11 +134,11 @@ export const useEntitySubscription = (
     };
   }, [entityType, entityId, wsService, stableCallback]);
 
-  // Effect to subscribe when service becomes ready
+  // Effect to subscribe when service becomes ready AND session is connected
   useEffect(() => {
-    // If service just became ready and we need to subscribe
+    // If service just became ready (which now includes session connected check) and we need to subscribe
     if (serviceReady && needsSubscriptionRef.current && !unsubscribeFnRef.current) {
-      wsLog(`WebSocket now ready, subscribing to ${entityType} ${entityId}`);
+      wsLog(`WebSocket now fully ready with session connected, subscribing to ${entityType} ${entityId}`);
       try {
         unsubscribeFnRef.current = wsService.subscribeToRoom(entityType, entityId, stableCallback);
         needsSubscriptionRef.current = false;

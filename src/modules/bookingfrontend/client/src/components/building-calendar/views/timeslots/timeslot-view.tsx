@@ -12,6 +12,7 @@ import TimeSlotCard from "@/components/building-calendar/views/timeslots/card/ti
 import {IFreeTimeSlot} from "@/service/pecalendar.types";
 import {Spinner} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useWebSocketContext} from "@/service/websocket/websocket-context";
 
 interface TimeslotViewProps {
 	currentDate: DateTime;
@@ -23,6 +24,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 	const {enabledResources} = useEnabledResources();
 	const createSimpleApp = useCreateSimpleApplication();
 	const deletePartialApp = useDeletePartialApplication();
+	const webSocketService = useWebSocketContext();
 	const t = useTrans();
 	const viewRange = useMemo(() => {
 		if (props.viewMode.includes('Day')) {
@@ -137,8 +139,17 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 			// Delete the overlapping application
 			deletePartialApp.mutate(slot.overlap_event.id, {
 				onSuccess: () => {
-					// Refetch time slots to update the view
-					// refetchTimeSlots();
+					// Check if websocket connection is active
+					const isWebSocketActive = webSocketService.isReady && 
+	webSocketService.status === 'OPEN' && 
+	webSocketService.sessionConnected;
+
+					// If websocket is not active, manually refetch the timeslots
+					if (!isWebSocketActive) {
+						refetchTimeSlots();
+						console.log("WebSocket not fully connected - manual refetch required")
+
+					}
 					setProcessingSlotId(null);
 				},
 				onError: () => {
@@ -149,9 +160,19 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 			// Create a new application
 			createSimpleApp.mutate({timeslot: slot, building_id: props.building.id}, {
 				onSuccess: () => {
-					// Refetch time slots to update the view
-					// refetchTimeSlots().then(() => setProcessingSlotId(null))
-					setProcessingSlotId(null)
+					// Check if websocket connection is active
+					const isWebSocketActive = webSocketService.isReady && 
+	webSocketService.status === 'OPEN' && 
+	webSocketService.sessionConnected;
+
+
+					// If websocket is not active, manually refetch the timeslots
+					if (!isWebSocketActive) {
+						refetchTimeSlots().then(() => setProcessingSlotId(null));
+						console.log("WebSocket not fully connected - manual refetch required")
+					} else {
+						setProcessingSlotId(null);
+					}
 				},
 				onError: () => {
 					setProcessingSlotId(null);

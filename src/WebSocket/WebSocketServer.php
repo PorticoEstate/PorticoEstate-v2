@@ -106,6 +106,14 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'roomId' => $roomId,
                 'sessionType' => isset($conn->bookingSessionId) ? 'booking' : 'standard'
             ]);
+            
+            // Send connection success message to client
+            $conn->send(json_encode([
+                'type' => 'connection_success',
+                'message' => 'Successfully connected to WebSocket server',
+                'roomId' => $roomId,
+                'timestamp' => date('c')
+            ]));
         }
     }
 

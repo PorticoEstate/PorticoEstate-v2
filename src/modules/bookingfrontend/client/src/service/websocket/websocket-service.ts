@@ -14,6 +14,7 @@ import {
 	SubscriptionCallback
 } from './subscription-manager';
 import {WEBSOCKET_CLIENT_DEBUG, wsLog as wslogbase} from './util';
+
 const wsLog = (message: string, data: any = null) => wslogbase('WSService', message, data)
 
 // WebSocket Service Class
@@ -99,19 +100,19 @@ export class WebSocketService {
 						clientId: message.clientId,
 						hasHeartbeatInfo: !!message.heartbeat_id
 					});
-					
+
 					// Update heartbeat tracking if this is acknowledging a heartbeat ping
 					if (message.heartbeat_id && message.heartbeat_count && typeof sessionStorage !== 'undefined') {
 						const lastHeartbeatKey = `lastHeartbeat_${message.heartbeat_id}`;
 						sessionStorage.setItem(lastHeartbeatKey, message.heartbeat_count.toString());
-						
+
 						// Reset missed heartbeats counter
 						if (parseInt(sessionStorage.getItem('missedHeartbeats') || '0', 10) > 0) {
 							sessionStorage.setItem('missedHeartbeats', '0');
 							wsLog('Reset missed heartbeats counter after successful acknowledgment');
 						}
 					}
-					
+
 					// We're removing the auto-ping response from acknowledgments
 					// This was causing a ping flood by creating a feedback loop
 					// The regular heartbeat interval is sufficient for keepalive
@@ -149,16 +150,16 @@ export class WebSocketService {
 			console.error('Cannot initialize WebSocket service worker in a non-browser environment');
 			return false;
 		}
-			
+
 		// Firefox detection - check if the browser is Firefox
-		const isFirefox = typeof navigator !== 'undefined' && 
+		const isFirefox = typeof navigator !== 'undefined' &&
 			navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-			
+
 		// Log Firefox detection
 		if (isFirefox && WEBSOCKET_CLIENT_DEBUG) {
 			console.log('Firefox browser detected, using enhanced compatibility mode');
 		}
-        
+
 		// Check if service worker is explicitly disabled in options
 		if (options.disableServiceWorker) {
 			console.log('Service Worker explicitly disabled by configuration - using direct WebSocket');
@@ -239,7 +240,7 @@ export class WebSocketService {
 					// Try to verify the service worker file MIME type
 					try {
 						// Import the verifier function dynamically to avoid circular dependencies
-						const { verifyServiceWorkerMimeType } = await import('./service-worker-fallback');
+						const {verifyServiceWorkerMimeType} = await import('./service-worker-fallback');
 						const swUrl = `${this.basePath}/websocket-sw.js`;
 
 						const isValid = await verifyServiceWorkerMimeType(swUrl);
@@ -272,18 +273,18 @@ export class WebSocketService {
 				// Set up a timeout for activation
 				const activationPromise = new Promise<boolean>((resolve) => {
 					// Detect Firefox for extended timeout
-					const isFirefox = typeof navigator !== 'undefined' && 
+					const isFirefox = typeof navigator !== 'undefined' &&
 						navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-					
+
 					// Firefox needs longer timeout as it's less aggressive with service worker activation
 					const timeoutDuration = isFirefox ? 20000 : 10000; // 20 seconds for Firefox, 10 for others
-					
+
 					if (isFirefox) {
 						wsLog('Firefox detected - using extended service worker activation timeout', {
-							timeoutDuration: `${timeoutDuration/1000}s`
+							timeoutDuration: `${timeoutDuration / 1000}s`
 						});
 					}
-					
+
 					const timeout = setTimeout(() => {
 						wsLog('Service worker activation timed out, attempting to use existing registration');
 						// Even if activation times out, we can still try to use the registration
@@ -629,15 +630,15 @@ export class WebSocketService {
 		const heartbeatId = Math.random().toString(36).substring(2, 10);
 		let heartbeatCount = 0;
 		const heartbeatInterval = 30000; // 30 seconds (increased from 15 seconds to reduce message frequency)
-		
+
 		// Log heartbeat setup
-		wsLog(`Starting client heartbeat ${heartbeatId} with interval ${heartbeatInterval/1000}s`);
-		
+		wsLog(`Starting client heartbeat ${heartbeatId} with interval ${heartbeatInterval / 1000}s`);
+
 		// Send a ping every 30 seconds (less than the 3-minute inactive threshold)
 		this.heartbeatInterval = setInterval(() => {
 			if (this.isInitialized && this.status !== 'CLOSED') {
 				heartbeatCount++;
-				
+
 				// Add more detailed heartbeat information
 				const heartbeatMessage = {
 					type: 'ping',
@@ -645,33 +646,33 @@ export class WebSocketService {
 					count: heartbeatCount,
 					timestamp: new Date().toISOString()
 				};
-				
+
 				wsLog(`Sending client heartbeat #${heartbeatCount}`, heartbeatMessage);
-				
+
 				// Track last heartbeat acknowledged status
 				const lastHeartbeatKey = `lastHeartbeat_${heartbeatId}`;
 				let missedHeartbeats = 0;
-				
+
 				// Check if we're missing too many heartbeats
 				if (typeof sessionStorage !== 'undefined') {
 					const missedCount = sessionStorage.getItem('missedHeartbeats') || '0';
 					missedHeartbeats = parseInt(missedCount, 10);
-					
+
 					if (missedHeartbeats > 3) {
 						wsLog(`Too many missed heartbeats (${missedHeartbeats}), attempting reconnection`, {
 							heartbeatId,
 							timestamp: new Date().toISOString()
 						});
-						
+
 						// Reset counter
 						sessionStorage.setItem('missedHeartbeats', '0');
-						
+
 						// Force reconnection
 						this.reconnect();
 						return;
 					}
 				}
-				
+
 				// Set up a one-time handler to check if heartbeat is acknowledged
 				setTimeout(() => {
 					// If last heartbeat timestamp doesn't match, increment missed count
@@ -684,10 +685,10 @@ export class WebSocketService {
 						}
 					}
 				}, 5000); // Check after 5 seconds
-				
+
 				// Send the heartbeat
 				this.sendMessageToServiceWorker(heartbeatMessage);
-				
+
 				// Store the sent heartbeat count
 				if (typeof sessionStorage !== 'undefined') {
 					sessionStorage.setItem(lastHeartbeatKey, heartbeatCount.toString());
@@ -797,8 +798,30 @@ export class WebSocketService {
 
 	// Send a message through the WebSocket
 	sendMessage(type: string, message: string, additionalData: Record<string, any> = {}): boolean {
+		// Special case: If this is a 'subscribe' message and the WebSocket is actually OPEN,
+		// we should consider the service initialized even if the flag isn't set yet.
+		// This fixes the bug where direct WebSocket connections work but isInitialized isn't set.
+		if (type === 'subscribe' && this.status === 'OPEN' && !this.isInitialized) {
+			wsLog('WebSocket is OPEN but not marked as initialized. Setting initialized flag.', {
+				type,
+				status: this.status,
+				isInitialized: false
+			});
+			this.isInitialized = true;
+		}
+
 		if (!this.isInitialized) {
 			console.error('WebSocket service not initialized');
+			// Store subscriptions for later even if not initialized
+			if (type === 'subscribe' && 'entityType' in additionalData && 'entityId' in additionalData) {
+				const entityType = additionalData.entityType;
+				const entityId = additionalData.entityId;
+				wsLog(`Storing subscription to ${entityType} ${entityId} for when service is ready`);
+				this.pendingSubscriptions.push({
+					entityType,
+					entityId
+				});
+			}
 			return false;
 		}
 
@@ -809,12 +832,65 @@ export class WebSocketService {
 			timestamp: new Date().toISOString()
 		};
 
-		this.sendMessageToServiceWorker({
-			type: 'send',
-			data
+		wsLog('Sending message:', {
+			type,
+			message,
+			...additionalData,
+			timestamp: new Date().toISOString()
 		});
 
-		return true;
+		// Check for direct WebSocket mode - if we're using the direct WebSocket context
+		// or if no service worker controller is available, use the dispatchEvent mechanism
+		// instead of trying to send through the service worker.
+		// This ensures messages are properly handled in direct WebSocket mode.
+		const dispatchDirectly = (type === 'send' || type === 'subscribe') && (
+			// Check if we're in direct WebSocket mode by seeing if window.directWebSocketRef exists
+			(typeof window !== 'undefined' &&
+				// @ts-ignore - This property is dynamically added by WebSocketContext in direct mode
+				window.__directWebSocketRef) ||
+			// Or if service worker controller is missing
+			(typeof navigator !== 'undefined' &&
+				'serviceWorker' in navigator &&
+				!navigator.serviceWorker.controller)
+		);
+
+		if (dispatchDirectly) {
+			// In direct WebSocket mode, we dispatch an event that the WebSocketContext will handle
+			wsLog('Using direct event dispatch in direct WebSocket mode', {type, data});
+
+
+			this.dispatchEvent('direct_message', {
+				type: 'direct_message',
+				data: data
+			});
+
+			// When in direct WebSocket mode, we don't need the wrapper around the data
+			// that the service worker expects. Instead, we should format the message as
+			// it would be sent directly over the WebSocket.
+			// if (type === 'send') {
+			// 	// For 'send' messages, send the unwrapped data directly
+			// 	this.dispatchEvent('direct_message', data);
+			// } else if (type === 'subscribe') {
+			// 	// For 'subscribe' messages, format it as the server expects
+			// 	this.dispatchEvent('direct_message', {
+			// 		type: 'subscribe',
+			// 		entityType: additionalData.entityType,
+			// 		entityId: additionalData.entityId,
+			// 		timestamp: new Date().toISOString()
+			// 	});
+			// } else {
+			// 	// For other message types, pass through unchanged
+			// 	this.dispatchEvent('direct_message', data);
+			// }
+			return true;
+		} else {
+			// Normal service worker mode
+			this.sendMessageToServiceWorker({
+				type: 'send',
+				data
+			});
+			return true;
+		}
 	}
 
 	// Close the WebSocket connection
@@ -866,6 +942,36 @@ export class WebSocketService {
 
 	// Check if the service is initialized
 	isReady(): boolean {
+		// If the connection is OPEN but not marked as initialized, fix that
+		// This happens with direct WebSocket connections that don't properly set isInitialized
+		if (this.status === 'OPEN' && !this.isInitialized) {
+			wsLog('WebSocket is OPEN but not marked as initialized. Auto-correcting state.', {
+				status: this.status,
+				isInitialized: false
+			});
+			this.isInitialized = true;
+
+			// Check if we have any pending subscriptions that should be processed now
+			if (this.pendingSubscriptions.length > 0) {
+				wsLog(`Processing ${this.pendingSubscriptions.length} pending subscriptions after auto-correction`, {
+					subscriptions: this.pendingSubscriptions
+				});
+
+				// Clone the pending subscriptions array to avoid modification during iteration
+				const subscriptionsToProcess = [...this.pendingSubscriptions];
+				this.pendingSubscriptions = []; // Clear pending queue
+
+				// Process each subscription with a small delay to avoid overwhelming the socket
+				subscriptionsToProcess.forEach((sub, index) => {
+					setTimeout(() => {
+						this.sendMessage('subscribe', `Processing deferred subscription to ${sub.entityType} ${sub.entityId}`, {
+							entityType: sub.entityType,
+							entityId: sub.entityId
+						});
+					}, index * 50); // 50ms delay between each subscription
+				});
+			}
+		}
 		return this.isInitialized;
 	}
 
@@ -954,9 +1060,9 @@ export class WebSocketService {
 	 */
 	private resubscribeToRooms(): void {
 		// Detect Firefox for special handling
-		const isFirefox = typeof navigator !== 'undefined' && 
+		const isFirefox = typeof navigator !== 'undefined' &&
 			navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-		
+
 		// Track resubscription attempts to prevent infinite loops in Firefox
 		if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
 			const resubAttemptKey = 'wsResubscriptionAttempts';
@@ -964,7 +1070,7 @@ export class WebSocketService {
 			const lastAttemptTimeKey = 'wsLastResubscriptionAttempt';
 			const lastAttemptTime = parseInt(sessionStorage.getItem(lastAttemptTimeKey) || '0', 10);
 			const timeSinceLastAttempt = now - lastAttemptTime;
-			
+
 			// Reset counter if it's been more than 2 minutes since last attempt
 			if (timeSinceLastAttempt > 120000) {
 				sessionStorage.setItem(resubAttemptKey, '1');
@@ -972,23 +1078,23 @@ export class WebSocketService {
 				// Increment attempt counter
 				const attempts = parseInt(sessionStorage.getItem(resubAttemptKey) || '0', 10) + 1;
 				sessionStorage.setItem(resubAttemptKey, attempts.toString());
-				
+
 				// If too many attempts in a short period, especially in Firefox, throttle
 				if (attempts > 10 && isFirefox) {
-					wsLog(`Firefox detected with ${attempts} resubscription attempts in ${timeSinceLastAttempt/1000}s - throttling`, {
+					wsLog(`Firefox detected with ${attempts} resubscription attempts in ${timeSinceLastAttempt / 1000}s - throttling`, {
 						timeSinceLastAttempt: `${timeSinceLastAttempt}ms`,
 						browser: 'Firefox'
 					});
-					
+
 					// Don't resubscribe - we're in a resubscription loop
 					return;
 				}
 			}
-			
+
 			// Update last attempt time
 			sessionStorage.setItem(lastAttemptTimeKey, now.toString());
 		}
-				
+
 		// Get all active subscriptions from the manager
 		const activeSubscriptions = this.subscriptionManager.getActiveEntitySubscriptions();
 
@@ -1014,7 +1120,7 @@ export class WebSocketService {
 
 		// For Firefox, we'll use a much longer delay between subscriptions to prevent issues
 		const subscriptionDelay = isFirefox ? 300 : 50; // 300ms for Firefox, 50ms for others
-		
+
 		// Send subscribe messages for all subscriptions with slight delay between each
 		// to prevent overwhelming the service worker
 		if (allSubscriptions.length > 0) {

@@ -44,6 +44,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const [wsService] = useState(() => WebSocketService.getInstance());
   const wsRef = useRef<WebSocket | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Add a ref to store the direct message listener function for cleanup
+  const wsDirectMessageListenerRef = useRef<((event: any) => void) | null>(null);
   const queryClient = useQueryClient();
 
 
@@ -91,11 +93,51 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         // Create a new WebSocket connection
         const ws = new WebSocket(wsUrl);
         isInitializedRef.current = true;
+        
+        // Store WebSocket reference in window object for direct WebSocket mode detection
+        if (typeof window !== 'undefined') {
+          // @ts-ignore - Store a reference to the active WebSocket for direct mode
+          window.__directWebSocketRef = ws;
+        }
 
         // Set up WebSocket event handlers
         ws.onopen = () => {
           console.log('Direct WebSocket connection established');
           setStatus('OPEN');
+          
+          // Important: Mark the WebSocketService as initialized when direct WebSocket connects
+          // This ensures useEntitySubscription and other hooks work properly with direct WebSocket mode
+          const wsService = WebSocketService.getInstance();
+          if (!wsService.isReady()) {
+            console.log('Auto-initializing WebSocketService for direct WebSocket mode');
+            // @ts-ignore - Force set the internal isInitialized flag
+            wsService['isInitialized'] = true;
+            
+            // Set up event listener for direct messages from WebSocketService
+            const directMessageListener = (event: any) => {
+              if (ws.readyState === WebSocket.OPEN && event.data) {
+                try {
+                  // The data structure is different from what we expected
+                  // The direct_message event has a 'data' property which is the actual message to send
+                  console.log('Received direct_message event, sending via WebSocket', event.data);
+                  
+                  // Use the data property directly - it already contains the properly formatted message
+                  ws.send(JSON.stringify(event.data));
+                } catch (error) {
+                  console.error('Error sending direct message via WebSocket:', error);
+                }
+              }
+            };
+            
+            // Remove any existing listener for cleanup
+            if (wsDirectMessageListenerRef.current) {
+              wsService.removeEventListener('direct_message', wsDirectMessageListenerRef.current);
+            }
+            
+            // Add the new listener
+            wsService.addEventListener('direct_message', directMessageListener);
+            wsDirectMessageListenerRef.current = directMessageListener;
+          }
 
           // Setup ping interval
           if (pingIntervalRef.current) {
@@ -308,12 +350,24 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       // Clean up service worker event listeners
       wsService.removeEventListener('status', statusListener);
       wsService.removeEventListener('message', messageListener);
+      
+      // Clean up direct message listener if it exists
+      if (wsDirectMessageListenerRef.current) {
+        wsService.removeEventListener('direct_message', wsDirectMessageListenerRef.current);
+        wsDirectMessageListenerRef.current = null;
+      }
 
       // Clean up direct WebSocket connection if it exists
       if (wsRef.current) {
         try {
           wsRef.current.close();
           wsRef.current = null;
+          
+          // Clear the window reference
+          if (typeof window !== 'undefined') {
+            // @ts-ignore - Clear the reference on cleanup
+            window.__directWebSocketRef = null;
+          }
         } catch (error) {
           console.error('Error closing WebSocket:', error);
         }
@@ -486,6 +540,44 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             ws.onopen = () => {
               console.log('Direct WebSocket reconnected');
               setStatus('OPEN');
+              
+              // Store WebSocket reference in window object for direct WebSocket mode detection
+              if (typeof window !== 'undefined') {
+                // @ts-ignore - Store a reference to the active WebSocket for direct mode
+                window.__directWebSocketRef = ws;
+              }
+              
+              // Important: Mark the WebSocketService as initialized when direct WebSocket connects
+              const wsService = WebSocketService.getInstance();
+              if (!wsService.isReady()) {
+                console.log('Auto-initializing WebSocketService for direct WebSocket mode on reconnect');
+                // @ts-ignore - Force set the internal isInitialized flag
+                wsService['isInitialized'] = true;
+                
+                // Set up event listener for direct messages from WebSocketService
+                const directMessageListener = (event: any) => {
+                  if (ws.readyState === WebSocket.OPEN && event.data) {
+                    try {
+                      // The data structure is different from what we expected
+                      console.log('Received direct_message event on reconnect, sending via WebSocket', event.data);
+                      
+                      // Use the data property directly
+                      ws.send(JSON.stringify(event.data));
+                    } catch (error) {
+                      console.error('Error sending direct message via WebSocket on reconnect:', error);
+                    }
+                  }
+                };
+                
+                // Remove any existing listener for cleanup
+                if (wsDirectMessageListenerRef.current) {
+                  wsService.removeEventListener('direct_message', wsDirectMessageListenerRef.current);
+                }
+                
+                // Add the new listener
+                wsService.addEventListener('direct_message', directMessageListener);
+                wsDirectMessageListenerRef.current = directMessageListener;
+              }
 
               // Setup ping interval
               pingIntervalRef.current = setInterval(() => {
@@ -736,6 +828,44 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             ws.onopen = () => {
               console.log('Direct WebSocket reconnected via status effect');
               setStatus('OPEN');
+              
+              // Store WebSocket reference in window object for direct WebSocket mode detection
+              if (typeof window !== 'undefined') {
+                // @ts-ignore - Store a reference to the active WebSocket for direct mode
+                window.__directWebSocketRef = ws;
+              }
+              
+              // Important: Mark the WebSocketService as initialized when direct WebSocket connects
+              const wsService = WebSocketService.getInstance();
+              if (!wsService.isReady()) {
+                console.log('Auto-initializing WebSocketService for direct WebSocket mode via status effect');
+                // @ts-ignore - Force set the internal isInitialized flag
+                wsService['isInitialized'] = true;
+                
+                // Set up event listener for direct messages from WebSocketService
+                const directMessageListener = (event: any) => {
+                  if (ws.readyState === WebSocket.OPEN && event.data) {
+                    try {
+                      // The data structure is different from what we expected
+                      console.log('Received direct_message event via status effect, sending via WebSocket', event.data);
+                      
+                      // Use the data property directly
+                      ws.send(JSON.stringify(event.data));
+                    } catch (error) {
+                      console.error('Error sending direct message via WebSocket via status effect:', error);
+                    }
+                  }
+                };
+                
+                // Remove any existing listener for cleanup
+                if (wsDirectMessageListenerRef.current) {
+                  wsService.removeEventListener('direct_message', wsDirectMessageListenerRef.current);
+                }
+                
+                // Add the new listener
+                wsService.addEventListener('direct_message', directMessageListener);
+                wsDirectMessageListenerRef.current = directMessageListener;
+              }
 
               // Setup ping interval
               if (pingIntervalRef.current) {

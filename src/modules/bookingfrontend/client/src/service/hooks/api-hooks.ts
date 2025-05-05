@@ -28,8 +28,8 @@ import { IArticle } from "../types/api/order-articles.types";
 import {ISearchDataAll, ISearchDataOptimized, ISearchDataTown, ISearchOrganization} from "@/service/types/api/search.types";
 import {fetchSearchData} from "@/service/api/api-utils-static";
 import {fetchBuildingDocuments, fetchResourceDocuments} from "@/service/api/building";
-import { useMessageTypeSubscription } from './use-websocket-subscriptions';
-import { IWSServerDeletedMessage, IWSServerNewMessage } from '../websocket/websocket.types';
+import { useMessageTypeSubscription, useEntitySubscription } from './use-websocket-subscriptions';
+import { IWSServerDeletedMessage, IWSServerNewMessage, WebSocketMessage } from '../websocket/websocket.types';
 
 /**
  * Custom hook that wraps useMutation and adds server message invalidation
@@ -110,6 +110,16 @@ export function useBuildingFreeTimeSlots({
 			);
 		}
 	}, [initialFreeTime, building_id, queryClient, weekKey]);
+
+	// Create a handler function that can be used in the subscription
+	const handleBuildingUpdate = useCallback((message: WebSocketMessage) => {
+		console.log(`Received building update for ${building_id}:`, message);
+		queryClient.invalidateQueries({ queryKey: ['buildingFreeTime', building_id] });
+	}, [building_id, queryClient]);
+
+	// Use the standard useEntitySubscription hook to subscribe to building updates
+	// The service will queue this subscription if WebSocket is not ready yet
+	useEntitySubscription('building', building_id, handleBuildingUpdate);
 
 	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
 		// Always fetch from API for just the current week

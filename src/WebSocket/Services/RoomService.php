@@ -502,4 +502,22 @@ class RoomService
             'roomsCleaned' => $roomsCleaned
         ];
     }
+    
+    /**
+     * Check if a connection is in a specific room
+     * 
+     * @param string $roomId Room identifier
+     * @param ConnectionInterface $conn Connection to check
+     * @return bool True if the connection is in the room
+     */
+    public function isInRoom(string $roomId, ConnectionInterface $conn): bool
+    {
+        // Check if the room exists
+        if (!isset($this->rooms[$roomId])) {
+            return false;
+        }
+        
+        // Check if the connection is in the room
+        return $this->rooms[$roomId]->contains($conn);
+    }
 }

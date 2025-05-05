@@ -68,6 +68,9 @@ class SessionService
             $conn->userInfo = $userInfo;
             $conn->userAgent = $userAgent;
             
+            // Flag this connection as requiring a session ID if none was found
+            $conn->sessionIdRequired = !$sessionId;
+            
             // Log the extracted data with limited session ID info for security
             $maskedSessionId = $sessionId ? substr($sessionId, 0, 8) . '...' : null;
             $maskedBookingSessionId = $bookingSessionId ? substr($bookingSessionId, 0, 8) . '...' : null;
@@ -146,5 +149,74 @@ class SessionService
             'clientId' => $from->resourceId,
             'type' => $messageType,
         ], $sessionContext);
+    }
+    
+    /**
+     * Update the session ID for a connection
+     * 
+     * @param ConnectionInterface $conn The connection to update
+     * @param string $sessionId The new session ID
+     * @param \App\WebSocket\Services\RoomService $roomService Room service for room operations
+     * @return array Result of the operation
+     */
+    public function updateSessionId(ConnectionInterface $conn, string $sessionId, RoomService $roomService): array
+    {
+        // Check if the new session ID is the same as the current one
+        if (isset($conn->sessionId) && $conn->sessionId === $sessionId) {
+            $this->logger->info("Session ID is unchanged", [
+                'clientId' => $conn->resourceId,
+                'sessionId' => substr($sessionId, 0, 8) . '...'
+            ]);
+            
+            return [
+                'success' => true,
+                'action' => 'none',
+                'message' => 'Session ID is unchanged'
+            ];
+        }
+        
+        // Store the old session info for logging and room management
+        $oldSessionId = $conn->sessionId ?? null;
+        $oldRoomId = $oldSessionId ? $roomService->createRoomIdFromSession($oldSessionId) : null;
+        
+        // Update the connection with the new session ID
+        $conn->sessionId = $sessionId;
+        $conn->bookingSessionId = $sessionId; // Treat all explicit updates as booking sessions
+        
+        // Clear the session required flag if it was set
+        $conn->sessionIdRequired = false;
+        
+        // Create a room ID for the new session
+        $newRoomId = $roomService->createRoomIdFromSession($sessionId);
+        
+        // If the connection was in a session room, remove it
+        if ($oldRoomId && $roomService->isInRoom($oldRoomId, $conn)) {
+            $roomService->leaveRoom($oldRoomId, $conn);
+            $this->logger->info("Removed from old session room", [
+                'clientId' => $conn->resourceId,
+                'oldRoom' => $oldRoomId
+            ]);
+        }
+        
+        // Add to the new session room
+        $roomService->joinRoom($newRoomId, $conn);
+        $conn->roomId = $newRoomId;
+        
+        $this->logger->info("Session ID updated", [
+            'clientId' => $conn->resourceId,
+            'oldSessionId' => $oldSessionId ? substr($oldSessionId, 0, 8) . '...' : 'none',
+            'newSessionId' => substr($sessionId, 0, 8) . '...',
+            'newRoom' => $newRoomId
+        ]);
+        
+        // Extract user info for the new session
+        $conn->userInfo = $this->extractUserInfoFromSession($sessionId);
+        
+        return [
+            'success' => true,
+            'action' => $oldSessionId ? 'updated' : 'set',
+            'message' => $oldSessionId ? 'Session ID updated' : 'Session ID set',
+            'roomId' => $newRoomId
+        ];
     }
 }

@@ -21,6 +21,28 @@ export const useEntitySubscription = (
   const unsubscribeFnRef = useRef<(() => void) | undefined>(undefined);
   const wsService = WebSocketService.getInstance();
   const callbackRef = useRef(callback);
+  // Track whether we need to attempt subscription when service becomes ready
+  const needsSubscriptionRef = useRef(false);
+  // Track the current status
+  const [serviceReady, setServiceReady] = useState(wsService.isReady());
+  
+  // Listen for websocket status changes
+  useEffect(() => {
+    const statusListener = (event: { status: any }) => {
+      const newStatus = event.status;
+      if (newStatus === 'OPEN') {
+        setServiceReady(true);
+      }
+    };
+    
+    // Add event listener for status changes
+    wsService.addEventListener('status', statusListener);
+    
+    // Clean up
+    return () => {
+      wsService.removeEventListener('status', statusListener);
+    };
+  }, [wsService]);
   
   // Update the callback ref when it changes
   useEffect(() => {
@@ -32,11 +54,57 @@ export const useEntitySubscription = (
     callbackRef.current(message);
   }, []); // No dependencies for the stable callback
 
+  // Effect for initial subscription
   useEffect(() => {
     // Only subscribe if not already subscribed to the same entity
     if (!unsubscribeFnRef.current) {
       console.log(`Subscribing to ${entityType} ${entityId}`);
-      unsubscribeFnRef.current = wsService.subscribeToRoom(entityType, entityId, stableCallback);
+      
+      // Special check for direct WebSocket mode
+      // In direct mode, the WebSocket might be OPEN but the service not marked as initialized
+      const isDirectWebSocketReady = (() => {
+        // Check if we're using direct WebSocket by looking at context status
+        // If the WebSocketContext shows OPEN but isReady() is false, we're likely in direct mode
+        try {
+          if (typeof window !== 'undefined') {
+            // @ts-ignore - Access private status field to detect if the WebSocket is actually OPEN
+            const status = wsService['status']; 
+            return status === 'OPEN' && !wsService.isReady();
+          }
+        } catch (e) {
+          // Ignore errors trying to access private fields
+        }
+        return false;
+      })();
+      
+      // Try to subscribe if service is ready OR we're in direct WebSocket mode with an open connection
+      if (wsService.isReady() || isDirectWebSocketReady) {
+        try {
+          // If we're in direct WebSocket mode with ready connection but uninitialized service,
+          // force set the initialization flag
+          if (isDirectWebSocketReady) {
+            console.log(`Detected direct WebSocket open but uninitialized for ${entityType} ${entityId}`);
+            // @ts-ignore - Force set the internal isInitialized flag
+            wsService['isInitialized'] = true;
+          }
+          
+          unsubscribeFnRef.current = wsService.subscribeToRoom(entityType, entityId, stableCallback);
+          needsSubscriptionRef.current = false;
+        } catch (error) {
+          console.log(`Failed to subscribe to ${entityType} ${entityId}:`, error);
+          needsSubscriptionRef.current = true;
+        }
+      } else {
+        console.log(`Deferring subscription to ${entityType} ${entityId} until WebSocket is ready`);
+        // Mark that we need to subscribe when service becomes ready
+        needsSubscriptionRef.current = true;
+        
+        // Add fake unsubscribe function that will be replaced when real subscription happens
+        unsubscribeFnRef.current = () => {
+          console.log(`Cancelling deferred subscription to ${entityType} ${entityId}`);
+          needsSubscriptionRef.current = false;
+        };
+      }
     }
 
     // Unsubscribe when component unmounts or entityType/entityId changes
@@ -45,23 +113,40 @@ export const useEntitySubscription = (
         console.log(`Unsubscribing from ${entityType} ${entityId}`);
         unsubscribeFnRef.current();
         unsubscribeFnRef.current = undefined;
+        needsSubscriptionRef.current = false;
         // No explicit unsubscribe needed - server will detect inactive subscriptions via ping-pong
       }
     };
   }, [entityType, entityId, wsService, stableCallback]);
+  
+  // Effect to subscribe when service becomes ready
+  useEffect(() => {
+    // If service just became ready and we need to subscribe
+    if (serviceReady && needsSubscriptionRef.current && !unsubscribeFnRef.current) {
+      console.log(`WebSocket now ready, subscribing to ${entityType} ${entityId}`);
+      try {
+        unsubscribeFnRef.current = wsService.subscribeToRoom(entityType, entityId, stableCallback);
+        needsSubscriptionRef.current = false;
+      } catch (error) {
+        console.log(`Failed to subscribe to ${entityType} ${entityId} after service ready:`, error);
+      }
+    }
+  }, [serviceReady, entityType, entityId, stableCallback, wsService]);
 
   // Manual unsubscribe function
   const unsubscribe = useCallback(() => {
     if (unsubscribeFnRef.current) {
       unsubscribeFnRef.current();
       unsubscribeFnRef.current = undefined;
+      needsSubscriptionRef.current = false;
     }
     // No explicit unsubscribe needed - server will detect inactive subscriptions via ping-pong
   }, []);
 
   return {
     unsubscribe,
-    isSubscribed: !!unsubscribeFnRef.current
+    isSubscribed: !!unsubscribeFnRef.current,
+    isServiceReady: serviceReady
   };
 };
 

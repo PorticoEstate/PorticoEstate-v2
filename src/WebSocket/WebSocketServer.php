@@ -74,23 +74,23 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
         // Add connection
         $this->connectionService->addConnection($conn);
         
-        // Check if booking session exists
-        if (!isset($conn->bookingSessionId)) {
-            $this->logger->warning("Client connected without booking session", [
+        // Check if session ID is required
+        if (isset($conn->sessionIdRequired) && $conn->sessionIdRequired) {
+            $this->logger->info("Client connected without session - requesting session ID", [
                 'clientId' => $conn->resourceId,
                 'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown'
             ]);
             
-            // Send reconnect request
+            // Send session request - ask client to provide session ID
             $conn->send(json_encode([
-                'type' => 'reconnect_required',
-                'message' => 'Booking session not found. Please reconnect.',
-                'code' => 'NO_BOOKING_SESSION',
+                'type' => 'session_id_required',
+                'message' => 'Please provide your session ID via an update_session message',
+                'code' => 'NO_SESSION',
                 'timestamp' => date('c')
             ]));
             
-            // We'll keep the connection but request the client to reconnect
-            // This gives the client time to handle the message before reconnecting
+            // We'll keep the connection and wait for the client to send their session ID
+            // This allows the client to fetch their session ID and update it without disconnecting
         }
         
         // Add to a session-based room if session ID is available
@@ -270,6 +270,46 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                     'entityId' => $entityId
                 ]);
             }
+        }
+        
+        // Handle session ID update
+        if ($messageType === 'update_session' && isset($data['sessionId'])) {
+            $sessionId = $data['sessionId'];
+            
+            // Validate sessionId - it should be a non-empty string
+            if (empty($sessionId) || !is_string($sessionId)) {
+                $from->send(json_encode([
+                    'type' => 'error',
+                    'message' => 'Invalid session ID provided',
+                    'code' => 'INVALID_SESSION_ID',
+                    'timestamp' => date('c')
+                ]));
+                return;
+            }
+            
+            // Update the session ID
+            $result = $this->sessionService->updateSessionId($from, $sessionId, $this->roomService);
+            
+            // Check if this was an initial session setup (for better messaging)
+            $wasInitialSetup = isset($from->sessionIdRequired) && $from->sessionIdRequired;
+            
+            // Send a confirmation message
+            $from->send(json_encode([
+                'type' => 'session_update_confirmation',
+                'success' => $result['success'],
+                'message' => $wasInitialSetup ? 'Session ID set successfully' : $result['message'],
+                'action' => $result['action'],
+                'wasRequired' => $wasInitialSetup,
+                'sessionId' => substr($sessionId, 0, 8) . '...',  // Only show part of the session ID for security
+                'timestamp' => date('c')
+            ]));
+            
+            $this->logger->info("Client session updated", [
+                'clientId' => $from->resourceId,
+                'action' => $result['action'],
+                'result' => $result['success'] ? 'success' : 'failure'
+            ]);
+            return;
         }
         
         // Handle room ping responses

@@ -87,6 +87,27 @@ export interface IWSRoomMessage extends IWebSocketMessageBase {
   data?: any;
 }
 
+// Interface for session update message
+export interface IWSSessionUpdateMessage extends IWebSocketMessageBase {
+  type: 'update_session';
+  sessionId: string;
+}
+
+// Interface for session update confirmation message
+export interface IWSSessionUpdateConfirmMessage extends IWebSocketMessageBase {
+  type: 'session_update_confirmation';
+  success: boolean;
+  message: string;
+  action: 'updated' | 'unchanged';
+  sessionId: string;
+}
+
+// Interface for session ID required message
+export interface IWSSessionIdRequiredMessage extends IWebSocketMessageBase {
+  type: 'session_id_required';
+  message: string;
+}
+
 // Union type for all possible WebSocket messages
 export type WebSocketMessage =
   | IWSNotificationMessage
@@ -98,7 +119,10 @@ export type WebSocketMessage =
   | IWSEntityUnsubscribeMessage
   | IWSSubscriptionConfirmMessage
   | IWSEntityEventMessage
-  | IWSRoomMessage;
+  | IWSRoomMessage
+  | IWSSessionUpdateMessage
+  | IWSSessionUpdateConfirmMessage
+  | IWSSessionIdRequiredMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
 
 export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR' | 'FALLBACK_REQUIRED';

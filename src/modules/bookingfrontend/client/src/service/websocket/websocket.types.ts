@@ -33,7 +33,7 @@ export interface IWSServerDeletedMessage extends IWebSocketMessageBase {
 
 // Interface for a ping/pong message
 export interface IWSPingMessage extends IWebSocketMessageBase {
-  type: 'ping' | 'pong' | 'server_ping';
+  type: 'ping' | 'pong' | 'server_ping' | 'server_pong';
   entityType?: string;
   entityId?: number | string;
   id?: any;

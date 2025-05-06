@@ -121,14 +121,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
             // Set up event listener for direct messages from WebSocketService
             // Create a closure to capture the current WebSocket reference
-            const createDirectMessageListener = (name) => {
+            const createDirectMessageListener = (name: string) => {
               return (event: any) => {
                 // Get the current WebSocket reference from wsRef for safety
                 const currentWs = wsRef.current;
-                
+
                 // Always log the readyState
                 if (currentWs) {
-                  wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState, 
+                  wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState,
                     currentWs.readyState === WebSocket.CONNECTING ? 'CONNECTING' :
                     currentWs.readyState === WebSocket.OPEN ? 'OPEN' :
                     currentWs.readyState === WebSocket.CLOSING ? 'CLOSING' :
@@ -136,13 +136,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 } else {
                   wsLog(`⚠️ WebSocket reference is null in ${name}`);
                 }
-                
+
                 // Only proceed if we have a valid WebSocket and it's OPEN
                 if (currentWs && currentWs.readyState === WebSocket.OPEN && event.data) {
                   try {
                     // The data structure is different from what we expected
                     wsLog(`Received direct_message event (${name}), sending via WebSocket`, event.data);
-                    
+
                     // Use the data property directly - it already contains the properly formatted message
                     currentWs.send(JSON.stringify(event.data));
                   } catch (error) {
@@ -151,15 +151,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 } else if (event.data) {
                   // Log when we receive a message but can't send it due to connection state
                   wsLog(`⚠️ Cannot send message: WebSocket not in OPEN state (${name})`, event.data);
-                  
+
                   // Queue message for retry if possible
                   queueMessageForRetry(event.data);
                 }
               };
             };
-            
+
             // Function to queue messages for retry
-            const queueMessageForRetry = (data) => {
+            const queueMessageForRetry = (data: WebSocketMessage) => {
               wsLog('🔄 Queueing message for retry after connection is established', data);
               // Set a short timeout to retry the message
               setTimeout(() => {
@@ -176,7 +176,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 }
               }, 1000); // Retry after 1 second
             };
-            
+
             // Create the listener using our factory function
             const directMessageListener_initialSetup = createDirectMessageListener('directMessageListener_initialSetup');
 
@@ -205,7 +205,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     roomId: event.data.roomId,
                     timestamp: event.data.timestamp
                   });
-                  console.log('🔌 CONNECTION SUCCESS:', event.data);
+                  wsLog('🔌 CONNECTION SUCCESS:', event.data);
                 }
                 // Log subscription confirmations
                 else if (event.data.type === 'subscription_confirmation') {
@@ -216,18 +216,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 }
                 // Also log room messages which indicate successful subscription
                 else if (event.data.type === 'room_message' &&
-                         event.data.room &&
+                         event.data.roomId &&
                          event.data.entityType &&
                          event.data.entityId) {
                   wsLog(`📨 Received room message for ${event.data.entityType} ${event.data.entityId}`, {
                     action: event.data.action,
-                    room: event.data.room,
+                    room: event.data.roomId,
                     timestamp: event.data.timestamp
                   });
                 }
 
                 // Debug console log for any message type during resubscription
-                console.log('WebSocket message during resubscription:', event.data);
+                wsLog('WebSocket message during resubscription:', event.data);
               }
             };
 
@@ -235,7 +235,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             wsService.addEventListener('message', messageListener);
 
             // @ts-ignore - Directly call resubscribeToRooms method to restore subscriptions
-            console.log('⚠️ CALLING RESUBSCRIBE TO ROOMS');
+            wsLog('⚠️ CALLING RESUBSCRIBE TO ROOMS');
             wsService.resubscribeToRooms();
 
             // Keep the listener active longer to catch delayed messages
@@ -494,6 +494,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       // during development, so we don't want to reset these flags unless necessary
       // This is managed automatically by React's useEffect cleanup mechanism
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handleMessage omitted to avoid circular dependencies
   }, [wsService, customUrl, autoReconnect, reconnectInterval, pingInterval, disableServiceWorker]);
 
   // Handle global message processing - define this before handleReconnection to break circular dependency
@@ -507,7 +508,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           roomId: data.roomId,
           timestamp: data.timestamp
         });
-        console.log('🔌 CONNECTION SUCCESS:', data);
+        wsLog('🔌 CONNECTION SUCCESS:', data);
 
         // Set the session connected flag to true
         // This tells the application that the server has acknowledged our session connection
@@ -631,7 +632,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         break;
       }
     }
-  }, [queryClient]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Track if reconnection is in progress to avoid multiple simultaneous reconnections
   const isReconnectingRef = useRef(false);
@@ -696,14 +698,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 wsService['isInitialized'] = true;
 
                 // Create a factory function for direct message listeners
-                const createDirectMessageListener = (name) => {
+                const createDirectMessageListener = (name: string) => {
                   return (event: any) => {
                     // Get the current WebSocket reference from wsRef for safety
                     const currentWs = wsRef.current;
-                    
+
                     // Always log the readyState
                     if (currentWs) {
-                      wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState, 
+                      wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState,
                         currentWs.readyState === WebSocket.CONNECTING ? 'CONNECTING' :
                         currentWs.readyState === WebSocket.OPEN ? 'OPEN' :
                         currentWs.readyState === WebSocket.CLOSING ? 'CLOSING' :
@@ -711,13 +713,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     } else {
                       wsLog(`⚠️ WebSocket reference is null in ${name}`);
                     }
-                    
+
                     // Only proceed if we have a valid WebSocket and it's OPEN
                     if (currentWs && currentWs.readyState === WebSocket.OPEN && event.data) {
                       try {
                         // The data structure is different from what we expected
                         wsLog(`Received direct_message event (${name}), sending via WebSocket`, event.data);
-                        
+
                         // Use the data property directly - it already contains the properly formatted message
                         currentWs.send(JSON.stringify(event.data));
                       } catch (error) {
@@ -726,15 +728,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     } else if (event.data) {
                       // Log when we receive a message but can't send it due to connection state
                       wsLog(`⚠️ Cannot send message: WebSocket not in OPEN state (${name})`, event.data);
-                      
+
                       // Queue message for retry if possible
                       queueMessageForRetry(event.data);
                     }
                   };
                 };
-                
+
                 // Function to queue messages for retry
-                const queueMessageForRetry = (data) => {
+                const queueMessageForRetry = (data: WebSocketMessage) => {
                   wsLog('🔄 Queueing message for retry after connection is established', data);
                   // Set a short timeout to retry the message
                   setTimeout(() => {
@@ -751,7 +753,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     }
                   }, 1000); // Retry after 1 second
                 };
-                
+
                 // Create the reconnect message listener using the factory function
                 const directMessageListener_reconnect = createDirectMessageListener('directMessageListener_reconnect');
 
@@ -780,7 +782,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                         roomId: event.data.roomId,
                         timestamp: event.data.timestamp
                       });
-                      console.log('🔌 CONNECTION SUCCESS:', event.data);
+                      wsLog('🔌 CONNECTION SUCCESS:', event.data);
                     }
                     // Log subscription confirmations
                     else if (event.data.type === 'subscription_confirmation') {
@@ -791,18 +793,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     }
                     // Also log room messages which indicate successful subscription
                     else if (event.data.type === 'room_message' &&
-                             event.data.room &&
+                             event.data.roomId &&
                              event.data.entityType &&
                              event.data.entityId) {
                       wsLog(`📨 Received room message for ${event.data.entityType} ${event.data.entityId}`, {
                         action: event.data.action,
-                        room: event.data.room,
+                        room: event.data.roomId,
                         timestamp: event.data.timestamp
                       });
                     }
 
                     // Debug console log for any message type during resubscription
-                    console.log('WebSocket message during reconnection resubscription:', event.data);
+                    wsLog('WebSocket message during reconnection resubscription:', event.data);
                   }
                 };
 
@@ -810,7 +812,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 wsService.addEventListener('message', messageListener);
 
                 // @ts-ignore - Directly call resubscribeToRooms method to restore subscriptions
-                console.log('⚠️ CALLING RESUBSCRIBE TO ROOMS AFTER RECONNECTION');
+                wsLog('⚠️ CALLING RESUBSCRIBE TO ROOMS AFTER RECONNECTION');
                 wsService.resubscribeToRooms();
 
                 // Keep the listener active longer to catch delayed messages
@@ -1088,14 +1090,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 wsService['isInitialized'] = true;
 
                 // Create a factory function for direct message listeners
-                const createDirectMessageListener = (name) => {
+                const createDirectMessageListener = (name: string) => {
                   return (event: any) => {
                     // Get the current WebSocket reference from wsRef for safety
                     const currentWs = wsRef.current;
-                    
+
                     // Always log the readyState
                     if (currentWs) {
-                      wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState, 
+                      wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState,
                         currentWs.readyState === WebSocket.CONNECTING ? 'CONNECTING' :
                         currentWs.readyState === WebSocket.OPEN ? 'OPEN' :
                         currentWs.readyState === WebSocket.CLOSING ? 'CLOSING' :
@@ -1103,13 +1105,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     } else {
                       wsLog(`⚠️ WebSocket reference is null in ${name}`);
                     }
-                    
+
                     // Only proceed if we have a valid WebSocket and it's OPEN
                     if (currentWs && currentWs.readyState === WebSocket.OPEN && event.data) {
                       try {
                         // The data structure is different from what we expected
                         wsLog(`Received direct_message event (${name}), sending via WebSocket`, event.data);
-                        
+
                         // Use the data property directly - it already contains the properly formatted message
                         currentWs.send(JSON.stringify(event.data));
                       } catch (error) {
@@ -1118,15 +1120,15 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     } else if (event.data) {
                       // Log when we receive a message but can't send it due to connection state
                       wsLog(`⚠️ Cannot send message: WebSocket not in OPEN state (${name})`, event.data);
-                      
+
                       // Queue message for retry if possible
                       queueMessageForRetry(event.data);
                     }
                   };
                 };
-                
+
                 // Function to queue messages for retry
-                const queueMessageForRetry = (data) => {
+                const queueMessageForRetry = (data: WebSocketMessage) => {
                   wsLog('🔄 Queueing message for retry after connection is established', data);
                   // Set a short timeout to retry the message
                   setTimeout(() => {
@@ -1143,7 +1145,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     }
                   }, 1000); // Retry after 1 second
                 };
-                
+
                 // Create the status effect message listener using the factory function
                 const directMessageListener_statusEffect = createDirectMessageListener('directMessageListener_statusEffect');
 
@@ -1174,18 +1176,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     }
                     // Also log room messages which indicate successful subscription
                     else if (event.data.type === 'room_message' &&
-                             event.data.room &&
+                             event.data.roomId &&
                              event.data.entityType &&
                              event.data.entityId) {
                       wsLog(`📨 Received room message for ${event.data.entityType} ${event.data.entityId}`, {
                         action: event.data.action,
-                        room: event.data.room,
+                        room: event.data.roomId,
                         timestamp: event.data.timestamp
                       });
                     }
 
                     // Debug console log for any message type during resubscription
-                    console.log('WebSocket message during status effect resubscription:', event.data);
+                    wsLog('WebSocket message during status effect resubscription:', event.data);
                   }
                 };
 
@@ -1193,7 +1195,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 wsService.addEventListener('message', messageListener);
 
                 // @ts-ignore - Directly call resubscribeToRooms method to restore subscriptions
-                console.log('⚠️ CALLING RESUBSCRIBE TO ROOMS AFTER STATUS EFFECT RECONNECTION');
+                wsLog('⚠️ CALLING RESUBSCRIBE TO ROOMS AFTER STATUS EFFECT RECONNECTION');
                 wsService.resubscribeToRooms();
 
                 // Keep the listener active longer to catch delayed messages
@@ -1305,7 +1307,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         });
       }
     }
-  }, [status, customUrl, pingInterval, reconnectInterval, autoReconnect, wsService, handleMessage, disableServiceWorker]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- We intentionally omit status and handleMessage to avoid circular dependencies
+  }, [customUrl, pingInterval, reconnectInterval, autoReconnect, wsService, disableServiceWorker]);
 
   const value = {
     status,

@@ -1,7 +1,7 @@
 'use client';
 
 // Toggle for client-side WebSocket logging
-export const WEBSOCKET_CLIENT_DEBUG = true;
+export const WEBSOCKET_CLIENT_DEBUG = false;
 
 /**
  * Helper function for consistent WebSocket logging

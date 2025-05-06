@@ -231,16 +231,16 @@ class ApplicationService
 					if ($hasCollision)
 					{
 						$collisionDebugInfo[$application['id']] = $applicationCollisionInfo;
-						
+
 						// Reject the application with collision
 						$updateData = array_merge($baseUpdateData, [
 							'status' => 'REJECTED',
 							'parent_id' => $application['id'] == $parent_id ? null : $parent_id
 						]);
-						
+
 						$this->patchApplicationMainData($updateData, $application['id']);
 						$skippedApplications[] = array_merge($application, $updateData);
-						
+
 						// Skip sending notification and adding to updated list
 						continue;
 					}
@@ -251,7 +251,7 @@ class ApplicationService
 							'status' => 'ACCEPTED',
 							'parent_id' => $application['id'] == $parent_id ? null : $parent_id
 						]);
-						
+
 						$this->patchApplicationMainData($updateData, $application['id']);
 						$this->createEventForApplication($application['id']);
 					}
@@ -481,7 +481,7 @@ class ApplicationService
 
 		// Use the provided check_collision function logic
 		$hasCollision = $this->check_collision($resourceIds, $from, $to, $session_id);
-		
+
 		// Debug information to return
 		return [
 			'has_collision' => $hasCollision,
@@ -494,7 +494,7 @@ class ApplicationService
 
 	/**
 	 * Comprehensive collision check that checks blocks, allocations and events
-	 * 
+	 *
 	 * @param array $resources Array of resource IDs
 	 * @param string $from_ Start time
 	 * @param string $to_ End time
@@ -2081,6 +2081,7 @@ class ApplicationService
 	 * @return array Application data with ID and status
 	 * @throws \Exception If booking fails
 	 */
+
 	public function createSimpleBooking(int $resourceId, int $buildingId, string $from, string $to, string $sessionId): array
 	{
 		$startedTransaction = false;
@@ -2096,17 +2097,16 @@ class ApplicationService
 			// CRITICAL SECURITY FIX - DIRECT OVERLAP CHECK
 			// First check directly if this time slot is already taken by ANY application (including NEWPARTIAL1)
 			// Note that we DO NOT filter by session_id to catch all applications regardless of session
+			// FIXED: The SQL now excludes adjacent bookings (where one ends exactly when the other starts)
 			$overlapCheckSql = "SELECT COUNT(*) as overlap_count
-				FROM bb_application a
-				JOIN bb_application_resource ar ON a.id = ar.application_id
-				JOIN bb_application_date ad ON a.id = ad.application_id
-				WHERE ar.resource_id = :resource_id
-				AND a.status NOT IN ('REJECTED')
-				AND a.active = 1
-				AND ((ad.from_ BETWEEN :from_date AND :to_date)
-					OR (ad.to_ BETWEEN :from_date AND :to_date)
-					OR (:from_date BETWEEN ad.from_ AND ad.to_)
-					OR (:to_date BETWEEN ad.from_ AND ad.to_))";
+            FROM bb_application a
+            JOIN bb_application_resource ar ON a.id = ar.application_id
+            JOIN bb_application_date ad ON a.id = ad.application_id
+            WHERE ar.resource_id = :resource_id
+            AND a.status NOT IN ('REJECTED')
+            AND a.active = 1
+            AND ((ad.from_ < :to_date AND ad.to_ > :from_date)
+                AND NOT (ad.from_ = :to_date OR ad.to_ = :from_date))";
 
 			// Execute the count query to check for any overlaps
 			$stmt = $this->db->prepare($overlapCheckSql);
@@ -2121,16 +2121,16 @@ class ApplicationService
 
 			// If we found any overlapping applications, set a session message and reject the request
 			if ($overlapCount > 0) {
-					$errorMessage = lang('resource_already_booked');
+				$errorMessage = lang('resource_already_booked');
 
-					// Set message using Cache::message_set() like ApplicationController does
-					\App\modules\phpgwapi\services\Cache::message_set($errorMessage, 'error');
+				// Set message using Cache::message_set() like ApplicationController does
+				\App\modules\phpgwapi\services\Cache::message_set($errorMessage, 'error');
 
-					// Log the overlap for debugging
-					error_log("BOOKING OVERLAP DETECTED: Resource ID {$resourceId}, time {$from} to {$to}");
+				// Log the overlap for debugging
+				error_log("BOOKING OVERLAP DETECTED: Resource ID {$resourceId}, time {$from} to {$to}");
 
-					// Throw exception to stop the booking process
-					throw new \Exception($errorMessage);
+				// Throw exception to stop the booking process
+				throw new \Exception($errorMessage);
 			}
 
 			// Check if resource supports simple booking
@@ -2246,7 +2246,6 @@ class ApplicationService
 			throw $e;
 		}
 	}
-
 	/**
 	 * Cancel blocks for an application
 	 *

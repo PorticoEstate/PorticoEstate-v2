@@ -34,6 +34,7 @@ const SILENT_SOCKET_TYPES: Record<WebSocketMessage['type'], boolean> = {
 	'room_ping': true,
 	'room_ping_response': true,
 	'subscription_confirmation': true,
+	'connection_success': true,
 	session_update_confirmation: true,
 	entity_event: false,
 	notification: false,

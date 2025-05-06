@@ -132,7 +132,7 @@ export const useEntitySubscription = (
         wsService.unsubscribeFromRoom(entityType, entityId);
       }
     };
-  }, [entityType, entityId, wsService, stableCallback]);
+  }, [entityType, entityId, wsService, stableCallback, wsContext.status, wsContext.sessionConnected]);
 
   // Effect to subscribe when service becomes ready AND session is connected
   useEffect(() => {
@@ -201,7 +201,7 @@ export const useMessageTypeSubscription = <T extends WebSocketMessage['type']>(
         unsubscribeFnRef.current = undefined;
       }
     };
-  }, [messageType, typedCallback]);
+  }, [messageType, typedCallback, wsService]);
 
   // Manual unsubscribe function
   const unsubscribe = useCallback(() => {
@@ -234,16 +234,19 @@ export const useMultiEntitySubscription = (
   const wsService = WebSocketService.getInstance();
 
   useEffect(() => {
+    // Get a snapshot of the current ref value for cleanup
+    const unsubscribeFns = unsubscribeFnsRef.current;
+    
     // Clear previous subscriptions
-    unsubscribeFnsRef.current.forEach(unsubFn => unsubFn());
-    unsubscribeFnsRef.current.clear();
+    unsubscribeFns.forEach(unsubFn => unsubFn());
+    unsubscribeFns.clear();
 
     // Set up new subscriptions
     subscriptions.forEach(sub => {
       const key = `${sub.entityType}:${sub.entityId}`;
       const unsubFn = wsService.subscribeToRoom(sub.entityType, sub.entityId, sub.callback);
       if (unsubFn) {
-        unsubscribeFnsRef.current.set(key, unsubFn);
+        unsubscribeFns.set(key, unsubFn);
       }
     });
 
@@ -251,16 +254,16 @@ export const useMultiEntitySubscription = (
     return () => {
       subscriptions.forEach(sub => {
         const key = `${sub.entityType}:${sub.entityId}`;
-        const unsubFn = unsubscribeFnsRef.current.get(key);
+        const unsubFn = unsubscribeFns.get(key);
         if (unsubFn) {
           unsubFn();
           // Explicitly tell the server we're unsubscribing
           wsService.unsubscribeFromRoom(sub.entityType, sub.entityId);
         }
       });
-      unsubscribeFnsRef.current.clear();
+      unsubscribeFns.clear();
     };
-  }, [subscriptions]);
+  }, [subscriptions, wsService]);
 
   return {
     isSubscribed: unsubscribeFnsRef.current.size > 0,

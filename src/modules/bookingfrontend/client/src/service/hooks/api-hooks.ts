@@ -144,7 +144,7 @@ export function useBuildingFreeTimeSlots({
 			console.log("Should probably be caught before this (wrong place), but not sure why we got this message: ", message);
 			return;
 		}
-		console.log(`Received building update for ${building_id}:`, message);
+		// console.log(`Received building update for ${building_id}:`, message);
 
 		switch (message.action) {
 			case 'updated': {

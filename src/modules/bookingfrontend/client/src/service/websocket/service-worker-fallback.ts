@@ -49,7 +49,7 @@ export async function createDirectWebSocketFallback(
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        
+
         // Automatically respond to server_ping messages with pong
         if (data.type === 'server_ping') {
           try {
@@ -63,7 +63,7 @@ export async function createDirectWebSocketFallback(
             wsLog('Error sending pong response to server_ping:', error);
           }
         }
-        
+
         if (onMessage) onMessage(data);
       } catch (error) {
         wsLog('Error parsing WebSocket message:', error);
@@ -114,7 +114,7 @@ export function isSecurityError(error: any): boolean {
 export async function shouldUseDirectConnection(disableServiceWorker?: boolean): Promise<boolean> {
   // Check if running in a browser
   if (typeof window === 'undefined') return false;
-  
+
   // Check if service worker is explicitly disabled
   if (disableServiceWorker) return true;
 
@@ -133,7 +133,7 @@ export async function shouldUseDirectConnection(disableServiceWorker?: boolean):
   // Check if browser has encountered previous service worker errors
   // Store this in sessionStorage to persist across initial page load and refreshes
   if (sessionStorage.getItem('sw_error')) {
-    console.log('Previous service worker errors detected, using direct connection');
+    wsLog('Previous service worker errors detected, using direct connection');
     return true;
   }
 

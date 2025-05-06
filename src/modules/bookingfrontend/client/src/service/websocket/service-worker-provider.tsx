@@ -92,7 +92,7 @@ export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children,
 			// Only run the initialization if we have service worker support
 			initializeServiceWorker();
 		});
-	}, []);
+	}, [disableServiceWorker]);
 
 	// If we need to fall back to direct mode, render just the children without the provider
 	if (fallbackToDirectMode) {

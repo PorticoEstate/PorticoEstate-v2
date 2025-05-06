@@ -153,7 +153,7 @@ const Dialog: React.FC<DialogProps> = ({
 				maxWidth: '100%', 
 				maxHeight: '100%',
 				width: isMobile ? '100%' : 'auto',
-				height: isMobile ? '100%' : 'auto'
+				height: isMobile ? '100%' : '90vh'
 			}}
 		>
 			<div className={styles.dialogContainer}>

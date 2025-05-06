@@ -93,10 +93,10 @@
         transform: translate(-50%, -50%) scale(0.9);
         max-width: 90vw;
         max-height: 90vh;
+        min-height: 90vh;
         border-radius: 20px;
         border: none;
         min-width: 640px;
-        min-height: 480px;
 
         &.fullscreen {
             max-width: 100vw;

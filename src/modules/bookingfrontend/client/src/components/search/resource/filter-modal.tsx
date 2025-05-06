@@ -1,11 +1,12 @@
 import React, {FC, useEffect, useMemo, useState} from 'react';
-import {Button} from '@digdir/designsystemet-react';
+import {Button, Field, Label, Select} from '@digdir/designsystemet-react';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import {ISearchDataOptimized} from '@/service/types/api/search.types';
+import {ISearchDataOptimized, ISearchDataTown} from '@/service/types/api/search.types';
 import MobileDialog from "@/components/dialog/mobile-dialog";
 import ActivityFilterWithLimit from './activity-filter';
 import FacilityFilterWithLimit from './facility-filter';
 import styles from './resource-search.module.scss';
+import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 
 interface FilterModalProps {
     open: boolean;
@@ -15,6 +16,13 @@ interface FilterModalProps {
     setSelectedActivities: React.Dispatch<React.SetStateAction<number[]>>;
     selectedFacilities: number[];
     setSelectedFacilities: React.Dispatch<React.SetStateAction<number[]>>;
+    // Additional props for date and where filters
+    date?: Date;
+    onDateChange?: (newDate: Date | null) => void;
+    where?: number | '';
+    onWhereChange?: (newWhere: number | '') => void;
+    towns?: ISearchDataTown[];
+    showDateWhere?: boolean;
 }
 
 const FilterModal: FC<FilterModalProps> = ({
@@ -24,7 +32,13 @@ const FilterModal: FC<FilterModalProps> = ({
     selectedActivities,
     setSelectedActivities,
     selectedFacilities,
-    setSelectedFacilities
+    setSelectedFacilities,
+    date,
+    onDateChange,
+    where,
+    onWhereChange,
+    towns,
+    showDateWhere = false
 }) => {
     const t = useTrans();
 
@@ -231,6 +245,38 @@ const FilterModal: FC<FilterModalProps> = ({
             closeOnBackdropClick={false}
         >
             <div className={styles.filterModalContent}>
+                {showDateWhere && date && onDateChange && (
+                    <div className={styles.dateFilterWrapper}>
+                        <div>
+                            <Label>{t('bookingfrontend.when')}</Label>
+                            <CalendarDatePicker
+                                currentDate={date}
+                                onDateChange={onDateChange}
+                                view="timeGridDay"
+                            />
+                        </div>
+                    </div>
+                )}
+                
+                {showDateWhere && towns && towns.length > 0 && onWhereChange && (
+                    <div className={styles.townFilterWrapper}>
+                        <Field>
+                            <Label>{t('bookingfrontend.where')}</Label>
+                            <Select
+                                value={where}
+                                onChange={(e) => onWhereChange(e.target.value ? +e.target.value : '')}
+                            >
+                                <Select.Option value="">{t('booking.all')}</Select.Option>
+                                {towns.map(town => (
+                                    <Select.Option key={town.id} value={town.id.toString()}>
+                                        {town.name}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Field>
+                    </div>
+                )}
+                
                 <ActivityFilterWithLimit
                     key={`activity-filter-${filterKey}`}
                     activities={activitiesWithResources}

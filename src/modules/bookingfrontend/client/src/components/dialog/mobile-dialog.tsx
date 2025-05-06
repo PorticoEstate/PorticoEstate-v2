@@ -111,25 +111,34 @@ const Dialog: React.FC<DialogProps> = ({
 		};
 	}, [attemptClose]);
 
+	// Much simpler implementation without all the viewport adjustments
+	// The grid layout in CSS will handle the footer positioning naturally
+
+	// Simplified dialog management
 	useEffect(() => {
 		const dialog = dialogRef.current;
+		const scrollY = window.scrollY;
 
 		if (open) {
 			if (dialog) {
 				dialog.showModal();
 				setTimeout(() => setShow(true), 10);
 			}
+			
+			// Simple approach to disable scrolling
 			document.body.style.overflow = 'hidden';
 		} else {
 			if (dialog) {
 				setShow(false);
 				setTimeout(() => dialog.close(), 300);
 			}
-			document.body.style.overflow = 'auto';
+			
+			// Restore scrolling
+			document.body.style.overflow = '';
 		}
 
 		return () => {
-			document.body.style.overflow = 'auto';
+			document.body.style.overflow = '';
 		};
 	}, [open]);
 
@@ -140,6 +149,12 @@ const Dialog: React.FC<DialogProps> = ({
 				isFullscreen ? styles.fullscreen : ''
 			}`}
 			onClick={handleBackdropClick}
+			style={{ 
+				maxWidth: '100%', 
+				maxHeight: '100%',
+				width: isMobile ? '100%' : 'auto',
+				height: isMobile ? '100%' : 'auto'
+			}}
 		>
 			<div className={styles.dialogContainer}>
 				{showDefaultHeader && (

@@ -442,6 +442,57 @@ class BookingUserController
 	}
 
 	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/user/session",
+	 *     summary="Get current user's session ID",
+	 *     tags={"User"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Session ID successfully retrieved",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="sessionId", type="string", description="The current session ID")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="User not authenticated"
+	 *     )
+	 * )
+	 */
+	public function getSessionId(Request $request, Response $response): Response
+	{
+		try {
+			// Get the session ID from PHP's session
+			$sessionId = session_id();
+			
+			if (!$sessionId) {
+				return ResponseHelper::sendErrorResponse(
+					['error' => 'No active session found'],
+					401
+				);
+			}
+
+			// Return the session ID
+			$response->getBody()->write(json_encode([
+				'sessionId' => $sessionId
+			]));
+			
+			return $response
+				->withHeader('Content-Type', 'application/json')
+				->withStatus(200);
+				
+		} catch (Exception $e) {
+			// Log the error but don't expose internal details
+			error_log("Error retrieving session ID: " . $e->getMessage());
+			
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Internal server error'],
+				500
+			);
+		}
+	}
+
+	/**
 	 * @OA\Delete(
 	 *     path="/bookingfrontend/user/messages/{id}",
 	 *     summary="Delete a specific message by ID",

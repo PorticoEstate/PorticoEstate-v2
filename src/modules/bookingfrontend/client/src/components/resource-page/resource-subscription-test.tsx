@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useCallback, useRef } from 'react';
-import { useEntitySubscription } from '@/service/hooks/use-websocket-subscriptions';
+import { useEntitySubscriptionWithPing } from '@/service/hooks/use-websocket-subscriptions';
 import { Alert, Heading, Paragraph } from '@digdir/designsystemet-react';
 import { Button } from '@digdir/designsystemet-react';
 import { ChevronDownIcon, ChevronUpIcon } from "@navikt/aksel-icons";
-import { WebSocketMessage } from '@/service/websocket/websocket.types';
+import { WebSocketMessage, IWSRoomPingMessage, IWSRoomPingResponseMessage } from '@/service/websocket/websocket.types';
 
 interface ResourceSubscriptionTestProps {
   resourceId: number;
@@ -59,8 +59,8 @@ const ResourceSubscriptionTest: React.FC<ResourceSubscriptionTestProps> = ({ res
            `Data: ${JSON.stringify(message, null, 2)}`;
   }, []);
 
-  // Subscribe to the resource entity with a stable callback
-  const { isSubscribed } = useEntitySubscription(
+  // Subscribe to the resource entity with a stable callback and ping handling
+  const { isSubscribed, ping } = useEntitySubscriptionWithPing(
     'resource',
     resourceId,
     useCallback((message: WebSocketMessage) => {
@@ -74,7 +74,33 @@ const ResourceSubscriptionTest: React.FC<ResourceSubscriptionTestProps> = ({ res
         },
         ...prevEvents,
       ].slice(0, 10)); // Keep only the latest 10 events
-    }, [formatMessage])
+    }, [formatMessage]),
+    {
+      // Handle ping messages specifically
+      onPing: (pingMessage: IWSRoomPingMessage) => {
+        console.log('Received room ping:', pingMessage);
+        setEvents((prevEvents) => [
+          {
+            message: `📡 Room Ping Received\nRoom: ${pingMessage.roomId}\nTimestamp: ${new Date(pingMessage.timestamp).toLocaleString()}\nPing ID: ${pingMessage.pingId || 'none'}`,
+            timestamp: new Date().toISOString(),
+          },
+          ...prevEvents,
+        ].slice(0, 10));
+      },
+      // Handle ping response messages
+      onResponse: (responseMessage: IWSRoomPingResponseMessage) => {
+        console.log('Sent room ping response:', responseMessage);
+        setEvents((prevEvents) => [
+          {
+            message: `📡 Room Ping Response Sent\nRoom: ${responseMessage.roomId}\nTimestamp: ${new Date(responseMessage.timestamp).toLocaleString()}\nPing ID: ${responseMessage.pingId || 'none'}`,
+            timestamp: new Date().toISOString(),
+          },
+          ...prevEvents,
+        ].slice(0, 10));
+      },
+      // Auto-respond to pings (default is true)
+      autoRespond: true
+    }
   );
 
   // Create a stable toggle function that doesn't recreate on each render
@@ -103,6 +129,9 @@ const ResourceSubscriptionTest: React.FC<ResourceSubscriptionTestProps> = ({ res
               {isSubscribed
                 ? `✅ Subscribed to resource ${resourceId}`
                 : `⚠️ Not subscribed to resource ${resourceId}`}
+            </Paragraph>
+            <Paragraph>
+              Ping status: {ping.pingCount} pings received, {ping.responseCount} responses sent
             </Paragraph>
           </Alert>
 

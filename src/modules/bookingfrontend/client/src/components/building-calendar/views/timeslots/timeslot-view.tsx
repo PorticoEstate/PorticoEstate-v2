@@ -12,6 +12,7 @@ import TimeSlotCard from "@/components/building-calendar/views/timeslots/card/ti
 import {IFreeTimeSlot} from "@/service/pecalendar.types";
 import {Spinner} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useWebSocketContext} from "@/service/websocket/websocket-context";
 
 interface TimeslotViewProps {
 	currentDate: DateTime;
@@ -23,6 +24,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 	const {enabledResources} = useEnabledResources();
 	const createSimpleApp = useCreateSimpleApplication();
 	const deletePartialApp = useDeletePartialApplication();
+	const webSocketService = useWebSocketContext();
 	const t = useTrans();
 	const viewRange = useMemo(() => {
 		if (props.viewMode.includes('Day')) {
@@ -62,7 +64,6 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 		weeks,
 		instance: undefined,
 	});
-
 	const currentResourceId = useMemo(() => {
 		if (enabledResources.size !== 1) return undefined;
 
@@ -77,7 +78,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 		// Get the slots for the single enabled resource
 		const resourceId = currentResourceId
 		const slots = freeTimeSlots[resourceId] || [];
-		
+
 		// Get the current date/time to filter out past slots
 		const now = DateTime.now();
 
@@ -106,12 +107,12 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 		return slots.filter(slot => {
 			const slotStart = DateTime.fromISO(slot.start_iso);
 			const slotEnd = DateTime.fromISO(slot.end_iso);
-			
+
 			// Filter out slots in the past
 			if (slotStart < now) {
 				return false;
 			}
-			
+
 			// Filter by the selected date range
 			return slotStart >= startOfRange && slotEnd <= endOfRange;
 		}).sort((a, b) => {
@@ -138,8 +139,17 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 			// Delete the overlapping application
 			deletePartialApp.mutate(slot.overlap_event.id, {
 				onSuccess: () => {
-					// Refetch time slots to update the view
-					refetchTimeSlots();
+					// Check if websocket connection is active
+					const isWebSocketActive = webSocketService.isReady && 
+	webSocketService.status === 'OPEN' && 
+	webSocketService.sessionConnected;
+
+					// If websocket is not active, manually refetch the timeslots
+					if (!isWebSocketActive) {
+						refetchTimeSlots();
+						console.log("WebSocket not fully connected - manual refetch required")
+
+					}
 					setProcessingSlotId(null);
 				},
 				onError: () => {
@@ -150,8 +160,19 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 			// Create a new application
 			createSimpleApp.mutate({timeslot: slot, building_id: props.building.id}, {
 				onSuccess: () => {
-					// Refetch time slots to update the view
-					refetchTimeSlots().then(() => setProcessingSlotId(null))
+					// Check if websocket connection is active
+					const isWebSocketActive = webSocketService.isReady && 
+	webSocketService.status === 'OPEN' && 
+	webSocketService.sessionConnected;
+
+
+					// If websocket is not active, manually refetch the timeslots
+					if (!isWebSocketActive) {
+						refetchTimeSlots().then(() => setProcessingSlotId(null));
+						console.log("WebSocket not fully connected - manual refetch required")
+					} else {
+						setProcessingSlotId(null);
+					}
 				},
 				onError: () => {
 					setProcessingSlotId(null);
@@ -176,7 +197,7 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 
 						return (
 							<TimeSlotCard
-								key={`${slot.start_iso}-${index}`}
+								key={`${slot.when}`}
 								slot={slot}
 								resourceId={currentResourceId}
 								onSelect={handleSlotAction}

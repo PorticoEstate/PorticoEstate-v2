@@ -14,7 +14,8 @@ import {
 	SubscriptionCallback
 } from './subscription-manager';
 import {WEBSOCKET_CLIENT_DEBUG, wsLog as wslogbase} from './util';
-const wsLog = (message: string, data: any = null) => wslogbase('WSService', message, data)
+
+const wsLog = (message: string, ...optionalParams: any[]) => wslogbase('WSService', message, optionalParams)
 
 // WebSocket Service Class
 export class WebSocketService {
@@ -99,19 +100,19 @@ export class WebSocketService {
 						clientId: message.clientId,
 						hasHeartbeatInfo: !!message.heartbeat_id
 					});
-					
+
 					// Update heartbeat tracking if this is acknowledging a heartbeat ping
 					if (message.heartbeat_id && message.heartbeat_count && typeof sessionStorage !== 'undefined') {
 						const lastHeartbeatKey = `lastHeartbeat_${message.heartbeat_id}`;
 						sessionStorage.setItem(lastHeartbeatKey, message.heartbeat_count.toString());
-						
+
 						// Reset missed heartbeats counter
 						if (parseInt(sessionStorage.getItem('missedHeartbeats') || '0', 10) > 0) {
 							sessionStorage.setItem('missedHeartbeats', '0');
 							wsLog('Reset missed heartbeats counter after successful acknowledgment');
 						}
 					}
-					
+
 					// We're removing the auto-ping response from acknowledgments
 					// This was causing a ping flood by creating a feedback loop
 					// The regular heartbeat interval is sufficient for keepalive
@@ -140,13 +141,29 @@ export class WebSocketService {
 		// Prevent duplicate initialization (React StrictMode protection)
 		if (this.isInitialized) {
 			if (WEBSOCKET_CLIENT_DEBUG) {
-				console.log('WebSocket service already initialized, skipping redundant initialization (StrictMode protection)');
+				wsLog('WebSocket service already initialized, skipping redundant initialization (StrictMode protection)');
 			}
 			return true;
 		}
 
 		if (typeof window === 'undefined') {
 			console.error('Cannot initialize WebSocket service worker in a non-browser environment');
+			return false;
+		}
+
+		// Firefox detection - check if the browser is Firefox
+		const isFirefox = typeof navigator !== 'undefined' &&
+			navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+		// Log Firefox detection
+		if (isFirefox && WEBSOCKET_CLIENT_DEBUG) {
+			wsLog('Firefox browser detected, using enhanced compatibility mode');
+		}
+
+		// Check if service worker is explicitly disabled in options
+		if (options.disableServiceWorker) {
+			wsLog('Service Worker explicitly disabled by configuration - using direct WebSocket');
+			this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 			return false;
 		}
 
@@ -164,7 +181,7 @@ export class WebSocketService {
 			const connectionStatus = await this.checkConnectionStatus();
 			if (connectionStatus === 'OPEN') {
 				if (WEBSOCKET_CLIENT_DEBUG) {
-					console.log('WebSocket connection is already active in another tab, joining existing connection');
+					wsLog('WebSocket connection is already active in another tab, joining existing connection');
 				}
 				this.status = 'OPEN';
 				this.isInitialized = true;
@@ -188,7 +205,7 @@ export class WebSocketService {
 
 			if (existingRegistration) {
 				if (WEBSOCKET_CLIENT_DEBUG) {
-					console.log('WebSocket Service Worker already registered');
+					wsLog('WebSocket Service Worker already registered');
 				}
 				this.serviceWorkerRegistration = existingRegistration;
 			} else {
@@ -196,12 +213,12 @@ export class WebSocketService {
 					// Register a new service worker with correct base path
 					const swURL = `${this.basePath}/websocket-sw.js`;
 					const scope = `${this.basePath}/`;
-					console.log('Registering new service worker using scope:', scope);
+					wsLog('Registering new service worker using scope:', scope);
 					this.serviceWorkerRegistration = await navigator.serviceWorker.register(swURL, {
 						scope: scope
 					});
 					if (WEBSOCKET_CLIENT_DEBUG) {
-						console.log('WebSocket Service Worker registered with scope:', this.serviceWorkerRegistration.scope);
+						wsLog('WebSocket Service Worker registered with scope:', this.serviceWorkerRegistration.scope);
 					}
 				} catch (registerError) {
 					console.error('Failed to register WebSocket service worker:', registerError);
@@ -223,7 +240,7 @@ export class WebSocketService {
 					// Try to verify the service worker file MIME type
 					try {
 						// Import the verifier function dynamically to avoid circular dependencies
-						const { verifyServiceWorkerMimeType } = await import('./service-worker-fallback');
+						const {verifyServiceWorkerMimeType} = await import('./service-worker-fallback');
 						const swUrl = `${this.basePath}/websocket-sw.js`;
 
 						const isValid = await verifyServiceWorkerMimeType(swUrl);
@@ -255,7 +272,19 @@ export class WebSocketService {
 			} else {
 				// Set up a timeout for activation
 				const activationPromise = new Promise<boolean>((resolve) => {
-					// Increase timeout to 10 seconds
+					// Detect Firefox for extended timeout
+					const isFirefox = typeof navigator !== 'undefined' &&
+						navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+					// Firefox needs longer timeout as it's less aggressive with service worker activation
+					const timeoutDuration = isFirefox ? 20000 : 10000; // 20 seconds for Firefox, 10 for others
+
+					if (isFirefox) {
+						wsLog('Firefox detected - using extended service worker activation timeout', {
+							timeoutDuration: `${timeoutDuration / 1000}s`
+						});
+					}
+
 					const timeout = setTimeout(() => {
 						wsLog('Service worker activation timed out, attempting to use existing registration');
 						// Even if activation times out, we can still try to use the registration
@@ -271,7 +300,8 @@ export class WebSocketService {
 							resolve(true);
 						} else {
 							wsLog('Service worker activation timed out and no active registration', {
-								registrations: 'Checking existing registrations...'
+								registrations: 'Checking existing registrations...',
+								browser: isFirefox ? 'Firefox' : 'Other'
 							});
 
 							// Try to find any available registrations as a last resort
@@ -285,11 +315,21 @@ export class WebSocketService {
 									})) : 'none');
 							});
 
-							// Signal fallback is needed
+							// For Firefox, we'll try a more aggressive recovery approach
+							if (isFirefox) {
+								wsLog('Firefox-specific recovery: attempting to connect anyway');
+								// This is risky but necessary for Firefox - we'll try connecting even without a fully activated service worker
+								this.connectToServiceWorker(options);
+								this.isInitialized = true;
+								resolve(true);
+								return;
+							}
+
+							// For other browsers, signal fallback is needed
 							this.dispatchEvent('status', {status: 'FALLBACK_REQUIRED'});
 							resolve(false);
 						}
-					}, 10000); // 10 second timeout
+					}, timeoutDuration);
 
 					// Check if it's already active, which could happen in some browsers
 					if (this.serviceWorkerRegistration?.active) {
@@ -336,14 +376,14 @@ export class WebSocketService {
 			// Additional check for controller availability
 			if (!navigator.serviceWorker.controller) {
 				if (WEBSOCKET_CLIENT_DEBUG) {
-					console.log('No service worker controller yet, waiting for controllerchange event');
+					wsLog('No service worker controller yet, waiting for controllerchange event');
 				}
 
 				// Set up a promise that resolves when controller is available
 				const controllerPromise = new Promise<boolean>((resolve) => {
 					// Check if controller is already available
 					if (navigator.serviceWorker.controller) {
-						console.log('Service worker controller already available, proceeding immediately');
+						wsLog('Service worker controller already available, proceeding immediately');
 						this.connectToServiceWorker(options);
 						this.isInitialized = true;
 						resolve(true);
@@ -430,7 +470,7 @@ export class WebSocketService {
 
 		// Check if we have persistent service worker errors
 		if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('sw_error')) {
-			console.log('Cached service worker error found, not checking connection status');
+			wsLog('Cached service worker error found, not checking connection status');
 			return 'CLOSED';
 		}
 
@@ -508,7 +548,7 @@ export class WebSocketService {
 				navigator.serviceWorker.addEventListener('controllerchange', () => {
 					clearTimeout(timeout);
 					if (WEBSOCKET_CLIENT_DEBUG) {
-						console.log('Controller now available, sending connect message');
+						wsLog('Controller now available, sending connect message');
 					}
 					this.sendMessageToServiceWorker({
 						type: 'connect',
@@ -523,7 +563,7 @@ export class WebSocketService {
 			} else {
 				// Send connect message to service worker
 				if (WEBSOCKET_CLIENT_DEBUG) {
-					console.log('Service worker controller available, sending connect message');
+					wsLog('Service worker controller available, sending connect message');
 				}
 				this.sendMessageToServiceWorker({
 					type: 'connect',
@@ -547,7 +587,7 @@ export class WebSocketService {
 			const status = await this.checkConnectionStatus();
 			if (status === 'OPEN') {
 				if (WEBSOCKET_CLIENT_DEBUG) {
-					console.log('Existing WebSocket connection detected in fallback, skipping connection request');
+					wsLog('Existing WebSocket connection detected in fallback, skipping connection request');
 				}
 				this.status = 'OPEN';
 
@@ -590,15 +630,15 @@ export class WebSocketService {
 		const heartbeatId = Math.random().toString(36).substring(2, 10);
 		let heartbeatCount = 0;
 		const heartbeatInterval = 30000; // 30 seconds (increased from 15 seconds to reduce message frequency)
-		
+
 		// Log heartbeat setup
-		wsLog(`Starting client heartbeat ${heartbeatId} with interval ${heartbeatInterval/1000}s`);
-		
+		wsLog(`Starting client heartbeat ${heartbeatId} with interval ${heartbeatInterval / 1000}s`);
+
 		// Send a ping every 30 seconds (less than the 3-minute inactive threshold)
 		this.heartbeatInterval = setInterval(() => {
 			if (this.isInitialized && this.status !== 'CLOSED') {
 				heartbeatCount++;
-				
+
 				// Add more detailed heartbeat information
 				const heartbeatMessage = {
 					type: 'ping',
@@ -606,33 +646,33 @@ export class WebSocketService {
 					count: heartbeatCount,
 					timestamp: new Date().toISOString()
 				};
-				
+
 				wsLog(`Sending client heartbeat #${heartbeatCount}`, heartbeatMessage);
-				
+
 				// Track last heartbeat acknowledged status
 				const lastHeartbeatKey = `lastHeartbeat_${heartbeatId}`;
 				let missedHeartbeats = 0;
-				
+
 				// Check if we're missing too many heartbeats
 				if (typeof sessionStorage !== 'undefined') {
 					const missedCount = sessionStorage.getItem('missedHeartbeats') || '0';
 					missedHeartbeats = parseInt(missedCount, 10);
-					
+
 					if (missedHeartbeats > 3) {
 						wsLog(`Too many missed heartbeats (${missedHeartbeats}), attempting reconnection`, {
 							heartbeatId,
 							timestamp: new Date().toISOString()
 						});
-						
+
 						// Reset counter
 						sessionStorage.setItem('missedHeartbeats', '0');
-						
+
 						// Force reconnection
 						this.reconnect();
 						return;
 					}
 				}
-				
+
 				// Set up a one-time handler to check if heartbeat is acknowledged
 				setTimeout(() => {
 					// If last heartbeat timestamp doesn't match, increment missed count
@@ -645,10 +685,10 @@ export class WebSocketService {
 						}
 					}
 				}, 5000); // Check after 5 seconds
-				
+
 				// Send the heartbeat
 				this.sendMessageToServiceWorker(heartbeatMessage);
-				
+
 				// Store the sent heartbeat count
 				if (typeof sessionStorage !== 'undefined') {
 					sessionStorage.setItem(lastHeartbeatKey, heartbeatCount.toString());
@@ -675,6 +715,21 @@ export class WebSocketService {
 	// Send a message to the service worker
 	private sendMessageToServiceWorker(message: any): boolean {
 		try {
+			// First, check if navigator.serviceWorker exists
+			if (typeof navigator === 'undefined' || !navigator.serviceWorker) {
+				// In direct WebSocket mode or when service worker API is not available
+				console.warn('Service Worker API is not available - using direct WebSocket');
+
+				// Ensure the message is properly routed in direct WebSocket mode
+				this.dispatchEvent('direct_message', {
+					type: 'direct_message',
+					data: message
+				});
+
+				return true;
+			}
+
+			// Normal service worker code path
 			if (navigator.serviceWorker.controller) {
 				navigator.serviceWorker.controller.postMessage(message);
 				return true;
@@ -692,7 +747,7 @@ export class WebSocketService {
 								try {
 									registration.active.postMessage(message);
 									if (WEBSOCKET_CLIENT_DEBUG) {
-										console.log('Message sent to service worker via registration');
+										wsLog('Message sent to service worker via registration');
 									}
 									messageSent = true;
 								} catch (err) {
@@ -714,6 +769,18 @@ export class WebSocketService {
 			}
 		} catch (error) {
 			console.error('Error sending message to service worker:', error);
+
+			// In case of error, try to dispatch as direct message as fallback
+			if (typeof window !== 'undefined' &&
+				// @ts-ignore - This property is dynamically added by WebSocketContext in direct mode
+				window.__directWebSocketRef) {
+				this.dispatchEvent('direct_message', {
+					type: 'direct_message',
+					data: message
+				});
+				return true;
+			}
+
 			return false;
 		}
 	}
@@ -744,9 +811,13 @@ export class WebSocketService {
 
 	// Dispatch an event to all listeners
 	private dispatchEvent(type: string, data: any): void {
-		if (!this.eventListeners.has(type)) return;
-
+		if (!this.eventListeners.has(type)) {
+			wsLog(`No listeners for event type ${type}`, data);
+			return;
+		};
 		const listeners = this.eventListeners.get(type)!;
+
+		wsLog('Dispatching event:', type, data, listeners);
 		listeners.forEach(callback => {
 			try {
 				callback(data);
@@ -758,8 +829,30 @@ export class WebSocketService {
 
 	// Send a message through the WebSocket
 	sendMessage(type: string, message: string, additionalData: Record<string, any> = {}): boolean {
+		// Special case: If this is a 'subscribe' message and the WebSocket is actually OPEN,
+		// we should consider the service initialized even if the flag isn't set yet.
+		// This fixes the bug where direct WebSocket connections work but isInitialized isn't set.
+		if (type === 'subscribe' && this.status === 'OPEN' && !this.isInitialized) {
+			wsLog('WebSocket is OPEN but not marked as initialized. Setting initialized flag.', {
+				type,
+				status: this.status,
+				isInitialized: false
+			});
+			this.isInitialized = true;
+		}
+
 		if (!this.isInitialized) {
 			console.error('WebSocket service not initialized');
+			// Store subscriptions for later even if not initialized
+			if (type === 'subscribe' && 'entityType' in additionalData && 'entityId' in additionalData) {
+				const entityType = additionalData.entityType;
+				const entityId = additionalData.entityId;
+				wsLog(`Storing subscription to ${entityType} ${entityId} for when service is ready`);
+				this.pendingSubscriptions.push({
+					entityType,
+					entityId
+				});
+			}
 			return false;
 		}
 
@@ -770,12 +863,48 @@ export class WebSocketService {
 			timestamp: new Date().toISOString()
 		};
 
-		this.sendMessageToServiceWorker({
-			type: 'send',
-			data
+		wsLog('Sending message:', {
+			type,
+			message,
+			...additionalData,
+			timestamp: new Date().toISOString()
 		});
 
-		return true;
+		// Check for direct WebSocket mode in these cases:
+		// 1. We're in direct WebSocket mode if window.__directWebSocketRef exists
+		// 2. navigator.serviceWorker is undefined (no SW support)
+		// 3. navigator.serviceWorker exists but no controller is available
+		const dispatchDirectly =
+			// Check if we're in direct WebSocket mode by seeing if window.__directWebSocketRef exists
+			(typeof window !== 'undefined' &&
+				// @ts-ignore - This property is dynamically added by WebSocketContext in direct mode
+				window.__directWebSocketRef) ||
+			// Check if service worker API is not available
+			(typeof navigator === 'undefined' || !navigator.serviceWorker) ||
+			// Or if service worker controller is missing
+			(typeof navigator !== 'undefined' &&
+				'serviceWorker' in navigator &&
+				!navigator.serviceWorker.controller);
+
+		if (dispatchDirectly) {
+			// In direct WebSocket mode, we dispatch an event that the WebSocketContext will handle
+			wsLog('Using direct event dispatch in direct WebSocket mode', {type, data});
+
+			// Dispatch the message to be handled by the WebSocketContext
+			this.dispatchEvent('direct_message', {
+				type: 'direct_message',
+				data: data
+			});
+
+			return true;
+		} else {
+			// Normal service worker mode
+			this.sendMessageToServiceWorker({
+				type: 'send',
+				data
+			});
+			return true;
+		}
 	}
 
 	// Close the WebSocket connection
@@ -827,6 +956,36 @@ export class WebSocketService {
 
 	// Check if the service is initialized
 	isReady(): boolean {
+		// If the connection is OPEN but not marked as initialized, fix that
+		// This happens with direct WebSocket connections that don't properly set isInitialized
+		if (this.status === 'OPEN' && !this.isInitialized) {
+			wsLog('WebSocket is OPEN but not marked as initialized. Auto-correcting state.', {
+				status: this.status,
+				isInitialized: false
+			});
+			this.isInitialized = true;
+
+			// Check if we have any pending subscriptions that should be processed now
+			if (this.pendingSubscriptions.length > 0) {
+				wsLog(`Processing ${this.pendingSubscriptions.length} pending subscriptions after auto-correction`, {
+					subscriptions: this.pendingSubscriptions
+				});
+
+				// Clone the pending subscriptions array to avoid modification during iteration
+				const subscriptionsToProcess = [...this.pendingSubscriptions];
+				this.pendingSubscriptions = []; // Clear pending queue
+
+				// Process each subscription with a small delay to avoid overwhelming the socket
+				subscriptionsToProcess.forEach((sub, index) => {
+					setTimeout(() => {
+						this.sendMessage('subscribe', `Processing deferred subscription to ${sub.entityType} ${sub.entityId}`, {
+							entityType: sub.entityType,
+							entityId: sub.entityId
+						});
+					}, index * 50); // 50ms delay between each subscription
+				});
+			}
+		}
 		return this.isInitialized;
 	}
 
@@ -882,8 +1041,28 @@ export class WebSocketService {
 		}
 	}
 
-	// The unsubscribeFromRoom method has been removed.
-	// The server detects inactive subscriptions via ping-pong mechanism.
+	/**
+	 * Unsubscribe from a room (entity)
+	 * @param entityType The type of entity (e.g., 'resource', 'building')
+	 * @param entityId The ID of the entity
+	 */
+	unsubscribeFromRoom(
+		entityType: string,
+		entityId: number | string
+	): void {
+		// Send unsubscribe message to server
+		this.sendMessage('unsubscribe', `Unsubscribing from ${entityType} ${entityId}`, {
+			entityType,
+			entityId
+		});
+
+		// Remove from pending subscriptions if exists
+		this.pendingSubscriptions = this.pendingSubscriptions.filter(sub =>
+			!(sub.entityType === entityType && sub.entityId === entityId)
+		);
+
+		wsLog(`Explicitly unsubscribed from ${entityType} ${entityId}`);
+	}
 
 	/**
 	 * Subscribe to messages of a specific type
@@ -913,7 +1092,43 @@ export class WebSocketService {
 	/**
 	 * Resubscribe to all rooms if connection was lost and reestablished
 	 */
-	private resubscribeToRooms(): void {
+	public resubscribeToRooms(): void {
+		// Detect Firefox for special handling
+		const isFirefox = typeof navigator !== 'undefined' &&
+			navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+
+		// Track resubscription attempts to prevent infinite loops in Firefox
+		if (typeof window !== 'undefined' && typeof sessionStorage !== 'undefined') {
+			const resubAttemptKey = 'wsResubscriptionAttempts';
+			const now = Date.now();
+			const lastAttemptTimeKey = 'wsLastResubscriptionAttempt';
+			const lastAttemptTime = parseInt(sessionStorage.getItem(lastAttemptTimeKey) || '0', 10);
+			const timeSinceLastAttempt = now - lastAttemptTime;
+
+			// Reset counter if it's been more than 2 minutes since last attempt
+			if (timeSinceLastAttempt > 120000) {
+				sessionStorage.setItem(resubAttemptKey, '1');
+			} else {
+				// Increment attempt counter
+				const attempts = parseInt(sessionStorage.getItem(resubAttemptKey) || '0', 10) + 1;
+				sessionStorage.setItem(resubAttemptKey, attempts.toString());
+
+				// If too many attempts in a short period, especially in Firefox, throttle
+				if (attempts > 10 && isFirefox) {
+					wsLog(`Firefox detected with ${attempts} resubscription attempts in ${timeSinceLastAttempt / 1000}s - throttling`, {
+						timeSinceLastAttempt: `${timeSinceLastAttempt}ms`,
+						browser: 'Firefox'
+					});
+
+					// Don't resubscribe - we're in a resubscription loop
+					return;
+				}
+			}
+
+			// Update last attempt time
+			sessionStorage.setItem(lastAttemptTimeKey, now.toString());
+		}
+
 		// Get all active subscriptions from the manager
 		const activeSubscriptions = this.subscriptionManager.getActiveEntitySubscriptions();
 
@@ -934,8 +1149,11 @@ export class WebSocketService {
 
 		// Log resubscription attempt
 		if (WEBSOCKET_CLIENT_DEBUG) {
-			console.log(`Resubscribing to ${allSubscriptions.length} rooms`);
+			wsLog(`Resubscribing to ${allSubscriptions.length} rooms${isFirefox ? ' (Firefox)' : ''}`);
 		}
+
+		// For Firefox, we'll use a much longer delay between subscriptions to prevent issues
+		const subscriptionDelay = isFirefox ? 300 : 50; // 300ms for Firefox, 50ms for others
 
 		// Send subscribe messages for all subscriptions with slight delay between each
 		// to prevent overwhelming the service worker
@@ -949,14 +1167,16 @@ export class WebSocketService {
 					entityId: sub.entityId
 				});
 
-				// Schedule next subscription with a small delay
+				// Schedule next subscription with browser-specific delay
 				setTimeout(() => {
 					resubscribeWithDelay(index + 1);
-				}, 50);
+				}, subscriptionDelay);
 			};
 
-			// Start the sequential resubscription
-			resubscribeWithDelay(0);
+			// Start the sequential resubscription with a small initial delay for Firefox
+			setTimeout(() => {
+				resubscribeWithDelay(0);
+			}, isFirefox ? 500 : 0);
 		}
 	}
 }

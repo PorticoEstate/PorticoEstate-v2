@@ -470,14 +470,14 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 					</div>
 
 					<div className={styles.dateFilter}>
-						<Field>
+						<div>
 							<Label>{t('bookingfrontend.when')}</Label>
 							<CalendarDatePicker
 								currentDate={date}
 								onDateChange={handleDateChange}
 								view="timeGridDay"
 							/>
-						</Field>
+						</div>
 					</div>
 
 					<div className={styles.townFilter}>

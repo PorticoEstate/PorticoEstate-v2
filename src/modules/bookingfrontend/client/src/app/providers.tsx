@@ -24,14 +24,14 @@ const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang
 
     // Get the translations object to pass to the client
     const translations = (i18n.getResourceBundle(lang, 'translation') || {}) as Record<string, string>;
-    
+
     return (
         <LoadingProvider>
             <ClientTranslationProvider lang={lang} initialTranslations={translations}>
                 <QueryProvider>
                     <ToastProvider>
                         <ServiceWorkerProvider>
-                            <WebSocketProvider>
+                            <WebSocketProvider disableServiceWorker>
                                 <PrefetchWrapper>
                                     <LoadingIndicationWrapper loadingString={t('common.loading')}>
                                         {children}

@@ -33,9 +33,23 @@ export interface IWSServerDeletedMessage extends IWebSocketMessageBase {
 
 // Interface for a ping/pong message
 export interface IWSPingMessage extends IWebSocketMessageBase {
-  type: 'ping' | 'pong' | 'server_ping';
+  type: 'ping' | 'pong' | 'server_ping' | 'server_pong';
   entityType?: string;
   entityId?: number | string;
+  id?: any;
+}
+
+// Interface for a room ping/ping response message
+export interface IWSRoomPingMessage extends IWebSocketMessageBase {
+  type: 'room_ping';
+  roomId: string;
+  pingId?: string;
+}
+
+export interface IWSRoomPingResponseMessage extends IWebSocketMessageBase {
+  type: 'room_ping_response';
+  roomId: string;
+  pingId?: string;
 }
 
 // Interface for a reconnect required message
@@ -86,18 +100,52 @@ export interface IWSRoomMessage extends IWebSocketMessageBase {
   data?: any;
 }
 
+// Interface for session update message
+export interface IWSSessionUpdateMessage extends IWebSocketMessageBase {
+  type: 'update_session';
+  sessionId: string;
+}
+
+// Interface for session update confirmation message
+export interface IWSSessionUpdateConfirmMessage extends IWebSocketMessageBase {
+  type: 'session_update_confirmation';
+  success: boolean;
+  message: string;
+  action: 'updated' | 'unchanged';
+  sessionId: string;
+}
+
+// Interface for session ID required message
+export interface IWSSessionIdRequiredMessage extends IWebSocketMessageBase {
+  type: 'session_id_required';
+  message: string;
+}
+
+// Interface for connection success message
+export interface IWSConnectionSuccessMessage extends IWebSocketMessageBase {
+  type: 'connection_success';
+  message: string;
+  roomId: string;
+}
+
 // Union type for all possible WebSocket messages
 export type WebSocketMessage =
   | IWSNotificationMessage
   | IWSServerNewMessage
   | IWSServerDeletedMessage
   | IWSPingMessage
+  | IWSRoomPingMessage
+  | IWSRoomPingResponseMessage
   | IWSReconnectMessage
   | IWSEntitySubscribeMessage
   | IWSEntityUnsubscribeMessage
   | IWSSubscriptionConfirmMessage
   | IWSEntityEventMessage
-  | IWSRoomMessage;
+  | IWSRoomMessage
+  | IWSSessionUpdateMessage
+  | IWSSessionUpdateConfirmMessage
+  | IWSSessionIdRequiredMessage
+  | IWSConnectionSuccessMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
 
 export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR' | 'FALLBACK_REQUIRED';
@@ -108,6 +156,7 @@ export interface ServiceWorkerWebSocketOptions {
   autoReconnect?: boolean;
   reconnectInterval?: number;
   pingInterval?: number;
+  disableServiceWorker?: boolean;
 }
 
 // Events that can be dispatched

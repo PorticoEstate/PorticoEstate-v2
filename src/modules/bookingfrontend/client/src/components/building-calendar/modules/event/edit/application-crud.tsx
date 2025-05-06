@@ -771,7 +771,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
             </div>
         );
     };
-	console.log("max-min time", maxTime, minTime)
+	// console.log("max-min time", maxTime, minTime)
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>

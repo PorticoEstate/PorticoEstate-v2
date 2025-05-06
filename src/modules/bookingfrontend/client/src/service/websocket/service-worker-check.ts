@@ -10,12 +10,17 @@ const wsLog = (message: string, data: any = null) => wslogbase('WSChecker', mess
  * This function checks not just the existence of the API but whether it's
  * actually usable in the current context (HTTPS, permissions, etc.)
  */
-export async function checkServiceWorkerSupport(): Promise<{
+export async function checkServiceWorkerSupport(disableServiceWorker?: boolean): Promise<{
 	supported: boolean;
 	reason?: string;
 }> {
 	if (typeof window === 'undefined') {
 		return {supported: false, reason: 'Not in browser environment'};
+	}
+
+	// Check if service worker is explicitly disabled
+	if (disableServiceWorker) {
+		return {supported: false, reason: 'Service Worker explicitly disabled'};
 	}
 
 	// Check for basic API presence
@@ -207,7 +212,13 @@ export async function checkServiceWorkerSupport(): Promise<{
  * Directly checks if service workers are available without performing detailed tests
  * This is a synchronous function that just checks for the basic availability
  */
-export function hasServiceWorkerAPI(): boolean {
+export function hasServiceWorkerAPI(disableServiceWorker?: boolean): boolean {
+	// Check if service worker is explicitly disabled
+	if (disableServiceWorker) {
+		console.warn('Not using service worker: Explicitly disabled');
+		return false;
+	}
+	
 	// Check if we're running on a secure context with proper certificates
 	if (typeof window !== 'undefined') {
 		// If not running on HTTPS or localhost, force direct WebSocket

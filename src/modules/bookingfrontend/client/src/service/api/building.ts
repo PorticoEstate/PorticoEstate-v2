@@ -49,7 +49,7 @@ export function useBuilding(building_id?: number, instance?: string, initialData
         {
             queryKey: ['building', building_id],
             queryFn: building_id === undefined ? skipToken : () => {
-                console.log('fetching building', building_id)
+                // console.log('fetching building', building_id)
                 return fetchBuilding(building_id, instance)
             }, // Fetch function
             enabled: building_id !== undefined, // Only run the query if building_id is provided

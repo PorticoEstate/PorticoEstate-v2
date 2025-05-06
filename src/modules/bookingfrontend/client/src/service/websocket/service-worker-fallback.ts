@@ -49,6 +49,21 @@ export async function createDirectWebSocketFallback(
     ws.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
+
+        // Automatically respond to server_ping messages with pong
+        if (data.type === 'server_ping') {
+          try {
+            ws.send(JSON.stringify({
+              type: 'pong',
+              timestamp: new Date().toISOString(),
+              reply_to: data.id || null
+            }));
+            wsLog('Sent pong response to server_ping');
+          } catch (error) {
+            wsLog('Error sending pong response to server_ping:', error);
+          }
+        }
+
         if (onMessage) onMessage(data);
       } catch (error) {
         wsLog('Error parsing WebSocket message:', error);
@@ -93,11 +108,15 @@ export function isSecurityError(error: any): boolean {
 
 /**
  * Determine if we should use a direct WebSocket connection instead of a service worker
+ * @param disableServiceWorker Optional flag to explicitly disable service worker
  * @returns Promise resolving to true if direct connection should be used
  */
-export async function shouldUseDirectConnection(): Promise<boolean> {
+export async function shouldUseDirectConnection(disableServiceWorker?: boolean): Promise<boolean> {
   // Check if running in a browser
   if (typeof window === 'undefined') return false;
+
+  // Check if service worker is explicitly disabled
+  if (disableServiceWorker) return true;
 
   // Check if service workers are supported at all
   if (!('serviceWorker' in navigator)) return true;
@@ -114,7 +133,7 @@ export async function shouldUseDirectConnection(): Promise<boolean> {
   // Check if browser has encountered previous service worker errors
   // Store this in sessionStorage to persist across initial page load and refreshes
   if (sessionStorage.getItem('sw_error')) {
-    console.log('Previous service worker errors detected, using direct connection');
+    wsLog('Previous service worker errors detected, using direct connection');
     return true;
   }
 

@@ -22,7 +22,7 @@ function check_all(strTargetAction)
   }
 }
 </script>
-<h1>{{ description }}</h1>
+<h1>{{ description | raw }}</h1>
 {% endblock %}
 
 {% block app_header %}
@@ -68,8 +68,8 @@ function check_all(strTargetAction)
 
 {% block detail %}
 		<li>
-			<strong>{{ name }}</strong><br>
-			{{ details }}
+			<strong>{{ name | raw }}</strong><br>
+			{{ details | raw }}
 		</li>
 {% endblock %}
 
@@ -125,7 +125,7 @@ function check_all(strTargetAction)
 {% endblock %}
 
 {% block footer %}
-	{{ footer_text }}
+	{{ footer_text | raw }}
 	<div class="banner"> </div>
 </div>
 {% endblock %}

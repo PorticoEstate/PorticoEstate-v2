@@ -19,6 +19,7 @@
 	use App\modules\phpgwapi\services\setup\Process;
 	use App\modules\phpgwapi\services\setup\Html;
 	use App\helpers\Template;
+	use App\modules\phpgwapi\services\Twig;
 
 	class SqlToArray
 	{

@@ -2,7 +2,7 @@
 {% block setup_demo %}
 {{ errors }}
 <h1>{{ title }}</h1>
-<p>{{ description }}</p>
+<p>{{ description | raw }}</p>
 <h2>{{ detailadmin }}</h2>
 <div id="setup_accounts">
 <form method="post" action="{{ action_url | raw }}">

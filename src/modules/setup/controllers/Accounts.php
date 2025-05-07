@@ -19,10 +19,10 @@ use App\modules\phpgwapi\services\setup\Setup;
 use App\modules\phpgwapi\services\setup\Detection;
 use App\modules\phpgwapi\services\setup\Process;
 use App\modules\phpgwapi\services\setup\Html;
-use App\helpers\Template2;
 use App\modules\phpgwapi\services\setup\SetupTranslation;
 use App\modules\phpgwapi\services\Sanitizer;
 use App\helpers\DateHelper;
+use App\modules\phpgwapi\services\Twig;
 use PDO;
 use App\modules\phpgwapi\controllers\Accounts\phpgwapi_group;
 use App\modules\phpgwapi\controllers\Accounts\phpgwapi_user;
@@ -40,14 +40,13 @@ class Accounts
 	private $process;
 	private $html;
 	private $setup;
-	private $setup_tpl;
 	private $translation;
 	private $serverSettings;
 	private $accounts;
+	private $twig;
 
 	public function __construct()
 	{
-
 		//setup_info
 		Settings::getInstance()->set('setup_info', []); //$GLOBALS['setup_info']
 		//setup_data
@@ -63,16 +62,16 @@ class Accounts
 		$this->setup = new Setup();
 		$this->translation = new SetupTranslation();
 		$this->accounts = new \App\modules\phpgwapi\controllers\Accounts\Accounts();
+		$this->twig = Twig::getInstance();
 
 		$flags = array(
 			'noheader' 		=> True,
 			'nonavbar'		=> True,
-			'currentapp'	=> 'home',
+			'currentapp'	=> 'setup',
 			'noapi'			=> True,
 			'nocachecontrol' => True
 		);
 		Settings::getInstance()->set('flags', $flags);
-
 
 		// Check header and authentication
 		if (!$this->setup->auth('Config'))
@@ -81,12 +80,6 @@ class Accounts
 			exit;
 		}
 
-		$tpl_root = $this->html->setup_tpl_dir('setup');
-		$this->setup_tpl = new Template2($tpl_root);
-		$this->setup_tpl->set_unknowns('loose');
-
-
-		$this->html->set_tpl($this->setup_tpl);
 	}
 
 	/**
@@ -276,8 +269,6 @@ class Accounts
 			}
 			Settings::getInstance()->set('server', $this->serverSettings);
 
-			//		$GLOBALS['phpgw']->crypto->init(array(md5(session_id() . $this->serverSettings['encryptkey']), $this->serverSettings['mcrypt_iv']));
-
 			/* Posted admin data */
 			// We need to reverse the entities or the password can be mangled
 			$passwd			= html_entity_decode(\Sanitizer::get_var('passwd', 'string', 'POST'));
@@ -341,13 +332,6 @@ class Accounts
 					}
 				}
 
-				/* 				$contacts = CreateObject('phpgwapi.contacts');
-				if (is_array($contacts_to_delete)) {
-					foreach ($contacts_to_delete as $contact_id) {
-						$contacts->delete($contact_id, '', false);
-					}
-				}
- */
 				unset($contacts_to_delete);
 
 				/* Create the groups */
@@ -385,22 +369,6 @@ class Accounts
 			}
 		}
 
-		$this->setup_tpl->set_file(array(
-			'T_head'       => 'head.tpl',
-			'T_footer'     => 'footer.tpl',
-			'T_alert_msg'  => 'msg_alert_msg.tpl',
-			'T_login_main' => 'login_main.tpl',
-			'T_login_stage_header' => 'login_stage_header.tpl',
-			'T_accounts' => 'accounts.tpl'
-		));
-		$this->setup_tpl->set_block('T_login_stage_header', 'B_multi_domain', 'V_multi_domain');
-		$this->setup_tpl->set_block('T_login_stage_header', 'B_single_domain', 'V_single_domain');
-		$this->setup_tpl->set_var('lang_cookies_must_be_enabled', $this->setup->lang('<b>NOTE:</b> You must have cookies enabled to use setup and header admin!'));
-
-		$header = $this->html->get_header($this->setup->lang('Demo Server Setup'));
-
-		$this->setup_tpl->set_var('action_url', 'accounts');
-
 		/* detect whether anything will be deleted before alerting */
 		$stmt = $this->db->prepare('SELECT config_value FROM phpgw_config WHERE config_name = :config_name');
 		$stmt->execute(['config_name' => 'account_repository']);
@@ -425,25 +393,35 @@ class Accounts
 			$error_msg = '<div class="msg">' . implode("<br>\n", $errors) . '</div>';
 		}
 
-		$this->setup_tpl->set_var(array(
-			'errors'			=> $error_msg,
-			'description'		=> $account_creation_notice,
-			'title'				=> $this->setup->lang('create accounts'),
-			'detailadmin'		=> $this->setup->lang('Details for admininstrator account'),
-			'adminusername'		=> $this->setup->lang('Admin username'),
-			'adminfirstname'	=> $this->setup->lang('Admin first name'),
-			'adminlastname'		=> $this->setup->lang('Admin last name'),
-			'adminpassword'		=> $this->setup->lang('Admin password'),
-			'adminpassword2'	=> $this->setup->lang('Re-enter password'),
-			'lang_submit'		=> $this->setup->lang('Save'),
-			'lang_cancel'		=> $this->setup->lang('Cancel'),
-			'val_username'		=> $username,
-			'val_fname'			=> $fname,
-			'val_lname'			=> $lname,
-		));
+		// Prepare the variables for the Twig template
+		$templateVars = [
+			'errors'           => $error_msg,
+			'description'      => $account_creation_notice,
+			'title'            => $this->setup->lang('create accounts'),
+			'detailadmin'      => $this->setup->lang('Details for admininstrator account'),
+			'adminusername'    => $this->setup->lang('Admin username'),
+			'adminfirstname'   => $this->setup->lang('Admin first name'),
+			'adminlastname'    => $this->setup->lang('Admin last name'),
+			'adminpassword'    => $this->setup->lang('Admin password'),
+			'adminpassword2'   => $this->setup->lang('Re-enter password'),
+			'lang_submit'      => $this->setup->lang('Save'),
+			'lang_cancel'      => $this->setup->lang('Cancel'),
+			'val_username'     => $username,
+			'val_fname'        => $fname,
+			'val_lname'        => $lname,
+			'action_url'       => 'accounts'
+		];
 
-		$main = $this->setup_tpl->parse('out', 'T_accounts');
+		// Get the header and footer
+		$header = $this->html->get_header($this->setup->lang('Demo Server Setup'));
+		
+		// Render the accounts template using Twig
+		$content = $this->twig->renderBlock('accounts.html.twig', 'setup_demo', $templateVars);
+		
+		// Get the footer
 		$footer = $this->html->get_footer();
-		return $header . $main . $footer;
+		
+		// Return the complete page
+		return $header . $content . $footer;
 	}
 }

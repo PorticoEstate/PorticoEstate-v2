@@ -22,6 +22,7 @@ use App\modules\phpgwapi\services\setup\Html;
 use App\helpers\Template2;
 use App\modules\phpgwapi\services\setup\SetupTranslation;
 use App\modules\phpgwapi\services\Sanitizer;
+use App\modules\phpgwapi\services\Twig;
 use App\helpers\DateHelper;
 use PDO;
 
@@ -37,6 +38,7 @@ class Config
 	private $setup;
 	private $setup_tpl;
 	private $translation;
+	private $twig;
 
 	public function __construct()
 	{
@@ -58,11 +60,12 @@ class Config
 		$flags = array(
 			'noheader' 		=> True,
 			'nonavbar'		=> True,
-			'currentapp'	=> 'home',
+			'currentapp'	=> 'setup',
 			'noapi'			=> True,
 			'nocachecontrol' => True
 		);
 		Settings::getInstance()->set('flags', $flags);
+		$this->twig = Twig::getInstance();
 
 
 		// Check header and authentication
@@ -72,10 +75,10 @@ class Config
 			exit;
 		}
 
+		// We still need to initialize the legacy template system for backwards compatibility
 		$tpl_root = $this->html->setup_tpl_dir('setup');
 		$this->setup_tpl = new Template2($tpl_root);
 		$this->setup_tpl->set_unknowns('loose');
-
 
 		$this->html->set_tpl($this->setup_tpl);
 	}
@@ -109,29 +112,10 @@ class Config
 
 	public function index()
 	{
-
 		if (\Sanitizer::get_var('cancel', 'bool', 'POST'))
 		{
 			Header('Location: ../setup');
 			exit;
-		}
-
-
-		$this->setup_tpl->set_file(array(
-			'T_head' => 'head.tpl',
-			'T_footer' => 'footer.tpl',
-			'T_alert_msg' => 'msg_alert_msg.tpl',
-			'T_config_pre_script' => 'config_pre_script.tpl',
-			'T_config_post_script' => 'config_post_script.tpl'
-		));
-
-		$this->setup_tpl->set_var('lang_cookies_must_be_enabled', $this->setup->lang('<b>NOTE:</b> You must have cookies enabled to use setup and header admin!'));
-
-
-		if (is_file(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
-		{
-			$css = file_get_contents(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
-			$this->setup_tpl->set_var('css', $css);
 		}
 
 		// Following to ensure windows file paths are saved correctly
@@ -171,11 +155,11 @@ class Config
 
 		$current_config['encryptkey'] = md5(time() . $_SERVER['HTTP_HOST']); // random enough
 
-
 		$setup_info = $this->detection->get_db_versions();
 		$newsettings = \Sanitizer::get_var('newsettings', 'string', 'POST');
 
 		$files_in_docroot = (isset($newsettings['files_dir'])) ? $this->in_docroot($newsettings['files_dir']) : false;
+		
 		if (\Sanitizer::get_var('submit', 'string', 'POST') && is_array($newsettings) && !$files_in_docroot)
 		{
 			switch (intval($newsettings['daytime_port']))
@@ -286,91 +270,106 @@ class Config
 			);
 		}
 
-		$config_pre_script = $this->setup_tpl->fp('out', 'T_config_pre_script');
-		// Now parse each of the templates we want to show here
+		// Load CSS if available
+		$css = '';
+		if (is_file(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
+		{
+			$css = file_get_contents(dirname(__DIR__, 1) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
+		}
 
+		// Prepare data for templates
+		$templateVars = [
+			'css' => $css,
+			'lang_cookies_must_be_enabled' => $this->setup->lang('<b>NOTE:</b> You must have cookies enabled to use setup and header admin!')
+		];
 
-		$this->setup_tpl->set_unknowns('keep');
-		$this->setup_tpl->set_file(array('config' => 'config.tpl'));
-		$this->setup_tpl->set_block('config', 'body', 'body');
+		// Render the pre-script part using Twig
+		$config_pre_script = $this->twig->renderBlock('config_pre_script.html.twig', 'config_pre_script', $templateVars);
+		
+		// Process configuration variables
+		$vars = [];
+		
 
-		$vars = $this->setup_tpl->get_undefined('body');
+		$templateContent = file_get_contents(dirname(__DIR__, 1) . "/phpgwapi/templates/base/config.html.twig");
+		preg_match_all('/{{\s*([a-zA-Z0-9_]+)(?:\s*\|[^}]*)?\s*}}/', $templateContent, $matches);
+		$vars = $matches[1];
+
 		$this->setup->hook('config', 'setup');
 
-		if (!is_array($vars))
+		// Prepare the template variables for Twig
+		$configVars = [];
+		
+		if (is_array($vars))
 		{
-			$vars = array();
-		}
-
-		foreach ($vars as $value)
-		{
-			$valarray = explode('_', $value);
-
-			$var_type = $valarray[0];
-			unset($valarray[0]);
-
-			$newval = implode(' ', $valarray);
-			unset($valarray);
-
-			switch ($var_type)
+			foreach ($vars as $value)
 			{
-				case 'lang':
-					$this->setup_tpl->set_var($value, $this->setup->lang($newval));
-					break;
-				case 'value':
-					$newval = str_replace(' ', '_', $newval);
-					/* Don't show passwords in the form */
-					//		if(ereg('passwd',$value) || ereg('password',$value) || ereg('root_pw',$value))
-					if (preg_match('/(passwd|password|root_pw)/i', $value))
-					{
-						$this->setup_tpl->set_var($value, '');
-					}
-					else
-					{
-						$this->setup_tpl->set_var($value, isset($current_config[$newval]) ? $current_config[$newval] : '');
-					}
-					break;
-				case 'selected':
-					$configs = array();
-					$config  = '';
-					$newvals = explode(' ', $newval);
-					$setting = end($newvals);
-					for ($i = 0; $i < (count($newvals) - 1); ++$i)
-					{
-						$configs[] = $newvals[$i];
-					}
-					$config = implode('_', $configs);
-					/* echo $config . '=' . $current_config[$config]; */
-					if (
-						isset($current_config[$config])
-						&& $current_config[$config] == $setting
-					)
-					{
-						$this->setup_tpl->set_var($value, ' selected');
-					}
-					else
-					{
-						$this->setup_tpl->set_var($value, '');
-					}
-					break;
-				case 'hook':
-					$newval = str_replace(' ', '_', $newval);
-					$this->setup_tpl->set_var($value, $newval($current_config));
-					break;
-				default:
-					$this->setup_tpl->set_var($value, '');
-					break;
+				$valarray = explode('_', $value);
+				$var_type = $valarray[0];
+				unset($valarray[0]);
+				$newval = implode(' ', $valarray);
+				
+				switch ($var_type)
+				{
+					case 'lang':
+						$configVars[$value] = $this->setup->lang($newval);
+						break;
+					case 'value':
+						$newval = str_replace(' ', '_', $newval);
+						if (preg_match('/(passwd|password|root_pw)/i', $value))
+						{
+							$configVars[$value] = '';
+						}
+						else
+						{
+							$configVars[$value] = isset($current_config[$newval]) ? $current_config[$newval] : '';
+						}
+						break;
+					case 'selected':
+						$configs = array();
+						$config  = '';
+						$newvals = explode(' ', $newval);
+						$setting = end($newvals);
+						for ($i = 0; $i < (count($newvals) - 1); ++$i)
+						{
+							$configs[] = $newvals[$i];
+						}
+						$config = implode('_', $configs);
+						if (isset($current_config[$config]) && $current_config[$config] == $setting)
+						{
+							$configVars[$value] = ' selected';
+						}
+						else
+						{
+							$configVars[$value] = '';
+						}
+						break;
+					case 'hook':
+						$newval = str_replace(' ', '_', $newval);
+						$configVars[$value] = $newval($current_config);
+						break;
+					default:
+						$configVars[$value] = '';
+						break;
+				}
 			}
 		}
-		$body =  $this->setup_tpl->fp('out', 'body');
-		$this->setup_tpl->set_var('more_configs', $this->setup->lang('Please login to phpgroupware and run the admin application for additional site configuration') . '.');
-
-		$this->setup_tpl->set_var('lang_submit', $this->setup->lang('Save'));
-		$this->setup_tpl->set_var('lang_cancel', $this->setup->lang('Cancel'));
-		$post_script = $this->setup_tpl->fp('out', 'T_config_post_script');
+		
+		// Add additional variables
+		$configVars['more_configs'] = $this->setup->lang('Please login to phpgroupware and run the admin application for additional site configuration') . '.';
+		$configVars['lang_submit'] = $this->setup->lang('Save');
+		$configVars['lang_cancel'] = $this->setup->lang('Cancel');
+		
+		// Merge with main template vars
+		$templateVars = array_merge($templateVars, $configVars);
+		
+		// Render the main template using Twig
+		$body = $this->twig->render('config.html.twig', $templateVars);
+		
+		// Render the post-script part using Twig
+		$post_script = $this->twig->renderBlock('config_post_script.html.twig', 'config_post_script', $templateVars);
 
 		$footer = $this->html->get_footer();
 
-		return  $header . $config_pre_script . $body . $post_script . $footer;
+		return $header . $config_pre_script . $body . $post_script . $footer;
 	}
 }

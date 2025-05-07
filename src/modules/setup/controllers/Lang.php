@@ -35,7 +35,6 @@ class Lang
 	private $process;
 	private $html;
 	private $setup;
-	private $setup_tpl;
 	private $translation;
 	private $twig;
 
@@ -70,10 +69,6 @@ class Lang
 			exit;
 		}
 
-		// We still need to initialize the legacy template system for backwards compatibility
-		$tpl_root = $this->html->setup_tpl_dir('setup');
-		$this->setup_tpl = new Template($tpl_root);
-		$this->html->set_tpl($this->setup_tpl);
 	}
 
 	public function index()

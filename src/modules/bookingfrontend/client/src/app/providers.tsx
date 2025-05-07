@@ -30,7 +30,7 @@ const Providers: FC<PropsWithChildren & {lang: string}> = async ({children, lang
             <ClientTranslationProvider lang={lang} initialTranslations={translations}>
                 <QueryProvider>
                     <ToastProvider>
-                        <ServiceWorkerProvider>
+                        <ServiceWorkerProvider disableServiceWorker>
                             <WebSocketProvider disableServiceWorker>
                                 <PrefetchWrapper>
                                     <LoadingIndicationWrapper loadingString={t('common.loading')}>

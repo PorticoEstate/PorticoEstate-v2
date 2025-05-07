@@ -15,23 +15,23 @@
 	<td {{ td_align }}>
 		{{ select_box_desc|raw }}
 		<form method="POST" action="lang">
-		{{ hidden_var1 }}
+		{{ hidden_var1 | raw }}
 		<p style="height: 150px; overflow: auto; border: 5px solid #eee; background: #eee; color: #000; margin-bottom: 1.5em;">
-		{{ checkbox_langs }}
+		{{ checkbox_langs |raw }}
 		</p>
 	</td>
 	{% block B_choose_method %}
 	<td valign="top">
-		{{ meth_desc }}
+		{{ meth_desc |raw }}
 		<br><br>
 		<input type="radio" name="upgrademethod" value="dumpold" checked>
-		&nbsp;{{ blurb_dumpold }}
+		&nbsp;{{ blurb_dumpold |raw }}
 		<br>
 		<input type="radio" name="upgrademethod" value="addonlynew">
-		&nbsp;{{ blurb_addonlynew }}
+		&nbsp;{{ blurb_addonlynew |raw }}
 		<br>
 		<input type="radio" name="upgrademethod" value="addmissing">
-		&nbsp;{{ blurb_addmissing }}
+		&nbsp;{{ blurb_addmissing |raw }}
 	</td>
 	{% endblock %}
 </tr>

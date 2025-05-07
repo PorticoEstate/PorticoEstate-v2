@@ -22,6 +22,7 @@ use App\modules\phpgwapi\services\setup\Html;
 use App\helpers\Template;
 use App\modules\phpgwapi\services\setup\SetupTranslation;
 use App\modules\phpgwapi\services\Crypto;
+use App\modules\phpgwapi\services\Twig;
 use PDO;
 use Sanitizer;
 
@@ -35,8 +36,8 @@ class ManageHeader
 	private $process;
 	private $html;
 	private $setup;
-	private $setup_tpl;
 	private $translation;
+	private $twig;
 
 	private $serverSettings;
 	private $crypto;
@@ -82,24 +83,13 @@ class ManageHeader
 		$flags = array(
 			'noheader' 		=> True,
 			'nonavbar'		=> True,
-			'currentapp'	=> 'home',
+			'currentapp'	=> 'setup',
 			'noapi'			=> True,
 			'nocachecontrol' => True
 		);
+		$this->twig = Twig::getInstance();
 		Settings::getInstance()->set('flags', $flags);
 
-
-		// Check header and authentication
-
-		// if (!$this->setup->auth('Header')) {
-		// 	Header('Location: ../setup');
-		// 	exit;
-		// }
-
-		$tpl_root = $this->html->setup_tpl_dir('setup');
-		$this->setup_tpl = new Template($tpl_root);
-
-		$this->html->set_tpl($this->setup_tpl);
 	}
 
 	/**
@@ -156,10 +146,68 @@ class ManageHeader
 
 		srand((int)microtime() * 1000000);
 		$random_char = array(
-			'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f',
-			'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v',
-			'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-			'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+			'0',
+			'1',
+			'2',
+			'3',
+			'4',
+			'5',
+			'6',
+			'7',
+			'8',
+			'9',
+			'a',
+			'b',
+			'c',
+			'd',
+			'e',
+			'f',
+			'g',
+			'h',
+			'i',
+			'j',
+			'k',
+			'l',
+			'm',
+			'n',
+			'o',
+			'p',
+			'q',
+			'r',
+			's',
+			't',
+			'u',
+			'v',
+			'w',
+			'x',
+			'y',
+			'z',
+			'A',
+			'B',
+			'C',
+			'D',
+			'E',
+			'F',
+			'G',
+			'H',
+			'I',
+			'J',
+			'K',
+			'L',
+			'M',
+			'N',
+			'O',
+			'P',
+			'Q',
+			'R',
+			'S',
+			'T',
+			'U',
+			'V',
+			'W',
+			'X',
+			'Y',
+			'Z'
 		);
 
 		if (!isset($this->serverSettings['mcrypt_iv']) || !$this->serverSettings['mcrypt_iv'])
@@ -185,32 +233,6 @@ class ManageHeader
 
 		$setup_data['stage']['header'] = $this->detection->check_header();
 
-		// added these to let the app work, need to templatize still
-		$this->setup_tpl->set_file(array(
-			'T_head' => 'head.tpl',
-			'T_footer' => 'footer.tpl',
-			'T_alert_msg' => 'msg_alert_msg.tpl',
-			'T_login_main' => 'login_main.tpl',
-			'T_login_stage_header' => 'login_stage_header.tpl',
-			'T_setup_manage' => 'manageheader.tpl'
-		));
-		$this->setup_tpl->set_block('T_login_stage_header', 'B_multi_domain', 'V_multi_domain');
-		$this->setup_tpl->set_block('T_login_stage_header', 'B_single_domain', 'V_single_domain');
-		$this->setup_tpl->set_block('T_setup_manage', 'manageheader', 'manageheader');
-		$this->setup_tpl->set_block('T_setup_manage', 'domain', 'domain');
-
-		if (is_file(dirname(__DIR__, 2) . "/phpgwapi/templates/pure/css/version_3/pure-min.css"))
-		{
-			$css = file_get_contents(dirname(__DIR__, 2) . "/phpgwapi/templates/pure/css/version_3/pure-min.css");
-		}
-		else
-		{
-			$css = '';
-		}
-
-		$this->setup_tpl->set_var('css', $css);
-		$this->setup_tpl->set_var('HeaderLoginWarning', $this->setup->lang('Warning: All your passwords (database, phpGroupWare admin,...)<br> will be shown in plain text after you log in for header administration.'));
-		$this->setup_tpl->set_var('lang_cookies_must_be_enabled', $this->setup->lang('<b>NOTE:</b> You must have cookies enabled to use setup and header admin!'));
 
 		/* Detect current mode */
 		switch ($setup_data['stage']['header'])
@@ -243,10 +265,10 @@ class ManageHeader
 					Header('Location: ../setup');
 					exit;
 
-//					$ret_header = $this->html->get_header('Please login', True);
-//					$login_form = $this->html->login_form();
-//					$ret_footer =  $this->html->get_footer();
-//					return $ret_header . $login_form . $ret_footer;
+					//					$ret_header = $this->html->get_header('Please login', True);
+					//					$login_form = $this->html->login_form();
+					//					$ret_footer =  $this->html->get_footer();
+					//					return $ret_header . $login_form . $ret_footer;
 				}
 				$setup_data['HeaderFormMSG'] = $this->setup->lang('Edit your header.inc.php');
 				$setup_data['PageMSG'] = $this->setup->lang('Edit your existing header.inc.php');
@@ -295,10 +317,10 @@ class ManageHeader
 				<pre id="header_contents">
 $newheader
 				</pre>
-				<form action="setup" method="post">
+				<form class="pure-form pure-form-stacked" action="logout" method="post">
 					$lang_text<br>
 					<input type="hidden" name="FormLogout" value="header">
-					<input type="submit" name="junk" value="{$lang_continue}">
+					<input type="submit" class="pure-button" name="junk" value="{$lang_continue}">
 				</form>
 				{$ret_footer}
 HTML;
@@ -610,67 +632,22 @@ HTML;
 							$detected .= '<li>' . $this->setup->lang('Importing old settings into the new format....') . "</li>\n";
 						}
 
-						reset($phpgw_settings['phpgw_domain']);
-						//$default_domain = each($phpgw_settings['phpgw_domain']);
+						if (!isset($phpgw_settings['phpgw_domain']))
+						{
+							$phpgw_settings['phpgw_domain'] = array();
+						}
+
 						$default_domain = key($phpgw_settings['phpgw_domain']);
 						$this->serverSettings['default_domain'] = $default_domain;
 						unset($default_domain); // we kill this for security reasons
 						$this->serverSettings['config_passwd'] = $phpgw_settings['phpgw_domain'][$this->serverSettings['default_domain']]['config_passwd'];
+
 
 						if (Sanitizer::get_var('adddomain', 'string', 'POST'))
 						{
 							$phpgw_settings['phpgw_domain'][$this->setup->lang('new')] = array();
 						}
 
-						if (!isset($phpgw_settings['phpgw_domain']))
-						{
-							$phpgw_settings['phpgw_domain'] = array();
-						}
-						$ret_domains = '';
-						foreach ($phpgw_settings['phpgw_domain'] as $key => $val)
-						{
-							$this->setup_tpl->set_var('lang_domain', $this->setup->lang('Domain'));
-							$this->setup_tpl->set_var('lang_delete', $this->setup->lang('Delete'));
-							$this->setup_tpl->set_var('db_domain', $key);
-							$this->setup_tpl->set_var('db_host', $this->crypto->decrypt($phpgw_settings['phpgw_domain'][$key]['db_host']));
-							$this->setup_tpl->set_var('db_port', $this->crypto->decrypt($phpgw_settings['phpgw_domain'][$key]['db_port']));
-							$this->setup_tpl->set_var('db_name', $this->crypto->decrypt($phpgw_settings['phpgw_domain'][$key]['db_name']));
-							$this->setup_tpl->set_var('db_user', $this->crypto->decrypt($phpgw_settings['phpgw_domain'][$key]['db_user']));
-							$this->setup_tpl->set_var('db_pass', $this->crypto->decrypt($phpgw_settings['phpgw_domain'][$key]['db_pass']));
-							$this->setup_tpl->set_var('db_type', $phpgw_settings['phpgw_domain'][$key]['db_type']);
-							$this->setup_tpl->set_var('config_pass', $this->crypto->decrypt($phpgw_settings['phpgw_domain'][$key]['config_passwd']));
-
-							$selected = '';
-							$dbtype_options = '';
-							$found_dbtype = False;
-							foreach ($supported_db as $db)
-							{
-								$phpgw_settings['phpgw_domain'][$key]['db_type'] = $phpgw_settings['phpgw_domain'][$key]['db_type'] == 'pgsql' ? 'postgres' : $phpgw_settings['phpgw_domain'][$key]['db_type']; // upgrade from 0.9.16
-								if ($db == $phpgw_settings['phpgw_domain'][$key]['db_type'])
-								{
-									$selected = ' selected';
-									$found_dbtype = true;
-								}
-								else
-								{
-									$selected = '';
-								}
-								$dbtype_options .= <<<HTML
-								<option{$selected} value="{$db}">$db</option>
-
-HTML;
-							}
-
-							$this->setup_tpl->set_var('dbtype_options', $dbtype_options);
-							//---------
-							$selected = '';
-							$found_dbtype = False;
-
-							//----------
-
-							$ret_domains .= $this->setup_tpl->parse('domains', 'domain', true);
-						}
-						$this->setup_tpl->set_var('domain', '');
 					}
 
 					if (defined('PHPGW_SERVER_ROOT'))
@@ -686,46 +663,73 @@ HTML;
 					{
 						$this->serverSettings['include_root'] = $this->serverSettings['server_root'];
 					}
+					$comment_l = '';
+					$comment_r = '';
+
+					// Generate domains HTML using Twig
+					$domainsHtml = '';
+					if (isset($phpgw_settings['phpgw_domain']) && is_array($phpgw_settings['phpgw_domain']))
+					{
+						foreach ($phpgw_settings['phpgw_domain'] as $key => $val)
+						{
+							$selected = '';
+							$dbtype_options = '';
+							foreach ($supported_db as $db)
+							{
+								$phpgw_settings['phpgw_domain'][$key]['db_type'] = $phpgw_settings['phpgw_domain'][$key]['db_type'] == 'pgsql' ? 'postgres' : $phpgw_settings['phpgw_domain'][$key]['db_type']; // upgrade from 0.9.16
+								if ($db == $phpgw_settings['phpgw_domain'][$key]['db_type'])
+								{
+									$selected = ' selected';
+								}
+								else
+								{
+									$selected = '';
+								}
+								$dbtype_options .= <<<HTML
+								<option{$selected} value="{$db}">$db</option>
+
+HTML;
+							}
+
+							// Create domain variables for Twig template
+							$domainVars = [
+								'db_domain' => $key,
+								'db_host' => $this->crypto->decrypt($val['db_host']),
+								'db_port' => $this->crypto->decrypt($val['db_port']),
+								'db_name' => $this->crypto->decrypt($val['db_name']),
+								'db_user' => $this->crypto->decrypt($val['db_user']),
+								'db_pass' => $this->crypto->decrypt($val['db_pass']),
+								'db_type' => $val['db_type'],
+								'config_pass' => $this->crypto->decrypt($val['config_passwd']),
+								'dbtype_options' => $dbtype_options,
+							];
+
+							// Render domain block using Twig
+							$domainsHtml .= $this->twig->renderBlock('manageheader.html.twig', 'domain', $domainVars);
+
+							$i++;
+						}
+					}
 				}
 				else
 				{
 					$detected .= '<li class="warn">' . $this->setup->lang('Sample configuration not found. using built in defaults') . "</li>\n";
+					$comment_l = '<!-- ';
+					$comment_r = ' -->';
 
+					$domainVars = [
+						'db_domain' => 'default',
+						'db_host' => 'localhost',
+						'db_port' => '',
+						'db_name' => 'phpgroupware',
+						'db_user' => 'phpgroupware',
+						'db_pass' => 'your_password',
+						'db_type' => $supported_db[0],
+						'config_pass' => 'changeme',
+						'dbtype_options' => $dbtype_options,
+					];
 
-					/* These are the settings for the database system */
-					$this->setup_tpl->set_var('lang_domain', $this->setup->lang('Domain'));
-					$this->setup_tpl->set_var('lang_delete', $this->setup->lang('Delete'));
-					$this->setup_tpl->set_var('db_domain', 'default');
-					$this->setup_tpl->set_var('db_host', 'localhost');
-					$this->setup_tpl->set_var('db_port', '');
-					$this->setup_tpl->set_var('db_name', 'phpgroupware');
-					$this->setup_tpl->set_var('db_user', 'phpgroupware');
-					$this->setup_tpl->set_var('db_pass', 'your_password');
-					$this->setup_tpl->set_var('db_type', $supported_db[0]);
-					$this->setup_tpl->set_var('config_pass', 'changeme');
-
-					$dbtype_options = '';
-					foreach ($supported_db as $db)
-					{
-						$dbtype_options .= <<<HTML
-						<option value="{$db}">{$db}</option>
-
-HTML;
-					}
-					$this->setup_tpl->set_var('dbtype_options', $dbtype_options);
-
-					$this->setup_tpl->parse('domains', 'domain', True);
-					$this->setup_tpl->set_var('domain', '');
-
-					$this->setup_tpl->set_var('comment_l', '<!-- ');
-					$this->setup_tpl->set_var('comment_r', ' -->');
-
-					$this->serverSettings['header_admin_password'] = '';
-					$this->serverSettings['db_persistent'] = true;
-					$this->serverSettings['sessions_type'] = 'php';
-					//				$this->serverSettings['mcrypt_enabled'] = extension_loaded('mcrypt');
-					$this->serverSettings['show_domain_selectbox'] = false;
-					$this->serverSettings['domain_from_host'] = false;
+					$domainsHtml = $this->twig->renderBlock('manageheader.html.twig', 'domain', $domainVars);
 				}
 
 				// now guessing better settings then the default ones
@@ -735,36 +739,6 @@ HTML;
 					$updir    =	dirname(__DIR__, 2);
 					$this->serverSettings['server_root'] = $updir;
 					$this->serverSettings['include_root'] = $updir;
-				}
-
-				$detected .= "</ul>\n";
-				$this->setup_tpl->set_var('detected', $detected);
-				/* End of detected settings, now display the form with the detected or prior values */
-
-				$this->setup_tpl->set_var('server_root', $this->serverSettings['server_root']);
-				$this->setup_tpl->set_var('include_root', $this->serverSettings['include_root']);
-				$this->setup_tpl->set_var('header_admin_password', !empty($this->serverSettings['header_admin_password']) ? $this->crypto->decrypt($this->serverSettings['header_admin_password']) : '');
-				//			$this->setup_tpl->set_var('header_admin_password', isset($this->serverSettings['header_admin_password']) ? $this->serverSettings['header_admin_password'] : '');
-				$this->setup_tpl->set_var('system_name', isset($this->serverSettings['system_name']) ? $this->serverSettings['system_name'] : 'Portico Estate');
-				$this->setup_tpl->set_var('default_lang', $default_lang);
-				if (isset($GLOBALS['phpgw_info']['login_left_message']))
-				{
-					$this->setup_tpl->set_var('login_left_message', str_replace(array('<br>', '</br>', '<br />', '<', '>', '"'), array("\n", "\n", "", '[', ']', '&quot;'), $GLOBALS['phpgw_info']['login_left_message']));
-				}
-				if (isset($GLOBALS['phpgw_info']['login_right_message']))
-				{
-					$this->setup_tpl->set_var('login_right_message', str_replace(array('<br>', '</br>', '<br />', '<', '>', '"'), array("\n", "\n", "", '[', ']', '&quot;'), $GLOBALS['phpgw_info']['login_right_message']));
-				}
-				$this->setup_tpl->set_var('new_user_url', isset($this->serverSettings['new_user_url']) ? $this->serverSettings['new_user_url'] : '');
-				$this->setup_tpl->set_var('lost_password_url', isset($this->serverSettings['lost_password_url']) ? $this->serverSettings['lost_password_url'] : '');
-
-				if (isset($this->serverSettings['db_persistent']) && $this->serverSettings['db_persistent'])
-				{
-					$this->setup_tpl->set_var('db_persistent_yes', ' selected');
-				}
-				else
-				{
-					$this->setup_tpl->set_var('db_persistent_no', ' selected');
 				}
 
 				$selected = '';
@@ -781,15 +755,12 @@ HTML;
 					}
 					$session_options .= <<<HTML
 					<option{$selected} value="{$stype}">{$stype}</option>
-
 HTML;
 				}
-				$this->setup_tpl->set_var('session_options', $session_options);
 
 				unset($stype);
 				$selected = '';
-				$crypto_options = '';
-				$crypto_options .= <<<HTML
+				$crypto_options = <<<HTML
 				<option value="">None</option>
 
 HTML;
@@ -811,71 +782,59 @@ HTML;
 
 					$crypto_options .= <<<HTML
 					<option{$selected} value="{$stype}">{$stype}</option>
-
 HTML;
-				}
-				$this->setup_tpl->set_var('crypto_options', $crypto_options);
+				}				
 
-				if (isset($this->serverSettings['mcrypt_enabled']) && $this->serverSettings['mcrypt_enabled'])
-				{
-					$this->setup_tpl->set_var('mcrypt_enabled_yes', ' selected');
-				}
-				else
-				{
-					$this->setup_tpl->set_var('mcrypt_enabled_no', ' selected');
-				}
+				$detected .= "</ul>\n";
 
-				$this->setup_tpl->set_var('mcrypt_iv', $this->serverSettings['mcrypt_iv']);
+				// Build templateVars array for Twig template rendering
+				$templateVars = [
+					'detected' => $detected,
+					'server_root' => $this->serverSettings['server_root'],
+					'include_root' => $this->serverSettings['include_root'],
+					'header_admin_password' => !empty($this->serverSettings['header_admin_password']) ? $this->crypto->decrypt($this->serverSettings['header_admin_password']) : '',
+					'system_name' => isset($this->serverSettings['system_name']) ? $this->serverSettings['system_name'] : 'Portico Estate',
+					'default_lang' => $default_lang,
+					'login_left_message' => isset($this->serverSettings['login_left_message']) ?
+						str_replace(array('<br>', '</br>', '<br />', '<', '>', '"'), array("\n", "\n", "", '[', ']', '&quot;'), $this->serverSettings['login_left_message']) : '',
+					'login_right_message' => isset($this->serverSettings['login_right_message']) ?
+						str_replace(array('<br>', '</br>', '<br />', '<', '>', '"'), array("\n", "\n", "", '[', ']', '&quot;'), $this->serverSettings['login_right_message']) : '',
+					'new_user_url' => isset($this->serverSettings['new_user_url']) ? $this->serverSettings['new_user_url'] : '',
+					'lost_password_url' => isset($this->serverSettings['lost_password_url']) ? $this->serverSettings['lost_password_url'] : '',
+					'db_persistent_yes' => isset($this->serverSettings['db_persistent']) && $this->serverSettings['db_persistent'] ? ' selected' : '',
+					'db_persistent_no' => isset($this->serverSettings['db_persistent']) && $this->serverSettings['db_persistent'] ? '' : ' selected',
+					'session_options' => $session_options,
+					'crypto_options' => $crypto_options,
+					'mcrypt_enabled_yes' => isset($this->serverSettings['mcrypt_enabled']) && $this->serverSettings['mcrypt_enabled'] ? ' selected' : '',
+					'mcrypt_enabled_no' => isset($this->serverSettings['mcrypt_enabled']) && $this->serverSettings['mcrypt_enabled'] ? '' : ' selected',
+					'mcrypt_iv' => $this->serverSettings['mcrypt_iv'],
+					'setup_mcrypt_key' => $this->serverSettings['setup_mcrypt_key'],
+					'setup_acl' => !isset($this->serverSettings['setup_acl']) || !$this->serverSettings['setup_acl'] ? '127.0.0.1' : $this->serverSettings['setup_acl'],
+					'domain_selectbox_yes' => isset($this->serverSettings['show_domain_selectbox']) && $this->serverSettings['show_domain_selectbox'] ? ' selected' : '',
+					'domain_selectbox_no' => isset($this->serverSettings['show_domain_selectbox']) && $this->serverSettings['show_domain_selectbox'] ? '' : ' selected',
+					'domain_from_host_yes' => isset($this->serverSettings['domain_from_host']) && $this->serverSettings['domain_from_host'] ? ' selected' : '',
+					'domain_from_host_no' => isset($this->serverSettings['domain_from_host']) && $this->serverSettings['domain_from_host'] ? '' : ' selected',
+					'errors' => $errors,
+					'comment_l' => $comment_l,
+					'comment_r' => $comment_r,
+					'formend' => ''
+				];
 
-				$this->setup_tpl->set_var('setup_mcrypt_key', $this->serverSettings['setup_mcrypt_key']);
 
-				if (!isset($this->serverSettings['setup_acl']) || !$this->serverSettings['setup_acl'])
-				{
-					$this->serverSettings['setup_acl'] = '127.0.0.1';
-				}
-				$this->setup_tpl->set_var('lang_setup_acl', $this->setup->lang('Limit access to setup to the following addresses or networks (e.g. 10.1.1,127.0.0.1)'));
-				$this->setup_tpl->set_var('setup_acl', $this->serverSettings['setup_acl']);
 
-				if (isset($this->serverSettings['show_domain_selectbox']) && $this->serverSettings['show_domain_selectbox'])
-				{
-					$this->setup_tpl->set_var('domain_selectbox_yes', ' selected');
-				}
-				else
-				{
-					$this->setup_tpl->set_var('domain_selectbox_no', ' selected');
-				}
-
-				if (isset($this->serverSettings['domain_from_host']) && $this->serverSettings['domain_from_host'])
-				{
-					$this->setup_tpl->set_var('domain_from_host_yes', ' selected');
-				}
-				else
-				{
-					$this->setup_tpl->set_var('domain_from_host_no', ' selected');
-				}
-
-				$errors = '';
-				if (!isset($found_dbtype) || !$found_dbtype)
-				{
-					/*
-				$errors .= '<br><font color="red">' . $this->setup->lang('Warning!') . '<br>'
-					. $this->setup->lang('The db_type in defaults (%1) is not supported on this server. using first supported type.',$this->serverSettings['db_type'])
-					. '</font>';
-				*/
-				}
-
+				$templateVars['domains'] = $domainsHtml;
 				if (
 					is_writeable('../header.inc.php') ||
 					(!file_exists('../header.inc.php') && is_writeable('../'))
 				)
 				{
-					$errors .= '<br><input type="submit" name="action[write]" value="' . $this->setup->lang('Write config') . '">&nbsp;'
+					$errors = '<br><input type="submit" name="action[write]" value="' . $this->setup->lang('Write config') . '">&nbsp;'
 						. $this->setup->lang('or') . '&nbsp;<input type="submit" name="action[download]" value="' . $this->setup->lang('Download') . '">&nbsp;'
 						. $this->setup->lang('or') . '&nbsp;<input type=submit name="action[view]" value="' . $this->setup->lang('View') . '"> ' . $this->setup->lang('the file') . '.</form>';
 				}
 				else
 				{
-					$errors .= '<br>'
+					$errors = '<br>'
 						. $this->setup->lang(
 							'Cannot create the header.inc.php due to file permission restrictions.<br> Instead you can %1 the file.',
 							'<input type="submit" name="action[download]" value="' . $this->setup->lang('Download') . '">' . $this->setup->lang('or') . '&nbsp;<input type="submit" name="action[view]" value="' . $this->setup->lang('View') . '">'
@@ -883,54 +842,44 @@ HTML;
 						. '</form>';
 				}
 
-				$this->setup_tpl->set_var('errors', $errors);
+				$templateVars['errors'] = $errors;
 
-				$this->setup_tpl->set_var('lang_settings', $this->setup->lang('Settings'));
-				$this->setup_tpl->set_var('lang_adddomain', $this->setup->lang('Add a domain'));
-				$this->setup_tpl->set_var('lang_serverroot', $this->setup->lang('Server Root'));
-				$this->setup_tpl->set_var('lang_includeroot', $this->setup->lang('Include Root (this should be the same as Server Root unless you know what you are doing)'));
-				$this->setup_tpl->set_var('lang_adminpass', $this->setup->lang('Admin password to header manager'));
-				$this->setup_tpl->set_var('lang_system_name', $this->setup->lang('System name'));
-				$this->setup_tpl->set_var('lang_login_left_message', $this->setup->lang('login left message'));
-				$this->setup_tpl->set_var('lang_login_right_message', $this->setup->lang('login right message'));
-				$this->setup_tpl->set_var('lang_new_user', $this->setup->lang('url new user'));
-				$this->setup_tpl->set_var('lang_forgotten_password', $this->setup->lang('url forgotten password'));
-				$this->setup_tpl->set_var('lang_dbhost', $this->setup->lang('DB Host'));
-				$this->setup_tpl->set_var('lang_dbhostdescr', $this->setup->lang('Hostname/IP of database server'));
-				$this->setup_tpl->set_var('lang_dbport', $this->setup->lang('DB port'));
-				$this->setup_tpl->set_var('lang_dbportdescr', $this->setup->lang('If empty, default will be used'));
-				$this->setup_tpl->set_var('lang_dbname', $this->setup->lang('DB Name'));
-				$this->setup_tpl->set_var('lang_dbnamedescr', $this->setup->lang('Name of database'));
-				$this->setup_tpl->set_var('lang_dbuser', $this->setup->lang('DB User'));
-				$this->setup_tpl->set_var('lang_dbuserdescr', $this->setup->lang('Name of db user phpGroupWare uses to connect'));
-				$this->setup_tpl->set_var('lang_dbpass', $this->setup->lang('DB Password'));
-				$this->setup_tpl->set_var('lang_dbpassdescr', $this->setup->lang('Password of db user'));
-				$this->setup_tpl->set_var('lang_dbtype', $this->setup->lang('DB Type'));
-				$this->setup_tpl->set_var('lang_whichdb', $this->setup->lang('Which database type do you want to use with phpGroupWare?'));
-				$this->setup_tpl->set_var('lang_configpass', $this->setup->lang('Configuration Password'));
-				$this->setup_tpl->set_var('lang_passforconfig', $this->setup->lang('Password needed for configuration'));
-				$this->setup_tpl->set_var('lang_persist', $this->setup->lang('Persistent connections'));
-				$this->setup_tpl->set_var('lang_persistdescr', $this->setup->lang('Do you want persistent connections (higher performance, but consumes more resources)'));
-				$this->setup_tpl->set_var('lang_sesstype', $this->setup->lang('Sessions Type'));
-				$this->setup_tpl->set_var('lang_sesstypedescr', $this->setup->lang('What type of sessions management do you want to use (PHP session management usually performs better)?'));
-				$this->setup_tpl->set_var('lang_enable_crypto', $this->setup->lang('Enable Crypto'));
-				$this->setup_tpl->set_var('lang_enablemcrypt', $this->setup->lang('Enable MCrypt'));
-				$this->setup_tpl->set_var('lang_mcryptversion', $this->setup->lang('MCrypt version'));
-				$this->setup_tpl->set_var('lang_mcryptversiondescr', $this->setup->lang('Set this to "old" for versions &lt; 2.4, otherwise the exact mcrypt version you use.'));
-				$this->setup_tpl->set_var('lang_mcryptiv', $this->setup->lang('MCrypt initialization vector'));
-				$this->setup_tpl->set_var('lang_mcryptivdescr', $this->setup->lang('This should be around 32 bytes in length.<br>Note: The default has been randomly generated.'));
+				// Add language variables for Twig template
+				$langVars = [
+					'settings' => $this->setup->lang('Settings'),
+					'adddomain' => $this->setup->lang('Add a domain'),
+					'serverroot' => $this->setup->lang('Server Root'),
+					'includeroot' => $this->setup->lang('Include Root (this should be the same as Server Root unless you know what you are doing)'),
+					'adminpass' => $this->setup->lang('Admin password to header manager'),
+					'system_name' => $this->setup->lang('System name'),
+					'login_left_message' => $this->setup->lang('login left message'),
+					'login_right_message' => $this->setup->lang('login right message'),
+					'new_user' => $this->setup->lang('url new user'),
+					'forgotten_password' => $this->setup->lang('url forgotten password'),
+					'persist' => $this->setup->lang('Persistent connections'),
+					'persistdescr' => $this->setup->lang('Do you want persistent connections (higher performance, but consumes more resources)'),
+					'sesstype' => $this->setup->lang('Sessions Type'),
+					'sesstypedescr' => $this->setup->lang('What type of sessions management do you want to use (PHP session management usually performs better)?'),
+					'enable_crypto' => $this->setup->lang('Enable Crypto'),
+					'mcryptiv' => $this->setup->lang('MCrypt initialization vector'),
+					'mcryptivdescr' => $this->setup->lang('This should be around 32 bytes in length.<br>Note: The default has been randomly generated.'),
+					'setup_mcrypt_key' => $this->setup->lang('Enter some random text as encryption key for the setup encryption'),
+					'setup_mcrypt_key_descr' => $this->setup->lang('This should be around 32 bytes in length.<br>Note: The default has been randomly generated.'),
+					'domselect' => $this->setup->lang('Domain select box on login'),
+					'domain_from_host' => $this->setup->lang('Automatically detect domain from hostname'),
+					'note_domain_from_host' => $this->setup->lang('Note: This option will only work if show domain select box is off.'),
+					'finaldescr' => $this->setup->lang('After retrieving the file, put it into place as the header.inc.php.  Then, click "continue".'),
+					'continue' => $this->setup->lang('Continue'),
+					'True' => $this->setup->lang('True'),
+					'False' => $this->setup->lang('False')
+				];
 
-				$this->setup_tpl->set_var('lang_setup_mcrypt_key', $this->setup->lang('Enter some random text as encryption key for the setup encryption'));
-				$this->setup_tpl->set_var('lang_setup_mcrypt_key_descr', $this->setup->lang('This should be around 32 bytes in length.<br>Note: The default has been randomly generated.'));
+				// Merge language variables with template variables
+				$templateVars = array_merge($templateVars, ['lang' => $langVars]);
 
-				$this->setup_tpl->set_var('lang_domselect', $this->setup->lang('Domain select box on login'));
-				$this->setup_tpl->set_var('lang_domain_from_host', $this->setup->lang('Automatically detect domain from hostname'));
-				$this->setup_tpl->set_var('lang_note_domain_from_host', $this->setup->lang('Note: This option will only work if show domain select box is off.'));
-				$this->setup_tpl->set_var('lang_finaldescr', $this->setup->lang('After retrieving the file, put it into place as the header.inc.php.  Then, click "continue".'));
-				$this->setup_tpl->set_var('lang_continue', $this->setup->lang('Continue'));
-
-				$manageheader = $this->setup_tpl->fp('out', 'manageheader');
-				return $ret_header .  $manageheader;
+				// Render manageheader block using Twig
+				$manageheaderHtml = $this->twig->renderBlock('manageheader.html.twig', 'manageheader', $templateVars);
+				return $ret_header . $manageheaderHtml;
 				// ending the switch default
 		}
 	}

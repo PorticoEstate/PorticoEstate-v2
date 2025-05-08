@@ -1,6 +1,5 @@
 {# Login_denylogin template #}
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!doctype html>
 <html>
 {% block login_form %}
 <head>
@@ -20,7 +19,7 @@
 	<!-- DO NOT LANG ENABLE THIS TPL - LANG() CAN NOT BE RELIED UPON FOR UPGRADES -->
 	<div id="horizon">
 		
-		<div id="loginmsg">{{ lang('message') }}</div>
+		<div id="loginmsg">{{ message }}</div>
 		
 		<div id="loginbox">
 			<div id="logintitle">Upgrading ...</div>

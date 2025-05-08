@@ -376,8 +376,7 @@ class Config
 		
 		// Add additional variables
 		$configVars['more_configs'] = $this->setup->lang('Please login to phpgroupware and run the admin application for additional site configuration') . '.';
-//		$configVars['lang_submit'] = $this->setup->lang('Save');
-//		$configVars['lang_cancel'] = $this->setup->lang('Cancel');
+
 		
 		// Merge with main template vars
 		$templateVars = array_merge($templateVars, $configVars);

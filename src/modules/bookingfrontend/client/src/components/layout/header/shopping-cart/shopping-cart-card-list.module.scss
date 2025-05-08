@@ -1,0 +1,140 @@
+@import '../../../../styles/colors';
+@import '../../../../styles/util.module';
+
+.cartListContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
+.cartCard {
+  background-color: var(--ds-color-neutral-surface-subtle);
+  border-radius: var(--ds-radius-medium);
+  padding: 1rem;
+  box-shadow: var(--ds-shadow-small);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--ds-shadow-medium);
+  }
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.cardTitle {
+  margin: 0;
+  word-break: break-word;
+  flex: 1;
+  font-size: var(--ds-font-size-sm);
+  font-weight: var(--ds-font-weight-semibold);
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+
+  @media (min-width: 480px) {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: var(--ds-font-size-sm);
+  color: var(--ds-text-default);
+}
+
+.infoIcon {
+  color: var(--ds-color-neutral-dark);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.multipleDates {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.375rem;
+  border-radius: 1rem;
+  background-color: var(--ds-color-neutral-surface-subtle);
+  color: var(--ds-color-neutral-dark);
+  font-size: var(--ds-font-size-xs);
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.resourcesContainer {
+  margin-top: 0.75rem;
+}
+
+.datesAccordion {
+  margin-top: 1rem;
+  border-top: 1px solid var(--ds-color-neutral-surface-subtle);
+  padding-top: 0.5rem;
+}
+
+.datesHeader {
+  font-weight: var(--ds-font-weight-medium);
+  margin-bottom: 0.5rem;
+  font-size: var(--ds-font-size-md);
+}
+
+.datesList {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dateItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem;
+  border-radius: var(--ds-radius-small);
+  background-color: var(--ds-color-neutral-surface-light);
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+}
+
+.dateDay {
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.dateTime {
+  color: var(--ds-text-default);
+}

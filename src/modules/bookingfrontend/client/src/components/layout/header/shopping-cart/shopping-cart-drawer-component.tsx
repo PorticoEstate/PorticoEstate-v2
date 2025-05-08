@@ -53,33 +53,36 @@ const ShoppingCartDrawerComponent: React.FC = () => {
     }, [isOpen]);
 
     // Don't render anything if not open or not mounted
-    if (!isOpen || !mounted) {
+    if ( !mounted) {
         return null;
     }
-    
+
     // Get portal container or fallback to body
     const drawerContent = (
-        <div id="shopping-cart-drawer-root">
-            <div className={styles.drawerOverlay} onClick={() => setIsOpen(false)} />
-            <div 
-                ref={drawerRef}
-                className={styles.drawer}
-            >
-                <ShoppingCartContent setOpen={setIsOpen} setCurrentApplication={setCurrentApplication}/>
-            </div>
-            {currentApplication && (
-                <ApplicationCrud 
-                    onClose={() => setCurrentApplication(undefined)} 
-                    applicationId={currentApplication.application_id} 
-                    date_id={currentApplication.date_id}
-                    building_id={currentApplication.building_id} 
-                />
-            )}
-        </div>
-    );
-    
-    // Create portal to document.body
-    return createPortal(drawerContent, document.body);
+		<>
+			{isOpen && <div id="shopping-cart-drawer-root">
+				<div className={styles.drawerOverlay} onClick={() => setIsOpen(false)}/>
+				<div
+					ref={drawerRef}
+					className={styles.drawer}
+				>
+					<ShoppingCartContent setOpen={setIsOpen} setCurrentApplication={setCurrentApplication}/>
+				</div>
+
+			</div>}
+			{currentApplication && (
+				<ApplicationCrud
+					onClose={() => setCurrentApplication(undefined)}
+					applicationId={currentApplication.application_id}
+					date_id={currentApplication.date_id}
+					building_id={currentApplication.building_id}
+				/>
+			)}
+		</>
+	);
+
+	// Create portal to document.body
+	return createPortal(drawerContent, document.body);
 };
 
 export default ShoppingCartDrawerComponent;

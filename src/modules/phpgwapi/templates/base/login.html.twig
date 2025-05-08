@@ -88,6 +88,7 @@
 		{{ lightbox_css }}
 
 		<!-- BEGIN header_block -->
+		{% block header_block %}
 		<div class="header">
 			<div class="home-menu pure-menu pure-menu-horizontal pure-menu-fixed">
 				<a class="pure-menu-heading" href="">{{ system }} - {{ lang('login') }}</a>
@@ -98,12 +99,17 @@
 				</ul>
 			</div>
 		</div>
+		{% endblock header_block %}
+
 		<!-- END header_block -->
 		<div class="content-wrapper">
 			<div class="content">
 
 				<!-- BEGIN instruction_block -->
+				{% block instruction_block %}
 				<h2 class="content-head is-center">{{ instruction }}</h2>
+
+				{% endblock instruction_block %}
 				<!-- END instruction_block -->
 
 				<div class="pure-g">
@@ -111,6 +117,7 @@
 					<div class="l-box l-box-lrg pure-u-1 {{ grid_css }}">
 
 						<!-- BEGIN message_block -->
+						{% block message_block %}
 						<dl id="system-message">
 							<dt class="{{ message_class }}">{{ lang('message') }}</dt>
 							<dd class="{{ message_class_item }}">
@@ -119,24 +126,31 @@
 								</ul>
 							</dd>
 						</dl>
+						{% endblock message_block %}
+
 						<!-- END message_block -->
 
 						<form name="login" method="post" action="{{ login_url }}" {{ autocomplete }} id="form-login" class="pure-form pure-form-stacked">
 							<fieldset>
 								<input type="hidden" name="passwd_type" value="text">
 								<!-- BEGIN loging_block -->
+								{% block loging_block %}
 								<div class="pure-control-group">
 									<label for="login">{{ lang('username') }}</label>
 									<input type="text" value="{{ last_loginid }}" name="login" id="login" {{ login_read_only }} required="required"/>
 									<input type="hidden" name="skip_remote" value="{{ skip_remote }}">
 									<input type="hidden" name="lightbox" value="{{ lightbox }}">
 								</div>
+								{% endblock loging_block %}
 								<!-- END loging_block -->
 								<!-- BEGIN domain_from_host -->
+								{% block domain_from_host %}
 								@{{ logindomain }}<input type="hidden" id="logindomain" name="logindomain" value="{{ logindomain }}"/>
+								{% endblock domain_from_host %}
 								<!-- END domain_from_host -->
 								<br>
 								<!-- BEGIN login_additional_info -->
+								{% block login_additional_info %}
 								<div class="pure-control-group">
 									<label for="firstname">{{ lang('firstname') }}</label>
 									<input type="text" value="{{ firstname }}" maxlength="100" name="firstname" id="firstname" required="required"/>
@@ -153,31 +167,41 @@
 									<label for="cellphone">{{ lang('cellphone') }}</label>
 									<input type="tel" value="{{ cellphone }}" name="cellphone" id="cellphone" required="required"/>
 								</div>
+								{% endblock login_additional_info %}
 								<!-- END login_additional_info -->
 								<!-- BEGIN password_block -->
+								{% block password_block %}
 								<div class="pure-control-group">
 									<label for="passwd">{{ lang('password') }}</label>
 									<input type="password" name="passwd" id="passwd" required="required"/>
 									<p id="warning_text" style="display:none;color:red;"> {{ lang('Caps Lock is on') }} </p>									
 								</div>
+								{% endblock password_block %}
 								<!-- END password_block -->
 								<!-- BEGIN login_check_passwd -->
+								{% block login_check_passwd %}
 								<div class="pure-control-group">
 									<label for="passwd_confirm">{{ lang('confirm_password') }}</label>
 									<input type="password" name="passwd_confirm" id="passwd_confirm" required="required"/>
 								</div>
+								{% endblock login_check_passwd %}
 								<!-- END login_check_passwd -->
 								<!-- BEGIN domain_select -->
+								{% block domain_select %}
 								<div class="pure-control-group">
 									<label for="logindomain">{{ lang('domain') }}</label>
+									{{domain_options}}
 									<select name="logindomain" id="logindomain" class="pure-u-1">
-										<!-- BEGIN domain_option -->
-										<option value="{{ domain_name }}" {{ domain_selected|raw }}>{{ domain_display_name }}</option>
-										<!-- END domain_option -->
+										<!--foreach domain in domain_options-->
+										{% for domain in domain_options %}
+										<option value="{{ domain.name }}" {{ domain.selected|raw }}>{{ domain.display_name| raw }}</option>
+										{% endfor %}
 									</select>
 								</div>
+								{% endblock domain_select %}
 								<!-- END domain_select -->
 								<!-- BEGIN button_block -->
+								{% block button_block %}
 
 								<div class="pure-controls">
 									<button type="button" class="pure-button pure-button-primary" name="submitit_" onclick="do_login();">
@@ -187,6 +211,7 @@
 								</div>
 								<input type="hidden" name="submitit" value="1">
 								<p class="link_group"><a href="{{ return_sso_login_url }}">{{ lang('return_sso_login') }}</a></p>
+								{% endblock button_block %}
 								<!-- END button_block -->
 							</fieldset>
 						</form>
@@ -194,6 +219,7 @@
 					</div>
 
 					<!-- BEGIN forgotten_password_block -->
+					{% block forgotten_password_block %}
 					<div class="l-box-lrg pure-u-1 pure-u-md-1-2">
 						<p>
 							<a href="{{ action_new_user }}">{{ lang('new_user') }}</a>
@@ -203,10 +229,12 @@
 							<a href="{{ action_lost_password }}">{{ lang('forgotten_password') }}</a>.
 						</p>
 					</div>
+					{% endblock forgotten_password_block %}
 					<!-- END forgotten_password_block -->
 
 				</div>
 				<!-- BEGIN info_block -->
+				{% block info_block %}
 
 				<div class="pure-g">
 
@@ -221,10 +249,12 @@
 						</div>
 					</div>
 				</div>
+				{% endblock info_block %}
 				<!-- END info_block -->
 
 			</div>
 			<!-- BEGIN footer_block -->
+			{% block footer_block %}
 			<div class="footer is-center">
 				<noscript>Warning! JavaScript must be enabled for proper operation of the Administrator back-end.</noscript>
 				<div class="copyright pure-g">
@@ -235,10 +265,11 @@
 					</div>
 				</div>
 			</div>
+			{% endblock footer_block %}
 			<!-- END footer_block -->
 		</div>
 	</body>
-	{% endblock %}
+	{% endblock login_form %}
 
 	<script>
 		var passwd_input = document.getElementById("passwd");

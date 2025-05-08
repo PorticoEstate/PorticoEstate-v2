@@ -277,13 +277,14 @@ class Config
 		];
 
 		// Render the pre-script part using Twig
+		$templateVars['title'] = $this->setup->lang('Configuration');
 		$config_pre_script = $this->twig->renderBlock('config_pre_script.html.twig', 'config_pre_script', $templateVars);
 		
 		// Process configuration variables
 		$vars = [];
 		
 
-		$templateContent = file_get_contents(dirname(__DIR__, 1) . "/phpgwapi/templates/base/config.html.twig");
+		$templateContent = file_get_contents(dirname(__DIR__, 2) . "/setup/templates/base/config.html.twig");
 		preg_match_all('/{{\s*([a-zA-Z0-9_]+)(?:\s*\|[^}]*)?\s*}}/', $templateContent, $matches);
 		$vars = $matches[1];
 
@@ -296,12 +297,18 @@ class Config
 		{
 			foreach ($vars as $value)
 			{
-				$valarray = explode('_', $value);
-				$var_type = $valarray[0];
-				unset($valarray[0]);
-				$newval = implode(' ', $valarray);
-				
-				switch ($var_type)
+				$valarray	 = explode('_', $value);
+				$type		 = $valarray[0];
+				$new		 = array();
+				$newval		 = '';
+
+				while ($chunk = next($valarray))
+				{
+					$new[] = $chunk;
+				}
+				$newval = implode(' ', $new);
+
+				switch ($type)
 				{
 					case 'lang':
 						$configVars[$value] = $this->setup->lang($newval);
@@ -315,6 +322,19 @@ class Config
 						else
 						{
 							$configVars[$value] = isset($current_config[$newval]) ? $current_config[$newval] : '';
+						}
+						break;
+					case 'checked':
+						/* '+' is used as a delimiter for the check value */
+						list($newvalue, $check) = preg_split('/\+/', $newval);
+						$newval = preg_replace('/ /', '_', $newvalue);
+						if ($current_config[$newval] == $check)
+						{
+							$configVars[$value] = ' checked';
+						}
+						else
+						{
+							$configVars[$value] = '';
 						}
 						break;
 					case 'selected':
@@ -338,7 +358,14 @@ class Config
 						break;
 					case 'hook':
 						$newval = str_replace(' ', '_', $newval);
-						$configVars[$value] = $newval($current_config);
+						if (function_exists($newval))
+						{
+							$configVars[$value] = $newval($current_config);
+						}
+						else
+						{
+							$configVars[$value] = '';
+						}
 						break;
 					default:
 						$configVars[$value] = '';
@@ -349,17 +376,17 @@ class Config
 		
 		// Add additional variables
 		$configVars['more_configs'] = $this->setup->lang('Please login to phpgroupware and run the admin application for additional site configuration') . '.';
-		$configVars['lang_submit'] = $this->setup->lang('Save');
-		$configVars['lang_cancel'] = $this->setup->lang('Cancel');
+//		$configVars['lang_submit'] = $this->setup->lang('Save');
+//		$configVars['lang_cancel'] = $this->setup->lang('Cancel');
 		
 		// Merge with main template vars
 		$templateVars = array_merge($templateVars, $configVars);
 		
 		// Render the main template using Twig
 		$body = $this->twig->render('config.html.twig', $templateVars);
-		
+
 		// Render the post-script part using Twig
-		$post_script = $this->twig->renderBlock('config_post_script.html.twig', 'config_post_script', $templateVars);
+		$post_script = $this->twig->render('config_post_script.html.twig', $templateVars);
 
 		$footer = $this->html->get_footer();
 

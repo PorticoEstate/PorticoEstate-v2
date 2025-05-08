@@ -93,7 +93,7 @@ foreach ($files as $file) {
     $content = preg_replace_callback('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', function($matches) {
         $var = $matches[1];
         // List of variables that might contain HTML that shouldn't be escaped
-        $rawVars = ['options', 'select', 'rows', 'input', 'form_action', 'value'];
+        $rawVars = ['options', 'select', 'rows', 'input', 'form_action', 'value', 'hook'];
         
         foreach ($rawVars as $rawVar) {
             if (strpos($var, $rawVar) !== false) {

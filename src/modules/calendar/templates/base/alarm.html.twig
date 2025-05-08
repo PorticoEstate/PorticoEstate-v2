@@ -1,0 +1,49 @@
+{# Alarm template #}
+<!-- $Id$ -->
+{% block alarm_management %}
+<form action="{{ action_url | raw }}" method="post" name="alarmform">
+{{ hidden_vars }}
+<center>
+  <table border="0" width="90%">
+   {{ rows|raw }}
+  </table>
+</center>
+<p>
+<center>
+<b>{{ input_text|raw }}</b><p>
+{{ input_days|raw }}&nbsp;{{ input_hours|raw }}&nbsp;{{ input_minutes|raw }}&nbsp;{{ input_owner|raw }}
+<p>
+{{ input_add|raw }}
+</center>
+</form>
+{% endblock %}
+{% block alarm_headers %}
+  <tr class="th">
+   <td align="left" width="25%">{{ lang('time') }}</td>
+   <td align="left" width="30%">{{ lang('text') }}</td>
+   <td align="left" width="25%">{{ lang('owner') }}</td>
+   <td width="10%">{{ lang('enabled') }}</td>
+   <td width="10%">{{ lang('select') }}</td>
+  </tr>
+{% endblock %}
+{% block list %}
+  <tr class="{{ class }}">
+   <td>{{ field }}:</td>
+   <td>{{ data }}</td>
+   <td>{{ owner }}</td>
+   <td align="center">{{ enabled }}</td>
+   <td align="center">{{ select|raw }}</td>
+  </tr>
+{% endblock %}
+{% block hr %}
+ <tr bgcolor="{{ th_bg }}">
+  <td colspan="5" align="center"><b>{{ hr_text }}</b></td>
+ </tr>
+{% endblock %}
+{% block buttons %}
+ <tr>
+  <td colspan="6" align="right">
+   {{ enable_button }}&nbsp;{{ disable_button }}&nbsp;{{ delete_button }}
+  </td>
+ </tr>
+{% endblock %}

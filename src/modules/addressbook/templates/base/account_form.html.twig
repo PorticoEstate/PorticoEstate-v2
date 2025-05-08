@@ -1,0 +1,101 @@
+{# Account_form template #}
+{% block form %}
+{{ error_messages }}
+
+ <form method="POST" action="{{ form_action|raw }}">
+ 	<div align="center">
+	<table border="0" width="95%">
+		<tr>
+			<td valign="top">
+				{{ rows|raw }}
+			</td>
+			<td valign="top">
+
+			   <table border=0 width=100%>
+			    <tr bgcolor="{{ th_bg }}">
+			      <td colspan="4"><b>{{ lang('action') }}</b></td>
+			    </tr>
+				
+			    <tr bgcolor="{{ tr_color1 }}">
+			     <td width="25%">{{ lang('loginid') }}</td>
+			     <td width="25%">{{ account_lid }}&nbsp;</td>
+				
+			     <td width="25%">{{ lang('account_active') }}:</td>
+			     <td width="25%">{{ account_status }}</td>
+			    </tr>
+				
+			    <tr bgcolor="{{ tr_color2 }}">
+			     <td>{{ lang('firstname') }}</td>
+			     <td>{{ account_firstname }}&nbsp;</td>
+			     <td>{{ lang('lastname') }}</td>
+			     <td>{{ account_lastname }}&nbsp;</td>
+			    </tr>
+
+				<tr bgcolor="{{ tr_color1 }}">
+				 <td>{{ lang('domain') }}</td>
+				 <td>{{ domain }}</td>
+				 <td>{{ lang('add_addbook') }}</td>
+				 <td>{{ add_addbook }}{{ person_id }}</td>
+				</tr>
+
+			    {{ password_fields }}
+			 
+			    <tr bgcolor="{{ tr_color2 }}">
+			     <td>{{ lang('changepassword') }}</td>
+			     <td>{{ changepassword }}</td>
+			     <td>{{ lang('anonymous') }}</td>
+			     <td>{{ anonymous }}</td>
+			    </tr>
+
+			    <tr bgcolor="{{ tr_color1 }}">
+			     <td>{{ lang('expires') }}</td>
+			     <td colspan="3">{{ input_expires|raw }}&nbsp;&nbsp;{{ lang('never') }}&nbsp;{{ never_expires }}</td>
+			    </tr>
+	
+			    <tr bgcolor="{{ tr_color2 }}">
+			     <td>{{ lang('groups') }}</td>
+			     <td colspan="3">{{ groups_select|raw }}&nbsp;</td>
+			    </tr>
+
+			    {{ permissions_list }}
+			
+				 {{ form_buttons }}
+			
+			   </table>
+   			</td>
+   		</tr>
+   	</table>
+ 	</div>
+ </form>
+{% endblock %}
+
+{% block form_passwordinfo %}
+    <tr bgcolor="{{ tr_color1 }}">
+     <td>{{ lang('password') }}</td>
+     <td><input type="password" name="account_passwd" value="{{ account_passwd }}"></td>
+     <td>{{ lang('reenter_password') }}</td>
+     <td><input type="password" name="account_passwd_2" value="{{ account_passwd_2 }}"></td>
+    </tr>
+{% endblock %}
+
+{% block form_buttons_ %}
+    <tr bgcolor="{{ tr_color2 }}">
+     <td colspan="4" align="right"><input type="submit" name="submit" value="{{ lang('button') }}"></td>
+    </tr>
+{% endblock %}
+
+{% block form_logininfo %}
+    <tr bgcolor="{{ tr_color1 }}">
+     <td>{{ lang('lastlogin') }}</td>
+     <td>{{ account_lastlogin }}</td>
+
+     <td>{{ lang('lastloginfrom') }}</td>
+     <td>{{ account_lastloginfrom }}</td>
+    </tr>
+{% endblock %}
+
+{% block link_row %}
+	<tr bgcolor="{{ tr_color }}">
+		<td>&nbsp;<a href="{{ row_link }}">{{ row_text }}</a></td>
+	</tr>
+{% endblock %}

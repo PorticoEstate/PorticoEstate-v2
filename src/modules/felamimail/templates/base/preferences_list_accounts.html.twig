@@ -1,0 +1,14 @@
+{# Preferences_list_accounts template #}
+{% block main %}
+<script language="JavaScript1.2">
+// some translations needed for javascript functions
+var lang_reallyDeleteAccountSettings	= '{{ lang('really_delete_accountsettings') }}';
+</script>
+<a href="{{ url_addAccount }}"><image src="{{ url_image_add }}" alt="{{ lang('add') }}" title="{{ lang('add') }}"></a>&nbsp;
+<a href="#" onclick="fm_deleteAccountData()"><image src="{{ url_image_delete }}" alt="{{ lang('delete') }}" title="{{ lang('delete') }}"></a>
+<form name="userDefinedAccountList">
+<div id="userDefinedAccountTable" style="border:1px solid silver;">
+{{ table }}
+</div>
+</form>
+{% endblock %}

@@ -1,0 +1,36 @@
+{# Addressbook-js-bits template #}
+<!-- begin addressbook-js-bits.tpl -->
+&nbsp; <!-- === block seperator == --> &nbsp;
+
+{% block B_hidden_emails_list %}
+ 	<input type="hidden" name="{{ hidden_name }}" value="{{ hidden_value|raw }}"> 
+{% endblock %}
+
+&nbsp; <!-- === block seperator == --> &nbsp;
+{% block B_toselectbox %}
+	<option value="{{ toselvalue|raw }}" {{ tosel_is_selected|raw }}>{{ toselname }}</options>
+{% endblock %}
+
+&nbsp; <!-- === block seperator == --> &nbsp;
+
+{% block B_ccselectbox %}
+	<option value="{{ ccselvalue|raw }}" {{ ccsel_is_selected|raw }}>{{ ccselname }}</options>
+{% endblock %}
+
+&nbsp; <!-- === block seperator == --> &nbsp;
+
+{% block B_bccselectbox %}
+	<option value="{{ bccselvalue|raw }}" {{ bccsel_is_selected|raw }}>{{ bccselname }}</options>
+{% endblock %}
+
+&nbsp; <!-- === block seperator == --> &nbsp;
+
+&nbsp; <!-- === block seperator == --> &nbsp;
+{% block B_addressbook_record_inner %}
+{{ field_name }}{{ space_to_fit }}{{ field_value|raw }}
+{% endblock %}
+
+
+&nbsp; <!-- === block seperator == --> &nbsp;
+
+<!-- end addressbook-js-bits.tpl -->

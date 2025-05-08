@@ -1,0 +1,108 @@
+{# Nextmatchs template #}
+{% block nextmatchs %}
+ <table width="{{ table_width }}" border="0" bgcolor="{{ th_bg }}" cellspacing="0" cellpadding="0" cols="5">
+  <tr>   {{ left }}
+   <td align="center" bgcolor="{{ th_bg }}" valign="top" width="92%">{{ cats_search_filter_data }}</td>   {{ right }}
+  </tr>
+ </table>
+
+<br>
+
+{% endblock %}
+
+
+{% block nm_filter %}
+       <td>
+{{ select|raw }}
+        <noscript>
+         <input type="submit" value="{{ lang('filter') }}">
+        </noscript>
+       </td>
+{% endblock %}
+
+
+{% block nm_form %}
+<td width="2%" align="{{ align }}" valign="top">
+	<form method="POST" action="{{ action }}" name="{{ form_name }}">
+	{{ hidden }}
+	<table border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td align="{{ align }}">
+			<input type="image" src="{{ img }}" alt="{{ label }}" name="start" value="{{ start }}">
+		</td>
+	</tr>
+	</table>
+</form>
+</td>
+{% endblock %}
+
+
+{% block nm_icon %}
+<td width="2%" align="{{ align }}">&nbsp;{{ _link }}</td>
+{% endblock %}
+
+
+{% block nm_link %}
+<td width="2%" align="{{ align }}" valign="top">
+	<table border="0" cellspacing="0" cellpadding="0">
+	<tr>
+		<td align="{{ align }}">
+			<img src="{{ img }}" width="12" height="12" alt="{{ label }}">
+		</td>
+	</tr>
+	</table>
+</td>
+{% endblock %}
+
+
+{% block nm_search %}
+        <input type="text" name="query" value="{{ query_value|raw }}">&nbsp;{{ searchby }}<input type="submit" name="Search" value="{{ lang('search') }}">
+{% endblock %}
+
+{% block nm_cats %}
+       <td>
+        {{ lang('category') }}&nbsp;&nbsp;<select name="{{ cat_field }}" onChange="this.form.submit();">
+         <option value="0">{{ lang('all') }}</option>
+         {{ categories }}
+        </select>
+        <noscript><input type="submit" name="cats" value="{{ lang('select') }}"></noscript>
+       </td>
+{% endblock %}
+
+{% block nm_search_filter %}
+    <form method="POST" action="{{ form_action|raw }}" name="filter">
+     <table border="0" bgcolor="{{ th_bg }}" cellspacing="0" cellpadding="0">
+      <input type="hidden" name="filter" value="{{ filter_value|raw }}">
+      <input type="hidden" name="qfield" value="{{ qfield_value|raw }}">
+      <input type="hidden" name="start" value="{{ start_value|raw }}">
+      <input type="hidden" name="order" value="{{ order_value|raw }}">
+      <input type="hidden" name="sort" value="{{ sort_value|raw }}">
+      <input type="hidden" name="query" value="{{ query_value|raw }}">
+      <tr>
+		<td>{{ search }}</td>
+		<td>&nbsp;</td>
+		{{ filter }}
+      </tr>
+     </table>
+    </form>
+{% endblock %}
+
+{% block nm_cats_search_filter %}
+    <form method="POST" action="{{ form_action|raw }}" name="filter">
+     <table border="0" bgcolor="{{ th_bg }}" cellspacing="0" cellpadding="0">
+      <input type="hidden" name="filter" value="{{ filter_value|raw }}">
+      <input type="hidden" name="qfield" value="{{ qfield_value|raw }}">
+      <input type="hidden" name="start" value="{{ start_value|raw }}">
+      <input type="hidden" name="order" value="{{ order_value|raw }}">
+      <input type="hidden" name="sort" value="{{ sort_value|raw }}">
+      <input type="hidden" name="query" value="{{ query_value|raw }}">
+      <tr>
+		{{ cats }}
+		<td>&nbsp;</td>
+		<td>{{ search }}</td>
+		<td>&nbsp;&nbsp;</td>
+		{{ filter }}
+      </tr>
+     </table>
+    </form>
+{% endblock %}

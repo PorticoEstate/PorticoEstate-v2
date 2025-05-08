@@ -124,17 +124,6 @@ class Twig
      */
     private function registerModulePaths()
     {
-        // Register the base template directory without a namespace
-        $basePath = PHPGW_SERVER_ROOT . '/phpgwapi/templates';
-        if (is_dir($basePath . '/base'))
-        {
-            $this->loader->addPath($basePath . '/base');
-        }
-
-        if (is_dir($basePath . '/' . $this->serverSettings['template_set']))
-        {
-            $this->loader->addPath($basePath . '/' . $this->serverSettings['template_set']);
-        }
 
         // Register module template directories with their module name as namespace
         $modulesDir = PHPGW_SERVER_ROOT;
@@ -161,10 +150,9 @@ class Twig
                 $moduleTemplateDir = $modulePath . '/templates/' . $this->serverSettings['template_set'];
                 if (is_dir($moduleTemplateDir))
                 {
-                    // Always add both the original module name and lowercase version for compatibility
-        //            $this->loader->addPath($moduleTemplateDir, $module);
+                    $this->loader->addPath($moduleTemplateDir, $module);
                     // Also add as a general path (without namespace)
-       //             $this->loader->addPath($moduleTemplateDir);
+                    $this->loader->addPath($moduleTemplateDir);
                 }
 
                 // Also check for templates in the 'base' directory
@@ -180,17 +168,19 @@ class Twig
                 }
             }
         }
-/*
-        // Debug output - list all registered namespaces and paths
-        $namespaces = $this->loader->getNamespaces();
-       _debug_array("Registered Twig namespaces: " . implode(", ", $namespaces));
-
-        foreach ($namespaces as $namespace)
+        // Register the base template directory without a namespace
+        $basePath = PHPGW_SERVER_ROOT . '/phpgwapi/templates';
+ 
+        if (is_dir($basePath . '/' . $this->serverSettings['template_set']))
         {
-            $paths = $this->loader->getPaths($namespace);
-            _debug_array("Paths for namespace '{$namespace}': " . implode(", ", $paths));
+            $this->loader->addPath($basePath . '/' . $this->serverSettings['template_set']);
         }
-*/
+
+        if (is_dir($basePath . '/base'))
+        {
+            $this->loader->addPath($basePath . '/base');
+        }
+
     }
 
     /**

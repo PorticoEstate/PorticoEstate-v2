@@ -1,0 +1,113 @@
+{# Smtprouting template #}
+{% block main %}
+<center>
+<table border="0" cellspacing="1" cellpading="0" width="95%">
+<tr>
+	<td width="10%" valign="top">
+		<table border="0" cellspacing="1" cellpading="0" width="100%">
+		{{ menu_rows|raw }}
+		<tr>
+			<td>
+				&nbsp;
+			</td>
+		</tr>
+		{{ activation_rows|raw }}
+		<tr bgcolor="{{ done_row_color }}">
+			<td>
+				<a href="{{ done_link }}">{{ lang('done') }}</a>
+			</td>
+		</tr>
+		</table>
+	</td>
+	<td width="90%" valign="top">
+		<table width="100%" cellspacing="1" cellpading="0" border="0">
+		<tr>
+			<td>
+				<form action="{{ form_action|raw }}" method="post">
+				<table width="100%" cellspacing="1" cellpading="0" border="0">
+					<tr bgcolor="{{ th_bg }}">
+						<td align="center">
+							{{ lang('domain_name') }}
+						</td>
+						<td  align="center">
+							{{ lang('remote_server') }}
+						</td>
+						<td align="center">
+							{{ lang('remote_port') }}
+						</td>
+						<td align="center">
+							{{ lang('delete') }}
+						</td>
+					</tr>
+					{{ smtproute_rows|raw }}
+					<tr bgcolor="{{ last_row_color }}">
+						<td align="center">
+							<input type="text" size="30" name="domain_name">
+						</td>
+						<td align="center">
+							<input type="text" size="30" name="remote_server">
+						</td>
+						<td align="center">
+							<input type="text" size="4" value="25" name="remote_port">
+						</td>
+						<td align="center">
+							<input type="submit" name="add_smtp_route" value="{{ lang('add') }}">
+							<input type="hidden" name="bo_action" value="add_smtproute">
+						</td>
+					</tr>
+				</table>
+				</form>
+			</td>
+		</tr>
+		</table>
+	</td>
+</tr>
+</table>
+</center>
+{% endblock %}
+
+{% block menu_row %}
+<tr bgcolor="{{ menu_row_color }}">
+	<td>
+		<nobr><a href="{{ menu_link }}">{{ menu_description }}</a><nobr>
+	</td>
+</tr>
+{% endblock %}
+
+{% block menu_row_bold %}
+<tr bgcolor="{{ menu_row_color }}">
+	<td>
+		<nobr><b><a href="{{ menu_link }}">{{ menu_description }}</a></b><nobr>
+	</td>
+</tr>
+{% endblock %}
+
+{% block activation_row %}
+<tr bgcolor="{{ bg_01 }}">
+	<td>
+		<a href="{{ activation_link }}">{{ lang('activate') }}</a>
+	</td>
+</tr>
+<tr>
+	<td>
+		&nbsp;
+	</td>
+</tr>
+{% endblock %}
+
+{% block smtproute_row %}
+<tr bgcolor="{{ row_color }}">
+	<td align="center">
+		{{ domain_name }}
+	</td>
+	<td align="center">
+		{{ remote_server }}
+	</td>
+	<td align="center">
+		{{ remote_port }}
+	</td>
+	<td align="center">
+		<a href={{ delete_route_link }}>{{ lang('delete') }}</a>
+	</td>
+</tr>
+{% endblock %}

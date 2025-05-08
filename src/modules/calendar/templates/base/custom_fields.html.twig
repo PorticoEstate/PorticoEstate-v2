@@ -1,0 +1,47 @@
+{# Custom_fields template #}
+<!-- $Id$ -->
+{% block custom_fields %}
+{{ lang('error') }}<br />
+<form action="{{ action_url | raw }}" method="post">
+ {{ hidden_vars }}
+ <center>
+  <table border="0" width="90%">
+   <tr class="th">
+    <th align="left" width="30%">{{ lang('name') }}</th>
+    <th>{{ lang('length') }}</th>
+    <th>{{ lang('shown') }}</th>
+    <th>{{ lang('order') }}</th>
+    <th>{{ lang('title') }}</th>
+    <th>{{ lang('disabled') }}</th>
+    <th>&nbsp;</th>
+   </tr>
+   {{ rows|raw }}
+   <tr class="th">
+    <td>{{ name }}</td>
+    <td align="center">{{ length }}</td>
+    <td align="center">{{ shown }}</td>
+    <td align="center">{{ order }}</td>
+    <td align="center">{{ title }}</td>
+    <td align="center">{{ disabled }}</td>
+    <td align="center">{{ button }}</td>
+   </tr>
+   <tr>
+    <td>{{ save_button }} &nbsp; {{ cancel_button }}</td>
+   </tr>
+  </table>
+ </center>
+</form>
+<br />
+{% endblock %}
+
+{% block row %}
+   <tr class="{{ tr_color }}">
+    <td>{{ name }}</td>
+    <td align="center">{{ length }}</td>
+    <td align="center">{{ shown }}</td>
+    <td align="center">{{ order }}</td>
+    <td align="center">{{ title }}</td>
+    <td align="center">{{ disabled }}</td>
+    <td align="center">{{ button }}</td>
+   </tr>
+{% endblock %}

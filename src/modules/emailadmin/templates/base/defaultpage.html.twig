@@ -1,0 +1,63 @@
+{# Defaultpage template #}
+{% block main %}
+<center>
+<table border="0" cellspacing="1" cellpading="0" width="95%">
+<tr>
+	<td width="10%" valign="top">
+		<table border="0" cellspacing="1" cellpading="0" width="100%">
+		{{ menu_rows|raw }}
+		<tr>
+			<td>
+				&nbsp;
+			</td>
+		</tr>
+		{{ activation_rows|raw }}
+		<tr bgcolor="{{ done_row_color }}">
+			<td>
+				<a href="{{ done_link }}">{{ lang('done') }}</a>
+			</td>
+		</tr>
+		</table>
+	</td>
+	<td width="90%" valign="top">
+		<form action="{{ form_action|raw }}" method="post">
+		<table width="100%" cellspacing="1" cellpading="0" border="0">
+		<tr>
+			<td> {{ lang('Data') }} </td>
+		</tr>
+		</table>
+		</form>
+	</td>
+</tr>
+</table>
+</center>
+{% endblock %}
+
+{% block menu_row %}
+<tr bgcolor="{{ menu_row_color }}">
+	<td>
+		<nobr><a href="{{ menu_link }}">{{ menu_description }}</a><nobr>
+	</td>
+</tr>
+{% endblock %}
+
+{% block menu_row_bold %}
+<tr bgcolor="{{ menu_row_color }}">
+	<td>
+		<nobr><b><a href="{{ menu_link }}">{{ menu_description }}</a></b><nobr>
+	</td>
+</tr>
+{% endblock %}
+
+{% block activation_row %}
+<tr bgcolor="{{ bg_01 }}">
+	<td>
+		<a href="{{ activation_link }}">{{ lang('activate') }}</a>
+	</td>
+</tr>
+<tr>
+	<td>
+		&nbsp;
+	</td>
+</tr>
+{% endblock %}

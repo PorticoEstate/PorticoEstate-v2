@@ -1,0 +1,65 @@
+{# Csv_import template #}
+
+<br /><center>
+
+  <FORM {{ enctype }} action="{{ action_url | raw }}" method="post">
+      <TABLE>
+
+{% block filename %}
+     <TR>
+       <TD>{{ lang('csvfile') }}</td>
+    <td><INPUT NAME="csvfile" SIZE=30 TYPE="file" VALUE="{{ csvfile }}"></td>
+   </tr>
+   <tr>
+    <td>{{ lang('fieldsep') }}</td>
+    <td><input name="fieldsep" size=1 value="{{ fieldsep }}"></td>
+   </tr>
+   <tr><td>&nbsp;</td>
+    <td><INPUT NAME="convert" TYPE="submit" VALUE="{{ submit }}"></TD>
+   </TR>
+{% endblock %}
+
+{% block fheader %}
+   <tr>
+    <td><b>{{ lang('csv_fieldname') }}</b></td>
+    <td><b>{{ lang('addr_fieldname') }}</b></td>
+    <td><b>{{ lang('translation') }}</b></td>
+   </tr>
+{% endblock %}
+
+{% block fields %}
+   <tr>
+    <td>{{ csv_field }}</td>
+    <td><SELECT name="addr_fields[{{ csv_idx }}]">{{ addr_fields }}</select></td>
+    <td><input name="trans[{{ csv_idx }}]" size=60 value="{{ trans }}"></td>
+   </tr>
+{% endblock %}
+
+{% block ffooter %}
+   <tr>
+    <td rowspan="2" valign="middle"><br /><INPUT NAME="convert" TYPE="submit" VALUE="{{ submit }}"></TD>
+    <td colspan="2"><br />
+     {{ lang('start') }} <INPUT name="start" type="text" size="5" value="{{ start }}"> &nbsp; &nbsp;
+     {{ lang('max') }} <INPUT name="max" type="text" size="3" value="{{ max }}"><td>
+   </tr>
+   <tr>
+    <td colspan="3"><INPUT name="debug" type="checkbox" value="1" checked> {{ lang('debug') }}</td>
+   </TR>
+   <tr><td colspan=3>&nbsp;<p>
+    {{ help_on_trans }}
+   </td></tr>
+{% endblock %}
+
+{% block imported %}
+   <tr>
+    <td colspan=2 align=center>
+     {{ log }}<p>
+     {{ anz_imported }}
+    </td>
+   </TR>
+{% endblock %}
+
+</TABLE>
+{{ hiddenvars }}</form>
+
+</CENTER>

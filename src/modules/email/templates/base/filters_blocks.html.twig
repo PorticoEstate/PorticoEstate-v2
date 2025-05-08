@@ -1,0 +1,52 @@
+{# Filters_blocks template #}
+<!-- begin file filters_blocks.tpl -->
+
+&nbsp; <!-- === block seperator == --> &nbsp; 
+
+{% block B_match_account_box %}
+{{ lang('inbox_for_account') }}<br />
+{{ account_multi_box }}
+{% endblock %}
+
+&nbsp; <!-- === block seperator == --> &nbsp; 
+
+{% block B_match_and_or_ignore %}
+<select name="{{ andor_select_name|raw }}">
+	<option value="ignore_me" {{ ignore_me_selected|raw }}>&lt;{{ lang('ignore_me1') }}&gt;</option>
+	<option value="or" {{ or_selected|raw }}>{{ lang('or') }}</option>
+	<option value="and" {{ and_selected|raw }}>{{ lang('and') }}</option>
+</select>
+{% endblock %}
+
+&nbsp; <!-- === block seperator == --> &nbsp; 
+	
+{% block B_action_no_ignore %}
+<select name="{{ actionbox_judgement_name }}">
+	<!-- <option value="keep">{{ lang('keep') }}</option> -->
+	<!-- <option value="discard">{{ lang('discard') }}</option> -->
+	<!-- <option value="reject">{{ lang('reject') }}</option> -->
+	<!-- <option value="redirect">{{ lang('redirect') }}</option> -->
+	<option value="fileinto" selected>{{ lang('fileinto') }}</option>
+	<!-- <option value="flag">{{ lang('flag') }}</option> -->
+</select>
+
+{% endblock %}
+
+&nbsp; <!-- === block seperator == --> &nbsp; 
+	
+{% block B_action_with_ignore_me %}
+<select name="{{ actionbox_judgement_name }}">
+	<option value="ignore_me" selected>&lt;{{ lang('ignore_me2') }}&gt;</option>
+	<!-- <option value="keep">{{ lang('keep') }}</option> -->
+	<!-- <option value="discard">{{ lang('discard') }}</option> -->
+	<!-- <option value="reject">{{ lang('reject') }}</option> -->
+	<!-- <option value="redirect">{{ lang('redirect') }}</option> -->
+	<option value="fileinto">{{ lang('fileinto') }}</option>
+	<!-- <option value="flag">{{ lang('flag') }}</option> -->
+</select>
+
+{% endblock %}
+
+&nbsp; <!-- === block seperator == --> &nbsp; 
+
+<!-- end file filters_blocks.tpl -->

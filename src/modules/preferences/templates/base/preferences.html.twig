@@ -1,0 +1,43 @@
+{# Preferences template #}
+<div class="error_message">{{ messages }}</div>
+
+{% block form %}
+<div id="tab-content">
+	{{ tabs }}
+	{{ pre_div }}
+	{{ select_user|raw }}
+
+	<form method="POST" action="{{ action_url | raw }}" class="pure-form pure-form-aligned">
+		{{ account_id }}
+		<!-- BEGIN list -->
+		{{ list_header }}
+		{{ rows|raw }}
+
+		<!-- END list -->
+
+		<div class="button_group">
+			<input type="submit" name="submit" value="{{ lang('submit') }}">
+			<input type="submit" name="cancel" value="{{ lang('cancel') }}">
+			{{ help_button }}
+		</div>
+	</form>
+	{{ post_div }}
+</div>
+{% endblock %}
+
+{% block row %}
+<div class="pure-control-group">
+	<label>{{ row_name }}</label>
+	{{ row_value|raw }}
+</div>
+{% endblock %}
+
+{% block help_row %}
+<div class="pure-control-group">
+	<label>{{ row_name }}</label>
+	{{ row_value|raw }}
+</div>
+<div class="pure-control-group">
+	<label colspan="2">{{ help_value|raw }}</label>
+</div>
+{% endblock %}

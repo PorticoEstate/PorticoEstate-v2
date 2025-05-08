@@ -1,0 +1,84 @@
+{# Form template #}
+<!-- $Id$ -->
+<h1>{{ lang('todo_action') }}</h1>
+{{ error }}
+<form method="post" action="{{ actionurl }}">
+		<label for="values_title">{{ lang('title') }}:</label>
+		<input id="values_title" type="text" name="values[title]" value="{{ title }}" size="50"><br>
+		
+		<label for="values_descr">{{ lang('descr') }}:</label>
+		<textarea name="values[descr]" rows="10" cols="80">{{ descr }}</textarea><br>
+		
+		
+		<label for="values_new_parent">{{ lang('parent') }}</label>
+		<select id="values_new_parent" name="new_parent"><option value="">{{ lang('none') }}</option>{{ todo_list }}</select><br>
+
+		<label for="values_start_date">{{ lang('start_date') }}:</label>
+		{{ start_select_date|raw }}
+		{{ selfortoday }}
+		<label for="selfortoday">{{ lang('selfortoday') }}</label><br>
+
+		<td>{{ lang('end_date') }}:</td>
+		<td>{{ end_select_date|raw }}</td>
+		<td>{{ lang('daysfromstartdate') }}</td>
+		<td>{{ daysfromstartdate }}</td>
+
+		<label for="">{{ lang('completed') }}:</td>
+		<td>{{ stat_list }}</td><br>
+
+		<label for="new_cat">{{ lang('category') }}</label>
+		<select id="new_cat" name="new_cat"><option value="0">{{ lang('none') }}</option>{{ cat_list }}</select><br>
+
+		<td>{{ lang('urgency') }}:</td>
+		<td>{{ pri_list }}</td><br>
+		<label for="assinged_user">{{ lang('assigned_user') }}:</label>
+		<select id="assigned_user" name="assigned[]" multiple><option value="">{{ lang('nobody') }}</option>{{ user_list }}</select><br>
+		
+		<td>{{ lang('access') }}:</td>
+		<td>{{ access_list }}</td><br>
+
+		<label for="assigned_group">{{ lang('assigned_group') }}</label>
+		<select id="assigned_group" name="assigned_group[]" multiple><option value="">{{ lang('none') }}</option>{{ group_list }}</select><br>
+	</tr>
+</table>
+
+{% block add %}
+
+<table width="90%" border="0" cellspacing="0" cellpadding="0">
+	<tr valign="bottom">
+		<td height="35" width="50%">
+			<div align="center">
+			<input type="submit" name="submit" value="{{ lang('save') }}">
+		</div>
+		</td>
+		<td height="35" width="50%">
+			<div align="center">
+			<input type="reset" name="reset" value="{{ lang('reset') }}">
+			</div>
+		</td>
+	</tr>
+</table>
+</form>
+</center>
+         
+{% endblock %}
+
+{% block edit %}
+
+<table width="90%" border="0" cellspacing="0" cellpadding="0">
+	<tr valign="bottom">
+		<td height="35" width="50%">
+			<div align="center">
+			<input type="submit" name="submit" value="{{ lang('save') }}">
+		</div></form>
+		</td>
+		<td height="35" width="50%">
+			<div align="center">
+			{{ delete }}
+			</div>
+		</td>
+	</tr>
+</table>
+</center>
+         
+{% endblock %}

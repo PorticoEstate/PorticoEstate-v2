@@ -1,0 +1,26 @@
+{# NextMatch template #}
+<!-- HELLO -->
+<table width="100%" border="0" align="center">
+	<tr>
+		{{ left_next_matchs }}
+		<td align="center"><b>{{ description }}</b></td>
+		{{ right_next_matchs }}
+	</tr>
+</table>
+
+<table width="100%" border="0" cellspacing="1" cellpading="1">
+	<thead>
+{% block header_row %}
+		<tr bgcolor="{{ th_bg }}">
+			{{ header_row_data }}
+		</tr>
+{% endblock %}
+	</thead>
+	<tbody id="nextMatchBody">
+{% block row_list %}
+		<tr id="{{ row_id }}" bgcolor="{{ row_color }}">
+			{{ row_data }}
+		</tr>
+{% endblock %}
+	</tbody>
+</table>

@@ -1,0 +1,10 @@
+{# Principal_tabs template #}
+{% block principal_tab %}
+	<ul>
+		{{ principal_buttons }}
+	</ul>
+{% endblock %}
+
+{% block principal_button %}
+		<li {{ principal_tab_css }}><a href="{{ principal_action }}"><em>{{ principal_value|raw }}</em></a></li>
+{% endblock %}

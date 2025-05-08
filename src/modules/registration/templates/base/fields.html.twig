@@ -1,0 +1,66 @@
+{# Fields template #}
+{% block header %}
+<form method="POST" action="{{ action_url | raw }}">
+	<center><h3>{{ message }}</h3></center>
+	{% endblock %}
+
+	{% block list %}
+	<table class="pure-table pure-table-bordered pure-table-striped">
+		<thead>
+			<tr>
+				<th width=5%>{{ lang('name_and_shortdesc') }}</th>
+				<th>{{ lang('text') }}</th>
+				<th>{{ lang('type') }}</th>
+				<th>{{ lang('values_and_shortdesc') }}</th>
+				<th>{{ lang('required') }}</th>
+				<th>{{ lang('remove') }}</th>
+				<th>{{ lang('order') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+
+			<!-- BEGIN info -->
+			<tr>
+				<td><input type="text" name="{{ field_short_name }}_name" size="10" value="{{ field_name }}"></td>
+				<td><input type="text" name="{{ field_short_name }}_text" value="{{ field_text }}"></td>
+				<td><select name="{{ field_short_name }}_type">
+						<option {{ field_type_selected_text|raw }} value="text">{{ lang('text') }}</option>
+						<option {{ field_type_selected_textarea|raw }} value="textarea">{{ lang('textarea') }}</option>
+						<option {{ field_type_selected_dropdown|raw }} value="dropdown">{{ lang('dropdown') }}</option>
+						<option {{ field_type_selected_checkbox|raw }} value="checkbox">{{ lang('checkbox') }}</option>
+						<option {{ field_type_selected_email|raw }} value="email">{{ lang('email') }}</option>
+						<option {{ field_type_selected_first_name|raw }} value="first_name">{{ lang('first_name') }}</option>
+						<option {{ field_type_selected_last_name|raw }} value="last_name">{{ lang('last_name') }}</option>
+						<option {{ field_type_selected_address|raw }} value="address">{{ lang('address') }}</option>
+						<option {{ field_type_selected_city|raw }} value="city">{{ lang('city') }}</option>
+						<option {{ field_type_selected_state|raw }} value="state">{{ lang('state') }}</option>
+						<option {{ field_type_selected_zip|raw }} value="zip">{{ lang('zip') }}</option>
+						<option {{ field_type_selected_country|raw }} value="country">{{ lang('country') }}</option>
+						<option {{ field_type_selected_gender|raw }} value="gender">{{ lang('gender') }}</option>
+						<option {{ field_type_selected_phone|raw }} value="phone">{{ lang('phone') }}</option>
+						<option {{ field_type_selected_birthday|raw }} value="birthday">{{ lang('birthday') }}</option>
+						<option {{ field_type_selected_location|raw }} value="location">{{ lang('location') }}</option>
+					</select></td>
+				<td><input type="text" name="{{ field_short_name }}_values" value="{{ field_values|raw }}" size="15"></td>
+				<td><input type="checkbox" name="{{ field_short_name }}_required" {{ field_required }}></td>
+				<td><input type="checkbox" name="{{ field_short_name }}_remove" {{ field_remove }}></td>
+				<td><input type="text" name="{{ field_short_name }}_order" size="2" value="{{ field_order }}"></td>
+			</tr>
+			<!-- END info -->
+		</tbody>
+	</table>
+	{% endblock %}
+
+	{% block footer %}
+	<p>
+	<table border="0" align="center" width="50%">
+		<tr>
+			<!--
+			   <td align="left"><input type="submit" name="cancel" value="{{ lang('cancel') }}"></td>
+			-->
+			<td align="center">
+				<input type="submit" name="submit" value="{{ lang('update_add') }}"></td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

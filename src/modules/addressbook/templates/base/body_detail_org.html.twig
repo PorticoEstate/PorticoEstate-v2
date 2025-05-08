@@ -1,0 +1,57 @@
+{# Body_detail_org template #}
+{% block columns_data %}
+<td>{{ text }}</td>
+{% endblock %}
+
+{% block input_detail_data %}
+<tr bgcolor="{{ row_bgc }}">
+{{ columns }}
+</tr>
+{% endblock %}
+
+{% block input_detail_data_tmp %}
+{{ tmp_detail }}
+{% endblock %}
+
+<!-- BEGIN input_row_tmp  -->
+{{ tmp_row }}
+<!-- END input_row_tmp -->
+
+{% block block_row %}
+<table border="0">
+  <tr>
+    <th style="border-bottom: solid black 2px; cursor: hand; cursor: pointer;"  colspan="6" onclick="showHide('{{ block_name }}');">{{ block_name }}</th>
+  </tr>
+</table>
+<div id="{{ block_name }}" style="display: none;">
+<table width="100%" border="0" align="center" cellspacing="0" cellpadding="0">
+<tbody>
+  {{ detail_body_set }}
+</tbody>
+</table>
+</div>
+{% endblock %}
+
+{% block detail_body %}
+<tr>
+<table width="100%" border="0" align="center" cellspacing="0" cellpadding="0">
+  <tbody>
+    <tr align="right">
+      <td>
+	<input type="submit" name="{{ detail_b_name }}" value="{{ detail_b_value|raw }}">
+      </td>
+    </tr>
+
+    <tr><th bgcolor="{{ th_bg }}">{{ caption_detail }}</th></tr>
+
+    <tr>
+      <td>
+
+	{{ block_detail }}
+
+      </td>
+    </tr>
+  </tbody>
+</table>
+</tr>
+{% endblock %}

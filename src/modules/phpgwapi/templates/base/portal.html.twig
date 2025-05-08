@@ -1,0 +1,32 @@
+{# Portal template #}
+{% block portal_box %}
+<div class="home_portal">
+	<div class="home_portal_title">
+		<div class="home_portal_controls">{{ portal_controls }}</div>
+		<h2>{{ title }}</h2>
+	</div>
+	<div class="home_portal_content">
+	    {{ row }}
+	</div>
+</div>
+{% endblock %}
+{% block portal_row %}
+    <div>
+		{{ output }}
+    </div>
+{% endblock %}
+{% block portal_listbox_header %}
+	<ul>
+{% endblock %}
+{% block portal_listbox_link %}
+		<li><a href="{{ link }}">{{ text }}</a></li>
+{% endblock %}
+{% block portal_listbox_footer %}
+	</ul>
+{% endblock %}
+{% block portal_control %}
+	{{ control_link }}
+{% endblock %}
+{% block link_field %}
+	{{ link_field_data }}
+{% endblock %}

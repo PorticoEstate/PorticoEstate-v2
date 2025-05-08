@@ -1,0 +1,19 @@
+{# Lostpw_select template #}
+{% block form %}
+<p>{{ errors }}</p>
+<form action="{{ form_action|raw }}" method="POST" class="pure-form pure-form-aligned">
+	<p>
+		{{ lang('explain') }}
+	</p>
+	<fieldset>
+		<div class="pure-control-group">
+			<label>{{ lang('username') }}</label>
+			<input name="r_reg[loginid]" value="{{ value_username|raw }}" required="required" type="{{ input_type|raw }}">
+		</div>
+
+		<div class="pure-controls">
+			<button type="submit" class="pure-button pure-button-primary" name="submit">{{ lang('submit') }}</button>
+        </div>
+	</fieldset>
+</form>
+{% endblock %}

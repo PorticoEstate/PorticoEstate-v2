@@ -1,0 +1,25 @@
+{# Preferences_edit_signature template #}
+{% block main %}
+<table style="width:100%; background-color:white;">
+<tr>
+	<td style="width:80px;">
+		{{ lang('description') }}
+	</td>
+	<td>
+		<input id="signatureDesc" type="text" style="width:100%;" value="{{ description }}">
+	</td>
+	<td style="width:25%;text-align:right;">
+		{{ checkbox_isDefaultSignature }}
+		{{ lang('default_signature') }}
+	</td>
+</tr>
+</table>
+{{ tinymce }}
+<button type="button" onclick="fm_saveSignature()">{{ lang('save') }}</button>
+<button type="button" onclick="fm_applySignature()">{{ lang('apply') }}</button>
+<button type="button" onclick="window.close()">{{ lang('cancel') }}</button>
+<input type="hidden" id="signatureID" value="{{ signatureID }}">
+<script language="JavaScript1.2">
+	document.getElementById('signatureDesc').focus();
+</script>
+{% endblock %}

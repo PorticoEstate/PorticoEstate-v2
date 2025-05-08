@@ -1,0 +1,52 @@
+{# Index template #}
+{% block addressbook_header %}
+{{ tabs }}
+<!--{{ principal_tabs_inc }}-->
+
+{{ lang('showing') }}
+<br />{{ searchreturn }}
+{{ search_filter }}
+
+<table>
+	<thead>
+		<tr>
+			{{ cols }}
+			<th width="5%">{{ lang('view') }}</th>
+			<th width="5%">{{ lang('vcard') }}</th>
+			<th width="5%">{{ lang('edit') }}</th>
+			<th width="5%">{{ lang('owner') }}</th>
+		</tr>
+	</thead>
+	<tbody>
+{% endblock %}
+
+{% block column %}
+			<td>{{ col_data }}&nbsp;</td>
+{% endblock %}
+
+{% block row %}
+		<tr class="{{ row_class }}">
+			{{ columns }}
+			<td><a href="{{ row_view_link }}">{{ lang('view') }}</a></td>
+			<td><a href="{{ row_vcard_link }}">{{ lang('vcard') }}</a></td>
+			<td>{{ row_edit }}</td>
+			<td>{{ row_owner }}</td>
+		</tr>
+{% endblock %}
+
+{% block addressbook_footer %}
+	</tbody>
+</table>
+<table>
+  <tr>
+	<td>
+     <form action="{{ add_url }}"    method="post"><td width="16%"><input type="submit" name="Add" value="{{ lang('add') }}"></td></form>
+     <form action="{{ cat_cont_url }}" method="post"><td width="16%"><input type="submit" name="Categorize" value="{{ lang('cat_cont') }}"></td></form>
+     <form action="{{ vcard_url }}"  method="post"><td width="16%"><input type="submit" name="AddVcard" value="{{ lang('addvcard') }}"></td></form>
+     <form action="{{ import_url }}" method="post"><td width="16%"><input type="submit" name="Import" value="{{ lang('import') }}"></td></form>
+     <form action="{{ import_alt_url }}" method="post"><td width="16%"><input type="submit" name="Import" value="{{ lang('import_alt') }}"></td></form>
+     <form action="{{ export_url }}" method="post"><td width="16%"><input type="submit" name="Export" value="{{ lang('export') }}"></td></form>
+    </td>
+   </tr>
+</table>
+{% endblock %}

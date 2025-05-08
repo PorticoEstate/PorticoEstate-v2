@@ -1,0 +1,24 @@
+{# Day_cal template #}
+<!-- $Id$ -->
+{% block day %}
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+{{ row }}
+</table>
+{% endblock %}
+{% block day_row %}
+    <tr>{{ item }}
+    </tr>
+{% endblock %}
+{% block day_event_on %}
+     <td class="event-on"{{ extras }}>{{ event }}</td>
+{% endblock %}
+{% block day_event_off %}
+     <td class="event-off"{{ extras }}>{{ event }}</td>
+{% endblock %}
+{% block day_event_holiday %}
+     <td class="event-holiday"{{ extras }}>{{ event }}</td>
+{% endblock %}
+{% block day_time %}
+     <td class="time" nowrap>{{ open_link }}{{ time }}{{ close_link }}</td>
+{% endblock %}
+

@@ -1,0 +1,364 @@
+{# SieveForm template #}
+{% block header %}
+<!-- TEMPLATE: sieveForm.tpl -->
+<script language="JavaScript1.2">
+
+function submitRuleList(action)
+{
+	document.rulelist.rulelist_action.value = action;
+	document.rulelist.submit();
+}
+
+function submitVacationRule(action)
+{
+	document.vacationrule.vacationRule_action.value = action;
+	document.vacationrule.submit();
+}
+
+function createScript()
+{
+	var newscript = prompt('Please supply a name for your new script','');
+	if (newscript)
+	{
+		document.addScript.newScriptName.value = newscript;
+		document.addScript.submit();
+	}
+}
+
+</script>
+<center>
+
+<table width="100%" border="0" cellspacing="0" cellpading="0">
+	<tr>
+		<th width="50%" id="tab1" class="activetab" onclick="javascript:tab.display(1);"><a href="#" tabindex="0" accesskey="1" onfocus="tab.display(1);" onclick="tab.display(1); return(false);">{{ lang('filter_rules') }}</a></th>
+		<th width="50%" id="tab2" class="activetab" onclick="javascript:tab.display(2);"><a href="#" tabindex="0" accesskey="2" onfocus="tab.display(2);" onclick="tab.display(2); return(false);">{{ lang('vacation_notice') }}({{ lang('vacation_status') }})</a></th>
+	</tr>
+</table>
+
+<!-- beginn of the code for filter rules Tab -->
+
+<div id="tabcontent1" class="inactivetab">
+
+<br>
+<table border='0' width='100%'>
+<tr class="text_small">
+<td>
+{{ lang('rule') }}: <a href="javascript:submitRuleList('enable');">{{ lang('enable') }}</a> 
+<a href="javascript:submitRuleList('disable');">{{ lang('disable') }}</a> 
+<a href="javascript:submitRuleList('delete');">{{ lang('delete') }}</a>
+</td>
+<td style='text-align : right;'>
+<a href="{{ url_add_rule }}">{{ lang('add_rule') }}</a>
+</td>
+</tr>
+</table>
+<form name='rulelist' method='post' action='{{ action_rulelist }}'>
+<input type='hidden' name='rulelist_action' value='unset'>
+<table width="100%" border="0" cellpadding="2" cellspacing="1">
+	<thead class="th">
+		<tr>
+			<th width="3%">&nbsp;</th>
+			<th width="10%"> {{ lang('Status') }} </th>
+			<th width="80%">{{ lang('rule') }}</th>
+			<th width="5%"> {{ lang('Order') }} </th>
+		</tr>
+	</thead>
+		{{ filterrows|raw }}
+	<tbody>
+	</tbody>
+</table>
+</form>
+</div>
+<!-- end of the code for Global Tab -->
+
+<!-- beginn of the code for the vacation tab -->
+
+<div id="tabcontent2" class="inactivetab">
+<br>
+<table border='0' width='100%'>
+<tr class="text_small">
+<td>
+{{ lang('rule') }}: <a class="{{ css_enabled }}" href="javascript:submitVacationRule('enable');">{{ lang('enable') }}</a> 
+<a class="{{ css_disabled }}" href="javascript:submitVacationRule('disable');">{{ lang('disable') }}</a> 
+<a href="javascript:submitVacationRule('delete');">{{ lang('delete') }}</a>
+<a href="javascript:submitVacationRule('save');">{{ lang('save') }}</a>
+</td>
+</tr>
+</table>
+<form ACTION="{{ vacation_action_url }}" METHOD="post" NAME="vacationrule">
+<input type='hidden' name='vacationRule_action' value='unset'>
+<table WIDTH="100%" CELLPADDING="2" CELLSPACING="1" style="border: 1px solid silver;">
+	<tr CLASS="th">
+		<td colspan="2">
+						{{ lang('edit_vacation_settings') }}      
+		</td>
+	</tr>
+	<tr CLASS="sieveRowActive">
+		<td>
+			{{ lang('respond_to_mail_sent_to') }}:
+		</td>
+		<td nowrap="nowrap">
+			{{ multiSelectBox }}
+		</td>
+	</tr>
+	<tr CLASS="sieveRowActive">
+		<td>
+			{{ lang('every') }}:
+		</td>
+		<td>
+			<select name="days">
+				<option value="0"></option>
+				<option value="1" {{ selected_1|raw }}>1</option>
+				<option value="2" {{ selected_2|raw }}>2</option>
+				<option value="3" {{ selected_3|raw }}>3</option>
+				<option value="4" {{ selected_5|raw }}>4</option>
+				<option value="5" {{ selected_5|raw }}>5</option>
+				<option value="6" {{ selected_6|raw }}>6</option>
+				<option value="7" {{ selected_7|raw }}>7</option>
+				<option value="8" {{ selected_8|raw }}>8</option>
+				<option value="9" {{ selected_0|raw }}>9</option>
+				<option value="10" {{ selected_10|raw }}>10</option>
+				<option value="11" {{ selected_11|raw }}>11</option>
+				<option value="12" {{ selected_12|raw }}>12</option>
+				<option value="13" {{ selected_13|raw }}>13</option>
+				<option value="14" {{ selected_14|raw }}>14</option>
+				<option value="15" {{ selected_15|raw }}>15</option>
+				<option value="16" {{ selected_16|raw }}>16</option>
+				<option value="17" {{ selected_17|raw }}>17</option>
+				<option value="18" {{ selected_18|raw }}>18</option>
+				<option value="19" {{ selected_19|raw }}>19</option>
+				<option value="20" {{ selected_20|raw }}>20</option>
+				<option value="21" {{ selected_21|raw }}>21</option>
+				<option value="22" {{ selected_22|raw }}>22</option>
+				<option value="23" {{ selected_23|raw }}>23</option>
+				<option value="24" {{ selected_24|raw }}>24</option>
+				<option value="25" {{ selected_25|raw }}>25</option>
+				<option value="26" {{ selected_26|raw }}>26</option>
+				<option value="27" {{ selected_27|raw }}>27</option>
+				<option value="28" {{ selected_28|raw }}>28</option>
+				<option value="29" {{ selected_29|raw }}>29</option>
+				<option value="30" {{ selected_30|raw }}>30</option>
+			</select>
+			{{ lang('days') }}
+		</td>
+	</tr>
+	<tr CLASS="sieveRowActive">
+		<td>
+			{{ lang('with_message') }}:
+		</td>
+		<td nowrap="nowrap">
+			<textarea class="input_text" name="vacation_text" rows="5" cols="60" wrap="hard" tabindex="1">{{ vacation_text }}</textarea>
+		</td>
+	</tr>
+	<tr>
+		<td>
+			&nbsp;
+		</td>
+	</tr>
+</table>
+<input type="hidden" name="ruleID" value="{{ value_ruleID|raw }}">
+</form>
+
+</div>
+<!-- end of the code for the vacation Tab -->
+
+<table border='0' width='100%'>
+	<tr class="text_small">
+		<td>
+			<a href="{{ url_back }}">{{ lang('back') }}</a> 
+		</td>
+	</tr>
+</table>
+</center>
+{% endblock %}
+
+{% block filterrow %}
+<tr class="{{ ruleCSS }}" onmouseover="javascript:style.backgroundColor='#F6F7F4'" onmouseout="javascript:style.backgroundColor='#FFFFFF'" style="background-color: rgb(255, 255, 255);">
+	<td style="text-align: center;">
+		<input type="checkbox" name="ruleID[]" value="{{ ruleID }}">
+	</td>
+	<td style="text-align: center;">
+		{{ filter_status }}
+	</td>
+	<td>
+		<a class="{{ ruleCSS }}" href="javascript:alert('buh');" onmouseover="window.status='Edit This Rule'; return true;" onmouseout="window.status='';">{{ filter_text }}</a>
+	</td>
+	<td nowrap="nowrap" style="text-align: center;">
+		<a href="{{ url_increase }}"><img src="{{ url_up }}" alt="Move rule up" border="0" onmouseover="window.status='Move rule up'; return true;" onmouseout="window.status='';"></a>
+		<a href="{{ url_decrease }}"><img src="{{ url_down }}" alt="Move rule down" border="0" onmouseover="window.status='Move rule down'; return true;" onmouseout="window.status='';"></a>
+	</td>
+</tr>
+{% endblock %}
+
+{% block vacation %}
+
+<form ACTION="{{ vacation_action_url }}" METHOD="post" NAME="editVacation">
+<p style="color: red; font-style: italic; text-align: center;">{{ validation_errors }}</p>
+<table WIDTH="100%" CELLPADDING="2" CELLSPACING="1" style="border: 1px solid silver;">
+	<tr CLASS="th">
+		<td colspan="2">
+						{{ lang('edit_vacation_settings') }}      
+		</td>
+	</tr>
+	<tr CLASS="sieveRowActive">
+		<td>
+			{{ lang('status') }}:
+		</td>
+		<td>
+			<input type="radio" name="vacationStatus" {{ checked_active }} value="on" id="status_active"> <label for="status_active">{{ lang('active') }}</label>
+			<input type="radio" name="vacationStatus" {{ checked_disabled }} value="off" id="status_disabled"> <label for="status_disabled">{{ lang('disabled') }}</label>
+			{{ by_date }}
+		</td>
+	</tr>
+<!-- END timed_vaction -->
+
+		</td>
+	</tr>
+	<tr CLASS="sieveRowActive">
+		<td>
+			{{ lang('respond_to_mail_sent_to') }}:
+		</td>
+		<td nowrap="nowrap">
+			{{ multiSelectBox }}
+		</td>
+	</tr>
+	<tr CLASS="sieveRowActive">
+		<td>
+			{{ lang('every') }}:
+		</td>
+		<td>
+			<select name="days">
+				<option value="0"></option>
+				<option value="1" {{ selected_1|raw }}>1</option>
+				<option value="2" {{ selected_2|raw }}>2</option>
+				<option value="3" {{ selected_3|raw }}>3</option>
+				<option value="4" {{ selected_4|raw }}>4</option>
+				<option value="5" {{ selected_5|raw }}>5</option>
+				<option value="6" {{ selected_6|raw }}>6</option>
+				<option value="7" {{ selected_7|raw }}>7</option>
+				<option value="8" {{ selected_8|raw }}>8</option>
+				<option value="9" {{ selected_0|raw }}>9</option>
+				<option value="10" {{ selected_10|raw }}>10</option>
+				<option value="11" {{ selected_11|raw }}>11</option>
+				<option value="12" {{ selected_12|raw }}>12</option>
+				<option value="13" {{ selected_13|raw }}>13</option>
+				<option value="14" {{ selected_14|raw }}>14</option>
+				<option value="15" {{ selected_15|raw }}>15</option>
+				<option value="16" {{ selected_16|raw }}>16</option>
+				<option value="17" {{ selected_17|raw }}>17</option>
+				<option value="18" {{ selected_18|raw }}>18</option>
+				<option value="19" {{ selected_19|raw }}>19</option>
+				<option value="20" {{ selected_20|raw }}>20</option>
+				<option value="21" {{ selected_21|raw }}>21</option>
+				<option value="22" {{ selected_22|raw }}>22</option>
+				<option value="23" {{ selected_23|raw }}>23</option>
+				<option value="24" {{ selected_24|raw }}>24</option>
+				<option value="25" {{ selected_25|raw }}>25</option>
+				<option value="26" {{ selected_26|raw }}>26</option>
+				<option value="27" {{ selected_27|raw }}>27</option>
+				<option value="28" {{ selected_28|raw }}>28</option>
+				<option value="29" {{ selected_29|raw }}>29</option>
+				<option value="30" {{ selected_30|raw }}>30</option>
+			</select>
+			{{ lang('days') }}
+		</td>
+	</tr>
+	<tr CLASS="sieveRowActive">
+		<td>
+			{{ lang('with_message') }}:<br />{{ set_as_default }}
+		</td>
+		<td nowrap="nowrap">
+			<textarea class="input_text" name="vacation_text" rows="7" cols="75" wrap="hard" tabindex="1">{{ vacation_text }}</textarea>
+			{{ lang('help_start_end_replacement') }}
+		</td>
+	</tr>
+	<tr CLASS="sieveRowActive">
+		<td>
+			{{ lang('vacation_forwards') }}:
+		</td>
+		<td nowrap="nowrap">
+			<input class="input_text" name="vacation_forwards" size="80" value="{{ vacation_forwards }}" />
+		</td>
+	</tr>
+	<tr>
+		<td>
+			&nbsp;
+		</td>
+	</tr>
+	<tr height="30px" valign="bottom">
+		<td align="left" colspan="2">
+			<table border="0" valign="bottom">
+			<tr>
+				<td>
+					<input name="save" value="{{ lang('save') }}" type="submit">
+				</td>
+				<td>
+					<input name="apply" value="{{ lang('apply') }}" type="submit">
+				</td>
+				<td width=100%"> &nbsp; </td>
+				<td align="right">
+					<input name="cancel" value="{{ lang('cancel') }}" type="submit">
+				</td>
+			</tr>
+			</table>
+		</td>
+	</tr>
+</table>
+</form>
+{% endblock %}
+
+</table>
+<input type="hidden" name="ruleID" value="{{ value_ruleID|raw }}">
+</form>
+<!-- END vacation -->
+
+{% block email_notification %}
+<form ACTION="{{ email_notification_action_url }}" METHOD="post" NAME="editVacation">
+<table WIDTH="100%" CELLPADDING="2" CELLSPACING="1" style="border: 1px solid silver;">
+  <tr CLASS="th">
+    <td colspan="2">email notification settings</td>
+  </tr>
+  <tr CLASS="row_on">
+    <td> {{ lang('Status') }}: </td>
+    <td>
+      <input type="radio" name="emailNotificationStatus"{{ checked_active }} value="active"> {{ lang('active') }}
+      <input type="radio" name="emailNotificationStatus"{{ checked_disabled }} value="disabled"> {{ lang('disabled') }}
+    </td>
+  </tr>
+  <tr CLASS="row_off">
+    <td> {{ lang('External email') }}: </td>
+    <td nowrap="nowrap"><input type="text" size="35" name="emailNotificationExternalEmail" value="{{ external_email }}" /></td>
+  </tr>
+  <tr CLASS="row_on">
+    <td> {{ lang('Display mail subject in notification') }}: </td>
+    <td>
+      <input type="radio" name="emailNotificationDisplaySubject"{{ checked_yes }} value="1"> {{ lang('yes') }}
+      <input type="radio" name="emailNotificationDisplaySubject"{{ checked_no }} value="0"> {{ lang('no') }}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      &nbsp;
+    </td>
+  </tr>
+  <tr height="30px" valign="bottom">
+    <td align="left" colspan="2">
+      <table border="0" valign="bottom">
+      <tr>
+        <td>
+          <input name="save" value="{{ lang('save') }}" type="submit">
+        </td>
+        <td>
+          <input name="apply" value="{{ lang('apply') }}" type="submit">
+        </td>
+        <td width=100%"> &nbsp; </td>
+        <td align="right">
+          <input name="cancel" value="{{ lang('cancel') }}" type="submit">
+        </td>
+      </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</form>
+{% endblock %}

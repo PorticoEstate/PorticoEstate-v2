@@ -1,0 +1,34 @@
+{# View template #}
+{% block view_header %}
+<table id="contacts_view">
+{% endblock %}
+{% block view_row %}
+	<tr class="{{ tr_class }}">
+		<td class="contacts_v_label">{{ display_col }}</td>
+		<td class="contacts_v_val">{{ ref_data }}</td>
+	</tr>
+{% endblock %}
+{{ cols }}
+{% block view_footer %}
+	<tr class="{{ owner_class }}">
+		<td class="contacts_v_label">{{ lang('owner') }}</td>
+		<td class="contacts_v_val">{{ owner }}</td>
+	</tr>
+	<tr class="{{ access_class }}">
+		<td class="contacts_v_label">{{ lang('access') }}</td>
+		<td class="contacts_v_val">{{ access }}</td>
+	</tr>
+	<tr class="{{ cat_class }}">
+		<td class="contacts_v_label">{{ lang('category') }}</td>
+		<td class="contacts_v_val">{{ catname }}</td>
+	</tr>
+</table>
+{% endblock %}
+{% block view_buttons %}
+	<div class="button_group">
+		{{ edit_button }}
+		{{ copy_button }}
+		{{ vcard_button }}
+		{{ done_button }}
+	</div>
+{% endblock %}

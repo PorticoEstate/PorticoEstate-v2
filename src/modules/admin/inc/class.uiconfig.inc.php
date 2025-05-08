@@ -262,17 +262,7 @@ HTML;
 		}
 
 		// Initialize template variables
-		$templateVars = [
-			'action_url' => phpgw::link('/index.php', array(
-				'menuaction' => 'admin.uiconfig.index',
-				'appname' => $appname
-			)),
-			'lang_cancel' => lang('cancel'),
-			'lang_submit' => lang('save'),
-			'title' => lang('Site Configuration'),
-			'error' => $errors ? lang('Error: %1', $errors) : '',
-			'error_class' => $errors ? 'error' : ''
-		];
+		$templateVars = [];
 
 		// Setup all the language variables
 		$this->hooks->single('config', $appname);
@@ -377,9 +367,22 @@ HTML;
 			}
 		}
 
+		$templateVars_global = [
+			'action_url' => phpgw::link('/index.php', array(
+				'menuaction' => 'admin.uiconfig.index',
+				'appname' => $appname
+			)),
+			'lang_cancel' => lang('cancel'),
+			'lang_submit' => lang('save'),
+			'title' => lang('Site Configuration'),
+			'error' => $errors ? lang('Error: %1', $errors) : '',
+			'error_class' => $errors ? 'error' : ''
+		];
+
+		$templateVars = array_merge($templateVars, $templateVars_global);
 		$this->phpgwapi_common->phpgw_header(true);
 
 		// Render the Twig template with all variables
-		echo $twigService->render('config.html.twig', $templateVars, $config_appname);
+		echo $twigService->render('config.html.twig', $templateVars);
 	}
 }

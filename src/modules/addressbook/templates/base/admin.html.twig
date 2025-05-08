@@ -1,0 +1,17 @@
+{# Admin template #}
+<!-- BEGIN admin.tpl -->
+<p><b>{{ lang('admin') }}:</b><hr /><p>
+   <form method="POST" action="{{ action_url | raw }}">
+   <table border="0" align="center" cellspacing="1" cellpadding="1">
+    <tr bgcolor="#EEEEEE">
+     <td colspan="3">
+     {{ lang('countrylist') }}
+     <input type="checkbox" name="usecountrylist"{{ countrylist }}></td>
+    </tr>
+    <tr>
+     <td colspan="5" align="center">
+      <input type="submit" name="submit" value="{{ lang('submit') }}">
+     </td>
+    </tr>
+   </table>
+   </form>

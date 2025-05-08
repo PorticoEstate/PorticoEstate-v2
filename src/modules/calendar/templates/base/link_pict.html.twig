@@ -1,0 +1,17 @@
+{# Link_pict template #}
+<!-- $Id$    link_pict -->
+{% block link_pict %}
+{{ picture }}
+{% endblock %}
+{% block link_open %}
+<a href="{{ link_link }}" onMouseOver="window.status='{{ lang('view') }}'; return true;">
+{% endblock %}
+{% block pict %}
+ <img src="{{ pic_image }}" width="{{ width }}" height="{{ height }}" alt="{{ alt }}" title="{{ title }}" border="0">
+{% endblock %}
+{% block link_text %}
+ {{ text }}
+{% endblock %}
+{% block link_close %}
+</a>
+{% endblock %}

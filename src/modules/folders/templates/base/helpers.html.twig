@@ -1,0 +1,14 @@
+{# Helpers template #}
+{% block link %}
+<br>
+{{ logoutbutton }}<input type="button" id="switchlink" value="{{ linkname }}" onClick="self.location.href='{{ linkvalue|raw }}'">
+<br><br>
+{% endblock %}
+
+{% block iframe %}
+<tr>
+  <td>
+    <iframe src="{{ source }}" frameborder="0" name="folders_iframe"></iframe>
+  </td>
+</tr>
+{% endblock %}

@@ -1,0 +1,36 @@
+{# Index template #}
+{% block list %}
+<div id="preferences-index" class="content">
+	<div id="tab-content">
+	{{ tabs }}
+		<div id="user">
+			{{ rows|raw }}
+		</div>
+		<div id="default">
+				{{ rows|raw }}
+		</div>
+		<div id="forced">
+				{{ rows|raw }}
+		</div>
+
+	</div>
+</div>
+{% endblock %}
+
+{% block app_row %}
+	<h2><a name="{{ a_name }}"></a><img src="{{ app_icon }}" alt="{{ app_name }}"> {{ app_name }}</h2>
+	<ul>
+{% endblock %}
+
+{% block app_row_noicon %}
+	<h2><a name="{{ a_name }}"></a> {{ app_name }}</h2>
+	<ul>
+{% endblock %}
+
+{% block link_row %}
+		<li class="{{ pref_class }}"><a href="{{ pref_link }}">{{ pref_text }}</a></li>
+{% endblock %}
+
+{% block spacer_row %}
+	</ul>
+{% endblock %}

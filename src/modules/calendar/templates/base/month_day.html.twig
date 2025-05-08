@@ -1,0 +1,19 @@
+{# Month_day template #}
+<!-- $Id$    month_day -->
+{% block m_w_table %}
+<table width="100%" border="0" bordercolor="#FFFFFF" cellspacing="2" cellpadding="2" cols="{{ cols }}">
+ {{ row }}
+</table>
+{% endblock %}
+{% block month_daily %}
+   <font size="-1">[ {{ day_number }} ]</font>{{ new_event_link }}<br />
+    {{ daily_events }}
+{% endblock %}
+{% block day_event %}
+    <font size="{{ week_day_font_size }}">
+{{ events }}
+    </font>
+{% endblock %}
+{% block event %}
+{{ day_events }}
+{% endblock %}

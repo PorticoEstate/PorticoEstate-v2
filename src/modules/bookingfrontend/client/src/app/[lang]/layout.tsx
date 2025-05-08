@@ -65,6 +65,9 @@ const RootLayout: FC<RootLayoutProps> = (props) => {
 
     return (
         <html lang={props.params.lang} dir={dir(props.params.lang)}>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+        </head>
         <body className={`${roboto.className} ${poppins.variable}`}>
         <div className={'container-xxl container-fluid'}>
             {props.children}

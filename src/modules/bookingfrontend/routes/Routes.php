@@ -109,6 +109,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->group('/user', function (RouteCollectorProxy $group) {
 		$group->get('', BookingUserController::class . ':index');
 		$group->patch('', BookingUserController::class . ':update');
+		$group->get('/session', BookingUserController::class . ':getSessionId');
 		$group->get('/messages', BookingUserController::class . ':getMessages');
 		$group->delete('/messages/{id}', BookingUserController::class . ':deleteMessage');
 		$group->get('/messages/test', BookingUserController::class . ':createTestMessage');

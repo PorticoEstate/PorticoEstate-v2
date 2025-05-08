@@ -413,7 +413,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		const newEnd = resizeInfo.event.end;
 		const newStart = resizeInfo.event.start;
 		if (!newEnd || !newStart) {
-			console.log("No new date")
+			// console.log("No new date")
 			return;
 		}
 		if (resizeInfo.event.extendedProps?.type === 'temporary' && 'applicationId' in resizeInfo.event.extendedProps) {
@@ -422,7 +422,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const existingEvent = partials?.list.find(app => +app.id === +eventId);
 
 			if (!eventId || !dateId || !existingEvent) {
-				console.log("missing data", eventId, dateId, existingEvent)
+				// console.log("missing data", eventId, dateId, existingEvent)
 				return;
 			}
 
@@ -434,10 +434,10 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				startStr: newStart.toISOString(),
 				endStr: newEnd.toISOString()
 			};
-			
+
 			// Only proceed with the update if there's no overlap
 			const hasNoOverlap = checkEventOverlap(span, resizeInfo.event as EventImpl);
-			
+
 			if (!hasNoOverlap) {
 				// If there's an overlap, revert the event to its original position
 				resizeInfo.revert();
@@ -447,7 +447,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const updatedApplication: IUpdatePartialApplication = {
 				id: eventId,
 			}
-			
+
 			updatedApplication.dates = existingEvent.dates.map(date => {
 				if (date.id && date && +dateId === +date.id) {
 					return {

@@ -104,6 +104,24 @@ export async function fetchFreeTimeSlotsForRange(building_id: number, start: Dat
 }
 
 
+/**
+ * Fetch the authenticated user's session ID
+ * @returns An object containing the sessionId
+ */
+export async function fetchSessionId(): Promise<{ sessionId: string }> {
+	const url = phpGWLink(['bookingfrontend', 'user', 'session']);
+
+	const response = await fetch(url, {
+		credentials: 'include',
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to fetch session ID');
+	}
+
+	return response.json();
+}
+
 export async function fetchServerSettings(): Promise<IServerSettings> {
     const url = phpGWLink(['api', 'server-settings'], {include_configs: true});
     const response = await fetch(url);

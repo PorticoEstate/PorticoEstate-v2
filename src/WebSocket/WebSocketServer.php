@@ -60,25 +60,37 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
         // Extract session data
         $this->sessionService->extractSessionData($conn);
         
+        // Log detailed connection information including browser details
+        $this->logger->info("New connection!", [
+            'clientId' => $conn->resourceId,
+            'ipAddress' => $conn->remoteAddress ?? 'unknown',
+            'totalClients' => $this->connectionService->getClientCount() + 1, // +1 for this new connection
+            'hasSession' => isset($conn->sessionId),
+            'hasBookingSession' => isset($conn->bookingSessionId),
+            'hasUserInfo' => isset($conn->userInfo),
+            'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown'
+        ]);
+        
         // Add connection
         $this->connectionService->addConnection($conn);
         
-        // Check if booking session exists
-        if (!isset($conn->bookingSessionId)) {
-            $this->logger->warning("Client connected without booking session", [
-                'clientId' => $conn->resourceId
+        // Check if session ID is required
+        if (isset($conn->sessionIdRequired) && $conn->sessionIdRequired) {
+            $this->logger->info("Client connected without session - requesting session ID", [
+                'clientId' => $conn->resourceId,
+                'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown'
             ]);
             
-            // Send reconnect request
+            // Send session request - ask client to provide session ID
             $conn->send(json_encode([
-                'type' => 'reconnect_required',
-                'message' => 'Booking session not found. Please reconnect.',
-                'code' => 'NO_BOOKING_SESSION',
+                'type' => 'session_id_required',
+                'message' => 'Please provide your session ID via an update_session message',
+                'code' => 'NO_SESSION',
                 'timestamp' => date('c')
             ]));
             
-            // We'll keep the connection but request the client to reconnect
-            // This gives the client time to handle the message before reconnecting
+            // We'll keep the connection and wait for the client to send their session ID
+            // This allows the client to fetch their session ID and update it without disconnecting
         }
         
         // Add to a session-based room if session ID is available
@@ -94,6 +106,14 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'roomId' => $roomId,
                 'sessionType' => isset($conn->bookingSessionId) ? 'booking' : 'standard'
             ]);
+            
+            // Send connection success message to client
+            $conn->send(json_encode([
+                'type' => 'connection_success',
+                'message' => 'Successfully connected to WebSocket server',
+                'roomId' => $roomId,
+                'timestamp' => date('c')
+            ]));
         }
     }
 
@@ -260,6 +280,46 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             }
         }
         
+        // Handle session ID update
+        if ($messageType === 'update_session' && isset($data['sessionId'])) {
+            $sessionId = $data['sessionId'];
+            
+            // Validate sessionId - it should be a non-empty string
+            if (empty($sessionId) || !is_string($sessionId)) {
+                $from->send(json_encode([
+                    'type' => 'error',
+                    'message' => 'Invalid session ID provided',
+                    'code' => 'INVALID_SESSION_ID',
+                    'timestamp' => date('c')
+                ]));
+                return;
+            }
+            
+            // Update the session ID
+            $result = $this->sessionService->updateSessionId($from, $sessionId, $this->roomService);
+            
+            // Check if this was an initial session setup (for better messaging)
+            $wasInitialSetup = isset($from->sessionIdRequired) && $from->sessionIdRequired;
+            
+            // Send a confirmation message
+            $from->send(json_encode([
+                'type' => 'session_update_confirmation',
+                'success' => $result['success'],
+                'message' => $wasInitialSetup ? 'Session ID set successfully' : $result['message'],
+                'action' => $result['action'],
+                'wasRequired' => $wasInitialSetup,
+                'sessionId' => substr($sessionId, 0, 8) . '...',  // Only show part of the session ID for security
+                'timestamp' => date('c')
+            ]));
+            
+            $this->logger->info("Client session updated", [
+                'clientId' => $from->resourceId,
+                'action' => $result['action'],
+                'result' => $result['success'] ? 'success' : 'failure'
+            ]);
+            return;
+        }
+        
         // Handle room ping responses
         if ($messageType === 'room_ping_response' && isset($data['roomId'])) {
             $roomId = $data['roomId'];
@@ -286,14 +346,14 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             }
             
             // Log pong with detailed information
-            $this->logger->info("Pong received from client", [
+            $this->logger->info("Ping-Pong", [
                 'clientId' => $from->resourceId,
-                'pingId' => $data['id'] ?? 'unknown',
+                'action' => 'pong received',
+                'pongId' => $data['id'] ?? 'unknown',
                 'replyTo' => $data['reply_to'] ?? 'unknown',
                 'sessionActive' => isset($from->sessionId),
-                'hasBookingSession' => isset($from->bookingSessionId),
-                'rtt' => $rtt !== null ? $rtt . 'ms' : 'unknown',
-                'timestamp' => date('c')
+                'browser' => isset($from->userAgent) ? $from->userAgent : 'unknown',
+                'rtt' => $rtt !== null ? $rtt . 'ms' : 'unknown'
             ]);
             
             return;
@@ -311,10 +371,18 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
      */
     public function onClose(ConnectionInterface $conn): void
     {
-        // Collect information about the connection for logging
+        // Log a more concise connection closed message first
+        $this->logger->info("Connection closed", [
+            'clientId' => $conn->resourceId,
+            'ipAddress' => $conn->remoteAddress ?? 'unknown',
+            'remainingClients' => $this->connectionService->getClientCount() - 1 // -1 for this connection being removed
+        ]);
+        
+        // Collect detailed information about the connection for logging
         $clientInfo = [
             'clientId' => $conn->resourceId,
             'remoteAddress' => $conn->remoteAddress ?? 'unknown',
+            'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown',
             'httpHeaders' => isset($conn->httpRequest) ? 'available' : 'none',
             'closeCode' => property_exists($conn, 'closeCode') ? $conn->closeCode : 'unknown',
             'closeReason' => property_exists($conn, 'closeReason') ? $conn->closeReason : 'unknown',
@@ -324,7 +392,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             'connectionDuration' => isset($conn->connectTime) ? (time() - $conn->connectTime) . ' seconds' : 'unknown'
         ];
         
-        $this->logger->info("Connection closing with details", $clientInfo);
+        $this->logger->debug("Connection closing with details", $clientInfo);
         
         // If connection was in rooms, handle room departure
         if (isset($conn->roomId) || $clientInfo['roomCount'] > 0) {

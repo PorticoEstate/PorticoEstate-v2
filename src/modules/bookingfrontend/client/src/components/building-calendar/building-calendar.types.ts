@@ -57,5 +57,7 @@ export interface FCallBackgroundEvent {
     extendedProps: {
         closed?: boolean;
         type: 'background'
+		source?: string;
+		debug?: any;
     }
 }

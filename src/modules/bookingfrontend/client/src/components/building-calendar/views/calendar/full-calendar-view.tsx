@@ -174,7 +174,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				display: 'background',
 				classNames: styles.closedHours,
 				extendedProps: {
-					type: 'background'
+					type: 'background',
+					source: 'past'
 				}
 			});
 		}
@@ -201,36 +202,47 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					a.from_.localeCompare(b.from_)
 				);
 
-				// Add background for time before first opening
-				backgroundEvents.push({
-					start: date.startOf('day').toJSDate(),
-					end: date.set({
-						hour: parseInt(sortedBoundaries[0].from_.split(':')[0]),
-						minute: parseInt(sortedBoundaries[0].from_.split(':')[1])
-					}).toJSDate(),
-					display: 'background',
-					classNames: styles.closedHours,
-					extendedProps: {
-						closed: true,
-						type: 'background'
-					}
-				});
+				// Add background for time before first opening - but only if start time isn't midnight
+				const firstBoundaryFrom = sortedBoundaries[0].from_;
+				if (firstBoundaryFrom !== "00:00:00") {
+					backgroundEvents.push({
+						start: date.startOf('day').toJSDate(),
+						end: date.set({
+							hour: parseInt(firstBoundaryFrom.split(':')[0]),
+							minute: parseInt(firstBoundaryFrom.split(':')[1])
+						}).toJSDate(),
+						display: 'background',
+						classNames: styles.closedHours,
+						extendedProps: {
+							closed: true,
+							type: 'background',
+							source: 'seasonBeforeStart'
+						}
+					});
+				}
 
 				// Add background for time after last closing
 				const lastBoundary = sortedBoundaries[sortedBoundaries.length - 1];
-				backgroundEvents.push({
-					start: date.set({
-						hour: parseInt(lastBoundary.to_.split(':')[0]),
-						minute: parseInt(lastBoundary.to_.split(':')[1])
-					}).toJSDate(),
-					end: date.plus({days: 1}).startOf('day').toJSDate(),
-					display: 'background',
-					classNames: styles.closedHours,
-					extendedProps: {
-						closed: true,
-						type: 'background'
-					}
-				});
+				const lastBoundaryTo = lastBoundary.to_;
+
+				// Only add after-hours background if the venue doesn't close near midnight
+				// (Skip if closing time is 23:45:00 or later)
+				if (lastBoundaryTo < "23:45:00") {
+					backgroundEvents.push({
+						start: date.set({
+							hour: parseInt(lastBoundaryTo.split(':')[0]),
+							minute: parseInt(lastBoundaryTo.split(':')[1])
+						}).toJSDate(),
+						end: date.plus({days: 1}).startOf('day').toJSDate(),
+						display: 'background',
+						classNames: styles.closedHours,
+						extendedProps: {
+							closed: true,
+							type: 'background',
+							source:'seasonAfterHours'
+						}
+					});
+				}
 			}
 		}
 
@@ -353,6 +365,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 		// Check for overlap with each event's actual times
 		let overlapEventName = '';
+
 		const hasNoOverlap = !relevantEvents.some(event => {
 			// Get actual start and end times from extendedProps
 			const eventStart = DateTime.fromJSDate(event.extendedProps.actualStart || event.start!);
@@ -374,11 +387,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			}
 
 			// If there's no deny flag, use the standard rules (only block closed)
-			if (overlap && (event.extendedProps.closed)) {
-				return true;
-			}
+			return !!(overlap && (event.extendedProps.closed));
 
-			return false;
+
 		});
 
 		// If we have an overlap, show a toast notification ONLY on final user selection

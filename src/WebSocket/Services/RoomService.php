@@ -433,6 +433,7 @@ class RoomService
     /**
      * Clean up inactive connections from rooms
      * Removes connections that haven't responded to pings for more than 8 minutes
+     * Only cleans up entity rooms, not session rooms
      * 
      * @param int $inactiveThreshold Seconds of inactivity before removal (default: 480 = 8 minutes)
      * @return array Stats about cleanup
@@ -444,6 +445,11 @@ class RoomService
         $connectionsRemoved = 0;
         
         foreach ($this->rooms as $roomId => $connections) {
+            // Skip session rooms - they should only be cleaned up when a client disconnects
+            if (strpos($roomId, 'session_') === 0) {
+                continue;
+            }
+            
             $roomCleanCount = 0;
             
             foreach ($connections as $conn) {
@@ -495,5 +501,23 @@ class RoomService
             'connectionsRemoved' => $connectionsRemoved,
             'roomsCleaned' => $roomsCleaned
         ];
+    }
+    
+    /**
+     * Check if a connection is in a specific room
+     * 
+     * @param string $roomId Room identifier
+     * @param ConnectionInterface $conn Connection to check
+     * @return bool True if the connection is in the room
+     */
+    public function isInRoom(string $roomId, ConnectionInterface $conn): bool
+    {
+        // Check if the room exists
+        if (!isset($this->rooms[$roomId])) {
+            return false;
+        }
+        
+        // Check if the connection is in the room
+        return $this->rooms[$roomId]->contains($conn);
     }
 }

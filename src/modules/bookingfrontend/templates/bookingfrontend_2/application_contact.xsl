@@ -428,7 +428,7 @@
 						<div class="row  d-flex align-items-center justify-content-end">
 								<button
 									class="pe-btn pe-btn-primary  align-items-center gap-2"
-									style="width: min-content"
+									style="width: fit-content"
 									type="button" id="btnSubmit">
 									<div class="text-bold">
 										<xsl:choose>
@@ -451,7 +451,7 @@
 
 										<xsl:for-each select="payment_methods">
 											<a id="payment_{method}" href="#"
-											   style="width: min-content"
+											   style="width: fit-content"
 											   data-bind="visible: applicationCartTotalSum() != 0; click: () => initiate_payment('{method}')">
 												<img src="{logo}" class="ml-5" OnClick="">
 												</img>

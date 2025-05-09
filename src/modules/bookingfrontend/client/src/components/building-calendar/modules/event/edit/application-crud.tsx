@@ -42,6 +42,7 @@ interface ApplicationCrudProps {
     applicationId?: number;
     date_id?: number;
     onClose: () => void;
+    showDebug?: boolean;
 }
 
 interface ApplicationCrudInnerProps extends ApplicationCrudProps {
@@ -111,7 +112,6 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
         return null;
     }
 
-
     return (
         <div style={{ display: isOpen ? 'block' : 'none' }}>
             <ApplicationCrud
@@ -123,8 +123,9 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
                 partials={partials}
                 lastSubmittedData={lastSubmittedData}
                 bookingUser={bookingUser}
-				seasons={seasons}
+                seasons={seasons}
                 events={events}
+                showDebug={isDevMode()} // Always enable debug in dev mode
                 onSubmitSuccess={(data) => setLastSubmittedData(data)}
                 {...props}
             />
@@ -168,10 +169,19 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		});
 
 		// Set default values if no valid times found
-		return [
-			minTime === '24:00:00' ? '06:00:00' : minTime,
-			maxTime === '00:00:00' ? '24:00:00' : maxTime
-		];
+		// For min time, use the earliest boundary time or default to 6am
+		const effectiveMinTime = minTime === '24:00:00' ? '06:00:00' : minTime;
+
+		// For max time, check if the calculated time is very late (23:45 or later)
+		// If so, extend it to midnight (24:00). Otherwise respect the boundary.
+		// This ensures consistency with calendar view behavior.
+		const effectiveMaxTime =
+			maxTime === '00:00:00' || // No boundaries found
+			maxTime >= '23:45:00'     // Season closes very late
+				? '24:00:00'          // Allow until midnight
+				: maxTime;            // Otherwise respect the boundary
+
+		return [effectiveMinTime, effectiveMaxTime];
 	}, [props.seasons]);
 
 	const isWithinBusinessHours = useCallback((date: Date): boolean => {
@@ -189,14 +199,37 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			return season.active && dt >= seasonStart && dt <= seasonEnd;
 		});
 
+		// If no active seasons for this date, consider it within hours (will be validated elsewhere)
+		if (activeSeasons.length === 0) {
+			return true;
+		}
 
-		// Check if time falls within any boundary of any active season
-		return activeSeasons.some(season =>
-			season.boundaries.some(boundary =>
-				boundary.wday === dayOfWeek &&
-				boundary.from_ <= timeStr &&
-				boundary.to_ >= timeStr
-			)
+		// Get all boundaries for this day from active seasons
+		const dayBoundaries = activeSeasons.flatMap(season =>
+			season.boundaries.filter(b => b.wday === dayOfWeek)
+		);
+
+		// If no boundaries defined for this day, consider it within hours (will be validated elsewhere)
+		if (dayBoundaries.length === 0) {
+			return true;
+		}
+
+		// Special handling for late night hours (23:45:00 or later)
+		// Find the latest boundary for this day
+		const sortedBoundaries = [...dayBoundaries].sort((a, b) =>
+			b.to_.localeCompare(a.to_)
+		);
+
+		const latestBoundaryTo = sortedBoundaries[0]?.to_;
+
+		// If the latest boundary extends to 23:45:00 or later, allow bookings until midnight
+		if (latestBoundaryTo && latestBoundaryTo >= '23:45:00' && timeStr <= '24:00:00') {
+			return true;
+		}
+
+		// Standard check: time falls within any boundary of any active season
+		return dayBoundaries.some(boundary =>
+			boundary.from_ <= timeStr && boundary.to_ >= timeStr
 		);
 	}, [props.seasons]);
 
@@ -485,6 +518,24 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 		// Validate dates
 		if (startInPast || endInPast || startOutsideHours || endOutsideHours) {
+			// Add debug info when validation fails
+			if (props.showDebug) {
+				console.log("Time validation failed:", {
+					startInPast,
+					endInPast,
+					startOutsideHours,
+					endOutsideHours,
+					start: {
+						time: data.start,
+						formatted: DateTime.fromJSDate(data.start).toFormat('HH:mm:ss')
+					},
+					end: {
+						time: data.end,
+						formatted: DateTime.fromJSDate(data.end).toFormat('HH:mm:ss')
+					}
+				});
+			}
+
 			if (startInPast) {
 				setError('start', {
 					type: 'manual',
@@ -771,7 +822,38 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
             </div>
         );
     };
-	console.log("max-min time", maxTime, minTime)
+	// console.log("max-min time", maxTime, minTime)
+
+    // Enhanced debug logging for time constraints and business hours validation
+    if (props.showDebug) {
+        console.log("Application CRUD time constraints:", {
+            minTime,
+            maxTime,
+            startTime: startTime ? {
+                date: startTime,
+                formatted: DateTime.fromJSDate(startTime).toFormat('HH:mm:ss'),
+                isWithinHours: isWithinBusinessHours(startTime)
+            } : null,
+            endTime: endTime ? {
+                date: endTime,
+                formatted: DateTime.fromJSDate(endTime).toFormat('HH:mm:ss'),
+                isWithinHours: isWithinBusinessHours(endTime)
+            } : null,
+            activeSeasons: props.seasons?.filter(season => {
+                const now = DateTime.now();
+                const seasonStart = DateTime.fromISO(season.from_);
+                const seasonEnd = DateTime.fromISO(season.to_);
+                return season.active && now >= seasonStart && now <= seasonEnd;
+            }).map(s => ({
+                id: s.id,
+                boundaries: s.boundaries.map(b => ({
+                    wday: b.wday,
+                    from: b.from_,
+                    to: b.to_
+                }))
+            }))
+        });
+    }
 
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -844,7 +926,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											minTime={minTime}
 											maxTime={maxTime}
 											allowPastDates={existingApplication !== undefined}
-											showDebug={isDevMode()}
+											showDebug={props.showDebug || isDevMode()}
 										/>
 
 
@@ -875,7 +957,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											minTime={minTime}
 											maxTime={maxTime}
 											allowPastDates={existingApplication !== undefined}
-											showDebug={isDevMode()}
+											showDebug={props.showDebug || isDevMode()}
 										/>
                                         {errors.end &&
                                             <span className={styles.error}>{errors.end.message}</span>}

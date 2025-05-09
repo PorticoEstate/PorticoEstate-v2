@@ -7,6 +7,7 @@ import {wsLog as wslogbase} from "@/service/websocket/util";
 
 interface ServiceWorkerProviderProps {
 	children: ReactNode;
+	disableServiceWorker?: boolean;
 }
 const wsLog = (message: string, data: any = null) => wslogbase('WSProvider', message, data)
 
@@ -14,13 +15,20 @@ const wsLog = (message: string, data: any = null) => wslogbase('WSProvider', mes
  * Provider component that handles WebSocket Service Worker registration
  * This component must be a client component (use client directive)
  */
-export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children}) => {
+export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children, disableServiceWorker}) => {
 	const [isRegistered, setIsRegistered] = useState(false);
 	const [fallbackToDirectMode, setFallbackToDirectMode] = useState(false);
 
 	useEffect(() => {
 		// Skip if we're not in a browser environment
 		if (typeof window === 'undefined') return;
+
+		// If service worker is explicitly disabled via prop
+		if (disableServiceWorker) {
+			wsLog('Direct mode requested via disableServiceWorker prop');
+			setFallbackToDirectMode(true);
+			return;
+		}
 
 		// If URL has direct=true, don't even try service workers
 		const urlParams = new URLSearchParams(window.location.search);
@@ -31,7 +39,7 @@ export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children}
 		}
 
 		// Comprehensive check for service worker support
-		checkServiceWorkerSupport().then(result => {
+		checkServiceWorkerSupport(disableServiceWorker).then(result => {
 			if (!result.supported) {
 				console.warn(`Service Workers are not supported: ${result.reason}`);
 				setIsRegistered(false); // Mark as not registered, but continue
@@ -84,12 +92,12 @@ export const ServiceWorkerProvider: FC<ServiceWorkerProviderProps> = ({children}
 			// Only run the initialization if we have service worker support
 			initializeServiceWorker();
 		});
-	}, []);
+	}, [disableServiceWorker]);
 
 	// If we need to fall back to direct mode, render just the children without the provider
 	if (fallbackToDirectMode) {
 		// Inform the console so it's clear what's happening
-		console.info('Using direct WebSocket connection (service worker disabled)');
+		wsLog('Using direct WebSocket connection (service worker disabled)');
 		return <>{children}</>;
 	}
 

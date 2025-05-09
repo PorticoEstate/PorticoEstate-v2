@@ -108,6 +108,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		return {
 			businessHours: generateBusinessHours(),
 			startTime: slotMinTime,
+			// Use the calculated slotMaxTime which respects boundaries
+			// but also extends to midnight when appropriate
 			endTime: slotMaxTime
 		};
 	}, [generateBusinessHours, slotMinTime, slotMaxTime]);
@@ -141,8 +143,18 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		});
 
 		// Set default values if no valid times found
-		setSlotMinTime(minTime === "24:00:00" ? '06:00:00' : minTime);
-		setSlotMaxTime(maxTime === "00:00:00" ? '24:00:00' : maxTime);
+		setSlotMinTime(minTime === "24:00:00" ? '00:00:00' : minTime);
+
+		// For max time, check if the calculated time is very late (23:45 or later)
+		// If so, extend it to the end of day (24:00). Otherwise respect the boundary.
+		// This means we'll respect season boundaries for display but allow booking until
+		// midnight for seasons that end very late or when no boundaries exist.
+		setSlotMaxTime(
+			maxTime === "00:00:00" || // No boundaries found 
+			maxTime >= "23:45:00"     // Season closes very late
+				? '24:00:00'          // Allow until midnight
+				: maxTime             // Otherwise respect the boundary
+		);
 	}, [props.seasons, events]);
 
 
@@ -174,7 +186,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				display: 'background',
 				classNames: styles.closedHours,
 				extendedProps: {
-					type: 'background'
+					type: 'background',
+					source: 'past'
 				}
 			});
 		}
@@ -201,36 +214,47 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					a.from_.localeCompare(b.from_)
 				);
 
-				// Add background for time before first opening
-				backgroundEvents.push({
-					start: date.startOf('day').toJSDate(),
-					end: date.set({
-						hour: parseInt(sortedBoundaries[0].from_.split(':')[0]),
-						minute: parseInt(sortedBoundaries[0].from_.split(':')[1])
-					}).toJSDate(),
-					display: 'background',
-					classNames: styles.closedHours,
-					extendedProps: {
-						closed: true,
-						type: 'background'
-					}
-				});
+				// Add background for time before first opening - but only if start time isn't midnight
+				const firstBoundaryFrom = sortedBoundaries[0].from_;
+				if (firstBoundaryFrom !== "00:00:00") {
+					backgroundEvents.push({
+						start: date.startOf('day').toJSDate(),
+						end: date.set({
+							hour: parseInt(firstBoundaryFrom.split(':')[0]),
+							minute: parseInt(firstBoundaryFrom.split(':')[1])
+						}).toJSDate(),
+						display: 'background',
+						classNames: styles.closedHours,
+						extendedProps: {
+							closed: true,
+							type: 'background',
+							source: 'seasonBeforeStart'
+						}
+					});
+				}
 
 				// Add background for time after last closing
 				const lastBoundary = sortedBoundaries[sortedBoundaries.length - 1];
-				backgroundEvents.push({
-					start: date.set({
-						hour: parseInt(lastBoundary.to_.split(':')[0]),
-						minute: parseInt(lastBoundary.to_.split(':')[1])
-					}).toJSDate(),
-					end: date.plus({days: 1}).startOf('day').toJSDate(),
-					display: 'background',
-					classNames: styles.closedHours,
-					extendedProps: {
-						closed: true,
-						type: 'background'
-					}
-				});
+				const lastBoundaryTo = lastBoundary.to_;
+
+				// Only add after-hours background if the venue doesn't close near midnight
+				// (Skip if closing time is 23:45:00 or later)
+				if (lastBoundaryTo < "23:45:00") {
+					backgroundEvents.push({
+						start: date.set({
+							hour: parseInt(lastBoundaryTo.split(':')[0]),
+							minute: parseInt(lastBoundaryTo.split(':')[1])
+						}).toJSDate(),
+						end: date.plus({days: 1}).startOf('day').toJSDate(),
+						display: 'background',
+						classNames: styles.closedHours,
+						extendedProps: {
+							closed: true,
+							type: 'background',
+							source:'seasonAfterHours'
+						}
+					});
+				}
 			}
 		}
 
@@ -353,6 +377,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 		// Check for overlap with each event's actual times
 		let overlapEventName = '';
+
 		const hasNoOverlap = !relevantEvents.some(event => {
 			// Get actual start and end times from extendedProps
 			const eventStart = DateTime.fromJSDate(event.extendedProps.actualStart || event.start!);
@@ -374,11 +399,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			}
 
 			// If there's no deny flag, use the standard rules (only block closed)
-			if (overlap && (event.extendedProps.closed)) {
-				return true;
-			}
+			return !!(overlap && (event.extendedProps.closed));
 
-			return false;
+
 		});
 
 		// If we have an overlap, show a toast notification ONLY on final user selection
@@ -413,7 +436,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		const newEnd = resizeInfo.event.end;
 		const newStart = resizeInfo.event.start;
 		if (!newEnd || !newStart) {
-			console.log("No new date")
+			// console.log("No new date")
 			return;
 		}
 		if (resizeInfo.event.extendedProps?.type === 'temporary' && 'applicationId' in resizeInfo.event.extendedProps) {
@@ -422,7 +445,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const existingEvent = partials?.list.find(app => +app.id === +eventId);
 
 			if (!eventId || !dateId || !existingEvent) {
-				console.log("missing data", eventId, dateId, existingEvent)
+				// console.log("missing data", eventId, dateId, existingEvent)
 				return;
 			}
 
@@ -434,10 +457,10 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				startStr: newStart.toISOString(),
 				endStr: newEnd.toISOString()
 			};
-			
+
 			// Only proceed with the update if there's no overlap
 			const hasNoOverlap = checkEventOverlap(span, resizeInfo.event as EventImpl);
-			
+
 			if (!hasNoOverlap) {
 				// If there's an overlap, revert the event to its original position
 				resizeInfo.revert();
@@ -447,7 +470,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const updatedApplication: IUpdatePartialApplication = {
 				id: eventId,
 			}
-			
+
 			updatedApplication.dates = existingEvent.dates.map(date => {
 				if (date.id && date && +dateId === +date.id) {
 					return {

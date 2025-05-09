@@ -7,6 +7,7 @@ import { hasServiceWorkerAPI } from './service-worker-check';
 import { getWebSocketUrl, wsLog as wslogbase } from './util';
 import { useQueryClient } from '@tanstack/react-query';
 import { SubscriptionManager } from './subscription-manager';
+import { useWebSocketSession } from '../hooks/use-websocket-session';
 
 interface WebSocketContextValue {
   status: WebSocketStatus;
@@ -15,9 +16,10 @@ interface WebSocketContextValue {
   reconnect: () => void;
   closeConnection: () => void;
   isReady: boolean;
+  sessionConnected: boolean; // Indicates if we've received a connection_success message
 }
 
-const wsLog = (message: string, data: any = null) => wslogbase('WSContext', message, data)
+const wsLog = (message: string, ...optionalParams: any[]) => wslogbase('WSContext', message, optionalParams)
 
 const WebSocketContext = createContext<WebSocketContextValue | undefined>(undefined);
 
@@ -27,6 +29,7 @@ interface WebSocketProviderProps {
   autoReconnect?: boolean;
   reconnectInterval?: number;
   pingInterval?: number;
+  disableServiceWorker?: boolean;
 }
 
 export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
@@ -35,14 +38,21 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   autoReconnect = true,
   reconnectInterval = 5000,
   pingInterval = 600000, // Changed from 30000 (30s) to 600000 (10min)
+  disableServiceWorker = false,
 }) => {
   const [status, setStatus] = useState<WebSocketStatus>('CLOSED');
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [sessionConnected, setSessionConnected] = useState(false);
   const [wsService] = useState(() => WebSocketService.getInstance());
   const wsRef = useRef<WebSocket | null>(null);
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Add a ref to store the direct message listener function for cleanup
+  const wsDirectMessageListenerRef = useRef<((event: any) => void) | null>(null);
   const queryClient = useQueryClient();
+
+  // Initialize session management
+  useWebSocketSession();
 
 
   // Keep track of initialization state with a ref to handle StrictMode double-invocation
@@ -52,167 +62,339 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   useEffect(() => {
     // StrictMode protection - prevent double initialization
     if (isInitializedRef.current) {
-      console.log('WebSocket already initialized, skipping redundant initialization (StrictMode protection)');
+      wsLog('WebSocket already initialized, skipping redundant initialization (StrictMode protection)');
       return;
     }
 
     if (typeof window === 'undefined') return; // Skip on server-side rendering
 
+    // Setup function for direct WebSocket connection as fallback
+    const setupDirectWebSocket = () => {
+      // StrictMode protection - prevent creating a new connection if one already exists and is open
+      if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+        wsLog('Direct WebSocket connection already exists and is open, skipping creation');
+        return;
+      }
+
+      // If we have a reference but it's not in OPEN state, clean it up before creating a new one
+      if (wsRef.current && wsRef.current.readyState !== WebSocket.OPEN) {
+        wsLog('Existing WebSocket is not in OPEN state, cleaning up before reconnecting');
+        try {
+          wsRef.current.close();
+        } catch (e) {
+          console.error('Error closing non-open WebSocket:', e);
+        }
+        wsRef.current = null;
+      }
+
+      try {
+        const wsUrl = customUrl || getDefaultWebSocketUrl();
+        if (!wsUrl) {
+          console.error('No WebSocket URL available');
+          setStatus('ERROR');
+          return;
+        }
+
+        wsLog('Creating new direct WebSocket connection');
+        // Create a new WebSocket connection
+        const ws = new WebSocket(wsUrl);
+        isInitializedRef.current = true;
+
+        // Store WebSocket reference in window object for direct WebSocket mode detection
+        if (typeof window !== 'undefined') {
+          // @ts-ignore - Store a reference to the active WebSocket for direct mode
+          window.__directWebSocketRef = ws;
+        }
+
+        // Set up WebSocket event handlers
+        ws.onopen = () => {
+          wsLog('Direct WebSocket connection established');
+          setStatus('OPEN');
+
+          // Important: Mark the WebSocketService as initialized when direct WebSocket connects
+          // This ensures useEntitySubscription and other hooks work properly with direct WebSocket mode
+          const wsService = WebSocketService.getInstance();
+          if (!wsService.isReady()) {
+            wsLog('Auto-initializing WebSocketService for direct WebSocket mode');
+            // @ts-ignore - Force set the internal isInitialized flag
+            wsService['isInitialized'] = true;
+
+            // Set up event listener for direct messages from WebSocketService
+            // Create a closure to capture the current WebSocket reference
+            const createDirectMessageListener = (name: string) => {
+              return (event: any) => {
+                // Get the current WebSocket reference from wsRef for safety
+                const currentWs = wsRef.current;
+
+                // Always log the readyState
+                if (currentWs) {
+                  wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState,
+                    currentWs.readyState === WebSocket.CONNECTING ? 'CONNECTING' :
+                    currentWs.readyState === WebSocket.OPEN ? 'OPEN' :
+                    currentWs.readyState === WebSocket.CLOSING ? 'CLOSING' :
+                    currentWs.readyState === WebSocket.CLOSED ? 'CLOSED' : 'UNKNOWN');
+                } else {
+                  wsLog(`⚠️ WebSocket reference is null in ${name}`);
+                }
+
+                // Only proceed if we have a valid WebSocket and it's OPEN
+                if (currentWs && currentWs.readyState === WebSocket.OPEN && event.data) {
+                  try {
+                    // The data structure is different from what we expected
+                    wsLog(`Received direct_message event (${name}), sending via WebSocket`, event.data);
+
+                    // Use the data property directly - it already contains the properly formatted message
+                    currentWs.send(JSON.stringify(event.data));
+                  } catch (error) {
+                    console.error(`Error sending direct message via WebSocket (${name}):`, error);
+                  }
+                } else if (event.data) {
+                  // Log when we receive a message but can't send it due to connection state
+                  wsLog(`⚠️ Cannot send message: WebSocket not in OPEN state (${name})`, event.data);
+
+                  // Queue message for retry if possible
+                  queueMessageForRetry(event.data);
+                }
+              };
+            };
+
+            // Function to queue messages for retry
+            const queueMessageForRetry = (data: WebSocketMessage) => {
+              wsLog('🔄 Queueing message for retry after connection is established', data);
+              // Set a short timeout to retry the message
+              setTimeout(() => {
+                const currentWs = wsRef.current;
+                if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                  try {
+                    wsLog('🔄 Retrying queued message', data);
+                    currentWs.send(JSON.stringify(data));
+                  } catch (error) {
+                    console.error('Error sending queued message:', error);
+                  }
+                } else {
+                  wsLog('❌ Failed to retry message, WebSocket still not ready');
+                }
+              }, 1000); // Retry after 1 second
+            };
+
+            // Create the listener using our factory function
+            const directMessageListener_initialSetup = createDirectMessageListener('directMessageListener_initialSetup');
+
+            // Remove any existing listener for cleanup
+            if (wsDirectMessageListenerRef.current) {
+              wsService.removeEventListener('direct_message', wsDirectMessageListenerRef.current);
+            }
+
+            // Add the new listener
+            wsService.addEventListener('direct_message', directMessageListener_initialSetup);
+            wsDirectMessageListenerRef.current = directMessageListener_initialSetup;
+          }
+
+          // After connection is established, trigger resubscription to all rooms
+          // This ensures entity subscriptions are properly re-established in direct mode
+          setTimeout(() => {
+            wsLog('Triggering resubscription to all entity rooms after direct connection established');
+
+            // Set up temporary listener to track subscription confirmations and other message types
+            const messageListener = (event: { data: WebSocketMessage }) => {
+              if (event.data) {
+                // Log connection success messages
+                if (event.data.type === 'connection_success') {
+                  wsLog(`🔌 CONNECTION SUCCESS - Added to room ${event.data.roomId}`, {
+                    message: event.data.message,
+                    roomId: event.data.roomId,
+                    timestamp: event.data.timestamp
+                  });
+                  wsLog('🔌 CONNECTION SUCCESS:', event.data);
+                }
+                // Log subscription confirmations
+                else if (event.data.type === 'subscription_confirmation') {
+                  wsLog(`✅ SUBSCRIPTION CONFIRMED for ${event.data.entityType} ${event.data.entityId}`, {
+                    status: event.data.status,
+                    timestamp: event.data.timestamp
+                  });
+                }
+                // Also log room messages which indicate successful subscription
+                else if (event.data.type === 'room_message' &&
+                         event.data.roomId &&
+                         event.data.entityType &&
+                         event.data.entityId) {
+                  wsLog(`📨 Received room message for ${event.data.entityType} ${event.data.entityId}`, {
+                    action: event.data.action,
+                    room: event.data.roomId,
+                    timestamp: event.data.timestamp
+                  });
+                }
+
+                // Debug console log for any message type during resubscription
+                wsLog('WebSocket message during resubscription:', event.data);
+              }
+            };
+
+            // Add temporary listener for all message types
+            wsService.addEventListener('message', messageListener);
+
+            // @ts-ignore - Directly call resubscribeToRooms method to restore subscriptions
+            wsLog('⚠️ CALLING RESUBSCRIBE TO ROOMS');
+            wsService.resubscribeToRooms();
+
+            // Keep the listener active longer to catch delayed messages
+            // Increased from 5 seconds to 30 seconds to ensure we catch all confirmations
+            setTimeout(() => {
+              wsLog('Removing temporary subscription confirmation listener');
+              wsService.removeEventListener('message', messageListener);
+            }, 30000);
+          }, 500);
+
+          // Setup ping interval
+          if (pingIntervalRef.current) {
+            clearInterval(pingIntervalRef.current);
+          }
+          pingIntervalRef.current = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'ping',
+                timestamp: new Date().toISOString()
+              }));
+            }
+          }, pingInterval || 600000);
+
+          // Store interval ID for cleanup
+          setTimeout(() => {
+            // This is a hack to avoid the "cannot update state during render" error
+            setIsReady(true);
+          }, 0);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data) as WebSocketMessage;
+            setTimeout(() => {
+              setLastMessage(data);
+
+              // Specialized handling for reconnect_required in the initial setup
+              if (data.type === 'reconnect_required') {
+                wsLog('Server requested reconnection:', data.message);
+
+                // Clear existing ping interval
+                if (pingIntervalRef.current) {
+                  clearInterval(pingIntervalRef.current);
+                  pingIntervalRef.current = null;
+                }
+
+                // Close current connection
+                ws.close();
+                wsRef.current = null;
+
+                // Trigger reconnection after a brief delay
+                setStatus('RECONNECTING');
+                setTimeout(() => {
+                  setStatus('CONNECTING');
+                }, 1000);
+              }
+              // Handle server_ping directly in the WebSocket handler
+              else if (data.type === 'server_ping') {
+                // For direct connection mode, immediately respond with a pong
+                try {
+                  ws.send(JSON.stringify({
+                    type: 'pong',
+                    timestamp: new Date().toISOString(),
+                    reply_to: data.id || null
+                  }));
+                } catch (error) {
+                  console.error('Error sending pong response to server_ping:', error);
+                }
+
+                // Process through subscription manager for direct WebSocket mode
+                const subscriptionManager = SubscriptionManager.getInstance();
+                subscriptionManager.handleMessage(data);
+
+                // Also use the standard message handler
+                handleMessage(data);
+              }
+              // For all other messages, use the standard handler
+              else {
+                // Process through subscription manager for direct WebSocket mode
+                // This ensures message subscriptions work even without service worker
+                const subscriptionManager = SubscriptionManager.getInstance();
+                subscriptionManager.handleMessage(data);
+
+                // Also use the standard message handler for backward compatibility
+                handleMessage(data);
+              }
+            }, 0);
+          } catch (e) {
+            console.error('Error parsing WebSocket message:', e);
+          }
+        };
+
+        ws.onclose = (event) => {
+          wsLog('Direct WebSocket connection closed', event.code, event.reason);
+          setStatus('CLOSED');
+
+          // Reset the session connected flag when connection is closed
+          setSessionConnected(false);
+
+          // Important: Set wsRef to null if the connection is actually closed
+          // This ensures we don't have a reference to a closed socket
+          if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSED) {
+            wsLog('Setting websocket reference to null since connection is closed');
+            wsRef.current = null;
+          }
+
+          // Reconnect if needed
+          if (autoReconnect) {
+            wsLog(`Attempting to reconnect in ${reconnectInterval || 5000}ms`);
+            setStatus('RECONNECTING');
+
+            // Only setup a new reconnection if not already reconnecting
+            setTimeout(() => {
+              if (!isReconnectingRef.current) {
+                setupDirectWebSocket();
+              } else {
+                wsLog('Reconnection already in progress, skipping additional reconnect attempt');
+              }
+            }, reconnectInterval || 5000);
+          } else {
+            // Reset initialization flags when not auto-reconnecting
+            isInitializedRef.current = false;
+            isReconnectingRef.current = false;
+          }
+        };
+
+        ws.onerror = () => {
+          console.error('Direct WebSocket error');
+          setStatus('ERROR');
+          // Reset reconnection flag on error
+          isReconnectingRef.current = false;
+        };
+
+        // Store the WebSocket instance in a ref for later use
+        wsRef.current = ws;
+      } catch (error) {
+        console.error('Failed to setup direct WebSocket:', error);
+        setStatus('ERROR');
+        isInitializedRef.current = false;
+        isReconnectingRef.current = false;
+      }
+    };
+
+    // Check if service worker is explicitly disabled via prop
+    if (disableServiceWorker) {
+      wsLog('Service Worker explicitly disabled via disableServiceWorker prop - using direct WebSocket');
+      // Setup a direct WebSocket connection as fallback
+      setupDirectWebSocket();
+      return;
+    }
+
     // Perform a basic check for service worker support
-    const swSupported = hasServiceWorkerAPI();
+    const swSupported = hasServiceWorkerAPI(disableServiceWorker);
 
     // If service workers aren't supported, use direct WebSocket
     if (!swSupported) {
       console.warn('Service Workers are not supported in this browser - using direct WebSocket fallback');
 
       // Setup a direct WebSocket connection as fallback
-      const setupDirectWebSocket = () => {
-        // StrictMode protection - prevent creating a new connection if one already exists and is open
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          console.log('Direct WebSocket connection already exists and is open, skipping creation');
-          return;
-        }
-
-        // If we have a reference but it's not in OPEN state, clean it up before creating a new one
-        if (wsRef.current && wsRef.current.readyState !== WebSocket.OPEN) {
-          console.log('Existing WebSocket is not in OPEN state, cleaning up before reconnecting');
-          try {
-            wsRef.current.close();
-          } catch (e) {
-            console.error('Error closing non-open WebSocket:', e);
-          }
-          wsRef.current = null;
-        }
-
-        try {
-          const wsUrl = customUrl || getDefaultWebSocketUrl();
-          if (!wsUrl) {
-            console.error('No WebSocket URL available');
-            setStatus('ERROR');
-            return;
-          }
-
-          console.log('Creating new direct WebSocket connection');
-          // Create a new WebSocket connection
-          const ws = new WebSocket(wsUrl);
-          isInitializedRef.current = true;
-
-          // Set up WebSocket event handlers
-          ws.onopen = () => {
-            console.log('Direct WebSocket connection established');
-            setStatus('OPEN');
-
-            // Setup ping interval
-            if (pingIntervalRef.current) {
-              clearInterval(pingIntervalRef.current);
-            }
-            pingIntervalRef.current = setInterval(() => {
-              if (ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({
-                  type: 'ping',
-                  timestamp: new Date().toISOString()
-                }));
-              }
-            }, pingInterval || 600000);
-
-            // Store interval ID for cleanup
-            setTimeout(() => {
-              // This is a hack to avoid the "cannot update state during render" error
-              setIsReady(true);
-            }, 0);
-          };
-
-          ws.onmessage = (event) => {
-            try {
-              const data = JSON.parse(event.data) as WebSocketMessage;
-              setTimeout(() => {
-                setLastMessage(data);
-
-                // Specialized handling for reconnect_required in the initial setup
-                if (data.type === 'reconnect_required') {
-                  console.log('Server requested reconnection:', data.message);
-
-                  // Clear existing ping interval
-                  if (pingIntervalRef.current) {
-                    clearInterval(pingIntervalRef.current);
-                    pingIntervalRef.current = null;
-                  }
-
-                  // Close current connection
-                  ws.close();
-                  wsRef.current = null;
-
-                  // Trigger reconnection after a brief delay
-                  setStatus('RECONNECTING');
-                  setTimeout(() => {
-                    setStatus('CONNECTING');
-                  }, 1000);
-                }
-                // For all other messages, use the standard handler
-                else {
-                  // Process through subscription manager for direct WebSocket mode
-                  // This ensures message subscriptions work even without service worker
-                  const subscriptionManager = SubscriptionManager.getInstance();
-                  subscriptionManager.handleMessage(data);
-
-                  // Also use the standard message handler for backward compatibility
-                  handleMessage(data);
-                }
-              }, 0);
-            } catch (e) {
-              console.error('Error parsing WebSocket message:', e);
-            }
-          };
-
-          ws.onclose = (event) => {
-            console.log('Direct WebSocket connection closed', event.code, event.reason);
-            setStatus('CLOSED');
-
-            // Important: Set wsRef to null if the connection is actually closed
-            // This ensures we don't have a reference to a closed socket
-            if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSED) {
-              console.log('Setting websocket reference to null since connection is closed');
-              wsRef.current = null;
-            }
-
-            // Reconnect if needed
-            if (autoReconnect) {
-              console.log(`Attempting to reconnect in ${reconnectInterval || 5000}ms`);
-              setStatus('RECONNECTING');
-
-              // Only setup a new reconnection if not already reconnecting
-              setTimeout(() => {
-                if (!isReconnectingRef.current) {
-                  setupDirectWebSocket();
-                } else {
-                  console.log('Reconnection already in progress, skipping additional reconnect attempt');
-                }
-              }, reconnectInterval || 5000);
-            } else {
-              // Reset initialization flags when not auto-reconnecting
-              isInitializedRef.current = false;
-              isReconnectingRef.current = false;
-            }
-          };
-
-          ws.onerror = () => {
-            console.error('Direct WebSocket error');
-            setStatus('ERROR');
-            // Reset reconnection flag on error
-            isReconnectingRef.current = false;
-          };
-
-          // Store the WebSocket instance in a ref for later use
-          wsRef.current = ws;
-        } catch (error) {
-          console.error('Failed to setup direct WebSocket:', error);
-          setStatus('ERROR');
-          isInitializedRef.current = false;
-          isReconnectingRef.current = false;
-        }
-      };
-
-      // Initialize the direct WebSocket connection
       setupDirectWebSocket();
       return;
     }
@@ -222,7 +404,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       url: customUrl || getDefaultWebSocketUrl(),
       autoReconnect,
       reconnectInterval,
-      pingInterval
+      pingInterval,
+      disableServiceWorker
     };
 
     // Set up event listeners
@@ -278,11 +461,23 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       wsService.removeEventListener('status', statusListener);
       wsService.removeEventListener('message', messageListener);
 
+      // Clean up direct message listener if it exists
+      if (wsDirectMessageListenerRef.current) {
+        wsService.removeEventListener('direct_message', wsDirectMessageListenerRef.current);
+        wsDirectMessageListenerRef.current = null;
+      }
+
       // Clean up direct WebSocket connection if it exists
       if (wsRef.current) {
         try {
           wsRef.current.close();
           wsRef.current = null;
+
+          // Clear the window reference
+          if (typeof window !== 'undefined') {
+            // @ts-ignore - Clear the reference on cleanup
+            window.__directWebSocketRef = null;
+          }
         } catch (error) {
           console.error('Error closing WebSocket:', error);
         }
@@ -299,12 +494,29 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       // during development, so we don't want to reset these flags unless necessary
       // This is managed automatically by React's useEffect cleanup mechanism
     };
-  }, [wsService, customUrl, autoReconnect, reconnectInterval, pingInterval]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- handleMessage omitted to avoid circular dependencies
+  }, [wsService, customUrl, autoReconnect, reconnectInterval, pingInterval, disableServiceWorker]);
 
   // Handle global message processing - define this before handleReconnection to break circular dependency
   const handleMessage = useCallback((data: WebSocketMessage) => {
     // Handle messages based on their type - TypeScript will properly discriminate
     switch (data.type) {
+      case 'connection_success': {
+        // Handle connection success message which indicates proper session connection
+        wsLog(`🔌 CONNECTION SUCCESS - Added to session room ${data.roomId}`, {
+          message: data.message,
+          roomId: data.roomId,
+          timestamp: data.timestamp
+        });
+        wsLog('🔌 CONNECTION SUCCESS:', data);
+
+        // Set the session connected flag to true
+        // This tells the application that the server has acknowledged our session connection
+        // and we are ready to subscribe to entity rooms
+        setSessionConnected(true);
+        break;
+      }
+
       case 'notification': {
         // Process notification and show browser notification if needed
         if (typeof window !== 'undefined') {
@@ -314,7 +526,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             });
           });
         }
-        console.log('Received notification:', data.message);
+        wsLog('Received notification:', data.message);
         break;
       }
 
@@ -322,13 +534,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         // Server message handling has been moved to useServerMessages hook
         // This just ensures messages are forwarded through the subscription system
         // Events are handled in a dedicated hook now
-        console.log(`Received server message [action: ${data.action}], forwarding to subscribers`);
+        wsLog(`Received server message [action: ${data.action}], forwarding to subscribers`);
         break;
       }
 
       case 'reconnect_required': {
         // Handle server-requested reconnection in direct connection mode
-        console.log('Server requested reconnection:', data.message);
+        wsLog('Server requested reconnection:', data.message);
 
         // Only handle if we're using direct WebSocket connection
         if (wsRef.current) {
@@ -364,6 +576,12 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         break;
       }
 
+      case 'session_id_required': {
+        // This will now be handled by the useWebSocketSession hook
+        wsLog('Received session_id_required message:', data.message);
+        break;
+      }
+
       case 'ping':
       case 'pong':
       case 'server_ping': {
@@ -371,30 +589,51 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
         // Handle entity-specific ping
         if (data.type === 'ping' && 'entityType' in data && 'entityId' in data) {
-          console.log(`Received entity ping for ${data.entityType} ${data.entityId}`);
+          wsLog(`Received entity ping for ${data.entityType} ${data.entityId}`);
 
           // The subscription manager will handle sending the pong response
           // This is processed in subscription-manager.ts
+        } else if (data.type === 'server_ping' && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          // For direct connection mode, we should respond to server_ping with a pong
+          try {
+            wsRef.current.send(JSON.stringify({
+              type: 'pong',
+              timestamp: new Date().toISOString(),
+              reply_to: data.id || null
+            }));
+          } catch (error) {
+            console.error('Error sending pong response to server_ping:', error);
+          }
         } else {
           // Regular ping/pong handling
-          // console.log(`Received ${data.type} message`);
+          // wsLog(`Received ${data.type} message`);
         }
         break;
       }
 
       case 'room_message': {
         // Room messages are handled by subscription callbacks
-        console.log(`Received room message [action: ${data.action}]`, data);
+        // wsLog(`Received room message [action: ${data.action}]`, data);
+        break;
+      }
+      case 'subscription_confirmation': {
+        // Subscription confirmations are handled by subscription callbacks
+        // But also log them at the main level for visibility
+        wsLog(`✅ Subscription confirmed for ${data.entityType} ${data.entityId}`, {
+          status: data.status,
+          timestamp: data.timestamp
+        });
         break;
       }
 
       default: {
         // Handle any other message types
-        console.log(`Received unhandled message type: ${data.type}`, data);
+        wsLog(`Received unhandled message type: ${data.type}`, data);
         break;
       }
     }
-  }, [queryClient]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Track if reconnection is in progress to avoid multiple simultaneous reconnections
   const isReconnectingRef = useRef(false);
@@ -403,7 +642,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
   const handleReconnection = useCallback(() => {
     // Prevent multiple reconnection attempts (StrictMode protection)
     if (isReconnectingRef.current) {
-      console.log('Reconnection already in progress, ignoring redundant request');
+      wsLog('Reconnection already in progress, ignoring redundant request');
       return;
     }
 
@@ -436,14 +675,153 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
           }
 
           try {
-            console.log('Creating new WebSocket connection after reconnect request');
+            wsLog('Creating new WebSocket connection after reconnect request');
             const ws = new WebSocket(wsUrl);
             wsRef.current = ws;
 
             // Set up the WebSocket event handlers again
             ws.onopen = () => {
-              console.log('Direct WebSocket reconnected');
+              wsLog('Direct WebSocket reconnected');
               setStatus('OPEN');
+
+              // Store WebSocket reference in window object for direct WebSocket mode detection
+              if (typeof window !== 'undefined') {
+                // @ts-ignore - Store a reference to the active WebSocket for direct mode
+                window.__directWebSocketRef = ws;
+              }
+
+              // Important: Mark the WebSocketService as initialized when direct WebSocket connects
+              const wsService = WebSocketService.getInstance();
+              if (!wsService.isReady()) {
+                wsLog('Auto-initializing WebSocketService for direct WebSocket mode on reconnect');
+                // @ts-ignore - Force set the internal isInitialized flag
+                wsService['isInitialized'] = true;
+
+                // Create a factory function for direct message listeners
+                const createDirectMessageListener = (name: string) => {
+                  return (event: any) => {
+                    // Get the current WebSocket reference from wsRef for safety
+                    const currentWs = wsRef.current;
+
+                    // Always log the readyState
+                    if (currentWs) {
+                      wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState,
+                        currentWs.readyState === WebSocket.CONNECTING ? 'CONNECTING' :
+                        currentWs.readyState === WebSocket.OPEN ? 'OPEN' :
+                        currentWs.readyState === WebSocket.CLOSING ? 'CLOSING' :
+                        currentWs.readyState === WebSocket.CLOSED ? 'CLOSED' : 'UNKNOWN');
+                    } else {
+                      wsLog(`⚠️ WebSocket reference is null in ${name}`);
+                    }
+
+                    // Only proceed if we have a valid WebSocket and it's OPEN
+                    if (currentWs && currentWs.readyState === WebSocket.OPEN && event.data) {
+                      try {
+                        // The data structure is different from what we expected
+                        wsLog(`Received direct_message event (${name}), sending via WebSocket`, event.data);
+
+                        // Use the data property directly - it already contains the properly formatted message
+                        currentWs.send(JSON.stringify(event.data));
+                      } catch (error) {
+                        console.error(`Error sending direct message via WebSocket (${name}):`, error);
+                      }
+                    } else if (event.data) {
+                      // Log when we receive a message but can't send it due to connection state
+                      wsLog(`⚠️ Cannot send message: WebSocket not in OPEN state (${name})`, event.data);
+
+                      // Queue message for retry if possible
+                      queueMessageForRetry(event.data);
+                    }
+                  };
+                };
+
+                // Function to queue messages for retry
+                const queueMessageForRetry = (data: WebSocketMessage) => {
+                  wsLog('🔄 Queueing message for retry after connection is established', data);
+                  // Set a short timeout to retry the message
+                  setTimeout(() => {
+                    const currentWs = wsRef.current;
+                    if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                      try {
+                        wsLog('🔄 Retrying queued message', data);
+                        currentWs.send(JSON.stringify(data));
+                      } catch (error) {
+                        console.error('Error sending queued message:', error);
+                      }
+                    } else {
+                      wsLog('❌ Failed to retry message, WebSocket still not ready');
+                    }
+                  }, 1000); // Retry after 1 second
+                };
+
+                // Create the reconnect message listener using the factory function
+                const directMessageListener_reconnect = createDirectMessageListener('directMessageListener_reconnect');
+
+                // Remove any existing listener for cleanup
+                if (wsDirectMessageListenerRef.current) {
+                  wsService.removeEventListener('direct_message', wsDirectMessageListenerRef.current);
+                }
+
+                // Add the new listener
+                wsService.addEventListener('direct_message', directMessageListener_reconnect);
+                wsDirectMessageListenerRef.current = directMessageListener_reconnect;
+              }
+
+              // After reconnection is established, trigger resubscription to all rooms
+              // This ensures entity subscriptions are properly re-established after reconnect
+              setTimeout(() => {
+                wsLog('Triggering resubscription to all entity rooms after direct reconnection');
+
+                // Set up temporary listener to track subscription confirmations and other message types
+                const messageListener = (event: { data: WebSocketMessage }) => {
+                  if (event.data) {
+                    // Log connection success messages
+                    if (event.data.type === 'connection_success') {
+                      wsLog(`🔌 CONNECTION SUCCESS - Added to room ${event.data.roomId}`, {
+                        message: event.data.message,
+                        roomId: event.data.roomId,
+                        timestamp: event.data.timestamp
+                      });
+                      wsLog('🔌 CONNECTION SUCCESS:', event.data);
+                    }
+                    // Log subscription confirmations
+                    else if (event.data.type === 'subscription_confirmation') {
+                      wsLog(`✅ SUBSCRIPTION CONFIRMED for ${event.data.entityType} ${event.data.entityId}`, {
+                        status: event.data.status,
+                        timestamp: event.data.timestamp
+                      });
+                    }
+                    // Also log room messages which indicate successful subscription
+                    else if (event.data.type === 'room_message' &&
+                             event.data.roomId &&
+                             event.data.entityType &&
+                             event.data.entityId) {
+                      wsLog(`📨 Received room message for ${event.data.entityType} ${event.data.entityId}`, {
+                        action: event.data.action,
+                        room: event.data.roomId,
+                        timestamp: event.data.timestamp
+                      });
+                    }
+
+                    // Debug console log for any message type during resubscription
+                    wsLog('WebSocket message during reconnection resubscription:', event.data);
+                  }
+                };
+
+                // Add temporary listener for all message types
+                wsService.addEventListener('message', messageListener);
+
+                // @ts-ignore - Directly call resubscribeToRooms method to restore subscriptions
+                wsLog('⚠️ CALLING RESUBSCRIBE TO ROOMS AFTER RECONNECTION');
+                wsService.resubscribeToRooms();
+
+                // Keep the listener active longer to catch delayed messages
+                // Increased from 5 seconds to 30 seconds to ensure we catch all confirmations
+                setTimeout(() => {
+                  wsLog('Removing temporary subscription confirmation listener');
+                  wsService.removeEventListener('message', messageListener);
+                }, 30000);
+              }, 500);
 
               // Setup ping interval
               pingIntervalRef.current = setInterval(() => {
@@ -469,7 +847,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
                 // Specialized handler for reconnect_required to avoid circular refs
                 if (data.type === 'reconnect_required') {
-                  console.log('Server requested reconnection:', data.message);
+                  wsLog('Server requested reconnection:', data.message);
 
                   // Clear existing ping interval
                   if (pingIntervalRef.current) {
@@ -489,6 +867,26 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                     setStatus('CONNECTING');
                   }, 1000);
                 }
+                // Handle server_ping directly in the WebSocket handler
+                else if (data.type === 'server_ping') {
+                  // For direct connection mode, immediately respond with a pong
+                  try {
+                    ws.send(JSON.stringify({
+                      type: 'pong',
+                      timestamp: new Date().toISOString(),
+                      reply_to: data.id || null
+                    }));
+                  } catch (error) {
+                    console.error('Error sending pong response to server_ping:', error);
+                  }
+
+                  // Process through subscription manager for direct WebSocket mode
+                  const subscriptionManager = SubscriptionManager.getInstance();
+                  subscriptionManager.handleMessage(data);
+
+                  // Also use the standard message handler
+                  handleMessage(data);
+                }
                 // Handle other message types
                 else {
                   // Process through subscription manager for direct WebSocket mode
@@ -505,26 +903,29 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             };
 
             ws.onclose = (event) => {
-              console.log('Direct WebSocket connection closed', event.code, event.reason);
+              wsLog('Direct WebSocket connection closed', event.code, event.reason);
               setStatus('CLOSED');
+
+              // Reset the session connected flag when connection is closed
+              setSessionConnected(false);
 
               // Important: Set wsRef to null if the connection is actually closed
               // This ensures we don't have a reference to a closed socket
               if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSED) {
-                console.log('Setting websocket reference to null since connection is closed');
+                wsLog('Setting websocket reference to null since connection is closed');
                 wsRef.current = null;
               }
 
               // Reconnect if needed
               if (autoReconnect) {
-                console.log(`Attempting to reconnect in ${reconnectInterval || 5000}ms`);
+                wsLog(`Attempting to reconnect in ${reconnectInterval || 5000}ms`);
                 setStatus('RECONNECTING');
                 setTimeout(() => {
                   // Only trigger reconnection if not already reconnecting
                   if (!isReconnectingRef.current) {
                     setStatus('CONNECTING');
                   } else {
-                    console.log('Reconnection already in progress, skipping additional reconnect attempt');
+                    wsLog('Reconnection already in progress, skipping additional reconnect attempt');
                   }
                 }, reconnectInterval || 5000);
               } else {
@@ -621,7 +1022,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
   // Reconnect the WebSocket
   const reconnect = useCallback(() => {
-    const swSupported = hasServiceWorkerAPI();
+    const swSupported = hasServiceWorkerAPI(disableServiceWorker);
 
     // If using direct WebSocket fallback
     if (wsRef.current || !swSupported) {
@@ -633,10 +1034,11 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       wsService.reconnect({
         url: customUrl || getDefaultWebSocketUrl(),
         reconnectInterval,
-        pingInterval
+        pingInterval,
+        disableServiceWorker
       });
     }
-  }, [wsService, customUrl, reconnectInterval, pingInterval, handleReconnection]);
+  }, [wsService, customUrl, reconnectInterval, pingInterval, handleReconnection, disableServiceWorker]);
 
   // Handle reconnection when status changes to CONNECTING
   useEffect(() => {
@@ -657,7 +1059,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
       }
 
       // Initialize a new connection
-      const swSupported = hasServiceWorkerAPI();
+      const swSupported = hasServiceWorkerAPI(disableServiceWorker);
 
       // For direct WebSocket mode
       if (!swSupported) {
@@ -665,14 +1067,144 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         const wsUrl = customUrl || getDefaultWebSocketUrl();
         if (wsUrl) {
           try {
-            console.log('Creating new WebSocket connection:', wsUrl);
+            wsLog('Creating new WebSocket connection:', wsUrl);
             const ws = new WebSocket(wsUrl);
             wsRef.current = ws;
 
             // Set up the WebSocket event handlers (similar to those in setupDirectWebSocket)
             ws.onopen = () => {
-              console.log('Direct WebSocket reconnected via status effect');
+              wsLog('Direct WebSocket reconnected via status effect');
               setStatus('OPEN');
+
+              // Store WebSocket reference in window object for direct WebSocket mode detection
+              if (typeof window !== 'undefined') {
+                // @ts-ignore - Store a reference to the active WebSocket for direct mode
+                window.__directWebSocketRef = ws;
+              }
+
+              // Important: Mark the WebSocketService as initialized when direct WebSocket connects
+              const wsService = WebSocketService.getInstance();
+              if (!wsService.isReady()) {
+                wsLog('Auto-initializing WebSocketService for direct WebSocket mode via status effect');
+                // @ts-ignore - Force set the internal isInitialized flag
+                wsService['isInitialized'] = true;
+
+                // Create a factory function for direct message listeners
+                const createDirectMessageListener = (name: string) => {
+                  return (event: any) => {
+                    // Get the current WebSocket reference from wsRef for safety
+                    const currentWs = wsRef.current;
+
+                    // Always log the readyState
+                    if (currentWs) {
+                      wsLog(`WebSocket readyState in ${name}:`, currentWs.readyState,
+                        currentWs.readyState === WebSocket.CONNECTING ? 'CONNECTING' :
+                        currentWs.readyState === WebSocket.OPEN ? 'OPEN' :
+                        currentWs.readyState === WebSocket.CLOSING ? 'CLOSING' :
+                        currentWs.readyState === WebSocket.CLOSED ? 'CLOSED' : 'UNKNOWN');
+                    } else {
+                      wsLog(`⚠️ WebSocket reference is null in ${name}`);
+                    }
+
+                    // Only proceed if we have a valid WebSocket and it's OPEN
+                    if (currentWs && currentWs.readyState === WebSocket.OPEN && event.data) {
+                      try {
+                        // The data structure is different from what we expected
+                        wsLog(`Received direct_message event (${name}), sending via WebSocket`, event.data);
+
+                        // Use the data property directly - it already contains the properly formatted message
+                        currentWs.send(JSON.stringify(event.data));
+                      } catch (error) {
+                        console.error(`Error sending direct message via WebSocket (${name}):`, error);
+                      }
+                    } else if (event.data) {
+                      // Log when we receive a message but can't send it due to connection state
+                      wsLog(`⚠️ Cannot send message: WebSocket not in OPEN state (${name})`, event.data);
+
+                      // Queue message for retry if possible
+                      queueMessageForRetry(event.data);
+                    }
+                  };
+                };
+
+                // Function to queue messages for retry
+                const queueMessageForRetry = (data: WebSocketMessage) => {
+                  wsLog('🔄 Queueing message for retry after connection is established', data);
+                  // Set a short timeout to retry the message
+                  setTimeout(() => {
+                    const currentWs = wsRef.current;
+                    if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+                      try {
+                        wsLog('🔄 Retrying queued message', data);
+                        currentWs.send(JSON.stringify(data));
+                      } catch (error) {
+                        console.error('Error sending queued message:', error);
+                      }
+                    } else {
+                      wsLog('❌ Failed to retry message, WebSocket still not ready');
+                    }
+                  }, 1000); // Retry after 1 second
+                };
+
+                // Create the status effect message listener using the factory function
+                const directMessageListener_statusEffect = createDirectMessageListener('directMessageListener_statusEffect');
+
+                // Remove any existing listener for cleanup
+                if (wsDirectMessageListenerRef.current) {
+                  wsService.removeEventListener('direct_message', wsDirectMessageListenerRef.current);
+                }
+
+                // Add the new listener
+                wsService.addEventListener('direct_message', directMessageListener_statusEffect);
+                wsDirectMessageListenerRef.current = directMessageListener_statusEffect;
+              }
+
+              // After connection is established via status effect, trigger resubscription to all rooms
+              // This ensures entity subscriptions are properly re-established in direct mode
+              setTimeout(() => {
+                wsLog('Triggering resubscription to all entity rooms after status effect reconnection');
+
+                // Set up temporary listener to track subscription confirmations and other message types
+                const messageListener = (event: { data: WebSocketMessage }) => {
+                  if (event.data) {
+                    // Log subscription confirmations
+                    if (event.data.type === 'subscription_confirmation') {
+                      wsLog(`✅ SUBSCRIPTION CONFIRMED for ${event.data.entityType} ${event.data.entityId}`, {
+                        status: event.data.status,
+                        timestamp: event.data.timestamp
+                      });
+                    }
+                    // Also log room messages which indicate successful subscription
+                    else if (event.data.type === 'room_message' &&
+                             event.data.roomId &&
+                             event.data.entityType &&
+                             event.data.entityId) {
+                      wsLog(`📨 Received room message for ${event.data.entityType} ${event.data.entityId}`, {
+                        action: event.data.action,
+                        room: event.data.roomId,
+                        timestamp: event.data.timestamp
+                      });
+                    }
+
+                    // Debug console log for any message type during resubscription
+                    wsLog('WebSocket message during status effect resubscription:', event.data);
+                  }
+                };
+
+                // Add temporary listener for all message types
+                wsService.addEventListener('message', messageListener);
+
+                // @ts-ignore - Directly call resubscribeToRooms method to restore subscriptions
+                wsLog('⚠️ CALLING RESUBSCRIBE TO ROOMS AFTER STATUS EFFECT RECONNECTION');
+                wsService.resubscribeToRooms();
+
+                // Keep the listener active longer to catch delayed messages
+                // Increased from 5 seconds to 30 seconds to ensure we catch all confirmations
+                setTimeout(() => {
+                  wsLog('Removing temporary subscription confirmation listener');
+                  wsService.removeEventListener('message', messageListener);
+                }, 30000);
+              }, 500);
 
               // Setup ping interval
               if (pingIntervalRef.current) {
@@ -698,6 +1230,20 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
                 const data = JSON.parse(event.data) as WebSocketMessage;
                 setLastMessage(data);
 
+                // Handle server_ping directly in the WebSocket handler
+                if (data.type === 'server_ping') {
+                  // For direct connection mode, immediately respond with a pong
+                  try {
+                    ws.send(JSON.stringify({
+                      type: 'pong',
+                      timestamp: new Date().toISOString(),
+                      reply_to: data.id || null
+                    }));
+                  } catch (error) {
+                    console.error('Error sending pong response to server_ping:', error);
+                  }
+                }
+
                 // Process through subscription manager for direct WebSocket mode
                 // This ensures message subscriptions work even without service worker
                 const subscriptionManager = SubscriptionManager.getInstance();
@@ -711,24 +1257,24 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
             };
 
             ws.onclose = (event) => {
-              console.log('Direct WebSocket connection closed', event.code, event.reason);
+              wsLog('Direct WebSocket connection closed', event.code, event.reason);
               setStatus('CLOSED');
 
               // Important: Set wsRef to null if the connection is actually closed
               if (wsRef.current && wsRef.current.readyState === WebSocket.CLOSED) {
-                console.log('Setting websocket reference to null since connection is closed');
+                wsLog('Setting websocket reference to null since connection is closed');
                 wsRef.current = null;
               }
 
               // Reconnect if needed
               if (autoReconnect) {
-                console.log(`Attempting to reconnect in ${reconnectInterval || 5000}ms`);
+                wsLog(`Attempting to reconnect in ${reconnectInterval || 5000}ms`);
                 setStatus('RECONNECTING');
                 setTimeout(() => {
                   if (!isReconnectingRef.current) {
                     setStatus('CONNECTING');
                   } else {
-                    console.log('Reconnection already in progress, skipping additional reconnect attempt');
+                    wsLog('Reconnection already in progress, skipping additional reconnect attempt');
                   }
                 }, reconnectInterval || 5000);
               } else {
@@ -756,11 +1302,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
         wsService.reconnect({
           url: customUrl || getDefaultWebSocketUrl(),
           reconnectInterval,
-          pingInterval
+          pingInterval,
+          disableServiceWorker
         });
       }
     }
-  }, [status, customUrl, pingInterval, reconnectInterval, autoReconnect, wsService, handleMessage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- We intentionally omit status and handleMessage to avoid circular dependencies
+  }, [customUrl, pingInterval, reconnectInterval, autoReconnect, wsService, disableServiceWorker]);
 
   const value = {
     status,
@@ -768,7 +1316,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
     sendMessage,
     reconnect,
     closeConnection,
-    isReady
+    isReady,
+    sessionConnected
   };
 
   return (
@@ -788,19 +1337,28 @@ export const useWebSocketContext = (): WebSocketContextValue => {
 
 // Example status indicator component
 export const WebSocketStatusIndicator: React.FC = () => {
-  const { status, isReady } = useWebSocketContext();
+  const { status, isReady, sessionConnected } = useWebSocketContext();
 
   const getStatusColor = () => {
     if (!isReady) return 'var(--gray-500)';
 
     switch(status) {
-      case 'OPEN': return 'var(--green-500)';
+      case 'OPEN': return sessionConnected ? 'var(--green-500)' : 'var(--yellow-500)';
       case 'CONNECTING':
       case 'RECONNECTING': return 'var(--yellow-500)';
       case 'ERROR':
       case 'CLOSED': return 'var(--red-500)';
       default: return 'var(--gray-500)';
     }
+  };
+
+  // Get the text label based on connection state
+  const getConnectionLabel = () => {
+    if (!isReady) return 'INITIALIZING';
+    if (status === 'OPEN') {
+      return sessionConnected ? 'CONNECTED' : 'OPEN (SESSION PENDING)';
+    }
+    return status;
   };
 
   return (
@@ -819,7 +1377,7 @@ export const WebSocketStatusIndicator: React.FC = () => {
         borderRadius: '50%',
         backgroundColor: getStatusColor(),
       }} />
-      <span>WebSocket: {isReady ? status : 'INITIALIZING'}</span>
+      <span>WebSocket: {getConnectionLabel()}</span>
     </div>
   );
 };

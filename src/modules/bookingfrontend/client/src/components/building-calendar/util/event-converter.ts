@@ -98,7 +98,8 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
         display: 'background',
         classNames: `${styles.allDayEventBackground} ${styles.eventAllDay} ${styles[`event-${event.type}-background`]}`,
         extendedProps: {
-            type: 'background'
+            type: 'background',
+			source: 'EventConv'
         }
     } : null;
 

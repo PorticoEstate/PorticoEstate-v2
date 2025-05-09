@@ -13,6 +13,32 @@ body {
 	margin: 0;
 }
 
+/* Prevent mobile browsers from zooming on input focus */
+input,
+select,
+textarea {
+	font-size: 16px; /* Minimum font size to prevent iOS zoom */
+}
+
+/* Disable zoom on viewport for mobile devices */
+@media screen and (max-width: 768px) {
+	meta[name="viewport"] {
+		content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover";
+	}
+}
+
+/* Simplified mobile support */
+:root {
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Fix for iOS 100vh issue */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    height: -webkit-fill-available;
+  }
+}
+
 
 @layer ds.components {
 	.ds-button :where(img, svg) {

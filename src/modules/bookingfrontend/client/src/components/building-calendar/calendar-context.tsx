@@ -74,7 +74,8 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 
 		}
 		// If any slotted resource is selected, we're in slot view
-		const hasSlottedResourceEnable = props.enabledResources.values().some(id => ResourceUsesTimeSlots(resources.find(res => +res.id === +id)!));
+		const enabledResources = [...(props.enabledResources.values() || [])]
+		const hasSlottedResourceEnable = enabledResources.some(id => ResourceUsesTimeSlots(resources.find(res => +res.id === +id)!));
 
 		if (hasSlottedResourceEnable) {
 			return 'timeslots';

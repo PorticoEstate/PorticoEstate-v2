@@ -9,6 +9,7 @@ import {ISearchDataBuilding, ISearchDataOptimized, ISearchDataTown, ISearchResou
 import ResourceResultItem from "@/components/search/resource/resource-result-item";
 import FilterModal from './filter-modal';
 import {FilterIcon} from '@navikt/aksel-icons';
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface ResourceSearchProps {
     initialSearchData?: ISearchDataOptimized;
@@ -36,6 +37,21 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
     const [filtersModalOpen, setFiltersModalOpen] = useState<boolean>(false);
     const [selectedActivities, setSelectedActivities] = useState<number[]>([]);
     const [selectedFacilities, setSelectedFacilities] = useState<number[]>([]);
+    const [isSearching, setIsSearching] = useState<boolean>(false);
+    const [searchFieldScrolled, setSearchFieldScrolled] = useState<boolean>(false);
+    const isMobile = useIsMobile();
+
+    // Add scroll event listener for mobile
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.innerWidth <= 768) {
+                setSearchFieldScrolled(window.scrollY > 50);
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Fetch all search data, using initialSearchData as default
     const {data: searchData, isLoading: isLoadingSearch, error: searchError} = useSearchData({
@@ -366,24 +382,54 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         );
     }
 
-    // Render active filter chips
+    // Render active filter chips in a more compact way
     const renderActiveFilters = () => {
         if (!textSearchQuery && where === '' && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return null;
         }
 
+        // Count total active filters
+        const totalFilters = [
+            textSearchQuery ? 1 : 0,
+            where ? 1 : 0,
+            selectedActivities.length,
+            selectedFacilities.length
+        ].reduce((sum, current) => sum + current, 0);
+
         return (
             <div className={styles.activeFilters}>
-                <span>{t('common.filter')}:</span>
+                {/* Only show clear filters button if there are filters other than textSearchQuery */}
+                {(where || selectedActivities.length > 0 || selectedFacilities.length > 0) && (
+                    <div className={styles.filterSummary}>
+                        <Button
+                            variant="tertiary"
+                            data-size="sm"
+                            onClick={clearFilters}
+                            className={styles.clearFiltersButton}
+                            aria-label={t('bookingfrontend.search_clear_filters')}
+                        >
+                            {isMobile ? '✕' : t('bookingfrontend.search_clear_filters')}
+                        </Button>
+                    </div>
+                )}
+
                 <div className={styles.filterChips}>
-                    {textSearchQuery && (
-                        <Chip.Removable data-color="brand1" onClick={() => setTextSearchQuery('')}>
-                            {t('common.search')}: {textSearchQuery}
+                    {textSearchQuery && !isMobile && (
+                        <Chip.Removable
+                            data-color="brand1"
+                            data-size="sm"
+                            onClick={() => setTextSearchQuery('')}
+                        >
+                            {textSearchQuery}
                         </Chip.Removable>
                     )}
                     {where && (
-                        <Chip.Removable data-color="brand1" onClick={() => setWhere('')}>
-                            {t('bookingfrontend.town part')}: {towns.find(town => town.id === Number(where))?.name || ''}
+                        <Chip.Removable
+                            data-color="brand1"
+                            data-size="sm"
+                            onClick={() => setWhere('')}
+                        >
+                            {towns.find(town => town.id === Number(where))?.name || ''}
                         </Chip.Removable>
                     )}
                     {selectedActivities.map(activityId => {
@@ -392,9 +438,10 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                             <Chip.Removable
                                 key={`activity-${activityId}`}
                                 data-color="brand1"
+                                data-size="sm"
                                 onClick={() => setSelectedActivities(prev => prev.filter(id => id !== activityId))}
                             >
-                                {t('bookingfrontend.activity')}: {activity.name}
+                                {activity.name}
                             </Chip.Removable>
                         ) : null;
                     })}
@@ -404,19 +451,13 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                             <Chip.Removable
                                 key={`facility-${facilityId}`}
                                 data-color="brand1"
+                                data-size="sm"
                                 onClick={() => setSelectedFacilities(prev => prev.filter(id => id !== facilityId))}
                             >
-                                {t('booking.facility')}: {facility.name}
+                                {facility.name}
                             </Chip.Removable>
                         ) : null;
                     })}
-                    <Button
-                        variant="tertiary"
-                        data-size="sm"
-                        onClick={clearFilters}
-                    >
-                        {t('bookingfrontend.search_clear_filters')}
-                    </Button>
                 </div>
             </div>
         );
@@ -455,53 +496,107 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         );
     };
 
-    return (
-        <div className={styles.resourceSearchContainer}>
+	return (
+        <div className={`${styles.resourceSearchContainer} ${isSearching ? styles.isSearching : ''}`}>
             {/* Search Filter Section */}
-            <section id="resource-filter" className={styles.filterSection}>
+            <section id="resource-filter" className={`${styles.filterSection} ${searchFieldScrolled && isMobile ? styles.scrolled : ''}`}>
 				<div className={styles.searchInputs}>
-					<div className={styles.searchField}>
+					<div className={`${styles.searchField} ${searchFieldScrolled ? styles.scrolled : ''}`}>
 						<Textfield
 							label={t('common.search')}
 							value={textSearchQuery}
-							onChange={(e) => setTextSearchQuery(e.target.value)}
+							onChange={(e) => {
+									setTextSearchQuery(e.target.value);
+									// Show searching animation
+									setIsSearching(true);
+
+									// On mobile, scroll the results into view with offset for sticky header
+									if (isMobile) {
+										// Wait for the DOM to update with new results
+										setTimeout(() => {
+											const resultsSection = document.getElementById('resource-results');
+											if (resultsSection) {
+												// Calculate the height of the sticky header
+												const filterSection = document.getElementById('resource-filter');
+												const headerHeight = filterSection ? filterSection.offsetHeight : 0;
+
+												// Get the position of the results section
+												const resultsRect = resultsSection.getBoundingClientRect();
+
+												// Scroll to position with offset
+												window.scrollTo({
+													top: window.scrollY + resultsRect.top - headerHeight - 16, // Add 16px extra padding
+													behavior: 'smooth'
+												});
+											}
+
+											// After scrolling, clear the searching state
+											setTimeout(() => setIsSearching(false), 500);
+										}, 300);
+									} else {
+										// For desktop, just clear the searching state after a delay
+										setTimeout(() => setIsSearching(false), 300);
+									}
+								}}
 							placeholder={t('bookingfrontend.search available resources')}
+                            id="resource-search-input"
+							// @ts-ignore
+							suffix={
+								textSearchQuery && isMobile ? (
+									<Button
+										variant="tertiary"
+										data-size="sm"
+										className={styles.clearSearchButton}
+										onClick={() => setTextSearchQuery('')}
+										aria-label={t('common.clear')}
+									>
+										✕
+									</Button>
+								) : undefined
+							}
 						/>
 					</div>
 
-					<div className={styles.dateFilter}>
-						<Field>
-							<Label>{t('bookingfrontend.when')}</Label>
-							<CalendarDatePicker
-								currentDate={date}
-								onDateChange={handleDateChange}
-								view="timeGridDay"
-							/>
-						</Field>
-					</div>
+					{/* Only show date and town filters on desktop */}
+					{!isMobile && (
+                        <>
+                            <div className={styles.dateFilter}>
+                                <div>
+                                    <Label>{t('bookingfrontend.when')}</Label>
+                                    <CalendarDatePicker
+                                        currentDate={date}
+                                        onDateChange={handleDateChange}
+                                        view="timeGridDay"
+                                    />
+                                </div>
+                            </div>
 
-					<div className={styles.townFilter}>
-						<Field>
-							<Label>{t('bookingfrontend.where')}</Label>
-							<Select
-								value={where}
-								onChange={(e) => setWhere(e.target.value ? +e.target.value : '')}
-							>
-								<Select.Option value="">{t('booking.all')}</Select.Option>
-								{towns.map(town => (
-									<Select.Option key={town.id} value={town.id.toString()}>
-										{town.name}
-									</Select.Option>
-								))}
-							</Select>
-						</Field>
-					</div>
+                            <div className={styles.townFilter}>
+                                <Field>
+                                    <Label>{t('bookingfrontend.where')}</Label>
+                                    <Select
+                                        value={where}
+                                        onChange={(e) => setWhere(e.target.value ? +e.target.value : '')}
+                                    >
+                                        <Select.Option value="">{t('booking.all')}</Select.Option>
+                                        {towns.map(town => (
+                                            <Select.Option key={town.id} value={town.id.toString()}>
+                                                {town.name}
+                                            </Select.Option>
+                                        ))}
+                                    </Select>
+                                </Field>
+                            </div>
+                        </>
+                    )}
+
 					<div className={styles.moreFiltersContainer}>
 						<Button
 							variant="secondary"
 							onClick={() => setFiltersModalOpen(true)}
+							data-size={'sm'}
 						>
-							<FilterIcon/> {t('bookingfrontend.more_filters')}
+							<FilterIcon/> {t(isMobile ? 'common.filter' : 'bookingfrontend.more_filters')}
 						</Button>
 						<FilterModal
 							open={filtersModalOpen}
@@ -511,6 +606,13 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 							setSelectedActivities={setSelectedActivities}
 							selectedFacilities={selectedFacilities}
 							setSelectedFacilities={setSelectedFacilities}
+                            // Pass date and where props for mobile view
+                            date={date}
+                            onDateChange={handleDateChange}
+                            where={where}
+                            onWhereChange={setWhere}
+                            towns={towns}
+                            showDateWhere={isMobile}
 						/>
 					</div>
 				</div>

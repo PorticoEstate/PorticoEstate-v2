@@ -186,16 +186,78 @@ class ApplicationController extends DocumentController
             $deleted = $this->applicationService->deletePartial($id);
             
             // Send WebSocket notifications about the freed timeslot
-            if ($deleted && $buildingId && $resourceId && $from && $to) {
+            if ($deleted) {
                 try {
-                    // Notify the relevant entity rooms that overlap status has changed
-                    $this->notifyTimeslotChanged(
-                        (int)$buildingId,
-                        (int)$resourceId,
-                        $from,
-                        $to,
-                        $id
-                    );
+                    // Notify about timeslot changes if we have the necessary data
+                    if ($buildingId && $resourceId && $from && $to) {
+                        // Notify the relevant entity rooms that overlap status has changed
+                        $this->notifyTimeslotChanged(
+                            (int)$buildingId,
+                            (int)$resourceId,
+                            $from,
+                            $to,
+                            $id
+                        );
+                    }
+                    
+                    // Get timeslots affected by the application deletion
+                    $startDate = new \DateTime($from, new \DateTimeZone('Europe/Oslo'));
+                    $endDate = new \DateTime($to, new \DateTimeZone('Europe/Oslo'));
+                    
+                    // Dates for fetching overlapped timeslots - use a wider range to catch all affected
+                    $queryStartDate = clone $startDate;
+                    $queryStartDate->modify('-1 day')->setTime(0, 0, 0); // Start one day before
+                    
+                    $queryEndDate = clone $endDate;
+                    $queryEndDate->modify('+1 day')->setTime(23, 59, 59); // End one day after
+                    
+                    // Fetch the affected timeslots with fresh data after deletion
+                    $affectedTimeslots = [];
+                    if (is_array($resourceIds) && !empty($resourceIds)) {
+                        foreach ($resourceIds as $resId) {
+                            $timeslots = $this->getAffectedTimeslots($buildingId, (int)$resId, $queryStartDate, $queryEndDate);
+                            if (!empty($timeslots)) {
+                                $affectedTimeslots[$resId] = $timeslots;
+                            }
+                        }
+                    }
+                    
+                    // Send dedicated notifications to rooms about application deletion
+                    if ($buildingId) {
+                        WebSocketHelper::sendEntityNotification(
+                            'building',
+                            (int)$buildingId,
+                            'Application deleted',
+                            'deleted',
+                            [
+                                'application_id' => $id,
+                                'from' => $from,
+                                'to' => $to,
+                                'affected_timeslots' => $affectedTimeslots,
+                                'change_type' => 'deletion'
+                            ]
+                        );
+                    }
+                    
+                    // Notify each resource's room about the application deletion
+                    if (is_array($resourceIds) && !empty($resourceIds)) {
+                        foreach ($resourceIds as $resId) {
+                            WebSocketHelper::sendEntityNotification(
+                                'resource',
+                                (int)$resId,
+                                'Application deleted',
+                                'deleted',
+                                [
+                                    'application_id' => $id,
+                                    'from' => $from,
+                                    'to' => $to,
+                                    'affected_timeslots' => isset($affectedTimeslots[$resId]) ? $affectedTimeslots[$resId] : [],
+                                    'resource_id' => (int)$resId,
+                                    'change_type' => 'deletion'
+                                ]
+                            );
+                        }
+                    }
                 } catch (Exception $wsException) {
                     // Log but don't interrupt the response flow
                     error_log("WebSocket notification error in deletePartial: " . $wsException->getMessage());
@@ -1234,6 +1296,46 @@ class ApplicationController extends DocumentController
     }
     
     /**
+     * Gets the affected timeslots for a resource in the same format as the get_freetime endpoint
+     * 
+     * @param int $buildingId The building ID
+     * @param int $resourceId The resource ID
+     * @param \DateTime $startDate The start date for query
+     * @param \DateTime $endDate The end date for query
+     * @return array Timeslots in the same format as the get_freetime endpoint
+     */
+    protected function getAffectedTimeslots(int $buildingId, int $resourceId, \DateTime $startDate, \DateTime $endDate): array
+    {
+        // Create a booking business object to access the get_free_events method
+        $bo = \CreateObject('booking.bobooking');
+        
+        // Format dates for the get_free_events method
+        $formattedStartDate = $startDate->format('d/m-Y');
+        $formattedEndDate = $endDate->format('d/m-Y');
+        
+        // Save current request parameters
+        $originalRequest = $_REQUEST;
+        
+        // Set up the request parameters for get_freetime
+        $_REQUEST['building_id'] = $buildingId;
+        $_REQUEST['resource_id'] = $resourceId;
+        $_REQUEST['start_date'] = $formattedStartDate;
+        $_REQUEST['end_date'] = $formattedEndDate;
+        $_REQUEST['detailed_overlap'] = true;
+        $_REQUEST['stop_on_end_date'] = true;
+        
+        // Use the existing logic to get timeslots
+        $uibooking = \CreateObject('bookingfrontend.uibooking');
+        $timeslots = $uibooking->get_freetime();
+        
+        // Restore original request parameters
+        $_REQUEST = $originalRequest;
+        
+        // Return the timeslots for this resource
+        return isset($timeslots[$resourceId]) ? $timeslots[$resourceId] : [];
+    }
+    
+    /**
      * Sends WebSocket notifications to entity rooms when timeslot reservation changes
      * Notifies both the building and resource rooms about the changed overlap status
      * 
@@ -1247,12 +1349,35 @@ class ApplicationController extends DocumentController
     protected function notifyTimeslotChanged(int $buildingId, int $resourceId, string $from, string $to, int $applicationId): void
     {
         try {
-            // Prepare data for both notifications
+            // Always use Oslo timezone
+            $tzObject = new \DateTimeZone('Europe/Oslo');
+            
+            // Create DateTime objects with the Oslo timezone
+            $startDateTime = new \DateTime($from, $tzObject);
+            $endDateTime = new \DateTime($to, $tzObject);
+            
+            // Dates for fetching overlapped timeslots
+            $queryStartDate = clone $startDateTime;
+            $queryStartDate->modify('-1 day')->setTime(0, 0, 0); // Start one day before
+            
+            $queryEndDate = clone $endDateTime;
+            $queryEndDate->modify('+1 day')->setTime(23, 59, 59); // End one day after
+            
+            // Get the affected timeslots from the booking engine after the change
+            // This uses the same logic as the get_freetime endpoint
+            $affectedTimeslots = [];
+            $resourceTimeslots = $this->getAffectedTimeslots($buildingId, $resourceId, $queryStartDate, $queryEndDate);
+            if (!empty($resourceTimeslots)) {
+                $affectedTimeslots[$resourceId] = $resourceTimeslots;
+            }
+            
+            // Prepare detailed data for both notifications
             $eventData = [
                 'application_id' => $applicationId,
                 'from' => $from,
                 'to' => $to,
-                'change_type' => 'overlap_status'
+                'change_type' => 'overlap_status',
+                'affected_timeslots' => $affectedTimeslots
             ];
             
             // Notify the building room - this will only go to clients subscribed to this entity
@@ -1264,16 +1389,27 @@ class ApplicationController extends DocumentController
                 $eventData
             );
             
+            // Prepare resource-specific data (include resource ID)
+            $resourceData = $eventData;
+            $resourceData['resource_id'] = $resourceId;
+            
+            // For resource-specific notifications, use a simplified format
+            if (isset($affectedTimeslots[$resourceId])) {
+                $resourceData['affected_timeslots'] = $affectedTimeslots[$resourceId];
+            } else {
+                $resourceData['affected_timeslots'] = [];
+            }
+            
             // Notify the resource room - this will only go to clients subscribed to this entity
             WebSocketHelper::sendEntityNotification(
                 'resource',
                 $resourceId,
                 'Timeslot reservation changed',
                 'updated',
-                $eventData
+                $resourceData
             );
             
-            error_log("WebSocket notifications sent for timeslot reservation: building_id={$buildingId}, resource_id={$resourceId}");
+            error_log("WebSocket notifications sent for timeslot reservation: building_id={$buildingId}, resource_id={$resourceId}, from={$from}, to={$to}");
         } catch (Exception $e) {
             // Log error but don't interrupt the main request flow
             error_log("WebSocket notification error: " . $e->getMessage());

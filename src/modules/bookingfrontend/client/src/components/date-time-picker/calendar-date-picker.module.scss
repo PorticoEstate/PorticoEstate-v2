@@ -332,6 +332,14 @@
                         background: var(--dsc-button-background--hover);
                     }
 
+                    &.disabled {
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                        &:hover {
+                            background: transparent;
+                        }
+                    }
+
                     &Selected {
                         background: var(--ds-color-base-default) !important;
                         color: var(--ds-color-base-contrast-default) !important;

@@ -86,12 +86,28 @@ const TimePicker: FC<TimePickerProps & { minTime?: string; maxTime?: string }> =
 		const handleHourClick = (hour: number) => {
 			const newDate = new Date(date);
 			newDate.setHours(hour);
+
+			// If 24:00 (midnight) is selected, force minutes to 00
+			if (hour === 24) {
+				newDate.setMinutes(0);
+				newDate.setSeconds(0);
+			}
+
 			onChangeDate(newDate);
 		};
 
 		const handleMinuteClick = (minute: number) => {
 			const newDate = new Date(date);
-			newDate.setMinutes(minute);
+			const currentHour = date.getHours();
+
+			// If the current hour is 24 (midnight), force minutes to 00 regardless of selection
+			if (currentHour === 24) {
+				newDate.setMinutes(0);
+				newDate.setSeconds(0);
+			} else {
+				newDate.setMinutes(minute);
+			}
+
 			onChangeDate(newDate);
 		};
 
@@ -118,18 +134,22 @@ const TimePicker: FC<TimePickerProps & { minTime?: string; maxTime?: string }> =
 					<div className={styles.timeColumn}>
 						<div className={styles.timeColumnHeader}>{t('bookingfrontend.minute')}</div>
 						<div className={styles.timeColumnList} ref={minutesListRef}>
-							{minutes.map(minute => (
-								<div
-									key={minute}
-									data-minute={minute}
-									className={`${styles.timeColumnListItem} ${
-										minute === selectedMinute ? styles.timeColumnListItemSelected : ''
-									}`}
-									onClick={() => handleMinuteClick(minute)}
-								>
-									{minute.toString().padStart(2, '0')}
-								</div>
-							))}
+							{minutes.map(minute => {
+								// When hour is 24, only show 00 minutes and disable others
+								const isDisabled = selectedHour === 24 && minute !== 0;
+								return (
+									<div
+										key={minute}
+										data-minute={minute}
+										className={`${styles.timeColumnListItem} ${
+											minute === selectedMinute ? styles.timeColumnListItemSelected : ''
+										} ${isDisabled ? styles.disabled : ''}`}
+										onClick={() => isDisabled ? null : handleMinuteClick(minute)}
+									>
+										{minute.toString().padStart(2, '0')}
+									</div>
+								);
+							})}
 						</div>
 					</div>
 				</div>

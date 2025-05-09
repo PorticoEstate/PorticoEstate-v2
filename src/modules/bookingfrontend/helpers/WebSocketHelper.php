@@ -253,7 +253,7 @@ class WebSocketHelper
     
     /**
      * Send a notification about a new partial application
-     * 
+     *
      * @param int $id Application ID
      * @param int|null $resourceId Resource ID
      * @return bool Success status
@@ -270,6 +270,20 @@ class WebSocketHelper
                 'timestamp' => date('c')
             ]
         );
+    }
+
+    /**
+     * Send a notification about a new partial application asynchronously
+     *
+     * @param int $id Application ID
+     * @param int|null $resourceId Resource ID
+     * @return bool Success status of forking (not the notification itself)
+     */
+    public static function notifyPartialApplicationCreatedAsync(int $id, ?int $resourceId = null): bool
+    {
+        return self::forkNotification(function() use ($id, $resourceId) {
+            self::notifyPartialApplicationCreated($id, $resourceId);
+        });
     }
     
     /**
@@ -309,7 +323,7 @@ class WebSocketHelper
     /**
      * Send a notification to a specific entity room (building, resource, etc.)
      * This ensures the message is properly formatted for entity room routing
-     * 
+     *
      * @param string $entityType Type of entity (e.g. 'building', 'resource')
      * @param int|string $entityId ID of the entity
      * @param string $message Message description
@@ -326,11 +340,11 @@ class WebSocketHelper
             error_log($errorMsg);
             throw new Exception($errorMsg);
         }
-        
+
         // Create a room message for the entity using the room_message type
         // This uses the same room structure as subscriptions
         $roomId = 'entity_' . $entityType . '_' . $entityId;
-        
+
         $payload = [
             'type' => 'room_message',  // Using room_message type instead of entity_event
             'roomId' => $roomId,       // Target the specific entity room
@@ -341,11 +355,74 @@ class WebSocketHelper
             'data' => $data,
             'timestamp' => date('c')
         ];
-        
+
         error_log("WebSocketHelper: Sending room message to {$entityType} room for ID {$entityId}");
-        
+
         // Send directly to Redis with a special room_messages channel for better message routing
         return self::sendRedisNotification($payload, 'room_messages');
+    }
+
+    /**
+     * Send a notification to a specific entity room asynchronously using process forking
+     *
+     * @param string $entityType Type of entity (e.g. 'building', 'resource')
+     * @param int|string $entityId ID of the entity
+     * @param string $message Message description
+     * @param string $action Action that occurred (e.g. 'updated', 'changed')
+     * @param array $data Additional data to include
+     * @return bool Success status of forking (not the notification itself)
+     */
+    public static function sendEntityNotificationAsync(string $entityType, $entityId, string $message, string $action, array $data = []): bool
+    {
+        return self::forkNotification(function() use ($entityType, $entityId, $message, $action, $data) {
+            self::sendEntityNotification($entityType, $entityId, $message, $action, $data);
+        });
+    }
+
+    /**
+     * Fork a process to send WebSocket notifications asynchronously
+     *
+     * @param callable $callback The function to execute in the child process
+     * @return bool True if forking was successful, false otherwise
+     */
+    public static function forkNotification(callable $callback): bool
+    {
+        // Check if pcntl is available
+        if (!function_exists('pcntl_fork')) {
+            error_log("pcntl_fork not available, running notification synchronously");
+            $callback();
+            return false;
+        }
+
+        // Fork the process
+        $pid = pcntl_fork();
+
+        // Fork failed
+        if ($pid == -1) {
+            error_log("Failed to fork process for WebSocket notification");
+            $callback();
+            return false;
+        }
+
+        // Parent process (return immediately)
+        if ($pid) {
+            return true;
+        }
+
+        // Child process
+        try {
+            // Run the callback function
+            $callback();
+
+            // Exit the child process
+            if (function_exists('posix_kill')) {
+                posix_kill(getmypid(), SIGTERM);
+            }
+            exit(0);
+        } catch (Exception $e) {
+            error_log("Error in forked WebSocket notification process: " . $e->getMessage());
+            exit(1);
+        }
     }
     
     /**

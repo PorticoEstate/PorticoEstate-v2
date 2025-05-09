@@ -188,76 +188,88 @@ class ApplicationController extends DocumentController
             // Send WebSocket notifications about the freed timeslot
             if ($deleted) {
                 try {
-                    // Notify about timeslot changes if we have the necessary data
-                    if ($buildingId && $resourceId && $from && $to) {
-                        // Notify the relevant entity rooms that overlap status has changed
-                        $this->notifyTimeslotChanged(
-                            (int)$buildingId,
-                            (int)$resourceId,
-                            $from,
-                            $to,
-                            $id
-                        );
-                    }
-                    
-                    // Get timeslots affected by the application deletion
-                    $startDate = new \DateTime($from, new \DateTimeZone('Europe/Oslo'));
-                    $endDate = new \DateTime($to, new \DateTimeZone('Europe/Oslo'));
-                    
-                    // Dates for fetching overlapped timeslots - use a wider range to catch all affected
-                    $queryStartDate = clone $startDate;
-                    $queryStartDate->modify('-1 day')->setTime(0, 0, 0); // Start one day before
-                    
-                    $queryEndDate = clone $endDate;
-                    $queryEndDate->modify('+1 day')->setTime(23, 59, 59); // End one day after
-                    
-                    // Fetch the affected timeslots with fresh data after deletion
-                    $affectedTimeslots = [];
-                    if (is_array($resourceIds) && !empty($resourceIds)) {
-                        foreach ($resourceIds as $resId) {
-                            $timeslots = $this->getAffectedTimeslots($buildingId, (int)$resId, $queryStartDate, $queryEndDate);
-                            if (!empty($timeslots)) {
-                                $affectedTimeslots[$resId] = $timeslots;
+                    // Offload all WebSocket notifications to a forked process
+                    WebSocketHelper::forkNotification(function() use ($buildingId, $resourceId, $from, $to, $id, $resourceIds) {
+                        try {
+                            // Notify about timeslot changes if we have the necessary data
+                            if ($buildingId && $resourceId && $from && $to) {
+                                // Notify the relevant entity rooms that overlap status has changed
+                                $this->notifyTimeslotChanged(
+                                    (int)$buildingId,
+                                    (int)$resourceId,
+                                    $from,
+                                    $to,
+                                    $id
+                                );
                             }
+
+                            // Get timeslots affected by the application deletion
+                            $startDate = new \DateTime($from, new \DateTimeZone('Europe/Oslo'));
+                            $endDate = new \DateTime($to, new \DateTimeZone('Europe/Oslo'));
+
+                            // Dates for fetching overlapped timeslots - use a wider range to catch all affected
+                            $queryStartDate = clone $startDate;
+                            $queryStartDate->modify('-1 day')->setTime(0, 0, 0); // Start one day before
+
+                            $queryEndDate = clone $endDate;
+                            $queryEndDate->modify('+1 day')->setTime(23, 59, 59); // End one day after
+
+                            // Fetch the affected timeslots with fresh data after deletion
+                            $affectedTimeslots = [];
+                            if (is_array($resourceIds) && !empty($resourceIds)) {
+                                foreach ($resourceIds as $resId) {
+                                    $timeslots = $this->getAffectedTimeslots($buildingId, (int)$resId, $queryStartDate, $queryEndDate);
+                                    if (!empty($timeslots)) {
+                                        $affectedTimeslots[$resId] = $timeslots;
+                                    }
+                                }
+                            }
+
+                            // Send dedicated notifications to rooms about application deletion
+                            if ($buildingId) {
+                                WebSocketHelper::sendEntityNotification(
+                                    'building',
+                                    (int)$buildingId,
+                                    'Application deleted',
+                                    'deleted',
+                                    [
+                                        'application_id' => $id,
+                                        'from' => $from,
+                                        'to' => $to,
+                                        'affected_timeslots' => $affectedTimeslots,
+                                        'change_type' => 'deletion'
+                                    ]
+                                );
+                            }
+
+                            // Notify each resource's room about the application deletion
+                            if (is_array($resourceIds) && !empty($resourceIds)) {
+                                foreach ($resourceIds as $resId) {
+                                    WebSocketHelper::sendEntityNotification(
+                                        'resource',
+                                        (int)$resId,
+                                        'Application deleted',
+                                        'deleted',
+                                        [
+                                            'application_id' => $id,
+                                            'from' => $from,
+                                            'to' => $to,
+                                            'affected_timeslots' => isset($affectedTimeslots[$resId]) ? $affectedTimeslots[$resId] : [],
+                                            'resource_id' => (int)$resId,
+                                            'change_type' => 'deletion'
+                                        ]
+                                    );
+                                }
+                            }
+                        } catch (Exception $innerException) {
+                            // Log errors from the forked process
+                            error_log("Error in forked WebSocket notification process: " . $innerException->getMessage());
                         }
-                    }
-                    
-                    // Send dedicated notifications to rooms about application deletion
-                    if ($buildingId) {
-                        WebSocketHelper::sendEntityNotification(
-                            'building',
-                            (int)$buildingId,
-                            'Application deleted',
-                            'deleted',
-                            [
-                                'application_id' => $id,
-                                'from' => $from,
-                                'to' => $to,
-                                'affected_timeslots' => $affectedTimeslots,
-                                'change_type' => 'deletion'
-                            ]
-                        );
-                    }
-                    
-                    // Notify each resource's room about the application deletion
-                    if (is_array($resourceIds) && !empty($resourceIds)) {
-                        foreach ($resourceIds as $resId) {
-                            WebSocketHelper::sendEntityNotification(
-                                'resource',
-                                (int)$resId,
-                                'Application deleted',
-                                'deleted',
-                                [
-                                    'application_id' => $id,
-                                    'from' => $from,
-                                    'to' => $to,
-                                    'affected_timeslots' => isset($affectedTimeslots[$resId]) ? $affectedTimeslots[$resId] : [],
-                                    'resource_id' => (int)$resId,
-                                    'change_type' => 'deletion'
-                                ]
-                            );
-                        }
-                    }
+                    });
+
+                    // Log that notifications were forked
+                    error_log("WebSocket notifications for application deletion #{$id} offloaded to forked process");
+
                 } catch (Exception $wsException) {
                     // Log but don't interrupt the response flow
                     error_log("WebSocket notification error in deletePartial: " . $wsException->getMessage());
@@ -353,10 +365,14 @@ class ApplicationController extends DocumentController
                 'message' => 'Partial application created successfully'
             ];
 
-            // Broadcast notification through WebSocket
+            // Broadcast notification through WebSocket (asynchronously)
             try {
                 $resourceId = isset($data['resources']) && !empty($data['resources']) ? $data['resources'][0] : null;
-                WebSocketHelper::notifyPartialApplicationCreated($id, $resourceId);
+                // Use async notification with forking for better performance
+                WebSocketHelper::forkNotification(function() use ($id, $resourceId) {
+                    WebSocketHelper::notifyPartialApplicationCreated($id, $resourceId);
+                });
+                error_log("WebSocket notification for application creation #{$id} offloaded to forked process");
             } catch (Exception $e) {
                 // Log but don't interrupt flow
                 error_log("WebSocket notification error: " . $e->getMessage());
@@ -1122,6 +1138,7 @@ class ApplicationController extends DocumentController
 	public function createSimpleApplication(Request $request, Response $response): Response
 	{
 		try {
+			$startTime = microtime(true);
 			$session = Sessions::getInstance();
 			$session_id = $session->get_session_id();
 
@@ -1151,12 +1168,7 @@ class ApplicationController extends DocumentController
 				}
 			}
 
-
-			// FIXED CONVERSION: Properly convert milliseconds to date strings
-			// Debug before conversion
-			error_log("Timestamps received: from={$data['from']}, to={$data['to']}");
-			$osloTz = new \DateTimeZone('Europe/Oslo');
-			// Convert from milliseconds to seconds if needed
+			// Optimized timestamp conversion - reduce object creation and string operations
 			$fromTimestamp = is_numeric($data['from']) ? (int)$data['from'] : 0;
 			$toTimestamp = is_numeric($data['to']) ? (int)$data['to'] : 0;
 
@@ -1168,7 +1180,8 @@ class ApplicationController extends DocumentController
 				$toTimestamp = (int)($toTimestamp / 1000);
 			}
 
-			// Create DateTime objects with Oslo timezone
+			// Create DateTime objects with Oslo timezone once
+			$osloTz = new \DateTimeZone('Europe/Oslo');
 			$fromDate = new \DateTime('@' . $fromTimestamp); // Create with UTC
 			$fromDate->setTimezone($osloTz);                 // Convert to Oslo
 
@@ -1193,15 +1206,28 @@ class ApplicationController extends DocumentController
 				'message' => 'Simple application created successfully',
 				'status' => $result['status']
 			];
-			
-			// Notify about the timeslot change to update overlap status
-			$this->notifyTimeslotChanged(
-				(int)$data['building_id'],
-				(int)$data['resource_id'],
-				$from,
-				$to,
-				$result['id']
-			);
+
+			// Offload WebSocket notifications to a separate process
+			WebSocketHelper::forkNotification(function() use ($data, $from, $to, $result) {
+				try {
+					// Notify about the timeslot change to update overlap status
+					$this->notifyTimeslotChanged(
+						(int)$data['building_id'],
+						(int)$data['resource_id'],
+						$from,
+						$to,
+						$result['id']
+					);
+					error_log("WebSocket notifications for application creation #{$result['id']} completed in forked process");
+				} catch (Exception $innerException) {
+					error_log("Error in forked WebSocket notification process: " . $innerException->getMessage());
+				}
+			});
+
+			// Performance logging (in production, this should be conditional based on debug flag)
+			$endTime = microtime(true);
+			$executionTime = round(($endTime - $startTime) * 1000, 2); // convert to ms
+			error_log("Simple application creation for resource {$data['resource_id']} took {$executionTime}ms (API processing time, excludes forked operations)");
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withStatus(201)

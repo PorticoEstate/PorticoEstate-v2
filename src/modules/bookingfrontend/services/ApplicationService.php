@@ -1716,8 +1716,22 @@ class ApplicationService
 	 * @param int $resourceId Resource ID
 	 * @return array|false Resource data or false if not supported
 	 */
+	/**
+	 * Get resource information for simple booking with caching
+	 *
+	 * @param int $resourceId The resource ID to query
+	 * @return array|false Resource data or false if not found/eligible
+	 */
 	public function getSimpleBookingResource(int $resourceId)
 	{
+		// Use static cache to avoid repeated DB queries in the same request
+		static $resourceCache = [];
+
+		// Check if we have this resource in cache
+		if (isset($resourceCache[$resourceId])) {
+			return $resourceCache[$resourceId];
+		}
+
 		$sql = "SELECT r.*, br.building_id
             FROM bb_resource r
             JOIN bb_building_resource br ON r.id = br.resource_id
@@ -1729,7 +1743,9 @@ class ApplicationService
 		$stmt->bindParam(':id', $resourceId, \PDO::PARAM_INT);
 		$stmt->execute();
 
-		return $stmt->fetch(\PDO::FETCH_ASSOC);
+		// Store in cache and return
+		$resourceCache[$resourceId] = $stmt->fetch(\PDO::FETCH_ASSOC);
+		return $resourceCache[$resourceId];
 	}
 
 	/**
@@ -2017,14 +2033,36 @@ class ApplicationService
 	/**
 	 * Check if a block already exists
 	 */
+	/**
+	 * Check if a block already exists with caching
+	 *
+	 * @param string $session_id The session ID
+	 * @param int $resource_id The resource ID
+	 * @param string $from Start datetime
+	 * @param string $to End datetime
+	 * @return bool True if block exists
+	 */
 	private function checkBlockExists(string $session_id, int $resource_id, string $from, string $to): bool
 	{
+		// Use a static cache to avoid repeating the same query
+		static $blockCache = [];
+
+		// Create a unique key for this combination
+		$cacheKey = "{$session_id}_{$resource_id}_{$from}_{$to}";
+
+		// Check if we have this check in cache
+		if (isset($blockCache[$cacheKey])) {
+			return $blockCache[$cacheKey];
+		}
+
+		// Use a more efficient query with LIMIT 1 since we only need to know if it exists
 		$sql = "SELECT 1 FROM bb_block
             WHERE active = 1
             AND session_id = :session_id
             AND resource_id = :resource_id
             AND from_ = :from
-            AND to_ = :to";
+            AND to_ = :to
+            LIMIT 1";
 
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([
@@ -2034,7 +2072,9 @@ class ApplicationService
 			':to' => $to
 		]);
 
-		return (bool)$stmt->fetch();
+		// Cache and return result
+		$blockCache[$cacheKey] = (bool)$stmt->fetch();
+		return $blockCache[$cacheKey];
 	}
 
 	/**
@@ -2098,7 +2138,9 @@ class ApplicationService
 			// First check directly if this time slot is already taken by ANY application (including NEWPARTIAL1)
 			// Note that we DO NOT filter by session_id to catch all applications regardless of session
 			// FIXED: The SQL now excludes adjacent bookings (where one ends exactly when the other starts)
-			$overlapCheckSql = "SELECT COUNT(*) as overlap_count
+			// Use a more efficient query with LIMIT 1 since we only need to know if ANY overlap exists
+			// This avoids the COUNT(*) which has to scan all matching rows
+			$overlapCheckSql = "SELECT 1 as has_overlap
             FROM bb_application a
             JOIN bb_application_resource ar ON a.id = ar.application_id
             JOIN bb_application_date ad ON a.id = ad.application_id
@@ -2106,9 +2148,10 @@ class ApplicationService
             AND a.status NOT IN ('REJECTED')
             AND a.active = 1
             AND ((ad.from_ < :to_date AND ad.to_ > :from_date)
-                AND NOT (ad.from_ = :to_date OR ad.to_ = :from_date))";
+                AND NOT (ad.from_ = :to_date OR ad.to_ = :from_date))
+            LIMIT 1";
 
-			// Execute the count query to check for any overlaps
+			// Execute the optimized query to check for any overlaps
 			$stmt = $this->db->prepare($overlapCheckSql);
 			$stmt->execute([
 				':resource_id' => $resourceId,
@@ -2116,11 +2159,11 @@ class ApplicationService
 				':to_date' => $to
 			]);
 
-			$result = $stmt->fetch(\PDO::FETCH_ASSOC);
-			$overlapCount = (int)$result['overlap_count'];
+			// Simply check if there's any result
+			$hasOverlap = (bool)$stmt->fetch();
 
 			// If we found any overlapping applications, set a session message and reject the request
-			if ($overlapCount > 0) {
+			if ($hasOverlap) {
 				$errorMessage = lang('resource_already_booked');
 
 				// Set message using Cache::message_set() like ApplicationController does

@@ -1663,7 +1663,7 @@ JS;
 
 	function responsiblility_role()
 	{
-		$user_id = Sanitizer::get_var('user_id', 'int', 'request', $this->account);
+		$user_id = Sanitizer::get_var('user_id', 'int', 'REQUEST', $this->account);
 		$role_id = Sanitizer::get_var('role_id', 'int');
 		$type_id = Sanitizer::get_var('type_id', 'int');
 

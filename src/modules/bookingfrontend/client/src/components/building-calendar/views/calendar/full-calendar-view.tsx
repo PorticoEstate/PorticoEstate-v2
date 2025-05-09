@@ -108,6 +108,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		return {
 			businessHours: generateBusinessHours(),
 			startTime: slotMinTime,
+			// Use the calculated slotMaxTime which respects boundaries
+			// but also extends to midnight when appropriate
 			endTime: slotMaxTime
 		};
 	}, [generateBusinessHours, slotMinTime, slotMaxTime]);
@@ -141,8 +143,18 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		});
 
 		// Set default values if no valid times found
-		setSlotMinTime(minTime === "24:00:00" ? '06:00:00' : minTime);
-		setSlotMaxTime(maxTime === "00:00:00" ? '24:00:00' : maxTime);
+		setSlotMinTime(minTime === "24:00:00" ? '00:00:00' : minTime);
+
+		// For max time, check if the calculated time is very late (23:45 or later)
+		// If so, extend it to the end of day (24:00). Otherwise respect the boundary.
+		// This means we'll respect season boundaries for display but allow booking until
+		// midnight for seasons that end very late or when no boundaries exist.
+		setSlotMaxTime(
+			maxTime === "00:00:00" || // No boundaries found 
+			maxTime >= "23:45:00"     // Season closes very late
+				? '24:00:00'          // Allow until midnight
+				: maxTime             // Otherwise respect the boundary
+		);
 	}, [props.seasons, events]);
 
 

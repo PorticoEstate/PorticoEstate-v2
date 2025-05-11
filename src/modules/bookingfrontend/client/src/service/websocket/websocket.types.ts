@@ -2,6 +2,7 @@
  * Type definitions for WebSocket communication
  */
 import { IServerMessage } from '../types/api/server-messages.types';
+import { IApplication } from '../types/api/application.types';
 
 // Base interface for all WebSocket messages
 export interface IWebSocketMessageBase {
@@ -128,6 +129,18 @@ export interface IWSConnectionSuccessMessage extends IWebSocketMessageBase {
   roomId: string;
 }
 
+// Interface for partial applications response
+export interface IWSPartialApplicationsResponse extends IWebSocketMessageBase {
+  type: 'partial_applications_response';
+  data: {
+    error: boolean;
+    status: string;
+    applications: IApplication[]; // Array of partial applications
+    count: number;
+    sessionId: string;
+  };
+}
+
 // Union type for all possible WebSocket messages
 export type WebSocketMessage =
   | IWSNotificationMessage
@@ -145,7 +158,8 @@ export type WebSocketMessage =
   | IWSSessionUpdateMessage
   | IWSSessionUpdateConfirmMessage
   | IWSSessionIdRequiredMessage
-  | IWSConnectionSuccessMessage;
+  | IWSConnectionSuccessMessage
+  | IWSPartialApplicationsResponse;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
 
 export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR' | 'FALLBACK_REQUIRED';

@@ -1,0 +1,53 @@
+{# Config template #}
+<!-- $Id:$ -->
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+	<table class="pure-table pure-table-bordered">
+		<tr class="th">
+			<td colspan="2"><font color="{{ th_text }}">&nbsp;<b>{{ title }}</b></font></td>
+		</tr>
+		{% endblock %}
+		{% block body %}
+		<tr class="row_on">
+			<td colspan="2">&nbsp;</td>
+		</tr>
+		<tr class="row_off">
+			<td colspan="2">&nbsp;<b>{{ lang('logistic') }} {{ lang('settings') }}</b></td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('Use_ACL_for_control_areas') }}.</td>
+			<td>
+				<select name="newsettings[acl_at_control_area]">
+					<option value="2" {{ selected_acl_at_control_area_2|raw }}> {{ lang('NO') }}: </option>
+					<option value="1" {{ selected_acl_at_control_area_1|raw }}> {{ lang('YES') }}: </option>
+				</select>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>Antall planlagte kontroller som skal vises.</td>
+			<td>
+				<input type="text" name="newsettings[no_of_planned_controls]" value="{{ value_no_of_planned_controls|raw }}"/>
+			</td>
+		</tr>
+		<tr class="row_off">
+			<td> {{ lang('Antall tildelte kontroller som skal vises') }}: </td>
+			<td>
+				<input type="text" name="newsettings[no_of_assigned_controls]" value="{{ value_no_of_assigned_controls|raw }}"/>
+			</td>
+		</tr>
+		{% endblock %}
+		{% block footer %}
+		<tr class="th">
+			<td colspan="2">
+				&nbsp;
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">
+				<input type="submit" name="submit" value="{{ lang('submit') }}">
+				<input type="submit" name="cancel" value="{{ lang('cancel') }}">
+			</td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

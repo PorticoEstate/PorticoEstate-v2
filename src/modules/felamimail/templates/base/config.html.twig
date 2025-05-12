@@ -1,0 +1,137 @@
+{# Config template #}
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+<table class="pure-table pure-table-bordered">
+   <tr bgcolor="{{ th_bg }}">
+    <td colspan="2"><font color="{{ th_text }}">&nbsp;<b>{{ title }}</b></font></td>
+   </tr>
+{% endblock %}
+{% block body %}
+   <tr>
+    <td colspan="2">&nbsp;</td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td colspan="2">&nbsp;<b>{{ lang('Mail_settings') }}</b></td>
+   </tr>
+
+   <tr bgcolor="{{ row_on }}">
+    <td>{{ lang('Enter_your_IMAP_mail_server_hostname_or_IP_address') }}:</td>
+    <td><input name="newsettings[imapServer]" value="{{ value_imapServer|raw }}"></td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td>{{ lang('Select_your_mail_server_type') }}:</td>
+    <td>
+     <select name="newsettings[imapServerMode]">
+      <option value="imap" {{ selected_imapServerMode_imap|raw }}> {{ lang('IMAP') }}: </option>
+      <option value="imaps-encr-only" {selected_imapServerMode_imaps-encr-only}> {{ lang('IMAPS Encryption only') }}: </option>
+      <option value="imaps-encr-auth" {selected_imapServerMode_imaps-encr-auth}> {{ lang('IMAPS Authentication') }}: </option>
+     </select>
+    </td>
+   </tr>
+
+   <tr bgcolor="{{ row_on }}">
+    <td> {{ lang('IMAP server type') }}: </td>
+    <td>
+     <select name="newsettings[imapServerType]">
+      <option value="Cyrus" {{ selected_imapServerType_Cyrus|raw }}> {{ lang('Cyrus') }}: </option>
+      <option value="Cyrus-LDAP" {selected_imapServerType_Cyrus-LDAP}>Cyrus-LDAP</option>
+      <option value="Courier" {{ selected_imapServerType_Courier|raw }}> {{ lang('Courier') }}: </option>
+      <option value="UWash" {{ selected_imapServerType_UWash|raw }}> {{ lang('UWash') }}: </option>
+     </select>
+    </td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td>{lang_Enter_your_default_mail_domain_(_From:_user@domain_)}:</td>
+    <td><input name="newsettings[mailSuffix]" value="{{ value_mailSuffix|raw }}"></td>
+   </tr>
+
+   <tr bgcolor="{{ row_on }}">
+    <td>{{ lang('Mail_server_login_type') }}:</td>
+    <td>
+     <select name="newsettings[mailLoginType]">
+      <option value="standard" {{ selected_mailLoginType_standard|raw }}>standard</option>
+      <option value="vmailmgr" {{ selected_mailLoginType_vmailmgr|raw }}>vmailmgr</option>
+     </select>
+    </td>
+   </tr>
+   
+   <tr bgcolor="{{ row_off }}">
+    <td>{{ lang('Users_can_define_their_own_emailaccounts') }}:</td>
+    <td>
+     <select name="newsettings[userDefinedAccounts]">
+      <option value="no" {{ selected_userDefinedAccounts_no|raw }}>{{ lang('no') }}</option>
+      <option value="yes" {{ selected_userDefinedAccounts_yes|raw }}>{{ lang('yes') }}</option>
+     </select>
+    </td>
+   </tr>
+   
+   <tr bgcolor="{{ row_on }}">
+    <td>{{ lang('Organization_name') }}:</td>
+    <td><input name="newsettings[organizationName]" value="{{ value_organizationName|raw }}" size="30"></td>
+   </tr>
+
+   <tr>
+   	<td colspan="2">&nbsp;</td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td colspan="2">&nbsp;<b>{{ lang('SMTP_settings') }}</b></td>
+   </tr>
+
+   <tr bgcolor="{{ row_on }}">
+    <td>{{ lang('Enter_your_SMTP_server_hostname_or_IP_address') }}:</td>
+    <td><input name="newsettings[smtpServer]" value="{{ value_smtpServer|raw }}"></td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td>{{ lang('Enter_your_SMTP_server_port') }}:</td>
+    <td><input name="newsettings[smtpPort]" value="{{ value_smtpPort|raw }}"></td>
+   </tr>
+
+   <tr bgcolor="{{ row_on }}">
+    <td>{{ lang('Use_SMTP_auth') }}:</td>
+    <td>
+     <select name="newsettings[smtpAuth]">
+      <option value="no" {{ selected_smtpAuth_no|raw }}>{{ lang('no') }}</option>
+      <option value="yes" {{ selected_smtpAuth_yes|raw }}>{{ lang('yes') }}</option>
+     </select>
+    </td>
+   </tr>
+
+   <tr>
+   	<td colspan="2">&nbsp;</td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td colspan="2">&nbsp;<b>{{ lang('Sieve_settings') }}</b></td>
+   </tr>
+
+   <tr bgcolor="{{ row_on }}">
+    <td>{{ lang('Enter_your_SIEVE_server_hostname_or_IP_address') }}:</td>
+    <td><input name="newsettings[sieveServer]" value="{{ value_sieveServer|raw }}"></td>
+   </tr>
+
+   <tr bgcolor="{{ row_off }}">
+    <td>{{ lang('Enter_your_SIEVE_server_port') }}:</td>
+    <td><input name="newsettings[sievePort]" value="{{ value_sievePort|raw }}"></td>
+   </tr>
+
+{% endblock %}
+{% block footer %}
+  <tr bgcolor="{{ th_bg }}">
+    <td colspan="2">
+&nbsp;
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <input type="submit" name="submit" value="Submit">
+      <input type="submit" name="cancel" value="Cancel">
+    </td>
+  </tr>
+</table>
+</form>
+{% endblock %}

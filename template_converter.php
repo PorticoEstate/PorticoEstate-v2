@@ -31,9 +31,11 @@ foreach ($modules as $moduleDir)
     echo "------------------------\n";
 
     // Find all .tpl files in template directory
-    $files = glob($templateDir . '*.tpl');
+ //   $files = glob($templateDir . '*.tpl');
+	$configTpl = $templateDir . 'config.tpl';
+	$files = file_exists($configTpl) ? [$configTpl] : [];
 
-    if (count($files) == 0)
+	if (count($files) == 0)
     {
         echo "No .tpl files found in $templateDir\n";
         continue;

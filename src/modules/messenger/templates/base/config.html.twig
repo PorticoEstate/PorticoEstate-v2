@@ -1,0 +1,53 @@
+{# Config template #}
+{% block header %}
+<form method="post" action="{{ action_url }}">
+	<table class="pure-table pure-table-bordered pure-table-striped pure-form">
+		<th>
+		<td colspan="2"><font color="{{ th_text }}">&nbsp;<b>{{ title }}</b></font></td>
+		</th>
+		<tr bgcolor="{{ th_err }}">
+			<td colspan="2">&nbsp;<b>{{ error }}</b></font></td>
+		</tr>
+		{% endblock %}
+		{% block body %}
+		<tr class="row_on">
+			<td colspan="2">&nbsp;</td>
+		</tr>
+		<tr class="row_off">
+			<td colspan="2">&nbsp;<b>{{ lang('Messenger') }}/{{ lang('Settings') }}</b></font></td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('Select_where_you_want_to_store') }}/{{ lang('retrieve_messages') }}.</td>
+			<td>
+				<select name="newsettings[message_repository]" class="pure-u-1">
+					<option value="sql" {{ selected_message_repository_sql|raw }}> {{ lang('SQL') }}: </option>
+					<option value="imap" {{ selected_message_repository_imap|raw }}>SMTP/IMAP</option>
+				</select>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('IMAP_host_for_messages') }}:</td>
+			<td><input name="newsettings[imap_message_host]" value="{{ value_imap_message_host|raw }}" size="40" class="pure-u-1"/></td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('Restrict_users_to_only_sending_to_the_follow_group') }}:</td>
+			<td>
+				<table>
+					{{ hook_restrict_to_group|raw }}
+				</table>
+			</td>
+		</tr>
+		{% endblock %}
+		{% block footer %}
+		<tr class="{{ th }}">
+			<td colspan="2">&nbsp;</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">
+				<input type="submit" name="submit" value="{{ lang('submit') }}" class="pure-button"/>
+				<input type="submit" name="cancel" value="{{ lang('cancel') }}" class="pure-button"/>
+			</td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

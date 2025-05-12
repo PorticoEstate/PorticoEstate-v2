@@ -58,6 +58,9 @@ services:
             REDIS_HOST: redis
             REDIS_PORT: 6379
             NEXT_ENV: ${NEXT_ENV:-development}
+            WSS_LOG_ENABLED: "true"
+            WSS_DEBUG_LOG_ENABLED: "${WSS_DEBUG_LOG_ENABLED:-true}"
+            WSS_LOG_TO_DOCKER: "true"
         ports:
             - "8080:8080"  # WebSocket port
         volumes:

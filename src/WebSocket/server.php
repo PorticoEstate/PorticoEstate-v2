@@ -8,7 +8,10 @@ use App\WebSocket\Services\RedisService;
 use React\EventLoop\Factory;
 use React\Socket\SocketServer;
 use Psr\Log\LoggerInterface;
-
+if (!defined('SRC_ROOT_PATH'))
+{
+	define('SRC_ROOT_PATH', __DIR__.'/..'.'/..' . '/src');
+}
 // Set custom error handling to capture any issues
 ini_set('display_errors', 1);
 ini_set('log_errors', 1);
@@ -22,11 +25,11 @@ if (extension_loaded('xdebug')) {
     ini_set('xdebug.remote_autostart', 0);
     ini_set('xdebug.remote_connect_back', 0);
     ini_set('xdebug.idekey', '');
-    
+
     // For Xdebug 3
     ini_set('xdebug.mode', 'off');
     ini_set('xdebug.start_with_request', 'no');
-    
+
     // More aggressive disabling
     if (function_exists('xdebug_disable')) {
         xdebug_disable();
@@ -39,6 +42,53 @@ if (!file_exists($autoloadPath)) {
     die("Composer autoload not found at: {$autoloadPath}. Please run composer install.");
 }
 require $autoloadPath;
+
+// Look for configuration file
+$configFile = dirname(__DIR__, 2) . '/config/header.inc.php';
+$altConfigFile = '/var/www/html/config/header.inc.php';
+
+// Try to extract database settings from Portico's config file
+if (file_exists($configFile) || file_exists($altConfigFile)) {
+    $filepath = file_exists($configFile) ? $configFile : $altConfigFile;
+    echo "Loading database configuration from $filepath\n";
+
+    $fileContent = file_get_contents($filepath);
+    if ($fileContent) {
+        // Extract database settings using regex
+        if (preg_match("/['\"]db_type['\"]\\s*=>\\s*['\"]([^'\"]+)['\"]/",$fileContent, $matches)) {
+            putenv("DB_TYPE={$matches[1]}");
+        }
+
+        if (preg_match("/['\"]db_host['\"]\\s*=>\\s*['\"]([^'\"]+)['\"]/",$fileContent, $matches)) {
+            putenv("DB_HOST={$matches[1]}");
+        }
+
+        if (preg_match("/['\"]db_port['\"]\\s*=>\\s*['\"]([^'\"]+)['\"]/",$fileContent, $matches)) {
+            putenv("DB_PORT={$matches[1]}");
+        }
+
+        if (preg_match("/['\"]db_name['\"]\\s*=>\\s*['\"]([^'\"]+)['\"]/",$fileContent, $matches)) {
+            putenv("DB_NAME={$matches[1]}");
+        }
+
+        if (preg_match("/['\"]db_user['\"]\\s*=>\\s*['\"]([^'\"]+)['\"]/",$fileContent, $matches)) {
+            putenv("DB_USER={$matches[1]}");
+        }
+
+        if (preg_match("/['\"]db_pass['\"]\\s*=>\\s*['\"]([^'\"]+)['\"]/",$fileContent, $matches)) {
+            putenv("DB_PASS={$matches[1]}");
+        }
+
+        if (preg_match("/['\"]domain['\"]\\s*=>\\s*['\"]([^'\"]+)['\"]/",$fileContent, $matches)) {
+            putenv("DOMAIN={$matches[1]}");
+        }
+
+        echo "Database settings extracted: " .
+             "TYPE=" . getenv('DB_TYPE') . ", " .
+             "HOST=" . getenv('DB_HOST') . ", " .
+             "NAME=" . getenv('DB_NAME') . "\n";
+    }
+}
 
 // WebSocket server configuration constants
 define('WSS_LOG_ENABLED', true);           // Master switch for all logging
@@ -54,10 +104,10 @@ $logger = new class implements LoggerInterface {
     public function warning($message, array $context = []): void { $this->log('WARNING', $message, $context); }
     public function notice($message, array $context = []): void { $this->log('NOTICE', $message, $context); }
     public function info($message, array $context = []): void { $this->log('INFO', $message, $context); }
-    public function debug($message, array $context = []): void { 
+    public function debug($message, array $context = []): void {
         // Only log debug messages if debug logging is enabled
         if (WSS_DEBUG_LOG_ENABLED) {
-            $this->log('DEBUG', $message, $context); 
+            $this->log('DEBUG', $message, $context);
         }
     }
     public function log($level, $message, array $context = []): void {
@@ -65,12 +115,12 @@ $logger = new class implements LoggerInterface {
         if (!WSS_LOG_ENABLED) {
             return;
         }
-        
+
         // Add timestamp, level, and process ID to the log format
         $pid = getmypid();
         $timestamp = date('Y-m-d H:i:s');
         $contextStr = !empty($context) ? ' ' . json_encode($context) : '';
-        
+
         // Output to stdout (which can be redirected by supervisord)
         echo "[{$timestamp}] [{$level}] [PID:{$pid}] {$message}{$contextStr}" . PHP_EOL;
     }
@@ -103,13 +153,13 @@ $wsHttpServer = new HttpServer(
 try {
     // More verbose binding with debug information
     echo "Creating socket server on 0.0.0.0:8080..." . PHP_EOL;
-    
+
     // Explicitly check if port is already in use (Linux only)
     if (function_exists('socket_create') && function_exists('socket_bind')) {
         $testSocket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         $canBind = socket_bind($testSocket, '0.0.0.0', 8080);
         socket_close($testSocket);
-        
+
         if (!$canBind) {
             echo "WARNING: Port 8080 appears to be already in use!" . PHP_EOL;
             echo "Error code: " . socket_last_error() . " - " . socket_strerror(socket_last_error()) . PHP_EOL;
@@ -117,11 +167,11 @@ try {
             echo "Port 8080 is available for binding." . PHP_EOL;
         }
     }
-    
+
     // Create the socket server with React
     $socketAddress = '0.0.0.0:8080';
     echo "Binding to $socketAddress..." . PHP_EOL;
-    
+
     // Show environment information
     echo "PHP version: " . PHP_VERSION . PHP_EOL;
     echo "Operating system: " . PHP_OS . PHP_EOL;
@@ -132,11 +182,11 @@ try {
         $originalLogger = $logger;
         $logger = new class($originalLogger) implements LoggerInterface {
             private $innerLogger;
-            
+
             public function __construct(LoggerInterface $innerLogger) {
                 $this->innerLogger = $innerLogger;
             }
-            
+
             public function emergency($message, array $context = []): void { $this->log('EMERGENCY', $message, $context); }
             public function alert($message, array $context = []): void { $this->log('ALERT', $message, $context); }
             public function critical($message, array $context = []): void { $this->log('CRITICAL', $message, $context); }
@@ -144,53 +194,53 @@ try {
             public function warning($message, array $context = []): void { $this->log('WARNING', $message, $context); }
             public function notice($message, array $context = []): void { $this->log('NOTICE', $message, $context); }
             public function info($message, array $context = []): void { $this->log('INFO', $message, $context); }
-            public function debug($message, array $context = []): void { 
+            public function debug($message, array $context = []): void {
                 // Only forward debug messages if debug logging is enabled
                 if (WSS_DEBUG_LOG_ENABLED) {
                     $this->log('DEBUG', $message, $context);
                 }
             }
-            
+
             public function log($level, $message, array $context = []): void {
                 // Forward to inner logger
                 $this->innerLogger->log($level, $message, $context);
-                
+
                 // Only write errors and warnings to stderr for Docker logs
                 if (in_array($level, ['EMERGENCY', 'ALERT', 'CRITICAL', 'ERROR', 'WARNING'])) {
                     $formattedContext = !empty($context) ? ' ' . json_encode($context) : '';
                     $dockerMessage = "[" . date('Y-m-d H:i:s') . "] [{$level}] WSS: {$message}{$formattedContext}" . PHP_EOL;
-                    
+
                     // Write to stderr (appears in Docker logs)
                     fwrite(STDERR, $dockerMessage);
                 }
             }
         };
     }
-    
+
     // Create WebSocket server on port 8080
     $context = [];
     $socket = new SocketServer($socketAddress, $context, $loop);
     $server = new IoServer($wsHttpServer, $socket, $loop);
-    
+
     echo "WebSocket server listening on port 8080" . PHP_EOL;
 
     echo "SUCCESS: WebSocket server started on 0.0.0.0:8080" . PHP_EOL;
-    
+
     // Write a status file that can be checked
     file_put_contents('/tmp/websocket_running', date('Y-m-d H:i:s'));
-    
+
     // Set up a timer to check for notification files every second (as fallback)
     $loop->addPeriodicTimer(1, function() use ($webSocket) {
         $webSocket->checkNotificationFiles();
     });
-    
+
     // Send server ping to all clients every 60 seconds (1 minute) to keep connections alive
     // Reduced from 4 minutes to ensure more frequent keepalive checks
     $loop->addPeriodicTimer(60, function() use ($webSocket, $logger) {
         $logger->info("Sending server ping to all clients");
         $webSocket->sendServerPing();
     });
-    
+
     // Send ping to all entity rooms every 240 seconds (4 minutes)
     // This helps detect inactive clients and clean them up
     $loop->addPeriodicTimer(240, function() use ($webSocket, $logger) {
@@ -198,23 +248,23 @@ try {
         $entityRooms = array_filter($rooms, function($room) {
             return !$room['isSessionRoom'] && strpos($room['id'], 'entity_') === 0;
         });
-        
+
         if (count($entityRooms) > 0) {
             $logger->info("Pinging entity rooms", [
                 'roomCount' => count($entityRooms)
             ]);
-            
+
             foreach ($entityRooms as $room) {
                 $webSocket->getRoomService()->pingRoom($room['id']);
             }
         }
     });
-    
+
     // Clean up inactive room connections every 480 seconds (8 minutes)
     $loop->addPeriodicTimer(480, function() use ($webSocket, $logger) {
         $logger->info("Cleaning up inactive room connections");
         $stats = $webSocket->getRoomService()->cleanupInactiveConnections(480); // 8 minutes threshold
-        
+
         if ($stats['connectionsRemoved'] > 0) {
             $logger->info("Inactive connections cleanup complete", [
                 'connectionsRemoved' => $stats['connectionsRemoved'],
@@ -222,49 +272,49 @@ try {
             ]);
         }
     });
-    
+
     // Set up Redis Pub/Sub if Redis is available
     if ($webSocket->isRedisEnabled()) {
         try {
             // Use Clue Redis React for non-blocking Redis pub/sub
             $factory = new \Clue\React\Redis\Factory($loop);
             $redisClient = null;
-            
+
             $factory->createClient('redis://' . (getenv('REDIS_HOST') ?: 'redis') . ':' . (getenv('REDIS_PORT') ?: 6379))
                 ->then(function (\Clue\React\Redis\Client $client) use ($webSocket, $logger, &$redisClient) {
                     $redisClient = $client;
                     $logger->info("Redis pub/sub connection established");
-                    
+
                     // Subscribe to general notifications channel
                     $client->subscribe('notifications');
-                    
+
                     // Subscribe to session messages channel
                     $client->subscribe('session_messages');
-                    
+
                     // Subscribe to room messages channel for entity room messages
                     $client->subscribe('room_messages');
-                    
+
                     // Handle messages
                     $client->on('message', function ($channel, $payload) use ($webSocket, $logger) {
                         // Parse the payload for logging and processing
                         $data = json_decode($payload, true);
                         $messageType = $data['type'] ?? 'unknown';
-                        
+
                         // Handle room_messages channel
                         if ($channel === 'room_messages') {
                             if ($messageType === 'room_message' && isset($data['roomId'])) {
                                 $roomId = $data['roomId'];
-                                
+
                                 $logger->info("Room message received via Redis", [
                                     'roomId' => $roomId,
                                     'type' => $messageType,
                                     'timestamp' => date('c')
                                 ]);
-                                
+
                                 // Send message to the specific room
                                 if ($webSocket->getRoomService()->roomExists($roomId)) {
                                     $sent = $webSocket->getRoomService()->sendToRoom($roomId, $payload);
-                                    
+
                                     $logger->info("Room message delivery", [
                                         'success' => $sent > 0,
                                         'roomId' => $roomId,
@@ -275,65 +325,65 @@ try {
                                         'roomId' => $roomId
                                     ]);
                                 }
-                                
+
                                 return;
                             }
                         }
-                        
+
                         if ($channel === 'notifications') {
                             // Handle entity-targeted notifications (legacy format)
-                            if (isset($data['target']) && $data['target'] === 'entity' && 
+                            if (isset($data['target']) && $data['target'] === 'entity' &&
                                 isset($data['entityType']) && isset($data['entityId'])) {
                                 // Get entity info
                                 $entityType = $data['entityType'];
                                 $entityId = $data['entityId'];
-                                
+
                                 $logger->info("Entity-targeted Redis notification received (legacy format)", [
                                     'entityType' => $entityType,
                                     'entityId' => $entityId,
                                     'type' => $messageType,
                                     'timestamp' => date('c')
                                 ]);
-                                
+
                                 // Send to entity room
                                 $success = $webSocket->sendToEntityRoom($entityType, $entityId, $payload);
-                                
+
                                 $logger->info("Entity message delivery", [
                                     'success' => $success,
                                     'entityType' => $entityType,
                                     'entityId' => $entityId
                                 ]);
-                                
+
                                 return;
                             }
-                            
+
                             // Handle session-targeted notifications
-                            else if (isset($data['target']) && $data['target'] === 'session' && 
+                            else if (isset($data['target']) && $data['target'] === 'session' &&
                                 isset($data['sessionId'])) {
                                 // Get session info
                                 $sessionId = $data['sessionId'];
-                                
+
                                 $logger->info("Session-targeted Redis notification received", [
                                     'sessionId' => substr($sessionId, 0, 8) . '...',
                                     'type' => $messageType,
                                     'timestamp' => date('c')
                                 ]);
-                                
+
                                 // Send to session room
                                 $success = $webSocket->sendToSessionRoom($sessionId, $payload);
-                                
+
                                 $logger->info("Session message delivery", [
                                     'success' => $success,
                                     'sessionId' => substr($sessionId, 0, 8) . '...'
                                 ]);
-                                
+
                                 return;
                             }
-                            
+
                             // Handle general notifications
                             $notificationType = $data['data']['type'] ?? 'general';
                             $message = $data['message'] ?? 'No message';
-                            
+
                             // Log detailed information
                             $logger->info("Redis notification received", [
                                 'channel' => $channel,
@@ -343,27 +393,27 @@ try {
                                 'payload_length' => strlen($payload),
                                 'timestamp' => date('c')
                             ]);
-                            
+
                             // Add source information
                             if (is_array($data)) {
                                 $data['source'] = 'redis';
                                 $data['received_at'] = date('c');
                                 $payload = json_encode($data);
                             }
-                            
+
                             // Log client count and broadcast
                             $clientCount = $webSocket->getClientCount();
                             $logger->info("Broadcasting Redis message to {$clientCount} clients");
-                            
+
                             // Broadcast to all clients
                             $webSocket->broadcastNotification($payload);
-                            
+
                         } elseif ($channel === 'session_messages') {
                             // Handle session-targeted messages
                             if ($messageType === 'session_targeted' && isset($data['sessionId'])) {
                                 $sessionId = $data['sessionId'];
                                 $message = $data['message'] ?? 'No message';
-                                
+
                                 // Simplify logging to focus on most important information
                                 $logger->info("Redis session message received", [
                                     'sessionId' => substr($sessionId, 0, 8) . '...',
@@ -371,13 +421,30 @@ try {
                                     'message_count' => isset($data['data']['messages']) ? count($data['data']['messages']) : 0,
                                     'timestamp' => date('c')
                                 ]);
-                                
+
                                 // Send to specific session room
                                 // Pass data directly to avoid additional nesting
                                 $payload = json_encode($data['data'] ?? $data);
                                 $success = $webSocket->sendToSessionRoom($sessionId, $payload);
-                                
+
                                 $logger->info("Session message delivery", [
+                                    'success' => $success,
+                                    'sessionId' => substr($sessionId, 0, 8) . '...'
+                                ]);
+                            }
+                            // Handle update_partial_applications message type
+                            else if ($messageType === 'update_partial_applications' && isset($data['sessionId'])) {
+                                $sessionId = $data['sessionId'];
+
+                                $logger->info("Partial applications update request received", [
+                                    'sessionId' => substr($sessionId, 0, 8) . '...',
+                                    'timestamp' => date('c')
+                                ]);
+
+                                // Fetch and send partial applications for the session
+                                $success = $webSocket->sendPartialApplicationsUpdate($sessionId);
+
+                                $logger->info("Partial applications update delivery", [
                                     'success' => $success,
                                     'sessionId' => substr($sessionId, 0, 8) . '...'
                                 ]);
@@ -400,36 +467,36 @@ try {
             ]);
         }
     }
-    
+
     // Check for session-specific notification files
     $loop->addPeriodicTimer(2, function() use ($webSocket, $logger) {
         // Look for session message files
         $files = glob('/tmp/websocket_session_*.json');
-        
+
         if (!empty($files)) {
             $logger->info("Processing session message files", [
                 'count' => count($files)
             ]);
-            
+
             foreach ($files as $file) {
                 try {
                     $content = file_get_contents($file);
-                    
+
                     if ($content) {
                         $data = json_decode($content, true);
-                        
+
                         if (isset($data['sessionId'])) {
                             $sessionId = $data['sessionId'];
-                            
+
                             $logger->info("Processing session message file", [
                                 'file' => basename($file),
                                 'sessionId' => substr($sessionId, 0, 8) . '...'
                             ]);
-                            
+
                             // Send to specific session room
                             $webSocket->sendToSessionRoom($sessionId, $data);
                         }
-                        
+
                         // Delete the file after processing
                         unlink($file);
                     }
@@ -442,7 +509,7 @@ try {
             }
         }
     });
-    
+
     // Display log configuration status
     if (WSS_LOG_ENABLED) {
         echo "[" . date('Y-m-d H:i:s') . "] [INFO] Logging is ENABLED" . PHP_EOL;
@@ -454,21 +521,21 @@ try {
 } catch (\Exception $e) {
     echo "ERROR starting WebSocket server: " . $e->getMessage() . PHP_EOL;
     echo "Stack trace: " . $e->getTraceAsString() . PHP_EOL;
-    
+
     // Try alternate port if 8080 is occupied
     try {
         echo "Trying alternate ports..." . PHP_EOL;
         // WebSocket on 8082
         $wsSocket = new SocketServer('0.0.0.0:8082', [], $loop);
         $wsServer = new IoServer($wsHttpServer, $wsSocket, $loop);
-        
+
         // HTTP API on 8083
         $httpSocket = new SocketServer('0.0.0.0:8083', [], $loop);
         IoServer::factory($httpServer, $httpSocket);
-        
+
         echo "WebSocket server listening on port 8082" . PHP_EOL;
         echo "HTTP API server listening on port 8083" . PHP_EOL;
-        
+
         // Update Apache config to use alternate port
         $apacheConfig = '/etc/apache2/sites-enabled/000-default.conf';
         if (file_exists($apacheConfig)) {
@@ -476,7 +543,7 @@ try {
             $config = str_replace('ws://slim:8080', 'ws://slim:8082', $config);
             file_put_contents($apacheConfig, $config);
             echo "Updated Apache config to use port 8082" . PHP_EOL;
-            
+
             // Also update the WebSocketHelper class if we can find it
             $wsHelper = '/var/www/html/src/modules/bookingfrontend/helpers/WebSocketHelper.php';
             if (file_exists($wsHelper)) {
@@ -486,7 +553,7 @@ try {
                 echo "Updated WebSocketHelper to use port 8083" . PHP_EOL;
             }
         }
-        
+
         echo "SUCCESS: WebSocket server started on 0.0.0.0:8081" . PHP_EOL;
         file_put_contents('/tmp/websocket_running', date('Y-m-d H:i:s') . ' (port 8081)');
     } catch (\Exception $e2) {

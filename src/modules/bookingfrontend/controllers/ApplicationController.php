@@ -6,6 +6,8 @@ use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\bookingfrontend\models\Document;
+use App\modules\bookingfrontend\repositories\ApplicationRepository;
+use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\modules\bookingfrontend\services\ApplicationService;
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Cache;
@@ -26,6 +28,8 @@ class ApplicationController extends DocumentController
 {
     private $bouser;
     private $applicationService;
+    private $applicationRepository;
+    private $articleRepository;
     private $userSettings;
 
     public function __construct(ContainerInterface $container)
@@ -33,6 +37,8 @@ class ApplicationController extends DocumentController
         parent::__construct(Document::OWNER_APPLICATION);
         $this->bouser = new UserHelper();
         $this->applicationService = new ApplicationService();
+        $this->applicationRepository = new ApplicationRepository();
+        $this->articleRepository = new ArticleRepository();
         $this->userSettings = Settings::getInstance()->get('user');
     }
 
@@ -182,91 +188,104 @@ class ApplicationController extends DocumentController
             $resourceId = !empty($resourceIds) && is_array($resourceIds) ? $resourceIds[0] : null;
             $from = $application['from_'] ?? null;
             $to = $application['to_'] ?? null;
-            
+
             $deleted = $this->applicationService->deletePartial($id);
-            
+
             // Send WebSocket notifications about the freed timeslot
             if ($deleted) {
                 try {
-                    // Notify about timeslot changes if we have the necessary data
-                    if ($buildingId && $resourceId && $from && $to) {
-                        // Notify the relevant entity rooms that overlap status has changed
-                        $this->notifyTimeslotChanged(
-                            (int)$buildingId,
-                            (int)$resourceId,
-                            $from,
-                            $to,
-                            $id
-                        );
-                    }
-                    
-                    // Get timeslots affected by the application deletion
-                    $startDate = new \DateTime($from, new \DateTimeZone('Europe/Oslo'));
-                    $endDate = new \DateTime($to, new \DateTimeZone('Europe/Oslo'));
-                    
-                    // Dates for fetching overlapped timeslots - use a wider range to catch all affected
-                    $queryStartDate = clone $startDate;
-                    $queryStartDate->modify('-1 day')->setTime(0, 0, 0); // Start one day before
-                    
-                    $queryEndDate = clone $endDate;
-                    $queryEndDate->modify('+1 day')->setTime(23, 59, 59); // End one day after
-                    
-                    // Fetch the affected timeslots with fresh data after deletion
-                    $affectedTimeslots = [];
-                    if (is_array($resourceIds) && !empty($resourceIds)) {
-                        foreach ($resourceIds as $resId) {
-                            $timeslots = $this->getAffectedTimeslots($buildingId, (int)$resId, $queryStartDate, $queryEndDate);
-                            if (!empty($timeslots)) {
-                                $affectedTimeslots[$resId] = $timeslots;
+                    // Offload all WebSocket notifications to a forked process
+                    WebSocketHelper::forkNotification(function() use ($buildingId, $resourceId, $from, $to, $id, $resourceIds) {
+                        try {
+                            // Notify about timeslot changes if we have the necessary data
+                            if ($buildingId && $resourceId && $from && $to) {
+                                // Notify the relevant entity rooms that overlap status has changed
+                                $this->notifyTimeslotChanged(
+                                    (int)$buildingId,
+                                    (int)$resourceId,
+                                    $from,
+                                    $to,
+                                    $id
+                                );
                             }
+
+                            // Get timeslots affected by the application deletion
+                            $startDate = new \DateTime($from, new \DateTimeZone('Europe/Oslo'));
+                            $endDate = new \DateTime($to, new \DateTimeZone('Europe/Oslo'));
+
+                            // Dates for fetching overlapped timeslots - use a wider range to catch all affected
+                            $queryStartDate = clone $startDate;
+                            $queryStartDate->modify('-1 day')->setTime(0, 0, 0); // Start one day before
+
+                            $queryEndDate = clone $endDate;
+                            $queryEndDate->modify('+1 day')->setTime(23, 59, 59); // End one day after
+
+                            // Fetch the affected timeslots with fresh data after deletion
+                            $affectedTimeslots = [];
+                            if (is_array($resourceIds) && !empty($resourceIds)) {
+                                foreach ($resourceIds as $resId) {
+                                    $timeslots = $this->getAffectedTimeslots($buildingId, (int)$resId, $queryStartDate, $queryEndDate);
+                                    if (!empty($timeslots)) {
+                                        $affectedTimeslots[$resId] = $timeslots;
+                                    }
+                                }
+                            }
+
+                            // Send dedicated notifications to rooms about application deletion
+                            if ($buildingId) {
+                                WebSocketHelper::sendEntityNotification(
+                                    'building',
+                                    (int)$buildingId,
+                                    'Application deleted',
+                                    'deleted',
+                                    [
+                                        'application_id' => $id,
+                                        'from' => $from,
+                                        'to' => $to,
+                                        'affected_timeslots' => $affectedTimeslots,
+                                        'change_type' => 'deletion'
+                                    ]
+                                );
+                            }
+
+                            // Notify each resource's room about the application deletion
+                            if (is_array($resourceIds) && !empty($resourceIds)) {
+                                foreach ($resourceIds as $resId) {
+                                    WebSocketHelper::sendEntityNotification(
+                                        'resource',
+                                        (int)$resId,
+                                        'Application deleted',
+                                        'deleted',
+                                        [
+                                            'application_id' => $id,
+                                            'from' => $from,
+                                            'to' => $to,
+                                            'affected_timeslots' => isset($affectedTimeslots[$resId]) ? $affectedTimeslots[$resId] : [],
+                                            'resource_id' => (int)$resId,
+                                            'change_type' => 'deletion'
+                                        ]
+                                    );
+                                }
+                            }
+                        } catch (Exception $innerException) {
+                            // Log errors from the forked process
+                            error_log("Error in forked WebSocket notification process: " . $innerException->getMessage());
                         }
-                    }
-                    
-                    // Send dedicated notifications to rooms about application deletion
-                    if ($buildingId) {
-                        WebSocketHelper::sendEntityNotification(
-                            'building',
-                            (int)$buildingId,
-                            'Application deleted',
-                            'deleted',
-                            [
-                                'application_id' => $id,
-                                'from' => $from,
-                                'to' => $to,
-                                'affected_timeslots' => $affectedTimeslots,
-                                'change_type' => 'deletion'
-                            ]
-                        );
-                    }
-                    
-                    // Notify each resource's room about the application deletion
-                    if (is_array($resourceIds) && !empty($resourceIds)) {
-                        foreach ($resourceIds as $resId) {
-                            WebSocketHelper::sendEntityNotification(
-                                'resource',
-                                (int)$resId,
-                                'Application deleted',
-                                'deleted',
-                                [
-                                    'application_id' => $id,
-                                    'from' => $from,
-                                    'to' => $to,
-                                    'affected_timeslots' => isset($affectedTimeslots[$resId]) ? $affectedTimeslots[$resId] : [],
-                                    'resource_id' => (int)$resId,
-                                    'change_type' => 'deletion'
-                                ]
-                            );
-                        }
-                    }
+                    });
+
+                    // Log that notifications were forked
+                    error_log("WebSocket notifications for application deletion #{$id} offloaded to forked process");
+
                 } catch (Exception $wsException) {
                     // Log but don't interrupt the response flow
                     error_log("WebSocket notification error in deletePartial: " . $wsException->getMessage());
                 }
             }
-            
-			$response->getBody()->write(json_encode(['deleted' => $deleted]));
-			return $response->withStatus(200)
-				->withHeader('Content-Type', 'application/json');
+            WebSocketHelper::triggerPartialApplicationsUpdate();
+
+            $response->getBody()->write(json_encode(['deleted' => $deleted]));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -341,8 +360,6 @@ class ApplicationController extends DocumentController
             $data['active'] = '1';
             $data['created'] = 'now';
 
-
-
             // Add dummy data for required fields
             $this->populateDummyData($data);
 
@@ -353,14 +370,19 @@ class ApplicationController extends DocumentController
                 'message' => 'Partial application created successfully'
             ];
 
-            // Broadcast notification through WebSocket
+            // Broadcast notification through WebSocket (asynchronously)
             try {
                 $resourceId = isset($data['resources']) && !empty($data['resources']) ? $data['resources'][0] : null;
-                WebSocketHelper::notifyPartialApplicationCreated($id, $resourceId);
+                // Use async notification with forking for better performance
+                WebSocketHelper::forkNotification(function() use ($id, $resourceId) {
+                    WebSocketHelper::notifyPartialApplicationCreated($id, $resourceId);
+                });
+                error_log("WebSocket notification for application creation #{$id} offloaded to forked process");
             } catch (Exception $e) {
                 // Log but don't interrupt flow
                 error_log("WebSocket notification error: " . $e->getMessage());
             }
+            WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
 
             $response->getBody()->write(json_encode($responseData));
             return $response->withStatus(201)
@@ -438,11 +460,13 @@ class ApplicationController extends DocumentController
 
             $data['id'] = $id;
             $this->applicationService->savePartialApplication($data);
-			$response->getBody()->write(json_encode([
-				'message' => 'Application updated successfully'
-			]));
-			return $response->withStatus(200)
-				->withHeader('Content-Type', 'application/json');
+            WebSocketHelper::triggerPartialApplicationsUpdate();
+
+            $response->getBody()->write(json_encode([
+                'message' => 'Application updated successfully'
+            ]));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
 
 
         } catch (Exception $e) {
@@ -555,11 +579,13 @@ class ApplicationController extends DocumentController
 
             $data['id'] = $id;
             $this->applicationService->patchApplication($data);
-			$response->getBody()->write(json_encode([
-				'message' => 'Application updated successfully'
-			]));
-			return $response->withStatus(200)
-				->withHeader('Content-Type', 'application/json');
+            WebSocketHelper::triggerPartialApplicationsUpdate();
+
+            $response->getBody()->write(json_encode([
+                'message' => 'Application updated successfully'
+            ]));
+            return $response->withStatus(200)
+                ->withHeader('Content-Type', 'application/json');
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -620,73 +646,74 @@ class ApplicationController extends DocumentController
             }
 
             try {
-				// Update all partial applications
-				$result = $this->applicationService->checkoutPartials($session_id, $data);
+                // Update all partial applications
+                $result = $this->applicationService->checkoutPartials($session_id, $data);
 
-				// Add timestamp and session info for debugging
-				$result['debug_timestamp'] = date('Y-m-d H:i:s');
-				$result['debug_session_id'] = $session_id;
+                // Add timestamp and session info for debugging
+                $result['debug_timestamp'] = date('Y-m-d H:i:s');
+                $result['debug_session_id'] = $session_id;
 
-				// Determine message based on direct booking and count
-				// Check if at least one application is a direct booking
-				$has_direct_booking = false;
-				foreach ($result['updated'] as $app) {
-					if ($app['status'] === 'ACCEPTED') {
-						$has_direct_booking = true;
-						break;
-					}
-				}
+                // Determine message based on direct booking and count
+                // Check if at least one application is a direct booking
+                $has_direct_booking = false;
+                foreach ($result['updated'] as $app) {
+                    if ($app['status'] === 'ACCEPTED') {
+                        $has_direct_booking = true;
+                        break;
+                    }
+                }
 
-				// Define message sets based on direct booking status
-				if ($has_direct_booking) {
-					$messages = array(
-						'one' => array(
-							'registered' => "Your application has now been processed and a confirmation email has been sent to you.",
-							'review' => ""
-						),
-						'multiple' => array(
-							'registered' => "Your applications have now been processed and confirmation emails have been sent to you.",
-							'review' => ""
-						)
-					);
-				} else {
-					$messages = array(
-						'one' => array(
-							'registered' => "Your application has now been registered and a confirmation email has been sent to you.",
-							'review' => "A Case officer will review your application as soon as possible."
-						),
-						'multiple' => array(
-							'registered' => "Your applications have now been registered and confirmation emails have been sent to you.",
-							'review' => "A Case officer will review your applications as soon as possible."
-						)
-					);
-				}
+                // Define message sets based on direct booking status
+                if ($has_direct_booking) {
+                    $messages = array(
+                        'one' => array(
+                            'registered' => "Your application has now been processed and a confirmation email has been sent to you.",
+                            'review' => ""
+                        ),
+                        'multiple' => array(
+                            'registered' => "Your applications have now been processed and confirmation emails have been sent to you.",
+                            'review' => ""
+                        )
+                    );
+                } else {
+                    $messages = array(
+                        'one' => array(
+                            'registered' => "Your application has now been registered and a confirmation email has been sent to you.",
+                            'review' => "A Case officer will review your application as soon as possible."
+                        ),
+                        'multiple' => array(
+                            'registered' => "Your applications have now been registered and confirmation emails have been sent to you.",
+                            'review' => "A Case officer will review your applications as soon as possible."
+                        )
+                    );
+                }
 
-				// Choose message set based on count
-				$msgset = count($result['updated']) > 1 ? 'multiple' : 'one';
-				
-				// Build message array
-				$message_arr = array();
-				$message_arr[] = lang($messages[$msgset]['registered']);
-				if ($messages[$msgset]['review']) {
-					$message_arr[] = lang($messages[$msgset]['review']);
-				}
-				$message_arr[] = lang("Please check your Spam Filter if you are missing mail.");
-				
-				// Set message in cache
-				Cache::message_set(implode("<br/>", $message_arr), 'message', 'booking.booking confirmed');
+                // Choose message set based on count
+                $msgset = count($result['updated']) > 1 ? 'multiple' : 'one';
 
-				$response->getBody()->write(json_encode([
-					'message' => 'Applications processed successfully',
-					'applications' => $result['updated'],
-					'skipped' => $result['skipped'],
-					'debug_info' => [
-						'collisions' => $result['debug_collisions'],
-						'timestamp' => $result['debug_timestamp'],
-						'session_id' => $result['debug_session_id']
-					]
-				]));
-				return $response->withHeader('Content-Type', 'application/json');
+                // Build message array
+                $message_arr = array();
+                $message_arr[] = lang($messages[$msgset]['registered']);
+                if ($messages[$msgset]['review']) {
+                    $message_arr[] = lang($messages[$msgset]['review']);
+                }
+                $message_arr[] = lang("Please check your Spam Filter if you are missing mail.");
+
+                // Set message in cache
+                Cache::message_set(implode("<br/>", $message_arr), 'message', 'booking.booking confirmed');
+                WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
+
+                $response->getBody()->write(json_encode([
+                    'message' => 'Applications processed successfully',
+                    'applications' => $result['updated'],
+                    'skipped' => $result['skipped'],
+                    'debug_info' => [
+                        'collisions' => $result['debug_collisions'],
+                        'timestamp' => $result['debug_timestamp'],
+                        'session_id' => $result['debug_session_id']
+                    ]
+                ]));
+                return $response->withHeader('Content-Type', 'application/json');
 
             } catch (Exception $e) {
                 // Check if the error message contains validation errors
@@ -709,99 +736,99 @@ class ApplicationController extends DocumentController
     }
 
 
-	/**
-	 * @OA\Post(
-	 *     path="/bookingfrontend/applications/validate-checkout",
-	 *     summary="Validate if checkout of partial applications would succeed",
-	 *     tags={"Applications"},
-	 *     @OA\RequestBody(
-	 *         required=true,
-	 *         @OA\JsonContent(
-	 *             type="object",
-	 *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
-	 *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
-	 *             @OA\Property(property="organizationNumber", type="string"),
-	 *             @OA\Property(property="organizationName", type="string"),
-	 *             @OA\Property(property="contactName", type="string"),
-	 *             @OA\Property(property="contactEmail", type="string"),
-	 *             @OA\Property(property="contactPhone", type="string"),
-	 *             @OA\Property(property="street", type="string"),
-	 *             @OA\Property(property="zipCode", type="string"),
-	 *             @OA\Property(property="city", type="string"),
-	 *             @OA\Property(property="eventTitle", type="string"),
-	 *             @OA\Property(property="organizerName", type="string")
-	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=200,
-	 *         description="Validation results",
-	 *         @OA\JsonContent(
-	 *             type="object",
-	 *             @OA\Property(property="valid", type="boolean"),
-	 *             @OA\Property(
-	 *                 property="applications",
-	 *                 type="array",
-	 *                 @OA\Items(
-	 *                     type="object",
-	 *                     @OA\Property(property="id", type="integer"),
-	 *                     @OA\Property(property="valid", type="boolean"),
-	 *                     @OA\Property(property="would_be_direct_booking", type="boolean"),
-	 *                     @OA\Property(
-	 *                         property="issues",
-	 *                         type="array",
-	 *                         @OA\Items(
-	 *                             type="object",
-	 *                             @OA\Property(property="type", type="string"),
-	 *                             @OA\Property(property="message", type="string")
-	 *                         )
-	 *                     )
-	 *                 )
-	 *             )
-	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=400,
-	 *         description="Invalid data or no active session"
-	 *     )
-	 * )
-	 */
-	public function validateCheckout(Request $request, Response $response): Response
-	{
-		try {
-			$session = Sessions::getInstance();
-			$session_id = $session->get_session_id();
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/applications/validate-checkout",
+     *     summary="Validate if checkout of partial applications would succeed",
+     *     tags={"Applications"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
+     *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
+     *             @OA\Property(property="organizationNumber", type="string"),
+     *             @OA\Property(property="organizationName", type="string"),
+     *             @OA\Property(property="contactName", type="string"),
+     *             @OA\Property(property="contactEmail", type="string"),
+     *             @OA\Property(property="contactPhone", type="string"),
+     *             @OA\Property(property="street", type="string"),
+     *             @OA\Property(property="zipCode", type="string"),
+     *             @OA\Property(property="city", type="string"),
+     *             @OA\Property(property="eventTitle", type="string"),
+     *             @OA\Property(property="organizerName", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Validation results",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="valid", type="boolean"),
+     *             @OA\Property(
+     *                 property="applications",
+     *                 type="array",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer"),
+     *                     @OA\Property(property="valid", type="boolean"),
+     *                     @OA\Property(property="would_be_direct_booking", type="boolean"),
+     *                     @OA\Property(
+     *                         property="issues",
+     *                         type="array",
+     *                         @OA\Items(
+     *                             type="object",
+     *                             @OA\Property(property="type", type="string"),
+     *                             @OA\Property(property="message", type="string")
+     *                         )
+     *                     )
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid data or no active session"
+     *     )
+     * )
+     */
+    public function validateCheckout(Request $request, Response $response): Response
+    {
+        try {
+            $session = Sessions::getInstance();
+            $session_id = $session->get_session_id();
 
-			if (empty($session_id)) {
-				return ResponseHelper::sendErrorResponse(
-					['error' => 'No active session'],
-					400
-				);
-			}
+            if (empty($session_id)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'No active session'],
+                    400
+                );
+            }
 
-			$data = json_decode($request->getBody()->getContents(), true);
-			if (!$data) {
-				return ResponseHelper::sendErrorResponse(
-					['error' => 'Invalid JSON data'],
-					400
-				);
-			}
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
 
-			// Validate checkout
-			$validationResults = $this->applicationService->validateCheckout($session_id, $data);
+            // Validate checkout
+            $validationResults = $this->applicationService->validateCheckout($session_id, $data);
 
-			$validationResults['debug_timestamp'] = date('Y-m-d H:i:s');
-			$validationResults['debug_session_id'] = $session_id;
+            $validationResults['debug_timestamp'] = date('Y-m-d H:i:s');
+            $validationResults['debug_session_id'] = $session_id;
 
-			$response->getBody()->write(json_encode($validationResults));
-			return $response->withHeader('Content-Type', 'application/json');
+            $response->getBody()->write(json_encode($validationResults));
+            return $response->withHeader('Content-Type', 'application/json');
 
-		} catch (Exception $e) {
-			return ResponseHelper::sendErrorResponse(
-				['error' => $e->getMessage()],
-				500
-			);
-		}
-	}
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
 
 
     /**
@@ -949,6 +976,8 @@ class ApplicationController extends DocumentController
                 $documents[] = $docId;
             }
 
+            WebSocketHelper::triggerPartialApplicationsUpdate();
+
 
             $response->getBody()->write(json_encode([
                 'message' => 'Files uploaded successfully',
@@ -1025,6 +1054,7 @@ class ApplicationController extends DocumentController
 
             // Delete the document and its file
             $this->documentService->deleteDocument($documentId);
+            WebSocketHelper::triggerPartialApplicationsUpdate();
 
             return $response->withStatus(204);
 
@@ -1087,184 +1117,196 @@ class ApplicationController extends DocumentController
     }
 
 
-	/**
-	 * @OA\Post(
-	 *     path="/bookingfrontend/applications/simple",
-	 *     summary="Create a simple application booking for a specific timeslot",
-	 *     tags={"Applications"},
-	 *     @OA\RequestBody(
-	 *         required=true,
-	 *         @OA\JsonContent(
-	 *             type="object",
-	 *             required={"resource_id", "building_id", "from", "to"},
-	 *             @OA\Property(property="resource_id", type="integer"),
-	 *             @OA\Property(property="building_id", type="integer"),
-	 *             @OA\Property(property="from", type="integer", description="Start timestamp in seconds"),
-	 *             @OA\Property(property="to", type="integer", description="End timestamp in seconds")
-	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=201,
-	 *         description="Simple application created",
-	 *         @OA\JsonContent(
-	 *             type="object",
-	 *             @OA\Property(property="id", type="integer"),
-	 *             @OA\Property(property="message", type="string"),
-	 *             @OA\Property(property="status", type="string")
-	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=400,
-	 *         description="Invalid input or timeslot unavailable"
-	 *     )
-	 * )
-	 */
-	public function createSimpleApplication(Request $request, Response $response): Response
-	{
-		try {
-			$session = Sessions::getInstance();
-			$session_id = $session->get_session_id();
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/applications/simple",
+     *     summary="Create a simple application booking for a specific timeslot",
+     *     tags={"Applications"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"resource_id", "building_id", "from", "to"},
+     *             @OA\Property(property="resource_id", type="integer"),
+     *             @OA\Property(property="building_id", type="integer"),
+     *             @OA\Property(property="from", type="integer", description="Start timestamp in seconds"),
+     *             @OA\Property(property="to", type="integer", description="End timestamp in seconds")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Simple application created",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id", type="integer"),
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="status", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid input or timeslot unavailable"
+     *     )
+     * )
+     */
+    public function createSimpleApplication(Request $request, Response $response): Response
+    {
+        try {
+            $startTime = microtime(true);
+            $session = Sessions::getInstance();
+            $session_id = $session->get_session_id();
 
-			if (empty($session_id)) {
-				return ResponseHelper::sendErrorResponse(
-					['error' => 'No active session'],
-					400
-				);
-			}
+            if (empty($session_id)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'No active session'],
+                    400
+                );
+            }
 
-			$data = json_decode($request->getBody()->getContents(), true);
-			if (!$data) {
-				return ResponseHelper::sendErrorResponse(
-					['error' => 'Invalid JSON data'],
-					400
-				);
-			}
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
 
-			// Validate required fields
-			$requiredFields = ['resource_id', 'building_id', 'from', 'to'];
-			foreach ($requiredFields as $field) {
-				if (!isset($data[$field])) {
-					return ResponseHelper::sendErrorResponse(
-						['error' => "Missing required field: {$field}"],
-						400
-					);
-				}
-			}
+            // Validate required fields
+            $requiredFields = ['resource_id', 'building_id', 'from', 'to'];
+            foreach ($requiredFields as $field) {
+                if (!isset($data[$field])) {
+                    return ResponseHelper::sendErrorResponse(
+                        ['error' => "Missing required field: {$field}"],
+                        400
+                    );
+                }
+            }
+
+            // Optimized timestamp conversion - reduce object creation and string operations
+            $fromTimestamp = is_numeric($data['from']) ? (int)$data['from'] : 0;
+            $toTimestamp = is_numeric($data['to']) ? (int)$data['to'] : 0;
+
+            // If these look like milliseconds (13 digits), convert to seconds
+            if ($fromTimestamp > 10000000000) {
+                $fromTimestamp = (int)($fromTimestamp / 1000);
+            }
+            if ($toTimestamp > 10000000000) {
+                $toTimestamp = (int)($toTimestamp / 1000);
+            }
+
+            // Create DateTime objects with Oslo timezone once
+            $osloTz = new \DateTimeZone('Europe/Oslo');
+            $fromDate = new \DateTime('@' . $fromTimestamp); // Create with UTC
+            $fromDate->setTimezone($osloTz);                 // Convert to Oslo
+
+            $toDate = new \DateTime('@' . $toTimestamp);     // Create with UTC
+            $toDate->setTimezone($osloTz);                   // Convert to Oslo
+
+            // Format for database with Oslo timezone
+            $from = $fromDate->format('Y-m-d H:i:s');
+            $to = $toDate->format('Y-m-d H:i:s');
+
+            // Check if resource supports simple booking and is available
+            $result = $this->applicationService->createSimpleBooking(
+                (int)$data['resource_id'],
+                (int)$data['building_id'],
+                $from,
+                $to,
+                $session_id
+            );
+
+            $responseData = [
+                'id' => $result['id'],
+                'message' => 'Simple application created successfully',
+                'status' => $result['status']
+            ];
+
+            // Offload WebSocket notifications to a separate process
+            WebSocketHelper::forkNotification(function() use ($data, $from, $to, $result) {
+                try {
+                    // Notify about the timeslot change to update overlap status
+                    $this->notifyTimeslotChanged(
+                        (int)$data['building_id'],
+                        (int)$data['resource_id'],
+                        $from,
+                        $to,
+                        $result['id']
+                    );
+                    error_log("WebSocket notifications for application creation #{$result['id']} completed in forked process");
+                } catch (Exception $innerException) {
+                    error_log("Error in forked WebSocket notification process: " . $innerException->getMessage());
+                }
+            });
+
+            WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
+
+            // Performance logging (in production, this should be conditional based on debug flag)
+            $endTime = microtime(true);
+            $executionTime = round(($endTime - $startTime) * 1000, 2); // convert to ms
+            error_log("Simple application creation for resource {$data['resource_id']} took {$executionTime}ms (API processing time, excludes forked operations)");
+
+            $response->getBody()->write(json_encode($responseData));
+            return $response->withStatus(201)
+                ->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error creating simple application: " . $e->getMessage()],
+                500
+            );
+        }
+    }
 
 
-			// FIXED CONVERSION: Properly convert milliseconds to date strings
-			// Debug before conversion
-			error_log("Timestamps received: from={$data['from']}, to={$data['to']}");
-			$osloTz = new \DateTimeZone('Europe/Oslo');
-			// Convert from milliseconds to seconds if needed
-			$fromTimestamp = is_numeric($data['from']) ? (int)$data['from'] : 0;
-			$toTimestamp = is_numeric($data['to']) ? (int)$data['to'] : 0;
-
-			// If these look like milliseconds (13 digits), convert to seconds
-			if ($fromTimestamp > 10000000000) {
-				$fromTimestamp = (int)($fromTimestamp / 1000);
-			}
-			if ($toTimestamp > 10000000000) {
-				$toTimestamp = (int)($toTimestamp / 1000);
-			}
-
-			// Create DateTime objects with Oslo timezone
-			$fromDate = new \DateTime('@' . $fromTimestamp); // Create with UTC
-			$fromDate->setTimezone($osloTz);                 // Convert to Oslo
-
-			$toDate = new \DateTime('@' . $toTimestamp);     // Create with UTC
-			$toDate->setTimezone($osloTz);                   // Convert to Oslo
-
-			// Format for database with Oslo timezone
-			$from = $fromDate->format('Y-m-d H:i:s');
-			$to = $toDate->format('Y-m-d H:i:s');
-
-			// Check if resource supports simple booking and is available
-			$result = $this->applicationService->createSimpleBooking(
-				(int)$data['resource_id'],
-				(int)$data['building_id'],
-				$from,
-				$to,
-				$session_id
-			);
-
-			$responseData = [
-				'id' => $result['id'],
-				'message' => 'Simple application created successfully',
-				'status' => $result['status']
-			];
-			
-			// Notify about the timeslot change to update overlap status
-			$this->notifyTimeslotChanged(
-				(int)$data['building_id'],
-				(int)$data['resource_id'],
-				$from,
-				$to,
-				$result['id']
-			);
-
-			$response->getBody()->write(json_encode($responseData));
-			return $response->withStatus(201)
-				->withHeader('Content-Type', 'application/json');
-		} catch (Exception $e) {
-			return ResponseHelper::sendErrorResponse(
-				['error' => "Error creating simple application: " . $e->getMessage()],
-				500
-			);
-		}
-	}
 
 
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications/articles",
+     *     summary="Get available articles for resources",
+     *     tags={"Applications"},
+     *     @OA\Parameter(
+     *         name="resources[]",
+     *         in="query",
+     *         required=true,
+     *         @OA\Schema(type="array", @OA\Items(type="integer"))
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of articles",
+     *         @OA\JsonContent(
+     *             type="array",
+     *              @OA\Items(type="object")
+     *         )
+     *     )
+     * )
+     */
+    public function getArticlesByResources(Request $request, Response $response): Response
+    {
+        try
+        {
+            $resources = $request->getQueryParams()['resources'] ?? [];
 
+            if (empty($resources))
+            {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Resources parameter is required'],
+                    400
+                );
+            }
 
-	/**
-	 * @OA\Get(
-	 *     path="/bookingfrontend/applications/articles",
-	 *     summary="Get available articles for resources",
-	 *     tags={"Applications"},
-	 *     @OA\Parameter(
-	 *         name="resources[]",
-	 *         in="query",
-	 *         required=true,
-	 *         @OA\Schema(type="array", @OA\Items(type="integer"))
-	 *     ),
-	 *     @OA\Response(
-	 *         response=200,
-	 *         description="List of articles",
-	 *         @OA\JsonContent(
-	 *             type="array",
-	 *              @OA\Items(type="object")
-	 *         )
-	 *     )
-	 * )
-	 */
-	public function getArticlesByResources(Request $request, Response $response): Response
-	{
-		try
-		{
-			$resources = $request->getQueryParams()['resources'] ?? [];
+            // Get articles by resources directly from the repository
+            $articles = $this->articleRepository->getArticlesByResources($resources);
 
-			if (empty($resources))
-			{
-				return ResponseHelper::sendErrorResponse(
-					['error' => 'Resources parameter is required'],
-					400
-				);
-			}
-
-			// Get articles by resources
-			$articles = $this->applicationService->getArticlesByResources($resources);
-
-			$response->getBody()->write(json_encode($articles));
-			return $response->withHeader('Content-Type', 'application/json');
-		} catch (Exception $e)
-		{
-			return ResponseHelper::sendErrorResponse(
-				['error' => "Error fetching articles: " . $e->getMessage()],
-				500
-			);
-		}
-	}
+            $response->getBody()->write(json_encode($articles));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e)
+        {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error fetching articles: " . $e->getMessage()],
+                500
+            );
+        }
+    }
 
     /**
      * Broadcasts a notification when a partial application is created
@@ -1283,10 +1325,10 @@ class ApplicationController extends DocumentController
                 'resource_id' => $data['resources'][0] ?? null,
                 'timestamp' => date('c')
             ];
-            
+
             // Send the notification through WebSocket
             WebSocketHelper::sendNotification(
-                'New partial application created', 
+                'New partial application created',
                 $notificationData
             );
         } catch (Exception $e) {
@@ -1294,10 +1336,10 @@ class ApplicationController extends DocumentController
             error_log("WebSocket notification error: " . $e->getMessage());
         }
     }
-    
+
     /**
      * Gets the affected timeslots for a resource in the same format as the get_freetime endpoint
-     * 
+     *
      * @param int $buildingId The building ID
      * @param int $resourceId The resource ID
      * @param \DateTime $startDate The start date for query
@@ -1308,14 +1350,14 @@ class ApplicationController extends DocumentController
     {
         // Create a booking business object to access the get_free_events method
         $bo = \CreateObject('booking.bobooking');
-        
+
         // Format dates for the get_free_events method
         $formattedStartDate = $startDate->format('d/m-Y');
         $formattedEndDate = $endDate->format('d/m-Y');
-        
+
         // Save current request parameters
         $originalRequest = $_REQUEST;
-        
+
         // Set up the request parameters for get_freetime
         $_REQUEST['building_id'] = $buildingId;
         $_REQUEST['resource_id'] = $resourceId;
@@ -1323,22 +1365,22 @@ class ApplicationController extends DocumentController
         $_REQUEST['end_date'] = $formattedEndDate;
         $_REQUEST['detailed_overlap'] = true;
         $_REQUEST['stop_on_end_date'] = true;
-        
+
         // Use the existing logic to get timeslots
         $uibooking = \CreateObject('bookingfrontend.uibooking');
         $timeslots = $uibooking->get_freetime();
-        
+
         // Restore original request parameters
         $_REQUEST = $originalRequest;
-        
+
         // Return the timeslots for this resource
         return isset($timeslots[$resourceId]) ? $timeslots[$resourceId] : [];
     }
-    
+
     /**
      * Sends WebSocket notifications to entity rooms when timeslot reservation changes
      * Notifies both the building and resource rooms about the changed overlap status
-     * 
+     *
      * @param int $buildingId The building ID
      * @param int $resourceId The resource ID
      * @param string $from Start datetime
@@ -1351,18 +1393,18 @@ class ApplicationController extends DocumentController
         try {
             // Always use Oslo timezone
             $tzObject = new \DateTimeZone('Europe/Oslo');
-            
+
             // Create DateTime objects with the Oslo timezone
             $startDateTime = new \DateTime($from, $tzObject);
             $endDateTime = new \DateTime($to, $tzObject);
-            
+
             // Dates for fetching overlapped timeslots
             $queryStartDate = clone $startDateTime;
             $queryStartDate->modify('-1 day')->setTime(0, 0, 0); // Start one day before
-            
+
             $queryEndDate = clone $endDateTime;
             $queryEndDate->modify('+1 day')->setTime(23, 59, 59); // End one day after
-            
+
             // Get the affected timeslots from the booking engine after the change
             // This uses the same logic as the get_freetime endpoint
             $affectedTimeslots = [];
@@ -1370,7 +1412,7 @@ class ApplicationController extends DocumentController
             if (!empty($resourceTimeslots)) {
                 $affectedTimeslots[$resourceId] = $resourceTimeslots;
             }
-            
+
             // Prepare detailed data for both notifications
             $eventData = [
                 'application_id' => $applicationId,
@@ -1379,7 +1421,7 @@ class ApplicationController extends DocumentController
                 'change_type' => 'overlap_status',
                 'affected_timeslots' => $affectedTimeslots
             ];
-            
+
             // Notify the building room - this will only go to clients subscribed to this entity
             WebSocketHelper::sendEntityNotification(
                 'building',
@@ -1388,18 +1430,18 @@ class ApplicationController extends DocumentController
                 'updated',
                 $eventData
             );
-            
+
             // Prepare resource-specific data (include resource ID)
             $resourceData = $eventData;
             $resourceData['resource_id'] = $resourceId;
-            
+
             // For resource-specific notifications, use a simplified format
             if (isset($affectedTimeslots[$resourceId])) {
                 $resourceData['affected_timeslots'] = $affectedTimeslots[$resourceId];
             } else {
                 $resourceData['affected_timeslots'] = [];
             }
-            
+
             // Notify the resource room - this will only go to clients subscribed to this entity
             WebSocketHelper::sendEntityNotification(
                 'resource',
@@ -1408,7 +1450,7 @@ class ApplicationController extends DocumentController
                 'updated',
                 $resourceData
             );
-            
+
             error_log("WebSocket notifications sent for timeslot reservation: building_id={$buildingId}, resource_id={$resourceId}, from={$from}, to={$to}");
         } catch (Exception $e) {
             // Log error but don't interrupt the main request flow

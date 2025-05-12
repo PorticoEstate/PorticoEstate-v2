@@ -7,6 +7,7 @@ import {
 	UseQueryResult,
 	MutationOptions
 } from "@tanstack/react-query";
+import { useWebSocketContext } from '../websocket/websocket-context';
 import {IBookingUser, IDocument, IServerSettings} from "@/service/types/api.types";
 import {
 	fetchArticlesForResources,
@@ -475,12 +476,42 @@ export function useUpdateBookingUser() {
 
 
 export function usePartialApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
+	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
+
+	// Handle WebSocket messages with partial application updates
+	useMessageTypeSubscription('partial_applications_response', (message) => {
+		console.log('Received partial applications WebSocket update');
+
+		// Update the query cache with the new data
+		if (message.data.error === false) {
+			queryClient.setQueryData(['partialApplications'], {
+				list: message.data.applications,
+				total_sum: message.data.applications.reduce((sum, app) => {
+					// Calculate total sum from orders if they exist
+					const orderSum = app.orders?.reduce((acc, order) => acc + (Number(order.sum) || 0), 0) || 0;
+					return sum + orderSum;
+				}, 0)
+			});
+		}
+	});
+
 	return useQuery(
 		{
 			queryKey: ['partialApplications'],
 			queryFn: () => fetchPartialApplications(), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			refetchInterval: () => {
+				// Check if websocket connection is active
+				const isWebSocketActive = wsReady &&
+					wsStatus === 'OPEN' &&
+					sessionConnected;
+
+				// If websocket is not active, refetch every 30 seconds
+				// Otherwise rely on WebSocket updates
+				return isWebSocketActive ? false : 30000;
+			}
 		}
 	);
 }
@@ -696,6 +727,7 @@ export function useInvoices(): UseQueryResult<ICompletedReservation[]> {
 
 export function useCreatePartialApplication() {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected,isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (newApplication: Partial<NewPartialApplication>) => {
@@ -719,14 +751,24 @@ export function useCreatePartialApplication() {
 			return response.json();
 		},
 		onSuccess: () => {
-			// Invalidate and refetch partial applications queries
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			// Check if websocket connection is active
+			const isWebSocketActive = wsReady &&
+				wsStatus === 'OPEN' &&
+				sessionConnected;
+
+			// Only invalidate if WebSocket is not active
+			// If WebSocket is active, the server will send a message with the updated data
+			if (!isWebSocketActive) {
+				// Invalidate and refetch partial applications queries
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			}
 		},
 	});
 }
 
 export function useUpdatePartialApplication() {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async ({id, application}: { id: number, application: IUpdatePartialApplication }) => {
@@ -783,14 +825,24 @@ export function useUpdatePartialApplication() {
 			}
 		},
 		onSettled: () => {
-			// Always refetch after error or success to ensure data is correct
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			// Check if websocket connection is active
+			const isWebSocketActive = wsReady &&
+				wsStatus === 'OPEN' &&
+				sessionConnected;
+
+			// Only invalidate if WebSocket is not active
+			// If WebSocket is active, the server will send a message with the updated data
+			if (!isWebSocketActive) {
+				// Always refetch after error or success to ensure data is correct
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			}
 		},
 	});
 }
 
 export function useDeletePartialApplication() {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (id: number) => {
@@ -798,7 +850,7 @@ export function useDeletePartialApplication() {
 			const response = await fetch(url, {method: 'DELETE'});
 
 			if (!response.ok) {
-				throw new Error('Failed to update partial application');
+				throw new Error('Failed to delete partial application');
 			}
 
 			return id
@@ -832,8 +884,17 @@ export function useDeletePartialApplication() {
 			}
 		},
 		onSettled: () => {
-			// Always refetch after error or success to ensure data is correct
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			// Check if websocket connection is active
+			const isWebSocketActive = wsReady &&
+				wsStatus === 'OPEN' &&
+				sessionConnected;
+
+			// Only invalidate if WebSocket is not active
+			// If WebSocket is active, the server will send a message with the updated data
+			if (!isWebSocketActive) {
+				// Always refetch after error or success to ensure data is correct
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			}
 		},
 	});
 }
@@ -841,6 +902,7 @@ export function useDeletePartialApplication() {
 
 export function useCreateSimpleApplication() {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (params: { timeslot: IFreeTimeSlot, building_id: number }) => {
@@ -868,38 +930,35 @@ export function useCreateSimpleApplication() {
 			return response.json();
 		},
 		onSuccess: (data, variables) => {
-			// Invalidate and refetch partial applications queries
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			// Check if websocket connection is active
+			const isWebSocketActive = wsReady &&
+				wsStatus === 'OPEN' &&
+				sessionConnected;
 
-			// // Invalidate timeslots to refresh available slots after booking
-			// const buildingId = variables.building_id;
-			// if (buildingId) {
-			// 	// Most thorough approach - invalidate ALL buildingFreeTime queries for this building
-			// 	queryClient.invalidateQueries({
-			// 		predicate: (query) => {
-			// 			const queryKey = query.queryKey;
-			// 			return (
-			// 				Array.isArray(queryKey) &&
-			// 				queryKey[0] === 'buildingFreeTime' &&
-			// 				(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
-			// 			);
-			// 		}
-			// 	});
-			//
-			// 	// Force a refresh of any combined queries that may use comma-separated week keys
-			// 	setTimeout(() => {
-			// 		queryClient.refetchQueries({
-			// 			predicate: (query) => {
-			// 				const queryKey = query.queryKey;
-			// 				return (
-			// 					Array.isArray(queryKey) &&
-			// 					queryKey[0] === 'buildingFreeTime' &&
-			// 					query.queryKey.length > 2
-			// 				);
-			// 			}
-			// 		});
-			// 	}, 100);
-			// }
+			// Only invalidate if WebSocket is not active
+			// If WebSocket is active, the server will send messages with the updated data
+			if (!isWebSocketActive) {
+				// Invalidate and refetch partial applications queries
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+
+				// Invalidate building timeslots if needed
+				const buildingId = variables.building_id;
+				if (buildingId) {
+					queryClient.invalidateQueries({
+						predicate: (query) => {
+							const queryKey = query.queryKey;
+							return (
+								Array.isArray(queryKey) &&
+								queryKey[0] === 'buildingFreeTime' &&
+								(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
+							);
+						}
+					});
+				}
+			}
+			// Note: When WebSocket is active, the server will send:
+			// 1. partial_applications_response for updating applications
+			// 2. room_message for updating building timeslots
 		},
 	});
 }

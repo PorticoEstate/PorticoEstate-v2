@@ -65,9 +65,10 @@ class Twig
 
         // Add debug extension
         $this->twig->addExtension(new DebugExtension());
-        
+
         // Register the lang function for translations
-        $this->twig->addFunction(new TwigFunction('lang', function($text) {
+        $this->twig->addFunction(new TwigFunction('lang', function ($text)
+        {
             // Replace underscores with spaces before calling lang()
             $text = str_replace('_', ' ', $text);
             return lang($text);
@@ -75,7 +76,8 @@ class Twig
         $this->twig->addFunction(new TwigFunction('hook', [$this, 'renderHook']));
 
         // Add a filter to replace underscores with spaces
-        $this->twig->addFilter(new TwigFilter('replace_underscores', function($text) {
+        $this->twig->addFilter(new TwigFilter('replace_underscores', function ($text)
+        {
             return str_replace('_', ' ', $text);
         }));
 
@@ -124,29 +126,17 @@ class Twig
      */
     private function registerModulePaths()
     {
-        // Register the base template directory without a namespace
-        $basePath = PHPGW_SERVER_ROOT . '/phpgwapi/templates';
-        if (is_dir($basePath . '/base'))
-        {
-            $this->loader->addPath($basePath . '/base');
-        }
-
-        if (is_dir($basePath . '/' . $this->serverSettings['template_set']))
-        {
-            $this->loader->addPath($basePath . '/' . $this->serverSettings['template_set']);
-        }
-
         // Register module template directories with their module name as namespace
         $modulesDir = PHPGW_SERVER_ROOT;
 
 
         if (is_dir($modulesDir))
-       {
+        {
             $modules = [$this->flags['currentapp']];
 
             foreach ($modules as $module)
             {
- 
+
                 $modulePath = $modulesDir . '/' . $module;
 
                 // Only process directories
@@ -155,16 +145,12 @@ class Twig
                     continue;
                 }
 
-                // Register module's template directory with module name as namespace
-
-                // First check for Twig templates
                 $moduleTemplateDir = $modulePath . '/templates/' . $this->serverSettings['template_set'];
                 if (is_dir($moduleTemplateDir))
                 {
-                    // Always add both the original module name and lowercase version for compatibility
-        //            $this->loader->addPath($moduleTemplateDir, $module);
+                    $this->loader->addPath($moduleTemplateDir, $module);
                     // Also add as a general path (without namespace)
-       //             $this->loader->addPath($moduleTemplateDir);
+                    $this->loader->addPath($moduleTemplateDir);
                 }
 
                 // Also check for templates in the 'base' directory
@@ -172,25 +158,22 @@ class Twig
                 if (is_dir($moduleBaseTemplateDir))
                 {
                     // Add base directory as a fallback path for this namespace
-                    // Always add both the original module name and lowercase version for compatibility
                     $this->loader->addPath($moduleBaseTemplateDir, $module);
-                    //          $this->loader->addPath($moduleBaseTemplateDir, strtolower($module));
                     // Also add as a general path (without namespace)
                     $this->loader->addPath($moduleBaseTemplateDir);
                 }
             }
         }
-/*
-        // Debug output - list all registered namespaces and paths
-        $namespaces = $this->loader->getNamespaces();
-       _debug_array("Registered Twig namespaces: " . implode(", ", $namespaces));
-
-        foreach ($namespaces as $namespace)
+        // Register the base template directory without a namespace
+        $basePath = PHPGW_SERVER_ROOT . '/phpgwapi/templates';
+        if (is_dir($basePath . '/' . $this->serverSettings['template_set']))
         {
-            $paths = $this->loader->getPaths($namespace);
-            _debug_array("Paths for namespace '{$namespace}': " . implode(", ", $paths));
+            $this->loader->addPath($basePath . '/' . $this->serverSettings['template_set']);
         }
-*/
+        if (is_dir($basePath . '/base'))
+        {
+            $this->loader->addPath($basePath . '/base');
+        }
     }
 
     /**
@@ -263,15 +246,18 @@ class Twig
         {
             // Log the error and return an error message
             error_log("Twig renderBlock error: " . $e->getMessage());
-            
+
             // Fallback to direct HTML generation if Twig rendering fails
-            if ($blockName === 'row_2') {
+            if ($blockName === 'row_2')
+            {
                 return '<tr><td colspan="2" class="center">' . $vars['value'] . '</td></tr>';
-            } else if ($blockName === 'row') {
-                return '<tr class="' . $vars['tr_class'] . '"><td class="center">' . $vars['label'] . 
-                       '</td><td class="center">' . $vars['value'] . '</td></tr>';
             }
-            
+            else if ($blockName === 'row')
+            {
+                return '<tr class="' . $vars['tr_class'] . '"><td class="center">' . $vars['label'] .
+                    '</td><td class="center">' . $vars['value'] . '</td></tr>';
+            }
+
             return "<!-- Error rendering block '{$blockName}': " . htmlspecialchars($e->getMessage()) . " -->";
         }
     }

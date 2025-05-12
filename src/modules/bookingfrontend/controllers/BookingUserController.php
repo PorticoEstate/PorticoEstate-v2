@@ -113,10 +113,7 @@ class BookingUserController
 //            }
             $serialized = $userModel->serialize();
 
-            $response->getBody()->write(json_encode($serialized));
-            return $response
-                ->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
+            return ResponseHelper::sendJSONResponse($serialized, 200);
 
         } catch (Exception $e)
         {
@@ -177,36 +174,28 @@ class BookingUserController
 
             if (!$bouser->is_logged_in())
             {
-                $response->getBody()->write(json_encode(['error' => 'User not authenticated']));
-                return $response->withHeader('Content-Type', 'application/json')
-                    ->withStatus(401);
+                return ResponseHelper::sendErrorResponse(['error' => 'User not authenticated'], 401);
             }
 
             // Get current user's SSN
             $userSsn = $bouser->ssn;
             if (empty($userSsn))
             {
-                $response->getBody()->write(json_encode(['error' => 'No SSN found for user']));
-                return $response->withHeader('Content-Type', 'application/json')
-                    ->withStatus(400);
+                return ResponseHelper::sendErrorResponse(['error' => 'No SSN found for user'], 400);
             }
 
             // Get the user ID from SSN
             $userId = $bouser->get_user_id($userSsn);
             if (!$userId)
             {
-                $response->getBody()->write(json_encode(['error' => 'User not found']));
-                return $response->withHeader('Content-Type', 'application/json')
-                    ->withStatus(404);
+                return ResponseHelper::sendErrorResponse(['error' => 'User not found'], 404);
             }
 
             // Get update data from request body
             $data = json_decode($request->getBody()->getContents(), true);
             if (json_last_error() !== JSON_ERROR_NONE)
             {
-                $response->getBody()->write(json_encode(['error' => 'Invalid JSON data']));
-                return $response->withHeader('Content-Type', 'application/json')
-                    ->withStatus(400);
+                return ResponseHelper::sendErrorResponse(['error' => 'Invalid JSON data'], 400);
             }
 
             // Only allow whitelisted fields
@@ -221,9 +210,7 @@ class BookingUserController
 
             if (empty($updateData))
             {
-                $response->getBody()->write(json_encode(['error' => 'No valid fields to update']));
-                return $response->withHeader('Content-Type', 'application/json')
-                    ->withStatus(400);
+                return ResponseHelper::sendErrorResponse(['error' => 'No valid fields to update'], 400);
             }
 
             // Validate fields
@@ -231,9 +218,7 @@ class BookingUserController
             {
                 if (!filter_var($updateData['email'], FILTER_VALIDATE_EMAIL))
                 {
-                    $response->getBody()->write(json_encode(['error' => 'Invalid email format']));
-                    return $response->withHeader('Content-Type', 'application/json')
-                        ->withStatus(400);
+                    return ResponseHelper::sendErrorResponse(['error' => 'Invalid email format'], 400);
                 }
             }
 
@@ -241,9 +226,7 @@ class BookingUserController
             {
                 if (!empty($updateData['homepage']) && !filter_var($updateData['homepage'], FILTER_VALIDATE_URL))
                 {
-                    $response->getBody()->write(json_encode(['error' => 'Invalid homepage URL format']));
-                    return $response->withHeader('Content-Type', 'application/json')
-                        ->withStatus(400);
+                    return ResponseHelper::sendErrorResponse(['error' => 'Invalid homepage URL format'], 400);
                 }
             }
 
@@ -262,9 +245,7 @@ class BookingUserController
 
             if (empty($setClauses))
             {
-                $response->getBody()->write(json_encode(['error' => 'No valid fields to update']));
-                return $response->withHeader('Content-Type', 'application/json')
-                    ->withStatus(400);
+                return ResponseHelper::sendErrorResponse(['error' => 'No valid fields to update'], 400);
             }
 
             $sql = "UPDATE bb_user SET " . implode(', ', $setClauses) . " WHERE id = :id";
@@ -275,28 +256,22 @@ class BookingUserController
 
             if ($stmt->rowCount() === 0)
             {
-                $response->getBody()->write(json_encode(['error' => 'User not found or no changes made']));
-                return $response->withHeader('Content-Type', 'application/json')
-                    ->withStatus(404);
+                return ResponseHelper::sendErrorResponse(['error' => 'User not found or no changes made'], 404);
             }
 
             // Get updated user data
             $userModel = new User($bouser);
             $serialized = $userModel->serialize();
 
-            $response->getBody()->write(json_encode([
+            return ResponseHelper::sendJSONResponse([
                 'message' => 'User updated successfully',
                 'user' => $serialized
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')
-                ->withStatus(200);
+            ], 200);
 
         } catch (Exception $e)
         {
             $error = "Error updating user: " . $e->getMessage();
-            $response->getBody()->write(json_encode(['error' => $error]));
-            return $response->withHeader('Content-Type', 'application/json')
-                ->withStatus(500);
+            return ResponseHelper::sendErrorResponse(['error' => $error], 500);
         }
     }
     private function maskSSN(string $ssn): string {
@@ -378,10 +353,7 @@ class BookingUserController
 			}
 
 			// Return the processed messages
-			$response->getBody()->write(json_encode($processed_messages));
-			return $response
-				->withHeader('Content-Type', 'application/json')
-				->withStatus(200);
+			return ResponseHelper::sendJSONResponse($processed_messages, 200);
 		} catch (Exception $e) {
 			// Log the error but don't expose internal details
 			error_log("Error fetching messages: " . $e->getMessage());
@@ -422,14 +394,10 @@ class BookingUserController
 			Cache::message_set($messageText, 'message', $messageTitle);
 
 			// Return success response
-			$response->getBody()->write(json_encode([
+			return ResponseHelper::sendJSONResponse([
 				'success' => true,
 				'message' => 'Test message created with title: ' . $messageTitle
-			]));
-
-			return $response
-				->withHeader('Content-Type', 'application/json')
-				->withStatus(200);
+			], 200);
 		} catch (Exception $e) {
 			// Log the error but don't expose internal details
 			error_log("Error creating test message: " . $e->getMessage());
@@ -473,13 +441,9 @@ class BookingUserController
 			}
 
 			// Return the session ID
-			$response->getBody()->write(json_encode([
+			return ResponseHelper::sendJSONResponse([
 				'sessionId' => $sessionId
-			]));
-			
-			return $response
-				->withHeader('Content-Type', 'application/json')
-				->withStatus(200);
+			], 200);
 				
 		} catch (Exception $e) {
 			// Log the error but don't expose internal details
@@ -597,14 +561,10 @@ class BookingUserController
 			}
 
 			// Return success response
-			$response->getBody()->write(json_encode([
+			return ResponseHelper::sendJSONResponse([
 				'success' => true,
 				'message' => 'Message deleted successfully'
-			]));
-
-			return $response
-				->withHeader('Content-Type', 'application/json')
-				->withStatus(200);
+			], 200);
 
 		} catch (Exception $e) {
 			// Log the error but don't expose internal details

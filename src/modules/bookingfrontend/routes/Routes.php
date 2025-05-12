@@ -125,6 +125,7 @@ $app->post('/bookingfrontend/version', VersionController::class . ':setVersion')
 $app->get('/bookingfrontend/version', VersionController::class . ':getVersion')->add(new SessionsMiddleware($app->getContainer()));
 
 
+
 $app->get('/bookingfrontend/lang[/{lang}]', LangHelper::class . ':process');
 $app->get('/bookingfrontend/login[/{params:.*}]', LoginHelper::class . ':organization')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/bookingfrontend/logout[/{params:.*}]', LogoutHelper::class . ':process')->add(new SessionsMiddleware($app->getContainer()));

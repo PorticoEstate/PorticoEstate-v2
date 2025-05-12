@@ -7,8 +7,14 @@ RUN apt-get update && \
     libzip-dev \
     supervisor \
     cron \
+    # Install PostgreSQL dependencies
+    libpq-dev \
+    # Install any other database drivers you might need
     && pecl install redis \
     && docker-php-ext-enable redis \
+    # Install PostgreSQL driver
+    && docker-php-ext-install pdo_pgsql \
+    # Other extensions
     && docker-php-ext-install zip sockets
 
 # Install Composer
@@ -29,6 +35,10 @@ COPY supervisord-websocket.conf /etc/supervisor/supervisord.conf
 # Set an entrypoint to handle any initialization before running WebSocket server
 COPY docker-entrypoint-websocket.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint-websocket.sh
+
+# Setup healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD php /var/www/html/src/WebSocket/health_check.sh || exit 1
 
 ENTRYPOINT ["docker-entrypoint-websocket.sh"]
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

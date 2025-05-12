@@ -10,6 +10,7 @@ use App\WebSocket\Services\NotificationService;
 use App\WebSocket\Services\SessionService;
 use App\WebSocket\Services\ConnectionService;
 use App\WebSocket\Services\RoomService;
+use App\WebSocket\Services\DatabaseService;
 use App\WebSocket\Interfaces\WebSocketHandler;
 
 class WebSocketServer implements MessageComponentInterface, WebSocketHandler
@@ -20,6 +21,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     private $sessionService;
     private $connectionService;
     private $roomService;
+    private $databaseService;
     
     /**
      * Get the roomService
@@ -40,8 +42,9 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
         $this->redisService = new RedisService($logger);
         $this->sessionService = new SessionService($logger);
         $this->roomService = new RoomService($logger);
+        $this->databaseService = new DatabaseService($logger);
         $this->notificationService = new NotificationService(
-            $logger, 
+            $logger,
             $this->connectionService->getClients()
         );
     }
@@ -340,11 +343,11 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             // Calculate round-trip time if client_timestamp is provided
             $clientTime = $data['client_timestamp'] ?? null;
             $rtt = null;
-            
+
             if ($clientTime) {
                 $rtt = time() * 1000 - $clientTime; // in milliseconds
             }
-            
+
             // Log pong with detailed information
             $this->logger->info("Ping-Pong", [
                 'clientId' => $from->resourceId,
@@ -355,10 +358,67 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'browser' => isset($from->userAgent) ? $from->userAgent : 'unknown',
                 'rtt' => $rtt !== null ? $rtt . 'ms' : 'unknown'
             ]);
-            
+
             return;
         }
-        
+
+        // Handle user info update
+        if ($messageType === 'update_user_info' && isset($data['userId'])) {
+            $userId = (int)$data['userId'];
+
+            // Create or update the userInfo object with the provided user ID
+            if (!isset($from->userInfo)) {
+                $from->userInfo = [
+                    'sessionFound' => true,
+                    'sessionId' => isset($from->sessionId) ? substr($from->sessionId, 0, 8) . '****' : null,
+                    'sessionType' => isset($from->bookingSessionId) ? 'booking' : 'standard'
+                ];
+            }
+
+            // Update the user ID
+            $from->userInfo['userId'] = $userId;
+
+            // Log the user info update
+            $this->logger->info("User info updated", [
+                'clientId' => $from->resourceId,
+                'userId' => $userId,
+                'sessionType' => isset($from->bookingSessionId) ? 'booking' : 'standard'
+            ]);
+
+            // Send a confirmation back to the client
+            $from->send(json_encode([
+                'type' => 'user_info_update_confirmation',
+                'success' => true,
+                'message' => 'User information updated successfully',
+                'userId' => $userId,
+                'timestamp' => date('c')
+            ]));
+
+            return;
+        }
+
+        // Handle requests for partial applications
+        if ($messageType === 'get_partial_applications') {
+            $this->logger->info("Request for partial applications", [
+                'clientId' => $from->resourceId,
+                'sessionType' => isset($from->bookingSessionId) ? 'booking' : 'standard',
+                'hasUserInfo' => isset($from->userInfo) && isset($from->userInfo['userId']),
+                'timestamp' => date('c')
+            ]);
+
+            // Get partial applications for the user
+            $response = $this->getUserPartialApplications($from);
+
+            // Send the response back to the client
+            $from->send(json_encode([
+                'type' => 'partial_applications_response',
+                'data' => $response,
+                'timestamp' => date('c')
+            ]));
+
+            return;
+        }
+
         // Process other standard message types
         $this->notificationService->processMessage($from, $msg);
     }
@@ -605,9 +665,77 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     }
 
     /**
+     * Check if database is connected
+     *
+     * @return bool
+     */
+    public function isDatabaseConnected(): bool
+    {
+        return $this->databaseService->isConnected();
+    }
+
+    /**
+    /**
+     * Get user's partial applications
+     *
+     * @param ConnectionInterface $conn The WebSocket connection
+     * @return array List of partial applications or error message
+     */
+    public function getUserPartialApplications(ConnectionInterface $conn): array
+    {
+        // Check if database is connected
+        if (!$this->isDatabaseConnected()) {
+            return [
+                'error' => true,
+                'message' => 'Database not connected',
+                'status' => 'error'
+            ];
+        }
+
+        // Check if the connection has a session ID
+        if (!isset($conn->sessionId)) {
+            return [
+                'error' => true,
+                'message' => 'No session found',
+                'status' => 'error'
+            ];
+        }
+
+        try {
+            // Get the session ID directly from the connection
+            $sessionId = $conn->sessionId;
+
+            $this->logger->info("Retrieving partial applications for session", [
+                'sessionId' => substr($sessionId, 0, 8) . '...'
+            ]);
+
+            // Get partial applications directly using the session ID
+            // This now uses ApplicationRepository directly from the Slim codebase
+            $applications = $this->databaseService->getPartialApplicationsBySessionId($sessionId);
+
+            return [
+                'error' => false,
+                'status' => 'success',
+                'applications' => $applications,
+                'count' => count($applications),
+                'sessionId' => substr($sessionId, 0, 8) . '...' // Include session ID in response for debugging
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error("Error getting user partial applications", [
+                'error' => $e->getMessage(),
+                'sessionId' => isset($conn->sessionId) ? substr($conn->sessionId, 0, 8) . '...' : 'none'
+            ]);
+
+            return [
+                'error' => true,
+                'message' => 'Error processing request: ' . $e->getMessage(),
+                'status' => 'error'
+            ];
+        }
+    }    /**
      * Send a notification using Redis pub/sub
      * Can be called statically from other parts of the application
-     * 
+     *
      * @param array|string $data Notification data to send
      * @param string $channel Redis channel to use (default: notifications)
      * @return bool Success status
@@ -616,7 +744,66 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     {
         return RedisService::sendNotification($data, $channel);
     }
-    
+
+    /**
+     * Fetch and send partial applications update to a specific session
+     *
+     * @param string $sessionId The session ID
+     * @return bool Success status
+     */
+    public function sendPartialApplicationsUpdate(string $sessionId): bool
+    {
+        // Check if database is connected
+        if (!$this->isDatabaseConnected()) {
+            $this->logger->error("Cannot send partial applications update - database not connected", [
+                'sessionId' => substr($sessionId, 0, 8) . '...'
+            ]);
+            return false;
+        }
+
+        try {
+            $this->logger->info("Retrieving partial applications for session update", [
+                'sessionId' => substr($sessionId, 0, 8) . '...'
+            ]);
+
+            // Get applications using session ID (now using ApplicationRepository directly)
+            $applications = $this->databaseService->getPartialApplicationsBySessionId($sessionId);
+
+            // Prepare the response data
+            $responseData = [
+                'type' => 'partial_applications_response',
+                'data' => [
+                    'error' => false,
+                    'status' => 'success',
+                    'applications' => $applications,
+                    'count' => count($applications),
+                    'sessionId' => substr($sessionId, 0, 8) . '...',
+                    'source' => 'server_push',
+                    'timestamp' => date('c')
+                ],
+                'timestamp' => date('c')
+            ];
+
+            // Send to session room
+            $success = $this->sendToSessionRoom($sessionId, $responseData);
+
+            $this->logger->info("Partial applications update sent", [
+                'sessionId' => substr($sessionId, 0, 8) . '...',
+                'applicationCount' => count($applications),
+                'success' => $success
+            ]);
+
+            return $success;
+        } catch (\Exception $e) {
+            $this->logger->error("Error sending partial applications update", [
+                'sessionId' => substr($sessionId, 0, 8) . '...',
+                'error' => $e->getMessage()
+            ]);
+
+            return false;
+        }
+    }
+
     /**
      * Get all rooms in the system
      *

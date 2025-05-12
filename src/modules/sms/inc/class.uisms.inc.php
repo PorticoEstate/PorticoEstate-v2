@@ -423,6 +423,7 @@ class sms_uisms
 		}
 
 		$p_num = Sanitizer::get_var('p_num');
+		$message = Sanitizer::get_var('message');
 		$values = Sanitizer::get_var('values');
 		$from = Sanitizer::get_var('from');
 		$from = $from ? $from : 'index';
@@ -543,6 +544,7 @@ JS;
 			'value_p_num' => $p_num,
 			'lang_format' => lang('International format'),
 			'lang_message' => lang('message'),
+			'value_message' => $message,
 			'lang_character_left' => lang('character left'),
 			'lang_send_as_flash' => lang('send as flash message'),
 			'lang_send_as_unicode' => lang('send as unicode'),

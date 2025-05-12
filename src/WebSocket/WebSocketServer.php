@@ -22,7 +22,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     private $connectionService;
     private $roomService;
     private $databaseService;
-    
+
     /**
      * Get the roomService
      *
@@ -36,7 +36,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     public function __construct(LoggerInterface $logger)
     {
         $this->logger = $logger;
-        
+
         // Initialize services
         $this->connectionService = new ConnectionService($logger);
         $this->redisService = new RedisService($logger);
@@ -59,12 +59,12 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     {
         // Store connection time for duration tracking
         $conn->connectTime = time();
-        
+
         // Extract session data
         $this->sessionService->extractSessionData($conn);
-        
+
         // Log detailed connection information including browser details
-        $this->logger->info("New connection!", [
+        $this->logger->notice("New connection!", [
             'clientId' => $conn->resourceId,
             'ipAddress' => $conn->remoteAddress ?? 'unknown',
             'totalClients' => $this->connectionService->getClientCount() + 1, // +1 for this new connection
@@ -73,17 +73,17 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             'hasUserInfo' => isset($conn->userInfo),
             'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown'
         ]);
-        
+
         // Add connection
         $this->connectionService->addConnection($conn);
-        
+
         // Check if session ID is required
         if (isset($conn->sessionIdRequired) && $conn->sessionIdRequired) {
             $this->logger->info("Client connected without session - requesting session ID", [
                 'clientId' => $conn->resourceId,
                 'browser' => isset($conn->userAgent) ? $conn->userAgent : 'unknown'
             ]);
-            
+
             // Send session request - ask client to provide session ID
             $conn->send(json_encode([
                 'type' => 'session_id_required',
@@ -91,25 +91,25 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'code' => 'NO_SESSION',
                 'timestamp' => date('c')
             ]));
-            
+
             // We'll keep the connection and wait for the client to send their session ID
             // This allows the client to fetch their session ID and update it without disconnecting
         }
-        
+
         // Add to a session-based room if session ID is available
         if (isset($conn->sessionId)) {
             $roomId = $this->roomService->createRoomIdFromSession($conn->sessionId);
             $this->roomService->joinRoom($roomId, $conn);
-            
+
             // Store room ID in connection for easier access
             $conn->roomId = $roomId;
-            
+
             $this->logger->info("Client added to session room", [
                 'clientId' => $conn->resourceId,
                 'roomId' => $roomId,
                 'sessionType' => isset($conn->bookingSessionId) ? 'booking' : 'standard'
             ]);
-            
+
             // Send connection success message to client
             $conn->send(json_encode([
                 'type' => 'connection_success',
@@ -131,39 +131,39 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     {
         $data = json_decode($msg, true);
         $messageType = $data['type'] ?? 'unknown';
-        
+
         // Enrich message with user context if available
         $enrichedData = $this->sessionService->enrichMessageWithUserContext($from, $data);
-        
+
         // If data was enriched, re-encode the message
         if ($enrichedData !== $data) {
             $msg = json_encode($enrichedData);
             $data = $enrichedData;
         }
-        
+
         // Log the message
         $logContext = $this->sessionService->getSessionLogContext($from, $messageType);
         $logContext['recipients'] = $this->connectionService->getClientCount() - 1;
         $logContext['contentLength'] = strlen($msg);
-        
+
         $this->logger->info("Message received", $logContext);
-        
+
         // Handle entity subscription
         if ($messageType === 'subscribe' && isset($data['entityType']) && isset($data['entityId'])) {
             $entityType = $data['entityType'];
             $entityId = $data['entityId'];
             $roomId = $this->roomService->createRoomIdFromEntity($entityType, $entityId);
-            
+
             // Join the entity room
             $this->roomService->joinRoom($roomId, $from);
-            
+
             $this->logger->info("Client subscribed to entity", [
                 'clientId' => $from->resourceId,
                 'entityType' => $entityType,
                 'entityId' => $entityId,
                 'roomId' => $roomId
             ]);
-            
+
             // Send confirmation to the client
             $from->send(json_encode([
                 'type' => 'subscription_confirmation',
@@ -174,23 +174,23 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             ]));
             return;
         }
-        
+
         // Handle entity unsubscription
         if ($messageType === 'unsubscribe' && isset($data['entityType']) && isset($data['entityId'])) {
             $entityType = $data['entityType'];
             $entityId = $data['entityId'];
             $roomId = $this->roomService->createRoomIdFromEntity($entityType, $entityId);
-            
+
             // Leave the entity room
             $this->roomService->leaveRoom($roomId, $from);
-            
+
             $this->logger->info("Client unsubscribed from entity", [
                 'clientId' => $from->resourceId,
                 'entityType' => $entityType,
                 'entityId' => $entityId,
                 'roomId' => $roomId
             ]);
-            
+
             // Send confirmation to the client
             $from->send(json_encode([
                 'type' => 'subscription_confirmation',
@@ -201,18 +201,18 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             ]));
             return;
         }
-        
+
         // Check if this message is intended for a specific room
         if ($messageType === 'room_message' && isset($data['roomId'])) {
             $roomId = $data['roomId'];
-            
+
             // Check if client is in the specified room
             $clientRooms = $this->roomService->getConnectionRooms($from);
-            
+
             if (in_array($roomId, $clientRooms)) {
                 // Send to all clients in the room except sender
                 $this->roomService->broadcastToRoom($roomId, $from, $msg);
-                
+
                 $this->logger->info("Room message sent", [
                     'clientId' => $from->resourceId,
                     'roomId' => $roomId
@@ -224,7 +224,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                     'clientId' => $from->resourceId,
                     'roomId' => $roomId
                 ]);
-                
+
                 // Send an error response to the client
                 $from->send(json_encode([
                     'type' => 'error',
@@ -235,19 +235,19 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 return;
             }
         }
-        
+
         // Handle session-specific messages
         if ($messageType === 'session_message' && isset($from->roomId)) {
             $roomId = $from->roomId;
-            
+
             // Override the message type for consistency in logs
             $data['type'] = 'room_message';
             $data['roomId'] = $roomId;
             $msg = json_encode($data);
-            
+
             // Send to all clients in the session room except sender
             $this->roomService->broadcastToRoom($roomId, $from, $msg);
-            
+
             $this->logger->info("Session message sent", [
                 'clientId' => $from->resourceId,
                 'roomId' => $roomId,
@@ -255,13 +255,13 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             ]);
             return;
         }
-        
+
         // Handle entity_event messages
         if ($messageType === 'entity_event' && isset($data['entityType']) && isset($data['entityId'])) {
             $entityType = $data['entityType'];
             $entityId = $data['entityId'];
             $roomId = $this->roomService->createRoomIdFromEntity($entityType, $entityId);
-            
+
             // Check if entity room exists
             if ($this->roomService->roomExists($roomId)) {
                 $this->logger->info("Entity event message routing to room", [
@@ -270,7 +270,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                     'entityId' => $entityId,
                     'roomId' => $roomId
                 ]);
-                
+
                 // Broadcast to entity room
                 $this->roomService->broadcastToRoom($roomId, $from, $msg);
                 return;
@@ -282,11 +282,11 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 ]);
             }
         }
-        
+
         // Handle session ID update
         if ($messageType === 'update_session' && isset($data['sessionId'])) {
             $sessionId = $data['sessionId'];
-            
+
             // Validate sessionId - it should be a non-empty string
             if (empty($sessionId) || !is_string($sessionId)) {
                 $from->send(json_encode([
@@ -297,13 +297,13 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 ]));
                 return;
             }
-            
+
             // Update the session ID
             $result = $this->sessionService->updateSessionId($from, $sessionId, $this->roomService);
-            
+
             // Check if this was an initial session setup (for better messaging)
             $wasInitialSetup = isset($from->sessionIdRequired) && $from->sessionIdRequired;
-            
+
             // Send a confirmation message
             $from->send(json_encode([
                 'type' => 'session_update_confirmation',
@@ -314,7 +314,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'sessionId' => substr($sessionId, 0, 8) . '...',  // Only show part of the session ID for security
                 'timestamp' => date('c')
             ]));
-            
+
             $this->logger->info("Client session updated", [
                 'clientId' => $from->resourceId,
                 'action' => $result['action'],
@@ -322,14 +322,14 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             ]);
             return;
         }
-        
+
         // Handle room ping responses
         if ($messageType === 'room_ping_response' && isset($data['roomId'])) {
             $roomId = $data['roomId'];
-            
+
             // Update the connection's activity timestamp for this room
             $this->roomService->updateConnectionActivity($roomId, $from);
-            
+
             $this->logger->debug("Room ping response received", [
                 'clientId' => $from->resourceId,
                 'roomId' => $roomId,
@@ -337,7 +337,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             ]);
             return;
         }
-        
+
         // Handle pong responses from client
         if ($messageType === 'pong') {
             // Calculate round-trip time if client_timestamp is provided
@@ -437,7 +437,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             'ipAddress' => $conn->remoteAddress ?? 'unknown',
             'remainingClients' => $this->connectionService->getClientCount() - 1 // -1 for this connection being removed
         ]);
-        
+
         // Collect detailed information about the connection for logging
         $clientInfo = [
             'clientId' => $conn->resourceId,
@@ -451,9 +451,9 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             'roomCount' => $this->roomService->getConnectionRooms($conn) ? count($this->roomService->getConnectionRooms($conn)) : 0,
             'connectionDuration' => isset($conn->connectTime) ? (time() - $conn->connectTime) . ' seconds' : 'unknown'
         ];
-        
+
         $this->logger->debug("Connection closing with details", $clientInfo);
-        
+
         // If connection was in rooms, handle room departure
         if (isset($conn->roomId) || $clientInfo['roomCount'] > 0) {
             $roomsInfo = $this->roomService->getConnectionRooms($conn);
@@ -461,11 +461,11 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'clientId' => $conn->resourceId,
                 'rooms' => $roomsInfo
             ]);
-            
+
             // Remove from all rooms
             $this->roomService->leaveAllRooms($conn);
         }
-        
+
         // Remove connection from the server
         $this->connectionService->removeConnection($conn);
     }
@@ -492,9 +492,9 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             'errorLine' => $e->getLine(),
             'errorTrace' => array_slice($e->getTrace(), 0, 3)  // First 3 frames of stack trace
         ];
-        
+
         $this->logger->error("WebSocket connection error with details", $clientInfo);
-        
+
         // Let the connection service handle the error (which includes closing the connection)
         $this->connectionService->handleError($conn, $e);
     }
@@ -531,7 +531,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     {
         $this->notificationService->broadcastNotification($msg);
     }
-    
+
     /**
      * Send a notification to a specific session room
      *
@@ -543,7 +543,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     {
         // Create room ID from session
         $roomId = $this->roomService->createRoomIdFromSession($sessionId);
-        
+
         // Check if room exists
         if (!$this->roomService->roomExists($roomId)) {
             $this->logger->info("Session room not found", [
@@ -552,14 +552,14 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             ]);
             return false;
         }
-        
+
         // Convert message to JSON if it's an array
         if (is_array($msg)) {
             // Don't add roomId for server_message type to keep it clean for client
             if ($msg['type'] !== 'server_message' && !isset($msg['roomId'])) {
                 $msg['roomId'] = $roomId;
             }
-            
+
             $msg = json_encode($msg);
         } else if (is_string($msg) && $msg[0] === '{') {
             // If it's already a JSON string, try to parse it to check for server_message
@@ -573,13 +573,13 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 // If parsing fails, continue with the original message
             }
         }
-        
+
         // Send to room
         $sent = $this->roomService->sendToRoom($roomId, $msg);
-        
+
         return $sent > 0;
     }
-    
+
     /**
      * Send a notification to a specific entity room
      *
@@ -592,7 +592,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     {
         // Create room ID from entity
         $roomId = $this->roomService->createRoomIdFromEntity($entityType, $entityId);
-        
+
         // Check if room exists
         if (!$this->roomService->roomExists($roomId)) {
             $this->logger->info("Entity room not found", [
@@ -602,7 +602,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             ]);
             return false;
         }
-        
+
         // Convert message to JSON if it's an array
         if (is_array($msg)) {
             // Add entity info to the message
@@ -615,7 +615,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             if (!isset($msg['roomId'])) {
                 $msg['roomId'] = $roomId;
             }
-            
+
             $msg = json_encode($msg);
         } else if (is_string($msg) && $msg[0] === '{') {
             // If it's already a JSON string, try to parse it to add entity info
@@ -637,10 +637,10 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 // If parsing fails, continue with the original message
             }
         }
-        
+
         // Send to room
         $sent = $this->roomService->sendToRoom($roomId, $msg);
-        
+
         return $sent > 0;
     }
 
@@ -813,7 +813,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
     {
         $rooms = [];
         $roomIds = $this->roomService->getAllRoomIds();
-        
+
         foreach ($roomIds as $roomId) {
             $rooms[] = [
                 'id' => $roomId,
@@ -821,7 +821,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'isSessionRoom' => strpos($roomId, 'session_') === 0
             ];
         }
-        
+
         return $rooms;
     }
 }

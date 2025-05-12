@@ -247,6 +247,29 @@ $redis->publish('notifications', json_encode($notification));
 
 If Redis is unavailable, the system will automatically fall back to a file-based notification system, ensuring reliable message delivery in all scenarios.
 
+## Configuration
+
+The WebSocket server can be configured using environment variables. The following variables are available:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `WSS_LOG_ENABLED` | Master switch for all logging | `true` |
+| `WSS_DEBUG_LOG_ENABLED` | Enable detailed debug logs | `false` (in production), `true` (in development) |
+| `WSS_LOG_TO_DOCKER` | Enable Docker log integration | `true` |
+
+You can set these variables in the Docker Compose file or pass them as environment variables when running the WebSocket server:
+
+```yaml
+# In docker-compose.yml
+websocket:
+  environment:
+    WSS_LOG_ENABLED: "true"
+    WSS_DEBUG_LOG_ENABLED: "false"
+    WSS_LOG_TO_DOCKER: "true"
+```
+
+In production, only critical logs, error messages, warnings, notices, and essential connection messages will be shown by default. Regular info messages and debug logs are suppressed unless `WSS_DEBUG_LOG_ENABLED=true` is set. This significantly reduces log verbosity while still capturing important events.
+
 ## Troubleshooting
 
 If you encounter any issues with the WebSocket server, check the following:
@@ -256,3 +279,4 @@ If you encounter any issues with the WebSocket server, check the following:
 3. Verify the WebSocket port (8080) is properly exposed in the Docker configuration
 4. Check Redis connection: `docker exec portico_api redis-cli -h redis ping`
 5. Check the Redis logs: `docker logs portico_redis`
+6. Enable debug logging by setting `WSS_DEBUG_LOG_ENABLED=true` in your environment

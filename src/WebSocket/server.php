@@ -90,10 +90,10 @@ if (file_exists($configFile) || file_exists($altConfigFile)) {
     }
 }
 
-// WebSocket server configuration constants
-define('WSS_LOG_ENABLED', true);           // Master switch for all logging
-define('WSS_DEBUG_LOG_ENABLED', false);    // Enable for detailed debug logs
-define('WSS_LOG_TO_DOCKER', true);         // Enable for Docker log integration
+// WebSocket server configuration constants using environment variables with defaults
+define('WSS_LOG_ENABLED', getenv('WSS_LOG_ENABLED') !== false ? filter_var(getenv('WSS_LOG_ENABLED'), FILTER_VALIDATE_BOOLEAN) : true);
+define('WSS_DEBUG_LOG_ENABLED', getenv('WSS_DEBUG_LOG_ENABLED') !== false ? filter_var(getenv('WSS_DEBUG_LOG_ENABLED'), FILTER_VALIDATE_BOOLEAN) : false);
+define('WSS_LOG_TO_DOCKER', getenv('WSS_LOG_TO_DOCKER') !== false ? filter_var(getenv('WSS_LOG_TO_DOCKER'), FILTER_VALIDATE_BOOLEAN) : true);
 
 // Create a custom logger that outputs to stdout
 $logger = new class implements LoggerInterface {
@@ -103,7 +103,12 @@ $logger = new class implements LoggerInterface {
     public function error($message, array $context = []): void { $this->log('ERROR', $message, $context); }
     public function warning($message, array $context = []): void { $this->log('WARNING', $message, $context); }
     public function notice($message, array $context = []): void { $this->log('NOTICE', $message, $context); }
-    public function info($message, array $context = []): void { $this->log('INFO', $message, $context); }
+    public function info($message, array $context = []): void {
+        // Only log info messages if debug logging is enabled or if it's an important connection message
+        if (WSS_DEBUG_LOG_ENABLED) {
+            $this->log('INFO', $message, $context);
+        }
+    }
     public function debug($message, array $context = []): void {
         // Only log debug messages if debug logging is enabled
         if (WSS_DEBUG_LOG_ENABLED) {
@@ -193,7 +198,14 @@ try {
             public function error($message, array $context = []): void { $this->log('ERROR', $message, $context); }
             public function warning($message, array $context = []): void { $this->log('WARNING', $message, $context); }
             public function notice($message, array $context = []): void { $this->log('NOTICE', $message, $context); }
-            public function info($message, array $context = []): void { $this->log('INFO', $message, $context); }
+            public function info($message, array $context = []): void {
+                // Only log info messages if debug logging is enabled or if it's an important connection message
+                if (WSS_DEBUG_LOG_ENABLED ||
+                    (strpos($message, 'New connection') === 0) ||
+                    (isset($context['error']) && $context['error'])) {
+                    $this->log('INFO', $message, $context);
+                }
+            }
             public function debug($message, array $context = []): void {
                 // Only forward debug messages if debug logging is enabled
                 if (WSS_DEBUG_LOG_ENABLED) {

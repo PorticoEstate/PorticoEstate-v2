@@ -89,6 +89,26 @@ class ApplicationController extends DocumentController
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications",
+     *     summary="Get all applications for the current user",
+     *     tags={"Applications"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of applications",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="list", type="array", @OA\Items(ref="#/components/schemas/Application")),
+     *             @OA\Property(property="total_sum", type="number")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="User not authenticated"
+     *     )
+     * )
+     */
     public function getApplications(Request $request, Response $response): Response
     {
         try {
@@ -123,6 +143,97 @@ class ApplicationController extends DocumentController
             $error = "Error fetching applications: " . $e->getMessage();
             return ResponseHelper::sendErrorResponse(
                 ['error' => $error],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications/{id}",
+     *     summary="Get a specific application by ID",
+     *     description="Returns a specific application if the user has access to it, or if the correct secret is provided.",
+     *     tags={"Applications"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the application to retrieve",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="secret",
+     *         in="query",
+     *         required=false,
+     *         description="Secret key that can be used to access the application without authentication",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Application details",
+     *         @OA\JsonContent(ref="#/components/schemas/Application")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized to view this application"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Application not found"
+     *     )
+     * )
+     */
+    public function getApplicationById(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+
+            // Get the application with basic data first
+            $application = $this->applicationService->getApplicationById($id);
+            if (!$application) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Application not found'],
+                    404
+                );
+            }
+
+            // Check for secret parameter in GET
+            $secret = $request->getQueryParams()['secret'] ?? null;
+            if ($secret && isset($application['secret']) && $application['secret'] === $secret) {
+                // Access allowed with correct secret - get full application data
+                $fullApplication = $this->applicationService->getFullApplication($id);
+                if (!$fullApplication) {
+                    return ResponseHelper::sendErrorResponse(
+                        ['error' => 'Application details not found'],
+                        404
+                    );
+                }
+				return ResponseHelper::sendJSONResponse($fullApplication->serialize());
+            }
+
+            // Check if user can access this application
+            if (!$this->canViewApplication($application)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to view this application'],
+                    403
+                );
+            }
+
+            // User has access - get full application data
+            $fullApplication = $this->applicationService->getFullApplication($id);
+            if (!$fullApplication) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Application details not found'],
+                    404
+                );
+            }
+
+            // Return the complete application data
+			return ResponseHelper::sendJSONResponse($fullApplication->serialize());
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error retrieving application: " . $e->getMessage()],
                 500
             );
         }
@@ -1067,54 +1178,73 @@ class ApplicationController extends DocumentController
     }
 
     /**
-     * Check if the current user/session can modify the given application
-     *
-     * Verifies either:
-     * - Application belongs to current session (for in-progress applications)
-     * OR if user is logged in:
-     * - Is the direct owner (via SSN)
-     * - Belongs to the owning organization
-     * - Is a delegate for the owning organization
+     * Check if the current user/session can view the given application
+     * More permissive than canModifyApplication, allowing access to completed applications
      *
      * @param array $application The application data to check
-     * @return bool True if user can modify the application, false otherwise
+     * @return bool True if user can view the application, false otherwise
      */
-    private function canModifyApplication(array $application): bool
+    private function canViewApplication(array $application): bool
     {
-        $session = Sessions::getInstance();
-        $session_id = $session->get_session_id();
 
-        // Check if application belongs to current session
-        if ($application['status'] === 'NEWPARTIAL1' && $application['session_id'] === $session_id) {
-            return true;
-        }
+		$session = Sessions::getInstance();
+		$session_id = $session->get_session_id();
 
-        // Additional checks if user is logged in
-        if ($this->bouser->is_logged_in()) {
-            $ssn = $this->bouser->ssn;
-            $orgnr = $this->bouser->orgnr;
+		// Check if application belongs to current session
+		if ($application['status'] === 'NEWPARTIAL1' && $application['session_id'] === $session_id) {
+			return true;
+		}
 
-            if ($application['customer_ssn'] === $ssn) {
-                return true;
-            }
+		// Additional checks if user is logged in
+		if ($this->bouser->is_logged_in()) {
+			$ssn = $this->bouser->ssn;
+			$orgnr = $this->bouser->orgnr;
 
-            if ($application['customer_identifier_type'] === 'organization_number'
-                && $application['customer_organization_number'] === $orgnr) {
-                return true;
-            }
+			if ($application['customer_ssn'] === $ssn) {
+				return true;
+			}
 
-            if ($application['customer_identifier_type'] === 'organization_number'
-                && $this->bouser->organizations) {
-                foreach ($this->bouser->organizations as $org) {
-                    if ($org['orgnr'] === $application['customer_organization_number']) {
-                        return true;
-                    }
-                }
-            }
-        }
+			if ($application['customer_identifier_type'] === 'organization_number'
+				&& $application['customer_organization_number'] === $orgnr) {
+				return true;
+			}
 
-        return false;
+			if ($application['customer_identifier_type'] === 'organization_number'
+				&& $this->bouser->organizations) {
+				foreach ($this->bouser->organizations as $org) {
+					if ($org['orgnr'] === $application['customer_organization_number']) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+
     }
+
+	/**
+	 * Check if the current user/session can modify the given application
+	 *
+	 * Verifies either:
+	 * - Application belongs to current session (for in-progress applications)
+	 * OR if user is logged in:
+	 * - Is the direct owner (via SSN)
+	 * - Belongs to the owning organization
+	 * - Is a delegate for the owning organization
+	 *
+	 * @param array $application The application data to check
+	 * @return bool True if user can modify the application, false otherwise
+	 */
+	private function canModifyApplication(array $application): bool
+	{
+		if (!$this->canViewApplication($application)) {
+			return false;
+		}
+
+
+		return true;
+	}
 
 
     /**

@@ -78,19 +78,20 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
 	$group->group('/applications', function (RouteCollectorProxy $group)
 	{
+		$group->get('', ApplicationController::class . ':getApplications');
 		$group->post('/simple', ApplicationController::class . ':createSimpleApplication');
 		$group->get('/partials', ApplicationController::class . ':getPartials');
 		$group->post('/partials', ApplicationController::class . ':createPartial');
 		$group->post('/partials/checkout', ApplicationController::class . ':checkoutPartials');
 		$group->put('/partials/{id}', ApplicationController::class . ':updatePartial');
-		$group->get('', ApplicationController::class . ':getApplications');
-		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
 		$group->patch('/partials/{id}', ApplicationController::class . ':patchApplication');
 		$group->post('/{id}/documents', ApplicationController::class . ':uploadDocument');
 		$group->delete('/document/{id}', ApplicationController::class . ':deleteDocument');
 		$group->get('/document/{id}/download', ApplicationController::class . ':downloadDocument');
 		$group->post('/validate-checkout', ApplicationController::class . ':validateCheckout');
 		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
+		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
+		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
 
 	});
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');

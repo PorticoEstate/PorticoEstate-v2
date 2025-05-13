@@ -19,3 +19,6 @@ Dockerfile.local
 structure.txt
 
 .env
+/portico/tmp/
+
+**/.claude/settings.local.json

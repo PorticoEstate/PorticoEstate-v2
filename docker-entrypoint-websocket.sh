@@ -52,6 +52,9 @@ fi
 echo "Environment:"
 echo "  REDIS_HOST: $REDIS_HOST"
 echo "  REDIS_PORT: $REDIS_PORT"
+echo "  WSS_LOG_ENABLED: ${WSS_LOG_ENABLED:-true}"
+echo "  WSS_DEBUG_LOG_ENABLED: ${WSS_DEBUG_LOG_ENABLED:-false}"
+echo "  WSS_LOG_TO_DOCKER: ${WSS_LOG_TO_DOCKER:-true}"
 
 # Execute the original command
 exec "$@"

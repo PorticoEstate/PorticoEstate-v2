@@ -58,6 +58,9 @@ services:
             docker: "true"
             REDIS_HOST: redis
             REDIS_PORT: 6379
+            WSS_LOG_ENABLED: "true"
+            WSS_DEBUG_LOG_ENABLED: "${WSS_DEBUG_LOG_ENABLED:-false}"
+            WSS_LOG_TO_DOCKER: "true"
 #        ports:
 #            - "8080:8080"  # WebSocket port
         volumes:

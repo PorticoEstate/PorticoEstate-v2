@@ -417,7 +417,29 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		} else {
 			clearErrors('start');
 		}
-	}, [startTime, isWithinBusinessHours, setError, clearErrors, t]);
+
+		// Check if start time is later than end time
+		const endTimeValue = getValues('end');
+		if (endTimeValue && startTime > endTimeValue) {
+			// Create a new end time 30 minutes after start time
+			const newEndTime = new Date(startTime);
+			newEndTime.setMinutes(newEndTime.getMinutes() + 30);
+
+			// Ensure the new end time doesn't exceed the maximum allowed time
+			const newEndTimeStr = DateTime.fromJSDate(newEndTime).toFormat('HH:mm:ss');
+
+			// If the new end time would exceed the maximum time, use the maximum time instead
+			if (newEndTimeStr > maxTime) {
+				// Use the same day as the start time but with max hours/minutes
+				const [maxHours, maxMinutes] = maxTime.split(':').map(Number);
+				newEndTime.setHours(maxHours);
+				newEndTime.setMinutes(maxMinutes);
+				newEndTime.setSeconds(0);
+			}
+
+			setValue('end', newEndTime, { shouldDirty: true });
+		}
+	}, [startTime, isWithinBusinessHours, setError, clearErrors, t, setValue, getValues, maxTime]);
 
 	useEffect(() => {
 		if (!endTime) return;

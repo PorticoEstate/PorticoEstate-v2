@@ -2,17 +2,16 @@
 
 namespace App\providers;
 
+use DI\Container;
 use PDO;
 use App\Database\Db;
-use Slim\App;
 use Exception;
 use PDOException;
 
 class DatabaseServiceProvider
 {
-	public static function register(App $app)
+	public static function register(Container $container)
 	{
-		$container = $app->getContainer();
 		$config = $container->get('settings')['db'];
 
 		if (!isset($config['db_host']))
@@ -65,7 +64,6 @@ class DatabaseServiceProvider
 
 		$container->set('db', function () use ($container)
 		{
-
 			return Db::getInstance();
 		});
 	}

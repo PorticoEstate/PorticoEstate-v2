@@ -66,7 +66,7 @@ $app->add(function ($request, $handler)
 $datbaseProvider = new DatabaseServiceProvider();
 $webSocketProvider = new WebSocketServiceProvider();
 
-$datbaseProvider->register($app);
+$datbaseProvider->register($container);
 $webSocketProvider->register($container);
 
 // Register WebSocket routes class

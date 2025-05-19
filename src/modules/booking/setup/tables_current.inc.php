@@ -489,6 +489,7 @@ $phpgw_baseline = array(
 			'session_id' => array('type' => 'varchar', 'precision' => '64', 'nullable' => True),
 			'agreement_requirements' => array('type' => 'text', 'nullable' => True),
 			'external_archive_key' => array('type' => 'varchar', 'precision' => '64', 'nullable' => True),
+			'recurring_info' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(

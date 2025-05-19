@@ -7723,3 +7723,20 @@ function booking_upgrade0_2_110($oProc)
 		return $currentver;
 	}
 }
+$test[] = '0.2.111';
+function booking_upgrade0_2_111($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn(
+		'bb_application',
+		'recurring_info',
+		array('type' => 'jsonb', 'nullable' => true),
+	);
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.112';
+		return $currentver;
+	}
+}

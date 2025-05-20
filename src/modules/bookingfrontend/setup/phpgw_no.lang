@@ -622,6 +622,7 @@ Successfully changed start time	bookingfrontend	no	Endring av startidspunkt er v
 successfully created (%1) allocations:	bookingfrontend	no	(%1) tildelinger lagret
 summary	bookingfrontend	no	Oppsummering
 surname	bookingfrontend	no	Etternavn
+system feedback	bookingfrontend	no	System tilbakemelding
 System message	bookingfrontend	no	Systemmelding
 System messages	bookingfrontend	no	Systemmeldinger
 target audience	bookingfrontend	no	Målgruppe

@@ -57,11 +57,11 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const newToast = { ...message, id };
     setToasts(prev => [...prev, newToast]);
 
-    // Auto-hide toast after 5 seconds if autoHide is true
+    // Auto-hide toast after 10 seconds if autoHide is true (increased from 5 seconds)
     if (message.autoHide !== false) {
       setTimeout(() => {
         removeToast(id);
-      }, 5000);
+      }, 10000);
     }
   };
 

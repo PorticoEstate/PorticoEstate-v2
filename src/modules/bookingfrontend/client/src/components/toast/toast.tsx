@@ -120,7 +120,11 @@ const Toast: React.FC<ToastProps> = ({toast, onClose}) => {
 					{title}
 				</Heading>}
 				<Paragraph data-size={'xs'}>
-					{text}
+					{typeof text === 'string' ? (
+						<span dangerouslySetInnerHTML={{ __html: text }} />
+					) : (
+						text
+					)}
 				</Paragraph>
 			</div>
 			<Button

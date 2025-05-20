@@ -100,6 +100,8 @@ export interface IBookingfrontendConfig {
     soap_password?: string;
     test_ssn?: string;
     usecookies?: boolean;
+	url_uustatus?: string;
+	url_system_feedback?: string;
 }
 
 

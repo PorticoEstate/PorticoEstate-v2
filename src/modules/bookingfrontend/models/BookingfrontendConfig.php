@@ -68,6 +68,18 @@ class BookingfrontendConfig
      */
     public $usecookies;
 
+    /**
+     * @OA\Property(type="string")
+	 * @Expose
+     */
+    public $url_uustatus;
+
+    /**
+     * @OA\Property(type="string")
+	 * @Expose
+     */
+    public $url_system_feedback;
+
     public function __construct(?array $data)
     {
         if (is_array($data))

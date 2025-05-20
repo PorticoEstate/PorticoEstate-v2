@@ -47,7 +47,7 @@ export interface IApplication {
 }
 
 
-interface IApplicationDate {
+export interface IApplicationDate {
     from_: string;
     to_: string;
     id: number;

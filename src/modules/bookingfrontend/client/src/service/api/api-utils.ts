@@ -98,6 +98,7 @@ export async function fetchFreeTimeSlotsForRange(building_id: number, start: Dat
 		detailed_overlap: true,
 		stop_on_end_date: true
 	}, true, instance);
+	console.log("FETCHING FREE TIME SLOTS FOR RANGE", url);
 	const response = await fetch(url);
 	const result = await response.json();
 	return result;
@@ -176,10 +177,51 @@ export async function validateOrgNum(org_num: string): Promise<BrregOrganization
 
 
 export async function fetchDeliveredApplications(): Promise<{ list: IApplication[], total_sum: number }> {
-    const url = phpGWLink(['bookingfrontend', 'applications']);
-    const response = await fetch(url);
+    const params: Record<string, any> = {}
+
+    // Add session cookie if we're on the server
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications'], params);
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch applications: ${response.status}`);
+    }
+
     const result = await response.json();
     return result;
+}
+
+/**
+ * Fetch a single application by ID
+ * @param id The application ID to fetch
+ * @returns The application object
+ */
+export async function fetchApplication(id: number): Promise<IApplication> {
+	const params: Record<string, any> = {}
+	if(typeof window === 'undefined') {
+		const cookies = require("next/headers").cookies()
+		const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+		if(sessionCookie) {
+			params.bookingfrontendsession = sessionCookie;
+		}
+	}
+	let url = phpGWLink(['bookingfrontend', 'applications', id.toString()], params);
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch application with ID ${id}`);
+    }
+
+    return response.json();
 }
 
 
@@ -229,8 +271,24 @@ export async function fetchTowns(): Promise<ISearchDataTown[]> {
 }
 
 export async function fetchInvoices(): Promise<ICompletedReservation[]> {
-    const url = phpGWLink(['bookingfrontend', 'invoices']);
-    const response = await fetch(url);
+    const params: Record<string, any> = {}
+
+    // Add session cookie if we're on the server
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'invoices'], params);
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch invoices: ${response.status}`);
+    }
+
     const result = await response.json();
     return result;
 }

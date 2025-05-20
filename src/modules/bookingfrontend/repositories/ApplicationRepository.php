@@ -118,12 +118,13 @@ class ApplicationRepository
         }
 
         $application = new Application($result);
-        $application->dates = $this->fetchDates($application->id);
-        $application->resources = $this->fetchResources($application->id);
-        $application->orders = $this->fetchOrders($application->id);
-        $application->agegroups = $this->fetchAgeGroups($application->id);
-        $application->audience = $this->fetchTargetAudience($application->id);
-        $application->documents = $this->fetchDocuments($application->id);
+		$application->dates = $this->fetchDates($application->id);
+		$application->resources = $this->fetchResources($application->id);
+		$application->orders = $this->fetchOrders($application->id);
+		$application->articles = $this->fetchArticles($application->id);
+		$application->agegroups = $this->fetchAgeGroups($application->id);
+		$application->audience = $this->fetchTargetAudience($application->id);
+		$application->documents = $this->fetchDocuments($application->id);
 
         return $application;
     }

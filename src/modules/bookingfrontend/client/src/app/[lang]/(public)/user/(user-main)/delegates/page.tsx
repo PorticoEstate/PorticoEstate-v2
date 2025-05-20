@@ -2,7 +2,6 @@
 import React, {FC, useState} from 'react';
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {GSTable} from "@/components/gs-table";
-import {CellContext, createColumnHelper} from "@tanstack/table-core";
 import {ColumnDef} from "@/components/gs-table/table.types";
 import {IDelegate} from "@/service/types/api.types";
 import {default as NXLink} from "next/link";
@@ -13,82 +12,19 @@ import {useBookingUser} from "@/service/hooks/api-hooks";
 interface DelegatesProps {
 }
 
-
-// Define the data type
-interface UserData {
-    id: number;
-    name: string;
-    email: string;
-    status: 'active' | 'inactive' | 'pending';
-    lastLogin: Date;
-    posts: number;
-    role: string;
-}
-
-const userData: UserData[] = [
-    {
-        id: 1,
-        name: "John Smith",
-        email: "john.smith@example.com",
-        status: "active",
-        lastLogin: new Date('2024-03-15T10:30:00'),
-        posts: 145,
-        role: "Admin"
-    },
-    {
-        id: 2,
-        name: "Sarah Johnson",
-        email: "sarah.j@example.com",
-        status: "inactive",
-        lastLogin: new Date('2024-03-10T15:45:00'),
-        posts: 67,
-        role: "Editor"
-    },
-    {
-        id: 3,
-        name: "Michael Chen",
-        email: "m.chen@example.com",
-        status: "active",
-        lastLogin: new Date('2024-03-18T09:15:00'),
-        posts: 234,
-        role: "Author"
-    },
-    {
-        id: 4,
-        name: "Emma Wilson",
-        email: "emma.w@example.com",
-        status: "pending",
-        lastLogin: new Date('2024-03-17T14:20:00'),
-        posts: 89,
-        role: "Contributor"
-    },
-    {
-        id: 5,
-        name: "David Brown",
-        email: "david.b@example.com",
-        status: "active",
-        lastLogin: new Date('2024-03-16T11:50:00'),
-        posts: 178,
-        role: "Editor"
-    }
-];
-
 const Delegates: FC<DelegatesProps> = (props) => {
     const t = useTrans();
     const {data: user} = useBookingUser();
     const delegates = user?.delegates;
     const [searchTerm, setSearchTerm] = useState('');
 
-
-    // Optional: Use TanStack's column helper for better type inference
-    const columnHelper = createColumnHelper<IDelegate>();
     const columns: ColumnDef<IDelegate>[] = [
         {
             id: 'name',
             accessorFn: row => row.name,
             header: 'Navn',
-            cell: (info: CellContext<IDelegate, string>) => {
-                const name = info.getValue();
+            cell: info => {
+                const name = info.getValue<string>();
                 const orgId = info.row.original.org_id;
                 return (<Link
                     asChild
@@ -124,8 +60,8 @@ const Delegates: FC<DelegatesProps> = (props) => {
             id: 'active',
             accessorFn: row => row.active,
             header: 'Status',
-            cell: (info: CellContext<IDelegate, boolean>) => {
-                const status = info.getValue();
+            cell: info => {
+                const status = info.getValue<boolean>();
                 return (
                     <div>
                         {status ? 'Aktiv' : 'Inaktiv'}
@@ -139,15 +75,10 @@ const Delegates: FC<DelegatesProps> = (props) => {
         //     accessorFn: row => row.org_id,
         //     header: 'ID',
         //     enableSorting: false,
-        //
-        //     // cell: (info: CellContext<UserData, Date>) =>
-        //     //     info.getValue().toLocaleDateString(),
-        //     // sortingFn: (rowA, rowB) => {
-        //     //     return rowA.original.lastLogin.getTime() - rowB.original.lastLogin.getTime();
-        //     // }
         // },
-    ] as const;
+    ];
 
+    // Example of UserData columns for reference
     // const columns: ColumnDef<UserData>[] = [
     //     {
     //         id: 'name',
@@ -169,8 +100,8 @@ const Delegates: FC<DelegatesProps> = (props) => {
     //     {
     //         id: 'status',
     //         accessorFn: row => row.status,
-    //         cell: (info: CellContext<UserData, 'active' | 'inactive' | 'pending'>) => {
-    //             const status = info.getValue();
+    //         cell: info => {
+    //             const status = info.getValue<'active' | 'inactive' | 'pending'>();
     //             return (
     //                 <div>
     //                     {status}
@@ -183,8 +114,7 @@ const Delegates: FC<DelegatesProps> = (props) => {
     //         id: 'lastLogin',
     //         accessorFn: row => row.lastLogin,
     //         header: 'Last Login',
-    //         cell: (info: CellContext<UserData, Date>) =>
-    //             info.getValue().toLocaleDateString(),
+    //         cell: info => info.getValue<Date>().toLocaleDateString(),
     //         sortingFn: (rowA, rowB) => {
     //             return rowA.original.lastLogin.getTime() - rowB.original.lastLogin.getTime();
     //         }
@@ -203,7 +133,7 @@ const Delegates: FC<DelegatesProps> = (props) => {
     //         accessorFn: row => row.role,
     //         sortingFn: 'alphanumeric'
     //     }
-    // ] as const;
+    // ];
     return (
         <GSTable<IDelegate>
             data={delegates || []}

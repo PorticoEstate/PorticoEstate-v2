@@ -10,6 +10,7 @@ import {
 import { useWebSocketContext } from '../websocket/websocket-context';
 import {IBookingUser, IDocument, IServerSettings} from "@/service/types/api.types";
 import {
+	fetchApplication,
 	fetchArticlesForResources,
 	fetchBuildingAgeGroups,
 	fetchBuildingAudience,
@@ -516,15 +517,33 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 	);
 }
 
-export function useApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
+export function useApplications(
+  options?: { initialData?: { list: IApplication[], total_sum: number } }
+): UseQueryResult<{ list: IApplication[], total_sum: number }> {
 	return useQuery(
 		{
 			queryKey: ['deliveredApplications'],
 			queryFn: () => fetchDeliveredApplications(), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			initialData: options?.initialData,
 		}
 	);
+}
+
+export function useApplication(
+    id: number,
+    options?: { initialData?: IApplication }
+): UseQueryResult<IApplication> {
+    return useQuery(
+        {
+            queryKey: ['application', id],
+            queryFn: () => fetchApplication(id),
+            retry: 2,
+            refetchOnWindowFocus: false,
+            initialData: options?.initialData,
+        }
+    );
 }
 
 export function useServerMessages(): UseQueryResult<IServerMessage[]> {
@@ -713,15 +732,18 @@ export function useDeleteServerMessage() {
 }
 
 
-export function useInvoices(): UseQueryResult<ICompletedReservation[]> {
-	return useQuery(
-		{
-			queryKey: ['invoices'],
-			queryFn: () => fetchInvoices(), // Fetch function
-			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default
-		}
-	);
+export function useInvoices(
+    options?: { initialData?: ICompletedReservation[] }
+): UseQueryResult<ICompletedReservation[]> {
+    return useQuery(
+        {
+            queryKey: ['invoices'],
+            queryFn: () => fetchInvoices(), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+            initialData: options?.initialData,
+        }
+    );
 }
 
 

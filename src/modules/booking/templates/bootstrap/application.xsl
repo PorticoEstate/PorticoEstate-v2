@@ -224,19 +224,18 @@
 								<xsl:if test="application/status!='REJECTED'">
 									<form method="POST">
 										<input type="hidden" name="status" value="REJECTED"/>
-										<button onclick="return confirm('{php:function('lang', 'Are you sure you want to delete?')}')" type="submit" class="dropdown-item" >
+										<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#rejectApplicationModal">
 											<xsl:choose>
-												<!--xsl:when test="not(application/case_officer)"-->
 												<xsl:when test="not(application/case_officer/is_current_user)">
-													<xsl:attribute name="disabled">disabled</xsl:attribute>
-													<i class="fas fa-flag me-1 text-secondary"></i>
+												  <xsl:attribute name="disabled">disabled</xsl:attribute>
+												  <i class="fas fa-flag me-1 text-secondary"></i>
 												</xsl:when>
 												<xsl:otherwise>
-													<i class="fas fa-flag me-1 text-primary"></i>
+												  <i class="fas fa-flag me-1 text-primary"></i>
 												</xsl:otherwise>
-											</xsl:choose>
-											<xsl:value-of select="php:function('lang', 'Reject application')" />
-										</button>
+											  </xsl:choose>
+											  <xsl:value-of select="php:function('lang', 'Reject application')" />
+											</button>
 									</form>
 								</xsl:if>
 								<xsl:if test="application/status='PENDING' or application/status='REJECTED' or application/status='NEWPARTIAL1'">
@@ -249,22 +248,19 @@
 										</xsl:when>
 										<xsl:when test="num_associations!='0'">
 											<div>
-												<form method="POST">
-													<input type="hidden" name="status" value="ACCEPTED"/>
-													<button type="submit" class="dropdown-item" >
-														<xsl:choose>
-															<!--xsl:when test="not(application/case_officer)"-->
-															<xsl:when test="not(application/case_officer/is_current_user)">
-																<xsl:attribute name="disabled">disabled</xsl:attribute>
-																<i class="fas fa-flag me-1 text-secondary"></i>
-															</xsl:when>
-															<xsl:otherwise>
-																<i class="fas fa-flag me-1 text-primary"></i>
-															</xsl:otherwise>
-														</xsl:choose>
-														<xsl:value-of select="php:function('lang', 'Accept application')" />
-													</button>
-												</form>
+												<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#acceptApplicationModal">
+													<xsl:choose>
+														<!--xsl:when test="not(application/case_officer)"-->
+														<xsl:when test="not(application/case_officer/is_current_user)">
+															<xsl:attribute name="disabled">disabled</xsl:attribute>
+															<i class="fas fa-flag me-1 text-secondary"></i>
+														</xsl:when>
+														<xsl:otherwise>
+															<i class="fas fa-flag me-1 text-primary"></i>
+														</xsl:otherwise>
+													</xsl:choose>
+													<xsl:value-of select="php:function('lang', 'Accept application')" />
+												</button>
 											</div>
 										</xsl:when>
 									</xsl:choose>
@@ -1461,6 +1457,76 @@
 			<!-- /.modal-content -->
 		</div>
 		<!-- /.modal-dialog -->
+	</div>
+	
+	<div class="modal fade" id="acceptApplicationModal" tabindex="-1" role="dialog" aria-labelledby="acceptApplicationModalLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<h5 class="modal-title" id="acceptApplicationModalLabel">
+			  <xsl:value-of select="php:function('lang', 'Accept Application')" />
+			</h5>
+			<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+			  <span aria-hidden="true">x</span>
+			</button>
+		  </div>
+		  <form method="POST">
+			<div class="modal-body">
+			  <p><xsl:value-of select="php:function('lang', 'Are you sure you want to approve?')" /></p>
+			  <div class="form-group">
+				<label for="acceptance_message">
+				  <xsl:value-of select="php:function('lang', 'Message to send with approval')" />
+				</label>
+				<textarea name="acceptance_message" id="acceptance_message" class="form-control" rows="4"></textarea>
+			  </div>
+			  <input type="hidden" name="status" value="ACCEPTED"/>
+			</div>
+			<div class="modal-footer">
+			  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+				<xsl:value-of select="php:function('lang', 'Cancel')" />
+			  </button>
+			  <button type="submit" class="btn btn-success">
+				<xsl:value-of select="php:function('lang', 'Approve')" />
+			  </button>
+			</div>
+		  </form>
+		</div>
+	  </div>
+	</div>
+	
+	<div class="modal fade" id="rejectApplicationModal" tabindex="-1" role="dialog" aria-labelledby="rejectApplicationModalLabel" aria-hidden="true">
+	  <div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content">
+		  <div class="modal-header">
+			<h5 class="modal-title" id="rejectApplicationModalLabel">
+			  <xsl:value-of select="php:function('lang', 'Reject Application')" />
+			</h5>
+			<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+			  <span aria-hidden="true">x</span>
+			</button>
+		  </div>
+		  <form method="POST">
+			<div class="modal-body">
+			  <p><xsl:value-of select="php:function('lang', 'Are you sure you want to delete?')" /></p>
+			  <div class="form-group">
+				<label for="rejection_reason">
+				  <xsl:value-of select="php:function('lang', 'Reason for rejection')" />
+				</label>
+				<textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="4"></textarea>
+			  </div>
+			  <input type="hidden" name="status" value="REJECTED"/>
+			</div>
+			<div class="modal-footer">
+			  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+				<xsl:value-of select="php:function('lang', 'Cancel')" />
+			  </button>
+			  <button type="submit" class="btn btn-danger">
+				<xsl:value-of select="php:function('lang', 'reject application')" />
+			  </button>
+			</div>
+		  </form>
+		</div>
+	  </div>
 	</div>
 
 	<script>

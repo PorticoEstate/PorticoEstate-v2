@@ -3483,6 +3483,12 @@ class booking_uiapplication extends booking_uicommon
 
 				if ($application['status'] == 'REJECTED')
 				{
+					$rejection_reason = Sanitizer::get_var('rejection_reason', 'html', 'POST');
+					if($rejection_reason)
+					{
+						$application['comment'] = $rejection_reason;
+						$this->add_comment($application, $rejection_reason);
+					}
 					$test = $this->assoc_bo->so->read(array('filters' => array('application_id' => $application['id']), 'results' => 'all'));
 					foreach ($test['results'] as $app)
 					{
@@ -3492,6 +3498,13 @@ class booking_uiapplication extends booking_uicommon
 
 				if ($application['status'] == 'ACCEPTED')
 				{
+					$acceptance_message = Sanitizer::get_var('acceptance_message', 'html', 'POST');
+					if($acceptance_message)
+					{
+						$application['comment'] = $acceptance_message;
+						$this->add_comment($application, $acceptance_message);
+					}
+
 					$test = $this->assoc_bo->so->read(array('filters' => array('application_id' => $application['id']), 'results' => 'all'));
 					foreach ($test['results'] as $app)
 					{
@@ -3689,6 +3702,8 @@ class booking_uiapplication extends booking_uicommon
 		$application['tabs'] = phpgwapi_jquery::tabview_generate($tabs, $active_tab);
 		phpgwapi_jquery::formvalidator_generate(array('file'), 'file_form');
 		self::rich_text_editor('comment');
+		self::rich_text_editor('rejection_reason');
+		self::rich_text_editor('acceptance_message');
 		$application['description'] = html_entity_decode(nl2br($application['description']));
 		$application['equipment'] = html_entity_decode(nl2br($application['equipment']));
 

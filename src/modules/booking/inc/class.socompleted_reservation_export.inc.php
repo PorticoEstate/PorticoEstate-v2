@@ -1088,15 +1088,6 @@ class booking_socompleted_reservation_export extends booking_socommon
 			$kundenr = str_pad(substr($this->get_customer_identifier_value_for($reservation), 0, 11), 11, '0', STR_PAD_LEFT);
 			$stored_header['kundenr'] = $kundenr;
 
-			if (empty($lopenr[$kundenr]))
-			{
-				$lopenr[$kundenr] = 1;
-			}
-			else
-			{
-				$lopenr[$kundenr]++;
-			}
-
 			if (strlen($this->get_customer_identifier_value_for($reservation)) > 9)
 			{
 				$name = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $contact_name), 0, 40), 40, ' '); //40 chars long
@@ -1183,6 +1174,15 @@ class booking_socompleted_reservation_export extends booking_socommon
 					$_article_code = $order_line['article_code'];
 					$_article_alternative_code = $order_line['article_alternative_code'];
 
+					if (empty($lopenr[$kundenr][$_article_code]))
+					{
+						$lopenr[$kundenr][$_article_code] = 1;
+					}
+					else
+					{
+						$lopenr[$kundenr][$_article_code]++;
+					}
+
 					if ($order_line['tax_percent'])
 					{
 						$unit_tax = (float)$order_line['unit_price'] * $order_line['tax_percent'] / 100;
@@ -1216,7 +1216,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 					$fakturalinje['varenr']		 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $_article_code), 0, 4), 4, '0', STR_PAD_LEFT);
 
-					$fakturalinje['lopenr']		 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr]), 2, '0', STR_PAD_LEFT);
+					$fakturalinje['lopenr']		 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr][$_article_code]), 2, '0', STR_PAD_LEFT);
 					$fakturalinje['pris']		 = str_pad($pris_inkl_mva * 100, 8, '0', STR_PAD_LEFT) . ' ';
 					$fakturalinje['grunnlag']	 = str_pad($order_line['quantity'] * 100, 9, '0', STR_PAD_LEFT); //'000000100'; // antall. De 2 siste posisjoner er desimaler.
 					$fakturalinje['belop']		 = str_pad(($order_line['amount'] + $order_line['tax']) * 100, 10, '0', STR_PAD_LEFT) . ' ';
@@ -1240,7 +1240,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 					}
 
 					$linjetekst['varenr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $_article_code), 0, 4), 4, '0', STR_PAD_LEFT);
-					$linjetekst['lopenr']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr]), 2, '0', STR_PAD_LEFT);
+					$linjetekst['lopenr']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr][$_article_code]), 2, '0', STR_PAD_LEFT);
 					$linjetekst['linjenr']	 = str_pad($linjenr, 2, '0', STR_PAD_LEFT);
 					$linjetekst['tekst']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $article_name), 50, ' ');
 
@@ -1250,6 +1250,17 @@ class booking_socompleted_reservation_export extends booking_socommon
 			else
 			{
 				$ant_post++;
+
+				$_article_code = $account_codes['article'];
+
+				if (empty($lopenr[$kundenr][$_article_code]))
+				{
+					$lopenr[$kundenr][$_article_code] = 1;
+				}
+				else
+				{
+					$lopenr[$kundenr][$_article_code]++;
+				}
 
 				//Fakturalinje FL
 				$fakturalinje = $this->get_visma_FL_row_template();
@@ -1270,9 +1281,9 @@ class booking_socompleted_reservation_export extends booking_socommon
 					$fakturalinje['oppdrgnr'] = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['unit_number']), 3, '0', STR_PAD_LEFT);
 				}
 
-				$fakturalinje['varenr']		 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['article']), 0, 4), 4, '0', STR_PAD_LEFT);
+				$fakturalinje['varenr']		 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $_article_code), 0, 4), 4, '0', STR_PAD_LEFT);
 
-				$fakturalinje['lopenr']		 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr]), 2, '0', STR_PAD_LEFT);
+				$fakturalinje['lopenr']		 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr][$_article_code]), 2, '0', STR_PAD_LEFT);
 				$fakturalinje['pris']		 = str_pad($reservation['cost'] * 100, 8, '0', STR_PAD_LEFT) . ' ';
 				$fakturalinje['grunnlag']	 = '000000100'; //De 2 siste posisjoner er desimaler.NB! Avvik i Kristiansand: ikke desimaler...
 				$fakturalinje['belop']		 = str_pad($reservation['cost'] * 100, 10, '0', STR_PAD_LEFT) . ' ';
@@ -1294,8 +1305,8 @@ class booking_socompleted_reservation_export extends booking_socommon
 					$linjetekst['oppdrgnr'] = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['unit_number']), 3, '0', STR_PAD_LEFT);
 				}
 
-				$linjetekst['varenr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['article']), 0, 4), 4, '0', STR_PAD_LEFT);
-				$linjetekst['lopenr']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr]), 2, '0', STR_PAD_LEFT);
+				$linjetekst['varenr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $_article_code), 0, 4), 4, '0', STR_PAD_LEFT);
+				$linjetekst['lopenr']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr][$_article_code]), 2, '0', STR_PAD_LEFT);
 				$linjetekst['linjenr']	 = str_pad($linjenr, 2, '0', STR_PAD_LEFT);
 				$linjetekst['tekst']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $reservation['article_description']), 50, ' ');
 
@@ -1313,8 +1324,8 @@ class booking_socompleted_reservation_export extends booking_socommon
 					$linjetekst['oppdrgnr'] = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['unit_number']), 3, '0', STR_PAD_LEFT);
 				}
 
-				$linjetekst['varenr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['article']), 0, 4), 4, '0', STR_PAD_LEFT);
-				$linjetekst['lopenr']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr]), 2, '0', STR_PAD_LEFT);
+				$linjetekst['varenr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $_article_code), 0, 4), 4, '0', STR_PAD_LEFT);
+				$linjetekst['lopenr']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $lopenr[$kundenr][$_article_code]), 2, '0', STR_PAD_LEFT);
 				$linjetekst['linjenr']	 = str_pad($linjenr + 1, 2, '0', STR_PAD_LEFT);
 				$linjetekst['tekst']	 = str_pad(iconv("utf-8", "ISO-8859-1//TRANSLIT", $reservation['description']), 50, ' ');
 

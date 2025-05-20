@@ -39,13 +39,13 @@ const ServerMessageToastHandler: FC = () => {
         if (processedMessageIds.current.has(message.id)) {
           return;
         }
-        
+
         // Mark this message as processed
         processedMessageIds.current.add(message.id);
-        
+
         // Map server message type to toast type
         const toastType = message.type === 'error' ? 'error' : 'success';
-        
+
         // Determine if we should auto-hide and configuration based on message type
         // Error messages stay longer on screen than success messages
         const autoHide = true; // Always auto-hide, but duration is controlled in toast-context.tsx
@@ -61,8 +61,7 @@ const ServerMessageToastHandler: FC = () => {
 
         // Delete the server message now that it's been displayed as a toast
         // Set retry: false to prevent retrying if the mutation fails
-        deleteMessages.mutate(message.id, { 
-          retry: false,
+        deleteMessages.mutate(message.id, {
           onError: (error) => {
             console.error(`Failed to delete server message ${message.id}:`, error);
           }

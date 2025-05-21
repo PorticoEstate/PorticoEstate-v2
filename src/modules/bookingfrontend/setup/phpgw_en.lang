@@ -622,6 +622,7 @@ Successfully changed start time	bookingfrontend	en	Start time change was success
 successfully created (%1) allocations:	bookingfrontend	en	Successfully created (%1) allocations:
 summary	bookingfrontend	en	Summary
 surname	bookingfrontend	en	Surname
+system feedback	bookingfrontend	en	System feedback
 System message	bookingfrontend	en	System message
 System messages	bookingfrontend	en	System messages
 target audience	bookingfrontend	en	Target audience

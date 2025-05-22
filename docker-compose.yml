@@ -11,6 +11,7 @@ x-common-variables: &common-variables
     NEXTJS_HOST: ${NEXTJS_HOST:-portico_nextjs}
     SLIM_HOST: ${SLIM_HOST:-portico_api}
     REDIS_HOST: ${REDIS_HOST:-portico_redis}
+    WEBSOCKET_HOST: ${WEBSOCKET_HOST:-portico_websocket}
     REDIS_PORT: 6379
 
 volumes:
@@ -18,9 +19,12 @@ volumes:
         driver: local
     redis_data:
         driver: local
+    vendor_data:
+        driver: local
 services:
     slim:
         container_name: ${SLIM_HOST:-portico_api}
+        hostname: ${SLIM_HOST:-portico_api}
      #   image: sigurdne/portico_estate_webserver:latest
         build:
             context: .
@@ -39,6 +43,7 @@ services:
             - "8088:80"
         volumes:
             - .:/var/www/html
+            - vendor_data:/var/www/html/vendor
             - ./logs:/var/log/apache2
             - /var/local/:/var/local/
             # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
@@ -48,10 +53,10 @@ services:
             - "host.docker.internal:host-gateway"
         depends_on:
             - redis
-            - websocket
 
     websocket:
         container_name: ${WEBSOCKET_HOST:-portico_websocket}
+        hostname: ${WEBSOCKET_HOST:-portico_websocket}
         build:
             context: .
             dockerfile: Dockerfile.websocket
@@ -66,15 +71,19 @@ services:
 #            - "8080:8080"  # WebSocket port
         volumes:
             - .:/var/www/html
+            - vendor_data:/var/www/html/vendor
             - ./logs:/var/log/websocket
         networks:
             - internal
         depends_on:
             - redis
+            - slim
 
     redis:
         image: redis:alpine
         container_name: ${REDIS_HOST:-portico_redis}
+        hostname: ${REDIS_HOST:-portico_redis}
+
         restart: unless-stopped
 #        ports:
 #            - "6379:6379"
@@ -85,7 +94,8 @@ services:
         command: redis-server --appendonly yes
 
     nextjs:
-        hostname: ${NEXTJS_HOST:-nextjs}
+        hostname: ${NEXTJS_HOST:-portico_nextjs}
+        container_name: ${NEXTJS_HOST:-portico_nextjs}
         build:
             dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs
             args:
@@ -96,7 +106,6 @@ services:
             <<: *common-variables
         networks:
             - internal
-
 
 networks:
     internal:

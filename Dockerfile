@@ -194,6 +194,15 @@ COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
 # Copy Supervisor configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Set up working directory
+WORKDIR /var/www/html
+
+# Copy composer files first to leverage Docker cache
+COPY composer.json composer.lock* ./
+
+# Install all dependencies during build time
+RUN composer install --no-dev --optimize-autoloader
+
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 

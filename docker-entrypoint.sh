@@ -21,13 +21,16 @@ fi
 
 # Set Apache environment variables
 NEXTJS_SERVER="${NEXTJS_HOST:-nextjs}:3000"
+WEBSOCKET_SERVER="${WEBSOCKET_HOST:-portico_websocket}:3000"
 
 # Export variables for Apache
 export NEXTJS_SERVER
 export SLIM_SERVER
+export WEBSOCKET_SERVER
 
 # Pass environment variables to Apache
 echo "SetEnv NEXTJS_SERVER ${NEXTJS_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
+echo "SetEnv WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 
 # Make sure Ratchet is installed
 if [ ! -d /var/www/html/vendor/cboden/ratchet ]; then

@@ -5,10 +5,13 @@
 # docker compose build
 
 x-common-variables: &common-variables
-    NEXT_ENV: ${NEXT_ENV:-development}
+    NEXT_ENV: ${NEXT_ENV:-production}
     NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}
     NEXT_INTERNAL_API_URL: ${NEXT_INTERNAL_API_URL:-http://slim}
-    WATCHPACK_POLLING: true
+    NEXTJS_HOST: ${NEXTJS_HOST:-portico_nextjs}
+    SLIM_HOST: ${SLIM_HOST:-portico_api}
+    REDIS_HOST: ${REDIS_HOST:-portico_redis}
+    REDIS_PORT: 6379
 
 volumes:
     logs:
@@ -17,7 +20,7 @@ volumes:
         driver: local
 services:
     slim:
-        container_name: portico_api
+        container_name: ${SLIM_HOST:-portico_api}
      #   image: sigurdne/portico_estate_webserver:latest
         build:
             context: .
@@ -32,8 +35,6 @@ services:
         environment:
             <<: *common-variables
             docker: "true"
-            REDIS_HOST: redis
-            REDIS_PORT: 6379
         ports:
             - "8088:80"
         volumes:
@@ -43,26 +44,26 @@ services:
             # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
         networks:
             - internal
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
         depends_on:
             - redis
             - websocket
 
     websocket:
-        container_name: portico_websocket
+        container_name: ${WEBSOCKET_HOST:-portico_websocket}
         build:
             context: .
             dockerfile: Dockerfile.websocket
         working_dir: /var/www/html
         environment:
+            <<: *common-variables
             docker: "true"
-            REDIS_HOST: redis
-            REDIS_PORT: 6379
-            NEXT_ENV: ${NEXT_ENV:-development}
             WSS_LOG_ENABLED: "true"
-            WSS_DEBUG_LOG_ENABLED: "${WSS_DEBUG_LOG_ENABLED:-true}"
+            WSS_DEBUG_LOG_ENABLED: "${WSS_DEBUG_LOG_ENABLED:-false}"
             WSS_LOG_TO_DOCKER: "true"
-        ports:
-            - "8080:8080"  # WebSocket port
+#        ports:
+#            - "8080:8080"  # WebSocket port
         volumes:
             - .:/var/www/html
             - ./logs:/var/log/websocket
@@ -70,13 +71,13 @@ services:
             - internal
         depends_on:
             - redis
-    
+
     redis:
         image: redis:alpine
-        container_name: portico_redis
+        container_name: ${REDIS_HOST:-portico_redis}
         restart: unless-stopped
-        ports:
-            - "6379:6379"
+#        ports:
+#            - "6379:6379"
         volumes:
             - redis_data:/data
         networks:
@@ -103,4 +104,5 @@ services:
 
 networks:
     internal:
-        driver: bridge
+        name: portico_internal
+        external: true

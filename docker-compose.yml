@@ -90,8 +90,8 @@ services:
         command: redis-server --appendonly yes
 
     nextjs:
-        hostname: ${NEXTJS_HOST:-nextjs}
-        container_name: ${NEXTJS_HOST:-nextjs}
+        hostname: ${NEXTJS_HOST:-portico_nextjs}
+        container_name: ${NEXTJS_HOST:-portico_nextjs}
         build:
             dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs
             args:

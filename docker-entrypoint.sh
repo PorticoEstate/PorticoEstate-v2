@@ -20,7 +20,7 @@ if [ -f /var/www/html/src/WebSocket/ws ]; then
 fi
 
 # Set Apache environment variables
-NEXTJS_SERVER="${NEXTJS_HOST:-nextjs}:3000"
+NEXTJS_SERVER="${NEXTJS_HOST:-portico_nextjs}:3000"
 WEBSOCKET_SERVER="${WEBSOCKET_HOST:-portico_websocket}:8080"
 
 # Export variables for Apache

@@ -11,6 +11,7 @@ x-common-variables: &common-variables
     NEXTJS_HOST: ${NEXTJS_HOST:-portico_nextjs}
     SLIM_HOST: ${SLIM_HOST:-portico_api}
     REDIS_HOST: ${REDIS_HOST:-portico_redis}
+    WEBSOCKET_HOST: ${WEBSOCKET_HOST:-portico_websocket}
     REDIS_PORT: 6379
 
 volumes:
@@ -21,6 +22,7 @@ volumes:
 services:
     slim:
         container_name: ${SLIM_HOST:-portico_api}
+        hostname: ${SLIM_HOST:-portico_api}
      #   image: sigurdne/portico_estate_webserver:latest
         build:
             context: .
@@ -52,6 +54,7 @@ services:
 
     websocket:
         container_name: ${WEBSOCKET_HOST:-portico_websocket}
+        hostname: ${WEBSOCKET_HOST:-portico_websocket}
         build:
             context: .
             dockerfile: Dockerfile.websocket
@@ -75,6 +78,8 @@ services:
     redis:
         image: redis:alpine
         container_name: ${REDIS_HOST:-portico_redis}
+        hostname: ${REDIS_HOST:-portico_redis}
+
         restart: unless-stopped
 #        ports:
 #            - "6379:6379"
@@ -86,6 +91,7 @@ services:
 
     nextjs:
         hostname: ${NEXTJS_HOST:-nextjs}
+        container_name: ${NEXTJS_HOST:-nextjs}
         build:
             dockerfile: ./src/modules/bookingfrontend/client/Dockerfile.nextjs
             args:

@@ -21,7 +21,7 @@ fi
 
 # Set Apache environment variables
 NEXTJS_SERVER="${NEXTJS_HOST:-nextjs}:3000"
-WEBSOCKET_SERVER="${WEBSOCKET_HOST:-portico_websocket}:3000"
+WEBSOCKET_SERVER="${WEBSOCKET_HOST:-portico_websocket}:8080"
 
 # Export variables for Apache
 export NEXTJS_SERVER

@@ -19,6 +19,8 @@ volumes:
         driver: local
     redis_data:
         driver: local
+    vendor_data:
+        driver: local
 services:
     slim:
         container_name: ${SLIM_HOST:-portico_api}
@@ -41,6 +43,7 @@ services:
             - "8088:80"
         volumes:
             - .:/var/www/html
+            - vendor_data:/var/www/html/vendor
             - ./logs:/var/log/apache2
             - /var/local/:/var/local/
             # developement: store your files in '/var/local/phpgw/<domain>/tmp' and '/var/local/phpgw/<domain>/files'
@@ -50,7 +53,6 @@ services:
             - "host.docker.internal:host-gateway"
         depends_on:
             - redis
-            - websocket
 
     websocket:
         container_name: ${WEBSOCKET_HOST:-portico_websocket}
@@ -69,11 +71,13 @@ services:
 #            - "8080:8080"  # WebSocket port
         volumes:
             - .:/var/www/html
+            - vendor_data:/var/www/html/vendor
             - ./logs:/var/log/websocket
         networks:
             - internal
         depends_on:
             - redis
+            - slim
 
     redis:
         image: redis:alpine
@@ -102,7 +106,6 @@ services:
             <<: *common-variables
         networks:
             - internal
-
 
 networks:
     internal:

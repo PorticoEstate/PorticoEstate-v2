@@ -32,10 +32,14 @@ export WEBSOCKET_SERVER
 echo "SetEnv NEXTJS_SERVER ${NEXTJS_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 echo "SetEnv WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 
-# Make sure Ratchet is installed
-if [ ! -d /var/www/html/vendor/cboden/ratchet ]; then
-    echo "Installing Ratchet WebSocket library..."
-    cd /var/www/html && composer require cboden/ratchet react/socket
+# Check if composer dependencies need to be updated (development scenario with mounted volumes)
+if [ -f /var/www/html/composer.json ]; then
+    if [ ! -d /var/www/html/vendor ] || [ ! -f /var/www/html/vendor/autoload.php ] || [ /var/www/html/composer.json -nt /var/www/html/vendor/composer/installed.json ]; then
+        echo "Updating Composer dependencies..."
+        cd /var/www/html && composer install --no-dev --optimize-autoloader
+    else
+        echo "Composer dependencies are up to date"
+    fi
 fi
 
 # Create log directory for Supervisor

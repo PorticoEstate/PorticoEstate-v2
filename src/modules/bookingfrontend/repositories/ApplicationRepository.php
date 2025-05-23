@@ -152,39 +152,10 @@ class ApplicationRepository
                 throw new \Exception("Application not found or not a partial application");
             }
 
-            // If application has a session ID, cancel any associated blocks
-            if (!empty($application['session_id']))
-            {
-                // Get dates and resources
-                $dates = $this->fetchDates($id);
-                $resourceIds = [];
-                $resources = $this->fetchResources($id);
-
-                foreach ($resources as $resource)
-                {
-                    $resourceIds[] = $resource['id'];
-                }
-
-                if (!empty($dates) && !empty($resourceIds))
-                {
-                    // Cancel blocks
-                    $placeholders = implode(',', array_fill(0, count($resourceIds), '?'));
-                    $params = [$application['session_id']];
-                    $params = array_merge($params, $resourceIds);
-
-                    foreach ($dates as $date)
-                    {
-                        $sql = "UPDATE bb_block SET active = 0
-                            WHERE session_id = ?
-                            AND resource_id IN ($placeholders)
-                            AND from_ = ?
-                            AND to_ = ?";
-
-                        $stmt = $this->db->prepare($sql);
-                        $stmt->execute(array_merge($params, [$date['from_'], $date['to_']]));
-                    }
-                }
-            }
+            // NOTE: We don't automatically clear blocks here anymore.
+            // Blocks should only be cleared when we're sure the booking was successfully recorded
+            // or properly rejected in the database. This prevents race conditions where blocks
+            // could be prematurely cleared, allowing conflicting bookings.
 
             // Delete associated data
             $this->deleteAssociatedData($id);

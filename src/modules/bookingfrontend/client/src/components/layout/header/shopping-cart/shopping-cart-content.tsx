@@ -78,6 +78,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                         <Link
                             href={'/checkout'}
                             className={'link-text link-text-unset normal'}
+                            onClick={() => props.setOpen(false)}
                         >
                             {t('bookingfrontend.submit_application')} <ArrowRightIcon fontSize="1.5rem" />
                         </Link>

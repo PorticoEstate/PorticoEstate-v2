@@ -437,6 +437,70 @@ class Cache
 	}
 
 	/**
+	 * Atomically acquire a lock using Redis SETNX
+	 *
+	 * @param string $module the module name
+	 * @param string $id the lock identifier
+	 * @param string $value the lock value (usually session ID)
+	 * @param int $ttl time to live in seconds
+	 * @return bool true if lock was acquired, false if already locked
+	 */
+	public static function acquire_atomic_lock($module, $id, $value, $ttl = 30)
+	{
+		$redis_enabled = self::_redis_enabled();
+		
+		if ($redis_enabled)
+		{
+			$key = self::_gen_key($module, $id);
+			return self::$phpgwapi_redis->acquire_lock($key, $value, $ttl);
+		}
+		
+		// Fallback to regular cache if Redis not available
+		// This is not atomic but provides basic protection
+		$existing = self::system_get($module, $id);
+		if ($existing && $existing !== $value) {
+			return false;
+		}
+		return self::system_set($module, $id, $value);
+	}
+
+	/**
+	 * Release an atomic lock
+	 *
+	 * @param string $module the module name
+	 * @param string $id the lock identifier  
+	 * @param string $value the expected lock value
+	 * @return bool true if lock was released
+	 */
+	public static function release_atomic_lock($module, $id, $value)
+	{
+		if (self::_redis_enabled())
+		{
+			$key = self::_gen_key($module, $id);
+			return self::$phpgwapi_redis->release_lock($key, $value);
+		}
+		
+		// Fallback to regular cache clear
+		return self::system_clear($module, $id);
+	}
+
+	/**
+	 * Get keys matching a pattern (Redis only)
+	 *
+	 * @param string $pattern the pattern to match
+	 * @return array array of matching keys
+	 */
+	public static function get_keys_by_pattern($pattern)
+	{
+		if (self::_redis_enabled())
+		{
+			return self::$phpgwapi_redis->get_keys_by_pattern($pattern);
+		}
+		
+		return array();
+	}
+
+	/**
 	 * Clear the data from the user cache
 	 *
 	 * @param string $module the module name the data belongs to

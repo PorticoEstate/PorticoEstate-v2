@@ -100,6 +100,7 @@ Apply for time	booking	nn	Søk om tid
 approve	booking	nn	Godkjenn
 apr	booking	nn	april
 archived	booking	nn	Arkivert
+are you sure you want to approve?	booking	nn	Er du sikker på at søknad skal godkjennast?
 Are you sure you want to delete?	booking	nn	Er du sikker på at søknad skal avvisast?
 Article	booking	nn	Artikkel
 article code	booking	nn	Artikkelkode
@@ -540,6 +541,7 @@ Message	booking	nn	Melding
 Message about new event	booking	nn	Melding om nytt arrangement
 Message from Bergen county - AktivBy	booking	nn	Melding frå AktivKommune
 Message sent about the changes in the reservations	booking	nn	Melding sendt om endringar på reserverasjoner
+Message to send with approval	booking	nn	Melding som skal sendast med godkjenning
 Messages	booking	nn	Meldingar
 Metadata	common	nn	Metadata
 meter	booking	nn	Meter
@@ -705,6 +707,7 @@ Project No.	booking	nn	Prosjektnr.
 Public event	booking	nn	Offentleg arrangement
 published	booking	nn	Publisert
 quantity	booking	nn	Mengde
+reason for rejection	booking	nn	Årsak til avslag
 Re-assign to me	booking	nn	Bli saksbehandler
 receipt	booking	nn	Kvittering
 Recipients	booking	nn	Mottakarar

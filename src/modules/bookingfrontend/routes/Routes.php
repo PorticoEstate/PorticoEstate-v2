@@ -2,6 +2,7 @@
 
 use App\modules\bookingfrontend\controllers\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
+use App\modules\bookingfrontend\controllers\CheckoutController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
@@ -82,18 +83,25 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->post('/simple', ApplicationController::class . ':createSimpleApplication');
 		$group->get('/partials', ApplicationController::class . ':getPartials');
 		$group->post('/partials', ApplicationController::class . ':createPartial');
-		$group->post('/partials/checkout', ApplicationController::class . ':checkoutPartials');
+		$group->post('/partials/checkout', CheckoutController::class . ':checkout');
+		$group->post('/partials/vipps-payment', CheckoutController::class . ':initiateVippsPayment');
 		$group->put('/partials/{id}', ApplicationController::class . ':updatePartial');
 		$group->patch('/partials/{id}', ApplicationController::class . ':patchApplication');
 		$group->post('/{id}/documents', ApplicationController::class . ':uploadDocument');
 		$group->delete('/document/{id}', ApplicationController::class . ':deleteDocument');
 		$group->get('/document/{id}/download', ApplicationController::class . ':downloadDocument');
-		$group->post('/validate-checkout', ApplicationController::class . ':validateCheckout');
+		$group->post('/validate-checkout', CheckoutController::class . ':validateCheckout');
 		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
 		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
 		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
 
 	});
+
+	$group->group('/checkout', function (RouteCollectorProxy $group)
+	{
+		$group->get('/external-payment-eligibility', CheckoutController::class . ':checkExternalPaymentEligibility');
+	});
+
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');
 })->add(new SessionsMiddleware($app->getContainer()));
 

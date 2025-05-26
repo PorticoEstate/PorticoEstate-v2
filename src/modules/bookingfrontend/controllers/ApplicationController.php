@@ -293,14 +293,42 @@ class ApplicationController extends DocumentController
             }
 
 
+            // Fetch detailed application information for notifications and block clearing
+            $dates = $this->applicationService->applicationRepository->fetchDates($id);
+            $resources = $this->applicationService->applicationRepository->fetchResources($id);
+            
             // Store building and resource data for notifications before deletion
             $buildingId = $application['building_id'] ?? null;
-            $resourceIds = $application['resources'] ?? [];
-            $resourceId = !empty($resourceIds) && is_array($resourceIds) ? $resourceIds[0] : null;
-            $from = $application['from_'] ?? null;
-            $to = $application['to_'] ?? null;
-
+            $resourceIds = array_column($resources, 'id');
+            $resourceId = !empty($resourceIds) ? $resourceIds[0] : null;
+            $from = !empty($dates) ? $dates[0]['from_'] : null;
+            $to = !empty($dates) ? $dates[0]['to_'] : null;
+            
             $deleted = $this->applicationService->deletePartial($id);
+            
+            // Clear blocks for this application
+            if ($deleted && $application && !empty($application['session_id'])) {
+                try {
+                    $sessionId = $application['session_id'];
+                    
+                    // Clear blocks for each resource and date
+                    foreach ($resources as $resource) {
+                        foreach ($dates as $date) {
+                            $this->applicationService->clearBlocksAndLocks(
+                                (int)$resource['id'],
+                                $date['from_'],
+                                $date['to_'],
+                                $sessionId
+                            );
+                        }
+                    }
+                    
+                    error_log("Blocks cleared for deleted application {$id}");
+                } catch (\Exception $e) {
+                    // Log but continue, as the application is already deleted
+                    error_log("Error clearing blocks for deleted application {$id}: " . $e->getMessage());
+                }
+            }
 
             // Send WebSocket notifications about the freed timeslot
             if ($deleted) {
@@ -706,240 +734,8 @@ class ApplicationController extends DocumentController
         }
     }
 
-    /**
-     * @OA\Post(
-     *     path="/bookingfrontend/applications/partials/checkout",
-     *     summary="Update and finalize all partial applications with contact and organization info",
-     *     tags={"Applications"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
-     *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
-     *             @OA\Property(property="organizationNumber", type="string"),
-     *             @OA\Property(property="organizationName", type="string"),
-     *             @OA\Property(property="contactName", type="string"),
-     *             @OA\Property(property="contactEmail", type="string"),
-     *             @OA\Property(property="contactPhone", type="string"),
-     *             @OA\Property(property="street", type="string"),
-     *             @OA\Property(property="zipCode", type="string"),
-     *             @OA\Property(property="city", type="string"),
-     *             @OA\Property(property="eventTitle", type="string"),
-     *             @OA\Property(property="organizerName", type="string")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Applications updated successfully"
-     *     )
-     * )
-     */
-    public function checkoutPartials(Request $request, Response $response): Response
-    {
-        try {
-            $session = Sessions::getInstance();
-            $session_id = $session->get_session_id();
-
-            if (empty($session_id)) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'No active session'],
-                    400
-                );
-            }
-
-            $data = json_decode($request->getBody()->getContents(), true);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Invalid JSON data'],
-                    400
-                );
-            }
-
-            try {
-                // Update all partial applications
-                $result = $this->applicationService->checkoutPartials($session_id, $data);
-
-                // Add timestamp and session info for debugging
-                $result['debug_timestamp'] = date('Y-m-d H:i:s');
-                $result['debug_session_id'] = $session_id;
-
-                // Determine message based on direct booking and count
-                // Check if at least one application is a direct booking
-                $has_direct_booking = false;
-                foreach ($result['updated'] as $app) {
-                    if ($app['status'] === 'ACCEPTED') {
-                        $has_direct_booking = true;
-                        break;
-                    }
-                }
-
-                // Define message sets based on direct booking status
-                if ($has_direct_booking) {
-                    $messages = array(
-                        'one' => array(
-                            'registered' => "Your application has now been processed and a confirmation email has been sent to you.",
-                            'review' => ""
-                        ),
-                        'multiple' => array(
-                            'registered' => "Your applications have now been processed and confirmation emails have been sent to you.",
-                            'review' => ""
-                        )
-                    );
-                } else {
-                    $messages = array(
-                        'one' => array(
-                            'registered' => "Your application has now been registered and a confirmation email has been sent to you.",
-                            'review' => "A Case officer will review your application as soon as possible."
-                        ),
-                        'multiple' => array(
-                            'registered' => "Your applications have now been registered and confirmation emails have been sent to you.",
-                            'review' => "A Case officer will review your applications as soon as possible."
-                        )
-                    );
-                }
-
-                // Choose message set based on count
-                $msgset = count($result['updated']) > 1 ? 'multiple' : 'one';
-
-                // Build message array
-                $message_arr = array();
-                $message_arr[] = lang($messages[$msgset]['registered']);
-                if ($messages[$msgset]['review']) {
-                    $message_arr[] = lang($messages[$msgset]['review']);
-                }
-                $message_arr[] = lang("Please check your Spam Filter if you are missing mail.");
-
-                // Set message in cache
-                Cache::message_set(implode("<br/>", $message_arr), 'message', 'booking.booking confirmed');
-                WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
-
-                $response->getBody()->write(json_encode([
-                    'message' => 'Applications processed successfully',
-                    'applications' => $result['updated'],
-                    'skipped' => $result['skipped'],
-                    'debug_info' => [
-                        'collisions' => $result['debug_collisions'],
-                        'timestamp' => $result['debug_timestamp'],
-                        'session_id' => $result['debug_session_id']
-                    ]
-                ]));
-                return $response->withHeader('Content-Type', 'application/json');
-
-            } catch (Exception $e) {
-                // Check if the error message contains validation errors
-                if (strpos($e->getMessage(), ',') !== false) {
-                    // This is likely a validation error with multiple messages
-                    return ResponseHelper::sendErrorResponse(
-                        ['errors' => explode(', ', $e->getMessage())],
-                        400
-                    );
-                }
-                throw $e;
-            }
-
-        } catch (Exception $e) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => $e->getMessage()],
-                500
-            );
-        }
-    }
 
 
-    /**
-     * @OA\Post(
-     *     path="/bookingfrontend/applications/validate-checkout",
-     *     summary="Validate if checkout of partial applications would succeed",
-     *     tags={"Applications"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
-     *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
-     *             @OA\Property(property="organizationNumber", type="string"),
-     *             @OA\Property(property="organizationName", type="string"),
-     *             @OA\Property(property="contactName", type="string"),
-     *             @OA\Property(property="contactEmail", type="string"),
-     *             @OA\Property(property="contactPhone", type="string"),
-     *             @OA\Property(property="street", type="string"),
-     *             @OA\Property(property="zipCode", type="string"),
-     *             @OA\Property(property="city", type="string"),
-     *             @OA\Property(property="eventTitle", type="string"),
-     *             @OA\Property(property="organizerName", type="string")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Validation results",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="valid", type="boolean"),
-     *             @OA\Property(
-     *                 property="applications",
-     *                 type="array",
-     *                 @OA\Items(
-     *                     type="object",
-     *                     @OA\Property(property="id", type="integer"),
-     *                     @OA\Property(property="valid", type="boolean"),
-     *                     @OA\Property(property="would_be_direct_booking", type="boolean"),
-     *                     @OA\Property(
-     *                         property="issues",
-     *                         type="array",
-     *                         @OA\Items(
-     *                             type="object",
-     *                             @OA\Property(property="type", type="string"),
-     *                             @OA\Property(property="message", type="string")
-     *                         )
-     *                     )
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Invalid data or no active session"
-     *     )
-     * )
-     */
-    public function validateCheckout(Request $request, Response $response): Response
-    {
-        try {
-            $session = Sessions::getInstance();
-            $session_id = $session->get_session_id();
-
-            if (empty($session_id)) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'No active session'],
-                    400
-                );
-            }
-
-            $data = json_decode($request->getBody()->getContents(), true);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Invalid JSON data'],
-                    400
-                );
-            }
-
-            // Validate checkout
-            $validationResults = $this->applicationService->validateCheckout($session_id, $data);
-
-            $validationResults['debug_timestamp'] = date('Y-m-d H:i:s');
-            $validationResults['debug_session_id'] = $session_id;
-
-            $response->getBody()->write(json_encode($validationResults));
-            return $response->withHeader('Content-Type', 'application/json');
-
-        } catch (Exception $e) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => $e->getMessage()],
-                500
-            );
-        }
-    }
 
 
     /**
@@ -1336,6 +1132,7 @@ class ApplicationController extends DocumentController
             $from = $fromDate->format('Y-m-d H:i:s');
             $to = $toDate->format('Y-m-d H:i:s');
 
+            
             // Check if resource supports simple booking and is available
             $result = $this->applicationService->createSimpleBooking(
                 (int)$data['resource_id'],
@@ -1344,6 +1141,7 @@ class ApplicationController extends DocumentController
                 $to,
                 $session_id
             );
+            
 
             $responseData = [
                 'id' => $result['id'],

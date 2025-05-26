@@ -543,6 +543,7 @@ resource	bookingfrontend	no	Ressurs
 resource name	bookingfrontend	no	Navn på ressurs
 resource schedule	bookingfrontend	no	Ressurskalender
 resource type	bookingfrontend	no	Type
+resource_already_being_booked	bookingfrontend	no	Ressursen er allerede i ferd med å bli booket av en annen bruker
 resource_already_booked	bookingfrontend	no	Dette tidspunktet er ikke tilgjengelig. Ressursen er allerede reservert for denne tiden.
 resource_overlap_detected	bookingfrontend	no	Ressurs-overlapping oppdaget. Vennligst velg annen tid eller ressurser.
 resources	bookingfrontend	no	Ressurser

@@ -5,7 +5,7 @@ import styles from './layout.module.scss'
 import Header from "@/components/layout/header/header";
 import Footer from "@/components/layout/footer/footer";
 import Providers from "@/app/providers";
-import ServerMessages from "@/components/server-messages/server-messages";
+import ServerMessageToastHandler from "@/components/server-messages/server-message-toast-handler";
 
 
 interface PublicLayoutProps extends PropsWithChildren {
@@ -19,8 +19,8 @@ const PublicLayout: FC<PublicLayoutProps> = (props) => {
     return (
         <Providers lang={props.params.lang}>
             <Header/>
-			{/* Information alert */}
-			<ServerMessages />
+            {/* Server message handler (converts messages to toasts) */}
+            <ServerMessageToastHandler />
             <div className={styles.mainContent}>
                 {/*<InternalNav/>*/}
                 {props.children}

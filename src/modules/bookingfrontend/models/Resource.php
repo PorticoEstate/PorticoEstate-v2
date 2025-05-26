@@ -237,6 +237,7 @@ class Resource
     /**
      * @ORM\Column(type="smallint", nullable=true)
      * @Expose
+     * @Short
      * @OA\Property(description="Whether prepayment is activated", type="integer", nullable=true)
      */
     public $activate_prepayment;

@@ -9,11 +9,18 @@ RUN apt-get update && \
     cron \
     # Install PostgreSQL dependencies
     libpq-dev \
+    # Install dependencies for other PHP extensions
+    libxml2-dev \
+    libxslt1-dev \
+    libgd-dev \
+    libicu-dev \
     # Install any other database drivers you might need
     && pecl install redis \
     && docker-php-ext-enable redis \
     # Install PostgreSQL driver
     && docker-php-ext-install pdo_pgsql \
+    # Install missing extensions
+    && docker-php-ext-install soap xsl gd opcache intl ftp \
     # Other extensions
     && docker-php-ext-install zip sockets
 

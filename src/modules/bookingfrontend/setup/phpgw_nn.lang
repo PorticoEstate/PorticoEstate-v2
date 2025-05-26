@@ -543,6 +543,7 @@ resource	bookingfrontend	nn	Ressurs
 resource name	bookingfrontend	nn	Namn på ressurs
 resource schedule	bookingfrontend	nn	Ressurskalendar
 resource type	bookingfrontend	nn	Type
+resource_already_being_booked	bookingfrontend	nn	Ressursen er allereie i ferd med å bli booka av ein annan brukar
 resource_already_booked	bookingfrontend	nn	Dette tidspunktet er ikkje tilgjengeleg. Ressursen er allereie reservert for denne tida.
 resource_overlap_detected	bookingfrontend	nn	Ressurs-overlapping oppdaga. Ver venleg og vel anna tid eller ressursar.
 resources	bookingfrontend	nn	Ressursar

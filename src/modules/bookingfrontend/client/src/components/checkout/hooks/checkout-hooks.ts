@@ -1,6 +1,7 @@
-import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import {IApplication} from "@/service/types/api/application.types";
+import {initiateVippsPayment, VippsPaymentData, VippsPaymentResponse, fetchExternalPaymentEligibility} from "@/service/api/api-utils";
 
 export interface CheckoutFormData {
     // Event Details
@@ -98,5 +99,37 @@ export function useCheckoutApplications() {
             // Always refetch to ensure data is correct
             queryClient.invalidateQueries({queryKey: ['partialApplications']});
         },
+    });
+}
+
+export function useVippsPayment() {
+    return useMutation({
+        mutationFn: async (paymentData: VippsPaymentData) => {
+            return await initiateVippsPayment(paymentData);
+        },
+        onSuccess: (data: VippsPaymentResponse) => {
+            if (data.success && data.redirect_url) {
+                // Redirect to Vipps payment page
+                window.location.href = data.redirect_url;
+            }
+        },
+        onError: (error: Error) => {
+            console.error('Vipps payment error:', error);
+            // Error handling will be done by the component
+        }
+    });
+}
+
+export function useExternalPaymentEligibility() {
+    const queryClient = useQueryClient();
+    const partialApplicationsData = queryClient.getQueryData<{ list: IApplication[], total_sum: number }>(['partialApplications']);
+    
+    return useQuery({
+        queryKey: ['externalPaymentEligibility', partialApplicationsData?.list?.length, partialApplicationsData?.total_sum],
+        queryFn: fetchExternalPaymentEligibility,
+        retry: false,
+        refetchOnWindowFocus: false,
+        // Only fetch when we have partial applications
+        enabled: !!partialApplicationsData?.list?.length
     });
 }

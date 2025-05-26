@@ -1,4 +1,5 @@
 import React, {Fragment, useMemo, useState, FC, useCallback, useEffect, useRef} from 'react';
+import { IResource } from '@/service/types/resource.types';
 import {
     Button,
     Chip, Details,

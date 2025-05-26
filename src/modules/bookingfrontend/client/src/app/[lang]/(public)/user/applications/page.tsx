@@ -11,6 +11,7 @@ import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
 import {phpGWLink} from "@/service/util";
 import {Link} from "@digdir/designsystemet-react";
+import {IResource} from "@/service/types/resource.types";
 
 interface ApplicationsProps {
 }

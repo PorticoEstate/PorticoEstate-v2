@@ -366,3 +366,89 @@ export async function fetchUpcomingEvents(params?: UpcomingEventsParams): Promis
 		throw error;
 	}
 }
+
+export interface VippsPaymentData {
+	eventTitle: string;
+	organizerName: string;
+	customerType: 'ssn' | 'organization_number';
+	organizationNumber?: string;
+	organizationName?: string;
+	contactName: string;
+	contactEmail: string;
+	contactPhone: string;
+	street: string;
+	zipCode: string;
+	city: string;
+	documentsRead: boolean;
+}
+
+export interface VippsPaymentResponse {
+	success: boolean;
+	redirect_url?: string;
+	error?: string;
+}
+
+export async function initiateVippsPayment(paymentData: VippsPaymentData): Promise<VippsPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'applications', 'partials', 'vipps-payment']);
+	console.log('=== VIPPS API FUNCTION ===');
+	console.log('URL:', url);
+	console.log('Payment data:', paymentData);
+	
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify(paymentData),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	console.log('Response status:', response.status);
+	console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+	
+	const responseText = await response.text();
+	console.log('Raw response:', responseText);
+	
+	let result;
+	try {
+		result = JSON.parse(responseText);
+	} catch (e) {
+		console.error('Failed to parse response as JSON:', e);
+		throw new Error('Invalid JSON response from server');
+	}
+	
+	console.log('Parsed result:', result);
+	
+	if (!response.ok) {
+		throw new Error(result.error || 'Vipps payment initiation failed');
+	}
+
+	return result;
+}
+
+export interface ExternalPaymentEligibilityResponse {
+	eligible: boolean;
+	reason: string;
+	total_amount: number;
+	applications_count: number;
+	payment_methods: Array<{
+		method: string;
+		logo: string;
+	}>;
+}
+
+export async function fetchExternalPaymentEligibility(): Promise<ExternalPaymentEligibilityResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'external-payment-eligibility']);
+	
+	const response = await fetch(url, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to check external payment eligibility');
+	}
+
+	return response.json();
+}

@@ -543,6 +543,7 @@ resource	bookingfrontend	en	Resource
 resource name	bookingfrontend	en	Resource name
 resource schedule	bookingfrontend	en	Resource schedule
 resource type	bookingfrontend	en	Resource type
+resource_already_being_booked	bookingfrontend	en	Resource is already being booked by another user
 resource_already_booked	bookingfrontend	en	This timeslot is not available. The resource is already booked for this time.
 resource_overlap_detected	bookingfrontend	en	Resource overlap detected. Please select different time or resources.
 resources	bookingfrontend	en	Resources

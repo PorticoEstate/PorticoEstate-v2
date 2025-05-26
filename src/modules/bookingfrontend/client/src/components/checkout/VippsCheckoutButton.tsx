@@ -59,16 +59,16 @@ const VippsCheckoutButton: FC<VippsCheckoutButtonProps> = ({
 		<vipps-checkout-button
 			ref={buttonRef}
 			language={language}
-			branded={branded.toString()}
+			branded={branded ? 'true' : 'false'}
 			type={type}
 			disabled={disabled}
 			brand={brand}
 			verb={verb}
 			vmp-continue-as-first-name={vmpContinueAsFirstName}
 			variant={variant}
-			loading={loading.toString()}
-			rounded={rounded.toString()}
-			stretched={stretched.toString()}
+			loading={loading ? 'true' : 'false'}
+			rounded={rounded ? 'true' : 'false'}
+			stretched={stretched ? 'true' : 'false'}
 		/>
 	);
 };

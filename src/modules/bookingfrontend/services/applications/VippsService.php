@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\bookingfrontend\services;
+namespace App\modules\bookingfrontend\services\applications;
 
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\security\Sessions;

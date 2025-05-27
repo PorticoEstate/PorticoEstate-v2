@@ -10,6 +10,7 @@ use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
+use App\modules\bookingfrontend\services\DocumentService;
 
 class ApplicationRepository
 {
@@ -188,6 +189,9 @@ class ApplicationRepository
      */
     private function deleteAssociatedData(int $application_id): void
     {
+        // First, delete documents (including physical files)
+        $this->deleteApplicationDocuments($application_id);
+
         // Order matters here due to foreign key constraints
         $tables = [
             'bb_purchase_order_line',
@@ -213,6 +217,34 @@ class ApplicationRepository
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':application_id' => $application_id]);
+        }
+    }
+
+    /**
+     * Delete all documents associated with an application
+     *
+     * @param int $application_id The application ID
+     */
+    private function deleteApplicationDocuments(int $application_id): void
+    {
+        // Get all documents for this application
+        $sql = "SELECT id FROM bb_document_application WHERE owner_id = :application_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':application_id' => $application_id]);
+        $documentIds = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        if (!empty($documentIds)) {
+            // Use DocumentService to properly delete each document (files and DB records)
+            $documentService = new DocumentService(Document::OWNER_APPLICATION);
+            
+            foreach ($documentIds as $documentId) {
+                try {
+                    $documentService->deleteDocument($documentId);
+                } catch (\Exception $e) {
+                    // Log error but continue with other documents
+                    error_log("Error deleting document {$documentId} for application {$application_id}: " . $e->getMessage());
+                }
+            }
         }
     }
 

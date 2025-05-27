@@ -1,7 +1,7 @@
 import {DateTime} from "luxon";
 import {phpGWLink} from "@/service/util";
 import {IBookingUser, IServerSettings} from "@/service/types/api.types";
-import {IApplication} from "@/service/types/api/application.types";
+import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
@@ -221,6 +221,132 @@ export async function fetchApplication(id: number): Promise<IApplication> {
         throw new Error(`Failed to fetch application with ID ${id}`);
     }
 
+    return response.json();
+}
+
+/**
+ * Fetch comments for an application
+ * @param id The application ID
+ * @param types Optional comma-separated list of comment types to filter by
+ * @param secret Optional secret for external access
+ * @returns Comments and statistics
+ */
+export async function fetchApplicationComments(
+    id: number, 
+    types?: string, 
+    secret?: string
+): Promise<GetCommentsResponse> {
+    const params: Record<string, any> = {};
+    
+    if (types) {
+        params.types = types;
+    }
+    if (secret) {
+        params.secret = secret;
+    }
+    
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+    
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'comments'], params);
+    
+    const response = await fetch(url, FetchAuthOptions());
+    
+    if (!response.ok) {
+        throw new Error(`Failed to fetch comments for application ${id}`);
+    }
+    
+    return response.json();
+}
+
+/**
+ * Add a comment to an application
+ * @param id The application ID
+ * @param commentData The comment data to add
+ * @param secret Optional secret for external access
+ * @returns The created comment
+ */
+export async function addApplicationComment(
+    id: number, 
+    commentData: AddCommentRequest, 
+    secret?: string
+): Promise<AddCommentResponse> {
+    const params: Record<string, any> = {};
+    
+    if (secret) {
+        params.secret = secret;
+    }
+    
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+    
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'comments'], params);
+    
+    const response = await fetch(url, FetchAuthOptions({
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(commentData),
+    }));
+    
+    if (!response.ok) {
+        throw new Error(`Failed to add comment to application ${id}`);
+    }
+    
+    return response.json();
+}
+
+/**
+ * Update the status of an application
+ * @param id The application ID
+ * @param statusData The status update data
+ * @param secret Optional secret for external access
+ * @returns The status update response
+ */
+export async function updateApplicationStatus(
+    id: number, 
+    statusData: UpdateStatusRequest, 
+    secret?: string
+): Promise<UpdateStatusResponse> {
+    const params: Record<string, any> = {};
+    
+    if (secret) {
+        params.secret = secret;
+    }
+    
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+    
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'status'], params);
+    
+    const response = await fetch(url, FetchAuthOptions({
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(statusData),
+    }));
+    
+    if (!response.ok) {
+        throw new Error(`Failed to update status for application ${id}`);
+    }
+    
     return response.json();
 }
 

@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\repositories;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Document;
 use PDO;
+use Exception;
 
 class DocumentRepository
 {

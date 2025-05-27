@@ -1,13 +1,13 @@
 <?php
 
-namespace App\modules\bookingfrontend\controllers;
+namespace App\modules\bookingfrontend\controllers\applications;
 
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
-use App\modules\bookingfrontend\services\ApplicationService;
-use App\modules\bookingfrontend\services\CheckoutService;
-use App\modules\bookingfrontend\services\VippsService;
+use App\modules\bookingfrontend\services\applications\ApplicationService;
+use App\modules\bookingfrontend\services\applications\CheckoutService;
+use App\modules\bookingfrontend\services\applications\VippsService;
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;

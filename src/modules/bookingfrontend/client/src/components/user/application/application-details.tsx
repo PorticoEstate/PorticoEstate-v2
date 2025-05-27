@@ -1,8 +1,9 @@
 'use client'
 import React, {FC} from 'react';
 import {IApplication} from "@/service/types/api/application.types";
-import {useApplication} from "@/service/hooks/api-hooks";
-import {Card, Heading, Paragraph, Spinner} from "@digdir/designsystemet-react";
+import {useApplication, useResourceRegulationDocuments} from "@/service/hooks/api-hooks";
+import {Card, Heading, Paragraph, Spinner, Link as DigdirLink} from "@digdir/designsystemet-react";
+import ApplicationComments from "./application-comments";
 import PageHeader from "@/components/page-header/page-header";
 import styles from "@/components/layout/header/internal-nav/internal-nav.module.scss";
 import Link from "next/link";
@@ -12,6 +13,7 @@ import {DateTime} from "luxon";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import GSAccordion from "@/components/gs-accordion/g-s-accordion";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {getDocumentLink} from "@/service/api/building";
 
 interface ApplicationDetailsProps {
 	initialApplication?: IApplication;
@@ -22,6 +24,9 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 	const { data: application, isLoading, error } = useApplication(props.applicationId, {
 		initialData: props.initialApplication
 	});
+	const { data: regulationDocuments } = useResourceRegulationDocuments(
+		application?.resources || []
+	);
 	const t = useTrans();
 
 
@@ -121,14 +126,10 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 			)}
 
 			<section className="my-2">
-				<GSAccordion data-color="neutral">
-					<GSAccordion.Heading>
-						<h3>{t('bookingfrontend.history')}</h3>
-					</GSAccordion.Heading>
-					<GSAccordion.Content>
-						<Paragraph>{t('bookingfrontend.no history available')}</Paragraph>
-					</GSAccordion.Content>
-				</GSAccordion>
+				<ApplicationComments 
+					applicationId={props.applicationId}
+					secret={application?.secret || undefined}
+				/>
 
 				<GSAccordion data-color="neutral">
 					<GSAccordion.Heading>
@@ -184,11 +185,31 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						)}
 					</GSAccordion.Content>
 				</GSAccordion>
+
+				{regulationDocuments && regulationDocuments.length > 0 && (
+					<GSAccordion data-color="neutral">
+						<GSAccordion.Heading>
+							<h3>{t('bookingfrontend.terms and conditions')}</h3>
+						</GSAccordion.Heading>
+						<GSAccordion.Content>
+							<div>
+								{regulationDocuments.map((doc) => (
+									<div key={doc.id} style={{ marginBottom: '0.5rem' }}>
+										<DigdirLink
+											href={getDocumentLink(doc, doc.owner_type || 'resource')}
+											target="_blank"
+										>
+											{doc.name}
+										</DigdirLink>
+									</div>
+								))}
+							</div>
+						</GSAccordion.Content>
+					</GSAccordion>
+				)}
 			</section>
 		</main>
 	);
 }
 
 export default ApplicationDetails
-
-

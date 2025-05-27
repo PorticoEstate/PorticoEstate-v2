@@ -1,8 +1,9 @@
 <?php
 
-use App\modules\bookingfrontend\controllers\ApplicationController;
+use App\modules\bookingfrontend\controllers\applications\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
-use App\modules\bookingfrontend\controllers\CheckoutController;
+use App\modules\bookingfrontend\controllers\applications\CheckoutController;
+use App\modules\bookingfrontend\controllers\applications\CommentsController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
@@ -94,6 +95,12 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
 		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
 		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
+		
+		// Comments endpoints
+		$group->get('/{id}/comments', CommentsController::class . ':getApplicationComments');
+		$group->post('/{id}/comments', CommentsController::class . ':addApplicationComment');
+		$group->get('/{id}/comments/stats', CommentsController::class . ':getApplicationCommentStats');
+		$group->put('/{id}/status', CommentsController::class . ':updateApplicationStatus');
 
 	});
 

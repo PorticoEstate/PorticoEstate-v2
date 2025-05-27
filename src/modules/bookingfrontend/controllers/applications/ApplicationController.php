@@ -1,16 +1,17 @@
 <?php
 
-namespace App\modules\bookingfrontend\controllers;
+namespace App\modules\bookingfrontend\controllers\applications;
 
+use App\modules\bookingfrontend\controllers\DocumentController;
+use App\modules\bookingfrontend\helpers\ApplicationHelper;
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
-use App\modules\bookingfrontend\services\ApplicationService;
+use App\modules\bookingfrontend\services\applications\ApplicationService;
 use App\modules\phpgwapi\security\Sessions;
-use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -31,6 +32,7 @@ class ApplicationController extends DocumentController
     private $applicationRepository;
     private $articleRepository;
     private $userSettings;
+    private ApplicationHelper $applicationHelper;
 
     public function __construct(ContainerInterface $container)
     {
@@ -40,6 +42,7 @@ class ApplicationController extends DocumentController
         $this->applicationRepository = new ApplicationRepository();
         $this->articleRepository = new ArticleRepository();
         $this->userSettings = Settings::getInstance()->get('user');
+        $this->applicationHelper = new ApplicationHelper();
     }
 
     /**
@@ -197,22 +200,8 @@ class ApplicationController extends DocumentController
                 );
             }
 
-            // Check for secret parameter in GET
-            $secret = $request->getQueryParams()['secret'] ?? null;
-            if ($secret && isset($application['secret']) && $application['secret'] === $secret) {
-                // Access allowed with correct secret - get full application data
-                $fullApplication = $this->applicationService->getFullApplication($id);
-                if (!$fullApplication) {
-                    return ResponseHelper::sendErrorResponse(
-                        ['error' => 'Application details not found'],
-                        404
-                    );
-                }
-				return ResponseHelper::sendJSONResponse($fullApplication->serialize());
-            }
-
-            // Check if user can access this application
-            if (!$this->canViewApplication($application)) {
+            // Check if user can access this application (supports secret parameter and user access)
+            if (!$this->applicationHelper->canViewApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to view this application'],
                     403
@@ -285,7 +274,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify permissions
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to delete this application'],
                     403
@@ -296,21 +285,21 @@ class ApplicationController extends DocumentController
             // Fetch detailed application information for notifications and block clearing
             $dates = $this->applicationService->applicationRepository->fetchDates($id);
             $resources = $this->applicationService->applicationRepository->fetchResources($id);
-            
+
             // Store building and resource data for notifications before deletion
             $buildingId = $application['building_id'] ?? null;
             $resourceIds = array_column($resources, 'id');
             $resourceId = !empty($resourceIds) ? $resourceIds[0] : null;
             $from = !empty($dates) ? $dates[0]['from_'] : null;
             $to = !empty($dates) ? $dates[0]['to_'] : null;
-            
+
             $deleted = $this->applicationService->deletePartial($id);
-            
+
             // Clear blocks for this application
             if ($deleted && $application && !empty($application['session_id'])) {
                 try {
                     $sessionId = $application['session_id'];
-                    
+
                     // Clear blocks for each resource and date
                     foreach ($resources as $resource) {
                         foreach ($dates as $date) {
@@ -322,7 +311,7 @@ class ApplicationController extends DocumentController
                             );
                         }
                     }
-                    
+
                     error_log("Blocks cleared for deleted application {$id}");
                 } catch (\Exception $e) {
                     // Log but continue, as the application is already deleted
@@ -582,7 +571,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify permissions
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to modify this application'],
                     403
@@ -701,7 +690,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify permissions
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to modify this application'],
                     403
@@ -832,7 +821,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify ownership
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to upload documents to this application'],
                     403
@@ -952,7 +941,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify ownership
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to delete this document'],
                     403
@@ -973,74 +962,6 @@ class ApplicationController extends DocumentController
         }
     }
 
-    /**
-     * Check if the current user/session can view the given application
-     * More permissive than canModifyApplication, allowing access to completed applications
-     *
-     * @param array $application The application data to check
-     * @return bool True if user can view the application, false otherwise
-     */
-    private function canViewApplication(array $application): bool
-    {
-
-		$session = Sessions::getInstance();
-		$session_id = $session->get_session_id();
-
-		// Check if application belongs to current session
-		if ($application['status'] === 'NEWPARTIAL1' && $application['session_id'] === $session_id) {
-			return true;
-		}
-
-		// Additional checks if user is logged in
-		if ($this->bouser->is_logged_in()) {
-			$ssn = $this->bouser->ssn;
-			$orgnr = $this->bouser->orgnr;
-
-			if ($application['customer_ssn'] === $ssn) {
-				return true;
-			}
-
-			if ($application['customer_identifier_type'] === 'organization_number'
-				&& $application['customer_organization_number'] === $orgnr) {
-				return true;
-			}
-
-			if ($application['customer_identifier_type'] === 'organization_number'
-				&& $this->bouser->organizations) {
-				foreach ($this->bouser->organizations as $org) {
-					if ($org['orgnr'] === $application['customer_organization_number']) {
-						return true;
-					}
-				}
-			}
-		}
-
-		return false;
-
-    }
-
-	/**
-	 * Check if the current user/session can modify the given application
-	 *
-	 * Verifies either:
-	 * - Application belongs to current session (for in-progress applications)
-	 * OR if user is logged in:
-	 * - Is the direct owner (via SSN)
-	 * - Belongs to the owning organization
-	 * - Is a delegate for the owning organization
-	 *
-	 * @param array $application The application data to check
-	 * @return bool True if user can modify the application, false otherwise
-	 */
-	private function canModifyApplication(array $application): bool
-	{
-		if (!$this->canViewApplication($application)) {
-			return false;
-		}
-
-
-		return true;
-	}
 
 
     /**
@@ -1132,7 +1053,7 @@ class ApplicationController extends DocumentController
             $from = $fromDate->format('Y-m-d H:i:s');
             $to = $toDate->format('Y-m-d H:i:s');
 
-            
+
             // Check if resource supports simple booking and is available
             $result = $this->applicationService->createSimpleBooking(
                 (int)$data['resource_id'],
@@ -1141,7 +1062,7 @@ class ApplicationController extends DocumentController
                 $to,
                 $session_id
             );
-            
+
 
             $responseData = [
                 'id' => $result['id'],

@@ -114,6 +114,12 @@ export interface IWSSessionUpdateConfirmMessage extends IWebSocketMessageBase {
   message: string;
   action: 'updated' | 'unchanged';
   sessionId: string;
+  environment?: {
+    NEXTJS_HOST?: string | null;
+    SLIM_HOST?: string | null;
+    REDIS_HOST?: string | null;
+    websocket_host?: string | null;
+  };
 }
 
 // Interface for session ID required message
@@ -127,6 +133,12 @@ export interface IWSConnectionSuccessMessage extends IWebSocketMessageBase {
   type: 'connection_success';
   message: string;
   roomId: string;
+  environment?: {
+    NEXTJS_HOST?: string | null;
+    SLIM_HOST?: string | null;
+    REDIS_HOST?: string | null;
+    websocket_host?: string | null;
+  };
 }
 
 // Interface for partial applications response

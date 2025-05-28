@@ -2,6 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
+use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\phpgwapi\security\Sessions;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -29,7 +30,7 @@ class DebugController
             }
             
             if (!$sessionId) {
-                return $response->withJson([
+                return ResponseHelper::sendJSONResponse([
                     'success' => false,
                     'message' => 'No session ID provided'
                 ], 400);
@@ -42,7 +43,7 @@ class DebugController
             
             error_log("DebugController: Trigger result: " . ($success ? 'success' : 'failure'));
             
-            return $response->withJson([
+            return ResponseHelper::sendJSONResponse([
                 'success' => $success,
                 'message' => $success ? 'Partial applications update triggered' : 'Failed to trigger update',
                 'sessionId' => substr($sessionId, 0, 8) . '...',
@@ -51,7 +52,7 @@ class DebugController
             
         } catch (\Exception $e) {
             error_log("DebugController error: " . $e->getMessage());
-            return $response->withJson([
+            return ResponseHelper::sendJSONResponse([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
             ], 500);
@@ -79,7 +80,7 @@ class DebugController
             
             error_log("DebugController: Redis publish result: " . ($success ? 'success' : 'failure'));
             
-            return $response->withJson([
+            return ResponseHelper::sendJSONResponse([
                 'success' => $success,
                 'message' => $success ? 'Redis message sent' : 'Failed to send Redis message',
                 'channel' => $channel,
@@ -89,7 +90,7 @@ class DebugController
             
         } catch (\Exception $e) {
             error_log("DebugController Redis test error: " . $e->getMessage());
-            return $response->withJson([
+            return ResponseHelper::sendJSONResponse([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
             ], 500);
@@ -123,11 +124,11 @@ class DebugController
                 'timestamp' => date('c')
             ];
             
-            return $response->withJson($sessionData);
+            return ResponseHelper::sendJSONResponse($sessionData);
             
         } catch (\Exception $e) {
             error_log("DebugController session info error: " . $e->getMessage());
-            return $response->withJson([
+            return ResponseHelper::sendJSONResponse([
                 'success' => false,
                 'message' => 'Error: ' . $e->getMessage()
             ], 500);

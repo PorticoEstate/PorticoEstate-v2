@@ -17,7 +17,6 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    transform: translateY(-2px);
     box-shadow: var(--ds-shadow-medium);
   }
 }
@@ -93,6 +92,26 @@
 
 .resourcesContainer {
   margin-top: 0.75rem;
+}
+
+.expandedResourcesList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.resourceItem {
+  a {
+    text-decoration: none;
+    color: inherit;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .datesAccordion {

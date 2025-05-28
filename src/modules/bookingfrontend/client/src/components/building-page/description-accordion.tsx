@@ -5,6 +5,7 @@ import GSAccordion from "@/components/gs-accordion/g-s-accordion";
 import {getTranslation} from "@/app/i18n";
 import {unescapeHTML} from "@/components/building-page/util/building-text-util";
 import {Details} from "@digdir/designsystemet-react";
+import { IResource } from "@/service/types/resource.types";
 
 interface DescriptionAccordionProps {
     description_json: (IBuilding | IResource)['description_json'];

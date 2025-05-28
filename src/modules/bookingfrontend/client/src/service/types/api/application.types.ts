@@ -1,5 +1,6 @@
 import {IShortResource} from "@/service/pecalendar.types";
 import {IDocument} from "@/service/types/api.types";
+import {IResource} from "@/service/types/resource.types";
 import {ArticleOrder} from "@/service/types/api/order-articles.types";
 
 export interface IApplication {

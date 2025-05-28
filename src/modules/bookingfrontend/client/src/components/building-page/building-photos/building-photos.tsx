@@ -1,6 +1,7 @@
 import {IBuilding} from "@/service/types/Building";
 import {fetchBuildingDocuments, fetchResourceDocuments} from "@/service/api/building";
 import PhotosGrid from "@/components/building-page/building-photos/photos-grid";
+import { IResource } from "@/service/types/resource.types";
 
 interface BuildingPhotosWrapperProps {
     object: IBuilding | IResource;

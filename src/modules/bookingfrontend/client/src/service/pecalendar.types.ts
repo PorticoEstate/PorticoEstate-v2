@@ -1,3 +1,5 @@
+import {IResource} from './types/resource.types';
+
 export type IEvent = IAPIEvent | IAPIBooking | IAPIAllocation;
 
 export const IEventIsAPIEvent = (event: IEvent): event is IAPIEvent => {
@@ -113,7 +115,7 @@ export interface IEventOLD {
 	is_public?: number
 }
 
-export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id'>;
+export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id' | 'activate_prepayment'>;
 
 export interface IEventDate {
 	from_: string

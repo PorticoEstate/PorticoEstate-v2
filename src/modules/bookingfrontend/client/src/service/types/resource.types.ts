@@ -1,4 +1,4 @@
-interface IResource {
+export interface IResource {
     id: number;
     name: string;
     activity_id: number | null;

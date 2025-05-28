@@ -1,5 +1,5 @@
 'use client'
-import React, {FC, useMemo} from 'react';
+import React, {FC, useMemo, useEffect} from 'react';
 import {useRouter} from "next/navigation";
 import {Tabs} from "@digdir/designsystemet-react";
 import {
@@ -57,6 +57,16 @@ const ClientLayout: FC<ClientLayoutProps> = (props) => {
 		return searchPages.filter(a =>
 			props.serverSettings.booking_config?.landing_sections?.find(section => section === a.configValue))
 	}, [props.serverSettings])
+
+	// Handle hash-based redirects (#event, #organization)
+	useEffect(() => {
+		const hash = window.location.hash;
+		if (hash === '#event' && pathname === '/') {
+			router.replace('/search/event');
+		} else if (hash === '#organization' && pathname === '/') {
+			router.replace('/search/organization');
+		}
+	}, [pathname, router]);
 
 	// PROTECT DISABLED PAGE
 	if(props.serverSettings.booking_config?.landing_sections && currentPath && !props.serverSettings.booking_config.landing_sections.find(section => section === currentPath?.configValue)) {

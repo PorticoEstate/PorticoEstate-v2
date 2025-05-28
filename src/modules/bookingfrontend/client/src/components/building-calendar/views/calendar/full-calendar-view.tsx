@@ -1,4 +1,5 @@
 import React, {Dispatch, FC, useCallback, useEffect, useMemo, useState} from 'react';
+import { IResource } from '@/service/types/resource.types';
 import interactionPlugin, {EventResizeDoneArg} from "@fullcalendar/interaction";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";

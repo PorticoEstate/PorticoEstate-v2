@@ -1,4 +1,5 @@
 import {IBuilding} from "@/service/types/Building";
+import { IResource } from "@/service/types/resource.types";
 
 /**
  * Full search data interface including all fields returned by the API

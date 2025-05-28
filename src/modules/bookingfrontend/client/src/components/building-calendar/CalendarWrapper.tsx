@@ -15,6 +15,7 @@ import styles from "@/components/building-calendar/building-calender.module.scss
 import CalendarResourceFilter from "@/components/building-calendar/modules/resource-filter/calender-resource-filter";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useBuilding} from "@/service/api/building";
+import { IResource } from '@/service/types/resource.types';
 
 interface CalendarWrapperProps {
     initialFreeTime: Record<string, IFreeTimeSlot[]>; // [resourceId]: Array<IFreeTimeSlot>

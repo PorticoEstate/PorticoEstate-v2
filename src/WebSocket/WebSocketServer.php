@@ -110,12 +110,18 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'sessionType' => isset($conn->bookingSessionId) ? 'booking' : 'standard'
             ]);
 
-            // Send connection success message to client
+            // Send connection success message to client with environment variables
             $conn->send(json_encode([
                 'type' => 'connection_success',
                 'message' => 'Successfully connected to WebSocket server',
                 'roomId' => $roomId,
-                'timestamp' => date('c')
+                'timestamp' => date('c'),
+                'environment' => [
+                    'NEXTJS_HOST' => getenv('NEXTJS_HOST') ?: null,
+                    'SLIM_HOST' => getenv('SLIM_HOST') ?: null,
+                    'REDIS_HOST' => getenv('REDIS_HOST') ?: null,
+                    'websocket_host' => getenv('websocket_host') ?: getenv('WEBSOCKET_HOST') ?: null
+                ]
             ]));
         }
     }
@@ -304,7 +310,7 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             // Check if this was an initial session setup (for better messaging)
             $wasInitialSetup = isset($from->sessionIdRequired) && $from->sessionIdRequired;
 
-            // Send a confirmation message
+            // Send a confirmation message with environment variables
             $from->send(json_encode([
                 'type' => 'session_update_confirmation',
                 'success' => $result['success'],
@@ -312,7 +318,13 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'action' => $result['action'],
                 'wasRequired' => $wasInitialSetup,
                 'sessionId' => substr($sessionId, 0, 8) . '...',  // Only show part of the session ID for security
-                'timestamp' => date('c')
+                'timestamp' => date('c'),
+                'environment' => [
+                    'NEXTJS_HOST' => getenv('NEXTJS_HOST') ?: null,
+                    'SLIM_HOST' => getenv('SLIM_HOST') ?: null,
+                    'REDIS_HOST' => getenv('REDIS_HOST') ?: null,
+                    'websocket_host' => getenv('websocket_host') ?: getenv('WEBSOCKET_HOST') ?: null
+                ]
             ]));
 
             $this->logger->info("Client session updated", [

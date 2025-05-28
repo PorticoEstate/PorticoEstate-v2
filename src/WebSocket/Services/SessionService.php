@@ -253,7 +253,9 @@ class SessionService
             'success' => true,
             'action' => $oldSessionId ? 'updated' : 'set',
             'message' => $oldSessionId ? 'Session ID updated' : 'Session ID set',
-            'roomId' => $newRoomId
+            'roomId' => $newRoomId,
+            'roomJoined' => true,
+            'roomSize' => $roomService->getRoomSize($newRoomId)
         ];
     }
 }

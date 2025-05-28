@@ -130,12 +130,12 @@ $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
 	$group->get('/websocket', function ($request, $response) {
 		$html = file_get_contents(__DIR__ . '/../templates/websocket-debug.html');
 		
-		// Get the base URL and construct WebSocket URL
+		// Get the base URL and construct WebSocket URL (always use wss)
 		$uri = $request->getUri();
-		$scheme = $uri->getScheme() === 'https' ? 'wss' : 'ws';
+		$scheme = 'wss';
 		$host = $uri->getHost();
 		$port = $uri->getPort();
-		$portSuffix = ($port && (($scheme === 'ws' && $port !== 80) || ($scheme === 'wss' && $port !== 443))) ? ':' . $port : '';
+		$portSuffix = ($port && $port !== 443) ? ':' . $port : '';
 		$wsUrl = $scheme . '://' . $host . $portSuffix . '/wss';
 		
 		// Replace the default WebSocket host in the HTML

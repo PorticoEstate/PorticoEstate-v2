@@ -35,6 +35,7 @@ class BookingfrontendConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose 
      */
     public $develope_mode;
 

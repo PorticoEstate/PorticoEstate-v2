@@ -51,20 +51,15 @@ export function useSetVersionSettings() {
   const pathname = usePathname();
 
   return useMutation({
-    mutationFn: (version: 'original' | 'new' | 'beta') => setVersionSettings(version),
+    mutationFn: (version: 'original' | 'new') => setVersionSettings(version),
 
     // When mutation succeeds, update the cache and refetch
     onSuccess: (data) => {
       queryClient.setQueryData(VERSION_SETTINGS_KEY, data);
       queryClient.invalidateQueries({ queryKey: VERSION_SETTINGS_KEY });
 
-      // If switching to a version other than beta, handle special routing
-      if (data.version !== 'beta') {
-        handleRoutingToOldClient(pathname);
-      } else {
-        // Force page reload to apply the new version settings
-        window.location.reload();
-      }
+      // Handle routing to old client for both versions
+      handleRoutingToOldClient(pathname);
     }
   });
 }

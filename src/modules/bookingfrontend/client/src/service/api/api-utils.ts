@@ -255,9 +255,8 @@ export async function fetchInvoices(): Promise<ICompletedReservation[]> {
 
 export interface VersionSettings {
     success: boolean;
-    version: 'original' | 'new' | 'beta';
+    version: 'original' | 'new';
     template_set: string;
-    beta_client: string;
 }
 
 export async function fetchVersionSettings(): Promise<VersionSettings> {
@@ -267,7 +266,7 @@ export async function fetchVersionSettings(): Promise<VersionSettings> {
     return result;
 }
 
-export async function setVersionSettings(version: 'original' | 'new' | 'beta'): Promise<VersionSettings> {
+export async function setVersionSettings(version: 'original' | 'new'): Promise<VersionSettings> {
     const url = phpGWLink(['bookingfrontend', 'version']);
     const response = await fetch(url, {
         method: 'POST',

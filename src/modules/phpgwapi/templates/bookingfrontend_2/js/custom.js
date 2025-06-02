@@ -23,8 +23,6 @@ $(document).ready(function ()
 			version = 'original';
 		} else if (selectedTemplate === 'bookingfrontend_2') {
 			version = 'new';
-		} else if (selectedTemplate === 'beta') {
-			version = 'beta';
 		}
 		
 		// Use the new version API
@@ -54,8 +52,6 @@ $(document).ready(function ()
 			version = 'original';
 		} else if (selectedTemplate === 'bookingfrontend_2') {
 			version = 'new';
-		} else if (selectedTemplate === 'beta') {
-			version = 'beta';
 		}
 		
 		// Use the new version API

@@ -1,6 +1,6 @@
 import {DateTime} from "luxon";
 import {phpGWLink} from "@/service/util";
-import {IBookingUser, IServerSettings} from "@/service/types/api.types";
+import {IBookingUser, IServerSettings, IMultiDomain} from "@/service/types/api.types";
 import {IApplication} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
@@ -382,4 +382,20 @@ export async function fetchUpcomingEvents(params?: UpcomingEventsParams): Promis
 		console.error('Error fetching upcoming events:', error);
 		throw error;
 	}
+}
+
+/**
+ * Fetches multi-domains from the API
+ * @returns Promise with an array of IMultiDomain objects
+ */
+export async function fetchMultiDomains(): Promise<IMultiDomain[]> {
+	const url = phpGWLink(['bookingfrontend', 'multi-domains']);
+	const response = await fetch(url);
+	
+	if (!response.ok) {
+		throw new Error(`Failed to fetch multi-domains: ${response.status}`);
+	}
+	
+	const result = await response.json();
+	return result.results || [];
 }

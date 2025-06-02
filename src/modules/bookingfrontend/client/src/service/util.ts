@@ -13,13 +13,27 @@ export function phpGWLink(
     const useOldStructure = oArgs && 'menuaction' in oArgs;
 
     if (baseURL) {
-        const baseURLParts = baseURL.split('/').filter((a) => a !== '' && !a.includes('http'));
-        baseURL = '//' + baseURLParts.slice(0, baseURLParts.length - 1).join('/') + '/';
+        // Check if baseURL already has a protocol
+        if (baseURL.startsWith('http://') || baseURL.startsWith('https://')) {
+            // Keep the protocol and just ensure it ends with /
+            baseURL = baseURL.replace(/\/+$/, '') + '/';
+        } else {
+            // No protocol, use https and process as before
+            const baseURLParts = baseURL.split('/').filter((a) => a !== '');
+            // For external domains, we want to keep the full host, not remove the last part
+            if (baseURLParts.length === 1) {
+                // Single domain like "stavanger.aktiv-kommune.no"
+                baseURL = 'https://' + baseURLParts[0] + '/';
+            } else {
+                // Multi-part path, remove last segment as before
+                baseURL = 'https://' + baseURLParts.slice(0, baseURLParts.length - 1).join('/') + '/';
+            }
+        }
     }
+
 
     const urlParts = (baseURL || strBaseURL).split('?');
     let newURL = urlParts[0];
-
     // Helper function to safely join URL parts without double slashes
 	function safeJoinURL(base: string, path: string): string {
 		return base.replace(/\/+$/, '') + '/' + path.replace(/^\/+/, '');

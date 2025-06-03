@@ -579,16 +579,16 @@ export function useAddApplicationComment(
     options?: MutationOptions<AddCommentResponse, Error, { applicationId: number; commentData: AddCommentRequest; secret?: string }>
 ) {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
-        mutationFn: ({ applicationId, commentData, secret }) => 
+        mutationFn: ({ applicationId, commentData, secret }) =>
             addApplicationComment(applicationId, commentData, secret),
         onSuccess: (data, variables) => {
             // Invalidate comments cache
             queryClient.invalidateQueries({
                 queryKey: ['applicationComments', variables.applicationId]
             });
-            
+
             // Invalidate application cache to refresh any related data
             queryClient.invalidateQueries({
                 queryKey: ['application', variables.applicationId]
@@ -607,21 +607,21 @@ export function useUpdateApplicationStatus(
     options?: MutationOptions<UpdateStatusResponse, Error, { applicationId: number; statusData: UpdateStatusRequest; secret?: string }>
 ) {
     const queryClient = useQueryClient();
-    
+
     return useMutation({
-        mutationFn: ({ applicationId, statusData, secret }) => 
+        mutationFn: ({ applicationId, statusData, secret }) =>
             updateApplicationStatus(applicationId, statusData, secret),
         onSuccess: (data, variables) => {
             // Invalidate comments cache (status changes create comments)
             queryClient.invalidateQueries({
                 queryKey: ['applicationComments', variables.applicationId]
             });
-            
+
             // Invalidate application cache to refresh status
             queryClient.invalidateQueries({
                 queryKey: ['application', variables.applicationId]
             });
-            
+
             // Invalidate applications list cache
             queryClient.invalidateQueries({
                 queryKey: ['applications']
@@ -1222,7 +1222,7 @@ export function useUpcomingEvents(params: {
 	});
 }
 
-export function useResourceRegulationDocuments(resources: { id: number, building_id?: number }[]) {
+export function useResourceRegulationDocuments(resources: { id: number, building_id?: number | null }[]) {
 	const queryClient = useQueryClient();
 	const resourceIds = resources.map(r => r.id);
 

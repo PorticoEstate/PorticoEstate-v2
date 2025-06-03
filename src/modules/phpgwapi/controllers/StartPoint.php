@@ -442,7 +442,7 @@ class StartPoint
 				$develop_mode = isset($config_frontend['develope_mode']) && $config_frontend['develope_mode'] === 'True';
 
 				// Handle homepage redirect with no menuaction
-				if ($develop_mode && !isset($_GET['menuaction']  || $_GET['menuaction'] === 'bookingfrontend.uisearch.index')) {
+				if ($develop_mode && !isset($_GET['menuaction']) || $_GET['menuaction'] === 'bookingfrontend.uisearch.index') {
 					\phpgw::redirect_link('/bookingfrontend/client/');
 				}
 

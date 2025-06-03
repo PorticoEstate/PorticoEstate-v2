@@ -498,18 +498,18 @@ class ApplicationController extends DocumentController
                 'message' => 'Partial application created successfully'
             ];
 
-            // Broadcast notification through WebSocket (asynchronously)
-            try {
-                $resourceId = isset($data['resources']) && !empty($data['resources']) ? $data['resources'][0] : null;
-                // Use async notification with forking for better performance
-                WebSocketHelper::forkNotification(function() use ($id, $resourceId) {
-                    WebSocketHelper::notifyPartialApplicationCreated($id, $resourceId);
-                });
-                error_log("WebSocket notification for application creation #{$id} offloaded to forked process");
-            } catch (Exception $e) {
-                // Log but don't interrupt flow
-                error_log("WebSocket notification error: " . $e->getMessage());
-            }
+            // WebSocket notification disabled for partial applications
+            // try {
+            //     $resourceId = isset($data['resources']) && !empty($data['resources']) ? $data['resources'][0] : null;
+            //     // Use async notification with forking for better performance
+            //     WebSocketHelper::forkNotification(function() use ($id, $resourceId) {
+            //         WebSocketHelper::notifyPartialApplicationCreated($id, $resourceId);
+            //     });
+            //     error_log("WebSocket notification for application creation #{$id} offloaded to forked process");
+            // } catch (Exception $e) {
+            //     // Log but don't interrupt flow
+            //     error_log("WebSocket notification error: " . $e->getMessage());
+            // }
             WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
 
             $response->getBody()->write(json_encode($responseData));

@@ -7,6 +7,7 @@ use App\modules\bookingfrontend\controllers\applications\CommentsController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
+use App\modules\bookingfrontend\controllers\DebugController;
 use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
@@ -139,6 +140,30 @@ $app->group('/bookingfrontend/auth', function (RouteCollectorProxy $group) {
 
 $app->post('/bookingfrontend/version', VersionController::class . ':setVersion')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/bookingfrontend/version', VersionController::class . ':getVersion')->add(new SessionsMiddleware($app->getContainer()));
+
+// Debug routes
+$app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
+	$group->get('/websocket', function ($request, $response) {
+		$html = file_get_contents(__DIR__ . '/../templates/websocket-debug.html');
+		
+		// Get the base URL and construct WebSocket URL (always use wss)
+		$uri = $request->getUri();
+		$scheme = 'wss';
+		$host = $uri->getHost();
+		$port = $uri->getPort();
+		$portSuffix = ($port && $port !== 443) ? ':' . $port : '';
+		$wsUrl = $scheme . '://' . $host . $portSuffix . '/wss';
+		
+		// Replace the default WebSocket host in the HTML
+		$html = str_replace('value="ws://localhost:8080"', 'value="' . $wsUrl . '"', $html);
+		
+		$response->getBody()->write($html);
+		return $response->withHeader('Content-Type', 'text/html');
+	});
+	$group->post('/trigger-partial-update', DebugController::class . ':triggerPartialUpdate');
+	$group->post('/test-redis', DebugController::class . ':testRedis');
+	$group->get('/session-info', DebugController::class . ':getSessionInfo');
+})->add(new SessionsMiddleware($app->getContainer()));
 
 
 

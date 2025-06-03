@@ -110,12 +110,40 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'sessionType' => isset($conn->bookingSessionId) ? 'booking' : 'standard'
             ]);
 
-            // Send connection success message to client
+            // Send message to user about being added to the room
+            $conn->send(json_encode([
+                'type' => 'room_joined',
+                'roomId' => $roomId,
+                'roomType' => 'session',
+                'message' => 'You have been added to a session room',
+                'roomSize' => $this->roomService->getRoomSize($roomId),
+                'timestamp' => date('c')
+            ]));
+
+            // Get current room information for the connection
+            $connectionRooms = $this->roomService->getConnectionRooms($conn);
+            $roomsInfo = [];
+            foreach ($connectionRooms as $roomId) {
+                $roomsInfo[] = [
+                    'id' => $roomId,
+                    'size' => $this->roomService->getRoomSize($roomId),
+                    'type' => strpos($roomId, 'session_') === 0 ? 'session' : 'entity'
+                ];
+            }
+
+            // Send connection success message to client with environment variables and rooms info
             $conn->send(json_encode([
                 'type' => 'connection_success',
                 'message' => 'Successfully connected to WebSocket server',
                 'roomId' => $roomId,
-                'timestamp' => date('c')
+                'timestamp' => date('c'),
+                'rooms' => $roomsInfo,
+                'environment' => [
+                    'NEXTJS_HOST' => getenv('NEXTJS_HOST') ?: null,
+                    'SLIM_HOST' => getenv('SLIM_HOST') ?: null,
+                    'REDIS_HOST' => getenv('REDIS_HOST') ?: null,
+                    'websocket_host' => getenv('websocket_host') ?: getenv('WEBSOCKET_HOST') ?: null
+                ]
             ]));
         }
     }
@@ -163,6 +191,18 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'entityId' => $entityId,
                 'roomId' => $roomId
             ]);
+
+            // Send message to user about being added to the room
+            $from->send(json_encode([
+                'type' => 'room_joined',
+                'roomId' => $roomId,
+                'roomType' => 'entity',
+                'entityType' => $entityType,
+                'entityId' => $entityId,
+                'message' => 'You have been added to an entity room',
+                'roomSize' => $this->roomService->getRoomSize($roomId),
+                'timestamp' => date('c')
+            ]));
 
             // Send confirmation to the client
             $from->send(json_encode([
@@ -301,10 +341,33 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
             // Update the session ID
             $result = $this->sessionService->updateSessionId($from, $sessionId, $this->roomService);
 
+            // Send room_joined notification if a new room was joined
+            if ($result['success'] && isset($result['roomJoined']) && $result['roomJoined']) {
+                $from->send(json_encode([
+                    'type' => 'room_joined',
+                    'roomId' => $result['roomId'],
+                    'roomType' => 'session',
+                    'message' => 'You have been added to a session room',
+                    'roomSize' => $result['roomSize'],
+                    'timestamp' => date('c')
+                ]));
+            }
+
             // Check if this was an initial session setup (for better messaging)
             $wasInitialSetup = isset($from->sessionIdRequired) && $from->sessionIdRequired;
 
-            // Send a confirmation message
+            // Get current room information for the connection
+            $connectionRooms = $this->roomService->getConnectionRooms($from);
+            $roomsInfo = [];
+            foreach ($connectionRooms as $roomId) {
+                $roomsInfo[] = [
+                    'id' => $roomId,
+                    'size' => $this->roomService->getRoomSize($roomId),
+                    'type' => strpos($roomId, 'session_') === 0 ? 'session' : 'entity'
+                ];
+            }
+
+            // Send a confirmation message with environment variables and rooms info
             $from->send(json_encode([
                 'type' => 'session_update_confirmation',
                 'success' => $result['success'],
@@ -312,7 +375,14 @@ class WebSocketServer implements MessageComponentInterface, WebSocketHandler
                 'action' => $result['action'],
                 'wasRequired' => $wasInitialSetup,
                 'sessionId' => substr($sessionId, 0, 8) . '...',  // Only show part of the session ID for security
-                'timestamp' => date('c')
+                'timestamp' => date('c'),
+                'rooms' => $roomsInfo,
+                'environment' => [
+                    'NEXTJS_HOST' => getenv('NEXTJS_HOST') ?: null,
+                    'SLIM_HOST' => getenv('SLIM_HOST') ?: null,
+                    'REDIS_HOST' => getenv('REDIS_HOST') ?: null,
+                    'websocket_host' => getenv('websocket_host') ?: getenv('WEBSOCKET_HOST') ?: null
+                ]
             ]));
 
             $this->logger->info("Client session updated", [

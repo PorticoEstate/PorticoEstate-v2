@@ -1,6 +1,6 @@
 import {getTranslation} from "@/app/i18n";
-import PageHeader from "@/components/page-header/page-header";
-import UserPageClient from "@/app/[lang]/(public)/user/user-page-client";
+import React from "react";
+import UserPageClient from "@/app/[lang]/(public)/user/(user-main)/user-page-client";
 
 interface UserPageProps {
 }

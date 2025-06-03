@@ -10,6 +10,10 @@ import {
 import { useWebSocketContext } from '../websocket/websocket-context';
 import {IBookingUser, IDocument, IServerSettings, IMultiDomain} from "@/service/types/api.types";
 import {
+	fetchApplication,
+	fetchApplicationComments,
+	addApplicationComment,
+	updateApplicationStatus,
 	fetchArticlesForResources,
 	fetchBuildingAgeGroups,
 	fetchBuildingAudience,
@@ -29,7 +33,7 @@ import {
 	fetchMultiDomains,
 	patchBookingUser
 } from "@/service/api/api-utils";
-import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
+import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
 import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
@@ -517,15 +521,114 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 	);
 }
 
-export function useApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
+export function useApplications(
+  options?: { initialData?: { list: IApplication[], total_sum: number } }
+): UseQueryResult<{ list: IApplication[], total_sum: number }> {
 	return useQuery(
 		{
 			queryKey: ['deliveredApplications'],
 			queryFn: () => fetchDeliveredApplications(), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			initialData: options?.initialData,
 		}
 	);
+}
+
+export function useApplication(
+    id: number,
+    options?: { initialData?: IApplication }
+): UseQueryResult<IApplication> {
+    return useQuery(
+        {
+            queryKey: ['application', id],
+            queryFn: () => fetchApplication(id),
+            retry: 2,
+            refetchOnWindowFocus: false,
+            initialData: options?.initialData,
+        }
+    );
+}
+
+/**
+ * Hook to fetch comments for an application
+ * @param applicationId The application ID
+ * @param types Optional comma-separated list of comment types to filter by
+ * @param secret Optional secret for external access
+ * @returns Comments and statistics
+ */
+export function useApplicationComments(
+    applicationId: number,
+    types?: string,
+    secret?: string
+): UseQueryResult<GetCommentsResponse> {
+    return useQuery({
+        queryKey: ['applicationComments', applicationId, types, secret],
+        queryFn: () => fetchApplicationComments(applicationId, types, secret),
+        retry: 2,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
+ * Hook to add a comment to an application
+ * @param options Mutation options
+ * @returns Mutation object for adding comments
+ */
+export function useAddApplicationComment(
+    options?: MutationOptions<AddCommentResponse, Error, { applicationId: number; commentData: AddCommentRequest; secret?: string }>
+) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ applicationId, commentData, secret }) =>
+            addApplicationComment(applicationId, commentData, secret),
+        onSuccess: (data, variables) => {
+            // Invalidate comments cache
+            queryClient.invalidateQueries({
+                queryKey: ['applicationComments', variables.applicationId]
+            });
+
+            // Invalidate application cache to refresh any related data
+            queryClient.invalidateQueries({
+                queryKey: ['application', variables.applicationId]
+            });
+        },
+        ...options,
+    });
+}
+
+/**
+ * Hook to update an application's status
+ * @param options Mutation options
+ * @returns Mutation object for updating status
+ */
+export function useUpdateApplicationStatus(
+    options?: MutationOptions<UpdateStatusResponse, Error, { applicationId: number; statusData: UpdateStatusRequest; secret?: string }>
+) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ applicationId, statusData, secret }) =>
+            updateApplicationStatus(applicationId, statusData, secret),
+        onSuccess: (data, variables) => {
+            // Invalidate comments cache (status changes create comments)
+            queryClient.invalidateQueries({
+                queryKey: ['applicationComments', variables.applicationId]
+            });
+
+            // Invalidate application cache to refresh status
+            queryClient.invalidateQueries({
+                queryKey: ['application', variables.applicationId]
+            });
+
+            // Invalidate applications list cache
+            queryClient.invalidateQueries({
+                queryKey: ['applications']
+            });
+        },
+        ...options,
+    });
 }
 
 export function useServerMessages(): UseQueryResult<IServerMessage[]> {
@@ -714,15 +817,18 @@ export function useDeleteServerMessage() {
 }
 
 
-export function useInvoices(): UseQueryResult<ICompletedReservation[]> {
-	return useQuery(
-		{
-			queryKey: ['invoices'],
-			queryFn: () => fetchInvoices(), // Fetch function
-			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default
-		}
-	);
+export function useInvoices(
+    options?: { initialData?: ICompletedReservation[] }
+): UseQueryResult<ICompletedReservation[]> {
+    return useQuery(
+        {
+            queryKey: ['invoices'],
+            queryFn: () => fetchInvoices(), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+            initialData: options?.initialData,
+        }
+    );
 }
 
 
@@ -1116,7 +1222,7 @@ export function useUpcomingEvents(params: {
 	});
 }
 
-export function useResourceRegulationDocuments(resources: { id: number, building_id?: number }[]) {
+export function useResourceRegulationDocuments(resources: { id: number, building_id?: number | null }[]) {
 	const queryClient = useQueryClient();
 	const resourceIds = resources.map(r => r.id);
 

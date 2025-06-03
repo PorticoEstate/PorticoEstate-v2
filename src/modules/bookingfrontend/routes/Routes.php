@@ -1,7 +1,9 @@
 <?php
 
-use App\modules\bookingfrontend\controllers\ApplicationController;
+use App\modules\bookingfrontend\controllers\applications\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
+use App\modules\bookingfrontend\controllers\applications\CheckoutController;
+use App\modules\bookingfrontend\controllers\applications\CommentsController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
@@ -88,21 +90,35 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
 	$group->group('/applications', function (RouteCollectorProxy $group)
 	{
+		$group->get('', ApplicationController::class . ':getApplications');
 		$group->post('/simple', ApplicationController::class . ':createSimpleApplication');
 		$group->get('/partials', ApplicationController::class . ':getPartials');
 		$group->post('/partials', ApplicationController::class . ':createPartial');
-		$group->post('/partials/checkout', ApplicationController::class . ':checkoutPartials');
+		$group->post('/partials/checkout', CheckoutController::class . ':checkout');
+		$group->post('/partials/vipps-payment', CheckoutController::class . ':initiateVippsPayment');
 		$group->put('/partials/{id}', ApplicationController::class . ':updatePartial');
-		$group->get('', ApplicationController::class . ':getApplications');
-		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
 		$group->patch('/partials/{id}', ApplicationController::class . ':patchApplication');
 		$group->post('/{id}/documents', ApplicationController::class . ':uploadDocument');
 		$group->delete('/document/{id}', ApplicationController::class . ':deleteDocument');
 		$group->get('/document/{id}/download', ApplicationController::class . ':downloadDocument');
-		$group->post('/validate-checkout', ApplicationController::class . ':validateCheckout');
+		$group->post('/validate-checkout', CheckoutController::class . ':validateCheckout');
 		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
+		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
+		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
+		
+		// Comments endpoints
+		$group->get('/{id}/comments', CommentsController::class . ':getApplicationComments');
+		$group->post('/{id}/comments', CommentsController::class . ':addApplicationComment');
+		$group->get('/{id}/comments/stats', CommentsController::class . ':getApplicationCommentStats');
+		$group->put('/{id}/status', CommentsController::class . ':updateApplicationStatus');
 
 	});
+
+	$group->group('/checkout', function (RouteCollectorProxy $group)
+	{
+		$group->get('/external-payment-eligibility', CheckoutController::class . ':checkExternalPaymentEligibility');
+	});
+
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');
 })->add(new SessionsMiddleware($app->getContainer()));
 

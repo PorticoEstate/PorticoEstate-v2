@@ -132,8 +132,15 @@ class Sessions
 
 		if (!$this->_sessionid)
 		{
+			// Check for standard session ID in GET/POST
 			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET')
 				?? \Sanitizer::get_var(session_name(), 'string', 'POST');
+
+			// Check for bookingfrontendsession parameter in GET for special frontend use cases
+			if (!$this->_sessionid && \Sanitizer::get_var('bookingfrontendsession', 'string', 'GET'))
+			{
+				$this->_sessionid = \Sanitizer::get_var('bookingfrontendsession', 'string', 'GET');
+			}
 		}
 	}
 
@@ -433,6 +440,12 @@ class Sessions
 		if (empty($sessionid) || !$sessionid)
 		{
 			$sessionid = $this->get_session_id();
+
+			// Additional check for bookingfrontendsession parameter if no session ID found
+			if (!$sessionid && \Sanitizer::get_var('bookingfrontendsession', 'string', 'GET'))
+			{
+				$sessionid = \Sanitizer::get_var('bookingfrontendsession', 'string', 'GET');
+			}
 		}
 
 		if (!$sessionid)

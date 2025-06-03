@@ -1,6 +1,6 @@
 import {DateTime} from "luxon";
 import {phpGWLink} from "@/service/util";
-import {IBookingUser, IServerSettings} from "@/service/types/api.types";
+import {IBookingUser, IServerSettings, IMultiDomain} from "@/service/types/api.types";
 import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
@@ -250,19 +250,19 @@ export async function fetchApplication(id: number): Promise<IApplication> {
  * @returns Comments and statistics
  */
 export async function fetchApplicationComments(
-    id: number, 
-    types?: string, 
+    id: number,
+    types?: string,
     secret?: string
 ): Promise<GetCommentsResponse> {
     const params: Record<string, any> = {};
-    
+
     if (types) {
         params.types = types;
     }
     if (secret) {
         params.secret = secret;
     }
-    
+
     if (typeof window === 'undefined') {
         const cookies = require("next/headers").cookies()
         const sessionCookie = cookies.get('bookingfrontendsession')?.value;
@@ -270,15 +270,15 @@ export async function fetchApplicationComments(
             params.bookingfrontendsession = sessionCookie;
         }
     }
-    
+
     const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'comments'], params);
-    
+
     const response = await fetch(url, FetchAuthOptions());
-    
+
     if (!response.ok) {
         throw new Error(`Failed to fetch comments for application ${id}`);
     }
-    
+
     return response.json();
 }
 
@@ -290,16 +290,16 @@ export async function fetchApplicationComments(
  * @returns The created comment
  */
 export async function addApplicationComment(
-    id: number, 
-    commentData: AddCommentRequest, 
+    id: number,
+    commentData: AddCommentRequest,
     secret?: string
 ): Promise<AddCommentResponse> {
     const params: Record<string, any> = {};
-    
+
     if (secret) {
         params.secret = secret;
     }
-    
+
     if (typeof window === 'undefined') {
         const cookies = require("next/headers").cookies()
         const sessionCookie = cookies.get('bookingfrontendsession')?.value;
@@ -307,9 +307,9 @@ export async function addApplicationComment(
             params.bookingfrontendsession = sessionCookie;
         }
     }
-    
+
     const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'comments'], params);
-    
+
     const response = await fetch(url, FetchAuthOptions({
         method: 'POST',
         headers: {
@@ -317,11 +317,11 @@ export async function addApplicationComment(
         },
         body: JSON.stringify(commentData),
     }));
-    
+
     if (!response.ok) {
         throw new Error(`Failed to add comment to application ${id}`);
     }
-    
+
     return response.json();
 }
 
@@ -333,16 +333,16 @@ export async function addApplicationComment(
  * @returns The status update response
  */
 export async function updateApplicationStatus(
-    id: number, 
-    statusData: UpdateStatusRequest, 
+    id: number,
+    statusData: UpdateStatusRequest,
     secret?: string
 ): Promise<UpdateStatusResponse> {
     const params: Record<string, any> = {};
-    
+
     if (secret) {
         params.secret = secret;
     }
-    
+
     if (typeof window === 'undefined') {
         const cookies = require("next/headers").cookies()
         const sessionCookie = cookies.get('bookingfrontendsession')?.value;
@@ -350,9 +350,9 @@ export async function updateApplicationStatus(
             params.bookingfrontendsession = sessionCookie;
         }
     }
-    
+
     const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'status'], params);
-    
+
     const response = await fetch(url, FetchAuthOptions({
         method: 'PUT',
         headers: {
@@ -360,11 +360,11 @@ export async function updateApplicationStatus(
         },
         body: JSON.stringify(statusData),
     }));
-    
+
     if (!response.ok) {
         throw new Error(`Failed to update status for application ${id}`);
     }
-    
+
     return response.json();
 }
 
@@ -439,9 +439,8 @@ export async function fetchInvoices(): Promise<ICompletedReservation[]> {
 
 export interface VersionSettings {
     success: boolean;
-    version: 'original' | 'new' | 'beta';
+    version: 'original' | 'new';
     template_set: string;
-    beta_client: string;
 }
 
 export async function fetchVersionSettings(): Promise<VersionSettings> {
@@ -451,7 +450,7 @@ export async function fetchVersionSettings(): Promise<VersionSettings> {
     return result;
 }
 
-export async function setVersionSettings(version: 'original' | 'new' | 'beta'): Promise<VersionSettings> {
+export async function setVersionSettings(version: 'original' | 'new'): Promise<VersionSettings> {
     const url = phpGWLink(['bookingfrontend', 'version']);
     const response = await fetch(url, {
         method: 'POST',
@@ -595,7 +594,7 @@ export async function initiateVippsPayment(paymentData: VippsPaymentData): Promi
 	console.log('=== VIPPS API FUNCTION ===');
 	console.log('URL:', url);
 	console.log('Payment data:', paymentData);
-	
+
 	const response = await fetch(url, {
 		method: 'POST',
 		body: JSON.stringify(paymentData),
@@ -606,10 +605,10 @@ export async function initiateVippsPayment(paymentData: VippsPaymentData): Promi
 
 	console.log('Response status:', response.status);
 	console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-	
+
 	const responseText = await response.text();
 	console.log('Raw response:', responseText);
-	
+
 	let result;
 	try {
 		result = JSON.parse(responseText);
@@ -617,9 +616,9 @@ export async function initiateVippsPayment(paymentData: VippsPaymentData): Promi
 		console.error('Failed to parse response as JSON:', e);
 		throw new Error('Invalid JSON response from server');
 	}
-	
+
 	console.log('Parsed result:', result);
-	
+
 	if (!response.ok) {
 		throw new Error(result.error || 'Vipps payment initiation failed');
 	}
@@ -640,7 +639,7 @@ export interface ExternalPaymentEligibilityResponse {
 
 export async function fetchExternalPaymentEligibility(): Promise<ExternalPaymentEligibilityResponse> {
 	const url = phpGWLink(['bookingfrontend', 'checkout', 'external-payment-eligibility']);
-	
+
 	const response = await fetch(url, {
 		method: 'GET',
 		headers: {
@@ -653,4 +652,20 @@ export async function fetchExternalPaymentEligibility(): Promise<ExternalPayment
 	}
 
 	return response.json();
+}
+
+/**
+ * Fetches multi-domains from the API
+ * @returns Promise with an array of IMultiDomain objects
+ */
+export async function fetchMultiDomains(): Promise<IMultiDomain[]> {
+	const url = phpGWLink(['bookingfrontend', 'multi-domains']);
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(`Failed to fetch multi-domains: ${response.status}`);
+	}
+
+	const result = await response.json();
+	return result.results || [];
 }

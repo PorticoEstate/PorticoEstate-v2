@@ -10,6 +10,7 @@ use App\modules\bookingfrontend\controllers\BookingUserController;
 use App\modules\bookingfrontend\controllers\DebugController;
 use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\controllers\LoginController;
+use App\modules\bookingfrontend\controllers\MultiDomainController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\controllers\ResourceController;
 use App\modules\bookingfrontend\controllers\VersionController;
@@ -63,6 +64,14 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}/events', EventController::class . ':getOrganizationEvents');
 		$group->get('/list', OrganizationController::class . ':getList');
 		$group->get('/{id}', OrganizationController::class . ':getById');
+	});
+
+	$group->group('/multi-domains', function (RouteCollectorProxy $group) {
+		$group->get('', MultiDomainController::class . ':getMultiDomains');
+//		$group->post('', MultiDomainController::class . ':createMultiDomain');
+		$group->get('/{id}', MultiDomainController::class . ':getMultiDomainById');
+//		$group->put('/{id}', MultiDomainController::class . ':updateMultiDomain');
+//		$group->delete('/{id}', MultiDomainController::class . ':deleteMultiDomain');
 	});
 
 	$group->group('/events', function (RouteCollectorProxy $group)
@@ -145,7 +154,7 @@ $app->get('/bookingfrontend/version', VersionController::class . ':getVersion')-
 $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
 	$group->get('/websocket', function ($request, $response) {
 		$html = file_get_contents(__DIR__ . '/../templates/websocket-debug.html');
-		
+
 		// Get the base URL and construct WebSocket URL (always use wss)
 		$uri = $request->getUri();
 		$scheme = 'wss';
@@ -153,10 +162,10 @@ $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
 		$port = $uri->getPort();
 		$portSuffix = ($port && $port !== 443) ? ':' . $port : '';
 		$wsUrl = $scheme . '://' . $host . $portSuffix . '/wss';
-		
+
 		// Replace the default WebSocket host in the HTML
 		$html = str_replace('value="ws://localhost:8080"', 'value="' . $wsUrl . '"', $html);
-		
+
 		$response->getBody()->write($html);
 		return $response->withHeader('Content-Type', 'text/html');
 	});

@@ -433,36 +433,37 @@ class StartPoint
 
 		$this->validate_object_method();
 
-		// Check for beta client redirect - ONLY for GET requests and not for JSON returns
+		// Check for develop mode redirect - ONLY for GET requests and not for JSON returns
 		if ($app == 'bookingfrontend' && $_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
 			$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
-			// Explicitly check for the string "true" since the Sanitizer might not convert it properly
-			$beta_client_raw = Sanitizer::get_var('beta_client', 'raw', 'COOKIE');
-			$beta_client = ($beta_client_raw === 'true');
 
-			// Handle homepage redirect with no menuaction or search index
-			if ($beta_client && $template_set == 'bookingfrontend_2' && (!isset($_GET['menuaction']) || $_GET['menuaction'] === 'bookingfrontend.uisearch.index')) {
-				\phpgw::redirect_link('/bookingfrontend/client/');
-			}
+			if ($template_set == 'bookingfrontend_2') {
+				$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();
+				$develop_mode = isset($config_frontend['develope_mode']) && $config_frontend['develope_mode'] === 'True';
 
-			// Handle redirects with menuaction
-			if ($beta_client && $template_set == 'bookingfrontend_2' && isset($_GET['menuaction'])) {
-				$menuaction = $_GET['menuaction'];
+				// Handle homepage redirect with no menuaction
+				if ($develop_mode && !isset($_GET['menuaction']  || $_GET['menuaction'] === 'bookingfrontend.uisearch.index')) {
+					\phpgw::redirect_link('/bookingfrontend/client/');
+				}
+
+				// Handle redirects with menuaction
+				if ($develop_mode && isset($_GET['menuaction'])) {
+					$menuaction = $_GET['menuaction'];
 
 				// Skip search index since it's handled above
 				if ($menuaction === 'bookingfrontend.uisearch.index') {
 					return; // Already handled above
 				}
 
-				$redirectMap = [
+					$redirectMap = [
 					'bookingfrontend.uibuilding.show' => '/bookingfrontend/client/building/%id%',
 					'bookingfrontend.uiresource.show' => '/bookingfrontend/client/resource/%id%',
 					'bookingfrontend.uiuser.show' => '/bookingfrontend/client/user/details',
-					// Add more mappings as needed
-				];
+						// Add more mappings as needed
+					];
 
-				foreach ($redirectMap as $action => $redirectUrl) {
-					if (strpos($menuaction, $action) === 0) {
+					foreach ($redirectMap as $action => $redirectUrl) {
+						if (strpos($menuaction, $action) === 0) {
 						// Replace placeholders with actual values if needed
 						if (strpos($redirectUrl, '%id%') !== false) {
 							if (isset($_GET['id'])) {
@@ -472,6 +473,7 @@ class StartPoint
 						} else {
 							// No placeholder, redirect directly
 							\phpgw::redirect_link($redirectUrl);
+						}
 						}
 					}
 				}
@@ -486,15 +488,17 @@ class StartPoint
 
 			if ($app == 'bookingfrontend')
 			{
-				// Check for beta client when no menuaction is provided and default to homepage
+				// Check for develop mode when no menuaction is provided and default to homepage
 				if ($_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
 					$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
-					// Explicitly check for the string "true" since the Sanitizer might not convert it properly
-					$beta_client_raw = Sanitizer::get_var('beta_client', 'raw', 'COOKIE');
-					$beta_client = ($beta_client_raw === 'true');
 
-					if ($beta_client && $template_set == 'bookingfrontend_2') {
-						\phpgw::redirect_link('/bookingfrontend/client/');
+					if ($template_set == 'bookingfrontend_2') {
+						$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();
+						$develop_mode = isset($config_frontend['develope_mode']) && $config_frontend['develope_mode'] === 'True';
+
+						if ($develop_mode) {
+							\phpgw::redirect_link('/bookingfrontend/client/no/');
+						}
 					}
 				}
 

@@ -8,7 +8,7 @@ import {
 	MutationOptions
 } from "@tanstack/react-query";
 import { useWebSocketContext } from '../websocket/websocket-context';
-import {IBookingUser, IDocument, IServerSettings} from "@/service/types/api.types";
+import {IBookingUser, IDocument, IServerSettings, IMultiDomain} from "@/service/types/api.types";
 import {
 	fetchApplication,
 	fetchApplicationComments,
@@ -30,6 +30,7 @@ import {
 	fetchSessionId,
 	fetchTowns,
 	fetchUpcomingEvents,
+	fetchMultiDomains,
 	patchBookingUser
 } from "@/service/api/api-utils";
 import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
@@ -1447,4 +1448,23 @@ export function useResourceArticles({
 		queryKey: ['resourceArticles', resourceIds.sort().join(',')],
 		queryFn: fetchArticles,
 	});
+}
+
+/**
+ * Hook to fetch multi-domains data using the dedicated endpoint
+ * @param options - Query options including initialData for server-side rendering
+ */
+export function useMultiDomains(options?: {
+	initialData?: IMultiDomain[]
+}): UseQueryResult<IMultiDomain[]> {
+	return useQuery(
+		{
+			queryKey: ['multiDomains'],
+			queryFn: () => fetchMultiDomains(), // Fetch function
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour (cached)
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			initialData: options?.initialData, // Use server-side fetched data if available
+		}
+	);
 }

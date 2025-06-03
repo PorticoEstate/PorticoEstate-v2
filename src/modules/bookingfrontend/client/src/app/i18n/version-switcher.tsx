@@ -20,15 +20,14 @@ const VersionSwitcher: React.FC = () => {
   // Get localized versions
   const versions = [
 		  { key: 'original', label: 'common.original' },
-		  { key: 'new', label: 'common.new' },
-		  { key: 'beta', label: 'bookingfrontend.beta_version' }
+		  { key: 'new', label: 'common.new' }
 	  ];
 
   // Determine current version
   const currentVersion = versionSettings?.version || 'original';
 
   // Handle version change
-  const handleVersionChange = (version: 'original' | 'new' | 'beta') => {
+  const handleVersionChange = (version: 'original' | 'new') => {
     setIsOpen(false);
     setVersion(version);
   };
@@ -75,7 +74,7 @@ const VersionSwitcher: React.FC = () => {
           {versions.map((ver) => (
             <Button
               key={ver.key}
-              onClick={() => handleVersionChange(ver.key as 'original' | 'new' | 'beta')}
+              onClick={() => handleVersionChange(ver.key as 'original' | 'new')}
               variant={currentVersion === ver.key ? "secondary" : "tertiary"}
               style={{
                 width: '200px',

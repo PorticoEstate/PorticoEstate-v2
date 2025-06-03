@@ -603,5 +603,18 @@ trait SerializableTrait
         }
     }
 
+    /**
+     * Convert the object to an array using the serialize method
+     * This is a convenience method that calls serialize() with default parameters
+     * 
+     * @param array $context Additional context for serialization
+     * @param bool $short Whether to use short serialization (only properties marked with @Short)
+     * @return array|null The serialized array representation of the object
+     */
+    public function toArray(array $context = [], bool $short = false): ?array
+    {
+        return $this->serialize($context, $short);
+    }
+
 
 }

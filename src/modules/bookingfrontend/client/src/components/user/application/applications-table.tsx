@@ -80,7 +80,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 			accessorFn: (row) => row.resources,
 			header: t('bookingfrontend.resources'),
 			meta: {
-				toStringEx: (v: IShortResource[]) => v.map(r => r.name)
+				toStringEx: (v: any) => v.map((r: any) => r.name)
 			},
 			cell: info => {
 				const resources = info.getValue<IShortResource[]>();

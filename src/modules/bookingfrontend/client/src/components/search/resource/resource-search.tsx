@@ -489,7 +489,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
             return (
                 <div className={styles.noResults}>
                     <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
-                    {renderSearchInfo()}
+                    {/*{renderSearchInfo()}*/}
                 </div>
             );
         }
@@ -504,7 +504,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                     >
                         {t('bookingfrontend.search_clear_filters')}
                     </Button>
-                    {renderSearchInfo()}
+                    {/*{renderSearchInfo()}*/}
                 </div>
             );
         }

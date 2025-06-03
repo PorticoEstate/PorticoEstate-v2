@@ -5,7 +5,8 @@ import {useApplication, useResourceRegulationDocuments} from "@/service/hooks/ap
 import {Card, Heading, Paragraph, Spinner, Link as DigdirLink} from "@digdir/designsystemet-react";
 import ApplicationComments from "./application-comments";
 import PageHeader from "@/components/page-header/page-header";
-import styles from "@/components/layout/header/internal-nav/internal-nav.module.scss";
+import navStyles from "@/components/layout/header/internal-nav/internal-nav.module.scss";
+import styles from "./application-details.module.scss";
 import Link from "next/link";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faArrowLeft} from "@fortawesome/free-solid-svg-icons";
@@ -21,10 +22,10 @@ interface ApplicationDetailsProps {
 }
 
 const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
-	const { data: application, isLoading, error } = useApplication(props.applicationId, {
+	const {data: application, isLoading, error} = useApplication(props.applicationId, {
 		initialData: props.initialApplication
 	});
-	const { data: regulationDocuments } = useResourceRegulationDocuments(
+	const {data: regulationDocuments} = useResourceRegulationDocuments(
 		application?.resources || []
 	);
 	const t = useTrans();
@@ -32,8 +33,8 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 
 	if (isLoading) {
 		return (
-			<div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
-				<Spinner data-size="lg" aria-label={t('common.loading')} />
+			<div style={{display: 'flex', justifyContent: 'center', padding: '2rem'}}>
+				<Spinner data-size="lg" aria-label={t('common.loading')}/>
 			</div>
 		);
 	}
@@ -41,7 +42,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 	if (error || !application) {
 		return (
 			<main>
-				<PageHeader title={t('bookingfrontend.application')} />
+				<PageHeader title={t('bookingfrontend.application')}/>
 				<Card>
 					<Heading level={2} data-size="sm">{t('common.error')}</Heading>
 					<Paragraph>{t('common.application not found')}</Paragraph>
@@ -52,8 +53,8 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 
 	return (
 		<main>
-			<div style={{marginBottom: '1rem'}}>
-				<div className={`${styles.internalNavContainer} mx-standard`}>
+			<div>
+				<div className={`${navStyles.internalNavContainer}`}>
 					<Link className={'link-text link-text-primary'} href={'/user/applications'}>
 						<FontAwesomeIcon icon={faArrowLeft}/>
 						{t('common.back')}
@@ -61,72 +62,105 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 				</div>
 			</div>
 			<PageHeader title={application.name || t('bookingfrontend.application')}/>
-				<div className="mx-standard" style={{marginTop: '-0.75rem', marginBottom: '1rem', textAlign: 'left'}}>
-					<div className="text-overline" style={{color: 'var(--digdir-info-text-subtle)', fontWeight: 400}}>
-						#{application.id}
-					</div>
+			<div>
+				<div className="font-size-h4" style={{color: 'var(--ds-color-text-subtle)', fontWeight: 400}}>
+					#{application.id}
 				</div>
+			</div>
 
-			<Card>
-				<div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem'}}>
-					<div>
-						<Heading level={3} data-size="xs">{t('bookingfrontend.status')}</Heading>
-						<Paragraph>
-              <span className={`status-badge status-${application.status.toLowerCase()}`}>
-                {t(`bookingfrontend.${application.status.toLowerCase()}`)}
-              </span>
-						</Paragraph>
-					</div>
-
-					<div>
-						<Heading level={3} data-size="xs">{t('bookingfrontend.created')}</Heading>
-						<Paragraph>{DateTime.fromSQL(application.created).toFormat('dd.MM.yyyy')}</Paragraph>
-					</div>
-
-					<div>
-						<Heading level={3} data-size="xs">{t('bookingfrontend.modified')}</Heading>
-						<Paragraph>{DateTime.fromSQL(application.modified).toFormat('dd.MM.yyyy HH:mm')}</Paragraph>
-					</div>
-
-					<div>
-						<Heading level={3} data-size="xs">{t('bookingfrontend.where')}</Heading>
-						<Paragraph>{application.building_name}</Paragraph>
-					</div>
-
-					<div>
-						<Heading level={3} data-size="xs">{t('bookingfrontend.resources')}</Heading>
-						<ResourceCircles resources={application.resources} maxCircles={4} size={'small'} expandable/>
-					</div>
-
-					<div>
-						<Heading level={3} data-size="xs">{t('bookingfrontend.dates')}</Heading>
+			<Card className={styles.responsiveCard}>
+				<div className={styles.contentGrid}>
+					<div className={styles.detailItem}>
 						<div>
-							{application.dates.map((date, index) => (
-								<Paragraph key={index}>
-									{DateTime.fromISO(date.from_).toFormat('dd.MM.yyyy HH:mm')} - {DateTime.fromISO(date.to_).toFormat('HH:mm')}
-								</Paragraph>
-							))}
+							<Heading level={3} data-size="xs">{t('bookingfrontend.status')}</Heading>
+						</div>
+						<div>
+							<Paragraph>
+								<span className={`status-badge status-${application.status.toLowerCase()}`}>
+									{t(`bookingfrontend.${application.status.toLowerCase()}`)}
+								</span>
+							</Paragraph>
 						</div>
 					</div>
 
-					<div>
-						<Heading level={3} data-size="xs">{t('bookingfrontend.contact')}</Heading>
-						<Paragraph>{application.contact_name}</Paragraph>
-						<Paragraph>{application.contact_email}</Paragraph>
-						<Paragraph>{application.contact_phone}</Paragraph>
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.created')}</Heading>
+						</div>
+						<div>
+							<Paragraph>{DateTime.fromSQL(application.created).toFormat('dd.MM.yyyy')}</Paragraph>
+						</div>
 					</div>
+
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.modified')}</Heading>
+						</div>
+						<div>
+							<Paragraph>{DateTime.fromSQL(application.modified).toFormat('dd.MM.yyyy HH:mm')}</Paragraph>
+						</div>
+					</div>
+
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.where')}</Heading>
+						</div>
+						<div>
+							<Paragraph>{application.building_name}</Paragraph>
+						</div>
+					</div>
+
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.resources')}</Heading>
+						</div>
+						<div>
+							<ResourceCircles resources={application.resources} maxCircles={4} size={'small'} expandable/>
+						</div>
+					</div>
+
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.start_time')}</Heading>
+						</div>
+						<div>
+							<div>
+								{application.dates.map((date, index) => (
+									<Paragraph key={index}>
+										{DateTime.fromISO(date.from_).toFormat('dd.MM.yyyy HH:mm')}
+									</Paragraph>
+								))}
+							</div>
+						</div>
+					</div>
+
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.end_time')}</Heading>
+						</div>
+						<div>
+							<div>
+								{application.dates.map((date, index) => (
+									<Paragraph key={index}>
+										{DateTime.fromISO(date.to_).toFormat('dd.MM.yyyy HH:mm')}
+									</Paragraph>
+								))}
+							</div>
+						</div>
+					</div>
+
 				</div>
 			</Card>
 
 			{application.description && (
-				<Card style={{ marginTop: '1rem' }}>
+				<Card className={styles.responsiveCard} style={{marginTop: '1rem'}}>
 					<Heading level={3} data-size="xs">{t('bookingfrontend.description')}</Heading>
 					<Paragraph>{application.description}</Paragraph>
 				</Card>
 			)}
 
 			<section className="my-2">
-				<ApplicationComments 
+				<ApplicationComments
 					applicationId={props.applicationId}
 					secret={application?.secret || undefined}
 				/>
@@ -148,7 +182,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						{application.agegroups && application.agegroups.length > 0 ? (
 							<div>
 								{application.agegroups.map((agegroup, index) => (
-									<div key={index} style={{ marginBottom: '0.5rem' }}>
+									<div key={index} style={{marginBottom: '0.5rem'}}>
 										<Heading level={4} data-size="xs">{agegroup.name}</Heading>
 										<Paragraph>
 											{t('bookingfrontend.participants')}: {agegroup.female ? (agegroup.male + agegroup.female) : agegroup.male}
@@ -167,7 +201,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						<h3>{t('bookingfrontend.contact & invoice')}</h3>
 					</GSAccordion.Heading>
 					<GSAccordion.Content>
-						<div style={{ marginBottom: '1rem' }}>
+						<div style={{marginBottom: '1rem'}}>
 							<Heading level={4} data-size="xs">{t('bookingfrontend.contact')}</Heading>
 							<Paragraph>{application.contact_name}</Paragraph>
 							<Paragraph>{application.contact_email}</Paragraph>
@@ -194,7 +228,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						<GSAccordion.Content>
 							<div>
 								{regulationDocuments.map((doc) => (
-									<div key={doc.id} style={{ marginBottom: '0.5rem' }}>
+									<div key={doc.id} style={{marginBottom: '0.5rem'}}>
 										<DigdirLink
 											href={getDocumentLink(doc, doc.owner_type || 'resource')}
 											target="_blank"

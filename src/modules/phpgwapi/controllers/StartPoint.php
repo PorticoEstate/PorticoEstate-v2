@@ -459,12 +459,18 @@ class StartPoint
 					'bookingfrontend.uibuilding.show' => '/bookingfrontend/client/building/%id%',
 					'bookingfrontend.uiresource.show' => '/bookingfrontend/client/resource/%id%',
 					'bookingfrontend.uiuser.show' => '/bookingfrontend/client/user/details',
+					'bookingfrontend.uiapplication.add_contact' => '/bookingfrontend/client/checkout',
+
 						// Add more mappings as needed
 					];
 
 					foreach ($redirectMap as $action => $redirectUrl) {
 						if (strpos($menuaction, $action) === 0) {
-						// Replace placeholders with actual values if needed
+						// Don't redirect if payment_order_id is set
+						if (isset($_GET['payment_order_id'])) {
+							break; // Skip redirect for payment flows
+						}
+							// Replace placeholders with actual values if needed
 						if (strpos($redirectUrl, '%id%') !== false) {
 							if (isset($_GET['id'])) {
 								$redirectUrl = str_replace('%id%', $_GET['id'], $redirectUrl);

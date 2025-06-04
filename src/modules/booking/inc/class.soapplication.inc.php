@@ -821,59 +821,73 @@ class booking_soapplication extends booking_socommon
 	function delete_payment($remote_order_id)
 	{
 		$remote_id = $this->db->db_addslashes($remote_order_id);
-		$this->db->query("SELECT * FROM bb_payment WHERE remote_id ='{$remote_id}'", __LINE__, __FILE__);
+		$sql = "DELETE FROM bb_payment WHERE remote_id = '{$remote_id}'";
+		return $this->db->query($sql, __LINE__, __FILE__);
 	}
 
 	function add_payment($order_id, $msn, $mode = 'live',  $payment_method_id = 1)
 	{
+		// Handle both single order_id and array of order_ids
+		$order_ids = is_array($order_id) ? $order_id : [$order_id];
+		$primary_order_id = $order_ids[0];
 
-		$sql = "SELECT count(id) AS cnt FROM bb_payment WHERE order_id =" . (int)$order_id;
+		$sql = "SELECT count(id) AS cnt FROM bb_payment WHERE order_id =" . (int)$primary_order_id;
 
 		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$cnt		 = (int)$this->db->f('cnt');
 		$payment_attempt = $cnt + 1;
-		$remote_id	 = "{$msn}-{$order_id}-order-{$order_id}-{$payment_attempt}";
+		$remote_id	 = "{$msn}-{$primary_order_id}-order-{$primary_order_id}-{$payment_attempt}";
 
-		//			$order = $this->get_single_purchase_order($order_id);
-		$order = createObject('booking.sopurchase_order')->get_single_purchase_order($order_id);
+		$sopurchase_order = createObject('booking.sopurchase_order');
 
+		// Create payment records for all orders with the same remote_id
+		foreach ($order_ids as $single_order_id) {
+			$order = $sopurchase_order->get_single_purchase_order($single_order_id);
 
-		$value_set = array(
-			'order_id' => $order_id,
-			'payment_method_id'	 => (int) $payment_method_id,
-			'payment_gateway_mode' => $mode, //test and live.
-			'remote_id' => $remote_id,
-			'remote_state' => null,
-			'amount' => $order['sum'],
-			'currency' => 'NOK',
-			'refunded_amount' => '0.0',
-			'refunded_currency' => 'NOK',
-			'status' => 'new', // pending, completed, voided, partially_refunded, refunded
-			'created' => time(),
-			'autorized' => null,
-			'expires' => null,
-			'completet' => null,
-			'captured' => null,
-			//			'avs_response_code' => array('type' => 'varchar', 'precision' => '15', 'nullable' => true),
-			//			'avs_response_code_label' => array('type' => 'varchar', 'precision' => '35', 'nullable' => true),
-		);
+			$value_set = array(
+				'order_id' => $single_order_id,
+				'payment_method_id'	 => (int) $payment_method_id,
+				'payment_gateway_mode' => $mode, //test and live.
+				'remote_id' => $remote_id,
+				'remote_state' => null,
+				'amount' => $order['sum'],
+				'currency' => 'NOK',
+				'refunded_amount' => '0.0',
+				'refunded_currency' => 'NOK',
+				'status' => 'new', // pending, completed, voided, partially_refunded, refunded
+				'created' => time(),
+				'autorized' => null,
+				'expires' => null,
+				'completet' => null,
+				'captured' => null,
+				//			'avs_response_code' => array('type' => 'varchar', 'precision' => '15', 'nullable' => true),
+				//			'avs_response_code_label' => array('type' => 'varchar', 'precision' => '35', 'nullable' => true),
+			);
 
-		$this->db->query('INSERT INTO bb_payment (' . implode(',', array_keys($value_set)) . ') VALUES ('
-			. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
+			$this->db->query('INSERT INTO bb_payment (' . implode(',', array_keys($value_set)) . ') VALUES ('
+				. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
+		}
+
 		return $remote_id;
 	}
 
 	function get_application_from_payment_order($payment_order_id)
 	{
 		$remote_id	 = $this->db->db_addslashes($payment_order_id);
-		$sql = "SELECT application_id FROM bb_payment"
+		$sql = "SELECT DISTINCT application_id FROM bb_payment"
 			. " JOIN bb_purchase_order ON bb_payment.order_id = bb_purchase_order.id"
 			. "	WHERE remote_id = '{$remote_id}'";
 
 		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		return $this->db->f('application_id');
+		
+		$application_ids = array();
+		while ($this->db->next_record())
+		{
+			$application_ids[] = (int)$this->db->f('application_id');
+		}
+		
+		return $application_ids;
 	}
 
 	/**

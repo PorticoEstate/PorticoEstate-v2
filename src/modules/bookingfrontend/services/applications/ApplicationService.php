@@ -9,6 +9,7 @@ use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\Database\Db;
 use App\modules\bookingfrontend\services\DocumentService;
+use App\modules\bookingfrontend\services\EventService;
 use App\modules\phpgwapi\services\Settings;
 use PDO;
 use Exception;

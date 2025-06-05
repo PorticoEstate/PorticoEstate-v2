@@ -435,7 +435,7 @@
 							</xsl:otherwise>
 						</xsl:choose>
 					</div>
-					
+
 					<!-- Only show status and dates for single applications (detailed info is in summary above for multiple) -->
 					<xsl:if test="application/related_application_count &lt;= 1">
 						<div class="d-flex w-100 justify-content-between">
@@ -512,7 +512,7 @@
 															</p>
 															<p class="card-text mb-2">
 																<small class="text-muted">
-																	<xsl:value-of select="php:function('lang', 'Status')" />: 
+																	<xsl:value-of select="php:function('lang', 'Status')" />:
 																	<span class="badge bg-primary text-white"><xsl:value-of select="php:function('lang', string(status))"/></span>
 																</small>
 															</p>
@@ -949,7 +949,7 @@
 																<xsl:value-of select="php:function('lang', 'Building schedule')" />
 															</a>)
 														</p>
-														
+
 														<!-- Display application count if multiple applications -->
 														<xsl:if test="application/related_application_count > 1">
 															<p class="mb-1" style="font-weight: bold; color: #2c5aa0;">
@@ -963,45 +963,45 @@
 												<div class="list-group">
 													<div class="list-group-item flex-column align-items-start">
 														<!-- Show combined orders for multiple applications -->
-														<xsl:if test="application/related_application_count > 1 and application/combined_orders">
-															<div class="d-flex w-100 justify-content-between">
-																<h5 class="mb-1">
-																	<xsl:value-of select="php:function('lang', 'Orders from all applications')" />
-																</h5>
-															</div>
-															<xsl:for-each select="application/combined_orders">
-																<div class="mb-3">
-																	<h6><xsl:value-of select="php:function('lang', 'Order')" /> #<xsl:value-of select="order_id"/></h6>
-																	<table class="table table-sm">
-																		<thead>
-																			<tr>
-																				<th><xsl:value-of select="php:function('lang', 'Article')" /></th>
-																				<th><xsl:value-of select="php:function('lang', 'Quantity')" /></th>
-																				<th><xsl:value-of select="php:function('lang', 'Unit Price')" /></th>
-																				<th><xsl:value-of select="php:function('lang', 'Amount')" /></th>
-																			</tr>
-																		</thead>
-																		<tbody>
-																			<xsl:for-each select="lines">
-																				<tr>
-																					<td><xsl:value-of select="name"/></td>
-																					<td><xsl:value-of select="quantity"/> <xsl:value-of select="unit"/></td>
-																					<td><xsl:value-of select="unit_price"/></td>
-																					<td><xsl:value-of select="amount"/></td>
-																				</tr>
-																			</xsl:for-each>
-																		</tbody>
-																		<tfoot>
-																			<tr>
-																				<th colspan="3"><xsl:value-of select="php:function('lang', 'Total')" /></th>
-																				<th><xsl:value-of select="sum"/></th>
-																			</tr>
-																		</tfoot>
-																	</table>
-																</div>
-															</xsl:for-each>
-														</xsl:if>
-														
+<!--														<xsl:if test="application/related_application_count > 1 and application/combined_orders">-->
+<!--															<div class="d-flex w-100 justify-content-between">-->
+<!--																<h5 class="mb-1">-->
+<!--																	<xsl:value-of select="php:function('lang', 'Orders from all applications')" />-->
+<!--																</h5>-->
+<!--															</div>-->
+<!--															<xsl:for-each select="application/combined_orders">-->
+<!--																<div class="mb-3">-->
+<!--																	<h6><xsl:value-of select="php:function('lang', 'Order')" /> #<xsl:value-of select="order_id"/></h6>-->
+<!--																	<table class="table table-sm">-->
+<!--																		<thead>-->
+<!--																			<tr>-->
+<!--																				<th><xsl:value-of select="php:function('lang', 'Article')" /></th>-->
+<!--																				<th><xsl:value-of select="php:function('lang', 'Quantity')" /></th>-->
+<!--																				<th><xsl:value-of select="php:function('lang', 'Unit Price')" /></th>-->
+<!--																				<th><xsl:value-of select="php:function('lang', 'Amount')" /></th>-->
+<!--																			</tr>-->
+<!--																		</thead>-->
+<!--																		<tbody>-->
+<!--																			<xsl:for-each select="lines">-->
+<!--																				<tr>-->
+<!--																					<td><xsl:value-of select="name"/></td>-->
+<!--																					<td><xsl:value-of select="quantity"/> <xsl:value-of select="unit"/></td>-->
+<!--																					<td><xsl:value-of select="unit_price"/></td>-->
+<!--																					<td><xsl:value-of select="amount"/></td>-->
+<!--																				</tr>-->
+<!--																			</xsl:for-each>-->
+<!--																		</tbody>-->
+<!--																		<tfoot>-->
+<!--																			<tr>-->
+<!--																				<th colspan="3"><xsl:value-of select="php:function('lang', 'Total')" /></th>-->
+<!--																				<th><xsl:value-of select="sum"/></th>-->
+<!--																			</tr>-->
+<!--																		</tfoot>-->
+<!--																	</table>-->
+<!--																</div>-->
+<!--															</xsl:for-each>-->
+<!--														</xsl:if>-->
+
 														<!-- Always show articles_container for JavaScript-populated orders -->
 														<div id="articles_container" style="display:inline-block;">
 														</div>
@@ -1299,7 +1299,7 @@
 					</div>
 				</xsl:for-each>
 			</div>
-		
+
 			<!-- FOURTH PANE START -->
 			<div class="tab-pane fade" id="history">
 				<h3>
@@ -1606,7 +1606,7 @@
 		</div>
 		<!-- /.modal-dialog -->
 	</div>
-	
+
 	<div class="modal fade" id="acceptApplicationModal" tabindex="-1" role="dialog" aria-labelledby="acceptApplicationModalLabel" aria-hidden="true">
 	  <div class="modal-dialog modal-dialog-centered" role="document">
 		<div class="modal-content">
@@ -1641,7 +1641,7 @@
 		</div>
 	  </div>
 	</div>
-	
+
 	<div class="modal fade" id="rejectApplicationModal" tabindex="-1" role="dialog" aria-labelledby="rejectApplicationModalLabel" aria-hidden="true">
 	  <div class="modal-dialog modal-dialog-centered" role="document">
 		<div class="modal-content">

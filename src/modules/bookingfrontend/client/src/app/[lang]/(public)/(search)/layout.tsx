@@ -4,37 +4,39 @@ import {fetchServerSettings} from "@/service/api/api-utils";
 import {Alert, Heading, Paragraph} from "@digdir/designsystemet-react";
 import {getTranslation} from "@/app/i18n";
 import ClientHeading from "@/app/[lang]/(public)/(search)/client-heading";
-import ServerMessages from '@/components/server-messages/server-messages';
-import parse from 'html-react-parser';
-import {unescapeHTML} from "@/components/building-page/util/building-text-util";
-
-
-const hasValidContent = (content: string | undefined): boolean => {
-	if (!content) return false;
-	// Remove HTML tags and check if there's actual text content
-	const textContent = content.replace(/<[^>]*>/g, '').trim();
-	return textContent.length > 0;
-};
+import {normalizeText} from "@/components/building-page/util/building-text-util";
 
 export const dynamic = 'force-dynamic';
 export default async function Layout(props: PropsWithChildren) {
 	const serverSettings = await fetchServerSettings();
 	const {t} = await getTranslation();
 
+	const frontImageText = serverSettings.booking_config?.frontimagetext
+		? normalizeText(serverSettings.booking_config.frontimagetext)
+		: null;
+
+	const frontPageText = serverSettings.booking_config?.frontpagetext
+		? normalizeText(serverSettings.booking_config.frontpagetext)
+		: null;
+
 	return (
 		<div>
 			{/* Warning alert box with frontimagetext */}
-			{hasValidContent(serverSettings.booking_config?.frontimagetext) && (
+			{frontImageText && frontImageText.body && (
 				<Alert data-color="warning" style={{marginBottom: '1rem'}}>
-					{parse(unescapeHTML(serverSettings?.booking_config?.frontimagetext!))}
+					{frontImageText.title && <strong>{frontImageText.title}</strong>}
+					{frontImageText.title && frontImageText.body && <br />}
+					{frontImageText.body}
 				</Alert>
 			)}
 
 			{/* Info alert box with frontpagetext */}
-			{hasValidContent(serverSettings.booking_config?.frontpagetext) && (
-				// <Alert data-color="info" style={{marginBottom: '1rem'}}>
-				<div>{parse(unescapeHTML(serverSettings?.booking_config?.frontpagetext!))}</div>
-				// </Alert>
+			{frontPageText && frontPageText.body && (
+				<div data-color="info" style={{marginBottom: '1rem'}}>
+					{frontPageText.title && <Heading level={4} data-size={'md'} style={{margin:0 }}>{frontPageText.title}</Heading>}
+					{/*{frontPageText.title && frontPageText.body && <br />}*/}
+					{frontPageText.body}
+				</div>
 			)}
 			<ClientHeading>
 

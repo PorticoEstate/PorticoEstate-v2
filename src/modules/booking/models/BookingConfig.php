@@ -284,6 +284,7 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
      */
     public $frontimagetext;
 
@@ -294,11 +295,13 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
      */
     public $frontpagetext;
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
      */
     public $frontpagetitle;
 

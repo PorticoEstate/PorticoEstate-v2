@@ -63,3 +63,39 @@ export function extractDescriptionText(description_json: string, i18n: i18n): st
     }
     return description;
 }
+
+interface NormalizedText {
+    title?: string;
+    body: string;
+}
+
+/**
+ * Normalizes HTML text by removing all styling, extracting title from h1 tags,
+ * and cleaning up whitespace.
+ */
+export function normalizeText(html: string): NormalizedText {
+    if (!html) return { body: '' };
+    
+    // First unescape HTML entities
+    const unescaped = unescapeHTML(html);
+    
+    // Remove preceding and ending newlines
+    const trimmed = unescaped.trim();
+    
+    // Extract title from first h1 tag
+    const h1Match = trimmed.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    const title = h1Match ? h1Match[1].replace(/<[^>]*>/g, '').trim() : undefined;
+    
+    // Remove all HTML tags to get plain text
+    let body = trimmed.replace(/<[^>]*>/g, '');
+    
+    // If we extracted a title, remove it from the body
+    if (title && body.startsWith(title)) {
+        body = body.substring(title.length).trim();
+    }
+    
+    // Clean up extra whitespace
+    body = body.replace(/\s+/g, ' ').trim();
+    
+    return { title, body };
+}

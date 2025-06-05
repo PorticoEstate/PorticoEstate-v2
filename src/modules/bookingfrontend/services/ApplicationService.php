@@ -277,7 +277,7 @@ class ApplicationService
                 'responsible_street' => $data['street'],
                 'responsible_zip_code' => $data['zipCode'],
                 'responsible_city' => $data['city'],
-                'name' => $data['eventTitle'],
+//                'name' => $data['eventTitle'],
                 'organizer' => $data['organizerName'],
                 'customer_identifier_type' => $data['customerType'],
                 'customer_organization_number' => $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null,
@@ -547,7 +547,6 @@ class ApplicationService
             'street' => 'Street address',
             'zipCode' => 'Zip code',
             'city' => 'City',
-            'eventTitle' => 'Event title',
             'organizerName' => 'Organizer name',
             'customerType' => 'Customer type'
         ];
@@ -823,23 +822,23 @@ class ApplicationService
 
     public function createSimpleBooking(int $resourceId, int $buildingId, string $from, string $to, string $sessionId): array
     {
-        
+
         $startedTransaction = false;
         try
         {
             // ATOMIC LOCK ACQUISITION - Use Redis SETNX for true atomicity
             $lockKey = "booking_lock_{$resourceId}_{$from}_{$to}";
             $lockTtl = 30; // 30 seconds should be enough for the booking process
-            
+
             // Try to acquire the atomic lock
             $lockAcquired = \App\modules\phpgwapi\services\Cache::acquire_atomic_lock('booking', $lockKey, $sessionId, $lockTtl);
-            
+
             if (!$lockAcquired) {
                 $errorMessage = lang('resource_already_being_booked');
                 \App\modules\phpgwapi\services\Cache::message_set($errorMessage, 'error');
                 throw new \Exception($errorMessage);
             }
-            
+
             try {
                 // Start database transaction for atomic booking operation
                 // This ensures that the overlap check and application creation happen atomically
@@ -848,10 +847,10 @@ class ApplicationService
                     $this->db->beginTransaction();
                     $startedTransaction = true;
                 }
-                
+
                 // IMPORTANT: All overlap checking must happen WITHIN this transaction
                 // to prevent race conditions between concurrent booking attempts
-                
+
                 // Verify we're in a transaction before using FOR UPDATE
                 if (!$this->db->inTransaction()) {
                     throw new \Exception("Database transaction required for atomic booking operation");
@@ -885,7 +884,7 @@ class ApplicationService
                 // Check if any overlapping application was found and locked
                 $overlappingApp = $stmt->fetch(\PDO::FETCH_ASSOC);
                 $hasOverlap = (bool)$overlappingApp;
-                
+
                 // Log the atomic check for debugging
                 if ($hasOverlap) {
                     error_log("ATOMIC OVERLAP DETECTED: Found conflicting application #{$overlappingApp['id']} (status: {$overlappingApp['status']}) for resource {$resourceId}, time {$from} to {$to}");
@@ -905,7 +904,7 @@ class ApplicationService
 
                     // Release atomic lock since we're not proceeding with the booking
                     \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-                    
+
                     // Also clear database blocks since booking failed
                     try {
                         $sql = "UPDATE bb_block SET active = 0
@@ -913,7 +912,7 @@ class ApplicationService
                             AND resource_id = :resource_id
                             AND from_ = :from
                             AND to_ = :to";
-                            
+
                         $clearStmt = $this->db->prepare($sql);
                         $clearStmt->execute([
                             ':session_id' => $sessionId,
@@ -921,21 +920,21 @@ class ApplicationService
                             ':from' => $from,
                             ':to' => $to
                         ]);
-                        
+
                         $updatedCount = $clearStmt->rowCount();
                         error_log("LOCKS AND BLOCKS RELEASED (database conflict): Resource ID {$resourceId}, time {$from} to {$to}, cleared {$updatedCount} blocks");
                     } catch (\Exception $clearEx) {
                         // Just log this error but don't interrupt the flow
                         error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage());
                     }
-                    
+
                     // Throw exception to stop the booking process
                     throw new \Exception($errorMessage);
                 }
             } catch (\Exception $e) {
                 // If any exception occurs during the DB check, release atomic lock before re-throwing
                 \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-                
+
                 // Also clear database blocks since booking failed
                 try {
                     $sql = "UPDATE bb_block SET active = 0
@@ -943,7 +942,7 @@ class ApplicationService
                         AND resource_id = :resource_id
                         AND from_ = :from
                         AND to_ = :to";
-                        
+
                     $clearStmt = $this->db->prepare($sql);
                     $clearStmt->execute([
                         ':session_id' => $sessionId,
@@ -951,14 +950,14 @@ class ApplicationService
                         ':from' => $from,
                         ':to' => $to
                     ]);
-                    
+
                     $updatedCount = $clearStmt->rowCount();
                     error_log("LOCKS AND BLOCKS RELEASED (early error): Resource ID {$resourceId}, time {$from} to {$to}, cleared {$updatedCount} blocks, error: " . $e->getMessage());
                 } catch (\Exception $clearEx) {
                     // Just log this error but don't interrupt the flow
                     error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage() . " while handling original error: " . $e->getMessage());
                 }
-                
+
                 throw $e;
             }
 
@@ -1059,7 +1058,7 @@ class ApplicationService
             {
                 $this->db->commit();
             }
-            
+
             // Operation successful - release the atomic lock
             \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
 
@@ -1074,10 +1073,10 @@ class ApplicationService
             {
                 $this->db->rollBack();
             }
-            
+
             // Release atomic lock in error cases
             \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-            
+
             // Also clear database blocks since booking failed
             try {
                 $sql = "UPDATE bb_block SET active = 0
@@ -1085,7 +1084,7 @@ class ApplicationService
                     AND resource_id = :resource_id
                     AND from_ = :from
                     AND to_ = :to";
-                    
+
                 $clearStmt = $this->db->prepare($sql);
                 $clearStmt->execute([
                     ':session_id' => $sessionId,
@@ -1093,13 +1092,13 @@ class ApplicationService
                     ':from' => $from,
                     ':to' => $to
                 ]);
-                
+
                 $updatedCount = $clearStmt->rowCount();
             } catch (\Exception $clearEx) {
                 // Just log this error but don't interrupt the flow
                 error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage() . " while handling original error: " . $e->getMessage());
             }
-            
+
             throw $e;
         }
     }
@@ -1479,13 +1478,13 @@ class ApplicationService
             return false;
         }
     }
-    
+
     /**
      * Explicitly clear blocks and cache locks for a resource and time slot
-     * 
+     *
      * This should be called after a successful registration or when we're sure
      * the booking process is complete (whether successful or not)
-     * 
+     *
      * @param int $resourceId Resource ID
      * @param string $from Start time
      * @param string $to End time
@@ -1498,24 +1497,24 @@ class ApplicationService
             // Clear the specific timeslot lock
             $lockKey = "timeslot_lock_{$resourceId}_{$from}_{$to}";
             \App\modules\phpgwapi\services\Cache::system_clear('booking', $lockKey);
-            
+
             // Clear resource-level locks if this session owns them
             $resourceBookingFlag = "resource_booking_in_progress_{$resourceId}";
             $resourceBookingDetails = "resource_booking_details_{$resourceId}";
-            
+
             $currentLock = \App\modules\phpgwapi\services\Cache::system_get('booking', $resourceBookingFlag);
             if ($currentLock === $sessionId) {
                 \App\modules\phpgwapi\services\Cache::system_clear('booking', $resourceBookingFlag);
                 \App\modules\phpgwapi\services\Cache::system_clear('booking', $resourceBookingDetails);
             }
-            
+
             // Update blocks in the database
             $sql = "UPDATE bb_block SET active = 0
                 WHERE session_id = :session_id
                 AND resource_id = :resource_id
                 AND from_ = :from
                 AND to_ = :to";
-                
+
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 ':session_id' => $sessionId,
@@ -1523,10 +1522,10 @@ class ApplicationService
                 ':from' => $from,
                 ':to' => $to
             ]);
-            
+
             $updatedCount = $stmt->rowCount();
             error_log("Cleared {$updatedCount} blocks and locks for resource {$resourceId}, time {$from} to {$to}, session {$sessionId}");
-            
+
             return true;
         } catch (\Exception $e) {
             error_log("Error clearing blocks and locks: " . $e->getMessage());

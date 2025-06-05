@@ -22,6 +22,14 @@ const CheckoutContent: FC = () => {
     const [eventDetails, setEventDetails] = useState<CheckoutEventDetailsData>();
     const checkoutMutation = useCheckoutApplications();
     const [billingDetails, setBillingDetails] = useState<BillingFormData>();
+    const [selectedParentId, setSelectedParentId] = useState<number>();
+
+    // Preselect the first application as parent when applications load
+    useEffect(() => {
+        if (applications?.list?.length && !selectedParentId) {
+            setSelectedParentId(applications.list[0].id);
+        }
+    }, [applications?.list, selectedParentId]);
     const [currentApplication, setCurrentApplication] = useState<{
         application_id: number,
         date_id: number,
@@ -121,7 +129,6 @@ const CheckoutContent: FC = () => {
 
         try {
             checkoutMutation.mutateAsync({
-                eventTitle: eventDetails.title,
                 organizerName: eventDetails.organizerName,
                 customerType: billingDetails?.customerType || 'ssn',
                 contactName: billingDetails.contactName,
@@ -130,7 +137,8 @@ const CheckoutContent: FC = () => {
                 street: billingDetails.street,
                 zipCode: billingDetails.zipCode,
                 city: billingDetails.city,
-                documentsRead: billingDetails.documentsRead
+                documentsRead: billingDetails.documentsRead,
+                parent_id: selectedParentId
             }).then(() => {
                 router.push('/user/applications');
             })
@@ -152,7 +160,12 @@ const CheckoutContent: FC = () => {
     return (
         <div className={styles.content}>
             <CheckoutEventDetails user={user} partials={applications.list} onDetailsChange={setEventDetails} />
-            <CartSection applications={applications.list} setCurrentApplication={setCurrentApplication} />
+            <CartSection 
+                applications={applications.list} 
+                setCurrentApplication={setCurrentApplication}
+                selectedParentId={selectedParentId}
+                onParentIdChange={setSelectedParentId}
+            />
 
             <BillingForm 
                 user={user} 

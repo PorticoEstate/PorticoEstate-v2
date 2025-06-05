@@ -22,7 +22,7 @@ interface ApplicationsProps {
 const Applications: FC<ApplicationsProps> = (props) => {
     const t = useTrans();
     const {data: applicationsRaw, isLoading} = useApplications();
-
+	console.log(applicationsRaw);
     // const applicatiuons = useMemo<ITableApplication[]>(() => {
     //     if(!applicationsRaw) {
     //         return []

@@ -185,21 +185,21 @@ class ApplicationController extends DocumentController
             // Fetch detailed application information for notifications and block clearing
             $dates = $this->applicationService->applicationRepository->fetchDates($id);
             $resources = $this->applicationService->applicationRepository->fetchResources($id);
-            
+
             // Store building and resource data for notifications before deletion
             $buildingId = $application['building_id'] ?? null;
             $resourceIds = array_column($resources, 'id');
             $resourceId = !empty($resourceIds) ? $resourceIds[0] : null;
             $from = !empty($dates) ? $dates[0]['from_'] : null;
             $to = !empty($dates) ? $dates[0]['to_'] : null;
-            
+
             $deleted = $this->applicationService->deletePartial($id);
-            
+
             // Clear blocks for this application
             if ($deleted && $application && !empty($application['session_id'])) {
                 try {
                     $sessionId = $application['session_id'];
-                    
+
                     // Clear blocks for each resource and date
                     foreach ($resources as $resource) {
                         foreach ($dates as $date) {
@@ -211,7 +211,7 @@ class ApplicationController extends DocumentController
                             );
                         }
                     }
-                    
+
                     error_log("Blocks cleared for deleted application {$id}");
                 } catch (\Exception $e) {
                     // Log but continue, as the application is already deleted
@@ -748,7 +748,7 @@ class ApplicationController extends DocumentController
                 if (strpos($e->getMessage(), ',') !== false) {
                     // This is likely a validation error with multiple messages
                     return ResponseHelper::sendErrorResponse(
-                        ['errors' => explode(', ', $e->getMessage())],
+                        ['errors' => explode(', ', $e->getMessage()), 'plain' => $e],
                         400
                     );
                 }
@@ -1234,7 +1234,7 @@ class ApplicationController extends DocumentController
             $from = $fromDate->format('Y-m-d H:i:s');
             $to = $toDate->format('Y-m-d H:i:s');
 
-            
+
             // Check if resource supports simple booking and is available
             $result = $this->applicationService->createSimpleBooking(
                 (int)$data['resource_id'],
@@ -1243,7 +1243,7 @@ class ApplicationController extends DocumentController
                 $to,
                 $session_id
             );
-            
+
 
             $responseData = [
                 'id' => $result['id'],

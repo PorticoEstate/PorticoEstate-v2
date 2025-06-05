@@ -4,7 +4,6 @@ import {IApplication} from "@/service/types/api/application.types";
 
 export interface CheckoutFormData {
     // Event Details
-    eventTitle: string;
     organizerName: string;
 
     // Customer Type

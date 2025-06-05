@@ -41,6 +41,7 @@ class booking_uiapplication extends booking_uicommon
 		'cancel_payment'			 => true,
 		'refund_payment'			 => true,
 		'get_purchase_order'		 => true,
+		'articles'					 => true,
 		'delete'					 => true,
 		'get_activity_data'			 => true,
 		'get_applications'			 => true
@@ -580,7 +581,7 @@ class booking_uiapplication extends booking_uicommon
 
 		$filter_id_sql = $this->bo->accessable_applications(!empty($case_officer_id) ? array_map('abs', $case_officer_id) : null, $building_id);
 
-		$filters['where'] = "(bb_application.id IN ({$filter_id_sql}))";
+		$filters['where'] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL)";
 
 		$activity_id = Sanitizer::get_var('activities', 'int', 'REQUEST', null);
 		if ($activity_id)
@@ -655,6 +656,15 @@ class booking_uiapplication extends booking_uicommon
 			}
 			$fromdate = implode(',', $dates);
 			$application['from_'] = pretty_timestamp($fromdate);
+			
+			// Add child application count
+			$child_count = count($this->bo->so->get_child_applications($application['id']));
+			$application['child_count'] = $child_count;
+			if ($child_count > 0) {
+				$total_count = $child_count + 1;
+				$application['name'] = $application['name'] . ' (' . $total_count . ' ' . lang('applications') . ')';
+			}
+			
 			$application['status'] = lang($application['status']);
 			$application['created'] = pretty_timestamp($application['created']);
 			$application['modified'] = pretty_timestamp($application['modified']);
@@ -844,6 +854,22 @@ class booking_uiapplication extends booking_uicommon
 
 		return $purchase_order;
 	}
+
+	public function articles()
+	{
+		$application_id = Sanitizer::get_var('application_id', 'int');
+		
+		// Get related applications (parent + children) for combined display
+		$related_info = $this->bo->so->get_related_applications($application_id);
+		$application_ids = $related_info['application_ids'];
+		
+		$params = array(
+			'application_ids' => $application_ids
+		);
+		
+		return $this->bo->so->get_application_articles($params);
+	}
+
 	private function _combine_dates($from_, $to_)
 	{
 		return array('from_' => $from_, 'to_' => $to_);
@@ -3391,6 +3417,133 @@ class booking_uiapplication extends booking_uicommon
 		if (!$application)
 		{
 			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
+		}
+
+		// Get related applications (parent + children) for combined display
+		$related_info = $this->bo->so->get_related_applications($id);
+		$combined_applications = array();
+		$combined_resources = array();
+		$application_count = $related_info['total_count'];
+		
+		// Fetch all related applications
+		foreach ($related_info['application_ids'] as $app_id)
+		{
+			if ($app_id == $id)
+			{
+				$combined_applications[$app_id] = $application;
+			}
+			else
+			{
+				$related_app = $this->bo->read_single($app_id);
+				if ($related_app)
+				{
+					$combined_applications[$app_id] = $related_app;
+				}
+			}
+		}
+		
+		// Combine dates from all applications, keeping original resource associations
+		$combined_dates_with_resources = array();
+		foreach ($combined_applications as $app_id => $app)
+		{
+			if (!empty($app['dates']) && !empty($app['resources']))
+			{
+				foreach ($app['dates'] as $date)
+				{
+					// Create unique entry for each application's date, don't combine by time
+					$unique_key = $app_id . '_' . $date['from_'] . '_' . $date['to_'];
+					$combined_dates_with_resources[$unique_key] = array(
+						'from_' => $date['from_'],
+						'to_' => $date['to_'],
+						'id' => $date['id'],
+						'resources' => $app['resources'], // Keep original resources for this specific application
+						'application_ids' => array($app_id),
+						'application_name' => $app['name'] // Add application name for potential display
+					);
+				}
+			}
+		}
+		
+		// Sort by date
+		uasort($combined_dates_with_resources, function($a, $b) {
+			return strtotime($a['from_']) - strtotime($b['from_']);
+		});
+		
+		// Add resource names for each date
+		foreach ($combined_dates_with_resources as &$date_info)
+		{
+			if (!empty($date_info['resources']))
+			{
+				$resource_names = $this->bo->so->get_resource_name($date_info['resources']);
+				$date_info['resource_names'] = is_array($resource_names) ? implode(', ', $resource_names) : '';
+				$date_info['resource_list'] = $resource_names; // Keep array for potential future use
+			}
+			else
+			{
+				$date_info['resource_names'] = '';
+				$date_info['resource_list'] = array();
+			}
+		}
+		
+		// Create summary information for multiple applications
+		$application['related_applications_info'] = array();
+		if ($application_count > 1) {
+			foreach ($combined_applications as $app_id => $app) {
+				$date_ranges = array();
+				if (!empty($app['dates'])) {
+					foreach ($app['dates'] as $date) {
+						$date_ranges[] = pretty_timestamp($date['from_']) . ' - ' . pretty_timestamp($date['to_']);
+					}
+				}
+				$resource_names = !empty($app['resources']) ? $this->bo->so->get_resource_name($app['resources']) : array();
+				
+				$application['related_applications_info'][] = array(
+					'id' => $app_id,
+					'name' => $app['name'],
+					'status' => $app['status'],
+					'date_ranges' => $date_ranges,
+					'resource_names' => is_array($resource_names) ? $resource_names : array(),
+					'created' => pretty_timestamp($app['created'])
+				);
+			}
+		}
+		
+		// Update the main application with combined data
+		$application['dates'] = array_values($combined_dates_with_resources);
+		$application['related_application_count'] = $application_count;
+		$application['parent_id'] = $related_info['parent_id'];
+		
+		// Collect all unique resources
+		foreach ($combined_applications as $app)
+		{
+			if (!empty($app['resources']))
+			{
+				foreach ($app['resources'] as $resource_id)
+				{
+					if (!in_array($resource_id, $combined_resources))
+					{
+						$combined_resources[] = $resource_id;
+					}
+				}
+			}
+		}
+		$application['resources'] = $combined_resources;
+
+		// Get purchase orders from all related applications for articles_container
+		if ($application_count > 1) {
+			// Create a mock applications array to pass to get_purchase_order
+			$combined_app_results = array('results' => array());
+			foreach ($combined_applications as $app_id => $app) {
+				$combined_app_results['results'][] = array('id' => $app_id);
+			}
+			$this->bo->so->get_purchase_order($combined_app_results);
+			// Extract orders for the articles_container
+			$application['combined_orders'] = array();
+			foreach ($combined_app_results['results'] as $app) {
+				if (!empty($app['orders'])) {
+					$application['combined_orders'] = array_merge($application['combined_orders'], $app['orders']);
+				}
+			}
 		}
 
 		$resource_participant_limit_gross = CreateObject('booking.soresource')->get_participant_limit($application['resources'], true);

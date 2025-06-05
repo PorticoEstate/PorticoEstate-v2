@@ -569,7 +569,6 @@ export async function fetchUpcomingEvents(params?: UpcomingEventsParams): Promis
 }
 
 export interface VippsPaymentData {
-	eventTitle: string;
 	organizerName: string;
 	customerType: 'ssn' | 'organization_number';
 	organizationNumber?: string;

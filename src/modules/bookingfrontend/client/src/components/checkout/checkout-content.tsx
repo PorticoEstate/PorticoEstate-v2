@@ -66,10 +66,10 @@ const CheckoutContent: FC = () => {
 
     // State to track individual document checkboxes
     const [checkedDocuments, setCheckedDocuments] = useState<Record<number, boolean>>({});
-    
+
     // State to track if we should show document error
     const [showDocumentsError, setShowDocumentsError] = useState(false);
-    
+
     // Reference for the documents section
     const documentsSectionRef = React.useRef<HTMLDivElement>(null);
 
@@ -79,7 +79,7 @@ const CheckoutContent: FC = () => {
             ...prev,
             [documentId]: checked
         }));
-        
+
         // If user is checking a document, clear the error state
         if (checked) {
             setShowDocumentsError(false);
@@ -116,20 +116,20 @@ const CheckoutContent: FC = () => {
             console.log('missing Data', eventDetails, billingDetails);
             return;
         }
-        
+
         // Check if documents need to be confirmed
         if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
             // Show error state
             setShowDocumentsError(true);
-            
+
             // Scroll to documents section
             if (documentsSectionRef.current) {
-                documentsSectionRef.current.scrollIntoView({ 
+                documentsSectionRef.current.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
                 });
             }
-            
+
             // Don't submit the form
             return;
         }
@@ -160,25 +160,25 @@ const CheckoutContent: FC = () => {
         console.log('eventDetails:', eventDetails);
         console.log('applications:', applications);
         console.log('billingDetails:', billingDetails);
-        
+
         if (!eventDetails || !applications || !billingDetails) {
             console.log('missing Data for Vipps payment', eventDetails, billingDetails);
             return;
         }
-        
+
         // Check if documents need to be confirmed
         if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
             // Show error state
             setShowDocumentsError(true);
-            
+
             // Scroll to documents section
             if (documentsSectionRef.current) {
-                documentsSectionRef.current.scrollIntoView({ 
+                documentsSectionRef.current.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
                 });
             }
-            
+
             // Don't proceed with payment
             return;
         }
@@ -186,7 +186,6 @@ const CheckoutContent: FC = () => {
         try {
             console.log('=== CALLING VIPPS API ===');
             const paymentData = {
-                eventTitle: eventDetails.title,
                 organizerName: eventDetails.organizerName,
                 customerType: billingDetails?.customerType || 'ssn',
                 organizationNumber: billingDetails.organizationNumber,
@@ -200,7 +199,7 @@ const CheckoutContent: FC = () => {
                 documentsRead: billingDetails.documentsRead
             };
             console.log('Payment data:', paymentData);
-            
+
             await vippsPaymentMutation.mutateAsync(paymentData);
             console.log('=== VIPPS API CALL COMPLETED ===');
         } catch (error) {
@@ -221,17 +220,17 @@ const CheckoutContent: FC = () => {
     return (
         <div className={styles.content}>
             <CheckoutEventDetails user={user} partials={applications.list} onDetailsChange={setEventDetails} />
-            <CartSection 
-                applications={applications.list} 
+            <CartSection
+                applications={applications.list}
                 setCurrentApplication={setCurrentApplication}
                 selectedParentId={selectedParentId}
                 onParentIdChange={setSelectedParentId}
             />
 
-            <BillingForm 
-                user={user} 
-                onBillingChange={setBillingDetails} 
-                onSubmit={handleFormSubmit} 
+            <BillingForm
+                user={user}
+                onBillingChange={setBillingDetails}
+                onSubmit={handleFormSubmit}
                 onVippsPayment={shouldShowExternalPaymentOptions ? handleVippsPayment : undefined}
                 paymentEligibility={paymentEligibility}
                 vippsLoading={vippsPaymentMutation.isPending}

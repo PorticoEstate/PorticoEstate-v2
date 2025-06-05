@@ -510,6 +510,13 @@ trait SerializableTrait
 
     /**
      * Parse @Timestamp annotation
+     * 
+     * Supports the following options:
+     * - format: Output format (default: "c" for ISO 8601)
+     * - sourceTimezone: The timezone the stored timestamp is in (default: "Europe/Oslo")
+     * 
+     * Example: @Timestamp(format="c", sourceTimezone="UTC")
+     * 
      * @return array|null Returns format settings if annotation is present, null otherwise
      */
     private function parseTimestampAnnotation(\ReflectionProperty $property): ?array
@@ -537,6 +544,11 @@ trait SerializableTrait
                 } else {
                     $options['format'] = 'c';
                 }
+                
+                // Set default source timezone to Oslo if not specified
+                if (!isset($options['sourceTimezone'])) {
+                    $options['sourceTimezone'] = 'Europe/Oslo';
+                }
 
                 self::$annotationCache[$className]['properties'][$propertyName]['timestamp'] = $options;
             }
@@ -554,17 +566,22 @@ trait SerializableTrait
      */
     private function formatTimestamp($value, array $options = []): string
     {
-        // Get format from options or use ISO 8601 as default
+        // Get format and source timezone from options
         $format = $options['format'] ?? 'c';
-
-        // Create Oslo timezone object
+        $sourceTimezone = $options['sourceTimezone'] ?? 'Europe/Oslo';
+        
+        // Create timezone objects
+        $sourceTz = new \DateTimeZone($sourceTimezone);
         $osloTz = new \DateTimeZone('Europe/Oslo');
 
         // Handle different timestamp formats
         if (is_numeric($value)) {
-            // Unix timestamp
-            $date = new \DateTime('now', $osloTz);
+            // Unix timestamp - treat as being in the source timezone
+            $date = new \DateTime('now', $sourceTz);
             $date->setTimestamp($value);
+            
+            // Convert to Oslo timezone for output
+            $date->setTimezone($osloTz);
             return $date->format($format);
         }
 
@@ -574,14 +591,29 @@ trait SerializableTrait
         }
 
         try {
-            // Create DateTime with Oslo timezone from the start
-            // This will treat the input time as being in Oslo timezone
-            $date = new \DateTime($value, $osloTz);
+            // Create DateTime assuming the value is in the source timezone
+            $date = new \DateTime($value, $sourceTz);
+            
+            // Convert to Oslo timezone for output
+            $date->setTimezone($osloTz);
             return $date->format($format);
         } catch (\Exception $e) {
             // If parsing fails, return original value
             return $value;
         }
+    }
+
+    /**
+     * Convert the object to an array using the serialize method
+     * This is a convenience method that calls serialize() with default parameters
+     * 
+     * @param array $context Additional context for serialization
+     * @param bool $short Whether to use short serialization (only properties marked with @Short)
+     * @return array|null The serialized array representation of the object
+     */
+    public function toArray(array $context = [], bool $short = false): ?array
+    {
+        return $this->serialize($context, $short);
     }
 
 

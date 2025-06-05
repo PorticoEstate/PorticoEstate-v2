@@ -9,7 +9,7 @@ import BillingForm from "@/components/checkout/billing-form";
 import styles from './checkout.module.scss';
 import {Spinner} from "@digdir/designsystemet-react";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
-import {useCheckoutApplications} from "@/components/checkout/hooks/checkout-hooks";
+import {useCheckoutApplications, useVippsPayment, useExternalPaymentEligibility} from "@/components/checkout/hooks/checkout-hooks";
 import {useRouter} from "next/navigation";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import RegulationDocuments from './regulation-documents';
@@ -21,6 +21,8 @@ const CheckoutContent: FC = () => {
     const updateMutation = useUpdatePartialApplication();
     const [eventDetails, setEventDetails] = useState<CheckoutEventDetailsData>();
     const checkoutMutation = useCheckoutApplications();
+    const vippsPaymentMutation = useVippsPayment();
+    const {data: paymentEligibility, isLoading: eligibilityLoading} = useExternalPaymentEligibility();
     const [billingDetails, setBillingDetails] = useState<BillingFormData>();
     const [selectedParentId, setSelectedParentId] = useState<number>();
 
@@ -91,6 +93,11 @@ const CheckoutContent: FC = () => {
         return regulationDocuments.every(doc => checkedDocuments[doc.id] === true);
     }, [regulationDocuments, checkedDocuments]);
 
+    // Check if external payment should be available based on backend eligibility
+    const shouldShowExternalPaymentOptions = useMemo(() => {
+        return paymentEligibility?.eligible === true;
+    }, [paymentEligibility]);
+
     // Update billing details when document consent status changes
     useEffect(() => {
         if (billingDetails && billingDetails.documentsRead !== areAllDocumentsChecked) {
@@ -148,7 +155,61 @@ const CheckoutContent: FC = () => {
         }
     };
 
-    if(userLoading || partialsLoading || checkoutMutation.isPending || docsLoading) {
+    const handleVippsPayment = async () => {
+        console.log('=== VIPPS PAYMENT CLICKED ===');
+        console.log('eventDetails:', eventDetails);
+        console.log('applications:', applications);
+        console.log('billingDetails:', billingDetails);
+        
+        if (!eventDetails || !applications || !billingDetails) {
+            console.log('missing Data for Vipps payment', eventDetails, billingDetails);
+            return;
+        }
+        
+        // Check if documents need to be confirmed
+        if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
+            // Show error state
+            setShowDocumentsError(true);
+            
+            // Scroll to documents section
+            if (documentsSectionRef.current) {
+                documentsSectionRef.current.scrollIntoView({ 
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+            
+            // Don't proceed with payment
+            return;
+        }
+
+        try {
+            console.log('=== CALLING VIPPS API ===');
+            const paymentData = {
+                eventTitle: eventDetails.title,
+                organizerName: eventDetails.organizerName,
+                customerType: billingDetails?.customerType || 'ssn',
+                organizationNumber: billingDetails.organizationNumber,
+                organizationName: billingDetails.organizationName,
+                contactName: billingDetails.contactName,
+                contactEmail: billingDetails.contactEmail,
+                contactPhone: billingDetails.contactPhone,
+                street: billingDetails.street,
+                zipCode: billingDetails.zipCode,
+                city: billingDetails.city,
+                documentsRead: billingDetails.documentsRead
+            };
+            console.log('Payment data:', paymentData);
+            
+            await vippsPaymentMutation.mutateAsync(paymentData);
+            console.log('=== VIPPS API CALL COMPLETED ===');
+        } catch (error) {
+            console.error('Error initiating Vipps payment:', error);
+            // TODO: Handle error (show error message to user)
+        }
+    };
+
+    if(userLoading || partialsLoading || checkoutMutation.isPending || docsLoading || eligibilityLoading) {
         return <Spinner aria-label={t('bookingfrontend.loading_user_info')} />
     }
 
@@ -171,6 +232,9 @@ const CheckoutContent: FC = () => {
                 user={user} 
                 onBillingChange={setBillingDetails} 
                 onSubmit={handleFormSubmit} 
+                onVippsPayment={shouldShowExternalPaymentOptions ? handleVippsPayment : undefined}
+                paymentEligibility={paymentEligibility}
+                vippsLoading={vippsPaymentMutation.isPending}
                 documentsValidated={!regulationDocuments?.length || areAllDocumentsChecked}
                 documentsSectionRef={documentsSectionRef}
                 showDocumentsSection={true}

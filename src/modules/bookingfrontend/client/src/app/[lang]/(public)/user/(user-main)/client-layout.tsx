@@ -10,7 +10,7 @@ import Link from "next/link";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faArrowLeft} from "@fortawesome/free-solid-svg-icons";
 import PageHeader from "@/components/page-header/page-header";
-import {userSubPages} from "@/app/[lang]/(public)/user/user-page-helper";
+import {userSubPages} from "@/app/[lang]/(public)/user/(user-main)/user-page-helper";
 import {LinkTab} from "@/components/util/LinkTab";
 import {useCurrentPath} from "@/service/hooks/path-hooks";
 

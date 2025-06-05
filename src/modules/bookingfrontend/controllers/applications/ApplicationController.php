@@ -1,16 +1,17 @@
 <?php
 
-namespace App\modules\bookingfrontend\controllers;
+namespace App\modules\bookingfrontend\controllers\applications;
 
+use App\modules\bookingfrontend\controllers\DocumentController;
+use App\modules\bookingfrontend\helpers\ApplicationHelper;
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
-use App\modules\bookingfrontend\services\ApplicationService;
+use App\modules\bookingfrontend\services\applications\ApplicationService;
 use App\modules\phpgwapi\security\Sessions;
-use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -31,6 +32,7 @@ class ApplicationController extends DocumentController
     private $applicationRepository;
     private $articleRepository;
     private $userSettings;
+    private ApplicationHelper $applicationHelper;
 
     public function __construct(ContainerInterface $container)
     {
@@ -40,6 +42,7 @@ class ApplicationController extends DocumentController
         $this->applicationRepository = new ApplicationRepository();
         $this->articleRepository = new ArticleRepository();
         $this->userSettings = Settings::getInstance()->get('user');
+        $this->applicationHelper = new ApplicationHelper();
     }
 
     /**
@@ -89,6 +92,26 @@ class ApplicationController extends DocumentController
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications",
+     *     summary="Get all applications for the current user",
+     *     tags={"Applications"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of applications",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="list", type="array", @OA\Items(ref="#/components/schemas/Application")),
+     *             @OA\Property(property="total_sum", type="number")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="User not authenticated"
+     *     )
+     * )
+     */
     public function getApplications(Request $request, Response $response): Response
     {
         try {
@@ -123,6 +146,83 @@ class ApplicationController extends DocumentController
             $error = "Error fetching applications: " . $e->getMessage();
             return ResponseHelper::sendErrorResponse(
                 ['error' => $error],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/applications/{id}",
+     *     summary="Get a specific application by ID",
+     *     description="Returns a specific application if the user has access to it, or if the correct secret is provided.",
+     *     tags={"Applications"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID of the application to retrieve",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="secret",
+     *         in="query",
+     *         required=false,
+     *         description="Secret key that can be used to access the application without authentication",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Application details",
+     *         @OA\JsonContent(ref="#/components/schemas/Application")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Unauthorized to view this application"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Application not found"
+     *     )
+     * )
+     */
+    public function getApplicationById(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+
+            // Get the application with basic data first
+            $application = $this->applicationService->getApplicationById($id);
+            if (!$application) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Application not found'],
+                    404
+                );
+            }
+
+            // Check if user can access this application (supports secret parameter and user access)
+            if (!$this->applicationHelper->canViewApplication($application, $request)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Unauthorized to view this application'],
+                    403
+                );
+            }
+
+            // User has access - get full application data
+            $fullApplication = $this->applicationService->getFullApplication($id);
+            if (!$fullApplication) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Application details not found'],
+                    404
+                );
+            }
+
+            // Return the complete application data
+			return ResponseHelper::sendJSONResponse($fullApplication->serialize());
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => "Error retrieving application: " . $e->getMessage()],
                 500
             );
         }
@@ -174,7 +274,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify permissions
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to delete this application'],
                     403
@@ -471,7 +571,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify permissions
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to modify this application'],
                     403
@@ -590,7 +690,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify permissions
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to modify this application'],
                     403
@@ -623,240 +723,8 @@ class ApplicationController extends DocumentController
         }
     }
 
-    /**
-     * @OA\Post(
-     *     path="/bookingfrontend/applications/partials/checkout",
-     *     summary="Update and finalize all partial applications with contact and organization info",
-     *     tags={"Applications"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
-     *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
-     *             @OA\Property(property="organizationNumber", type="string"),
-     *             @OA\Property(property="organizationName", type="string"),
-     *             @OA\Property(property="contactName", type="string"),
-     *             @OA\Property(property="contactEmail", type="string"),
-     *             @OA\Property(property="contactPhone", type="string"),
-     *             @OA\Property(property="street", type="string"),
-     *             @OA\Property(property="zipCode", type="string"),
-     *             @OA\Property(property="city", type="string"),
-     *             @OA\Property(property="eventTitle", type="string"),
-     *             @OA\Property(property="organizerName", type="string")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Applications updated successfully"
-     *     )
-     * )
-     */
-    public function checkoutPartials(Request $request, Response $response): Response
-    {
-        try {
-            $session = Sessions::getInstance();
-            $session_id = $session->get_session_id();
-
-            if (empty($session_id)) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'No active session'],
-                    400
-                );
-            }
-
-            $data = json_decode($request->getBody()->getContents(), true);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Invalid JSON data'],
-                    400
-                );
-            }
-
-            try {
-                // Update all partial applications
-                $result = $this->applicationService->checkoutPartials($session_id, $data);
-
-                // Add timestamp and session info for debugging
-                $result['debug_timestamp'] = date('Y-m-d H:i:s');
-                $result['debug_session_id'] = $session_id;
-
-                // Determine message based on direct booking and count
-                // Check if at least one application is a direct booking
-                $has_direct_booking = false;
-                foreach ($result['updated'] as $app) {
-                    if ($app['status'] === 'ACCEPTED') {
-                        $has_direct_booking = true;
-                        break;
-                    }
-                }
-
-                // Define message sets based on direct booking status
-                if ($has_direct_booking) {
-                    $messages = array(
-                        'one' => array(
-                            'registered' => "Your application has now been processed and a confirmation email has been sent to you.",
-                            'review' => ""
-                        ),
-                        'multiple' => array(
-                            'registered' => "Your applications have now been processed and confirmation emails have been sent to you.",
-                            'review' => ""
-                        )
-                    );
-                } else {
-                    $messages = array(
-                        'one' => array(
-                            'registered' => "Your application has now been registered and a confirmation email has been sent to you.",
-                            'review' => "A Case officer will review your application as soon as possible."
-                        ),
-                        'multiple' => array(
-                            'registered' => "Your applications have now been registered and confirmation emails have been sent to you.",
-                            'review' => "A Case officer will review your applications as soon as possible."
-                        )
-                    );
-                }
-
-                // Choose message set based on count
-                $msgset = count($result['updated']) > 1 ? 'multiple' : 'one';
-
-                // Build message array
-                $message_arr = array();
-                $message_arr[] = lang($messages[$msgset]['registered']);
-                if ($messages[$msgset]['review']) {
-                    $message_arr[] = lang($messages[$msgset]['review']);
-                }
-                $message_arr[] = lang("Please check your Spam Filter if you are missing mail.");
-
-                // Set message in cache
-                Cache::message_set(implode("<br/>", $message_arr), 'message', 'booking.booking confirmed');
-                WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
-
-                $response->getBody()->write(json_encode([
-                    'message' => 'Applications processed successfully',
-                    'applications' => $result['updated'],
-                    'skipped' => $result['skipped'],
-                    'debug_info' => [
-                        'collisions' => $result['debug_collisions'],
-                        'timestamp' => $result['debug_timestamp'],
-                        'session_id' => $result['debug_session_id']
-                    ]
-                ]));
-                return $response->withHeader('Content-Type', 'application/json');
-
-            } catch (Exception $e) {
-                // Check if the error message contains validation errors
-                if (strpos($e->getMessage(), ',') !== false) {
-                    // This is likely a validation error with multiple messages
-                    return ResponseHelper::sendErrorResponse(
-                        ['errors' => explode(', ', $e->getMessage()), 'plain' => $e],
-                        400
-                    );
-                }
-                throw $e;
-            }
-
-        } catch (Exception $e) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => $e->getMessage()],
-                500
-            );
-        }
-    }
 
 
-    /**
-     * @OA\Post(
-     *     path="/bookingfrontend/applications/validate-checkout",
-     *     summary="Validate if checkout of partial applications would succeed",
-     *     tags={"Applications"},
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\JsonContent(
-     *             type="object",
-     *             required={"customerType", "contactName", "contactEmail", "contactPhone"},
-     *             @OA\Property(property="customerType", type="string", enum={"ssn", "organization_number"}),
-     *             @OA\Property(property="organizationNumber", type="string"),
-     *             @OA\Property(property="organizationName", type="string"),
-     *             @OA\Property(property="contactName", type="string"),
-     *             @OA\Property(property="contactEmail", type="string"),
-     *             @OA\Property(property="contactPhone", type="string"),
-     *             @OA\Property(property="street", type="string"),
-     *             @OA\Property(property="zipCode", type="string"),
-     *             @OA\Property(property="city", type="string"),
-     *             @OA\Property(property="eventTitle", type="string"),
-     *             @OA\Property(property="organizerName", type="string")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Validation results",
-     *         @OA\JsonContent(
-     *             type="object",
-     *             @OA\Property(property="valid", type="boolean"),
-     *             @OA\Property(
-     *                 property="applications",
-     *                 type="array",
-     *                 @OA\Items(
-     *                     type="object",
-     *                     @OA\Property(property="id", type="integer"),
-     *                     @OA\Property(property="valid", type="boolean"),
-     *                     @OA\Property(property="would_be_direct_booking", type="boolean"),
-     *                     @OA\Property(
-     *                         property="issues",
-     *                         type="array",
-     *                         @OA\Items(
-     *                             type="object",
-     *                             @OA\Property(property="type", type="string"),
-     *                             @OA\Property(property="message", type="string")
-     *                         )
-     *                     )
-     *                 )
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Invalid data or no active session"
-     *     )
-     * )
-     */
-    public function validateCheckout(Request $request, Response $response): Response
-    {
-        try {
-            $session = Sessions::getInstance();
-            $session_id = $session->get_session_id();
-
-            if (empty($session_id)) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'No active session'],
-                    400
-                );
-            }
-
-            $data = json_decode($request->getBody()->getContents(), true);
-            if (!$data) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Invalid JSON data'],
-                    400
-                );
-            }
-
-            // Validate checkout
-            $validationResults = $this->applicationService->validateCheckout($session_id, $data);
-
-            $validationResults['debug_timestamp'] = date('Y-m-d H:i:s');
-            $validationResults['debug_session_id'] = $session_id;
-
-            $response->getBody()->write(json_encode($validationResults));
-            return $response->withHeader('Content-Type', 'application/json');
-
-        } catch (Exception $e) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => $e->getMessage()],
-                500
-            );
-        }
-    }
 
 
     /**
@@ -953,7 +821,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify ownership
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to upload documents to this application'],
                     403
@@ -1073,7 +941,7 @@ class ApplicationController extends DocumentController
             }
 
             // Verify ownership
-            if (!$this->canModifyApplication($application)) {
+            if (!$this->applicationHelper->canModifyApplication($application, $request)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Unauthorized to delete this document'],
                     403
@@ -1094,55 +962,6 @@ class ApplicationController extends DocumentController
         }
     }
 
-    /**
-     * Check if the current user/session can modify the given application
-     *
-     * Verifies either:
-     * - Application belongs to current session (for in-progress applications)
-     * OR if user is logged in:
-     * - Is the direct owner (via SSN)
-     * - Belongs to the owning organization
-     * - Is a delegate for the owning organization
-     *
-     * @param array $application The application data to check
-     * @return bool True if user can modify the application, false otherwise
-     */
-    private function canModifyApplication(array $application): bool
-    {
-        $session = Sessions::getInstance();
-        $session_id = $session->get_session_id();
-
-        // Check if application belongs to current session
-        if ($application['status'] === 'NEWPARTIAL1' && $application['session_id'] === $session_id) {
-            return true;
-        }
-
-        // Additional checks if user is logged in
-        if ($this->bouser->is_logged_in()) {
-            $ssn = $this->bouser->ssn;
-            $orgnr = $this->bouser->orgnr;
-
-            if ($application['customer_ssn'] === $ssn) {
-                return true;
-            }
-
-            if ($application['customer_identifier_type'] === 'organization_number'
-                && $application['customer_organization_number'] === $orgnr) {
-                return true;
-            }
-
-            if ($application['customer_identifier_type'] === 'organization_number'
-                && $this->bouser->organizations) {
-                foreach ($this->bouser->organizations as $org) {
-                    if ($org['orgnr'] === $application['customer_organization_number']) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
 
 
     /**

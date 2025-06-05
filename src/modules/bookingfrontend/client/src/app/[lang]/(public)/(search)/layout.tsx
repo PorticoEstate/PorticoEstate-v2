@@ -26,14 +26,14 @@ export default async function Layout(props: PropsWithChildren) {
 			{/* Warning alert box with frontimagetext */}
 			{hasValidContent(serverSettings.booking_config?.frontimagetext) && (
 				<Alert data-color="warning" style={{marginBottom: '1rem'}}>
-					{parse(unescapeHTML(serverSettings.booking_config.frontimagetext!))}
+					{parse(unescapeHTML(serverSettings?.booking_config?.frontimagetext!))}
 				</Alert>
 			)}
 
 			{/* Info alert box with frontpagetext */}
 			{hasValidContent(serverSettings.booking_config?.frontpagetext) && (
 				// <Alert data-color="info" style={{marginBottom: '1rem'}}>
-				<div>{parse(unescapeHTML(serverSettings.booking_config.frontpagetext!))}</div>
+				<div>{parse(unescapeHTML(serverSettings?.booking_config?.frontpagetext!))}</div>
 				// </Alert>
 			)}
 			<ClientHeading>

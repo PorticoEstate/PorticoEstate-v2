@@ -3,7 +3,7 @@ import {FC, useMemo} from 'react';
 import {Card, Heading, Paragraph} from "@digdir/designsystemet-react";
 import PageHeader from "@/components/page-header/page-header";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
-import {userSubPages} from "@/app/[lang]/(public)/user/user-page-helper";
+import {userSubPages} from "@/app/[lang]/(public)/user/(user-main)/user-page-helper";
 import {useBookingUser} from "@/service/hooks/api-hooks";
 import Link from "next/link";
 

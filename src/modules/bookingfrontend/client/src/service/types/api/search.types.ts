@@ -1,4 +1,5 @@
 import {IBuilding} from "@/service/types/Building";
+import { IResource } from "@/service/types/resource.types";
 
 /**
  * Full search data interface including all fields returned by the API
@@ -27,14 +28,11 @@ export interface ISearchDataOptimized {
 	building_resources: ISearchDataBuildingResource[];
 	resources: ISearchResource[];
 	towns: ISearchDataTown[];
-	organizations: ISearchOrganization[];
 	facilities: ISearchDataFacility[];
 	resource_activities: ISearchDataResourceActivity[];
 	resource_facilities: ISearchDataResourceFacility[];
 	resource_categories: ISearchDataResourceCategory[];
 	resource_category_activity: ISearchDataResourceCategoryActivity[];
-
-
 }
 
 /**
@@ -49,6 +47,9 @@ export interface ISearchResource {
 	deactivate_calendar: number;
 	deactivate_application: number;
 	rescategory_id: number | null; // Link to resource category
+	domain_name?: string; // Multi-domain name for cross-domain search results
+	domain_url?: string; // Multi-domain base URL for redirects
+	original_id?: number; // Original ID before domain transformation
 }
 
 export interface ISearchDataTown {
@@ -56,6 +57,8 @@ export interface ISearchDataTown {
 	// b_name: string; // Link -> building->name
 	id: number;
 	name: string;
+	original_id?: number; // Original ID before domain transformation
+	domain_name?: string; // Multi-domain name for cross-domain search results
 }
 export interface ISearchDataBuildingResource {
 	building_id: number; // Link -> building->id
@@ -67,10 +70,15 @@ export interface ISearchDataActivity {
 	name: string;
 	// description: string;
 	active: 1 | 0;
+	original_id?: number; // Original ID before domain transformation
+	domain_name?: string; // Multi-domain name for cross-domain search results
 }
 
 export interface ISearchDataBuilding extends Pick<IBuilding,'id' | 'town_id' | 'activity_id' | 'deactivate_calendar' | 'deactivate_application' | 'deactivate_sendmessage' | 'extra_kalendar' | 'name' | 'location_code' | 'street' | 'zip_code' | 'district' | 'city'
-> {}
+> {
+	original_id?: number; // Original ID before domain transformation
+	domain_name?: string; // Multi-domain name for cross-domain search results
+}
 
 export interface ISearchOrganization {
 	id: number;
@@ -91,6 +99,8 @@ export interface ISearchOrganization {
 export interface ISearchDataFacility {
 	id: number;
 	name: string;
+	original_id?: number; // Original ID before domain transformation
+	domain_name?: string; // Multi-domain name for cross-domain search results
 }
 
 export interface ISearchDataResourceActivity {
@@ -107,6 +117,8 @@ export interface ISearchDataResourceCategory {
 	id: number;
 	name: number;
 	parent_id: number; // link to parent ResCategory
+	original_id?: number; // Original ID before domain transformation
+	domain_name?: string; // Multi-domain name for cross-domain search results
 }
 
 export interface ISearchDataResourceCategoryActivity {

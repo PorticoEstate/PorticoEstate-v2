@@ -1,11 +1,12 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
-import {useSearchData, useTowns} from "@/service/hooks/api-hooks";
+import {useSearchData, useTowns, useMultiDomains} from "@/service/hooks/api-hooks";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
 import styles from './resource-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import {ISearchDataBuilding, ISearchDataOptimized, ISearchDataTown, ISearchResource} from '@/service/types/api/search.types';
+import {IMultiDomain} from '@/service/types/api.types';
 import ResourceResultItem from "@/components/search/resource/resource-result-item";
 import FilterModal from './filter-modal';
 import {FilterIcon} from '@navikt/aksel-icons';
@@ -14,6 +15,7 @@ import {useIsMobile} from "@/service/hooks/is-mobile";
 interface ResourceSearchProps {
     initialSearchData?: ISearchDataOptimized;
     initialTowns?: ISearchDataTown[];
+    initialMultiDomains?: IMultiDomain[];
 }
 
 // Interface for localStorage search state
@@ -29,7 +31,7 @@ interface StoredSearchState {
 const STORAGE_KEY = 'resource_search_state';
 const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTowns }) => {
+const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTowns, initialMultiDomains }) => {
     // Initialize state for search filters
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
     const [date, setDate] = useState<Date>(new Date());
@@ -63,11 +65,16 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         initialData: initialTowns
     });
 
+    // Fetch multi-domains data for cross-domain search
+    const {data: multiDomainsData, isLoading: isLoadingMultiDomains, error: multiDomainsError} = useMultiDomains({
+        initialData: initialMultiDomains
+    });
+
     const t = useTrans();
 
     // Determine overall loading and error state
-    const isLoading = isLoadingSearch || isLoadingTowns;
-    const error = searchError || townsError;
+    const isLoading = isLoadingSearch || isLoadingTowns || isLoadingMultiDomains;
+    const error = searchError || townsError || multiDomainsError;
 
     // Load saved search state from localStorage on initial render
     useEffect(() => {
@@ -463,12 +470,26 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         );
     };
 
+    // Show total number of searchable domains for user awareness
+    const renderSearchInfo = () => {
+        if (!multiDomainsData || multiDomainsData.length === 0) return null;
+
+        const totalDomains = multiDomainsData.length + 1; // +1 for current domain
+
+        return (
+            <div className={styles.searchInfo}>
+                <p>{t('bookingfrontend.searching_across_domains', { count: totalDomains }) || `Searching across ${totalDomains} domains`}</p>
+            </div>
+        );
+    };
+
     // Render search results section
     const renderSearchResults = () => {
         if (!textSearchQuery.trim() && !where && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return (
                 <div className={styles.noResults}>
                     <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
+                    {/*{renderSearchInfo()}*/}
                 </div>
             );
         }
@@ -483,15 +504,32 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                     >
                         {t('bookingfrontend.search_clear_filters')}
                     </Button>
+                    {/*{renderSearchInfo()}*/}
                 </div>
             );
         }
 
+        // Calculate result statistics
+        const localResults = filteredResources.filter(r => !r.domain_name);
+        const externalResults = filteredResources.filter(r => r.domain_name);
+
         return (
-            <div className={styles.resourceGrid}>
-                {filteredResources.map(resource => (
-                    <ResourceResultItem key={resource.id} resource={resource}/>
-                ))}
+            <div className={styles.resultsContainer}>
+                {/*{(localResults.length > 0 && externalResults.length > 0) && (*/}
+                {/*    <div className={styles.resultsStats}>*/}
+                {/*        <p>{t('bookingfrontend.mixed_results_info', { */}
+                {/*            local: localResults.length, */}
+                {/*            external: externalResults.length, */}
+                {/*            total: filteredResources.length */}
+                {/*        }) || `Showing ${filteredResources.length} results (${localResults.length} local, ${externalResults.length} from other domains)`}</p>*/}
+                {/*    </div>*/}
+                {/*)}*/}
+
+                <div className={styles.resourceGrid}>
+                    {filteredResources.map(resource => (
+                        <ResourceResultItem key={`${resource.domain_name || 'local'}-${resource.id}`} resource={resource}/>
+                    ))}
+                </div>
             </div>
         );
     };

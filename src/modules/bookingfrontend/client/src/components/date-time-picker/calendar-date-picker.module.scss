@@ -50,7 +50,7 @@
     border-radius: 5rem;
 
     .datePickerButton {
-        justify-content: start;
+        justify-content: flex-start;
         display: flex;
 
         @media (min-width: 768px) {

@@ -1,16 +1,20 @@
 'use client'
 import React, {FC, useState} from 'react';
-import {Textarea, Button, Spinner} from "@digdir/designsystemet-react";
+import {Textarea, Button, Spinner, Paragraph} from "@digdir/designsystemet-react";
 import GSAccordion from "@/components/gs-accordion/g-s-accordion";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useAddApplicationComment} from "@/service/hooks/api-hooks";
+import {GetCommentsResponse} from "@/service/types/api/application.types";
+import ApplicationCommentComponent from "./application-comment";
 
 interface CreateProps {
 	applicationId: number;
 	secret?: string;
+	commentsData?: GetCommentsResponse;
+	isLoading: boolean;
 }
 
-const Create: FC<CreateProps> = ({ applicationId, secret }) => {
+const Create: FC<CreateProps> = ({ applicationId, secret, commentsData, isLoading }) => {
 	const addCommentMutation = useAddApplicationComment();
 	const [newComment, setNewComment] = useState('');
 	const t = useTrans();
@@ -79,11 +83,35 @@ const Create: FC<CreateProps> = ({ applicationId, secret }) => {
 						</Button>
 					</div>
 					{addCommentMutation.isError && (
-						<div style={{ color: 'var(--digdir-error-text)', fontSize: '0.875rem' }}>
+						<div style={{ color: 'var(--ds-color-danger-text)', fontSize: '0.875rem' }}>
 							{t('bookingfrontend.failed to add comment')}
 						</div>
 					)}
 				</form>
+
+				{commentsData && commentsData.comments.length > 0 && (
+					<details style={{ marginTop: '1.5rem' }}>
+						<summary style={{ 
+							cursor: 'pointer', 
+							fontWeight: 500,
+							marginBottom: '1rem',
+							userSelect: 'none'
+						}}>
+							{t('bookingfrontend.history')} ({commentsData.comments.length})
+						</summary>
+						{isLoading ? (
+							<div style={{ display: 'flex', justifyContent: 'center', padding: '1rem' }}>
+								<Spinner data-size="sm" aria-label={t('common.loading')} />
+							</div>
+						) : (
+							<div>
+								{commentsData.comments.map((comment) => (
+									<ApplicationCommentComponent key={comment.id} comment={comment} />
+								))}
+							</div>
+						)}
+					</details>
+				)}
 			</GSAccordion.Content>
 		</GSAccordion>
 	);

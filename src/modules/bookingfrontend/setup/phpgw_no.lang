@@ -586,6 +586,7 @@ select date	bookingfrontend	no	Velg dato
 select method	bookingfrontend	no	Velg metode
 select role...	bookingfrontend	no	Velg rolle
 select_all	bookingfrontend	no	Velg alle
+select_main_application_note	bookingfrontend	no	Velg hvilken søknad som skal være hovedsøknaden. Dette hjelper saksbehandleren å få bedre oversikt når søknadene skal behandles.
 select_organization	bookingfrontend	no	Velg eller søk etter organisasjon
 selected	bookingfrontend	no	Valgt
 selected_time_must_be_in_future	bookingfrontend	no	Det valgte tidspunktet må være i fremtiden

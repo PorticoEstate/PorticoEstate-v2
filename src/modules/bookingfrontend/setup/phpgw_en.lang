@@ -586,6 +586,7 @@ select date	bookingfrontend	en	Select date
 select method	bookingfrontend	en	Select method
 select role...	bookingfrontend	en	Select role...
 select_all	bookingfrontend	en	Select All
+select_main_application_note	bookingfrontend	en	Select which application should be the main application. This will help the case officer get a better overview when processing your applications.
 select_organization	bookingfrontend	en	Select or search for organization
 selected	bookingfrontend	en	Selected
 selected_time_must_be_in_future	bookingfrontend	en	The selected time must be in the future

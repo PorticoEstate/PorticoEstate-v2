@@ -25,39 +25,42 @@ const ApplicationCommentComponent: FC<ApplicationCommentProps> = ({comment}) => 
 
 	return (
 		<div style={{
-			marginBottom: '1rem',
-			paddingBottom: '1rem',
-			borderBottom: '1px solid var(--digdir-border-default)'
+			padding: '1rem',
+			border: '1px solid var(--ds-color-border-subtle)',
+			borderRadius: '4px',
+			marginBottom: '0.5rem'
 		}}>
-			<div style={{marginBottom: '0.5rem'}}>
-				<div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-
-					<Heading level={4} data-size="xs">{comment.author}</Heading>
-					<Paragraph data-size={'xs'}>
-						<TimeAgo
-							datetime={comment.time}
-							locale={i18n.language}
-						/>
-						{' · '}
-						{DateTime.fromISO(comment.time).toFormat('dd.MM.yyyy HH:mm')}
-					</Paragraph>
-				</div>
-
-				<div style={{color: 'var(--digdir-text-subtle)', fontSize: '0.875rem'}}>
-					{comment.type !== 'comment' && (
-						<span style={{
-							marginLeft: '0.5rem',
-							padding: '0.25rem 0.5rem',
-							backgroundColor: 'var(--digdir-surface-subtle)',
-							borderRadius: '4px',
-							fontSize: '0.75rem'
-						}}>
-							{t(`bookingfrontend.${comment.type}`)}
-						</span>
-					)}
-				</div>
+			<div style={{ 
+				display: 'flex', 
+				alignItems: 'center', 
+				gap: '0.5rem',
+				marginBottom: '0.5rem'
+			}}>
+				<Heading level={4} data-size="xs">
+					{comment.author}
+				</Heading>
+				<Paragraph data-size="xs">
+					<TimeAgo
+						datetime={comment.time}
+						locale={i18n.language}
+					/>
+					{' · '}
+					{DateTime.fromISO(comment.time).toFormat('dd.MM.yyyy HH:mm')}
+				</Paragraph>
+				{comment.type !== 'comment' && (
+					<span style={{
+						padding: '0.125rem 0.5rem',
+						backgroundColor: 'var(--ds-color-surface-subtle)',
+						borderRadius: '4px',
+						fontSize: '0.75rem'
+					}}>
+						{t(`bookingfrontend.${comment.type}`)}
+					</span>
+				)}
 			</div>
-			<Paragraph>{comment.comment}</Paragraph>
+			<Paragraph>
+				{comment.comment}
+			</Paragraph>
 		</div>
 	);
 };

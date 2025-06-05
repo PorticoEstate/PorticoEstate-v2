@@ -586,6 +586,7 @@ select date	bookingfrontend	nn	Vel dato
 select method	bookingfrontend	nn	Vel ein metode
 select role...	bookingfrontend	nn	Vel rolle
 select_all	bookingfrontend	nn	Velg alle
+select_main_application_note	bookingfrontend	nn	Vel kva søknad som skal vere hovudsøknaden. Dette hjelper saksbehandlaren å få betre oversikt når søknadene skal behandlast.
 select_organization	bookingfrontend	nn	Vel eller søk etter organisasjon
 selected	bookingfrontend	nn	Valgt
 selected_time_must_be_in_future	bookingfrontend	nn	Det valde tidspunktet må vere i framtida

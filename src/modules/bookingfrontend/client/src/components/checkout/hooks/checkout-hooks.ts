@@ -5,7 +5,6 @@ import {initiateVippsPayment, VippsPaymentData, VippsPaymentResponse, fetchExter
 
 export interface CheckoutFormData {
     // Event Details
-    eventTitle: string;
     organizerName: string;
 
     // Customer Type

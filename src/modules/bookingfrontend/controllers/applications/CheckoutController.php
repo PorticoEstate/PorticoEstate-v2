@@ -59,7 +59,6 @@ class CheckoutController
      *             @OA\Property(property="street", type="string"),
      *             @OA\Property(property="zipCode", type="string"),
      *             @OA\Property(property="city", type="string"),
-     *             @OA\Property(property="eventTitle", type="string"),
      *             @OA\Property(property="organizerName", type="string")
      *         )
      *     ),
@@ -384,10 +383,10 @@ class CheckoutController
             // 1. Validate and update applications with contact info (but keep them partial for Vipps payment)
             try {
                 $updatedApplications = $this->applicationService->updateApplicationsWithContactInfo($session_id, $data, false);
-                
+
                 // 2. Calculate total amount for Vipps payment
                 $totalAmount = $this->applicationService->calculateTotalSum($updatedApplications);
-                
+
                 if ($totalAmount <= 0) {
                     return ResponseHelper::sendErrorResponse(
                         ['error' => 'No payment required for these applications'],
@@ -404,10 +403,10 @@ class CheckoutController
 
                 // 4. Initialize Vipps payment using VippsService
                 $application_ids = array_column($updatedApplications, 'id');
-                
+
                 try {
                     $paymentResult = $this->vippsService->initiatePayment($application_ids);
-                    
+
                     if (isset($paymentResult['url'])) {
                         return ResponseHelper::sendJSONResponse([
                             'success' => true,

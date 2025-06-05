@@ -279,7 +279,7 @@ class ApplicationService
                 'responsible_street' => $data['street'],
                 'responsible_zip_code' => $data['zipCode'],
                 'responsible_city' => $data['city'],
-                'name' => $data['eventTitle'],
+//                'name' => $data['eventTitle'],
                 'organizer' => $data['organizerName'],
                 'customer_identifier_type' => $data['customerType'],
                 'customer_organization_number' => $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null,
@@ -325,44 +325,51 @@ class ApplicationService
         try {
             $this->db->beginTransaction();
 
-            // Get application ID from payment order using legacy system
+            // Get application IDs from payment order using legacy system
             $soapplication = CreateObject('booking.soapplication');
-            $application_id = $soapplication->get_application_from_payment_order($remote_order_id);
+            $application_ids = $soapplication->get_application_from_payment_order($remote_order_id);
 
-            if (!$application_id) {
-                throw new Exception('No application found for payment order: ' . $remote_order_id);
+            if (empty($application_ids)) {
+                throw new Exception('No applications found for payment order: ' . $remote_order_id);
             }
 
-            // Get the full application
-            $application = $this->getApplicationById($application_id);
-            if (!$application) {
-                throw new Exception('Application not found: ' . $application_id);
+            $approvedApplications = [];
+
+            // Process each application in the payment
+            foreach ($application_ids as $application_id) {
+                // Get application details
+                $application = $this->getApplicationById($application_id);
+                if (!$application) {
+                    throw new Exception('Application not found: ' . $application_id);
+                }
+
+                // Update application status to ACCEPTED
+                $updateData = [
+                    'status' => 'ACCEPTED',
+                    'session_id' => null, // Finalize application
+                    'modified' => date('Y-m-d H:i:s')
+                ];
+
+                $this->patchApplicationMainData($updateData, $application_id);
+
+                // Create events for each timeslot (this already exists and works)
+                $this->createEventForApplication($application_id);
+
+                // Cancel blocks for this session to free up resources
+                $this->cancelBlocksForApplication($application_id);
+
+                // Send notification email (this already exists and works)
+                $this->send_notification($application_id);
+
+                $approvedApplications[] = array_merge($application, $updateData);
             }
 
-            // Update application status to ACCEPTED
-            $updateData = [
-                'status' => 'ACCEPTED',
-                'session_id' => null, // Finalize application
-                'modified' => date('Y-m-d H:i:s')
-            ];
-
-            $this->patchApplicationMainData($updateData, $application_id);
-
-            // Create events for each timeslot (this already exists and works)
-            $this->createEventForApplication($application_id);
-
-            // Cancel blocks for this session to free up resources
-            $this->cancelBlocksForApplication($application_id);
-
-            // Send notification email (this already exists and works)
-            $this->send_notification($application_id);
-
-            // Update payment status to completed
+            // Update payment status to completed (once for all applications)
             $soapplication->update_payment_status($remote_order_id, 'completed', 'CAPTURE');
 
             $this->db->commit();
 
-            return [array_merge($application, $updateData)];
+            return $approvedApplications;
 
         } catch (Exception $e) {
             $this->db->rollBack();
@@ -387,21 +394,23 @@ class ApplicationService
             $soapplication = CreateObject('booking.soapplication');
             $sopurchase_order = CreateObject('booking.sopurchase_order');
 
-            // Get application ID from payment order
-            $application_id = $soapplication->get_application_from_payment_order($remote_order_id);
+            // Get application IDs from payment order
+            $application_ids = $soapplication->get_application_from_payment_order($remote_order_id);
 
-            if ($application_id) {
-                // Cancel blocks for this application to free up resources
-                $this->cancelBlocksForApplication($application_id);
+            if (!empty($application_ids)) {
+                foreach ($application_ids as $application_id) {
+                    // Cancel blocks for this application to free up resources
+                    $this->cancelBlocksForApplication($application_id);
 
-                // Delete purchase orders
-                $sopurchase_order->delete_purchase_order($application_id);
+                    // Delete purchase orders
+                    $sopurchase_order->delete_purchase_order($application_id);
 
-                // Update payment status to voided
+                    // Delete the application
+                    $soapplication->delete_application($application_id);
+                }
+
+                // Update payment status to voided once for all applications
                 $soapplication->update_payment_status($remote_order_id, 'voided', $operation);
-
-                // Delete the application
-                $soapplication->delete_application($application_id);
             }
 
             $this->db->commit();
@@ -714,7 +723,6 @@ class ApplicationService
             'street' => 'Street address',
             'zipCode' => 'Zip code',
             'city' => 'City',
-            'eventTitle' => 'Event title',
             'organizerName' => 'Organizer name',
             'customerType' => 'Customer type'
         ];

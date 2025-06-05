@@ -435,31 +435,34 @@
 							</xsl:otherwise>
 						</xsl:choose>
 					</div>
-					
-					<div class="d-flex w-100 justify-content-between">
-						<p class="mb-1 mt-3">
-							<xsl:value-of select="php:function('lang', 'Status')" />
+
+					<!-- Only show status and dates for single applications (detailed info is in summary above for multiple) -->
+					<xsl:if test="application/related_application_count &lt;= 1">
+						<div class="d-flex w-100 justify-content-between">
+							<p class="mb-1 mt-3">
+								<xsl:value-of select="php:function('lang', 'Status')" />
+							</p>
+						</div>
+						<p>
+							<xsl:value-of select="php:function('lang', string(application/status))"/>
 						</p>
-					</div>
-					<p>
-						<xsl:value-of select="php:function('lang', string(application/status))"/>
-					</p>
-					<div class="d-flex w-100 justify-content-between">
-						<p class="mb-1">
-							<xsl:value-of select="php:function('lang', 'Created')" />
+						<div class="d-flex w-100 justify-content-between">
+							<p class="mb-1">
+								<xsl:value-of select="php:function('lang', 'Created')" />
+							</p>
+						</div>
+						<p>
+							<xsl:value-of select="php:function('pretty_timestamp', application/created)"/>
 						</p>
-					</div>
-					<p>
-						<xsl:value-of select="php:function('pretty_timestamp', application/created)"/>
-					</p>
-					<div class="d-flex w-100 justify-content-between">
-						<p class="mb-1">
-							<xsl:value-of select="php:function('lang', 'Modified')" />
+						<div class="d-flex w-100 justify-content-between">
+							<p class="mb-1">
+								<xsl:value-of select="php:function('lang', 'Modified')" />
+							</p>
+						</div>
+						<p>
+							<xsl:value-of select="php:function('pretty_timestamp', application/modified)"/>
 						</p>
-					</div>
-					<p>
-						<xsl:value-of select="php:function('pretty_timestamp', application/modified)"/>
-					</p>
+					</xsl:if>
 					<xsl:if test="application/external_archive_key !=''">
 						<div class="d-flex w-100 justify-content-between">
 							<p class="mb-1">
@@ -478,6 +481,77 @@
 					<div class="container-fluid">
 						<div class="row">
 							<div class="col-md-12">
+								<!-- Show related applications summary if multiple applications -->
+								<xsl:if test="application/related_application_count > 1">
+									<div class="alert alert-info mb-4">
+										<h5 class="alert-heading">
+											<i class="fas fa-info-circle me-2"></i>
+											<xsl:value-of select="php:function('lang', 'Combined Applications Summary')" />
+										</h5>
+										<p class="mb-3">
+											<xsl:value-of select="php:function('lang', 'This view combines information from')" />
+											<xsl:text> </xsl:text>
+											<strong><xsl:value-of select="application/related_application_count"/></strong>
+											<xsl:text> </xsl:text>
+											<xsl:value-of select="php:function('lang', 'related applications')" />:
+										</p>
+										<div class="row">
+											<xsl:for-each select="application/related_applications_info">
+												<div class="col-md-6 mb-3">
+													<div class="card border-light">
+														<div class="card-body p-3">
+															<h6 class="card-title">
+																<strong>
+																	<xsl:value-of select="php:function('lang', 'Application')" />
+																	<xsl:text> #</xsl:text>
+																	<xsl:value-of select="id"/>
+																</strong>
+															</h6>
+															<p class="card-text mb-2">
+																<strong><xsl:value-of select="name"/></strong>
+															</p>
+															<p class="card-text mb-2">
+																<small class="text-muted">
+																	<xsl:value-of select="php:function('lang', 'Status')" />:
+																	<span class="badge bg-primary text-white"><xsl:value-of select="php:function('lang', string(status))"/></span>
+																</small>
+															</p>
+															<p class="card-text mb-2">
+																<small class="text-muted">
+																	<xsl:value-of select="php:function('lang', 'Created')" />: <xsl:value-of select="created"/>
+																</small>
+															</p>
+															<xsl:if test="date_ranges">
+																<p class="card-text mb-1">
+																	<small><strong><xsl:value-of select="php:function('lang', 'Dates')" />:</strong></small>
+																</p>
+																<ul class="list-unstyled mb-2">
+																	<xsl:for-each select="date_ranges">
+																		<li><small>• <xsl:value-of select="."/></small></li>
+																	</xsl:for-each>
+																</ul>
+															</xsl:if>
+															<xsl:if test="resource_names">
+																<p class="card-text mb-1">
+																	<small><strong><xsl:value-of select="php:function('lang', 'Resources')" />:</strong></small>
+																</p>
+																<p class="card-text">
+																	<small>
+																		<xsl:for-each select="resource_names">
+																			<xsl:value-of select="."/>
+																			<xsl:if test="position() != last()">, </xsl:if>
+																		</xsl:for-each>
+																	</small>
+																</p>
+															</xsl:if>
+														</div>
+													</div>
+												</div>
+											</xsl:for-each>
+										</div>
+									</div>
+								</xsl:if>
+
 								<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
 									<div class="panel panel-default">
 										<div class="panel-heading" role="tab" id="headingOne">
@@ -875,18 +949,60 @@
 																<xsl:value-of select="php:function('lang', 'Building schedule')" />
 															</a>)
 														</p>
+
+														<!-- Display application count if multiple applications -->
+														<xsl:if test="application/related_application_count > 1">
+															<p class="mb-1" style="font-weight: bold; color: #2c5aa0;">
+																<xsl:value-of select="application/related_application_count"/> applications combined
+															</p>
+														</xsl:if>
 													</div>
 												</div>
 
+												<!-- Resources now shown with dates below -->
 												<div class="list-group">
 													<div class="list-group-item flex-column align-items-start">
+														<!-- Show combined orders for multiple applications -->
+<!--														<xsl:if test="application/related_application_count > 1 and application/combined_orders">-->
+<!--															<div class="d-flex w-100 justify-content-between">-->
+<!--																<h5 class="mb-1">-->
+<!--																	<xsl:value-of select="php:function('lang', 'Orders from all applications')" />-->
+<!--																</h5>-->
+<!--															</div>-->
+<!--															<xsl:for-each select="application/combined_orders">-->
+<!--																<div class="mb-3">-->
+<!--																	<h6><xsl:value-of select="php:function('lang', 'Order')" /> #<xsl:value-of select="order_id"/></h6>-->
+<!--																	<table class="table table-sm">-->
+<!--																		<thead>-->
+<!--																			<tr>-->
+<!--																				<th><xsl:value-of select="php:function('lang', 'Article')" /></th>-->
+<!--																				<th><xsl:value-of select="php:function('lang', 'Quantity')" /></th>-->
+<!--																				<th><xsl:value-of select="php:function('lang', 'Unit Price')" /></th>-->
+<!--																				<th><xsl:value-of select="php:function('lang', 'Amount')" /></th>-->
+<!--																			</tr>-->
+<!--																		</thead>-->
+<!--																		<tbody>-->
+<!--																			<xsl:for-each select="lines">-->
+<!--																				<tr>-->
+<!--																					<td><xsl:value-of select="name"/></td>-->
+<!--																					<td><xsl:value-of select="quantity"/> <xsl:value-of select="unit"/></td>-->
+<!--																					<td><xsl:value-of select="unit_price"/></td>-->
+<!--																					<td><xsl:value-of select="amount"/></td>-->
+<!--																				</tr>-->
+<!--																			</xsl:for-each>-->
+<!--																		</tbody>-->
+<!--																		<tfoot>-->
+<!--																			<tr>-->
+<!--																				<th colspan="3"><xsl:value-of select="php:function('lang', 'Total')" /></th>-->
+<!--																				<th><xsl:value-of select="sum"/></th>-->
+<!--																			</tr>-->
+<!--																		</tfoot>-->
+<!--																	</table>-->
+<!--																</div>-->
+<!--															</xsl:for-each>-->
+<!--														</xsl:if>-->
 
-														<div id="resources_container" class="pure-form-contentTable"></div>
-													</div>
-												</div>
-
-												<div class="list-group">
-													<div class="list-group-item flex-column align-items-start">
+														<!-- Always show articles_container for JavaScript-populated orders -->
 														<div id="articles_container" style="display:inline-block;">
 														</div>
 													</div>
@@ -899,7 +1015,7 @@
 										<div class="panel-heading" role="tab" id="headingSix">
 											<h4 class="panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseSix" aria-expanded="true" aria-controls="collapseSix">
-													<xsl:value-of select="php:function('lang', 'When?')" />
+													<xsl:value-of select="php:function('lang', 'When and Where?')" />
 												</a>
 											</h4>
 										</div>
@@ -928,29 +1044,51 @@
 															building_id = <xsl:value-of select="application/building_id"/>;
 														</script>
 														<xsl:for-each select="application/dates">
-															<div class="pure-control-group">
-																<label>
-																	<xsl:value-of select="php:function('lang', 'From')" />:</label>
-																<span>
-																	<xsl:value-of select="php:function('pretty_timestamp', from_)"/>
-																</span>
-																<xsl:if test="../case_officer/is_current_user">
-																	<xsl:if test="contains($collisiondata, from_)">
-																		<xsl:if test="not(contains($assocdata, from_))">
-																			<a href="javascript: void(0)"
-																			   onclick="open_schedule(building_id,'{from_}');return false;">
-																				<i class="fa fa-exclamation-circle"></i>
-																			</a>
-																		</xsl:if>
+															<div class="card mb-3" style="border: 1px solid #ddd;">
+																<div class="card-body">
+																	<xsl:if test="application_name">
+																		<div class="pure-control-group">
+																			<label style="font-weight: bold; color: #2c5aa0;">
+																				<xsl:value-of select="php:function('lang', 'Application')" />:</label>
+																			<span style="font-weight: bold;">
+																				<xsl:value-of select="application_name"/>
+																			</span>
+																		</div>
 																	</xsl:if>
-																</xsl:if>
-															</div>
-															<div class="pure-control-group">
-																<label>
-																	<xsl:value-of select="php:function('lang', 'To')" />:</label>
-																<span>
-																	<xsl:value-of select="php:function('pretty_timestamp', to_)"/>
-																</span>
+																	<div class="pure-control-group">
+																		<label style="font-weight: bold;">
+																			<xsl:value-of select="php:function('lang', 'Time Period')" />:</label>
+																		<span>
+																			<xsl:value-of select="php:function('pretty_timestamp', from_)"/>
+																			<xsl:text> - </xsl:text>
+																			<xsl:value-of select="php:function('pretty_timestamp', to_)"/>
+																		</span>
+																		<xsl:if test="../case_officer/is_current_user">
+																			<xsl:if test="contains($collisiondata, from_)">
+																				<xsl:if test="not(contains($assocdata, from_))">
+																					<a href="javascript: void(0)"
+																					   onclick="open_schedule(building_id,'{from_}');return false;">
+																						<i class="fa fa-exclamation-circle"></i>
+																					</a>
+																				</xsl:if>
+																			</xsl:if>
+																		</xsl:if>
+																	</div>
+																	<div class="pure-control-group">
+																		<label>
+																			<xsl:value-of select="php:function('lang', 'Resources')" />:</label>
+																		<span>
+																			<xsl:choose>
+																				<xsl:when test="resource_names != ''">
+																					<xsl:value-of select="resource_names"/>
+																				</xsl:when>
+																				<xsl:otherwise>
+																					<xsl:text>No resources specified</xsl:text>
+																				</xsl:otherwise>
+																			</xsl:choose>
+																		</span>
+																	</div>
+																</div>
 															</div>
 															<xsl:if test="../edit_link">
 																<script type="text/javascript">
@@ -1161,7 +1299,7 @@
 					</div>
 				</xsl:for-each>
 			</div>
-		
+
 			<!-- FOURTH PANE START -->
 			<div class="tab-pane fade" id="history">
 				<h3>
@@ -1221,6 +1359,7 @@
 			var documentsURL = phpGWLink('index.php', {menuaction:'booking.uidocument_view.regulations', sort:'name', length:-1}, true) +'&owner[]=building::' + building_id;
 			var attachmentsResourceURL = phpGWLink('index.php', {menuaction:'booking.uidocument_application.index', sort:'name', no_images:1, filter_owner_id:app_id, length:-1}, true);
 			var paymentURL = phpGWLink('index.php', {menuaction:'booking.uiapplication.payments', sort:'order_id',dir:'asc',application_id:app_id, length:-1}, true);
+			var articlesURL = phpGWLink('index.php', {menuaction:'booking.uiapplication.articles', sort:'id',dir:'asc',application_id:app_id, length:-1}, true);
 
 			for (var i = 0; i < initialSelection.length; i++)
 			{
@@ -1250,12 +1389,21 @@
 
 		var colDefsDocuments = [{key: 'name', label: lang['Document'], formatter: genericLink}];
 
-		createTable('resources_container',resourcesURL,colDefsResources, '', 'pure-table pure-table-bordered');
+		// Resources now shown with dates instead of separate table
 		createTable('associated_container',associatedURL,colDefsAssociated,'results', 'pure-table pure-table-bordered');
 		createTable('regulation_documents',documentsURL,colDefsDocuments, '', 'pure-table pure-table-bordered');
 
 		var colDefsAttachmentsResource = [{key: 'name', label: lang['Name'], formatter: genericLink}];
 		createTable('attachments_container', attachmentsResourceURL, colDefsAttachmentsResource, '', 'pure-table pure-table-bordered');
+
+		var colDefsArticles = [
+		{key: 'article', label: lang['article']},
+		{key: 'quantity', label: lang['quantity']},
+		{key: 'unit', label: lang['unit']},
+		{key: 'cost', label: lang['cost']},
+		{key: 'currency', label: lang['currency']}
+		];
+		createTable('articles_container', articlesURL, colDefsArticles, '', 'pure-table pure-table-bordered');
 
 		var colDefsPayment = [
 		{
@@ -1458,7 +1606,7 @@
 		</div>
 		<!-- /.modal-dialog -->
 	</div>
-	
+
 	<div class="modal fade" id="acceptApplicationModal" tabindex="-1" role="dialog" aria-labelledby="acceptApplicationModalLabel" aria-hidden="true">
 	  <div class="modal-dialog modal-dialog-centered" role="document">
 		<div class="modal-content">
@@ -1493,7 +1641,7 @@
 		</div>
 	  </div>
 	</div>
-	
+
 	<div class="modal fade" id="rejectApplicationModal" tabindex="-1" role="dialog" aria-labelledby="rejectApplicationModalLabel" aria-hidden="true">
 	  <div class="modal-dialog modal-dialog-centered" role="document">
 		<div class="modal-content">

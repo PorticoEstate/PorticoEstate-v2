@@ -119,24 +119,38 @@ class VippsService
         $transaction = null;
         $contact_phone = null;
 
+        $total_amount = 0;
+        $unpaid_order_ids = [];
+        $building_names = [];
+
         foreach ($applications['results'] as $application) {
-            $dates = implode(', ', array_map([$this, 'getDateRange'], $application['dates']));
             $contact_phone = $application['contact_phone'];
+            
+            if (!empty($application['building_name']) && !in_array($application['building_name'], $building_names)) {
+                $building_names[] = $application['building_name'];
+            }
 
             foreach ($application['orders'] as $order) {
                 if (empty($order['paid'])) {
-                    $remote_order_id = $soapplication->add_payment($order['order_id'], $this->msn);
-                    $transaction = [
-                        "amount" => (float)$order['sum'] * 100,
-                        "orderId" => $remote_order_id,
-                        "transactionText" => 'Aktiv kommune, bookingdato: ' . $dates,
-                        "skipLandingPage" => false,
-                        "scope" => "name address email",
-                        "useExplicitCheckoutFlow" => true
-                    ];
-                    break 2;
+                    $total_amount += (float)$order['sum'];
+                    $unpaid_order_ids[] = $order['order_id'];
                 }
             }
+        }
+
+        if ($total_amount > 0) {
+            $building_text = !empty($building_names) ? implode(', ', $building_names) : '';
+            $transaction_text = !empty($building_text) ? "Aktiv kommune, {$building_text}" : 'Aktiv kommune';
+            
+            $remote_order_id = $soapplication->add_payment($unpaid_order_ids, $this->msn);
+            $transaction = [
+                "amount" => $total_amount * 100,
+                "orderId" => $remote_order_id,
+                "transactionText" => $transaction_text,
+                "skipLandingPage" => false,
+                "scope" => "name address email",
+                "useExplicitCheckoutFlow" => true
+            ];
         }
 
         if (!$transaction) {
@@ -288,10 +302,10 @@ class VippsService
 
         while ($attempts < $max_attempts) {
             $data = $this->getPaymentDetails($remote_order_id);
-            
+
             if (isset($data['transactionLogHistory'][0])) {
                 $last_transaction = $data['transactionLogHistory'][0];
-                
+
                 // Return payment status without modifying application state
                 if (in_array($last_transaction['operation'], $cancel_array)) {
                     return [
@@ -300,7 +314,7 @@ class VippsService
                         'data' => $data
                     ];
                 }
-                
+
                 if ($last_transaction['operationSuccess'] && in_array($last_transaction['operation'], $approved_array)) {
                     return [
                         'status' => 'ready_for_capture',
@@ -309,14 +323,14 @@ class VippsService
                         'data' => $data
                     ];
                 }
-                
+
                 return [
                     'status' => 'pending',
                     'operation' => $last_transaction['operation'],
                     'data' => $data
                 ];
             }
-            
+
             $attempts++;
             if ($attempts < $max_attempts) {
                 sleep(2); // Wait 2 seconds between attempts like legacy
@@ -433,7 +447,7 @@ class VippsService
             $response = $this->client->request('POST', $url, $request);
             $ret = json_decode($response->getBody()->getContents(), true);
             return $ret;
-            
+
         } catch (\GuzzleHttp\Exception\BadResponseException $e) {
             if ($this->debug) {
                 error_log("Vipps cancel payment error: " . $e->getMessage());

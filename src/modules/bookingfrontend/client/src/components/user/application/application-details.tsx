@@ -29,7 +29,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 		application?.resources || []
 	);
 	const t = useTrans();
-
+	console.log(application);
 
 	if (isLoading) {
 		return (
@@ -116,6 +116,23 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						</div>
 						<div>
 							<ResourceCircles resources={application.resources} maxCircles={4} size={'small'} expandable/>
+						</div>
+					</div>
+
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.participants')}</Heading>
+						</div>
+						<div>
+							<Paragraph>
+								{application.agegroups && application.agegroups.length > 0 
+									? application.agegroups.reduce((total, agegroup) => {
+										const groupTotal = agegroup.female ? (agegroup.male + agegroup.female) : agegroup.male;
+										return total + groupTotal;
+									}, 0)
+									: 0
+								}
+							</Paragraph>
 						</div>
 					</div>
 

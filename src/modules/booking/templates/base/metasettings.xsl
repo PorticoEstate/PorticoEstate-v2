@@ -27,7 +27,7 @@
 					</div>
 					<div class="pure-control-group">
 						<label for="field_frontimagetext">
-							<xsl:value-of select="php:function('lang', 'frontimage text')"/>
+							<i class="fa fa-exclamation-triangle" style="color: #f39c12;"></i> <xsl:value-of select="php:function('lang', 'warning')"/>							
 						</label>
 						<div class="pure-custom">
 							<textarea id="field_frontimagetext" class="full-width" name="frontimagetext">
@@ -50,7 +50,7 @@
 					</div>
 					<div class="pure-control-group">
 						<label for="field_frontpagetext">
-							<xsl:value-of select="php:function('lang', 'Frontpage text')"/>
+							<i class="fa fa-info-circle" style="color: #3498db;"></i> <xsl:value-of select="php:function('lang', 'information')"/>
 						</label>
 						<div class="pure-custom">
 							<textarea id="field_frontpagetext" class="full-width" name="frontpagetext">

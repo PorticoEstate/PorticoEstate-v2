@@ -11,7 +11,7 @@
     --dsc-button-size: var(--ds-size-12);
 
     --dsc-card-border-color: var(--ds-color-border-subtle);
-    
+
     width: 100%;  /* Full width by default */
 
     &[data-variant='secondary'],
@@ -68,6 +68,7 @@
             margin-top: 0.5rem;
             padding: 1rem;
             max-height: 350px;
+			user-select: none;
             &__aria-live {
                 display: none;
             }
@@ -281,7 +282,7 @@
 
 .wrapper {
     width: 100%;
-    
+
     :global(.ds-input) {
         width: 100%;
     }

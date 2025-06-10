@@ -17,7 +17,7 @@ interface FilterModalProps {
     selectedFacilities: number[];
     setSelectedFacilities: React.Dispatch<React.SetStateAction<number[]>>;
     // Additional props for date and where filters
-    date?: Date;
+    date?: Date | null;
     onDateChange?: (newDate: Date | null) => void;
     where?: number | '';
     onWhereChange?: (newWhere: number | '') => void;
@@ -245,7 +245,7 @@ const FilterModal: FC<FilterModalProps> = ({
             closeOnBackdropClick={false}
         >
             <div className={styles.filterModalContent}>
-                {showDateWhere && date && onDateChange && (
+                {showDateWhere && onDateChange && (
                     <div className={styles.dateFilterWrapper}>
                         <div>
                             <Label>{t('bookingfrontend.when')}</Label>
@@ -253,11 +253,13 @@ const FilterModal: FC<FilterModalProps> = ({
                                 currentDate={date}
                                 onDateChange={onDateChange}
                                 view="timeGridDay"
+                                allowEmpty={true}
+                                placeholder={t('bookingfrontend.select_date')}
                             />
                         </div>
                     </div>
                 )}
-                
+
                 {showDateWhere && towns && towns.length > 0 && onWhereChange && (
                     <div className={styles.townFilterWrapper}>
                         <Field>
@@ -276,7 +278,7 @@ const FilterModal: FC<FilterModalProps> = ({
                         </Field>
                     </div>
                 )}
-                
+
                 <ActivityFilterWithLimit
                     key={`activity-filter-${filterKey}`}
                     activities={activitiesWithResources}

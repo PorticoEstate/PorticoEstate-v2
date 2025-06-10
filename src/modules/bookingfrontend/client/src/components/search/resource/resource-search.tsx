@@ -21,7 +21,7 @@ interface ResourceSearchProps {
 // Interface for localStorage search state
 interface StoredSearchState {
     textSearchQuery: string;
-    date: string;
+    date: string | null;
     where: number | '';
     selectedActivities: number[];
     selectedFacilities: number[];
@@ -34,7 +34,7 @@ const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTowns, initialMultiDomains }) => {
     // Initialize state for search filters
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
-    const [date, setDate] = useState<Date>(new Date());
+    const [date, setDate] = useState<Date | null>(null);
     const [where, setWhere] = useState<number | ''>('');
     const [filtersModalOpen, setFiltersModalOpen] = useState<boolean>(false);
     const [selectedActivities, setSelectedActivities] = useState<number[]>([]);
@@ -91,6 +91,8 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                         setTextSearchQuery(parsedState.textSearchQuery);
                         if (parsedState.date) {
                             setDate(new Date(parsedState.date));
+                        } else {
+                            setDate(null);
                         }
                         setWhere(parsedState.where);
                         if (parsedState.selectedActivities) {
@@ -210,7 +212,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         if (!resourcesWithBuildings.length) return [];
 
         // If no filters are applied, return empty array (don't show results by default)
-        if (!textSearchQuery.trim() && !where && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+        if (!textSearchQuery.trim() && !where && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return [];
         }
 
@@ -326,7 +328,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
     const clearFilters = () => {
         setTextSearchQuery('');
         setWhere('');
-        setDate(new Date());
+        setDate(null);
         setSelectedActivities([]);
         setSelectedFacilities([]);
 
@@ -337,7 +339,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
             // Create a clean state to ensure complete reset
             const cleanState: StoredSearchState = {
                 textSearchQuery: '',
-                date: new Date().toISOString(),
+                date: null,
                 where: '',
                 selectedActivities: [],
                 selectedFacilities: [],
@@ -357,7 +359,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                 try {
                     const stateToSave: StoredSearchState = {
                         textSearchQuery,
-                        date: date.toISOString(),
+                        date: date ? date.toISOString() : null,
                         where,
                         selectedActivities,
                         selectedFacilities,
@@ -391,7 +393,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 
     // Render active filter chips in a more compact way
     const renderActiveFilters = () => {
-        if (!textSearchQuery && where === '' && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+        if (!textSearchQuery && where === '' && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return null;
         }
 
@@ -399,6 +401,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         const totalFilters = [
             textSearchQuery ? 1 : 0,
             where ? 1 : 0,
+            date ? 1 : 0,
             selectedActivities.length,
             selectedFacilities.length
         ].reduce((sum, current) => sum + current, 0);
@@ -406,7 +409,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         return (
             <div className={styles.activeFilters}>
                 {/* Only show clear filters button if there are filters other than textSearchQuery */}
-                {(where || selectedActivities.length > 0 || selectedFacilities.length > 0) && (
+                {(where || date || selectedActivities.length > 0 || selectedFacilities.length > 0) && (
                     <div className={styles.filterSummary}>
                         <Button
                             variant="tertiary"
@@ -437,6 +440,15 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                             onClick={() => setWhere('')}
                         >
                             {towns.find(town => town.id === Number(where))?.name || ''}
+                        </Chip.Removable>
+                    )}
+                    {date && (
+                        <Chip.Removable
+                            data-color="brand1"
+                            data-size="sm"
+                            onClick={() => setDate(null)}
+                        >
+                            {date.toLocaleDateString()}
                         </Chip.Removable>
                     )}
                     {selectedActivities.map(activityId => {
@@ -485,7 +497,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 
     // Render search results section
     const renderSearchResults = () => {
-        if (!textSearchQuery.trim() && !where && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+        if (!textSearchQuery.trim() && !where && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return (
                 <div className={styles.noResults}>
                     <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
@@ -527,7 +539,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 
                 <div className={styles.resourceGrid}>
                     {filteredResources.map(resource => (
-                        <ResourceResultItem key={`${resource.domain_name || 'local'}-${resource.id}`} resource={resource}/>
+                        <ResourceResultItem key={`${resource.domain_name || 'local'}-${resource.id}`} resource={resource} selectedDate={date}/>
                     ))}
                 </div>
             </div>
@@ -605,6 +617,8 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                                         currentDate={date}
                                         onDateChange={handleDateChange}
                                         view="timeGridDay"
+										placeholder={t('bookingfrontend.select date')}
+										allowEmpty={true}
                                     />
                                 </div>
                             </div>

@@ -200,7 +200,7 @@ class ErrorHandler
 		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
 		$referer = str_replace('?', "\n?", $referer);
 		$referer = str_replace('&', "\n&", $referer);
-		$parametres = $_GET;
+		$parametres = Sanitizer::clean_value($_GET);
 		$parametres = print_r($parametres, true);
 		$trace = "IP_address: {$IP_address}</b>\n Referer: {$referer} </b>\nParameters: {$parametres}</b>\nPath: {$path}</b>\n" . $this->phpgw_parse_backtrace($bt);
 
@@ -380,7 +380,7 @@ class ErrorHandler
 		$referer = str_replace('&', "\n&", $referer);
 		$path = $this->path;
 		$IP_address = Sanitizer::get_ip_address(true);
-		$parametres = $_GET;
+		$parametres = Sanitizer::clean_value($_GET);
 		$parametres = print_r($parametres, true);
 		$trace = "IP_address: {$IP_address}</b>\nReferer: {$referer} </b>\nPath: {$path}</b>\nParameters: {$parametres}</b>\n" . $e->getTraceAsString();
 		

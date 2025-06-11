@@ -338,6 +338,20 @@ $phpgw_baseline = array(
 		'ix' => array(),
 		'uc' => array(),
 	),
+	'bb_resource_outlook_item' => array(
+		'fd' => array(
+			'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
+			'outlook_item_id' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False),
+			'active' => array('type' => 'int', 'nullable' => False, 'precision' => 2, 'default' => 1),
+			'sync_date_time' => array('type' => 'timestamp', 'nullable' => False, 'default' => 'current_timestamp'),
+		),
+		'pk' => array('resource_id', 'outlook_item_id'),
+		'fk' => array(
+			'bb_resource' => array('resource_id' => 'id'),
+		),
+		'ix' => array(),
+		'uc' => array()
+	),
 	'bb_building_resource' => array(
 		'fd' => array(
 			'building_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),

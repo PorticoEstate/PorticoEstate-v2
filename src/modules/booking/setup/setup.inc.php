@@ -75,6 +75,7 @@ $setup_info['booking']['tables'] = [
 	'bb_resource_activity',
 	'bb_resource_facility',
 	'bb_resource_e_lock',
+	'bb_resource_outlook_item',
 	'bb_building_resource',
 	'bb_document_building',
 	'bb_document_resource',

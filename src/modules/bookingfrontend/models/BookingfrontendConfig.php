@@ -35,7 +35,8 @@ class BookingfrontendConfig
 
     /**
      * @OA\Property(type="string")
-	 * @Expose 
+	 * @Expose
+	 * @ParseBool
      */
     public $develope_mode;
 

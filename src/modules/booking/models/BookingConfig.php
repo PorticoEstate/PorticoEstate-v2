@@ -19,6 +19,8 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
+     * @ParseBool
      */
     public $activate_application_articles;
 
@@ -425,6 +427,7 @@ class BookingConfig
     /**
      * @OA\Property(type="string")
 	 * @Expose
+	 * @ParseBool
      */
     public $user_can_delete_allocations;
 

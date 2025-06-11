@@ -46,13 +46,13 @@ const ResourceInfoModalContent: FC<ResourceInfoPopperContentProps> = (props) => 
                     )}
                     {resource.data?.opening_hours && (
                         <div>
-                            <h4>{t('bookingfrontend.description')}</h4>
+                            <h4>{t('booking.opening hours')}</h4>
                             <div>{parse(unescapeHTML(resource.data.opening_hours))}</div>
                         </div>
                     )}
                     {resource.data?.contact_info && (
                         <div>
-                            <h4>{t('bookingfrontend.description')}</h4>
+                            <h4>{t('bookingfrontend.contact information')}</h4>
                             <div>{parse(unescapeHTML(resource.data.contact_info))}</div>
                         </div>
                     )}

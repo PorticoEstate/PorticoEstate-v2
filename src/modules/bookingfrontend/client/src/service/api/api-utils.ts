@@ -668,3 +668,60 @@ export async function fetchMultiDomains(): Promise<IMultiDomain[]> {
 	const result = await response.json();
 	return result.results || [];
 }
+
+/**
+ * Fetches available resources for a specific date from a specific domain
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @param domain - Optional domain name for multi-domain requests
+ * @returns Promise with an array of available resource IDs
+ */
+export async function fetchAvailableResources(date: string, domain?: string): Promise<number[]> {
+	const url = phpGWLink(['bookingfrontend', 'availableresources'], { date }, true, domain);
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(`Failed to fetch available resources: ${response.status}`);
+	}
+
+	return await response.json().then(d => d.resources);
+}
+
+/**
+ * Fetches available resources for a specific date across all domains
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @param multiDomains - Array of domain configurations
+ * @returns Promise with a map of domain names to available resource IDs
+ */
+export async function fetchAvailableResourcesMultiDomain(
+	date: string,
+	multiDomains: IMultiDomain[]
+): Promise<Record<string, number[]>> {
+	const results: Record<string, number[]> = {};
+
+	// Fetch from local domain (no domain parameter)
+	try {
+		const localResources = await fetchAvailableResources(date);
+		results['local'] = localResources;
+	} catch (error) {
+		console.error('Error fetching local available resources:', error);
+		results['local'] = [];
+	}
+
+	// Fetch from all external domains in parallel
+	const domainPromises = multiDomains.map(async (domain) => {
+		try {
+			const resources = await fetchAvailableResources(date, domain.name);
+			return { domain: domain.name, resources };
+		} catch (error) {
+			console.error(`Error fetching available resources from ${domain.name}:`, error);
+			return { domain: domain.name, resources: [] };
+		}
+	});
+
+	const domainResults = await Promise.all(domainPromises);
+	domainResults.forEach(({ domain, resources }) => {
+		results[domain] = resources;
+	});
+
+	return results;
+}

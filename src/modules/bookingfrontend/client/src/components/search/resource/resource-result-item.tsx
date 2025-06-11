@@ -13,9 +13,10 @@ import {createDomainResourceUrl, createDomainBuildingUrl, redirectToDomain} from
 interface ResourceResultItemProps {
 	resource: ISearchResource & { building?: ISearchDataBuilding };
 	selectedDate: Date | null;
+	isAvailable?: boolean;
 }
 
-const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate}) => {
+const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate, isAvailable}) => {
 	const t = useTrans();
 	// const {data: searchData} = useSearchData(); // Commented out since activity lookup is not currently used
 	const {data: towns} = useTowns();
@@ -61,11 +62,11 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 		if (isExternalDomain && domain) {
 			return createDomainResourceUrl(domain, resource.id, resource.original_id);
 		}
-		
+
 		if (!selectedDate || isToday(selectedDate)) {
 			return `/resource/${resource.id}`;
 		}
-		
+
 		return `/resource/${resource.id}/${formatDateForUrl(selectedDate)}`;
 	}, [isExternalDomain, domain, resource.id, resource.original_id, selectedDate]);
 
@@ -73,11 +74,11 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 		if (isExternalDomain && domain && resource.building) {
 			return createDomainBuildingUrl(domain, resource.building.id, resource.building.original_id);
 		}
-		
+
 		if (!selectedDate || isToday(selectedDate)) {
 			return `/building/${resource.building?.id}`;
 		}
-		
+
 		return `/building/${resource.building?.id}/${formatDateForUrl(selectedDate)}`;
 	}, [isExternalDomain, domain, resource.building, selectedDate]);
 
@@ -134,6 +135,15 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 							<Heading level={3} data-size="xs" className={styles.resourceTitle}>
 								{resource.name}
 							</Heading>
+							{/* Availability indicator */}
+							{selectedDate && isAvailable !== undefined && (
+								<span
+									className={`${styles.availabilityIndicator} ${isAvailable ? styles.available : styles.unavailable}`}
+									title={isAvailable ? t('bookingfrontend.available') : t('bookingfrontend.leased')}
+								>
+									{/*{isAvailable ? '✓' : '✗'}*/}
+								</span>
+							)}
 						</div>
 					</Link>
 				</DigdirLink>

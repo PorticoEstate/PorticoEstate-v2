@@ -84,14 +84,24 @@ class ConfigLocation
 
 		while ($row = $stmt->fetch(PDO::FETCH_ASSOC))
 		{
-			$test = unserialize($this->db->unmarshal($row['config_value'], 'string'));
-			if ($test)
+			$config_value = $this->db->unmarshal($row['config_value'], 'string');
+
+			// Check if the string appears to be serialized data
+			if (preg_match('/^[aOs]:\d+:|^[bidN];/', $config_value))
 			{
-				$this->config_data[$row['section']][$row['config_name']] = $test;
+				$unserialized = @unserialize($config_value);
+				if ($unserialized !== false || $config_value === 'b:0;')
+				{
+					$this->config_data[$row['config_name']] = $unserialized;
+				}
+				else
+				{
+					$this->config_data[$row['config_name']] = $config_value;
+				}
 			}
 			else
 			{
-				$this->config_data[$row['section']][$row['config_name']] = $this->db->unmarshal($row['config_value'], 'string');
+				$this->config_data[$row['config_name']] = $config_value;
 			}
 		}
 	}

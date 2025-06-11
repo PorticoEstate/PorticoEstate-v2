@@ -616,6 +616,40 @@
 					</div>
 				</div>
 
+				<div class="pure-control-group">
+					<label>
+						<xsl:value-of select="php:function('lang', 'Outlook mapping')" />
+					</label>
+
+					<input id="field_outlook_id" name="outlook_id" type="hidden" value=""/>
+					<input id="field_outlook_name" name="outlook_name" type="text" value="" class="pure-input-1-2">
+						<xsl:if test="new_form">
+							<xsl:attribute name="data-validation">
+								<xsl:text>required</xsl:text>
+							</xsl:attribute>
+							<xsl:attribute name="data-validation-error-msg">
+								<xsl:value-of select="php:function('lang', 'Please enter a outlook name')" />
+							</xsl:attribute>
+						</xsl:if>
+					</input>
+					<div id="outlook_container" class="custom-container"></div>
+					<xsl:if test="resource/permission/write">
+						<a class='button'>
+							<xsl:attribute name="onClick">
+								<xsl:text>addoutlook()</xsl:text>
+							</xsl:attribute>
+							<xsl:value-of select="php:function('lang', 'Add')" />
+						</a>
+						<xsl:text> | </xsl:text>
+						<a class='button'>
+							<xsl:attribute name="onClick">
+								<xsl:text>removeoutlook()</xsl:text>
+							</xsl:attribute>
+							<xsl:value-of select="php:function('lang', 'Delete')" />
+						</a>
+					</xsl:if>
+				</div>
+
 
 <!--				<div class="pure-control-group">
 					<label>

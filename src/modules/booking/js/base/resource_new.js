@@ -5,6 +5,9 @@ $(document).ready(function ()
 	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.uibuilding.index'}, true),
 		'field_building_name', 'field_building_id', 'building_container');
 
+	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.booutlook.get_rooms'}, true),
+	'field_outlook_name', 'field_outlook_id', 'outlook_container');
+
 	$("#field_schema_activity_id").val($("#field_activity_id").val());
 
 	get_custom_fields($("#field_activity_id").val(), default_schema);

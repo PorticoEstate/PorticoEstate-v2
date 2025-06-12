@@ -621,7 +621,7 @@
 						<xsl:value-of select="php:function('lang', 'Outlook mapping')" />
 					</label>
 
-					<input id="field_outlook_id" name="outlook_id" type="hidden" value=""/>
+					<input id="field_outlook_item_id" name="outlook_item_id" type="hidden" value=""/>
 					<input id="field_outlook_name" name="outlook_name" type="text" value="" class="pure-input-1-2">
 						<xsl:if test="new_form">
 							<xsl:attribute name="data-validation">

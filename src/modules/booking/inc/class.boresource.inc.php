@@ -290,6 +290,15 @@ class booking_boresource extends booking_bocommon_authorized
 		return false;
 	}
 
+	function add_outlook($entity, $resource_id, $outlook_item_id)
+	{
+		if ($this->authorize_write($entity))
+		{
+			return parent::add_outlook($resource_id, $outlook_item_id);
+		}
+		return false;
+	}
+
 	function add_e_lock($entity, $resource_id, $e_lock_system_id, $e_lock_resource_id, $e_lock_name = '', $access_code_format = '', $access_instruction = '')
 	{
 		if ($this->authorize_write($entity))

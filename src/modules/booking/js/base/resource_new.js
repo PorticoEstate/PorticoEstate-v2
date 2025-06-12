@@ -6,7 +6,7 @@ $(document).ready(function ()
 		'field_building_name', 'field_building_id', 'building_container');
 
 	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.booutlook.get_rooms'}, true),
-	'field_outlook_name', 'field_outlook_id', 'outlook_container');
+	'field_outlook_name', 'field_outlook_item_id', 'outlook_container');
 
 	$("#field_schema_activity_id").val($("#field_activity_id").val());
 
@@ -134,6 +134,31 @@ removeBuilding = function ()
 	});
 };
 
+addoutlook = function ()
+{
+	var oArgs = { menuaction: 'booking.uiresource.add_outlook' };
+	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var outlook_item_id = $("#field_outlook_item_id").val();
+	$.ajax({
+		type: 'POST',
+		data: { outlook_item_id: outlook_item_id, resource_id: resource_id },
+		dataType: 'JSON',
+		url: requestUrl,
+		success: function (data)
+		{
+			if (data.ok == true)
+			{
+				oTable1.api().draw();
+				$("#field_outlook_item_id").val('');
+				$("#field_outlook_name").val('');
+			}
+			if (data.msg !== '')
+			{
+				alert(data.msg);
+			}
+		}
+	});
+};
 
 ChangeSchema = function (key, oData)
 {

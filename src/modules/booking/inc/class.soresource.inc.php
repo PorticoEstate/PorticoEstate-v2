@@ -377,6 +377,30 @@ class booking_soresource extends booking_socommon
 		}
 	}
 
+	function add_outlook($resource_id, $outlook_item_id)
+	{
+		if (!$resource_id || !$outlook_item_id)
+		{
+			return false;
+		}
+
+		//check for duplicate
+		$sql = "SELECT resource_id FROM bb_resource_outlook_item WHERE resource_id = ? AND outlook_item_id = ?";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute(array($resource_id, $outlook_item_id));
+		
+		if ($stmt->fetch())
+		{
+			return false;
+		}
+		else
+		{
+			$sql = "INSERT INTO bb_resource_outlook_item (resource_id, outlook_item_id) VALUES (?, ?)";
+			$stmt = $this->db->prepare($sql);
+			return $stmt->execute(array($resource_id, $outlook_item_id));
+		}
+	}
+
 	function get_seasons($resource_id)
 	{
 		$values = array();

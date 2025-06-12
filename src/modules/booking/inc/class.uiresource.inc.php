@@ -31,6 +31,7 @@ class booking_uiresource extends booking_uicommon
 		'get_buildings' => true,
 		'add_building' => true,
 		'remove_building' => true,
+		'add_outlook' => true,
 		'get_e_locks'	=> true,
 		'add_e_lock'	=> true,
 		'remove_e_lock'	=> true,
@@ -882,6 +883,61 @@ class booking_uiresource extends booking_uicommon
 			'ok' => $receipt,
 			'msg' => $msg
 		);
+	}
+
+	public function add_outlook()
+	{
+		$resource_id = Sanitizer::get_var('resource_id', 'int');
+		$outlook_item_id = Sanitizer::get_var('outlook_item_id', 'string');
+		if (!$outlook_item_id)
+		{
+			return array(
+				'ok' => false,
+				'msg' => lang('missing outlook item id')
+			);
+		}
+		if (!$outlook_item_id || !preg_match('/^[a-zA-Z0-9-]+$/', $outlook_item_id))
+		{
+			return array(
+				'ok' => false,
+				'msg' => lang('invalid outlook item id')
+			);
+		}
+		if (!$resource_id)
+		{
+			return array(
+				'ok' => false,
+				'msg' => lang('missing resource id')
+			);
+		}
+
+		try
+		{
+			$resource = $this->bo->read_single($resource_id);
+			$receipt = $this->bo->add_outlook($resource, $resource_id, $outlook_item_id);
+			if ($receipt)
+			{
+				return array(
+					'ok' => true,
+					'msg' => lang('Outlook calendar added successfully')
+				);
+			}
+			else
+			{
+				return array(
+					'ok' => false,
+					'msg' => lang('Failed to add Outlook calendar')
+				);
+			}
+		}
+		catch (booking_unauthorized_exception $e)
+		{
+			return false;
+			return array(
+				'ok' => false,
+				'msg' => lang('Could not add object due to insufficient permissions')
+			);
+		}
 	}
 
 	public function show()

@@ -194,7 +194,7 @@ export async function validateOrgNum(org_num: string): Promise<BrregOrganization
 }
 
 
-export async function fetchDeliveredApplications(): Promise<{ list: IApplication[], total_sum: number }> {
+export async function fetchDeliveredApplications(includeOrganizations: boolean = false): Promise<{ list: IApplication[], total_sum: number }> {
     const params: Record<string, any> = {}
 
     // Add session cookie if we're on the server
@@ -204,6 +204,11 @@ export async function fetchDeliveredApplications(): Promise<{ list: IApplication
         if (sessionCookie) {
             params.bookingfrontendsession = sessionCookie;
         }
+    }
+
+    // Add include_organizations parameter if requested
+    if (includeOrganizations) {
+        params.include_organizations = 'true';
     }
 
     const url = phpGWLink(['bookingfrontend', 'applications'], params);

@@ -44,7 +44,8 @@ export interface IApplication {
     customer_organization_name: string | null;
     customer_organization_id: number | null;
     agegroups: IApplicationAgeGroup[];
-	articles?: ArticleOrder[];
+    articles?: ArticleOrder[];
+    application_type?: 'personal' | 'organization';
 }
 
 

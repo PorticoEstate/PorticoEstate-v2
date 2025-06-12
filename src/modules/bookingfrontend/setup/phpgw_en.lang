@@ -58,6 +58,7 @@ application	bookingfrontend	en	Application
 application add	bookingfrontend	en	Application add
 Application basket	bookingfrontend	en	Application basket
 Application cart	bookingfrontend	en	Application cart
+application_registered_confirmation	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
 applications	bookingfrontend	en	Applications
 applications.description	bookingfrontend	en	View and manage your applications
 applications_overview	bookingfrontend	en	Here is an overview of your applications that are ready for submission and approval.
@@ -75,6 +76,7 @@ aug	bookingfrontend	en	August
 available	bookingfrontend	en	Available
 back	bookingfrontend	en	Back
 Back to user list	booking	en	Back to user list
+back_to_start	bookingfrontend	en	Back to start
 beta_version	bookingfrontend	en	Beta version
 billing	bookingfrontend	en	Billing
 billing_information	bookingfrontend	en	Billing information
@@ -138,6 +140,7 @@ category	bookingfrontend	en	Category
 Change organization	common	en	Change organization
 Change the allocation	bookingfrontend	en	Change the allocation
 Check calendar	bookingfrontend	en	Check calendar
+check_spam_filter	bookingfrontend	en	Please check your spam filter if you are missing mail.
 choose a date	bookingfrontend	en	Choose a date
 Choose another building	bookingfrontend	en	Choose another building
 Choose atleast one object	bookingfrontend	en	Choose at least one object
@@ -190,6 +193,7 @@ Could not find application id. Contact case officer with allocation id	bookingfr
 create	bookingfrontend	en	Create
 Create new booking	bookingfrontend	en	Create new booking
 created	bookingfrontend	en	Created
+currency	bookingfrontend	en	NOK
 current activities	bookingfrontend	en	Current activities
 custom login url	bookingfrontend	en	Custom login url
 custom login url parameter	bookingfrontend	en	Custom login url parameter
@@ -250,6 +254,7 @@ Edit until	bookingfrontend	en	Edit until
 edit_event	bookingfrontend	en	Edit Event
 editer	bookingfrontend	en	Editer
 empty_cart	bookingfrontend	en	You have nothing in your shopping cart
+end_time	bookingfrontend	en	End time
 end_time_in_past	bookingfrontend	en	End time cannot be in the past
 end_time_must_be_after_start_time	bookingfrontend	en	End time must be after start time
 end_time_outside_business_hours	bookingfrontend	en	End time must be within business hours
@@ -693,6 +698,23 @@ view allocation	bookingfrontend	en	View allocation
 view booking	bookingfrontend	en	View booking
 view event	bookingfrontend	en	View event
 view_all_images	bookingfrontend	en	View all images
+view_my_applications	bookingfrontend	en	View My Applications
+vipps_amount	bookingfrontend	en	Amount
+vipps_applications_approved	bookingfrontend	en	Your applications have been approved
+vipps_back_to_checkout	bookingfrontend	en	Back to checkout
+vipps_check_again	bookingfrontend	en	Check again
+vipps_checking_payment	bookingfrontend	en	Checking payment status
+vipps_init_failed	bookingfrontend	en	Failed to initiate Vipps payment
+vipps_no_payment_id	bookingfrontend	en	No payment ID provided
+vipps_not_configured	bookingfrontend	en	Vipps payment is not properly configured
+vipps_payment_cancelled	bookingfrontend	en	Payment cancelled
+vipps_payment_error	bookingfrontend	en	Payment error
+vipps_payment_id	bookingfrontend	en	Payment ID
+vipps_payment_pending	bookingfrontend	en	Payment pending
+vipps_payment_successful	bookingfrontend	en	Payment successful
+vipps_processing_payment	bookingfrontend	en	Processing your payment...
+vipps_redirecting_shortly	bookingfrontend	en	Redirecting you shortly...
+vipps_try_again	bookingfrontend	en	Try again
 we	bookingfrontend	en	We
 week	bookingfrontend	en	Week
 week template	bookingfrontend	en	Week template
@@ -720,4 +742,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
-end_time	bookingfrontend	en	End time

@@ -58,6 +58,7 @@ application	bookingfrontend	nn	Søknad
 application add	bookingfrontend	nn	søknad
 Application basket	bookingfrontend	nn	Søknadskorg
 Application cart	bookingfrontend	nn	Handlekurv
+application_registered_confirmation	bookingfrontend	nn	Søknaden er sendt. Du får ei stadfesting på e-post.
 applications	bookingfrontend	nn	Søknadar
 applications.description	bookingfrontend	nn	Vis og administrer søknadane dine
 applications_overview	bookingfrontend	nn	Her er ei oversikt over søknadane dine som er klare for innsending og godkjenning.
@@ -75,6 +76,7 @@ aug	bookingfrontend	nn	august
 available	bookingfrontend	nn	Ledig
 back	bookingfrontend	nn	tilbake
 Back to user list	booking	nn	Attende til brukarlista
+back_to_start	bookingfrontend	nn	Tilbake til start
 beta_version	bookingfrontend	nn	Betaversjon
 billing	bookingfrontend	nn	Fakturering
 billing_information	bookingfrontend	nn	Fakturainformasjon
@@ -138,6 +140,7 @@ category	bookingfrontend	nn	Kategori
 Change organization	common	nn	Bytt organisasjon
 Change the allocation	bookingfrontend	nn	Endre tildeling
 Check calendar	bookingfrontend	nn	Sjekk kalendar
+check_spam_filter	bookingfrontend	nn	Vi gjer merksam på at e-postsvar blir automatisk generert og kan ende i spamfilter/nettsøppel.
 choose a date	bookingfrontend	nn	Vel ein dato
 Choose another building	bookingfrontend	nn	Velg annet anlegg
 Choose atleast one object	bookingfrontend	nn	Vel minst eitt leigeobjekt
@@ -190,6 +193,7 @@ Could not find application id. Contact case officer with allocation id	bookingfr
 create	bookingfrontend	nn	Lagre
 Create new booking	bookingfrontend	nn	Lag ny interntildeling
 created	bookingfrontend	nn	Oppretta
+currency	bookingfrontend	nn	NOK
 current activities	bookingfrontend	nn	Nåværande aktivitetar
 custom login url	bookingfrontend	nn	Egendefinert logg inn url
 custom login url parameter	bookingfrontend	nn	Egendefinert logg inn url parameter
@@ -250,6 +254,7 @@ Edit until	bookingfrontend	nn	Endre til
 edit_event	bookingfrontend	nn	Rediger arrangement
 editer	bookingfrontend	nn	Rediger
 empty_cart	bookingfrontend	nn	Du har ingenting i handlekorga
+end_time	bookingfrontend	nn	Sluttidspunkt
 end_time_in_past	bookingfrontend	nn	Sluttidspunktet kan ikkje vere i fortida
 end_time_must_be_after_start_time	bookingfrontend	nn	Sluttidspunktet må vere etter starttidspunktet
 end_time_outside_business_hours	bookingfrontend	nn	Sluttidspunktet må vere innanfor opningstider
@@ -693,6 +698,24 @@ view allocation	bookingfrontend	nn	Vis tildeling
 view booking	bookingfrontend	nn	Vis interntildeling
 view event	bookingfrontend	nn	Vis arrangement
 view_all_images	bookingfrontend	nn	Vis alle bilete
+view_my_applications	bookingfrontend	nn	Vis søknadene mine
+vipps_amount	bookingfrontend	nn	Beløp
+vipps_applications_approved	bookingfrontend	nn	Søknadene dine er godkjende
+vipps_back_to_checkout	bookingfrontend	nn	Tilbake til kassen
+vipps_check_again	bookingfrontend	nn	Sjekk igjen
+vipps_checking_payment	bookingfrontend	nn	Sjekkar betalingsstatus
+vipps_init_failed	bookingfrontend	nn	Kunne ikkje starta Vipps-betaling
+vipps_no_payment_id	bookingfrontend	nn	Ingen betalings-ID oppgjeve
+vipps_not_configured	bookingfrontend	nn	Vipps-betaling er ikkje riktig konfigurert
+vipps_payment_cancelled	bookingfrontend	nn	Betaling avbroten
+vipps_payment_completed	bookingfrontend	nn	Bookinga di er fullført via Vipps-betaling
+vipps_payment_error	bookingfrontend	nn	Betalingsfeil
+vipps_payment_id	bookingfrontend	nn	Betalings-ID
+vipps_payment_pending	bookingfrontend	nn	Betaling pågår
+vipps_payment_successful	bookingfrontend	nn	Betaling vellykka
+vipps_processing_payment	bookingfrontend	nn	Behandlar betalinga di...
+vipps_redirecting_shortly	bookingfrontend	nn	Omdirigerer deg snart...
+vipps_try_again	bookingfrontend	nn	Prøv igjen
 we	bookingfrontend	nn	ons
 week	bookingfrontend	nn	uke
 week template	bookingfrontend	nn	Vekeplan
@@ -720,4 +743,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	nn	Søknadene dine er godkjent, og en bekreftelse er sendt til deg på e-post.
 your_applications	bookingfrontend	nn	Dine søknader
 zip code	bookingfrontend	nn	Postnummer
-end_time	bookingfrontend	nn	Sluttidspunkt

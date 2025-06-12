@@ -117,6 +117,16 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->group('/checkout', function (RouteCollectorProxy $group)
 	{
 		$group->get('/external-payment-eligibility', CheckoutController::class . ':checkExternalPaymentEligibility');
+		
+		// Vipps payment endpoints
+		$group->group('/vipps', function (RouteCollectorProxy $group)
+		{
+			$group->post('/check-payment-status', CheckoutController::class . ':checkVippsPaymentStatus');
+			$group->get('/payment-details/{payment_order_id}', CheckoutController::class . ':getVippsPaymentDetails');
+			$group->post('/cancel-payment', CheckoutController::class . ':cancelVippsPayment');
+			$group->post('/refund-payment', CheckoutController::class . ':refundVippsPayment');
+			$group->post('/post-to-accounting', CheckoutController::class . ':postVippsToAccounting');
+		});
 	});
 
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');

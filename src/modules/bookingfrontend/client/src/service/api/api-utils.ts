@@ -653,6 +653,127 @@ export async function fetchExternalPaymentEligibility(): Promise<ExternalPayment
 	return response.json();
 }
 
+export interface VippsPaymentStatusResponse {
+	status: string;
+	message: string;
+	applications_approved?: boolean;
+}
+
+export interface VippsPaymentDetailsResponse {
+	transactionInfo?: {
+		status: string;
+		amount: number;
+		timeStamp: string;
+	};
+	transactionLogHistory?: Array<{
+		operation: string;
+		operationSuccess: boolean;
+		timeStamp: string;
+		amount: number;
+	}>;
+}
+
+export interface VippsCancelPaymentResponse {
+	success: boolean;
+	message: string;
+	vipps_response?: any;
+}
+
+export interface VippsRefundPaymentResponse {
+	success: boolean;
+	message: string;
+	refunded_amount: number;
+	vipps_response?: any;
+}
+
+/**
+ * Check Vipps payment status and process payment
+ * This should be called after user returns from Vipps or periodically to check status
+ */
+export async function checkVippsPaymentStatus(payment_order_id: string): Promise<VippsPaymentStatusResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'check-payment-status']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to check Vipps payment status');
+	}
+
+	return response.json();
+}
+
+/**
+ * Get detailed payment information from Vipps
+ */
+export async function getVippsPaymentDetails(payment_order_id: string): Promise<VippsPaymentDetailsResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'payment-details', payment_order_id]);
+
+	const response = await fetch(url, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to get Vipps payment details');
+	}
+
+	return response.json();
+}
+
+/**
+ * Cancel a Vipps payment
+ */
+export async function cancelVippsPayment(payment_order_id: string): Promise<VippsCancelPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'cancel-payment']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to cancel Vipps payment');
+	}
+
+	return response.json();
+}
+
+/**
+ * Refund a Vipps payment
+ */
+export async function refundVippsPayment(payment_order_id: string, amount: number): Promise<VippsRefundPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'refund-payment']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id, amount }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to refund Vipps payment');
+	}
+
+	return response.json();
+}
+
 /**
  * Fetches multi-domains from the API
  * @returns Promise with an array of IMultiDomain objects

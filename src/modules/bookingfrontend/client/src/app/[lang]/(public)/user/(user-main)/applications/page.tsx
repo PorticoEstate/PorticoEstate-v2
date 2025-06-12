@@ -6,10 +6,10 @@ import { getTranslation } from "@/app/i18n";
 
 export default async function ApplicationsPage() {
   const { t } = await getTranslation();
-  
+
   // Fetch delivered applications on the server using the enhanced function with cookie authentication
-  const applications = await fetchDeliveredApplications();
-  
+  const applications = await fetchDeliveredApplications(true);
+
   return (
     <main>
       <PageHeader title={t('bookingfrontend.applications')} />

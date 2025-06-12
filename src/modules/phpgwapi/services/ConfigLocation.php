@@ -92,16 +92,16 @@ class ConfigLocation
 				$unserialized = @unserialize($config_value);
 				if ($unserialized !== false || $config_value === 'b:0;')
 				{
-					$this->config_data[$row['config_name']] = $unserialized;
+					$this->config_data[$row['section']][$row['config_name']] = $unserialized;
 				}
 				else
 				{
-					$this->config_data[$row['config_name']] = $config_value;
+					$this->config_data[$row['section']][$row['config_name']] = $config_value;
 				}
 			}
 			else
 			{
-				$this->config_data[$row['config_name']] = $config_value;
+				$this->config_data[$row['section']][$row['config_name']] = $config_value;
 			}
 		}
 	}

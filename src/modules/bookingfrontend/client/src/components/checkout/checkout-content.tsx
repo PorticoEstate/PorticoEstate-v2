@@ -138,6 +138,8 @@ const CheckoutContent: FC = () => {
             checkoutMutation.mutateAsync({
                 organizerName: eventDetails.organizerName,
                 customerType: billingDetails?.customerType || 'ssn',
+                organizationNumber: billingDetails.organizationNumber,
+                organizationName: billingDetails.organizationName,
                 contactName: billingDetails.contactName,
                 contactEmail: billingDetails.contactEmail,
                 contactPhone: billingDetails.contactPhone,

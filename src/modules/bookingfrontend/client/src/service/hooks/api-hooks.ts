@@ -524,12 +524,17 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 }
 
 export function useApplications(
-  options?: { initialData?: { list: IApplication[], total_sum: number } }
+  options?: { 
+    initialData?: { list: IApplication[], total_sum: number };
+    includeOrganizations?: boolean;
+  }
 ): UseQueryResult<{ list: IApplication[], total_sum: number }> {
+	const includeOrganizations = options?.includeOrganizations ?? false;
+	
 	return useQuery(
 		{
-			queryKey: ['deliveredApplications'],
-			queryFn: () => fetchDeliveredApplications(), // Fetch function
+			queryKey: ['deliveredApplications', includeOrganizations],
+			queryFn: () => fetchDeliveredApplications(includeOrganizations), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
 			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
 			initialData: options?.initialData,

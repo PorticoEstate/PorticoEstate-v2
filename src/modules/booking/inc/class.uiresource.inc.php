@@ -32,6 +32,7 @@ class booking_uiresource extends booking_uicommon
 		'add_building' => true,
 		'remove_building' => true,
 		'add_outlook' => true,
+		'remove_outlook' => true,
 		'get_e_locks'	=> true,
 		'add_e_lock'	=> true,
 		'remove_e_lock'	=> true,
@@ -889,6 +890,7 @@ class booking_uiresource extends booking_uicommon
 	{
 		$resource_id = Sanitizer::get_var('resource_id', 'int');
 		$outlook_item_id = Sanitizer::get_var('outlook_item_id', 'string');
+		$outlook_item_name = Sanitizer::get_var('outlook_item_name', 'string');
 		if (!$outlook_item_id)
 		{
 			return array(
@@ -914,7 +916,7 @@ class booking_uiresource extends booking_uicommon
 		try
 		{
 			$resource = $this->bo->read_single($resource_id);
-			$receipt = $this->bo->add_outlook($resource, $resource_id, $outlook_item_id);
+			$receipt = $this->bo->add_outlook($resource, $resource_id, $outlook_item_id, $outlook_item_name);
 			if ($receipt)
 			{
 				return array(
@@ -936,6 +938,55 @@ class booking_uiresource extends booking_uicommon
 			return array(
 				'ok' => false,
 				'msg' => lang('Could not add object due to insufficient permissions')
+			);
+		}
+	}
+
+
+	public function remove_outlook()
+	{
+		$resource_id = Sanitizer::get_var('resource_id', 'int');
+		$outlook_item_id = Sanitizer::get_var('outlook_item_id', 'string');
+		if (!$outlook_item_id)
+		{
+			return array(
+				'ok' => false,
+				'msg' => lang('missing outlook item id')
+			);
+		}
+		if (!$resource_id)
+		{
+			return array(
+				'ok' => false,
+				'msg' => lang('missing resource id')
+			);
+		}
+
+		try
+		{
+			$resource = $this->bo->read_single($resource_id);
+			$receipt = $this->bo->remove_outlook($resource, $resource_id, $outlook_item_id);
+			if ($receipt)
+			{
+				return array(
+					'ok' => true,
+					'msg' => lang('Outlook calendar removed successfully')
+				);
+			}
+			else
+			{
+				return array(
+					'ok' => false,
+					'msg' => lang('Failed to remove Outlook calendar')
+				);
+			}
+		}
+		catch (booking_unauthorized_exception $e)
+		{
+			return false;
+			return array(
+				'ok' => false,
+				'msg' => lang('Could not update object due to insufficient permissions')
 			);
 		}
 	}

@@ -621,8 +621,50 @@
 						<xsl:value-of select="php:function('lang', 'Outlook mapping')" />
 					</label>
 
+					<table id="outlook_items" class="pure-table pure-u-md-1-2">
+						<xsl:if test="not(resource/outlook_items)">
+							<xsl:attribute name="style">
+								<xsl:text>display:none;</xsl:text>
+							</xsl:attribute>
+						</xsl:if>
+						<xsl:for-each select="resource/outlook_items">
+							<xsl:variable name="outlook_item_id">
+								<xsl:value-of select="outlook_item_id"/>
+							</xsl:variable>
+							<tr id = "outlook_item_{$outlook_item_id}">
+								<td>
+									<xsl:value-of select="outlook_item_id"/>
+								</td>
+								<td>
+									<xsl:value-of select="outlook_item_name"/>
+								</td>
+								<td>
+									<a class='button'>
+										<xsl:attribute name="onClick">
+											<xsl:text>removeoutlook(</xsl:text>
+											<xsl:value-of select="../id"/>
+											<xsl:text>, '</xsl:text>
+											<xsl:value-of select="$outlook_item_id"/>
+											<xsl:text>')</xsl:text>
+										</xsl:attribute>
+										<xsl:value-of select="php:function('lang', 'delete')" />
+									</a>
+								</td>
+							</tr>
+						</xsl:for-each>
+					</table>
+					<xsl:if test="not(resource/outlook_items)">
+						<div id="no_outlook_mapping" class="pure-u-md-1-2">
+							<xsl:value-of select="php:function('lang', 'No Outlook mapping')" />
+						</div>
+					</xsl:if>
+				</div>
+				<div class="pure-control-group">
+					<label>
+						<xsl:value-of select="php:function('lang', 'Add Outlook mapping')" />
+					</label>
 					<input id="field_outlook_item_id" name="outlook_item_id" type="hidden" value=""/>
-					<input id="field_outlook_name" name="outlook_name" type="text" value="" class="pure-input-1-2">
+					<input id="field_outlook_item_name" name="outlook_item_name" type="text" value="" class="pure-input-1-2">
 						<xsl:if test="new_form">
 							<xsl:attribute name="data-validation">
 								<xsl:text>required</xsl:text>
@@ -639,13 +681,6 @@
 								<xsl:text>addoutlook()</xsl:text>
 							</xsl:attribute>
 							<xsl:value-of select="php:function('lang', 'Add')" />
-						</a>
-						<xsl:text> | </xsl:text>
-						<a class='button'>
-							<xsl:attribute name="onClick">
-								<xsl:text>removeoutlook()</xsl:text>
-							</xsl:attribute>
-							<xsl:value-of select="php:function('lang', 'Delete')" />
 						</a>
 					</xsl:if>
 				</div>
@@ -794,6 +829,6 @@
 		</div>
 	</form>
 	<script type="text/javascript">
-		var lang = <xsl:value-of select="php:function('js_lang', 'Select category...')"/>;
+		var lang = <xsl:value-of select="php:function('js_lang', 'Select category...', 'Delete')"/>;
 	</script>
 </xsl:template>

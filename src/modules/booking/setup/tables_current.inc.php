@@ -342,6 +342,7 @@ $phpgw_baseline = array(
 		'fd' => array(
 			'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
 			'outlook_item_id' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False),
+			'outlook_item_name' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False),
 			'active' => array('type' => 'int', 'nullable' => False, 'precision' => 2, 'default' => 1),
 			'sync_date_time' => array('type' => 'timestamp', 'nullable' => False, 'default' => 'current_timestamp'),
 		),

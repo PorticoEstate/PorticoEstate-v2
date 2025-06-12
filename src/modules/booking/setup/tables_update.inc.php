@@ -7752,6 +7752,7 @@ function booking_upgrade0_2_112($oProc)
 			'fd' => array(
 				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
 				'outlook_item_id' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False),
+				'outlook_item_name' => array('type' => 'varchar', 'precision' => 255, 'nullable' => True),
 				'active' => array('type' => 'int', 'nullable' => False, 'precision' => 2, 'default' => 1),
 				'sync_date_time' => array('type' => 'timestamp', 'nullable' => False, 'default' => 'current_timestamp'),
 			),

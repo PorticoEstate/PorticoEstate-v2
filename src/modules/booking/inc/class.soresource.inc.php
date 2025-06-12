@@ -165,6 +165,14 @@ class booking_soresource extends booking_socommon
 						'column' => array('e_lock_system_id', 'e_lock_resource_id', 'e_lock_name', 'access_code_format', 'access_instruction', 'active', 'modified_on', 'modified_by'),
 					)
 				),
+				'outlook_items' => array(
+					'type' => 'string',
+					'manytomany' => array(
+						'table' => 'bb_resource_outlook_item',
+						'key' => 'resource_id',
+						'column' => array('outlook_item_id','outlook_item_name')
+					)
+				),
 			)
 		);
 		$this->account = $this->userSettings['account_id'];
@@ -377,7 +385,7 @@ class booking_soresource extends booking_socommon
 		}
 	}
 
-	function add_outlook($resource_id, $outlook_item_id)
+	function add_outlook($resource_id, $outlook_item_id, $outlook_item_name)
 	{
 		if (!$resource_id || !$outlook_item_id)
 		{
@@ -395,10 +403,22 @@ class booking_soresource extends booking_socommon
 		}
 		else
 		{
-			$sql = "INSERT INTO bb_resource_outlook_item (resource_id, outlook_item_id) VALUES (?, ?)";
+			$sql = "INSERT INTO bb_resource_outlook_item (resource_id, outlook_item_id, outlook_item_name) VALUES (?, ?, ?)";
 			$stmt = $this->db->prepare($sql);
-			return $stmt->execute(array($resource_id, $outlook_item_id));
+			return $stmt->execute(array($resource_id, $outlook_item_id, $outlook_item_name));
 		}
+	}
+
+
+	function remove_outlook($resource_id, $outlook_item_id)
+	{
+		if (!$resource_id || !$outlook_item_id) {
+			return false;
+		}
+
+		$sql = "DELETE FROM bb_resource_outlook_item WHERE resource_id = ? AND outlook_item_id = ?";
+		$stmt = $this->db->prepare($sql);
+		return $stmt->execute(array($resource_id, $outlook_item_id));
 	}
 
 	function get_seasons($resource_id)

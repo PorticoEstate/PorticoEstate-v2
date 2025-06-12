@@ -1,6 +1,6 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
-import {useSearchData, useTowns, useMultiDomains} from "@/service/hooks/api-hooks";
+import {useSearchData, useTowns, useMultiDomains, useAvailableResourcesMultiDomain} from "@/service/hooks/api-hooks";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
 import styles from './resource-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
@@ -69,6 +69,12 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
     const {data: multiDomainsData, isLoading: isLoadingMultiDomains, error: multiDomainsError} = useMultiDomains({
         initialData: initialMultiDomains
     });
+
+    // Format date for API call (YYYY-MM-DD)
+    const formattedDate = date ? date.toISOString().split('T')[0] : undefined;
+
+    // Fetch available resources for the selected date across all domains
+    const {data: availableResourcesByDomain} = useAvailableResourcesMultiDomain(formattedDate, multiDomainsData);
 
     const t = useTrans();
 
@@ -311,11 +317,27 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
             });
         }
 
-        // Date availability filter would go here
-        // For now, we're not implementing date filtering logic
+        // Sort by availability - available resources first
+        if (availableResourcesByDomain) {
+            filtered.sort((a, b) => {
+                // Determine which domain this resource belongs to
+                const aDomain = a.domain_name || 'local';
+                const bDomain = b.domain_name || 'local';
+
+                // Check if resource is available in its respective domain
+                const aIsAvailable = availableResourcesByDomain[aDomain]?.includes(a.original_id || a.id) || false;
+                const bIsAvailable = availableResourcesByDomain[bDomain]?.includes(b.original_id || b.id) || false;
+
+                // If both available or both unavailable, maintain current order (relevance)
+                if (aIsAvailable === bIsAvailable) return 0;
+
+                // Available resources come first
+                return bIsAvailable ? 1 : -1;
+            });
+        }
 
         return filtered;
-    }, [resourcesWithBuildings, textSearchQuery, where, selectedActivities, selectedFacilities, searchData]);
+    }, [resourcesWithBuildings, textSearchQuery, where, selectedActivities, selectedFacilities, searchData, availableResourcesByDomain]);
 
     // Handle date selection
     const handleDateChange = (newDate: Date | null) => {
@@ -538,9 +560,24 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                 {/*)}*/}
 
                 <div className={styles.resourceGrid}>
-                    {filteredResources.map(resource => (
-                        <ResourceResultItem key={`${resource.domain_name || 'local'}-${resource.id}`} resource={resource} selectedDate={date}/>
-                    ))}
+                    {filteredResources.map(resource => {
+                        // Determine availability for this resource based on its domain
+                        const resourceDomain = resource.domain_name || 'local';
+                        const resourceIdToCheck = resource.original_id || resource.id;
+                        console.log(resourceDomain, resourceIdToCheck, availableResourcesByDomain?.[resourceDomain]);
+						const isAvailable = availableResourcesByDomain?.[resourceDomain]
+                            ? availableResourcesByDomain[resourceDomain].includes(resourceIdToCheck)
+                            : undefined;
+
+                        return (
+                            <ResourceResultItem
+                                key={`${resource.domain_name || 'local'}-${resource.id}`}
+                                resource={resource}
+                                selectedDate={date}
+                                isAvailable={isAvailable}
+                            />
+                        );
+                    })}
                 </div>
             </div>
         );

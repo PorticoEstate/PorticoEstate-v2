@@ -15,6 +15,8 @@ import {
 	addApplicationComment,
 	updateApplicationStatus,
 	fetchArticlesForResources,
+	fetchAvailableResources,
+	fetchAvailableResourcesMultiDomain,
 	fetchBuildingAgeGroups,
 	fetchBuildingAudience,
 	fetchBuildingSchedule,
@@ -1465,6 +1467,46 @@ export function useMultiDomains(options?: {
 			staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour (cached)
 			refetchOnWindowFocus: false, // Do not refetch on window focus by default
 			initialData: options?.initialData, // Use server-side fetched data if available
+		}
+	);
+}
+
+/**
+ * Hook to fetch available resources for a specific date
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @returns Query result containing array of available resource IDs
+ */
+export function useAvailableResources(date?: string): UseQueryResult<number[]> {
+	return useQuery(
+		{
+			queryKey: ['availableResources', date],
+			queryFn: date ? () => fetchAvailableResources(date) : skipToken,
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			enabled: !!date, // Only run query if date is provided
+		}
+	);
+}
+
+/**
+ * Hook to fetch available resources for a specific date across all domains
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @param multiDomains - Array of domain configurations
+ * @returns Query result containing map of domain names to available resource IDs
+ */
+export function useAvailableResourcesMultiDomain(
+	date?: string,
+	multiDomains?: IMultiDomain[]
+): UseQueryResult<Record<string, number[]>> {
+	return useQuery(
+		{
+			queryKey: ['availableResourcesMultiDomain', date, multiDomains?.map(d => d.name).join(',')],
+			queryFn: (date && multiDomains) ? () => fetchAvailableResourcesMultiDomain(date, multiDomains) : skipToken,
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			enabled: !!(date && multiDomains), // Only run query if date and domains are provided
 		}
 	);
 }

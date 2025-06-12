@@ -58,6 +58,7 @@ application	bookingfrontend	no	Søknad
 application add	bookingfrontend	no	Legg til søknad
 Application basket	bookingfrontend	no	Søknadskurv
 Application cart	bookingfrontend	no	Handlekurv
+application_registered_confirmation	bookingfrontend	no	Søknaden har blitt sendt inn, og en bekreftelse har blitt sendt til deg på e-post.
 applications	bookingfrontend	no	Søknader
 applications.description	bookingfrontend	no	Se og administrer dine søknader
 applications_overview	bookingfrontend	no	Her er en oversikt over dine søknader som er klar for innsending og godkjennelse.
@@ -75,6 +76,7 @@ aug	bookingfrontend	no	august
 available	bookingfrontend	no	Ledig
 back	bookingfrontend	no	Tilbake
 Back to user list	booking	no	Tilbake til brukerlisten
+back_to_start	bookingfrontend	no	Tilbake til start
 beta_version	bookingfrontend	no	Betaversjon
 billing	bookingfrontend	no	Fakturering
 billing_information	bookingfrontend	no	Fakturainformasjon
@@ -138,6 +140,7 @@ category	bookingfrontend	no	Kategori
 Change organization	common	no	Bytt organisasjon
 Change the allocation	bookingfrontend	no	Endre tildeling
 Check calendar	bookingfrontend	no	Sjekk kalender
+check_spam_filter	bookingfrontend	no	Vi gjør oppmerksom på at e-postsvar blir automatisk generert og derfor noen ganger vil ende i spamfilter/nettsøppel.
 choose a date	bookingfrontend	no	Velg dato
 Choose another building	bookingfrontend	no	Velg annet anlegg
 Choose atleast one object	bookingfrontend	no	Velg minst ett leieobjekt
@@ -190,6 +193,7 @@ Could not find application id. Contact case officer with allocation id	bookingfr
 create	bookingfrontend	no	Lagre
 Create new booking	bookingfrontend	no	Lag ny interntildeling
 created	bookingfrontend	no	Opprettet
+currency	bookingfrontend	no	NOK
 current activities	bookingfrontend	no	Aktiviteter
 custom login url	bookingfrontend	no	Egendefinert logg inn url
 custom login url parameter	bookingfrontend	no	Egendefinert logg inn url parametre
@@ -250,6 +254,7 @@ Edit until	bookingfrontend	no	Endre til
 edit_event	bookingfrontend	no	Rediger arrangement
 editer	bookingfrontend	no	Rediger
 empty_cart	bookingfrontend	no	Du har ingenting i handlekurven
+end_time	bookingfrontend	no	Slutt tidspunkt
 end_time_in_past	bookingfrontend	no	Sluttidspunktet kan ikke være i fortiden
 end_time_must_be_after_start_time	bookingfrontend	no	Sluttidspunktet må være etter starttidspunktet
 end_time_outside_business_hours	bookingfrontend	no	Sluttidspunktet må være innenfor åpningstider
@@ -693,6 +698,24 @@ view allocation	bookingfrontend	no	Vis tildeling
 view booking	bookingfrontend	no	Vis interntildeling
 view event	bookingfrontend	no	Vis arrangement
 view_all_images	bookingfrontend	no	Vis alle bilder
+view_my_applications	bookingfrontend	no	Vis mine søknader
+vipps_amount	bookingfrontend	no	Beløp
+vipps_applications_approved	bookingfrontend	no	Søknadene dine er godkjent
+vipps_back_to_checkout	bookingfrontend	no	Tilbake til kassen
+vipps_check_again	bookingfrontend	no	Sjekk igjen
+vipps_checking_payment	bookingfrontend	no	Sjekker betalingsstatus
+vipps_init_failed	bookingfrontend	no	Kunne ikke starte Vipps-betaling
+vipps_no_payment_id	bookingfrontend	no	Ingen betalings-ID oppgitt
+vipps_not_configured	bookingfrontend	no	Vipps-betaling er ikke riktig konfigurert
+vipps_payment_cancelled	bookingfrontend	no	Betaling avbrutt
+vipps_payment_completed	bookingfrontend	no	Bookingen din er fullført via Vipps-betaling
+vipps_payment_error	bookingfrontend	no	Betalingsfeil
+vipps_payment_id	bookingfrontend	no	Betalings-ID
+vipps_payment_pending	bookingfrontend	no	Betaling pågår
+vipps_payment_successful	bookingfrontend	no	Betaling vellykket
+vipps_processing_payment	bookingfrontend	no	Behandler betalingen din...
+vipps_redirecting_shortly	bookingfrontend	no	Omdirigerer deg snart...
+vipps_try_again	bookingfrontend	no	Prøv igjen
 we	bookingfrontend	no	ons
 week	bookingfrontend	no	uke
 week template	bookingfrontend	no	Ukeplan
@@ -720,4 +743,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	no	Søknadene er godkjent, og en bekreftelse har blitt sendt til deg på e-post.
 your_applications	bookingfrontend	no	Dine søknader
 zip code	bookingfrontend	no	Postnummer
-end_time	bookingfrontend	no	Slutt tidspunkt

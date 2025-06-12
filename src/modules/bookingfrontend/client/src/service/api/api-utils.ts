@@ -653,6 +653,127 @@ export async function fetchExternalPaymentEligibility(): Promise<ExternalPayment
 	return response.json();
 }
 
+export interface VippsPaymentStatusResponse {
+	status: string;
+	message: string;
+	applications_approved?: boolean;
+}
+
+export interface VippsPaymentDetailsResponse {
+	transactionInfo?: {
+		status: string;
+		amount: number;
+		timeStamp: string;
+	};
+	transactionLogHistory?: Array<{
+		operation: string;
+		operationSuccess: boolean;
+		timeStamp: string;
+		amount: number;
+	}>;
+}
+
+export interface VippsCancelPaymentResponse {
+	success: boolean;
+	message: string;
+	vipps_response?: any;
+}
+
+export interface VippsRefundPaymentResponse {
+	success: boolean;
+	message: string;
+	refunded_amount: number;
+	vipps_response?: any;
+}
+
+/**
+ * Check Vipps payment status and process payment
+ * This should be called after user returns from Vipps or periodically to check status
+ */
+export async function checkVippsPaymentStatus(payment_order_id: string): Promise<VippsPaymentStatusResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'check-payment-status']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to check Vipps payment status');
+	}
+
+	return response.json();
+}
+
+/**
+ * Get detailed payment information from Vipps
+ */
+export async function getVippsPaymentDetails(payment_order_id: string): Promise<VippsPaymentDetailsResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'payment-details', payment_order_id]);
+
+	const response = await fetch(url, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to get Vipps payment details');
+	}
+
+	return response.json();
+}
+
+/**
+ * Cancel a Vipps payment
+ */
+export async function cancelVippsPayment(payment_order_id: string): Promise<VippsCancelPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'cancel-payment']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to cancel Vipps payment');
+	}
+
+	return response.json();
+}
+
+/**
+ * Refund a Vipps payment
+ */
+export async function refundVippsPayment(payment_order_id: string, amount: number): Promise<VippsRefundPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'refund-payment']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id, amount }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to refund Vipps payment');
+	}
+
+	return response.json();
+}
+
 /**
  * Fetches multi-domains from the API
  * @returns Promise with an array of IMultiDomain objects
@@ -667,4 +788,61 @@ export async function fetchMultiDomains(): Promise<IMultiDomain[]> {
 
 	const result = await response.json();
 	return result.results || [];
+}
+
+/**
+ * Fetches available resources for a specific date from a specific domain
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @param domain - Optional domain name for multi-domain requests
+ * @returns Promise with an array of available resource IDs
+ */
+export async function fetchAvailableResources(date: string, domain?: string): Promise<number[]> {
+	const url = phpGWLink(['bookingfrontend', 'availableresources'], { date }, true, domain);
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(`Failed to fetch available resources: ${response.status}`);
+	}
+
+	return await response.json().then(d => d.resources);
+}
+
+/**
+ * Fetches available resources for a specific date across all domains
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @param multiDomains - Array of domain configurations
+ * @returns Promise with a map of domain names to available resource IDs
+ */
+export async function fetchAvailableResourcesMultiDomain(
+	date: string,
+	multiDomains: IMultiDomain[]
+): Promise<Record<string, number[]>> {
+	const results: Record<string, number[]> = {};
+
+	// Fetch from local domain (no domain parameter)
+	try {
+		const localResources = await fetchAvailableResources(date);
+		results['local'] = localResources;
+	} catch (error) {
+		console.error('Error fetching local available resources:', error);
+		results['local'] = [];
+	}
+
+	// Fetch from all external domains in parallel
+	const domainPromises = multiDomains.map(async (domain) => {
+		try {
+			const resources = await fetchAvailableResources(date, domain.name);
+			return { domain: domain.name, resources };
+		} catch (error) {
+			console.error(`Error fetching available resources from ${domain.name}:`, error);
+			return { domain: domain.name, resources: [] };
+		}
+	});
+
+	const domainResults = await Promise.all(domainPromises);
+	domainResults.forEach(({ domain, resources }) => {
+		results[domain] = resources;
+	});
+
+	return results;
 }

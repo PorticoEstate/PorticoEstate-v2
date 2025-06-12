@@ -24,7 +24,8 @@ import {
 	useBuildingAudience, useBuildingSeasons,
 	useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
 	usePartialApplications,
-	useUpdatePartialApplication, useUploadApplicationDocument, useBuildingSchedule
+	useUpdatePartialApplication, useUploadApplicationDocument, useBuildingSchedule,
+	useServerSettings
 } from "@/service/hooks/api-hooks";
 import {NewPartialApplication, IUpdatePartialApplication, IApplication} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
@@ -146,6 +147,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
     const participantsSectionRef = useRef<HTMLDivElement>(null);
+    const {data: serverSettings} = useServerSettings();
 	const [minTime, maxTime] = useMemo(() => {
 		let minTime = '24:00:00';
 		let maxTime = '00:00:00';
@@ -997,8 +999,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                         )}
                     </div>
 
-					{/* Add this after the resources selection section */}
-					{selectedResources.length > 0 && (
+					{/* Articles section - only show if activated in server settings */}
+					{selectedResources.length > 0 && serverSettings?.booking_config?.activate_application_articles === true && (
 						<div className={`${styles.formGroup} ${styles.wide}`}>
 							<div className={styles.resourcesHeader}>
 								<h4>{t('bookingfrontend.articles')}</h4>

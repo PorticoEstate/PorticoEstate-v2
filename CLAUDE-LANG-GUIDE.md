@@ -135,6 +135,26 @@ Search for a key in all languages of a specific module:
 php test_lang_files.php --search=save --module=booking
 ```
 
+### Search for Translation Values
+
+Search for translation values containing specific text across all language files:
+
+```bash
+php test_lang_files.php --search-value="booking has been registered"
+```
+
+Search for translation values in specific languages:
+
+```bash
+php test_lang_files.php --search-value="booking has been registered" --langs=no,en,nn
+```
+
+This feature is useful when:
+- You know the text you're looking for but not the key name
+- You want to find all translations containing specific words or phrases
+- You need to check how a concept is translated across different languages
+- You want to verify consistency in terminology across the application
+
 ## Common Workflows with Claude
 
 ### 1. Initial Check
@@ -184,7 +204,21 @@ This helps when:
 - You want to verify if a key exists in all required language files
 - You need to find the context of a specific key for better translation
 
-### 6. Sorting Language Files by Key
+### 6. Searching for Translation Values
+
+When you need to find translations by their content rather than key:
+
+```
+php test_lang_files.php --search-value="booking has been registered" --langs=en,no,nn
+```
+
+This helps when:
+- You know the text but not the translation key
+- You want to find existing translations to reuse
+- You need to check consistency in terminology
+- You want to find all translations containing specific words
+
+### 7. Sorting Language Files by Key
 
 To make language files easier to maintain, you can sort them alphabetically by key:
 
@@ -194,7 +228,7 @@ php test_lang_files.php --sort --lang=en,no,nn --module=bookingfrontend
 
 This organizes all translations in a consistent order across language files, making differences easier to spot and maintenance simpler.
 
-### 7. Fixing Translations
+### 8. Fixing Translations
 
 After identifying missing translations, you can add them to the language files:
 
@@ -212,6 +246,41 @@ After identifying missing translations, you can add them to the language files:
    ```
    php test_lang_files.php --compare --lang=en,no,nn --module=module_name
    ```
+
+## Best Practices for Translation Keys
+
+### Use Semantic Keys Instead of Full Text
+
+**Bad:**
+```
+Your application has now been registered and a confirmation email has been sent to you.	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
+```
+
+**Good:**
+```
+application_registered_confirmation	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
+```
+
+### Key Naming Conventions
+
+- Use snake_case for translation keys
+- Make keys descriptive but concise
+- Use module-specific prefixes when needed (e.g., `vipps_payment_completed`)
+- Avoid full sentences as keys
+- Use consistent terminology across related keys
+
+### Examples of Good Translation Keys
+
+```bash
+# Add semantic keys for common messages
+php test_lang_files.php --add-translation --key="application_registered_confirmation" --module=bookingfrontend --langs="en:Your application has now been registered and a confirmation email has been sent to you.,no:Søknaden har blitt sendt inn, og en bekreftelse har blitt sendt til deg på e-post."
+
+# Add feature-specific keys
+php test_lang_files.php --add-translation --key="vipps_payment_completed" --module=bookingfrontend --langs="en:Your booking has been completed via Vipps payment,no:Bookingen din er fullført via Vipps-betaling"
+
+# Add reusable utility keys
+php test_lang_files.php --add-translation --key="check_spam_filter" --module=bookingfrontend --langs="en:Please check your spam filter if you are missing mail.,no:Vi gjør oppmerksom på at e-postsvar blir automatisk generert og derfor noen ganger vil ende i spamfilter/nettsøppel."
+```
 
 ## Common Issues & Solutions
 
@@ -285,6 +354,22 @@ php test_lang_files.php --search=booking.save --langs=en,no,nn
 ```
 
 This helps when you need to check if a translation exists in all required languages or when you need to see how a specific term is translated in different languages.
+
+### Searching for Translation Values
+
+Search for translations containing specific text:
+
+```
+php test_lang_files.php --search-value="booking has been registered"
+```
+
+Search for values in specific languages:
+
+```
+php test_lang_files.php --search-value="Please check your Spam Filter" --langs=en,no,nn
+```
+
+This helps when you know the text content but need to find the translation key, or when you want to ensure consistency in terminology across the application.
 
 ### Sorting Language Files for Better Maintainability
 

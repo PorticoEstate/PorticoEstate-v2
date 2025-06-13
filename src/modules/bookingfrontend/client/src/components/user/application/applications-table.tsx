@@ -9,7 +9,7 @@ import {ColumnDef} from "@/components/gs-table/table.types";
 import {DateTime} from "luxon";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
-import {Link, Switch} from "@digdir/designsystemet-react";
+import {Link, Checkbox} from "@digdir/designsystemet-react";
 
 interface ApplicationsTableProps {
 	initialApplications?: { list: IApplication[], total_sum: number };
@@ -159,16 +159,6 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 
 	return (
 		<div>
-			<div className="p-4">
-				<Switch
-					checked={includeOrganizations}
-					onChange={(e) => setIncludeOrganizations(e.target.checked)}
-					aria-label={t('bookingfrontend.include_organization_applications')}
-				>
-					{t('bookingfrontend.include_organization_applications')}
-				</Switch>
-			</div>
-
 			<GSTable<IApplication>
 				data={applicationsRaw?.list || []}
 				columns={columns}
@@ -176,7 +166,16 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 				enableRowSelection
 				enableMultiRowSelection
 				enableSearch
-				utilityHeader={true}
+				utilityHeader={{
+					right: (
+						<Checkbox
+							checked={includeOrganizations}
+							onChange={(e) => setIncludeOrganizations(e.target.checked)}
+							label={t('bookingfrontend.show_organizations')}
+						>
+						</Checkbox>
+					)
+				}}
 				exportFileName={"applications"}
 			/>
 		</div>

@@ -290,6 +290,7 @@ function Table<T>({
         ),
         right: (
             <>
+                {typeof utilityHeader === 'object' && utilityHeader?.right}
                 {!!exportFileName && (
                     <TableExport
                         table={table}
@@ -298,7 +299,6 @@ function Table<T>({
                     />
                 )}
                 <ColumnToggle table={table} tableColumns={tableColumns} columnVisibility={columnVisibility}/>
-                {typeof utilityHeader === 'object' && utilityHeader?.right}
             </>
         ),
     }), [enableSearch, table, searchPlaceholder, utilityHeader, exportFileName, selectedRows, rowSelection, tableColumns, columnVisibility]);

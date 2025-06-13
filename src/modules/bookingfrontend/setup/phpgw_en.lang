@@ -743,3 +743,4 @@ Your applications have now been processed and confirmation emails have been sent
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
 show_organizations	bookingfrontend	en	Show organizations
+personal	bookingfrontend	en	Personal

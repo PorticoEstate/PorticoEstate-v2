@@ -744,3 +744,4 @@ Your applications have now been processed and confirmation emails have been sent
 your_applications	bookingfrontend	no	Dine søknader
 zip code	bookingfrontend	no	Postnummer
 show_organizations	bookingfrontend	no	Vis organisasjoner
+personal	bookingfrontend	no	Personlig

@@ -1,5 +1,5 @@
 'use client'
-import React, {FC, useState} from 'react';
+import React, {FC, useState, useMemo} from 'react';
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useApplications} from "@/service/hooks/api-hooks";
 import {GSTable} from "@/components/gs-table";
@@ -9,7 +9,8 @@ import {ColumnDef} from "@/components/gs-table/table.types";
 import {DateTime} from "luxon";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
-import {Link, Switch} from "@digdir/designsystemet-react";
+import {Link, Checkbox, Button} from "@digdir/designsystemet-react";
+import { ArrowsCirclepathIcon } from '@navikt/aksel-icons';
 
 interface ApplicationsTableProps {
 	initialApplications?: { list: IApplication[], total_sum: number };
@@ -19,10 +20,16 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 	const t = useTrans();
 	const [includeOrganizations, setIncludeOrganizations] = useState(true);
 
-	const {data: applicationsRaw, isLoading} = useApplications({
+	const {data: applicationsRaw, isFetching, refetch} = useApplications({
 		initialData: initialApplications,
-		includeOrganizations
+		includeOrganizations: true
 	});
+
+	const filteredApplications = useMemo(() => {
+		if (!applicationsRaw?.list) return [];
+		if (includeOrganizations) return applicationsRaw.list;
+		return applicationsRaw.list.filter(app => app.application_type !== 'organization');
+	}, [applicationsRaw?.list, includeOrganizations]);
 
 	const columns: ColumnDef<IApplication>[] = [
 		{
@@ -159,24 +166,34 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 
 	return (
 		<div>
-			<div className="p-4">
-				<Switch
-					checked={includeOrganizations}
-					onChange={(e) => setIncludeOrganizations(e.target.checked)}
-					aria-label={t('bookingfrontend.include_organization_applications')}
-				>
-					{t('bookingfrontend.include_organization_applications')}
-				</Switch>
-			</div>
-
 			<GSTable<IApplication>
-				data={applicationsRaw?.list || []}
+				data={filteredApplications}
 				columns={columns}
 				enableSorting={true}
 				enableRowSelection
 				enableMultiRowSelection
 				enableSearch
-				utilityHeader={true}
+				isLoading={isFetching}
+				utilityHeader={{
+					right: (
+						<>
+							<Checkbox
+								checked={includeOrganizations}
+								onChange={(e) => setIncludeOrganizations(e.target.checked)}
+								label={t('bookingfrontend.show_organizations')}
+							>
+							</Checkbox>
+							<Button
+								variant="tertiary"
+								data-size="sm"
+								onClick={() => refetch()}
+								disabled={isFetching}
+							>
+								<ArrowsCirclepathIcon />
+							</Button>
+						</>
+					)
+				}}
 				exportFileName={"applications"}
 			/>
 		</div>

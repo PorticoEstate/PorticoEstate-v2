@@ -82,6 +82,7 @@ export interface TableProps<T> {
     // persistSettings?: boolean; // Optional flag to enable/disable persistence
     storageId?: string; // Optional unique identifier for localStorage and enable persistence
     exportFileName?: string; // enables export, and sets filename
+    isLoading?: boolean; // Show loading state
 }
 
 // Add localStorage settings interface

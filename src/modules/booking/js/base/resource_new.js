@@ -5,7 +5,7 @@ $(document).ready(function ()
 	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.uibuilding.index'}, true),
 		'field_building_name', 'field_building_id', 'building_container');
 
-	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.booutlook.get_rooms'}, true),
+	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.boresource.get_outlook_resources'}, true),
 	'field_outlook_item_name', 'field_outlook_item_id', 'outlook_container');
 
 	$("#field_schema_activity_id").val($("#field_activity_id").val());
@@ -136,7 +136,7 @@ removeBuilding = function ()
 
 addoutlook = function ()
 {
-	var oArgs = { menuaction: 'booking.uiresource.add_outlook' };
+	var oArgs = { menuaction: 'booking.uiresource.add_outlook_item' };
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 	var outlook_item_id = $("#field_outlook_item_id").val();
 	var outlook_item_name = $("#field_outlook_item_name").val();
@@ -152,7 +152,6 @@ addoutlook = function ()
 				$("#no_outlook_mapping").hide();
 				$("#outlook_items").append(
 					'<tr id="outlook_item_' + outlook_item_id + '">' +
-					'<td>' + outlook_item_id + '</td>' +
 					'<td>' + outlook_item_name + '</td>' +
 					'<td><a class="button" onclick="removeoutlook(' + resource_id + ',\'' + outlook_item_id + '\')">' +
 					lang['Delete'] + '</a></td>' +
@@ -180,7 +179,7 @@ removeoutlook = function (resource_id, outlook_item_id)
 	}
 	
 	// Proceed with the removal
-	var oArgs = {menuaction: 'booking.uiresource.remove_outlook'};
+	var oArgs = {menuaction: 'booking.uiresource.remove_outlook_item'};
 	var requestUrl = phpGWLink('index.php', oArgs, true);
 	$.ajax({
 		type: 'POST',

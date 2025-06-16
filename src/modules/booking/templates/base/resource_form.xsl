@@ -633,9 +633,6 @@
 							</xsl:variable>
 							<tr id = "outlook_item_{$outlook_item_id}">
 								<td>
-									<xsl:value-of select="outlook_item_id"/>
-								</td>
-								<td>
 									<xsl:value-of select="outlook_item_name"/>
 								</td>
 								<td>

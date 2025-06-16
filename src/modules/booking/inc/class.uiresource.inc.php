@@ -31,8 +31,8 @@ class booking_uiresource extends booking_uicommon
 		'get_buildings' => true,
 		'add_building' => true,
 		'remove_building' => true,
-		'add_outlook' => true,
-		'remove_outlook' => true,
+		'add_outlook_item' => true,
+		'remove_outlook_item' => true,
 		'get_e_locks'	=> true,
 		'add_e_lock'	=> true,
 		'remove_e_lock'	=> true,
@@ -886,7 +886,7 @@ class booking_uiresource extends booking_uicommon
 		);
 	}
 
-	public function add_outlook()
+	public function add_outlook_item()
 	{
 		$resource_id = Sanitizer::get_var('resource_id', 'int');
 		$outlook_item_id = Sanitizer::get_var('outlook_item_id', 'string');
@@ -916,8 +916,8 @@ class booking_uiresource extends booking_uicommon
 		try
 		{
 			$resource = $this->bo->read_single($resource_id);
-			$receipt = $this->bo->add_outlook($resource, $resource_id, $outlook_item_id, $outlook_item_name);
-			if ($receipt)
+			$receipt = $this->bo->add_outlook_item($resource, $resource_id, $outlook_item_id, $outlook_item_name);
+			if ($receipt['status'] == 'success')
 			{
 				return array(
 					'ok' => true,
@@ -943,7 +943,7 @@ class booking_uiresource extends booking_uicommon
 	}
 
 
-	public function remove_outlook()
+	public function remove_outlook_item()
 	{
 		$resource_id = Sanitizer::get_var('resource_id', 'int');
 		$outlook_item_id = Sanitizer::get_var('outlook_item_id', 'string');
@@ -951,9 +951,10 @@ class booking_uiresource extends booking_uicommon
 		{
 			return array(
 				'ok' => false,
-				'msg' => lang('missing outlook item id')
+				'msg' => lang('missing outlook item name')
 			);
 		}
+
 		if (!$resource_id)
 		{
 			return array(
@@ -965,8 +966,8 @@ class booking_uiresource extends booking_uicommon
 		try
 		{
 			$resource = $this->bo->read_single($resource_id);
-			$receipt = $this->bo->remove_outlook($resource, $resource_id, $outlook_item_id);
-			if ($receipt)
+			$receipt = $this->bo->remove_outlook_item($resource, $resource_id, $outlook_item_id);
+			if ($receipt['status'] == 'success')
 			{
 				return array(
 					'ok' => true,

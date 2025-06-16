@@ -8,28 +8,47 @@ import {FCallEvent, FCEventContentArg} from "@/components/building-calendar/buil
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
-import {IEventIsAPIEvent} from "@/service/pecalendar.types";
+import {IEventIsAPIEvent, IEvent} from "@/service/pecalendar.types";
 
 interface EventContentListProps {
-    eventInfo: FCEventContentArg<FCallEvent>;
+    eventInfo: FCEventContentArg<FCallEvent> | IEvent;
 }
 
 const EventContentList: FC<EventContentListProps> = ({eventInfo}) => {
     const t = useTrans();
     const isMobile = useIsMobile();
-    const eventData = eventInfo.event.extendedProps.source;
-    // const actualTimeText = formatEventTime(eventInfo.event);
-    const actualStart = 'actualStart' in eventInfo.event.extendedProps ? eventInfo.event.extendedProps.actualStart : eventInfo.event.start;
-    const actualEnd = 'actualEnd' in eventInfo.event.extendedProps ? eventInfo.event.extendedProps.actualEnd : eventInfo.event.end;
+    
+    // Type guard to check if eventInfo is FCEventContentArg
+    const isFullCalendarEvent = (eventInfo: FCEventContentArg<FCallEvent> | IEvent): eventInfo is FCEventContentArg<FCallEvent> => {
+        return 'event' in eventInfo;
+    };
+    
+    let eventData: IEvent;
+    let actualStart: Date;
+    let actualEnd: Date;
+    let title: string;
+    
+    if (isFullCalendarEvent(eventInfo)) {
+        eventData = eventInfo.event.extendedProps.source;
+        actualStart = 'actualStart' in eventInfo.event.extendedProps ? eventInfo.event.extendedProps.actualStart : eventInfo.event.start;
+        actualEnd = 'actualEnd' in eventInfo.event.extendedProps ? eventInfo.event.extendedProps.actualEnd : eventInfo.event.end;
+        title = eventInfo.event.title;
+    } else {
+        eventData = eventInfo;
+        actualStart = new Date(eventData.from_);
+        actualEnd = new Date(eventData.to_);
+        title = 'name' in eventData ? eventData.name : eventData.building_name;
+    }
+    
     const renderColorCircles = (maxCircles: number) => {
-        const resources = eventInfo.event.extendedProps.source.resources;
+        const resources = eventData.resources;
         const totalResources = resources.length;
         const circlesToShow = resources.slice(0, maxCircles);
         const remainingCount = totalResources - maxCircles;
 
         return (
             <div className={styles.colorCircles}>
-                {circlesToShow.map((res, index) => (
+                {circlesToShow.map((res: any, index: number) => (
                     <ColourCircle resourceId={res.id} key={index} className={styles.colorCircle} size="small"/>
                 ))}
                 {remainingCount > 0 && <span className={styles.remainingCount}>+{remainingCount}</span>}
@@ -43,7 +62,7 @@ const EventContentList: FC<EventContentListProps> = ({eventInfo}) => {
               <span className={`${styles.time} text-overline`}>
                 <FontAwesomeIcon className="text-label" icon={faClock}/>{formatTimeStamp(actualStart, true)}
               </span>
-            <div className={styles.title}>{eventInfo.event.title}</div>
+            <div className={styles.title}>{title}</div>
             <div className={`${styles.resourceIcons} text-label`}>
                 <LayersIcon fontSize="1.25rem" />
                 {renderColorCircles(isMobile ? 1 : 3)}

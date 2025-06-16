@@ -12,6 +12,7 @@ import {IBookingUser, IDocument, IServerSettings, IMultiDomain} from "@/service/
 import {
 	fetchApplication,
 	fetchApplicationComments,
+	fetchApplicationScheduleEntities,
 	addApplicationComment,
 	updateApplicationStatus,
 	fetchArticlesForResources,
@@ -38,7 +39,7 @@ import {
 import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
-import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
@@ -524,13 +525,13 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 }
 
 export function useApplications(
-  options?: { 
+  options?: {
     initialData?: { list: IApplication[], total_sum: number };
     includeOrganizations?: boolean;
   }
 ): UseQueryResult<{ list: IApplication[], total_sum: number }> {
 	const includeOrganizations = options?.includeOrganizations ?? false;
-	
+
 	return useQuery(
 		{
 			queryKey: ['deliveredApplications', includeOrganizations],
@@ -572,6 +573,24 @@ export function useApplicationComments(
     return useQuery({
         queryKey: ['applicationComments', applicationId, types, secret],
         queryFn: () => fetchApplicationComments(applicationId, types, secret),
+        retry: 2,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
+ * Hook to fetch events, allocations and bookings related to an application
+ * @param applicationId The application ID
+ * @param secret Optional secret for external access
+ * @returns Query result with events, allocations and bookings
+ */
+export function useApplicationScheduleEntities(
+    applicationId: number,
+    secret?: string
+): UseQueryResult<{events: IAPIEvent[], allocations: IAPIAllocation[], bookings: IAPIBooking[]}> {
+    return useQuery({
+        queryKey: ['applicationEventsAllocationsBookings', applicationId, secret],
+        queryFn: () => fetchApplicationScheduleEntities(applicationId, secret),
         retry: 2,
         refetchOnWindowFocus: false,
     });

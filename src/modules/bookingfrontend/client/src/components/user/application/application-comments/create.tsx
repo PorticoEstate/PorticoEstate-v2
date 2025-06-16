@@ -41,7 +41,7 @@ const Create: FC<CreateProps> = ({ applicationId, secret, commentsData, isLoadin
 	return (
 		<GSAccordion data-color="neutral">
 			<GSAccordion.Heading>
-				<h3>{t('bookingfrontend.add comment')}</h3>
+				<h3>{t('bookingfrontend.comments')} ({commentsData?.comments?.length || 0})</h3>
 			</GSAccordion.Heading>
 			<GSAccordion.Content>
 				<form onSubmit={handleSubmitComment} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -51,7 +51,7 @@ const Create: FC<CreateProps> = ({ applicationId, secret, commentsData, isLoadin
 						</label>
 						<Textarea
 							id="comment-textarea"
-							placeholder={t('bookingfrontend.enter your comment here')}
+							placeholder={t('bookingfrontend.enter_your_comment_here')}
 							value={newComment}
 							onChange={(e) => setNewComment(e.target.value)}
 							rows={4}
@@ -84,7 +84,7 @@ const Create: FC<CreateProps> = ({ applicationId, secret, commentsData, isLoadin
 					</div>
 					{addCommentMutation.isError && (
 						<div style={{ color: 'var(--ds-color-danger-text)', fontSize: '0.875rem' }}>
-							{t('bookingfrontend.failed to add comment')}
+							{t('bookingfrontend.failed_to_add_comment')}
 						</div>
 					)}
 				</form>

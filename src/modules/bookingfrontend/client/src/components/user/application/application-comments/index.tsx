@@ -23,6 +23,8 @@ const ApplicationComments: FC<ApplicationCommentsProps> = ({ applicationId, secr
 	const latestComments = commentsData?.comments ? commentsData.comments.slice(-2) : [];
 
 	return (
+		<>
+
 		<section className="my-2">
 			{/* Latest 2 comments - always visible */}
 			{commentsLoading ? (
@@ -40,15 +42,16 @@ const ApplicationComments: FC<ApplicationCommentsProps> = ({ applicationId, secr
 					))}
 				</div>
 			) : null}
-			
+
 			{/* Add comment form */}
-			<Create 
-				applicationId={applicationId} 
-				secret={secret} 
+
+		</section>
+			<Create
+				applicationId={applicationId}
+				secret={secret}
 				commentsData={commentsData}
 				isLoading={commentsLoading}
-			/>
-		</section>
+			/></>
 	);
 };
 

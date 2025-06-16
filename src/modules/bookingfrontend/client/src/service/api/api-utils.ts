@@ -4,7 +4,7 @@ import {IBookingUser, IServerSettings, IMultiDomain} from "@/service/types/api.t
 import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
-import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
@@ -325,6 +325,41 @@ export async function addApplicationComment(
 
     if (!response.ok) {
         throw new Error(`Failed to add comment to application ${id}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Fetch events, allocations and bookings related to an application
+ * @param id The application ID
+ * @param secret Optional secret for external access
+ * @returns Events, allocations and bookings related to the application
+ */
+export async function fetchApplicationScheduleEntities(
+    id: number,
+    secret?: string
+): Promise<{events: IAPIEvent[], allocations: IAPIAllocation[], bookings: IAPIBooking[]}> {
+    const params: Record<string, any> = {};
+
+    if (secret) {
+        params.secret = secret;
+    }
+
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'schedule'], params);
+
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch events/allocations/bookings for application ${id}`);
     }
 
     return response.json();

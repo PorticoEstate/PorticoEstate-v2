@@ -744,3 +744,19 @@ your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
 show_organizations	bookingfrontend	en	Show organizations
 personal	bookingfrontend	en	Personal
+comments	bookingfrontend	en	Comments
+history	bookingfrontend	en	History
+no_history_available	bookingfrontend	en	No history available
+ownership	bookingfrontend	en	Ownership
+comment	bookingfrontend	en	Comment
+enter_your_comment_here	bookingfrontend	en	Enter your comment here
+failed_to_add_comment	bookingfrontend	en	Failed to add comment
+participants	bookingfrontend	en	Participants
+
+contact_and_invoice	bookingfrontend	en	Contact & Invoice
+copy_application	bookingfrontend	en	Copy application
+event_type	bookingfrontend	en	Event type
+target_audience	bookingfrontend	en	Target audience
+orders_articles	bookingfrontend	en	Orders/Articles
+events_allocations	bookingfrontend	en	Events/Allocations
+application_documents	bookingfrontend	en	Application documents

@@ -350,6 +350,49 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			};
 		}
 
+		// Check if we have a baseApplication to prefill from
+		const baseApplication = props.selectedTempApplication?.extendedProps?.baseApplication;
+		if (baseApplication) {
+			// Convert orders to ArticleOrder format if they exist
+			const articleOrders: ArticleOrder[] = [];
+			
+			// Process orders from base application
+			if (baseApplication.orders && baseApplication.orders.length > 0) {
+				baseApplication.orders.forEach(order => {
+					if (order.lines && order.lines.length > 0) {
+						order.lines.forEach(line => {
+							articleOrders.push({
+								id: line.article_mapping_id,
+								quantity: +line.quantity,
+								parent_id: line.parent_mapping_id > 0 ? line.parent_mapping_id : null
+							});
+						});
+					}
+				});
+			}
+			
+			return {
+				title: baseApplication.name || '',
+				organizer: baseApplication.organizer || props.bookingUser?.name || '',
+				start: defaultStartEnd.start, // Keep dates empty as requested
+				end: defaultStartEnd.end,     // Keep dates empty as requested
+				homepage: baseApplication.homepage || '',
+				description: baseApplication.description || '',
+				equipment: baseApplication.equipment || '',
+				resources: props.selectedTempApplication?.extendedProps?.resources?.map(String) ?? [],
+				audience: baseApplication.audience ?? undefined,
+				articles: articleOrders,
+				agegroups: agegroups?.map(ag => ({
+					id: ag.id,
+					male: baseApplication.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
+					female: 0,
+					name: ag.name,
+					description: ag.description,
+					sort: ag.sort,
+				})) || []
+			};
+		}
+
 		// Use lastSubmittedData if available, otherwise use default empty values
 		return {
 			title: props.lastSubmittedData?.title ?? '',

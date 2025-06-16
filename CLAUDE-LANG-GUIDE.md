@@ -16,6 +16,29 @@ Use the following command to check for missing translations:
 php test_lang_files.php --compare --lang=en,no,nn --module=booking
 ```
 
+## Installing Language Changes
+
+After making changes to language files (adding new translations, fixing missing translations, etc.), you need to install the language changes to make them available in the application:
+
+```bash
+curl 'http://pe-api.test/setup/lang' \
+  -X POST \
+  -H 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:139.0) Gecko/20100101 Firefox/139.0' \
+  -H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' \
+  -H 'Accept-Language: en-US,en;q=0.5' \
+  -H 'Accept-Encoding: gzip, deflate' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -H 'Origin: http://pe-api.test' \
+  -H 'Connection: keep-alive' \
+  -H 'Referer: http://pe-api.test/setup/lang' \
+  -H 'Cookie: last_loginid=henning; last_domain=default; template_set=bookingfrontend_2; domain=default; login_as_organization=1; after=%22%5C%2Fclient%5C%2Fno%3Fclick_history%3Db4577fa3de097daf0484f39b58d00879%22; ConfigPW=%242y%2412%24grdOg2MZij1YI6ErAqMDbu7lmDZeiG1jDgZ1l8ciTZ61Lue4HDTPi; ConfigDomain=default; ConfigLang=en; login_second_pass=1; selected_lang=no; bookingfrontendsession=833f7955e3061961ccd53d5985b67afc' \
+  -H 'Upgrade-Insecure-Requests: 1' \
+  -H 'Priority: u=0, i' \
+  --data-raw 'lang_selected%5B%5D=en&lang_selected%5B%5D=no&lang_selected%5B%5D=nn&upgrademethod=dumpold&submit=Install'
+```
+
+**Important:** This command installs language changes for the selected languages (en, no, nn) and should be run after any translation modifications to ensure the changes are active in the application.
+
 ## Available Commands
 
 ### Basic Format Checking

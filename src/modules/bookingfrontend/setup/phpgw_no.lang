@@ -745,3 +745,19 @@ your_applications	bookingfrontend	no	Dine søknader
 zip code	bookingfrontend	no	Postnummer
 show_organizations	bookingfrontend	no	Vis organisasjoner
 personal	bookingfrontend	no	Personlig
+comments	bookingfrontend	no	Kommentarer
+history	bookingfrontend	no	Historikk
+no_history_available	bookingfrontend	no	Ingen historikk tilgjengelig
+ownership	bookingfrontend	no	Eierskap
+comment	bookingfrontend	no	Kommentar
+enter_your_comment_here	bookingfrontend	no	Skriv inn kommentaren din her
+failed_to_add_comment	bookingfrontend	no	Kunne ikke legge til kommentar
+participants	bookingfrontend	no	Deltakere
+
+contact_and_invoice	bookingfrontend	no	Kontakt og faktura
+copy_application	bookingfrontend	no	Kopier søknad
+event_type	bookingfrontend	no	Arrangementstype
+target_audience	bookingfrontend	no	Målgruppe
+orders_articles	bookingfrontend	no	Bestillinger/Artikler
+events_allocations	bookingfrontend	no	Arrangementer/Tildelinger
+application_documents	bookingfrontend	no	Søknadsdokumenter

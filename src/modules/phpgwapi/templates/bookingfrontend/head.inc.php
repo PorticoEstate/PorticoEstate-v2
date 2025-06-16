@@ -59,7 +59,9 @@ if ($tracker_id)
 	phpgwapi_js::getInstance()->add_code('', $tracker_code2);
 }
 
-$template = new Template(PHPGW_TEMPLATE_DIR);
+//$template = new Template(PHPGW_TEMPLATE_DIR);
+$template = Template::getInstance();
+$template->set_root(PHPGW_TEMPLATE_DIR);
 $template->set_unknowns('remove');
 $template->set_file('head', 'head.tpl');
 $template->set_block('head', 'stylesheet', 'stylesheets');

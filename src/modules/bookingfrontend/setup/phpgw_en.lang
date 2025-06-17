@@ -58,6 +58,7 @@ application	bookingfrontend	en	Application
 application add	bookingfrontend	en	Application add
 Application basket	bookingfrontend	en	Application basket
 Application cart	bookingfrontend	en	Application cart
+application_documents	bookingfrontend	en	Application documents
 application_registered_confirmation	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
 applications	bookingfrontend	en	Applications
 applications.description	bookingfrontend	en	View and manage your applications
@@ -167,6 +168,8 @@ close_dialog	bookingfrontend	en	Close dialog
 close_message	bookingfrontend	en	Close message
 collect users	booking	en	Collect users
 Collects users from all applications and events	booking	en	Collects users from all applications and events
+comment	bookingfrontend	en	Comment
+comments	bookingfrontend	en	Comments
 Complete applications	bookingfrontend	en	Complete applications
 complete applications	bookingfrontend	en	Complete applications
 complete_applications	bookingfrontend	en	Complete applications
@@ -180,6 +183,7 @@ contact 2	bookingfrontend	en	Contact 2
 contact information	bookingfrontend	en	Contact information
 Contact information name is to long. max 50 characters	bookingfrontend	en	Contact information name is to long. max 50 characters
 contact person	bookingfrontend	en	Contact person
+contact_and_invoice	bookingfrontend	en	Contact & Invoice
 contact_email	bookingfrontend	en	Email
 contact_name	bookingfrontend	en	Contact name
 contact_phone	bookingfrontend	en	Phone
@@ -187,6 +191,7 @@ contacts[0][email] contains an invalid email	bookingfrontend	en	Contacts[0][emai
 contacts[1][email] contains an invalid email	bookingfrontend	en	Contacts[1][email] contains an invalid email
 continue	bookingfrontend	en	Continue
 cookie domain for sessions	bookingfrontend	en	Cookie domain for sessions
+copy_application	bookingfrontend	en	Copy application
 cost	bookingfrontend	en	Cost
 cost is set	booking	en	New price is set
 Could not delete allocation due to a booking still use it	bookingfrontend	en	Could not delete allocation due to a booking still use it
@@ -261,6 +266,7 @@ end_time_must_be_after_start_time	bookingfrontend	en	End time must be after star
 end_time_outside_business_hours	bookingfrontend	en	End time must be within business hours
 enter_team_organization_name	bookingfrontend	en	Enter team/organization name
 enter_title	bookingfrontend	en	Please enter a title
+enter_your_comment_here	bookingfrontend	en	Enter your comment here
 entity %1 has been saved	bookingfrontend	en	Entity %1 has been saved
 entity %1 has been updated	bookingfrontend	en	Entity %1 has been updated
 equipment	bookingfrontend	en	Equipment
@@ -276,12 +282,15 @@ Event/activity description	bookingfrontend	en	Event/activity description
 Event/activity homepage	bookingfrontend	en	Event/activity homepage
 event_building	bookingfrontend	en	Event / Building
 event_title	bookingfrontend	en	Event title
+event_type	bookingfrontend	en	Event type
 events	bookingfrontend	en	Events
+events_allocations	bookingfrontend	en	Events/Allocations
 every	bookingfrontend	en	every
 executiveofficer	bookingfrontend	en	Executiveofficer
 expired for edit	bookingfrontend	en	Expired
 Facilities	bookingfrontend	en	Facilities
 facilities	bookingfrontend	en	Facilities
+failed_to_add_comment	bookingfrontend	en	Failed to add comment
 feb	bookingfrontend	en	Feb
 female	bookingfrontend	en	Female
 fetching data	bookingfrontend	en	Fetching data
@@ -318,6 +327,7 @@ group	bookingfrontend	en	Group
 Group shortname	bookingfrontend	en	Group shortname
 group_id	bookingfrontend	en	Group id
 Happening in Bergen	bookingfrontend	en	Happening in Bergen
+history	bookingfrontend	en	History
 history and comments (%1)	bookingfrontend	en	History and comments (%1)
 hms document	bookingfrontend	en	Hse document
 home_page	bookingfrontend	en	To the homepage
@@ -439,6 +449,7 @@ no records found.	bookingfrontend	en	No records found.
 No rent object chosen	bookingfrontend	en	No rent object chosen
 No valid identification returned from login	common	en	No valid identification returned from login
 no_documents_to_accept	bookingfrontend	en	There are no documents to accept for this application.
+no_history_available	bookingfrontend	en	No history available
 no_overlap	bookingfrontend	en	{{res}} does not allow overlapping bookings.
 no_resources_found	bookingfrontend	en	No resources found for the given date
 nov	bookingfrontend	en	November
@@ -451,6 +462,7 @@ officer	bookingfrontend	en	Officer
 Official organization	bookingfrontend	en	Registered in Brønnøysund
 old	bookingfrontend	en	Old
 optional	booking	en	Optional
+orders_articles	bookingfrontend	en	Orders/Articles
 organization	bookingfrontend	en	Organization
 organization index	bookingfrontend	en	Organization index
 organization number	bookingfrontend	en	Organization number
@@ -466,12 +478,15 @@ Overlaps other organizations allocation	bookingfrontend	en	Overlaps other organi
 Overlaps with existing allocation	bookingfrontend	en	Overlaps with existing allocation
 Overlaps with existing booking	bookingfrontend	en	Overlaps with existing booking
 Overlaps with existing event	bookingfrontend	en	Overlaps with existing event
+ownership	bookingfrontend	en	Ownership
 parent activity	bookingfrontend	en	Parent activity
 parent id	bookingfrontend	en	Parent id
 part of town	common	en	Part of town
 Part of town (2018)	bookingfrontend	en	Part of town
+participants	bookingfrontend	en	Participants
 Pending	bookingfrontend	en	Pending
 permissions	bookingfrontend	en	Permissions
+personal	bookingfrontend	en	Personal
 personal group	bookingfrontend	en	Not registered in Brønnøysund
 phone	bookingfrontend	en	Phone
 Phone is already registered	bookingfrontend	en	Phone is already registered
@@ -608,6 +623,7 @@ show only active	bookingfrontend	en	Show only active
 show_less	bookingfrontend	en	Show less
 show_more	bookingfrontend	en	Show more
 show_only_available	bookingfrontend	en	Show only available
+show_organizations	bookingfrontend	en	Show organizations
 showing items	bookingfrontend	en	Showing items
 showing items {startRecord} - {endRecord} of {totalRecords}	bookingfrontend	en	Showing items {startrecord} - {endrecord} of {totalrecords}
 site title	bookingfrontend	en	Site title
@@ -634,6 +650,7 @@ system feedback	bookingfrontend	en	System feedback
 System message	bookingfrontend	en	System message
 System messages	bookingfrontend	en	System messages
 target audience	bookingfrontend	en	Target audience
+target_audience	bookingfrontend	en	Target audience
 team leader 1	bookingfrontend	en	Team leader 1
 team leader 2	bookingfrontend	en	Team leader 2
 team leaders	bookingfrontend	en	Team leaders
@@ -743,20 +760,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
-show_organizations	bookingfrontend	en	Show organizations
-personal	bookingfrontend	en	Personal
-comments	bookingfrontend	en	Comments
-history	bookingfrontend	en	History
-no_history_available	bookingfrontend	en	No history available
-ownership	bookingfrontend	en	Ownership
-comment	bookingfrontend	en	Comment
-enter_your_comment_here	bookingfrontend	en	Enter your comment here
-failed_to_add_comment	bookingfrontend	en	Failed to add comment
-participants	bookingfrontend	en	Participants
-contact_and_invoice	bookingfrontend	en	Contact & Invoice
-copy_application	bookingfrontend	en	Copy application
-event_type	bookingfrontend	en	Event type
-target_audience	bookingfrontend	en	Target audience
-orders_articles	bookingfrontend	en	Orders/Articles
-events_allocations	bookingfrontend	en	Events/Allocations
-application_documents	bookingfrontend	en	Application documents

@@ -4,6 +4,7 @@ namespace App\modules\booking\helpers;
 
 use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\services\ConfigLocation;
+use App\modules\phpgwapi\services\Cache;
 
 class OutlookHelper
 {
@@ -160,9 +161,8 @@ class OutlookHelper
 		if (curl_errno($ch))
 		{
 			// Handle error
-			return array(
-				'error' => 'Curl error: ' . curl_error($ch)
-			);
+			Cache::message_set('Error fetching Outlook resources: ' . curl_error($ch), 'error');
+			return [];
 		}
 		curl_close($ch);
 		// Decode the JSON response

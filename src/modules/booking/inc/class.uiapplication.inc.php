@@ -3832,7 +3832,7 @@ class booking_uiapplication extends booking_uicommon
 		}
 		$from = array("data" => implode(',', $from));
 		$num_associations = $associations['total_records'];
-		if ($this->is_assigned_to_current_user($application) || $this->acl->check('admin', Acl::ADD, 'booking'))
+		if ($this->is_assigned_to_current_user($application))// || $this->acl->check('admin', Acl::ADD, 'booking'))
 		{
 			$application['currentuser'] = true;
 		}

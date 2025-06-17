@@ -43,6 +43,9 @@ if (!file_exists($autoloadPath)) {
 }
 require $autoloadPath;
 
+// Include the Sanitizer class
+require_once dirname(__DIR__) . '/helpers/Sanitizer.php';
+
 // Look for configuration file
 $configFile = dirname(__DIR__, 2) . '/config/header.inc.php';
 $altConfigFile = '/var/www/html/config/header.inc.php';

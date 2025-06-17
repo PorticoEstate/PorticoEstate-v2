@@ -24,6 +24,7 @@ interface GroupedResources {
 export interface CalendarResourceFilterOption {
 	value: string;
 	label: string;
+	deactivated?: boolean;
 }
 
 interface CalendarResourceFilterProps {
@@ -75,7 +76,8 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	const resourceOptions = useMemo<CalendarResourceFilterOption[]>(() => {
 		return (resources || []).map((resource, index) => ({
 			value: resource.id.toString(),
-			label: resource.name
+			label: resource.name,
+			deactivated: resource.deactivate_application
 		}));
 	}, [resources]);
 
@@ -87,7 +89,8 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 		(resources || []).forEach(resource => {
 			const option = {
 				value: resource.id.toString(),
-				label: resource.name
+				label: resource.name,
+				deactivated: resource.deactivate_application
 			};
 
 			if (ResourceUsesTimeSlots(resource)) {
@@ -120,11 +123,9 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 			if (prevEnabled.size === 0) {
 				if (groupedResources) {
 					if (groupedResources.normal.length < groupedResources.slotted.length) {
-						return new Set([groupedResources.slotted?.[0].value.toString()]);
+						return new Set([groupedResources.slotted?.[0]?.value.toString()].filter(Boolean));
 					}
 					return new Set(groupedResources.normal.map(r => r.value.toString()));
-
-
 				}
 				const normalResources = (resources || []).filter((res, index) => !ResourceUsesTimeSlots(res));
 				return new Set(normalResources.map(r => r.id.toString()));
@@ -198,7 +199,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 					</Fieldset.Description>
 					{groupedResources.slotted.map(resource => (
 						<div key={resource.value}
-							 className={`${styles.resourceItem} ${enabledResources.has(resource.value) ? styles.active : ''}`}>
+							 className={`${styles.resourceItem} ${enabledResources.has(resource.value) ? styles.active : ''} ${resource.deactivated ? styles.deactivated : ''}`}>
 
 							<Radio
 								key={resource.value}
@@ -211,6 +212,11 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 										<div>
 											<ColourCircle resourceId={+resource.value} size={'medium'}/>
 											<span>{resource.label}</span>
+											{resource.deactivated && (
+												<span className={styles.deactivatedText}>
+													({t('bookingfrontend.booking_unavailable')})
+												</span>
+											)}
 										</div>
 										{!isMobile && (
 											<Button
@@ -245,7 +251,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 					</div>
 					{groupedResources.normal.map(resource => (
 						<div key={resource.value}
-							 className={`${styles.resourceItem} ${enabledResources.has(resource.value) ? styles.active : ''}`}>
+							 className={`${styles.resourceItem} ${enabledResources.has(resource.value) ? styles.active : ''} ${resource.deactivated ? styles.deactivated : ''}`}>
 							<Checkbox
 								value={resource.value}
 								id={`resource-${resource.value}`}

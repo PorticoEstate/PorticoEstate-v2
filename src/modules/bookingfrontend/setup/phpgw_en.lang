@@ -96,6 +96,7 @@ booking name	bookingfrontend	en	Booking name
 booking show	bookingfrontend	en	Internal allocation
 booking_calendar	bookingfrontend	en	Bookingcalendar
 booking_categories	bookingfrontend	en	Booking categories
+booking_unavailable	bookingfrontend	en	Booking unavailable
 bookingfrontend host	bookingfrontend	en	Bookingfrontend host
 bookingfrontend settings	bookingfrontend	en	Bookingfrontend settings
 bookings	bookingfrontend	en	Bookings
@@ -752,7 +753,6 @@ comment	bookingfrontend	en	Comment
 enter_your_comment_here	bookingfrontend	en	Enter your comment here
 failed_to_add_comment	bookingfrontend	en	Failed to add comment
 participants	bookingfrontend	en	Participants
-
 contact_and_invoice	bookingfrontend	en	Contact & Invoice
 copy_application	bookingfrontend	en	Copy application
 event_type	bookingfrontend	en	Event type

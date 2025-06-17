@@ -96,6 +96,7 @@ booking name	bookingfrontend	nn	Namn på interntildeling
 booking show	bookingfrontend	nn	Interntildeling
 booking_calendar	bookingfrontend	nn	Bookingkalendar
 booking_categories	bookingfrontend	nn	Booking kategoriar
+booking_unavailable	bookingfrontend	nn	Booking ikkje tilgjengeleg
 bookingfrontend host	bookingfrontend	nn	Bookingfrontend vert
 bookingfrontend settings	bookingfrontend	nn	Bookingfrontend innstillingar
 bookings	bookingfrontend	nn	Interntildelingar

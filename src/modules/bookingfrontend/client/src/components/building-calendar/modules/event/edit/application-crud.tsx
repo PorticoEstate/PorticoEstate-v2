@@ -334,8 +334,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				description: existingApplication.description || '',
 				equipment: existingApplication.equipment || '',
 				organizer: existingApplication.organizer || '',
-				resources: existingApplication.resources?.map((res) => res.id.toString()) ||
-					props.selectedTempApplication?.extendedProps?.resources?.map(String) ||
+				resources: existingApplication.resources?.filter(res => !res.deactivate_application).map((res) => res.id.toString()) ||
+					props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
+						const resource = buildingResources?.find(r => r.id === +resId);
+						return !resource?.deactivate_application;
+					}).map(String) ||
 					[],
 				audience: existingApplication.audience || undefined,
 				articles: articleOrders, // Use converted orders
@@ -402,7 +405,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			homepage: props.lastSubmittedData?.homepage ?? '',
 			description: props.lastSubmittedData?.description ?? '',
 			equipment: props.lastSubmittedData?.equipment ?? '',
-			resources: props.selectedTempApplication?.extendedProps?.resources?.map(String) ?? [],
+			resources: props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
+				const resource = buildingResources?.find(r => r.id === +resId);
+				return !resource?.deactivate_application;
+			}).map(String) ?? [],
 			audience: props.lastSubmittedData?.audience ?? undefined,
 			articles: props.lastSubmittedData?.articles ?? [],
 			agegroups: agegroups?.map(ag => ({
@@ -758,6 +764,12 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     };
 
     const toggleResource = (resourceId: string) => {
+        // Check if resource is deactivated
+        const resource = buildingResources?.find(r => r.id === +resourceId);
+        if (resource?.deactivate_application) {
+            return; // Prevent selection of deactivated resources
+        }
+
         const currentResources = watch('resources');
         const resourceIndex = currentResources.indexOf(resourceId);
 
@@ -775,11 +787,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const toggleAllResources = () => {
         if (!buildingResources) return;
 
-        const allResourceIds = buildingResources.map(r => String(r.id));
-        if (selectedResources.length === buildingResources.length) {
+        // Filter out deactivated resources
+        const activeResources = buildingResources.filter(r => !r.deactivate_application);
+        const allActiveResourceIds = activeResources.map(r => String(r.id));
+        
+        if (selectedResources.length === activeResources.length) {
             setValue('resources', [], {shouldDirty: true});
         } else {
-            setValue('resources', allResourceIds, {shouldDirty: true});
+            setValue('resources', allActiveResourceIds, {shouldDirty: true});
         }
     };
 
@@ -877,11 +892,17 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                 data-color={'brand1'}
                                 data-size={"md"}
                                 checked={selectedResources.includes(String(resource.id))}
+                                disabled={resource.deactivate_application}
                                 onChange={() => toggleResource(String(resource.id))}
-                                className={styles.resourceItem}
+                                className={`${styles.resourceItem} ${resource.deactivate_application ? styles.deactivated : ''}`}
                             >
                                 <ColourCircle resourceId={resource.id} size="medium"/>
                                 <span>{resource.name}</span>
+                                {resource.deactivate_application && (
+                                    <span className={styles.deactivatedText}>
+                                        ({t('bookingfrontend.booking_unavailable')})
+                                    </span>
+                                )}
                             </Chip.Checkbox>
                             // </div>
                         ))}

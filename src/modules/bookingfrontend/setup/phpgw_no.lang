@@ -96,6 +96,7 @@ booking name	bookingfrontend	no	Navn på interntildeling
 booking show	bookingfrontend	no	Interntildeling
 booking_calendar	bookingfrontend	no	Bookingkalender
 booking_categories	bookingfrontend	no	Booking kategorier
+booking_unavailable	bookingfrontend	no	Bestilling ikke tilgjengelig
 bookingfrontend host	bookingfrontend	no	Bookingfrontend vert
 bookingfrontend settings	bookingfrontend	no	Bookingfrontend innstillinger
 bookings	bookingfrontend	no	Interntildelinger

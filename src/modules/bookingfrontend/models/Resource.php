@@ -202,6 +202,8 @@ class Resource
     /**
      * @ORM\Column(type="integer")
      * @Expose
+	 * @ParseBool
+     * @Short
      * @OA\Property(description="Whether the application is deactivated", type="integer")
      */
     public $deactivate_application;

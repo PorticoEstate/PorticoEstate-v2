@@ -23,7 +23,7 @@ export interface IResource {
     capacity: number | null;
     participant_limit: number | null;
     deactivate_calendar: number;
-    deactivate_application: number;
+    deactivate_application: boolean;
     booking_time_minutes: number | null;
     booking_limit_number: number | null;
     booking_limit_number_horizont: number | null;

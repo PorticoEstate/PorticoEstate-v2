@@ -94,6 +94,7 @@ booking name	bookingfrontend	no	Navn på interntildeling
 booking show	bookingfrontend	no	Interntildeling
 booking_calendar	bookingfrontend	no	Bookingkalender
 booking_categories	bookingfrontend	no	Booking kategorier
+booking_unavailable	bookingfrontend	no	Bestilling ikke tilgjengelig
 bookingfrontend host	bookingfrontend	no	Bookingfrontend vert
 bookingfrontend settings	bookingfrontend	no	Bookingfrontend innstillinger
 bookings	bookingfrontend	no	Interntildelinger
@@ -250,6 +251,7 @@ Edit until	bookingfrontend	no	Endre til
 edit_event	bookingfrontend	no	Rediger arrangement
 editer	bookingfrontend	no	Rediger
 empty_cart	bookingfrontend	no	Du har ingenting i handlekurven
+end_time	bookingfrontend	no	Slutt tidspunkt
 end_time_in_past	bookingfrontend	no	Sluttidspunktet kan ikke være i fortiden
 end_time_must_be_after_start_time	bookingfrontend	no	Sluttidspunktet må være etter starttidspunktet
 end_time_outside_business_hours	bookingfrontend	no	Sluttidspunktet må være innenfor åpningstider
@@ -720,4 +722,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	no	Søknadene er godkjent, og en bekreftelse har blitt sendt til deg på e-post.
 your_applications	bookingfrontend	no	Dine søknader
 zip code	bookingfrontend	no	Postnummer
-end_time	bookingfrontend	no	Slutt tidspunkt

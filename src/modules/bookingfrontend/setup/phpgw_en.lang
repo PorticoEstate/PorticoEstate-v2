@@ -94,6 +94,7 @@ booking name	bookingfrontend	en	Booking name
 booking show	bookingfrontend	en	Internal allocation
 booking_calendar	bookingfrontend	en	Bookingcalendar
 booking_categories	bookingfrontend	en	Booking categories
+booking_unavailable	bookingfrontend	en	Booking unavailable
 bookingfrontend host	bookingfrontend	en	Bookingfrontend host
 bookingfrontend settings	bookingfrontend	en	Bookingfrontend settings
 bookings	bookingfrontend	en	Bookings
@@ -250,6 +251,7 @@ Edit until	bookingfrontend	en	Edit until
 edit_event	bookingfrontend	en	Edit Event
 editer	bookingfrontend	en	Editer
 empty_cart	bookingfrontend	en	You have nothing in your shopping cart
+end_time	bookingfrontend	en	End time
 end_time_in_past	bookingfrontend	en	End time cannot be in the past
 end_time_must_be_after_start_time	bookingfrontend	en	End time must be after start time
 end_time_outside_business_hours	bookingfrontend	en	End time must be within business hours
@@ -720,4 +722,3 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
-end_time	bookingfrontend	en	End time

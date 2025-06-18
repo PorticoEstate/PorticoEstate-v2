@@ -31,7 +31,7 @@ const History: FC<HistoryProps> = ({ commentsData, isLoading }) => {
 						))}
 					</div>
 				) : (
-					<Paragraph>{t('bookingfrontend.no history available')}</Paragraph>
+					<Paragraph>{t('bookingfrontend.no_history_available')}</Paragraph>
 				)}
 			</GSAccordion.Content>
 		</GSAccordion>

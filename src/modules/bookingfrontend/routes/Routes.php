@@ -4,6 +4,7 @@ use App\modules\bookingfrontend\controllers\applications\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
 use App\modules\bookingfrontend\controllers\applications\CheckoutController;
 use App\modules\bookingfrontend\controllers\applications\CommentsController;
+use App\modules\bookingfrontend\controllers\ScheduleEntityController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
@@ -39,7 +40,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}/resources', ResourceController::class . ':getResourcesByBuilding');
 		$group->get('/{id}/documents', BuildingController::class . ':getDocuments');
 		$group->get('/document/{id}/download', BuildingController::class . ':downloadDocument');
-		$group->get('/{id}/schedule', BuildingController::class . ':getSchedule');
+		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getBuildingSchedule');
 		$group->get('/{id}/agegroups', BuildingController::class . ':getAgeGroups');
 		$group->get('/{id}/audience', BuildingController::class . ':getAudience');
 		$group->get('/{id}/seasons', BuildingController::class . ':getSeasons');
@@ -50,7 +51,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('', ResourceController::class . ':index');
 		$group->get('/{id}', ResourceController::class . ':getResource');
 		$group->get('/{id}/documents', ResourceController::class . ':getDocuments');
-		$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
+		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getResourceSchedule');
 		$group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
 	});
@@ -83,6 +84,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->post('/{id}/in-registration', EventController::class . ':inRegistration');
 		$group->patch('/{id}/out-registration', EventController::class . ':outRegistration');
 	});
+
 })->add(new SessionsMiddleware($app->getContainer()));
 
 // Session group
@@ -104,6 +106,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->post('/validate-checkout', CheckoutController::class . ':validateCheckout');
 		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
 		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
+		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getApplicationSchedule');
 		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
 		
 		// Comments endpoints

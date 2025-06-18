@@ -348,6 +348,26 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			return false;
 		}
 
+		// Check if any selected resources have deactivated applications
+		const selectedResources = [...enabledResources].map(Number);
+		const deactivatedResources = selectedResources.filter(resourceId => {
+			const resource = resources?.find(r => r.id === resourceId);
+			return resource?.deactivate_application;
+		});
+
+		if (deactivatedResources.length > 0) {
+			// Only show toast for actual user selection attempts
+			if (span.end && span.start) {
+				addToast({
+					type: 'warning',
+					text: t('bookingfrontend.booking_unavailable'),
+					autoHide: true,
+					messageId: 'booking_unavailable'
+				});
+			}
+			return false;
+		}
+
 		// Get all events in the calendar
 		const allEvents = calendarApi.getEvents();
 
@@ -369,7 +389,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		// Check for resources with deny_application_if_booked flag
-		const selectedResources = [...enabledResources].map(Number);
+		// selectedResources already defined above
 		let resourcesWithDenyFlagArr = events
 			?.flatMap(event => event.resources)
 			.filter(res => selectedResources.includes(res.id) && (resources?.find(r => r.id === res.id)?.deny_application_if_booked === 1 || checkDirectBooking(resources?.find(r => r.id === res.id))));

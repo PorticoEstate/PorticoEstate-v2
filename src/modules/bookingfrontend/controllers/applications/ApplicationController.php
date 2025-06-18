@@ -240,7 +240,6 @@ class ApplicationController extends DocumentController
         }
     }
 
-
     /**
      * @OA\Delete(
      *     path="/bookingfrontend/applications/{id}",
@@ -1318,4 +1317,5 @@ class ApplicationController extends DocumentController
             error_log("WebSocket notification error: " . $e->getMessage());
         }
     }
+
 }

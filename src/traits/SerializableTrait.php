@@ -614,8 +614,8 @@ trait SerializableTrait
      * Parse @ParseBool annotation
      *
      * This annotation enables automatic conversion of string boolean values to actual booleans:
-     * - "True", "Yes" (case insensitive) -> true
-     * - "False", "No", null, "", unset -> false
+     * - "True", "Yes", "1" (case insensitive) or integer 1 -> true
+     * - "False", "No", "0", null, "", unset or integer 0 -> false
      *
      * Example: @ParseBool
      *
@@ -638,18 +638,27 @@ trait SerializableTrait
      * Convert string boolean values to actual boolean values
      *
      * Converts:
-     * - "True", "Yes" (case insensitive) -> true
-     * - "False", "No", null, "", unset -> false
+     * - "True", "Yes", "1" (case insensitive) or integer 1 -> true
+     * - "False", "No", "0", null, "", unset or integer 0 -> false
      * - All other values remain unchanged
      */
     private function parseStringBoolean($value): mixed
     {
         if (is_string($value)) {
             $lowerValue = strtolower(trim($value));
-            if (in_array($lowerValue, ['true', 'yes'])) {
+            if (in_array($lowerValue, ['true', 'yes', '1'])) {
                 return true;
             }
-            if (in_array($lowerValue, ['false', 'no', ''])) {
+            if (in_array($lowerValue, ['false', 'no', '', '0'])) {
+                return false;
+            }
+        }
+
+        if (is_int($value)) {
+            if ($value === 1) {
+                return true;
+            }
+            if ($value === 0) {
                 return false;
             }
         }

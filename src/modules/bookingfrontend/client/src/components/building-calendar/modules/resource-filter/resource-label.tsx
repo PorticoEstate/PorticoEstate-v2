@@ -8,16 +8,23 @@ import ColourCircle from "@/components/building-calendar/modules/colour-circle/c
 import {Button} from "@digdir/designsystemet-react";
 import {InformationSquareIcon} from "@navikt/aksel-icons";
 import {useIsMobile} from "@/service/hooks/is-mobile";
+import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
 
 const ResourceLabel: FC<{resource: CalendarResourceFilterOption; onInfo: () => void}> = ({resource, onInfo}) => {
 	const isMobile = useIsMobile();
+	const t = useTrans();
 
 	return (
 		<div className={`${styles.resourceLabel} text-normal`}>
 			<div>
 				<ColourCircle resourceId={+resource.value} size={'medium'}/>
 				<span>{resource.label}</span>
+				{resource.deactivated && (
+					<span className={styles.deactivatedText}>
+						({t('bookingfrontend.booking_unavailable')})
+					</span>
+				)}
 			</div>
 			{!isMobile && (
 				<Button variant={'tertiary'} data-size={'sm'} onClick={onInfo}>

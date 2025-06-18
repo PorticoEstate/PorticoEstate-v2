@@ -1043,7 +1043,7 @@
 														<script type="text/javascript">
 															building_id = <xsl:value-of select="application/building_id"/>;
 														</script>
-														<xsl:for-each select="application/dates">
+														<xsl:for-each select="application/combined_dates">
 															<div class="card mb-3" style="border: 1px solid #ddd;">
 																<div class="card-body">
 																	<xsl:if test="application_name">

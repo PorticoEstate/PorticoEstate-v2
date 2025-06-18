@@ -8,10 +8,12 @@ import {
 	MutationOptions
 } from "@tanstack/react-query";
 import { useWebSocketContext } from '../websocket/websocket-context';
-import {IBookingUser, IDocument, IServerSettings, IMultiDomain} from "@/service/types/api.types";
+import {IBookingUser, IDocument, IServerSettings, IMultiDomain, IDocumentCategoryQuery} from "@/service/types/api.types";
 import {
 	fetchApplication,
 	fetchApplicationComments,
+	fetchApplicationDocuments,
+	fetchApplicationScheduleEntities,
 	addApplicationComment,
 	updateApplicationStatus,
 	fetchArticlesForResources,
@@ -38,7 +40,7 @@ import {
 import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
-import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
@@ -524,12 +526,17 @@ export function usePartialApplications(): UseQueryResult<{ list: IApplication[],
 }
 
 export function useApplications(
-  options?: { initialData?: { list: IApplication[], total_sum: number } }
+  options?: {
+    initialData?: { list: IApplication[], total_sum: number };
+    includeOrganizations?: boolean;
+  }
 ): UseQueryResult<{ list: IApplication[], total_sum: number }> {
+	const includeOrganizations = options?.includeOrganizations ?? false;
+
 	return useQuery(
 		{
-			queryKey: ['deliveredApplications'],
-			queryFn: () => fetchDeliveredApplications(), // Fetch function
+			queryKey: ['deliveredApplications', includeOrganizations],
+			queryFn: () => fetchDeliveredApplications(includeOrganizations), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
 			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
 			initialData: options?.initialData,
@@ -567,6 +574,24 @@ export function useApplicationComments(
     return useQuery({
         queryKey: ['applicationComments', applicationId, types, secret],
         queryFn: () => fetchApplicationComments(applicationId, types, secret),
+        retry: 2,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
+ * Hook to fetch events, allocations and bookings related to an application
+ * @param applicationId The application ID
+ * @param secret Optional secret for external access
+ * @returns Query result with events, allocations and bookings
+ */
+export function useApplicationScheduleEntities(
+    applicationId: number,
+    secret?: string
+): UseQueryResult<{events: IAPIEvent[], allocations: IAPIAllocation[], bookings: IAPIBooking[]}> {
+    return useQuery({
+        queryKey: ['applicationEventsAllocationsBookings', applicationId, secret],
+        queryFn: () => fetchApplicationScheduleEntities(applicationId, secret),
         retry: 2,
         refetchOnWindowFocus: false,
     });
@@ -1509,4 +1534,22 @@ export function useAvailableResourcesMultiDomain(
 			enabled: !!(date && multiDomains), // Only run query if date and domains are provided
 		}
 	);
+}
+
+/**
+ * Hook to fetch documents for an application
+ * @param applicationId The application ID
+ * @param typeFilter Optional document type filter(s)
+ * @returns Query result containing array of documents
+ */
+export function useApplicationDocuments(
+	applicationId: number | string,
+	typeFilter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]
+): UseQueryResult<IDocument[]> {
+	return useQuery({
+		queryKey: ['applicationDocuments', applicationId, typeFilter],
+		queryFn: () => fetchApplicationDocuments(applicationId, typeFilter),
+		retry: 2,
+		refetchOnWindowFocus: false,
+	});
 }

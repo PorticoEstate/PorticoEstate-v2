@@ -58,6 +58,8 @@ application	bookingfrontend	nn	Søknad
 application add	bookingfrontend	nn	søknad
 Application basket	bookingfrontend	nn	Søknadskorg
 Application cart	bookingfrontend	nn	Handlekurv
+application_documents	bookingfrontend	nn	Søknadsdokument
+application_registered_confirmation	bookingfrontend	nn	Søknaden er sendt. Du får ei stadfesting på e-post.
 applications	bookingfrontend	nn	Søknadar
 applications.description	bookingfrontend	nn	Vis og administrer søknadane dine
 applications_overview	bookingfrontend	nn	Her er ei oversikt over søknadane dine som er klare for innsending og godkjenning.
@@ -75,6 +77,7 @@ aug	bookingfrontend	nn	august
 available	bookingfrontend	nn	Ledig
 back	bookingfrontend	nn	tilbake
 Back to user list	booking	nn	Attende til brukarlista
+back_to_start	bookingfrontend	nn	Tilbake til start
 beta_version	bookingfrontend	nn	Betaversjon
 billing	bookingfrontend	nn	Fakturering
 billing_information	bookingfrontend	nn	Fakturainformasjon
@@ -113,6 +116,7 @@ bygning	bookingfrontend	nn	Bygg/anlegg
 calendar view	bookingfrontend	nn	Dags-/ukesvisning
 calendar_resources	bookingfrontend	nn	Kalenderressursar
 calendar_view	bookingfrontend	nn	Kalender
+calendar_view_disabled	bookingfrontend	nn	Kalendervisning er deaktivert
 Can not create a booking in the past	bookingfrontend	nn	Du kan ikkje opprette ei interntildeling i fortida.
 Can not repeat from a date in the past	bookingfrontend	nn	Du kan ikkje repetere frå ein dato i fortida.
 cancel	bookingfrontend	nn	Avbryt
@@ -139,6 +143,7 @@ category	bookingfrontend	nn	Kategori
 Change organization	common	nn	Bytt organisasjon
 Change the allocation	bookingfrontend	nn	Endre tildeling
 Check calendar	bookingfrontend	nn	Sjekk kalendar
+check_spam_filter	bookingfrontend	nn	Vi gjer merksam på at e-postsvar blir automatisk generert og kan ende i spamfilter/nettsøppel.
 choose a date	bookingfrontend	nn	Vel ein dato
 Choose another building	bookingfrontend	nn	Velg annet anlegg
 Choose atleast one object	bookingfrontend	nn	Vel minst eitt leigeobjekt
@@ -164,6 +169,8 @@ close_dialog	bookingfrontend	nn	Lukk dialog
 close_message	bookingfrontend	nn	Lukk melding
 collect users	booking	nn	Legg til brukarar
 Collects users from all applications and events	booking	nn	Haustar brukarar frå alle søknader og arrangement
+comment	bookingfrontend	nn	Kommentar
+comments	bookingfrontend	nn	Kommentarar
 Complete applications	bookingfrontend	nn	Fullfør søknad
 complete applications	bookingfrontend	nn	Fullfør søknad
 complete_applications	bookingfrontend	nn	Fullfør søknad
@@ -177,6 +184,7 @@ contact 2	bookingfrontend	nn	Kontakt 2
 contact information	bookingfrontend	nn	Kontaktinformasjon
 Contact information name is to long. max 50 characters	bookingfrontend	nn	Namnet i kontaktinformasjonen er for langt, maksimalt 50 teikn.
 contact person	bookingfrontend	nn	Kontaktperson
+contact_and_invoice	bookingfrontend	nn	Kontakt og faktura
 contact_email	bookingfrontend	nn	E-post
 contact_name	bookingfrontend	nn	Namn
 contact_phone	bookingfrontend	nn	Telefon
@@ -184,6 +192,7 @@ contacts[0][email] contains an invalid email	bookingfrontend	nn	Ugyldig e-post u
 contacts[1][email] contains an invalid email	bookingfrontend	nn	Ugyldig e-post under ansvarleg gruppeleiar 2
 continue	bookingfrontend	nn	Fortsett
 cookie domain for sessions	bookingfrontend	nn	Cookiedomene for sesjoner
+copy_application	bookingfrontend	nn	Kopier søknad
 cost	bookingfrontend	nn	Pris
 cost is set	booking	nn	Ny pris er definert
 Could not delete allocation due to a booking still use it	bookingfrontend	nn	Kan ikkje slette denne interntildelinga fordi ei interntildeling framleis brukar ho
@@ -191,6 +200,7 @@ Could not find application id. Contact case officer with allocation id	bookingfr
 create	bookingfrontend	nn	Lagre
 Create new booking	bookingfrontend	nn	Lag ny interntildeling
 created	bookingfrontend	nn	Oppretta
+currency	bookingfrontend	nn	NOK
 current activities	bookingfrontend	nn	Nåværande aktivitetar
 custom login url	bookingfrontend	nn	Egendefinert logg inn url
 custom login url parameter	bookingfrontend	nn	Egendefinert logg inn url parameter
@@ -257,6 +267,7 @@ end_time_must_be_after_start_time	bookingfrontend	nn	Sluttidspunktet må vere et
 end_time_outside_business_hours	bookingfrontend	nn	Sluttidspunktet må vere innanfor opningstider
 enter_team_organization_name	bookingfrontend	nn	Skriv namn på lag/organisasjon
 enter_title	bookingfrontend	nn	Angi ein tittel
+enter_your_comment_here	bookingfrontend	nn	Skriv inn kommentaren din her
 entity %1 has been saved	bookingfrontend	nn	Post %1 er lagra
 entity %1 has been updated	bookingfrontend	nn	Post %1 er oppdatert
 equipment	bookingfrontend	nn	Utstyr
@@ -272,12 +283,15 @@ Event/activity description	bookingfrontend	nn	Kort beskrivelse av arrangementet 
 Event/activity homepage	bookingfrontend	nn	Heimeside for arrangementet / aktiviteten
 event_building	bookingfrontend	nn	Arrangement / bygning
 event_title	bookingfrontend	nn	Tittel på arrangementet
+event_type	bookingfrontend	nn	Arrangementstype
 events	bookingfrontend	nn	Arrangement
+events_allocations	bookingfrontend	nn	Arrangement/Tildelingar
 every	bookingfrontend	nn	hver
 executiveofficer	bookingfrontend	nn	Saksbehandler
 expired for edit	bookingfrontend	nn	Utløpt
 Facilities	bookingfrontend	nn	Fasiliteter
 facilities	bookingfrontend	nn	Fasiliteter
+failed_to_add_comment	bookingfrontend	nn	Kunne ikkje leggje til kommentar
 feb	bookingfrontend	nn	februar
 female	bookingfrontend	nn	kvinne
 fetching data	bookingfrontend	nn	Henter data…
@@ -314,6 +328,7 @@ group	bookingfrontend	nn	Gruppe/lag
 Group shortname	bookingfrontend	nn	Kortnamn
 group_id	bookingfrontend	nn	Gruppe/Lag
 Happening in Bergen	bookingfrontend	nn	Dette skjer i Bergen kommune
+history	bookingfrontend	nn	Historikk
 history and comments (%1)	bookingfrontend	nn	Historikk (%1)
 hms document	bookingfrontend	nn	HMS-dokument
 home_page	bookingfrontend	nn	Til forsiden
@@ -435,6 +450,7 @@ no records found.	bookingfrontend	nn	Ingen treff
 No rent object chosen	bookingfrontend	nn	Ingen leieobjekt er valgt
 No valid identification returned from login	common	nn	Ingen gyldig identifikasjon returnert frå innlogging.
 no_documents_to_accept	bookingfrontend	nn	Det er ingen dokument å godkjenne for denne søknaden.
+no_history_available	bookingfrontend	nn	Ingen historikk tilgjengeleg
 no_overlap	bookingfrontend	nn	{{res}} tillater ikkje overlappande bookingar.
 no_resources_found	bookingfrontend	nn	Ingen ressursar funne for den valde datoen
 nov	bookingfrontend	nn	november
@@ -447,6 +463,7 @@ officer	bookingfrontend	nn	Saksbehandlar
 Official organization	bookingfrontend	nn	Registrert i Brønnøysund
 old	bookingfrontend	nn	Gammal
 optional	booking	nn	(Valfri)
+orders_articles	bookingfrontend	nn	Bestillingar/Artiklar
 organization	bookingfrontend	nn	Organisasjon/bedrift
 organization index	bookingfrontend	nn	Organisasjonsoversikt
 organization number	bookingfrontend	nn	Organisasjonsnummer
@@ -462,12 +479,15 @@ Overlaps other organizations allocation	bookingfrontend	nn	Overlappar med ein an
 Overlaps with existing allocation	bookingfrontend	nn	Overlappar med eksisterande tildeling
 Overlaps with existing booking	bookingfrontend	nn	Overlappar med eksisterande interntildeling
 Overlaps with existing event	bookingfrontend	nn	Overlappar med eksisterande arrangement
+ownership	bookingfrontend	nn	Eigarskap
 parent activity	bookingfrontend	nn	Overordna kategori
 parent id	bookingfrontend	nn	Overordna id
 part of town	common	nn	Namn på område/bydel
 Part of town (2018)	bookingfrontend	nn	Bydel
+participants	bookingfrontend	nn	Deltakarar
 Pending	bookingfrontend	nn	Under handsaming
 permissions	bookingfrontend	nn	Rettigheitar
+personal	bookingfrontend	nn	Personleg
 personal group	bookingfrontend	nn	Ikkje registrert i Brønnøysund
 phone	bookingfrontend	nn	Telefon
 Phone is already registered	bookingfrontend	nn	Telefonnummeret er alt registrert
@@ -604,6 +624,7 @@ show only active	bookingfrontend	nn	Skjul
 show_less	bookingfrontend	nn	Vis mindre
 show_more	bookingfrontend	nn	Vis mer
 show_only_available	bookingfrontend	nn	Vis berre tilgjengelege
+show_organizations	bookingfrontend	nn	Vis organisasjonar
 showing items	bookingfrontend	nn	Viser
 showing items {startRecord} - {endRecord} of {totalRecords}	bookingfrontend	nn	Viser {startRecord} - {endRecord} av {totalRecords}
 site title	bookingfrontend	nn	Tittel på sida
@@ -630,6 +651,7 @@ system feedback	bookingfrontend	nn	System tilbakemelding
 System message	bookingfrontend	nn	Systemmelding
 System messages	bookingfrontend	nn	Systemmeldingar
 target audience	bookingfrontend	nn	Målgruppe
+target_audience	bookingfrontend	nn	Målgruppe
 team leader 1	bookingfrontend	nn	Ansvarlege gruppeleiar 1
 team leader 2	bookingfrontend	nn	Ansvarlege gruppeleiar 2
 team leaders	bookingfrontend	nn	Ansvarlege gruppeleiar
@@ -695,6 +717,24 @@ view allocation	bookingfrontend	nn	Vis tildeling
 view booking	bookingfrontend	nn	Vis interntildeling
 view event	bookingfrontend	nn	Vis arrangement
 view_all_images	bookingfrontend	nn	Vis alle bilete
+view_my_applications	bookingfrontend	nn	Vis søknadene mine
+vipps_amount	bookingfrontend	nn	Beløp
+vipps_applications_approved	bookingfrontend	nn	Søknadene dine er godkjende
+vipps_back_to_checkout	bookingfrontend	nn	Tilbake til kassen
+vipps_check_again	bookingfrontend	nn	Sjekk igjen
+vipps_checking_payment	bookingfrontend	nn	Sjekkar betalingsstatus
+vipps_init_failed	bookingfrontend	nn	Kunne ikkje starta Vipps-betaling
+vipps_no_payment_id	bookingfrontend	nn	Ingen betalings-ID oppgjeve
+vipps_not_configured	bookingfrontend	nn	Vipps-betaling er ikkje riktig konfigurert
+vipps_payment_cancelled	bookingfrontend	nn	Betaling avbroten
+vipps_payment_completed	bookingfrontend	nn	Bookinga di er fullført via Vipps-betaling
+vipps_payment_error	bookingfrontend	nn	Betalingsfeil
+vipps_payment_id	bookingfrontend	nn	Betalings-ID
+vipps_payment_pending	bookingfrontend	nn	Betaling pågår
+vipps_payment_successful	bookingfrontend	nn	Betaling vellykka
+vipps_processing_payment	bookingfrontend	nn	Behandlar betalinga di...
+vipps_redirecting_shortly	bookingfrontend	nn	Omdirigerer deg snart...
+vipps_try_again	bookingfrontend	nn	Prøv igjen
 we	bookingfrontend	nn	ons
 week	bookingfrontend	nn	uke
 week template	bookingfrontend	nn	Vekeplan

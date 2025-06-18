@@ -894,7 +894,8 @@ class booking_soapplication extends booking_socommon
 		$this->db->next_record();
 		$cnt		 = (int)$this->db->f('cnt');
 		$payment_attempt = $cnt + 1;
-		$remote_id	 = "{$msn}-{$primary_order_id}-order-{$primary_order_id}-{$payment_attempt}";
+		$random_hash = substr(bin2hex(random_bytes(2)), 0, 4);
+		$remote_id	 = "{$msn}-{$primary_order_id}-order-{$primary_order_id}-{$payment_attempt}-{$random_hash}";
 
 		$sopurchase_order = createObject('booking.sopurchase_order');
 

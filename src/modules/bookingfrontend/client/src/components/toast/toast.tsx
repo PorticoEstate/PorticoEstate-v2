@@ -14,7 +14,7 @@ import {useShoppingCartDrawer} from "@/components/layout/header/shopping-cart/sh
 import {usePathname} from "next/navigation";
 
 const ToastContainer: React.FC = () => {
-	const {toasts, removeToast, setFabButtonRef, setFabOpen, isFabOpen} = useToast();
+	const {toasts, removeToast, pauseToast, resumeToast, setFabButtonRef, setFabOpen, isFabOpen} = useToast();
 	const {data: cartItems} = usePartialApplications();
 	const fabButtonRef = useRef<HTMLButtonElement>(null);
 	const t = useTrans();
@@ -38,7 +38,13 @@ const ToastContainer: React.FC = () => {
 			{/* Toast notifications */}
 			<div className={styles.toastContainer}>
 				{toasts.map((toast) => (
-					<Toast key={toast.id} toast={toast} onClose={() => removeToast(toast.id)}/>
+					<Toast 
+						key={toast.id} 
+						toast={toast} 
+						onClose={() => removeToast(toast.id)}
+						onPause={() => pauseToast(toast.id)}
+						onResume={() => resumeToast(toast.id)}
+					/>
 				))}
 			</div>
 
@@ -84,9 +90,11 @@ const ToastContainer: React.FC = () => {
 interface ToastProps {
 	toast: ToastMessage;
 	onClose: () => void;
+	onPause: () => void;
+	onResume: () => void;
 }
 
-const Toast: React.FC<ToastProps> = ({toast, onClose}) => {
+const Toast: React.FC<ToastProps> = ({toast, onClose, onPause, onResume}) => {
 	const t = useTrans();
 	const {type, title, text} = toast;
 
@@ -112,6 +120,8 @@ const Toast: React.FC<ToastProps> = ({toast, onClose}) => {
 			data-color={color}
 			className={`${styles.alert} ${styles.alertCompact} ${styles.toastAnimation}`}
 			data-size="sm"
+			onMouseEnter={onPause}
+			onMouseLeave={onResume}
 		>
 			<div>
 				{title && <Heading level={5} data-size='2xs' style={{

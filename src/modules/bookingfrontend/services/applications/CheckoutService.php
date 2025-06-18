@@ -86,9 +86,11 @@ class CheckoutService
             $activate_prepayment = 0;
             foreach ($applications as $application) {
                 // The resources array already contains prepayment info, no need to query again
-                foreach ($application['resources'] as $resource) {
-                    if ($resource['activate_prepayment']) {
-                        $activate_prepayment++;
+                if (isset($application['resources']) && is_array($application['resources'])) {
+                    foreach ($application['resources'] as $resource) {
+                        if (isset($resource['activate_prepayment']) && $resource['activate_prepayment']) {
+                            $activate_prepayment++;
+                        }
                     }
                 }
             }
@@ -96,14 +98,24 @@ class CheckoutService
             // Get booking configuration - same as add_contact()
             $location_obj = new Locations();
             $location_id = $location_obj->get_id('booking', 'run');
-            $custom_config = CreateObject('admin.soconfig', $location_id)->read();
+            $custom_config_obj = CreateObject('admin.soconfig', $location_id);
+            $custom_config = $custom_config_obj->config_data;
             
             // Check Vipps availability - exact same condition as add_contact method
             if ($activate_prepayment && !empty($custom_config['payment']['method']) && !empty($custom_config['Vipps']['active'])) {
-                $payment_methods[] = [
-                    'method' => 'vipps',
-                    'logo' => $this->getVippsLogo()
-                ];
+                // Additional check: verify Vipps is actually configured
+                try {
+                    $vippsService = new VippsService();
+                    if ($vippsService->isConfigured()) {
+                        $payment_methods[] = [
+                            'method' => 'vipps',
+                            'logo' => $this->getVippsLogo()
+                        ];
+                    }
+                } catch (Exception $vippsException) {
+                    // Vipps is enabled but not properly configured
+                    error_log("Vipps is enabled but not properly configured: " . $vippsException->getMessage());
+                }
             }
             
             // Add other payment methods here in the future
@@ -183,4 +195,5 @@ class CheckoutService
             'applications_count' => $eligibility['applications_count']
         ];
     }
+
 }

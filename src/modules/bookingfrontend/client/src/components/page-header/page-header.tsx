@@ -5,7 +5,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {Heading} from "@digdir/designsystemet-react";
 
 interface PageHeaderProps {
-    title: string;
+    title: string | JSX.Element;
     icon?: IconProp;
     className?: string
 }

@@ -320,10 +320,15 @@ class CheckoutController
             return ResponseHelper::sendJSONResponse($eligibilityResult);
 
         } catch (Exception $e) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => $e->getMessage()],
-                500
-            );
+            // Log the error but don't expose sensitive configuration details
+            error_log("External payment eligibility check failed: " . $e->getMessage());
+            
+            // Return a safe error response
+            return ResponseHelper::sendJSONResponse([
+                'eligible' => false,
+                'reason' => 'External payment service not available',
+                'payment_methods' => []
+            ]);
         }
     }
 
@@ -397,7 +402,7 @@ class CheckoutController
                 // 3. Validate Vipps configuration
                 if (!$this->vippsService->isConfigured()) {
                     return ResponseHelper::sendErrorResponse([
-                        'error' => 'Vipps payment is not properly configured'
+                        'error' => lang('vipps_not_configured')
                     ], 500);
                 }
 
@@ -416,13 +421,13 @@ class CheckoutController
                     } else {
                         // Handle Vipps initiation failure
                         return ResponseHelper::sendErrorResponse([
-                            'error' => 'Failed to initiate Vipps payment',
+                            'error' => lang('vipps_init_failed'),
                             'details' => is_array($paymentResult) ? json_encode($paymentResult) : 'Unknown error'
                         ], 500);
                     }
                 } catch (Exception $vippsException) {
                     return ResponseHelper::sendErrorResponse([
-                        'error' => 'Vipps payment initialization failed',
+                        'error' => lang('vipps_init_failed'),
                         'details' => $vippsException->getMessage()
                     ], 500);
                 }
@@ -438,6 +443,318 @@ class CheckoutController
                 }
                 throw $e;
             }
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/checkout/vipps/check-payment-status",
+     *     summary="Check Vipps payment status and process payment",
+     *     tags={"Checkout"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"payment_order_id"},
+     *             @OA\Property(property="payment_order_id", type="string", description="Payment order ID from Vipps")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment status check result",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="status", type="string"),
+     *             @OA\Property(property="message", type="string"),
+     *             @OA\Property(property="applications_approved", type="boolean")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid payment order ID"
+     *     )
+     * )
+     */
+    public function checkVippsPaymentStatus(Request $request, Response $response): Response
+    {
+        try {
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data || empty($data['payment_order_id'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'payment_order_id is required'],
+                    400
+                );
+            }
+
+            $payment_order_id = $data['payment_order_id'];
+
+            // Validate Vipps configuration
+            if (!$this->vippsService->isConfigured()) {
+                return ResponseHelper::sendErrorResponse([
+                    'error' => lang('vipps_not_configured')
+                ], 500);
+            }
+
+            // Process payment status with business logic
+            $result = $this->vippsService->processPaymentStatus($payment_order_id);
+
+            return ResponseHelper::sendJSONResponse($result);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/checkout/vipps/payment-details/{payment_order_id}",
+     *     summary="Get Vipps payment details",
+     *     tags={"Checkout"},
+     *     @OA\Parameter(
+     *         name="payment_order_id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="string"),
+     *         description="Payment order ID from Vipps"
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment details from Vipps API",
+     *         @OA\JsonContent(type="object")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Payment not found"
+     *     )
+     * )
+     */
+    public function getVippsPaymentDetails(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $payment_order_id = $args['payment_order_id'] ?? '';
+            
+            if (empty($payment_order_id)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'payment_order_id is required'],
+                    400
+                );
+            }
+
+            // Validate Vipps configuration
+            if (!$this->vippsService->isConfigured()) {
+                return ResponseHelper::sendErrorResponse([
+                    'error' => lang('vipps_not_configured')
+                ], 500);
+            }
+
+            // Get payment details from Vipps API
+            $details = $this->vippsService->getPaymentDetails($payment_order_id);
+
+            return ResponseHelper::sendJSONResponse($details);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/checkout/vipps/cancel-payment",
+     *     summary="Cancel Vipps payment",
+     *     tags={"Checkout"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"payment_order_id"},
+     *             @OA\Property(property="payment_order_id", type="string", description="Payment order ID from Vipps")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment cancellation result",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean"),
+     *             @OA\Property(property="message", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid payment order ID"
+     *     )
+     * )
+     */
+    public function cancelVippsPayment(Request $request, Response $response): Response
+    {
+        try {
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data || empty($data['payment_order_id'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'payment_order_id is required'],
+                    400
+                );
+            }
+
+            $payment_order_id = $data['payment_order_id'];
+
+            // Validate Vipps configuration
+            if (!$this->vippsService->isConfigured()) {
+                return ResponseHelper::sendErrorResponse([
+                    'error' => lang('vipps_not_configured')
+                ], 500);
+            }
+
+            // Cancel payment
+            $result = $this->vippsService->cancelPayment($payment_order_id);
+
+            // Update payment status in database
+            $soapplication = CreateObject('booking.soapplication');
+            $soapplication->update_payment_status($payment_order_id, 'voided', 'CANCEL');
+
+            return ResponseHelper::sendJSONResponse([
+                'success' => true,
+                'message' => 'Payment cancelled successfully',
+                'vipps_response' => $result
+            ]);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/checkout/vipps/refund-payment",
+     *     summary="Refund Vipps payment",
+     *     tags={"Checkout"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"payment_order_id", "amount"},
+     *             @OA\Property(property="payment_order_id", type="string", description="Payment order ID from Vipps"),
+     *             @OA\Property(property="amount", type="number", description="Amount to refund in kroner (will be converted to øre)")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Payment refund result",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean"),
+     *             @OA\Property(property="message", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid payment order ID or amount"
+     *     )
+     * )
+     */
+    public function refundVippsPayment(Request $request, Response $response): Response
+    {
+        try {
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data || empty($data['payment_order_id']) || !isset($data['amount'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'payment_order_id and amount are required'],
+                    400
+                );
+            }
+
+            $payment_order_id = $data['payment_order_id'];
+            $amount = (float)$data['amount'];
+
+            if ($amount <= 0) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Amount must be greater than 0'],
+                    400
+                );
+            }
+
+            // Validate Vipps configuration
+            if (!$this->vippsService->isConfigured()) {
+                return ResponseHelper::sendErrorResponse([
+                    'error' => lang('vipps_not_configured')
+                ], 500);
+            }
+
+            // Convert amount to øre (cents)
+            $amount_ore = (int)($amount * 100);
+
+            // Refund payment
+            $result = $this->vippsService->refundPayment($payment_order_id, $amount_ore);
+
+            // Update payment status in database
+            $soapplication = CreateObject('booking.soapplication');
+            $soapplication->update_payment_status($payment_order_id, 'refunded', 'REFUND', $amount);
+
+            return ResponseHelper::sendJSONResponse([
+                'success' => true,
+                'message' => 'Payment refunded successfully',
+                'refunded_amount' => $amount,
+                'vipps_response' => $result
+            ]);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/checkout/vipps/post-to-accounting",
+     *     summary="Post completed Vipps transactions to accounting system",
+     *     tags={"Checkout"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Accounting posting results",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="posted_transactions", type="integer"),
+     *             @OA\Property(property="posted_refunds", type="integer"),
+     *             @OA\Property(property="errors", type="array", @OA\Items(type="string"))
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Accounting system error"
+     *     )
+     * )
+     */
+    public function postVippsToAccounting(Request $request, Response $response): Response
+    {
+        try {
+            // Validate Vipps configuration
+            if (!$this->vippsService->isConfigured()) {
+                return ResponseHelper::sendErrorResponse([
+                    'error' => lang('vipps_not_configured')
+                ], 500);
+            }
+
+            // Post transactions to accounting system
+            $results = $this->vippsService->postToAccountingSystem();
+
+            return ResponseHelper::sendJSONResponse($results);
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(

@@ -19,6 +19,7 @@ import ColumnToggle from "@/components/gs-table/subcomponents/column-toggle";
 import TablePagination from "./subcomponents/table-pagination";
 import TableExport from "@/components/gs-table/subcomponents/table-export";
 import {useIsMobile} from "@/service/hooks/is-mobile";
+import {Spinner} from "@digdir/designsystemet-react";
 
 
 // Fuzzy filter function
@@ -138,7 +139,8 @@ function Table<T>({
                       onColumnVisibilityChange,
                       pageSize: defaultPageSize = 10,
                       enablePagination = true,
-                      exportFileName
+                      exportFileName,
+                      isLoading = false
                   }: TableProps<T>) {
 
     const isMobile = useIsMobile();
@@ -290,6 +292,7 @@ function Table<T>({
         ),
         right: (
             <>
+                {typeof utilityHeader === 'object' && utilityHeader?.right}
                 {!!exportFileName && (
                     <TableExport
                         table={table}
@@ -298,7 +301,6 @@ function Table<T>({
                     />
                 )}
                 <ColumnToggle table={table} tableColumns={tableColumns} columnVisibility={columnVisibility}/>
-                {typeof utilityHeader === 'object' && utilityHeader?.right}
             </>
         ),
     }), [enableSearch, table, searchPlaceholder, utilityHeader, exportFileName, selectedRows, rowSelection, tableColumns, columnVisibility]);
@@ -308,7 +310,7 @@ function Table<T>({
             {!!utilityHeader && (
                 <TableUtilityHeader {...combinedUtilityHeader} />
             )}
-            <div className={`${styles.table} ${isMobile ? styles.tableMobile : ''}`} 
+            <div className={`${styles.table} ${isMobile ? styles.tableMobile : ''}`}
                  style={{gridTemplateColumns: isMobile ? undefined : gridTemplateColumns}}>
                 <TableHeader
                     headerGroups={table.getHeaderGroups()}
@@ -318,7 +320,11 @@ function Table<T>({
                     iconPadding={iconPadding}
                     isMobile={isMobile}
                 />
-                {data.length === 0 && empty ? (
+                {isLoading ? (
+                    <div className={styles.loadingContainer}>
+                        <Spinner data-size={'sm'} aria-label={'loading...'} />
+                    </div>
+                ) : data.length === 0 && empty ? (
                     empty
                 ) : (
                     table.getRowModel().rows.map(row => (

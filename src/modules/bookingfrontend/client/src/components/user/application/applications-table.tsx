@@ -1,5 +1,5 @@
 'use client'
-import React, {FC} from 'react';
+import React, {FC, useState, useMemo} from 'react';
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useApplications} from "@/service/hooks/api-hooks";
 import {GSTable} from "@/components/gs-table";
@@ -9,7 +9,8 @@ import {ColumnDef} from "@/components/gs-table/table.types";
 import {DateTime} from "luxon";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
-import {Link} from "@digdir/designsystemet-react";
+import {Link, Checkbox, Button} from "@digdir/designsystemet-react";
+import { ArrowsCirclepathIcon } from '@navikt/aksel-icons';
 
 interface ApplicationsTableProps {
 	initialApplications?: { list: IApplication[], total_sum: number };
@@ -17,9 +18,18 @@ interface ApplicationsTableProps {
 
 const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) => {
 	const t = useTrans();
-	const {data: applicationsRaw, isLoading} = useApplications({
-		initialData: initialApplications
+	const [includeOrganizations, setIncludeOrganizations] = useState(true);
+
+	const {data: applicationsRaw, isFetching, refetch} = useApplications({
+		initialData: initialApplications,
+		includeOrganizations: true
 	});
+
+	const filteredApplications = useMemo(() => {
+		if (!applicationsRaw?.list) return [];
+		if (includeOrganizations) return applicationsRaw.list;
+		return applicationsRaw.list.filter(app => app.application_type !== 'organization');
+	}, [applicationsRaw?.list, includeOrganizations]);
 
 	const columns: ColumnDef<IApplication>[] = [
 		{
@@ -65,6 +75,32 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 					<span className={`status-badge status-${status.toLowerCase()}`}>
             {t(`bookingfrontend.${status.toLowerCase()}`)}
           </span>
+				);
+			},
+		},
+
+		{
+			id: 'application_type',
+			accessorFn: (row) => row.application_type,
+			header: t('bookingfrontend.type'),
+			meta: {
+				size: 0.5
+			},
+			cell: info => {
+				const applicationType = info.getValue<string>();
+				const row = info.row.original;
+
+				if (applicationType === 'organization') {
+					return (
+						<span className="application-type-badge" title={row.customer_organization_name || 'Organization'}>
+							{t('bookingfrontend.organization')}
+						</span>
+					);
+				}
+				return (
+					<span className="application-type-badge">
+						{t('bookingfrontend.personal')}
+					</span>
 				);
 			},
 		},
@@ -129,16 +165,38 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 	];
 
 	return (
-		<GSTable<IApplication>
-			data={applicationsRaw?.list || []}
-			columns={columns}
-			enableSorting={true}
-			enableRowSelection
-			enableMultiRowSelection
-			enableSearch
-			utilityHeader={true}
-			exportFileName={"applications"}
-		/>
+		<div>
+			<GSTable<IApplication>
+				data={filteredApplications}
+				columns={columns}
+				enableSorting={true}
+				enableRowSelection
+				enableMultiRowSelection
+				enableSearch
+				isLoading={isFetching}
+				utilityHeader={{
+					right: (
+						<>
+							<Checkbox
+								checked={includeOrganizations}
+								onChange={(e) => setIncludeOrganizations(e.target.checked)}
+								label={t('bookingfrontend.show_organizations')}
+							>
+							</Checkbox>
+							<Button
+								variant="tertiary"
+								data-size="sm"
+								onClick={() => refetch()}
+								disabled={isFetching}
+							>
+								<ArrowsCirclepathIcon />
+							</Button>
+						</>
+					)
+				}}
+				exportFileName={"applications"}
+			/>
+		</div>
 	);
 }
 

@@ -1,6 +1,7 @@
 <?php
 namespace App\modules\bookingfrontend\repositories;
 
+use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Article;
 use PDO;
 use App\Database\Db;
@@ -16,11 +17,13 @@ class ApplicationRepository
 {
     private $db;
     private $articleRepository;
+    private $userHelper;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->articleRepository = new ArticleRepository();
+        $this->userHelper = new UserHelper();
     }
 
     /**
@@ -84,6 +87,93 @@ class ApplicationRepository
             $application->audience = $this->fetchTargetAudience($application->id);
             $application->documents = $this->fetchDocuments($application->id);
             $applications[] = $application->serialize([]);
+        }
+
+        return $applications;
+    }
+
+    /**
+     * Get applications by SSN including applications from organizations the user belongs to
+     *
+     * @param string $ssn Social security number
+     * @param bool $includeOrganizations Whether to include organization applications
+     * @return array Array of applications
+     */
+    public function getApplicationsBySsnAndOrganizations(string $ssn, bool $includeOrganizations = false): array
+    {
+        // Base query for personal applications
+        $sql = "SELECT *, 'personal' as application_type FROM bb_application
+            WHERE customer_ssn = :ssn
+            AND status != 'NEWPARTIAL1'";
+
+        $params = [':ssn' => $ssn];
+
+        if ($includeOrganizations) {
+            // Get user's organization memberships using UserHelper
+            $organizations = $this->userHelper->organizations;
+            if (!empty($organizations)) {
+                $orgIds = [];
+                $orgNumbers = [];
+
+                foreach ($organizations as $org) {
+                    if (!empty($org['org_id'])) {
+                        $orgIds[] = $org['org_id'];
+                    }
+                    if (!empty($org['orgnr'])) {
+                        $orgNumbers[] = $org['orgnr'];
+                    }
+                }
+
+                // Add UNION to include organization applications
+                if (!empty($orgIds)) {
+                    $orgIdsStr = implode(',', $orgIds);
+                    $sql .= " UNION SELECT *, 'organization' as application_type FROM bb_application
+                        WHERE customer_organization_id IN ({$orgIdsStr})
+                        AND status != 'NEWPARTIAL1'";
+                }
+
+                // Also include applications by organization number
+                if (!empty($orgNumbers)) {
+                    $orgNumberPlaceholders = [];
+                    foreach ($orgNumbers as $index => $orgNumber) {
+                        $placeholder = ":org_number_{$index}";
+                        $orgNumberPlaceholders[] = $placeholder;
+                        $params[$placeholder] = $orgNumber;
+                    }
+                    $orgNumbersStr = implode(',', $orgNumberPlaceholders);
+
+                    $sql .= " UNION SELECT *, 'organization' as application_type FROM bb_application
+                        WHERE customer_organization_number IN ({$orgNumbersStr})
+                        AND status != 'NEWPARTIAL1'
+                        AND (customer_ssn IS NULL OR customer_ssn != :ssn2)";
+
+                    $params[':ssn2'] = $ssn; // Avoid duplicates
+                }
+            }
+        }
+
+        $sql .= " ORDER BY created DESC";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $applications = [];
+        foreach ($results as $result)
+        {
+            $application = new Application($result);
+            $application->dates = $this->fetchDates($application->id);
+            $application->resources = $this->fetchResources($application->id);
+            $application->orders = $this->fetchOrders($application->id);
+            $application->articles = $this->fetchArticles($application->id);
+            $application->agegroups = $this->fetchAgeGroups($application->id);
+            $application->audience = $this->fetchTargetAudience($application->id);
+            $application->documents = $this->fetchDocuments($application->id);
+
+            // Add metadata about application type
+            $serialized = $application->serialize([]);
+            $serialized['application_type'] = $result['application_type'];
+            $applications[] = $serialized;
         }
 
         return $applications;
@@ -236,7 +326,7 @@ class ApplicationRepository
         if (!empty($documentIds)) {
             // Use DocumentService to properly delete each document (files and DB records)
             $documentService = new DocumentService(Document::OWNER_APPLICATION);
-            
+
             foreach ($documentIds as $documentId) {
                 try {
                     $documentService->deleteDocument($documentId);

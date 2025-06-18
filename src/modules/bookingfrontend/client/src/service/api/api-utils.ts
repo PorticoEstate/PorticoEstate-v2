@@ -1,6 +1,12 @@
 import {DateTime} from "luxon";
 import {phpGWLink} from "@/service/util";
-import {IBookingUser, IServerSettings, IMultiDomain} from "@/service/types/api.types";
+import {
+	IBookingUser,
+	IServerSettings,
+	IMultiDomain,
+	IDocumentCategoryQuery,
+	IDocument
+} from "@/service/types/api.types";
 import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
@@ -245,6 +251,15 @@ export async function fetchApplication(id: number): Promise<IApplication> {
     }
 
     return response.json();
+}
+
+export async function fetchApplicationDocuments(applicationId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
+	const url = phpGWLink(["bookingfrontend", 'applications', applicationId, 'documents'],
+		type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
+
+	const response = await fetch(url);
+	const result = await response.json();
+	return result;
 }
 
 /**

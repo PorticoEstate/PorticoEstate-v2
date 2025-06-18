@@ -5,7 +5,8 @@ import {
 	useApplication,
 	useResourceRegulationDocuments,
 	useBuildingAudience,
-	useApplicationScheduleEntities
+	useApplicationScheduleEntities,
+	useApplicationDocuments
 } from "@/service/hooks/api-hooks";
 import {IAPIEvent, IAPIBooking, IAPIAllocation, IEvent} from "@/service/pecalendar.types";
 import {Card, Heading, Paragraph, Spinner, Link as DigdirLink, Tag} from "@digdir/designsystemet-react";
@@ -74,6 +75,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 		application?.resources || []
 	);
 	const {data: audience} = useBuildingAudience(application?.building_id);
+	const {data: applicationDocuments} = useApplicationDocuments(props.applicationId);
 
 	const t = useTrans();
 
@@ -345,7 +347,22 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						<h3>{t('bookingfrontend.application_documents')}</h3>
 					</GSAccordion.Heading>
 					<GSAccordion.Content>
-						<Paragraph>{t('bookingfrontend.no information available')}</Paragraph>
+						{applicationDocuments && applicationDocuments.length > 0 ? (
+							<div>
+								{applicationDocuments.map((doc) => (
+									<div key={doc.id} style={{marginBottom: '0.5rem'}}>
+										<DigdirLink
+											href={getDocumentLink(doc, 'application')}
+											target="_blank"
+										>
+											{doc.name}
+										</DigdirLink>
+									</div>
+								))}
+							</div>
+						) : (
+							<Paragraph>{t('bookingfrontend.no documents available')}</Paragraph>
+						)}
 					</GSAccordion.Content>
 				</GSAccordion>
 

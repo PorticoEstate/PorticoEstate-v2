@@ -8,10 +8,11 @@ import {
 	MutationOptions
 } from "@tanstack/react-query";
 import { useWebSocketContext } from '../websocket/websocket-context';
-import {IBookingUser, IDocument, IServerSettings, IMultiDomain} from "@/service/types/api.types";
+import {IBookingUser, IDocument, IServerSettings, IMultiDomain, IDocumentCategoryQuery} from "@/service/types/api.types";
 import {
 	fetchApplication,
 	fetchApplicationComments,
+	fetchApplicationDocuments,
 	fetchApplicationScheduleEntities,
 	addApplicationComment,
 	updateApplicationStatus,
@@ -1533,4 +1534,22 @@ export function useAvailableResourcesMultiDomain(
 			enabled: !!(date && multiDomains), // Only run query if date and domains are provided
 		}
 	);
+}
+
+/**
+ * Hook to fetch documents for an application
+ * @param applicationId The application ID
+ * @param typeFilter Optional document type filter(s)
+ * @returns Query result containing array of documents
+ */
+export function useApplicationDocuments(
+	applicationId: number | string,
+	typeFilter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]
+): UseQueryResult<IDocument[]> {
+	return useQuery({
+		queryKey: ['applicationDocuments', applicationId, typeFilter],
+		queryFn: () => fetchApplicationDocuments(applicationId, typeFilter),
+		retry: 2,
+		refetchOnWindowFocus: false,
+	});
 }

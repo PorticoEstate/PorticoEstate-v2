@@ -100,6 +100,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->post('/partials/vipps-payment', CheckoutController::class . ':initiateVippsPayment');
 		$group->put('/partials/{id}', ApplicationController::class . ':updatePartial');
 		$group->patch('/partials/{id}', ApplicationController::class . ':patchApplication');
+		$group->get('/{id}/documents', ApplicationController::class . ':getDocuments');
 		$group->post('/{id}/documents', ApplicationController::class . ':uploadDocument');
 		$group->delete('/document/{id}', ApplicationController::class . ':deleteDocument');
 		$group->get('/document/{id}/download', ApplicationController::class . ':downloadDocument');
@@ -108,7 +109,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
 		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getApplicationSchedule');
 		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
-		
+
 		// Comments endpoints
 		$group->get('/{id}/comments', CommentsController::class . ':getApplicationComments');
 		$group->post('/{id}/comments', CommentsController::class . ':addApplicationComment');
@@ -120,7 +121,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->group('/checkout', function (RouteCollectorProxy $group)
 	{
 		$group->get('/external-payment-eligibility', CheckoutController::class . ':checkExternalPaymentEligibility');
-		
+
 		// Vipps payment endpoints
 		$group->group('/vipps', function (RouteCollectorProxy $group)
 		{

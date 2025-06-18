@@ -116,6 +116,7 @@ bygning	bookingfrontend	nn	Bygg/anlegg
 calendar view	bookingfrontend	nn	Dags-/ukesvisning
 calendar_resources	bookingfrontend	nn	Kalenderressursar
 calendar_view	bookingfrontend	nn	Kalender
+calendar_view_disabled	bookingfrontend	nn	Kalendervisning er deaktivert
 Can not create a booking in the past	bookingfrontend	nn	Du kan ikkje opprette ei interntildeling i fortida.
 Can not repeat from a date in the past	bookingfrontend	nn	Du kan ikkje repetere frå ein dato i fortida.
 cancel	bookingfrontend	nn	Avbryt

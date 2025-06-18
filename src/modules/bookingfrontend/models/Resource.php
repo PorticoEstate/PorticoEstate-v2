@@ -195,6 +195,7 @@ class Resource
     /**
      * @ORM\Column(type="integer")
      * @Expose
+	 * @ParseBool
      * @OA\Property(description="Whether the calendar is deactivated", type="integer")
      */
     public $deactivate_calendar;

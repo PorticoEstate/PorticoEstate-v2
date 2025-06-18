@@ -116,6 +116,7 @@ bygning	bookingfrontend	en	Bygning
 calendar view	bookingfrontend	en	Day/week view
 calendar_resources	bookingfrontend	en	Calendar resources
 calendar_view	bookingfrontend	en	Calendar
+calendar_view_disabled	bookingfrontend	en	Calendar view is disabled
 Can not create a booking in the past	bookingfrontend	en	Can not create a booking in the past
 Can not repeat from a date in the past	bookingfrontend	en	Can not repeat from a date in the past
 cancel	bookingfrontend	en	Cancel

@@ -61,7 +61,7 @@ const FilterModal: FC<FilterModalProps> = ({
         // Get all active buildings
         const activeBuildings = new Set(
             searchData.buildings
-                .filter(building => building.deactivate_calendar !== 1)
+                .filter(building => !building.deactivate_calendar)
                 .map(building => building.id)
         );
 
@@ -174,7 +174,7 @@ const FilterModal: FC<FilterModalProps> = ({
         // Get all active buildings
         const activeBuildings = new Set(
             searchData.buildings
-                .filter(building => building.deactivate_calendar !== 1)
+                .filter(building => !building.deactivate_calendar)
                 .map(building => building.id)
         );
 

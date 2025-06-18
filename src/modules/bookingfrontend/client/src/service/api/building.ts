@@ -134,7 +134,7 @@ export async function fetchResourceDocuments(buildingId: number | string, type_f
     return result;
 }
 
-export function getDocumentLink(doc: IDocument, type: 'building' | 'resource'): string {
+export function getDocumentLink(doc: IDocument, type: 'building' | 'resource' | 'application'): string {
     const url = phpGWLink(['bookingfrontend', type + 's', 'document', doc.id, 'download']);
     return url
 }

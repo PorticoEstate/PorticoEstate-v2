@@ -115,7 +115,7 @@ export interface IEventOLD {
 	is_public?: number
 }
 
-export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id' | 'activate_prepayment'>;
+export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id' | 'activate_prepayment' | 'deactivate_application'>;
 
 export interface IEventDate {
 	from_: string

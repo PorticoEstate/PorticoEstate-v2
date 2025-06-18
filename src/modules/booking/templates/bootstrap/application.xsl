@@ -1393,7 +1393,17 @@
 		createTable('associated_container',associatedURL,colDefsAssociated,'results', 'pure-table pure-table-bordered');
 		createTable('regulation_documents',documentsURL,colDefsDocuments, '', 'pure-table pure-table-bordered');
 
-		var colDefsAttachmentsResource = [{key: 'name', label: lang['Name'], formatter: genericLink}];
+		if (currentuser == 1)
+		{
+			var colDefsAttachmentsResource = [
+			{key: 'name', label: lang['Name'], formatter: genericLink},
+			{key: 'option_delete', label: lang['Delete'], formatter: genericLink2}];
+		}
+		else
+		{
+			var colDefsAttachmentsResource = [{key: 'name', label: lang['Name'], formatter: genericLink}];
+		}
+
 		createTable('attachments_container', attachmentsResourceURL, colDefsAttachmentsResource, '', 'pure-table pure-table-bordered');
 
 		var colDefsArticles = [

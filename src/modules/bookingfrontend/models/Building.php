@@ -33,7 +33,7 @@ class Building
      * )
      */
     public $id;
-    
+
     /**
      * @ORM\Column(type="integer", nullable=true)
      * @Expose
@@ -167,7 +167,8 @@ class Building
      * @ORM\Column(type="integer", options={"default" : 0})
      * @Expose
      * @Short
-     * @OA\Property(
+	 * @ParseBool
+	 * @OA\Property(
      *      description="Whether the calendar is deactivated, 0 or 1",
      *      type="integer"
      * )

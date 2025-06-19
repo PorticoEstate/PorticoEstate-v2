@@ -501,9 +501,9 @@ class ResourceController extends DocumentController
             $queryParams = $request->getQueryParams();
             
             // Check if required parameters are provided
-            if (!isset($queryParams['start_date']) || !isset($queryParams['end_date'])) {
+            if (!isset($queryParams['start_date'])) {
                 return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Both start_date and end_date parameters are required'],
+                    ['error' => 'start_date parameter is required'],
                     400
                 );
             }
@@ -512,7 +512,7 @@ class ResourceController extends DocumentController
             $sql = "SELECT r.id FROM bb_resource r WHERE r.id = :id AND r.active = 1";
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $resourceId, \PDO::PARAM_INT);
-            $stmt->bindParam(':current_date', $currentDate);
+            //$stmt->bindParam(':current_date', $currentDate);
             $stmt->execute();
             
             if (!$stmt->fetch()) {
@@ -527,8 +527,16 @@ class ResourceController extends DocumentController
                 $startDate = new \DateTime($queryParams['start_date']);
                 $startDate->setTime(0, 0, 0);
                 
-                $endDate = new \DateTime($queryParams['end_date']);
-                $endDate->setTime(23, 59, 59);
+                if(isset($queryParams['end_date']))
+                {
+                    $endDate = new \DateTime($queryParams['end_date']);
+                    $endDate->setTime(23, 59, 59);
+                }
+                else
+                {
+                    // Default to six months later if end_date is not provided
+                    $endDate = (clone $startDate)->modify('+6 month');
+                }
             } catch (\Exception $e) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Invalid date format. Use YYYY-MM-DD format.'],

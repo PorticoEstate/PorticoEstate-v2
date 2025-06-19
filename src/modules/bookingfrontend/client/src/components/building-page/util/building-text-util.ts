@@ -103,6 +103,9 @@ export function normalizeText(html: string): NormalizedText {
     // Clean up extra whitespace but preserve newlines
     body = body.replace(/[ \t]+/g, ' ').replace(/\n[ \t]*/g, '\n').replace(/[ \t]*\n/g, '\n');
     
+    // Consolidate multiple newlines into single newlines
+    body = body.replace(/\n+/g, '\n');
+    
     // Remove leading and trailing newlines
     body = body.replace(/^\n+|\n+$/g, '').trim();
     

@@ -52,14 +52,70 @@ const ApplicationSchedule: FC<ApplicationScheduleProps> = (props) => {
 			<div style={{marginBottom: '1rem'}}>
 				{applicationSchedule.map((ev, index) => (
 					<div key={ev.id}
-						 onClick={(e) => handleEventClick(ev, e.currentTarget)}
 						 style={{
-							 cursor: 'pointer',
 							 backgroundColor: index % 2 === 0 ? 'transparent' : 'var(--ds-color-background-tinted)',
 							 padding: '0.5rem',
-							 borderRadius: '4px'
+							 borderRadius: '4px',
+							 display: 'flex',
+							 alignItems: 'center',
+							 justifyContent: 'space-between'
 						 }}>
-						<EventContentList eventInfo={ev}/>
+						<div 
+							onClick={(e) => handleEventClick(ev, e.currentTarget)}
+							style={{
+								cursor: 'pointer',
+								flex: 1
+							}}>
+							<EventContentList eventInfo={ev}/>
+						</div>
+						
+						{/* Edit/Cancel Links */}
+						{(ev.edit_link || ev.cancel_link) && (
+							<div style={{
+								display: 'flex',
+								gap: '0.5rem',
+								marginLeft: '1rem'
+							}}>
+								{ev.edit_link && (
+									<a 
+										href={ev.edit_link}
+										style={{
+											color: 'var(--ds-color-foreground-action)',
+											textDecoration: 'none',
+											fontSize: '0.875rem',
+											fontWeight: '500'
+										}}
+										onMouseEnter={(e) => {
+											e.currentTarget.style.textDecoration = 'underline';
+										}}
+										onMouseLeave={(e) => {
+											e.currentTarget.style.textDecoration = 'none';
+										}}
+									>
+										{t('bookingfrontend.edit')}
+									</a>
+								)}
+								{ev.cancel_link && (
+									<a 
+										href={ev.cancel_link}
+										style={{
+											color: 'var(--ds-color-foreground-danger)',
+											textDecoration: 'none',
+											fontSize: '0.875rem',
+											fontWeight: '500'
+										}}
+										onMouseEnter={(e) => {
+											e.currentTarget.style.textDecoration = 'underline';
+										}}
+										onMouseLeave={(e) => {
+											e.currentTarget.style.textDecoration = 'none';
+										}}
+									>
+										{t('bookingfrontend.cancel')}
+									</a>
+								)}
+							</div>
+						)}
 					</div>
 				))}
 			</div>

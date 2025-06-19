@@ -233,7 +233,8 @@ class Resource
     /**
      * @ORM\Column(type="smallint", nullable=true)
      * @Expose
-     * @OA\Property(description="Whether the resource is hidden in frontend", type="integer", nullable=true)
+	 * @ParseBool
+	 * @OA\Property(description="Whether the resource is hidden in frontend", type="integer", nullable=true)
      */
     public $hidden_in_frontend;
 

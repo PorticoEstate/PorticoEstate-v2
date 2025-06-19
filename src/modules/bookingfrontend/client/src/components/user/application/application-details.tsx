@@ -9,7 +9,7 @@ import {
 	useApplicationDocuments
 } from "@/service/hooks/api-hooks";
 import {IAPIEvent, IAPIBooking, IAPIAllocation, IEvent} from "@/service/pecalendar.types";
-import {Card, Heading, Paragraph, Spinner, Link as DigdirLink, Tag} from "@digdir/designsystemet-react";
+import {Card, Heading, Paragraph, Spinner, Link as DigdirLink, Tag, Table} from "@digdir/designsystemet-react";
 import ApplicationComments from "./application-comments";
 import PageHeader from "@/components/page-header/page-header";
 import navStyles from "@/components/layout/header/internal-nav/internal-nav.module.scss";
@@ -28,6 +28,7 @@ import EventPopper from "@/components/building-calendar/modules/event/popper/eve
 import ApplicationSchedule from "@/components/user/application/application-schedule/application-schedule";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
+import ArticleTable from "@/components/article-table/article-table";
 
 interface ApplicationDetailsProps {
 	initialApplication?: IApplication;
@@ -395,7 +396,11 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						<h3>{t('bookingfrontend.orders_articles')}</h3>
 					</GSAccordion.Heading>
 					<GSAccordion.Content>
-						<Paragraph>{t('bookingfrontend.no information available')}</Paragraph>
+						<ArticleTable 
+							orders={application.orders}
+							mode="orders"
+							readOnly={true}
+						/>
 					</GSAccordion.Content>
 				</GSAccordion>
 

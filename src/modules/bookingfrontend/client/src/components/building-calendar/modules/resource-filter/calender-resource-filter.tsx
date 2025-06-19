@@ -14,6 +14,8 @@ import ResourceLabel from "@/components/building-calendar/modules/resource-filte
 import {FreeTimeSlotsResponse} from "@/service/hooks/api-hooks";
 import {useQueryClient} from "@tanstack/react-query";
 import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
+import {useBuilding} from "@/service/api/building";
+import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 
 
 interface GroupedResources {
@@ -46,7 +48,8 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	const [popperResource, setPopperResource] = useState<CalendarResourceFilterOption | null>(null);
 	const {setEnabledResources, enabledResources} = useEnabledResources();
 	const queryClient = useQueryClient();
-	const {data: resources} = useBuildingResources(buildingId)
+	const {data: resources} = useBuildingResources(buildingId);
+	const {data: building} = useBuilding(buildingId);
 
 
 	const resourcesWithSlots = useMemo(() => {
@@ -77,9 +80,9 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 		return (resources || []).map((resource, index) => ({
 			value: resource.id.toString(),
 			label: resource.name,
-			deactivated: resource.deactivate_application
+			deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application
 		}));
-	}, [resources]);
+	}, [resources, building]);
 
 
 	const groupedResources = useMemo<GroupedResources>(() => {
@@ -90,7 +93,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 			const option = {
 				value: resource.id.toString(),
 				label: resource.name,
-				deactivated: resource.deactivate_application
+				deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application
 			};
 
 			if (ResourceUsesTimeSlots(resource)) {
@@ -114,7 +117,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 		// }
 		//
 		// return { slotted, normal: [] };
-	}, [resources]);
+	}, [resources, building]);
 
 	useEffect(() => {
 		// Only run this once when component mounts

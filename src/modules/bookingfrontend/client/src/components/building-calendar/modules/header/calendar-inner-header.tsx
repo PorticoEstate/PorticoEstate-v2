@@ -168,7 +168,14 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			}
 			{
 				calendarViewMode === 'calendar' &&
-				<Button variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'} data-color={'accent'} onClick={props.createNew} data-size={'sm'} className={styles.orderButton}>
+				<Button 
+					variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'} 
+					data-color={'accent'} 
+					onClick={props.createNew} 
+					data-size={'sm'} 
+					className={styles.orderButton}
+					disabled={props.building.deactivate_application}
+				>
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}
 

@@ -40,8 +40,8 @@ export interface IBuilding {
     /** Whether the calendar is deactivated */
     deactivate_calendar: boolean;
 
-    /** Whether applications are deactivated, 0 or 1 */
-    deactivate_application: number;
+    /** Whether applications are deactivated */
+    deactivate_application: boolean;
 
     /** Whether sending messages is deactivated, 0 or 1 */
     deactivate_sendmessage: number;

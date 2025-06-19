@@ -15,6 +15,7 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import FullCalendarView from "@/components/building-calendar/views/calendar/full-calendar-view";
 import TimeslotView from "@/components/building-calendar/views/timeslots/timeslot-view";
+import {isCalendarDeactivated} from "@/service/utils/deactivation-utils";
 
 interface BuildingCalendarProps {
 	events?: IEvent[];

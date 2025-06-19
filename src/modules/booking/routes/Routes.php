@@ -7,7 +7,7 @@ use App\modules\phpgwapi\security\AccessVerifier;
 use App\modules\phpgwapi\security\ApiKeyVerifier;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use App\modules\booking\controllers\VippsController;
-use App\modules\bookingfrontend\controllers\ResourceController;
+use App\modules\booking\controllers\ResourceController;
 
 
 $app->group('/booking/users', function (RouteCollectorProxy $group) {

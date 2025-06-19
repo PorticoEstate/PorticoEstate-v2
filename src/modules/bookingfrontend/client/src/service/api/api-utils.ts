@@ -1,10 +1,16 @@
 import {DateTime} from "luxon";
 import {phpGWLink} from "@/service/util";
-import {IBookingUser, IServerSettings, IMultiDomain} from "@/service/types/api.types";
+import {
+	IBookingUser,
+	IServerSettings,
+	IMultiDomain,
+	IDocumentCategoryQuery,
+	IDocument
+} from "@/service/types/api.types";
 import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
-import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
@@ -194,7 +200,7 @@ export async function validateOrgNum(org_num: string): Promise<BrregOrganization
 }
 
 
-export async function fetchDeliveredApplications(): Promise<{ list: IApplication[], total_sum: number }> {
+export async function fetchDeliveredApplications(includeOrganizations: boolean = false): Promise<{ list: IApplication[], total_sum: number }> {
     const params: Record<string, any> = {}
 
     // Add session cookie if we're on the server
@@ -204,6 +210,11 @@ export async function fetchDeliveredApplications(): Promise<{ list: IApplication
         if (sessionCookie) {
             params.bookingfrontendsession = sessionCookie;
         }
+    }
+
+    // Add include_organizations parameter if requested
+    if (includeOrganizations) {
+        params.include_organizations = 'true';
     }
 
     const url = phpGWLink(['bookingfrontend', 'applications'], params);
@@ -240,6 +251,15 @@ export async function fetchApplication(id: number): Promise<IApplication> {
     }
 
     return response.json();
+}
+
+export async function fetchApplicationDocuments(applicationId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
+	const url = phpGWLink(["bookingfrontend", 'applications', applicationId, 'documents'],
+		type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
+
+	const response = await fetch(url);
+	const result = await response.json();
+	return result;
 }
 
 /**
@@ -320,6 +340,41 @@ export async function addApplicationComment(
 
     if (!response.ok) {
         throw new Error(`Failed to add comment to application ${id}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Fetch events, allocations and bookings related to an application
+ * @param id The application ID
+ * @param secret Optional secret for external access
+ * @returns Events, allocations and bookings related to the application
+ */
+export async function fetchApplicationScheduleEntities(
+    id: number,
+    secret?: string
+): Promise<{events: IAPIEvent[], allocations: IAPIAllocation[], bookings: IAPIBooking[]}> {
+    const params: Record<string, any> = {};
+
+    if (secret) {
+        params.secret = secret;
+    }
+
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'schedule'], params);
+
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch events/allocations/bookings for application ${id}`);
     }
 
     return response.json();
@@ -648,6 +703,127 @@ export async function fetchExternalPaymentEligibility(): Promise<ExternalPayment
 
 	if (!response.ok) {
 		throw new Error('Failed to check external payment eligibility');
+	}
+
+	return response.json();
+}
+
+export interface VippsPaymentStatusResponse {
+	status: string;
+	message: string;
+	applications_approved?: boolean;
+}
+
+export interface VippsPaymentDetailsResponse {
+	transactionInfo?: {
+		status: string;
+		amount: number;
+		timeStamp: string;
+	};
+	transactionLogHistory?: Array<{
+		operation: string;
+		operationSuccess: boolean;
+		timeStamp: string;
+		amount: number;
+	}>;
+}
+
+export interface VippsCancelPaymentResponse {
+	success: boolean;
+	message: string;
+	vipps_response?: any;
+}
+
+export interface VippsRefundPaymentResponse {
+	success: boolean;
+	message: string;
+	refunded_amount: number;
+	vipps_response?: any;
+}
+
+/**
+ * Check Vipps payment status and process payment
+ * This should be called after user returns from Vipps or periodically to check status
+ */
+export async function checkVippsPaymentStatus(payment_order_id: string): Promise<VippsPaymentStatusResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'check-payment-status']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to check Vipps payment status');
+	}
+
+	return response.json();
+}
+
+/**
+ * Get detailed payment information from Vipps
+ */
+export async function getVippsPaymentDetails(payment_order_id: string): Promise<VippsPaymentDetailsResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'payment-details', payment_order_id]);
+
+	const response = await fetch(url, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to get Vipps payment details');
+	}
+
+	return response.json();
+}
+
+/**
+ * Cancel a Vipps payment
+ */
+export async function cancelVippsPayment(payment_order_id: string): Promise<VippsCancelPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'cancel-payment']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to cancel Vipps payment');
+	}
+
+	return response.json();
+}
+
+/**
+ * Refund a Vipps payment
+ */
+export async function refundVippsPayment(payment_order_id: string, amount: number): Promise<VippsRefundPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'refund-payment']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id, amount }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to refund Vipps payment');
 	}
 
 	return response.json();

@@ -22,14 +22,12 @@ class ResourceController extends DocumentController
 {
     private $db;
     private $userSettings;
-    private $buildingScheduleService;
 
     public function __construct(ContainerInterface $container)
     {
         parent::__construct(Document::OWNER_RESOURCE);
         $this->db = Db::getInstance();
         $this->userSettings = Settings::getInstance()->get('user');
-        $this->buildingScheduleService = new \App\modules\bookingfrontend\services\BuildingScheduleService();
     }
 
     private function getUserRoles()
@@ -429,132 +427,5 @@ class ResourceController extends DocumentController
         $stmt->bindParam(':building_id', $buildingId, \PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchColumn();
-    }
-    
-    /**
-     * @OA\Get(
-     *     path="/bookingfrontend/resources/{id}/schedule",
-     *     summary="Get a schedule for a specific resource within a date range",
-     *     tags={"Resources"},
-     *     @OA\Parameter(
-     *         name="id",
-     *         in="path",
-     *         description="ID of the resource",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="start_date",
-     *         in="query",
-     *         description="Start date for the schedule (format: YYYY-MM-DD)",
-     *         required=true,
-     *         @OA\Schema(type="string", format="date", example="2025-03-17")
-     *     ),
-     *     @OA\Parameter(
-     *         name="end_date",
-     *         in="query",
-     *         description="End date for the schedule (format: YYYY-MM-DD)",
-     *         required=true,
-     *         @OA\Schema(type="string", format="date", example="2025-03-24")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Resource schedule for the specified date range",
-     *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(
-     *                 oneOf={
-     *                     @OA\Schema(ref="#/components/schemas/Event"),
-     *                     @OA\Schema(ref="#/components/schemas/Booking"),
-     *                     @OA\Schema(ref="#/components/schemas/Allocation")
-     *                 }
-     *             )
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=400,
-     *         description="Invalid date format or missing parameters",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="error", type="string", example="Invalid date format or missing parameters")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Resource not found",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="error", type="string", example="Resource not found")
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Server error",
-     *         @OA\JsonContent(
-     *             @OA\Property(property="error", type="string")
-     *         )
-     *     )
-     * )
-     */
-    public function getResourceSchedule(Request $request, Response $response, array $args): Response
-    {
-        try {
-            $resourceId = (int)$args['id'];
-            $queryParams = $request->getQueryParams();
-            
-            // Check if required parameters are provided
-            if (!isset($queryParams['start_date'])) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'start_date parameter is required'],
-                    400
-                );
-            }
-            
-            // Verify resource exists
-            $sql = "SELECT r.id FROM bb_resource r WHERE r.id = :id AND r.active = 1";
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':id', $resourceId, \PDO::PARAM_INT);
-            //$stmt->bindParam(':current_date', $currentDate);
-            $stmt->execute();
-            
-            if (!$stmt->fetch()) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Resource not found or not active'],
-                    404
-                );
-            }
-            
-            // Convert dates to DateTime objects
-            try {
-                $startDate = new \DateTime($queryParams['start_date']);
-                $startDate->setTime(0, 0, 0);
-                
-                if(isset($queryParams['end_date']))
-                {
-                    $endDate = new \DateTime($queryParams['end_date']);
-                    $endDate->setTime(23, 59, 59);
-                }
-                else
-                {
-                    // Default to six months later if end_date is not provided
-                    $endDate = (clone $startDate)->modify('+6 month');
-                }
-            } catch (\Exception $e) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Invalid date format. Use YYYY-MM-DD format.'],
-                    400
-                );
-            }
-            
-            // Get schedule from service
-            $schedule = $this->buildingScheduleService->getResourceSchedule($resourceId, $startDate, $endDate);
-            
-            $response->getBody()->write(json_encode($schedule));
-            return $response->withHeader('Content-Type', 'application/json');
-            
-        } catch (\Exception $e) {
-            return ResponseHelper::sendErrorResponse(
-                ['error' => 'Error fetching resource schedule: ' . $e->getMessage()],
-                500
-            );
-        }
     }
 }

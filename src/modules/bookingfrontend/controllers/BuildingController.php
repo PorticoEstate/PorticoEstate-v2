@@ -8,7 +8,6 @@ use App\modules\bookingfrontend\models\Audience;
 use App\modules\bookingfrontend\models\Building;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\Season;
-use App\modules\bookingfrontend\services\BuildingScheduleService;
 use DateTime;
 use DateTimeZone;
 use Psr\Container\ContainerInterface;
@@ -28,7 +27,6 @@ class BuildingController extends DocumentController
 {
 	private $db;
 	private $userSettings;
-	private $buildingScheduleService;
 
 	public function __construct(ContainerInterface $container)
 	{
@@ -36,7 +34,6 @@ class BuildingController extends DocumentController
 
 		$this->db = Db::getInstance();
 		$this->userSettings = Settings::getInstance()->get('user');
-		$this->buildingScheduleService = new BuildingScheduleService();
 	}
 	
 	/**
@@ -221,218 +218,6 @@ class BuildingController extends DocumentController
 		}
 	}
 
-	/**
-	 * @OA\Get(
-	 *     path="/bookingfrontend/buildings/{id}/schedule",
-	 *     summary="Get schedules for a single date or multiple weeks",
-	 *     tags={"Buildings"},
-	 *     @OA\Parameter(
-	 *         name="id",
-	 *         in="path",
-	 *         required=true,
-	 *         description="Building ID",
-	 *         @OA\Schema(type="integer")
-	 *     ),
-	 *     @OA\Parameter(
-	 *         name="date",
-	 *         in="query",
-	 *         required=false,
-	 *         description="Single date to get schedule for (format: YYYY-MM-DD)",
-	 *         @OA\Schema(type="string", format="date", example="2025-03-17")
-	 *     ),
-	 *     @OA\Parameter(
-	 *         name="dates[]",
-	 *         in="query",
-	 *         required=false,
-	 *         description="Array of dates to get schedules for (overrides single date if both provided)",
-	 *         @OA\Schema(
-	 *             type="array",
-	 *             @OA\Items(type="string", format="date", example="2025-03-17")
-	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=200,
-	 *         description="Building schedules mapped by week start date",
-	 *         @OA\JsonContent(
-	 *             type="object",
-	 *             @OA\AdditionalProperties(
-	 *                 description="Weekly schedule array keyed by week start date (Monday)",
-	 *                 type="array",
-	 *                 @OA\Items(
-	 *                     oneOf={
-	 *                         @OA\Schema(ref="#/components/schemas/Event"),
-	 *                         @OA\Schema(ref="#/components/schemas/Booking"),
-	 *                         @OA\Schema(ref="#/components/schemas/Allocation")
-	 *                     }
-	 *                 )
-	 *             ),
-	 *             example={
-	 *                 "2025-03-17": {
-	 *                     {
-	 *                         "type": "allocation",
-	 *                         "organization_id": 733,
-	 *                         "season_id": 1024,
-	 *                         "id_string": "497574",
-	 *                         "additional_invoice_information": "",
-	 *                         "organization_name": "Skjold Nesttun Janitsjar",
-	 *                         "organization_shortname": "",
-	 *                         "id": 497574,
-	 *                         "active": 1,
-	 *                         "from_": "2025-03-23T17:00:00+01:00",
-	 *                         "to_": "2025-03-23T18:00:00+01:00",
-	 *                         "completed": 0,
-	 *                         "building_name": "Fana kulturhus",
-	 *                         "skip_bas": 0,
-	 *                         "resources": {
-	 *                             {
-	 *                                 "id": 125,
-	 *                                 "name": "Kultursalen",
-	 *                                 "activity_id": 1
-	 *                             },
-	 *                             {
-	 *                                 "id": 106,
-	 *                                 "name": "Småsalen",
-	 *                                 "activity_id": 1
-	 *                             }
-	 *                         }
-	 *                     },
-	 *                     {
-	 *                         "type": "booking",
-	 *                         "group_id": 995,
-	 *                         "allocation_id": 497594,
-	 *                         "season_id": 1024,
-	 *                         "activity_id": 1,
-	 *                         "reminder": 1,
-	 *                         "secret": "265a4cc74c8c2e371e4ecd8698499f2b",
-	 *                         "group_name": "Skjold Nesttun Janitsjar",
-	 *                         "activity_name": "Kultur",
-	 *                         "id": 215652,
-	 *                         "active": 1,
-	 *                         "from_": "2025-03-20T16:00:00+01:00",
-	 *                         "to_": "2025-03-20T20:00:00+01:00",
-	 *                         "completed": 0,
-	 *                         "building_name": "Fana kulturhus",
-	 *                         "skip_bas": 0,
-	 *                         "resources": {
-	 *                             {
-	 *                                 "id": 482,
-	 *                                 "name": "Anretning",
-	 *                                 "activity_id": 1
-	 *                             },
-	 *                             {
-	 *                                 "id": 125,
-	 *                                 "name": "Kultursalen",
-	 *                                 "activity_id": 1
-	 *                             }
-	 *                         }
-	 *                     }
-	 *                 }
-	 *             }
-	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=400,
-	 *         description="Invalid date format",
-	 *         @OA\JsonContent(
-	 *             @OA\Property(property="error", type="string", example="Invalid date format: 2025-13-45")
-	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=404,
-	 *         description="Building not found",
-	 *         @OA\JsonContent(
-	 *             @OA\Property(property="error", type="string", example="Building not found")
-	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=500,
-	 *         description="Server error",
-	 *         @OA\JsonContent(
-	 *             @OA\Property(property="error", type="string")
-	 *         )
-	 *     )
-	 * )
-	 */
-	public function getSchedule(Request $request, Response $response, array $args): Response
-	{
-		try
-		{
-			$building_id = (int)$args['id'];
-
-			// Verify building exists
-			$sql = "SELECT id FROM bb_building WHERE id = :id";
-			$stmt = $this->db->prepare($sql);
-			$stmt->bindParam(':id', $building_id, \PDO::PARAM_INT);
-			$stmt->execute();
-
-			if (!$stmt->fetch())
-			{
-				return ResponseHelper::sendErrorResponse(
-					['error' => 'Building not found'],
-					404
-				);
-			}
-
-			$queryParams = $request->getQueryParams();
-
-			// Check for dates array first, then single date, then default to current date
-			if (isset($queryParams['dates']) && is_array($queryParams['dates']))
-			{
-				$dates = $queryParams['dates'];
-			} elseif (isset($queryParams['date']))
-			{
-				$dates = [$queryParams['date']];
-			} else
-			{
-				$dates = [date('Y-m-d')];
-			}
-
-			// Convert dates to DateTime objects and validate
-			$dateTimes = array_map(function ($dateStr)
-			{
-				try
-				{
-					return new DateTime($dateStr);
-				} catch (\Exception $e)
-				{
-					throw new \InvalidArgumentException("Invalid date format: {$dateStr}");
-				}
-			}, $dates);
-
-			// Get schedules from service
-			$schedules = $this->buildingScheduleService->getWeeklySchedules($building_id, $dateTimes);
-
-			// For single date requests, also include the direct date as a key
-//            if (count($dates) === 1 && isset($queryParams['date'])) {
-//                $singleDate = new DateTime($queryParams['date']);
-//                $weekStart = clone $singleDate;
-//                if ($weekStart->format('w') != 1) {
-//                    $weekStart->modify('last monday');
-//                }
-//                $weekStartStr = $weekStart->format('Y-m-d');
-//
-//                // Add the specific date as a key pointing to the same schedule
-//                $schedules[$singleDate->format('Y-m-d')] = $schedules[$weekStartStr];
-//            }
-
-			$response->getBody()->write(json_encode($schedules));
-			return $response->withHeader('Content-Type', 'application/json');
-
-		} catch (\InvalidArgumentException $e)
-		{
-			return ResponseHelper::sendErrorResponse(
-				['error' => $e->getMessage()],
-				400
-			);
-		} catch (Exception $e)
-		{
-			$error = "Error fetching building schedule: " . $e->getMessage();
-			return ResponseHelper::sendErrorResponse(
-				['error' => $error],
-				500
-			);
-		}
-	}
 
 	/**
 	 * @OA\Get(

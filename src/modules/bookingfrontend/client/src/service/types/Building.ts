@@ -37,8 +37,8 @@ export interface IBuilding {
     /** Location code of the building */
     location_code?: string;
 
-    /** Whether the calendar is deactivated, 0 or 1 */
-    deactivate_calendar: number;
+    /** Whether the calendar is deactivated */
+    deactivate_calendar: boolean;
 
     /** Whether applications are deactivated, 0 or 1 */
     deactivate_application: number;

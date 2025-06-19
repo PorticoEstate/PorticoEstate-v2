@@ -4,9 +4,13 @@ namespace App\modules\bookingfrontend\services;
 
 use App\Database\Db;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\helpers\ApplicationHelper;
+use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\models\Event;
 use App\modules\bookingfrontend\models\Booking;
 use App\modules\bookingfrontend\models\Allocation;
+use App\modules\phpgwapi\models\ServerSettings;
+use GuzzleHttp\Psr7\ServerRequest;
 use PDO;
 use DateTime;
 use Exception;
@@ -18,11 +22,15 @@ class ScheduleEntityService
 {
     private $db;
     private $bouser;
+    private $applicationHelper;
+    private $applicationRepository;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->bouser = new UserHelper();
+        $this->applicationHelper = new ApplicationHelper();
+        $this->applicationRepository = new ApplicationRepository();
     }
 
     /**
@@ -46,12 +54,16 @@ class ScheduleEntityService
                     WHERE e.application_id = ? AND e.active = 1
                     ORDER BY e.from_ ASC";
 
-
-
             $stmt = $this->db->prepare($sql);
             $stmt->execute([$applicationId]);
 
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            // Get application data for permission checking
+            $application = $this->applicationRepository->getApplicationById($applicationId);
+
+            // Load booking configuration
+            $config = $this->loadBookingConfig();
 
             // Get User orgs for serialization
             $userOrgs = $this->bouser->organizations ? array_column($this->bouser->organizations, 'orgnr') : null;
@@ -60,7 +72,12 @@ class ScheduleEntityService
             foreach ($this->groupByEntity($rows) as $eventGroup) {
                 $event = new Event($eventGroup[0]);
                 $event->resources = array_map([$this, 'formatResource'], $eventGroup);
-                $results[] = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
+                
+                // Add edit/cancel links
+                $eventData = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
+                $this->addEditCancelLinks($eventData, $config, 'event', $application);
+                
+                $results[] = $eventData;
             }
 
             return $results;
@@ -100,11 +117,22 @@ class ScheduleEntityService
 
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
+            // Get application data for permission checking
+            $application = $this->applicationRepository->getApplicationById($applicationId);
+
+            // Load booking configuration
+            $config = $this->loadBookingConfig();
+
             $results = [];
             foreach ($this->groupByEntity($rows) as $allocationGroup) {
                 $allocation = new Allocation($allocationGroup[0]);
                 $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
-                $results[] = $allocation->serialize();
+                
+                // Add edit/cancel links
+                $allocationData = $allocation->serialize();
+                $this->addEditCancelLinks($allocationData, $config, 'allocation', $application);
+                
+                $results[] = $allocationData;
             }
 
             return $results;
@@ -144,6 +172,12 @@ class ScheduleEntityService
 
             $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
+            // Get application data for permission checking
+            $application = $this->applicationRepository->getApplicationById($applicationId);
+
+            // Load booking configuration
+            $config = $this->loadBookingConfig();
+
             // Get User groups for serialization
             $userGroups = $this->bouser->getUserGroups();
             $userGroupIds = $userGroups ? array_column($userGroups, 'id') : null;
@@ -152,7 +186,12 @@ class ScheduleEntityService
             foreach ($this->groupByEntity($rows) as $bookingGroup) {
                 $booking = new Booking($bookingGroup[0]);
                 $booking->resources = array_map([$this, 'formatResource'], $bookingGroup);
-                $results[] = $booking->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
+                
+                // Add edit/cancel links
+                $bookingData = $booking->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
+                $this->addEditCancelLinks($bookingData, $config, 'booking', $application);
+                
+                $results[] = $bookingData;
             }
 
             return $results;
@@ -702,4 +741,129 @@ class ScheduleEntityService
             throw new Exception("Error fetching events for resource {$resource_id}: " . $e->getMessage());
         }
     }
+
+    /**
+     * Load booking configuration using ServerSettings
+     * @return \App\modules\booking\models\BookingConfig
+     */
+    private function loadBookingConfig()
+    {
+        $serverSettings = ServerSettings::getInstance(true);
+        return $serverSettings->booking_config;
+    }
+
+    /**
+     * Add edit/cancel links to schedule entity data
+     * @param array &$entityData Reference to entity data array
+     * @param \App\modules\booking\models\BookingConfig $config Configuration data
+     * @param string $entityType Type of entity (booking, allocation, event)
+     * @param array|null $application Application data for permission checking
+     * @return void
+     */
+    private function addEditCancelLinks(array &$entityData, $config, string $entityType, ?array $application = null): void
+    {
+        $entityData['edit_link'] = null;
+        $entityData['cancel_link'] = null;
+
+        // Check if user is logged in
+        if (!$this->bouser->is_logged_in()) {
+            return;
+        }
+        
+        // Check application access if we have application data
+        $hasApplicationAccess = true;
+        if ($application) {
+            $mockRequest = new ServerRequest('GET', '');
+            $hasApplicationAccess = $this->applicationHelper->canModifyApplication($application, $mockRequest);
+        }
+        
+        if (!$hasApplicationAccess) {
+            return;
+        }
+
+        $hasPermission = false;
+        $canDelete = false;
+
+        switch ($entityType) {
+            case 'booking':
+                $groupId = $entityData['group_id'] ?? 0;
+                $hasPermission = $this->bouser->is_group_admin($groupId);
+                $canDelete = ($config->user_can_delete_bookings ?? 'no') === 'yes';
+                break;
+            case 'allocation':
+                $orgId = $entityData['organization_id'] ?? 0;
+                $hasPermission = $this->bouser->is_organization_admin($orgId);
+                $canDelete = ($config->user_can_delete_allocations ?? 'no') === 'yes';
+                break;
+            case 'event':
+                // For events created from applications, use application modify permission
+                if ($application) {
+                    $mockRequest = new ServerRequest('GET', '');
+                    $hasPermission = $this->applicationHelper->canModifyApplication($application, $mockRequest);
+                } else {
+                    $hasPermission = false;
+                }
+                $canDelete = ($config->user_can_delete_events ?? 'no') === 'yes';
+                break;
+        }
+
+        if (!$hasPermission) {
+            return;
+        }
+
+        $fromDate = $entityData['from_'] ?? null;
+        if (!$fromDate || $fromDate <= date('Y-m-d H:i:s')) {
+            return;
+        }
+
+        $resourceIds = isset($entityData['resources']) ? array_column($entityData['resources'], 'id') : [];
+
+        // Generate edit link
+        $entityData['edit_link'] = $this->generateLink([
+            'menuaction' => "bookingfrontend.ui{$entityType}.edit",
+            'id' => $entityData['id'],
+            'resource_ids' => $resourceIds
+        ]);
+
+        // Generate cancel link if allowed
+        if ($canDelete) {
+            $entityData['cancel_link'] = $this->generateLink([
+                'menuaction' => "bookingfrontend.ui{$entityType}.cancel",
+                'id' => $entityData['id'],
+                'resource_ids' => $resourceIds
+            ]);
+        }
+    }
+
+    /**
+     * Generate link URL for frontend actions
+     * @param array $params URL parameters
+     * @return string Generated URL
+     */
+    private function generateLink(array $params): string
+    {
+        // Handle resource_ids array properly
+        if (isset($params['resource_ids']) && is_array($params['resource_ids'])) {
+            $query = '';
+            $otherParams = $params;
+            $resourceIds = $otherParams['resource_ids'];
+            unset($otherParams['resource_ids']);
+            
+            // Add non-array parameters
+            if (!empty($otherParams)) {
+                $query = http_build_query($otherParams);
+            }
+            
+            // Add resource_ids as array parameters
+            foreach ($resourceIds as $resourceId) {
+                $query .= ($query ? '&' : '') . 'resource_ids[]=' . urlencode($resourceId);
+            }
+            
+            return "/bookingfrontend/?{$query}";
+        }
+        
+        $query = http_build_query($params);
+        return "/bookingfrontend/?{$query}";
+    }
+
 }

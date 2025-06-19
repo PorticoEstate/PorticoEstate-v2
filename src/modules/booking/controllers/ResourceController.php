@@ -3,6 +3,10 @@
 namespace App\modules\booking\controllers;
 
 use App\modules\bookingfrontend\services\ScheduleEntityService;
+use App\modules\phpgwapi\services\Settings;
+use App\Database\Db;
+use App\modules\bookingfrontend\models\Resource;
+
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -12,10 +16,89 @@ use Exception;
 class ResourceController
 {
 	protected ScheduleEntityService $scheduleEntityService;
+	protected array $userSettings;
+	protected Db $db;
 
 	public function __construct(ContainerInterface $container)
 	{
 		$this->scheduleEntityService = new ScheduleEntityService($container);
+		$this->userSettings = Settings::getInstance()->get('user');
+		$this->db = Db::getInstance();
+	}
+
+	public function index(Request $request, Response $response): Response
+	{
+		$maxMatches = isset($this->userSettings['preferences']['common']['maxmatchs']) ? (int)$this->userSettings['preferences']['common']['maxmatchs'] : 15;
+		$queryParams = $request->getQueryParams();
+		$start = isset($queryParams['start']) ? (int)$queryParams['start'] : 0;
+		$short = isset($queryParams['short']) && $queryParams['short'] == '1';
+		$perPage = isset($queryParams['results']) ? (int)$queryParams['results'] : $maxMatches;
+		$sort = $queryParams['sort'] ?? 'id';
+		$dir = $queryParams['dir'] ?? 'asc';
+
+		// Validate and sanitize the sort field to prevent SQL injection
+		$allowedSortFields = ['id', 'name', 'activity_id', 'sort'];
+		$sort = in_array($sort, $allowedSortFields) ? $sort : 'id';
+		$dir = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
+
+		$sql = "SELECT r.*, br.building_id
+                FROM bb_resource r
+                LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                WHERE r.active = 1 AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)
+                ORDER BY r.$sort $dir";
+
+		if ($perPage > 0)
+		{
+			$sql .= " LIMIT :limit OFFSET :start";
+		}
+
+		try
+		{
+			$stmt = $this->db->prepare($sql);
+			if ($perPage > 0)
+			{
+				$stmt->bindParam(':limit', $perPage, \PDO::PARAM_INT);
+				$stmt->bindParam(':start', $start, \PDO::PARAM_INT);
+			}
+			$stmt->execute();
+			$results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+			$resources = array_map(function ($data) use ($short)
+			{
+				$resource = new Resource($data);
+				return $resource->serialize([], $short);
+			}, $results);
+
+			$totalCount = $this->getTotalCount();
+
+			$responseData = [
+				'total_records' => $totalCount,
+				'start' => $start,
+				'sort' => $sort,
+				'dir' => $dir,
+				'results' => $resources
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		}
+		catch (Exception $e)
+		{
+			$error = "Error fetching resources: " . $e->getMessage();
+			$response->getBody()->write(json_encode(['error' => $error]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	private function getTotalCount(): int
+	{
+		$sql = "SELECT COUNT(DISTINCT r.id)
+                FROM bb_resource r
+                LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                WHERE r.active = 1";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute();
+		return $stmt->fetchColumn();
 	}
 
 	/**

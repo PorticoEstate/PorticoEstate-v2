@@ -26,7 +26,7 @@ export default async function Layout(props: PropsWithChildren) {
 				<Alert data-color="warning" style={{marginBottom: '1rem'}}>
 					{frontImageText.title && <strong>{frontImageText.title}</strong>}
 					{frontImageText.title && frontImageText.body && <br />}
-					{frontImageText.body}
+					<span style={{whiteSpace: 'pre-line'}}>{frontImageText.body}</span>
 				</Alert>
 			)}
 
@@ -35,7 +35,7 @@ export default async function Layout(props: PropsWithChildren) {
 				<div data-color="info" style={{marginBottom: '1rem'}}>
 					{frontPageText.title && <Heading level={4} data-size={'md'} style={{margin:0 }}>{frontPageText.title}</Heading>}
 					{/*{frontPageText.title && frontPageText.body && <br />}*/}
-					{frontPageText.body}
+					<span style={{whiteSpace: 'pre-line'}}>{frontPageText.body}</span>
 				</div>
 			)}
 			<ClientHeading>

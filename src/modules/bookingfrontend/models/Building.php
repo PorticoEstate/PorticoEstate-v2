@@ -177,7 +177,8 @@ class Building
 
     /**
      * @ORM\Column(type="integer", options={"default" : 0})
-     * @Expose
+	 * @Expose
+	 * @ParseBool
      * @Short
      * @OA\Property(
      *      description="Whether applications are deactivated, 0 or 1",

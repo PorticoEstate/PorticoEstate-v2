@@ -37,6 +37,7 @@ import ArticleTable from "@/components/article-table/article-table";
 import {ArticleOrder} from "@/service/types/api/order-articles.types";
 import {isDevMode} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
+import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 
 interface ApplicationCrudProps {
     selectedTempApplication?: Partial<FCallTempEvent>;
@@ -334,10 +335,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				description: existingApplication.description || '',
 				equipment: existingApplication.equipment || '',
 				organizer: existingApplication.organizer || '',
-				resources: existingApplication.resources?.filter(res => !res.deactivate_application).map((res) => res.id.toString()) ||
+				resources: existingApplication.resources?.filter(res => props.building ? !isApplicationDeactivated(res, props.building) : !res.deactivate_application).map((res) => res.id.toString()) ||
 					props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
 						const resource = buildingResources?.find(r => r.id === +resId);
-						return !resource?.deactivate_application;
+						return resource && props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application;
 					}).map(String) ||
 					[],
 				audience: existingApplication.audience || undefined,
@@ -407,7 +408,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			equipment: props.lastSubmittedData?.equipment ?? '',
 			resources: props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
 				const resource = buildingResources?.find(r => r.id === +resId);
-				return !resource?.deactivate_application;
+				return resource && props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application;
 			}).map(String) ?? [],
 			audience: props.lastSubmittedData?.audience ?? undefined,
 			articles: props.lastSubmittedData?.articles ?? [],
@@ -766,7 +767,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const toggleResource = (resourceId: string) => {
         // Check if resource is deactivated
         const resource = buildingResources?.find(r => r.id === +resourceId);
-        if (resource?.deactivate_application) {
+        if (resource && props.building ? isApplicationDeactivated(resource, props.building) : resource?.deactivate_application) {
             return; // Prevent selection of deactivated resources
         }
 
@@ -788,7 +789,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
         if (!buildingResources) return;
 
         // Filter out deactivated resources
-        const activeResources = buildingResources.filter(r => !r.deactivate_application);
+        const activeResources = buildingResources.filter(r => props.building ? !isApplicationDeactivated(r, props.building) : !r.deactivate_application);
         const allActiveResourceIds = activeResources.map(r => String(r.id));
         
         if (selectedResources.length === activeResources.length) {
@@ -892,13 +893,13 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                 data-color={'brand1'}
                                 data-size={"md"}
                                 checked={selectedResources.includes(String(resource.id))}
-                                disabled={resource.deactivate_application}
+                                disabled={props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application}
                                 onChange={() => toggleResource(String(resource.id))}
-                                className={`${styles.resourceItem} ${resource.deactivate_application ? styles.deactivated : ''}`}
+                                className={`${styles.resourceItem} ${props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application ? styles.deactivated : ''}`}
                             >
                                 <ColourCircle resourceId={resource.id} size="medium"/>
                                 <span>{resource.name}</span>
-                                {resource.deactivate_application && (
+                                {(props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application) && (
                                     <span className={styles.deactivatedText}>
                                         ({t('bookingfrontend.booking_unavailable')})
                                     </span>

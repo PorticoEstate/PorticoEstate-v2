@@ -30,6 +30,7 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {Season} from "@/service/types/Building";
 import {useBuilding, useBuildingResources} from "@/service/api/building";
 import { useToast } from "@/components/toast/toast-context";
+import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 
 interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
@@ -367,7 +368,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		const selectedResources = [...enabledResources].map(Number);
 		const deactivatedResources = selectedResources.filter(resourceId => {
 			const resource = resources?.find(r => r.id === resourceId);
-			return resource?.deactivate_application;
+			return resource && building ? isApplicationDeactivated(resource, building) : resource?.deactivate_application;
 		});
 
 		if (deactivatedResources.length > 0) {

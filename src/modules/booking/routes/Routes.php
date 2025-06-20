@@ -26,7 +26,17 @@ $app->group('/booking/resources', function (RouteCollectorProxy $group)
 {
 	$group->get('', ResourceController::class . ':index');
 	$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
-	$group->post('/{resource_id}/events', EventController::class . ':createForResource');
+	$group->post('/{resource_id}/events', EventController::class . ':createForResource');// Create an event for a specific resource
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/events', function (RouteCollectorProxy $group)
+{
+	//create an event for array of resources
+	$group->post('', EventController::class . ':createEvent');
+	$group->put('/{event_id}', EventController::class . ':updateEvent');
+	$group->patch('/{event_id}/toggle-active', EventController::class . ':toggleActiveStatus');
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

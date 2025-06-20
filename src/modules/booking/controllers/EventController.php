@@ -494,4 +494,542 @@ class EventController
 		// No conflicts found
 		return null;
 	}
+
+	/**
+	 * @OA\Put(
+	 *     path="/booking/events/{event_id}",
+	 *     summary="Update an existing event",
+	 *     description="Updates an existing event. Can be used for calendar bridge synchronization or admin updates.",
+	 *     tags={"Events"},
+	 *     @OA\Parameter(
+	 *         name="event_id",
+	 *         in="path",
+	 *         description="ID of the event to update",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         description="Updated event data",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="title", type="string", description="Event title", example="Updated Team Meeting"),
+	 *             @OA\Property(property="from_", type="string", format="date-time", description="Event start time (ISO 8601)", example="2025-06-25T15:30:00+02:00"),
+	 *             @OA\Property(property="to_", type="string", format="date-time", description="Event end time (ISO 8601)", example="2025-06-25T16:30:00+02:00"),
+	 *             @OA\Property(property="description", type="string", description="Event description", example="Updated weekly team sync meeting"),
+	 *             @OA\Property(property="contact_name", type="string", description="Contact name", example="john.doe@company.com"),
+	 *             @OA\Property(property="contact_email", type="string", description="Contact email", example="attendee@company.com"),
+	 *             @OA\Property(property="contact_phone", type="string", description="Contact phone", example="+47 123 45 678"),
+	 *             @OA\Property(property="equipment", type="string", description="Required equipment", example="Projector, Whiteboard"),
+	 *             @OA\Property(property="participant_limit", type="integer", description="Maximum participants", example=20)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Event updated successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean", example=true),
+	 *             @OA\Property(property="message", type="string", example="Event updated successfully"),
+	 *             @OA\Property(property="event", type="object", ref="#/components/schemas/Event")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Bad request - Invalid input data",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Invalid date format or data")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Event not found",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Event not found")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=409,
+	 *         description="Conflict - Time conflict with other events",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Time conflict: Overlaps with existing event #123")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Failed to update event")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function updateEvent(Request $request, Response $response, array $args): Response
+	{
+		try
+		{
+			$eventId = (int)$args['event_id'];
+
+			// Validate event ID
+			if ($eventId <= 0)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Invalid event ID']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Check if event exists and get current data
+			$currentEvent = $this->getEventById($eventId);
+			if (!$currentEvent)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Event not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			// Parse request data (handle both JSON and form-encoded data)
+			$updateData = [];
+			$contentType = $request->getHeaderLine('Content-Type');
+
+			if (strpos($contentType, 'application/json') !== false)
+			{
+				// Handle JSON data
+				$body = $request->getBody()->getContents();
+				$updateData = json_decode($body, true);
+
+				if (json_last_error() !== JSON_ERROR_NONE)
+				{
+					$response->getBody()->write(json_encode(['error' => 'Invalid JSON format']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+			}
+			else
+			{
+				// Handle form-encoded data
+				$updateData = $request->getParsedBody() ?: [];
+			}
+
+			if (empty($updateData))
+			{
+				$response->getBody()->write(json_encode(['error' => 'No update data provided']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Validate and parse dates if provided
+			$fromDate = null;
+			$toDate = null;
+			if (isset($updateData['from_']) || isset($updateData['to_']))
+			{
+				try
+				{
+					$fromDate = new \DateTime($updateData['from_'] ?? $currentEvent['from_']);
+					$toDate = new \DateTime($updateData['to_'] ?? $currentEvent['to_']);
+
+					if ($fromDate >= $toDate)
+					{
+						$response->getBody()->write(json_encode(['error' => 'End time must be after start time']));
+						return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+					}
+				}
+				catch (\Exception $e)
+				{
+					$response->getBody()->write(json_encode(['error' => 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS±HH:MM)']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+
+				// Check for time conflicts if dates are being changed
+				$resourceIds = $this->getEventResourceIds($eventId);
+				foreach ($resourceIds as $resourceId)
+				{
+					$conflictCheck = $this->checkEventConflictsForUpdate($eventId, $resourceId, $fromDate, $toDate, $updateData);
+					if ($conflictCheck !== null)
+					{
+						$response->getBody()->write(json_encode(['error' => $conflictCheck]));
+						return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+					}
+				}
+			}
+
+			// Update event in database
+			$success = $this->updateEventInDatabase($eventId, $updateData, $fromDate, $toDate);
+
+			if (!$success)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Failed to update event']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			}
+
+			// Get updated event data
+			$updatedEvent = $this->getEventById($eventId);
+
+			// Return success response
+			$responseData = [
+				'success' => true,
+				'message' => 'Event updated successfully',
+				'event' => $updatedEvent
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		}
+		catch (Exception $e)
+		{
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * Get event by ID
+	 */
+	private function getEventById(int $eventId): ?array
+	{
+		$sql = "SELECT e.*, 
+				   ARRAY_AGG(DISTINCT er.resource_id) as resource_ids,
+				   bb_building.name as building_name
+				FROM bb_event e
+				LEFT JOIN bb_event_resource er ON e.id = er.event_id
+				LEFT JOIN bb_building ON e.building_id = bb_building.id
+				WHERE e.id = :event_id AND e.active = 1
+				GROUP BY e.id, bb_building.name";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([':event_id' => $eventId]);
+		return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+	}
+
+	/**
+	 * Get resource IDs associated with an event
+	 */
+	private function getEventResourceIds(int $eventId): array
+	{
+		$sql = "SELECT resource_id FROM bb_event_resource WHERE event_id = :event_id";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([':event_id' => $eventId]);
+		return $stmt->fetchAll(PDO::FETCH_COLUMN);
+	}
+
+	/**
+	 * Check for event conflicts during update (excludes the current event)
+	 */
+	private function checkEventConflictsForUpdate(int $eventId, int $resourceId, \DateTime $fromDate, \DateTime $toDate, array $eventData): ?string
+	{
+		$start = $fromDate->format('Y-m-d H:i:s');
+		$end = $toDate->format('Y-m-d H:i:s');
+
+		// Check for overlapping events (excluding the current event)
+		$overlapSql = "SELECT e.id, e.name FROM bb_event e
+			WHERE e.active = 1 
+			AND e.id != :event_id
+			AND e.id IN (SELECT event_id FROM bb_event_resource WHERE resource_id = :resource_id)
+			AND ((e.from_ >= :start AND e.from_ < :end) OR
+				 (e.to_ > :start AND e.to_ <= :end) OR
+				 (e.from_ < :start AND e.to_ > :end))";
+
+		$overlapStmt = $this->db->prepare($overlapSql);
+		$overlapStmt->execute([
+			':event_id' => $eventId,
+			':resource_id' => $resourceId,
+			':start' => $start,
+			':end' => $end
+		]);
+
+		if ($overlapResult = $overlapStmt->fetch(PDO::FETCH_ASSOC))
+		{
+			return "Time conflict: Overlaps with existing event #{$overlapResult['id']} - {$overlapResult['name']}";
+		}
+
+		// Check for overlapping allocations
+		$allocationOverlapSql = "SELECT a.id FROM bb_allocation a
+			WHERE a.active = 1 
+			AND a.id IN (SELECT allocation_id FROM bb_allocation_resource WHERE resource_id = :resource_id)
+			AND ((a.from_ >= :start AND a.from_ < :end) OR
+				 (a.to_ > :start AND a.to_ <= :end) OR
+				 (a.from_ < :start AND a.to_ > :end))";
+
+		$allocationStmt = $this->db->prepare($allocationOverlapSql);
+		$allocationStmt->execute([
+			':resource_id' => $resourceId,
+			':start' => $start,
+			':end' => $end
+		]);
+
+		if ($allocationResult = $allocationStmt->fetch(PDO::FETCH_ASSOC))
+		{
+			return "Time conflict: Overlaps with existing allocation #{$allocationResult['id']}";
+		}
+
+		// Check for overlapping bookings
+		$bookingOverlapSql = "SELECT b.id FROM bb_booking b
+			WHERE b.active = 1 
+			AND b.id IN (SELECT booking_id FROM bb_booking_resource WHERE resource_id = :resource_id)
+			AND ((b.from_ >= :start AND b.from_ < :end) OR
+				 (b.to_ > :start AND b.to_ <= :end) OR
+				 (b.from_ < :start AND b.to_ > :end))";
+
+		$bookingStmt = $this->db->prepare($bookingOverlapSql);
+		$bookingStmt->execute([
+			':resource_id' => $resourceId,
+			':start' => $start,
+			':end' => $end
+		]);
+
+		if ($bookingResult = $bookingStmt->fetch(PDO::FETCH_ASSOC))
+		{
+			return "Time conflict: Overlaps with existing booking #{$bookingResult['id']}";
+		}
+
+		// No conflicts found
+		return null;
+	}
+
+	/**
+	 * @OA\Patch(
+	 *     path="/booking/events/{event_id}/toggle-active",
+	 *     summary="Toggle the active status of an event",
+	 *     description="Toggles the active flag of an event (soft delete/activate). When active=0, the event is effectively deleted but preserved in the database.",
+	 *     tags={"Events"},
+	 *     @OA\Parameter(
+	 *         name="event_id",
+	 *         in="path",
+	 *         description="ID of the event to toggle",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\RequestBody(
+	 *         required=false,
+	 *         description="Optional: explicitly set active status",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="active", type="boolean", description="Set active status explicitly (if not provided, it will be toggled)", example=false)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Event active status toggled successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean", example=true),
+	 *             @OA\Property(property="message", type="string", example="Event activated successfully"),
+	 *             @OA\Property(property="event_id", type="integer", example=123),
+	 *             @OA\Property(property="active", type="boolean", example=true)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Bad request - Invalid event ID",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Invalid event ID")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Event not found",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Event not found")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Failed to update event status")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function toggleActiveStatus(Request $request, Response $response, array $args): Response
+	{
+		try
+		{
+			$eventId = (int)$args['event_id'];
+
+			// Validate event ID
+			if ($eventId <= 0)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Invalid event ID']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Get current event (including inactive ones for this operation)
+			$currentEvent = $this->getEventByIdIncludingInactive($eventId);
+			if (!$currentEvent)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Event not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			// Parse request data to check if active status is explicitly provided
+			$requestData = [];
+			$contentType = $request->getHeaderLine('Content-Type');
+
+			if (strpos($contentType, 'application/json') !== false)
+			{
+				$body = $request->getBody()->getContents();
+				if (!empty($body))
+				{
+					$requestData = json_decode($body, true);
+					if (json_last_error() !== JSON_ERROR_NONE)
+					{
+						$response->getBody()->write(json_encode(['error' => 'Invalid JSON format']));
+						return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+					}
+				}
+			}
+			else
+			{
+				$requestData = $request->getParsedBody() ?: [];
+			}
+
+			// Determine new active status
+			$newActiveStatus = isset($requestData['active']) 
+				? (bool)$requestData['active'] 
+				: !((bool)$currentEvent['active']); // Toggle if not explicitly set
+
+			// Update active status in database
+			$success = $this->updateEventActiveStatus($eventId, $newActiveStatus);
+
+			if (!$success)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Failed to update event status']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			}
+
+			// Prepare response message
+			$message = $newActiveStatus ? 'Event activated successfully' : 'Event deactivated successfully';
+
+			// Return success response
+			$responseData = [
+				'success' => true,
+				'message' => $message,
+				'event_id' => $eventId,
+				'active' => $newActiveStatus
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		}
+		catch (Exception $e)
+		{
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * Get event by ID including inactive events
+	 */
+	private function getEventByIdIncludingInactive(int $eventId): ?array
+	{
+		$sql = "SELECT e.*, 
+				   ARRAY_AGG(DISTINCT er.resource_id) as resource_ids,
+				   bb_building.name as building_name
+				FROM bb_event e
+				LEFT JOIN bb_event_resource er ON e.id = er.event_id
+				LEFT JOIN bb_building ON e.building_id = bb_building.id
+				WHERE e.id = :event_id
+				GROUP BY e.id, bb_building.name";
+
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([':event_id' => $eventId]);
+		return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+	}
+
+	/**
+	 * Update event active status in database
+	 */
+	private function updateEventActiveStatus(int $eventId, bool $active): bool
+	{
+		try
+		{
+			$sql = "UPDATE bb_event SET active = :active WHERE id = :event_id";
+			$stmt = $this->db->prepare($sql);
+			return $stmt->execute([
+				':active' => $active ? 1 : 0,
+				':event_id' => $eventId
+			]);
+		}
+		catch (Exception $e)
+		{
+			error_log("Error updating event active status: " . $e->getMessage());
+			return false;
+		}
+	}
+
+	/**
+	 * Update event record in the database
+	 */
+	private function updateEventInDatabase(int $eventId, array $updateData, ?\DateTime $fromDate, ?\DateTime $toDate): bool
+	{
+		try
+		{
+			$this->db->beginTransaction();
+
+			// Build update query dynamically based on provided data
+			$updateFields = [];
+			$updateParams = [':event_id' => $eventId];
+
+			// Map of allowed fields to update
+			$allowedFields = [
+				'title' => 'name',
+				'name' => 'name',
+				'description' => 'description',
+				'contact_name' => 'contact_name',
+				'contact_email' => 'contact_email',
+				'contact_phone' => 'contact_phone',
+				'organizer' => 'organizer',
+				'equipment' => 'equipment',
+				'participant_limit' => 'participant_limit',
+				'homepage' => 'homepage',
+				'is_public' => 'is_public',
+				'completed' => 'completed'
+			];
+
+			// Add fields to update
+			foreach ($allowedFields as $inputField => $dbField)
+			{
+				if (isset($updateData[$inputField]))
+				{
+					$updateFields[] = "$dbField = :$dbField";
+					$updateParams[":$dbField"] = $updateData[$inputField];
+				}
+			}
+
+			// Add date fields if provided
+			if ($fromDate && $toDate)
+			{
+				$updateFields[] = "from_ = :from_";
+				$updateFields[] = "to_ = :to_";
+				$updateParams[':from_'] = $fromDate->format('Y-m-d H:i:s');
+				$updateParams[':to_'] = $toDate->format('Y-m-d H:i:s');
+			}
+
+			if (empty($updateFields))
+			{
+				// No valid fields to update
+				$this->db->rollback();
+				return false;
+			}
+
+			// Update bb_event table
+			$updateSql = "UPDATE bb_event SET " . implode(', ', $updateFields) . " WHERE id = :event_id";
+			$updateStmt = $this->db->prepare($updateSql);
+			$updateStmt->execute($updateParams);
+
+			// Update bb_event_date table if dates changed
+			if ($fromDate && $toDate)
+			{
+				$updateDateSql = "UPDATE bb_event_date SET from_ = :from_, to_ = :to_ WHERE event_id = :event_id";
+				$updateDateStmt = $this->db->prepare($updateDateSql);
+				$updateDateStmt->execute([
+					':event_id' => $eventId,
+					':from_' => $fromDate->format('Y-m-d H:i:s'),
+					':to_' => $toDate->format('Y-m-d H:i:s')
+				]);
+			}
+
+			$this->db->commit();
+			return true;
+		}
+		catch (Exception $e)
+		{
+			$this->db->rollback();
+			error_log("Error updating event: " . $e->getMessage());
+			return false;
+		}
+	}
 }

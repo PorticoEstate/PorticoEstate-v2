@@ -16,6 +16,7 @@ import CalendarResourceFilter from "@/components/building-calendar/modules/resou
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useBuilding} from "@/service/api/building";
 import { IResource } from '@/service/types/resource.types';
+import FullCalendar from "@fullcalendar/react";
 
 interface CalendarWrapperProps {
     initialFreeTime: Record<string, IFreeTimeSlot[]>; // [resourceId]: Array<IFreeTimeSlot>
@@ -47,6 +48,7 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
     const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!resourceId && !(window.innerWidth < 601));
     const [resourcesHidden, setSResourcesHidden] = useState<boolean>(!!resourceId || window.innerWidth < 601);
 	const [dates, setDates] = useState<DateTime[]>([DateTime.fromJSDate(initialDate)]);
+    const calendarRef = useRef<FullCalendar>(null);
 
 	const {data: _, isLoading, isStale} = useBuilding(building.id, undefined, building);
 
@@ -208,6 +210,12 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
         if (resourcesHidden) {
             setResourcesContainerRendered(false);
         }
+        
+        // Force FullCalendar to rerender after sidebar animation completes
+        if (calendarRef.current) {
+            const calendarApi = calendarRef.current.getApi();
+            calendarApi.render();
+        }
     };
 
 
@@ -242,6 +250,7 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                     buildingId={building.id}
                 />
                 <BuildingCalendarClient
+                    ref={calendarRef}
                     initialDate={DateTime.fromJSDate(initialDate)}
                     events={prioritizedEvents}
                     onDateChange={handleDateChange}

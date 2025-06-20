@@ -29,11 +29,11 @@ interface BuildingCalendarProps {
 Settings.defaultLocale = "nb";
 
 
-const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
+const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarProps>((props, ref) => {
 	const t = useTrans();
 	const {events} = props;
 	const [currentDate, setCurrentDate] = useState<DateTime>(props.initialDate);
-	const calendarRef = useRef<FullCalendar | null>(null);
+	const calendarRef = (ref as React.MutableRefObject<FullCalendar | null>) || useRef<FullCalendar | null>(null);
 	const [view, setView] = useState<string>(window.innerWidth < 601 ? 'timeGridDay' : 'timeGridWeek');
 	const [lastCalendarView, setLastCalendarView] = useState<string>('timeGridWeek');
 	const calendarViewMode = useCalenderViewMode();
@@ -203,7 +203,9 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
 		</React.Fragment>
 	);
-}
+});
+
+BuildingCalendarClient.displayName = 'BuildingCalendarClient';
 
 export default BuildingCalendarClient;
 

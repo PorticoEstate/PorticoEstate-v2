@@ -82,11 +82,12 @@ class OutlookHelper
 
 		$url = "{$this->baseurl}/mappings/resources";
 		$data = array(
-			'calendar_id' => $outlook_item_id,
-			'calendar_name' => $outlook_item_name,
-			'resource_id' => $resource_id,
 			'bridge_from' => 'booking_system',
-			'bridge_to' => 'bridge_to'
+			'bridge_to' => 'bridge_to',
+			'source_calendar_id' => $resource_id,
+			'source_calendar_name' => $resource_id,
+			'target_calendar_id' => $outlook_item_id,
+			'target_calendar_name' => $outlook_item_name,
 		);
 
 		//use the cURL library to post data (json) to the URL

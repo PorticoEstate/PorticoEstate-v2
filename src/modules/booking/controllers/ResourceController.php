@@ -466,6 +466,15 @@ class ResourceController
 				':resource_id' => $resourceId
 			]);
 
+			// Insert event date record
+			$eventDateSql = "INSERT INTO bb_event_date (event_id, from_, to_) VALUES (:event_id, :from_, :to_)";
+			$eventDateStmt = $this->db->prepare($eventDateSql);
+			$eventDateStmt->execute([
+				':event_id' => $eventId,
+				':from_' => $fromDate->format('Y-m-d H:i:s'),
+				':to_' => $toDate->format('Y-m-d H:i:s')
+			]);
+
 			$this->db->commit();
 			return (int)$eventId;
 

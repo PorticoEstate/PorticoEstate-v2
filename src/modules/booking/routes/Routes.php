@@ -8,6 +8,7 @@ use App\modules\phpgwapi\security\ApiKeyVerifier;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use App\modules\booking\controllers\VippsController;
 use App\modules\booking\controllers\ResourceController;
+use App\modules\booking\controllers\EventController;
 
 
 $app->group('/booking/users', function (RouteCollectorProxy $group) {
@@ -25,7 +26,7 @@ $app->group('/booking/resources', function (RouteCollectorProxy $group)
 {
 	$group->get('', ResourceController::class . ':index');
 	$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
-	$group->post('/{id}/events', ResourceController::class . ':createEvent');
+	$group->post('/{resource_id}/events', EventController::class . ':createForResource');
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

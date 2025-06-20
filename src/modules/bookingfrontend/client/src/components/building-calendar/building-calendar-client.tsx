@@ -29,7 +29,7 @@ interface BuildingCalendarProps {
 Settings.defaultLocale = "nb";
 
 
-const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
+const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarProps>((props, ref) => {
 	const t = useTrans();
 	const {events} = props;
 	const [currentDate, setCurrentDate] = useState<DateTime>(props.initialDate);
@@ -203,7 +203,9 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
 		</React.Fragment>
 	);
-}
+});
+
+BuildingCalendarClient.displayName = 'BuildingCalendarClient';
 
 export default BuildingCalendarClient;
 

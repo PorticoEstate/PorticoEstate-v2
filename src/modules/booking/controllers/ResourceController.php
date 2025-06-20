@@ -325,6 +325,13 @@ class ResourceController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
+			// Check for duplicates and overlaps
+			$conflictCheck = $this->checkEventConflicts($resourceId, $fromDate, $toDate, $eventData);
+			if ($conflictCheck !== null) {
+				$response->getBody()->write(json_encode(['error' => $conflictCheck]));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(409); // Conflict status
+			}
+
 			// Create event in database
 			$eventId = $this->createEventInDatabase($resourceId, $eventData, $fromDate, $toDate);
 
@@ -540,5 +547,95 @@ class ResourceController
 	private function generateEventSecret(): string
 	{
 		return bin2hex(random_bytes(16)); // 32 character hex string
+	}
+
+	/**
+	 * Check for event conflicts (duplicates and overlaps)
+	 */
+	private function checkEventConflicts(int $resourceId, \DateTime $fromDate, \DateTime $toDate, array $eventData): ?string
+	{
+		$start = $fromDate->format('Y-m-d H:i:s');
+		$end = $toDate->format('Y-m-d H:i:s');
+		
+		// Check for exact duplicates first (same resource, same time, same title)
+		$duplicateSql = "SELECT e.id FROM bb_event e
+			JOIN bb_event_resource er ON e.id = er.event_id
+			WHERE er.resource_id = :resource_id 
+			AND e.active = 1
+			AND e.from_ = :from_date
+			AND e.to_ = :to_date
+			AND e.name = :event_name";
+		
+		$duplicateStmt = $this->db->prepare($duplicateSql);
+		$duplicateStmt->execute([
+			':resource_id' => $resourceId,
+			':from_date' => $start,
+			':to_date' => $end,
+			':event_name' => $eventData['title']
+		]);
+		
+		if ($duplicateStmt->fetch()) {
+			return 'Duplicate event detected: An identical event already exists for this resource at the same time';
+		}
+		
+		// Check for overlapping events (based on soevent validation logic)
+		$overlapSql = "SELECT e.id, e.name FROM bb_event e
+			WHERE e.active = 1 
+			AND e.id IN (SELECT event_id FROM bb_event_resource WHERE resource_id = :resource_id)
+			AND ((e.from_ >= :start AND e.from_ < :end) OR
+				 (e.to_ > :start AND e.to_ <= :end) OR
+				 (e.from_ < :start AND e.to_ > :end))";
+		
+		$overlapStmt = $this->db->prepare($overlapSql);
+		$overlapStmt->execute([
+			':resource_id' => $resourceId,
+			':start' => $start,
+			':end' => $end
+		]);
+		
+		if ($overlapResult = $overlapStmt->fetch(PDO::FETCH_ASSOC)) {
+			return "Time conflict: Overlaps with existing event #{$overlapResult['id']} - {$overlapResult['name']}";
+		}
+		
+		// Check for overlapping allocations
+		$allocationOverlapSql = "SELECT a.id FROM bb_allocation a
+			WHERE a.active = 1 
+			AND a.id IN (SELECT allocation_id FROM bb_allocation_resource WHERE resource_id = :resource_id)
+			AND ((a.from_ >= :start AND a.from_ < :end) OR
+				 (a.to_ > :start AND a.to_ <= :end) OR
+				 (a.from_ < :start AND a.to_ > :end))";
+		
+		$allocationStmt = $this->db->prepare($allocationOverlapSql);
+		$allocationStmt->execute([
+			':resource_id' => $resourceId,
+			':start' => $start,
+			':end' => $end
+		]);
+		
+		if ($allocationResult = $allocationStmt->fetch(PDO::FETCH_ASSOC)) {
+			return "Time conflict: Overlaps with existing allocation #{$allocationResult['id']}";
+		}
+		
+		// Check for overlapping bookings
+		$bookingOverlapSql = "SELECT b.id FROM bb_booking b
+			WHERE b.active = 1 
+			AND b.id IN (SELECT booking_id FROM bb_booking_resource WHERE resource_id = :resource_id)
+			AND ((b.from_ >= :start AND b.from_ < :end) OR
+				 (b.to_ > :start AND b.to_ <= :end) OR
+				 (b.from_ < :start AND b.to_ > :end))";
+		
+		$bookingStmt = $this->db->prepare($bookingOverlapSql);
+		$bookingStmt->execute([
+			':resource_id' => $resourceId,
+			':start' => $start,
+			':end' => $end
+		]);
+		
+		if ($bookingResult = $bookingStmt->fetch(PDO::FETCH_ASSOC)) {
+			return "Time conflict: Overlaps with existing booking #{$bookingResult['id']}";
+		}
+		
+		// No conflicts found
+		return null;
 	}
 }

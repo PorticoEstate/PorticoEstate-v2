@@ -1,4 +1,5 @@
 import React, {Fragment, useMemo, useState, FC, useCallback, useEffect, useRef} from 'react';
+import { IResource } from '@/service/types/resource.types';
 import {
     Button,
     Chip, Details,
@@ -23,7 +24,8 @@ import {
 	useBuildingAudience, useBuildingSeasons,
 	useCreatePartialApplication, useDeleteApplicationDocument, useDeletePartialApplication,
 	usePartialApplications,
-	useUpdatePartialApplication, useUploadApplicationDocument, useBuildingSchedule
+	useUpdatePartialApplication, useUploadApplicationDocument, useBuildingSchedule,
+	useServerSettings
 } from "@/service/hooks/api-hooks";
 import {NewPartialApplication, IUpdatePartialApplication, IApplication} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
@@ -35,6 +37,7 @@ import ArticleTable from "@/components/article-table/article-table";
 import {ArticleOrder} from "@/service/types/api/order-articles.types";
 import {isDevMode} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
+import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 
 interface ApplicationCrudProps {
     selectedTempApplication?: Partial<FCallTempEvent>;
@@ -145,6 +148,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const uploadDocumentMutation = useUploadApplicationDocument();
     const deleteDocumentMutation = useDeleteApplicationDocument();
     const participantsSectionRef = useRef<HTMLDivElement>(null);
+    const {data: serverSettings} = useServerSettings();
 	const [minTime, maxTime] = useMemo(() => {
 		let minTime = '24:00:00';
 		let maxTime = '00:00:00';
@@ -331,14 +335,60 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				description: existingApplication.description || '',
 				equipment: existingApplication.equipment || '',
 				organizer: existingApplication.organizer || '',
-				resources: existingApplication.resources?.map((res) => res.id.toString()) ||
-					props.selectedTempApplication?.extendedProps?.resources?.map(String) ||
+				resources: existingApplication.resources?.filter(res => props.building ? !isApplicationDeactivated(res, props.building) : !res.deactivate_application).map((res) => res.id.toString()) ||
+					props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
+						const resource = buildingResources?.find(r => r.id === +resId);
+						return resource && props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application;
+					}).map(String) ||
 					[],
 				audience: existingApplication.audience || undefined,
 				articles: articleOrders, // Use converted orders
 				agegroups: agegroups?.map(ag => ({
 					id: ag.id,
 					male: existingApplication.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
+					female: 0,
+					name: ag.name,
+					description: ag.description,
+					sort: ag.sort,
+				})) || []
+			};
+		}
+
+		// Check if we have a baseApplication to prefill from
+		const baseApplication = props.selectedTempApplication?.extendedProps?.baseApplication;
+		if (baseApplication) {
+			// Convert orders to ArticleOrder format if they exist
+			const articleOrders: ArticleOrder[] = [];
+			
+			// Process orders from base application
+			if (baseApplication.orders && baseApplication.orders.length > 0) {
+				baseApplication.orders.forEach(order => {
+					if (order.lines && order.lines.length > 0) {
+						order.lines.forEach(line => {
+							articleOrders.push({
+								id: line.article_mapping_id,
+								quantity: +line.quantity,
+								parent_id: line.parent_mapping_id > 0 ? line.parent_mapping_id : null
+							});
+						});
+					}
+				});
+			}
+			
+			return {
+				title: baseApplication.name || '',
+				organizer: baseApplication.organizer || props.bookingUser?.name || '',
+				start: defaultStartEnd.start, // Keep dates empty as requested
+				end: defaultStartEnd.end,     // Keep dates empty as requested
+				homepage: baseApplication.homepage || '',
+				description: baseApplication.description || '',
+				equipment: baseApplication.equipment || '',
+				resources: props.selectedTempApplication?.extendedProps?.resources?.map(String) ?? [],
+				audience: baseApplication.audience ?? undefined,
+				articles: articleOrders,
+				agegroups: agegroups?.map(ag => ({
+					id: ag.id,
+					male: baseApplication.agegroups?.find(eag => eag.id === ag.id)?.male || 0,
 					female: 0,
 					name: ag.name,
 					description: ag.description,
@@ -356,7 +406,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			homepage: props.lastSubmittedData?.homepage ?? '',
 			description: props.lastSubmittedData?.description ?? '',
 			equipment: props.lastSubmittedData?.equipment ?? '',
-			resources: props.selectedTempApplication?.extendedProps?.resources?.map(String) ?? [],
+			resources: props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
+				const resource = buildingResources?.find(r => r.id === +resId);
+				return resource && props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application;
+			}).map(String) ?? [],
 			audience: props.lastSubmittedData?.audience ?? undefined,
 			articles: props.lastSubmittedData?.articles ?? [],
 			agegroups: agegroups?.map(ag => ({
@@ -712,6 +765,12 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     };
 
     const toggleResource = (resourceId: string) => {
+        // Check if resource is deactivated
+        const resource = buildingResources?.find(r => r.id === +resourceId);
+        if (resource && props.building ? isApplicationDeactivated(resource, props.building) : resource?.deactivate_application) {
+            return; // Prevent selection of deactivated resources
+        }
+
         const currentResources = watch('resources');
         const resourceIndex = currentResources.indexOf(resourceId);
 
@@ -729,11 +788,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const toggleAllResources = () => {
         if (!buildingResources) return;
 
-        const allResourceIds = buildingResources.map(r => String(r.id));
-        if (selectedResources.length === buildingResources.length) {
+        // Filter out deactivated resources
+        const activeResources = buildingResources.filter(r => props.building ? !isApplicationDeactivated(r, props.building) : !r.deactivate_application);
+        const allActiveResourceIds = activeResources.map(r => String(r.id));
+        
+        if (selectedResources.length === activeResources.length) {
             setValue('resources', [], {shouldDirty: true});
         } else {
-            setValue('resources', allResourceIds, {shouldDirty: true});
+            setValue('resources', allActiveResourceIds, {shouldDirty: true});
         }
     };
 
@@ -831,11 +893,17 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                                 data-color={'brand1'}
                                 data-size={"md"}
                                 checked={selectedResources.includes(String(resource.id))}
+                                disabled={props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application}
                                 onChange={() => toggleResource(String(resource.id))}
-                                className={styles.resourceItem}
+                                className={`${styles.resourceItem} ${props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application ? styles.deactivated : ''}`}
                             >
                                 <ColourCircle resourceId={resource.id} size="medium"/>
                                 <span>{resource.name}</span>
+                                {(props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application) && (
+                                    <span className={styles.deactivatedText}>
+                                        ({t('bookingfrontend.booking_unavailable')})
+                                    </span>
+                                )}
                             </Chip.Checkbox>
                             // </div>
                         ))}
@@ -996,8 +1064,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                         )}
                     </div>
 
-					{/* Add this after the resources selection section */}
-					{selectedResources.length > 0 && (
+					{/* Articles section - only show if activated in server settings */}
+					{selectedResources.length > 0 && serverSettings?.booking_config?.activate_application_articles === true && (
 						<div className={`${styles.formGroup} ${styles.wide}`}>
 							<div className={styles.resourcesHeader}>
 								<h4>{t('bookingfrontend.articles')}</h4>

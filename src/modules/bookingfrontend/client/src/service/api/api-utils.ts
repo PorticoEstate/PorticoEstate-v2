@@ -1,10 +1,16 @@
 import {DateTime} from "luxon";
 import {phpGWLink} from "@/service/util";
-import {IBookingUser, IServerSettings} from "@/service/types/api.types";
-import {IApplication} from "@/service/types/api/application.types";
+import {
+	IBookingUser,
+	IServerSettings,
+	IMultiDomain,
+	IDocumentCategoryQuery,
+	IDocument
+} from "@/service/types/api.types";
+import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
-import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
 import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
@@ -98,6 +104,7 @@ export async function fetchFreeTimeSlotsForRange(building_id: number, start: Dat
 		detailed_overlap: true,
 		stop_on_end_date: true
 	}, true, instance);
+	console.log("FETCHING FREE TIME SLOTS FOR RANGE", url);
 	const response = await fetch(url);
 	const result = await response.json();
 	return result;
@@ -193,11 +200,227 @@ export async function validateOrgNum(org_num: string): Promise<BrregOrganization
 }
 
 
-export async function fetchDeliveredApplications(): Promise<{ list: IApplication[], total_sum: number }> {
-    const url = phpGWLink(['bookingfrontend', 'applications']);
-    const response = await fetch(url);
+export async function fetchDeliveredApplications(includeOrganizations: boolean = false): Promise<{ list: IApplication[], total_sum: number }> {
+    const params: Record<string, any> = {}
+
+    // Add session cookie if we're on the server
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    // Add include_organizations parameter if requested
+    if (includeOrganizations) {
+        params.include_organizations = 'true';
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications'], params);
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch applications: ${response.status}`);
+    }
+
     const result = await response.json();
     return result;
+}
+
+/**
+ * Fetch a single application by ID
+ * @param id The application ID to fetch
+ * @returns The application object
+ */
+export async function fetchApplication(id: number): Promise<IApplication> {
+	const params: Record<string, any> = {}
+	if(typeof window === 'undefined') {
+		const cookies = require("next/headers").cookies()
+		const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+		if(sessionCookie) {
+			params.bookingfrontendsession = sessionCookie;
+		}
+	}
+	let url = phpGWLink(['bookingfrontend', 'applications', id.toString()], params);
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch application with ID ${id}`);
+    }
+
+    return response.json();
+}
+
+export async function fetchApplicationDocuments(applicationId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
+	const url = phpGWLink(["bookingfrontend", 'applications', applicationId, 'documents'],
+		type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
+
+	const response = await fetch(url);
+	const result = await response.json();
+	return result;
+}
+
+/**
+ * Fetch comments for an application
+ * @param id The application ID
+ * @param types Optional comma-separated list of comment types to filter by
+ * @param secret Optional secret for external access
+ * @returns Comments and statistics
+ */
+export async function fetchApplicationComments(
+    id: number,
+    types?: string,
+    secret?: string
+): Promise<GetCommentsResponse> {
+    const params: Record<string, any> = {};
+
+    if (types) {
+        params.types = types;
+    }
+    if (secret) {
+        params.secret = secret;
+    }
+
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'comments'], params);
+
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch comments for application ${id}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Add a comment to an application
+ * @param id The application ID
+ * @param commentData The comment data to add
+ * @param secret Optional secret for external access
+ * @returns The created comment
+ */
+export async function addApplicationComment(
+    id: number,
+    commentData: AddCommentRequest,
+    secret?: string
+): Promise<AddCommentResponse> {
+    const params: Record<string, any> = {};
+
+    if (secret) {
+        params.secret = secret;
+    }
+
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'comments'], params);
+
+    const response = await fetch(url, FetchAuthOptions({
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(commentData),
+    }));
+
+    if (!response.ok) {
+        throw new Error(`Failed to add comment to application ${id}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Fetch events, allocations and bookings related to an application
+ * @param id The application ID
+ * @param secret Optional secret for external access
+ * @returns Events, allocations and bookings related to the application
+ */
+export async function fetchApplicationScheduleEntities(
+    id: number,
+    secret?: string
+): Promise<{events: IAPIEvent[], allocations: IAPIAllocation[], bookings: IAPIBooking[]}> {
+    const params: Record<string, any> = {};
+
+    if (secret) {
+        params.secret = secret;
+    }
+
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'schedule'], params);
+
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch events/allocations/bookings for application ${id}`);
+    }
+
+    return response.json();
+}
+
+/**
+ * Update the status of an application
+ * @param id The application ID
+ * @param statusData The status update data
+ * @param secret Optional secret for external access
+ * @returns The status update response
+ */
+export async function updateApplicationStatus(
+    id: number,
+    statusData: UpdateStatusRequest,
+    secret?: string
+): Promise<UpdateStatusResponse> {
+    const params: Record<string, any> = {};
+
+    if (secret) {
+        params.secret = secret;
+    }
+
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'applications', id.toString(), 'status'], params);
+
+    const response = await fetch(url, FetchAuthOptions({
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(statusData),
+    }));
+
+    if (!response.ok) {
+        throw new Error(`Failed to update status for application ${id}`);
+    }
+
+    return response.json();
 }
 
 
@@ -247,8 +470,24 @@ export async function fetchTowns(): Promise<ISearchDataTown[]> {
 }
 
 export async function fetchInvoices(): Promise<ICompletedReservation[]> {
-    const url = phpGWLink(['bookingfrontend', 'invoices']);
-    const response = await fetch(url);
+    const params: Record<string, any> = {}
+
+    // Add session cookie if we're on the server
+    if (typeof window === 'undefined') {
+        const cookies = require("next/headers").cookies()
+        const sessionCookie = cookies.get('bookingfrontendsession')?.value;
+        if (sessionCookie) {
+            params.bookingfrontendsession = sessionCookie;
+        }
+    }
+
+    const url = phpGWLink(['bookingfrontend', 'invoices'], params);
+    const response = await fetch(url, FetchAuthOptions());
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch invoices: ${response.status}`);
+    }
+
     const result = await response.json();
     return result;
 }
@@ -382,4 +621,283 @@ export async function fetchUpcomingEvents(params?: UpcomingEventsParams): Promis
 		console.error('Error fetching upcoming events:', error);
 		throw error;
 	}
+}
+
+export interface VippsPaymentData {
+	organizerName: string;
+	customerType: 'ssn' | 'organization_number';
+	organizationNumber?: string;
+	organizationName?: string;
+	contactName: string;
+	contactEmail: string;
+	contactPhone: string;
+	street: string;
+	zipCode: string;
+	city: string;
+	documentsRead: boolean;
+}
+
+export interface VippsPaymentResponse {
+	success: boolean;
+	redirect_url?: string;
+	error?: string;
+}
+
+export async function initiateVippsPayment(paymentData: VippsPaymentData): Promise<VippsPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'applications', 'partials', 'vipps-payment']);
+	console.log('=== VIPPS API FUNCTION ===');
+	console.log('URL:', url);
+	console.log('Payment data:', paymentData);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify(paymentData),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	console.log('Response status:', response.status);
+	console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+	const responseText = await response.text();
+	console.log('Raw response:', responseText);
+
+	let result;
+	try {
+		result = JSON.parse(responseText);
+	} catch (e) {
+		console.error('Failed to parse response as JSON:', e);
+		throw new Error('Invalid JSON response from server');
+	}
+
+	console.log('Parsed result:', result);
+
+	if (!response.ok) {
+		throw new Error(result.error || 'Vipps payment initiation failed');
+	}
+
+	return result;
+}
+
+export interface ExternalPaymentEligibilityResponse {
+	eligible: boolean;
+	reason: string;
+	total_amount: number;
+	applications_count: number;
+	payment_methods: Array<{
+		method: string;
+		logo: string;
+	}>;
+}
+
+export async function fetchExternalPaymentEligibility(): Promise<ExternalPaymentEligibilityResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'external-payment-eligibility']);
+
+	const response = await fetch(url, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		throw new Error('Failed to check external payment eligibility');
+	}
+
+	return response.json();
+}
+
+export interface VippsPaymentStatusResponse {
+	status: string;
+	message: string;
+	applications_approved?: boolean;
+}
+
+export interface VippsPaymentDetailsResponse {
+	transactionInfo?: {
+		status: string;
+		amount: number;
+		timeStamp: string;
+	};
+	transactionLogHistory?: Array<{
+		operation: string;
+		operationSuccess: boolean;
+		timeStamp: string;
+		amount: number;
+	}>;
+}
+
+export interface VippsCancelPaymentResponse {
+	success: boolean;
+	message: string;
+	vipps_response?: any;
+}
+
+export interface VippsRefundPaymentResponse {
+	success: boolean;
+	message: string;
+	refunded_amount: number;
+	vipps_response?: any;
+}
+
+/**
+ * Check Vipps payment status and process payment
+ * This should be called after user returns from Vipps or periodically to check status
+ */
+export async function checkVippsPaymentStatus(payment_order_id: string): Promise<VippsPaymentStatusResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'check-payment-status']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to check Vipps payment status');
+	}
+
+	return response.json();
+}
+
+/**
+ * Get detailed payment information from Vipps
+ */
+export async function getVippsPaymentDetails(payment_order_id: string): Promise<VippsPaymentDetailsResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'payment-details', payment_order_id]);
+
+	const response = await fetch(url, {
+		method: 'GET',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to get Vipps payment details');
+	}
+
+	return response.json();
+}
+
+/**
+ * Cancel a Vipps payment
+ */
+export async function cancelVippsPayment(payment_order_id: string): Promise<VippsCancelPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'cancel-payment']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to cancel Vipps payment');
+	}
+
+	return response.json();
+}
+
+/**
+ * Refund a Vipps payment
+ */
+export async function refundVippsPayment(payment_order_id: string, amount: number): Promise<VippsRefundPaymentResponse> {
+	const url = phpGWLink(['bookingfrontend', 'checkout', 'vipps', 'refund-payment']);
+
+	const response = await fetch(url, {
+		method: 'POST',
+		body: JSON.stringify({ payment_order_id, amount }),
+		headers: {
+			'Content-Type': 'application/json',
+		},
+	});
+
+	if (!response.ok) {
+		const errorData = await response.json();
+		throw new Error(errorData.error || 'Failed to refund Vipps payment');
+	}
+
+	return response.json();
+}
+
+/**
+ * Fetches multi-domains from the API
+ * @returns Promise with an array of IMultiDomain objects
+ */
+export async function fetchMultiDomains(): Promise<IMultiDomain[]> {
+	const url = phpGWLink(['bookingfrontend', 'multi-domains']);
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(`Failed to fetch multi-domains: ${response.status}`);
+	}
+
+	const result = await response.json();
+	return result.results || [];
+}
+
+/**
+ * Fetches available resources for a specific date from a specific domain
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @param domain - Optional domain name for multi-domain requests
+ * @returns Promise with an array of available resource IDs
+ */
+export async function fetchAvailableResources(date: string, domain?: string): Promise<number[]> {
+	const url = phpGWLink(['bookingfrontend', 'availableresources'], { date }, true, domain);
+	const response = await fetch(url);
+
+	if (!response.ok) {
+		throw new Error(`Failed to fetch available resources: ${response.status}`);
+	}
+
+	return await response.json().then(d => d.resources);
+}
+
+/**
+ * Fetches available resources for a specific date across all domains
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @param multiDomains - Array of domain configurations
+ * @returns Promise with a map of domain names to available resource IDs
+ */
+export async function fetchAvailableResourcesMultiDomain(
+	date: string,
+	multiDomains: IMultiDomain[]
+): Promise<Record<string, number[]>> {
+	const results: Record<string, number[]> = {};
+
+	// Fetch from local domain (no domain parameter)
+	try {
+		const localResources = await fetchAvailableResources(date);
+		results['local'] = localResources;
+	} catch (error) {
+		console.error('Error fetching local available resources:', error);
+		results['local'] = [];
+	}
+
+	// Fetch from all external domains in parallel
+	const domainPromises = multiDomains.map(async (domain) => {
+		try {
+			const resources = await fetchAvailableResources(date, domain.name);
+			return { domain: domain.name, resources };
+		} catch (error) {
+			console.error(`Error fetching available resources from ${domain.name}:`, error);
+			return { domain: domain.name, resources: [] };
+		}
+	});
+
+	const domainResults = await Promise.all(domainPromises);
+	domainResults.forEach(({ domain, resources }) => {
+		results[domain] = resources;
+	});
+
+	return results;
 }

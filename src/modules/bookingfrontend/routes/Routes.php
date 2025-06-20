@@ -1,13 +1,17 @@
 <?php
 
-use App\modules\bookingfrontend\controllers\ApplicationController;
+use App\modules\bookingfrontend\controllers\applications\ApplicationController;
 use App\modules\bookingfrontend\controllers\BuildingController;
+use App\modules\bookingfrontend\controllers\applications\CheckoutController;
+use App\modules\bookingfrontend\controllers\applications\CommentsController;
+use App\modules\bookingfrontend\controllers\ScheduleEntityController;
 use App\modules\bookingfrontend\controllers\CompletedReservationController;
 use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
 use App\modules\bookingfrontend\controllers\DebugController;
 use App\modules\bookingfrontend\controllers\EventController;
 use App\modules\bookingfrontend\controllers\LoginController;
+use App\modules\bookingfrontend\controllers\MultiDomainController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
 use App\modules\bookingfrontend\controllers\ResourceController;
 use App\modules\bookingfrontend\controllers\VersionController;
@@ -36,7 +40,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}/resources', ResourceController::class . ':getResourcesByBuilding');
 		$group->get('/{id}/documents', BuildingController::class . ':getDocuments');
 		$group->get('/document/{id}/download', BuildingController::class . ':downloadDocument');
-		$group->get('/{id}/schedule', BuildingController::class . ':getSchedule');
+		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getBuildingSchedule');
 		$group->get('/{id}/agegroups', BuildingController::class . ':getAgeGroups');
 		$group->get('/{id}/audience', BuildingController::class . ':getAudience');
 		$group->get('/{id}/seasons', BuildingController::class . ':getSeasons');
@@ -47,7 +51,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('', ResourceController::class . ':index');
 		$group->get('/{id}', ResourceController::class . ':getResource');
 		$group->get('/{id}/documents', ResourceController::class . ':getDocuments');
-		$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
+		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getResourceSchedule');
 		$group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
 	});
@@ -63,6 +67,14 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}', OrganizationController::class . ':getById');
 	});
 
+	$group->group('/multi-domains', function (RouteCollectorProxy $group) {
+		$group->get('', MultiDomainController::class . ':getMultiDomains');
+//		$group->post('', MultiDomainController::class . ':createMultiDomain');
+		$group->get('/{id}', MultiDomainController::class . ':getMultiDomainById');
+//		$group->put('/{id}', MultiDomainController::class . ':updateMultiDomain');
+//		$group->delete('/{id}', MultiDomainController::class . ':deleteMultiDomain');
+	});
+
 	$group->group('/events', function (RouteCollectorProxy $group)
 	{
 		$group->get('/upcoming', EventController::class . ':getUpcomingEvents');
@@ -72,6 +84,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->post('/{id}/in-registration', EventController::class . ':inRegistration');
 		$group->patch('/{id}/out-registration', EventController::class . ':outRegistration');
 	});
+
 })->add(new SessionsMiddleware($app->getContainer()));
 
 // Session group
@@ -79,21 +92,47 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 {
 	$group->group('/applications', function (RouteCollectorProxy $group)
 	{
+		$group->get('', ApplicationController::class . ':getApplications');
 		$group->post('/simple', ApplicationController::class . ':createSimpleApplication');
 		$group->get('/partials', ApplicationController::class . ':getPartials');
 		$group->post('/partials', ApplicationController::class . ':createPartial');
-		$group->post('/partials/checkout', ApplicationController::class . ':checkoutPartials');
+		$group->post('/partials/checkout', CheckoutController::class . ':checkout');
+		$group->post('/partials/vipps-payment', CheckoutController::class . ':initiateVippsPayment');
 		$group->put('/partials/{id}', ApplicationController::class . ':updatePartial');
-		$group->get('', ApplicationController::class . ':getApplications');
-		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
 		$group->patch('/partials/{id}', ApplicationController::class . ':patchApplication');
+		$group->get('/{id}/documents', ApplicationController::class . ':getDocuments');
 		$group->post('/{id}/documents', ApplicationController::class . ':uploadDocument');
 		$group->delete('/document/{id}', ApplicationController::class . ':deleteDocument');
 		$group->get('/document/{id}/download', ApplicationController::class . ':downloadDocument');
-		$group->post('/validate-checkout', ApplicationController::class . ':validateCheckout');
+		$group->post('/validate-checkout', CheckoutController::class . ':validateCheckout');
 		$group->get('/articles', ApplicationController::class . ':getArticlesByResources');
+		$group->get('/{id}', ApplicationController::class . ':getApplicationById');
+		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getApplicationSchedule');
+		$group->delete('/{id}', [ApplicationController::class, 'deletePartial']);
+
+		// Comments endpoints
+		$group->get('/{id}/comments', CommentsController::class . ':getApplicationComments');
+		$group->post('/{id}/comments', CommentsController::class . ':addApplicationComment');
+		$group->get('/{id}/comments/stats', CommentsController::class . ':getApplicationCommentStats');
+		$group->put('/{id}/status', CommentsController::class . ':updateApplicationStatus');
 
 	});
+
+	$group->group('/checkout', function (RouteCollectorProxy $group)
+	{
+		$group->get('/external-payment-eligibility', CheckoutController::class . ':checkExternalPaymentEligibility');
+
+		// Vipps payment endpoints
+		$group->group('/vipps', function (RouteCollectorProxy $group)
+		{
+			$group->post('/check-payment-status', CheckoutController::class . ':checkVippsPaymentStatus');
+			$group->get('/payment-details/{payment_order_id}', CheckoutController::class . ':getVippsPaymentDetails');
+			$group->post('/cancel-payment', CheckoutController::class . ':cancelVippsPayment');
+			$group->post('/refund-payment', CheckoutController::class . ':refundVippsPayment');
+			$group->post('/post-to-accounting', CheckoutController::class . ':postVippsToAccounting');
+		});
+	});
+
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');
 })->add(new SessionsMiddleware($app->getContainer()));
 
@@ -129,7 +168,7 @@ $app->get('/bookingfrontend/version', VersionController::class . ':getVersion')-
 $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
 	$group->get('/websocket', function ($request, $response) {
 		$html = file_get_contents(__DIR__ . '/../templates/websocket-debug.html');
-		
+
 		// Get the base URL and construct WebSocket URL (always use wss)
 		$uri = $request->getUri();
 		$scheme = 'wss';
@@ -137,10 +176,10 @@ $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
 		$port = $uri->getPort();
 		$portSuffix = ($port && $port !== 443) ? ':' . $port : '';
 		$wsUrl = $scheme . '://' . $host . $portSuffix . '/wss';
-		
+
 		// Replace the default WebSocket host in the HTML
 		$html = str_replace('value="ws://localhost:8080"', 'value="' . $wsUrl . '"', $html);
-		
+
 		$response->getBody()->write($html);
 		return $response->withHeader('Content-Type', 'text/html');
 	});

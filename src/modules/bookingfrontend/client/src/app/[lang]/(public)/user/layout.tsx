@@ -1,42 +1,31 @@
-import {PropsWithChildren} from 'react';
+'use client'
+import React, { FC, PropsWithChildren } from 'react';
+import { useBookingUser } from "@/service/hooks/api-hooks";
+import { useRouter } from "next/navigation";
+import { useTrans } from "@/app/i18n/ClientTranslationProvider";
+import { Spinner } from "@digdir/designsystemet-react";
 
-import ClientLayout from "@/app/[lang]/(public)/user/client-layout";
-import {getTranslation} from "@/app/i18n";
-import {headers} from "next/headers";
-import {userSubPages} from "@/app/[lang]/(public)/user/user-page-helper";
-import AuthGuard from "@/components/user/auth-guard";
+interface UserRootLayoutProps extends PropsWithChildren {}
 
-interface UserLayoutProps extends PropsWithChildren {
-}
+const UserRootLayout: FC<UserRootLayoutProps> = ({ children }) => {
+  const user = useBookingUser();
+  const router = useRouter();
+  const t = useTrans();
 
-export const dynamic = 'force-dynamic'
+  if (!user.data?.is_logged_in && !user.isLoading) {
+    router.push('/');
+    return null;
+  }
 
-export async function generateMetadata(props: UserLayoutProps) {
-    const {t} = await getTranslation();
-    const headersList = headers();
-    const path = headersList.get('x-current-path')?.split('user');
-    if (path && path.length === 2) {
-        const currPage = userSubPages.find(a => a.relativePath === path[1]);
-        if (currPage) {
-            return {
-                title: t(currPage?.labelTag),
-            }
-        }
-
-    }
-
-    return {
-        title: t('bookingfrontend.my page'),
-    }
-}
-
-const UserLayout= async (props: UserLayoutProps) => {
-    // await requireAuth();
+  if (user.isLoading) {
     return (
-        <AuthGuard>
-            <ClientLayout>{props.children}</ClientLayout>
-        </AuthGuard>
-);
-}
-export default UserLayout
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
+        <Spinner data-size="lg" aria-label={t('common.loading')} />
+      </div>
+    );
+  }
 
+  return children;
+};
+
+export default UserRootLayout;

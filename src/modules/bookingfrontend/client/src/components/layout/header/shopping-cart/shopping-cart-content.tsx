@@ -56,6 +56,7 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                     <ShoppingCartCardList
                         basketData={basketData!.list}
                         openEdit={openEdit}
+                        onLinkClick={() => props.setOpen(false)}
                     />
                 )}
 

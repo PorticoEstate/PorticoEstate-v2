@@ -132,8 +132,15 @@ class Sessions
 
 		if (!$this->_sessionid)
 		{
+			// Check for standard session ID in GET/POST
 			$this->_sessionid = \Sanitizer::get_var(session_name(), 'string', 'GET')
 				?? \Sanitizer::get_var(session_name(), 'string', 'POST');
+
+			// Check for bookingfrontendsession parameter in GET for special frontend use cases
+			if (!$this->_sessionid && \Sanitizer::get_var('bookingfrontendsession', 'string', 'GET'))
+			{
+				$this->_sessionid = \Sanitizer::get_var('bookingfrontendsession', 'string', 'GET');
+			}
 		}
 	}
 
@@ -433,6 +440,12 @@ class Sessions
 		if (empty($sessionid) || !$sessionid)
 		{
 			$sessionid = $this->get_session_id();
+
+			// Additional check for bookingfrontendsession parameter if no session ID found
+			if (!$sessionid && \Sanitizer::get_var('bookingfrontendsession', 'string', 'GET'))
+			{
+				$sessionid = \Sanitizer::get_var('bookingfrontendsession', 'string', 'GET');
+			}
 		}
 
 		if (!$sessionid)
@@ -696,17 +709,44 @@ class Sessions
 	 */
 	public function read_session($sessionid)
 	{
-		if ($sessionid)
+		// If no sessionid provided, return empty
+		if (!$sessionid)
 		{
-			session_id($sessionid);
+			return array();
 		}
 
-		if (session_status() === PHP_SESSION_NONE)
+		// Check current session status
+		$currentStatus = session_status();
+
+		if ($currentStatus === PHP_SESSION_ACTIVE)
 		{
-			session_start();
+			// If current session matches requested one, use it
+			if (session_id() === $sessionid)
+			{
+				if (isset($_SESSION['phpgw_session']) && is_array($_SESSION['phpgw_session']))
+				{
+					return $_SESSION['phpgw_session'];
+				}
+				return array();
+			}
+			else
+			{
+				// Close current session to switch to requested one
+				session_write_close();
+			}
 		}
 
-		if (session_id() != $sessionid)
+		// Set the session ID and start session
+		session_id($sessionid);
+
+		if (!session_start())
+		{
+			// Session start failed
+			return array();
+		}
+
+		// Verify we got the correct session
+		if (session_id() !== $sessionid)
 		{
 			return array();
 		}
@@ -715,6 +755,7 @@ class Sessions
 		{
 			return $_SESSION['phpgw_session'];
 		}
+
 		return array();
 	}
 

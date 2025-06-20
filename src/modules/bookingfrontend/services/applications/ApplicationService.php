@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\bookingfrontend\services;
+namespace App\modules\bookingfrontend\services\applications;
 
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Application;
@@ -8,6 +8,8 @@ use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\Database\Db;
+use App\modules\bookingfrontend\services\DocumentService;
+use App\modules\bookingfrontend\services\EventService;
 use App\modules\phpgwapi\services\Settings;
 use PDO;
 use Exception;
@@ -49,11 +51,12 @@ class ApplicationService
      * Get applications by SSN
      *
      * @param string $ssn Social security number
+     * @param bool $includeOrganizations Whether to include organization applications
      * @return array Array of applications
      */
-    public function getApplicationsBySsn(string $ssn): array
+    public function getApplicationsBySsn(string $ssn, bool $includeOrganizations = false): array
     {
-        return $this->applicationRepository->getApplicationsBySsn($ssn);
+        return $this->applicationRepository->getApplicationsBySsnAndOrganizations($ssn, $includeOrganizations);
     }
 
     /**
@@ -189,24 +192,30 @@ class ApplicationService
     }
 
     /**
-     * Update all partial applications with contact and organization info
+     * Update applications with contact info and validate booking limits
      *
      * @param string $session_id Current session ID
      * @param array $data Contact and organization information
-     * @return array Updated applications
+     * @param bool $finalize Whether to finalize applications (remove session_id) or keep them partial
+     * @return array Updated applications with contact info
      * @throws Exception If update fails
      */
-    public function checkoutPartials(string $session_id, array $data): array
+    public function updateApplicationsWithContactInfo(string $session_id, array $data, bool $finalize = true): array
     {
+        $errors = $this->validateCheckoutData($data);
+        if (!empty($errors))
+        {
+            throw new Exception(implode(", ", $errors));
+        }
+
+        $startedTransaction = false;
         try
         {
-            $errors = $this->validateCheckoutData($data);
-            if (!empty($errors))
-            {
-                throw new Exception(implode(", ", $errors));
+            // Only start transaction if not already in one
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+                $startedTransaction = true;
             }
-
-            $this->db->beginTransaction();
 
             $applications = $this->getPartialApplications($session_id);
 
@@ -266,7 +275,6 @@ class ApplicationService
                 }
             }
 
-
             $parent_id = $data['parent_id'] ?? $applications[0]['id'];
 
             // Prepare base update data
@@ -277,24 +285,205 @@ class ApplicationService
                 'responsible_street' => $data['street'],
                 'responsible_zip_code' => $data['zipCode'],
                 'responsible_city' => $data['city'],
-                'name' => $data['eventTitle'],
+//                'name' => $data['eventTitle'],
                 'organizer' => $data['organizerName'],
                 'customer_identifier_type' => $data['customerType'],
                 'customer_organization_number' => $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null,
                 'customer_organization_name' => $data['customerType'] === 'organization_number' ? $data['organizationName'] : null,
                 'modified' => date('Y-m-d H:i:s'),
-                'customer_ssn' => $data['customerType'] === 'ssn' ? $this->userHelper->ssn : null,
-                'session_id' => null
+                'customer_ssn' => $data['customerType'] === 'ssn' ? $this->userHelper->ssn : null
             ];
 
+            // Only set session_id to null if finalizing applications
+            if ($finalize) {
+                $baseUpdateData['session_id'] = null;
+            }
+
             $updatedApplications = [];
-            $skippedApplications = [];
-            $collisionDebugInfo = []; // Debug information for collisions
 
             foreach ($applications as $application)
             {
                 $this->patchApplicationMainData($baseUpdateData, $application['id']);
+                $updatedApplications[] = array_merge($application, $baseUpdateData);
+            }
 
+            // Only commit if we started the transaction
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
+            
+            return $updatedApplications;
+
+        } catch (Exception $e)
+        {
+            // Only rollback if we started the transaction
+            if ($startedTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * Complete application approval after successful Vipps payment
+     * This is the modern equivalent of vipps_helper->approve_application()
+     *
+     * @param string $remote_order_id Payment order ID from Vipps
+     * @param float $amount Payment amount
+     * @return array Approved applications
+     * @throws Exception If approval fails
+     */
+    public function approveVippsPayment(string $remote_order_id, float $amount): array
+    {
+        try {
+            $this->db->beginTransaction();
+
+            // Get application IDs from payment order using legacy system
+            $soapplication = CreateObject('booking.soapplication');
+            $application_ids = $soapplication->get_application_from_payment_order($remote_order_id);
+
+            if (empty($application_ids)) {
+                throw new Exception('No applications found for payment order: ' . $remote_order_id);
+            }
+
+            $approvedApplications = [];
+
+            // Process each application in the payment
+            foreach ($application_ids as $application_id) {
+                // Get application details
+                $application = $this->getApplicationById($application_id);
+                if (!$application) {
+                    throw new Exception('Application not found: ' . $application_id);
+                }
+
+                // Update application status to ACCEPTED
+                $updateData = [
+                    'status' => 'ACCEPTED',
+                    'session_id' => null, // Finalize application
+                    'modified' => date('Y-m-d H:i:s')
+                ];
+
+                $this->patchApplicationMainData($updateData, $application_id);
+
+                // Create events for each timeslot (this already exists and works)
+                $this->createEventForApplication($application_id);
+
+                // Cancel blocks for this session to free up resources
+                $this->cancelBlocksForApplication($application_id);
+
+                // Send notification email (this already exists and works)
+                $this->send_notification($application_id);
+
+                $approvedApplications[] = array_merge($application, $updateData);
+            }
+
+            // Update payment status to completed (once for all applications)
+            $soapplication->update_payment_status($remote_order_id, 'completed', 'CAPTURE');
+
+            $this->db->commit();
+
+            return $approvedApplications;
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Handle failed or cancelled Vipps payment
+     * Clean up applications and payment records
+     *
+     * @param string $remote_order_id Payment order ID from Vipps
+     * @param string $operation Vipps operation (CANCEL, VOID, etc.)
+     * @return bool Success status
+     * @throws Exception If cleanup fails
+     */
+    public function cancelVippsPayment(string $remote_order_id, string $operation): bool
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $soapplication = CreateObject('booking.soapplication');
+            $sopurchase_order = CreateObject('booking.sopurchase_order');
+
+            // Get application IDs from payment order
+            $application_ids = $soapplication->get_application_from_payment_order($remote_order_id);
+
+            if (!empty($application_ids)) {
+                foreach ($application_ids as $application_id) {
+                    // Cancel blocks for this application to free up resources
+                    $this->cancelBlocksForApplication($application_id);
+
+                    // Delete purchase orders
+                    $sopurchase_order->delete_purchase_order($application_id);
+
+                    // Delete the application
+                    $soapplication->delete_application($application_id);
+                }
+
+                // Update payment status to voided once for all applications
+                $soapplication->update_payment_status($remote_order_id, 'voided', $operation);
+            }
+
+            $this->db->commit();
+
+            // Set cancelled message
+            \App\modules\phpgwapi\services\Cache::message_set('cancelled');
+
+            return true;
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Update payment status for an order
+     * Wrapper around legacy soapplication method
+     *
+     * @param string $remote_order_id Payment order ID
+     * @param string $status New status (pending, completed, voided)
+     * @param string $operation Vipps operation
+     * @return bool Success status
+     */
+    public function updatePaymentStatus(string $remote_order_id, string $status, string $operation): bool
+    {
+        try {
+            $soapplication = CreateObject('booking.soapplication');
+            $soapplication->update_payment_status($remote_order_id, $status, $operation);
+            return true;
+        } catch (Exception $e) {
+            error_log("Error updating payment status: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update all partial applications with contact and organization info
+     *
+     * @param string $session_id Current session ID
+     * @param array $data Contact and organization information
+     * @return array Updated applications
+     * @throws Exception If update fails
+     */
+    public function checkoutPartials(string $session_id, array $data): array
+    {
+        try
+        {
+            $this->db->beginTransaction();
+
+            // First update all applications with contact info and validate limits
+            $updatedApplications = $this->updateApplicationsWithContactInfo($session_id, $data);
+
+            $parent_id = $data['parent_id'] ?? $updatedApplications[0]['id'];
+            $finalUpdatedApplications = [];
+            $skippedApplications = [];
+            $collisionDebugInfo = []; // Debug information for collisions
+
+            foreach ($updatedApplications as $application)
+            {
                 // First check if eligible for direct booking without checking collisions
                 $isEligibleForDirectBooking = $this->isEligibleForDirectBooking($application);
 
@@ -325,10 +514,10 @@ class ApplicationService
                         $collisionDebugInfo[$application['id']] = $applicationCollisionInfo;
 
                         // Reject the application with collision
-                        $updateData = array_merge($baseUpdateData, [
+                        $updateData = [
                             'status' => 'REJECTED',
                             'parent_id' => $application['id'] == $parent_id ? null : $parent_id
-                        ]);
+                        ];
 
                         $this->patchApplicationMainData($updateData, $application['id']);
                         $skippedApplications[] = array_merge($application, $updateData);
@@ -339,10 +528,10 @@ class ApplicationService
                     else
                     {
                         // No collision - proceed with direct booking
-                        $updateData = array_merge($baseUpdateData, [
+                        $updateData = [
                             'status' => 'ACCEPTED',
                             'parent_id' => $application['id'] == $parent_id ? null : $parent_id
-                        ]);
+                        ];
 
                         $this->patchApplicationMainData($updateData, $application['id']);
                         $this->createEventForApplication($application['id']);
@@ -350,28 +539,31 @@ class ApplicationService
                 } else
                 {
                     // Not eligible for direct booking - process normally
-                    $updateData = array_merge($baseUpdateData, [
+                    $updateData = [
                         'status' => 'NEW',
                         'parent_id' => $application['id'] == $parent_id ? null : $parent_id
-                    ]);
+                    ];
 
                     $this->patchApplicationMainData($updateData, $application['id']);
                 }
 
                 // Send notification and add to updated list
                 $this->sendApplicationNotification($application['id']);
-                $updatedApplications[] = array_merge($application, $updateData);
+                $finalUpdatedApplications[] = array_merge($application, $updateData);
             }
+            
             $this->db->commit();
             return [
-                'updated' => $updatedApplications,
+                'updated' => $finalUpdatedApplications,
                 'skipped' => $skippedApplications,
                 'debug_collisions' => $collisionDebugInfo
             ];
 
         } catch (Exception $e)
         {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }
@@ -547,7 +739,6 @@ class ApplicationService
             'street' => 'Street address',
             'zipCode' => 'Zip code',
             'city' => 'City',
-            'eventTitle' => 'Event title',
             'organizerName' => 'Organizer name',
             'customerType' => 'Customer type'
         ];
@@ -823,23 +1014,23 @@ class ApplicationService
 
     public function createSimpleBooking(int $resourceId, int $buildingId, string $from, string $to, string $sessionId): array
     {
-        
+
         $startedTransaction = false;
         try
         {
             // ATOMIC LOCK ACQUISITION - Use Redis SETNX for true atomicity
             $lockKey = "booking_lock_{$resourceId}_{$from}_{$to}";
             $lockTtl = 30; // 30 seconds should be enough for the booking process
-            
+
             // Try to acquire the atomic lock
             $lockAcquired = \App\modules\phpgwapi\services\Cache::acquire_atomic_lock('booking', $lockKey, $sessionId, $lockTtl);
-            
+
             if (!$lockAcquired) {
                 $errorMessage = lang('resource_already_being_booked');
                 \App\modules\phpgwapi\services\Cache::message_set($errorMessage, 'error');
                 throw new \Exception($errorMessage);
             }
-            
+
             try {
                 // Start database transaction for atomic booking operation
                 // This ensures that the overlap check and application creation happen atomically
@@ -848,10 +1039,10 @@ class ApplicationService
                     $this->db->beginTransaction();
                     $startedTransaction = true;
                 }
-                
+
                 // IMPORTANT: All overlap checking must happen WITHIN this transaction
                 // to prevent race conditions between concurrent booking attempts
-                
+
                 // Verify we're in a transaction before using FOR UPDATE
                 if (!$this->db->inTransaction()) {
                     throw new \Exception("Database transaction required for atomic booking operation");
@@ -885,7 +1076,7 @@ class ApplicationService
                 // Check if any overlapping application was found and locked
                 $overlappingApp = $stmt->fetch(\PDO::FETCH_ASSOC);
                 $hasOverlap = (bool)$overlappingApp;
-                
+
                 // Log the atomic check for debugging
                 if ($hasOverlap) {
                     error_log("ATOMIC OVERLAP DETECTED: Found conflicting application #{$overlappingApp['id']} (status: {$overlappingApp['status']}) for resource {$resourceId}, time {$from} to {$to}");
@@ -905,7 +1096,7 @@ class ApplicationService
 
                     // Release atomic lock since we're not proceeding with the booking
                     \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-                    
+
                     // Also clear database blocks since booking failed
                     try {
                         $sql = "UPDATE bb_block SET active = 0
@@ -913,7 +1104,7 @@ class ApplicationService
                             AND resource_id = :resource_id
                             AND from_ = :from
                             AND to_ = :to";
-                            
+
                         $clearStmt = $this->db->prepare($sql);
                         $clearStmt->execute([
                             ':session_id' => $sessionId,
@@ -921,21 +1112,21 @@ class ApplicationService
                             ':from' => $from,
                             ':to' => $to
                         ]);
-                        
+
                         $updatedCount = $clearStmt->rowCount();
                         error_log("LOCKS AND BLOCKS RELEASED (database conflict): Resource ID {$resourceId}, time {$from} to {$to}, cleared {$updatedCount} blocks");
                     } catch (\Exception $clearEx) {
                         // Just log this error but don't interrupt the flow
                         error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage());
                     }
-                    
+
                     // Throw exception to stop the booking process
                     throw new \Exception($errorMessage);
                 }
             } catch (\Exception $e) {
                 // If any exception occurs during the DB check, release atomic lock before re-throwing
                 \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-                
+
                 // Also clear database blocks since booking failed
                 try {
                     $sql = "UPDATE bb_block SET active = 0
@@ -943,7 +1134,7 @@ class ApplicationService
                         AND resource_id = :resource_id
                         AND from_ = :from
                         AND to_ = :to";
-                        
+
                     $clearStmt = $this->db->prepare($sql);
                     $clearStmt->execute([
                         ':session_id' => $sessionId,
@@ -951,14 +1142,14 @@ class ApplicationService
                         ':from' => $from,
                         ':to' => $to
                     ]);
-                    
+
                     $updatedCount = $clearStmt->rowCount();
                     error_log("LOCKS AND BLOCKS RELEASED (early error): Resource ID {$resourceId}, time {$from} to {$to}, cleared {$updatedCount} blocks, error: " . $e->getMessage());
                 } catch (\Exception $clearEx) {
                     // Just log this error but don't interrupt the flow
                     error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage() . " while handling original error: " . $e->getMessage());
                 }
-                
+
                 throw $e;
             }
 
@@ -1059,7 +1250,7 @@ class ApplicationService
             {
                 $this->db->commit();
             }
-            
+
             // Operation successful - release the atomic lock
             \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
 
@@ -1074,10 +1265,10 @@ class ApplicationService
             {
                 $this->db->rollBack();
             }
-            
+
             // Release atomic lock in error cases
             \App\modules\phpgwapi\services\Cache::release_atomic_lock('booking', $lockKey, $sessionId);
-            
+
             // Also clear database blocks since booking failed
             try {
                 $sql = "UPDATE bb_block SET active = 0
@@ -1085,7 +1276,7 @@ class ApplicationService
                     AND resource_id = :resource_id
                     AND from_ = :from
                     AND to_ = :to";
-                    
+
                 $clearStmt = $this->db->prepare($sql);
                 $clearStmt->execute([
                     ':session_id' => $sessionId,
@@ -1093,13 +1284,13 @@ class ApplicationService
                     ':from' => $from,
                     ':to' => $to
                 ]);
-                
+
                 $updatedCount = $clearStmt->rowCount();
             } catch (\Exception $clearEx) {
                 // Just log this error but don't interrupt the flow
                 error_log("ERROR CLEARING BLOCKS: " . $clearEx->getMessage() . " while handling original error: " . $e->getMessage());
             }
-            
+
             throw $e;
         }
     }
@@ -1479,13 +1670,13 @@ class ApplicationService
             return false;
         }
     }
-    
+
     /**
      * Explicitly clear blocks and cache locks for a resource and time slot
-     * 
+     *
      * This should be called after a successful registration or when we're sure
      * the booking process is complete (whether successful or not)
-     * 
+     *
      * @param int $resourceId Resource ID
      * @param string $from Start time
      * @param string $to End time
@@ -1498,24 +1689,24 @@ class ApplicationService
             // Clear the specific timeslot lock
             $lockKey = "timeslot_lock_{$resourceId}_{$from}_{$to}";
             \App\modules\phpgwapi\services\Cache::system_clear('booking', $lockKey);
-            
+
             // Clear resource-level locks if this session owns them
             $resourceBookingFlag = "resource_booking_in_progress_{$resourceId}";
             $resourceBookingDetails = "resource_booking_details_{$resourceId}";
-            
+
             $currentLock = \App\modules\phpgwapi\services\Cache::system_get('booking', $resourceBookingFlag);
             if ($currentLock === $sessionId) {
                 \App\modules\phpgwapi\services\Cache::system_clear('booking', $resourceBookingFlag);
                 \App\modules\phpgwapi\services\Cache::system_clear('booking', $resourceBookingDetails);
             }
-            
+
             // Update blocks in the database
             $sql = "UPDATE bb_block SET active = 0
                 WHERE session_id = :session_id
                 AND resource_id = :resource_id
                 AND from_ = :from
                 AND to_ = :to";
-                
+
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 ':session_id' => $sessionId,
@@ -1523,10 +1714,10 @@ class ApplicationService
                 ':from' => $from,
                 ':to' => $to
             ]);
-            
+
             $updatedCount = $stmt->rowCount();
             error_log("Cleared {$updatedCount} blocks and locks for resource {$resourceId}, time {$from} to {$to}, session {$sessionId}");
-            
+
             return true;
         } catch (\Exception $e) {
             error_log("Error clearing blocks and locks: " . $e->getMessage());

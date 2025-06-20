@@ -45,6 +45,9 @@ fi
 # Create log directory for Supervisor
 mkdir -p /var/log/supervisor
 
+# Clean up stale Apache2 PID files to prevent startup issues
+rm -f /var/run/apache2/apache2.pid
+
 # Enable required modules for WebSocket
 a2enmod proxy proxy_http proxy_wstunnel rewrite
 

@@ -1,17 +1,20 @@
 import React, { FC, useState } from 'react';
-import { Button, } from "@digdir/designsystemet-react";
+import { Button, Link as DigdirLink } from "@digdir/designsystemet-react";
 import { IApplication } from "@/service/types/api/application.types";
 import { deletePartialApplication } from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
+import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import { PencilIcon, TrashIcon, CalendarIcon } from "@navikt/aksel-icons";
 import styles from "./shopping-cart-card-list.module.scss";
 import { applicationTimeToLux } from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import { DateTime } from "luxon";
 import { useClientTranslation } from "@/app/i18n/ClientTranslationProvider";
+import Link from "next/link";
 
 interface ShoppingCartCardListProps {
     basketData: IApplication[];
     openEdit: (item: IApplication) => void;
+    onLinkClick: () => void;
 }
 
 const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [string, string] => {
@@ -49,7 +52,7 @@ const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [st
     }
 };
 
-const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openEdit }) => {
+const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openEdit, onLinkClick }) => {
     const { t, i18n } = useClientTranslation();
     const [expandedId, setExpandedId] = useState<number | null>(null);
 
@@ -94,7 +97,11 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
                     <div className={styles.cardInfo}>
                         <div className={styles.infoItem}>
                             {/*<BuildingIcon aria-hidden className={styles.infoIcon} />*/}
-                            <span>{item.building_name}</span>
+                            <DigdirLink asChild>
+                                <Link href={`/building/${item.building_id}`} onClick={(e) => { e.stopPropagation(); onLinkClick(); }}>
+                                    {item.building_name}
+                                </Link>
+                            </DigdirLink>
                         </div>
 
                         <div className={styles.infoItem}>
@@ -119,12 +126,34 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
                     </div>
 
                     <div className={styles.resourcesContainer}>
-                        <ResourceCircles
-                            resources={item.resources || []}
-                            maxCircles={6}
-                            size={'small'}
-                            isExpanded={expandedId === item.id}
-                        />
+                        {(item.resources || []).length === 1 ? (
+                            <div className={styles.singleResource}>
+                                <DigdirLink asChild>
+                                    <Link href={`/resource/${item.resources[0].id}`} onClick={(e) => { e.stopPropagation(); onLinkClick(); }}>
+                                        <span><ColourCircle resourceId={item.resources[0].id}/> {item.resources[0].name}</span>
+                                    </Link>
+                                </DigdirLink>
+                            </div>
+                        ) : expandedId === item.id ? (
+                            <ul className={styles.expandedResourcesList}>
+                                {(item.resources || []).map((resource) => (
+                                    <li key={resource.id} className={styles.resourceItem}>
+                                        <DigdirLink asChild>
+                                            <Link href={`/resource/${resource.id}`} onClick={(e) => { e.stopPropagation(); onLinkClick(); }}>
+                                                <span><ColourCircle resourceId={resource.id}/> {resource.name}</span>
+                                            </Link>
+                                        </DigdirLink>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <ResourceCircles
+                                resources={item.resources || []}
+                                maxCircles={6}
+                                size={'small'}
+                                isExpanded={false}
+                            />
+                        )}
                     </div>
 
                     {expandedId === item.id && (item.dates?.length || 0) > 1 && (

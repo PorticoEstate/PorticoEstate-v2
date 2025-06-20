@@ -1,11 +1,12 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
-import {useSearchData, useTowns} from "@/service/hooks/api-hooks";
+import {useSearchData, useTowns, useMultiDomains, useAvailableResourcesMultiDomain} from "@/service/hooks/api-hooks";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
 import styles from './resource-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import {ISearchDataBuilding, ISearchDataOptimized, ISearchDataTown, ISearchResource} from '@/service/types/api/search.types';
+import {IMultiDomain} from '@/service/types/api.types';
 import ResourceResultItem from "@/components/search/resource/resource-result-item";
 import FilterModal from './filter-modal';
 import {FilterIcon} from '@navikt/aksel-icons';
@@ -14,12 +15,13 @@ import {useIsMobile} from "@/service/hooks/is-mobile";
 interface ResourceSearchProps {
     initialSearchData?: ISearchDataOptimized;
     initialTowns?: ISearchDataTown[];
+    initialMultiDomains?: IMultiDomain[];
 }
 
 // Interface for localStorage search state
 interface StoredSearchState {
     textSearchQuery: string;
-    date: string;
+    date: string | null;
     where: number | '';
     selectedActivities: number[];
     selectedFacilities: number[];
@@ -29,10 +31,10 @@ interface StoredSearchState {
 const STORAGE_KEY = 'resource_search_state';
 const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTowns }) => {
+const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTowns, initialMultiDomains }) => {
     // Initialize state for search filters
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
-    const [date, setDate] = useState<Date>(new Date());
+    const [date, setDate] = useState<Date | null>(null);
     const [where, setWhere] = useState<number | ''>('');
     const [filtersModalOpen, setFiltersModalOpen] = useState<boolean>(false);
     const [selectedActivities, setSelectedActivities] = useState<number[]>([]);
@@ -63,11 +65,22 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         initialData: initialTowns
     });
 
+    // Fetch multi-domains data for cross-domain search
+    const {data: multiDomainsData, isLoading: isLoadingMultiDomains, error: multiDomainsError} = useMultiDomains({
+        initialData: initialMultiDomains
+    });
+
+    // Format date for API call (YYYY-MM-DD)
+    const formattedDate = date ? date.toISOString().split('T')[0] : undefined;
+
+    // Fetch available resources for the selected date across all domains
+    const {data: availableResourcesByDomain} = useAvailableResourcesMultiDomain(formattedDate, multiDomainsData);
+
     const t = useTrans();
 
     // Determine overall loading and error state
-    const isLoading = isLoadingSearch || isLoadingTowns;
-    const error = searchError || townsError;
+    const isLoading = isLoadingSearch || isLoadingTowns || isLoadingMultiDomains;
+    const error = searchError || townsError || multiDomainsError;
 
     // Load saved search state from localStorage on initial render
     useEffect(() => {
@@ -84,6 +97,8 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                         setTextSearchQuery(parsedState.textSearchQuery);
                         if (parsedState.date) {
                             setDate(new Date(parsedState.date));
+                        } else {
+                            setDate(null);
                         }
                         setWhere(parsedState.where);
                         if (parsedState.selectedActivities) {
@@ -203,7 +218,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         if (!resourcesWithBuildings.length) return [];
 
         // If no filters are applied, return empty array (don't show results by default)
-        if (!textSearchQuery.trim() && !where && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+        if (!textSearchQuery.trim() && !where && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return [];
         }
 
@@ -302,11 +317,27 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
             });
         }
 
-        // Date availability filter would go here
-        // For now, we're not implementing date filtering logic
+        // Sort by availability - available resources first
+        if (availableResourcesByDomain) {
+            filtered.sort((a, b) => {
+                // Determine which domain this resource belongs to
+                const aDomain = a.domain_name || 'local';
+                const bDomain = b.domain_name || 'local';
+
+                // Check if resource is available in its respective domain
+                const aIsAvailable = availableResourcesByDomain[aDomain]?.includes(a.original_id || a.id) || false;
+                const bIsAvailable = availableResourcesByDomain[bDomain]?.includes(b.original_id || b.id) || false;
+
+                // If both available or both unavailable, maintain current order (relevance)
+                if (aIsAvailable === bIsAvailable) return 0;
+
+                // Available resources come first
+                return bIsAvailable ? 1 : -1;
+            });
+        }
 
         return filtered;
-    }, [resourcesWithBuildings, textSearchQuery, where, selectedActivities, selectedFacilities, searchData]);
+    }, [resourcesWithBuildings, textSearchQuery, where, selectedActivities, selectedFacilities, searchData, availableResourcesByDomain]);
 
     // Handle date selection
     const handleDateChange = (newDate: Date | null) => {
@@ -319,7 +350,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
     const clearFilters = () => {
         setTextSearchQuery('');
         setWhere('');
-        setDate(new Date());
+        setDate(null);
         setSelectedActivities([]);
         setSelectedFacilities([]);
 
@@ -330,7 +361,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
             // Create a clean state to ensure complete reset
             const cleanState: StoredSearchState = {
                 textSearchQuery: '',
-                date: new Date().toISOString(),
+                date: null,
                 where: '',
                 selectedActivities: [],
                 selectedFacilities: [],
@@ -350,7 +381,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                 try {
                     const stateToSave: StoredSearchState = {
                         textSearchQuery,
-                        date: date.toISOString(),
+                        date: date ? date.toISOString() : null,
                         where,
                         selectedActivities,
                         selectedFacilities,
@@ -384,7 +415,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 
     // Render active filter chips in a more compact way
     const renderActiveFilters = () => {
-        if (!textSearchQuery && where === '' && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+        if (!textSearchQuery && where === '' && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return null;
         }
 
@@ -392,6 +423,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         const totalFilters = [
             textSearchQuery ? 1 : 0,
             where ? 1 : 0,
+            date ? 1 : 0,
             selectedActivities.length,
             selectedFacilities.length
         ].reduce((sum, current) => sum + current, 0);
@@ -399,7 +431,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         return (
             <div className={styles.activeFilters}>
                 {/* Only show clear filters button if there are filters other than textSearchQuery */}
-                {(where || selectedActivities.length > 0 || selectedFacilities.length > 0) && (
+                {(where || date || selectedActivities.length > 0 || selectedFacilities.length > 0) && (
                     <div className={styles.filterSummary}>
                         <Button
                             variant="tertiary"
@@ -430,6 +462,15 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                             onClick={() => setWhere('')}
                         >
                             {towns.find(town => town.id === Number(where))?.name || ''}
+                        </Chip.Removable>
+                    )}
+                    {date && (
+                        <Chip.Removable
+                            data-color="brand1"
+                            data-size="sm"
+                            onClick={() => setDate(null)}
+                        >
+                            {date.toLocaleDateString()}
                         </Chip.Removable>
                     )}
                     {selectedActivities.map(activityId => {
@@ -463,12 +504,26 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         );
     };
 
+    // Show total number of searchable domains for user awareness
+    const renderSearchInfo = () => {
+        if (!multiDomainsData || multiDomainsData.length === 0) return null;
+
+        const totalDomains = multiDomainsData.length + 1; // +1 for current domain
+
+        return (
+            <div className={styles.searchInfo}>
+                <p>{t('bookingfrontend.searching_across_domains', { count: totalDomains }) || `Searching across ${totalDomains} domains`}</p>
+            </div>
+        );
+    };
+
     // Render search results section
     const renderSearchResults = () => {
-        if (!textSearchQuery.trim() && !where && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+        if (!textSearchQuery.trim() && !where && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
             return (
                 <div className={styles.noResults}>
                     <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
+                    {/*{renderSearchInfo()}*/}
                 </div>
             );
         }
@@ -483,15 +538,47 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                     >
                         {t('bookingfrontend.search_clear_filters')}
                     </Button>
+                    {/*{renderSearchInfo()}*/}
                 </div>
             );
         }
 
+        // Calculate result statistics
+        const localResults = filteredResources.filter(r => !r.domain_name);
+        const externalResults = filteredResources.filter(r => r.domain_name);
+
         return (
-            <div className={styles.resourceGrid}>
-                {filteredResources.map(resource => (
-                    <ResourceResultItem key={resource.id} resource={resource}/>
-                ))}
+            <div className={styles.resultsContainer}>
+                {/*{(localResults.length > 0 && externalResults.length > 0) && (*/}
+                {/*    <div className={styles.resultsStats}>*/}
+                {/*        <p>{t('bookingfrontend.mixed_results_info', { */}
+                {/*            local: localResults.length, */}
+                {/*            external: externalResults.length, */}
+                {/*            total: filteredResources.length */}
+                {/*        }) || `Showing ${filteredResources.length} results (${localResults.length} local, ${externalResults.length} from other domains)`}</p>*/}
+                {/*    </div>*/}
+                {/*)}*/}
+
+                <div className={styles.resourceGrid}>
+                    {filteredResources.map(resource => {
+                        // Determine availability for this resource based on its domain
+                        const resourceDomain = resource.domain_name || 'local';
+                        const resourceIdToCheck = resource.original_id || resource.id;
+                        console.log(resourceDomain, resourceIdToCheck, availableResourcesByDomain?.[resourceDomain]);
+						const isAvailable = availableResourcesByDomain?.[resourceDomain]
+                            ? availableResourcesByDomain[resourceDomain].includes(resourceIdToCheck)
+                            : undefined;
+
+                        return (
+                            <ResourceResultItem
+                                key={`${resource.domain_name || 'local'}-${resource.id}`}
+                                resource={resource}
+                                selectedDate={date}
+                                isAvailable={isAvailable}
+                            />
+                        );
+                    })}
+                </div>
             </div>
         );
     };
@@ -567,6 +654,8 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                                         currentDate={date}
                                         onDateChange={handleDateChange}
                                         view="timeGridDay"
+										placeholder={t('bookingfrontend.select date')}
+										allowEmpty={true}
                                     />
                                 </div>
                             </div>

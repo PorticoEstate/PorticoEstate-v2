@@ -59,7 +59,7 @@ if ($tracker_id)
 	phpgwapi_js::getInstance()->add_code('', $tracker_code2);
 }
 
-$template = Template::getInstance(PHPGW_TEMPLATE_DIR);
+$template = new Template(PHPGW_TEMPLATE_DIR);
 $template->set_unknowns('remove');
 $template->set_file('head', 'head.tpl');
 $template->set_block('head', 'stylesheet', 'stylesheets');
@@ -190,8 +190,8 @@ if (!empty($serverSettings['bakcground_image']))
 $bodoc	 = CreateObject('booking.bodocumentation');
 $manual	 = $bodoc->so->getFrontendDoc();
 
-$menuaction	 = Sanitizer::get_var('menuaction', 'GET');
-$id			 = Sanitizer::get_var('id', 'GET');
+$menuaction	 = Sanitizer::get_var('menuaction', 'string', 'GET', '');
+$id			 = Sanitizer::get_var('id', 'int', 'GET');
 if (strpos($menuaction, 'organization'))
 {
 	$boorganization	 = CreateObject('booking.boorganization');

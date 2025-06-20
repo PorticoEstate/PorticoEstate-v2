@@ -28,6 +28,7 @@ trait SerializableTrait
             $escapeStringAnnotation = $this->parseEscapeStringAnnotation($property);
             $defaultAnnotation = $this->parseDefaultAnnotation($property);
             $timestampAnnotation = $this->parseTimestampAnnotation($property);
+            $parseBoolAnnotation = $this->parseParseBoolAnnotation($property);
 
             if ($excludeAnnotation)
             {
@@ -57,6 +58,12 @@ trait SerializableTrait
                         {
                             $value = $this->processStringEscaping($value, $escapeStringAnnotation);
                         }
+                    }
+
+                    // Apply ParseBool transformation if annotation exists
+                    if ($parseBoolAnnotation)
+                    {
+                        $value = $this->parseStringBoolean($value);
                     }
 
                     if ($serializeAsAnnotation)
@@ -510,6 +517,13 @@ trait SerializableTrait
 
     /**
      * Parse @Timestamp annotation
+     *
+     * Supports the following options:
+     * - format: Output format (default: "c" for ISO 8601)
+     * - sourceTimezone: The timezone the stored timestamp is in (default: "Europe/Oslo")
+     *
+     * Example: @Timestamp(format="c", sourceTimezone="UTC")
+     *
      * @return array|null Returns format settings if annotation is present, null otherwise
      */
     private function parseTimestampAnnotation(\ReflectionProperty $property): ?array
@@ -538,6 +552,11 @@ trait SerializableTrait
                     $options['format'] = 'c';
                 }
 
+                // Set default source timezone to Oslo if not specified
+                if (!isset($options['sourceTimezone'])) {
+                    $options['sourceTimezone'] = 'Europe/Oslo';
+                }
+
                 self::$annotationCache[$className]['properties'][$propertyName]['timestamp'] = $options;
             }
             else
@@ -554,17 +573,22 @@ trait SerializableTrait
      */
     private function formatTimestamp($value, array $options = []): string
     {
-        // Get format from options or use ISO 8601 as default
+        // Get format and source timezone from options
         $format = $options['format'] ?? 'c';
+        $sourceTimezone = $options['sourceTimezone'] ?? 'Europe/Oslo';
 
-        // Create Oslo timezone object
+        // Create timezone objects
+        $sourceTz = new \DateTimeZone($sourceTimezone);
         $osloTz = new \DateTimeZone('Europe/Oslo');
 
         // Handle different timestamp formats
         if (is_numeric($value)) {
-            // Unix timestamp
-            $date = new \DateTime('now', $osloTz);
+            // Unix timestamp - treat as being in the source timezone
+            $date = new \DateTime('now', $sourceTz);
             $date->setTimestamp($value);
+
+            // Convert to Oslo timezone for output
+            $date->setTimezone($osloTz);
             return $date->format($format);
         }
 
@@ -574,14 +598,89 @@ trait SerializableTrait
         }
 
         try {
-            // Create DateTime with Oslo timezone from the start
-            // This will treat the input time as being in Oslo timezone
-            $date = new \DateTime($value, $osloTz);
+            // Create DateTime assuming the value is in the source timezone
+            $date = new \DateTime($value, $sourceTz);
+
+            // Convert to Oslo timezone for output
+            $date->setTimezone($osloTz);
             return $date->format($format);
         } catch (\Exception $e) {
             // If parsing fails, return original value
             return $value;
         }
+    }
+
+    /**
+     * Parse @ParseBool annotation
+     *
+     * This annotation enables automatic conversion of string boolean values to actual booleans:
+     * - "True", "Yes", "1" (case insensitive) or integer 1 -> true
+     * - "False", "No", "0", null, "", unset or integer 0 -> false
+     *
+     * Example: @ParseBool
+     *
+     * @return bool Returns true if annotation is present, false otherwise
+     */
+    private function parseParseBoolAnnotation(\ReflectionProperty $property): bool
+    {
+        $className = $property->getDeclaringClass()->getName();
+        $propertyName = $property->getName();
+
+        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['parseBool']))
+        {
+            $docComment = $property->getDocComment();
+            self::$annotationCache[$className]['properties'][$propertyName]['parseBool'] = strpos($docComment, '@ParseBool') !== false;
+        }
+        return self::$annotationCache[$className]['properties'][$propertyName]['parseBool'];
+    }
+
+    /**
+     * Convert string boolean values to actual boolean values
+     *
+     * Converts:
+     * - "True", "Yes", "1" (case insensitive) or integer 1 -> true
+     * - "False", "No", "0", null, "", unset or integer 0 -> false
+     * - All other values remain unchanged
+     */
+    private function parseStringBoolean($value): mixed
+    {
+        if (is_string($value)) {
+            $lowerValue = strtolower(trim($value));
+            if (in_array($lowerValue, ['true', 'yes', '1'])) {
+                return true;
+            }
+            if (in_array($lowerValue, ['false', 'no', '', '0'])) {
+                return false;
+            }
+        }
+
+        if (is_int($value)) {
+            if ($value === 1) {
+                return true;
+            }
+            if ($value === 0) {
+                return false;
+            }
+        }
+
+        if ($value === null) {
+            return false;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Convert the object to an array using the serialize method
+     * This is a convenience method that calls serialize() with default parameters
+     *
+     * @param array $context Additional context for serialization
+     * @param bool $short Whether to use short serialization (only properties marked with @Short)
+     * @return array|null The serialized array representation of the object
+     */
+    public function toArray(array $context = [], bool $short = false): ?array
+    {
+        return $this->serialize($context, $short);
     }
 
 

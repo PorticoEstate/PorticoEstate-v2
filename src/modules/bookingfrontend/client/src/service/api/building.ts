@@ -3,6 +3,7 @@ import {skipToken, useQuery} from "@tanstack/react-query";
 import {IBuilding} from "@/service/types/Building";
 import {IAPIQueryResponse, IDocument, IDocumentCategoryQuery} from "@/service/types/api.types";
 import {IShortResource} from "@/service/pecalendar.types";
+import { IResource } from "@/service/types/resource.types";
 
 
 export async function fetchBuilding(building_id: number, instance?: string): Promise<IBuilding> {
@@ -133,7 +134,7 @@ export async function fetchResourceDocuments(buildingId: number | string, type_f
     return result;
 }
 
-export function getDocumentLink(doc: IDocument, type: 'building' | 'resource'): string {
+export function getDocumentLink(doc: IDocument, type: 'building' | 'resource' | 'application'): string {
     const url = phpGWLink(['bookingfrontend', type + 's', 'document', doc.id, 'download']);
     return url
 }

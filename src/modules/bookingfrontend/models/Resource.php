@@ -195,6 +195,8 @@ class Resource
     /**
      * @ORM\Column(type="integer")
      * @Expose
+	 * @Short
+	 * @ParseBool
      * @OA\Property(description="Whether the calendar is deactivated", type="integer")
      */
     public $deactivate_calendar;
@@ -202,6 +204,8 @@ class Resource
     /**
      * @ORM\Column(type="integer")
      * @Expose
+	 * @ParseBool
+     * @Short
      * @OA\Property(description="Whether the application is deactivated", type="integer")
      */
     public $deactivate_application;
@@ -230,13 +234,15 @@ class Resource
     /**
      * @ORM\Column(type="smallint", nullable=true)
      * @Expose
-     * @OA\Property(description="Whether the resource is hidden in frontend", type="integer", nullable=true)
+	 * @ParseBool
+	 * @OA\Property(description="Whether the resource is hidden in frontend", type="integer", nullable=true)
      */
     public $hidden_in_frontend;
 
     /**
      * @ORM\Column(type="smallint", nullable=true)
      * @Expose
+     * @Short
      * @OA\Property(description="Whether prepayment is activated", type="integer", nullable=true)
      */
     public $activate_prepayment;

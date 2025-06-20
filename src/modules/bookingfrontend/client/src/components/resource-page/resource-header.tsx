@@ -7,6 +7,7 @@ import {IShortResource} from "@/service/pecalendar.types";
 import {Button, Heading} from "@digdir/designsystemet-react";
 import Link from "next/link";
 import DividerCircle from "@/components/util/DividerCircle";
+import { IResource } from "@/service/types/resource.types";
 
 interface ResourceHeaderProps {
 	resource: IShortResource | IResource;

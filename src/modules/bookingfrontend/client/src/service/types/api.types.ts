@@ -207,3 +207,31 @@ export interface IDocument {
     owner_type?: 'resource' | 'building';
 }
 export type IDocumentCategoryQuery = IDocument['category'] | 'images';
+
+/**
+ * Response interface for multi domain list endpoint
+ */
+export interface IMultiDomainListResponse {
+    /** Array of multi domain objects */
+    results: IMultiDomain[];
+    /** Total number of records */
+    total_records: number;
+}
+
+/**
+ * Multi Domain model interface
+ */
+export interface IMultiDomain {
+    /** Unique identifier for the multi domain */
+    id: number;
+    /** Name of the domain */
+    name: string;
+    /** Web service host URL */
+    webservicehost: string;
+    /** User ID who created this domain */
+    user_id?: number | null;
+    /** Entry date as timestamp */
+    entry_date?: number | null;
+    /** Modified date as timestamp */
+    modified_date?: number | null;
+}

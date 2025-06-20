@@ -15,6 +15,7 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import FullCalendarView from "@/components/building-calendar/views/calendar/full-calendar-view";
 import TimeslotView from "@/components/building-calendar/views/timeslots/timeslot-view";
+import {isCalendarDeactivated} from "@/service/utils/deactivation-utils";
 
 interface BuildingCalendarProps {
 	events?: IEvent[];
@@ -53,7 +54,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 		setLastCalendarView(view)
 
 	}, [view, lastCalendarView]);
-	
+
 	// Force day view when in calendar mode on mobile
 	useEffect(() => {
 		if (window.innerWidth < 601 && calendarViewMode === 'calendar' && view !== 'timeGridDay' && view !== 'listWeek') {
@@ -102,15 +103,20 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 
 
 	const handleDateSelect = useCallback((selectInfo?: Partial<DateSelectArg>) => {
+		// Prevent date selection if calendar is deactivated
+		if (props.building.deactivate_calendar) {
+			return;
+		}
+
 		if (selectInfo?.view?.type === 'dayGridMonth') {
 			return;
 		}
-		
+
 		// Prevent creating events in the past
 		if (selectInfo?.start && DateTime.fromJSDate(selectInfo.start) < DateTime.now()) {
 			return;
 		}
-		
+
 		const title = t('bookingfrontend.new application');
 
 		const newEvent: FCallTempEvent = {
@@ -128,7 +134,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 		};
 		selectEvent(newEvent, undefined);
 		selectInfo?.view?.calendar.unselect(); // Clear selection
-	}, [t, enabledResources, props.building.id, selectEvent]);
+	}, [t, enabledResources, props.building.id, props.building.deactivate_calendar, selectEvent]);
 
 	return (
 		<React.Fragment>
@@ -142,7 +148,7 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 								 currentDate={currentDate} setCurrentDate={setCurrentDate}
 								 setLastCalendarView={() => setView(lastCalendarView)} building={props.building}
 								 createNew={() => handleDateSelect()}/>
-			{calendarViewMode === 'calendar' && (
+			{calendarViewMode === 'calendar' && !props.building.deactivate_calendar && (
 				<FullCalendarView
 					calendarRef={calendarRef}
 					viewMode={view}
@@ -157,6 +163,21 @@ const BuildingCalendarClient: FC<BuildingCalendarProps> = (props) => {
 					handleDateSelect={handleDateSelect}
 				/>
 
+			)}
+			{calendarViewMode === 'calendar' && props.building.deactivate_calendar && (
+				<div style={{
+					padding: '2rem',
+					textAlign: 'center',
+					color: '#666',
+					fontSize: '1.1rem',
+					border: '1px solid #e0e0e0',
+					borderRadius: '8px',
+					backgroundColor: '#f9f9f9',
+					margin: '1rem 0',
+					gridArea: 'calendar-body'
+				}}>
+					{t('bookingfrontend.calendar_view_disabled')}
+				</div>
 			)}
 			{calendarViewMode === 'timeslots' && (
 				<TimeslotView

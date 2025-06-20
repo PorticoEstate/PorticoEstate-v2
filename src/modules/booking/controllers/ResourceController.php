@@ -475,6 +475,38 @@ class ResourceController
 				':to_' => $toDate->format('Y-m-d H:i:s')
 			]);
 
+			// Insert default age group (use first available)
+			$ageGroupSql = "SELECT id FROM bb_agegroup ORDER BY id LIMIT 1";
+			$ageGroupStmt = $this->db->prepare($ageGroupSql);
+			$ageGroupStmt->execute();
+			$ageGroupId = $ageGroupStmt->fetchColumn();
+			
+			if ($ageGroupId) {
+				$eventAgeGroupSql = "INSERT INTO bb_event_agegroup (event_id, agegroup_id, male, female) VALUES (:event_id, :agegroup_id, :male, :female)";
+				$eventAgeGroupStmt = $this->db->prepare($eventAgeGroupSql);
+				$eventAgeGroupStmt->execute([
+					':event_id' => $eventId,
+					':agegroup_id' => $ageGroupId,
+					':male' => 0, // Default values for bridge imports
+					':female' => 0
+				]);
+			}
+
+			// Insert default target audience (use first available)
+			$targetAudienceSql = "SELECT id FROM bb_targetaudience ORDER BY id LIMIT 1";
+			$targetAudienceStmt = $this->db->prepare($targetAudienceSql);
+			$targetAudienceStmt->execute();
+			$targetAudienceId = $targetAudienceStmt->fetchColumn();
+			
+			if ($targetAudienceId) {
+				$eventTargetAudienceSql = "INSERT INTO bb_event_targetaudience (event_id, targetaudience_id) VALUES (:event_id, :targetaudience_id)";
+				$eventTargetAudienceStmt = $this->db->prepare($eventTargetAudienceSql);
+				$eventTargetAudienceStmt->execute([
+					':event_id' => $eventId,
+					':targetaudience_id' => $targetAudienceId
+				]);
+			}
+
 			$this->db->commit();
 			return (int)$eventId;
 

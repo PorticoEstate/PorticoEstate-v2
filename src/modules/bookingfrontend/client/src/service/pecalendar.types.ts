@@ -25,6 +25,8 @@ export interface IAPIScheduleEntity {
 	building_name: string;    // @Expose + NOT NULL + default
 	skip_bas: number;        // @Expose + default 0
 	resources: IShortResource[];  // @Expose
+	edit_link?: string;
+	cancel_link?: string;
 }
 
 export interface IAPIAllocation extends IAPIScheduleEntity {

@@ -278,56 +278,85 @@ class ResourceController
 	 */
 	public function createEvent(Request $request, Response $response, array $args): Response
 	{
-		try {
+		try
+		{
 			$resourceId = (int)$args['id'];
-			
+
 			// Validate resource ID
-			if ($resourceId <= 0) {
+			if ($resourceId <= 0)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Invalid resource ID']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
 			// Verify resource exists
-			if (!$this->resourceExists($resourceId)) {
+			if (!$this->resourceExists($resourceId))
+			{
 				$response->getBody()->write(json_encode(['error' => 'Resource not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
 
-			// Parse request body
-			$body = $request->getBody()->getContents();
-			$eventData = json_decode($body, true);
+			// Parse request data (handle both JSON and form-encoded data)
+			$eventData = [];
+			$contentType = $request->getHeaderLine('Content-Type');
 
-			if (json_last_error() !== JSON_ERROR_NONE) {
-				$response->getBody()->write(json_encode(['error' => 'Invalid JSON format']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			if (strpos($contentType, 'application/json') !== false)
+			{
+				// Handle JSON data
+				$body = $request->getBody()->getContents();
+				$eventData = json_decode($body, true);
+
+				if (json_last_error() !== JSON_ERROR_NONE)
+				{
+					$response->getBody()->write(json_encode(['error' => 'Invalid JSON format']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+			}
+			else
+			{
+				// Handle form-encoded data ($_POST)
+				$eventData = $request->getParsedBody() ?: [];
+
+				if (empty($eventData))
+				{
+					$response->getBody()->write(json_encode(['error' => 'No data received']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
 			}
 
 			// Validate required fields
 			$requiredFields = ['title', 'from_', 'to_', 'source'];
-			foreach ($requiredFields as $field) {
-				if (!isset($eventData[$field]) || empty($eventData[$field])) {
+			foreach ($requiredFields as $field)
+			{
+				if (!isset($eventData[$field]) || empty($eventData[$field]))
+				{
 					$response->getBody()->write(json_encode(['error' => "Missing required field: $field"]));
 					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 				}
 			}
 
 			// Validate and parse dates
-			try {
+			try
+			{
 				$fromDate = new \DateTime($eventData['from_']);
 				$toDate = new \DateTime($eventData['to_']);
-				
-				if ($fromDate >= $toDate) {
+
+				if ($fromDate >= $toDate)
+				{
 					$response->getBody()->write(json_encode(['error' => 'End time must be after start time']));
 					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 				}
-			} catch (\Exception $e) {
+			}
+			catch (\Exception $e)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS±HH:MM)']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
 			// Check for duplicates and overlaps
 			$conflictCheck = $this->checkEventConflicts($resourceId, $fromDate, $toDate, $eventData);
-			if ($conflictCheck !== null) {
+			if ($conflictCheck !== null)
+			{
 				$response->getBody()->write(json_encode(['error' => $conflictCheck]));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(409); // Conflict status
 			}
@@ -335,7 +364,8 @@ class ResourceController
 			// Create event in database
 			$eventId = $this->createEventInDatabase($resourceId, $eventData, $fromDate, $toDate);
 
-			if (!$eventId) {
+			if (!$eventId)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Failed to create event']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 			}
@@ -357,8 +387,9 @@ class ResourceController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
-
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
@@ -380,12 +411,14 @@ class ResourceController
 	 */
 	private function createEventInDatabase(int $resourceId, array $eventData, \DateTime $fromDate, \DateTime $toDate): ?int
 	{
-		try {
+		try
+		{
 			$this->db->beginTransaction();
 
 			// Get building information for the resource
 			$buildingInfo = $this->getBuildingInfoForResource($resourceId);
-			if (!$buildingInfo) {
+			if (!$buildingInfo)
+			{
 				throw new Exception('Could not find building information for resource');
 			}
 
@@ -402,7 +435,7 @@ class ResourceController
 				'contact_name' => $eventData['contact_name'] ?? '',
 				'contact_email' => $eventData['contact_email'] ?? '',
 				'organizer' => $eventData['contact_name'] ?? 'Calendar Bridge',
-				
+
 				// Required fields from soevent constructor
 				'activity_id' => 1, // Default activity - you may want to make this configurable
 				'building_id' => $buildingInfo['id'],
@@ -412,12 +445,12 @@ class ResourceController
 				'customer_internal' => 0, // External by default for bridge imports
 				'include_in_list' => 0, // Don't include in public lists by default
 				'reminder' => 1, // Default reminder setting
-				
+
 				// Status fields
 				'active' => 1,
 				'is_public' => 0, // Private by default for bridge imports
 				'completed' => 0,
-				
+
 				// Optional fields with defaults
 				'contact_phone' => $eventData['contact_phone'] ?? '',
 				'homepage' => $eventData['homepage'] ?? '',
@@ -433,27 +466,29 @@ class ResourceController
 				'sms_total' => null,
 				'skip_bas' => 0,
 				'application_id' => null,
-				
+
 				// Metadata fields
-				'id_string' => null, // Will be set after insert
+				'id_string' => 0, // Will be set after insert
 			];
 
 			// Insert event
 			$eventColumns = array_keys($dbEventData);
 			$eventPlaceholders = ':' . implode(', :', $eventColumns);
-			
+
 			$eventSql = "INSERT INTO bb_event (" . implode(', ', $eventColumns) . ") VALUES (" . $eventPlaceholders . ") RETURNING id";
 			$eventStmt = $this->db->prepare($eventSql);
 
 			// Bind parameters
-			foreach ($dbEventData as $key => $value) {
+			foreach ($dbEventData as $key => $value)
+			{
 				$eventStmt->bindValue(":$key", $value);
 			}
 
 			$eventStmt->execute();
 			$eventId = $eventStmt->fetchColumn();
 
-			if (!$eventId) {
+			if (!$eventId)
+			{
 				throw new Exception('Failed to get event ID after insertion');
 			}
 
@@ -487,8 +522,9 @@ class ResourceController
 			$ageGroupStmt = $this->db->prepare($ageGroupSql);
 			$ageGroupStmt->execute();
 			$ageGroupId = $ageGroupStmt->fetchColumn();
-			
-			if ($ageGroupId) {
+
+			if ($ageGroupId)
+			{
 				$eventAgeGroupSql = "INSERT INTO bb_event_agegroup (event_id, agegroup_id, male, female) VALUES (:event_id, :agegroup_id, :male, :female)";
 				$eventAgeGroupStmt = $this->db->prepare($eventAgeGroupSql);
 				$eventAgeGroupStmt->execute([
@@ -504,8 +540,9 @@ class ResourceController
 			$targetAudienceStmt = $this->db->prepare($targetAudienceSql);
 			$targetAudienceStmt->execute();
 			$targetAudienceId = $targetAudienceStmt->fetchColumn();
-			
-			if ($targetAudienceId) {
+
+			if ($targetAudienceId)
+			{
 				$eventTargetAudienceSql = "INSERT INTO bb_event_targetaudience (event_id, targetaudience_id) VALUES (:event_id, :targetaudience_id)";
 				$eventTargetAudienceStmt = $this->db->prepare($eventTargetAudienceSql);
 				$eventTargetAudienceStmt->execute([
@@ -516,8 +553,9 @@ class ResourceController
 
 			$this->db->commit();
 			return (int)$eventId;
-
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$this->db->rollback();
 			error_log("Error creating event: " . $e->getMessage());
 			return null;
@@ -533,11 +571,11 @@ class ResourceController
 				FROM bb_building 
 				JOIN bb_building_resource ON bb_building.id = bb_building_resource.building_id 
 				WHERE bb_building_resource.resource_id = :resource_id";
-		
+
 		$stmt = $this->db->prepare($sql);
 		$stmt->execute([':resource_id' => $resourceId]);
 		$result = $stmt->fetch(PDO::FETCH_ASSOC);
-		
+
 		return $result ?: null;
 	}
 
@@ -556,7 +594,7 @@ class ResourceController
 	{
 		$start = $fromDate->format('Y-m-d H:i:s');
 		$end = $toDate->format('Y-m-d H:i:s');
-		
+
 		// Check for exact duplicates first (same resource, same time, same title)
 		$duplicateSql = "SELECT e.id FROM bb_event e
 			JOIN bb_event_resource er ON e.id = er.event_id
@@ -565,7 +603,7 @@ class ResourceController
 			AND e.from_ = :from_date
 			AND e.to_ = :to_date
 			AND e.name = :event_name";
-		
+
 		$duplicateStmt = $this->db->prepare($duplicateSql);
 		$duplicateStmt->execute([
 			':resource_id' => $resourceId,
@@ -573,11 +611,12 @@ class ResourceController
 			':to_date' => $end,
 			':event_name' => $eventData['title']
 		]);
-		
-		if ($duplicateStmt->fetch()) {
+
+		if ($duplicateStmt->fetch())
+		{
 			return 'Duplicate event detected: An identical event already exists for this resource at the same time';
 		}
-		
+
 		// Check for overlapping events (based on soevent validation logic)
 		$overlapSql = "SELECT e.id, e.name FROM bb_event e
 			WHERE e.active = 1 
@@ -585,18 +624,19 @@ class ResourceController
 			AND ((e.from_ >= :start AND e.from_ < :end) OR
 				 (e.to_ > :start AND e.to_ <= :end) OR
 				 (e.from_ < :start AND e.to_ > :end))";
-		
+
 		$overlapStmt = $this->db->prepare($overlapSql);
 		$overlapStmt->execute([
 			':resource_id' => $resourceId,
 			':start' => $start,
 			':end' => $end
 		]);
-		
-		if ($overlapResult = $overlapStmt->fetch(PDO::FETCH_ASSOC)) {
+
+		if ($overlapResult = $overlapStmt->fetch(PDO::FETCH_ASSOC))
+		{
 			return "Time conflict: Overlaps with existing event #{$overlapResult['id']} - {$overlapResult['name']}";
 		}
-		
+
 		// Check for overlapping allocations
 		$allocationOverlapSql = "SELECT a.id FROM bb_allocation a
 			WHERE a.active = 1 
@@ -604,18 +644,19 @@ class ResourceController
 			AND ((a.from_ >= :start AND a.from_ < :end) OR
 				 (a.to_ > :start AND a.to_ <= :end) OR
 				 (a.from_ < :start AND a.to_ > :end))";
-		
+
 		$allocationStmt = $this->db->prepare($allocationOverlapSql);
 		$allocationStmt->execute([
 			':resource_id' => $resourceId,
 			':start' => $start,
 			':end' => $end
 		]);
-		
-		if ($allocationResult = $allocationStmt->fetch(PDO::FETCH_ASSOC)) {
+
+		if ($allocationResult = $allocationStmt->fetch(PDO::FETCH_ASSOC))
+		{
 			return "Time conflict: Overlaps with existing allocation #{$allocationResult['id']}";
 		}
-		
+
 		// Check for overlapping bookings
 		$bookingOverlapSql = "SELECT b.id FROM bb_booking b
 			WHERE b.active = 1 
@@ -623,18 +664,19 @@ class ResourceController
 			AND ((b.from_ >= :start AND b.from_ < :end) OR
 				 (b.to_ > :start AND b.to_ <= :end) OR
 				 (b.from_ < :start AND b.to_ > :end))";
-		
+
 		$bookingStmt = $this->db->prepare($bookingOverlapSql);
 		$bookingStmt->execute([
 			':resource_id' => $resourceId,
 			':start' => $start,
 			':end' => $end
 		]);
-		
-		if ($bookingResult = $bookingStmt->fetch(PDO::FETCH_ASSOC)) {
+
+		if ($bookingResult = $bookingStmt->fetch(PDO::FETCH_ASSOC))
+		{
 			return "Time conflict: Overlaps with existing booking #{$bookingResult['id']}";
 		}
-		
+
 		// No conflicts found
 		return null;
 	}

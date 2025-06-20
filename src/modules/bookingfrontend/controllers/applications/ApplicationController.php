@@ -97,6 +97,13 @@ class ApplicationController extends DocumentController
      *     path="/bookingfrontend/applications",
      *     summary="Get all applications for the current user",
      *     tags={"Applications"},
+     *     @OA\Parameter(
+     *         name="include_organizations",
+     *         in="query",
+     *         required=false,
+     *         description="Include applications from organizations the user belongs to",
+     *         @OA\Schema(type="boolean", default=false)
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of applications",
@@ -132,7 +139,12 @@ class ApplicationController extends DocumentController
                 );
             }
 
-            $applications = $this->applicationService->getApplicationsBySsn($ssn);
+            // Get query parameter for including organization applications
+            $queryParams = $request->getQueryParams();
+            $includeOrganizations = isset($queryParams['include_organizations']) && 
+                                   filter_var($queryParams['include_organizations'], FILTER_VALIDATE_BOOLEAN);
+
+            $applications = $this->applicationService->getApplicationsBySsn($ssn, $includeOrganizations);
             $total_sum = $this->applicationService->calculateTotalSum($applications);
 
             $responseData = [
@@ -227,7 +239,6 @@ class ApplicationController extends DocumentController
             );
         }
     }
-
 
     /**
      * @OA\Delete(
@@ -1306,4 +1317,5 @@ class ApplicationController extends DocumentController
             error_log("WebSocket notification error: " . $e->getMessage());
         }
     }
+
 }

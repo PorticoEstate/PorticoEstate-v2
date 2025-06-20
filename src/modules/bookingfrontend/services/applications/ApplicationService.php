@@ -51,11 +51,12 @@ class ApplicationService
      * Get applications by SSN
      *
      * @param string $ssn Social security number
+     * @param bool $includeOrganizations Whether to include organization applications
      * @return array Array of applications
      */
-    public function getApplicationsBySsn(string $ssn): array
+    public function getApplicationsBySsn(string $ssn, bool $includeOrganizations = false): array
     {
-        return $this->applicationRepository->getApplicationsBySsn($ssn);
+        return $this->applicationRepository->getApplicationsBySsnAndOrganizations($ssn, $includeOrganizations);
     }
 
     /**
@@ -201,15 +202,20 @@ class ApplicationService
      */
     public function updateApplicationsWithContactInfo(string $session_id, array $data, bool $finalize = true): array
     {
+        $errors = $this->validateCheckoutData($data);
+        if (!empty($errors))
+        {
+            throw new Exception(implode(", ", $errors));
+        }
+
+        $startedTransaction = false;
         try
         {
-            $errors = $this->validateCheckoutData($data);
-            if (!empty($errors))
-            {
-                throw new Exception(implode(", ", $errors));
+            // Only start transaction if not already in one
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+                $startedTransaction = true;
             }
-
-            $this->db->beginTransaction();
 
             $applications = $this->getPartialApplications($session_id);
 
@@ -301,12 +307,19 @@ class ApplicationService
                 $updatedApplications[] = array_merge($application, $baseUpdateData);
             }
 
-            $this->db->commit();
+            // Only commit if we started the transaction
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
+            
             return $updatedApplications;
 
         } catch (Exception $e)
         {
-            $this->db->rollBack();
+            // Only rollback if we started the transaction
+            if ($startedTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }
@@ -459,10 +472,10 @@ class ApplicationService
     {
         try
         {
+            $this->db->beginTransaction();
+
             // First update all applications with contact info and validate limits
             $updatedApplications = $this->updateApplicationsWithContactInfo($session_id, $data);
-
-            $this->db->beginTransaction();
 
             $parent_id = $data['parent_id'] ?? $updatedApplications[0]['id'];
             $finalUpdatedApplications = [];
@@ -538,6 +551,7 @@ class ApplicationService
                 $this->sendApplicationNotification($application['id']);
                 $finalUpdatedApplications[] = array_merge($application, $updateData);
             }
+            
             $this->db->commit();
             return [
                 'updated' => $finalUpdatedApplications,
@@ -547,7 +561,9 @@ class ApplicationService
 
         } catch (Exception $e)
         {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }

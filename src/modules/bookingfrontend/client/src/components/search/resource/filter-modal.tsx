@@ -7,6 +7,7 @@ import ActivityFilterWithLimit from './activity-filter';
 import FacilityFilterWithLimit from './facility-filter';
 import styles from './resource-search.module.scss';
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
+import {isCalendarDeactivated, isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 
 interface FilterModalProps {
     open: boolean;
@@ -61,7 +62,7 @@ const FilterModal: FC<FilterModalProps> = ({
         // Get all active buildings
         const activeBuildings = new Set(
             searchData.buildings
-                .filter(building => building.deactivate_calendar !== 1)
+                .filter(building => !building.deactivate_calendar)
                 .map(building => building.id)
         );
 
@@ -174,7 +175,7 @@ const FilterModal: FC<FilterModalProps> = ({
         // Get all active buildings
         const activeBuildings = new Set(
             searchData.buildings
-                .filter(building => building.deactivate_calendar !== 1)
+                .filter(building => !building.deactivate_calendar)
                 .map(building => building.id)
         );
 

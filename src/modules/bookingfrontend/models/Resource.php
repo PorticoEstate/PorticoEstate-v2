@@ -195,6 +195,8 @@ class Resource
     /**
      * @ORM\Column(type="integer")
      * @Expose
+	 * @Short
+	 * @ParseBool
      * @OA\Property(description="Whether the calendar is deactivated", type="integer")
      */
     public $deactivate_calendar;
@@ -232,7 +234,8 @@ class Resource
     /**
      * @ORM\Column(type="smallint", nullable=true)
      * @Expose
-     * @OA\Property(description="Whether the resource is hidden in frontend", type="integer", nullable=true)
+	 * @ParseBool
+	 * @OA\Property(description="Whether the resource is hidden in frontend", type="integer", nullable=true)
      */
     public $hidden_in_frontend;
 

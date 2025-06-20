@@ -696,8 +696,8 @@ Project No.	booking	no	Prosjektnr.
 Public event	booking	no	Offentlig arrangement
 published	booking	no	Publisert
 quantity	booking	no	Mengde
-reason for rejection	booking	no	Årsak til avslag
 Re-assign to me	booking	no	Bli saksbehandler
+reason for rejection	booking	no	Årsak til avslag
 receipt	booking	no	Kvittering
 Recipients	booking	no	Mottakere
 Recurring allocation	booking	no	Gjenta tildelingen

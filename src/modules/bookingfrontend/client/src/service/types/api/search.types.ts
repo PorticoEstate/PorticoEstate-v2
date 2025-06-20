@@ -44,8 +44,8 @@ export interface ISearchResource {
 	activity_id: number | null;
 	active: number;
 	simple_booking: number | null;
-	deactivate_calendar: number;
-	deactivate_application: number;
+	deactivate_calendar: boolean;
+	deactivate_application: boolean;
 	rescategory_id: number | null; // Link to resource category
 	domain_name?: string; // Multi-domain name for cross-domain search results
 	domain_url?: string; // Multi-domain base URL for redirects

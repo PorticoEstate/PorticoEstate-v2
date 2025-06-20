@@ -1,25 +1,72 @@
 'use client'
-import React, {FC} from 'react';
+import React, {FC, useMemo} from 'react';
 import {IApplication} from "@/service/types/api/application.types";
-import {useApplication, useResourceRegulationDocuments} from "@/service/hooks/api-hooks";
-import {Card, Heading, Paragraph, Spinner, Link as DigdirLink} from "@digdir/designsystemet-react";
+import {
+	useApplication,
+	useResourceRegulationDocuments,
+	useBuildingAudience,
+	useApplicationScheduleEntities,
+	useApplicationDocuments
+} from "@/service/hooks/api-hooks";
+import {IAPIEvent, IAPIBooking, IAPIAllocation, IEvent} from "@/service/pecalendar.types";
+import {Card, Heading, Paragraph, Spinner, Link as DigdirLink, Tag, Table} from "@digdir/designsystemet-react";
 import ApplicationComments from "./application-comments";
 import PageHeader from "@/components/page-header/page-header";
 import navStyles from "@/components/layout/header/internal-nav/internal-nav.module.scss";
 import styles from "./application-details.module.scss";
 import Link from "next/link";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faArrowLeft} from "@fortawesome/free-solid-svg-icons";
+import {faArrowLeft, faEdit, faCopy, faTimes} from "@fortawesome/free-solid-svg-icons";
 import {DateTime} from "luxon";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import GSAccordion from "@/components/gs-accordion/g-s-accordion";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {getDocumentLink} from "@/service/api/building";
+import {Button} from "@digdir/designsystemet-react";
+import {EventContentList} from "@/components/building-calendar/modules/event/content";
+import EventPopper from "@/components/building-calendar/modules/event/popper/event-popper";
+import ApplicationSchedule from "@/components/user/application/application-schedule/application-schedule";
+import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
+import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
+import ArticleTable from "@/components/article-table/article-table";
 
 interface ApplicationDetailsProps {
 	initialApplication?: IApplication;
 	applicationId: number;
 }
+
+const getStatusColor = (status: string): "neutral" | "danger" | "info" | "success" | "warning" => {
+	const statusLower = status.toLowerCase();
+
+	// Map common application statuses to appropriate colors
+	switch (statusLower) {
+		case 'approved':
+		case 'confirmed':
+		case 'accepted':
+		case 'completed':
+			return 'success';
+
+		case 'rejected':
+		case 'denied':
+		case 'cancelled':
+		case 'failed':
+			return 'danger';
+
+		case 'pending':
+		case 'under_review':
+		case 'processing':
+		case 'waiting':
+			return 'warning';
+
+		case 'new':
+		case 'submitted':
+		case 'received':
+			return 'info';
+
+		default:
+			return 'neutral';
+	}
+};
 
 const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 	const {data: application, isLoading, error} = useApplication(props.applicationId, {
@@ -28,7 +75,45 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 	const {data: regulationDocuments} = useResourceRegulationDocuments(
 		application?.resources || []
 	);
+	const {data: audience} = useBuildingAudience(application?.building_id);
+	const {data: applicationDocuments} = useApplicationDocuments(props.applicationId);
+
 	const t = useTrans();
+
+	// State for copy functionality
+	const [showCopyDialog, setShowCopyDialog] = React.useState(false);
+
+	const handleCopyApplication = () => {
+		setShowCopyDialog(true);
+	};
+
+	const handleCloseCopyDialog = () => {
+		setShowCopyDialog(false);
+	};
+
+	// Create temp event for copying
+	const createTempEventFromApplication = (): Partial<FCallTempEvent> | undefined => {
+		if (!application) return undefined;
+
+		return {
+			id: `copy-${application.id}-${Date.now()}`, // Random unique ID
+			title: application.name || 'Copied Application',
+			start: undefined, // Leave blank as requested
+			end: undefined,   // Leave blank as requested
+			allDay: false,
+			editable: true,
+			extendedProps: {
+				type: 'temporary',
+				resources: application.resources.map(r => String(r.id)), // Use same resources
+				building_id: application.building_id,
+				baseApplication: {
+					...application,
+					dates: [] // Clear dates as requested
+				}
+			}
+		};
+	};
+
 	console.log(application);
 
 	if (isLoading) {
@@ -61,10 +146,31 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 					</Link>
 				</div>
 			</div>
-			<PageHeader title={application.name || t('bookingfrontend.application')}/>
-			<div>
+			<PageHeader title={
+				<span style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+					{application.name || t('bookingfrontend.application')}
+					<Tag data-color={getStatusColor(application.status)} data-size="sm">
+						{t(`bookingfrontend.${application.status.toLowerCase()}`)}
+					</Tag>
+				</span>
+			}/>
+			<div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
 				<div className="font-size-h4" style={{color: 'var(--ds-color-text-subtle)', fontWeight: 400}}>
 					#{application.id}
+				</div>
+				<div style={{display: 'flex', gap: '0.5rem'}}>
+					<Button variant="secondary" data-size="sm">
+						<FontAwesomeIcon icon={faEdit} style={{marginRight: '0.5rem'}}/>
+						{t('bookingfrontend.edit')}
+					</Button>
+					<Button variant="secondary" data-size="sm" onClick={handleCopyApplication}>
+						<FontAwesomeIcon icon={faCopy} style={{marginRight: '0.5rem'}}/>
+						{t('bookingfrontend.copy_application')}
+					</Button>
+					{/*<Button data-color="danger"  variant="secondary" data-size="sm">*/}
+					{/*	<FontAwesomeIcon icon={faTimes} style={{marginRight: '0.5rem'}}/>*/}
+					{/*	{t('bookingfrontend.cancel')}*/}
+					{/*</Button>*/}
 				</div>
 			</div>
 
@@ -72,14 +178,31 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 				<div className={styles.contentGrid}>
 					<div className={styles.detailItem}>
 						<div>
-							<Heading level={3} data-size="xs">{t('bookingfrontend.status')}</Heading>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.start_time')}</Heading>
 						</div>
 						<div>
-							<Paragraph>
-								<span className={`status-badge status-${application.status.toLowerCase()}`}>
-									{t(`bookingfrontend.${application.status.toLowerCase()}`)}
-								</span>
-							</Paragraph>
+							<div>
+								{application.dates.map((date, index) => (
+									<Paragraph key={index}>
+										{DateTime.fromISO(date.from_).toFormat('dd.MM.yyyy HH:mm')}
+									</Paragraph>
+								))}
+							</div>
+						</div>
+					</div>
+
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.end_time')}</Heading>
+						</div>
+						<div>
+							<div>
+								{application.dates.map((date, index) => (
+									<Paragraph key={index}>
+										{DateTime.fromISO(date.to_).toFormat('dd.MM.yyyy HH:mm')}
+									</Paragraph>
+								))}
+							</div>
 						</div>
 					</div>
 
@@ -115,7 +238,8 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 							<Heading level={3} data-size="xs">{t('bookingfrontend.resources')}</Heading>
 						</div>
 						<div>
-							<ResourceCircles resources={application.resources} maxCircles={4} size={'small'} expandable/>
+							<ResourceCircles resources={application.resources} maxCircles={4} size={'small'}
+											 expandable/>
 						</div>
 					</div>
 
@@ -125,7 +249,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						</div>
 						<div>
 							<Paragraph>
-								{application.agegroups && application.agegroups.length > 0 
+								{application.agegroups && application.agegroups.length > 0
 									? application.agegroups.reduce((total, agegroup) => {
 										const groupTotal = agegroup.female ? (agegroup.male + agegroup.female) : agegroup.male;
 										return total + groupTotal;
@@ -138,31 +262,37 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 
 					<div className={styles.detailItem}>
 						<div>
-							<Heading level={3} data-size="xs">{t('bookingfrontend.start_time')}</Heading>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.organizer')}</Heading>
 						</div>
 						<div>
-							<div>
-								{application.dates.map((date, index) => (
-									<Paragraph key={index}>
-										{DateTime.fromISO(date.from_).toFormat('dd.MM.yyyy HH:mm')}
-									</Paragraph>
-								))}
-							</div>
+							<Paragraph>{application.contact_name || application.customer_organization_name || '-'}</Paragraph>
 						</div>
 					</div>
 
 					<div className={styles.detailItem}>
 						<div>
-							<Heading level={3} data-size="xs">{t('bookingfrontend.end_time')}</Heading>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.event_type')}</Heading>
 						</div>
 						<div>
-							<div>
-								{application.dates.map((date, index) => (
-									<Paragraph key={index}>
-										{DateTime.fromISO(date.to_).toFormat('dd.MM.yyyy HH:mm')}
-									</Paragraph>
-								))}
-							</div>
+							<Paragraph>{application.customer_organization_name ? t('bookingfrontend.organization') : t('bookingfrontend.personal')}</Paragraph>
+						</div>
+					</div>
+
+					<div className={styles.detailItem}>
+						<div>
+							<Heading level={3} data-size="xs">{t('bookingfrontend.target_audience')}</Heading>
+						</div>
+						<div>
+							{application.audience && application.audience.length > 0 && audience ? (
+								<Paragraph>
+									{application.audience
+										.map(audienceId => audience.find(a => a.id === audienceId)?.name)
+										.filter(Boolean)
+										.join(', ')}
+								</Paragraph>
+							) : (
+								<Paragraph>-</Paragraph>
+							)}
 						</div>
 					</div>
 
@@ -184,10 +314,10 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 
 				<GSAccordion data-color="neutral">
 					<GSAccordion.Heading>
-						<h3>{t('bookingfrontend.information about the event')}</h3>
+						<h3>{t('bookingfrontend.events_allocations')}</h3>
 					</GSAccordion.Heading>
 					<GSAccordion.Content>
-						<Paragraph>{t('bookingfrontend.no information available')}</Paragraph>
+						<ApplicationSchedule applicationId={props.applicationId} />
 					</GSAccordion.Content>
 				</GSAccordion>
 
@@ -215,7 +345,31 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 
 				<GSAccordion data-color="neutral">
 					<GSAccordion.Heading>
-						<h3>{t('bookingfrontend.contact & invoice')}</h3>
+						<h3>{t('bookingfrontend.application_documents')}</h3>
+					</GSAccordion.Heading>
+					<GSAccordion.Content>
+						{applicationDocuments && applicationDocuments.length > 0 ? (
+							<div>
+								{applicationDocuments.map((doc) => (
+									<div key={doc.id} style={{marginBottom: '0.5rem'}}>
+										<DigdirLink
+											href={getDocumentLink(doc, 'application')}
+											target="_blank"
+										>
+											{doc.name}
+										</DigdirLink>
+									</div>
+								))}
+							</div>
+						) : (
+							<Paragraph>{t('bookingfrontend.no documents available')}</Paragraph>
+						)}
+					</GSAccordion.Content>
+				</GSAccordion>
+
+				<GSAccordion data-color="neutral">
+					<GSAccordion.Heading>
+						<h3>{t('bookingfrontend.contact_and_invoice')}</h3>
 					</GSAccordion.Heading>
 					<GSAccordion.Content>
 						<div style={{marginBottom: '1rem'}}>
@@ -234,6 +388,19 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 								)}
 							</div>
 						)}
+					</GSAccordion.Content>
+				</GSAccordion>
+
+				<GSAccordion data-color="neutral">
+					<GSAccordion.Heading>
+						<h3>{t('bookingfrontend.orders_articles')}</h3>
+					</GSAccordion.Heading>
+					<GSAccordion.Content>
+						<ArticleTable 
+							orders={application.orders}
+							mode="orders"
+							readOnly={true}
+						/>
 					</GSAccordion.Content>
 				</GSAccordion>
 
@@ -259,8 +426,17 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 					</GSAccordion>
 				)}
 			</section>
+			{/* Copy Application Dialog */}
+			{showCopyDialog && application && (
+				<ApplicationCrud
+					selectedTempApplication={createTempEventFromApplication()}
+					building_id={application.building_id}
+					onClose={handleCloseCopyDialog}
+				/>
+			)}
+
 		</main>
 	);
 }
 
-export default ApplicationDetails
+export default ApplicationDetails;

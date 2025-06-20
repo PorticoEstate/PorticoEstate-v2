@@ -314,7 +314,7 @@
 							<script type="text/javascript">
 								building_id = <xsl:value-of select="application/building_id"/>;
 							</script>
-							<xsl:for-each select="application/dates">
+							<xsl:for-each select="application/combined_dates">
 								<div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px;">
 									<div class="pure-control-group">
 										<label style="font-weight: bold;">

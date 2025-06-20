@@ -707,8 +707,8 @@ Project No.	booking	nn	Prosjektnr.
 Public event	booking	nn	Offentleg arrangement
 published	booking	nn	Publisert
 quantity	booking	nn	Mengde
-reason for rejection	booking	nn	Årsak til avslag
 Re-assign to me	booking	nn	Bli saksbehandler
+reason for rejection	booking	nn	Årsak til avslag
 receipt	booking	nn	Kvittering
 Recipients	booking	nn	Mottakarar
 Recurring allocation	booking	nn	Gjenta tildelingen

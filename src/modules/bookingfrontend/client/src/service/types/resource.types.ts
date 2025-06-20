@@ -22,12 +22,12 @@ export interface IResource {
     booking_day_horizon: number | null;
     capacity: number | null;
     participant_limit: number | null;
-    deactivate_calendar: number;
+    deactivate_calendar: boolean;
     deactivate_application: boolean;
     booking_time_minutes: number | null;
     booking_limit_number: number | null;
     booking_limit_number_horizont: number | null;
-    hidden_in_frontend: number | null;
+    hidden_in_frontend: boolean | null;
     activate_prepayment: number | null;
     booking_buffer_deadline: number | null;
     deny_application_if_booked: 0 | 1 | null;

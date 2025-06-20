@@ -71,7 +71,7 @@ interface NormalizedText {
 
 /**
  * Normalizes HTML text by removing all styling, extracting title from h1 tags,
- * and cleaning up whitespace.
+ * and cleaning up whitespace while preserving newlines from br tags.
  */
 export function normalizeText(html: string): NormalizedText {
     if (!html) return { body: '' };
@@ -86,16 +86,28 @@ export function normalizeText(html: string): NormalizedText {
     const h1Match = trimmed.match(/<h1[^>]*>(.*?)<\/h1>/i);
     const title = h1Match ? h1Match[1].replace(/<[^>]*>/g, '').trim() : undefined;
     
-    // Remove all HTML tags to get plain text
-    let body = trimmed.replace(/<[^>]*>/g, '');
+    // Convert br tags and block-level tags to newlines before removing other HTML tags
+    let body = trimmed.replace(/<br\s*\/?>/gi, '\n');
+    body = body.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n'); // Between paragraphs
+    body = body.replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n'); // Start/end of paragraphs
+    body = body.replace(/<\/(h[1-6]|div)>/gi, '\n'); // End of headings and divs
+    
+    // Remove all other HTML tags to get plain text
+    body = body.replace(/<[^>]*>/g, '');
     
     // If we extracted a title, remove it from the body
     if (title && body.startsWith(title)) {
         body = body.substring(title.length).trim();
     }
     
-    // Clean up extra whitespace
-    body = body.replace(/\s+/g, ' ').trim();
+    // Clean up extra whitespace but preserve newlines
+    body = body.replace(/[ \t]+/g, ' ').replace(/\n[ \t]*/g, '\n').replace(/[ \t]*\n/g, '\n');
+    
+    // Consolidate multiple newlines into single newlines
+    body = body.replace(/\n+/g, '\n');
+    
+    // Remove leading and trailing newlines
+    body = body.replace(/^\n+|\n+$/g, '').trim();
     
     return { title, body };
 }

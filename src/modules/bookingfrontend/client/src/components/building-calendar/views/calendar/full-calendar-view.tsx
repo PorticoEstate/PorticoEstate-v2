@@ -28,8 +28,9 @@ import {useCurrentBuilding, useEnabledResources, useTempEvents} from "@/componen
 import {IEvent} from "@/service/pecalendar.types";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {Season} from "@/service/types/Building";
-import {useBuildingResources} from "@/service/api/building";
+import {useBuilding, useBuildingResources} from "@/service/api/building";
 import { useToast } from "@/components/toast/toast-context";
+import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 
 interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
@@ -66,8 +67,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const updateMutation = useUpdatePartialApplication();
 	const {tempEvents: storedTempEvents} = useTempEvents();
 	const {enabledResources} = useEnabledResources();
-	const building = useCurrentBuilding()
-	const {data: resources} = useBuildingResources(building)
+	const buildingId = useCurrentBuilding()
+	const {data: building} = useBuilding(+buildingId);
+	const {data: resources} = useBuildingResources(buildingId)
 	const t = useTrans();
 	const {data: user} = useBookingUser();
 	const { addToast } = useToast();
@@ -151,7 +153,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		// This means we'll respect season boundaries for display but allow booking until
 		// midnight for seasons that end very late or when no boundaries exist.
 		setSlotMaxTime(
-			maxTime === "00:00:00" || // No boundaries found 
+			maxTime === "00:00:00" || // No boundaries found
 			maxTime >= "23:45:00"     // Season closes very late
 				? '24:00:00'          // Allow until midnight
 				: maxTime             // Otherwise respect the boundary
@@ -348,11 +350,25 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			return false;
 		}
 
+		// Check if the calendar is deactivated for the building
+		if (building?.deactivate_calendar) {
+			// Only show toast for actual user selection attempts
+			if (span.end && span.start) {
+				addToast({
+					type: 'warning',
+					text: t('bookingfrontend.booking_unavailable'),
+					autoHide: true,
+					messageId: 'calendar_deactivated'
+				});
+			}
+			return false;
+		}
+
 		// Check if any selected resources have deactivated applications
 		const selectedResources = [...enabledResources].map(Number);
 		const deactivatedResources = selectedResources.filter(resourceId => {
 			const resource = resources?.find(r => r.id === resourceId);
-			return resource?.deactivate_application;
+			return resource && building ? isApplicationDeactivated(resource, building) : resource?.deactivate_application;
 		});
 
 		if (deactivatedResources.length > 0) {
@@ -451,7 +467,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		return hasNoOverlap;
-	}, [enabledResources, events, resources, addToast, t]);
+	}, [enabledResources, events, resources, addToast, t, buildingId]);
 
 	const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
 		const newEnd = resizeInfo.event.end;

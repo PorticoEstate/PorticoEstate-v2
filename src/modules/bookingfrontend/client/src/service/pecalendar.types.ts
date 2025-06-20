@@ -25,6 +25,8 @@ export interface IAPIScheduleEntity {
 	building_name: string;    // @Expose + NOT NULL + default
 	skip_bas: number;        // @Expose + default 0
 	resources: IShortResource[];  // @Expose
+	edit_link?: string;
+	cancel_link?: string;
 }
 
 export interface IAPIAllocation extends IAPIScheduleEntity {
@@ -115,7 +117,7 @@ export interface IEventOLD {
 	is_public?: number
 }
 
-export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id' | 'activate_prepayment' | 'deactivate_application'>;
+export type IShortResource = Pick<IResource, 'active' | 'name' | 'id' | 'activity_id' | 'simple_booking' | 'building_id' | 'activate_prepayment' | 'deactivate_application' | 'deactivate_calendar'>;
 
 export interface IEventDate {
 	from_: string

@@ -49,7 +49,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	const {setEnabledResources, enabledResources} = useEnabledResources();
 	const queryClient = useQueryClient();
 	const {data: resources} = useBuildingResources(buildingId);
-	const {data: building} = useBuilding(buildingId);
+	const {data: building} = useBuilding(+buildingId);
 
 
 	const resourcesWithSlots = useMemo(() => {

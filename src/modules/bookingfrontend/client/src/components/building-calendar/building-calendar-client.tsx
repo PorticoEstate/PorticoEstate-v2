@@ -33,7 +33,8 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 	const t = useTrans();
 	const {events} = props;
 	const [currentDate, setCurrentDate] = useState<DateTime>(props.initialDate);
-	const calendarRef = useRef<FullCalendar | null>(null);
+	const internalRef = useRef<FullCalendar | null>(null);
+	const calendarRef = (ref || internalRef) as React.MutableRefObject<FullCalendar | null>;
 	const [view, setView] = useState<string>(window.innerWidth < 601 ? 'timeGridDay' : 'timeGridWeek');
 	const [lastCalendarView, setLastCalendarView] = useState<string>('timeGridWeek');
 	const calendarViewMode = useCalenderViewMode();
@@ -76,8 +77,9 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 	}, []);
 
 
+	const currentViewType = calendarRef.current?.getApi().view.type;
 	const popperPlacement = useMemo(() => {
-		switch (calendarRef.current?.getApi().view.type) {
+		switch (currentViewType) {
 			case 'timeGridDay':
 				return 'bottom-start';
 			case 'listWeek':
@@ -94,12 +96,12 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 				}
 				return 'right-start';
 		}
-	}, [calendarRef.current?.getApi().view.type, popperAnchorEl]);
+	}, [currentViewType, popperAnchorEl]);
 
 
 	useEffect(() => {
 		calendarRef?.current?.getApi().changeView(view)
-	}, [view]);
+	}, [view, calendarRef]);
 
 
 	const handleDateSelect = useCallback((selectInfo?: Partial<DateSelectArg>) => {

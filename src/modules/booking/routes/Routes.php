@@ -25,6 +25,7 @@ $app->group('/booking/resources', function (RouteCollectorProxy $group)
 {
 	$group->get('', ResourceController::class . ':index');
 	$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
+	$group->post('/{id}/events', ResourceController::class . ':createEvent');
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

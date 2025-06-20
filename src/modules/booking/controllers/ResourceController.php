@@ -6,7 +6,7 @@ use App\modules\bookingfrontend\services\ScheduleEntityService;
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Resource;
-
+use PDO;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -161,6 +161,14 @@ class ResourceController
 				throw new Exception('Invalid resource ID provided.');
 			}
 
+			// Verify resource exists
+			if (!$this->resourceExists($resourceId))
+			{
+				$response->getBody()->write(json_encode(['error' => 'Resource not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+
 			$queryParams = $request->getQueryParams();
 
 
@@ -205,5 +213,291 @@ class ResourceController
 			$response->getBody()->write(json_encode(['error' => $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
+	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/booking/resources/{id}/events",
+	 *     summary="Create a new event for a specific resource (Outlook integration)",
+	 *     description="Creates a new event from external calendar integration (e.g., Outlook). This endpoint is designed for calendar bridge services.",
+	 *     tags={"Resources"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         description="ID of the resource",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         description="Event data from calendar bridge",
+	 *         @OA\JsonContent(
+	 *             required={"title", "from_", "to_", "source"},
+	 *             @OA\Property(property="title", type="string", description="Event title", example="Team Meeting"),
+	 *             @OA\Property(property="from_", type="string", format="date-time", description="Event start time (ISO 8601)", example="2025-06-25T15:30:00+02:00"),
+	 *             @OA\Property(property="to_", type="string", format="date-time", description="Event end time (ISO 8601)", example="2025-06-25T16:00:00+02:00"),
+	 *             @OA\Property(property="description", type="string", description="Event description", example="Weekly team sync meeting"),
+	 *             @OA\Property(property="contact_name", type="string", description="Contact name", example="john.doe@company.com"),
+	 *             @OA\Property(property="contact_email", type="string", description="Contact email", example="attendee@company.com"),
+	 *             @OA\Property(property="source", type="string", description="Source of the event", example="calendar_bridge"),
+	 *             @OA\Property(property="bridge_import", type="boolean", description="Indicates if this is a bridge import", example=true),
+	 *             @OA\Property(property="type", type="string", description="Event type", example="event")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=201,
+	 *         description="Event created successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="id", type="integer", description="Created event ID"),
+	 *             @OA\Property(property="message", type="string", example="Event created successfully"),
+	 *             @OA\Property(property="event", type="object", ref="#/components/schemas/Event")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Bad request - Invalid input data",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Invalid date format or missing required fields")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Resource not found",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Resource not found")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Failed to create event")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function createEvent(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$resourceId = (int)$args['id'];
+			
+			// Validate resource ID
+			if ($resourceId <= 0) {
+				$response->getBody()->write(json_encode(['error' => 'Invalid resource ID']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Verify resource exists
+			if (!$this->resourceExists($resourceId)) {
+				$response->getBody()->write(json_encode(['error' => 'Resource not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			// Parse request body
+			$body = $request->getBody()->getContents();
+			$eventData = json_decode($body, true);
+
+			if (json_last_error() !== JSON_ERROR_NONE) {
+				$response->getBody()->write(json_encode(['error' => 'Invalid JSON format']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Validate required fields
+			$requiredFields = ['title', 'from_', 'to_', 'source'];
+			foreach ($requiredFields as $field) {
+				if (!isset($eventData[$field]) || empty($eventData[$field])) {
+					$response->getBody()->write(json_encode(['error' => "Missing required field: $field"]));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+			}
+
+			// Validate and parse dates
+			try {
+				$fromDate = new \DateTime($eventData['from_']);
+				$toDate = new \DateTime($eventData['to_']);
+				
+				if ($fromDate >= $toDate) {
+					$response->getBody()->write(json_encode(['error' => 'End time must be after start time']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+			} catch (\Exception $e) {
+				$response->getBody()->write(json_encode(['error' => 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS±HH:MM)']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Create event in database
+			$eventId = $this->createEventInDatabase($resourceId, $eventData, $fromDate, $toDate);
+
+			if (!$eventId) {
+				$response->getBody()->write(json_encode(['error' => 'Failed to create event']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			}
+
+			// Return success response
+			$responseData = [
+				'id' => $eventId,
+				'event_id' => $eventId,
+				'success' => true,
+				'event' => [
+					'id' => $eventId,
+					'resource_id' => $resourceId,
+					'name' => $eventData['title'],
+					'from_' => $eventData['from_'],
+					'to_' => $eventData['to_'],
+					'source' => $eventData['source']
+				]
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * Check if a resource exists in the database
+	 */
+	private function resourceExists(int $resourceId): bool
+	{
+		$sql = "SELECT id FROM bb_resource WHERE id = :id AND active = 1";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([':id' => $resourceId]);
+		return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+	}
+
+	/**
+	 * Create event record in the database
+	 */
+	private function createEventInDatabase(int $resourceId, array $eventData, \DateTime $fromDate, \DateTime $toDate): ?int
+	{
+		try {
+			$this->db->beginTransaction();
+
+			// Get building information for the resource
+			$buildingInfo = $this->getBuildingInfoForResource($resourceId);
+			if (!$buildingInfo) {
+				throw new Exception('Could not find building information for resource');
+			}
+
+			// Generate a secret for the event
+			$secret = $this->generateEventSecret();
+
+			// Prepare event data for database insertion with ALL required fields
+			$dbEventData = [
+				// Basic event information
+				'name' => $eventData['title'],
+				'from_' => $fromDate->format('Y-m-d H:i:s'),
+				'to_' => $toDate->format('Y-m-d H:i:s'),
+				'description' => $eventData['description'] ?? '',
+				'contact_name' => $eventData['contact_name'] ?? '',
+				'contact_email' => $eventData['contact_email'] ?? '',
+				'organizer' => $eventData['contact_name'] ?? 'Calendar Bridge',
+				
+				// Required fields from soevent constructor
+				'activity_id' => 1, // Default activity - you may want to make this configurable
+				'building_id' => $buildingInfo['id'],
+				'building_name' => $buildingInfo['name'],
+				'cost' => 0.00, // Default to 0 for bridge imports
+				'secret' => $secret,
+				'customer_internal' => 0, // External by default for bridge imports
+				'include_in_list' => 0, // Don't include in public lists by default
+				'reminder' => 1, // Default reminder setting
+				
+				// Status fields
+				'active' => 1,
+				'is_public' => 0, // Private by default for bridge imports
+				'completed' => 0,
+				
+				// Optional fields with defaults
+				'contact_phone' => $eventData['contact_phone'] ?? '',
+				'homepage' => $eventData['homepage'] ?? '',
+				'equipment' => $eventData['equipment'] ?? '',
+				'access_requested' => 0,
+				'participant_limit' => $eventData['participant_limit'] ?? null,
+				'customer_identifier_type' => null,
+				'customer_ssn' => null,
+				'customer_organization_number' => null,
+				'customer_organization_id' => null,
+				'customer_organization_name' => null,
+				'additional_invoice_information' => null,
+				'sms_total' => null,
+				'skip_bas' => 0,
+				'application_id' => null,
+				
+				// Metadata fields
+				'id_string' => null, // Will be set after insert
+			];
+
+			// Insert event
+			$eventColumns = array_keys($dbEventData);
+			$eventPlaceholders = ':' . implode(', :', $eventColumns);
+			
+			$eventSql = "INSERT INTO bb_event (" . implode(', ', $eventColumns) . ") VALUES (" . $eventPlaceholders . ") RETURNING id";
+			$eventStmt = $this->db->prepare($eventSql);
+
+			// Bind parameters
+			foreach ($dbEventData as $key => $value) {
+				$eventStmt->bindValue(":$key", $value);
+			}
+
+			$eventStmt->execute();
+			$eventId = $eventStmt->fetchColumn();
+
+			if (!$eventId) {
+				throw new Exception('Failed to get event ID after insertion');
+			}
+
+			// Update id_string to match the ID
+			$updateIdStringSql = "UPDATE bb_event SET id_string = :id_string WHERE id = :id";
+			$updateIdStringStmt = $this->db->prepare($updateIdStringSql);
+			$updateIdStringStmt->execute([
+				':id_string' => (string)$eventId,
+				':id' => $eventId
+			]);
+
+			// Link event to resource
+			$resourceSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)";
+			$resourceStmt = $this->db->prepare($resourceSql);
+			$resourceStmt->execute([
+				':event_id' => $eventId,
+				':resource_id' => $resourceId
+			]);
+
+			$this->db->commit();
+			return (int)$eventId;
+
+		} catch (Exception $e) {
+			$this->db->rollback();
+			error_log("Error creating event: " . $e->getMessage());
+			return null;
+		}
+	}
+
+	/**
+	 * Get building information for a resource
+	 */
+	private function getBuildingInfoForResource(int $resourceId): ?array
+	{
+		$sql = "SELECT bb_building.id, bb_building.name 
+				FROM bb_building 
+				JOIN bb_building_resource ON bb_building.id = bb_building_resource.building_id 
+				WHERE bb_building_resource.resource_id = :resource_id";
+		
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([':resource_id' => $resourceId]);
+		$result = $stmt->fetch(PDO::FETCH_ASSOC);
+		
+		return $result ?: null;
+	}
+
+	/**
+	 * Generate a unique secret for the event
+	 */
+	private function generateEventSecret(): string
+	{
+		return bin2hex(random_bytes(16)); // 32 character hex string
 	}
 }

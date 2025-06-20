@@ -1032,4 +1032,277 @@ class EventController
 			return false;
 		}
 	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/booking/events",
+	 *     summary="Create a new event for multiple resources",
+	 *     description="Creates a new event that can be associated with multiple resources. This endpoint reuses the single resource creation logic and adds additional resource associations.",
+	 *     tags={"Events"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         description="Event data with array of resources",
+	 *         @OA\JsonContent(
+	 *             required={"title", "from_", "to_", "resource_ids"},
+	 *             @OA\Property(property="title", type="string", description="Event title", example="Multi-Room Conference"),
+	 *             @OA\Property(property="from_", type="string", format="date-time", description="Event start time (ISO 8601)", example="2025-06-25T15:30:00+02:00"),
+	 *             @OA\Property(property="to_", type="string", format="date-time", description="Event end time (ISO 8601)", example="2025-06-25T17:00:00+02:00"),
+	 *             @OA\Property(
+	 *                 property="resource_ids",
+	 *                 type="array",
+	 *                 description="Array of resource IDs to associate with the event",
+	 *                 @OA\Items(type="integer"),
+	 *                 example={1, 2, 5}
+	 *             ),
+	 *             @OA\Property(property="description", type="string", description="Event description", example="Large conference requiring multiple rooms"),
+	 *             @OA\Property(property="contact_name", type="string", description="Contact name", example="john.doe@company.com"),
+	 *             @OA\Property(property="contact_email", type="string", description="Contact email", example="attendee@company.com"),
+	 *             @OA\Property(property="contact_phone", type="string", description="Contact phone", example="+47 123 45 678"),
+	 *             @OA\Property(property="source", type="string", description="Source of the event", example="admin_panel"),
+	 *             @OA\Property(property="equipment", type="string", description="Required equipment", example="Projector, Microphones"),
+	 *             @OA\Property(property="participant_limit", type="integer", description="Maximum participants", example=50),
+	 *             @OA\Property(property="is_public", type="boolean", description="Whether event is public", example=true)
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=201,
+	 *         description="Event created successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean", example=true),
+	 *             @OA\Property(property="id", type="integer", description="Created event ID"),
+	 *             @OA\Property(property="event_id", type="integer", description="Created event ID"),
+	 *             @OA\Property(property="message", type="string", example="Event created successfully for 3 resources"),
+	 *             @OA\Property(property="event", type="object", ref="#/components/schemas/Event"),
+	 *             @OA\Property(
+	 *                 property="resources",
+	 *                 type="array",
+	 *                 description="Resources associated with the event",
+	 *                 @OA\Items(type="integer")
+	 *             )
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Bad request - Invalid input data",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Invalid date format or missing required fields")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="One or more resources not found",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Resource not found: 123, 456")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=409,
+	 *         description="Conflict - Time conflict with existing events/bookings",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Time conflict on resource 123: Overlaps with existing event #456")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=500,
+	 *         description="Internal server error",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Failed to create event")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function createEvent(Request $request, Response $response): Response
+	{
+		try
+		{
+			// Parse request data (handle both JSON and form-encoded data)
+			$eventData = [];
+			$contentType = $request->getHeaderLine('Content-Type');
+
+			if (strpos($contentType, 'application/json') !== false)
+			{
+				// Handle JSON data
+				$body = $request->getBody()->getContents();
+				$eventData = json_decode($body, true);
+
+				if (json_last_error() !== JSON_ERROR_NONE)
+				{
+					$response->getBody()->write(json_encode(['error' => 'Invalid JSON format']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+			}
+			else
+			{
+				// Handle form-encoded data
+				$eventData = $request->getParsedBody() ?: [];
+
+				// Convert comma-separated resource_ids string to array if needed
+				if (isset($eventData['resource_ids']) && is_string($eventData['resource_ids']))
+				{
+					$eventData['resource_ids'] = array_map('intval', explode(',', $eventData['resource_ids']));
+				}
+
+				if (empty($eventData))
+				{
+					$response->getBody()->write(json_encode(['error' => 'No data received']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+			}
+
+			// Validate required fields
+			$requiredFields = ['title', 'from_', 'to_', 'resource_ids'];
+			foreach ($requiredFields as $field)
+			{
+				if (!isset($eventData[$field]) || empty($eventData[$field]))
+				{
+					$response->getBody()->write(json_encode(['error' => "Missing required field: $field"]));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+			}
+
+			// Validate resource_ids is an array
+			if (!is_array($eventData['resource_ids']))
+			{
+				$response->getBody()->write(json_encode(['error' => 'resource_ids must be an array of integers']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Convert to integers and validate
+			$resourceIds = array_map('intval', $eventData['resource_ids']);
+			$resourceIds = array_filter($resourceIds, function($id) { return $id > 0; });
+
+			if (empty($resourceIds))
+			{
+				$response->getBody()->write(json_encode(['error' => 'At least one valid resource_id is required']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Validate and parse dates
+			try
+			{
+				$fromDate = new \DateTime($eventData['from_']);
+				$toDate = new \DateTime($eventData['to_']);
+
+				if ($fromDate >= $toDate)
+				{
+					$response->getBody()->write(json_encode(['error' => 'End time must be after start time']));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+				}
+			}
+			catch (\Exception $e)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS±HH:MM)']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Verify all resources exist
+			$nonExistentResources = [];
+			foreach ($resourceIds as $resourceId)
+			{
+				if (!$this->resourceExists($resourceId))
+				{
+					$nonExistentResources[] = $resourceId;
+				}
+			}
+
+			if (!empty($nonExistentResources))
+			{
+				$response->getBody()->write(json_encode([
+					'error' => 'Resource not found: ' . implode(', ', $nonExistentResources)
+				]));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			// Check for conflicts on all resources
+			foreach ($resourceIds as $resourceId)
+			{
+				$conflictCheck = $this->checkEventConflicts($resourceId, $fromDate, $toDate, $eventData);
+				if ($conflictCheck !== null)
+				{
+					$response->getBody()->write(json_encode([
+						'error' => "Time conflict on resource $resourceId: $conflictCheck"
+					]));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+				}
+			}
+
+			// Create event using the first resource (reuse existing createEventInDatabase logic)
+			$primaryResourceId = $resourceIds[0];
+			$eventId = $this->createEventInDatabase($primaryResourceId, $eventData, $fromDate, $toDate);
+
+			if (!$eventId)
+			{
+				$response->getBody()->write(json_encode(['error' => 'Failed to create event']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			}
+
+			// Add additional resources to the event (skip the first one since it's already added)
+			$additionalResources = array_slice($resourceIds, 1);
+			if (!empty($additionalResources))
+			{
+				$success = $this->addAdditionalResourcesToEvent($eventId, $additionalResources);
+				if (!$success)
+				{
+					// Event was created but additional resources failed - log warning but don't fail completely
+					error_log("Warning: Event $eventId created but failed to add additional resources: " . implode(', ', $additionalResources));
+				}
+			}
+
+			// Return success response
+			$responseData = [
+				'success' => true,
+				'id' => $eventId,
+				'event_id' => $eventId,
+				'message' => 'Event created successfully for ' . count($resourceIds) . ' resource' . (count($resourceIds) > 1 ? 's' : ''),
+				'event' => [
+					'id' => $eventId,
+					'name' => $eventData['title'],
+					'from_' => $eventData['from_'],
+					'to_' => $eventData['to_'],
+					'source' => $eventData['source'] ?? 'admin_panel'
+				],
+				'resources' => $resourceIds
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+		}
+		catch (Exception $e)
+		{
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * Add additional resources to an existing event
+	 */
+	private function addAdditionalResourcesToEvent(int $eventId, array $resourceIds): bool
+	{
+		try
+		{
+			$this->db->beginTransaction();
+
+			// Insert additional resource associations
+			$resourceSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)";
+			$resourceStmt = $this->db->prepare($resourceSql);
+			
+			foreach ($resourceIds as $resourceId)
+			{
+				$resourceStmt->execute([
+					':event_id' => $eventId,
+					':resource_id' => $resourceId
+				]);
+			}
+
+			$this->db->commit();
+			return true;
+		}
+		catch (Exception $e)
+		{
+			$this->db->rollback();
+			error_log("Error adding additional resources to event $eventId: " . $e->getMessage());
+			return false;
+		}
+	}
 }

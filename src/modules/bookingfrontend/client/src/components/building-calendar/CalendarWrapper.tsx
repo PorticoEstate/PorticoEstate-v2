@@ -210,11 +210,11 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
         if (resourcesHidden) {
             setResourcesContainerRendered(false);
         }
-        
+
         // Force FullCalendar to rerender after sidebar animation completes
         if (calendarRef.current) {
             const calendarApi = calendarRef.current.getApi();
-            calendarApi.render();
+            (calendarApi as any).render();
         }
     };
 

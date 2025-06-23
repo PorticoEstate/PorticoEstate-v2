@@ -98,10 +98,10 @@ const BillingForm: FC<BillingFormProps> = ({
 			}
 
 			if (isDirectBooking) {
-				direct.push({ ...app, total: appTotal });
+				direct.push({...app, total: appTotal});
 				directSum += appTotal;
 			} else {
-				normal.push({ ...app, total: appTotal });
+				normal.push({...app, total: appTotal});
 				normalSum += appTotal;
 			}
 		});
@@ -429,7 +429,8 @@ const BillingForm: FC<BillingFormProps> = ({
 					{normalApplications.length > 0 && (
 						<div className={styles.summarySection}>
 							<Heading data-size={'sm'} level={4}>{t('bookingfrontend.applications')}</Heading>
-							<Paragraph className={styles.sectionSubtext}>{t('bookingfrontend.payment_if_approved')}</Paragraph>
+							<Paragraph
+								className={styles.sectionSubtext} data-size={'xs'}>{t('bookingfrontend.payment_if_approved')}</Paragraph>
 
 							{normalApplications.map((app, index) => (
 								<div key={app.id || index} className={styles.summaryItem}>
@@ -441,7 +442,10 @@ const BillingForm: FC<BillingFormProps> = ({
 											{/*<span className={styles.itemBadge}>{t('bookingfrontend.application')}</span>*/}
 											{app.total > 0 && (
 												<span className={styles.itemCost}>
-													{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(app.total)}
+													{new Intl.NumberFormat("nb-NO", {
+														style: "currency",
+														currency: "NOK"
+													}).format(app.total)}
 												</span>
 											)}
 										</div>
@@ -452,7 +456,10 @@ const BillingForm: FC<BillingFormProps> = ({
 							{normalTotal > 0 && (
 								<div className={styles.summaryTotal}>
 									<span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}:</span>
-									<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(normalTotal)}</span>
+									<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", {
+										style: "currency",
+										currency: "NOK"
+									}).format(normalTotal)}</span>
 								</div>
 							)}
 						</div>
@@ -473,7 +480,10 @@ const BillingForm: FC<BillingFormProps> = ({
 											{/*<span className={styles.itemBadge}>{t('bookingfrontend.direct_booking')}</span>*/}
 											{app.total > 0 && (
 												<span className={styles.itemCost}>
-													{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(app.total)}
+													{new Intl.NumberFormat("nb-NO", {
+														style: "currency",
+														currency: "NOK"
+													}).format(app.total)}
 												</span>
 											)}
 										</div>
@@ -484,7 +494,10 @@ const BillingForm: FC<BillingFormProps> = ({
 							{directTotal > 0 && (
 								<div className={styles.summaryTotal}>
 									<span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}:</span>
-									<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(directTotal)}</span>
+									<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", {
+										style: "currency",
+										currency: "NOK"
+									}).format(directTotal)}</span>
 								</div>
 							)}
 						</div>
@@ -492,10 +505,11 @@ const BillingForm: FC<BillingFormProps> = ({
 				</div>
 
 				<div className={styles.submitSection}>
-					{/* Show two options when user has both Vipps and normal applications */}
-					{paymentEligibility?.eligible ? (
-						<>
-							<div className={styles.checkoutButtons}>
+					<div className={styles.checkoutButtons}>
+
+						{/* Show two options when user has both Vipps and normal applications */}
+						{paymentEligibility?.eligible ? (
+							<>
 								{/* Vipps Payment Button */}
 								{paymentEligibility.payment_methods?.map((method) => {
 									if (method.method.toLowerCase() === 'vipps') {
@@ -535,20 +549,23 @@ const BillingForm: FC<BillingFormProps> = ({
 								>
 									{t('bookingfrontend.pay_later_with_invoice')}
 								</Button>
-							</div>
-						</>
-					) : (
-						/* Show single submit button when no Vipps eligibility */
-						<Button
-							variant="primary"
-							onClick={(e) => {
-								e.preventDefault();
-								onSubmit();
-							}}
-						>
-							{t('bookingfrontend.submit_application')}
-						</Button>
-					)}
+							</>
+						) : (
+							/* Show single submit button when no Vipps eligibility */
+							<Button
+								className={styles.invoiceButton}
+
+								variant="primary"
+								onClick={(e) => {
+									e.preventDefault();
+									onSubmit();
+								}}
+							>
+								{t('bookingfrontend.submit_application')}
+							</Button>
+						)}
+					</div>
+
 				</div>
 			</form>
 		</>

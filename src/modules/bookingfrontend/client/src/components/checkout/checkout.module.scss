@@ -119,6 +119,10 @@
 	.summarySection {
 		max-width: 440px;
 		padding-top: 1.5rem;
+
+		.sectionSubtext {
+			font-style: italic;
+		}
 		.summaryItem {
 			border-bottom: 1px solid var(--ds-color-border-subtle);
 

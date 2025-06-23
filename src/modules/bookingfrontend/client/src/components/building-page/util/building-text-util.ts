@@ -88,6 +88,17 @@ export function parseHtmlToMarkdown(html: string): ParsedMarkdownText {
         return { markdown: '' };
     }
 
+    // Clean up problematic HTML patterns before conversion
+    let cleanedHtml = trimmed;
+    
+    // Fix bold tags that contain line breaks - move br outside
+    cleanedHtml = cleanedHtml.replace(/<b>([^<]*)<br[^>]*>([^<]*)<\/b>/gi, '<b>$1</b><br><b>$2</b>');
+    cleanedHtml = cleanedHtml.replace(/<strong>([^<]*)<br[^>]*>([^<]*)<\/strong>/gi, '<strong>$1</strong><br><strong>$2</strong>');
+    
+    // Remove br tags within bold tags (they should be outside)
+    cleanedHtml = cleanedHtml.replace(/<b>([^<]*)<br[^>]*><\/b>/gi, '<b>$1</b>');
+    cleanedHtml = cleanedHtml.replace(/<strong>([^<]*)<br[^>]*><\/strong>/gi, '<strong>$1</strong>');
+    
     // Configure Turndown to strip styling and preserve semantic structure
     const turndownService = new TurndownService({
         headingStyle: 'atx',
@@ -99,11 +110,13 @@ export function parseHtmlToMarkdown(html: string): ParsedMarkdownText {
     turndownService.remove(['script', 'style']);
 
     // Convert HTML to Markdown
-    let markdown = turndownService.turndown(trimmed);
+    let markdown = turndownService.turndown(cleanedHtml);
 
     // Handle multiple br tags like normalizeText - convert sequences of br to newlines
     markdown = markdown.replace(/\\\n/g, '\n'); // Turndown escapes line breaks
     markdown = markdown.replace(/\n{3,}/g, '\n\n'); // Consolidate multiple newlines
+    
+    // Note: Turndown handles bold conversion correctly, so we don't need to clean up ** markers
 
     // Extract title from first heading
     const titleMatch = markdown.match(/^#\s+(.+)$/m);

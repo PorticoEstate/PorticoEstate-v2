@@ -8,6 +8,36 @@ import {parseHtmlToMarkdown} from "@/components/building-page/util/building-text
 import ReactMarkdown from 'react-markdown';
 
 export const dynamic = 'force-dynamic';
+
+// Helper to extract text content from React elements
+const extractTextContent = (node: React.ReactNode): string => {
+	if (typeof node === 'string') return node;
+	if (typeof node === 'number') return String(node);
+	if (Array.isArray(node)) return node.map(extractTextContent).join('');
+	if (React.isValidElement(node)) {
+		return extractTextContent(node.props.children);
+	}
+	return '';
+};
+
+// Helper to render inline markdown (for headings with bold text)
+const InlineMarkdown = ({children}: {children: React.ReactNode}) => {
+	// If children is already a React element (like <strong>), just return it
+	if (React.isValidElement(children)) {
+		return <>{children}</>;
+	}
+	
+	// Otherwise, treat as text and parse markdown
+	const text = extractTextContent(children);
+	return (
+		<ReactMarkdown components={{
+			p: ({children}) => <>{children}</>,
+			strong: ({children}) => <strong>{children}</strong>,
+			em: ({children}) => <em>{children}</em>
+		}}>{text}</ReactMarkdown>
+	);
+};
+
 export default async function Layout(props: PropsWithChildren) {
 	const serverSettings = await fetchServerSettings();
 	const {t} = await getTranslation();
@@ -28,12 +58,12 @@ export default async function Layout(props: PropsWithChildren) {
 					{frontImageText.title && <strong>{frontImageText.title}</strong>}
 					{frontImageText.title && frontImageText.markdown && <br/>}
 					<ReactMarkdown components={{
-						h1: ({children}) => <Heading level={2} data-size="lg">{children}</Heading>,
-						h2: ({children}) => <Heading level={3} data-size="md">{children}</Heading>,
-						h3: ({children}) => <Heading level={4} data-size="sm">{children}</Heading>,
-						h4: ({children}) => <Heading level={5} data-size="xs">{children}</Heading>,
-						h5: ({children}) => <Heading level={6} data-size="2xs">{children}</Heading>,
-						h6: ({children}) => <Heading level={6} data-size="2xs">{children}</Heading>,
+						h1: ({children}) => <Heading level={2} data-size="lg"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h2: ({children}) => <Heading level={3} data-size="md"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h3: ({children}) => <Heading level={4} data-size="sm"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h4: ({children}) => <Heading level={5} data-size="xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h5: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h6: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						p: ({children}) => <Paragraph data-size="md">{children}</Paragraph>
 					}}>{frontImageText.markdown}</ReactMarkdown>
 				</Alert>
@@ -46,12 +76,12 @@ export default async function Layout(props: PropsWithChildren) {
 						<Heading level={4} data-size={'md'} style={{margin: 0}}>{frontPageText.title}</Heading>}
 					{/*{frontPageText.title && frontPageText.markdown && <br />}*/}
 					<ReactMarkdown components={{
-						h1: ({children}) => <Heading level={2} data-size="lg">{children}</Heading>,
-						h2: ({children}) => <Heading level={3} data-size="md">{children}</Heading>,
-						h3: ({children}) => <Heading level={4} data-size="sm">{children}</Heading>,
-						h4: ({children}) => <Heading level={5} data-size="xs">{children}</Heading>,
-						h5: ({children}) => <Heading level={6} data-size="2xs">{children}</Heading>,
-						h6: ({children}) => <Heading level={6} data-size="2xs">{children}</Heading>,
+						h1: ({children}) => <Heading level={2} data-size="lg"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h2: ({children}) => <Heading level={3} data-size="md"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h3: ({children}) => <Heading level={4} data-size="sm"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h4: ({children}) => <Heading level={5} data-size="xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h5: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
+						h6: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						p: ({children}) => <Paragraph data-size="md">{children}</Paragraph>
 					}}>{frontPageText.markdown}</ReactMarkdown>
 				</div>

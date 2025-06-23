@@ -151,6 +151,7 @@ class Resource
     /**
      * @ORM\Column(type="bigint", nullable=true)
      * @Expose
+	 * @Short
      * @OA\Property(description="Start date for simple booking", type="integer", format="int64", nullable=true)
      */
     public $simple_booking_start_date;

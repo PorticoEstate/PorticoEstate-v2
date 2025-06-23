@@ -106,6 +106,22 @@ export function parseHtmlToMarkdown(html: string): ParsedMarkdownText {
         bulletListMarker: '-'
     });
 
+    // Custom rule for links to preserve target="_blank"
+    turndownService.addRule('links', {
+        filter: 'a',
+        replacement: function (content, node) {
+            const href = (node as HTMLAnchorElement).getAttribute('href');
+            const target = (node as HTMLAnchorElement).getAttribute('target');
+            if (!href) return content;
+            
+            // Mark external links (target="_blank") with a special syntax
+            if (target === '_blank') {
+                return `[${content}](${href}){:target="_blank"}`;
+            }
+            return `[${content}](${href})`;
+        }
+    });
+
     // Remove all styling attributes but preserve semantic tags
     turndownService.remove(['script', 'style']);
 

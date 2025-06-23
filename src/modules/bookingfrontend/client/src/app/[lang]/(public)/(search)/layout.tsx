@@ -33,7 +33,18 @@ const InlineMarkdown = ({children}: {children: React.ReactNode}) => {
 		<ReactMarkdown components={{
 			p: ({children}) => <>{children}</>,
 			strong: ({children}) => <strong>{children}</strong>,
-			em: ({children}) => <em>{children}</em>
+			em: ({children}) => <em>{children}</em>,
+			a: ({href, children}) => {
+				// Check if link should open in new tab based on our special syntax
+				const shouldOpenInNewTab = href?.includes('{:target="_blank"}');
+				const cleanHref = href?.replace('{:target="_blank"}', '') || '';
+				
+				return shouldOpenInNewTab ? (
+					<a href={cleanHref} target="_blank" rel="noopener noreferrer">{children}</a>
+				) : (
+					<a href={cleanHref}>{children}</a>
+				);
+			}
 		}}>{text}</ReactMarkdown>
 	);
 };
@@ -64,7 +75,18 @@ export default async function Layout(props: PropsWithChildren) {
 						h4: ({children}) => <Heading level={5} data-size="xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						h5: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						h6: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
-						p: ({children}) => <Paragraph data-size="md">{children}</Paragraph>
+						p: ({children}) => <Paragraph data-size="md">{children}</Paragraph>,
+						a: ({href, children}) => {
+							// Check if link should open in new tab based on our special syntax
+							const shouldOpenInNewTab = href?.includes('{:target="_blank"}');
+							const cleanHref = href?.replace('{:target="_blank"}', '') || '';
+							
+							return shouldOpenInNewTab ? (
+								<a href={cleanHref} target="_blank" rel="noopener noreferrer">{children}</a>
+							) : (
+								<a href={cleanHref}>{children}</a>
+							);
+						}
 					}}>{frontImageText.markdown}</ReactMarkdown>
 				</Alert>
 			)}
@@ -82,7 +104,18 @@ export default async function Layout(props: PropsWithChildren) {
 						h4: ({children}) => <Heading level={5} data-size="xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						h5: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						h6: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
-						p: ({children}) => <Paragraph data-size="md">{children}</Paragraph>
+						p: ({children}) => <Paragraph data-size="md">{children}</Paragraph>,
+						a: ({href, children}) => {
+							// Check if link should open in new tab based on our special syntax
+							const shouldOpenInNewTab = href?.includes('{:target="_blank"}');
+							const cleanHref = href?.replace('{:target="_blank"}', '') || '';
+							
+							return shouldOpenInNewTab ? (
+								<a href={cleanHref} target="_blank" rel="noopener noreferrer">{children}</a>
+							) : (
+								<a href={cleanHref}>{children}</a>
+							);
+						}
 					}}>{frontPageText.markdown}</ReactMarkdown>
 				</div>
 			)}

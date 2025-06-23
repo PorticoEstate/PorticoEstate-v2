@@ -1,11 +1,11 @@
-import {FC, useEffect, useState} from 'react';
+import {FC, useEffect, useState, useMemo} from 'react';
 import {useForm, Controller} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {
 	Button,
 	Field,
-	Fieldset,
-	Label,
+	Fieldset, Heading,
+	Label, Paragraph,
 	Radio,
 	Select,
 	Textfield,
@@ -21,6 +21,7 @@ import AsyncSelect from "react-select/async";
 import RegulationDocuments from './regulation-documents';
 import {ExternalPaymentEligibilityResponse} from "@/service/api/api-utils";
 import VippsCheckoutButton from './VippsCheckoutButton';
+import {IApplication} from "@/service/types/api/application.types";
 
 interface BillingFormProps {
 	onBillingChange: (data: BillingFormData) => void;
@@ -37,6 +38,7 @@ interface BillingFormProps {
 	areAllDocumentsChecked?: boolean;
 	showDocumentsError?: boolean;
 	vippsLoading?: boolean;
+	applications?: IApplication[];
 }
 
 type OrganizationOption = {
@@ -59,13 +61,58 @@ const BillingForm: FC<BillingFormProps> = ({
 											   },
 											   areAllDocumentsChecked = true,
 											   showDocumentsError = false,
-											   vippsLoading = false
+											   vippsLoading = false,
+											   applications = []
 										   }) => {
 	const t = useTrans();
 	const {data: myOrganizations, isLoading: orgLoading} = useMyOrganizations();
 	const {i18n} = useClientTranslation()
 	// Determine language for Vipps button (en or fallback to no)
 	const vippsLanguage = i18n.language === 'en' ? 'en' : 'no';
+
+	// Separate applications by type and calculate totals
+	const {normalApplications, directApplications, normalTotal, directTotal} = useMemo(() => {
+		const normal: any[] = [];
+		const direct: any[] = [];
+		let normalSum = 0;
+		let directSum = 0;
+
+		const currentUnixTime = Math.floor(Date.now() / 1000);
+
+		applications.forEach((app) => {
+			let isDirectBooking = false;
+			if (app.resources && Array.isArray(app.resources)) {
+				isDirectBooking = app.resources.some((resource) => {
+					if (!resource.direct_booking) {
+						return false;
+					}
+					// Check if current time is past the direct booking start time
+					return currentUnixTime > resource.direct_booking;
+				});
+			}
+
+			// Calculate application total
+			let appTotal = 0;
+			if (app.orders && Array.isArray(app.orders)) {
+				appTotal = app.orders.reduce((sum: number, order: any) => sum + (parseFloat(order.sum) || 0), 0);
+			}
+
+			if (isDirectBooking) {
+				direct.push({ ...app, total: appTotal });
+				directSum += appTotal;
+			} else {
+				normal.push({ ...app, total: appTotal });
+				normalSum += appTotal;
+			}
+		});
+
+		return {
+			normalApplications: normal,
+			directApplications: direct,
+			normalTotal: normalSum,
+			directTotal: directSum
+		};
+	}, [applications]);
 	const {
 		control,
 		handleSubmit,
@@ -374,69 +421,134 @@ const BillingForm: FC<BillingFormProps> = ({
 					</div>
 				)}
 
+				{/* Summary Section - Always show */}
+				<div className={styles.checkoutSummary}>
+					<Heading data-size={'md'} level={3}>{t('bookingfrontend.summary')}</Heading>
+
+					{/* Normal Applications Section - Show if there are normal applications */}
+					{normalApplications.length > 0 && (
+						<div className={styles.summarySection}>
+							<Heading data-size={'sm'} level={4}>{t('bookingfrontend.applications')}</Heading>
+							<Paragraph className={styles.sectionSubtext}>{t('bookingfrontend.payment_if_approved')}</Paragraph>
+
+							{normalApplications.map((app, index) => (
+								<div key={app.id || index} className={styles.summaryItem}>
+									<div className={styles.itemDetails}>
+										<span className={styles.itemLabel}>
+											{app.activity || app.event_name || app.name || app.title || t('bookingfrontend.application_title')}
+										</span>
+										<div className={styles.itemRight}>
+											{/*<span className={styles.itemBadge}>{t('bookingfrontend.application')}</span>*/}
+											{app.total > 0 && (
+												<span className={styles.itemCost}>
+													{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(app.total)}
+												</span>
+											)}
+										</div>
+									</div>
+								</div>
+							))}
+
+							{normalTotal > 0 && (
+								<div className={styles.summaryTotal}>
+									<span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}:</span>
+									<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(normalTotal)}</span>
+								</div>
+							)}
+						</div>
+					)}
+
+					{/* Direct Applications Section - Show if there are direct applications */}
+					{directApplications.length > 0 && (
+						<div className={styles.summarySection}>
+							<Heading data-size={'sm'} level={4}>{t('bookingfrontend.pay_now_or_later')}</Heading>
+
+							{directApplications.map((app, index) => (
+								<div key={app.id || index} className={styles.summaryItem}>
+									<div className={styles.itemDetails}>
+										<span className={styles.itemLabel}>
+											{app.activity || app.event_name || app.name || app.title || t('bookingfrontend.direct_booking_title')}:
+										</span>
+										<div className={styles.itemRight}>
+											{/*<span className={styles.itemBadge}>{t('bookingfrontend.direct_booking')}</span>*/}
+											{app.total > 0 && (
+												<span className={styles.itemCost}>
+													{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(app.total)}
+												</span>
+											)}
+										</div>
+									</div>
+								</div>
+							))}
+
+							{directTotal > 0 && (
+								<div className={styles.summaryTotal}>
+									<span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}:</span>
+									<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(directTotal)}</span>
+								</div>
+							)}
+						</div>
+					)}
+				</div>
+
 				<div className={styles.submitSection}>
-					{/* Render external payment method buttons based on API response */}
-					{paymentEligibility?.eligible && paymentEligibility.payment_methods?.map((method) => {
-						// Use VippsCheckoutButton wrapper for Vipps payments
-						if (method.method.toLowerCase() === 'vipps') {
-							return (
-								<VippsCheckoutButton
-									key={method.method}
-									type="button"
-									onClick={() => {
-										console.log("Vipps button clicked!");
-										if (onVippsPayment && !vippsLoading) {
-											onVippsPayment();
-										}
-									}}
-									brand="vipps"
-									language={vippsLanguage}
-									variant="primary"
-									rounded={false}
-									verb="continue"
-									stretched={false}
-									branded={true}
-									loading={vippsLoading}
-									disabled={vippsLoading}
-								/>
-							);
-						}
-
-						// Fallback to custom button for other payment methods
-						return (
-							<Button
-								key={method.method}
-								variant="primary"
-								onClick={(e) => {
-									e.preventDefault();
-									if (onVippsPayment) {
-										onVippsPayment();
+					{/* Show two options when user has both Vipps and normal applications */}
+					{paymentEligibility?.eligible ? (
+						<>
+							<div className={styles.checkoutButtons}>
+								{/* Vipps Payment Button */}
+								{paymentEligibility.payment_methods?.map((method) => {
+									if (method.method.toLowerCase() === 'vipps') {
+										return (
+											<VippsCheckoutButton
+												key={method.method}
+												type="button"
+												onClick={() => {
+													console.log("Vipps button clicked!");
+													if (onVippsPayment && !vippsLoading) {
+														onVippsPayment();
+													}
+												}}
+												brand="vipps"
+												language={vippsLanguage}
+												variant="primary"
+												rounded={false}
+												verb="continue"
+												stretched={false}
+												branded={true}
+												loading={vippsLoading}
+												disabled={vippsLoading}
+											/>
+										);
 									}
-								}}
-								disabled={vippsLoading}
-							>
-								{vippsLoading ? t('bookingfrontend.processing') : `Betal med ${method.method}`}
-								{method.logo && (
-									<img
-										src={method.logo}
-										alt={method.method}
-										style={{marginLeft: '8px', height: '20px'}}
-									/>
-								)}
-							</Button>
-						);
-					})}
+									return null;
+								})}
 
-					<Button
-						variant="secondary"
-						onClick={(e) => {
-							e.preventDefault();
-							// Directly call onSubmit to ensure document validation happens
-							onSubmit();
-						}}
-					>
-						{t('bookingfrontend.submit_application')}
-					</Button>
+								{/* Invoice Payment Button */}
+								<Button
+									onClick={(e) => {
+										e.preventDefault();
+										onSubmit();
+									}}
+									disabled={vippsLoading}
+									className={styles.invoiceButton}
+								>
+									{t('bookingfrontend.pay_later_with_invoice')}
+								</Button>
+							</div>
+						</>
+					) : (
+						/* Show single submit button when no Vipps eligibility */
+						<Button
+							variant="primary"
+							onClick={(e) => {
+								e.preventDefault();
+								onSubmit();
+							}}
+						>
+							{t('bookingfrontend.submit_application')}
+						</Button>
+					)}
 				</div>
 			</form>
 		</>

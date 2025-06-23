@@ -73,10 +73,32 @@ const VippsPaymentStatus: React.FC = () => {
             <div className="p-4">
                 <Alert data-color="success">
                     <h3>{t('bookingfrontend.vipps_payment_successful')}</h3>
-                    <p>{paymentResult.message}</p>
-                    {paymentResult.applications_approved && (
-                        <p className="mt-1">{t('bookingfrontend.vipps_applications_approved')}</p>
-                    )}
+                    <div className="mt-2">
+                        <h4>{t('bookingfrontend.after_submission_title')}</h4>
+                        
+                        {/* Show separate confirmations for direct bookings and applications */}
+                        <div className="mt-3">
+                            <div className="mb-3">
+                                <h5>{t('bookingfrontend.direct_bookings_confirmation_title')}</h5>
+                                <ul className="mt-2" style={{ paddingLeft: '1.25rem', listStyleType: 'disc' }}>
+                                    <li>{t('bookingfrontend.payment_completed_and_confirmed')}</li>
+                                    <li>{t('bookingfrontend.bookings_are_completed')}</li>
+                                </ul>
+                            </div>
+                            
+                            <div className="mb-3">
+                                <h5>{t('bookingfrontend.applications_for_review_title')}</h5>
+                                <ul className="mt-2" style={{ paddingLeft: '1.25rem', listStyleType: 'disc' }}>
+                                    <li>{t('bookingfrontend.applications_sent_and_will_receive_email')}</li>
+                                    <li>{t('bookingfrontend.invoice_will_come_if_approved')}</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <p className="mt-3" style={{ fontStyle: 'italic' }}>
+                            {t('bookingfrontend.check_spam_filter')}
+                        </p>
+                    </div>
                 </Alert>
 
                 {paymentDetails && (

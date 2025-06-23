@@ -117,7 +117,7 @@ class VippsService
     {
         // Get access token lazily
         $this->getAccessToken();
-        
+
         if (empty($this->accesstoken)) {
             throw new Exception("No valid Vipps access token available");
         }
@@ -139,7 +139,7 @@ class VippsService
 
         foreach ($applications['results'] as $application) {
             $contact_phone = $application['contact_phone'];
-            
+
             if (!empty($application['building_name']) && !in_array($application['building_name'], $building_names)) {
                 $building_names[] = $application['building_name'];
             }
@@ -155,7 +155,7 @@ class VippsService
         if ($total_amount > 0) {
             $building_text = !empty($building_names) ? implode(', ', $building_names) : '';
             $transaction_text = !empty($building_text) ? "Aktiv kommune, {$building_text}" : 'Aktiv kommune';
-            
+
             $remote_order_id = $soapplication->add_payment($unpaid_order_ids, $this->msn);
             $transaction = [
                 "amount" => $total_amount * 100,
@@ -230,7 +230,7 @@ class VippsService
         if (empty($this->accesstoken)) {
             $this->getAccessToken();
         }
-        
+
         $request['headers'] = [
             'Accept' => 'application/json;charset=UTF-8',
             'Authorization' => $this->accesstoken,
@@ -274,11 +274,11 @@ class VippsService
         // Get the base URL for the frontend client
         $userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
         $lang = $userSettings['preferences']['common']['lang'] ?? 'no';
-        
+
         // Use the modern client checkout completion page
         $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        
+
         return "{$protocol}://{$host}/bookingfrontend/client/{$lang}/checkout/vipps-return?" . http_build_query([
             'payment_order_id' => $remote_order_id,
             'session_id' => $session_id
@@ -544,7 +544,7 @@ class VippsService
     {
         // Use the API-only checkPaymentStatus method
         $statusResult = $this->checkPaymentStatus($remote_order_id);
-        
+
         switch ($statusResult['status']) {
             case 'failed':
                 $this->processFailedPayment($remote_order_id, $statusResult['operation']);
@@ -552,20 +552,20 @@ class VippsService
                     'status' => 'cancelled',
                     'message' => lang('vipps_payment_cancelled')
                 ];
-                
+
             case 'captured':
                 // Payment already captured, process applications directly
                 return $this->processAlreadyCapturedPayment($remote_order_id, $statusResult['amount']);
-                
+
             case 'ready_for_capture':
                 return $this->processCapturePayment($remote_order_id, $statusResult['amount']);
-                
+
             case 'pending':
                 return [
                     'status' => 'pending',
                     'message' => lang('vipps_payment_pending')
                 ];
-                
+
             default:
                 return $statusResult;
         }
@@ -581,7 +581,7 @@ class VippsService
         $soapplication = CreateObject('booking.soapplication');
         $application_ids = $soapplication->get_application_from_payment_order($remote_order_id);
         $session_id = Sessions::getInstance()->get_session_id();
-        
+
         if (!empty($session_id) && !empty($application_ids)) {
             $partials = CreateObject('booking.uiapplication')->get_partials($session_id);
 
@@ -603,7 +603,7 @@ class VippsService
                     $soapplication->delete_application($application_id);
                 }
             }
-            
+
             $soapplication->update_payment_status($remote_order_id, 'voided', $remote_state);
             \App\Database\Db::getInstance()->transaction_commit();
         }
@@ -618,30 +618,30 @@ class VippsService
     private function processCapturePayment(string $remote_order_id, int $amount): array
     {
         $soapplication = CreateObject('booking.soapplication');
-        
+
         try {
             // Update status to pending first
             $soapplication->update_payment_status($remote_order_id, 'pending', 'RESERVE');
 
             // Attempt to capture payment
             $capture = $this->capturePayment($remote_order_id, $amount);
-            
+
             if (isset($capture['transactionInfo']['status']) && $capture['transactionInfo']['status'] == 'Captured') {
                 \App\Database\Db::getInstance()->transaction_begin();
                 $soapplication->update_payment_status($remote_order_id, 'completed', 'CAPTURE');
                 $approved = $this->approveApplications($remote_order_id, $amount);
                 \App\Database\Db::getInstance()->transaction_commit();
-                
+
                 // Set success message in cache (similar to CheckoutController line 147)
                 if ($approved) {
                     $message_arr = [];
                     $message_arr[] = lang('application_registered_confirmation');
                     $message_arr[] = lang('vipps_payment_completed');
                     $message_arr[] = lang('check_spam_filter');
-                    
-                    Cache::message_set(implode("<br/>", $message_arr), 'message', 'vipps_payment_confirmed');
+
+                    Cache::message_set(implode("<br/>", $message_arr), 'message', 'bookingfrontend.vipps_payment_confirmed');
                 }
-                
+
                 return [
                     'status' => 'completed',
                     'message' => lang('vipps_payment_completed'),
@@ -673,34 +673,34 @@ class VippsService
     private function processAlreadyCapturedPayment(string $remote_order_id, int $amount): array
     {
         $soapplication = CreateObject('booking.soapplication');
-        
+
         try {
             \App\Database\Db::getInstance()->transaction_begin();
-            
+
             // Update payment status to completed
             $soapplication->update_payment_status($remote_order_id, 'completed', 'CAPTURE');
-            
+
             // Approve applications
             $approved = $this->approveApplications($remote_order_id, $amount);
-            
+
             \App\Database\Db::getInstance()->transaction_commit();
-            
+
             // Set success message in cache (similar to CheckoutController line 147)
             if ($approved) {
                 $message_arr = [];
                 $message_arr[] = lang('application_registered_confirmation');
                 $message_arr[] = lang('vipps_payment_completed');
                 $message_arr[] = lang('check_spam_filter');
-                
-                Cache::message_set(implode("<br/>", $message_arr), 'message', 'vipps_payment_confirmed');
+
+                Cache::message_set(implode("<br/>", $message_arr), 'message', 'bookingfrontend.vipps_payment_confirmed');
             }
-            
+
             return [
                 'status' => 'completed',
                 'message' => lang('vipps_payment_completed'),
                 'applications_approved' => $approved
             ];
-            
+
         } catch (Exception $e) {
             \App\Database\Db::getInstance()->transaction_abort();
             return [
@@ -721,12 +721,12 @@ class VippsService
 
         $application_ids = $boapplication->so->get_application_from_payment_order($remote_order_id);
         $ret = false;
-        
+
         foreach ($application_ids as $application_id) {
             $application = $boapplication->so->read_single($application_id);
             $application['status'] = 'ACCEPTED';
             $receipt = $boapplication->update($application);
-            
+
             $event = $application;
             unset($event['id']);
             unset($event['id_string']);
@@ -885,7 +885,7 @@ class VippsService
                         if ($result) {
                             $soapplication->mark_as_posted($remote_order_id);
                             $results['posted_transactions']++;
-                            
+
                             if ($this->debug) {
                                 error_log("Successfully posted transaction {$remote_order_id} to accounting system.");
                             }
@@ -933,7 +933,7 @@ class VippsService
                 if ($result) {
                     $soapplication->mark_refund_as_posted($remote_order_id);
                     $results['posted_refunds']++;
-                    
+
                     if ($this->debug) {
                         error_log("Successfully posted refund for transaction {$remote_order_id} to accounting system.");
                     }
@@ -961,7 +961,7 @@ class VippsService
                 if ($result) {
                     $soapplication->mark_refund_as_posted($refund['remote_order_id']);
                     $results['posted_refunds']++;
-                    
+
                     if ($this->debug) {
                         error_log("Successfully posted refund for transaction {$refund['remote_order_id']} to accounting system.");
                     }

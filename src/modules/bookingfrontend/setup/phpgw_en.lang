@@ -761,3 +761,10 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
+application_registered_single	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
+application_processed_single	bookingfrontend	en	Your application has now been processed and a confirmation email has been sent to you.
+applications_registered_multiple	bookingfrontend	en	Your applications have now been registered and confirmation emails have been sent to you.
+applications_processed_multiple	bookingfrontend	en	Your applications have now been processed and confirmation emails have been sent to you.
+case_officer_review_single	bookingfrontend	en	A Case officer will review your application as soon as possible.
+case_officer_review_multiple	bookingfrontend	en	A Case officer will review your applications as soon as possible.
+vipps_payment_confirmed	bookingfrontend	en	Your Vipps payment has been confirmed and your applications have been approved.

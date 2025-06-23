@@ -111,23 +111,23 @@ class CheckoutController
                 if ($has_direct_booking) {
                     $messages = array(
                         'one' => array(
-                            'registered' => "Your application has now been processed and a confirmation email has been sent to you.",
-                            'review' => ""
+                            'registered' => 'application_processed_single',
+                            'review' => ''
                         ),
                         'multiple' => array(
-                            'registered' => "Your applications have now been processed and confirmation emails have been sent to you.",
-                            'review' => ""
+                            'registered' => 'applications_processed_multiple',
+                            'review' => ''
                         )
                     );
                 } else {
                     $messages = array(
                         'one' => array(
-                            'registered' => "Your application has now been registered and a confirmation email has been sent to you.",
-                            'review' => "A Case officer will review your application as soon as possible."
+                            'registered' => 'application_registered_single',
+                            'review' => 'case_officer_review_single'
                         ),
                         'multiple' => array(
-                            'registered' => "Your applications have now been registered and confirmation emails have been sent to you.",
-                            'review' => "A Case officer will review your applications as soon as possible."
+                            'registered' => 'applications_registered_multiple',
+                            'review' => 'case_officer_review_multiple'
                         )
                     );
                 }

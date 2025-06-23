@@ -1,5 +1,6 @@
 import {fallbackLng} from "@/app/i18n/settings";
 import {i18n} from "i18next";
+import TurndownService from 'turndown';
 
 /**
  * A dictionary of named HTML entities and their corresponding character representations.
@@ -64,50 +65,70 @@ export function extractDescriptionText(description_json: string, i18n: i18n): st
     return description;
 }
 
-interface NormalizedText {
+
+interface ParsedMarkdownText {
     title?: string;
-    body: string;
+    markdown: string;
 }
 
 /**
- * Normalizes HTML text by removing all styling, extracting title from h1 tags,
- * and cleaning up whitespace while preserving newlines from br tags.
+ * Converts HTML to Markdown while stripping styling and preserving semantic structure.
+ * Handles multiple br tags like normalizeText and treats empty content (like just <br>) as empty.
  */
-export function normalizeText(html: string): NormalizedText {
-    if (!html) return { body: '' };
+export function parseHtmlToMarkdown(html: string): ParsedMarkdownText {
+    if (!html) return { markdown: '' };
 
     // First unescape HTML entities
     const unescaped = unescapeHTML(html);
-
-    // Remove preceding and ending newlines
     const trimmed = unescaped.trim();
 
-    // Extract title from first h1 tag
-    const h1Match = trimmed.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    const title = h1Match ? h1Match[1].replace(/<[^>]*>/g, '').trim() : undefined;
-
-    // Convert br tags and block-level tags to newlines before removing other HTML tags
-    let body = trimmed.replace(/<br\s*\/?>/gi, '\n');
-    body = body.replace(/<\/p>\s*<p[^>]*>/gi, '\n\n'); // Between paragraphs
-    body = body.replace(/<p[^>]*>/gi, '').replace(/<\/p>/gi, '\n'); // Start/end of paragraphs
-    body = body.replace(/<\/(h[1-6]|div)>/gi, '\n'); // End of headings and divs
-
-    // Remove all other HTML tags to get plain text
-    body = body.replace(/<[^>]*>/g, '');
-
-    // If we extracted a title, remove it from the body
-    if (title && body.startsWith(title)) {
-        body = body.substring(title.length).trim();
+    // Check if content is essentially empty (just br tags, whitespace, etc.)
+    const contentCheck = trimmed.replace(/<br\s*\/?>/gi, '').replace(/\s+/g, '');
+    if (!contentCheck || contentCheck.length === 0) {
+        return { markdown: '' };
     }
 
-    // Clean up extra whitespace but preserve newlines
-    body = body.replace(/[ \t]+/g, ' ').replace(/\n[ \t]*/g, '\n').replace(/[ \t]*\n/g, '\n');
+    // Clean up problematic HTML patterns before conversion
+    let cleanedHtml = trimmed;
+    
+    // Fix bold tags that contain line breaks - move br outside
+    cleanedHtml = cleanedHtml.replace(/<b>([^<]*)<br[^>]*>([^<]*)<\/b>/gi, '<b>$1</b><br><b>$2</b>');
+    cleanedHtml = cleanedHtml.replace(/<strong>([^<]*)<br[^>]*>([^<]*)<\/strong>/gi, '<strong>$1</strong><br><strong>$2</strong>');
+    
+    // Remove br tags within bold tags (they should be outside)
+    cleanedHtml = cleanedHtml.replace(/<b>([^<]*)<br[^>]*><\/b>/gi, '<b>$1</b>');
+    cleanedHtml = cleanedHtml.replace(/<strong>([^<]*)<br[^>]*><\/strong>/gi, '<strong>$1</strong>');
+    
+    // Configure Turndown to strip styling and preserve semantic structure
+    const turndownService = new TurndownService({
+        headingStyle: 'atx',
+        codeBlockStyle: 'fenced',
+        bulletListMarker: '-'
+    });
 
-    // Consolidate multiple newlines into single newlines
-    body = body.replace(/\n+/g, '\n');
+    // Remove all styling attributes but preserve semantic tags
+    turndownService.remove(['script', 'style']);
 
-    // Remove leading and trailing newlines
-    body = body.replace(/^\n+|\n+$/g, '').trim();
+    // Convert HTML to Markdown
+    let markdown = turndownService.turndown(cleanedHtml);
 
-    return { title, body };
+    // Handle multiple br tags like normalizeText - convert sequences of br to newlines
+    markdown = markdown.replace(/\\\n/g, '\n'); // Turndown escapes line breaks
+    markdown = markdown.replace(/\n{3,}/g, '\n\n'); // Consolidate multiple newlines
+    
+    // Note: Turndown handles bold conversion correctly, so we don't need to clean up ** markers
+
+    // Extract title from first heading
+    const titleMatch = markdown.match(/^#\s+(.+)$/m);
+    const title = titleMatch ? titleMatch[1].trim() : undefined;
+
+    // If we extracted a title, remove it from the markdown body
+    if (titleMatch) {
+        markdown = markdown.replace(titleMatch[0], '').trim();
+    }
+
+    // Clean up any leading/trailing whitespace
+    markdown = markdown.trim();
+
+    return { title, markdown };
 }

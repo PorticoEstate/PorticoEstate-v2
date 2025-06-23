@@ -762,3 +762,10 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	nn	Søknadene dine er godkjent, og en bekreftelse er sendt til deg på e-post.
 your_applications	bookingfrontend	nn	Dine søknader
 zip code	bookingfrontend	nn	Postnummer
+application_registered_single	bookingfrontend	nn	Søknaden har blitt sendt inn, og ein stadfesting har blitt sendt til deg på e-post.
+application_processed_single	bookingfrontend	nn	Søknaden din har blitt behandla og ein stadfesting har blitt sendt til deg på e-post.
+applications_registered_multiple	bookingfrontend	nn	Søknadene har blitt sendt inn, og stadfestar har blitt sendt til deg på e-post.
+applications_processed_multiple	bookingfrontend	nn	Søknadene dine har blitt behandla og stadfestar har blitt sendt til deg på e-post.
+case_officer_review_single	bookingfrontend	nn	Ein saksbehandlar vil behandle søknaden din så snart som mogleg.
+case_officer_review_multiple	bookingfrontend	nn	Ein saksbehandlar vil behandle søknadene dine så snart som mogleg.
+vipps_payment_confirmed	bookingfrontend	nn	Din Vipps-betaling er stadfesta og søknadene dine er godkjende.

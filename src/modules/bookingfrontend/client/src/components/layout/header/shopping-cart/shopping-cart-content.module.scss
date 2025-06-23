@@ -18,6 +18,31 @@
     height: 100%;
     min-height: 400px; // Ensure there's enough content to make footer sticky
 }
+
+.totalCost {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--ds-color-neutral-surface-subtle);
+    border-bottom: 1px solid var(--ds-color-neutral-surface-subtle);
+    background-color: var(--ds-color-neutral-surface-light);
+    border-radius: var(--ds-radius-medium);
+}
+
+.totalLabel {
+    color: var(--ds-text-default);
+    font-size: var(--ds-font-size-md);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+.totalAmount {
+    color: var(--ds-color-neutral-dark);
+    font-size: var(--ds-font-size-lg);
+    font-weight: var(--ds-font-weight-bold);
+}
+
 .eventPopperFooter {
     display: flex;
     justify-content: flex-end;

@@ -244,6 +244,7 @@ const CheckoutContent: FC = () => {
                 onDocumentCheck={handleDocumentConsentChange}
                 areAllDocumentsChecked={areAllDocumentsChecked}
                 showDocumentsError={showDocumentsError}
+                applications={applications?.list || []}
             />
 
             {currentApplication && (

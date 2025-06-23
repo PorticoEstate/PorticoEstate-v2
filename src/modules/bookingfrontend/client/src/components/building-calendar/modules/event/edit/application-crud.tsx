@@ -38,6 +38,7 @@ import {ArticleOrder} from "@/service/types/api/order-articles.types";
 import {isDevMode} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
+import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
 
 interface ApplicationCrudProps {
     selectedTempApplication?: Partial<FCallTempEvent>;
@@ -335,10 +336,15 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				description: existingApplication.description || '',
 				equipment: existingApplication.equipment || '',
 				organizer: existingApplication.organizer || '',
-				resources: existingApplication.resources?.filter(res => props.building ? !isApplicationDeactivated(res, props.building) : !res.deactivate_application).map((res) => res.id.toString()) ||
+				resources: existingApplication.resources?.filter(res => 
+					!ResourceUsesTimeSlots(res) && 
+					(props.building ? !isApplicationDeactivated(res, props.building) : !res.deactivate_application)
+				).map((res) => res.id.toString()) ||
 					props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
 						const resource = buildingResources?.find(r => r.id === +resId);
-						return resource && props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application;
+						return resource && 
+							!ResourceUsesTimeSlots(resource) &&
+							(props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application);
 					}).map(String) ||
 					[],
 				audience: existingApplication.audience || undefined,
@@ -408,7 +414,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			equipment: props.lastSubmittedData?.equipment ?? '',
 			resources: props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
 				const resource = buildingResources?.find(r => r.id === +resId);
-				return resource && props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application;
+				return resource && 
+					!ResourceUsesTimeSlots(resource) &&
+					(props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application);
 			}).map(String) ?? [],
 			audience: props.lastSubmittedData?.audience ?? undefined,
 			articles: props.lastSubmittedData?.articles ?? [],
@@ -765,10 +773,13 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     };
 
     const toggleResource = (resourceId: string) => {
-        // Check if resource is deactivated
+        // Check if resource is deactivated or uses timeslots
         const resource = buildingResources?.find(r => r.id === +resourceId);
-        if (resource && props.building ? isApplicationDeactivated(resource, props.building) : resource?.deactivate_application) {
-            return; // Prevent selection of deactivated resources
+        if (resource && (
+            ResourceUsesTimeSlots(resource) ||
+            (props.building ? isApplicationDeactivated(resource, props.building) : resource?.deactivate_application)
+        )) {
+            return; // Prevent selection of deactivated resources or timeslot resources
         }
 
         const currentResources = watch('resources');
@@ -788,8 +799,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     const toggleAllResources = () => {
         if (!buildingResources) return;
 
-        // Filter out deactivated resources
-        const activeResources = buildingResources.filter(r => props.building ? !isApplicationDeactivated(r, props.building) : !r.deactivate_application);
+        // Filter out deactivated resources and timeslot resources
+        const activeResources = buildingResources.filter(r => 
+            !ResourceUsesTimeSlots(r) && 
+            (props.building ? !isApplicationDeactivated(r, props.building) : !r.deactivate_application)
+        );
         const allActiveResourceIds = activeResources.map(r => String(r.id));
         
         if (selectedResources.length === activeResources.length) {
@@ -884,7 +898,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
                         flexWrap: 'wrap',
                         gap: '0.5rem'
                     }}>
-                        {buildingResources.map(resource => (
+                        {buildingResources
+                            .filter(resource => !ResourceUsesTimeSlots(resource))
+                            .map(resource => (
                             // <div key={resource.id} className={styles.resourceItem}>
                             <Chip.Checkbox
                                 value={String(resource.id)}

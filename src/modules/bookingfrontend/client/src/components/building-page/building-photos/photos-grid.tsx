@@ -61,13 +61,17 @@ const PhotosGrid = (props: PhotosGridProps) => {
 				preloaderDelay: 0
 			}}>
 				<div className={styles.photoGrid}>
-					{/* Only render the visible photos in the grid */}
-					{visiblePhotos.map((photo, index) => {
+					{/* Render ALL photos as gallery items, but only show some visually */}
+					{props.photos.map((photo, index) => {
 						const url = getDocumentLink(photo, props.type);
-						const isLast = index === visiblePhotos.length - 1 && hasMorePhotos;
+						const isVisible = index < photosToShow;
+						const isLast = index === photosToShow - 1 && hasMorePhotos;
 
 						return (
-							<div key={photo.id} className={styles.photoItem}>
+							<div 
+								key={photo.id} 
+								className={`${styles.photoItem} ${!isVisible ? styles.hidden : ''}`}
+							>
 								<Item
 									original={url}
 									thumbnail={url}
@@ -98,22 +102,6 @@ const PhotosGrid = (props: PhotosGridProps) => {
 									)}
 								</Item>
 							</div>
-						);
-					})}
-
-					{/* Add hidden items for gallery only */}
-					{props.photos.slice(photosToShow).map((photo) => {
-						const url = getDocumentLink(photo, props.type);
-						return (
-							<Item
-								key={`hidden-${photo.id}`}
-								original={url}
-								thumbnail={url}
-								width={1200}
-								height={800}
-							>
-								{() => <span/>}
-							</Item>
 						);
 					})}
 				</div>

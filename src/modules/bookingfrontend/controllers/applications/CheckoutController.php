@@ -97,54 +97,23 @@ class CheckoutController
                 $result['debug_timestamp'] = date('Y-m-d H:i:s');
                 $result['debug_session_id'] = $session_id;
 
-                // Determine message based on direct booking and count
-                // Check if at least one application is a direct booking
-                $has_direct_booking = false;
+                // Set individual messages per application with titles
                 foreach ($result['updated'] as $app) {
+                    $app_name = $app['name'] ?? 'Søknad';
+                    $app_title = lang('application') . ': ' . $app_name;
+
                     if ($app['status'] === 'ACCEPTED') {
-                        $has_direct_booking = true;
-                        break;
+                        // Direct booking approved
+                        $message = lang('application_processed_single') . "<br/>" . lang("Please check your Spam Filter if you are missing mail.");
+                        Cache::message_set($message, 'message', $app_title);
+                    } elseif ($app['status'] === 'NEW') {
+                        // Application sent for approval
+                        $message = lang('application_registered_single') . "<br/>" .
+                                  lang('case_officer_review_single') . "<br/>" .
+                                  lang("Please check your Spam Filter if you are missing mail.");
+                        Cache::message_set($message, 'message', $app_title);
                     }
                 }
-
-                // Define message sets based on direct booking status
-                if ($has_direct_booking) {
-                    $messages = array(
-                        'one' => array(
-                            'registered' => 'application_processed_single',
-                            'review' => ''
-                        ),
-                        'multiple' => array(
-                            'registered' => 'applications_processed_multiple',
-                            'review' => ''
-                        )
-                    );
-                } else {
-                    $messages = array(
-                        'one' => array(
-                            'registered' => 'application_registered_single',
-                            'review' => 'case_officer_review_single'
-                        ),
-                        'multiple' => array(
-                            'registered' => 'applications_registered_multiple',
-                            'review' => 'case_officer_review_multiple'
-                        )
-                    );
-                }
-
-                // Choose message set based on count
-                $msgset = count($result['updated']) > 1 ? 'multiple' : 'one';
-
-                // Build message array
-                $message_arr = array();
-                $message_arr[] = lang($messages[$msgset]['registered']);
-                if ($messages[$msgset]['review']) {
-                    $message_arr[] = lang($messages[$msgset]['review']);
-                }
-                $message_arr[] = lang("Please check your Spam Filter if you are missing mail.");
-
-                // Set message in cache
-                Cache::message_set(implode("<br/>", $message_arr), 'message', 'booking.booking confirmed');
                 WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
 
                 return ResponseHelper::sendJSONResponse([
@@ -322,7 +291,7 @@ class CheckoutController
         } catch (Exception $e) {
             // Log the error but don't expose sensitive configuration details
             error_log("External payment eligibility check failed: " . $e->getMessage());
-            
+
             // Return a safe error response
             return ResponseHelper::sendJSONResponse([
                 'eligible' => false,
@@ -392,9 +361,9 @@ class CheckoutController
                 // 2. Separate applications into direct bookings and normal applications
                 $directApplications = [];
                 $normalApplications = [];
-                
+
                 $currentUnixTime = time();
-                
+
                 foreach ($updatedApplications as $application) {
                     $isDirectBooking = false;
                     if (isset($application['resources']) && is_array($application['resources'])) {
@@ -408,7 +377,7 @@ class CheckoutController
                             }
                         }
                     }
-                    
+
                     if ($isDirectBooking) {
                         $directApplications[] = $application;
                     } else {
@@ -416,30 +385,9 @@ class CheckoutController
                     }
                 }
 
-                // 3. Submit normal applications immediately if any exist
-                if (!empty($normalApplications)) {
-                    // We need to submit only normal applications by updating their session temporarily
-                    // Store current partial applications and restore only normal ones for checkout
-                    $session = Sessions::getInstance();
-                    $originalPartials = $this->applicationService->getPartialApplications($session_id);
-                    
-                    // Temporarily clear partials and add only normal applications
-                    $uiApplication = CreateObject('booking.uiapplication');
-                    foreach ($originalPartials as $original) {
-                        if (!in_array($original['id'], array_column($normalApplications, 'id'))) {
-                            // Remove non-normal applications temporarily
-                            $uiApplication->remove_partial($session_id, $original['id']);
-                        }
-                    }
-                    
-                    // Submit normal applications
-                    $normalResult = $this->applicationService->checkoutPartials($session_id, $data);
-                    
-                    // Restore direct applications to partial state for payment
-                    foreach ($directApplications as $directApp) {
-                        $uiApplication->add_partial($directApp, $session_id);
-                    }
-                }
+                // 3. Normal applications will be processed after Vipps payment is confirmed
+                // Store application IDs for later processing
+                $normalApplicationIds = array_column($normalApplications, 'id');
 
                 // 4. Handle Vipps payment for direct applications (if eligible)
                 if (!empty($directApplications)) {
@@ -464,15 +412,23 @@ class CheckoutController
                     $direct_application_ids = array_column($directApplications, 'id');
 
                     try {
+                        // Only pass direct applications to Vipps (the ones that require payment)
                         $paymentResult = $this->vippsService->initiatePayment($direct_application_ids);
+                        
+                        // Store normal application IDs and contact data tied to the payment order
+                        if (isset($paymentResult['orderId'])) {
+                            Cache::system_set('bookingfrontend', 'vipps_normal_apps_' . $paymentResult['orderId'], $normalApplicationIds);
+                            Cache::system_set('bookingfrontend', 'vipps_contact_data_' . $paymentResult['orderId'], $data);
+                        }
 
                         if (isset($paymentResult['url'])) {
                             return ResponseHelper::sendJSONResponse([
                                 'success' => true,
                                 'redirect_url' => $paymentResult['url'],
                                 'orderId' => $paymentResult['orderId'] ?? null,
-                                'normal_applications_submitted' => count($normalApplications),
-                                'direct_applications_count' => count($directApplications)
+                                'normal_applications_pending' => count($normalApplications),
+                                'direct_applications_count' => count($directApplications),
+                                'message' => 'Direct applications require payment. Normal applications will be processed after payment confirmation.'
                             ]);
                         } else {
                             // Handle Vipps initiation failure
@@ -488,12 +444,15 @@ class CheckoutController
                         ], 500);
                     }
                 } else {
-                    // Only normal applications - redirect to success page
+                    // Only normal applications - process them immediately since no payment is required
+                    $normalResult = $this->applicationService->checkoutPartials($session_id, $data);
+                    
                     return ResponseHelper::sendJSONResponse([
                         'success' => true,
                         'redirect_url' => '/user/applications',
                         'normal_applications_submitted' => count($normalApplications),
-                        'direct_applications_count' => 0
+                        'direct_applications_count' => 0,
+                        'message' => 'Applications submitted successfully'
                     ]);
                 }
 
@@ -606,7 +565,7 @@ class CheckoutController
     {
         try {
             $payment_order_id = $args['payment_order_id'] ?? '';
-            
+
             if (empty($payment_order_id)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'payment_order_id is required'],

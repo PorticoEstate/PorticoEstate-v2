@@ -632,14 +632,22 @@ class VippsService
                 $approved = $this->approveApplications($remote_order_id, $amount);
                 \App\Database\Db::getInstance()->transaction_commit();
 
-                // Set success message in cache (similar to CheckoutController line 147)
+                // Set individual success messages per application with titles
                 if ($approved) {
-                    $message_arr = [];
-                    $message_arr[] = lang('application_registered_confirmation');
-                    $message_arr[] = lang('vipps_payment_completed');
-                    $message_arr[] = lang('check_spam_filter');
+                    // Get application IDs and details for individual messages
+                    $soapplication = CreateObject('booking.soapplication');
+                    $application_ids = $soapplication->get_application_from_payment_order($remote_order_id);
 
-                    Cache::message_set(implode("<br/>", $message_arr), 'message', 'bookingfrontend.vipps_payment_confirmed');
+                    $applicationService = new ApplicationService();
+                    foreach ($application_ids as $app_id) {
+                        $app = $applicationService->getApplicationById($app_id);
+                        if ($app) {
+                            $app_name = $app['name'] ?? 'Søknad';
+                            $app_title = lang('application') . ': ' . $app_name;
+                            $message = lang('vipps_payment_approved_single') . "<br/>" . lang("Please check your Spam Filter if you are missing mail.");
+                            Cache::message_set($message, 'message', $app_title);
+                        }
+                    }
                 }
 
                 return [
@@ -685,14 +693,22 @@ class VippsService
 
             \App\Database\Db::getInstance()->transaction_commit();
 
-            // Set success message in cache (similar to CheckoutController line 147)
+            // Set individual success messages per application with titles
             if ($approved) {
-                $message_arr = [];
-                $message_arr[] = lang('application_registered_confirmation');
-                $message_arr[] = lang('vipps_payment_completed');
-                $message_arr[] = lang('check_spam_filter');
+                // Get application IDs and details for individual messages
+                $soapplication = CreateObject('booking.soapplication');
+                $application_ids = $soapplication->get_application_from_payment_order($remote_order_id);
 
-                Cache::message_set(implode("<br/>", $message_arr), 'message', 'bookingfrontend.vipps_payment_confirmed');
+                $applicationService = new ApplicationService();
+                foreach ($application_ids as $app_id) {
+                    $app = $applicationService->getApplicationById($app_id);
+                    if ($app) {
+                        $app_name = $app['name'] ?? 'Søknad';
+                        $app_title = lang('application') . ': ' . $app_name;
+                        $message = lang('vipps_payment_approved_single') . "<br/>" . lang("Please check your Spam Filter if you are missing mail.");
+                        Cache::message_set($message, 'message', $app_title);
+                    }
+                }
             }
 
             return [
@@ -724,6 +740,8 @@ class VippsService
 
         foreach ($application_ids as $application_id) {
             $application = $boapplication->so->read_single($application_id);
+
+            // All applications in payment order are direct booking applications (require payment)
             $application['status'] = 'ACCEPTED';
             $receipt = $boapplication->update($application);
 
@@ -774,6 +792,98 @@ class VippsService
                 $ret = true;
             }
         }
+
+        // Process normal applications that were waiting for payment confirmation
+        $normal_application_ids = \App\modules\phpgwapi\services\Cache::system_get('bookingfrontend', 'vipps_normal_apps_' . $remote_order_id) ?? [];
+
+        if (!empty($normal_application_ids)) {
+            // Get the contact data that was used for the Vipps payment
+            $contact_data = \App\modules\phpgwapi\services\Cache::system_get('bookingfrontend', 'vipps_contact_data_' . $remote_order_id) ?? [];
+
+            if (!empty($contact_data)) {
+                try {
+                    // Get the session ID from the application data
+                    $session_id = null;
+                    foreach ($application_ids as $app_id) {
+                        $app = $boapplication->so->read_single($app_id);
+                        if (!empty($app['session_id'])) {
+                            $session_id = $app['session_id'];
+                            break;
+                        }
+                    }
+
+                    if (!empty($session_id)) {
+                        $applicationService = new \App\modules\bookingfrontend\services\applications\ApplicationService();
+
+                        // Check if normal applications still exist as partials
+                        $partialApplications = $applicationService->getPartialApplications($session_id);
+                        $normalPartials = array_filter($partialApplications, function($app) use ($normal_application_ids) {
+                            return in_array($app['id'], $normal_application_ids);
+                        });
+
+                        if (!empty($normalPartials)) {
+                            // Process only the normal applications by updating them with contact info and finalizing
+                            foreach ($normalPartials as $normalApp) {
+                                try {
+                                    // Update this specific normal application with contact info
+                                    $updateData = [
+                                        'contact_name' => $contact_data['contactName'],
+                                        'contact_email' => $contact_data['contactEmail'],
+                                        'contact_phone' => $contact_data['contactPhone'],
+                                        'customer_organization_number' => $contact_data['customerType'] === 'organization_number' ? $contact_data['organizationNumber'] : null,
+                                        'customer_organization_name' => $contact_data['customerType'] === 'organization_number' ? $contact_data['organizationName'] : null,
+                                        'session_id' => null, // Finalize the application
+                                        'status' => 'NEW', // Normal applications go for approval
+                                        'modified' => date('Y-m-d H:i:s')
+                                    ];
+
+                                    // Add address fields if provided
+                                    if (!empty($contact_data['street'])) {
+                                        $updateData['customer_street'] = $contact_data['street'];
+                                    }
+                                    if (!empty($contact_data['zipCode'])) {
+                                        $updateData['customer_zip_code'] = $contact_data['zipCode'];
+                                    }
+                                    if (!empty($contact_data['city'])) {
+                                        $updateData['customer_city'] = $contact_data['city'];
+                                    }
+
+                                    $applicationService->patchApplicationMainData($updateData, $normalApp['id']);
+
+                                    // Send notification for the normal application
+                                    $bo_application = CreateObject('booking.boapplication');
+                                    $updatedApp = $bo_application->so->read_single($normalApp['id']);
+                                    $bo_application->send_notification($updatedApp);
+
+                                    // Set confirmation message for normal application (same as regular checkout)
+                                    $app_name = $updatedApp['name'] ?? 'Søknad';
+                                    $app_title = lang('application') . ': ' . $app_name;
+                                    $message = lang('application_registered_single') . "<br/>" .
+                                              lang('case_officer_review_single') . "<br/>" .
+                                              lang("Please check your Spam Filter if you are missing mail.");
+                                    \App\modules\phpgwapi\services\Cache::message_set($message, 'message', $app_title);
+
+                                    $ret = true;
+                                } catch (\Exception $e) {
+                                    error_log("Failed to process normal application {$normalApp['id']}: " . $e->getMessage());
+                                }
+                            }
+
+                            // Trigger WebSocket update to notify frontend about partial applications changes
+						}
+					}
+                } catch (\Exception $e) {
+                    // Log error but don't fail the whole payment process
+                    error_log("Failed to process normal applications after Vipps payment: " . $e->getMessage());
+                }
+            }
+        }
+
+        // Clean up cached data
+        \App\modules\phpgwapi\services\Cache::system_clear('bookingfrontend', 'vipps_normal_apps_' . $remote_order_id);
+        \App\modules\phpgwapi\services\Cache::system_clear('bookingfrontend', 'vipps_contact_data_' . $remote_order_id);
+		\App\modules\bookingfrontend\helpers\WebSocketHelper::triggerPartialApplicationsUpdate($session_id);
+
 
         return $ret;
     }

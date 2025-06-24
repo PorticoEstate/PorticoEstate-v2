@@ -14,15 +14,17 @@ interface ResourceParams {
 }
 
 interface ResourceProps {
-    params: ResourceParams;
+    params: Promise<ResourceParams>;
     initialDate?: string;
 }
 
 
 
 const Resource = async (props: ResourceProps) => {
+    // Await params in Next.js 15+
+    const params = await props.params;
     // Convert the id to a number
-    const resourceId = parseInt(props.params.id, 10);
+    const resourceId = parseInt(params.id, 10);
 
     // Check if the buildingId is a valid number
     if (isNaN(resourceId)) {

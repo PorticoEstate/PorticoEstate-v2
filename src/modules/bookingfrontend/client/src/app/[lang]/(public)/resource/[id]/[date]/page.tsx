@@ -6,16 +6,18 @@ interface ResourceShowWithDateParams {
 }
 
 interface ResourceShowWithDateProps {
-    params: ResourceShowWithDateParams;
+    params: Promise<ResourceShowWithDateParams>;
 }
 
 // Reuse the parent page component but pass the date parameter
 export default async function ResourceShowWithDate(props: ResourceShowWithDateProps) {
+    const params = await props.params;
+    
     return Resource({
         params: {
-            id: props.params.id,
+            id: params.id,
         },
         // Pass the date parameter as a custom property
-        initialDate: props.params.date
+        initialDate: params.date
     });
 }

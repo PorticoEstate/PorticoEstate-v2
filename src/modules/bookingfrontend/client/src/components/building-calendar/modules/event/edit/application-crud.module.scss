@@ -207,18 +207,16 @@
 }
 
 .participantInput {
-    :global {
-        input[type="number"] {
-            -moz-appearance: textfield;
-            &::-webkit-outer-spin-button,
-            &::-webkit-inner-spin-button {
-                -webkit-appearance: none;
-                margin: 0;
-            }
+    :global(input[type="number"]) {
+        -moz-appearance: textfield;
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
 
-            &::placeholder {
-                opacity: 0.6;
-            }
+        &::placeholder {
+            opacity: 0.6;
         }
     }
 

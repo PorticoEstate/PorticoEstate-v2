@@ -12,13 +12,15 @@ interface BuildingShowParams {
     id: string;
 }
 interface BuildingShowProps {
-    params: BuildingShowParams;
+    params: Promise<BuildingShowParams>;
     initialDate?: string; // Add optional initialDate parameter
 }
 
 const BuildingShow = async (props: BuildingShowProps) => {
+    const params = await props.params;
+
     // Convert the id to a number
-    const buildingId = parseInt(props.params.id, 10);
+    const buildingId = parseInt(params.id, 10);
 
     // Check if the buildingId is a valid number
     if (isNaN(buildingId)) {
@@ -42,7 +44,6 @@ const BuildingShow = async (props: BuildingShowProps) => {
         <main>
             <BuildingHeader building={building} town={town} />
             {/*<hr className={`my-2 mx-standard`}/>*/}
-
 			<BuildingPhotos object={building} type={'building'} />
 			<section className={'my-2'}>
 				{/* Photos moved above accordions */}
@@ -50,7 +51,7 @@ const BuildingShow = async (props: BuildingShowProps) => {
                 <DescriptionAccordion description_json={building.description_json}/>
             </section>
             {/*<hr className={`my-2`}/>*/}
-            <BuildingCalendar building_id={props.params.id} initialDate={props.initialDate}/>
+            <BuildingCalendar building_id={params.id} initialDate={props.initialDate}/>
             <BuildingContact building={building}/>
         </main>
     );

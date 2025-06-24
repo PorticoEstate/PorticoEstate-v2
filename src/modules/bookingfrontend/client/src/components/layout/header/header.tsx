@@ -3,8 +3,8 @@ import HeaderMenuContent from "@/components/layout/header/header-menu-content";
 import LanguageSwitcher from "@/app/i18n/language-switcher";
 import UserMenu from "@/components/layout/header/user-menu/user-menu";
 import ShoppingCartButton from "@/components/layout/header/shopping-cart/shopping-cart-button";
-import logo_icon from '/public/logo_icon.svg';
-import logo_title from '/public/logo_title.svg';
+import logo_icon from '../../../../public/logo_icon.svg';
+import logo_title from '../../../../public/logo_title.svg';
 import Image from "next/image";
 // Shopping cart FAB is now managed by the toast system
 import Link from "next/link";

@@ -53,18 +53,21 @@ export const revalidate = 120;
 
 
 interface RootLayoutProps extends PropsWithChildren {
-    params: {
+    params: Promise<{
         lang: string;
-    }
+    }>
 
 }
 
-const RootLayout: FC<RootLayoutProps> = (props) => {
+const RootLayout: FC<RootLayoutProps> = async (props) => {
+    // Await params in Next.js 15+
+    const params = await props.params;
+    
     // Store the language from URL params for future use
-    setLayoutLanguage(props.params.lang);
+    setLayoutLanguage(params.lang);
 
     return (
-        <html lang={props.params.lang} dir={dir(props.params.lang)}>
+        <html lang={params.lang} dir={dir(params.lang)}>
         <head>
             <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
             <script

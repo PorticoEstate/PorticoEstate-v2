@@ -5,6 +5,9 @@
     margin-bottom: 1.5rem;
     padding-top: 1.5rem;
     padding-bottom: 1.5rem;
+    border-top: 1px solid #89266a;
+    width: 100%;
+    
     .footerContent {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
@@ -22,10 +25,6 @@
         margin-top: 0;
         margin-bottom: 0;
     }
-    //&-border-top {
-        border-top: 1px solid #89266a;
-        width: 100%;
-    //}\
     .footerLogoContainer {
         display: flex;
         //justify-content: center;

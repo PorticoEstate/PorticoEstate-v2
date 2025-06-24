@@ -7740,34 +7740,3 @@ function booking_upgrade0_2_111($oProc)
 		return $currentver;
 	}
 }
-
-$test[] = '0.2.112';
-function booking_upgrade0_2_112($oProc)
-{
-	$oProc->m_odb->transaction_begin();
-
-	$oProc->CreateTable(
-		'bb_resource_outlook_item',
-		array(
-			'fd' => array(
-				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
-				'outlook_item_id' => array('type' => 'varchar', 'precision' => 255, 'nullable' => False),
-				'outlook_item_name' => array('type' => 'varchar', 'precision' => 255, 'nullable' => True),
-				'active' => array('type' => 'int', 'nullable' => False, 'precision' => 2, 'default' => 1),
-				'sync_date_time' => array('type' => 'timestamp', 'nullable' => False, 'default' => 'current_timestamp'),
-			),
-			'pk' => array('resource_id', 'outlook_item_id'),
-			'fk' => array(
-				'bb_resource' => array('resource_id' => 'id'),
-			),
-			'ix' => array(),
-			'uc' => array()
-		)
-	);
-
-	if ($oProc->m_odb->transaction_commit())
-	{
-		$currentver = '0.2.113';
-		return $currentver;
-	}
-}

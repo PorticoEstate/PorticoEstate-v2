@@ -11,6 +11,7 @@ import Link from "next/link";
 import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
 import ShoppingCartCardList from "@/components/layout/header/shopping-cart/shopping-cart-card-list";
+import { calculateTotalCartCost, formatCurrency } from "@/utils/cost-utils";
 
 interface ShoppingCartContentProps {
     setOpen: Dispatch<boolean>;
@@ -58,6 +59,15 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                         openEdit={openEdit}
                         onLinkClick={() => props.setOpen(false)}
                     />
+                )}
+
+                {!isLoading && (basketData?.list.length || 0) > 0 && calculateTotalCartCost(basketData!.list) > 0 && (
+                    <div className={styles.totalCost}>
+                        <span className={styles.totalLabel}>{t('bookingfrontend.total')}:</span>
+                        <span className={styles.totalAmount}>
+                            {formatCurrency(calculateTotalCartCost(basketData!.list))}
+                        </span>
+                    </div>
                 )}
 
                 <div className={styles.eventPopperFooter}>

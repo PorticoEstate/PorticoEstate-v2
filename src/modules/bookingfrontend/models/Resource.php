@@ -101,6 +101,7 @@ class Resource
     /**
      * @ORM\Column(type="bigint", nullable=true)
      * @Expose
+	 * @Short
      * @OA\Property(description="Direct booking information", type="integer", format="int64", nullable=true)
      */
     public $direct_booking;

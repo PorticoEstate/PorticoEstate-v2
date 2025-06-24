@@ -601,8 +601,18 @@ class EventController
 			}
 			else
 			{
-				// Handle form-encoded data
+				// Handle form-encoded data - for PUT requests, we need to read raw body
 				$updateData = $request->getParsedBody() ?: [];
+				
+				// If no parsed body (common with PUT requests), read raw input and parse manually
+				if (empty($updateData))
+				{
+					$body = $request->getBody()->getContents();
+					if (!empty($body))
+					{
+						parse_str($body, $updateData);
+					}
+				}
 			}
 
 			if (empty($updateData))
@@ -872,7 +882,18 @@ class EventController
 			}
 			else
 			{
+				// Handle form-encoded data - for PATCH requests, we need to read raw body
 				$requestData = $request->getParsedBody() ?: [];
+				
+				// If no parsed body (common with PATCH requests), read raw input and parse manually
+				if (empty($requestData))
+				{
+					$body = $request->getBody()->getContents();
+					if (!empty($body))
+					{
+						parse_str($body, $requestData);
+					}
+				}
 			}
 
 			// Determine new active status

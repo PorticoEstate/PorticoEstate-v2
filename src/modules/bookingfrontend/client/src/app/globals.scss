@@ -895,6 +895,15 @@ select option:disabled {
 		--dsc-button-color--hover: var(--ds-color-text-default);
 		color: var(--dsc-button-color);
 		background-color: var(--dsc-button-background);
+		width: 2.5rem;
+		height: 2.5rem;
+		margin: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 0.875rem;
+		opacity: 0.7;
+		
 		&--selected {
 			background-color: var(--dsc-button-background--active);
 		}
@@ -904,15 +913,6 @@ select option:disabled {
 				background-color: var(--dsc-button-background--hover);
 			}
 		}
-
-		width: 2.5rem;
-		height: 2.5rem;
-		margin: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 0.875rem;
-		opacity: 0.7;
 		@media (min-width: 768px) {
 			width: 2.5rem;
 			height: 2.5rem;

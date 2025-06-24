@@ -7,6 +7,11 @@
     background-color: $grey-24;
     flex-grow: 1;
 
+    min-width: 300px;
+    //padding: 0;
+	padding-left: 1.5rem;
+	padding-right: 1.5rem;
+    
     @include tablet {
         //max-width: 300px;
         border-radius: 4px;
@@ -22,10 +27,6 @@
     //    min-height: 100vh;
     //    max-height: 100vh;
     //}
-    min-width: 300px;
-    //padding: 0;
-	padding-left: 1.5rem;
-	padding-right: 1.5rem;
     .eventPopperContent, .eventPopperFooter, .eventPopperActions {
         //padding-left: 1.5rem;
         //padding-right: 1.5rem;
@@ -50,11 +51,11 @@
     //}
 
     .eventPopperContent {
-
+        margin-bottom: 16px;
+        
         @include mobile {
             flex-grow: 1;
         }
-        margin-bottom: 16px;
 
 
     }

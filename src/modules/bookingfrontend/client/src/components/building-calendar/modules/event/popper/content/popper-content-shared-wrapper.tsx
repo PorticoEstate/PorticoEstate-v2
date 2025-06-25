@@ -8,7 +8,7 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 interface PopperContentSharedProps extends PropsWithChildren {
     onClose: () => void;
     header?: boolean;
-	headerContent?: JSX.Element;
+	headerContent?: React.ReactElement;
 
 }
 

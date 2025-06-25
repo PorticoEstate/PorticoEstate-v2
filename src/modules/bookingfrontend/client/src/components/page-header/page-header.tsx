@@ -1,11 +1,11 @@
-import {FC} from 'react';
+import {FC, ReactElement} from 'react';
 import {IconProp} from "@fortawesome/fontawesome-svg-core";
 import styles from "@/components/building-page/building-header.module.scss";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {Heading} from "@digdir/designsystemet-react";
 
 interface PageHeaderProps {
-    title: string | JSX.Element;
+    title: string | ReactElement;
     icon?: IconProp;
     className?: string
 }

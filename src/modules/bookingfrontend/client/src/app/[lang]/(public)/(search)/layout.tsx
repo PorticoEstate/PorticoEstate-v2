@@ -34,7 +34,7 @@ const extractTextContent = (node: React.ReactNode): string => {
 	if (typeof node === 'number') return String(node);
 	if (Array.isArray(node)) return node.map(extractTextContent).join('');
 	if (React.isValidElement(node)) {
-		return extractTextContent(node.props.children);
+		return extractTextContent((node.props as any).children);
 	}
 	return '';
 };

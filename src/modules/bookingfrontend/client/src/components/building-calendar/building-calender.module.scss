@@ -35,7 +35,7 @@
     gap: 0.875rem 0.875rem;
 	min-height: 985px;
 
-    :global .fc {
+    :global(.fc) {
         grid-area: calendar-body;
         background-color: $grey-light-64;
     }

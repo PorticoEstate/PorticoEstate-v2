@@ -7,10 +7,11 @@ import { fetchOrganizationsStatic } from "@/service/api/api-utils-static";
 export const revalidate = 3600;
 
 export async function generateMetadata({
-										   params: {lang},
+										   params,
 									   }: {
-	params: { lang: string };
+	params: Promise<{ lang: string }>;
 }) {
+	const {lang} = await params;
 	const {t} = await getTranslation(lang);
 
 	return {
@@ -19,14 +20,15 @@ export async function generateMetadata({
 }
 
 interface OrganizationSearchPageProps {
-	params: {
+	params: Promise<{
 		lang: string;
-	};
+	}>;
 }
 
 const OrganizationSearchPage: FC<OrganizationSearchPageProps> = async ({params}) => {
 	// Fetch organizations data server-side with caching
 	const initialOrganizations = await fetchOrganizationsStatic();
+	const {lang} = await params;
 
 	return (
 		<div>

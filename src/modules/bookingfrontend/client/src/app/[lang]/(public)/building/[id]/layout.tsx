@@ -6,13 +6,15 @@ interface BuildingLayoutParams {
 }
 
 interface BuildingLayoutProps {
-    params: BuildingLayoutParams;
+    params: Promise<BuildingLayoutParams>;
     children: React.ReactNode;
 }
 
 export async function generateMetadata(props: BuildingLayoutProps) {
+    // Await params in Next.js 15+
+    const params = await props.params;
     // Convert the id to a number
-    const buildingId = parseInt(props.params.id, 10);
+    const buildingId = parseInt(params.id, 10);
 
     // Check if the buildingId is a valid number
     if (isNaN(buildingId)) {
@@ -32,6 +34,8 @@ export async function generateMetadata(props: BuildingLayoutProps) {
     };
 }
 
-export default function BuildingLayout({ children }: BuildingLayoutProps) {
+export default async function BuildingLayout({ children, params }: BuildingLayoutProps) {
+    // Await params in Next.js 15+
+    await params;
     return children;
 }

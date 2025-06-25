@@ -14,9 +14,9 @@ export default async function ResourceShowWithDate(props: ResourceShowWithDatePr
     const params = await props.params;
     
     return Resource({
-        params: {
+        params: Promise.resolve({
             id: params.id,
-        },
+        }),
         // Pass the date parameter as a custom property
         initialDate: params.date
     });

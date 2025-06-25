@@ -71,7 +71,7 @@ const CheckoutContent: FC = () => {
     const [showDocumentsError, setShowDocumentsError] = useState(false);
 
     // Reference for the documents section
-    const documentsSectionRef = React.useRef<HTMLDivElement>(null);
+    const documentsSectionRef = React.useRef<HTMLDivElement>(null!);
 
     // Custom handler for individual document consent changes
     const handleDocumentConsentChange = (documentId: number, checked: boolean) => {

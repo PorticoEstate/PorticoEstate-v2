@@ -22,7 +22,7 @@ const ShoppingCartButton: FC<ShoppingCartButtonProps> = (props) => {
     // Register the button ref with the context
     useEffect(() => {
         if (popperAnchorEl.current) {
-            setAnchorRef(popperAnchorEl);
+            setAnchorRef(popperAnchorEl as React.RefObject<HTMLButtonElement>);
         }
     }, [setAnchorRef]);
 

@@ -16,8 +16,8 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
  */
 const CanvasEventContent: FC<CanvasEventContentProps> = memo(function CanvasEventContent(props) {
   const { eventInfo } = props;
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null!);
+  const containerRef = useRef<HTMLDivElement>(null!);
   const colours = useColours();
   const tInstance = useTrans();
 

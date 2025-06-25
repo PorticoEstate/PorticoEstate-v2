@@ -280,7 +280,7 @@ const BillingForm: FC<BillingFormProps> = ({
 											label: `${org.organization_number} [${org.name}]`
 										}))}
 										loadOptions={loadOptions}
-										onChange={(newValue) => {
+										onChange={(newValue: OrganizationOption | null) => {
 											const value = (newValue as OrganizationOption)?.value || '';
 											field.onChange(value);
 											handleOrgChange(value);
@@ -293,18 +293,18 @@ const BillingForm: FC<BillingFormProps> = ({
 										placeholder={t('bookingfrontend.select_organization')}
 										classNamePrefix="react-select"
 										styles={{
-											container: (base) => ({
+											container: (base: any) => ({
 												...base,
 												width: '100%'
 											}),
-											control: (base) => ({
+											control: (base: any) => ({
 												...base,
 												minHeight: '48px',
 												borderRadius: '4px',
 												borderColor: errors.organizationNumber ? '#c30000' : '#ccc',
 												width: '100%'
 											}),
-											menu: (base) => ({
+											menu: (base: any) => ({
 												...base,
 												zIndex: 2
 											})

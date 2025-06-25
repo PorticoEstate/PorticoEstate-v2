@@ -14,9 +14,9 @@ export default async function BuildingShowWithDate(props: BuildingShowWithDatePr
     const params = await props.params;
     
     return BuildingShow({
-        params: {
+        params: Promise.resolve({
             id: params.id,
-        },
+        }),
         // Pass the date parameter as a custom property
         initialDate: params.date
     });

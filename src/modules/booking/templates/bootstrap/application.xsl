@@ -1015,7 +1015,7 @@
 										<div class="panel-heading" role="tab" id="headingSix">
 											<h4 class="panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseSix" aria-expanded="true" aria-controls="collapseSix">
-													<xsl:value-of select="php:function('lang', 'When and Where?')" />
+													<xsl:value-of select="php:function('lang', 'when_and_where')" />
 												</a>
 											</h4>
 										</div>
@@ -1057,7 +1057,7 @@
 																	</xsl:if>
 																	<div class="pure-control-group">
 																		<label style="font-weight: bold;">
-																			<xsl:value-of select="php:function('lang', 'Time Period')" />:</label>
+																			<xsl:value-of select="php:function('lang', 'time_period')" />:</label>
 																		<span>
 																			<xsl:value-of select="php:function('pretty_timestamp', from_)"/>
 																			<xsl:text> - </xsl:text>

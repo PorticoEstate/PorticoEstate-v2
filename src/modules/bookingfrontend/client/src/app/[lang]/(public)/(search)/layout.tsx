@@ -9,6 +9,25 @@ import ReactMarkdown from 'react-markdown';
 
 export const dynamic = 'force-dynamic';
 
+// Helper to preprocess markdown and extract link target information
+const preprocessMarkdown = (markdown: string) => {
+	// Find all instances of [text](url){:target="_blank"} and convert them to standard markdown
+	// while keeping track of which links should open in new tab
+	const linkTargets = new Map();
+	let processedMarkdown = markdown;
+	
+	// Replace the special syntax with standard markdown and store target info
+	processedMarkdown = processedMarkdown.replace(
+		/\[([^\]]+)\]\(([^)]+)\)\{:target="_blank"\}/g,
+		(match, text, url) => {
+			linkTargets.set(url, true);
+			return `[${text}](${url})`;
+		}
+	);
+	
+	return { processedMarkdown, linkTargets };
+};
+
 // Helper to extract text content from React elements
 const extractTextContent = (node: React.ReactNode): string => {
 	if (typeof node === 'string') return node;
@@ -61,13 +80,22 @@ export default async function Layout(props: PropsWithChildren) {
 		? parseHtmlToMarkdown(serverSettings.booking_config.frontpagetext)
 		: null;
 
+	// Process the markdown to handle special link syntax
+	const frontImageProcessed = frontImageText?.markdown 
+		? preprocessMarkdown(frontImageText.markdown)
+		: null;
+	
+	const frontPageProcessed = frontPageText?.markdown 
+		? preprocessMarkdown(frontPageText.markdown)
+		: null;
+
 	return (
 		<div>
 			{/* Warning alert box with frontimagetext */}
-			{frontImageText && frontImageText.markdown && (
+			{frontImageProcessed && (
 				<Alert data-color="warning" style={{marginBottom: '1rem'}}>
-					{frontImageText.title && <strong>{frontImageText.title}</strong>}
-					{frontImageText.title && frontImageText.markdown && <br/>}
+					{frontImageText?.title && <strong>{frontImageText.title}</strong>}
+					{frontImageText?.title && frontImageProcessed.processedMarkdown && <br/>}
 					<ReactMarkdown components={{
 						h1: ({children}) => <Heading level={2} data-size="lg"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						h2: ({children}) => <Heading level={3} data-size="md"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
@@ -77,24 +105,23 @@ export default async function Layout(props: PropsWithChildren) {
 						h6: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						p: ({children}) => <Paragraph data-size="md">{children}</Paragraph>,
 						a: ({href, children}) => {
-							// Check if link should open in new tab based on our special syntax
-							const shouldOpenInNewTab = href?.includes('{:target="_blank"}');
-							const cleanHref = href?.replace('{:target="_blank"}', '') || '';
+							// Use the preprocessed link target information
+							const shouldOpenInNewTab = frontImageProcessed.linkTargets.get(href);
 							
 							return shouldOpenInNewTab ? (
-								<a href={cleanHref} target="_blank" rel="noopener noreferrer">{children}</a>
+								<a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
 							) : (
-								<a href={cleanHref}>{children}</a>
+								<a href={href}>{children}</a>
 							);
 						}
-					}}>{frontImageText.markdown}</ReactMarkdown>
+					}}>{frontImageProcessed.processedMarkdown}</ReactMarkdown>
 				</Alert>
 			)}
 
 			{/* Info alert box with frontpagetext */}
-			{frontPageText && frontPageText.markdown && (
+			{frontPageProcessed && (
 				<div data-color="info" style={{marginBottom: '1rem'}}>
-					{frontPageText.title &&
+					{frontPageText?.title &&
 						<Heading level={4} data-size={'md'} style={{margin: 0}}>{frontPageText.title}</Heading>}
 					{/*{frontPageText.title && frontPageText.markdown && <br />}*/}
 					<ReactMarkdown components={{
@@ -106,17 +133,16 @@ export default async function Layout(props: PropsWithChildren) {
 						h6: ({children}) => <Heading level={6} data-size="2xs"><InlineMarkdown>{children}</InlineMarkdown></Heading>,
 						p: ({children}) => <Paragraph data-size="md">{children}</Paragraph>,
 						a: ({href, children}) => {
-							// Check if link should open in new tab based on our special syntax
-							const shouldOpenInNewTab = href?.includes('{:target="_blank"}');
-							const cleanHref = href?.replace('{:target="_blank"}', '') || '';
+							// Use the preprocessed link target information
+							const shouldOpenInNewTab = frontPageProcessed.linkTargets.get(href);
 							
 							return shouldOpenInNewTab ? (
-								<a href={cleanHref} target="_blank" rel="noopener noreferrer">{children}</a>
+								<a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
 							) : (
-								<a href={cleanHref}>{children}</a>
+								<a href={href}>{children}</a>
 							);
 						}
-					}}>{frontPageText.markdown}</ReactMarkdown>
+					}}>{frontPageProcessed.processedMarkdown}</ReactMarkdown>
 				</div>
 			)}
 			<ClientHeading>

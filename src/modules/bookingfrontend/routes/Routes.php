@@ -20,6 +20,8 @@ use App\modules\bookingfrontend\helpers\LoginHelper;
 use App\modules\bookingfrontend\helpers\LogoutHelper;
 use App\modules\phpgwapi\controllers\StartPoint;
 use App\modules\phpgwapi\middleware\SessionsMiddleware;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Routing\RouteCollectorProxy;
 use App\modules\bookingfrontend\helpers\UserHelper;
 
@@ -136,6 +138,11 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');
 })->add(new SessionsMiddleware($app->getContainer()));
 
+
+// Redirect /bookingfrontend to /bookingfrontend/
+$app->get('/bookingfrontend', function (Request $request, Response $response) {
+    return $response->withStatus(301)->withHeader('Location', '/bookingfrontend/');
+});
 
 $app->get('/bookingfrontend/', StartPoint::class . ':bookingfrontend')->add(new SessionsMiddleware($app->getContainer()));
 $app->post('/bookingfrontend/', StartPoint::class . ':bookingfrontend')->add(new SessionsMiddleware($app->getContainer()));

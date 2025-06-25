@@ -769,3 +769,25 @@ applications_processed_multiple	bookingfrontend	no	Søknadene dine har blitt beh
 case_officer_review_single	bookingfrontend	no	En saksbehandler vil behandle søknaden din så snart som mulig.
 case_officer_review_multiple	bookingfrontend	no	En saksbehandler vil behandle søknadene dine så snart som mulig.
 vipps_payment_confirmed	bookingfrontend	no	Din Vipps-betaling er bekreftet og søknadene dine er godkjent.
+choose_checkout_method	bookingfrontend	no	Velg betalingsmåte
+both_buttons_submit_applications	bookingfrontend	no	Begge knappene sender inn søknader
+pay_now_with_vipps	bookingfrontend	no	Betal nå med Vipps
+pay_later_with_invoice	bookingfrontend	no	Betal senere med faktura
+vipps_immediate_payment	bookingfrontend	no	Hele beløpet for direktebookinger betales nå
+applications_sent_simultaneously	bookingfrontend	no	Søknader sendes samtidig
+invoice_created_for_direct_bookings	bookingfrontend	no	Faktura opprettes for direktebookinger
+applications_may_contain_paid_services	bookingfrontend	no	Søknader kan inneholde betalte tilleggstjenester
+invoiced_only_if_approved	bookingfrontend	no	Disse faktureres kun hvis søknaden godkjennes
+after_submission_title	bookingfrontend	no	Etter innsending
+direct_bookings_confirmation_title	bookingfrontend	no	Direktebookinger
+payment_completed_and_confirmed	bookingfrontend	no	Betaling er fullført og bekreftet
+bookings_are_completed	bookingfrontend	no	Bookingene dine er fullført og bekreftet
+applications_for_review_title	bookingfrontend	no	Søknader til saksbehandling
+applications_sent_and_will_receive_email	bookingfrontend	no	Søknader er sendt og du vil få svar på e-post
+invoice_will_come_if_approved	bookingfrontend	no	Faktura vil bli sendt hvis søknaden godkjennes
+payment_if_approved	bookingfrontend	no	Betales hvis søknad godkjennes
+pay_now_or_later	bookingfrontend	no	Betal nå eller med faktura
+application_title	bookingfrontend	no	Søknadstittel
+direct_booking_title	bookingfrontend	no	Tittel direktebestilling
+direct_booking	bookingfrontend	no	Direktebestilling
+total_incl_vat	bookingfrontend	no	Total inkl. mva

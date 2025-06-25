@@ -166,6 +166,11 @@ class EventController
 			// Create new event instance
 			$event = new Event($modelData);
 
+			// Ensure secret is set before validation
+			if (empty($event->secret)) {
+				$event->secret = bin2hex(random_bytes(16));
+			}
+
 			// Validate the event
 			$validationErrors = $event->validate();
 			if (!empty($validationErrors))
@@ -1275,6 +1280,11 @@ class EventController
 
 			// Create new event instance
 			$event = new Event($modelData);
+
+			// Ensure secret is set before validation
+			if (empty($event->secret)) {
+				$event->secret = bin2hex(random_bytes(16));
+			}
 
 			// Validate the event
 			$validationErrors = $event->validate();

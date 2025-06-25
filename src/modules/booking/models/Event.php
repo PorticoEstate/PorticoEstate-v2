@@ -132,6 +132,198 @@ class Event
      */
     public array $resources = [];
 
+    /**
+     * Central field map for validation and metadata
+     */
+    protected static function getFieldMap(): array
+    {
+        return [
+            'id' => [
+                'type' => 'int',
+                'required' => false,
+            ],
+            'id_string' => [
+                'type' => 'string',
+                'required' => false,
+                'default' => '0',
+            ],
+            'active' => [
+                'type' => 'int',
+                'required' => true,
+            ],
+            'skip_bas' => [
+                'type' => 'int',
+                'required' => false,
+            ],
+            'activity_id' => [
+                'type' => 'int',
+                'required' => true,
+                'validator' => function($value) {
+                    return ($value > 0) ? null : 'Activity ID is required';
+                },
+            ],
+            'application_id' => [
+                'type' => 'int',
+                'required' => false,
+            ],
+            'name' => [
+                'type' => 'string',
+                'required' => true,
+                'maxLength' => 255,
+            ],
+            'organizer' => [
+                'type' => 'string',
+                'required' => true,
+                'maxLength' => 255,
+            ],
+            'homepage' => [
+                'type' => 'string',
+                'required' => false,
+                'maxLength' => 255,
+            ],
+            'description' => [
+                'type' => 'string',
+                'required' => false,
+            ],
+            'equipment' => [
+                'type' => 'string',
+                'required' => false,
+            ],
+            'building_id' => [
+                'type' => 'int',
+                'required' => true,
+                'validator' => function($value) {
+                    return ($value > 0) ? null : 'Building ID is required';
+                },
+            ],
+            'building_name' => [
+                'type' => 'string',
+                'required' => true,
+                'maxLength' => 255,
+            ],
+            'from_' => [
+                'type' => 'datetime',
+                'required' => true,
+            ],
+            'to_' => [
+                'type' => 'datetime',
+                'required' => true,
+            ],
+            'cost' => [
+                'type' => 'float',
+                'required' => true,
+                'validator' => function($value) {
+                    return ($value >= 0) ? null : 'Cost must be zero or positive';
+                },
+            ],
+            'contact_name' => [
+                'type' => 'string',
+                'required' => true,
+                'maxLength' => 50,
+            ],
+            'contact_email' => [
+                'type' => 'string',
+                'required' => false,
+                'validator' => function($value) {
+                    if (empty($value)) return null;
+                    return filter_var($value, FILTER_VALIDATE_EMAIL) ? null : 'Contact email is invalid';
+                },
+            ],
+            'contact_phone' => [
+                'type' => 'string',
+                'required' => false,
+                'maxLength' => 50,
+            ],
+            'completed' => [
+                'type' => 'int',
+                'required' => true,
+                'default' => 0,
+            ],
+            'access_requested' => [
+                'type' => 'int',
+                'required' => false,
+                'default' => 0,
+            ],
+            'reminder' => [
+                'type' => 'int',
+                'required' => true,
+                'default' => 1,
+            ],
+            'is_public' => [
+                'type' => 'int',
+                'required' => true,
+                'default' => 1,
+            ],
+            'secret' => [
+                'type' => 'string',
+                'required' => true,
+            ],
+            'sms_total' => [
+                'type' => 'int',
+                'required' => false,
+            ],
+            'participant_limit' => [
+                'type' => 'int',
+                'required' => false,
+                'validator' => function($value) {
+                    if (is_null($value)) return null;
+                    return ($value >= 0) ? null : 'Participant limit must be zero or positive';
+                },
+            ],
+            'customer_organization_name' => [
+                'type' => 'string',
+                'required' => false,
+            ],
+            'customer_organization_id' => [
+                'type' => 'int',
+                'required' => false,
+            ],
+            'customer_identifier_type' => [
+                'type' => 'string',
+                'required' => false,
+            ],
+            'customer_ssn' => [
+                'type' => 'string',
+                'required' => false,
+                'validator' => function($value) {
+                    if (empty($value)) return null;
+                    // Norwegian SSN: 11 digits
+                    return preg_match('/^\d{11}$/', $value) ? null : 'Customer SSN is invalid';
+                },
+            ],
+            'customer_organization_number' => [
+                'type' => 'string',
+                'required' => false,
+                'validator' => function($value) {
+                    if (empty($value)) return null;
+                    // Norwegian org number: 9 digits
+                    return preg_match('/^\d{9}$/', $value) ? null : 'Customer organization number is invalid';
+                },
+            ],
+            'customer_internal' => [
+                'type' => 'int',
+                'required' => true,
+            ],
+            'include_in_list' => [
+                'type' => 'int',
+                'required' => true,
+                'default' => 0,
+            ],
+            'additional_invoice_information' => [
+                'type' => 'string',
+                'required' => false,
+            ],
+            'resources' => [
+                'type' => 'array',
+                'required' => true,
+                'validator' => function($value) {
+                    return (is_array($value) && count($value) > 0) ? null : 'At least one resource is required';
+                },
+            ],
+            // You can add more fields as needed, e.g. for agegroups, audience, comments, costs, dates, etc.
+        ];
+    }
+
     public function __construct(?array $data = null)
     {
         $this->db = Db::getInstance();
@@ -155,56 +347,69 @@ class Event
     }
 
     /**
-     * Validate the event data
-     * Based on doValidate method from booking_soevent
+     * Validate the event data using the field map
      */
     public function validate(): array
     {
         $errors = [];
-
-        // Validate date range
-        try {
-            $from = new DateTime($this->from_);
-            $to = new DateTime($this->to_);
-
-            if ($from >= $to) {
-                $errors[] = 'End time must be after start time';
+        foreach (self::getFieldMap() as $field => $meta) {
+            $value = $this->$field ?? null;
+            // Required check
+            if (($meta['required'] ?? false) && (is_null($value) || $value === '' || (is_array($value) && count($value) === 0))) {
+                $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' is required';
+                continue;
             }
-        } catch (Exception $e) {
-            $errors[] = 'Invalid date format';
+            // Type check (basic)
+            if (!is_null($value)) {
+                switch ($meta['type']) {
+                    case 'int':
+                        if (!is_int($value)) {
+                            $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be an integer';
+                        }
+                        break;
+                    case 'string':
+                        if (!is_string($value)) {
+                            $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be a string';
+                        }
+                        break;
+                    case 'array':
+                        if (!is_array($value)) {
+                            $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be an array';
+                        }
+                        break;
+                    case 'datetime':
+                        try {
+                            new \DateTime($value);
+                        } catch (\Exception $e) {
+                            $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be a valid date/time';
+                        }
+                        break;
+                }
+            }
+            // Max length check
+            if (isset($meta['maxLength']) && is_string($value) && strlen($value) > $meta['maxLength']) {
+                $errors[] = ucfirst(str_replace('_', ' ', $field)) . " must be {$meta['maxLength']} characters or less";
+            }
+            // Custom validator
+            if (isset($meta['validator']) && is_callable($meta['validator'])) {
+                $err = call_user_func($meta['validator'], $value, $this);
+                if ($err) {
+                    $errors[] = $err;
+                }
+            }
         }
-
-        // Validate required fields
-        if (empty($this->name)) {
-            $errors[] = 'Event name is required';
+        // Custom cross-field validation: from_ < to_
+        if (!empty($this->from_) && !empty($this->to_)) {
+            try {
+                $from = new \DateTime($this->from_);
+                $to = new \DateTime($this->to_);
+                if ($from >= $to) {
+                    $errors[] = 'End time must be after start time';
+                }
+            } catch (\Exception $e) {
+                // Already handled above
+            }
         }
-
-        if (empty($this->organizer)) {
-            $errors[] = 'Organizer is required';
-        }
-
-        if (!$this->activity_id) {
-            $errors[] = 'Activity ID is required';
-        }
-
-        if (!$this->building_id) {
-            $errors[] = 'Building ID is required';
-        }
-
-        if (empty($this->building_name)) {
-            $errors[] = 'Building name is required';
-        }
-
-        // Validate contact name length (from booking_soevent)
-        if (strlen($this->contact_name) > 50) {
-            $errors[] = 'Contact name must be 50 characters or less';
-        }
-
-        // Validate resources
-        if (empty($this->resources)) {
-            $errors[] = 'At least one resource is required';
-        }
-
         return $errors;
     }
 

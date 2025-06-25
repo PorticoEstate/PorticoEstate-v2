@@ -496,7 +496,12 @@ class StartPoint
 			{
 				// Check for develop mode when no menuaction is provided and default to homepage
 				if ($_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
+					// Check cookie first, if unset use the assigned template
 					$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
+					if (empty($template_set)) {
+						$userSettings = Settings::getInstance()->get('user');
+						$template_set = $userSettings['preferences']['common']['template_set'] ?? '';
+					}
 
 					if ($template_set == 'bookingfrontend_2') {
 						$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();

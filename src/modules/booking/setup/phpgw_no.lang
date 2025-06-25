@@ -936,3 +936,5 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been processed and confirmation emails have been sent to you.	booking	no	Søknadene er behandlet, og bekreftelser er sendt til deg på e-post.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	no	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	no	Postnummer
+when_and_where	booking	no	Når og hvor?
+time_period	booking	no	Tidsperiode

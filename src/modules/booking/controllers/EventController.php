@@ -3,6 +3,8 @@
 namespace App\modules\booking\controllers;
 
 use App\modules\phpgwapi\services\Settings;
+use App\modules\booking\models\Event;
+use App\modules\phpgwapi\security\Acl;
 use App\Database\Db;
 use PDO;
 
@@ -15,11 +17,13 @@ class EventController
 {
 	protected array $userSettings;
 	protected Db $db;
+	protected Acl $acl;
 
 	public function __construct(ContainerInterface $container)
 	{
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->db = Db::getInstance();
+		$this->acl = Acl::getInstance();
 	}
 
 	/**
@@ -92,6 +96,13 @@ class EventController
 	 */
 	public function createForResource(Request $request, Response $response, array $args): Response
 	{
+		// Check permissions
+		if (!$this->acl->check('.application', Acl::ADD, 'booking'))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
 		try
 		{
 			$resourceId = (int)$args['resource_id'];
@@ -104,7 +115,7 @@ class EventController
 			}
 
 			// Verify resource exists
-			if (!$this->resourceExists($resourceId))
+			if (!Event::resourceExists($resourceId))
 			{
 				$response->getBody()->write(json_encode(['error' => 'Resource not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
@@ -149,54 +160,42 @@ class EventController
 				}
 			}
 
-			// Validate and parse dates
-			try
-			{
-				$fromDate = new \DateTime($eventData['from_']);
-				$toDate = new \DateTime($eventData['to_']);
+			// Prepare event data for model
+			$modelData = $this->prepareEventDataForModel($resourceId, $eventData);
 
-				if ($fromDate >= $toDate)
-				{
-					$response->getBody()->write(json_encode(['error' => 'End time must be after start time']));
-					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-				}
-			}
-			catch (\Exception $e)
+			// Create new event instance
+			$event = new Event($modelData);
+
+			// Validate the event
+			$validationErrors = $event->validate();
+			if (!empty($validationErrors))
 			{
-				$response->getBody()->write(json_encode(['error' => 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS±HH:MM)']));
+				$response->getBody()->write(json_encode(['error' => 'Validation failed', 'details' => $validationErrors]));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
-			// Check for duplicates and overlaps
-			$conflictCheck = $this->checkEventConflicts($resourceId, $fromDate, $toDate, $eventData);
-			if ($conflictCheck !== null)
+			// Check for conflicts
+			$conflictErrors = $event->checkConflicts();
+			if (!empty($conflictErrors))
 			{
-				$response->getBody()->write(json_encode(['error' => $conflictCheck]));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(409); // Conflict status
+				$response->getBody()->write(json_encode(['error' => 'Time conflict detected', 'details' => $conflictErrors]));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
 			}
 
-			// Create event in database
-			$eventId = $this->createEventInDatabase($resourceId, $eventData, $fromDate, $toDate);
-
-			if (!$eventId)
+			// Save the event
+			$saveSuccess = $event->save();
+			if (!$saveSuccess)
 			{
 				$response->getBody()->write(json_encode(['error' => 'Failed to create event']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 			}
 
-			// Return success response
+			// Return success response with serialized event
 			$responseData = [
-				'id' => $eventId,
-				'event_id' => $eventId,
+				'id' => $event->id,
+				'event_id' => $event->id,
 				'success' => true,
-				'event' => [
-					'id' => $eventId,
-					'resource_id' => $resourceId,
-					'name' => $eventData['title'],
-					'from_' => $eventData['from_'],
-					'to_' => $eventData['to_'],
-					'source' => $eventData['source']
-				]
+				'event' => $event->serialize()
 			];
 
 			$response->getBody()->write(json_encode($responseData));
@@ -210,15 +209,62 @@ class EventController
 	}
 
 	/**
-	 * Check if a resource exists in the database
+	 * Prepare event data for the Event model
 	 */
-	private function resourceExists(int $resourceId): bool
+	private function prepareEventDataForModel(int $resourceId, array $eventData): array
 	{
-		$sql = "SELECT id FROM bb_resource WHERE id = :id AND active = 1";
-		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':id' => $resourceId]);
-		return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+		// Get building information for the resource
+		$buildingInfo = Event::getBuildingInfoForResource($resourceId);
+		if (!$buildingInfo)
+		{
+			throw new Exception('Could not find building information for resource');
+		}
+
+		// Map incoming data to Event model structure
+		return [
+			// Basic event information
+			'name' => $eventData['title'],
+			'from_' => $eventData['from_'],
+			'to_' => $eventData['to_'],
+			'description' => $eventData['description'] ?? '',
+			'contact_name' => $eventData['contact_name'] ?? '',
+			'contact_email' => $eventData['contact_email'] ?? '',
+			'organizer' => $eventData['contact_name'] ?? 'Calendar Bridge',
+
+			// Required fields
+			'activity_id' => 1, // Default activity - configurable
+			'building_id' => $buildingInfo['id'],
+			'building_name' => $buildingInfo['name'],
+			'cost' => 0.00, // Default to 0 for bridge imports
+			'customer_internal' => 0, // External by default for bridge imports
+			'include_in_list' => 0, // Don't include in public lists by default
+			'reminder' => 1, // Default reminder setting
+
+			// Status fields
+			'active' => 1,
+			'is_public' => 0, // Private by default for bridge imports
+			'completed' => 0,
+
+			// Optional fields with defaults
+			'contact_phone' => $eventData['contact_phone'] ?? '',
+			'homepage' => $eventData['homepage'] ?? '',
+			'equipment' => $eventData['equipment'] ?? '',
+			'access_requested' => 0,
+			'participant_limit' => $eventData['participant_limit'] ?? null,
+			'customer_identifier_type' => null,
+			'customer_ssn' => null,
+			'customer_organization_number' => null,
+			'customer_organization_id' => null,
+			'customer_organization_name' => null,
+			'additional_invoice_information' => null,
+			'sms_total' => null,
+			'skip_bas' => 0,
+
+			// Resource association
+			'resources' => [$resourceId],
+		];
 	}
+
 
 	/**
 	 * Create event record in the database
@@ -564,6 +610,13 @@ class EventController
 	 */
 	public function updateEvent(Request $request, Response $response, array $args): Response
 	{
+		// Check permissions
+		if (!$this->acl->check('.application', Acl::EDIT, 'booking'))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
 		try
 		{
 			$eventId = (int)$args['event_id'];
@@ -575,9 +628,9 @@ class EventController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
-			// Check if event exists and get current data
-			$currentEvent = $this->getEventById($eventId);
-			if (!$currentEvent)
+			// Load the existing event
+			$event = Event::find($eventId);
+			if (!$event)
 			{
 				$response->getBody()->write(json_encode(['error' => 'Event not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
@@ -621,58 +674,40 @@ class EventController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
-			// Validate and parse dates if provided
-			$fromDate = null;
-			$toDate = null;
+			// Update the event with new data
+			$event->populate($updateData);
+
+			// Validate the updated event
+			$validationErrors = $event->validate();
+			if (!empty($validationErrors))
+			{
+				$response->getBody()->write(json_encode(['error' => 'Validation failed', 'details' => $validationErrors]));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Check for conflicts if dates changed
 			if (isset($updateData['from_']) || isset($updateData['to_']))
 			{
-				try
+				$conflictErrors = $event->checkConflicts($eventId);
+				if (!empty($conflictErrors))
 				{
-					$fromDate = new \DateTime($updateData['from_'] ?? $currentEvent['from_']);
-					$toDate = new \DateTime($updateData['to_'] ?? $currentEvent['to_']);
-
-					if ($fromDate >= $toDate)
-					{
-						$response->getBody()->write(json_encode(['error' => 'End time must be after start time']));
-						return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-					}
-				}
-				catch (\Exception $e)
-				{
-					$response->getBody()->write(json_encode(['error' => 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS±HH:MM)']));
-					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-				}
-
-				// Check for time conflicts if dates are being changed
-				$resourceIds = $this->getEventResourceIds($eventId);
-				foreach ($resourceIds as $resourceId)
-				{
-					$conflictCheck = $this->checkEventConflictsForUpdate($eventId, $resourceId, $fromDate, $toDate, $updateData);
-					if ($conflictCheck !== null)
-					{
-						$response->getBody()->write(json_encode(['error' => $conflictCheck]));
-						return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
-					}
+					$response->getBody()->write(json_encode(['error' => 'Time conflict detected', 'details' => $conflictErrors]));
+					return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
 				}
 			}
 
-			// Update event in database
-			$success = $this->updateEventInDatabase($eventId, $updateData, $fromDate, $toDate);
-
-			if (!$success)
+			// Save the updated event
+			$saveSuccess = $event->save();
+			if (!$saveSuccess)
 			{
 				$response->getBody()->write(json_encode(['error' => 'Failed to update event']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 			}
 
-			// Get updated event data
-			$updatedEvent = $this->getEventById($eventId);
-
-			// Return success response
+			// Return success response with updated event
 			$responseData = [
 				'success' => true,
-				'message' => 'Event updated successfully',
-				'event' => $updatedEvent
+				'event' => $event->serialize()
 			];
 
 			$response->getBody()->write(json_encode($responseData));
@@ -844,6 +879,13 @@ class EventController
 	 */
 	public function toggleActiveStatus(Request $request, Response $response, array $args): Response
 	{
+		// Check permissions
+		if (!$this->acl->check('.application', Acl::EDIT, 'booking'))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
 		try
 		{
 			$eventId = (int)$args['event_id'];
@@ -855,9 +897,9 @@ class EventController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
-			// Get current event (including inactive ones for this operation)
-			$currentEvent = $this->getEventByIdIncludingInactive($eventId);
-			if (!$currentEvent)
+			// Load the event (including inactive ones for this operation)
+			$event = Event::find($eventId);
+			if (!$event)
 			{
 				$response->getBody()->write(json_encode(['error' => 'Event not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
@@ -899,12 +941,14 @@ class EventController
 			// Determine new active status
 			$newActiveStatus = isset($requestData['active']) 
 				? (bool)$requestData['active'] 
-				: !((bool)$currentEvent['active']); // Toggle if not explicitly set
+				: !((bool)$event->active); // Toggle if not explicitly set
 
-			// Update active status in database
-			$success = $this->updateEventActiveStatus($eventId, $newActiveStatus);
+			// Update the event's active status
+			$event->active = $newActiveStatus ? 1 : 0;
 
-			if (!$success)
+			// Save the event
+			$saveSuccess = $event->save();
+			if (!$saveSuccess)
 			{
 				$response->getBody()->write(json_encode(['error' => 'Failed to update event status']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
@@ -918,7 +962,8 @@ class EventController
 				'success' => true,
 				'message' => $message,
 				'event_id' => $eventId,
-				'active' => $newActiveStatus
+				'active' => $newActiveStatus,
+				'event' => $event->serialize()
 			];
 
 			$response->getBody()->write(json_encode($responseData));
@@ -1134,6 +1179,13 @@ class EventController
 	 */
 	public function createEvent(Request $request, Response $response): Response
 	{
+		// Check permissions
+		if (!$this->acl->check('.application', Acl::ADD, 'booking'))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
 		try
 		{
 			// Parse request data (handle both JSON and form-encoded data)
@@ -1198,29 +1250,11 @@ class EventController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
-			// Validate and parse dates
-			try
-			{
-				$fromDate = new \DateTime($eventData['from_']);
-				$toDate = new \DateTime($eventData['to_']);
-
-				if ($fromDate >= $toDate)
-				{
-					$response->getBody()->write(json_encode(['error' => 'End time must be after start time']));
-					return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-				}
-			}
-			catch (\Exception $e)
-			{
-				$response->getBody()->write(json_encode(['error' => 'Invalid date format. Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS±HH:MM)']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-			}
-
 			// Verify all resources exist
 			$nonExistentResources = [];
 			foreach ($resourceIds as $resourceId)
 			{
-				if (!$this->resourceExists($resourceId))
+				if (!Event::resourceExists($resourceId))
 				{
 					$nonExistentResources[] = $resourceId;
 				}
@@ -1234,54 +1268,45 @@ class EventController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
 
-			// Check for conflicts on all resources
-			foreach ($resourceIds as $resourceId)
+			// Prepare event data for model (using first resource as primary)
+			$primaryResourceId = $resourceIds[0];
+			$modelData = $this->prepareEventDataForModel($primaryResourceId, $eventData);
+			$modelData['resources'] = $resourceIds; // Set all resources
+
+			// Create new event instance
+			$event = new Event($modelData);
+
+			// Validate the event
+			$validationErrors = $event->validate();
+			if (!empty($validationErrors))
 			{
-				$conflictCheck = $this->checkEventConflicts($resourceId, $fromDate, $toDate, $eventData);
-				if ($conflictCheck !== null)
-				{
-					$response->getBody()->write(json_encode([
-						'error' => "Time conflict on resource $resourceId: $conflictCheck"
-					]));
-					return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
-				}
+				$response->getBody()->write(json_encode(['error' => 'Validation failed', 'details' => $validationErrors]));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
-			// Create event using the first resource (reuse existing createEventInDatabase logic)
-			$primaryResourceId = $resourceIds[0];
-			$eventId = $this->createEventInDatabase($primaryResourceId, $eventData, $fromDate, $toDate);
+			// Check for conflicts on all resources
+			$conflictErrors = $event->checkConflicts();
+			if (!empty($conflictErrors))
+			{
+				$response->getBody()->write(json_encode(['error' => 'Time conflict detected', 'details' => $conflictErrors]));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(409);
+			}
 
-			if (!$eventId)
+			// Save the event
+			$saveSuccess = $event->save();
+			if (!$saveSuccess)
 			{
 				$response->getBody()->write(json_encode(['error' => 'Failed to create event']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 			}
 
-			// Add additional resources to the event (skip the first one since it's already added)
-			$additionalResources = array_slice($resourceIds, 1);
-			if (!empty($additionalResources))
-			{
-				$success = $this->addAdditionalResourcesToEvent($eventId, $additionalResources);
-				if (!$success)
-				{
-					// Event was created but additional resources failed - log warning but don't fail completely
-					error_log("Warning: Event $eventId created but failed to add additional resources: " . implode(', ', $additionalResources));
-				}
-			}
-
 			// Return success response
 			$responseData = [
 				'success' => true,
-				'id' => $eventId,
-				'event_id' => $eventId,
+				'id' => $event->id,
+				'event_id' => $event->id,
 				'message' => 'Event created successfully for ' . count($resourceIds) . ' resource' . (count($resourceIds) > 1 ? 's' : ''),
-				'event' => [
-					'id' => $eventId,
-					'name' => $eventData['title'],
-					'from_' => $eventData['from_'],
-					'to_' => $eventData['to_'],
-					'source' => $eventData['source'] ?? 'admin_panel'
-				],
+				'event' => $event->serialize(),
 				'resources' => $resourceIds
 			];
 

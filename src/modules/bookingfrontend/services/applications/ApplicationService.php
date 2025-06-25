@@ -664,13 +664,19 @@ class ApplicationService
                 $resource['booking_limit_number'] > 0 &&
                 $ssn)
             {
-                $limit_reached = $this->checkBookingLimit(
-                    $application['session_id'],
-                    $resource['id'],
-                    $ssn,
-                    $resource['booking_limit_number_horizont'],
-                    $resource['booking_limit_number']
-                );
+                $user_session_id = $this->userHelper->get_session_id();
+                if ($user_session_id) {
+                    $limit_reached = $this->checkBookingLimit(
+                        $user_session_id,
+                        $resource['id'],
+                        $ssn,
+                        $resource['booking_limit_number_horizont'],
+                        $resource['booking_limit_number']
+                    );
+                } else {
+                    // Skip limit check if no session available
+                    $limit_reached = false;
+                }
 
                 if ($limit_reached)
                 {

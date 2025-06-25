@@ -266,7 +266,7 @@
 						<div class="pure-u-1">
 							<div class="heading">
 								<!--<legend>-->
-								<h3>3. <xsl:value-of select="php:function('lang', 'When and Where?')" /></h3>
+								<h3>3. <xsl:value-of select="php:function('lang', 'when_and_where')" /></h3>
 								<!--</legend>-->
 							</div>
 							<div class="pure-control-group">
@@ -280,7 +280,7 @@
 									</a>)
 								</span>
 							</div>
-							
+
 							<!-- Display application count if multiple applications -->
 							<xsl:if test="application/related_application_count > 1">
 								<div class="pure-control-group">
@@ -318,7 +318,7 @@
 								<div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px;">
 									<div class="pure-control-group">
 										<label style="font-weight: bold;">
-											<xsl:value-of select="php:function('lang', 'Time Period')" />:</label>
+											<xsl:value-of select="php:function('lang', 'time_period')" />:</label>
 										<span>
 											<xsl:value-of select="php:function('pretty_timestamp', from_)"/>
 											<xsl:text> - </xsl:text>

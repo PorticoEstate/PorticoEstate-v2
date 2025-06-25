@@ -21,10 +21,19 @@ const Footer = async (props: FooterProps) => {
 
 				<div className={styles.footerLogoContainer}>
 					{/*  LOGO */}
-					<img
-						className={styles.footerLogo}
-						src={serverSettings.logo_url} alt={serverSettings.logo_title}
-					/>
+					{serverSettings.bakcground_image ? (
+						<Link href={serverSettings.bakcground_image} target="_blank" rel="noopener noreferrer">
+							<img
+								className={styles.footerLogo}
+								src={serverSettings.logo_url} alt={serverSettings.logo_title}
+							/>
+						</Link>
+					) : (
+						<img
+							className={styles.footerLogo}
+							src={serverSettings.logo_url} alt={serverSettings.logo_title}
+						/>
+					)}
 				</div>
 				<div>
 					{/*Contact */}

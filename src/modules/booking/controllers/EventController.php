@@ -167,7 +167,8 @@ class EventController
 			$event = new Event($modelData);
 
 			// Ensure secret is set before validation
-			if (empty($event->secret)) {
+			if (empty($event->secret))
+			{
 				$event->secret = bin2hex(random_bytes(16));
 			}
 
@@ -661,7 +662,7 @@ class EventController
 			{
 				// Handle form-encoded data - for PUT requests, we need to read raw body
 				$updateData = $request->getParsedBody() ?: [];
-				
+
 				// If no parsed body (common with PUT requests), read raw input and parse manually
 				if (empty($updateData))
 				{
@@ -931,7 +932,7 @@ class EventController
 			{
 				// Handle form-encoded data - for PATCH requests, we need to read raw body
 				$requestData = $request->getParsedBody() ?: [];
-				
+
 				// If no parsed body (common with PATCH requests), read raw input and parse manually
 				if (empty($requestData))
 				{
@@ -944,8 +945,8 @@ class EventController
 			}
 
 			// Determine new active status
-			$newActiveStatus = isset($requestData['active']) 
-				? (bool)$requestData['active'] 
+			$newActiveStatus = isset($requestData['active'])
+				? (bool)$requestData['active']
 				: !((bool)$event->active); // Toggle if not explicitly set
 
 			// Update the event's active status
@@ -1247,7 +1248,10 @@ class EventController
 
 			// Convert to integers and validate
 			$resourceIds = array_map('intval', $eventData['resource_ids']);
-			$resourceIds = array_filter($resourceIds, function($id) { return $id > 0; });
+			$resourceIds = array_filter($resourceIds, function ($id)
+			{
+				return $id > 0;
+			});
 
 			if (empty($resourceIds))
 			{
@@ -1282,7 +1286,8 @@ class EventController
 			$event = new Event($modelData);
 
 			// Ensure secret is set before validation
-			if (empty($event->secret)) {
+			if (empty($event->secret))
+			{
 				$event->secret = bin2hex(random_bytes(16));
 			}
 
@@ -1342,7 +1347,7 @@ class EventController
 			// Insert additional resource associations
 			$resourceSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)";
 			$resourceStmt = $this->db->prepare($resourceSql);
-			
+
 			foreach ($resourceIds as $resourceId)
 			{
 				$resourceStmt->execute([

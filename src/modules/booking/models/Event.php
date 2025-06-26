@@ -16,672 +16,717 @@ use Exception;
  */
 class Event
 {
-    use SerializableTrait;
+	use SerializableTrait;
 
-    protected Db $db;
+	protected Db $db;
 
-    // Field definitions based on booking_soevent constructor
-    
-    /**
-     * @Expose
-     */
-    public ?int $id = null;
+	// Field definitions based on booking_soevent constructor
 
-    /**
-     * @Expose
-     * @Default("0")
-     */
-    public string $id_string = '0';
+	/**
+	 * @Expose
+	 */
+	public ?int $id = null;
 
-    /**
-     * @Expose
-     * @ParseBool
-     */
-    public int $active = 1;
+	/**
+	 * @Expose
+	 * @Default("0")
+	 */
+	public string $id_string = '0';
 
-    /**
-     * @Expose
-     */
-    public int $skip_bas = 0;
+	/**
+	 * @Expose
+	 * @ParseBool
+	 */
+	public int $active = 1;
 
-    /**
-     * @Expose
-     */
-    public int $activity_id;
+	/**
+	 * @Expose
+	 */
+	public int $skip_bas = 0;
 
-    /**
-     * @Expose
-     */
-    public ?int $application_id = null;
+	/**
+	 * @Expose
+	 */
+	public int $activity_id;
 
-    /**
-     * @Expose
-     */
-    public string $name;
+	/**
+	 * @Expose
+	 */
+	public ?int $application_id = null;
 
-    /**
-     * @Expose
-     */
-    public string $organizer;
+	/**
+	 * @Expose
+	 */
+	public string $name;
 
-    /**
-     * @Expose
-     */
-    public string $homepage = '';
+	/**
+	 * @Expose
+	 */
+	public string $organizer;
 
-    /**
-     * @Expose
-     */
-    public string $description = '';
+	/**
+	 * @Expose
+	 */
+	public string $homepage = '';
 
-    /**
-     * @Expose
-     */
-    public string $equipment = '';
+	/**
+	 * @Expose
+	 */
+	public string $description = '';
 
-    /**
-     * @Expose
-     */
-    public int $building_id;
+	/**
+	 * @Expose
+	 */
+	public string $equipment = '';
 
-    /**
-     * @Expose
-     */
-    public string $building_name;
+	/**
+	 * @Expose
+	 */
+	public int $building_id;
 
-    /**
-     * @Expose
-     * @Timestamp(format="c", sourceTimezone="Europe/Oslo")
-     */
-    public string $from_;
+	/**
+	 * @Expose
+	 */
+	public string $building_name;
 
-    /**
-     * @Expose
-     * @Timestamp(format="c", sourceTimezone="Europe/Oslo")
-     */
-    public string $to_;
+	/**
+	 * @Expose
+	 * @Timestamp(format="c", sourceTimezone="Europe/Oslo")
+	 */
+	public string $from_;
 
-    /**
-     * @Expose
-     */
-    public float $cost = 0.00;
+	/**
+	 * @Expose
+	 * @Timestamp(format="c", sourceTimezone="Europe/Oslo")
+	 */
+	public string $to_;
 
-    // Additional fields from actual database schema
-    public string $contact_name = '';
-    public string $contact_email = '';
-    public string $contact_phone = '';
-    public string $secret = '';
-    public int $customer_internal = 0;
-    public int $include_in_list = 0;
-    public int $reminder = 1;
-    public int $is_public = 0;
-    public int $completed = 0;
-    public int $access_requested = 0;
-    public ?int $participant_limit = null;
-    public ?string $customer_identifier_type = null;
-    public ?string $customer_ssn = null;
-    public ?string $customer_organization_number = null;
-    public ?int $customer_organization_id = null;
-    public ?string $customer_organization_name = null;
-    public ?string $additional_invoice_information = null;
-    public ?int $sms_total = null;
+	/**
+	 * @Expose
+	 */
+	public float $cost = 0.00;
 
-    /**
-     * @Expose
-     * @SerializeAs(type="array", of="int")
-     */
-    public array $resources = [];
+	// Additional fields from actual database schema
+	public string $contact_name = '';
+	public string $contact_email = '';
+	public string $contact_phone = '';
+	public string $secret = '';
+	public int $customer_internal = 0;
+	public int $include_in_list = 0;
+	public int $reminder = 1;
+	public int $is_public = 0;
+	public int $completed = 0;
+	public int $access_requested = 0;
+	public ?int $participant_limit = null;
+	public ?string $customer_identifier_type = null;
+	public ?string $customer_ssn = null;
+	public ?string $customer_organization_number = null;
+	public ?int $customer_organization_id = null;
+	public ?string $customer_organization_name = null;
+	public ?string $additional_invoice_information = null;
+	public ?int $sms_total = null;
 
-    /**
-     * Central field map for validation and metadata
-     */
-    protected static function getFieldMap(): array
-    {
-        return [
-            'id' => [
-                'type' => 'int',
-                'required' => false,
-            ],
-            'id_string' => [
-                'type' => 'string',
-                'required' => false,
-                'default' => '0',
-            ],
-            'active' => [
-                'type' => 'int',
-                'required' => true,
-            ],
-            'skip_bas' => [
-                'type' => 'int',
-                'required' => false,
-            ],
-            'activity_id' => [
-                'type' => 'int',
-                'required' => true,
-                'validator' => function($value) {
-                    return ($value > 0) ? null : 'Activity ID is required';
-                },
-            ],
-            'application_id' => [
-                'type' => 'int',
-                'required' => false,
-            ],
-            'name' => [
-                'type' => 'string',
-                'required' => true,
-                'maxLength' => 255,
-            ],
-            'organizer' => [
-                'type' => 'string',
-                'required' => true,
-                'maxLength' => 255,
-            ],
-            'homepage' => [
-                'type' => 'string',
-                'required' => false,
-                'maxLength' => 255,
-            ],
-            'description' => [
-                'type' => 'string',
-                'required' => false,
-            ],
-            'equipment' => [
-                'type' => 'string',
-                'required' => false,
-            ],
-            'building_id' => [
-                'type' => 'int',
-                'required' => true,
-                'validator' => function($value) {
-                    return ($value > 0) ? null : 'Building ID is required';
-                },
-            ],
-            'building_name' => [
-                'type' => 'string',
-                'required' => true,
-                'maxLength' => 255,
-            ],
-            'from_' => [
-                'type' => 'datetime',
-                'required' => true,
-            ],
-            'to_' => [
-                'type' => 'datetime',
-                'required' => true,
-            ],
-            'cost' => [
-                'type' => 'float',
-                'required' => true,
-                'validator' => function($value) {
-                    return ($value >= 0) ? null : 'Cost must be zero or positive';
-                },
-            ],
-            'contact_name' => [
-                'type' => 'string',
-                'required' => true,
-                'maxLength' => 50,
-            ],
-            'contact_email' => [
-                'type' => 'string',
-                'required' => false,
-                'validator' => function($value) {
-                    if (empty($value)) return null;
-                    return filter_var($value, FILTER_VALIDATE_EMAIL) ? null : 'Contact email is invalid';
-                },
-            ],
-            'contact_phone' => [
-                'type' => 'string',
-                'required' => false,
-                'maxLength' => 50,
-            ],
-            'completed' => [
-                'type' => 'int',
-                'required' => true,
-                'default' => 0,
-            ],
-            'access_requested' => [
-                'type' => 'int',
-                'required' => false,
-                'default' => 0,
-            ],
-            'reminder' => [
-                'type' => 'int',
-                'required' => true,
-                'default' => 1,
-            ],
-            'is_public' => [
-                'type' => 'int',
-                'required' => true,
-                'default' => 1,
-            ],
-            'secret' => [
-                'type' => 'string',
-                'required' => true,
-            ],
-            'sms_total' => [
-                'type' => 'int',
-                'required' => false,
-            ],
-            'participant_limit' => [
-                'type' => 'int',
-                'required' => false,
-                'validator' => function($value) {
-                    if (is_null($value)) return null;
-                    return ($value >= 0) ? null : 'Participant limit must be zero or positive';
-                },
-            ],
-            'customer_organization_name' => [
-                'type' => 'string',
-                'required' => false,
-            ],
-            'customer_organization_id' => [
-                'type' => 'int',
-                'required' => false,
-            ],
-            'customer_identifier_type' => [
-                'type' => 'string',
-                'required' => false,
-            ],
-            'customer_ssn' => [
-                'type' => 'string',
-                'required' => false,
-                'validator' => function($value) {
-                    if (empty($value)) return null;
-                    // Norwegian SSN: 11 digits
-                    return preg_match('/^\d{11}$/', $value) ? null : 'Customer SSN is invalid';
-                },
-            ],
-            'customer_organization_number' => [
-                'type' => 'string',
-                'required' => false,
-                'validator' => function($value) {
-                    if (empty($value)) return null;
-                    // Norwegian org number: 9 digits
-                    return preg_match('/^\d{9}$/', $value) ? null : 'Customer organization number is invalid';
-                },
-            ],
-            'customer_internal' => [
-                'type' => 'int',
-                'required' => true,
-            ],
-            'include_in_list' => [
-                'type' => 'int',
-                'required' => true,
-                'default' => 0,
-            ],
-            'additional_invoice_information' => [
-                'type' => 'string',
-                'required' => false,
-            ],
-            'resources' => [
-                'type' => 'array',
-                'required' => true,
-                'validator' => function($value) {
-                    return (is_array($value) && count($value) > 0) ? null : 'At least one resource is required';
-                },
-            ],
-            // You can add more fields as needed, e.g. for agegroups, audience, comments, costs, dates, etc.
-        ];
-    }
+	/**
+	 * @Expose
+	 * @SerializeAs(type="array", of="int")
+	 */
+	public array $resources = [];
 
-    public function __construct(?array $data = null)
-    {
-        $this->db = Db::getInstance();
-        
-        if ($data) {
-            $this->populate($data);
-        }
-    }
+	/**
+	 * Central field map for validation and metadata
+	 */
+	protected static function getFieldMap(): array
+	{
+		return [
+			'id' => [
+				'type' => 'int',
+				'required' => false,
+			],
+			'id_string' => [
+				'type' => 'string',
+				'required' => false,
+				'default' => '0',
+			],
+			'active' => [
+				'type' => 'int',
+				'required' => true,
+			],
+			'skip_bas' => [
+				'type' => 'int',
+				'required' => false,
+			],
+			'activity_id' => [
+				'type' => 'int',
+				'required' => true,
+				'validator' => function ($value)
+				{
+					return ($value > 0) ? null : 'Activity ID is required';
+				},
+			],
+			'application_id' => [
+				'type' => 'int',
+				'required' => false,
+			],
+			'name' => [
+				'type' => 'string',
+				'required' => true,
+				'maxLength' => 255,
+			],
+			'organizer' => [
+				'type' => 'string',
+				'required' => true,
+				'maxLength' => 255,
+			],
+			'homepage' => [
+				'type' => 'string',
+				'required' => false,
+				'maxLength' => 255,
+			],
+			'description' => [
+				'type' => 'string',
+				'required' => false,
+			],
+			'equipment' => [
+				'type' => 'string',
+				'required' => false,
+			],
+			'building_id' => [
+				'type' => 'int',
+				'required' => true,
+				'validator' => function ($value)
+				{
+					return ($value > 0) ? null : 'Building ID is required';
+				},
+			],
+			'building_name' => [
+				'type' => 'string',
+				'required' => true,
+				'maxLength' => 255,
+			],
+			'from_' => [
+				'type' => 'datetime',
+				'required' => true,
+			],
+			'to_' => [
+				'type' => 'datetime',
+				'required' => true,
+			],
+			'cost' => [
+				'type' => 'float',
+				'required' => true,
+				'validator' => function ($value)
+				{
+					return ($value >= 0) ? null : 'Cost must be zero or positive';
+				},
+			],
+			'contact_name' => [
+				'type' => 'string',
+				'required' => true,
+				'maxLength' => 50,
+			],
+			'contact_email' => [
+				'type' => 'string',
+				'required' => false,
+				'validator' => function ($value)
+				{
+					if (empty($value)) return null;
+					return filter_var($value, FILTER_VALIDATE_EMAIL) ? null : 'Contact email is invalid';
+				},
+			],
+			'contact_phone' => [
+				'type' => 'string',
+				'required' => false,
+				'maxLength' => 50,
+			],
+			'completed' => [
+				'type' => 'int',
+				'required' => true,
+				'default' => 0,
+			],
+			'access_requested' => [
+				'type' => 'int',
+				'required' => false,
+				'default' => 0,
+			],
+			'reminder' => [
+				'type' => 'int',
+				'required' => true,
+				'default' => 1,
+			],
+			'is_public' => [
+				'type' => 'int',
+				'required' => true,
+				'default' => 1,
+			],
+			'secret' => [
+				'type' => 'string',
+				'required' => true,
+			],
+			'sms_total' => [
+				'type' => 'int',
+				'required' => false,
+			],
+			'participant_limit' => [
+				'type' => 'int',
+				'required' => false,
+				'validator' => function ($value)
+				{
+					if (is_null($value)) return null;
+					return ($value >= 0) ? null : 'Participant limit must be zero or positive';
+				},
+			],
+			'customer_organization_name' => [
+				'type' => 'string',
+				'required' => false,
+			],
+			'customer_organization_id' => [
+				'type' => 'int',
+				'required' => false,
+			],
+			'customer_identifier_type' => [
+				'type' => 'string',
+				'required' => false,
+			],
+			'customer_ssn' => [
+				'type' => 'string',
+				'required' => false,
+				'validator' => function ($value)
+				{
+					if (empty($value)) return null;
+					// Norwegian SSN: 11 digits
+					return preg_match('/^\d{11}$/', $value) ? null : 'Customer SSN is invalid';
+				},
+			],
+			'customer_organization_number' => [
+				'type' => 'string',
+				'required' => false,
+				'validator' => function ($value)
+				{
+					if (empty($value)) return null;
+					// Norwegian org number: 9 digits
+					return preg_match('/^\d{9}$/', $value) ? null : 'Customer organization number is invalid';
+				},
+			],
+			'customer_internal' => [
+				'type' => 'int',
+				'required' => true,
+			],
+			'include_in_list' => [
+				'type' => 'int',
+				'required' => true,
+				'default' => 0,
+			],
+			'additional_invoice_information' => [
+				'type' => 'string',
+				'required' => false,
+			],
+			'resources' => [
+				'type' => 'array',
+				'required' => true,
+				'validator' => function ($value)
+				{
+					return (is_array($value) && count($value) > 0) ? null : 'At least one resource is required';
+				},
+			],
+			// You can add more fields as needed, e.g. for agegroups, audience, comments, costs, dates, etc.
+		];
+	}
 
-    /**
-     * Populate model with data
-     */
-    public function populate(array $data): self
-    {
-        foreach ($data as $key => $value) {
-            if (property_exists($this, $key)) {
-                $this->$key = $value;
-            }
-        }
-        return $this;
-    }
+	public function __construct(?array $data = null)
+	{
+		$this->db = Db::getInstance();
 
-    /**
-     * Validate the event data using the field map
-     */
-    public function validate(): array
-    {
-        $errors = [];
-        foreach (self::getFieldMap() as $field => $meta) {
-            $value = $this->$field ?? null;
-            // Required check
-            if (($meta['required'] ?? false) && (is_null($value) || $value === '' || (is_array($value) && count($value) === 0))) {
-                $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' is required';
-                continue;
-            }
-            // Type check (basic)
-            if (!is_null($value)) {
-                switch ($meta['type']) {
-                    case 'int':
-                        if (!is_int($value)) {
-                            $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be an integer';
-                        }
-                        break;
-                    case 'string':
-                        if (!is_string($value)) {
-                            $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be a string';
-                        }
-                        break;
-                    case 'array':
-                        if (!is_array($value)) {
-                            $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be an array';
-                        }
-                        break;
-                    case 'datetime':
-                        try {
-                            new \DateTime($value);
-                        } catch (\Exception $e) {
-                            $errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be a valid date/time';
-                        }
-                        break;
-                }
-            }
-            // Max length check
-            if (isset($meta['maxLength']) && is_string($value) && strlen($value) > $meta['maxLength']) {
-                $errors[] = ucfirst(str_replace('_', ' ', $field)) . " must be {$meta['maxLength']} characters or less";
-            }
-            // Custom validator
-            if (isset($meta['validator']) && is_callable($meta['validator'])) {
-                $err = call_user_func($meta['validator'], $value, $this);
-                if ($err) {
-                    $errors[] = $err;
-                }
-            }
-        }
-        // Custom cross-field validation: from_ < to_
-        if (!empty($this->from_) && !empty($this->to_)) {
-            try {
-                $from = new \DateTime($this->from_);
-                $to = new \DateTime($this->to_);
-                if ($from >= $to) {
-                    $errors[] = 'End time must be after start time';
-                }
-            } catch (\Exception $e) {
-                // Already handled above
-            }
-        }
-        return $errors;
-    }
+		if ($data)
+		{
+			$this->populate($data);
+		}
+	}
 
-    /**
-     * Save the event to database
-     */
-    public function save(): bool
-    {
-        try {
-            $this->db->beginTransaction();
+	/**
+	 * Populate model with data
+	 */
+	public function populate(array $data): self
+	{
+		foreach ($data as $key => $value)
+		{
+			if (property_exists($this, $key))
+			{
+				$this->$key = $value;
+			}
+		}
+		return $this;
+	}
 
-            if ($this->id) {
-                return $this->update();
-            } else {
-                return $this->create();
-            }
-        } catch (Exception $e) {
-            $this->db->rollback();
-            error_log("Error saving event: " . $e->getMessage());
-            return false;
-        }
-    }
+	/**
+	 * Validate the event data using the field map
+	 */
+	public function validate(): array
+	{
+		$errors = [];
+		foreach (self::getFieldMap() as $field => $meta)
+		{
+			$value = $this->$field ?? null;
+			// Required check
+			if (($meta['required'] ?? false) && (is_null($value) || $value === '' || (is_array($value) && count($value) === 0)))
+			{
+				$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' is required';
+				continue;
+			}
+			// Type check (basic)
+			if (!is_null($value))
+			{
+				switch ($meta['type'])
+				{
+					case 'int':
+						if (!is_int($value))
+						{
+							$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be an integer';
+						}
+						break;
+					case 'string':
+						if (!is_string($value))
+						{
+							$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be a string';
+						}
+						break;
+					case 'array':
+						if (!is_array($value))
+						{
+							$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be an array';
+						}
+						break;
+					case 'datetime':
+						try
+						{
+							new \DateTime($value);
+						}
+						catch (\Exception $e)
+						{
+							$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be a valid date/time';
+						}
+						break;
+				}
+			}
+			// Max length check
+			if (isset($meta['maxLength']) && is_string($value) && strlen($value) > $meta['maxLength'])
+			{
+				$errors[] = ucfirst(str_replace('_', ' ', $field)) . " must be {$meta['maxLength']} characters or less";
+			}
+			// Custom validator
+			if (isset($meta['validator']) && is_callable($meta['validator']))
+			{
+				$err = call_user_func($meta['validator'], $value, $this);
+				if ($err)
+				{
+					$errors[] = $err;
+				}
+			}
+		}
+		// Custom cross-field validation: from_ < to_
+		if (!empty($this->from_) && !empty($this->to_))
+		{
+			try
+			{
+				$from = new \DateTime($this->from_);
+				$to = new \DateTime($this->to_);
+				if ($from >= $to)
+				{
+					$errors[] = 'End time must be after start time';
+				}
+			}
+			catch (\Exception $e)
+			{
+				// Already handled above
+			}
+		}
+		return $errors;
+	}
 
-    /**
-     * Create new event in database
-     */
-    protected function create(): bool
-    {
-        // Generate secret if not set
-        if (empty($this->secret)) {
-            $this->secret = bin2hex(random_bytes(16));
-        }
+	/**
+	 * Save the event to database
+	 */
+	public function save(): bool
+	{
+		try
+		{
+			$this->db->beginTransaction();
 
-        // Prepare data for insertion
-        $eventData = $this->getDbData();
-        unset($eventData['id']); // Remove ID for insert
+			if ($this->id)
+			{
+				return $this->update();
+			}
+			else
+			{
+				return $this->create();
+			}
+		}
+		catch (Exception $e)
+		{
+			$this->db->rollback();
+			error_log("Error saving event: " . $e->getMessage());
+			return false;
+		}
+	}
 
-        $columns = array_keys($eventData);
-        $placeholders = ':' . implode(', :', $columns);
+	/**
+	 * Create new event in database
+	 */
+	protected function create(): bool
+	{
+		// Generate secret if not set
+		if (empty($this->secret))
+		{
+			$this->secret = bin2hex(random_bytes(16));
+		}
 
-        $sql = "INSERT INTO bb_event (" . implode(', ', $columns) . ") VALUES (" . $placeholders . ") RETURNING id";
-        $stmt = $this->db->prepare($sql);
+		// Prepare data for insertion
+		$eventData = $this->getDbData();
+		unset($eventData['id']); // Remove ID for insert
 
-        // Bind parameters
-        foreach ($eventData as $key => $value) {
-            $stmt->bindValue(":$key", $value);
-        }
+		$columns = array_keys($eventData);
+		$placeholders = ':' . implode(', :', $columns);
 
-        $stmt->execute();
-        $this->id = (int)$stmt->fetchColumn();
+		$sql = "INSERT INTO bb_event (" . implode(', ', $columns) . ") VALUES (" . $placeholders . ") RETURNING id";
+		$stmt = $this->db->prepare($sql);
 
-        if (!$this->id) {
-            throw new Exception('Failed to get event ID after insertion');
-        }
+		// Bind parameters
+		foreach ($eventData as $key => $value)
+		{
+			$stmt->bindValue(":$key", $value);
+		}
 
-        // Update id_string to match the ID
-        $this->id_string = (string)$this->id;
-        $updateSql = "UPDATE bb_event SET id_string = :id_string WHERE id = :id";
-        $updateStmt = $this->db->prepare($updateSql);
-        $updateStmt->execute([
-            ':id_string' => $this->id_string,
-            ':id' => $this->id
-        ]);
+		$stmt->execute();
+		$this->id = (int)$stmt->fetchColumn();
 
-        // Create resource associations
-        $this->saveResourceAssociations();
+		if (!$this->id)
+		{
+			throw new Exception('Failed to get event ID after insertion');
+		}
 
-        // Create event dates
-        $this->saveEventDates();
+		// Update id_string to match the ID
+		$this->id_string = (string)$this->id;
+		$updateSql = "UPDATE bb_event SET id_string = :id_string WHERE id = :id";
+		$updateStmt = $this->db->prepare($updateSql);
+		$updateStmt->execute([
+			':id_string' => $this->id_string,
+			':id' => $this->id
+		]);
 
-        // Create default age group and target audience
-        $this->saveDefaultAgeGroup();
-        $this->saveDefaultTargetAudience();
+		// Create resource associations
+		$this->saveResourceAssociations();
 
-        $this->db->commit();
-        return true;
-    }
+		// Create event dates
+		$this->saveEventDates();
 
-    /**
-     * Update existing event in database
-     * Based on update method from booking_soevent
-     */
-    protected function update(): bool
-    {
-        $eventData = $this->getDbData();
-        $id = $eventData['id'];
-        unset($eventData['id']);
+		// Create default age group and target audience
+		$this->saveDefaultAgeGroup();
+		$this->saveDefaultTargetAudience();
 
-        $setParts = [];
-        foreach (array_keys($eventData) as $column) {
-            $setParts[] = "$column = :$column";
-        }
+		$this->db->commit();
+		return true;
+	}
 
-        $sql = "UPDATE bb_event SET " . implode(', ', $setParts) . " WHERE id = :id";
-        $stmt = $this->db->prepare($sql);
+	/**
+	 * Update existing event in database
+	 * Based on update method from booking_soevent
+	 */
+	protected function update(): bool
+	{
+		$eventData = $this->getDbData();
+		$id = $eventData['id'];
+		unset($eventData['id']);
 
-        // Bind parameters
-        foreach ($eventData as $key => $value) {
-            $stmt->bindValue(":$key", $value);
-        }
-        $stmt->bindValue(':id', $id);
+		$setParts = [];
+		foreach (array_keys($eventData) as $column)
+		{
+			$setParts[] = "$column = :$column";
+		}
 
-        $stmt->execute();
+		$sql = "UPDATE bb_event SET " . implode(', ', $setParts) . " WHERE id = :id";
+		$stmt = $this->db->prepare($sql);
 
-        // Update bb_completed_reservation if exists (from booking_soevent logic)
-        $cost = $this->cost;
-        $description = mb_substr($this->from_, 0, -3, 'UTF-8') . ' - ' . mb_substr($this->to_, 0, -3, 'UTF-8');
+		// Bind parameters
+		foreach ($eventData as $key => $value)
+		{
+			$stmt->bindValue(":$key", $value);
+		}
+		$stmt->bindValue(':id', $id);
 
-        $completedResSql = "UPDATE bb_completed_reservation SET cost = :cost, from_ = :from_, to_ = :to_, description = :description
+		$stmt->execute();
+
+		// Update bb_completed_reservation if exists (from booking_soevent logic)
+		$cost = $this->cost;
+		$description = mb_substr($this->from_, 0, -3, 'UTF-8') . ' - ' . mb_substr($this->to_, 0, -3, 'UTF-8');
+
+		$completedResSql = "UPDATE bb_completed_reservation SET cost = :cost, from_ = :from_, to_ = :to_, description = :description
                            WHERE reservation_type = 'event' AND reservation_id = :id AND export_file_id IS NULL";
-        $completedResStmt = $this->db->prepare($completedResSql);
-        $completedResStmt->execute([
-            ':cost' => $cost,
-            ':from_' => $this->from_,
-            ':to_' => $this->to_,
-            ':description' => $description,
-            ':id' => $id
-        ]);
+		$completedResStmt = $this->db->prepare($completedResSql);
+		$completedResStmt->execute([
+			':cost' => $cost,
+			':from_' => $this->from_,
+			':to_' => $this->to_,
+			':description' => $description,
+			':id' => $id
+		]);
 
-        // Update resource associations
-        $this->saveResourceAssociations();
+		// Update resource associations
+		$this->saveResourceAssociations();
 
-        // Update event dates
-        $this->saveEventDates();
+		// Update event dates
+		$this->saveEventDates();
 
-        $this->db->commit();
-        return true;
-    }
+		$this->db->commit();
+		return true;
+	}
 
-    /**
-     * Get data formatted for database operations
-     */
-    protected function getDbData(): array
-    {
-        return [
-            'id' => $this->id,
-            'id_string' => $this->id_string,
-            'active' => $this->active,
-            'skip_bas' => $this->skip_bas,
-            'activity_id' => $this->activity_id,
-            'application_id' => $this->application_id,
-            'name' => $this->name,
-            'organizer' => $this->organizer,
-            'homepage' => $this->homepage,
-            'description' => $this->description,
-            'equipment' => $this->equipment,
-            'building_id' => $this->building_id,
-            'building_name' => $this->building_name,
-            'from_' => $this->from_,
-            'to_' => $this->to_,
-            'cost' => $this->cost,
-            'contact_name' => $this->contact_name,
-            'contact_email' => $this->contact_email,
-            'contact_phone' => $this->contact_phone,
-            'secret' => $this->secret,
-            'customer_internal' => $this->customer_internal,
-            'include_in_list' => $this->include_in_list,
-            'reminder' => $this->reminder,
-            'is_public' => $this->is_public,
-            'completed' => $this->completed,
-            'access_requested' => $this->access_requested,
-            'participant_limit' => $this->participant_limit,
-            'customer_identifier_type' => $this->customer_identifier_type,
-            'customer_ssn' => $this->customer_ssn,
-            'customer_organization_number' => $this->customer_organization_number,
-            'customer_organization_id' => $this->customer_organization_id,
-            'customer_organization_name' => $this->customer_organization_name,
-            'additional_invoice_information' => $this->additional_invoice_information,
-            'sms_total' => $this->sms_total
-        ];
-    }
+	/**
+	 * Get data formatted for database operations
+	 */
+	protected function getDbData(): array
+	{
+		return [
+			'id' => $this->id,
+			'id_string' => $this->id_string,
+			'active' => $this->active,
+			'skip_bas' => $this->skip_bas,
+			'activity_id' => $this->activity_id,
+			'application_id' => $this->application_id,
+			'name' => $this->name,
+			'organizer' => $this->organizer,
+			'homepage' => $this->homepage,
+			'description' => $this->description,
+			'equipment' => $this->equipment,
+			'building_id' => $this->building_id,
+			'building_name' => $this->building_name,
+			'from_' => $this->from_,
+			'to_' => $this->to_,
+			'cost' => $this->cost,
+			'contact_name' => $this->contact_name,
+			'contact_email' => $this->contact_email,
+			'contact_phone' => $this->contact_phone,
+			'secret' => $this->secret,
+			'customer_internal' => $this->customer_internal,
+			'include_in_list' => $this->include_in_list,
+			'reminder' => $this->reminder,
+			'is_public' => $this->is_public,
+			'completed' => $this->completed,
+			'access_requested' => $this->access_requested,
+			'participant_limit' => $this->participant_limit,
+			'customer_identifier_type' => $this->customer_identifier_type,
+			'customer_ssn' => $this->customer_ssn,
+			'customer_organization_number' => $this->customer_organization_number,
+			'customer_organization_id' => $this->customer_organization_id,
+			'customer_organization_name' => $this->customer_organization_name,
+			'additional_invoice_information' => $this->additional_invoice_information,
+			'sms_total' => $this->sms_total
+		];
+	}
 
-    /**
-     * Save resource associations
-     */
-    protected function saveResourceAssociations(): void
-    {
-        // Delete existing associations
-        $deleteSql = "DELETE FROM bb_event_resource WHERE event_id = :event_id";
-        $deleteStmt = $this->db->prepare($deleteSql);
-        $deleteStmt->execute([':event_id' => $this->id]);
+	/**
+	 * Save resource associations
+	 */
+	protected function saveResourceAssociations(): void
+	{
+		// Delete existing associations
+		$deleteSql = "DELETE FROM bb_event_resource WHERE event_id = :event_id";
+		$deleteStmt = $this->db->prepare($deleteSql);
+		$deleteStmt->execute([':event_id' => $this->id]);
 
-        // Insert new associations
-        if (!empty($this->resources)) {
-            $insertSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)";
-            $insertStmt = $this->db->prepare($insertSql);
+		// Insert new associations
+		if (!empty($this->resources))
+		{
+			$insertSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)";
+			$insertStmt = $this->db->prepare($insertSql);
 
-            foreach ($this->resources as $resourceId) {
-                $insertStmt->execute([
-                    ':event_id' => $this->id,
-                    ':resource_id' => (int)$resourceId
-                ]);
-            }
-        }
-    }
+			foreach ($this->resources as $resourceId)
+			{
+				$insertStmt->execute([
+					':event_id' => $this->id,
+					':resource_id' => (int)$resourceId
+				]);
+			}
+		}
+	}
 
-    /**
-     * Save event dates
-     */
-    protected function saveEventDates(): void
-    {
-        // Delete existing dates
-        $deleteSql = "DELETE FROM bb_event_date WHERE event_id = :event_id";
-        $deleteStmt = $this->db->prepare($deleteSql);
-        $deleteStmt->execute([':event_id' => $this->id]);
+	/**
+	 * Save event dates
+	 */
+	protected function saveEventDates(): void
+	{
+		// Delete existing dates
+		$deleteSql = "DELETE FROM bb_event_date WHERE event_id = :event_id";
+		$deleteStmt = $this->db->prepare($deleteSql);
+		$deleteStmt->execute([':event_id' => $this->id]);
 
-        // Insert new date
-        $insertSql = "INSERT INTO bb_event_date (event_id, from_, to_) VALUES (:event_id, :from_, :to_)";
-        $insertStmt = $this->db->prepare($insertSql);
-        $insertStmt->execute([
-            ':event_id' => $this->id,
-            ':from_' => $this->from_,
-            ':to_' => $this->to_
-        ]);
-    }
+		// Insert new date
+		$insertSql = "INSERT INTO bb_event_date (event_id, from_, to_) VALUES (:event_id, :from_, :to_)";
+		$insertStmt = $this->db->prepare($insertSql);
+		$insertStmt->execute([
+			':event_id' => $this->id,
+			':from_' => $this->from_,
+			':to_' => $this->to_
+		]);
+	}
 
-    /**
-     * Save default age group
-     */
-    protected function saveDefaultAgeGroup(): void
-    {
-        $ageGroupSql = "SELECT id FROM bb_agegroup ORDER BY id LIMIT 1";
-        $ageGroupStmt = $this->db->prepare($ageGroupSql);
-        $ageGroupStmt->execute();
-        $ageGroupId = $ageGroupStmt->fetchColumn();
+	/**
+	 * Save default age group
+	 */
+	protected function saveDefaultAgeGroup(): void
+	{
+		$ageGroupSql = "SELECT id FROM bb_agegroup ORDER BY id LIMIT 1";
+		$ageGroupStmt = $this->db->prepare($ageGroupSql);
+		$ageGroupStmt->execute();
+		$ageGroupId = $ageGroupStmt->fetchColumn();
 
-        if ($ageGroupId) {
-            $insertSql = "INSERT INTO bb_event_agegroup (event_id, agegroup_id, male, female) VALUES (:event_id, :agegroup_id, :male, :female)";
-            $insertStmt = $this->db->prepare($insertSql);
-            $insertStmt->execute([
-                ':event_id' => $this->id,
-                ':agegroup_id' => $ageGroupId,
-                ':male' => 0,
-                ':female' => 0
-            ]);
-        }
-    }
+		if ($ageGroupId)
+		{
+			$insertSql = "INSERT INTO bb_event_agegroup (event_id, agegroup_id, male, female) VALUES (:event_id, :agegroup_id, :male, :female)";
+			$insertStmt = $this->db->prepare($insertSql);
+			$insertStmt->execute([
+				':event_id' => $this->id,
+				':agegroup_id' => $ageGroupId,
+				':male' => 0,
+				':female' => 0
+			]);
+		}
+	}
 
-    /**
-     * Save default target audience
-     */
-    protected function saveDefaultTargetAudience(): void
-    {
-        $targetAudienceSql = "SELECT id FROM bb_targetaudience ORDER BY id LIMIT 1";
-        $targetAudienceStmt = $this->db->prepare($targetAudienceSql);
-        $targetAudienceStmt->execute();
-        $targetAudienceId = $targetAudienceStmt->fetchColumn();
+	/**
+	 * Save default target audience
+	 */
+	protected function saveDefaultTargetAudience(): void
+	{
+		$targetAudienceSql = "SELECT id FROM bb_targetaudience ORDER BY id LIMIT 1";
+		$targetAudienceStmt = $this->db->prepare($targetAudienceSql);
+		$targetAudienceStmt->execute();
+		$targetAudienceId = $targetAudienceStmt->fetchColumn();
 
-        if ($targetAudienceId) {
-            $insertSql = "INSERT INTO bb_event_targetaudience (event_id, targetaudience_id) VALUES (:event_id, :targetaudience_id)";
-            $insertStmt = $this->db->prepare($insertSql);
-            $insertStmt->execute([
-                ':event_id' => $this->id,
-                ':targetaudience_id' => $targetAudienceId
-            ]);
-        }
-    }
+		if ($targetAudienceId)
+		{
+			$insertSql = "INSERT INTO bb_event_targetaudience (event_id, targetaudience_id) VALUES (:event_id, :targetaudience_id)";
+			$insertStmt = $this->db->prepare($insertSql);
+			$insertStmt->execute([
+				':event_id' => $this->id,
+				':targetaudience_id' => $targetAudienceId
+			]);
+		}
+	}
 
-    /**
-     * Check for event conflicts
-     */
-    public function checkConflicts(?int $excludeEventId = null): ?string
-    {
-        if (empty($this->resources)) {
-            return 'No resources specified for conflict check';
-        }
+	/**
+	 * Check for event conflicts
+	 */
+	public function checkConflicts(?int $excludeEventId = null): ?string
+	{
+		if (empty($this->resources))
+		{
+			return 'No resources specified for conflict check';
+		}
 
-        $resourceIds = implode(',', array_map('intval', $this->resources));
-        $excludeClause = $excludeEventId ? " AND e.id != :exclude_id" : "";
+		$resourceIds = implode(',', array_map('intval', $this->resources));
+		$excludeClause = $excludeEventId ? " AND e.id != :exclude_id" : "";
 
-        // Check for exact duplicates
-        $duplicateSql = "SELECT e.id FROM bb_event e
+		// Check for exact duplicates
+		$duplicateSql = "SELECT e.id FROM bb_event e
                         JOIN bb_event_resource er ON e.id = er.event_id
                         WHERE e.name = :name 
                         AND e.from_ = :from_ 
@@ -690,22 +735,24 @@ class Event
                         AND e.active = 1
                         $excludeClause";
 
-        $duplicateStmt = $this->db->prepare($duplicateSql);
-        $duplicateStmt->bindValue(':name', $this->name);
-        $duplicateStmt->bindValue(':from_', $this->from_);
-        $duplicateStmt->bindValue(':to_', $this->to_);
-        
-        if ($excludeEventId) {
-            $duplicateStmt->bindValue(':exclude_id', $excludeEventId);
-        }
+		$duplicateStmt = $this->db->prepare($duplicateSql);
+		$duplicateStmt->bindValue(':name', $this->name);
+		$duplicateStmt->bindValue(':from_', $this->from_);
+		$duplicateStmt->bindValue(':to_', $this->to_);
 
-        $duplicateStmt->execute();
-        if ($duplicateStmt->fetch()) {
-            return 'Duplicate event: An identical event already exists for this resource and time period';
-        }
+		if ($excludeEventId)
+		{
+			$duplicateStmt->bindValue(':exclude_id', $excludeEventId);
+		}
 
-        // Check for overlapping events
-        $overlapSql = "SELECT e.id, e.name FROM bb_event e
+		$duplicateStmt->execute();
+		if ($duplicateStmt->fetch())
+		{
+			return 'Duplicate event: An identical event already exists for this resource and time period';
+		}
+
+		// Check for overlapping events
+		$overlapSql = "SELECT e.id, e.name FROM bb_event e
                       JOIN bb_event_resource er ON e.id = er.event_id
                       WHERE er.resource_id IN ($resourceIds)
                       AND e.active = 1
@@ -714,164 +761,177 @@ class Event
                       )
                       $excludeClause";
 
-        $overlapStmt = $this->db->prepare($overlapSql);
-        $overlapStmt->bindValue(':from_', $this->from_);
-        $overlapStmt->bindValue(':to_', $this->to_);
-        
-        if ($excludeEventId) {
-            $overlapStmt->bindValue(':exclude_id', $excludeEventId);
-        }
+		$overlapStmt = $this->db->prepare($overlapSql);
+		$overlapStmt->bindValue(':from_', $this->from_);
+		$overlapStmt->bindValue(':to_', $this->to_);
 
-        $overlapStmt->execute();
-        $conflict = $overlapStmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($conflict) {
-            return "Time conflict: Overlaps with existing event #{$conflict['id']} ({$conflict['name']})";
-        }
+		if ($excludeEventId)
+		{
+			$overlapStmt->bindValue(':exclude_id', $excludeEventId);
+		}
 
-        return null;
-    }
+		$overlapStmt->execute();
+		$conflict = $overlapStmt->fetch(PDO::FETCH_ASSOC);
 
-    /**
-     * Delete event and all related data
-     * Based on delete_event method from booking_soevent
-     */
-    public function delete(): bool
-    {
-        if (!$this->id) {
-            return false;
-        }
+		if ($conflict)
+		{
+			return "Time conflict: Overlaps with existing event #{$conflict['id']} ({$conflict['name']})";
+		}
 
-        try {
-            $this->db->beginTransaction();
+		return null;
+	}
 
-            $id = $this->id;
+	/**
+	 * Delete event and all related data
+	 * Based on delete_event method from booking_soevent
+	 */
+	public function delete(): bool
+	{
+		if (!$this->id)
+		{
+			return false;
+		}
 
-            // Delete related tables (order matters due to foreign keys)
-            $relatedTables = [
-                'bb_event_cost',
-                'bb_event_comment', 
-                'bb_event_agegroup',
-                'bb_event_targetaudience',
-                'bb_event_date',
-                'bb_event_resource'
-            ];
+		try
+		{
+			$this->db->beginTransaction();
 
-            foreach ($relatedTables as $table) {
-                $sql = "DELETE FROM $table WHERE event_id = :event_id";
-                $stmt = $this->db->prepare($sql);
-                $stmt->execute([':event_id' => $id]);
-            }
+			$id = $this->id;
 
-            // Handle purchase orders
-            $orderSql = "SELECT id, parent_id FROM bb_purchase_order WHERE reservation_type = 'event' AND reservation_id = :id";
-            $orderStmt = $this->db->prepare($orderSql);
-            $orderStmt->execute([':id' => $id]);
-            $order = $orderStmt->fetch(PDO::FETCH_ASSOC);
+			// Delete related tables (order matters due to foreign keys)
+			$relatedTables = [
+				'bb_event_cost',
+				'bb_event_comment',
+				'bb_event_agegroup',
+				'bb_event_targetaudience',
+				'bb_event_date',
+				'bb_event_resource'
+			];
 
-            if ($order) {
-                if ($order['parent_id']) {
-                    // Delete child order
-                    $deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
-                    $deleteOrderStmt = $this->db->prepare($deleteOrderSql);
-                    $deleteOrderStmt->execute([':order_id' => $order['id']]);
-                } else {
-                    // Handle parent order - delete children first
-                    $deleteChildOrdersSql = "DELETE FROM bb_purchase_order WHERE parent_id = :parent_id";
-                    $deleteChildOrdersStmt = $this->db->prepare($deleteChildOrdersSql);
-                    $deleteChildOrdersStmt->execute([':parent_id' => $order['id']]);
-                    
-                    // Then delete parent
-                    $deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
-                    $deleteOrderStmt = $this->db->prepare($deleteOrderSql);
-                    $deleteOrderStmt->execute([':order_id' => $order['id']]);
-                }
-            }
+			foreach ($relatedTables as $table)
+			{
+				$sql = "DELETE FROM $table WHERE event_id = :event_id";
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([':event_id' => $id]);
+			}
 
-            // Handle completed reservations
-            $completedResSql = "SELECT id FROM bb_completed_reservation WHERE reservation_id = :id AND reservation_type = 'event' AND export_file_id IS NULL";
-            $completedResStmt = $this->db->prepare($completedResSql);
-            $completedResStmt->execute([':id' => $id]);
-            $completedRes = $completedResStmt->fetch(PDO::FETCH_ASSOC);
+			// Handle purchase orders
+			$orderSql = "SELECT id, parent_id FROM bb_purchase_order WHERE reservation_type = 'event' AND reservation_id = :id";
+			$orderStmt = $this->db->prepare($orderSql);
+			$orderStmt->execute([':id' => $id]);
+			$order = $orderStmt->fetch(PDO::FETCH_ASSOC);
 
-            if ($completedRes) {
-                $deleteCompResResourceSql = "DELETE FROM bb_completed_reservation_resource WHERE completed_reservation_id = :comp_res_id";
-                $deleteCompResResourceStmt = $this->db->prepare($deleteCompResResourceSql);
-                $deleteCompResResourceStmt->execute([':comp_res_id' => $completedRes['id']]);
+			if ($order)
+			{
+				if ($order['parent_id'])
+				{
+					// Delete child order
+					$deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
+					$deleteOrderStmt = $this->db->prepare($deleteOrderSql);
+					$deleteOrderStmt->execute([':order_id' => $order['id']]);
+				}
+				else
+				{
+					// Handle parent order - delete children first
+					$deleteChildOrdersSql = "DELETE FROM bb_purchase_order WHERE parent_id = :parent_id";
+					$deleteChildOrdersStmt = $this->db->prepare($deleteChildOrdersSql);
+					$deleteChildOrdersStmt->execute([':parent_id' => $order['id']]);
 
-                $deleteCompResSql = "DELETE FROM bb_completed_reservation WHERE id = :comp_res_id";
-                $deleteCompResStmt = $this->db->prepare($deleteCompResSql);
-                $deleteCompResStmt->execute([':comp_res_id' => $completedRes['id']]);
-            }
+					// Then delete parent
+					$deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
+					$deleteOrderStmt = $this->db->prepare($deleteOrderSql);
+					$deleteOrderStmt->execute([':order_id' => $order['id']]);
+				}
+			}
 
-            // Finally delete the event itself
-            $deleteEventSql = "DELETE FROM bb_event WHERE id = :id";
-            $deleteEventStmt = $this->db->prepare($deleteEventSql);
-            $deleteEventStmt->execute([':id' => $id]);
+			// Handle completed reservations
+			$completedResSql = "SELECT id FROM bb_completed_reservation WHERE reservation_id = :id AND reservation_type = 'event' AND export_file_id IS NULL";
+			$completedResStmt = $this->db->prepare($completedResSql);
+			$completedResStmt->execute([':id' => $id]);
+			$completedRes = $completedResStmt->fetch(PDO::FETCH_ASSOC);
 
-            $this->db->commit();
-            return true;
-        } catch (Exception $e) {
-            $this->db->rollback();
-            error_log("Error deleting event: " . $e->getMessage());
-            return false;
-        }
-    }
+			if ($completedRes)
+			{
+				$deleteCompResResourceSql = "DELETE FROM bb_completed_reservation_resource WHERE completed_reservation_id = :comp_res_id";
+				$deleteCompResResourceStmt = $this->db->prepare($deleteCompResResourceSql);
+				$deleteCompResResourceStmt->execute([':comp_res_id' => $completedRes['id']]);
 
-    /**
-     * Load event by ID
-     */
-    public static function find(int $id): ?self
-    {
-        $db = Db::getInstance();
-        
-        $sql = "SELECT * FROM bb_event WHERE id = :id";
-        $stmt = $db->prepare($sql);
-        $stmt->execute([':id' => $id]);
-        $data = $stmt->fetch(PDO::FETCH_ASSOC);
+				$deleteCompResSql = "DELETE FROM bb_completed_reservation WHERE id = :comp_res_id";
+				$deleteCompResStmt = $this->db->prepare($deleteCompResSql);
+				$deleteCompResStmt->execute([':comp_res_id' => $completedRes['id']]);
+			}
 
-        if (!$data) {
-            return null;
-        }
+			// Finally delete the event itself
+			$deleteEventSql = "DELETE FROM bb_event WHERE id = :id";
+			$deleteEventStmt = $this->db->prepare($deleteEventSql);
+			$deleteEventStmt->execute([':id' => $id]);
 
-        $event = new self($data);
-        
-        // Load associated resources
-        $resourceSql = "SELECT resource_id FROM bb_event_resource WHERE event_id = :event_id";
-        $resourceStmt = $db->prepare($resourceSql);
-        $resourceStmt->execute([':event_id' => $id]);
-        $event->resources = $resourceStmt->fetchAll(PDO::FETCH_COLUMN);
+			$this->db->commit();
+			return true;
+		}
+		catch (Exception $e)
+		{
+			$this->db->rollback();
+			error_log("Error deleting event: " . $e->getMessage());
+			return false;
+		}
+	}
 
-        return $event;
-    }
+	/**
+	 * Load event by ID
+	 */
+	public static function find(int $id): ?self
+	{
+		$db = Db::getInstance();
 
-    /**
-     * Get building information for a resource
-     */
-    public static function getBuildingInfoForResource(int $resourceId): ?array
-    {
-        $db = Db::getInstance();
-        
-        $sql = "SELECT bb_building.id, bb_building.name 
+		$sql = "SELECT * FROM bb_event WHERE id = :id";
+		$stmt = $db->prepare($sql);
+		$stmt->execute([':id' => $id]);
+		$data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+		if (!$data)
+		{
+			return null;
+		}
+
+		$event = new self($data);
+
+		// Load associated resources
+		$resourceSql = "SELECT resource_id FROM bb_event_resource WHERE event_id = :event_id";
+		$resourceStmt = $db->prepare($resourceSql);
+		$resourceStmt->execute([':event_id' => $id]);
+		$event->resources = $resourceStmt->fetchAll(PDO::FETCH_COLUMN);
+
+		return $event;
+	}
+
+	/**
+	 * Get building information for a resource
+	 */
+	public static function getBuildingInfoForResource(int $resourceId): ?array
+	{
+		$db = Db::getInstance();
+
+		$sql = "SELECT bb_building.id, bb_building.name 
                 FROM bb_building 
                 JOIN bb_building_resource ON bb_building.id = bb_building_resource.building_id 
                 WHERE bb_building_resource.resource_id = :resource_id";
 
-        $stmt = $db->prepare($sql);
-        $stmt->execute([':resource_id' => $resourceId]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-    }
+		$stmt = $db->prepare($sql);
+		$stmt->execute([':resource_id' => $resourceId]);
+		return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
+	}
 
-    /**
-     * Check if a resource exists
-     */
-    public static function resourceExists(int $resourceId): bool
-    {
-        $db = Db::getInstance();
-        
-        $sql = "SELECT id FROM bb_resource WHERE id = :id AND active = 1";
-        $stmt = $db->prepare($sql);
-        $stmt->execute([':id' => $resourceId]);
-        return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
-    }
+	/**
+	 * Check if a resource exists
+	 */
+	public static function resourceExists(int $resourceId): bool
+	{
+		$db = Db::getInstance();
+
+		$sql = "SELECT id FROM bb_resource WHERE id = :id AND active = 1";
+		$stmt = $db->prepare($sql);
+		$stmt->execute([':id' => $resourceId]);
+		return $stmt->fetch(PDO::FETCH_ASSOC) !== false;
+	}
 }

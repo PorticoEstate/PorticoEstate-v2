@@ -1,7 +1,6 @@
 # Base image
 FROM node:20-alpine AS base
 ENV base_path=/src/modules/bookingfrontend/client
-RUN apk add --no-cache git
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -15,8 +14,8 @@ ENV https_proxy=${https_proxy}
 RUN if [ -n "${http_proxy}" ]; then \
  sed -i 's/https/http/' /etc/apk/repositories; \
 fi
+RUN apk add --no-cache git
 
-#RUN sed -i 's/https/http/' /etc/apk/repositories
 
 RUN apk add --no-cache libc6-compat
 WORKDIR /app

@@ -304,6 +304,9 @@ class ApplicationService
             foreach ($applications as $application)
             {
                 $this->patchApplicationMainData($baseUpdateData, $application['id']);
+
+                $baseUpdateData['session_id'] = $application['session_id']; // Keep session_id for partial applications
+
                 $updatedApplications[] = array_merge($application, $baseUpdateData);
             }
 
@@ -372,6 +375,7 @@ class ApplicationService
                 $this->cancelBlocksForApplication($application_id);
 
                 // Send notification email (this already exists and works)
+                //FIXE: call to undefined method send_notification()
                 $this->send_notification($application_id);
 
                 $approvedApplications[] = array_merge($application, $updateData);

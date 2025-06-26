@@ -839,3 +839,5 @@ Your application has now been registered and a confirmation email has been sent 
 Your application with event details has been added. You can add another application, or finalise the application with contact details.	booking	en	Your application with event details has been added. You can add another application, or finalise the application with contact details.
 Your applications have now been processed and confirmation emails have been sent to you.	booking	en	Your applications have now been processed and confirmation emails have been sent to you.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	en	Your applications have now been registered and confirmation emails have been sent to you.
+when_and_where	booking	en	When and Where?
+time_period	booking	en	Time period

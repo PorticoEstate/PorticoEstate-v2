@@ -377,7 +377,7 @@ class booking_soapplication extends booking_socommon
 			$results = array();
 			while ($row = $stmt->fetch())
 			{
-				$results[] = $row['name'];
+				$results[] = $this->db->unmarshal($row['name'], 'string');
 			}
 
 			return $results;

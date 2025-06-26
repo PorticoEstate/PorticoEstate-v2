@@ -854,9 +854,18 @@ class ApplicationService
 
         if ($application)
         {
+            $_application = (array)$application;
+            $resources_array = $_application['resources'] ?? [];
+
+            // Extract only the id values from the resources array (each resource is array('id' => 1, 'name' => 'name'))
+            $_application['resources'] = array_map(function($resource) {
+                return is_array($resource) ? (int)$resource['id'] : (int)$resource;
+            }, $resources_array);
             // Call existing notification method from booking.boapplication
+
+            $created = $_application['status'] === 'NEW' ? true : false;
             $bo = CreateObject('booking.boapplication');
-            $bo->send_notification((array)$application, true);
+            $bo->send_notification((array)$_application, $created);
         }
     }
 

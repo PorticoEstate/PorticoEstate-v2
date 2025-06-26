@@ -3,6 +3,7 @@
 namespace App\modules\booking\models;
 
 use App\traits\SerializableTrait;
+use App\traits\ValidatorTrait;
 use App\Database\Db;
 use PDO;
 use DateTime;
@@ -17,6 +18,7 @@ use Exception;
 class Event
 {
 	use SerializableTrait;
+	use ValidatorTrait;
 
 	protected Db $db;
 
@@ -141,194 +143,272 @@ class Event
 			'id' => [
 				'type' => 'int',
 				'required' => false,
+				'sanitize' => 'int',
 			],
 			'id_string' => [
 				'type' => 'string',
 				'required' => false,
 				'default' => '0',
+				'sanitize' => 'string',
 			],
 			'active' => [
 				'type' => 'int',
 				'required' => true,
+				'sanitize' => 'int',
 			],
 			'skip_bas' => [
 				'type' => 'int',
 				'required' => false,
+				'sanitize' => 'int',
 			],
 			'activity_id' => [
 				'type' => 'int',
 				'required' => true,
-				'validator' => function ($value)
-				{
-					return ($value > 0) ? null : 'Activity ID is required';
+				'sanitize' => 'int',
+				'validator' => function ($value) {
+					return self::validatePositive($value, 'Activity ID');
 				},
 			],
 			'application_id' => [
 				'type' => 'int',
 				'required' => false,
+				'sanitize' => 'int',
 			],
 			'name' => [
 				'type' => 'string',
 				'required' => true,
 				'maxLength' => 255,
+				'sanitize' => 'string',
 			],
 			'organizer' => [
 				'type' => 'string',
 				'required' => true,
 				'maxLength' => 255,
+				'sanitize' => 'string',
 			],
 			'homepage' => [
 				'type' => 'string',
 				'required' => false,
 				'maxLength' => 255,
+				'sanitize' => 'string',
+				'validator' => function ($value) {
+					return self::validateUrl($value, 'Homepage');
+				},
 			],
 			'description' => [
 				'type' => 'string',
 				'required' => false,
+				'sanitize' => 'html', // Allow some HTML but sanitize it
 			],
 			'equipment' => [
 				'type' => 'string',
 				'required' => false,
+				'sanitize' => 'string',
 			],
 			'building_id' => [
 				'type' => 'int',
 				'required' => true,
-				'validator' => function ($value)
-				{
-					return ($value > 0) ? null : 'Building ID is required';
+				'sanitize' => 'int',
+				'validator' => function ($value) {
+					return self::validatePositive($value, 'Building ID');
 				},
 			],
 			'building_name' => [
 				'type' => 'string',
 				'required' => true,
 				'maxLength' => 255,
+				'sanitize' => 'string',
 			],
 			'from_' => [
 				'type' => 'datetime',
 				'required' => true,
+				'sanitize' => 'string', // Will be validated by datetime validation
 			],
 			'to_' => [
 				'type' => 'datetime',
 				'required' => true,
+				'sanitize' => 'string', // Will be validated by datetime validation
 			],
 			'cost' => [
 				'type' => 'float',
 				'required' => true,
-				'validator' => function ($value)
-				{
-					return ($value >= 0) ? null : 'Cost must be zero or positive';
+				'sanitize' => 'float',
+				'validator' => function ($value) {
+					return self::validateNonNegative($value, 'Cost');
 				},
 			],
 			'contact_name' => [
 				'type' => 'string',
 				'required' => true,
 				'maxLength' => 50,
+				'sanitize' => 'string',
 			],
 			'contact_email' => [
 				'type' => 'string',
 				'required' => false,
-				'validator' => function ($value)
-				{
-					if (empty($value)) return null;
-					return filter_var($value, FILTER_VALIDATE_EMAIL) ? null : 'Contact email is invalid';
+				'sanitize' => 'email',
+				'validator' => function ($value) {
+					return self::validateEmail($value, 'Contact email');
 				},
 			],
 			'contact_phone' => [
 				'type' => 'string',
 				'required' => false,
 				'maxLength' => 50,
+				'sanitize' => 'string',
+				'validator' => function ($value) {
+					return self::validatePhone($value, 'Contact phone');
+				},
 			],
 			'completed' => [
 				'type' => 'int',
 				'required' => true,
 				'default' => 0,
+				'sanitize' => 'int',
 			],
 			'access_requested' => [
 				'type' => 'int',
 				'required' => false,
 				'default' => 0,
+				'sanitize' => 'int',
 			],
 			'reminder' => [
 				'type' => 'int',
 				'required' => true,
 				'default' => 1,
+				'sanitize' => 'int',
 			],
 			'is_public' => [
 				'type' => 'int',
 				'required' => true,
 				'default' => 1,
+				'sanitize' => 'int',
 			],
 			'secret' => [
 				'type' => 'string',
 				'required' => true,
+				'sanitize' => 'string',
 			],
 			'sms_total' => [
 				'type' => 'int',
 				'required' => false,
+				'sanitize' => 'int',
 			],
 			'participant_limit' => [
 				'type' => 'int',
 				'required' => false,
-				'validator' => function ($value)
-				{
+				'sanitize' => 'int',
+				'validator' => function ($value) {
 					if (is_null($value)) return null;
-					return ($value >= 0) ? null : 'Participant limit must be zero or positive';
+					return self::validateNonNegative($value, 'Participant limit');
 				},
 			],
 			'customer_organization_name' => [
 				'type' => 'string',
 				'required' => false,
+				'sanitize' => 'string',
 			],
 			'customer_organization_id' => [
 				'type' => 'int',
 				'required' => false,
+				'sanitize' => 'int',
 			],
 			'customer_identifier_type' => [
 				'type' => 'string',
 				'required' => false,
+				'sanitize' => 'string',
 			],
 			'customer_ssn' => [
 				'type' => 'string',
 				'required' => false,
-				'validator' => function ($value)
-				{
-					if (empty($value)) return null;
-					// Norwegian SSN: 11 digits
-					return preg_match('/^\d{11}$/', $value) ? null : 'Customer SSN is invalid';
+				'sanitize' => 'string',
+				'validator' => function ($value) {
+					return self::validateNorwegianSSN($value, 'Customer SSN');
 				},
 			],
 			'customer_organization_number' => [
 				'type' => 'string',
 				'required' => false,
-				'validator' => function ($value)
-				{
-					if (empty($value)) return null;
-					// Norwegian org number: 9 digits
-					return preg_match('/^\d{9}$/', $value) ? null : 'Customer organization number is invalid';
+				'sanitize' => 'string',
+				'validator' => function ($value) {
+					return self::validateNorwegianOrSwedishOrgNumber($value, 'Customer organization number');
 				},
 			],
 			'customer_internal' => [
 				'type' => 'int',
 				'required' => true,
+				'sanitize' => 'int',
 			],
 			'include_in_list' => [
 				'type' => 'int',
 				'required' => true,
 				'default' => 0,
+				'sanitize' => 'int',
 			],
 			'additional_invoice_information' => [
 				'type' => 'string',
+				'sanitize' => 'string',
 				'required' => false,
 			],
 			'resources' => [
 				'type' => 'array',
 				'required' => true,
-				'validator' => function ($value)
-				{
-					return (is_array($value) && count($value) > 0) ? null : 'At least one resource is required';
+				'sanitize' => 'array_int', // Array of integers
+				'validator' => function ($value) {
+					return self::validateNonEmptyArray($value, 'Resources');
 				},
 			],
+			// Additional fields for controller compatibility
+			'title' => [
+				'type' => 'string',
+				'required' => false, // Maps to 'name' field
+				'sanitize' => 'string',
+			],
+			'source' => [
+				'type' => 'string',
+				'required' => false,
+				'sanitize' => 'string',
+			],
+			'bridge_import' => [
+				'type' => 'bool',
+				'required' => false,
+				'sanitize' => 'bool',
+			],
+			'resource_ids' => [
+				'type' => 'array',
+				'required' => false, // Maps to 'resources' field
+				'sanitize' => 'array_int', // Array of integers
+			],
 			// You can add more fields as needed, e.g. for agegroups, audience, comments, costs, dates, etc.
+		];
+	}
+
+	/**
+	 * Get sanitization rules from field map
+	 */
+	public static function getSanitizationRules(): array
+	{
+		$rules = [];
+		foreach (static::getFieldMap() as $field => $config) {
+			if (isset($config['sanitize'])) {
+				$rules[$field] = $config['sanitize'];
+			}
+		}
+		return $rules;
+	}
+
+	/**
+	 * Get array element sanitization info
+	 * Maps array sanitization types to their element types
+	 */
+	public static function getArrayElementTypes(): array
+	{
+		return [
+			'array_int' => 'int',
+			'array_string' => 'string',
+			'array_email' => 'email',
+			'array_float' => 'float',
+			// Add more as needed
 		];
 	}
 

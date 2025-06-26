@@ -6,7 +6,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\booking\models\Event;
 use App\modules\phpgwapi\security\Acl;
 use App\Database\Db;
-use PDO;
+use Sanitizer;
 
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -22,7 +22,6 @@ class EventController
 	public function __construct(ContainerInterface $container)
 	{
 		$this->userSettings = Settings::getInstance()->get('user');
-		$this->db = Db::getInstance();
 		$this->acl = Acl::getInstance();
 	}
 
@@ -149,6 +148,9 @@ class EventController
 				}
 			}
 
+			// Sanitize incoming data
+			$eventData = $this->sanitizeEventData($eventData);
+
 			// Validate required fields
 			$requiredFields = ['title', 'from_', 'to_', 'source'];
 			foreach ($requiredFields as $field)
@@ -215,6 +217,156 @@ class EventController
 	}
 
 	/**
+	 * Sanitize incoming event data for security and consistency
+	 */
+	private function sanitizeEventData(array $eventData): array
+	{
+		$sanitizedData = [];
+		
+		// Get sanitization rules from the Event model
+		$sanitizationRules = Event::getSanitizationRules();
+		$arrayElementTypes = Event::getArrayElementTypes();
+		
+		foreach ($eventData as $key => $value) 
+		{
+			// Skip null/empty values unless it's an explicit false/0
+			if ($value === null || ($value === '' && $value !== '0' && $value !== 0 && $value !== false)) 
+			{
+				continue;
+			}
+			
+			$sanitizationType = $sanitizationRules[$key] ?? 'string';
+			
+			try 
+			{
+				switch ($sanitizationType) 
+				{
+					case 'html':
+						// Allow some HTML but sanitize it thoroughly
+						$sanitizedData[$key] = Sanitizer::clean_html($value);
+						break;
+						
+					case 'array_int':
+						// Handle arrays of integers (like resource_ids)
+						$sanitizedData[$key] = $this->sanitizeIntegerArray($value);
+						break;
+						
+					case 'array_string':
+						// Handle arrays of strings
+						$sanitizedData[$key] = $this->sanitizeStringArray($value);
+						break;
+						
+					case 'array':
+						// Generic array handling (fallback)
+						if (is_array($value)) 
+						{
+							$sanitizedData[$key] = array_map(function($v) {
+								return Sanitizer::clean_value($v, 'string');
+							}, $value);
+						} 
+						break;
+						
+					default:
+						// Check if it's a typed array
+						if (isset($arrayElementTypes[$sanitizationType])) 
+						{
+							$elementType = $arrayElementTypes[$sanitizationType];
+							$sanitizedData[$key] = $this->sanitizeTypedArray($value, $elementType);
+						}
+						else
+						{
+							// Use the existing Sanitizer clean_value method
+							$sanitizedData[$key] = Sanitizer::clean_value($value, $sanitizationType);
+						}
+						break;
+				}
+			} 
+			catch (Exception $e) 
+			{
+				// Log sanitization errors but don't fail the request
+				error_log("Sanitization error for field '$key': " . $e->getMessage());
+				
+				// Apply basic string sanitization as fallback
+				$sanitizedData[$key] = Sanitizer::clean_value($value, 'string');
+			}
+		}
+		
+		return $sanitizedData;
+	}
+
+	/**
+	 * Sanitize array of integers
+	 */
+	private function sanitizeIntegerArray($value): array
+	{
+		if (is_array($value)) 
+		{
+			return array_map('intval', array_filter($value, function($v) {
+				return is_numeric($v) && $v > 0;
+			}));
+		} 
+		elseif (is_string($value)) 
+		{
+			// Handle comma-separated strings
+			return array_map('intval', array_filter(
+				explode(',', $value), 
+				function($v) { return is_numeric(trim($v)) && intval(trim($v)) > 0; }
+			));
+		}
+		return [];
+	}
+
+	/**
+	 * Sanitize array of strings
+	 */
+	private function sanitizeStringArray($value): array
+	{
+		if (is_array($value)) 
+		{
+			return array_map(function($v) {
+				return Sanitizer::clean_value($v, 'string');
+			}, array_filter($value, function($v) {
+				return !empty(trim($v ?? ''));
+			}));
+		} 
+		elseif (is_string($value)) 
+		{
+			// Handle comma-separated strings
+			return array_map(function($v) {
+				return Sanitizer::clean_value(trim($v), 'string');
+			}, array_filter(explode(',', $value), function($v) {
+				return !empty(trim($v));
+			}));
+		}
+		return [];
+	}
+
+	/**
+	 * Sanitize array with specific element type
+	 */
+	private function sanitizeTypedArray($value, string $elementType): array
+	{
+		if (is_array($value)) 
+		{
+			return array_map(function($v) use ($elementType) {
+				return Sanitizer::clean_value($v, $elementType);
+			}, array_filter($value, function($v) {
+				return $v !== null && $v !== '';
+			}));
+		} 
+		elseif (is_string($value)) 
+		{
+			// Handle comma-separated strings
+			return array_map(function($v) use ($elementType) {
+				return Sanitizer::clean_value(trim($v), $elementType);
+			}, array_filter(explode(',', $value), function($v) {
+				return !empty(trim($v));
+			}));
+		}
+		return [];
+	}
+
+	/**
 	 * Prepare event data for the Event model
 	 */
 	private function prepareEventDataForModel(int $resourceId, array $eventData): array
@@ -271,281 +423,6 @@ class EventController
 		];
 	}
 
-
-	/**
-	 * Create event record in the database
-	 */
-	private function createEventInDatabase(int $resourceId, array $eventData, \DateTime $fromDate, \DateTime $toDate): ?int
-	{
-		try
-		{
-			$this->db->beginTransaction();
-
-			// Get building information for the resource
-			$buildingInfo = $this->getBuildingInfoForResource($resourceId);
-			if (!$buildingInfo)
-			{
-				throw new Exception('Could not find building information for resource');
-			}
-
-			// Generate a secret for the event
-			$secret = $this->generateEventSecret();
-
-			// Prepare event data for database insertion with ALL required fields
-			$dbEventData = [
-				// Basic event information
-				'name' => $eventData['title'],
-				'from_' => $fromDate->format('Y-m-d H:i:s'),
-				'to_' => $toDate->format('Y-m-d H:i:s'),
-				'description' => $eventData['description'] ?? '',
-				'contact_name' => $eventData['contact_name'] ?? '',
-				'contact_email' => $eventData['contact_email'] ?? '',
-				'organizer' => $eventData['contact_name'] ?? 'Calendar Bridge',
-
-				// Required fields from soevent constructor
-				'activity_id' => 1, // Default activity - you may want to make this configurable
-				'building_id' => $buildingInfo['id'],
-				'building_name' => $buildingInfo['name'],
-				'cost' => 0.00, // Default to 0 for bridge imports
-				'secret' => $secret,
-				'customer_internal' => 0, // External by default for bridge imports
-				'include_in_list' => 0, // Don't include in public lists by default
-				'reminder' => 1, // Default reminder setting
-
-				// Status fields
-				'active' => 1,
-				'is_public' => 0, // Private by default for bridge imports
-				'completed' => 0,
-
-				// Optional fields with defaults
-				'contact_phone' => $eventData['contact_phone'] ?? '',
-				'homepage' => $eventData['homepage'] ?? '',
-				'equipment' => $eventData['equipment'] ?? '',
-				'access_requested' => 0,
-				'participant_limit' => $eventData['participant_limit'] ?? null,
-				'customer_identifier_type' => null,
-				'customer_ssn' => null,
-				'customer_organization_number' => null,
-				'customer_organization_id' => null,
-				'customer_organization_name' => null,
-				'additional_invoice_information' => null,
-				'sms_total' => null,
-				'skip_bas' => 0,
-				'application_id' => null,
-
-				// Metadata fields
-				'id_string' => 0, // Will be set after insert
-			];
-
-			// Insert event
-			$eventColumns = array_keys($dbEventData);
-			$eventPlaceholders = ':' . implode(', :', $eventColumns);
-
-			$eventSql = "INSERT INTO bb_event (" . implode(', ', $eventColumns) . ") VALUES (" . $eventPlaceholders . ") RETURNING id";
-			$eventStmt = $this->db->prepare($eventSql);
-
-			// Bind parameters
-			foreach ($dbEventData as $key => $value)
-			{
-				$eventStmt->bindValue(":$key", $value);
-			}
-
-			$eventStmt->execute();
-			$eventId = $eventStmt->fetchColumn();
-
-			if (!$eventId)
-			{
-				throw new Exception('Failed to get event ID after insertion');
-			}
-
-			// Update id_string to match the ID
-			$updateIdStringSql = "UPDATE bb_event SET id_string = :id_string WHERE id = :id";
-			$updateIdStringStmt = $this->db->prepare($updateIdStringSql);
-			$updateIdStringStmt->execute([
-				':id_string' => (string)$eventId,
-				':id' => $eventId
-			]);
-
-			// Link event to resource
-			$resourceSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)";
-			$resourceStmt = $this->db->prepare($resourceSql);
-			$resourceStmt->execute([
-				':event_id' => $eventId,
-				':resource_id' => $resourceId
-			]);
-
-			// Insert event date record
-			$eventDateSql = "INSERT INTO bb_event_date (event_id, from_, to_) VALUES (:event_id, :from_, :to_)";
-			$eventDateStmt = $this->db->prepare($eventDateSql);
-			$eventDateStmt->execute([
-				':event_id' => $eventId,
-				':from_' => $fromDate->format('Y-m-d H:i:s'),
-				':to_' => $toDate->format('Y-m-d H:i:s')
-			]);
-
-			// Insert default age group (use first available)
-			$ageGroupSql = "SELECT id FROM bb_agegroup ORDER BY id LIMIT 1";
-			$ageGroupStmt = $this->db->prepare($ageGroupSql);
-			$ageGroupStmt->execute();
-			$ageGroupId = $ageGroupStmt->fetchColumn();
-
-			if ($ageGroupId)
-			{
-				$eventAgeGroupSql = "INSERT INTO bb_event_agegroup (event_id, agegroup_id, male, female) VALUES (:event_id, :agegroup_id, :male, :female)";
-				$eventAgeGroupStmt = $this->db->prepare($eventAgeGroupSql);
-				$eventAgeGroupStmt->execute([
-					':event_id' => $eventId,
-					':agegroup_id' => $ageGroupId,
-					':male' => 0, // Default values for bridge imports
-					':female' => 0
-				]);
-			}
-
-			// Insert default target audience (use first available)
-			$targetAudienceSql = "SELECT id FROM bb_targetaudience ORDER BY id LIMIT 1";
-			$targetAudienceStmt = $this->db->prepare($targetAudienceSql);
-			$targetAudienceStmt->execute();
-			$targetAudienceId = $targetAudienceStmt->fetchColumn();
-
-			if ($targetAudienceId)
-			{
-				$eventTargetAudienceSql = "INSERT INTO bb_event_targetaudience (event_id, targetaudience_id) VALUES (:event_id, :targetaudience_id)";
-				$eventTargetAudienceStmt = $this->db->prepare($eventTargetAudienceSql);
-				$eventTargetAudienceStmt->execute([
-					':event_id' => $eventId,
-					':targetaudience_id' => $targetAudienceId
-				]);
-			}
-
-			$this->db->commit();
-			return (int)$eventId;
-		}
-		catch (Exception $e)
-		{
-			$this->db->rollback();
-			error_log("Error creating event: " . $e->getMessage());
-			return null;
-		}
-	}
-
-	/**
-	 * Get building information for a resource
-	 */
-	private function getBuildingInfoForResource(int $resourceId): ?array
-	{
-		$sql = "SELECT bb_building.id, bb_building.name 
-				FROM bb_building 
-				JOIN bb_building_resource ON bb_building.id = bb_building_resource.building_id 
-				WHERE bb_building_resource.resource_id = :resource_id";
-
-		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':resource_id' => $resourceId]);
-		$result = $stmt->fetch(PDO::FETCH_ASSOC);
-
-		return $result ?: null;
-	}
-
-	/**
-	 * Generate a unique secret for the event
-	 */
-	private function generateEventSecret(): string
-	{
-		return bin2hex(random_bytes(16)); // 32 character hex string
-	}
-
-	/**
-	 * Check for event conflicts (duplicates and overlaps)
-	 */
-	private function checkEventConflicts(int $resourceId, \DateTime $fromDate, \DateTime $toDate, array $eventData): ?string
-	{
-		$start = $fromDate->format('Y-m-d H:i:s');
-		$end = $toDate->format('Y-m-d H:i:s');
-
-		// Check for exact duplicates first (same resource, same time, same title)
-		$duplicateSql = "SELECT e.id FROM bb_event e
-			JOIN bb_event_resource er ON e.id = er.event_id
-			WHERE er.resource_id = :resource_id 
-			AND e.active = 1
-			AND e.from_ = :from_date
-			AND e.to_ = :to_date
-			AND e.name = :event_name";
-
-		$duplicateStmt = $this->db->prepare($duplicateSql);
-		$duplicateStmt->execute([
-			':resource_id' => $resourceId,
-			':from_date' => $start,
-			':to_date' => $end,
-			':event_name' => $eventData['title']
-		]);
-
-		if ($duplicateStmt->fetch())
-		{
-			return 'Duplicate event detected: An identical event already exists for this resource at the same time';
-		}
-
-		// Check for overlapping events (based on soevent validation logic)
-		$overlapSql = "SELECT e.id, e.name FROM bb_event e
-			WHERE e.active = 1 
-			AND e.id IN (SELECT event_id FROM bb_event_resource WHERE resource_id = :resource_id)
-			AND ((e.from_ >= :start AND e.from_ < :end) OR
-				 (e.to_ > :start AND e.to_ <= :end) OR
-				 (e.from_ < :start AND e.to_ > :end))";
-
-		$overlapStmt = $this->db->prepare($overlapSql);
-		$overlapStmt->execute([
-			':resource_id' => $resourceId,
-			':start' => $start,
-			':end' => $end
-		]);
-
-		if ($overlapResult = $overlapStmt->fetch(PDO::FETCH_ASSOC))
-		{
-			return "Time conflict: Overlaps with existing event #{$overlapResult['id']} - {$overlapResult['name']}";
-		}
-
-		// Check for overlapping allocations
-		$allocationOverlapSql = "SELECT a.id FROM bb_allocation a
-			WHERE a.active = 1 
-			AND a.id IN (SELECT allocation_id FROM bb_allocation_resource WHERE resource_id = :resource_id)
-			AND ((a.from_ >= :start AND a.from_ < :end) OR
-				 (a.to_ > :start AND a.to_ <= :end) OR
-				 (a.from_ < :start AND a.to_ > :end))";
-
-		$allocationStmt = $this->db->prepare($allocationOverlapSql);
-		$allocationStmt->execute([
-			':resource_id' => $resourceId,
-			':start' => $start,
-			':end' => $end
-		]);
-
-		if ($allocationResult = $allocationStmt->fetch(PDO::FETCH_ASSOC))
-		{
-			return "Time conflict: Overlaps with existing allocation #{$allocationResult['id']}";
-		}
-
-		// Check for overlapping bookings
-		$bookingOverlapSql = "SELECT b.id FROM bb_booking b
-			WHERE b.active = 1 
-			AND b.id IN (SELECT booking_id FROM bb_booking_resource WHERE resource_id = :resource_id)
-			AND ((b.from_ >= :start AND b.from_ < :end) OR
-				 (b.to_ > :start AND b.to_ <= :end) OR
-				 (b.from_ < :start AND b.to_ > :end))";
-
-		$bookingStmt = $this->db->prepare($bookingOverlapSql);
-		$bookingStmt->execute([
-			':resource_id' => $resourceId,
-			':start' => $start,
-			':end' => $end
-		]);
-
-		if ($bookingResult = $bookingStmt->fetch(PDO::FETCH_ASSOC))
-		{
-			return "Time conflict: Overlaps with existing booking #{$bookingResult['id']}";
-		}
-
-		// No conflicts found
-		return null;
-	}
 
 	/**
 	 * @OA\Put(
@@ -680,6 +557,9 @@ class EventController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
+			// Sanitize update data
+			$updateData = $this->sanitizeEventData($updateData);
+
 			// Update the event with new data
 			$event->populate($updateData);
 
@@ -724,110 +604,6 @@ class EventController
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
-	}
-
-	/**
-	 * Get event by ID
-	 */
-	private function getEventById(int $eventId): ?array
-	{
-		$sql = "SELECT e.*, 
-				   ARRAY_AGG(DISTINCT er.resource_id) as resource_ids,
-				   bb_building.name as building_name
-				FROM bb_event e
-				LEFT JOIN bb_event_resource er ON e.id = er.event_id
-				LEFT JOIN bb_building ON e.building_id = bb_building.id
-				WHERE e.id = :event_id AND e.active = 1
-				GROUP BY e.id, bb_building.name";
-
-		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':event_id' => $eventId]);
-		return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-	}
-
-	/**
-	 * Get resource IDs associated with an event
-	 */
-	private function getEventResourceIds(int $eventId): array
-	{
-		$sql = "SELECT resource_id FROM bb_event_resource WHERE event_id = :event_id";
-		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':event_id' => $eventId]);
-		return $stmt->fetchAll(PDO::FETCH_COLUMN);
-	}
-
-	/**
-	 * Check for event conflicts during update (excludes the current event)
-	 */
-	private function checkEventConflictsForUpdate(int $eventId, int $resourceId, \DateTime $fromDate, \DateTime $toDate, array $eventData): ?string
-	{
-		$start = $fromDate->format('Y-m-d H:i:s');
-		$end = $toDate->format('Y-m-d H:i:s');
-
-		// Check for overlapping events (excluding the current event)
-		$overlapSql = "SELECT e.id, e.name FROM bb_event e
-			WHERE e.active = 1 
-			AND e.id != :event_id
-			AND e.id IN (SELECT event_id FROM bb_event_resource WHERE resource_id = :resource_id)
-			AND ((e.from_ >= :start AND e.from_ < :end) OR
-				 (e.to_ > :start AND e.to_ <= :end) OR
-				 (e.from_ < :start AND e.to_ > :end))";
-
-		$overlapStmt = $this->db->prepare($overlapSql);
-		$overlapStmt->execute([
-			':event_id' => $eventId,
-			':resource_id' => $resourceId,
-			':start' => $start,
-			':end' => $end
-		]);
-
-		if ($overlapResult = $overlapStmt->fetch(PDO::FETCH_ASSOC))
-		{
-			return "Time conflict: Overlaps with existing event #{$overlapResult['id']} - {$overlapResult['name']}";
-		}
-
-		// Check for overlapping allocations
-		$allocationOverlapSql = "SELECT a.id FROM bb_allocation a
-			WHERE a.active = 1 
-			AND a.id IN (SELECT allocation_id FROM bb_allocation_resource WHERE resource_id = :resource_id)
-			AND ((a.from_ >= :start AND a.from_ < :end) OR
-				 (a.to_ > :start AND a.to_ <= :end) OR
-				 (a.from_ < :start AND a.to_ > :end))";
-
-		$allocationStmt = $this->db->prepare($allocationOverlapSql);
-		$allocationStmt->execute([
-			':resource_id' => $resourceId,
-			':start' => $start,
-			':end' => $end
-		]);
-
-		if ($allocationResult = $allocationStmt->fetch(PDO::FETCH_ASSOC))
-		{
-			return "Time conflict: Overlaps with existing allocation #{$allocationResult['id']}";
-		}
-
-		// Check for overlapping bookings
-		$bookingOverlapSql = "SELECT b.id FROM bb_booking b
-			WHERE b.active = 1 
-			AND b.id IN (SELECT booking_id FROM bb_booking_resource WHERE resource_id = :resource_id)
-			AND ((b.from_ >= :start AND b.from_ < :end) OR
-				 (b.to_ > :start AND b.to_ <= :end) OR
-				 (b.from_ < :start AND b.to_ > :end))";
-
-		$bookingStmt = $this->db->prepare($bookingOverlapSql);
-		$bookingStmt->execute([
-			':resource_id' => $resourceId,
-			':start' => $start,
-			':end' => $end
-		]);
-
-		if ($bookingResult = $bookingStmt->fetch(PDO::FETCH_ASSOC))
-		{
-			return "Time conflict: Overlaps with existing booking #{$bookingResult['id']}";
-		}
-
-		// No conflicts found
-		return null;
 	}
 
 	/**
@@ -944,6 +720,12 @@ class EventController
 				}
 			}
 
+			// Sanitize request data if any
+			if (!empty($requestData))
+			{
+				$requestData = $this->sanitizeEventData($requestData);
+			}
+
 			// Determine new active status
 			$newActiveStatus = isset($requestData['active'])
 				? (bool)$requestData['active']
@@ -979,129 +761,6 @@ class EventController
 		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-		}
-	}
-
-	/**
-	 * Get event by ID including inactive events
-	 */
-	private function getEventByIdIncludingInactive(int $eventId): ?array
-	{
-		$sql = "SELECT e.*, 
-				   ARRAY_AGG(DISTINCT er.resource_id) as resource_ids,
-				   bb_building.name as building_name
-				FROM bb_event e
-				LEFT JOIN bb_event_resource er ON e.id = er.event_id
-				LEFT JOIN bb_building ON e.building_id = bb_building.id
-				WHERE e.id = :event_id
-				GROUP BY e.id, bb_building.name";
-
-		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':event_id' => $eventId]);
-		return $stmt->fetch(PDO::FETCH_ASSOC) ?: null;
-	}
-
-	/**
-	 * Update event active status in database
-	 */
-	private function updateEventActiveStatus(int $eventId, bool $active): bool
-	{
-		try
-		{
-			$sql = "UPDATE bb_event SET active = :active WHERE id = :event_id";
-			$stmt = $this->db->prepare($sql);
-			return $stmt->execute([
-				':active' => $active ? 1 : 0,
-				':event_id' => $eventId
-			]);
-		}
-		catch (Exception $e)
-		{
-			error_log("Error updating event active status: " . $e->getMessage());
-			return false;
-		}
-	}
-
-	/**
-	 * Update event record in the database
-	 */
-	private function updateEventInDatabase(int $eventId, array $updateData, ?\DateTime $fromDate, ?\DateTime $toDate): bool
-	{
-		try
-		{
-			$this->db->beginTransaction();
-
-			// Build update query dynamically based on provided data
-			$updateFields = [];
-			$updateParams = [':event_id' => $eventId];
-
-			// Map of allowed fields to update
-			$allowedFields = [
-				'title' => 'name',
-				'name' => 'name',
-				'description' => 'description',
-				'contact_name' => 'contact_name',
-				'contact_email' => 'contact_email',
-				'contact_phone' => 'contact_phone',
-				'organizer' => 'organizer',
-				'equipment' => 'equipment',
-				'participant_limit' => 'participant_limit',
-				'homepage' => 'homepage',
-				'is_public' => 'is_public',
-				'completed' => 'completed'
-			];
-
-			// Add fields to update
-			foreach ($allowedFields as $inputField => $dbField)
-			{
-				if (isset($updateData[$inputField]))
-				{
-					$updateFields[] = "$dbField = :$dbField";
-					$updateParams[":$dbField"] = $updateData[$inputField];
-				}
-			}
-
-			// Add date fields if provided
-			if ($fromDate && $toDate)
-			{
-				$updateFields[] = "from_ = :from_";
-				$updateFields[] = "to_ = :to_";
-				$updateParams[':from_'] = $fromDate->format('Y-m-d H:i:s');
-				$updateParams[':to_'] = $toDate->format('Y-m-d H:i:s');
-			}
-
-			if (empty($updateFields))
-			{
-				// No valid fields to update
-				$this->db->rollback();
-				return false;
-			}
-
-			// Update bb_event table
-			$updateSql = "UPDATE bb_event SET " . implode(', ', $updateFields) . " WHERE id = :event_id";
-			$updateStmt = $this->db->prepare($updateSql);
-			$updateStmt->execute($updateParams);
-
-			// Update bb_event_date table if dates changed
-			if ($fromDate && $toDate)
-			{
-				$updateDateSql = "UPDATE bb_event_date SET from_ = :from_, to_ = :to_ WHERE event_id = :event_id";
-				$updateDateStmt = $this->db->prepare($updateDateSql);
-				$updateDateStmt->execute([
-					':event_id' => $eventId,
-					':from_' => $fromDate->format('Y-m-d H:i:s'),
-					':to_' => $toDate->format('Y-m-d H:i:s')
-				]);
-			}
-
-			$this->db->commit();
-			return true;
-		}
-		catch (Exception $e)
-		{
-			$this->db->rollback();
-			error_log("Error updating event: " . $e->getMessage());
-			return false;
 		}
 	}
 
@@ -1228,6 +887,9 @@ class EventController
 				}
 			}
 
+			// Sanitize input data
+			$eventData = $this->sanitizeEventData($eventData);
+
 			// Validate required fields
 			$requiredFields = ['title', 'from_', 'to_', 'resource_ids'];
 			foreach ($requiredFields as $field)
@@ -1332,38 +994,6 @@ class EventController
 		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-		}
-	}
-
-	/**
-	 * Add additional resources to an existing event
-	 */
-	private function addAdditionalResourcesToEvent(int $eventId, array $resourceIds): bool
-	{
-		try
-		{
-			$this->db->beginTransaction();
-
-			// Insert additional resource associations
-			$resourceSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)";
-			$resourceStmt = $this->db->prepare($resourceSql);
-
-			foreach ($resourceIds as $resourceId)
-			{
-				$resourceStmt->execute([
-					':event_id' => $eventId,
-					':resource_id' => $resourceId
-				]);
-			}
-
-			$this->db->commit();
-			return true;
-		}
-		catch (Exception $e)
-		{
-			$this->db->rollback();
-			error_log("Error adding additional resources to event $eventId: " . $e->getMessage());
-			return false;
 		}
 	}
 }

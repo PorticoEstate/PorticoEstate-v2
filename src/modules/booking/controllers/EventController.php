@@ -996,4 +996,377 @@ class EventController
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
 	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/booking/events/{id}/audience",
+	 *     summary="Get audience for an event",
+	 *     description="Retrieves the target audience associated with a specific event",
+	 *     tags={"Events", "Relationships"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         description="Event ID",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Event audience retrieved successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="event_id", type="integer", example=123),
+	 *             @OA\Property(property="audience", type="array", @OA\Items(
+	 *                 @OA\Property(property="id", type="integer", example=1),
+	 *                 @OA\Property(property="name", type="string", example="Adults"),
+	 *                 @OA\Property(property="description", type="string", example="Adult participants")
+	 *             ))
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=404, description="Event not found"),
+	 *     @OA\Response(response=500, description="Internal server error")
+	 * )
+	 */
+	public function getEventAudience(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$eventId = (int) $args['id'];
+			$event = Event::find($eventId);
+
+			if (!$event) {
+				$response->getBody()->write(json_encode(['error' => 'Event not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$audience = $event->getAudience();
+			$responseData = [
+				'event_id' => $eventId,
+				'audience' => $audience
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/booking/events/{id}/comments",
+	 *     summary="Get comments for an event",
+	 *     description="Retrieves all comments associated with a specific event",
+	 *     tags={"Events", "Relationships"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         description="Event ID",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Event comments retrieved successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="event_id", type="integer", example=123),
+	 *             @OA\Property(property="comments", type="array", @OA\Items(
+	 *                 @OA\Property(property="id", type="integer", example=1),
+	 *                 @OA\Property(property="comment", type="string", example="Great event!"),
+	 *                 @OA\Property(property="type", type="string", example="user"),
+	 *                 @OA\Property(property="time", type="integer", example=1656846631),
+	 *                 @OA\Property(property="author", type="string", example="johndoe"),
+	 *                 @OA\Property(property="author_name", type="string", example="John Doe")
+	 *             ))
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=404, description="Event not found"),
+	 *     @OA\Response(response=500, description="Internal server error")
+	 * )
+	 */
+	public function getEventComments(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$eventId = (int) $args['id'];
+			$event = Event::find($eventId);
+
+			if (!$event) {
+				$response->getBody()->write(json_encode(['error' => 'Event not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$comments = $event->getComments();
+			$responseData = [
+				'event_id' => $eventId,
+				'comments' => $comments
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/booking/events/{id}/comments",
+	 *     summary="Add a comment to an event",
+	 *     description="Adds a new comment to a specific event",
+	 *     tags={"Events", "Relationships"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         description="Event ID",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"comment"},
+	 *             @OA\Property(property="comment", type="string", description="Comment text", example="This event was excellent!"),
+	 *             @OA\Property(property="type", type="string", description="Comment type", example="user", default="user"),
+	 *             @OA\Property(property="author", type="string", description="Author username", example="johndoe"),
+	 *             @OA\Property(property="author_name", type="string", description="Author display name", example="John Doe")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=201,
+	 *         description="Comment added successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean", example=true),
+	 *             @OA\Property(property="message", type="string", example="Comment added successfully")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=400, description="Invalid input"),
+	 *     @OA\Response(response=404, description="Event not found"),
+	 *     @OA\Response(response=500, description="Internal server error")
+	 * )
+	 */
+	public function addEventComment(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$eventId = (int) $args['id'];
+			$event = Event::find($eventId);
+
+			if (!$event) {
+				$response->getBody()->write(json_encode(['error' => 'Event not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$data = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
+
+			if (empty($data['comment'])) {
+				$response->getBody()->write(json_encode(['error' => 'Comment text is required']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			$comment = Sanitizer::sanitize($data['comment'], 'string');
+			$type = Sanitizer::sanitize($data['type'] ?? 'user', 'string');
+			$author = Sanitizer::sanitize($data['author'] ?? null, 'string');
+			$authorName = Sanitizer::sanitize($data['author_name'] ?? null, 'string');
+
+			$success = $event->addComment($comment, $type, $author, $authorName);
+
+			if (!$success) {
+				$response->getBody()->write(json_encode(['error' => 'Failed to add comment']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			}
+
+			$responseData = [
+				'success' => true,
+				'message' => 'Comment added successfully'
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/booking/events/{id}/dates",
+	 *     summary="Get dates for an event",
+	 *     description="Retrieves all dates associated with a specific event",
+	 *     tags={"Events", "Relationships"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         description="Event ID",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Event dates retrieved successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="event_id", type="integer", example=123),
+	 *             @OA\Property(property="dates", type="array", @OA\Items(
+	 *                 @OA\Property(property="id", type="integer", example=1),
+	 *                 @OA\Property(property="from_", type="string", format="date-time", example="2025-06-25T15:30:00+02:00"),
+	 *                 @OA\Property(property="to_", type="string", format="date-time", example="2025-06-25T17:00:00+02:00")
+	 *             ))
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=404, description="Event not found"),
+	 *     @OA\Response(response=500, description="Internal server error")
+	 * )
+	 */
+	public function getEventDates(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$eventId = (int) $args['id'];
+			$event = Event::find($eventId);
+
+			if (!$event) {
+				$response->getBody()->write(json_encode(['error' => 'Event not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$dates = $event->getDates();
+			$responseData = [
+				'event_id' => $eventId,
+				'dates' => $dates
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/booking/events/{id}/building-info",
+	 *     summary="Get building information for an event",
+	 *     description="Retrieves building information associated with the event's resources",
+	 *     tags={"Events", "Relationships"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         description="Event ID",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Building information retrieved successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="event_id", type="integer", example=123),
+	 *             @OA\Property(property="building_info", type="object",
+	 *                 @OA\Property(property="building_id", type="integer", example=5),
+	 *                 @OA\Property(property="building_name", type="string", example="Main Building")
+	 *             )
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=404, description="Event not found"),
+	 *     @OA\Response(response=500, description="Internal server error")
+	 * )
+	 */
+	public function getEventBuildingInfo(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$eventId = (int) $args['id'];
+			$event = Event::find($eventId);
+
+			if (!$event) {
+				$response->getBody()->write(json_encode(['error' => 'Event not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$buildingInfo = $event->getBuildingInfo();
+			$responseData = [
+				'event_id' => $eventId,
+				'building_info' => $buildingInfo
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Put(
+	 *     path="/booking/events/{id}/audience",
+	 *     summary="Update event audience relationships",
+	 *     description="Updates the many-to-many relationship between an event and audience groups",
+	 *     tags={"Events", "Relationships"},
+	 *     @OA\Parameter(
+	 *         name="id",
+	 *         in="path",
+	 *         description="Event ID",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             required={"audience_ids"},
+	 *             @OA\Property(property="audience_ids", type="array", @OA\Items(type="integer"), description="Array of audience IDs", example=[1, 2, 3])
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Audience relationships updated successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="success", type="boolean", example=true),
+	 *             @OA\Property(property="message", type="string", example="Audience relationships updated successfully")
+	 *         )
+	 *     ),
+	 *     @OA\Response(response=400, description="Invalid input"),
+	 *     @OA\Response(response=404, description="Event not found"),
+	 *     @OA\Response(response=500, description="Internal server error")
+	 * )
+	 */
+	public function updateEventAudience(Request $request, Response $response, array $args): Response
+	{
+		try {
+			$eventId = (int) $args['id'];
+			$event = Event::find($eventId);
+
+			if (!$event) {
+				$response->getBody()->write(json_encode(['error' => 'Event not found']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+			}
+
+			$data = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
+
+			if (!isset($data['audience_ids']) || !is_array($data['audience_ids'])) {
+				$response->getBody()->write(json_encode(['error' => 'audience_ids must be an array']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+			}
+
+			// Sanitize audience IDs
+			$audienceIds = array_map(function($id) {
+				return Sanitizer::sanitize($id, 'int');
+			}, $data['audience_ids']);
+
+			$success = $event->saveRelationship('audience', $audienceIds);
+
+			if (!$success) {
+				$response->getBody()->write(json_encode(['error' => 'Failed to update audience relationships']));
+				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+			}
+
+			$responseData = [
+				'success' => true,
+				'message' => 'Audience relationships updated successfully'
+			];
+
+			$response->getBody()->write(json_encode($responseData));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+		} catch (Exception $e) {
+			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
 }

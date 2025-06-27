@@ -1635,7 +1635,7 @@ SQL;
 		$metadata = $this->db->metadata('fm_location1');
 
 
-		$sql = " SELECT boei_objekt.objekt_id,bydel_id,tjenestested,navn,boei_objekt.eier_id, kostra_id, fm_owner_category.id as owner_type_id"
+		$sql = " SELECT boei_objekt.objekt_id,bydel_id,tjenestested,boei_objekt.navn,boei_objekt.eier_id, kostra_id, fm_owner_category.id as owner_type_id"
 			. " FROM boei_objekt 
 				JOIN fm_location1 ON boei_objekt.objekt_id = fm_location1.loc1
 				JOIN fm_owner_category ON fm_location1.owner_id = fm_owner_category.id"
@@ -1651,6 +1651,7 @@ SQL;
 			$kostra_id = (int)$this->db->f('kostra_id');
 			$loc1		  = $this->db->f('objekt_id');
 			$owner_type_id 	  = (int)$this->db->f('owner_type_id');
+			$navn = $this->db->f('navn');
 
 			$mva = 75;
 			if (in_array($tjenestested, array(26555)) || (in_array($owner_type_id,array(1, 2)) && $tjenestested == 26550))
@@ -1691,7 +1692,7 @@ SQL;
 			}
 
 			$sql2 = " UPDATE fm_location1 SET "
-				. " loc1_name = '" . $this->db->f('navn') . "',"
+				. " loc1_name = '" . $navn . "',"
 				. " part_of_town_id = " . (int)$this->db->f('bydel_id') . ","
 				. " owner_id = " . (int)$this->db->f('eier_id') . ","
 				. " mva = " . $mva . ","

@@ -1651,6 +1651,7 @@ SQL;
 			$kostra_id = (int)$this->db->f('kostra_id');
 			$loc1		  = $this->db->f('objekt_id');
 			$owner_type_id 	  = (int)$this->db->f('owner_type_id');
+			$navn = $this->db->f('navn');
 
 			$mva = 75;
 			if (in_array($tjenestested, array(26555)) || (in_array($owner_type_id,array(1, 2)) && $tjenestested == 26550))
@@ -1691,7 +1692,7 @@ SQL;
 			}
 
 			$sql2 = " UPDATE fm_location1 SET "
-				. " loc1_name = '" . $this->db->f('navn') . "',"
+				. " loc1_name = '" . $navn . "',"
 				. " part_of_town_id = " . (int)$this->db->f('bydel_id') . ","
 				. " owner_id = " . (int)$this->db->f('eier_id') . ","
 				. " mva = " . $mva . ","

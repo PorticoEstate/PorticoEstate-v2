@@ -1162,10 +1162,10 @@ class EventController
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
-			$comment = Sanitizer::sanitize($data['comment'], 'string');
-			$type = Sanitizer::sanitize($data['type'] ?? 'user', 'string');
-			$author = Sanitizer::sanitize($data['author'] ?? null, 'string');
-			$authorName = Sanitizer::sanitize($data['author_name'] ?? null, 'string');
+			$comment = Sanitizer::clean_value($data['comment'], 'string');
+			$type = Sanitizer::clean_value($data['type'] ?? 'user', 'string');
+			$author = Sanitizer::clean_value($data['author'] ?? null, 'string');
+			$authorName = Sanitizer::clean_value($data['author_name'] ?? null, 'string');
 
 			$success = $event->addComment($comment, $type, $author, $authorName);
 
@@ -1347,7 +1347,7 @@ class EventController
 
 			// Sanitize audience IDs
 			$audienceIds = array_map(function($id) {
-				return Sanitizer::sanitize($id, 'int');
+				return Sanitizer::clean_value($id, 'int');
 			}, $data['audience_ids']);
 
 			$success = $event->saveRelationship('audience', $audienceIds);

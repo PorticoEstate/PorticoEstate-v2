@@ -3,7 +3,6 @@
 namespace App\modules\booking\models;
 
 use App\traits\SerializableTrait;
-use App\traits\ValidatorTrait;
 use App\Database\Db;
 use PDO;
 use DateTime;
@@ -11,16 +10,14 @@ use Exception;
 
 /**
  * Event model for booking system
- * Based on booking_soevent legacy class
+ * Extends BaseModel for CRUD operations, validation, and relationship management
+ * Based on booking_soevent legacy class but modernized and streamlined
  * 
  * @Expose
  */
-class Event
+class Event extends BaseModel
 {
 	use SerializableTrait;
-	use ValidatorTrait;
-
-	protected Db $db;
 
 	// Field definitions based on booking_soevent constructor
 
@@ -143,6 +140,36 @@ class Event
 	protected ?array $_building_info = null;
 	protected ?array $_activity_info = null;
 	protected ?array $_application_info = null;
+
+	/**
+	 * Get table name for the Event model
+	 */
+	protected static function getTableName(): string
+	{
+		return 'bb_event';
+	}
+
+	/**
+	 * Get the location_id for custom fields
+	 * This corresponds to the location in the phpgw_locations table
+	 * For events, this should be the location_id for 'booking.event' or similar
+	 */
+	protected static function getCustomFieldsLocationId(): ?int
+	{
+		// Get the location_id for booking events from the database
+		return static::getLocationId('booking', 'event');
+	}
+
+	/**
+	 * Optional: Enable JSON storage for custom fields
+	 * Uncomment the line below to store all custom fields as JSON in a single field
+	 * This is useful when you have many custom fields or want to avoid schema changes
+	 */
+	protected static function getCustomFieldsJsonField(): ?string
+	{
+		// return 'json_representation'; // Enable JSON storage
+		return null; // Use individual columns (default)
+	}
 
 	/**
 	 * Central field map for validation and metadata
@@ -394,203 +421,41 @@ class Event
 	}
 
 	/**
-	 * Get sanitization rules from field map
+	 * Override BaseModel's doCustomValidation for Event-specific validation
 	 */
-	public static function getSanitizationRules(): array
-	{
-		$rules = [];
-		foreach (static::getFieldMap() as $field => $config) {
-			if (isset($config['sanitize'])) {
-				$rules[$field] = $config['sanitize'];
-			}
-		}
-		return $rules;
-	}
-
-	/**
-	 * Get array element types from field map (for array sanitization)
-	 */
-	public static function getArrayElementTypes(): array
-	{
-		$types = [];
-		foreach (static::getFieldMap() as $field => $config) {
-			if (isset($config['sanitize']) && str_starts_with($config['sanitize'], 'array_')) {
-				$elementType = substr($config['sanitize'], 6); // Remove 'array_' prefix
-				$types[$field] = $elementType;
-			}
-		}
-		return $types;
-	}
-
-	public function __construct(?array $data = null)
-	{
-		$this->db = Db::getInstance();
-
-		if ($data)
-		{
-			$this->populate($data);
-		}
-	}
-
-	/**
-	 * Populate model with data
-	 */
-	public function populate(array $data): self
-	{
-		foreach ($data as $key => $value)
-		{
-			if (property_exists($this, $key))
-			{
-				$this->$key = $value;
-			}
-		}
-		return $this;
-	}
-
-	/**
-	 * Validate the event data using the field map
-	 */
-	public function validate(): array
+	protected function doCustomValidation(): array
 	{
 		$errors = [];
-		foreach (self::getFieldMap() as $field => $meta)
-		{
-			$value = $this->$field ?? null;
-			// Required check
-			if (($meta['required'] ?? false) && (is_null($value) || $value === '' || (is_array($value) && count($value) === 0)))
-			{
-				$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' is required';
-				continue;
-			}
-			// Type check (basic)
-			if (!is_null($value))
-			{
-				switch ($meta['type'])
-				{
-					case 'int':
-						if (!is_int($value))
-						{
-							$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be an integer';
-						}
-						break;
-					case 'string':
-						if (!is_string($value))
-						{
-							$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be a string';
-						}
-						break;
-					case 'array':
-						if (!is_array($value))
-						{
-							$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be an array';
-						}
-						break;
-					case 'datetime':
-						try
-						{
-							new \DateTime($value);
-						}
-						catch (\Exception $e)
-						{
-							$errors[] = ucfirst(str_replace('_', ' ', $field)) . ' must be a valid date/time';
-						}
-						break;
-				}
-			}
-			// Max length check
-			if (isset($meta['maxLength']) && is_string($value) && strlen($value) > $meta['maxLength'])
-			{
-				$errors[] = ucfirst(str_replace('_', ' ', $field)) . " must be {$meta['maxLength']} characters or less";
-			}
-			// Custom validator
-			if (isset($meta['validator']) && is_callable($meta['validator']))
-			{
-				$err = call_user_func($meta['validator'], $value, $this);
-				if ($err)
-				{
-					$errors[] = $err;
-				}
-			}
-		}
+		
 		// Custom cross-field validation: from_ < to_
-		if (!empty($this->from_) && !empty($this->to_))
-		{
-			try
-			{
+		if (!empty($this->from_) && !empty($this->to_)) {
+			try {
 				$from = new \DateTime($this->from_);
 				$to = new \DateTime($this->to_);
-				if ($from >= $to)
-				{
+				if ($from >= $to) {
 					$errors[] = 'End time must be after start time';
 				}
-			}
-			catch (\Exception $e)
-			{
-				// Already handled above
+			} catch (\Exception $e) {
+				// Already handled by field validation
 			}
 		}
+
 		return $errors;
 	}
 
 	/**
-	 * Save the event to database
-	 */
-	public function save(): bool
-	{
-		try
-		{
-			$this->db->beginTransaction();
-
-			if ($this->id)
-			{
-				return $this->update();
-			}
-			else
-			{
-				return $this->create();
-			}
-		}
-		catch (Exception $e)
-		{
-			$this->db->rollback();
-			error_log("Error saving event: " . $e->getMessage());
-			return false;
-		}
-	}
-
-	/**
-	 * Create new event in database
+	 * Override BaseModel's create method to handle Event-specific logic
 	 */
 	protected function create(): bool
 	{
 		// Generate secret if not set
-		if (empty($this->secret))
-		{
+		if (empty($this->secret)) {
 			$this->secret = bin2hex(random_bytes(16));
 		}
 
-		// Prepare data for insertion
-		$eventData = $this->getDbData();
-		unset($eventData['id']); // Remove ID for insert
-
-		$columns = array_keys($eventData);
-		$placeholders = ':' . implode(', :', $columns);
-
-		$sql = "INSERT INTO bb_event (" . implode(', ', $columns) . ") VALUES (" . $placeholders . ") RETURNING id";
-		$stmt = $this->db->prepare($sql);
-
-		// Bind parameters
-		foreach ($eventData as $key => $value)
-		{
-			$stmt->bindValue(":$key", $value);
-		}
-
-		$stmt->execute();
-		$this->id = (int)$stmt->fetchColumn();
-
-		if (!$this->id)
-		{
-			throw new Exception('Failed to get event ID after insertion');
+		// Call parent create method
+		if (!parent::create()) {
+			return false;
 		}
 
 		// Update id_string to match the ID
@@ -602,47 +467,18 @@ class Event
 			':id' => $this->id
 		]);
 
-		// Create resource associations
-		$this->saveResourceAssociations();
-
-		// Create event dates
-		$this->saveEventDates();
-
-		// Create default age group and target audience
-		$this->saveDefaultAgeGroup();
-		$this->saveDefaultTargetAudience();
-
-		$this->db->commit();
 		return true;
 	}
 
 	/**
-	 * Update existing event in database
-	 * Based on update method from booking_soevent
+	 * Override BaseModel's update method to handle Event-specific logic
 	 */
 	protected function update(): bool
 	{
-		$eventData = $this->getDbData();
-		$id = $eventData['id'];
-		unset($eventData['id']);
-
-		$setParts = [];
-		foreach (array_keys($eventData) as $column)
-		{
-			$setParts[] = "$column = :$column";
+		// Call parent update method
+		if (!parent::update()) {
+			return false;
 		}
-
-		$sql = "UPDATE bb_event SET " . implode(', ', $setParts) . " WHERE id = :id";
-		$stmt = $this->db->prepare($sql);
-
-		// Bind parameters
-		foreach ($eventData as $key => $value)
-		{
-			$stmt->bindValue(":$key", $value);
-		}
-		$stmt->bindValue(':id', $id);
-
-		$stmt->execute();
 
 		// Update bb_completed_reservation if exists (from booking_soevent logic)
 		$cost = $this->cost;
@@ -656,60 +492,25 @@ class Event
 			':from_' => $this->from_,
 			':to_' => $this->to_,
 			':description' => $description,
-			':id' => $id
+			':id' => $this->id
 		]);
 
-		// Update resource associations
-		$this->saveResourceAssociations();
-
-		// Update event dates
-		$this->saveEventDates();
-
-		$this->db->commit();
 		return true;
 	}
 
 	/**
-	 * Get data formatted for database operations
+	 * Override BaseModel's saveRelationships method to handle Event-specific relationships
 	 */
-	protected function getDbData(): array
+	protected function saveRelationships(): void
 	{
-		return [
-			'id' => $this->id,
-			'id_string' => $this->id_string,
-			'active' => $this->active,
-			'skip_bas' => $this->skip_bas,
-			'activity_id' => $this->activity_id,
-			'application_id' => $this->application_id,
-			'name' => $this->name,
-			'organizer' => $this->organizer,
-			'homepage' => $this->homepage,
-			'description' => $this->description,
-			'equipment' => $this->equipment,
-			'building_id' => $this->building_id,
-			'building_name' => $this->building_name,
-			'from_' => $this->from_,
-			'to_' => $this->to_,
-			'cost' => $this->cost,
-			'contact_name' => $this->contact_name,
-			'contact_email' => $this->contact_email,
-			'contact_phone' => $this->contact_phone,
-			'secret' => $this->secret,
-			'customer_internal' => $this->customer_internal,
-			'include_in_list' => $this->include_in_list,
-			'reminder' => $this->reminder,
-			'is_public' => $this->is_public,
-			'completed' => $this->completed,
-			'access_requested' => $this->access_requested,
-			'participant_limit' => $this->participant_limit,
-			'customer_identifier_type' => $this->customer_identifier_type,
-			'customer_ssn' => $this->customer_ssn,
-			'customer_organization_number' => $this->customer_organization_number,
-			'customer_organization_id' => $this->customer_organization_id,
-			'customer_organization_name' => $this->customer_organization_name,
-			'additional_invoice_information' => $this->additional_invoice_information,
-			'sms_total' => $this->sms_total
-		];
+		$this->saveResourceAssociations();
+		$this->saveEventDates();
+		
+		// Only save defaults on create
+		if (!$this->id) {
+			$this->saveDefaultAgeGroup();
+			$this->saveDefaultTargetAudience();
+		}
 	}
 
 	/**
@@ -872,126 +673,87 @@ class Event
 	}
 
 	/**
-	 * Delete event and all related data
-	 * Based on delete_event method from booking_soevent
+	 * Override BaseModel's deleteRelationships method for Event-specific cleanup
 	 */
-	public function delete(): bool
+	protected function deleteRelationships(): void
 	{
-		if (!$this->id)
-		{
-			return false;
+		if (!$this->id) {
+			return;
 		}
 
-		try
-		{
-			$this->db->beginTransaction();
+		$id = $this->id;
 
-			$id = $this->id;
+		// Delete related tables (order matters due to foreign keys)
+		$relatedTables = [
+			'bb_event_cost',
+			'bb_event_comment', 
+			'bb_event_agegroup',
+			'bb_event_targetaudience',
+			'bb_event_date',
+			'bb_event_resource'
+		];
 
-			// Delete related tables (order matters due to foreign keys)
-			$relatedTables = [
-				'bb_event_cost',
-				'bb_event_comment',
-				'bb_event_agegroup',
-				'bb_event_targetaudience',
-				'bb_event_date',
-				'bb_event_resource'
-			];
-
-			foreach ($relatedTables as $table)
-			{
-				$sql = "DELETE FROM $table WHERE event_id = :event_id";
-				$stmt = $this->db->prepare($sql);
-				$stmt->execute([':event_id' => $id]);
-			}
-
-			// Handle purchase orders
-			$orderSql = "SELECT id, parent_id FROM bb_purchase_order WHERE reservation_type = 'event' AND reservation_id = :id";
-			$orderStmt = $this->db->prepare($orderSql);
-			$orderStmt->execute([':id' => $id]);
-			$order = $orderStmt->fetch(PDO::FETCH_ASSOC);
-
-			if ($order)
-			{
-				if ($order['parent_id'])
-				{
-					// Delete child order
-					$deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
-					$deleteOrderStmt = $this->db->prepare($deleteOrderSql);
-					$deleteOrderStmt->execute([':order_id' => $order['id']]);
-				}
-				else
-				{
-					// Handle parent order - delete children first
-					$deleteChildOrdersSql = "DELETE FROM bb_purchase_order WHERE parent_id = :parent_id";
-					$deleteChildOrdersStmt = $this->db->prepare($deleteChildOrdersSql);
-					$deleteChildOrdersStmt->execute([':parent_id' => $order['id']]);
-
-					// Then delete parent
-					$deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
-					$deleteOrderStmt = $this->db->prepare($deleteOrderSql);
-					$deleteOrderStmt->execute([':order_id' => $order['id']]);
-				}
-			}
-
-			// Handle completed reservations
-			$completedResSql = "SELECT id FROM bb_completed_reservation WHERE reservation_id = :id AND reservation_type = 'event' AND export_file_id IS NULL";
-			$completedResStmt = $this->db->prepare($completedResSql);
-			$completedResStmt->execute([':id' => $id]);
-			$completedRes = $completedResStmt->fetch(PDO::FETCH_ASSOC);
-
-			if ($completedRes)
-			{
-				$deleteCompResResourceSql = "DELETE FROM bb_completed_reservation_resource WHERE completed_reservation_id = :comp_res_id";
-				$deleteCompResResourceStmt = $this->db->prepare($deleteCompResResourceSql);
-				$deleteCompResResourceStmt->execute([':comp_res_id' => $completedRes['id']]);
-
-				$deleteCompResSql = "DELETE FROM bb_completed_reservation WHERE id = :comp_res_id";
-				$deleteCompResStmt = $this->db->prepare($deleteCompResSql);
-				$deleteCompResStmt->execute([':comp_res_id' => $completedRes['id']]);
-			}
-
-			// Finally delete the event itself
-			$deleteEventSql = "DELETE FROM bb_event WHERE id = :id";
-			$deleteEventStmt = $this->db->prepare($deleteEventSql);
-			$deleteEventStmt->execute([':id' => $id]);
-
-			$this->db->commit();
-			return true;
+		foreach ($relatedTables as $table) {
+			$sql = "DELETE FROM $table WHERE event_id = :event_id";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([':event_id' => $id]);
 		}
-		catch (Exception $e)
-		{
-			$this->db->rollback();
-			error_log("Error deleting event: " . $e->getMessage());
-			return false;
+
+		// Handle purchase orders
+		$orderSql = "SELECT id, parent_id FROM bb_purchase_order WHERE reservation_type = 'event' AND reservation_id = :id";
+		$orderStmt = $this->db->prepare($orderSql);
+		$orderStmt->execute([':id' => $id]);
+		$order = $orderStmt->fetch(PDO::FETCH_ASSOC);
+
+		if ($order) {
+			if ($order['parent_id']) {
+				// Delete child order
+				$deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
+				$deleteOrderStmt = $this->db->prepare($deleteOrderSql);
+				$deleteOrderStmt->execute([':order_id' => $order['id']]);
+			} else {
+				// Handle parent order - delete children first
+				$deleteChildOrdersSql = "DELETE FROM bb_purchase_order WHERE parent_id = :parent_id";
+				$deleteChildOrdersStmt = $this->db->prepare($deleteChildOrdersSql);
+				$deleteChildOrdersStmt->execute([':parent_id' => $order['id']]);
+
+				// Then delete parent
+				$deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
+				$deleteOrderStmt = $this->db->prepare($deleteOrderSql);
+				$deleteOrderStmt->execute([':order_id' => $order['id']]);
+			}
+		}
+
+		// Handle completed reservations
+		$completedResSql = "SELECT id FROM bb_completed_reservation WHERE reservation_id = :id AND reservation_type = 'event' AND export_file_id IS NULL";
+		$completedResStmt = $this->db->prepare($completedResSql);
+		$completedResStmt->execute([':id' => $id]);
+		$completedRes = $completedResStmt->fetch(PDO::FETCH_ASSOC);
+
+		if ($completedRes) {
+			$deleteCompResResourceSql = "DELETE FROM bb_completed_reservation_resource WHERE completed_reservation_id = :comp_res_id";
+			$deleteCompResResourceStmt = $this->db->prepare($deleteCompResResourceSql);
+			$deleteCompResResourceStmt->execute([':comp_res_id' => $completedRes['id']]);
+
+			$deleteCompResSql = "DELETE FROM bb_completed_reservation WHERE id = :comp_res_id";
+			$deleteCompResStmt = $this->db->prepare($deleteCompResSql);
+			$deleteCompResStmt->execute([':comp_res_id' => $completedRes['id']]);
 		}
 	}
 
 	/**
-	 * Load event by ID
+	 * Override BaseModel's find method to load Event-specific relationships
 	 */
-	public static function find(int $id): ?self
+	public static function find(int $id): ?static
 	{
-		$db = Db::getInstance();
-
-		$sql = "SELECT * FROM bb_event WHERE id = :id";
-		$stmt = $db->prepare($sql);
-		$stmt->execute([':id' => $id]);
-		$data = $stmt->fetch(PDO::FETCH_ASSOC);
-
-		if (!$data)
-		{
-			return null;
+		$event = parent::find($id);
+		if ($event) {
+			// Load associated resources
+			$resourceSql = "SELECT resource_id FROM bb_event_resource WHERE event_id = :event_id";
+			$resourceStmt = $event->db->prepare($resourceSql);
+			$resourceStmt->execute([':event_id' => $id]);
+			$event->resources = $resourceStmt->fetchAll(PDO::FETCH_COLUMN);
 		}
-
-		$event = new self($data);
-
-		// Load associated resources
-		$resourceSql = "SELECT resource_id FROM bb_event_resource WHERE event_id = :event_id";
-		$resourceStmt = $db->prepare($resourceSql);
-		$resourceStmt->execute([':event_id' => $id]);
-		$event->resources = $resourceStmt->fetchAll(PDO::FETCH_COLUMN);
-
 		return $event;
 	}
 
@@ -1026,338 +788,46 @@ class Event
 	}
 
 	/**
-	 * Get relationship metadata (joins, many-to-many mappings)
-	 * Based on legacy soevent field definitions
-	 */
-	protected static function getRelationshipMap(): array
-	{
-		return [
-			'audience' => [
-				'type' => 'many_to_many',
-				'table' => 'bb_event_audience',
-				'local_key' => 'event_id',
-				'foreign_key' => 'audience_id',
-				'target_table' => 'bb_audience',
-				'target_key' => 'id',
-				'select_fields' => ['id', 'name', 'description'],
-			],
-			'agegroups' => [
-				'type' => 'many_to_many',
-				'table' => 'bb_event_agegroup',
-				'local_key' => 'event_id',
-				'foreign_key' => 'agegroup_id',
-				'target_table' => 'bb_agegroup',
-				'target_key' => 'id',
-				'select_fields' => ['id', 'name', 'sort'],
-			],
-			'comments' => [
-				'type' => 'one_to_many',
-				'table' => 'bb_event_comment',
-				'local_key' => 'event_id',
-				'foreign_key' => 'event_id',
-				'select_fields' => ['id', 'event_id', 'comment', 'type', 'time', 'author', 'author_name'],
-				'order_by' => 'time DESC',
-			],
-			'costs' => [
-				'type' => 'one_to_many',
-				'table' => 'bb_event_cost',
-				'local_key' => 'event_id',
-				'foreign_key' => 'event_id',
-				'select_fields' => ['id', 'event_id', 'cost', 'description'],
-			],
-			'dates' => [
-				'type' => 'one_to_many',
-				'table' => 'bb_event_date',
-				'local_key' => 'event_id',
-				'foreign_key' => 'event_id',
-				'select_fields' => ['id', 'event_id', 'from_', 'to_'],
-				'order_by' => 'from_ ASC',
-			],
-			'resources' => [
-				'type' => 'many_to_many',
-				'table' => 'bb_event_resource',
-				'local_key' => 'event_id',
-				'foreign_key' => 'resource_id',
-				'target_table' => 'bb_resource',
-				'target_key' => 'id',
-				'select_fields' => ['id', 'name', 'type', 'sort', 'active'],
-			],
-			'building_info' => [
-				'type' => 'join',
-				'join_type' => 'LEFT',
-				'table' => 'bb_building',
-				'alias' => 'bld',
-				'on' => 'bld.id = (SELECT DISTINCT bb_building_resource.building_id FROM bb_building_resource JOIN bb_event_resource ON bb_building_resource.resource_id = bb_event_resource.resource_id WHERE bb_event_resource.event_id = bb_event.id LIMIT 1)',
-				'select_fields' => ['bld.id as building_id', 'bld.name as building_name'],
-			],
-			'activity_info' => [
-				'type' => 'join',
-				'join_type' => 'LEFT',
-				'table' => 'bb_activity',
-				'alias' => 'act',
-				'on' => 'act.id = bb_event.activity_id',
-				'select_fields' => ['act.id as activity_id', 'act.name as activity_name', 'act.description as activity_description'],
-			],
-			'application_info' => [
-				'type' => 'join',
-				'join_type' => 'LEFT',
-				'table' => 'bb_application',
-				'alias' => 'app',
-				'on' => 'app.id = bb_event.application_id',
-				'select_fields' => ['app.id as application_id', 'app.name as application_name', 'app.status as application_status'],
-			],
-		];
-	}
-
-	/**
-	 * Load a specific relationship
-	 */
-	public function loadRelationship(string $relationshipName): ?array
-	{
-		if (!$this->id) {
-			return null;
-		}
-
-		$relationships = static::getRelationshipMap();
-		if (!isset($relationships[$relationshipName])) {
-			return null;
-		}
-
-		$config = $relationships[$relationshipName];
-		$db = Db::getInstance();
-
-		switch ($config['type']) {
-			case 'many_to_many':
-				return $this->loadManyToManyRelationship($config);
-
-			case 'one_to_many':
-				return $this->loadOneToManyRelationship($config);
-
-			case 'join':
-				// Joins are typically loaded with the main query, but can be loaded separately
-				return $this->loadJoinRelationship($config);
-
-			default:
-				return null;
-		}
-	}
-
-	/**
-	 * Load many-to-many relationship data
-	 */
-	protected function loadManyToManyRelationship(array $config): array
-	{
-		$db = Db::getInstance();
-
-		$fields = implode(', ', array_map(function($field) use ($config) {
-			return "t.{$field}";
-		}, $config['select_fields']));
-
-		$sql = "
-			SELECT {$fields}
-			FROM {$config['target_table']} t
-			JOIN {$config['table']} jt ON t.{$config['target_key']} = jt.{$config['foreign_key']}
-			WHERE jt.{$config['local_key']} = :event_id
-		";
-
-		if (isset($config['order_by'])) {
-			$sql .= " ORDER BY {$config['order_by']}";
-		}
-
-		$stmt = $db->prepare($sql);
-		$stmt->execute([':event_id' => $this->id]);
-		return $stmt->fetchAll(PDO::FETCH_ASSOC);
-	}
-
-	/**
-	 * Load one-to-many relationship data
-	 */
-	protected function loadOneToManyRelationship(array $config): array
-	{
-		$db = Db::getInstance();
-
-		$fields = implode(', ', $config['select_fields']);
-		$sql = "SELECT {$fields} FROM {$config['table']} WHERE {$config['foreign_key']} = :event_id";
-
-		if (isset($config['order_by'])) {
-			$sql .= " ORDER BY {$config['order_by']}";
-		}
-
-		$stmt = $db->prepare($sql);
-		$stmt->execute([':event_id' => $this->id]);
-		return $stmt->fetchAll(PDO::FETCH_ASSOC);
-	}
-
-	/**
-	 * Load join relationship data
-	 */
-	protected function loadJoinRelationship(array $config): ?array
-	{
-		$db = Db::getInstance();
-
-		$fields = implode(', ', $config['select_fields']);
-		$sql = "
-			SELECT {$fields}
-			FROM bb_event
-			{$config['join_type']} JOIN {$config['table']} {$config['alias']} ON {$config['on']}
-			WHERE bb_event.id = :event_id
-		";
-
-		$stmt = $db->prepare($sql);
-		$stmt->execute([':event_id' => $this->id]);
-		$result = $stmt->fetch(PDO::FETCH_ASSOC);
-		return $result ?: null;
-	}
-
-	/**
-	 * Get audience for this event (lazy loaded)
+	 * Convenience methods for relationships (use BaseModel's loadRelationship)
 	 */
 	public function getAudience(): array
 	{
-		if ($this->_audience === null) {
-			$this->_audience = $this->loadRelationship('audience') ?? [];
-		}
-		return $this->_audience;
+		return $this->loadRelationship('audience') ?? [];
 	}
 
-	/**
-	 * Get age groups for this event (lazy loaded)
-	 */
 	public function getAgegroups(): array
 	{
-		if ($this->_agegroups === null) {
-			$this->_agegroups = $this->loadRelationship('agegroups') ?? [];
-		}
-		return $this->_agegroups;
+		return $this->loadRelationship('agegroups') ?? [];
 	}
 
-	/**
-	 * Get comments for this event (lazy loaded)
-	 */
 	public function getComments(): array
 	{
-		if ($this->_comments === null) {
-			$this->_comments = $this->loadRelationship('comments') ?? [];
-		}
-		return $this->_comments;
+		return $this->loadRelationship('comments') ?? [];
 	}
 
-	/**
-	 * Get costs for this event (lazy loaded)
-	 */
 	public function getCosts(): array
 	{
-		if ($this->_costs === null) {
-			$this->_costs = $this->loadRelationship('costs') ?? [];
-		}
-		return $this->_costs;
+		return $this->loadRelationship('costs') ?? [];
 	}
 
-	/**
-	 * Get dates for this event (lazy loaded)
-	 */
 	public function getDates(): array
 	{
-		if ($this->_dates === null) {
-			$this->_dates = $this->loadRelationship('dates') ?? [];
-		}
-		return $this->_dates;
+		return $this->loadRelationship('dates') ?? [];
 	}
 
-	/**
-	 * Get building information for this event (lazy loaded)
-	 */
 	public function getBuildingInfo(): ?array
 	{
-		if ($this->_building_info === null) {
-			$this->_building_info = $this->loadRelationship('building_info');
-		}
-		return $this->_building_info;
+		return $this->loadRelationship('building_info');
 	}
 
-	/**
-	 * Get activity information for this event (lazy loaded)
-	 */
 	public function getActivityInfo(): ?array
 	{
-		if ($this->_activity_info === null) {
-			$this->_activity_info = $this->loadRelationship('activity_info');
-		}
-		return $this->_activity_info;
+		return $this->loadRelationship('activity_info');
 	}
 
-	/**
-	 * Get application information for this event (lazy loaded)
-	 */
 	public function getApplicationInfo(): ?array
 	{
-		if ($this->_application_info === null) {
-			$this->_application_info = $this->loadRelationship('application_info');
-		}
-		return $this->_application_info;
-	}
-
-	/**
-	 * Load all relationships at once for performance
-	 */
-	public function loadAllRelationships(): void
-	{
-		$relationships = array_keys(static::getRelationshipMap());
-		foreach ($relationships as $relationship) {
-			$this->loadRelationship($relationship);
-		}
-	}
-
-	/**
-	 * Save many-to-many relationships
-	 */
-	public function saveRelationship(string $relationshipName, array $ids): bool
-	{
-		if (!$this->id) {
-			return false;
-		}
-
-		$relationships = static::getRelationshipMap();
-		if (!isset($relationships[$relationshipName]) || $relationships[$relationshipName]['type'] !== 'many_to_many') {
-			return false;
-		}
-
-		$config = $relationships[$relationshipName];
-		$db = Db::getInstance();
-
-		try {
-			$db->beginTransaction();
-
-			// Delete existing relationships
-			$deleteSql = "DELETE FROM {$config['table']} WHERE {$config['local_key']} = :event_id";
-			$deleteStmt = $db->prepare($deleteSql);
-			$deleteStmt->execute([':event_id' => $this->id]);
-
-			// Insert new relationships
-			if (!empty($ids)) {
-				$insertSql = "INSERT INTO {$config['table']} ({$config['local_key']}, {$config['foreign_key']}) VALUES (:event_id, :foreign_id)";
-				$insertStmt = $db->prepare($insertSql);
-
-				foreach ($ids as $foreignId) {
-					$insertStmt->execute([
-						':event_id' => $this->id,
-						':foreign_id' => $foreignId
-					]);
-				}
-			}
-
-			$db->commit();
-			// Clear cached relationship data
-			$propertyName = "_{$relationshipName}";
-			if (property_exists($this, $propertyName)) {
-				$this->$propertyName = null;
-			}
-			return true;
-		} catch (Exception $e) {
-			$db->rollback();
-			error_log("Error saving relationship {$relationshipName}: " . $e->getMessage());
-			return false;
-		}
+		return $this->loadRelationship('application_info');
 	}
 
 	/**
@@ -1369,9 +839,8 @@ class Event
 			return false;
 		}
 
-		$db = Db::getInstance();
 		$sql = "INSERT INTO bb_event_comment (event_id, comment, type, time, author, author_name) VALUES (:event_id, :comment, :type, :time, :author, :author_name)";
-		$stmt = $db->prepare($sql);
+		$stmt = $this->db->prepare($sql);
 
 		try {
 			$result = $stmt->execute([
@@ -1383,8 +852,11 @@ class Event
 				':author_name' => $authorName
 			]);
 
-			// Clear cached comments
-			$this->_comments = null;
+			// Clear cached comments to force reload
+			if (isset($this->_relationshipCache['comments'])) {
+				unset($this->_relationshipCache['comments']);
+			}
+			
 			return $result;
 		} catch (Exception $e) {
 			error_log("Error adding comment: " . $e->getMessage());
@@ -1401,9 +873,8 @@ class Event
 			return false;
 		}
 
-		$db = Db::getInstance();
 		$sql = "INSERT INTO bb_event_cost (event_id, cost, description) VALUES (:event_id, :cost, :description)";
-		$stmt = $db->prepare($sql);
+		$stmt = $this->db->prepare($sql);
 
 		try {
 			$result = $stmt->execute([
@@ -1412,8 +883,11 @@ class Event
 				':description' => $description
 			]);
 
-			// Clear cached costs
-			$this->_costs = null;
+			// Clear cached costs to force reload
+			if (isset($this->_relationshipCache['costs'])) {
+				unset($this->_relationshipCache['costs']);
+			}
+			
 			return $result;
 		} catch (Exception $e) {
 			error_log("Error adding cost: " . $e->getMessage());
@@ -1430,9 +904,8 @@ class Event
 			return false;
 		}
 
-		$db = Db::getInstance();
 		$sql = "INSERT INTO bb_event_date (event_id, from_, to_) VALUES (:event_id, :from_, :to_)";
-		$stmt = $db->prepare($sql);
+		$stmt = $this->db->prepare($sql);
 
 		try {
 			$result = $stmt->execute([
@@ -1441,8 +914,11 @@ class Event
 				':to_' => $to
 			]);
 
-			// Clear cached dates
-			$this->_dates = null;
+			// Clear cached dates to force reload
+			if (isset($this->_relationshipCache['dates'])) {
+				unset($this->_relationshipCache['dates']);
+			}
+			
 			return $result;
 		} catch (Exception $e) {
 			error_log("Error adding date: " . $e->getMessage());

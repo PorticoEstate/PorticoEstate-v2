@@ -70,13 +70,45 @@ $datbaseProvider->register($container);
 $webSocketProvider->register($container);
 
 // Register WebSocket routes class
-$container->set(Routes::class, function($c) {
-    // Get the WebSocketServer instance from the container
-    return new Routes($c->get(\App\WebSocket\WebSocketServer::class));
+$container->set(Routes::class, function ($c)
+{
+	// Get the WebSocketServer instance from the container
+	return new Routes($c->get(\App\WebSocket\WebSocketServer::class));
 });
 
 //require all routes
 require_once __DIR__ . '/src/routes/RegisterRoutes.php';
+
+// Load generic registry routes with error handling
+try
+{
+	$genericRegistryRoutes = require __DIR__ . '/src/routes/generic_registry.php';
+	if (is_callable($genericRegistryRoutes))
+	{
+		$genericRegistryRoutes($app);
+	}
+	else
+	{
+		error_log('Generic registry routes file did not return a callable');
+	}
+}
+catch (Exception $e)
+{
+	error_log('Failed to load generic registry routes: ' . $e->getMessage());
+	// Optionally continue without these routes rather than failing completely
+}
+
+// Test route registration (remove in production)
+// if (isset($_GET['test_routes']))
+// {
+// 	$routes = $app->getRouteCollector()->getRoutes();
+// 	echo "Registered routes:\n<br/>";
+// 	foreach ($routes as $route)
+// 	{
+// 		echo $route->getPattern() . " (" . implode(', ', $route->getMethods()) . ")\n<br/>";
+// 	}
+// 	exit;
+// }
 
 $displayErrorDetails = true; // Set to false in production
 $logErrors = true;

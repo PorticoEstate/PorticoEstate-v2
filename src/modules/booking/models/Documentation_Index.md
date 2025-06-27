@@ -33,6 +33,12 @@ This directory contains comprehensive documentation for the BaseModel system in 
   - Database integration
   - Performance considerations
 
+- **[GenericRegistry_Documentation.md](GenericRegistry_Documentation.md)** - Generic Registry System guide
+  - Configuration-driven multi-entity handling
+  - Single controller/model for multiple registry types
+  - REST API for simple CRUD operations
+  - Migration from legacy sogeneric pattern
+
 ### Migration and Refactoring
 - **[Event_Refactoring_Summary.md](Event_Refactoring_Summary.md)** - Event model refactoring details
   - What was changed

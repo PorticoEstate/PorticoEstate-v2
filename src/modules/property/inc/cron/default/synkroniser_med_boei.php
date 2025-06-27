@@ -1635,7 +1635,7 @@ SQL;
 		$metadata = $this->db->metadata('fm_location1');
 
 
-		$sql = " SELECT boei_objekt.objekt_id,bydel_id,tjenestested,navn,boei_objekt.eier_id, kostra_id, fm_owner_category.id as owner_type_id"
+		$sql = " SELECT boei_objekt.objekt_id,bydel_id,tjenestested,boei_objekt.navn,boei_objekt.eier_id, kostra_id, fm_owner_category.id as owner_type_id"
 			. " FROM boei_objekt 
 				JOIN fm_location1 ON boei_objekt.objekt_id = fm_location1.loc1
 				JOIN fm_owner_category ON fm_location1.owner_id = fm_owner_category.id"

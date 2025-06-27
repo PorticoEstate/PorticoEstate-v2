@@ -222,53 +222,54 @@ class EventController
 	private function sanitizeEventData(array $eventData): array
 	{
 		$sanitizedData = [];
-		
+
 		// Get sanitization rules from the Event model
 		$sanitizationRules = Event::getSanitizationRules();
 		$arrayElementTypes = Event::getArrayElementTypes();
-		
-		foreach ($eventData as $key => $value) 
+
+		foreach ($eventData as $key => $value)
 		{
 			// Skip null/empty values unless it's an explicit false/0
-			if ($value === null || ($value === '' && $value !== '0' && $value !== 0 && $value !== false)) 
+			if ($value === null || ($value === '' && $value !== '0' && $value !== 0 && $value !== false))
 			{
 				continue;
 			}
-			
+
 			$sanitizationType = $sanitizationRules[$key] ?? 'string';
-			
-			try 
+
+			try
 			{
-				switch ($sanitizationType) 
+				switch ($sanitizationType)
 				{
 					case 'html':
 						// Allow some HTML but sanitize it thoroughly
 						$sanitizedData[$key] = Sanitizer::clean_html($value);
 						break;
-						
+
 					case 'array_int':
 						// Handle arrays of integers (like resource_ids)
 						$sanitizedData[$key] = $this->sanitizeIntegerArray($value);
 						break;
-						
+
 					case 'array_string':
 						// Handle arrays of strings
 						$sanitizedData[$key] = $this->sanitizeStringArray($value);
 						break;
-						
+
 					case 'array':
 						// Generic array handling (fallback)
-						if (is_array($value)) 
+						if (is_array($value))
 						{
-							$sanitizedData[$key] = array_map(function($v) {
+							$sanitizedData[$key] = array_map(function ($v)
+							{
 								return Sanitizer::clean_value($v, 'string');
 							}, $value);
-						} 
+						}
 						break;
-						
+
 					default:
 						// Check if it's a typed array
-						if (isset($arrayElementTypes[$sanitizationType])) 
+						if (isset($arrayElementTypes[$sanitizationType]))
 						{
 							$elementType = $arrayElementTypes[$sanitizationType];
 							$sanitizedData[$key] = $this->sanitizeTypedArray($value, $elementType);
@@ -280,17 +281,17 @@ class EventController
 						}
 						break;
 				}
-			} 
-			catch (Exception $e) 
+			}
+			catch (Exception $e)
 			{
 				// Log sanitization errors but don't fail the request
 				error_log("Sanitization error for field '$key': " . $e->getMessage());
-				
+
 				// Apply basic string sanitization as fallback
 				$sanitizedData[$key] = Sanitizer::clean_value($value, 'string');
 			}
 		}
-		
+
 		return $sanitizedData;
 	}
 
@@ -299,18 +300,22 @@ class EventController
 	 */
 	private function sanitizeIntegerArray($value): array
 	{
-		if (is_array($value)) 
+		if (is_array($value))
 		{
-			return array_map('intval', array_filter($value, function($v) {
+			return array_map('intval', array_filter($value, function ($v)
+			{
 				return is_numeric($v) && $v > 0;
 			}));
-		} 
-		elseif (is_string($value)) 
+		}
+		elseif (is_string($value))
 		{
 			// Handle comma-separated strings
 			return array_map('intval', array_filter(
-				explode(',', $value), 
-				function($v) { return is_numeric(trim($v)) && intval(trim($v)) > 0; }
+				explode(',', $value),
+				function ($v)
+				{
+					return is_numeric(trim($v)) && intval(trim($v)) > 0;
+				}
 			));
 		}
 		return [];
@@ -321,20 +326,24 @@ class EventController
 	 */
 	private function sanitizeStringArray($value): array
 	{
-		if (is_array($value)) 
+		if (is_array($value))
 		{
-			return array_map(function($v) {
+			return array_map(function ($v)
+			{
 				return Sanitizer::clean_value($v, 'string');
-			}, array_filter($value, function($v) {
+			}, array_filter($value, function ($v)
+			{
 				return !empty(trim($v ?? ''));
 			}));
-		} 
-		elseif (is_string($value)) 
+		}
+		elseif (is_string($value))
 		{
 			// Handle comma-separated strings
-			return array_map(function($v) {
+			return array_map(function ($v)
+			{
 				return Sanitizer::clean_value(trim($v), 'string');
-			}, array_filter(explode(',', $value), function($v) {
+			}, array_filter(explode(',', $value), function ($v)
+			{
 				return !empty(trim($v));
 			}));
 		}
@@ -346,20 +355,24 @@ class EventController
 	 */
 	private function sanitizeTypedArray($value, string $elementType): array
 	{
-		if (is_array($value)) 
+		if (is_array($value))
 		{
-			return array_map(function($v) use ($elementType) {
+			return array_map(function ($v) use ($elementType)
+			{
 				return Sanitizer::clean_value($v, $elementType);
-			}, array_filter($value, function($v) {
+			}, array_filter($value, function ($v)
+			{
 				return $v !== null && $v !== '';
 			}));
-		} 
-		elseif (is_string($value)) 
+		}
+		elseif (is_string($value))
 		{
 			// Handle comma-separated strings
-			return array_map(function($v) use ($elementType) {
+			return array_map(function ($v) use ($elementType)
+			{
 				return Sanitizer::clean_value(trim($v), $elementType);
-			}, array_filter(explode(',', $value), function($v) {
+			}, array_filter(explode(',', $value), function ($v)
+			{
 				return !empty(trim($v));
 			}));
 		}
@@ -1028,11 +1041,13 @@ class EventController
 	 */
 	public function getEventAudience(Request $request, Response $response, array $args): Response
 	{
-		try {
+		try
+		{
 			$eventId = (int) $args['id'];
 			$event = Event::find($eventId);
 
-			if (!$event) {
+			if (!$event)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Event not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
@@ -1045,7 +1060,9 @@ class EventController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
@@ -1085,11 +1102,13 @@ class EventController
 	 */
 	public function getEventComments(Request $request, Response $response, array $args): Response
 	{
-		try {
+		try
+		{
 			$eventId = (int) $args['id'];
 			$event = Event::find($eventId);
 
-			if (!$event) {
+			if (!$event)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Event not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
@@ -1102,7 +1121,9 @@ class EventController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
@@ -1146,18 +1167,21 @@ class EventController
 	 */
 	public function addEventComment(Request $request, Response $response, array $args): Response
 	{
-		try {
+		try
+		{
 			$eventId = (int) $args['id'];
 			$event = Event::find($eventId);
 
-			if (!$event) {
+			if (!$event)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Event not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
 
 			$data = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
 
-			if (empty($data['comment'])) {
+			if (empty($data['comment']))
+			{
 				$response->getBody()->write(json_encode(['error' => 'Comment text is required']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
@@ -1169,7 +1193,8 @@ class EventController
 
 			$success = $event->addComment($comment, $type, $author, $authorName);
 
-			if (!$success) {
+			if (!$success)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Failed to add comment']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 			}
@@ -1181,7 +1206,9 @@ class EventController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(201);
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
@@ -1218,11 +1245,13 @@ class EventController
 	 */
 	public function getEventDates(Request $request, Response $response, array $args): Response
 	{
-		try {
+		try
+		{
 			$eventId = (int) $args['id'];
 			$event = Event::find($eventId);
 
-			if (!$event) {
+			if (!$event)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Event not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
@@ -1235,7 +1264,9 @@ class EventController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
@@ -1271,11 +1302,13 @@ class EventController
 	 */
 	public function getEventBuildingInfo(Request $request, Response $response, array $args): Response
 	{
-		try {
+		try
+		{
 			$eventId = (int) $args['id'];
 			$event = Event::find($eventId);
 
-			if (!$event) {
+			if (!$event)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Event not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
@@ -1288,7 +1321,9 @@ class EventController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}
@@ -1329,30 +1364,35 @@ class EventController
 	 */
 	public function updateEventAudience(Request $request, Response $response, array $args): Response
 	{
-		try {
+		try
+		{
 			$eventId = (int) $args['id'];
 			$event = Event::find($eventId);
 
-			if (!$event) {
+			if (!$event)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Event not found']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
 			}
 
 			$data = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true) ?? [];
 
-			if (!isset($data['audience_ids']) || !is_array($data['audience_ids'])) {
+			if (!isset($data['audience_ids']) || !is_array($data['audience_ids']))
+			{
 				$response->getBody()->write(json_encode(['error' => 'audience_ids must be an array']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
 			}
 
 			// Sanitize audience IDs
-			$audienceIds = array_map(function($id) {
+			$audienceIds = array_map(function ($id)
+			{
 				return Sanitizer::clean_value($id, 'int');
 			}, $data['audience_ids']);
 
 			$success = $event->saveRelationship('audience', $audienceIds);
 
-			if (!$success) {
+			if (!$success)
+			{
 				$response->getBody()->write(json_encode(['error' => 'Failed to update audience relationships']));
 				return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 			}
@@ -1364,7 +1404,9 @@ class EventController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}

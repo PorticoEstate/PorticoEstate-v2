@@ -85,7 +85,7 @@ try
 	$genericRegistryRoutes = require __DIR__ . '/src/routes/generic_registry.php';
 	if (is_callable($genericRegistryRoutes))
 	{
-		$genericRegistryRoutes($app);
+		$genericRegistryRoutes($app, $container);
 	}
 	else
 	{

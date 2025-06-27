@@ -6,10 +6,12 @@
  */
 
 use App\modules\booking\controllers\GenericRegistryController;
+use App\modules\phpgwapi\security\AccessVerifier;
+use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use Slim\App;
 use Slim\Routing\RouteCollectorProxy;
 
-return function (App $app)
+return function (App $app) use ($container)
 {
 	$app->group('/api/registry', function (RouteCollectorProxy $group)
 	{
@@ -34,5 +36,7 @@ return function (App $app)
 			$typeGroup->put('/{id:[0-9]+}', [GenericRegistryController::class, 'update']); // Update item
 			$typeGroup->delete('/{id:[0-9]+}', [GenericRegistryController::class, 'delete']); // Delete item
 		});
-	});
+	})
+//	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
 };

@@ -61,6 +61,29 @@ $controller->setRegistryClass(BookingGenericRegistry::class);
 /api/registry/{type}/{id}              # Falls back to booking module
 ```
 
+## Route Organization Update
+
+**✅ IMPORTANT**: As of the latest update, registry routes have been moved from the global location to module-specific route files.
+
+### Old Structure (Deprecated)
+```
+src/routes/generic_registry.php  # ❌ REMOVED
+```
+
+### New Structure (Current)
+```
+src/modules/booking/routes/Routes.php  # ✅ Contains booking registry routes
+src/modules/property/routes/Routes.php # ✅ Would contain property registry routes
+src/modules/admin/routes/Routes.php    # ✅ Would contain admin registry routes
+```
+
+### Benefits of Module-Specific Routes
+- **Better Organization**: Routes are organized by module
+- **Clearer Responsibility**: Each module manages its own routes
+- **Easier Maintenance**: Route changes are contained within modules
+- **Scalability**: New modules can independently add registry routes
+- **Global Controller**: Still uses the global GenericRegistryController
+
 ## Module Implementation
 
 ### Step 1: Create Module Registry

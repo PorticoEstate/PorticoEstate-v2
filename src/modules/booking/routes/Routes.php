@@ -9,6 +9,8 @@ use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use App\modules\booking\controllers\VippsController;
 use App\modules\booking\controllers\ResourceController;
 use App\modules\booking\controllers\EventController;
+use App\controllers\GenericRegistryController;
+use App\modules\booking\models\BookingGenericRegistry;
 
 
 $app->group('/booking/users', function (RouteCollectorProxy $group) {
@@ -45,7 +47,36 @@ $app->get('/booking/getpendingtransactions/vipps', VippsController::class . ':ge
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));
 
+
+
+$app->group('/booking/registry', function (RouteCollectorProxy $group) use ($container)
+{
+	// Create controller instance with BookingGenericRegistry
+	$controller = new GenericRegistryController(BookingGenericRegistry::class);
+
+	// Get available registry types
+	$group->get('/types', [$controller, 'types']);
+
+	// Registry type routes
+	$group->group('/{type}', function (RouteCollectorProxy $typeGroup) use ($controller)
+	{
+		// Get schema/field information for a registry type
+		$typeGroup->get('/schema', [$controller, 'schema']);
+
+		// Get list for dropdowns/selects
+		$typeGroup->get('/list', [$controller, 'getList']);
+
+		// CRUD operations
+		$typeGroup->get('', [$controller, 'index']); // List items
+		$typeGroup->post('', [$controller, 'store']); // Create new item
+		$typeGroup->get('/{id:[0-9]+}', [$controller, 'show']); // Get single item
+		$typeGroup->put('/{id:[0-9]+}', [$controller, 'update']); // Update item
+		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
+	});
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
 $app->get('/booking[/{params:.*}]', RedirectHelper::class . ':process')
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));
-

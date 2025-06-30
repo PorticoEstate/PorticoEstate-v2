@@ -86,8 +86,7 @@ abstract class GenericRegistry extends BaseModel
 	 */
 	public function getInstanceFieldMap(): array
 	{
-		if (!$this->registryConfig)
-		{
+		if (!$this->registryConfig) {
 			return [];
 		}
 
@@ -101,8 +100,7 @@ abstract class GenericRegistry extends BaseModel
 		];
 
 		// Add configured fields
-		foreach ($this->registryConfig['fields'] as $field)
-		{
+		foreach ($this->registryConfig['fields'] as $field) {
 			$fieldMap[$field['name']] = [
 				'type' => $this->mapFieldType($field['type']),
 				'required' => !isset($field['nullable']) || !$field['nullable'],
@@ -110,18 +108,30 @@ abstract class GenericRegistry extends BaseModel
 			];
 
 			// Add additional field properties
-			if (isset($field['maxlength']))
-			{
+			if (isset($field['maxlength'])) {
 				$fieldMap[$field['name']]['maxLength'] = $field['maxlength'];
 			}
-			if (isset($field['filter']) && $field['filter'])
-			{
+			if (isset($field['filter']) && $field['filter']) {
 				$fieldMap[$field['name']]['query'] = true;
 			}
-			if (isset($field['values_def']))
-			{
+			if (isset($field['values_def'])) {
 				$fieldMap[$field['name']]['values_def'] = $field['values_def'];
 			}
+		}
+
+		// Add custom fields if location_id is configured
+		$customFields = $this->getInstanceCustomFields();
+		foreach ($customFields as $customField) {
+			$fieldName = $customField['column_name'];
+			
+			// Skip if field already exists in static definition
+			if (isset($fieldMap[$fieldName])) {
+				continue;
+			}
+			
+			// Use BaseModel's method to convert custom field to field config
+			$fieldConfig = parent::convertCustomFieldToFieldConfig($customField);
+			$fieldMap[$fieldName] = $fieldConfig;
 		}
 
 		return $fieldMap;
@@ -250,7 +260,7 @@ abstract class GenericRegistry extends BaseModel
 	}
 
 	/**
-	 * Override getCompleteFieldMap to return registry-specific fields
+	 * Override getCompleteFieldMap to return registry-specific fields including custom fields
 	 * This is tricky because BaseModel expects static methods but we need instance data
 	 * We'll use a workaround with thread-local storage
 	 */
@@ -258,8 +268,7 @@ abstract class GenericRegistry extends BaseModel
 	{
 		// Try to get current instance context
 		$instance = static::getCurrentInstance();
-		if ($instance && $instance->registryConfig)
-		{
+		if ($instance && $instance->registryConfig) {
 			return $instance->getInstanceFieldMap();
 		}
 
@@ -268,14 +277,27 @@ abstract class GenericRegistry extends BaseModel
 	}
 
 	/**
+	 * Override getCustomFieldsJsonField for registry-specific JSON storage
+	 */
+	protected static function getCustomFieldsJsonField(): ?string
+	{
+		$instance = static::getCurrentInstance();
+		if ($instance && $instance->registryConfig) {
+			// Check if the registry config specifies JSON storage for custom fields
+			return $instance->registryConfig['custom_fields_json_field'] ?? 'json_representation';
+		}
+		return null;
+	}
+
+	/**
 	 * Thread-local storage for current instance
 	 */
 	private static ?GenericRegistry $currentInstance = null;
 
 	/**
-	 * Set current instance for static method context
+	 * Set current instance for static method context (public for testing)
 	 */
-	private static function setCurrentInstance(?GenericRegistry $instance): void
+	public static function setCurrentInstance(?GenericRegistry $instance): void
 	{
 		static::$currentInstance = $instance;
 	}
@@ -331,28 +353,35 @@ abstract class GenericRegistry extends BaseModel
 	}
 
 	/**
-	 * Custom fields support - based on registry type
+	 * Custom fields support - override BaseModel method to work with instance context
 	 */
 	protected static function getCustomFieldsLocationId(): ?int
 	{
-		// This would need to be called on instances, not statically
+		$instance = static::getCurrentInstance();
+		if ($instance) {
+			return $instance->getInstanceCustomFieldsLocationId();
+		}
 		return null;
 	}
 
 	/**
-	 * Instance method for custom fields
+	 * Instance method for custom fields (public for testing)
 	 */
-	protected function getInstanceCustomFieldsLocationId(): ?int
+	public function getInstanceCustomFieldsLocationId(): ?int
 	{
-		if (!$this->registryConfig)
-		{
+		if (!$this->registryConfig) {
 			return null;
 		}
 
 		$app = $this->registryConfig['acl_app'] ?? 'booking';
 		$location = $this->registryConfig['acl_location'] ?? '.admin';
 
-		return static::getLocationId($app, $location);
+		try {
+			return static::getLocationId($app, $location);
+		} catch (\Exception $e) {
+			error_log("Error getting location_id for {$app}.{$location}: " . $e->getMessage());
+			return null;
+		}
 	}
 
 	/**
@@ -388,6 +417,38 @@ abstract class GenericRegistry extends BaseModel
 		if (!$this->registryConfig)
 		{
 			throw new \Exception("Registry type not configured: {$this->registryType}");
+		}
+	}
+
+	/**
+	 * Get custom fields for this registry instance (public for testing)
+	 */
+	public function getInstanceCustomFields(): array
+	{
+		$locationId = $this->getInstanceCustomFieldsLocationId();
+		if ($locationId === null) {
+			return [];
+		}
+
+		try {
+			// Create instance of phpgwapi_custom_fields
+			$customFields = new \phpgwapi_custom_fields();
+			
+			// Get custom fields for this location
+			$fields = $customFields->find2(
+				$locationId,
+				0,        // start
+				'',       // query 
+				'ASC',    // sort
+				'attrib_sort', // order
+				true,     // allrows
+				true      // inc_choices
+			);
+			
+			return $fields ?: [];
+		} catch (\Exception $e) {
+			error_log("Error loading custom fields for registry type {$this->registryType}, location_id {$locationId}: " . $e->getMessage());
+			return [];
 		}
 	}
 }

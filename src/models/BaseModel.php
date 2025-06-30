@@ -1694,6 +1694,12 @@ abstract class BaseModel
 			$db = Db::getInstance();
 			$sql = "SELECT location_id FROM phpgw_locations WHERE app_name = ? AND location = ?";
 			$stmt = $db->prepare($sql);
+			
+			if ($stmt === false) {
+				error_log("Failed to prepare location_id query - table phpgw_locations may not exist");
+				return null;
+			}
+			
 			$stmt->execute([$appName, $location]);
 			
 			$result = $stmt->fetch(PDO::FETCH_ASSOC);

@@ -1,16 +1,17 @@
 <?php
 
-namespace App\modules\booking\models;
+namespace App\models;
 
-use App\modules\booking\models\BaseModel;
-use App\modules\phpgwapi\services\Translation;
+use App\models\BaseModel;
 
 /**
- * Generic Registry Model
+ * Generic Registry Model (Abstract)
  * Handles multiple simple entity types through configuration-driven approach
  * Similar to property_sogeneric_ but modernized with BaseModel architecture
+ * 
+ * Child classes must implement loadRegistryDefinitions() to provide their specific registry definitions
  */
-class GenericRegistry extends BaseModel
+abstract class GenericRegistry extends BaseModel
 {
 	protected static array $registryDefinitions = [];
 
@@ -206,162 +207,9 @@ class GenericRegistry extends BaseModel
 
 	/**
 	 * Load all registry definitions
+	 * Must be implemented by child classes to provide their specific registry definitions
 	 */
-	protected static function loadRegistryDefinitions(): void
-	{
-		$translation = Translation::getInstance();
-
-		static::$registryDefinitions = [
-			'office' => [
-				'table' => 'bb_office',
-				'id' => ['name' => 'id', 'type' => 'auto'],
-				'fields' => [
-					[
-						'name' => 'name',
-						'descr' => 'Name',
-						'type' => 'varchar',
-						'required' => true,
-						'maxlength' => 255
-					],
-					[
-						'name' => 'description',
-						'descr' => 'Description',
-						'type' => 'text',
-						'nullable' => true
-					]
-				],
-				'name' => 'Office',
-				'acl_app' => 'booking',
-				'acl_location' => '.office',
-				'menu_selection' => 'booking::settings::office::office',
-			],
-
-			'office_user' => [
-				'table' => 'bb_office_user',
-				'id' => ['name' => 'id', 'type' => 'auto'],
-				'fields' => [
-					[
-						'name' => 'office',
-						'descr' => 'Office',
-						'type' => 'select',
-						'filter' => true,
-						'values_def' => [
-							'method' => 'booking.bogeneric.get_list',
-							'method_input' => ['type' => 'office']
-						]
-					]
-				],
-				'name' => 'Office User',
-				'acl_app' => 'booking',
-				'acl_location' => '.office.user',
-			],
-
-			'article_category' => [
-				'table' => 'bb_article_category',
-				'id' => ['name' => 'id', 'type' => 'auto'],
-				'fields' => [
-					[
-						'name' => 'name',
-						'descr' => 'Name',
-						'type' => 'varchar',
-						'required' => true,
-						'maxlength' => 255
-					]
-				],
-				'name' => 'Article Category',
-				'acl_app' => 'booking',
-				'acl_location' => '.admin',
-			],
-
-			'article_service' => [
-				'table' => 'bb_service',
-				'id' => ['name' => 'id', 'type' => 'auto'],
-				'fields' => [
-					[
-						'name' => 'name',
-						'descr' => 'Name',
-						'type' => 'varchar',
-						'required' => true,
-						'maxlength' => 255
-					],
-					[
-						'name' => 'description',
-						'descr' => 'Description',
-						'type' => 'text',
-						'nullable' => true
-					],
-					[
-						'name' => 'active',
-						'descr' => 'Active',
-						'type' => 'checkbox',
-						'default' => 1,
-						'filter' => true
-					]
-				],
-				'name' => 'Article Service',
-				'acl_app' => 'booking',
-				'acl_location' => '.admin',
-			],
-
-			'e_lock_system' => [
-				'table' => 'bb_e_lock_system',
-				'id' => ['name' => 'id', 'type' => 'int'],
-				'fields' => [
-					[
-						'name' => 'name',
-						'descr' => 'Name',
-						'type' => 'varchar',
-						'required' => true,
-						'maxlength' => 255
-					],
-					[
-						'name' => 'webservicehost',
-						'descr' => 'WebService Host',
-						'type' => 'varchar',
-						'maxlength' => 255
-					],
-					[
-						'name' => 'instruction',
-						'descr' => 'Receipt',
-						'type' => 'html',
-						'nullable' => true
-					],
-					[
-						'name' => 'sms_alert',
-						'descr' => 'SMS Alert',
-						'type' => 'checkbox',
-						'default' => 1
-					]
-				],
-				'name' => 'E-Lock System',
-				'acl_app' => 'booking',
-				'acl_location' => '.admin',
-			],
-
-			'multi_domain' => [
-				'table' => 'bb_multi_domain',
-				'id' => ['name' => 'id', 'type' => 'auto'],
-				'fields' => [
-					[
-						'name' => 'name',
-						'descr' => 'Name',
-						'type' => 'varchar',
-						'required' => true,
-						'maxlength' => 255
-					],
-					[
-						'name' => 'webservicehost',
-						'descr' => 'WebService Host',
-						'type' => 'varchar',
-						'maxlength' => 255
-					]
-				],
-				'name' => 'Multi Domain',
-				'acl_app' => 'booking',
-				'acl_location' => '.admin',
-			]
-		];
-	}
+	protected static abstract function loadRegistryDefinitions(): void;
 
 	/**
 	 * Get list of available registry types

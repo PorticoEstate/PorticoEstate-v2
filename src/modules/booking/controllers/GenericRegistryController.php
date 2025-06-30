@@ -2,7 +2,7 @@
 
 namespace App\modules\booking\controllers;
 
-use App\modules\booking\models\GenericRegistry;
+use App\modules\booking\models\BookingGenericRegistry;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpBadRequestException;
@@ -29,7 +29,7 @@ class GenericRegistryController
 		}
 
 		// Validate registry type exists
-		if (!in_array($type, GenericRegistry::getAvailableTypes()))
+		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
@@ -59,7 +59,7 @@ class GenericRegistryController
 		}
 
 		// Get results
-		$registry = GenericRegistry::forType($type);
+		$registry = BookingGenericRegistry::forType($type);
 		$results = $registry->findWhere($conditions, [
 			'order_by' => $sort,
 			'direction' => $dir,
@@ -79,7 +79,7 @@ class GenericRegistryController
 			'start' => $start,
 			'limit' => $limit,
 			'registry_type' => $type,
-			'registry_name' => GenericRegistry::getTypeName($type)
+			'registry_name' => BookingGenericRegistry::getTypeName($type)
 		];
 
 		$response->getBody()->write(json_encode($responseData));
@@ -105,12 +105,12 @@ class GenericRegistryController
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, GenericRegistry::getAvailableTypes()))
+		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
-		$item = GenericRegistry::findByType($type, $id);
+		$item = BookingGenericRegistry::findByType($type, $id);
 
 		if (!$item)
 		{
@@ -141,7 +141,7 @@ class GenericRegistryController
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, GenericRegistry::getAvailableTypes()))
+		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
@@ -155,7 +155,7 @@ class GenericRegistryController
 
 		try
 		{
-			$item = GenericRegistry::createForType($type, $data);
+			$item = BookingGenericRegistry::createForType($type, $data);
 
 			// Validate the data
 			$errors = $item->validate();
@@ -218,12 +218,12 @@ class GenericRegistryController
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, GenericRegistry::getAvailableTypes()))
+		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
-		$item = GenericRegistry::findByType($type, $id);
+		$item = BookingGenericRegistry::findByType($type, $id);
 
 		if (!$item)
 		{
@@ -303,12 +303,12 @@ class GenericRegistryController
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, GenericRegistry::getAvailableTypes()))
+		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
-		$item = GenericRegistry::findByType($type, $id);
+		$item = BookingGenericRegistry::findByType($type, $id);
 
 		if (!$item)
 		{
@@ -353,9 +353,9 @@ class GenericRegistryController
 	{
 		$types = [];
 
-		foreach (GenericRegistry::getAvailableTypes() as $type)
+		foreach (BookingGenericRegistry::getAvailableTypes() as $type)
 		{
-			$config = GenericRegistry::getRegistryConfig($type);
+			$config = BookingGenericRegistry::getRegistryConfig($type);
 			$types[] = [
 				'type' => $type,
 				'name' => $config['name'] ?? ucfirst(str_replace('_', ' ', $type)),
@@ -387,13 +387,13 @@ class GenericRegistryController
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, GenericRegistry::getAvailableTypes()))
+		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
-		$config = GenericRegistry::getRegistryConfig($type);
-		$registry = GenericRegistry::forType($type);
+		$config = BookingGenericRegistry::getRegistryConfig($type);
+		$registry = BookingGenericRegistry::forType($type);
 		// Get field map through reflection or create a public method
 		$fieldMap = $registry->getCompleteFieldMap();
 
@@ -427,7 +427,7 @@ class GenericRegistryController
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, GenericRegistry::getAvailableTypes()))
+		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
@@ -443,7 +443,7 @@ class GenericRegistryController
 			$conditions['active'] = 1;
 		}
 
-		$items = GenericRegistry::findWhereByType($type, $conditions, [
+		$items = BookingGenericRegistry::findWhereByType($type, $conditions, [
 			'order_by' => 'name',
 			'direction' => 'ASC'
 		]);

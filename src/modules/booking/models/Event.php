@@ -2,6 +2,7 @@
 
 namespace App\modules\booking\models;
 
+use App\models\BaseModel;
 use App\traits\SerializableTrait;
 use App\Database\Db;
 use PDO;

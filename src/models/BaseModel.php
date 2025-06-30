@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\booking\models;
+namespace App\models;
 
 use App\traits\SerializableTrait;
 use App\traits\ValidatorTrait;

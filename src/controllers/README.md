@@ -47,18 +47,11 @@ $controller->setRegistryClass(BookingGenericRegistry::class);
 
 ### Module-Specific Routes (Recommended)
 ```
-/api/{module}/registry/types           # Get available types
-/api/{module}/registry/{type}          # List items
-/api/{module}/registry/{type}/schema   # Get field schema
-/api/{module}/registry/{type}/list     # Get dropdown list
-/api/{module}/registry/{type}/{id}     # CRUD operations
-```
-
-### Legacy Routes (Backward Compatibility)
-```
-/api/registry/types                    # Falls back to booking module
-/api/registry/{type}                   # Falls back to booking module
-/api/registry/{type}/{id}              # Falls back to booking module
+/{module}/registry/types           # Get available types
+/{module}/registry/{type}          # List items
+/{module}/registry/{type}/schema   # Get field schema
+/{module}/registry/{type}/list     # Get dropdown list
+/{module}/registry/{type}/{id}     # CRUD operations
 ```
 
 ## Route Organization Update

@@ -58,12 +58,13 @@ All property registry routes are available under `/property/registry`:
 
 ```
 GET    /property/registry/types              -> List all available registry types
-GET    /property/registry/{type}             -> List items for a registry type
+GET    /property/registry/{type}/            -> List items for a registry type
 GET    /property/registry/{type}/schema      -> Get field schema for a registry type
-GET    /property/registry/{type}/{id}        -> Get specific item by ID
-POST   /property/registry/{type}             -> Create new item
-PUT    /property/registry/{type}/{id}        -> Update existing item
-DELETE /property/registry/{type}/{id}        -> Delete item
+GET    /property/registry/{type}/list        -> Get dropdown/select list for a registry type
+GET    /property/registry/{type}/{id}        -> Get specific item by ID (ID must be numeric)
+POST   /property/registry/{type}/            -> Create new item
+PUT    /property/registry/{type}/{id}        -> Update existing item (ID must be numeric)
+DELETE /property/registry/{type}/{id}        -> Delete item (ID must be numeric)
 ```
 
 ### Example API Calls
@@ -72,24 +73,42 @@ DELETE /property/registry/{type}/{id}        -> Delete item
 # List all property registry types
 curl -X GET /property/registry/types
 
-# Get all districts
-curl -X GET /property/registry/district
+# Get all districts (full data)
+curl -X GET /property/registry/district/
+
+# Get district dropdown list (simplified for selects)
+curl -X GET /property/registry/district/list
 
 # Get schema for vendor registry
 curl -X GET /property/registry/vendor/schema
 
-# Get specific vendor by ID
+# Get specific vendor by ID (ID validated as numeric)
 curl -X GET /property/registry/vendor/123
 
 # Create new district
-curl -X POST /property/registry/district \
+curl -X POST /property/registry/district/ \
   -H "Content-Type: application/json" \
   -d '{"name": "Downtown", "descr": "Downtown district"}'
 
-# Update district
+# Update district (ID validated as numeric)
 curl -X PUT /property/registry/district/5 \
   -H "Content-Type: application/json" \
   -d '{"name": "Downtown Updated", "descr": "Updated description"}'
+```
+
+### New Features
+
+**Enhanced Route Structure:**
+- **Explicit Registry Binding**: Controller is instantiated with PropertyGenericRegistry class
+- **Input Validation**: ID parameters are validated as numeric using regex patterns
+- **Nested Route Groups**: Better organization with shared controller instance
+- **Additional Endpoints**: Added `/list` endpoint for dropdown/select use cases
+
+**Dropdown/Select Support:**
+```bash
+# Get simplified list for dropdowns (typically just id/name pairs)
+curl -X GET /property/registry/vendor/list
+curl -X GET /property/registry/district/list
 ```
 
 ## Usage Examples

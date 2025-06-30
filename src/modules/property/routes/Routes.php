@@ -8,6 +8,7 @@ use App\modules\property\controllers\TenantController;
 use App\modules\property\controllers\TicketController;
 use App\controllers\GenericRegistryController;
 use Slim\Routing\RouteCollectorProxy;
+use App\modules\property\models\PropertyGenericRegistry;
 
 
 $app->get('/property/inc/soap_client/bra5/soap.php', Bra5Controller::class . ':process');
@@ -38,21 +39,28 @@ $app->post('/property/usercase/{caseId}/response/', TicketController::class . ':
 // Property Registry Routes
 $app->group('/property/registry', function (RouteCollectorProxy $group) use ($container) {
 	
-	// List all available registry types
-	$group->get('/types', GenericRegistryController::class . ':types');
-	
-	// Registry type specific routes
-	$group->get('/{type}', GenericRegistryController::class . ':index');
-	
-	$group->get('/{type}/schema', GenericRegistryController::class . ':schema');
-	
-	$group->get('/{type}/{id}', GenericRegistryController::class . ':show');
-	
-	$group->post('/{type}', GenericRegistryController::class . ':store');
-	
-	$group->put('/{type}/{id}', GenericRegistryController::class . ':update');
-	
-	$group->delete('/{type}/{id}', GenericRegistryController::class . ':delete');
+	// Create controller instance with PropertyGenericRegistry
+	$controller = new GenericRegistryController(PropertyGenericRegistry::class);
+
+	// Get available registry types
+	$group->get('/types', [$controller, 'types']);
+
+	// Registry type routes
+	$group->group('/{type}', function (RouteCollectorProxy $typeGroup) use ($controller) {
+		
+		// Get schema/field information for a registry type
+		$typeGroup->get('/schema', [$controller, 'schema']);
+
+		// Get list for dropdowns/selects
+		$typeGroup->get('/list', [$controller, 'getList']);
+
+		// CRUD operations
+		$typeGroup->get('/', [$controller, 'index']); // List items
+		$typeGroup->post('/', [$controller, 'store']); // Create new item
+		$typeGroup->get('/{id:[0-9]+}', [$controller, 'show']); // Get single item
+		$typeGroup->put('/{id:[0-9]+}', [$controller, 'update']); // Update item
+		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
+	});
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\modules\booking\controllers;
+namespace App\controllers;
 
-use App\modules\booking\models\BookingGenericRegistry;
+use App\models\GenericRegistry;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpBadRequestException;
@@ -11,26 +11,104 @@ use Slim\Exception\HttpNotFoundException;
 /**
  * Generic Registry Controller
  * Handles CRUD operations for multiple registry types through a single controller
+ * Can be used by any module that implements GenericRegistry
  * Similar to property_uigeneric but modernized with Slim 4 and BaseModel
  */
 class GenericRegistryController
 {
 	/**
+	 * The GenericRegistry class to use for this controller instance
+	 * Should be set by the module that uses this controller
+	 */
+	protected string $registryClass;
+
+	/**
+	 * Constructor
+	 */
+	public function __construct(?string $registryClass = null)
+	{
+		if ($registryClass && class_exists($registryClass)) {
+			$this->registryClass = $registryClass;
+		}
+	}
+
+	/**
+	 * Set the registry class to use
+	 */
+	public function setRegistryClass(string $registryClass): void
+	{
+		if (!class_exists($registryClass)) {
+			throw new \InvalidArgumentException("Registry class {$registryClass} does not exist");
+		}
+
+		if (!is_subclass_of($registryClass, GenericRegistry::class)) {
+			throw new \InvalidArgumentException("Registry class {$registryClass} must extend GenericRegistry");
+		}
+
+		$this->registryClass = $registryClass;
+	}
+
+	/**
+	 * Get the registry class, with fallback detection
+	 */
+	protected function getRegistryClass(Request $request): string
+	{
+		if (isset($this->registryClass)) {
+			return $this->registryClass;
+		}
+
+		// Try to detect from route or headers
+		$module = $this->detectModuleFromRequest($request);
+		if ($module) {
+			$registryClass = "App\\modules\\{$module}\\models\\" . ucfirst($module) . "GenericRegistry";
+			if (class_exists($registryClass)) {
+				return $registryClass;
+			}
+		}
+
+		throw new \RuntimeException("No registry class configured and unable to auto-detect");
+	}
+
+	/**
+	 * Detect module from request (can be overridden by specific implementations)
+	 */
+	protected function detectModuleFromRequest(Request $request): ?string
+	{
+		// Try to detect from URI path - look for /api/{module}/registry pattern
+		$path = $request->getUri()->getPath();
+		if (preg_match('/\/api\/([^\/]+)\/registry/', $path, $matches)) {
+			return $matches[1];
+		}
+
+		// Fallback: if using legacy /api/registry path, assume booking module for now
+		if (strpos($path, '/api/registry') !== false) {
+			return 'booking';
+		}
+
+		// Try to detect from custom header
+		$moduleHeader = $request->getHeaderLine('X-Module');
+		if ($moduleHeader) {
+			return $moduleHeader;
+		}
+
+		return null;
+	}
+
+	/**
 	 * Get list of items for a registry type
-	 * GET /api/registry/{type}
+	 * GET /api/registry/{type} or /api/{module}/registry/{type}
 	 */
 	public function index(Request $request, Response $response, array $args): Response
 	{
+		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 
-		if (!$type)
-		{
+		if (!$type) {
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
 		// Validate registry type exists
-		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
-		{
+		if (!in_array($type, $registryClass::getAvailableTypes())) {
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
@@ -44,22 +122,19 @@ class GenericRegistryController
 
 		// Build search conditions
 		$conditions = [];
-		if ($query)
-		{
+		if ($query) {
 			$conditions[] = ['name', 'LIKE', "%{$query}%"];
 		}
 
 		// Add filters from query params
-		foreach ($params as $key => $value)
-		{
-			if (in_array($key, ['active', 'parent_id']) && $value !== '')
-			{
+		foreach ($params as $key => $value) {
+			if (in_array($key, ['active', 'parent_id']) && $value !== '') {
 				$conditions[$key] = $value;
 			}
 		}
 
 		// Get results
-		$registry = BookingGenericRegistry::forType($type);
+		$registry = $registryClass::forType($type);
 		$results = $registry->findWhere($conditions, [
 			'order_by' => $sort,
 			'direction' => $dir,
@@ -79,7 +154,7 @@ class GenericRegistryController
 			'start' => $start,
 			'limit' => $limit,
 			'registry_type' => $type,
-			'registry_name' => BookingGenericRegistry::getTypeName($type)
+			'registry_name' => $registryClass::getTypeName($type)
 		];
 
 		$response->getBody()->write(json_encode($responseData));
@@ -88,32 +163,29 @@ class GenericRegistryController
 
 	/**
 	 * Get single item by ID
-	 * GET /api/registry/{type}/{id}
+	 * GET /api/registry/{type}/{id} or /api/{module}/registry/{type}/{id}
 	 */
 	public function show(Request $request, Response $response, array $args): Response
 	{
+		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 		$id = (int)($args['id'] ?? 0);
 
-		if (!$type)
-		{
+		if (!$type) {
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id)
-		{
+		if (!$id) {
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
-		{
+		if (!in_array($type, $registryClass::getAvailableTypes())) {
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
-		$item = BookingGenericRegistry::findByType($type, $id);
+		$item = $registryClass::findByType($type, $id);
 
-		if (!$item)
-		{
+		if (!$item) {
 			throw new HttpNotFoundException($request, "Item not found");
 		}
 
@@ -130,37 +202,33 @@ class GenericRegistryController
 
 	/**
 	 * Create new item
-	 * POST /api/registry/{type}
+	 * POST /api/registry/{type} or /api/{module}/registry/{type}
 	 */
 	public function store(Request $request, Response $response, array $args): Response
 	{
+		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 
-		if (!$type)
-		{
+		if (!$type) {
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
-		{
+		if (!in_array($type, $registryClass::getAvailableTypes())) {
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
 		$data = $request->getParsedBody();
 
-		if (!is_array($data))
-		{
+		if (!is_array($data)) {
 			throw new HttpBadRequestException($request, 'Invalid request data');
 		}
 
-		try
-		{
-			$item = BookingGenericRegistry::createForType($type, $data);
+		try {
+			$item = $registryClass::createForType($type, $data);
 
 			// Validate the data
 			$errors = $item->validate();
-			if (!empty($errors))
-			{
+			if (!empty($errors)) {
 				$response->getBody()->write(json_encode([
 					'success' => false,
 					'errors' => $errors,
@@ -172,8 +240,7 @@ class GenericRegistryController
 			// Save the item
 			$success = $item->save();
 
-			if (!$success)
-			{
+			if (!$success) {
 				throw new \Exception('Failed to save item');
 			}
 
@@ -186,9 +253,7 @@ class GenericRegistryController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
-		}
-		catch (\Exception $e)
-		{
+		} catch (\Exception $e) {
 			$responseData = [
 				'success' => false,
 				'message' => 'Failed to create item: ' . $e->getMessage()
@@ -201,51 +266,45 @@ class GenericRegistryController
 
 	/**
 	 * Update existing item
-	 * PUT /api/registry/{type}/{id}
+	 * PUT /api/registry/{type}/{id} or /api/{module}/registry/{type}/{id}
 	 */
 	public function update(Request $request, Response $response, array $args): Response
 	{
+		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 		$id = (int)($args['id'] ?? 0);
 
-		if (!$type)
-		{
+		if (!$type) {
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id)
-		{
+		if (!$id) {
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
-		{
+		if (!in_array($type, $registryClass::getAvailableTypes())) {
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
-		$item = BookingGenericRegistry::findByType($type, $id);
+		$item = $registryClass::findByType($type, $id);
 
-		if (!$item)
-		{
+		if (!$item) {
 			throw new HttpNotFoundException($request, "Item not found");
 		}
 
 		$data = $request->getParsedBody();
 
-		if (!is_array($data))
-		{
+		if (!is_array($data)) {
 			throw new HttpBadRequestException($request, 'Invalid request data');
 		}
 
-		try
-		{
+		try {
 			// Update the item with new data
 			$item->populate($data);
 
 			// Validate the data
 			$errors = $item->validate();
-			if (!empty($errors))
-			{
+			if (!empty($errors)) {
 				$response->getBody()->write(json_encode([
 					'success' => false,
 					'errors' => $errors,
@@ -257,8 +316,7 @@ class GenericRegistryController
 			// Save the changes
 			$success = $item->save();
 
-			if (!$success)
-			{
+			if (!$success) {
 				throw new \Exception('Failed to update item');
 			}
 
@@ -271,9 +329,7 @@ class GenericRegistryController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json');
-		}
-		catch (\Exception $e)
-		{
+		} catch (\Exception $e) {
 			$responseData = [
 				'success' => false,
 				'message' => 'Failed to update item: ' . $e->getMessage()
@@ -286,41 +342,36 @@ class GenericRegistryController
 
 	/**
 	 * Delete item
-	 * DELETE /api/registry/{type}/{id}
+	 * DELETE /api/registry/{type}/{id} or /api/{module}/registry/{type}/{id}
 	 */
 	public function delete(Request $request, Response $response, array $args): Response
 	{
+		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 		$id = (int)($args['id'] ?? 0);
 
-		if (!$type)
-		{
+		if (!$type) {
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id)
-		{
+		if (!$id) {
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
-		{
+		if (!in_array($type, $registryClass::getAvailableTypes())) {
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
-		$item = BookingGenericRegistry::findByType($type, $id);
+		$item = $registryClass::findByType($type, $id);
 
-		if (!$item)
-		{
+		if (!$item) {
 			throw new HttpNotFoundException($request, "Item not found");
 		}
 
-		try
-		{
+		try {
 			$success = $item->delete();
 
-			if (!$success)
-			{
+			if (!$success) {
 				throw new \Exception('Failed to delete item');
 			}
 
@@ -332,9 +383,7 @@ class GenericRegistryController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json');
-		}
-		catch (\Exception $e)
-		{
+		} catch (\Exception $e) {
 			$responseData = [
 				'success' => false,
 				'message' => 'Failed to delete item: ' . $e->getMessage()
@@ -347,15 +396,15 @@ class GenericRegistryController
 
 	/**
 	 * Get available registry types
-	 * GET /api/registry/types
+	 * GET /api/registry/types or /api/{module}/registry/types
 	 */
 	public function types(Request $request, Response $response): Response
 	{
+		$registryClass = $this->getRegistryClass($request);
 		$types = [];
 
-		foreach (BookingGenericRegistry::getAvailableTypes() as $type)
-		{
-			$config = BookingGenericRegistry::getRegistryConfig($type);
+		foreach ($registryClass::getAvailableTypes() as $type) {
+			$config = $registryClass::getRegistryConfig($type);
 			$types[] = [
 				'type' => $type,
 				'name' => $config['name'] ?? ucfirst(str_replace('_', ' ', $type)),
@@ -376,24 +425,23 @@ class GenericRegistryController
 
 	/**
 	 * Get schema/field information for a registry type
-	 * GET /api/registry/{type}/schema
+	 * GET /api/registry/{type}/schema or /api/{module}/registry/{type}/schema
 	 */
 	public function schema(Request $request, Response $response, array $args): Response
 	{
+		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 
-		if (!$type)
-		{
+		if (!$type) {
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
-		{
+		if (!in_array($type, $registryClass::getAvailableTypes())) {
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
-		$config = BookingGenericRegistry::getRegistryConfig($type);
-		$registry = BookingGenericRegistry::forType($type);
+		$config = $registryClass::getRegistryConfig($type);
+		$registry = $registryClass::forType($type);
 		// Get field map through reflection or create a public method
 		$fieldMap = $registry->getCompleteFieldMap();
 
@@ -416,19 +464,18 @@ class GenericRegistryController
 
 	/**
 	 * Get list for dropdowns/selects
-	 * GET /api/registry/{type}/list
+	 * GET /api/registry/{type}/list or /api/{module}/registry/{type}/list
 	 */
 	public function getList(Request $request, Response $response, array $args): Response
 	{
+		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 
-		if (!$type)
-		{
+		if (!$type) {
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, BookingGenericRegistry::getAvailableTypes()))
-		{
+		if (!in_array($type, $registryClass::getAvailableTypes())) {
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
@@ -438,12 +485,11 @@ class GenericRegistryController
 
 		// Get all active items
 		$conditions = [];
-		if (isset($params['active']))
-		{
+		if (isset($params['active'])) {
 			$conditions['active'] = 1;
 		}
 
-		$items = BookingGenericRegistry::findWhereByType($type, $conditions, [
+		$items = $registryClass::findWhereByType($type, $conditions, [
 			'order_by' => 'name',
 			'direction' => 'ASC'
 		]);
@@ -451,20 +497,17 @@ class GenericRegistryController
 		// Format for dropdown
 		$list = [];
 
-		if ($addEmpty)
-		{
+		if ($addEmpty) {
 			$list[] = ['id' => '', 'name' => '-- Select --'];
 		}
 
-		foreach ($items as $item)
-		{
+		foreach ($items as $item) {
 			$listItem = [
 				'id' => $item->id,
 				'name' => $item->name
 			];
 
-			if ($selected && $item->id == $selected)
-			{
+			if ($selected && $item->id == $selected) {
 				$listItem['selected'] = true;
 			}
 

@@ -80,6 +80,15 @@ class GenericRegistryController
 			return $matches[1];
 		}
 
+		// Also detect from /{module}/registry pattern (for property, booking, etc.)
+		if (preg_match('/\/([^\/]+)\/registry/', $path, $matches)) {
+			$module = $matches[1];
+			// Only return if it's a known module (not 'api' or other generic paths)
+			if (in_array($module, ['property', 'booking', 'rental', 'admin'])) {
+				return $module;
+			}
+		}
+
 		// Fallback: if using legacy /api/registry path, assume booking module for now
 		if (strpos($path, '/api/registry') !== false) {
 			return 'booking';

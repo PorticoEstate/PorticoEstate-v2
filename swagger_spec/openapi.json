@@ -3875,23 +3875,21 @@
                         }
                     },
                     {
-                        "name": "active",
+                        "name": "{field_name}",
                         "in": "query",
-                        "description": "Filter by active status",
+                        "description": "Filter by any field marked as filterable in the registry configuration. Use \/registry\/{type}\/schema to see available filter fields.",
                         "schema": {
-                            "type": "integer",
-                            "enum": [
-                                0,
-                                1
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "number"
+                                }
                             ]
-                        }
-                    },
-                    {
-                        "name": "parent_id",
-                        "in": "query",
-                        "description": "Filter by parent ID",
-                        "schema": {
-                            "type": "integer"
                         }
                     }
                 ],
@@ -3962,42 +3960,32 @@
                     }
                 ],
                 "requestBody": {
-                    "description": "Registry item data",
+                    "description": "Registry item data - fields vary by registry type. See \/registry\/{type}\/schema for field definitions.",
                     "required": true,
                     "content": {
                         "application\/json": {
                             "schema": {
-                                "required": [
-                                    "name"
-                                ],
-                                "properties": {
-                                    "name": {
-                                        "description": "Item name",
-                                        "type": "string"
-                                    },
-                                    "descr": {
-                                        "description": "Item description",
-                                        "type": "string"
-                                    },
-                                    "active": {
-                                        "description": "Active status",
-                                        "type": "integer",
-                                        "default": 1,
-                                        "enum": [
-                                            0,
-                                            1
-                                        ]
-                                    },
-                                    "parent_id": {
-                                        "description": "Parent item ID",
-                                        "type": "integer"
-                                    },
-                                    "order": {
-                                        "description": "Display order",
-                                        "type": "integer"
-                                    }
-                                },
-                                "type": "object"
+                                "description": "Dynamic object with fields specific to the registry type",
+                                "type": "object",
+                                "additionalProperties": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "number"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                }
                             }
                         }
                     }
@@ -4181,38 +4169,32 @@
                     }
                 ],
                 "requestBody": {
-                    "description": "Updated registry item data",
+                    "description": "Updated registry item data - fields vary by registry type. See \/registry\/{type}\/schema for field definitions.",
                     "required": true,
                     "content": {
                         "application\/json": {
                             "schema": {
-                                "properties": {
-                                    "name": {
-                                        "description": "Item name",
-                                        "type": "string"
-                                    },
-                                    "descr": {
-                                        "description": "Item description",
-                                        "type": "string"
-                                    },
-                                    "active": {
-                                        "description": "Active status",
-                                        "type": "integer",
-                                        "enum": [
-                                            0,
-                                            1
-                                        ]
-                                    },
-                                    "parent_id": {
-                                        "description": "Parent item ID",
-                                        "type": "integer"
-                                    },
-                                    "order": {
-                                        "description": "Display order",
-                                        "type": "integer"
-                                    }
-                                },
-                                "type": "object"
+                                "description": "Dynamic object with fields specific to the registry type",
+                                "type": "object",
+                                "additionalProperties": {
+                                    "anyOf": [
+                                        {
+                                            "type": "string"
+                                        },
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "number"
+                                        },
+                                        {
+                                            "type": "boolean"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ]
+                                }
                             }
                         }
                     }
@@ -4588,14 +4570,20 @@
                         }
                     },
                     {
-                        "name": "active",
+                        "name": "{field_name}",
                         "in": "query",
-                        "description": "Filter by active status",
+                        "description": "Filter by any field marked as filterable in the registry configuration. Use \/registry\/{type}\/schema to see available filter fields.",
                         "schema": {
-                            "type": "integer",
-                            "enum": [
-                                0,
-                                1
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "number"
+                                }
                             ]
                         }
                     }
@@ -6097,42 +6085,34 @@
                 "type": "object"
             },
             "RegistryItem": {
+                "description": "Registry item with dynamic fields based on registry type configuration. Only the 'id' field is guaranteed to be present.",
                 "properties": {
                     "id": {
-                        "description": "Registry item ID",
-                        "type": "integer"
-                    },
-                    "name": {
-                        "description": "Registry item name",
-                        "type": "string"
-                    },
-                    "descr": {
-                        "description": "Registry item description",
-                        "type": "string"
-                    },
-                    "active": {
-                        "description": "Active status (1=active, 0=inactive)",
-                        "type": "integer"
-                    },
-                    "parent_id": {
-                        "description": "Parent item ID for hierarchical registries",
-                        "type": "integer"
-                    },
-                    "order": {
-                        "description": "Display order",
-                        "type": "integer"
-                    },
-                    "entry_date": {
-                        "description": "Creation date",
-                        "type": "string",
-                        "format": "date-time"
-                    },
-                    "user_id": {
-                        "description": "User who created the item",
+                        "description": "Registry item ID (always present)",
                         "type": "integer"
                     }
                 },
-                "type": "object"
+                "type": "object",
+                "additionalProperties": {
+                    "description": "Additional fields are defined per registry type. See \/registry\/{type}\/schema endpoint for specific field definitions.",
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        },
+                        {
+                            "type": "number"
+                        },
+                        {
+                            "type": "boolean"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
             },
             "RegistryType": {
                 "properties": {

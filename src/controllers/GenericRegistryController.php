@@ -22,14 +22,18 @@ use Slim\Exception\HttpNotFoundException;
  * @OA\Schema(
  *     schema="RegistryItem",
  *     type="object",
- *     @OA\Property(property="id", type="integer", description="Registry item ID"),
- *     @OA\Property(property="name", type="string", description="Registry item name"),
- *     @OA\Property(property="descr", type="string", description="Registry item description"),
- *     @OA\Property(property="active", type="integer", description="Active status (1=active, 0=inactive)"),
- *     @OA\Property(property="parent_id", type="integer", description="Parent item ID for hierarchical registries"),
- *     @OA\Property(property="order", type="integer", description="Display order"),
- *     @OA\Property(property="entry_date", type="string", format="date-time", description="Creation date"),
- *     @OA\Property(property="user_id", type="integer", description="User who created the item")
+ *     description="Registry item with dynamic fields based on registry type configuration. Only the 'id' field is guaranteed to be present.",
+ *     @OA\Property(property="id", type="integer", description="Registry item ID (always present)"),
+ *     @OA\AdditionalProperties(
+ *         description="Additional fields are defined per registry type. See /registry/{type}/schema endpoint for specific field definitions.",
+ *         anyOf={
+ *             @OA\Schema(type="string"),
+ *             @OA\Schema(type="integer"),
+ *             @OA\Schema(type="number"),
+ *             @OA\Schema(type="boolean"),
+ *             @OA\Schema(type="null")
+ *         }
+ *     )
  * )
  * 
  * @OA\Schema(
@@ -212,16 +216,16 @@ class GenericRegistryController
 	 *         @OA\Schema(type="string", enum={"ASC", "DESC"}, default="ASC")
 	 *     ),
 	 *     @OA\Parameter(
-	 *         name="active",
+	 *         name="{field_name}",
 	 *         in="query",
-	 *         description="Filter by active status",
-	 *         @OA\Schema(type="integer", enum={0, 1})
-	 *     ),
-	 *     @OA\Parameter(
-	 *         name="parent_id",
-	 *         in="query",
-	 *         description="Filter by parent ID",
-	 *         @OA\Schema(type="integer")
+	 *         description="Filter by any field marked as filterable in the registry configuration. Use /registry/{type}/schema to see available filter fields.",
+	 *         @OA\Schema(
+	 *             anyOf={
+	 *                 @OA\Schema(type="string"),
+	 *                 @OA\Schema(type="integer"),
+	 *                 @OA\Schema(type="number")
+	 *             }
+	 *         )
 	 *     ),
 	 *     @OA\Response(
 	 *         response=200,
@@ -265,19 +269,41 @@ class GenericRegistryController
 		// Build search conditions
 		$conditions = [];
 		if ($query) {
-			$conditions[] = ['name', 'LIKE', "%{$query}%"];
+			// Search in 'name' field if it exists in the registry config, otherwise search in first text field
+			$searchField = 'name'; // Default fallback
+			$config = $registryClass::getRegistryConfig($type);
+			if (!empty($config['fields'])) {
+				foreach ($config['fields'] as $field) {
+					if ($field['name'] === 'name') {
+						$searchField = 'name';
+						break;
+					} elseif (in_array($field['type'], ['varchar', 'text']) && !isset($searchField)) {
+						$searchField = $field['name'];
+					}
+				}
+			}
+			$conditions[] = [$searchField, 'LIKE', "%{$query}%"];
 		}
 
-		// Add filters from query params
+		// Add filters from query params - only for fields that exist in the registry configuration
+		$config = $registryClass::getRegistryConfig($type);
+		$allowedFilterFields = [];
+		if (!empty($config['fields'])) {
+			foreach ($config['fields'] as $field) {
+				if (isset($field['filter']) && $field['filter']) {
+					$allowedFilterFields[] = $field['name'];
+				}
+			}
+		}
+
 		foreach ($params as $key => $value) {
-			if (in_array($key, ['active', 'parent_id']) && $value !== '') {
+			if (in_array($key, $allowedFilterFields) && $value !== '') {
 				$conditions[$key] = $value;
 			}
 		}
 
-		// Get results
-		$registry = $registryClass::forType($type);
-		$results = $registry->findWhere($conditions, [
+		// Get results using static method with type parameter
+		$results = $registryClass::findWhereByType($type, $conditions, [
 			'order_by' => $sort,
 			'direction' => $dir,
 			'limit' => $limit,
@@ -286,7 +312,7 @@ class GenericRegistryController
 
 		// Get total count for pagination
 		// For now, we'll count the results (BaseModel doesn't have count method yet)
-		$allResults = $registry->findWhere($conditions);
+		$allResults = $registryClass::findWhereByType($type, $conditions);
 		$totalCount = count($allResults);
 
 		$responseData = [
@@ -368,7 +394,9 @@ class GenericRegistryController
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
+		// Use static method to find item by type and ID
 		$item = $registryClass::findByType($type, $id);
+//		_debug_array($item);
 
 		if (!$item) {
 			throw new HttpNotFoundException($request, "Item not found");
@@ -410,14 +438,19 @@ class GenericRegistryController
 	 *     ),
 	 *     @OA\RequestBody(
 	 *         required=true,
-	 *         description="Registry item data",
+	 *         description="Registry item data - fields vary by registry type. See /registry/{type}/schema for field definitions.",
 	 *         @OA\JsonContent(
-	 *             required={"name"},
-	 *             @OA\Property(property="name", type="string", description="Item name"),
-	 *             @OA\Property(property="descr", type="string", description="Item description"),
-	 *             @OA\Property(property="active", type="integer", enum={0, 1}, default=1, description="Active status"),
-	 *             @OA\Property(property="parent_id", type="integer", description="Parent item ID"),
-	 *             @OA\Property(property="order", type="integer", description="Display order")
+	 *             type="object",
+	 *             description="Dynamic object with fields specific to the registry type",
+	 *             @OA\AdditionalProperties(
+	 *                 anyOf={
+	 *                     @OA\Schema(type="string"),
+	 *                     @OA\Schema(type="integer"),
+	 *                     @OA\Schema(type="number"),
+	 *                     @OA\Schema(type="boolean"),
+	 *                     @OA\Schema(type="null")
+	 *                 }
+	 *             )
 	 *         )
 	 *     ),
 	 *     @OA\Response(
@@ -462,8 +495,19 @@ class GenericRegistryController
 		}
 
 		$data = $request->getParsedBody();
+		
+		// Handle JSON request body for POST requests
+		if ($data === null || !is_array($data)) {
+			$body = (string) $request->getBody();
+			if (!empty($body)) {
+				$data = json_decode($body, true);
+				if (json_last_error() !== JSON_ERROR_NONE) {
+					throw new HttpBadRequestException($request, 'Invalid JSON data');
+				}
+			}
+		}
 
-		if (!is_array($data)) {
+		if (!is_array($data) || empty($data)) {
 			throw new HttpBadRequestException($request, 'Invalid request data');
 		}
 
@@ -540,13 +584,19 @@ class GenericRegistryController
 	 *     ),
 	 *     @OA\RequestBody(
 	 *         required=true,
-	 *         description="Updated registry item data",
+	 *         description="Updated registry item data - fields vary by registry type. See /registry/{type}/schema for field definitions.",
 	 *         @OA\JsonContent(
-	 *             @OA\Property(property="name", type="string", description="Item name"),
-	 *             @OA\Property(property="descr", type="string", description="Item description"),
-	 *             @OA\Property(property="active", type="integer", enum={0, 1}, description="Active status"),
-	 *             @OA\Property(property="parent_id", type="integer", description="Parent item ID"),
-	 *             @OA\Property(property="order", type="integer", description="Display order")
+	 *             type="object",
+	 *             description="Dynamic object with fields specific to the registry type",
+	 *             @OA\AdditionalProperties(
+	 *                 anyOf={
+	 *                     @OA\Schema(type="string"),
+	 *                     @OA\Schema(type="integer"),
+	 *                     @OA\Schema(type="number"),
+	 *                     @OA\Schema(type="boolean"),
+	 *                     @OA\Schema(type="null")
+	 *                 }
+	 *             )
 	 *         )
 	 *     ),
 	 *     @OA\Response(
@@ -595,6 +645,7 @@ class GenericRegistryController
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
+		// Use static method to find item by type and ID
 		$item = $registryClass::findByType($type, $id);
 
 		if (!$item) {
@@ -602,8 +653,19 @@ class GenericRegistryController
 		}
 
 		$data = $request->getParsedBody();
+		
+		// Handle JSON request body for PUT requests
+		if ($data === null || !is_array($data)) {
+			$body = (string) $request->getBody();
+			if (!empty($body)) {
+				$data = json_decode($body, true);
+				if (json_last_error() !== JSON_ERROR_NONE) {
+					throw new HttpBadRequestException($request, 'Invalid JSON data');
+				}
+			}
+		}
 
-		if (!is_array($data)) {
+		if (!is_array($data) || empty($data)) {
 			throw new HttpBadRequestException($request, 'Invalid request data');
 		}
 
@@ -724,6 +786,7 @@ class GenericRegistryController
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
+		// Use static method to find item by type and ID
 		$item = $registryClass::findByType($type, $id);
 
 		if (!$item) {
@@ -877,9 +940,10 @@ class GenericRegistryController
 		}
 
 		$config = $registryClass::getRegistryConfig($type);
+		// Get field map using static method
+		$fieldMap = $registryClass::getCompleteFieldMap();
+		// Create instance to get ACL info
 		$registry = $registryClass::forType($type);
-		// Get field map through reflection or create a public method
-		$fieldMap = $registry->getCompleteFieldMap();
 
 		$responseData = [
 			'success' => true,
@@ -934,10 +998,16 @@ class GenericRegistryController
 	 *         @OA\Schema(type="integer")
 	 *     ),
 	 *     @OA\Parameter(
-	 *         name="active",
+	 *         name="{field_name}",
 	 *         in="query",
-	 *         description="Filter by active status",
-	 *         @OA\Schema(type="integer", enum={0, 1})
+	 *         description="Filter by any field marked as filterable in the registry configuration. Use /registry/{type}/schema to see available filter fields.",
+	 *         @OA\Schema(
+	 *             anyOf={
+	 *                 @OA\Schema(type="string"),
+	 *                 @OA\Schema(type="integer"),
+	 *                 @OA\Schema(type="number")
+	 *             }
+	 *         )
 	 *     ),
 	 *     @OA\Response(
 	 *         response=200,
@@ -987,14 +1057,39 @@ class GenericRegistryController
 		$addEmpty = isset($params['add_empty']) && $params['add_empty'];
 		$selected = $params['selected'] ?? null;
 
-		// Get all active items
+		// Apply filters based on registry configuration
 		$conditions = [];
-		if (isset($params['active'])) {
-			$conditions['active'] = 1;
+		$config = $registryClass::getRegistryConfig($type);
+		$allowedFilterFields = ['id']; // Always allow ID filtering
+		if (!empty($config['fields'])) {
+			foreach ($config['fields'] as $field) {
+				if (isset($field['filter']) && $field['filter']) {
+					$allowedFilterFields[] = $field['name'];
+				}
+			}
+		}
+
+		foreach ($params as $key => $value) {
+			if (in_array($key, $allowedFilterFields) && $value !== '' && !in_array($key, ['add_empty', 'selected'])) {
+				$conditions[$key] = $value;
+			}
+		}
+
+		// Determine sort field - prefer 'name' if available, otherwise use first available field
+		$sortField = 'id'; // Fallback
+		if (!empty($config['fields'])) {
+			foreach ($config['fields'] as $field) {
+				if ($field['name'] === 'name') {
+					$sortField = 'name';
+					break;
+				} elseif (isset($field['sortable']) && $field['sortable'] && $sortField === 'id') {
+					$sortField = $field['name'];
+				}
+			}
 		}
 
 		$items = $registryClass::findWhereByType($type, $conditions, [
-			'order_by' => 'name',
+			'order_by' => $sortField,
 			'direction' => 'ASC'
 		]);
 
@@ -1005,10 +1100,27 @@ class GenericRegistryController
 			$list[] = ['id' => '', 'name' => '-- Select --'];
 		}
 
+		// Determine display field - prefer 'name' if available, otherwise use first text field
+		$displayField = 'id'; // Fallback
+		if (!empty($config['fields'])) {
+			foreach ($config['fields'] as $field) {
+				if ($field['name'] === 'name') {
+					$displayField = 'name';
+					break;
+				} elseif (in_array($field['type'], ['varchar', 'text']) && $displayField === 'id') {
+					$displayField = $field['name'];
+				}
+			}
+		}
+
 		foreach ($items as $item) {
+			$displayValue = property_exists($item, $displayField) && isset($item->$displayField) 
+				? $item->$displayField 
+				: "Item #{$item->id}";
+
 			$listItem = [
 				'id' => $item->id,
-				'name' => $item->name
+				'name' => $displayValue
 			];
 
 			if ($selected && $item->id == $selected) {

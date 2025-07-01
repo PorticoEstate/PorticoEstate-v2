@@ -55,8 +55,8 @@ $app->group('/property/registry', function (RouteCollectorProxy $group) use ($co
 		$typeGroup->get('/list', [$controller, 'getList']);
 
 		// CRUD operations
-		$typeGroup->get('/', [$controller, 'index']); // List items
-		$typeGroup->post('/', [$controller, 'store']); // Create new item
+		$typeGroup->get('', [$controller, 'index']); // List items
+		$typeGroup->post('', [$controller, 'store']); // Create new item
 		$typeGroup->get('/{id:[0-9]+}', [$controller, 'show']); // Get single item
 		$typeGroup->put('/{id:[0-9]+}', [$controller, 'update']); // Update item
 		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item

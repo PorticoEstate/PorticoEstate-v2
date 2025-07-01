@@ -74,27 +74,18 @@ class GenericRegistryController
 	 */
 	protected function detectModuleFromRequest(Request $request): ?string
 	{
-		// Try to detect from URI path - look for /api/{module}/registry pattern
+		// Detect from /{module}/registry pattern at the start of path
+		// Matches: /property/registry, /booking/registry, etc.
 		$path = $request->getUri()->getPath();
-		if (preg_match('/\/api\/([^\/]+)\/registry/', $path, $matches)) {
-			return $matches[1];
-		}
-
-		// Also detect from /{module}/registry pattern (for property, booking, etc.)
-		if (preg_match('/\/([^\/]+)\/registry/', $path, $matches)) {
+		if (preg_match('/^\/([^\/]+)\/registry/', $path, $matches)) {
 			$module = $matches[1];
-			// Only return if it's a known module (not 'api' or other generic paths)
+			// Only return if it's a known module
 			if (in_array($module, ['property', 'booking', 'rental', 'admin'])) {
 				return $module;
 			}
 		}
 
-		// Fallback: if using legacy /api/registry path, assume booking module for now
-		if (strpos($path, '/api/registry') !== false) {
-			return 'booking';
-		}
-
-		// Try to detect from custom header
+		// Try to detect from custom header as fallback
 		$moduleHeader = $request->getHeaderLine('X-Module');
 		if ($moduleHeader) {
 			return $moduleHeader;
@@ -105,7 +96,7 @@ class GenericRegistryController
 
 	/**
 	 * Get list of items for a registry type
-	 * GET /api/registry/{type} or /api/{module}/registry/{type}
+	 * GET /{module}/registry/{type}
 	 */
 	public function index(Request $request, Response $response, array $args): Response
 	{
@@ -172,7 +163,7 @@ class GenericRegistryController
 
 	/**
 	 * Get single item by ID
-	 * GET /api/registry/{type}/{id} or /api/{module}/registry/{type}/{id}
+	 * GET /{module}/registry/{type}/{id}
 	 */
 	public function show(Request $request, Response $response, array $args): Response
 	{
@@ -211,7 +202,7 @@ class GenericRegistryController
 
 	/**
 	 * Create new item
-	 * POST /api/registry/{type} or /api/{module}/registry/{type}
+	 * POST /{module}/registry/{type}
 	 */
 	public function store(Request $request, Response $response, array $args): Response
 	{
@@ -275,7 +266,7 @@ class GenericRegistryController
 
 	/**
 	 * Update existing item
-	 * PUT /api/registry/{type}/{id} or /api/{module}/registry/{type}/{id}
+	 * PUT /{module}/registry/{type}/{id}
 	 */
 	public function update(Request $request, Response $response, array $args): Response
 	{
@@ -351,7 +342,7 @@ class GenericRegistryController
 
 	/**
 	 * Delete item
-	 * DELETE /api/registry/{type}/{id} or /api/{module}/registry/{type}/{id}
+	 * DELETE /{module}/registry/{type}/{id}
 	 */
 	public function delete(Request $request, Response $response, array $args): Response
 	{
@@ -405,7 +396,7 @@ class GenericRegistryController
 
 	/**
 	 * Get available registry types
-	 * GET /api/registry/types or /api/{module}/registry/types
+	 * GET /{module}/registry/types
 	 */
 	public function types(Request $request, Response $response): Response
 	{
@@ -434,7 +425,7 @@ class GenericRegistryController
 
 	/**
 	 * Get schema/field information for a registry type
-	 * GET /api/registry/{type}/schema or /api/{module}/registry/{type}/schema
+	 * GET /{module}/registry/{type}/schema
 	 */
 	public function schema(Request $request, Response $response, array $args): Response
 	{
@@ -473,7 +464,7 @@ class GenericRegistryController
 
 	/**
 	 * Get list for dropdowns/selects
-	 * GET /api/registry/{type}/list or /api/{module}/registry/{type}/list
+	 * GET /{module}/registry/{type}/list
 	 */
 	public function getList(Request $request, Response $response, array $args): Response
 	{

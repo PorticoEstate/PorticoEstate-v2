@@ -12,7 +12,8 @@
  * @version $Id$
  */
 
-namespace App\modules\phpgwapi\services; 
+namespace App\modules\phpgwapi\services;
+
 use PHPMailer\PHPMailer\Exception;
 use App\modules\phpgwapi\services\MailerSmtp;
 
@@ -43,38 +44,60 @@ class Send
 		$this->err['desc'] = ' ';
 		$this->serverSettings = Settings::getInstance()->get('server');
 		$this->userSetting = Settings::getInstance()->get('user');
-
 	}
 
 	function msg($service, $to, $subject, $body, $msgtype = '', $cc = '', $bcc = '', $from = '', $sender = '', $content_type = '', $boundary = '', $attachments = array(), $receive_notification = false, $reply_to = '')
 	{
-		if (!$from) {
-			if ($this->userSetting['fullname']) {
+		if (!$from)
+		{
+			if ($this->userSetting['fullname'])
+			{
 				$from = $this->userSetting['fullname'] . ' <' . $this->userSetting['preferences']['email']['address'] . '>';
-			} else {
+			}
+			else
+			{
 				$from = "NoReply<NoReply@{$this->serverSettings['hostname']}>";
 			}
 		}
 
 		$from = str_replace(array('[', ']'), array('<', '>'), $from);
 
-		if (!$sender) {
+		if (!$sender)
+		{
 			$from_array = explode('<', $from);
-			if (count($from_array) == 2) {
+			if (count($from_array) == 2)
+			{
 				$sender = $from_array[0];
-			} else if ($this->userSetting['fullname']) {
+			}
+			else if ($this->userSetting['fullname'])
+			{
 				$sender = $this->userSetting['fullname'];
-			} else {
+			}
+			else
+			{
 				$sender = "NoReply";
 			}
 		}
 
 		$ret = false;
-		switch ($service) {
+		switch ($service)
+		{
 			case 'email':
-				try {
+				try
+				{
 					$ret = $this->send_email($to, $subject, $body, $msgtype, $cc, $bcc, $from, $sender, $content_type, $boundary, $attachments, $receive_notification, $reply_to);
-				} catch (Exception $e) {
+				}
+				catch (Exception $e)
+				{
+					//log the error
+					$log = new \App\modules\phpgwapi\services\Log();
+					$log_args = array(
+						'severity' => 'F',
+						'file'	=> __FILE__,
+						'line'	=> __LINE__,
+						'text'	=> $e->getMessage(),
+					);
+					$log->fatal($log_args);
 					throw $e;
 					return false;
 				}
@@ -88,77 +111,105 @@ class Send
 		$mail = new MailerSmtp();
 		$from_array = explode('<', $from);
 		unset($from);
-		if (count($from_array) == 2) {
+		if (count($from_array) == 2)
+		{
 			$mail->setFrom(trim($from_array[1], '>'), $sender);
-		} else {
+		}
+		else
+		{
 			$mail->setFrom($from_array[0], $sender);
 		}
 
 		$delimiter = ';';
 
-		if ($to) {
+		if ($to)
+		{
 			$to = explode($delimiter, $to);
-			try {
-				foreach ($to as $entry) {
+			try
+			{
+				foreach ($to as $entry)
+				{
 					$entry = str_replace(array('[', ']'), array('<', '>'), $entry);
 					$to_array = explode('<', $entry);
-					if (count($to_array) == 2) {
+					if (count($to_array) == 2)
+					{
 						$mail->AddAddress(trim($to_array[1], '>'), $to_array[0]);
-					} else {
+					}
+					else
+					{
 						$mail->AddAddress($to_array[0]);
 					}
 				}
 				unset($entry);
-			} catch (Exception $e) {
+			}
+			catch (Exception $e)
+			{
 				throw $e;
 				return false;
 			}
-		} else {
+		}
+		else
+		{
 			$mail->AddAddress("undisclosed-recipients:;");
 		}
 
-		if ($cc) {
+		if ($cc)
+		{
 			$delimiter = ';';
 			$cc = explode($delimiter, $cc);
 
-			foreach ($cc as $entry) {
+			foreach ($cc as $entry)
+			{
 				$entry = str_replace(array('[', ']'), array('<', '>'), $entry);
 				$cc_array = explode('<', $entry);
-				if (count($cc_array) == 2) {
+				if (count($cc_array) == 2)
+				{
 					$mail->AddCC(trim($cc_array[1], '>'), $cc_array[0]);
-				} else {
+				}
+				else
+				{
 					$mail->AddCC($cc_array[0]);
 				}
 			}
 			unset($entry);
 		}
 
-		if ($bcc) {
+		if ($bcc)
+		{
 			$delimiter = ';';
 			$bcc = explode($delimiter, $bcc);
 
-			foreach ($bcc as $entry) {
+			foreach ($bcc as $entry)
+			{
 				$entry = str_replace(array('[', ']'), array('<', '>'), $entry);
 				$bcc_array = explode('<', $entry);
-				if (count($bcc_array) == 2) {
+				if (count($bcc_array) == 2)
+				{
 					$mail->AddBCC(trim($bcc_array[1], '>'), $bcc_array[0]);
-				} else {
+				}
+				else
+				{
 					$mail->AddBCC($bcc_array[0]);
 				}
 			}
 			unset($entry);
 		}
 
-		if ($reply_to) {
+		if ($reply_to)
+		{
 			$delimiter = ';';
 			$reply_to = explode($delimiter, $reply_to);
 
-			foreach ($reply_to as $entry) {
+			foreach ($reply_to as $entry)
+			{
 				$entry = str_replace(array('[', ']'), array('<', '>'), $entry);
 				$reply_to_array = explode('<', $entry);
-				if (count($reply_to_array) == 2) {
+				if (count($reply_to_array) == 2)
+				{
 					$mail->addReplyTo(trim($reply_to_array[1], '>'), $reply_to_array[0]);
-				} else {
+				}
+				else
+				{
 					$mail->addReplyTo($reply_to_array[0]);
 				}
 			}
@@ -171,27 +222,33 @@ class Send
 		$mail->Subject = $subject;
 
 		$mail->addCustomHeader('X-Mailer: fmsystem (http://www.fmsystem.no)');
-		if ($receive_notification) {
+		if ($receive_notification)
+		{
 			$mail->addCustomHeader("Disposition-Notification-To: {$mail->From}");
 		}
 
 		$mail->Body    = $body;
 
-		if ($content_type == 'html') {
+		if ($content_type == 'html')
+		{
 			$mail->IsHTML(true);
 			$html2text = new \Html2Text\Html2Text($body);
 			$mail->AltBody = $html2text->getText();
-		} else {
+		}
+		else
+		{
 			$mail->IsHTML(false);
 			$mail->WordWrap = 76;
 		}
 
-		switch ($msgtype) {
+		switch ($msgtype)
+		{
 			case 'Ical':
 				$mail->Ical = true;
 				$mail->ContentType = 'text/calendar';
 				$mail->addCustomHeader('MIME-version', "1.0");
-				if ($boundary) {
+				if ($boundary)
+				{
 					$mail->addCustomHeader('Content-type', "multipart/alternative; boundary=\"{$boundary}\"");
 				}
 				$mail->addCustomHeader('Content-type', "text/calendar; method=REQUEST; charset=UTF-8");
@@ -204,23 +261,28 @@ class Send
 				break;
 		}
 
-		if ($attachments && is_array($attachments)) {
-			foreach ($attachments as $key => $value) {
-				if (isset($value['content']) && $value['content']) {
+		if ($attachments && is_array($attachments))
+		{
+			foreach ($attachments as $key => $value)
+			{
+				if (isset($value['content']) && $value['content'])
+				{
 					$mail->AddStringAttachment(
-							$value['content'],
-							$value['name'],		//meeting.ics
-							$value['encoding'],	//7bit
-							$value['type'],		//"text/calendar;charset=utf-8; method=REQUEST"
-							$value['disposition'] // 'attachment' | inline
-						);
-				} else {
+						$value['content'],
+						$value['name'],		//meeting.ics
+						$value['encoding'],	//7bit
+						$value['type'],		//"text/calendar;charset=utf-8; method=REQUEST"
+						$value['disposition'] // 'attachment' | inline
+					);
+				}
+				else
+				{
 					$mail->AddAttachment(
-							$value['file'],
-							mb_convert_encoding($value['name'], 'ISO-8859-1', 'UTF-8'),
-							'base64',
-							$value['type']
-						);
+						$value['file'],
+						mb_convert_encoding($value['name'], 'ISO-8859-1', 'UTF-8'),
+						'base64',
+						$value['type']
+					);
 				}
 			}
 		}
@@ -228,9 +290,12 @@ class Send
 		// set a higher timeout for big messages
 		@set_time_limit(120);
 		#$mail->SMTPDebug = 10;
-		try {
+		try
+		{
 			$mail->send();
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			$this->errorInfo = $mail->ErrorInfo;
 			throw $e;
 			return false;
@@ -253,28 +318,36 @@ class Send
 		$enc_start = $enc_end = 0;
 
 		$words = explode(' ', $subject);
-		foreach ($words as $w => $word) {
+		foreach ($words as $w => $word)
+		{
 			$str = '';
 
-			for ($i = 0; $i < strlen($word); ++$i) {
-				if (($n = ord($word[$i])) > 127 || $word[$i] == '=') {
+			for ($i = 0; $i < strlen($word); ++$i)
+			{
+				if (($n = ord($word[$i])) > 127 || $word[$i] == '=')
+				{
 					$str .= sprintf('=%0X', $n);
-					if (!$enc_start) {
+					if (!$enc_start)
+					{
 						$enc_start = $w + 1;
 					}
 					$enc_end = $w + 1;
-				} else {
+				}
+				else
+				{
 					$str .= $word[$i];
 				}
 			}
 			$strs[] = $str;
 			//echo "word='$word', start=$enc_start, end=$enc_end, encoded='$str'<br>\n";
 		}
-		if (!$enc_start) {
+		if (!$enc_start)
+		{
 			return $subject;
 		}
 		$str = '';
-		foreach ($strs as $w => $s) {
+		foreach ($strs as $w => $s)
+		{
 			$str .= $str != '' ? ' ' : '';
 
 			if ($enc_start == $w + 1)	// first word to encode
@@ -296,17 +369,20 @@ class Send
 	{
 		$followme = '-';
 		$this->err['msg'] = '';
-		do {
+		do
+		{
 			$rmsg = fgets($socket, 255);
 			// echo "< $rmsg<BR>\n";
 			$this->err['code'] = substr($rmsg, 0, 3);
 			$followme = substr($rmsg, 3, 1);
 			$this->err['msg'] = substr($rmsg, 4);
-			if (substr($this->err["code"], 0, 1) != 2 && substr($this->err["code"], 0, 1) != 3) {
+			if (substr($this->err["code"], 0, 1) != 2 && substr($this->err["code"], 0, 1) != 3)
+			{
 				$rc  = fclose($socket);
 				return False;
 			}
-			if ($followme == ' ') {
+			if ($followme == ' ')
+			{
 				break;
 			}
 		} while ($followme == '-');
@@ -319,7 +395,8 @@ class Send
 		// echo "raw> $message<BR>\n";
 		// echo "hex> ".bin2hex($message)."<BR>\n";
 		$rc = fputs($socket, "$message");
-		if (!$rc) {
+		if (!$rc)
+		{
 			$this->err['code'] = '420';
 			$this->err['msg']  = 'lost connection';
 			$this->err['desc'] = 'Lost connection to smtp server.';
@@ -333,26 +410,33 @@ class Send
 	{
 		// check for multiple lines 1st
 		$pos = strpos($message, "\n");
-		if (!is_int($pos)) {
+		if (!is_int($pos))
+		{
 			// no new line found
 			$message .= "\r\n";
 			$this->msg2socket($socket, $message);
-		} else {
+		}
+		else
+		{
 			// multiple lines, we have to split it
-			do {
+			do
+			{
 				$msglen = $pos + 1;
 				$msg = substr($message, 0, $msglen);
 				$message = substr($message, $msglen);
 				$pos = strpos($msg, "\r\n");
-				if (!is_int($pos)) {
+				if (!is_int($pos))
+				{
 					// line not terminated
 					$msg = chop($msg) . "\r\n";
 				}
 				$pos = strpos($msg, '.');  // escape leading periods
-				if (is_int($pos) && !$pos) {
+				if (is_int($pos) && !$pos)
+				{
 					$msg = '.' . $msg;
 				}
-				if (!$this->msg2socket($socket, $msg)) {
+				if (!$this->msg2socket($socket, $msg))
+				{
 					return False;
 				}
 				$pos = strpos($message, "\n");
@@ -366,23 +450,27 @@ class Send
 		// check if header contains subject and is correctly terminated
 		$header = chop($header);
 		$header .= "\n";
-		if (is_string($subject) && !$subject) {
+		if (is_string($subject) && !$subject)
+		{
 			// no subject specified
 			return $header;
 		}
 		$theader = strtolower($header);
 		$pos  = strpos($theader, "\nsubject:");
-		if (is_int($pos)) {
+		if (is_int($pos))
+		{
 			// found after a new line
 			return $header;
 		}
 		$pos = strpos($theader, 'subject:');
-		if (is_int($pos) && !$pos) {
+		if (is_int($pos) && !$pos)
+		{
 			// found at start
 			return $header;
 		}
 		$pos = substr($subject, "\n");
-		if (!is_int($pos)) {
+		if (!is_int($pos))
+		{
 			$subject .= "\n";
 		}
 		$subject = 'Subject: ' . $subject;
@@ -414,12 +502,15 @@ class Send
 		// now we try to open the socket and check, if any smtp server responds
 		$smtp_port = $this->serverSettings['smtp_port'] ? $this->serverSettings['smtp_port'] : 25;
 		$socket = fsockopen($this->serverSettings['smtp_server'], $smtp_port, $errcode, $errmsg, $timeout);
-		if (!$socket) {
+		if (!$socket)
+		{
 			$this->err['code'] = '420';
 			$this->err['msg']  = $errcode . ':' . $errmsg;
 			$this->err['desc'] = 'Connection to ' . $this->serverSettings['smtp_server'] . ':' . $this->serverSettings['smtp_port'] . ' failed - could not open socket.';
 			return False;
-		} else {
+		}
+		else
+		{
 			$rrc = $this->socket2msg($socket);
 		}
 
@@ -430,9 +521,11 @@ class Send
 			"\$src = \$this->msg2socket(\$socket,\"MAIL FROM:<\$fromuser>\r\n\");",
 			"\$rrc = \$this->socket2msg(\$socket);"
 		);
-		for ($src = True, $rrc = True, $i = 0; $i < count($cmds); $i++) {
+		for ($src = True, $rrc = True, $i = 0; $i < count($cmds); $i++)
+		{
 			eval($cmds[$i]);
-			if (!$src || !$rrc) {
+			if (!$src || !$rrc)
+			{
 				return False;
 			}
 		}
@@ -440,7 +533,8 @@ class Send
 		// now we've got to evaluate the $to's
 		$toaddr = explode(",", $to);
 		$numaddr = count($toaddr);
-		for ($i = 0; $i < $numaddr; $i++) {
+		for ($i = 0; $i < $numaddr; $i++)
+		{
 			$src = $this->msg2socket($socket, 'RCPT TO:<' . $toaddr[$i] . ">\r\n");
 			$rrc = $this->socket2msg($socket);
 			// for lateron validation
@@ -452,49 +546,62 @@ class Send
 
 		//now we have to make sure that at least one $to-address was accepted
 		$stop = 1;
-		for ($i = 0; $i < count($this->to_res); $i++) {
+		for ($i = 0; $i < count($this->to_res); $i++)
+		{
 			$rc = substr($this->to_res[$i]['code'], 0, 1);
-			if ($rc == 2) {
+			if ($rc == 2)
+			{
 				// at least to this address we can deliver
 				$stop = 0;
 			}
 		}
-		if ($stop) {
+		if ($stop)
+		{
 			// no address found we can deliver to
 			return False;
 		}
 
 		// now we can go to deliver the message!
-		if (!$this->msg2socket($socket, "DATA\r\n")) {
+		if (!$this->msg2socket($socket, "DATA\r\n"))
+		{
 			return False;
 		}
-		if (!$this->socket2msg($socket)) {
+		if (!$this->socket2msg($socket))
+		{
 			return False;
 		}
-		if ($header != "") {
+		if ($header != "")
+		{
 			$header = $this->check_header($subject, $header);
-			if (!$this->put2socket($socket, $header)) {
+			if (!$this->put2socket($socket, $header))
+			{
 				return False;
 			}
-			if (!$this->put2socket($socket, "\r\n")) {
+			if (!$this->put2socket($socket, "\r\n"))
+			{
 				return False;
 			}
 		}
 		$message  = chop($message);
 		$message .= "\n";
-		if (!$this->put2socket($socket, $message)) {
+		if (!$this->put2socket($socket, $message))
+		{
 			return False;
 		}
-		if (!$this->msg2socket($socket, ".\r\n")) {
+		if (!$this->msg2socket($socket, ".\r\n"))
+		{
 			return False;
 		}
-		if (!$this->socket2msg($socket)) {
+		if (!$this->socket2msg($socket))
+		{
 			return False;
 		}
-		if (!$this->msg2socket($socket, "QUIT\r\n")) {
+		if (!$this->msg2socket($socket, "QUIT\r\n"))
+		{
 			return False;
 		}
-		do {
+		do
+		{
 			$closing = $this->socket2msg($socket);
 		} while ($closing);
 		return True;

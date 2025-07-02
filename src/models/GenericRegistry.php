@@ -4,6 +4,7 @@ namespace App\models;
 
 use App\models\BaseModel;
 use App\Database\Db;
+use PDO;
 
 /**
  * Generic Registry Model (Abstract)
@@ -358,11 +359,12 @@ abstract class GenericRegistry extends BaseModel
 	{
 		$tableName = $this->getInstanceTableName();
 		$data = $this->getDbData();
-		
+
 		// Remove ID for insert
 		unset($data['id']);
 
-		if (empty($data)) {
+		if (empty($data))
+		{
 			return false;
 		}
 
@@ -370,24 +372,27 @@ abstract class GenericRegistry extends BaseModel
 		$placeholders = ':' . implode(', :', $columns);
 
 		$sql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES (" . $placeholders . ")";
-		
+
 		// For PostgreSQL, add RETURNING id if id field exists
 		$fieldMap = $this->getInstanceFieldMap();
-		if (isset($fieldMap['id'])) {
+		if (isset($fieldMap['id']))
+		{
 			$sql .= " RETURNING id";
 		}
 
 		$stmt = $this->db->prepare($sql);
 
 		// Bind parameters
-		foreach ($data as $key => $value) {
+		foreach ($data as $key => $value)
+		{
 			$stmt->bindValue(":$key", $value);
 		}
 
 		$stmt->execute();
 
 		// Get the ID if available
-		if (isset($fieldMap['id'])) {
+		if (isset($fieldMap['id']))
+		{
 			$this->id = (int)$stmt->fetchColumn();
 		}
 
@@ -404,33 +409,79 @@ abstract class GenericRegistry extends BaseModel
 	{
 		$tableName = $this->getInstanceTableName();
 		$data = $this->getDbData();
-		$id = $data['id'];
-		unset($data['id']);
+		//	$id = $data['id'];
+		//	unset($data['id']);
+		$data = [
+			'name' => 'ARNAs',
+			'delivery_address' => 'test',
+			'external_id' => 1,
+			'district_id' => 1,
+		];
+		$id = 1;
 
-		if (empty($data)) {
+
+
+		if (empty($data))
+		{
 			return false;
 		}
 
 		$setParts = [];
-		foreach (array_keys($data) as $column) {
+		foreach (array_keys($data) as $column)
+		{
 			$setParts[] = "$column = :$column";
 		}
 
 		$sql = "UPDATE {$tableName} SET " . implode(', ', $setParts) . " WHERE id = :id";
-		$stmt = $this->db->prepare($sql);
 
-		// Bind parameters
-		foreach ($data as $key => $value) {
-			$stmt->bindValue(":$key", $value);
+		try
+		{
+			$stmt = $this->db->prepare($sql);
+			if (!$stmt)
+			{
+				throw new \Exception("Failed to prepare statement: " . implode(', ', $this->db->errorInfo()));
+			}
+
+			// Bind parameters with proper types
+			foreach ($data as $key => $value)
+			{
+				if (is_null($value))
+				{
+					$stmt->bindValue(":$key", null, PDO::PARAM_NULL);
+				}
+				elseif (is_bool($value))
+				{
+					$stmt->bindValue(":$key", $value ? 1 : 0, PDO::PARAM_INT);
+				}
+				elseif (is_int($value))
+				{
+					$stmt->bindValue(":$key", $value, PDO::PARAM_INT);
+				}
+				else
+				{
+					$stmt->bindValue(":$key", (string)$value, PDO::PARAM_STR);
+				}
+			}
+
+			// Bind ID parameter with proper type
+			$stmt->bindValue(':id', (int)$id, PDO::PARAM_INT);
+
+			$result = $stmt->execute();
+			if (!$result)
+			{
+				throw new \Exception("Execute failed: " . implode(', ', $stmt->errorInfo()));
+			}
+
+			// Save relationships
+			$this->saveRelationships();
+
+			return true;
 		}
-		$stmt->bindValue(':id', $id);
-
-		$stmt->execute();
-
-		// Save relationships
-		$this->saveRelationships();
-
-		return true;
+		catch (\Exception $e)
+		{
+			error_log("Update failed: " . $e->getMessage() . " SQL: $sql");
+			throw $e; // Re-throw to let the calling transaction handler deal with it
+		}
 	}
 
 	/**
@@ -438,13 +489,15 @@ abstract class GenericRegistry extends BaseModel
 	 */
 	public function delete(): bool
 	{
-		if (!$this->id) {
+		if (!$this->id)
+		{
 			return false;
 		}
 
 		$tableName = $this->getInstanceTableName();
 
-		try {
+		try
+		{
 			$this->db->beginTransaction();
 
 			// Delete relationships first
@@ -457,7 +510,9 @@ abstract class GenericRegistry extends BaseModel
 
 			$this->db->commit();
 			return true;
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$this->db->rollback();
 			error_log("Error deleting GenericRegistry: " . $e->getMessage());
 			return false;
@@ -474,32 +529,40 @@ abstract class GenericRegistry extends BaseModel
 		$jsonField = static::getCustomFieldsJsonField();
 		$customFieldsData = [];
 
-		foreach ($fieldMap as $field => $meta) {
+		foreach ($fieldMap as $field => $meta)
+		{
 			// Skip fields that are not stored in the main table
-			if (isset($meta['relationship']) || isset($meta['virtual'])) {
+			if (isset($meta['relationship']) || isset($meta['virtual']))
+			{
 				continue;
 			}
 
-			if (property_exists($this, $field)) {
+			if (property_exists($this, $field))
+			{
 				$value = $this->$field;
-				
+
 				// Marshal the value based on type
-				if (isset($meta['type'])) {
+				if (isset($meta['type']))
+				{
 					$value = $this->marshalValue($value, $meta['type']);
 				}
-				
+
 				// Handle custom fields JSON storage
-				if ($jsonField && isset($meta['custom_field']) && $meta['custom_field']) {
+				if ($jsonField && isset($meta['custom_field']) && $meta['custom_field'])
+				{
 					// Store custom field in JSON object instead of individual columns
 					$customFieldsData[$field] = $value;
-				} else {
+				}
+				else
+				{
 					$data[$field] = $value;
 				}
 			}
 		}
 
 		// Add JSON representation of custom fields if enabled
-		if ($jsonField && !empty($customFieldsData)) {
+		if ($jsonField && !empty($customFieldsData))
+		{
 			$data[$jsonField] = json_encode($customFieldsData);
 		}
 
@@ -600,30 +663,18 @@ abstract class GenericRegistry extends BaseModel
 	}
 
 	/**
-	 * Custom fields support - override BaseModel method to work with instance context
+	 * Override BaseModel method to provide registry-specific custom fields location
 	 */
 	protected static function getCustomFieldsLocationId(): ?int
 	{
 		$instance = static::getCurrentInstance();
-		if ($instance)
-		{
-			return $instance->getInstanceCustomFieldsLocationId();
-		}
-		return null;
-	}
-
-	/**
-	 * Instance method for custom fields (public for testing)
-	 */
-	public function getInstanceCustomFieldsLocationId(): ?int
-	{
-		if (!$this->registryConfig)
+		if (!$instance || !$instance->registryConfig)
 		{
 			return null;
 		}
 
-		$app = $this->registryConfig['acl_app'] ?? 'booking';
-		$location = $this->registryConfig['acl_location'] ?? '.admin';
+		$app = $instance->registryConfig['acl_app'] ?? 'booking';
+		$location = $instance->registryConfig['acl_location'] ?? '.admin';
 
 		try
 		{
@@ -673,38 +724,17 @@ abstract class GenericRegistry extends BaseModel
 	}
 
 	/**
-	 * Get custom fields for this registry instance (public for testing)
+	 * Get custom fields for this registry instance (delegates to BaseModel)
 	 */
 	public function getInstanceCustomFields(): array
 	{
-		$locationId = $this->getInstanceCustomFieldsLocationId();
-		if ($locationId === null)
-		{
-			return [];
-		}
-
-		try
-		{
-			// Create instance of phpgwapi_custom_fields
-			$customFields = new \phpgwapi_custom_fields();
-
-			// Get custom fields for this location
-			$fields = $customFields->find2(
-				$locationId,
-				0,        // start
-				'',       // query 
-				'ASC',    // sort
-				'attrib_sort', // order
-				true,     // allrows
-				true      // inc_choices
-			);
-
-			return $fields ?: [];
-		}
-		catch (\Exception $e)
-		{
-			error_log("Error loading custom fields for registry type {$this->registryType}, location_id {$locationId}: " . $e->getMessage());
-			return [];
+		// Set instance context and delegate to BaseModel method
+		static::setCurrentInstance($this);
+		
+		try {
+			return static::getCustomFields();
+		} finally {
+			static::setCurrentInstance(null);
 		}
 	}
 
@@ -720,20 +750,28 @@ abstract class GenericRegistry extends BaseModel
 		$data['id'] = $this->id;
 
 		// Only add fields that are explicitly defined in the registry configuration
-		if (!empty($this->registryConfig['fields'])) {
-			foreach ($this->registryConfig['fields'] as $field) {
+		if (!empty($this->registryConfig['fields']))
+		{
+			foreach ($this->registryConfig['fields'] as $field)
+			{
 				$fieldName = $field['name'];
-				
+
 				// Try to get the field value - first check if it exists as a property
-				if (property_exists($this, $fieldName)) {
+				if (property_exists($this, $fieldName))
+				{
 					$value = $this->$fieldName;
 					// Include the field even if it's null - the API consumer decides how to handle nulls
 					$data[$fieldName] = $value;
-				} else {
+				}
+				else
+				{
 					// Check if the property exists but is dynamically set
-					if (isset($this->$fieldName)) {
+					if (isset($this->$fieldName))
+					{
 						$data[$fieldName] = $this->$fieldName;
-					} else {
+					}
+					else
+					{
 						// Field is defined in config but not set - include as null
 						$data[$fieldName] = null;
 					}
@@ -742,24 +780,32 @@ abstract class GenericRegistry extends BaseModel
 		}
 
 		// Add custom fields if available
-		try {
+		try
+		{
 			$customFields = $this->getInstanceCustomFields();
-			foreach ($customFields as $customField) {
+			foreach ($customFields as $customField)
+			{
 				$fieldName = $customField['column_name'];
-				
+
 				// Skip if field already exists in static definition
-				if (isset($data[$fieldName])) {
+				if (isset($data[$fieldName]))
+				{
 					continue;
 				}
-				
+
 				// Get custom field value
-				if (property_exists($this, $fieldName)) {
+				if (property_exists($this, $fieldName))
+				{
 					$data[$fieldName] = $this->$fieldName;
-				} else if (isset($this->$fieldName)) {
+				}
+				else if (isset($this->$fieldName))
+				{
 					$data[$fieldName] = $this->$fieldName;
 				}
 			}
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			// Don't break the response if custom fields fail
 			error_log("Error loading custom fields in toArray(): " . $e->getMessage());
 		}
@@ -776,17 +822,22 @@ abstract class GenericRegistry extends BaseModel
 		// Set instance context for field map generation
 		static::setCurrentInstance($this);
 
-		try {
+		try
+		{
 			// Populate the ID field (always present in registry config)
-			if (isset($data['id'])) {
+			if (isset($data['id']))
+			{
 				$this->id = (int)$data['id'];
 			}
 
 			// Only populate fields that are explicitly defined in the registry configuration
-			if (!empty($this->registryConfig['fields'])) {
-				foreach ($this->registryConfig['fields'] as $field) {
+			if (!empty($this->registryConfig['fields']))
+			{
+				foreach ($this->registryConfig['fields'] as $field)
+				{
 					$fieldName = $field['name'];
-					if (isset($data[$fieldName])) {
+					if (isset($data[$fieldName]))
+					{
 						// Type conversion based on field configuration
 						$value = $this->convertFieldValue($data[$fieldName], $field);
 						// Create the property dynamically and set its value
@@ -797,11 +848,13 @@ abstract class GenericRegistry extends BaseModel
 
 			// Also call the parent populate method to handle any other BaseModel functionality (like custom fields)
 			parent::populate($data);
-		} finally {
+		}
+		finally
+		{
 			// Clear instance context
 			static::setCurrentInstance(null);
 		}
-		
+
 		return $this;
 	}
 
@@ -810,13 +863,15 @@ abstract class GenericRegistry extends BaseModel
 	 */
 	protected function convertFieldValue($value, array $fieldConfig)
 	{
-		if ($value === null) {
+		if ($value === null)
+		{
 			return null;
 		}
 
 		$type = $fieldConfig['type'];
-		
-		return match ($type) {
+
+		return match ($type)
+		{
 			'int' => (int)$value,
 			'float', 'decimal' => (float)$value,
 			'checkbox' => (bool)$value,

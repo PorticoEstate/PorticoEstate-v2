@@ -5,6 +5,7 @@ namespace App\models;
 use App\traits\SerializableTrait;
 use App\traits\ValidatorTrait;
 use App\Database\Db;
+use App\Database\Db2;
 use PDO;
 use Exception;
 use InvalidArgumentException;
@@ -283,7 +284,7 @@ abstract class BaseModel
 	public function save(): bool
 	{
 		try {
-			$this->db->beginTransaction();
+			$this->db->transaction_begin();
 
 			if ($this->id) {
 				$result = $this->update();
@@ -292,14 +293,14 @@ abstract class BaseModel
 			}
 
 			if ($result) {
-				$this->db->commit();
+				$this->db->transaction_commit();
 				return true;
 			} else {
-				$this->db->rollback();
+				$this->db->transaction_abort();
 				return false;
 			}
 		} catch (Exception $e) {
-			$this->db->rollback();
+			$this->db->transaction_abort();
 			error_log("Error saving " . static::class . ": " . $e->getMessage());
 			return false;
 		}
@@ -953,7 +954,7 @@ abstract class BaseModel
 		}
 
 		// Create secondary db connection for relationships
-		$db2 = Db::getInstance();
+		$db2 = new Db2();
 
 		// Unmarshal field values and load relationships
 		$entity = [];
@@ -1691,8 +1692,10 @@ abstract class BaseModel
 	protected static function getLocationId(string $appName, string $location): ?int
 	{
 		try {
-			$db = Db::getInstance();
-			$sql = "SELECT location_id FROM phpgw_locations WHERE app_name = ? AND location = ?";
+			$db = new Db2();
+
+		//	$sql = "SELECT location_id FROM phpgw_locations WHERE app_name = ? AND location = ?";
+			$sql = "SELECT location_id FROM phpgw_applications join phpgw_locations ON phpgw_applications.app_id = phpgw_locations.app_id WHERE app_name = ? AND phpgw_locations.name = ?";
 			$stmt = $db->prepare($sql);
 			
 			if ($stmt === false) {
@@ -1705,8 +1708,7 @@ abstract class BaseModel
 			$result = $stmt->fetch(PDO::FETCH_ASSOC);
 			return $result ? (int)$result['location_id'] : null;
 		} catch (Exception $e) {
-			error_log("Error getting location_id for {$appName}.{$location}: " . $e->getMessage());
-			return null;
+			throw $e;
 		}
 	}
 
@@ -1722,8 +1724,8 @@ abstract class BaseModel
 
 		try {
 			// Create instance of phpgwapi_custom_fields
-			$customFields = new \phpgwapi_custom_fields();
-			
+			$customFields = new \App\modules\phpgwapi\services\CustomFields();
+
 			// Get custom fields for this location
 			$fields = $customFields->find2(
 				$locationId,

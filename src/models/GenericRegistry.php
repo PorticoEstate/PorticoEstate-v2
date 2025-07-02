@@ -114,6 +114,10 @@ abstract class GenericRegistry extends BaseModel
 			{
 				$fieldMap[$field['name']]['values_def'] = $field['values_def'];
 			}
+			if (isset($field['validator']) && $field['validator'])
+			{
+				$fieldMap[$field['name']]['validator'] = $field['validator'];
+			}
 		}
 
 		// Add custom fields if location_id is configured
@@ -150,7 +154,7 @@ abstract class GenericRegistry extends BaseModel
 			'date' => 'date',
 			'datetime', 'timestamp' => 'datetime',
 			'html' => 'html',
-			'select' => 'string',
+			'select' => 'int', // Assuming select fields are stored as integers (foreign keys)
 			default => 'string'
 		};
 	}

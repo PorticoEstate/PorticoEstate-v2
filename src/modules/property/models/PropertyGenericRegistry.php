@@ -47,6 +47,10 @@ class PropertyGenericRegistry extends GenericRegistry
 						'name' => 'district_id',
 						'type' => 'select',
 						'nullable' => false,
+						'validator' => function ($value)
+						{
+							return empty($value) || !is_numeric($value);
+						},
 						'filter' => true,
 						'values_def' => [
 							'valueset' => false,

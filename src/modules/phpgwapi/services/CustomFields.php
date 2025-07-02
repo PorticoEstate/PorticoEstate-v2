@@ -28,27 +28,18 @@
 	   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	 */
 
+namespace App\modules\phpgwapi\services;
 
-	use App\modules\phpgwapi\services\Settings;
-	use App\modules\phpgwapi\controllers\Locations;
-	use App\Database\Db;
-	use App\Database\Db2;
-	use App\modules\phpgwapi\services\SchemaProc\SchemaProc;
-/*
-	 * Import the datetime class for date processing
-	 */
+use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\controllers\Locations;
+use App\Database\Db;
+use App\Database\Db2;
+use App\modules\phpgwapi\services\SchemaProc\SchemaProc;
 
-phpgw::import_class('phpgwapi.datetime');
+require_once(SRC_ROOT_PATH . '/modules/phpgwapi/inc/class.datetime.inc.php');
 
-/**
- * Custom Fields
- *
- * @package phpgroupware
- * @subpackage phpgwapi
- */
-class phpgwapi_custom_fields
+class CustomFields
 {
-
 	/**
 	 * @var array $receipt messages from the prosessing of functions
 	 */
@@ -92,14 +83,7 @@ class phpgwapi_custom_fields
 
 	private $_db2, $_dateformat, $_datetimeformat, $_oProc, $locations, $userSettings, $serverSettings;
 
-	/**
-	 * Constructor
-	 *
-	 * @param string $appname the name of the module using the custom fields
-	 *
-	 * @return void
-	 */
-	public function __construct($appname = null)
+	public function __construct(?string $appname = null)
 	{
 		$flags = Settings::getInstance()->get('flags');
 		$this->userSettings = Settings::getInstance()->get('user');
@@ -113,7 +97,7 @@ class phpgwapi_custom_fields
 
 		$this->_db = Db::getInstance();
 		$this->_db2 = new Db2();
-		
+
 		$this->_join			= $this->_db->join;
 		$this->_like			= $this->_db->like;
 		$this->_dateformat 		= Db::date_format();
@@ -149,7 +133,6 @@ class phpgwapi_custom_fields
 		$this->_oProc			= new SchemaProc($this->serverSettings['db_type']);
 		$this->_oProc->m_odb	= $this->_db;
 	}
-
 	/**
 	 * Magic get method
 	 *
@@ -521,15 +504,15 @@ class phpgwapi_custom_fields
 						break;
 
 					case 'D':
-						$ts = phpgwapi_datetime::date_to_timestamp($attrib['value']) - phpgwapi_datetime::user_timezone();
+						$ts = \phpgwapi_datetime::date_to_timestamp($attrib['value']) - \phpgwapi_datetime::user_timezone();
 						$attrib['value'] = date($this->_dateformat, $ts);
 						break;
 
 					case 'DT':
 						if ($attrib['value']['date'])
 						{
-							$date_array	= phpgwapi_datetime::date_array($attrib['value']['date']);
-							$ts = mktime((int)$attrib['value']['hour'], (int)$attrib['value']['min'], 0, $date_array['month'], $date_array['day'], $date_array['year']) - phpgwapi_datetime::user_timezone();
+							$date_array	= \phpgwapi_datetime::date_array($attrib['value']['date']);
+							$ts = mktime((int)$attrib['value']['hour'], (int)$attrib['value']['min'], 0, $date_array['month'], $date_array['day'], $date_array['year']) - \phpgwapi_datetime::user_timezone();
 							$attrib['value'] = date($this->_datetimeformat, $ts);
 						}
 						else
@@ -2325,4 +2308,5 @@ class phpgwapi_custom_fields
 			return $data_set;
 		}
 	}
+
 }

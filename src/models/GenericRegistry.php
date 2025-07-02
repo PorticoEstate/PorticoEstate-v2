@@ -25,12 +25,26 @@ abstract class GenericRegistry extends BaseModel
 	protected array $registryConfig = [];
 
 	/**
+	 * Cache for custom fields to avoid repeated lookups during a single request
+	 */
+	protected ?array $customFieldsCache = null;
+
+	/**
+	 * Static cache for custom fields by registry type to avoid repeated database calls
+	 * Key format: "ClassName:registryType"
+	 */
+	protected static array $staticCustomFieldsCache = [];
+
+	/**
 	 * Constructor
 	 */
 	public function __construct(string $registryType = '', array $data = [])
 	{
 		$this->registryType = $registryType;
 		$this->registryConfig = static::getRegistryConfig($registryType);
+		
+		// Clear custom fields cache since we're setting up a new registry type
+		$this->clearCustomFieldsCache();
 
 		parent::__construct($data);
 	}
@@ -720,16 +734,46 @@ abstract class GenericRegistry extends BaseModel
 
 	/**
 	 * Get custom fields for this registry instance (delegates to BaseModel)
+	 * Uses both instance-level and static-level caching to avoid repeated database lookups
 	 */
 	public function getInstanceCustomFields(): array
 	{
+		// Return cached result if available at instance level
+		if ($this->customFieldsCache !== null) {
+			return $this->customFieldsCache;
+		}
+
+		// Check static cache by registry type
+		$cacheKey = static::class . ':' . $this->registryType;
+		if (isset(static::$staticCustomFieldsCache[$cacheKey])) {
+			$this->customFieldsCache = static::$staticCustomFieldsCache[$cacheKey];
+			return $this->customFieldsCache;
+		}
+
 		// Set instance context and delegate to BaseModel method
 		static::setCurrentInstance($this);
 		
 		try {
-			return static::getCustomFields();
+			$this->customFieldsCache = static::getCustomFields();
+			// Also cache at static level for other instances of the same type
+			static::$staticCustomFieldsCache[$cacheKey] = $this->customFieldsCache;
+			return $this->customFieldsCache;
 		} finally {
 			static::setCurrentInstance(null);
+		}
+	}
+
+	/**
+	 * Clear the custom fields cache
+	 * Should be called when the registry type or configuration changes
+	 */
+	protected function clearCustomFieldsCache(bool $clearStaticCache = false): void
+	{
+		$this->customFieldsCache = null;
+		
+		if ($clearStaticCache) {
+			$cacheKey = static::class . ':' . $this->registryType;
+			unset(static::$staticCustomFieldsCache[$cacheKey]);
 		}
 	}
 

@@ -413,17 +413,8 @@ abstract class GenericRegistry extends BaseModel
 	{
 		$tableName = $this->getInstanceTableName();
 		$data = $this->getDbData();
-		//	$id = $data['id'];
-		//	unset($data['id']);
-		$data = [
-			'name' => 'ARNAs',
-			'delivery_address' => 'test',
-			'external_id' => 1,
-			'district_id' => 1,
-		];
-		$id = 1;
-
-
+		$id = $data['id'];
+		unset($data['id']);
 
 		if (empty($data))
 		{

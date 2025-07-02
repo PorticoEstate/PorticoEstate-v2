@@ -3,7 +3,6 @@
 namespace App\modules\property\models;
 
 use App\models\GenericRegistry;
-use App\models\BaseModel;
 use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
 use Exception;

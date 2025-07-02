@@ -1694,7 +1694,6 @@ abstract class BaseModel
 		try {
 			$db = new Db2();
 
-		//	$sql = "SELECT location_id FROM phpgw_locations WHERE app_name = ? AND location = ?";
 			$sql = "SELECT location_id FROM phpgw_applications join phpgw_locations ON phpgw_applications.app_id = phpgw_locations.app_id WHERE app_name = ? AND phpgw_locations.name = ?";
 			$stmt = $db->prepare($sql);
 			

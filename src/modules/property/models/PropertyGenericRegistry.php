@@ -20,7 +20,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'part_of_town' => [
 				'table' => 'fm_part_of_town',
 				'name' => 'Part of Town',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::location::town',
@@ -65,7 +65,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'district' => [
 				'table' => 'fm_district',
 				'name' => 'District',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::location::district',
@@ -89,7 +89,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'street' => [
 				'table' => 'fm_streetaddress',
 				'name' => 'Street',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::location::street',
@@ -112,7 +112,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'dimb' => [
 				'table' => 'fm_ecodimb',
 				'name' => 'Economic Dimension B',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::accounting::accounting_dimb',
@@ -171,7 +171,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'periodization' => [
 				'table' => 'fm_eco_periodization',
 				'name' => 'Periodization',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::accounting::periodization',
@@ -199,7 +199,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'tax' => [
 				'table' => 'fm_eco_tax',
 				'name' => 'Tax',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::accounting::tax',
@@ -222,7 +222,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'voucher_cat' => [
 				'table' => 'fm_eco_voucher_cat',
 				'name' => 'Voucher Category',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::accounting::voucher_cat',
@@ -240,7 +240,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'voucher_type' => [
 				'table' => 'fm_eco_voucher_type',
 				'name' => 'Voucher Type',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::accounting::voucher_type',
@@ -258,7 +258,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'tender_chapter' => [
 				'table' => 'fm_tender_chapter',
 				'name' => 'Tender Chapter',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::tender',
@@ -276,7 +276,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'owner_cats' => [
 				'table' => 'fm_owner_category',
 				'name' => 'Owner Categories',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::owner::owner_cats',
@@ -294,7 +294,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'tenant_cats' => [
 				'table' => 'fm_tenant_category',
 				'name' => 'Tenant Categories',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::tenant::tenant_cats',
@@ -312,7 +312,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'vendor_cats' => [
 				'table' => 'fm_vendor_category',
 				'name' => 'Vendor Categories',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::vendor::vendor_cats',
@@ -330,7 +330,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'vendor' => [
 				'table' => 'fm_vendor',
 				'name' => 'Vendor',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.vendor',
 				'system_location' => '.vendor',
@@ -370,7 +370,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'owner' => [
 				'table' => 'fm_owner',
 				'name' => 'Owner',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.owner',
 				'menu_selection' => 'property::economy::owner',
@@ -409,7 +409,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'tenant' => [
 				'table' => 'fm_tenant',
 				'name' => 'Tenant',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.tenant',
 				'menu_selection' => 'property::economy::tenant',
@@ -448,7 +448,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			's_agreement' => [
 				'table' => 'fm_s_agreement',
 				'name' => 'Service Agreement',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::agreement::service',
@@ -466,7 +466,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'tenant_claim' => [
 				'table' => 'fm_tenant_claim',
 				'name' => 'Tenant Claim',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::tenant::claim',
@@ -484,7 +484,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'wo_hours' => [
 				'table' => 'fm_wo_hours',
 				'name' => 'Work Order Hours',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::workorder::hours',
@@ -507,7 +507,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'r_condition_type' => [
 				'table' => 'fm_request_condition_type',
 				'name' => 'Request Condition Type',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::request::condition_type',
@@ -530,7 +530,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'r_probability' => [
 				'table' => 'fm_request_probability',
 				'name' => 'Request Probability',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::request::probability',
@@ -553,7 +553,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'r_consequence' => [
 				'table' => 'fm_request_consequence',
 				'name' => 'Request Consequence',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::request::consequence',
@@ -576,7 +576,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'authorities_demands' => [
 				'table' => 'fm_authorities_demands',
 				'name' => 'Authorities Demands',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::authorities::demands',
@@ -654,7 +654,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'dimb_role' => [
 				'table' => 'fm_ecodimb_role',
 				'name' => 'Economic Dimension B Role',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::accounting::dimb_role',
@@ -677,7 +677,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'condition_survey_status' => [
 				'table' => 'fm_condition_survey_status',
 				'name' => 'Condition Survey Status',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::condition_survey::status',
@@ -700,7 +700,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'request_responsible_unit' => [
 				'table' => 'fm_request_responsible_unit',
 				'name' => 'Request Responsible Unit',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::request::responsible_unit',
@@ -723,7 +723,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'ticket_priority' => [
 				'table' => 'fm_tts_priority',
 				'name' => 'Ticket Priority',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.ticket',
 				'menu_selection' => 'property::helpdesk::priority',
@@ -748,7 +748,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			'external_com_type' => [
 				'table' => 'fm_external_com_type',
 				'name' => 'External Communication Type',
-				'id' => ['name' => 'id', 'type' => 'auto'],
+				'id' => ['name' => 'id', 'type' => 'int'],
 				'acl_app' => 'property',
 				'acl_location' => '.admin',
 				'menu_selection' => 'admin::property::communication::external_type',

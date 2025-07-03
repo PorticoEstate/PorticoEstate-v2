@@ -42,7 +42,7 @@ abstract class GenericRegistry extends BaseModel
 	{
 		$this->registryType = $registryType;
 		$this->registryConfig = static::getRegistryConfig($registryType);
-		
+
 		// Clear custom fields cache since we're setting up a new registry type
 		$this->clearCustomFieldsCache();
 
@@ -376,10 +376,37 @@ abstract class GenericRegistry extends BaseModel
 	protected function create(): bool
 	{
 		$tableName = $this->getInstanceTableName();
+		$fieldMap = $this->getInstanceFieldMap();
 		$data = $this->getDbData();
 
-		// Remove ID for insert
-		unset($data['id']);
+		// Validate ID field requirements based on registry type
+		if (isset($fieldMap['id']))
+		{
+			$idType = $fieldMap['id']['type'] ?? 'auto';
+
+			if ($idType === 'auto')
+			{
+				// For auto type, ID must NOT be provided by client
+				if (isset($data['id']) && $data['id'] !== null)
+				{
+					throw new \Exception("ID must not be provided for auto-incrementing fields");
+				}
+			}
+			else if ($idType === 'int' || $idType === 'varchar')
+			{
+				// For int/varchar type, ID MUST be provided by client
+				if (!isset($data['id']) || $data['id'] === null || $data['id'] === '')
+				{
+					throw new \Exception("ID is required for registry type '{$this->registryType}' with ID type '{$idType}'");
+				}
+			}
+		}
+
+		// For auto type, remove ID for insert (it will be auto-generated)
+		if (isset($fieldMap['id']) && ($fieldMap['id']['type'] ?? 'auto') === 'auto')
+		{
+			unset($data['id']);
+		}
 
 		if (empty($data))
 		{
@@ -391,9 +418,8 @@ abstract class GenericRegistry extends BaseModel
 
 		$sql = "INSERT INTO {$tableName} (" . implode(', ', $columns) . ") VALUES (" . $placeholders . ")";
 
-		// For PostgreSQL, add RETURNING id if id field exists
-		$fieldMap = $this->getInstanceFieldMap();
-		if (isset($fieldMap['id']))
+		// For PostgreSQL, add RETURNING id if id field exists and is auto type
+		if (isset($fieldMap['id']) && ($fieldMap['id']['type'] ?? 'auto') === 'auto')
 		{
 			$sql .= " RETURNING id";
 		}
@@ -408,8 +434,8 @@ abstract class GenericRegistry extends BaseModel
 
 		$stmt->execute();
 
-		// Get the ID if available
-		if (isset($fieldMap['id']))
+		// Get the ID if available (for auto type)
+		if (isset($fieldMap['id']) && ($fieldMap['id']['type'] ?? 'auto') === 'auto')
 		{
 			$this->id = (int)$stmt->fetchColumn();
 		}
@@ -739,26 +765,31 @@ abstract class GenericRegistry extends BaseModel
 	public function getInstanceCustomFields(): array
 	{
 		// Return cached result if available at instance level
-		if ($this->customFieldsCache !== null) {
+		if ($this->customFieldsCache !== null)
+		{
 			return $this->customFieldsCache;
 		}
 
 		// Check static cache by registry type
 		$cacheKey = static::class . ':' . $this->registryType;
-		if (isset(static::$staticCustomFieldsCache[$cacheKey])) {
+		if (isset(static::$staticCustomFieldsCache[$cacheKey]))
+		{
 			$this->customFieldsCache = static::$staticCustomFieldsCache[$cacheKey];
 			return $this->customFieldsCache;
 		}
 
 		// Set instance context and delegate to BaseModel method
 		static::setCurrentInstance($this);
-		
-		try {
+
+		try
+		{
 			$this->customFieldsCache = static::getCustomFields();
 			// Also cache at static level for other instances of the same type
 			static::$staticCustomFieldsCache[$cacheKey] = $this->customFieldsCache;
 			return $this->customFieldsCache;
-		} finally {
+		}
+		finally
+		{
 			static::setCurrentInstance(null);
 		}
 	}
@@ -770,8 +801,9 @@ abstract class GenericRegistry extends BaseModel
 	protected function clearCustomFieldsCache(bool $clearStaticCache = false): void
 	{
 		$this->customFieldsCache = null;
-		
-		if ($clearStaticCache) {
+
+		if ($clearStaticCache)
+		{
 			$cacheKey = static::class . ':' . $this->registryType;
 			unset(static::$staticCustomFieldsCache[$cacheKey]);
 		}
@@ -917,5 +949,47 @@ abstract class GenericRegistry extends BaseModel
 			'varchar', 'text', 'html', 'select' => (string)$value,
 			default => $value
 		};
+	}
+
+	/**
+	 * Force save as new record (create), even if ID is present
+	 * This is needed for registry types with int/varchar ID where client provides the ID
+	 */
+	public function saveAsNew(): bool
+	{
+		$this->validateRegistryType();
+
+		// Set instance context for static methods
+		static::setCurrentInstance($this);
+
+		try
+		{
+			$this->db->transaction_begin();
+
+			// Always call create(), regardless of ID presence
+			$result = $this->create();
+
+			if ($result)
+			{
+				$this->db->transaction_commit();
+			}
+			else
+			{
+				$this->db->transaction_abort();
+			}
+		}
+		catch (\Exception $e)
+		{
+			$this->db->transaction_abort();
+			error_log("Error creating " . static::class . ": " . $e->getMessage());
+			$result = false;
+		}
+		finally
+		{
+			// Clear instance context
+			static::setCurrentInstance(null);
+		}
+
+		return $result;
 	}
 }

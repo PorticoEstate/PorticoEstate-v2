@@ -95,7 +95,8 @@ class GenericRegistryController
 	 */
 	public function __construct(?string $registryClass = null)
 	{
-		if ($registryClass && class_exists($registryClass)) {
+		if ($registryClass && class_exists($registryClass))
+		{
 			$this->registryClass = $registryClass;
 		}
 	}
@@ -105,11 +106,13 @@ class GenericRegistryController
 	 */
 	public function setRegistryClass(string $registryClass): void
 	{
-		if (!class_exists($registryClass)) {
+		if (!class_exists($registryClass))
+		{
 			throw new \InvalidArgumentException("Registry class {$registryClass} does not exist");
 		}
 
-		if (!is_subclass_of($registryClass, GenericRegistry::class)) {
+		if (!is_subclass_of($registryClass, GenericRegistry::class))
+		{
 			throw new \InvalidArgumentException("Registry class {$registryClass} must extend GenericRegistry");
 		}
 
@@ -121,15 +124,18 @@ class GenericRegistryController
 	 */
 	protected function getRegistryClass(Request $request): string
 	{
-		if (isset($this->registryClass)) {
+		if (isset($this->registryClass))
+		{
 			return $this->registryClass;
 		}
 
 		// Try to detect from route or headers
 		$module = $this->detectModuleFromRequest($request);
-		if ($module) {
+		if ($module)
+		{
 			$registryClass = "App\\modules\\{$module}\\models\\" . ucfirst($module) . "GenericRegistry";
-			if (class_exists($registryClass)) {
+			if (class_exists($registryClass))
+			{
 				return $registryClass;
 			}
 		}
@@ -145,17 +151,20 @@ class GenericRegistryController
 		// Detect from /{module}/registry pattern at the start of path
 		// Matches: /property/registry, /booking/registry, etc.
 		$path = $request->getUri()->getPath();
-		if (preg_match('/^\/([^\/]+)\/registry/', $path, $matches)) {
+		if (preg_match('/^\/([^\/]+)\/registry/', $path, $matches))
+		{
 			$module = $matches[1];
 			// Only return if it's a known module
-			if (in_array($module, ['property', 'booking', 'rental', 'admin'])) {
+			if (in_array($module, ['property', 'booking', 'rental', 'admin']))
+			{
 				return $module;
 			}
 		}
 
 		// Try to detect from custom header as fallback
 		$moduleHeader = $request->getHeaderLine('X-Module');
-		if ($moduleHeader) {
+		if ($moduleHeader)
+		{
 			return $moduleHeader;
 		}
 
@@ -249,12 +258,14 @@ class GenericRegistryController
 		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 
-		if (!$type) {
+		if (!$type)
+		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
 		// Validate registry type exists
-		if (!in_array($type, $registryClass::getAvailableTypes())) {
+		if (!in_array($type, $registryClass::getAvailableTypes()))
+		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
@@ -268,16 +279,22 @@ class GenericRegistryController
 
 		// Build search conditions
 		$conditions = [];
-		if ($query) {
+		if ($query)
+		{
 			// Search in 'name' field if it exists in the registry config, otherwise search in first text field
 			$searchField = 'name'; // Default fallback
 			$config = $registryClass::getRegistryConfig($type);
-			if (!empty($config['fields'])) {
-				foreach ($config['fields'] as $field) {
-					if ($field['name'] === 'name') {
+			if (!empty($config['fields']))
+			{
+				foreach ($config['fields'] as $field)
+				{
+					if ($field['name'] === 'name')
+					{
 						$searchField = 'name';
 						break;
-					} elseif (in_array($field['type'], ['varchar', 'text']) && !isset($searchField)) {
+					}
+					elseif (in_array($field['type'], ['varchar', 'text']) && !isset($searchField))
+					{
 						$searchField = $field['name'];
 					}
 				}
@@ -288,16 +305,21 @@ class GenericRegistryController
 		// Add filters from query params - only for fields that exist in the registry configuration
 		$config = $registryClass::getRegistryConfig($type);
 		$allowedFilterFields = [];
-		if (!empty($config['fields'])) {
-			foreach ($config['fields'] as $field) {
-				if (isset($field['filter']) && $field['filter']) {
+		if (!empty($config['fields']))
+		{
+			foreach ($config['fields'] as $field)
+			{
+				if (isset($field['filter']) && $field['filter'])
+				{
 					$allowedFilterFields[] = $field['name'];
 				}
 			}
 		}
 
-		foreach ($params as $key => $value) {
-			if (in_array($key, $allowedFilterFields) && $value !== '') {
+		foreach ($params as $key => $value)
+		{
+			if (in_array($key, $allowedFilterFields) && $value !== '')
+			{
 				$conditions[$key] = $value;
 			}
 		}
@@ -317,10 +339,14 @@ class GenericRegistryController
 
 		// Convert model objects to arrays for clean JSON response
 		$data = [];
-		foreach ($results as $result) {
-			if (is_object($result) && method_exists($result, 'toArray')) {
+		foreach ($results as $result)
+		{
+			if (is_object($result) && method_exists($result, 'toArray'))
+			{
 				$data[] = $result->toArray();
-			} else {
+			}
+			else
+			{
 				$data[] = $result;
 			}
 		}
@@ -392,23 +418,27 @@ class GenericRegistryController
 		$type = $args['type'] ?? '';
 		$id = (int)($args['id'] ?? 0);
 
-		if (!$type) {
+		if (!$type)
+		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id) {
+		if (!$id)
+		{
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, $registryClass::getAvailableTypes())) {
+		if (!in_array($type, $registryClass::getAvailableTypes()))
+		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
 		// Use static method to find item by type and ID
 		$item = $registryClass::findByType($type, $id);
-//		_debug_array($item);
+		//		_debug_array($item);
 
-		if (!$item) {
+		if (!$item)
+		{
 			throw new HttpNotFoundException($request, "Item not found");
 		}
 
@@ -496,37 +526,90 @@ class GenericRegistryController
 		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 
-		if (!$type) {
+		if (!$type)
+		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, $registryClass::getAvailableTypes())) {
+		if (!in_array($type, $registryClass::getAvailableTypes()))
+		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
 		$data = $request->getParsedBody();
-		
+
 		// Handle JSON request body for POST requests
-		if ($data === null || !is_array($data)) {
+		if ($data === null || !is_array($data))
+		{
 			$body = (string) $request->getBody();
-			if (!empty($body)) {
+			if (!empty($body))
+			{
 				$data = json_decode($body, true);
-				if (json_last_error() !== JSON_ERROR_NONE) {
+				if (json_last_error() !== JSON_ERROR_NONE)
+				{
 					throw new HttpBadRequestException($request, 'Invalid JSON data');
 				}
 			}
 		}
 
-		if (!is_array($data) || empty($data)) {
+		if (!is_array($data) || empty($data))
+		{
 			throw new HttpBadRequestException($request, 'Invalid request data');
 		}
 
-		try {
+		try
+		{
+			// Get the registry configuration to check ID field requirements
+			$config = $registryClass::getRegistryConfig($type);
+			$idConfig = $config['id'] ?? ['name' => 'id', 'type' => 'int'];
+			$idFieldName = $idConfig['name'] ?? 'id';
+			$idFieldType = $idConfig['type'] ?? 'int';
+
+			// Validate ID field requirements based on type
+			if ($idFieldType === 'auto')
+			{
+				// For auto-increment, ID should not be provided by client
+				if (isset($data[$idFieldName]) && $data[$idFieldName] !== null && $data[$idFieldName] !== '')
+				{
+					$response->getBody()->write(json_encode([
+						'success' => false,
+						'message' => "ID field '{$idFieldName}' should not be provided for auto-increment type",
+						'errors' => ["{$idFieldName}" => "ID is auto-generated, do not provide a value"]
+					]));
+					return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+				}
+			}
+			elseif (in_array($idFieldType, ['int', 'varchar']))
+			{
+				// For int/varchar, ID must be provided by client
+				if (!isset($data[$idFieldName]) || $data[$idFieldName] === null || $data[$idFieldName] === '')
+				{
+					$response->getBody()->write(json_encode([
+						'success' => false,
+						'message' => "ID field '{$idFieldName}' is required for {$idFieldType} type",
+						'errors' => ["{$idFieldName}" => "ID value is required"]
+					]));
+					return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+				}
+
+				// Additional validation for int type
+				if ($idFieldType === 'int' && !is_numeric($data[$idFieldName]))
+				{
+					$response->getBody()->write(json_encode([
+						'success' => false,
+						'message' => "ID field '{$idFieldName}' must be numeric for int type",
+						'errors' => ["{$idFieldName}" => "ID must be a valid integer"]
+					]));
+					return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
+				}
+			}
+
 			$item = $registryClass::createForType($type, $data);
 
 			// Validate the data
 			$errors = $item->validate();
-			if (!empty($errors)) {
+			if (!empty($errors))
+			{
 				$response->getBody()->write(json_encode([
 					'success' => false,
 					'errors' => $errors,
@@ -535,10 +618,11 @@ class GenericRegistryController
 				return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
 			}
 
-			// Save the item
-			$success = $item->save();
+			// Force creation mode for store operation (even if ID is provided for int/varchar types)
+			$success = $item->saveAsNew();
 
-			if (!$success) {
+			if (!$success)
+			{
 				throw new \Exception('Failed to save item');
 			}
 
@@ -551,7 +635,9 @@ class GenericRegistryController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withStatus(201)->withHeader('Content-Type', 'application/json');
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$responseData = [
 				'success' => false,
 				'message' => 'Failed to create item: ' . $e->getMessage()
@@ -643,49 +729,59 @@ class GenericRegistryController
 		$type = $args['type'] ?? '';
 		$id = (int)($args['id'] ?? 0);
 
-		if (!$type) {
+		if (!$type)
+		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id) {
+		if (!$id)
+		{
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, $registryClass::getAvailableTypes())) {
+		if (!in_array($type, $registryClass::getAvailableTypes()))
+		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
 		// Use static method to find item by type and ID
 		$item = $registryClass::findByType($type, $id);
 
-		if (!$item) {
+		if (!$item)
+		{
 			throw new HttpNotFoundException($request, "Item not found");
 		}
 
 		$data = $request->getParsedBody();
-		
+
 		// Handle JSON request body for PUT requests
-		if ($data === null || !is_array($data)) {
+		if ($data === null || !is_array($data))
+		{
 			$body = (string) $request->getBody();
-			if (!empty($body)) {
+			if (!empty($body))
+			{
 				$data = json_decode($body, true);
-				if (json_last_error() !== JSON_ERROR_NONE) {
+				if (json_last_error() !== JSON_ERROR_NONE)
+				{
 					throw new HttpBadRequestException($request, 'Invalid JSON data');
 				}
 			}
 		}
 
-		if (!is_array($data) || empty($data)) {
+		if (!is_array($data) || empty($data))
+		{
 			throw new HttpBadRequestException($request, 'Invalid request data');
 		}
 
-		try {
+		try
+		{
 			// Update the item with new data
 			$item->populate($data);
 
 			// Validate the data
 			$errors = $item->validate();
-			if (!empty($errors)) {
+			if (!empty($errors))
+			{
 				$response->getBody()->write(json_encode([
 					'success' => false,
 					'errors' => $errors,
@@ -697,7 +793,8 @@ class GenericRegistryController
 			// Save the changes
 			$success = $item->save();
 
-			if (!$success) {
+			if (!$success)
+			{
 				throw new \Exception('Failed to update item');
 			}
 
@@ -710,7 +807,9 @@ class GenericRegistryController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json');
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$responseData = [
 				'success' => false,
 				'message' => 'Failed to update item: ' . $e->getMessage()
@@ -784,29 +883,35 @@ class GenericRegistryController
 		$type = $args['type'] ?? '';
 		$id = (int)($args['id'] ?? 0);
 
-		if (!$type) {
+		if (!$type)
+		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!$id) {
+		if (!$id)
+		{
 			throw new HttpBadRequestException($request, 'ID is required');
 		}
 
-		if (!in_array($type, $registryClass::getAvailableTypes())) {
+		if (!in_array($type, $registryClass::getAvailableTypes()))
+		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
 		// Use static method to find item by type and ID
 		$item = $registryClass::findByType($type, $id);
 
-		if (!$item) {
+		if (!$item)
+		{
 			throw new HttpNotFoundException($request, "Item not found");
 		}
 
-		try {
+		try
+		{
 			$success = $item->delete();
 
-			if (!$success) {
+			if (!$success)
+			{
 				throw new \Exception('Failed to delete item');
 			}
 
@@ -818,7 +923,9 @@ class GenericRegistryController
 
 			$response->getBody()->write(json_encode($responseData));
 			return $response->withHeader('Content-Type', 'application/json');
-		} catch (\Exception $e) {
+		}
+		catch (\Exception $e)
+		{
 			$responseData = [
 				'success' => false,
 				'message' => 'Failed to delete item: ' . $e->getMessage()
@@ -862,14 +969,46 @@ class GenericRegistryController
 		$registryClass = $this->getRegistryClass($request);
 		$types = [];
 
-		foreach ($registryClass::getAvailableTypes() as $type) {
+		foreach ($registryClass::getAvailableTypes() as $type)
+		{
 			$config = $registryClass::getRegistryConfig($type);
+
+			// Include the id field definition in the fields array
+			$fields = $config['fields'] ?? [];
+
+			// Add the id field definition to the beginning of the fields array
+			if (isset($config['id']))
+			{
+				$idField = $config['id'];
+				// Convert to field format if needed
+				if (is_array($idField))
+				{
+					$idFieldDef = [
+						'name' => $idField['name'] ?? 'id',
+						'type' => $idField['type'] ?? 'int',
+						'descr' => $idField['descr'] ?? 'ID',
+						'nullable' => $idField['nullable'] ?? false,
+						'sortable' => true,
+						'filter' => true
+					];
+					// Add additional properties if they exist
+					if (isset($idField['maxlength']))
+					{
+						$idFieldDef['maxlength'] = $idField['maxlength'];
+					}
+
+					// Prepend the id field to the fields array
+					array_unshift($fields, $idFieldDef);
+				}
+			}
+
 			$types[] = [
 				'type' => $type,
 				'name' => $config['name'] ?? ucfirst(str_replace('_', ' ', $type)),
 				'table' => $config['table'] ?? '',
 				'acl_location' => $config['acl_location'] ?? '',
-				'fields' => $config['fields'] ?? []
+				'id_field' => $config['id'] ?? ['name' => 'id', 'type' => 'int'],
+				'fields' => $fields
 			];
 		}
 
@@ -941,11 +1080,13 @@ class GenericRegistryController
 		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 
-		if (!$type) {
+		if (!$type)
+		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, $registryClass::getAvailableTypes())) {
+		if (!in_array($type, $registryClass::getAvailableTypes()))
+		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
@@ -1055,11 +1196,13 @@ class GenericRegistryController
 		$registryClass = $this->getRegistryClass($request);
 		$type = $args['type'] ?? '';
 
-		if (!$type) {
+		if (!$type)
+		{
 			throw new HttpBadRequestException($request, 'Registry type is required');
 		}
 
-		if (!in_array($type, $registryClass::getAvailableTypes())) {
+		if (!in_array($type, $registryClass::getAvailableTypes()))
+		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
@@ -1071,28 +1214,38 @@ class GenericRegistryController
 		$conditions = [];
 		$config = $registryClass::getRegistryConfig($type);
 		$allowedFilterFields = ['id']; // Always allow ID filtering
-		if (!empty($config['fields'])) {
-			foreach ($config['fields'] as $field) {
-				if (isset($field['filter']) && $field['filter']) {
+		if (!empty($config['fields']))
+		{
+			foreach ($config['fields'] as $field)
+			{
+				if (isset($field['filter']) && $field['filter'])
+				{
 					$allowedFilterFields[] = $field['name'];
 				}
 			}
 		}
 
-		foreach ($params as $key => $value) {
-			if (in_array($key, $allowedFilterFields) && $value !== '' && !in_array($key, ['add_empty', 'selected'])) {
+		foreach ($params as $key => $value)
+		{
+			if (in_array($key, $allowedFilterFields) && $value !== '' && !in_array($key, ['add_empty', 'selected']))
+			{
 				$conditions[$key] = $value;
 			}
 		}
 
 		// Determine sort field - prefer 'name' if available, otherwise use first available field
 		$sortField = 'id'; // Fallback
-		if (!empty($config['fields'])) {
-			foreach ($config['fields'] as $field) {
-				if ($field['name'] === 'name') {
+		if (!empty($config['fields']))
+		{
+			foreach ($config['fields'] as $field)
+			{
+				if ($field['name'] === 'name')
+				{
 					$sortField = 'name';
 					break;
-				} elseif (isset($field['sortable']) && $field['sortable'] && $sortField === 'id') {
+				}
+				elseif (isset($field['sortable']) && $field['sortable'] && $sortField === 'id')
+				{
 					$sortField = $field['name'];
 				}
 			}
@@ -1106,26 +1259,33 @@ class GenericRegistryController
 		// Format for dropdown
 		$list = [];
 
-		if ($addEmpty) {
+		if ($addEmpty)
+		{
 			$list[] = ['id' => '', 'name' => '-- Select --'];
 		}
 
 		// Determine display field - prefer 'name' if available, otherwise use first text field
 		$displayField = 'id'; // Fallback
-		if (!empty($config['fields'])) {
-			foreach ($config['fields'] as $field) {
-				if ($field['name'] === 'name') {
+		if (!empty($config['fields']))
+		{
+			foreach ($config['fields'] as $field)
+			{
+				if ($field['name'] === 'name')
+				{
 					$displayField = 'name';
 					break;
-				} elseif (in_array($field['type'], ['varchar', 'text']) && $displayField === 'id') {
+				}
+				elseif (in_array($field['type'], ['varchar', 'text']) && $displayField === 'id')
+				{
 					$displayField = $field['name'];
 				}
 			}
 		}
 
-		foreach ($items as $item) {
-			$displayValue = property_exists($item, $displayField) && isset($item->$displayField) 
-				? $item->$displayField 
+		foreach ($items as $item)
+		{
+			$displayValue = property_exists($item, $displayField) && isset($item->$displayField)
+				? $item->$displayField
 				: "Item #{$item->id}";
 
 			$listItem = [
@@ -1133,7 +1293,8 @@ class GenericRegistryController
 				'name' => $displayValue
 			];
 
-			if ($selected && $item->id == $selected) {
+			if ($selected && $item->id == $selected)
+			{
 				$listItem['selected'] = true;
 			}
 

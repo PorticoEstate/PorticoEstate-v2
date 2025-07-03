@@ -4,6 +4,7 @@ namespace App\modules\property\models;
 
 use App\models\GenericRegistry;
 use App\modules\phpgwapi\services\Cache;
+use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
 use Exception;
 
@@ -30,12 +31,19 @@ class PropertyGenericRegistry extends GenericRegistry
 	public function __construct(string $registryType = '', array $data = [])
 	{
 		// Initialize database connection
-		$this->_db = Db::getInstance();
-		
-		// Initialize account (use session or default)
-		$this->account = $_SESSION['phpgw_info']['user']['account_id'] ?? 1;
 
-		parent::__construct($registryType, $data);
+		// Initialize account (use session or default)
+
+		$userSettings = Settings::getInstance()->get('user');
+		$this->account	 = $userSettings['account_id'] ?? 1;
+
+		// Only call parent constructor if registryType is not empty
+		// This prevents infinite loop when getRegistryDefinition creates instances
+		if (!empty($registryType)) {
+			parent::__construct($registryType, $data);
+		}
+		$this->_db = Db::getInstance();
+
 	}
 
 	/**
@@ -58,6 +66,11 @@ class PropertyGenericRegistry extends GenericRegistry
 	 */
 	public static function getRegistryDefinition(string $type, int $type_id = 0): ?array
 	{
+		// Return null for empty type to prevent infinite loop
+		if (empty($type)) {
+			return null;
+		}
+
 		// Check if already loaded
 		$key = $type_id > 0 ? "{$type}_{$type_id}" : $type;
 		if (isset(static::$registryDefinitions[$key])) {
@@ -66,7 +79,15 @@ class PropertyGenericRegistry extends GenericRegistry
 
 		// Use internal get_location_info method instead of legacy class
 		try {
-			$instance = new static();
+			// Create instance using reflection to avoid constructor call
+			$reflection = new \ReflectionClass(static::class);
+			$instance = $reflection->newInstanceWithoutConstructor();
+			
+			// Initialize required properties manually
+			$instance->_db = Db::getInstance();
+			$userSettings = Settings::getInstance()->get('user');
+			$instance->account = $userSettings['account_id'] ?? 1;
+
 			$info = $instance->get_location_info($type, $type_id);
 			if (!empty($info)) {
 				// Convert to our format and cache
@@ -181,6 +202,11 @@ class PropertyGenericRegistry extends GenericRegistry
 	 */
 	public static function getRegistryConfig(string $type): array
 	{
+		// Return empty array for empty type to prevent infinite loop
+		if (empty($type)) {
+			return [];
+		}
+
 		// Use our custom getRegistryDefinition which handles type_id and legacy loading
 		// For types that require type_id, we'll need to handle this through constructor or forType()
 		$definition = static::getRegistryDefinition($type);
@@ -339,29 +365,29 @@ class PropertyGenericRegistry extends GenericRegistry
 			case 'part_of_town':
 				$info = array(
 					'table'			 => 'fm_part_of_town',
-					'id'			 => array('name' => 'id', 'type' => 'int', 'descr' => lang('id')),
+					'id'			 => array('name' => 'id', 'type' => 'int', 'descr' => $this->lang('id')),
 					'fields'		 => array(
 						array(
 							'name'		 => 'name',
-							'descr'		 => lang('name'),
+							'descr'		 => $this->lang('name'),
 							'type'		 => 'varchar',
 							'nullable'	 => false,
 							'size'		 => 20
 						),
 						array(
 							'name'	 => 'delivery_address',
-							'descr'	 => lang('delivery address'),
+							'descr'	 => $this->lang('delivery address'),
 							'type'	 => 'text'
 						),
 						array(
 							'name'		 => 'external_id',
-							'descr'		 => lang('external id'),
+							'descr'		 => $this->lang('external id'),
 							'type'		 => 'int',
 							'nullable'	 => true,
 						),
 						array(
 							'name'		 => 'district_id',
-							'descr'		 => lang('district'),
+							'descr'		 => $this->lang('district'),
 							'type'		 => 'select',
 							'nullable'	 => false,
 							'filter'	 => true,
@@ -373,20 +399,12 @@ class PropertyGenericRegistry extends GenericRegistry
 							)
 						),
 					),
-					'edit_msg'		 => lang('edit'),
-					'add_msg'		 => lang('add'),
-					'name'			 => lang('part of town'),
+					'edit_msg'		 => $this->lang('edit'),
+					'add_msg'		 => $this->lang('add'),
+					'name'			 => $this->lang('part of town'),
 					'acl_app'		 => 'property',
 					'acl_location'	 => '.admin',
 					'menu_selection' => 'admin::property::location::town',
-					/*
-						  'default'			=> array
-						  (
-						  'user_id' 		=> array('add'	=> '$this->account'),
-						  'entry_date'	=> array('add'	=> 'time()'),
-						  'modified_date'	=> array('edit'	=> 'time()'),
-						  ),
-						 */
 					'check_grant'	 => false
 				);
 
@@ -1493,10 +1511,9 @@ class PropertyGenericRegistry extends GenericRegistry
 				break;
 			case 'building_part':
 
-				$config = CreateObject('phpgwapi.config', 'property');
-				$config->read();
+				$config = (new \App\modules\phpgwapi\services\Config('property'))->read();
 
-				$filter_buildingpart = isset($config->config_data['filter_buildingpart']) ? $config->config_data['filter_buildingpart'] : array();
+				$filter_buildingpart = isset($config['filter_buildingpart']) ? $config['filter_buildingpart'] : array();
 
 				$info	 = array(
 					'table'			 => 'fm_building_part',

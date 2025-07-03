@@ -1,4 +1,399 @@
-# GenericRegistry API Reference
+# API Reference
+
+## Class: App\models\BaseModel (Abstract)
+
+Abstract base class for CRUD operations with field validation, sanitization, and relationship management.
+
+### Constructor
+
+```php
+public function __construct(?array $data = null)
+```
+
+Creates a new model instance.
+
+**Parameters:**
+- `$data` - Optional initial data to populate#### Working with Relationships
+```php
+// Load relationship
+$item = MyModel::find(1);
+$tags = $item->loadRelationship('tags');
+
+// Load multiple items with relationships - requires custom implementation
+$items = MyModel::findWhere([], ['joins' => ['category']]);
+```**Example:**
+```php
+$model = new MyModel(['name' => 'Test', 'active' => true]);
+```
+
+### Abstract Methods (Must be Implemented)
+
+#### getFieldMap()
+```php
+protected static abstract function getFieldMap(): array
+```
+
+Must return field definitions for validation and marshaling.
+
+**Example Implementation:**
+```php
+protected static function getFieldMap(): array
+{
+    return [
+        'id' => ['type' => 'int', 'required' => false],
+        'name' => ['type' => 'string', 'required' => true, 'maxLength' => 255],
+        'email' => ['type' => 'email', 'required' => true],
+        'active' => ['type' => 'bool', 'default' => true],
+        'created_date' => ['type' => 'datetime'],
+    ];
+}
+```
+
+#### getTableName()
+```php
+protected static abstract function getTableName(): string
+```
+
+Must return the database table name.
+
+**Example Implementation:**
+```php
+protected static function getTableName(): string
+{
+    return 'my_table';
+}
+```
+
+### Optional Methods
+
+#### getRelationshipMap()
+```php
+protected static function getRelationshipMap(): array
+```
+
+Define entity relationships (optional).
+
+**Example Implementation:**
+```php
+protected static function getRelationshipMap(): array
+{
+    return [
+        'category' => [
+            'type' => 'belongs_to',
+            'model' => Category::class,
+            'foreign_key' => 'category_id',
+        ],
+        'tags' => [
+            'type' => 'many_to_many',
+            'model' => Tag::class,
+            'junction_table' => 'item_tags',
+            'local_key' => 'item_id',
+            'foreign_key' => 'tag_id',
+        ],
+    ];
+}
+```
+
+#### getCustomFieldsLocationId()
+```php
+protected static function getCustomFieldsLocationId(): ?int
+```
+
+Return location ID for custom fields integration.
+
+#### getCustomFieldsJsonField()
+```php
+protected static function getCustomFieldsJsonField(): ?string
+```
+
+Return field name to store custom fields as JSON.
+
+### Instance Methods
+
+#### populate()
+```php
+public function populate(array $data): self
+```
+
+Populate model with data from array.
+
+**Parameters:**
+- `$data` - Data array to populate model with
+
+**Returns:** Self for method chaining
+
+**Example:**
+```php
+$model->populate(['name' => 'Updated Name', 'active' => false]);
+```
+
+#### validate()
+```php
+public function validate(): array
+```
+
+Validate model data against field definitions.
+
+**Returns:** Array of validation errors (empty if valid)
+
+**Example:**
+```php
+$model = new MyModel();
+$model->name = ''; // Required field
+$errors = $model->validate();
+if (!empty($errors)) {
+    foreach ($errors as $error) {
+        echo $error . "\n";
+    }
+}
+```
+
+#### save()
+```php
+public function save(): bool
+```
+
+Save the model to database (create or update).
+
+**Returns:** True if successful, false otherwise
+
+**Example:**
+```php
+$model = new MyModel();
+$model->name = 'New Item';
+$model->email = 'test@example.com';
+
+if ($model->save()) {
+    echo "Saved successfully with ID: " . $model->id;
+} else {
+    echo "Save failed";
+}
+```
+
+#### delete()
+```php
+public function delete(): bool
+```
+
+Delete the model from database.
+
+**Returns:** True if successful, false otherwise
+
+**Example:**
+```php
+$model = MyModel::findById(123);
+if ($model && $model->delete()) {
+    echo "Deleted successfully";
+}
+```
+
+#### loadRelationship()
+```php
+public function loadRelationship(string $relationshipName): ?array
+```
+
+Load a specific relationship for this model.
+
+**Parameters:**
+- `$relationshipName` - Name of the relationship as defined in getRelationshipMap()
+
+**Returns:** Array of related data or null if not found
+
+**Example:**
+```php
+$item = MyModel::find(1);
+$tags = $item->loadRelationship('tags');
+$category = $item->loadRelationship('category');
+```
+
+### Static Methods
+
+#### find()
+```php
+public static function find(int $id): ?static
+```
+
+Find model by ID.
+
+**Parameters:**
+- `$id` - Record ID
+
+**Returns:** Model instance or null if not found
+
+**Example:**
+```php
+$model = MyModel::find(123);
+if ($model) {
+    echo "Found: " . $model->name;
+}
+```
+
+#### findWhere()
+```php
+public static function findWhere(array $conditions = [], array $options = []): array
+```
+
+Find multiple models with conditions.
+
+**Parameters:**
+- `$conditions` - Search conditions
+- `$options` - Query options (limit, offset, order, joins)
+
+**Returns:** Array of model instances
+
+**Example:**
+```php
+$models = MyModel::findWhere(
+    ['active' => true, 'category_id' => 5],
+    ['order' => 'name ASC', 'limit' => 10]
+);
+```
+
+#### getSanitizationRules()
+```php
+public static function getSanitizationRules(): array
+```
+
+Get sanitization rules from field map.
+
+**Returns:** Array of field sanitization rules
+
+### Field Map Configuration
+
+Each field in the field map can have the following properties:
+
+```php
+'field_name' => [
+    'type' => 'string',           // Required: Field type
+    'required' => true,           // Optional: Is field required
+    'nullable' => false,          // Optional: Can field be null
+    'maxLength' => 255,           // Optional: Max length for strings
+    'default' => 'default_value', // Optional: Default value
+    'sanitize' => 'string',       // Optional: Sanitization type
+    'validator' => function($value, $model) { // Optional: Custom validator
+        return $value !== 'invalid' ? null : 'Invalid value';
+    },
+    'custom_field' => true,       // Optional: Is this a custom field
+]
+```
+
+### Supported Field Types
+
+| Type | Description | PHP Type | Validation |
+|------|-------------|----------|------------|
+| `int` | Integer number | `int` | Must be numeric |
+| `string` | Short text | `string` | Basic string validation |
+| `text` | Long text | `string` | Basic string validation |
+| `float` | Floating point | `float` | Must be numeric |
+| `decimal` | Decimal number | `float` | Must be numeric |
+| `bool` | Boolean | `bool` | Must be boolean-like |
+| `date` | Date | `string` | Must be valid date |
+| `datetime` | Date/time | `string` | Must be valid datetime |
+| `timestamp` | Timestamp | `string` | Must be valid datetime |
+| `time` | Time | `string` | Must be valid time |
+| `email` | Email address | `string` | Must be valid email |
+| `url` | URL | `string` | Must be valid URL |
+| `html` | HTML content | `string` | No additional validation |
+| `array` | Array data | `array` | Must be array |
+| `json` | JSON data | `string` | No additional validation |
+| `intarray` | Array of integers | `array` | Each element must be int |
+
+### Relationship Types
+
+#### belongs_to
+```php
+'category' => [
+    'type' => 'belongs_to',
+    'model' => Category::class,
+    'foreign_key' => 'category_id',
+]
+```
+
+#### has_one
+```php
+'profile' => [
+    'type' => 'has_one',
+    'model' => Profile::class,
+    'foreign_key' => 'user_id',
+]
+```
+
+#### has_many
+```php
+'orders' => [
+    'type' => 'has_many',
+    'model' => Order::class,
+    'foreign_key' => 'customer_id',
+]
+```
+
+#### many_to_many
+```php
+'tags' => [
+    'type' => 'many_to_many',
+    'model' => Tag::class,
+    'junction_table' => 'item_tags',
+    'local_key' => 'item_id',
+    'foreign_key' => 'tag_id',
+]
+```
+
+### Usage Examples
+
+#### Basic CRUD Operations
+```php
+// Create
+$item = new MyModel();
+$item->name = 'Test Item';
+$item->description = 'Test description';
+$item->save();
+
+// Read
+$item = MyModel::find(1);
+$items = MyModel::findWhere(['active' => true]);
+
+// Update
+$item->name = 'Updated Name';
+$item->save();
+
+// Delete
+$item->delete();
+```
+
+#### Working with Relationships
+```php
+// Load relationship
+$item = MyModel::findById(1);
+$category = $item->getRelated('category');
+
+// Load multiple items with relationships
+$items = MyModel::findWhere([], ['joins' => ['category']]);
+foreach ($items as $item) {
+    echo $item->name . ' - ' . $item->category->name;
+}
+```
+
+#### Custom Validation
+```php
+class MyModel extends BaseModel
+{
+    // ...existing code...
+    
+    protected function doCustomValidation(): array
+    {
+        $errors = [];
+        
+        // Custom business logic validation
+        if ($this->start_date && $this->end_date && $this->start_date > $this->end_date) {
+            $errors[] = 'Start date must be before end date';
+        }
+        
+        return $errors;
+    }
+}
+```
+
+---
 
 ## Class: App\models\GenericRegistry (Abstract)
 

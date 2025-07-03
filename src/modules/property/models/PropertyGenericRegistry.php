@@ -463,7 +463,7 @@ class PropertyGenericRegistry extends GenericRegistry
 			case 'dimd':
 				$info	 = array(
 					'table'			 => 'fm_ecodimd',
-					'id'			 => array('name' => 'id', 'type' => 'varhcar'),
+					'id'			 => array('name' => 'id', 'type' => 'varchar'),
 					'fields'		 => array(
 						array(
 							'name'	 => 'descr',

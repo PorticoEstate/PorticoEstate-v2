@@ -111,7 +111,7 @@ abstract class GenericRegistry extends BaseModel
 		{
 			$fieldMap[$field['name']] = [
 				'type' => $this->mapFieldType($field['type']),
-				'required' => !isset($field['nullable']) || !$field['nullable'],
+				'required' => isset($field['nullable']) && $field['nullable'] === false,
 				'default' => $field['default'] ?? null,
 			];
 

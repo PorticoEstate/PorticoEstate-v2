@@ -5,6 +5,9 @@ $(document).ready(function ()
 	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.uibuilding.index'}, true),
 		'field_building_name', 'field_building_id', 'building_container');
 
+	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'booking.boresource.get_outlook_resources'}, true),
+	'field_outlook_item_name', 'field_outlook_item_id', 'outlook_container');
+
 	$("#field_schema_activity_id").val($("#field_activity_id").val());
 
 	get_custom_fields($("#field_activity_id").val(), default_schema);
@@ -131,6 +134,72 @@ removeBuilding = function ()
 	});
 };
 
+addoutlook = function ()
+{
+	var oArgs = { menuaction: 'booking.uiresource.add_outlook_item' };
+	var requestUrl = phpGWLink('index.php', oArgs, true);
+	var outlook_item_id = $("#field_outlook_item_id").val();
+	var outlook_item_name = $("#field_outlook_item_name").val();
+	$.ajax({
+		type: 'POST',
+		data: { outlook_item_id: outlook_item_id, outlook_item_name: outlook_item_name, resource_id: resource_id },
+		dataType: 'JSON',
+		url: requestUrl,
+		success: function (data)
+		{
+			if (data.ok == true)
+			{
+				$("#no_outlook_mapping").hide();
+				$("#outlook_items").append(
+					'<tr id="outlook_item_' + outlook_item_id + '">' +
+					'<td>' + outlook_item_name + '</td>' +
+					'<td><a class="button" onclick="removeoutlook(' + resource_id + ',\'' + outlook_item_id + '\')">' +
+					lang['Delete'] + '</a></td>' +
+					'</tr>'
+				);
+				$("#field_outlook_item_id").val('');
+				$("#field_outlook_item_name").val('');
+				$("#outlook_items").show();
+				// Show the outlook items table if it was hidden
+				// If this is the first item added, hide the no mapping message
+			}
+			if (data.msg !== '')
+			{
+				alert(data.msg);
+			}
+		}
+	});
+};
+
+removeoutlook = function (resource_id, outlook_item_id)
+{
+	// Add confirmation dialog
+	if (!confirm('Are you sure you want to remove this Outlook item?')) {
+		return;
+	}
+	
+	// Proceed with the removal
+	var oArgs = {menuaction: 'booking.uiresource.remove_outlook_item'};
+	var requestUrl = phpGWLink('index.php', oArgs, true);
+	$.ajax({
+		type: 'POST',
+		data: {outlook_item_id: outlook_item_id, resource_id: resource_id},
+		dataType: 'JSON',
+		url: requestUrl,
+		success: function (data)
+		{
+			if (data.ok == true)
+			{
+				//remove the row with id 'outlook_item_' + outlook_item_id
+				$("#outlook_item_" + outlook_item_id).remove();
+			}
+			if (data.msg !== '')
+			{
+				alert(data.msg);
+			}
+		}
+	});
+}
 
 ChangeSchema = function (key, oData)
 {

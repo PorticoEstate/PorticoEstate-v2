@@ -423,7 +423,7 @@ abstract class booking_socommon
 						$column = join(',', $column);
 						$order_method = '';
 
-						if (is_array($params['manytomany']['order']))
+						if (isset($params['manytomany']['order']) && is_array($params['manytomany']['order']))
 						{
 							$order_method = "ORDER BY {$params['manytomany']['order']['sort']} {$params['manytomany']['order']['dir']}";
 						}

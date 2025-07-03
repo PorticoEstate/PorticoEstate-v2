@@ -315,14 +315,24 @@ class GenericRegistryController
 		$allResults = $registryClass::findWhereByType($type, $conditions);
 		$totalCount = count($allResults);
 
+		// Convert model objects to arrays for clean JSON response
+		$data = [];
+		foreach ($results as $result) {
+			if (is_object($result) && method_exists($result, 'toArray')) {
+				$data[] = $result->toArray();
+			} else {
+				$data[] = $result;
+			}
+		}
+
 		$responseData = [
 			'success' => true,
-			'data' => $results,
+			'data' => $data,
 			'total' => $totalCount,
 			'start' => $start,
 			'limit' => $limit,
 			'registry_type' => $type,
-			'registry_name' => $registryClass::getTypeName($type)
+			'registry_name' => $config['name'] ?? ucfirst(str_replace('_', ' ', $type))
 		];
 
 		$response->getBody()->write(json_encode($responseData));

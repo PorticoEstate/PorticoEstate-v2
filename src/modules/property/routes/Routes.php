@@ -62,8 +62,9 @@ $app->group('/property/registry', function (RouteCollectorProxy $group) use ($co
 		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
 	});
 })
-->addMiddleware(new AccessVerifier($container))
-->addMiddleware(new SessionsMiddleware($container));
+//->addMiddleware(new AccessVerifier($container))
+//->addMiddleware(new SessionsMiddleware($container))
+;
 
 
 $app->get('/property[/{params:.*}]', RedirectHelper::class . ':process')

@@ -7,6 +7,8 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpBadRequestException;
 use Slim\Exception\HttpNotFoundException;
+use Sanitizer;
+
 
 /**
  * Generic Registry Controller
@@ -256,7 +258,7 @@ class GenericRegistryController
 	public function index(Request $request, Response $response, array $args): Response
 	{
 		$registryClass = $this->getRegistryClass($request);
-		$type = $args['type'] ?? '';
+		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
 
 		if (!$type)
 		{
@@ -273,9 +275,14 @@ class GenericRegistryController
 		$params = $request->getQueryParams();
 		$start = (int)($params['start'] ?? 0);
 		$limit = (int)($params['limit'] ?? 50);
-		$query = $params['query'] ?? '';
-		$sort = $params['sort'] ?? 'id';
-		$dir = $params['dir'] ?? 'ASC';
+		$query = Sanitizer::clean_value($params['query'] ?? '', 'string');
+		$sort = Sanitizer::clean_value($params['sort'] ?? 'id', 'string');
+		$dir = strtoupper(Sanitizer::clean_value($params['dir'] ?? 'ASC', 'string'));
+		
+		// Validate direction parameter
+		if (!in_array($dir, ['ASC', 'DESC'])) {
+			$dir = 'ASC';
+		}
 
 		// Build search conditions
 		$conditions = [];
@@ -320,7 +327,34 @@ class GenericRegistryController
 		{
 			if (in_array($key, $allowedFilterFields) && $value !== '')
 			{
-				$conditions[$key] = $value;
+				// Find field definition to determine proper sanitization type
+				$fieldType = 'string'; // Default
+				foreach ($config['fields'] as $field) {
+					if ($field['name'] === $key) {
+						switch ($field['type']) {
+							case 'int':
+							case 'integer':
+								$fieldType = 'int';
+								break;
+							case 'float':
+							case 'double':
+							case 'decimal':
+							case 'numeric':
+								$fieldType = 'float';
+								break;
+							case 'boolean':
+							case 'checkbox':
+								$fieldType = 'bool';
+								break;
+							default:
+								$fieldType = 'string';
+								break;
+						}
+						break;
+					}
+				}
+				
+				$conditions[$key] = Sanitizer::clean_value($value, $fieldType);
 			}
 		}
 
@@ -415,8 +449,8 @@ class GenericRegistryController
 	public function show(Request $request, Response $response, array $args): Response
 	{
 		$registryClass = $this->getRegistryClass($request);
-		$type = $args['type'] ?? '';
-		$id = (int)($args['id'] ?? 0);
+		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
+		$id = Sanitizer::clean_value($args['id'] ?? 0, 'int');
 
 		if (!$type)
 		{
@@ -524,7 +558,7 @@ class GenericRegistryController
 	public function store(Request $request, Response $response, array $args): Response
 	{
 		$registryClass = $this->getRegistryClass($request);
-		$type = $args['type'] ?? '';
+		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
 
 		if (!$type)
 		{
@@ -559,6 +593,9 @@ class GenericRegistryController
 
 		try
 		{
+			// Sanitize incoming data based on registry field definitions
+			$data = $this->sanitizeData($data, $registryClass, $type);
+			
 			// Get the registry configuration to check ID field requirements
 			$config = $registryClass::getRegistryConfig($type);
 			$idConfig = $config['id'] ?? ['name' => 'id', 'type' => 'int'];
@@ -726,8 +763,8 @@ class GenericRegistryController
 	public function update(Request $request, Response $response, array $args): Response
 	{
 		$registryClass = $this->getRegistryClass($request);
-		$type = $args['type'] ?? '';
-		$id = (int)($args['id'] ?? 0);
+		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
+		$id = Sanitizer::clean_value($args['id'] ?? 0, 'int');
 
 		if (!$type)
 		{
@@ -775,6 +812,9 @@ class GenericRegistryController
 
 		try
 		{
+			// Sanitize incoming data based on registry field definitions
+			$data = $this->sanitizeData($data, $registryClass, $type);
+			
 			// Update the item with new data
 			$item->populate($data);
 
@@ -880,8 +920,8 @@ class GenericRegistryController
 	public function delete(Request $request, Response $response, array $args): Response
 	{
 		$registryClass = $this->getRegistryClass($request);
-		$type = $args['type'] ?? '';
-		$id = (int)($args['id'] ?? 0);
+		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
+		$id = Sanitizer::clean_value($args['id'] ?? 0, 'int');
 
 		if (!$type)
 		{
@@ -1078,7 +1118,7 @@ class GenericRegistryController
 	public function schema(Request $request, Response $response, array $args): Response
 	{
 		$registryClass = $this->getRegistryClass($request);
-		$type = $args['type'] ?? '';
+		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
 
 		if (!$type)
 		{
@@ -1194,7 +1234,7 @@ class GenericRegistryController
 	public function getList(Request $request, Response $response, array $args): Response
 	{
 		$registryClass = $this->getRegistryClass($request);
-		$type = $args['type'] ?? '';
+		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
 
 		if (!$type)
 		{
@@ -1208,7 +1248,7 @@ class GenericRegistryController
 
 		$params = $request->getQueryParams();
 		$addEmpty = isset($params['add_empty']) && $params['add_empty'];
-		$selected = $params['selected'] ?? null;
+		$selected = Sanitizer::clean_value($params['selected'] ?? null, 'string');
 
 		// Apply filters based on registry configuration
 		$conditions = [];
@@ -1309,5 +1349,100 @@ class GenericRegistryController
 
 		$response->getBody()->write(json_encode($responseData));
 		return $response->withHeader('Content-Type', 'application/json');
+	}
+
+	/**
+	 * Sanitize incoming data based on registry field definitions
+	 * 
+	 * @param array $data Raw incoming data
+	 * @param string $registryClass Registry class name
+	 * @param string $type Registry type
+	 * @return array Sanitized data
+	 */
+	private function sanitizeData(array $data, string $registryClass, string $type): array
+	{
+		$config = $registryClass::getRegistryConfig($type);
+		$sanitizedData = [];
+		
+		// Get all field definitions including the ID field
+		$allFields = $config['fields'] ?? [];
+		
+		// Add ID field definition if it exists
+		if (isset($config['id'])) {
+			$idField = $config['id'];
+			$idFieldDef = [
+				'name' => $idField['name'] ?? 'id',
+				'type' => $idField['type'] ?? 'int'
+			];
+			// Add ID field to the beginning of fields array for processing
+			array_unshift($allFields, $idFieldDef);
+		}
+		
+		// Process each field in the data against the field definitions
+		foreach ($data as $fieldName => $value) {
+			// Find the field definition
+			$fieldDef = null;
+			foreach ($allFields as $field) {
+				if ($field['name'] === $fieldName) {
+					$fieldDef = $field;
+					break;
+				}
+			}
+			
+			// If field is not defined in the registry, skip it (don't include unknown fields)
+			if (!$fieldDef) {
+				continue;
+			}
+			
+			// Determine the sanitization type based on field definition
+			$sanitizeType = 'string'; // Default
+			switch ($fieldDef['type']) {
+				case 'int':
+				case 'integer':
+					$sanitizeType = 'int';
+					break;
+				case 'auto': // Auto-increment IDs are still integers when provided
+					$sanitizeType = 'int';
+					break;
+				case 'float':
+				case 'double':
+				case 'decimal':
+				case 'numeric':
+					$sanitizeType = 'float';
+					break;
+				case 'boolean':
+				case 'checkbox':
+					$sanitizeType = 'bool';
+					break;
+				case 'email':
+					$sanitizeType = 'email';
+					break;
+				case 'url':
+				case 'link':
+					$sanitizeType = 'url';
+					break;
+				case 'date':
+					$sanitizeType = 'date';
+					break;
+				case 'text':
+				case 'textarea':
+					// For text fields, allow some basic HTML if needed
+					$sanitizeType = 'html';
+					break;
+				case 'varchar':
+				case 'string':
+				case 'select':
+				case 'multiple_select':
+				case 'location':
+				default:
+					$sanitizeType = 'string';
+					break;
+			}
+			
+			// Sanitize the value
+			$sanitizedData[$fieldName] = Sanitizer::clean_value($value, $sanitizeType);
+		}
+		
+		return $sanitizedData;
 	}
 }

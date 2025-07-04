@@ -422,74 +422,74 @@ const BillingForm: FC<BillingFormProps> = ({
 				)}
 
 				{/* Summary Section - Always show */}
-				<div className={styles.checkoutSummary}>
-					<Heading data-size={'md'} level={3}>{t('bookingfrontend.summary')}</Heading>
+				{/*<div className={styles.checkoutSummary}>*/}
+				{/*	<Heading data-size={'md'} level={3}>{t('bookingfrontend.summary')}</Heading>*/}
 
-					{/* Normal Applications Section - Show if there are normal applications */}
-					{normalApplications.length > 0 && (
-						<div className={styles.summarySection}>
-							<Heading data-size={'sm'} level={4}>{t('bookingfrontend.applications')}</Heading>
-							<Paragraph className={styles.sectionSubtext}>{t('bookingfrontend.payment_if_approved')}</Paragraph>
+				{/*	/!* Normal Applications Section - Show if there are normal applications *!/*/}
+				{/*	{normalApplications.length > 0 && (*/}
+				{/*		<div className={styles.summarySection}>*/}
+				{/*			<Heading data-size={'sm'} level={4}>{t('bookingfrontend.applications')}</Heading>*/}
+				{/*			<Paragraph className={styles.sectionSubtext}>{t('bookingfrontend.payment_if_approved')}</Paragraph>*/}
 
-							{normalApplications.map((app, index) => (
-								<div key={app.id || index} className={styles.summaryItem}>
-									<div className={styles.itemDetails}>
-										<span className={styles.itemLabel}>
-											{app.activity || app.event_name || app.name || app.title || t('bookingfrontend.application_title')}
-										</span>
-										<div className={styles.itemRight}>
-											{/*<span className={styles.itemBadge}>{t('bookingfrontend.application')}</span>*/}
-											{app.total > 0 && (
-												<span className={styles.itemCost}>
-													{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(app.total)}
-												</span>
-											)}
-										</div>
-									</div>
-								</div>
-							))}
+				{/*			{normalApplications.map((app, index) => (*/}
+				{/*				<div key={app.id || index} className={styles.summaryItem}>*/}
+				{/*					<div className={styles.itemDetails}>*/}
+				{/*						<span className={styles.itemLabel}>*/}
+				{/*							{app.activity || app.event_name || app.name || app.title || t('bookingfrontend.application_title')}*/}
+				{/*						</span>*/}
+				{/*						<div className={styles.itemRight}>*/}
+				{/*							/!*<span className={styles.itemBadge}>{t('bookingfrontend.application')}</span>*!/*/}
+				{/*							{app.total > 0 && (*/}
+				{/*								<span className={styles.itemCost}>*/}
+				{/*									{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(app.total)}*/}
+				{/*								</span>*/}
+				{/*							)}*/}
+				{/*						</div>*/}
+				{/*					</div>*/}
+				{/*				</div>*/}
+				{/*			))}*/}
 
-							{normalTotal > 0 && (
-								<div className={styles.summaryTotal}>
-									<span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}:</span>
-									<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(normalTotal)}</span>
-								</div>
-							)}
-						</div>
-					)}
+				{/*			{normalTotal > 0 && (*/}
+				{/*				<div className={styles.summaryTotal}>*/}
+				{/*					<span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}:</span>*/}
+				{/*					<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(normalTotal)}</span>*/}
+				{/*				</div>*/}
+				{/*			)}*/}
+				{/*		</div>*/}
+				{/*	)}*/}
 
-					{/* Direct Applications Section - Show if there are direct applications */}
-					{directApplications.length > 0 && (
-						<div className={styles.summarySection}>
-							<Heading data-size={'sm'} level={4}>{t('bookingfrontend.pay_now_or_later')}</Heading>
+				{/*	/!* Direct Applications Section - Show if there are direct applications *!/*/}
+				{/*	{directApplications.length > 0 && (*/}
+				{/*		<div className={styles.summarySection}>*/}
+				{/*			<Heading data-size={'sm'} level={4}>{t('bookingfrontend.pay_now_or_later')}</Heading>*/}
 
-							{directApplications.map((app, index) => (
-								<div key={app.id || index} className={styles.summaryItem}>
-									<div className={styles.itemDetails}>
-										<span className={styles.itemLabel}>
-											{app.activity || app.event_name || app.name || app.title || t('bookingfrontend.direct_booking_title')}:
-										</span>
-										<div className={styles.itemRight}>
-											{/*<span className={styles.itemBadge}>{t('bookingfrontend.direct_booking')}</span>*/}
-											{app.total > 0 && (
-												<span className={styles.itemCost}>
-													{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(app.total)}
-												</span>
-											)}
-										</div>
-									</div>
-								</div>
-							))}
+				{/*			{directApplications.map((app, index) => (*/}
+				{/*				<div key={app.id || index} className={styles.summaryItem}>*/}
+				{/*					<div className={styles.itemDetails}>*/}
+				{/*						<span className={styles.itemLabel}>*/}
+				{/*							{app.activity || app.event_name || app.name || app.title || t('bookingfrontend.direct_booking_title')}:*/}
+				{/*						</span>*/}
+				{/*						<div className={styles.itemRight}>*/}
+				{/*							/!*<span className={styles.itemBadge}>{t('bookingfrontend.direct_booking')}</span>*!/*/}
+				{/*							{app.total > 0 && (*/}
+				{/*								<span className={styles.itemCost}>*/}
+				{/*									{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(app.total)}*/}
+				{/*								</span>*/}
+				{/*							)}*/}
+				{/*						</div>*/}
+				{/*					</div>*/}
+				{/*				</div>*/}
+				{/*			))}*/}
 
-							{directTotal > 0 && (
-								<div className={styles.summaryTotal}>
-									<span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}:</span>
-									<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(directTotal)}</span>
-								</div>
-							)}
-						</div>
-					)}
-				</div>
+				{/*			{directTotal > 0 && (*/}
+				{/*				<div className={styles.summaryTotal}>*/}
+				{/*					<span className={styles.totalLabel}>{t('bookingfrontend.total_incl_vat')}:</span>*/}
+				{/*					<span className={styles.totalAmount}>{new Intl.NumberFormat("nb-NO", { style: "currency", currency: "NOK" }).format(directTotal)}</span>*/}
+				{/*				</div>*/}
+				{/*			)}*/}
+				{/*		</div>*/}
+				{/*	)}*/}
+				{/*</div>*/}
 
 				<div className={styles.submitSection}>
 					{/* Show two options when user has both Vipps and normal applications */}

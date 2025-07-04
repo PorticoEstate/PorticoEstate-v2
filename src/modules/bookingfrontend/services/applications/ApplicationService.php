@@ -304,6 +304,9 @@ class ApplicationService
             foreach ($applications as $application)
             {
                 $this->patchApplicationMainData($baseUpdateData, $application['id']);
+
+                $baseUpdateData['session_id'] = $application['session_id']; // Keep session_id for partial applications
+
                 $updatedApplications[] = array_merge($application, $baseUpdateData);
             }
 
@@ -372,6 +375,7 @@ class ApplicationService
                 $this->cancelBlocksForApplication($application_id);
 
                 // Send notification email (this already exists and works)
+                //FIXE: call to undefined method send_notification()
                 $this->send_notification($application_id);
 
                 $approvedApplications[] = array_merge($application, $updateData);
@@ -850,9 +854,18 @@ class ApplicationService
 
         if ($application)
         {
+            $_application = (array)$application;
+            $resources_array = $_application['resources'] ?? [];
+
+            // Extract only the id values from the resources array (each resource is array('id' => 1, 'name' => 'name'))
+            $_application['resources'] = array_map(function($resource) {
+                return is_array($resource) ? (int)$resource['id'] : (int)$resource;
+            }, $resources_array);
             // Call existing notification method from booking.boapplication
+
+            $created = $_application['status'] === 'NEW' ? true : false;
             $bo = CreateObject('booking.boapplication');
-            $bo->send_notification((array)$application, true);
+            $bo->send_notification((array)$_application, $created);
         }
     }
 

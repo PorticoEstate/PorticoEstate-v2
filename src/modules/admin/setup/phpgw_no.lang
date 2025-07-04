@@ -85,6 +85,7 @@ login screen	admin	no	Innlogging
 main screen	admin	no	Hovedside
 main screen message	admin	no	Melding på hovedside
 module	admin	no	Modul
+omitt error logging from IP addresses	admin	no	Utelat feilmeldingslogging fra IP-adresser
 section	admin	no	seksjon
 security	admin	no	Sikkerhet
 severity	admin	no	Alvorlighetsgrad

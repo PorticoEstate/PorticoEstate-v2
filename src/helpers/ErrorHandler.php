@@ -73,6 +73,7 @@ class ErrorHandler
 	private $userSettings;
 	private $Log;
 	private $db;
+	private $omitt_error_logging_from_ips = [];
 	
 	private $path;
 
@@ -87,6 +88,8 @@ class ErrorHandler
 		$this->userSettings  = Settings::getInstance()->get('user');
 		$this->Log = new Log();
 		$this->db = Db::getInstance();
+		$this->omitt_error_logging_from_ips = isset($this->serverSettings['omitt_error_logging_from_ips']) ?
+			array_map('trim', explode(',', $this->serverSettings['omitt_error_logging_from_ips'])) : [];
 
 		set_error_handler([$this, 'phpgw_handle_error']);
 	}
@@ -148,6 +151,13 @@ class ErrorHandler
 			return true;
 		}
 
+		$IP_address = Sanitizer::get_ip_address(true);
+
+		if (in_array($IP_address, $this->omitt_error_logging_from_ips))
+		{
+			return true;
+		}
+
 		$path = $this->path;
 		if (isset($this->serverSettings['log_levels']['global_level']))
 		{
@@ -195,7 +205,6 @@ class ErrorHandler
 
 		$bt = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS);
 
-		$IP_address = Sanitizer::get_ip_address(true);
 
 		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
 		$referer = str_replace('?', "\n?", $referer);
@@ -380,6 +389,12 @@ class ErrorHandler
 		$referer = str_replace('&', "\n&", $referer);
 		$path = $this->path;
 		$IP_address = Sanitizer::get_ip_address(true);
+
+		if (in_array($IP_address, $this->omitt_error_logging_from_ips))
+		{
+			return;
+		}
+
 		$parametres = Sanitizer::clean_value($_GET);
 		$parametres = print_r($parametres, true);
 		$trace = "IP_address: {$IP_address}</b>\nReferer: {$referer} </b>\nPath: {$path}</b>\nParameters: {$parametres}</b>\n" . $e->getTraceAsString();

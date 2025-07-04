@@ -3,6 +3,7 @@
 namespace App\controllers;
 
 use App\models\GenericRegistry;
+use App\modules\phpgwapi\security\Acl;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Exception\HttpBadRequestException;
@@ -91,6 +92,10 @@ class GenericRegistryController
 	 * Should be set by the module that uses this controller
 	 */
 	protected string $registryClass;
+	/**
+	 * ACL instance for permission checks
+	 */
+	protected Acl $acl;
 
 	/**
 	 * Constructor
@@ -101,6 +106,7 @@ class GenericRegistryController
 		{
 			$this->registryClass = $registryClass;
 		}
+		$this->acl = Acl::getInstance();
 	}
 
 	/**
@@ -271,6 +277,15 @@ class GenericRegistryController
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
+		$config = $registryClass::getRegistryConfig($type);
+
+		if (!$this->acl->check($config['acl_location'], Acl::READ, $config['acl_app']))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
+
 		// Get query parameters
 		$params = $request->getQueryParams();
 		$start = (int)($params['start'] ?? 0);
@@ -290,7 +305,6 @@ class GenericRegistryController
 		{
 			// Search in 'name' field if it exists in the registry config, otherwise search in first text field
 			$searchField = 'name'; // Default fallback
-			$config = $registryClass::getRegistryConfig($type);
 			if (!empty($config['fields']))
 			{
 				foreach ($config['fields'] as $field)
@@ -310,7 +324,6 @@ class GenericRegistryController
 		}
 
 		// Add filters from query params - only for fields that exist in the registry configuration
-		$config = $registryClass::getRegistryConfig($type);
 		$allowedFilterFields = [];
 		if (!empty($config['fields']))
 		{
@@ -467,6 +480,14 @@ class GenericRegistryController
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
+		$config = $registryClass::getRegistryConfig($type);
+
+		if (!$this->acl->check($config['acl_location'], Acl::READ, $config['acl_app']))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
 		// Use static method to find item by type and ID
 		$item = $registryClass::findByType($type, $id);
 		//		_debug_array($item);
@@ -568,6 +589,14 @@ class GenericRegistryController
 		if (!in_array($type, $registryClass::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
+		}
+
+		$config = $registryClass::getRegistryConfig($type);
+
+		if (!$this->acl->check($config['acl_location'], Acl::ADD, $config['acl_app']))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
 		}
 
 		$data = $request->getParsedBody();
@@ -781,6 +810,14 @@ class GenericRegistryController
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
 		}
 
+		$config = $registryClass::getRegistryConfig($type);
+
+		if (!$this->acl->check($config['acl_location'], Acl::EDIT, $config['acl_app']))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
 		// Use static method to find item by type and ID
 		$item = $registryClass::findByType($type, $id);
 
@@ -936,6 +973,14 @@ class GenericRegistryController
 		if (!in_array($type, $registryClass::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
+		}
+
+		$config = $registryClass::getRegistryConfig($type);
+
+		if (!$this->acl->check($config['acl_location'], Acl::DELETE, $config['acl_app']))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
 		}
 
 		// Use static method to find item by type and ID
@@ -1244,6 +1289,13 @@ class GenericRegistryController
 		if (!in_array($type, $registryClass::getAvailableTypes()))
 		{
 			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
+		}
+
+		$config = $registryClass::getRegistryConfig($type);
+		if (!$this->acl->check($config['acl_location'], Acl::READ, $config['acl_app']))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
 		}
 
 		$params = $request->getQueryParams();

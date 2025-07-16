@@ -790,3 +790,4 @@ application_title	bookingfrontend	en	Application title
 direct_booking_title	bookingfrontend	en	Direct booking title
 direct_booking	bookingfrontend	en	Direct booking
 total_incl_vat	bookingfrontend	en	Total incl. VAT
+organizer_required	bookingfrontend	en	Organizer name is required

@@ -2,7 +2,7 @@
 import React, {FC, useState, useMemo, useEffect} from 'react';
 import CartSection from "./cart-section";
 import {useBookingUser, usePartialApplications, useUpdatePartialApplication, useResourceRegulationDocuments} from "@/service/hooks/api-hooks";
-import { CheckoutEventDetailsData } from './checkout-event-details-schema';
+import { CheckoutEventDetailsData, checkoutEventDetailsSchema } from './checkout-event-details-schema';
 import { BillingFormData } from './billing-form-schema';
 import CheckoutEventDetails from "@/components/checkout/checkout-event-details";
 import BillingForm from "@/components/checkout/billing-form";
@@ -70,8 +70,14 @@ const CheckoutContent: FC = () => {
     // State to track if we should show document error
     const [showDocumentsError, setShowDocumentsError] = useState(false);
 
+    // State to track if we should show organizer validation error
+    const [showOrganizerError, setShowOrganizerError] = useState(false);
+
     // Reference for the documents section
     const documentsSectionRef = React.useRef<HTMLDivElement>(null);
+
+    // Reference for the organizer field section
+    const organizerSectionRef = React.useRef<HTMLDivElement>(null);
 
     // Custom handler for individual document consent changes
     const handleDocumentConsentChange = (documentId: number, checked: boolean) => {
@@ -116,6 +122,27 @@ const CheckoutContent: FC = () => {
             console.log('missing Data', eventDetails, billingDetails);
             return;
         }
+
+        // Validate organizer field using the schema
+        const organizerValidation = checkoutEventDetailsSchema.safeParse(eventDetails);
+        if (!organizerValidation.success) {
+            // Show error state
+            setShowOrganizerError(true);
+
+            // Scroll to organizer section
+            if (organizerSectionRef.current) {
+                organizerSectionRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
+            // Don't submit the form
+            return;
+        }
+
+        // Clear organizer error if validation passes
+        setShowOrganizerError(false);
 
         // Check if documents need to be confirmed
         if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
@@ -167,6 +194,27 @@ const CheckoutContent: FC = () => {
             console.log('missing Data for Vipps payment', eventDetails, billingDetails);
             return;
         }
+
+        // Validate organizer field using the schema
+        const organizerValidation = checkoutEventDetailsSchema.safeParse(eventDetails);
+        if (!organizerValidation.success) {
+            // Show error state
+            setShowOrganizerError(true);
+
+            // Scroll to organizer section
+            if (organizerSectionRef.current) {
+                organizerSectionRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
+            // Don't proceed with payment
+            return;
+        }
+
+        // Clear organizer error if validation passes
+        setShowOrganizerError(false);
 
         // Check if documents need to be confirmed
         if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
@@ -221,7 +269,15 @@ const CheckoutContent: FC = () => {
 
     return (
         <div className={styles.content}>
-            <CheckoutEventDetails user={user} partials={applications.list} onDetailsChange={setEventDetails} />
+            <div ref={organizerSectionRef}>
+                <CheckoutEventDetails 
+                    user={user} 
+                    partials={applications.list} 
+                    onDetailsChange={setEventDetails}
+                    showError={showOrganizerError}
+                    onErrorClear={() => setShowOrganizerError(false)}
+                />
+            </div>
             <CartSection
                 applications={applications.list}
                 setCurrentApplication={setCurrentApplication}

@@ -791,3 +791,4 @@ application_title	bookingfrontend	nn	Søknadstittel
 direct_booking_title	bookingfrontend	nn	Tittel direktebestilling
 direct_booking	bookingfrontend	nn	Direktebestilling
 total_incl_vat	bookingfrontend	nn	Total inkl. mva
+organizer_required	bookingfrontend	nn	Arrangørnamn er påkravd

@@ -130,20 +130,25 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 
 		{
 			id: 'dates',
-			accessorFn: (row) => row.dates,
-			header: t('bookingfrontend.from'),
-			cell: info => {
-				const dates = info.getValue<IApplicationDate[]>();
+			accessorFn: (row) => {
+				const dates = row.dates;
 				if (dates.length === 0) return null;
 
-				// Sort dates and get earliest from_ date
+				// Sort dates and get earliest from_ date for sorting
 				const earliestDate = dates
 					.sort((a, b) =>
 						DateTime.fromISO(a.from_).toMillis() -
 						DateTime.fromISO(b.from_).toMillis()
 					)[0];
 
-				return DateTime.fromISO(earliestDate.from_).toFormat('dd.MM.yyyy HH:mm');
+				return DateTime.fromISO(earliestDate.from_).toMillis();
+			},
+			header: t('bookingfrontend.from'),
+			cell: info => {
+				const timestamp = info.getValue<number | null>();
+				if (timestamp === null) return null;
+
+				return DateTime.fromMillis(timestamp).toFormat('dd.MM.yyyy HH:mm');
 			},
 		},
 

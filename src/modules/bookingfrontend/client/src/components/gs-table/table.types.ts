@@ -55,7 +55,7 @@ export type ColumnDef<T> = (TanStackColumnDef<T> | AccessorFnColumnDefBase<T> | 
 export interface TableProps<T> {
     data: T[];
     columns: ColumnDef<T>[];
-    empty?: JSX.Element;
+    empty?: ReactElement;
     enableSorting?: boolean;
     renderExpandedContent?: (row: T) => ReactElement;
     renderRowButton?: (row: T) => ReactElement; // New prop for standalone buttons/links

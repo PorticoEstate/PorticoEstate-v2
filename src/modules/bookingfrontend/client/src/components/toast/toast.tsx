@@ -24,7 +24,7 @@ const ToastContainer: React.FC = () => {
 
 	// Register the FAB button ref with the context
 	useEffect(() => {
-		setFabButtonRef(fabButtonRef);
+		setFabButtonRef(fabButtonRef as React.RefObject<HTMLButtonElement>);
 	}, [setFabButtonRef]);
 
 	// Check if current page is checkout
@@ -60,7 +60,7 @@ const ToastContainer: React.FC = () => {
 								setFabOpen(true);
 							} else {
 								// Use the shared drawer context instead
-								setDrawerRef(fabButtonRef);
+								setDrawerRef(fabButtonRef as React.RefObject<HTMLButtonElement>);
 								setDrawerOpen(true);
 							}
 						}}

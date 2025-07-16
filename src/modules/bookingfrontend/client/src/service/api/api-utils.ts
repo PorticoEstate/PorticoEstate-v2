@@ -104,7 +104,6 @@ export async function fetchFreeTimeSlotsForRange(building_id: number, start: Dat
 		detailed_overlap: true,
 		stop_on_end_date: true
 	}, true, instance);
-	console.log("FETCHING FREE TIME SLOTS FOR RANGE", url);
 	const response = await fetch(url);
 	const result = await response.json();
 	return result;

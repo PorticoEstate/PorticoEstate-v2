@@ -6,13 +6,15 @@ interface ResourceLayoutParams {
 }
 
 interface ResourceLayoutProps {
-    params: ResourceLayoutParams;
+    params: Promise<ResourceLayoutParams>;
     children: React.ReactNode;
 }
 
 export async function generateMetadata(props: ResourceLayoutProps) {
+    // Await params in Next.js 15+
+    const params = await props.params;
     // Convert the id to a number
-    const resourceId = parseInt(props.params.id, 10);
+    const resourceId = parseInt(params.id, 10);
 
     // Check if the resourceId is a valid number
     if (isNaN(resourceId)) {
@@ -35,6 +37,8 @@ export async function generateMetadata(props: ResourceLayoutProps) {
     };
 }
 
-export default function ResourceLayout({ children }: ResourceLayoutProps) {
+export default async function ResourceLayout({ children, params }: ResourceLayoutProps) {
+    // Await params in Next.js 15+
+    await params;
     return children;
 }

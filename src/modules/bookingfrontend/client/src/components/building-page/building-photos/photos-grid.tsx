@@ -68,8 +68,8 @@ const PhotosGrid = (props: PhotosGridProps) => {
 						const isLast = index === photosToShow - 1 && hasMorePhotos;
 
 						return (
-							<div 
-								key={photo.id} 
+							<div
+								key={photo.id}
 								className={`${styles.photoItem} ${!isVisible ? styles.hidden : ''}`}
 							>
 								<Item

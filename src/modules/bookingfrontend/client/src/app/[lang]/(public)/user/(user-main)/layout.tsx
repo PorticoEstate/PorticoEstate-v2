@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 
 export async function generateMetadata(props: UserLayoutProps) {
     const {t} = await getTranslation();
-    const headersList = headers();
+    const headersList = await headers();
     const path = headersList.get('x-current-path')?.split('user');
     if (path && path.length === 2) {
         const currPage = userSubPages.find(a => a.relativePath === path[1]);

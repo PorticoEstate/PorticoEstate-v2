@@ -6,9 +6,9 @@ import EventSearchClient from '@/components/search/event/event-search'
 export const revalidate = 3600;
 
 interface EventSearchProps {
-    params: {
+    params: Promise<{
         lang: string;
-    };
+    }>;
 }
 
 const EventSearch: FC<EventSearchProps> = async () => {

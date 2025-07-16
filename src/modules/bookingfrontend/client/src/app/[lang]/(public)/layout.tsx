@@ -9,15 +9,18 @@ import ServerMessageToastHandler from "@/components/server-messages/server-messa
 
 
 interface PublicLayoutProps extends PropsWithChildren {
-    params: {
+    params: Promise<{
         lang: string
-    }
+    }>
 }
 
 
-const PublicLayout: FC<PublicLayoutProps> = (props) => {
+const PublicLayout: FC<PublicLayoutProps> = async (props) => {
+    // Await params in Next.js 15+
+    const params = await props.params;
+    
     return (
-        <Providers lang={props.params.lang}>
+        <Providers lang={params.lang}>
             <Header/>
             {/* Server message handler (converts messages to toasts) */}
             <ServerMessageToastHandler />
@@ -25,7 +28,7 @@ const PublicLayout: FC<PublicLayoutProps> = (props) => {
                 {/*<InternalNav/>*/}
                 {props.children}
             </div>
-            <Footer lang={props.params.lang}/>
+            <Footer lang={params.lang}/>
         </Providers>
     );
 }

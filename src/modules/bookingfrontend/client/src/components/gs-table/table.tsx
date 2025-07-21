@@ -179,8 +179,9 @@ function Table<T>({
     useEffect(() => {
         if (!storedSettings?.columnVisibility) {
             const initialVisibility = columns.reduce((acc, column) => {
-                if (column.meta?.defaultHidden && (column as any)?.accessorKey) {
-                    acc[(column as any).accessorKey as string] = false;
+                if (column.meta?.defaultHidden) {
+                    const columnId = ('id' in column ? column.id : (column as any).accessorKey) as string;
+                    acc[columnId] = false;
                 }
                 return acc;
             }, {} as VisibilityState);

@@ -9,6 +9,7 @@ use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
 use DateTime;
+use DateInterval;
 use OpenApi\Annotations as OA;
 
 /**
@@ -193,15 +194,15 @@ class ScheduleEntityController
      *     @OA\Parameter(
      *         name="start_date",
      *         in="query",
-     *         description="Start date for the schedule (format: YYYY-MM-DD)",
-     *         required=true,
+     *         description="Start date for the schedule (format: YYYY-MM-DD). Defaults to today if not provided.",
+     *         required=false,
      *         @OA\Schema(type="string", format="date", example="2025-03-17")
      *     ),
      *     @OA\Parameter(
      *         name="end_date",
      *         in="query",
-     *         description="End date for the schedule (format: YYYY-MM-DD)",
-     *         required=true,
+     *         description="End date for the schedule (format: YYYY-MM-DD). Defaults to start_date + 2 weeks if not provided.",
+     *         required=false,
      *         @OA\Schema(type="string", format="date", example="2025-03-24")
      *     ),
      *     @OA\Response(
@@ -238,20 +239,27 @@ class ScheduleEntityController
             $resourceId = (int)$args['id'];
             $queryParams = $request->getQueryParams();
             
-            // Check if required parameters are provided
-            if (!isset($queryParams['start_date']) || !isset($queryParams['end_date'])) {
-                return ResponseHelper::sendErrorResponse(
-                    ['error' => 'Both start_date and end_date parameters are required'],
-                    400
-                );
-            }
+            // Set default dates if not provided
+            $startDateParam = $queryParams['start_date'] ?? null;
+            $endDateParam = $queryParams['end_date'] ?? null;
             
             // Convert dates to DateTime objects
             try {
-                $startDate = new DateTime($queryParams['start_date']);
+                // Default start_date to today if not provided
+                if ($startDateParam === null) {
+                    $startDate = new DateTime();
+                } else {
+                    $startDate = new DateTime($startDateParam);
+                }
                 $startDate->setTime(0, 0, 0);
                 
-                $endDate = new DateTime($queryParams['end_date']);
+                // Default end_date to start_date + 2 weeks if not provided
+                if ($endDateParam === null) {
+                    $endDate = clone $startDate;
+                    $endDate->add(new DateInterval('P2W'));
+                } else {
+                    $endDate = new DateTime($endDateParam);
+                }
                 $endDate->setTime(23, 59, 59);
             } catch (\Exception $e) {
                 return ResponseHelper::sendErrorResponse(

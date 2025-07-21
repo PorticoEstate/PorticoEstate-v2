@@ -343,6 +343,37 @@
 					</div>
 				</xsl:if>
 
+				<div class="pure-control-group">
+					<label>
+						<xsl:value-of select="php:function('lang', 'Outlook mapping')" />
+					</label>
+					<table id="outlook_items" class="pure-table pure-u-md-1-2">
+						<xsl:if test="not(resource/outlook_items)">
+							<xsl:attribute name="style">
+								<xsl:text>display:none;</xsl:text>
+							</xsl:attribute>
+						</xsl:if>
+						<xsl:for-each select="resource/outlook_items">
+							<xsl:variable name="outlook_item_id">
+								<xsl:value-of select="outlook_item_id"/>
+							</xsl:variable>
+							<tr id = "outlook_item_{$outlook_item_id}">
+								<td>
+									<xsl:value-of select="outlook_item_id"/>
+								</td>
+								<td>
+									<xsl:value-of select="outlook_item_name"/>
+								</td>
+							</tr>
+						</xsl:for-each>
+					</table>
+					<xsl:if test="not(resource/outlook_items)">
+						<div id="no_outlook_mapping" class="pure-u-md-1-2">
+							<xsl:value-of select="php:function('lang', 'No Outlook mapping')" />
+						</div>
+					</xsl:if>
+				</div>
+
 				<div id="custom_fields"></div>
 				<div class="pure-control-group">
 					<label>

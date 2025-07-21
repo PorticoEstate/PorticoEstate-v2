@@ -57,8 +57,10 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 
 		{
 			id: 'dates',
-			accessorFn: (row) => {
-				const dates = row.dates;
+			accessorFn: (row) => row.dates,
+			header: t('bookingfrontend.timestamp'),
+			cell: info => {
+				const dates = info.getValue<IApplicationDate[]>();
 				if (dates.length === 0) return null;
 
 				// Sort dates and get earliest from_ date for sorting
@@ -84,6 +86,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 			accessorFn: (row) => row.status,
 			header: t('bookingfrontend.status'),
 			meta: {
+				size: 0.5,
 				filter: {
 					type: 'select' as const,
 					getUniqueValues: (data: IApplication[]) => {
@@ -108,7 +111,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 		{
 			id: 'building_name',
 			accessorFn: (row) => row.building_name,
-			header: t('bookingfrontend.where'),
+			header: t('bookingfrontend.place'),
 			enableSorting: false,
 		},
 
@@ -138,24 +141,25 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 			sortingFn: (rowA, rowB) => {
 				const a = rowA.original.customer_organization_number;
 				const b = rowB.original.customer_organization_number;
-				
+
 				// Handle null values - put them at the end
 				if (!a && !b) return 0;
 				if (!a) return 1;
 				if (!b) return -1;
-				
+
 				// Compare as numbers if they're numeric, otherwise as strings
 				const numA = parseInt(a);
 				const numB = parseInt(b);
-				
+
 				if (!isNaN(numA) && !isNaN(numB)) {
 					return numA - numB;
 				}
-				
+
 				return a.localeCompare(b);
 			},
 			meta: {
-				size: 1
+				size: 1,
+				defaultHidden: true
 			}
 		},
 
@@ -201,7 +205,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 		{
 			id: 'created',
 			accessorFn: (row) => row.created,
-			header: t('bookingfrontend.date'),
+			header: t('bookingfrontend.created'),
 			meta: {
 				size: 0.5
 			},
@@ -221,6 +225,9 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 				enableColumnFilters={true}
 				isLoading={isFetching}
 				storageId="applications-table"
+				defaultColumnVisibility={{
+					'customer_organization_number': false
+				}}
 				utilityHeader={{
 					right: (
 						<>

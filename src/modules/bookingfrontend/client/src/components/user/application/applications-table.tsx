@@ -10,7 +10,7 @@ import {DateTime} from "luxon";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
 import {Link, Checkbox, Button} from "@digdir/designsystemet-react";
-import { ArrowsCirclepathIcon } from '@navikt/aksel-icons';
+import { ArrowsCirclepathIcon, PersonFillIcon, TenancyIcon } from '@navikt/aksel-icons';
 
 interface ApplicationsTableProps {
 	initialApplications?: { list: IApplication[], total_sum: number };
@@ -56,79 +56,6 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 		},
 
 		{
-			id: 'created',
-			accessorFn: (row) => row.created,
-			header: t('bookingfrontend.date'),
-			meta: {
-				size: 0.5
-			},
-			cell: info => DateTime.fromSQL(info.getValue<string>()).toFormat('dd.MM.yyyy'),
-		},
-
-		{
-			id: 'status',
-			accessorFn: (row) => row.status,
-			header: t('bookingfrontend.status'),
-			cell: info => {
-				const status = info.getValue<string>();
-				return (
-					<span className={`status-badge status-${status.toLowerCase()}`}>
-            {t(`bookingfrontend.${status.toLowerCase()}`)}
-          </span>
-				);
-			},
-		},
-
-		{
-			id: 'application_type',
-			accessorFn: (row) => row.application_type,
-			header: t('bookingfrontend.type'),
-			meta: {
-				size: 0.5
-			},
-			cell: info => {
-				const applicationType = info.getValue<string>();
-				const row = info.row.original;
-
-				if (applicationType === 'organization') {
-					return (
-						<span className="application-type-badge" title={row.customer_organization_name || 'Organization'}>
-							{t('bookingfrontend.organization')}
-						</span>
-					);
-				}
-				return (
-					<span className="application-type-badge">
-						{t('bookingfrontend.personal')}
-					</span>
-				);
-			},
-		},
-
-		{
-			id: 'building_name',
-			accessorFn: (row) => row.building_name,
-			header: t('bookingfrontend.where'),
-		},
-
-		{
-			id: 'resources',
-			accessorFn: (row) => row.resources,
-			header: t('bookingfrontend.resources'),
-			meta: {
-				toStringEx: (v: any) => v.map((r: any) => r.name)
-			},
-			cell: info => {
-				const resources = info.getValue<IShortResource[]>();
-				return (
-					<div className="resources-list" style={{display: 'flex', flexDirection: 'column'}}>
-						<ResourceCircles resources={resources} maxCircles={4} size={'small'} expandable/>
-					</div>
-				);
-			},
-		},
-
-		{
 			id: 'dates',
 			accessorFn: (row) => row.dates,
 			header: t('bookingfrontend.from'),
@@ -148,10 +75,80 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 		},
 
 		{
+			id: 'status',
+			accessorFn: (row) => row.status,
+			header: t('bookingfrontend.status'),
+			meta: {
+				filter: {
+					type: 'select' as const,
+					getUniqueValues: (data: IApplication[]) => {
+						const uniqueStatuses = Array.from(new Set(data.map(app => app.status)));
+						return uniqueStatuses.map(status => ({
+							label: t(`bookingfrontend.${status.toLowerCase()}`),
+							value: status
+						}));
+					}
+				}
+			},
+			cell: info => {
+				const status = info.getValue<string>();
+				return (
+					<span className={`status-badge status-${status.toLowerCase()}`}>
+            {t(`bookingfrontend.${status.toLowerCase()}`)}
+          </span>
+				);
+			},
+		},
+
+		{
+			id: 'building_name',
+			accessorFn: (row) => row.building_name,
+			header: t('bookingfrontend.where'),
+			enableSorting: false,
+		},
+
+		{
+			id: 'resources',
+			accessorFn: (row) => row.resources,
+			header: t('bookingfrontend.resources'),
+			enableSorting: false,
+			meta: {
+				toStringEx: (v: any) => v.map((r: any) => r.name)
+			},
+			cell: info => {
+				const resources = info.getValue<IShortResource[]>();
+				return (
+					<div className="resources-list" style={{display: 'flex', flexDirection: 'column'}}>
+						<ResourceCircles resources={resources} maxCircles={4} size={'small'} expandable/>
+					</div>
+				);
+			},
+		},
+
+		{
 			id: 'customer_organization_number',
 			accessorFn: (row) => row.customer_organization_number,
 			header: t('bookingfrontend.organization number'),
 			cell: info => info.getValue<string | null>() || '-',
+			sortingFn: (rowA, rowB) => {
+				const a = rowA.original.customer_organization_number;
+				const b = rowB.original.customer_organization_number;
+				
+				// Handle null values - put them at the end
+				if (!a && !b) return 0;
+				if (!a) return 1;
+				if (!b) return -1;
+				
+				// Compare as numbers if they're numeric, otherwise as strings
+				const numA = parseInt(a);
+				const numB = parseInt(b);
+				
+				if (!isNaN(numA) && !isNaN(numB)) {
+					return numA - numB;
+				}
+				
+				return a.localeCompare(b);
+			},
 			meta: {
 				size: 1
 			}
@@ -161,6 +158,49 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 			id: 'contact_name',
 			accessorFn: (row) => row.contact_name,
 			header: t('bookingfrontend.contact'),
+		},
+
+		{
+			id: 'application_type',
+			accessorFn: (row) => row.application_type,
+			header: t('bookingfrontend.type'),
+			meta: {
+				size: 0.5,
+				filter: {
+					type: 'select' as const,
+					options: [
+						{ label: t('bookingfrontend.personal'), value: 'personal' },
+						{ label: t('bookingfrontend.organization'), value: 'organization' }
+					]
+				}
+			},
+			cell: info => {
+				const applicationType = info.getValue<string>();
+				const row = info.row.original;
+
+				if (applicationType === 'organization') {
+					return (
+						<span className="application-type-badge" title={row.customer_organization_name || t('bookingfrontend.organization')}>
+							<TenancyIcon fontSize="1.25rem" />
+						</span>
+					);
+				}
+				return (
+					<span className="application-type-badge" title={t('bookingfrontend.personal')}>
+						<PersonFillIcon fontSize="1.25rem" />
+					</span>
+				);
+			},
+		},
+
+		{
+			id: 'created',
+			accessorFn: (row) => row.created,
+			header: t('bookingfrontend.date'),
+			meta: {
+				size: 0.5
+			},
+			cell: info => DateTime.fromSQL(info.getValue<string>()).toFormat('dd.MM.yyyy'),
 		},
 	];
 
@@ -173,7 +213,9 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 				enableRowSelection
 				enableMultiRowSelection
 				enableSearch
+				enableColumnFilters={true}
 				isLoading={isFetching}
+				storageId="applications-table"
 				utilityHeader={{
 					right: (
 						<>

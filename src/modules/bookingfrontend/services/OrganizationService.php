@@ -160,10 +160,80 @@ class OrganizationService
      * @param string $ssn Norwegian social security number of the delegate
      * @throws Exception If database operation fails
      */
-    public function addDelegate(int $organizationId, string $ssn): void
+    public function addDelegate(int $organizationId, array $data): void
     {
+        $ssn = $data['ssn'];
+        $name = $data['name'] ?? '';
+        $email = $data['email'] ?? '';
+        $phone = $data['phone'] ?? '';
+        $active = $data['active'] ?? 1;
+        
         // Check if delegate already exists
         $sql = "SELECT 1 FROM bb_delegate
+                WHERE organization_id = :organization_id
+                AND customer_ssn = :ssn
+                AND active = 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':organization_id' => $organizationId,
+            ':ssn' => $ssn
+        ]);
+
+        if (!$stmt->fetch()) {
+            // Check if inactive delegate exists and reactivate
+            $sql = "SELECT id FROM bb_delegate
+                    WHERE organization_id = :organization_id
+                    AND customer_ssn = :ssn
+                    AND active = 0";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':organization_id' => $organizationId,
+                ':ssn' => $ssn
+            ]);
+
+            $existing = $stmt->fetch();
+            if ($existing) {
+                // Reactivate existing delegate and update details
+                $sql = "UPDATE bb_delegate SET active = :active, name = :name, email = :email, phone = :phone WHERE id = :id";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([
+                    ':id' => $existing['id'],
+                    ':active' => $active,
+                    ':name' => $name,
+                    ':email' => $email,
+                    ':phone' => $phone
+                ]);
+            } else {
+                // Create new delegate
+                $sql = "INSERT INTO bb_delegate (organization_id, customer_ssn, name, email, phone, active)
+                        VALUES (:organization_id, :ssn, :name, :email, :phone, :active)";
+
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([
+                    ':organization_id' => $organizationId,
+                    ':ssn' => $ssn,
+                    ':name' => $name,
+                    ':email' => $email,
+                    ':phone' => $phone,
+                    ':active' => $active
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Remove a delegate from an organization
+     *
+     * @param int $organizationId The ID of the organization
+     * @param string $ssn Norwegian social security number of the delegate
+     * @throws Exception If database operation fails
+     */
+    public function removeDelegate(int $organizationId, string $ssn): void
+    {
+        $sql = "UPDATE bb_delegate
+                SET active = 0
                 WHERE organization_id = :organization_id
                 AND customer_ssn = :ssn";
 
@@ -173,15 +243,8 @@ class OrganizationService
             ':ssn' => $ssn
         ]);
 
-        if (!$stmt->fetch()) {
-            $sql = "INSERT INTO bb_delegate (organization_id, customer_ssn, active)
-                    VALUES (:organization_id, :ssn, 1)";
-
-            $stmt = $this->db->prepare($sql);
-            $stmt->execute([
-                ':organization_id' => $organizationId,
-                ':ssn' => $ssn
-            ]);
+        if ($stmt->rowCount() === 0) {
+            throw new Exception('Delegate not found or already inactive');
         }
     }
 
@@ -330,22 +393,31 @@ class OrganizationService
             return false;
         }
 
-        $sql = "SELECT 1 FROM bb_organization o
-                LEFT JOIN bb_delegate d ON o.id = d.organization_id
-                WHERE o.id = :org_id
-                AND (
-                    (d.customer_ssn = :ssn AND d.active = 1)
-                    OR o.customer_ssn = :ssn
-                )
-                LIMIT 1";
+        // Check if user has access to this organization via their loaded organizations
+        if (!empty($this->userHelper->organizations)) {
+            foreach ($this->userHelper->organizations as $org) {
+                if (isset($org['org_id']) && $org['org_id'] == $organizationId) {
+                    return true;
+                }
+            }
+        }
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute([
-            ':org_id' => $organizationId,
-            ':ssn' => $this->userHelper->ssn
-        ]);
+        // Also check if user owns the organization directly by SSN
+        // This is for cases where organization might not be in the user's organizations array
+        if ($this->userHelper->ssn) {
+            $sql = "SELECT 1 FROM bb_organization
+                    WHERE id = :org_id AND customer_ssn = :ssn";
 
-        return (bool)$stmt->fetch();
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':org_id' => $organizationId,
+                ':ssn' => $this->userHelper->ssn
+            ]);
+
+            return (bool)$stmt->fetch();
+        }
+
+        return false;
     }
 
 
@@ -362,10 +434,16 @@ class OrganizationService
         // Define which fields can be updated
         $allowedFields = [
             'name' => true,
+            'shortname' => true,
             'phone' => true,
             'email' => true,
             'homepage' => true,
-            'description' => true
+            'activity_id' => true,
+            'show_in_portal' => true,
+            'street' => true,
+            'zip_code' => true,
+            'city' => true,
+            'description_json' => true
         ];
 
         // Filter out any fields that aren't allowed to be updated
@@ -489,7 +567,7 @@ class OrganizationService
             throw new Exception("Error fetching organization list: " . $e->getMessage());
         }
     }
-    
+
     /**
      * Get a specific organization by ID
      *
@@ -501,20 +579,191 @@ class OrganizationService
     {
         try {
             $sql = "SELECT * FROM bb_organization WHERE id = :id";
-            
+
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $id]);
-            
+
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
-            
+
             if (!$result) {
                 return null;
             }
-            
+
             return new \App\modules\bookingfrontend\models\Organization($result);
-            
+
         } catch (Exception $e) {
             throw new Exception("Error fetching organization: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get groups associated with an organization
+     *
+     * @param int $organizationId Organization ID
+     * @return array List of Group models in short format
+     * @throws Exception If database error occurs
+     */
+    public function getOrganizationGroups(int $organizationId): array
+    {
+        try {
+            $sql = "SELECT g.*
+                    FROM bb_group g
+                    WHERE g.organization_id = :organization_id
+                    AND g.active = 1
+                    ORDER BY g.name";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':organization_id' => $organizationId]);
+
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Convert to Group models and return in short format
+            $groups = [];
+            foreach ($results as $result) {
+                $group = new \App\modules\bookingfrontend\models\Group($result);
+                $groups[] = $group->serialize(['short' => true]);
+            }
+
+            return $groups;
+
+        } catch (Exception $e) {
+            throw new Exception("Error fetching organization groups: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get buildings used by an organization (within last 300 days)
+     *
+     * @param int $organizationId Organization ID
+     * @return array List of Building models in short format
+     * @throws Exception If database error occurs
+     */
+    public function getOrganizationBuildings(int $organizationId): array
+    {
+        try {
+            $sql = "SELECT DISTINCT b.*
+                    FROM bb_building b
+                    JOIN bb_building_resource br ON br.building_id = b.id
+                    JOIN bb_resource r ON r.id = br.resource_id
+                    JOIN bb_allocation_resource ar ON ar.resource_id = r.id
+                    JOIN bb_allocation a ON a.id = ar.allocation_id
+                    WHERE a.organization_id = :organization_id
+                    AND (a.from_ - 'now'::timestamp < '300 days')
+                    ORDER BY b.name";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':organization_id' => $organizationId]);
+
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Convert to Building models and return in short format
+            $buildings = [];
+            foreach ($results as $result) {
+                $building = new \App\modules\bookingfrontend\models\Building($result);
+                $buildings[] = $building->serialize(['short' => true]);
+            }
+
+            return $buildings;
+
+        } catch (Exception $e) {
+            throw new Exception("Error fetching organization buildings: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get delegates for an organization
+     *
+     * @param int $organizationId Organization ID
+     * @param bool $userHasAccess Whether user has access to see sensitive data
+     * @return array List of OrganizationDelegate models in short format
+     * @throws Exception If database error occurs
+     */
+    public function getOrganizationDelegates(int $organizationId, bool $userHasAccess = false): array
+    {
+        try {
+            $sql = "SELECT d.*
+                    FROM bb_delegate d
+                    WHERE d.organization_id = :organization_id
+                    AND d.active = 1
+                    ORDER BY d.name";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':organization_id' => $organizationId]);
+
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Convert to OrganizationDelegate models and return in short format
+            $delegates = [];
+            foreach ($results as $result) {
+                $delegate = new \App\modules\bookingfrontend\models\OrganizationDelegate($result);
+                $delegates[] = $delegate->serialize(['short' => true, 'user_has_access' => $userHasAccess]);
+            }
+
+            return $delegates;
+
+        } catch (Exception $e) {
+            throw new Exception("Error fetching organization delegates: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update delegate details
+     *
+     * @param int $delegateId The ID of the delegate
+     * @param array $data Updated delegate data (name, email, phone, active)
+     * @throws Exception If validation fails or database error occurs
+     */
+    public function updateDelegate(int $delegateId, array $data): void
+    {
+        // Define which fields can be updated
+        $allowedFields = [
+            'name' => true,
+            'email' => true,
+            'phone' => true,
+            'active' => true
+        ];
+        
+        // Filter out any fields that aren't allowed to be updated
+        $updateData = array_intersect_key($data, $allowedFields);
+        if (empty($updateData)) {
+            throw new Exception('No valid fields to update');
+        }
+        
+        // Build update query dynamically
+        $setClauses = [];
+        $params = [':id' => $delegateId];
+        
+        foreach ($updateData as $field => $value) {
+            $setClauses[] = "{$field} = :{$field}";
+            $params[":{$field}"] = $value;
+        }
+        
+        $sql = "UPDATE bb_delegate
+                SET " . implode(', ', $setClauses) . "
+                WHERE id = :id";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        
+        if ($stmt->rowCount() === 0) {
+            throw new Exception('Delegate not found or no changes made');
+        }
+    }
+
+    /**
+     * Delete a delegate permanently
+     *
+     * @param int $delegateId The ID of the delegate
+     * @throws Exception If database operation fails
+     */
+    public function deleteDelegate(int $delegateId): void
+    {
+        $sql = "DELETE FROM bb_delegate WHERE id = :id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':id' => $delegateId]);
+
+        if ($stmt->rowCount() === 0) {
+            throw new Exception('Delegate not found');
         }
     }
 }

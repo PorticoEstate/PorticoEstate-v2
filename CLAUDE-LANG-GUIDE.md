@@ -1,7 +1,7 @@
 # NOTE FOR DEV
 example prompt:
 ```aiignore
-I want to fix language files according to CLAUDE-LANG-GUIDE.md, lets focus on nn,en,no in the bookingfrontend module
+I want to work with language files according to CLAUDE-LANG-GUIDE.md use the language tool as described there, lets focus on nn,en,no in the bookingfrontend module
 ```
 
 # Guide for Working with Claude on Language Files

@@ -157,7 +157,21 @@ trait SerializableTrait
         $field = trim($parts[0]);
         $value = trim($parts[1]);
 
-        // Handle special variables
+        // Handle special variables (context variables)
+        if (str_starts_with($field, '$')) {
+            $contextKey = substr($field, 1);
+            $contextValue = $context[$contextKey] ?? null;
+
+            // If context value is an array, check if the target value is in it
+            if (is_array($contextValue)) {
+                return in_array($value, $contextValue);
+            }
+
+            // Regular comparison for non-array values
+            return $contextValue == $value;
+        }
+
+        // Handle special variables in value position (legacy support)
         if (str_starts_with($value, '$')) {
             $contextKey = substr($value, 1);
             $contextValue = $context[$contextKey] ?? null;

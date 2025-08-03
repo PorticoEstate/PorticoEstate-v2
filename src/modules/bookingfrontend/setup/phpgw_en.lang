@@ -790,3 +790,16 @@ application_title	bookingfrontend	en	Application title
 direct_booking_title	bookingfrontend	en	Direct booking title
 direct_booking	bookingfrontend	en	Direct booking
 total_incl_vat	bookingfrontend	en	Total incl. VAT
+timestamp	bookingfrontend	en	Timestamp
+no_groups	bookingfrontend	en	No groups found
+no_delegates	bookingfrontend	en	No delegates found
+edit_organization	bookingfrontend	en	Edit Organization
+markdown	bookingfrontend	en	Markdown
+visual	bookingfrontend	en	Visual
+enter_description_markdown	bookingfrontend	en	Enter description in markdown format
+markdown_help_professional	bookingfrontend	en	Use the toolbar above to format your text, or write in markdown syntax. Click preview to see the result.
+basic_information	bookingfrontend	en	Basic Information
+short_name	bookingfrontend	en	Short Name
+organization_not_found	bookingfrontend	en	Organization not found
+access_denied	bookingfrontend	en	Access Denied
+no_permission_edit_organization	bookingfrontend	en	You do not have permission to edit this organization.

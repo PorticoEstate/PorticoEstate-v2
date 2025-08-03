@@ -791,3 +791,16 @@ application_title	bookingfrontend	nn	Søknadstittel
 direct_booking_title	bookingfrontend	nn	Tittel direktebestilling
 direct_booking	bookingfrontend	nn	Direktebestilling
 total_incl_vat	bookingfrontend	nn	Total inkl. mva
+timestamp	bookingfrontend	nn	Tidspunkt
+no_groups	bookingfrontend	nn	Ingen grupper funne
+no_delegates	bookingfrontend	nn	Ingen delegatar funne
+edit_organization	bookingfrontend	nn	Rediger organisasjon
+markdown	bookingfrontend	nn	Markdown
+visual	bookingfrontend	nn	Visuell
+enter_description_markdown	bookingfrontend	nn	Skriv inn skildring i markdown-format
+markdown_help_professional	bookingfrontend	nn	Bruk verktøylinja over for å formatere teksten, eller skriv i markdown-syntaks. Klikk førehandsvisning for å sjå resultatet.
+basic_information	bookingfrontend	nn	Grunnleggjande informasjon
+short_name	bookingfrontend	nn	Kort namn
+organization_not_found	bookingfrontend	nn	Organisasjon ikkje funnen
+access_denied	bookingfrontend	nn	Tilgang nekta
+no_permission_edit_organization	bookingfrontend	nn	Du har ikkje løyve til å redigere denne organisasjonen.

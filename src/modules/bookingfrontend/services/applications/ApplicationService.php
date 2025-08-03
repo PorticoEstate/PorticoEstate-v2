@@ -294,6 +294,48 @@ class ApplicationService
                 'customer_ssn' => $data['customerType'] === 'ssn' ? $this->userHelper->ssn : null
             ];
 
+            // Handle organization ID - use provided ID if available, otherwise look up by number
+            if ($data['customerType'] === 'organization_number') {
+                if (!empty($data['organizationId'])) {
+                    // Use organization ID provided by client
+                    $baseUpdateData['customer_organization_id'] = (int)$data['organizationId'];
+                } elseif (!empty($data['organizationNumber'])) {
+                    // Look up organization ID and name by number
+                    $sql = "SELECT id, name FROM bb_organization WHERE organization_number = :org_number";
+                    $stmt = $this->db->prepare($sql);
+                    $stmt->bindParam(':org_number', $data['organizationNumber'], \PDO::PARAM_STR);
+                    $stmt->execute();
+                    $organization = $stmt->fetch(\PDO::FETCH_ASSOC);
+                    
+                    if ($organization) {
+                        $baseUpdateData['customer_organization_id'] = (int)$organization['id'];
+                        $baseUpdateData['customer_organization_name'] = $organization['name']; // Use DB name, not client name
+                    } else {
+                        // Organization not found - try to create it using modern OrganizationService
+                        try {
+                            $organizationService = new \App\modules\bookingfrontend\services\OrganizationService();
+                            $organizationData = [
+                                'organization_number' => $data['organizationNumber'],
+                                'name' => $data['organizationName'],
+                                'customer_identifier_type' => 'organization_number',
+                                'customer_organization_number' => $data['organizationNumber']
+                            ];
+                            
+                            $organizationId = $organizationService->createOrganization($organizationData);
+                            
+                            if ($organizationId) {
+                                $baseUpdateData['customer_organization_id'] = (int)$organizationId;
+                                // Use the name as validated/processed by OrganizationService
+                                // Note: OrganizationService appends " [ikke validert]" to the name
+                            }
+                        } catch (Exception $e) {
+                            // Log the error but continue without organization ID
+                            error_log("Failed to create organization for number {$data['organizationNumber']}: " . $e->getMessage());
+                        }
+                    }
+                }
+            }
+
             // Only set session_id to null if finalizing applications
             if ($finalize) {
                 $baseUpdateData['session_id'] = null;

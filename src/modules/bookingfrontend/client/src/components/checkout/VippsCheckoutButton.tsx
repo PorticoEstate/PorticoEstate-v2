@@ -1,4 +1,26 @@
-import {FC, useEffect, useRef} from 'react';
+import React, {FC, useEffect, useRef} from 'react';
+
+declare global {
+	namespace JSX {
+		interface IntrinsicElements {
+			'vipps-checkout-button': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> & {
+				disabled?: boolean;
+				onClick?: (event: Event) => void;
+				onclick?: (event: Event) => void;
+				type?: 'button' | 'submit';
+				brand?: 'vipps' | 'mobilepay';
+				language?: 'no' | 'en' | 'da' | 'fi';
+				variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+				rounded?: 'true' | 'false';
+				verb?: 'continue' | 'pay' | 'buy' | 'order' | 'book' | 'donate' | 'subscribe';
+				stretched?: 'true' | 'false';
+				branded?: 'true' | 'false';
+				loading?: 'true' | 'false';
+				'vmp-continue-as-first-name'?: string;
+			};
+		}
+	}
+}
 
 interface VippsCheckoutButtonProps {
 	language?: 'no' | 'en' | 'da' | 'fi';
@@ -55,22 +77,20 @@ const VippsCheckoutButton: FC<VippsCheckoutButtonProps> = ({
 		}
 	}, [onClick]);
 
-	return (
-		<vipps-checkout-button
-			ref={buttonRef}
-			language={language}
-			branded={branded ? 'true' : 'false'}
-			type={type}
-			disabled={disabled}
-			brand={brand}
-			verb={verb}
-			vmp-continue-as-first-name={vmpContinueAsFirstName}
-			variant={variant}
-			loading={loading ? 'true' : 'false'}
-			rounded={rounded ? 'true' : 'false'}
-			stretched={stretched ? 'true' : 'false'}
-		/>
-	);
+	return React.createElement('vipps-checkout-button', {
+		ref: buttonRef,
+		language: language,
+		branded: branded ? 'true' : 'false',
+		type: type,
+		disabled: disabled,
+		brand: brand,
+		verb: verb,
+		'vmp-continue-as-first-name': vmpContinueAsFirstName,
+		variant: variant,
+		loading: loading ? 'true' : 'false',
+		rounded: rounded ? 'true' : 'false',
+		stretched: stretched ? 'true' : 'false'
+	});
 };
 
 export default VippsCheckoutButton;

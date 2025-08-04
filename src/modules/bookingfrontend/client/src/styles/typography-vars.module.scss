@@ -86,9 +86,9 @@ $mobile: (
 	}
 
 	&-overline {
-		@include applyFontProperties('overline');
 		text-transform: uppercase;
 		font-weight: $text-regular;
+		@include applyFontProperties('overline');
 	}
 
 	&-body, &-normal, &-medium, &-lg {
@@ -96,8 +96,8 @@ $mobile: (
 	}
 
 	&-label {
-		@include applyFontProperties('label');
 		font-weight: $text-bold;
+		@include applyFontProperties('label');
 	}
 
 	&-xl {

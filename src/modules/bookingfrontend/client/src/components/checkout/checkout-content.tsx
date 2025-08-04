@@ -74,7 +74,7 @@ const CheckoutContent: FC = () => {
     const [showOrganizerError, setShowOrganizerError] = useState(false);
 
     // Reference for the documents section
-    const documentsSectionRef = React.useRef<HTMLDivElement>(null);
+    const documentsSectionRef = React.useRef<HTMLDivElement>(null!);
 
     // Reference for the organizer field section
     const organizerSectionRef = React.useRef<HTMLDivElement>(null);

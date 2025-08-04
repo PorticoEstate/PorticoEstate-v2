@@ -349,27 +349,23 @@ class OrganizationService
             return [];
         }
 
-        // Get organization details for the user's delegated organizations
         $organizations = [];
-        $org_numbers = [];
 
-        // First add the organizations the user has delegate access to
-        if ($this->userHelper->organizations) {
-            foreach ($this->userHelper->organizations as $org) {
-                if (!empty($org['orgnr'])) {
-                    $org_numbers[] = $org['orgnr'];
-                }
-            }
-        }
-
-        if (!empty($org_numbers)) {
-            $placeholders = str_repeat('?,', count($org_numbers) - 1) . '?';
+        // First add organizations where user has active delegate access
+        if ($this->userHelper->ssn) {
+            $encodedSSN = $this->encodeSSN($this->userHelper->ssn);
+            
             $sql = "SELECT o.*, true as is_delegate
-                FROM bb_organization o
-                WHERE o.organization_number IN ($placeholders)";
+                    FROM bb_organization o
+                    INNER JOIN bb_delegate d ON o.id = d.organization_id
+                    WHERE (d.ssn = :ssn OR d.ssn = :encoded_ssn)
+                    AND d.active = 1";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute($org_numbers);
+            $stmt->execute([
+                ':ssn' => $this->userHelper->ssn,
+                ':encoded_ssn' => $encodedSSN
+            ]);
             $organizations = $stmt->fetchAll(\PDO::FETCH_ASSOC);
         }
 
@@ -377,13 +373,25 @@ class OrganizationService
         if ($this->userHelper->ssn) {
             $sql = "SELECT *, false as is_delegate
                 FROM bb_organization
-                WHERE customer_ssn = ?";
+                WHERE customer_ssn = :ssn";
 
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$this->userHelper->ssn]);
+            $stmt->execute([':ssn' => $this->userHelper->ssn]);
             $owned_orgs = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            $organizations = array_merge($organizations, $owned_orgs);
+            // Merge owned organizations, avoiding duplicates
+            foreach ($owned_orgs as $owned_org) {
+                $found = false;
+                foreach ($organizations as $existing) {
+                    if ($existing['id'] == $owned_org['id']) {
+                        $found = true;
+                        break;
+                    }
+                }
+                if (!$found) {
+                    $organizations[] = $owned_org;
+                }
+            }
         }
 
         // Sort by name
@@ -407,17 +415,7 @@ class OrganizationService
             return false;
         }
 
-        // Check if user has access to this organization via their loaded organizations
-        if (!empty($this->userHelper->organizations)) {
-            foreach ($this->userHelper->organizations as $org) {
-                if (isset($org['org_id']) && $org['org_id'] == $organizationId) {
-                    return true;
-                }
-            }
-        }
-
-        // Also check if user owns the organization directly by SSN
-        // This is for cases where organization might not be in the user's organizations array
+        // Check if user owns the organization directly by SSN (direct owner access)
         if ($this->userHelper->ssn) {
             $sql = "SELECT 1 FROM bb_organization
                     WHERE id = :org_id AND customer_ssn = :ssn";
@@ -426,6 +424,27 @@ class OrganizationService
             $stmt->execute([
                 ':org_id' => $organizationId,
                 ':ssn' => $this->userHelper->ssn
+            ]);
+
+            if ($stmt->fetch()) {
+                return true; // User is direct owner
+            }
+        }
+
+        // Check if user has delegate access to this organization (must be active delegate)
+        if ($this->userHelper->ssn) {
+            $encodedSSN = $this->encodeSSN($this->userHelper->ssn);
+            
+            $sql = "SELECT 1 FROM bb_delegate d
+                    WHERE d.organization_id = :org_id 
+                    AND (d.ssn = :ssn OR d.ssn = :encoded_ssn)
+                    AND d.active = 1";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':org_id' => $organizationId,
+                ':ssn' => $this->userHelper->ssn,
+                ':encoded_ssn' => $encodedSSN
             ]);
 
             return (bool)$stmt->fetch();

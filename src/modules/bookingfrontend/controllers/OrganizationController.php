@@ -743,7 +743,7 @@ class OrganizationController extends DocumentController
     /**
      * @OA\Delete(
      *     path="/bookingfrontend/organizations/{id}/delegates/{delegate_id}",
-     *     summary="Remove a delegate from an organization",
+     *     summary="Deactivate a delegate from an organization (soft delete)",
      *     tags={"Organizations"},
      *     security={{ "oidc": {} }},
      *     @OA\Parameter(
@@ -762,7 +762,7 @@ class OrganizationController extends DocumentController
      *     ),
      *     @OA\Response(
      *         response=204,
-     *         description="Delegate removed successfully"
+     *         description="Delegate deactivated successfully"
      *     ),
      *     @OA\Response(
      *         response=403,

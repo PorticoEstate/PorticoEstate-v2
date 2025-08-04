@@ -58,10 +58,16 @@ class OrganizationDelegate
 
     /**
      * @ORM\Column(type="string", length=115, nullable=true)
-     * @Expose(when={"$user_has_access=true"})
-     * @OA\Property(description="Social Security Number (Norwegian format, 11 digits) - RESTRICTED: Only visible to organization admins", type="string", maxLength=115, nullable=true, pattern="^[0-9]{11}$", example="12345678901")
+     * @OA\Property(description="Social Security Number (Norwegian format, 11 digits) - RESTRICTED: Not exposed to frontend for security", type="string", maxLength=115, nullable=true, pattern="^[0-9]{11}$", example="12345678901")
      */
     public $ssn;
+
+    /**
+     * @Expose
+     * @Short
+     * @OA\Property(description="Whether this delegate is the current logged-in user", type="boolean", example=false)
+     */
+    public $is_self;
 
     /**
      * @ORM\Column(type="string", length=50, nullable=true)

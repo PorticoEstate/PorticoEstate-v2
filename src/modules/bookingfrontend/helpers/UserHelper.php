@@ -178,13 +178,51 @@ class UserHelper
 
 	public function get_delegate($ssn)
 	{
+		// Handle both plain and encoded SSNs for backward compatibility
+		$encodedSSN = $this->encodeSSN($ssn);
+
 		$sql = "SELECT o.name, o.organization_number, o.active
                 FROM bb_organization o
                 INNER JOIN bb_delegate d ON o.id = d.organization_id
-                WHERE d.customer_ssn = :ssn";
+                WHERE (d.ssn = :ssn OR d.ssn = :encoded_ssn) AND d.active = 1";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':ssn' => $ssn]);
+		$stmt->execute([
+			':ssn' => $ssn,
+			':encoded_ssn' => $encodedSSN
+		]);
 		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+	}
+
+	public function get_all_delegates($ssn)
+	{
+		// Handle both plain and encoded SSNs for backward compatibility
+		$encodedSSN = $this->encodeSSN($ssn);
+
+		$sql = "SELECT o.id as org_id, o.name as name, o.organization_number as organization_number, d.active as active
+                FROM bb_organization o
+                INNER JOIN bb_delegate d ON o.id = d.organization_id
+                WHERE (d.ssn = :ssn OR d.ssn = :encoded_ssn)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([
+			':ssn' => $ssn,
+			':encoded_ssn' => $encodedSSN
+		]);
+		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+	}
+
+	/**
+	 * Encode SSN using SHA1 hash with base64 encoding (same as old system)
+	 */
+	private function encodeSSN(string $ssn): string
+	{
+		// Check if SSN is already encoded
+		if (preg_match('/^{(.+)}(.+)$/', $ssn)) {
+			return $ssn; // Already encoded
+		}
+
+		// Encode using SHA1 + base64 (same as old system)
+		$hash = sha1($ssn);
+		return '{SHA1}' . base64_encode($hash);
 	}
 
 	protected function get_organizations()

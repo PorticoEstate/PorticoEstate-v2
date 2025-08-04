@@ -168,10 +168,24 @@ class OrganizationService
         $phone = $data['phone'] ?? '';
         $active = $data['active'] ?? 1;
         
-        // Check if delegate already exists
+        // Validate SSN format before encoding (same as old system)
+        if (!preg_match('/^{(.+)}(.+)$/', $ssn)) {
+            // Raw SSN - validate it
+            try {
+                $validator = createObject('booking.sfValidatorNorwegianSSN');
+                $ssn = $validator->clean($ssn);
+            } catch (Exception $e) {
+                throw new Exception($e->getMessage());
+            }
+        }
+        
+        // Encode SSN using the same method as the old system
+        $ssn = $this->encodeSSN($ssn);
+        
+        // Check if delegate already exists (active)
         $sql = "SELECT 1 FROM bb_delegate
                 WHERE organization_id = :organization_id
-                AND customer_ssn = :ssn
+                AND ssn = :ssn
                 AND active = 1";
 
         $stmt = $this->db->prepare($sql);
@@ -184,7 +198,7 @@ class OrganizationService
             // Check if inactive delegate exists and reactivate
             $sql = "SELECT id FROM bb_delegate
                     WHERE organization_id = :organization_id
-                    AND customer_ssn = :ssn
+                    AND ssn = :ssn
                     AND active = 0";
 
             $stmt = $this->db->prepare($sql);
@@ -207,7 +221,7 @@ class OrganizationService
                 ]);
             } else {
                 // Create new delegate
-                $sql = "INSERT INTO bb_delegate (organization_id, customer_ssn, name, email, phone, active)
+                $sql = "INSERT INTO bb_delegate (organization_id, ssn, name, email, phone, active)
                         VALUES (:organization_id, :ssn, :name, :email, :phone, :active)";
 
                 $stmt = $this->db->prepare($sql);
@@ -235,7 +249,7 @@ class OrganizationService
         $sql = "UPDATE bb_delegate
                 SET active = 0
                 WHERE organization_id = :organization_id
-                AND customer_ssn = :ssn";
+                AND ssn = :ssn";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
@@ -694,8 +708,14 @@ class OrganizationService
 
             // Convert to OrganizationDelegate models and return in short format
             $delegates = [];
+            $currentUserSSN = $this->userHelper->is_logged_in() ? $this->userHelper->ssn : null;
+            
             foreach ($results as $result) {
                 $delegate = new \App\modules\bookingfrontend\models\OrganizationDelegate($result);
+                
+                // Set is_self flag
+                $delegate->is_self = $currentUserSSN && $this->ssnMatches($result['ssn'], $currentUserSSN);
+                
                 $delegates[] = $delegate->serialize(['short' => true, 'user_has_access' => $userHasAccess]);
             }
 
@@ -751,19 +771,84 @@ class OrganizationService
     }
 
     /**
-     * Delete a delegate permanently
+     * Soft delete a delegate (set active = false)
      *
      * @param int $delegateId The ID of the delegate
      * @throws Exception If database operation fails
      */
     public function deleteDelegate(int $delegateId): void
     {
-        $sql = "DELETE FROM bb_delegate WHERE id = :id";
+        // Check if user is trying to delete themselves
+        if ($this->userHelper->is_logged_in() && $this->userHelper->ssn) {
+            $sql = "SELECT ssn FROM bb_delegate WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $delegateId]);
+            $delegate = $stmt->fetch();
+            
+            if ($delegate && $this->ssnMatches($delegate['ssn'], $this->userHelper->ssn)) {
+                throw new Exception('You cannot remove yourself as a delegate');
+            }
+        }
+
+        $sql = "UPDATE bb_delegate SET active = 0 WHERE id = :id";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':id' => $delegateId]);
 
         if ($stmt->rowCount() === 0) {
             throw new Exception('Delegate not found');
         }
+    }
+
+    /**
+     * Encode SSN using SHA1 hash with base64 encoding (same as old system)
+     *
+     * @param string $ssn Plain text SSN
+     * @return string Encoded SSN in format {SHA1}base64hash
+     */
+    private function encodeSSN(string $ssn): string
+    {
+        // Check if SSN is already encoded
+        if (preg_match('/^{(.+)}(.+)$/', $ssn)) {
+            return $ssn; // Already encoded
+        }
+        
+        // Encode using SHA1 + base64 (same as old system)
+        $hash = sha1($ssn);
+        return '{SHA1}' . base64_encode($hash);
+    }
+    
+    /**
+     * Decode an encoded SSN back to plain text (NOTE: This is not possible with SHA1 hash)
+     * This method is for reference only - SHA1 is a one-way hash
+     *
+     * @param string $encodedSSN Encoded SSN in format {SHA1}base64hash
+     * @return string|null Returns null since SHA1 cannot be decoded
+     */
+    private function decodeSSN(string $encodedSSN): ?string
+    {
+        // SHA1 is a one-way hash - cannot be decoded
+        // This method exists for documentation purposes
+        return null;
+    }
+    
+    /**
+     * Check if two SSNs match (handles both encoded and plain text)
+     *
+     * @param string $ssn1 First SSN (can be encoded or plain)
+     * @param string $ssn2 Second SSN (can be encoded or plain)
+     * @return bool True if SSNs match
+     */
+    private function ssnMatches(string $ssn1, string $ssn2): bool
+    {
+        // If both are encoded, compare directly
+        if (preg_match('/^{(.+)}(.+)$/', $ssn1) && preg_match('/^{(.+)}(.+)$/', $ssn2)) {
+            return $ssn1 === $ssn2;
+        }
+        
+        // If one is encoded and one is plain, encode the plain one and compare
+        $encoded1 = $this->encodeSSN($ssn1);
+        $encoded2 = $this->encodeSSN($ssn2);
+        
+        return $encoded1 === $encoded2;
     }
 }

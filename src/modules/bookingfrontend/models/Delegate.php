@@ -43,9 +43,12 @@ class Delegate
 
     public function __construct(array $data)
     {
-        $this->name = $data['orgname'] ?? null;
-        $this->organization_number = $data['orgnr'] ?? null;
-        $this->org_id = $data['org_id'] ?? null;
-        $this->active = true;
+		foreach ($data as $key => $value)
+		{
+			if (property_exists($this, $key))
+			{
+				$this->$key = $value;
+			}
+		}
     }
 }

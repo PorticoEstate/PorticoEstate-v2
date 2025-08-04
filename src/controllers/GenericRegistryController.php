@@ -93,9 +93,9 @@ class GenericRegistryController
 	 */
 	protected string $registryClass;
 	/**
-	 * ACL instance for permission checks
+	 * ACL instance for permission checks (lazy-loaded)
 	 */
-	protected Acl $acl;
+	protected ?Acl $acl = null;
 
 	/**
 	 * Constructor
@@ -106,7 +106,18 @@ class GenericRegistryController
 		{
 			$this->registryClass = $registryClass;
 		}
-		$this->acl = Acl::getInstance();
+		// ACL will be initialized lazily when first needed
+	}
+
+	/**
+	 * Get ACL instance (lazy-loaded)
+	 */
+	private function getAcl(): Acl
+	{
+		if ($this->acl === null) {
+			$this->acl = Acl::getInstance();
+		}
+		return $this->acl;
 	}
 
 	/**
@@ -279,7 +290,7 @@ class GenericRegistryController
 
 		$config = $registryClass::getRegistryConfig($type);
 
-		if (!$this->acl->check($config['acl_location'], Acl::READ, $config['acl_app']))
+		if (!$this->getAcl()->check($config['acl_location'], Acl::READ, $config['acl_app']))
 		{
 			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
@@ -482,7 +493,7 @@ class GenericRegistryController
 
 		$config = $registryClass::getRegistryConfig($type);
 
-		if (!$this->acl->check($config['acl_location'], Acl::READ, $config['acl_app']))
+		if (!$this->getAcl()->check($config['acl_location'], Acl::READ, $config['acl_app']))
 		{
 			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
@@ -593,7 +604,7 @@ class GenericRegistryController
 
 		$config = $registryClass::getRegistryConfig($type);
 
-		if (!$this->acl->check($config['acl_location'], Acl::ADD, $config['acl_app']))
+		if (!$this->getAcl()->check($config['acl_location'], Acl::ADD, $config['acl_app']))
 		{
 			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
@@ -812,7 +823,7 @@ class GenericRegistryController
 
 		$config = $registryClass::getRegistryConfig($type);
 
-		if (!$this->acl->check($config['acl_location'], Acl::EDIT, $config['acl_app']))
+		if (!$this->getAcl()->check($config['acl_location'], Acl::EDIT, $config['acl_app']))
 		{
 			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
@@ -977,7 +988,7 @@ class GenericRegistryController
 
 		$config = $registryClass::getRegistryConfig($type);
 
-		if (!$this->acl->check($config['acl_location'], Acl::DELETE, $config['acl_app']))
+		if (!$this->getAcl()->check($config['acl_location'], Acl::DELETE, $config['acl_app']))
 		{
 			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
@@ -1292,7 +1303,7 @@ class GenericRegistryController
 		}
 
 		$config = $registryClass::getRegistryConfig($type);
-		if (!$this->acl->check($config['acl_location'], Acl::READ, $config['acl_app']))
+		if (!$this->getAcl()->check($config['acl_location'], Acl::READ, $config['acl_app']))
 		{
 			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);

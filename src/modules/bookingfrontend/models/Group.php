@@ -95,6 +95,18 @@ class Group
      */
     public $show_in_portal;
 
+    /**
+     * @OA\Property(
+     *     type="array",
+     *     description="Group contacts (max 2)",
+     *     @OA\Items(ref="#/components/schemas/GroupContact")
+     * )
+     * @Expose
+     * @Short
+     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\GroupContact")
+     */
+    public $contacts;
+
     public function __construct($data = [])
     {
         if (!empty($data))

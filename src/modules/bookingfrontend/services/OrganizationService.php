@@ -639,21 +639,38 @@ class OrganizationService
     public function getOrganizationGroups(int $organizationId): array
     {
         try {
+            // Check if user has access to this organization (delegate or owner)
+            $userHasAccess = $this->hasAccess($organizationId);
+            
+            // If user has access, show all groups (including inactive)
+            // If no access, show only active groups
+            $activeFilter = $userHasAccess ? '' : 'AND g.active = 1';
+            
             $sql = "SELECT g.*
                     FROM bb_group g
                     WHERE g.organization_id = :organization_id
-                    AND g.active = 1
-                    ORDER BY g.name";
+                    {$activeFilter}
+                    ORDER BY g.active DESC, g.name";
 
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':organization_id' => $organizationId]);
 
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Convert to Group models and return in short format
+            // Convert to Group models and include contacts
             $groups = [];
             foreach ($results as $result) {
                 $group = new \App\modules\bookingfrontend\models\Group($result);
+                
+                // Fetch and populate contacts for this group
+                $contactsData = $this->getGroupContacts($result['id']);
+                $contacts = [];
+                foreach ($contactsData as $contactData) {
+                    $contacts[] = new \App\modules\bookingfrontend\models\GroupContact($contactData);
+                }
+                $group->contacts = $contacts;
+                
+                // Serialize group with contacts included
                 $groups[] = $group->serialize(['short' => true]);
             }
 
@@ -717,7 +734,6 @@ class OrganizationService
             $sql = "SELECT d.*
                     FROM bb_delegate d
                     WHERE d.organization_id = :organization_id
-                    AND d.active = 1
                     ORDER BY d.name";
 
             $stmt = $this->db->prepare($sql);
@@ -869,5 +885,351 @@ class OrganizationService
         $encoded2 = $this->encodeSSN($ssn2);
         
         return $encoded1 === $encoded2;
+    }
+
+    /**
+     * Create a new group for an organization
+     *
+     * @param array $data Group data containing:
+     *                    - name (required): Group name
+     *                    - organization_id (required): Organization ID
+     *                    - shortname: Short name (max 11 chars)
+     *                    - description: Group description
+     *                    - parent_id: Parent group ID
+     *                    - activity_id: Activity ID
+     *                    - show_in_portal: Whether to show in portal
+     *                    - contacts: Array of contact information
+     * @return int The ID of the newly created group
+     * @throws Exception If validation fails or database error occurs
+     */
+    public function createGroup(array $data): int
+    {
+        if (empty($data['name'])) {
+            throw new Exception('Group name is required');
+        }
+
+        if (empty($data['organization_id'])) {
+            throw new Exception('Organization ID is required');
+        }
+
+        // Validate parent group if specified
+        if (!empty($data['parent_id'])) {
+            if (!$this->validateParentGroup($data['parent_id'], $data['organization_id'])) {
+                throw new Exception('Invalid parent group or circular reference detected');
+            }
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            $sql = "INSERT INTO bb_group (
+                name, shortname, description, organization_id,
+                parent_id, activity_id, active, show_in_portal
+            ) VALUES (
+                :name, :shortname, :description, :organization_id,
+                :parent_id, :activity_id, :active, :show_in_portal
+            )";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':name' => $data['name'],
+                ':shortname' => !empty($data['shortname']) ? substr($data['shortname'], 0, 11) : substr($data['name'], 0, 11),
+                ':description' => $data['description'] ?? null,
+                ':organization_id' => $data['organization_id'],
+                ':parent_id' => $data['parent_id'] ?? null,
+                ':activity_id' => $data['activity_id'] ?? null,
+                ':active' => 1,
+                ':show_in_portal' => !empty($data['show_in_portal']) ? 1 : 0
+            ]);
+
+            $groupId = $this->db->lastInsertId();
+
+            // Add contacts if provided (max 2)
+            if (!empty($data['contacts']) && is_array($data['contacts'])) {
+                $this->createGroupContacts($groupId, array_slice($data['contacts'], 0, 2));
+            }
+
+            $this->db->commit();
+            return $groupId;
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error creating group: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update group details
+     *
+     * @param int $groupId The ID of the group
+     * @param array $data Updated group data
+     * @throws Exception If validation fails or database error occurs
+     */
+    public function updateGroup(int $groupId, array $data): void
+    {
+        // Define which fields can be updated
+        $allowedFields = [
+            'name' => true,
+            'shortname' => true,
+            'description' => true,
+            'parent_id' => true,
+            'activity_id' => true,
+            'active' => true,
+            'show_in_portal' => true
+        ];
+
+        // Filter out any fields that aren't allowed to be updated
+        $updateData = array_intersect_key($data, $allowedFields);
+
+        if (empty($updateData) && empty($data['contacts'])) {
+            throw new Exception('No valid fields to update');
+        }
+
+        // Validate parent group if being updated
+        if (isset($updateData['parent_id']) && !empty($updateData['parent_id'])) {
+            $sql = "SELECT organization_id FROM bb_group WHERE id = :id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':id' => $groupId]);
+            $group = $stmt->fetch();
+
+            if (!$group) {
+                throw new Exception('Group not found');
+            }
+
+            if (!$this->validateParentGroup($updateData['parent_id'], $group['organization_id'], $groupId)) {
+                throw new Exception('Invalid parent group or circular reference detected');
+            }
+        }
+
+        $this->db->beginTransaction();
+
+        try {
+            // Update group if there are fields to update
+            if (!empty($updateData)) {
+                // Handle shortname length limit
+                if (isset($updateData['shortname'])) {
+                    $updateData['shortname'] = substr($updateData['shortname'], 0, 11);
+                }
+
+                // Convert boolean to int for database
+                if (isset($updateData['active'])) {
+                    $updateData['active'] = $updateData['active'] ? 1 : 0;
+                }
+                if (isset($updateData['show_in_portal'])) {
+                    $updateData['show_in_portal'] = $updateData['show_in_portal'] ? 1 : 0;
+                }
+
+                $setClauses = [];
+                $params = [':id' => $groupId];
+
+                foreach ($updateData as $field => $value) {
+                    $setClauses[] = "{$field} = :{$field}";
+                    $params[":{$field}"] = $value;
+                }
+
+                $sql = "UPDATE bb_group SET " . implode(', ', $setClauses) . " WHERE id = :id";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute($params);
+            }
+
+            // Update contacts if provided
+            if (isset($data['contacts']) && is_array($data['contacts'])) {
+                $this->updateGroupContacts($groupId, array_slice($data['contacts'], 0, 2));
+            }
+
+            $this->db->commit();
+
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw new Exception("Error updating group: " . $e->getMessage());
+        }
+    }
+
+
+    /**
+     * Check if a group belongs to a specific organization
+     *
+     * @param int $groupId Group ID
+     * @param int $organizationId Organization ID
+     * @return bool True if group belongs to organization
+     */
+    public function groupBelongsToOrganization(int $groupId, int $organizationId): bool
+    {
+        $sql = "SELECT 1 FROM bb_group WHERE id = :group_id AND organization_id = :org_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':group_id' => $groupId,
+            ':org_id' => $organizationId
+        ]);
+
+        return (bool)$stmt->fetch();
+    }
+
+    /**
+     * Get contacts for a specific group
+     *
+     * @param int $groupId Group ID
+     * @return array List of group contacts
+     */
+    private function getGroupContacts(int $groupId): array
+    {
+        $sql = "SELECT id, name, email, phone, group_id
+                FROM bb_group_contact
+                WHERE group_id = :group_id
+                ORDER BY id";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':group_id' => $groupId]);
+        
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+
+    /**
+     * Validate parent group to prevent circular references
+     *
+     * @param int $parentId Parent group ID
+     * @param int $organizationId Organization ID
+     * @param int|null $excludeGroupId Group ID to exclude from validation (for updates)
+     * @return bool True if parent is valid
+     */
+    private function validateParentGroup(int $parentId, int $organizationId, ?int $excludeGroupId = null): bool
+    {
+        // Check if parent exists and belongs to same organization
+        $sql = "SELECT parent_id FROM bb_group WHERE id = :parent_id AND organization_id = :org_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            ':parent_id' => $parentId,
+            ':org_id' => $organizationId
+        ]);
+
+        $parent = $stmt->fetch();
+        if (!$parent) {
+            return false;
+        }
+
+        // Check for circular reference by traversing up the hierarchy
+        $currentParentId = $parent['parent_id'];
+        $visited = [$parentId];
+        
+        if ($excludeGroupId) {
+            $visited[] = $excludeGroupId;
+        }
+
+        while ($currentParentId) {
+            if (in_array($currentParentId, $visited)) {
+                return false; // Circular reference detected
+            }
+
+            $visited[] = $currentParentId;
+            
+            $sql = "SELECT parent_id FROM bb_group WHERE id = :id AND organization_id = :org_id";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':id' => $currentParentId,
+                ':org_id' => $organizationId
+            ]);
+
+            $currentParent = $stmt->fetch();
+            if (!$currentParent) {
+                break;
+            }
+
+            $currentParentId = $currentParent['parent_id'];
+        }
+
+        return true;
+    }
+
+    /**
+     * Create contacts for a group
+     *
+     * @param int $groupId Group ID
+     * @param array $contacts Array of contact data
+     * @throws Exception If database error occurs
+     */
+    private function createGroupContacts(int $groupId, array $contacts): void
+    {
+        foreach ($contacts as $contact) {
+            if (empty($contact['name'])) {
+                continue; // Skip contacts without names
+            }
+
+            $sql = "INSERT INTO bb_group_contact (group_id, name, email, phone)
+                    VALUES (:group_id, :name, :email, :phone)";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':group_id' => $groupId,
+                ':name' => $contact['name'],
+                ':email' => $contact['email'] ?? '',
+                ':phone' => $contact['phone'] ?? ''
+            ]);
+        }
+    }
+
+    /**
+     * Update contacts for a group
+     *
+     * @param int $groupId Group ID
+     * @param array $contacts Array of contact data (may include IDs for updates)
+     * @throws Exception If database error occurs
+     */
+    private function updateGroupContacts(int $groupId, array $contacts): void
+    {
+        // First, get existing contacts
+        $sql = "SELECT id FROM bb_group_contact WHERE group_id = :group_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':group_id' => $groupId]);
+        $existingIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $updatedIds = [];
+
+        foreach ($contacts as $contact) {
+            if (empty($contact['name'])) {
+                continue; // Skip contacts without names
+            }
+
+            if (!empty($contact['id']) && in_array($contact['id'], $existingIds)) {
+                // Update existing contact
+                $sql = "UPDATE bb_group_contact 
+                        SET name = :name, email = :email, phone = :phone
+                        WHERE id = :id AND group_id = :group_id";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([
+                    ':id' => $contact['id'],
+                    ':group_id' => $groupId,
+                    ':name' => $contact['name'],
+                    ':email' => $contact['email'] ?? '',
+                    ':phone' => $contact['phone'] ?? ''
+                ]);
+
+                $updatedIds[] = $contact['id'];
+            } else {
+                // Create new contact
+                $sql = "INSERT INTO bb_group_contact (group_id, name, email, phone)
+                        VALUES (:group_id, :name, :email, :phone)";
+                
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([
+                    ':group_id' => $groupId,
+                    ':name' => $contact['name'],
+                    ':email' => $contact['email'] ?? '',
+                    ':phone' => $contact['phone'] ?? ''
+                ]);
+
+                $updatedIds[] = $this->db->lastInsertId();
+            }
+        }
+
+        // Delete contacts that weren't included in the update
+        $toDelete = array_diff($existingIds, $updatedIds);
+        if (!empty($toDelete)) {
+            $placeholders = str_repeat('?,', count($toDelete) - 1) . '?';
+            $sql = "DELETE FROM bb_group_contact WHERE id IN ($placeholders)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($toDelete);
+        }
     }
 }

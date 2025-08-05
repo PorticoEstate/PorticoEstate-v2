@@ -550,6 +550,204 @@ class OrganizationController extends DocumentController
     }
 
     /**
+     * @OA\Post(
+     *     path="/bookingfrontend/organizations/{id}/groups",
+     *     summary="Create a new group for an organization",
+     *     tags={"Organizations"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"name"},
+     *             @OA\Property(property="name", type="string", description="Group name"),
+     *             @OA\Property(property="shortname", type="string", description="Group short name (max 11 chars)"),
+     *             @OA\Property(property="description", type="string", description="Group description"),
+     *             @OA\Property(property="parent_id", type="integer", description="Parent group ID"),
+     *             @OA\Property(property="activity_id", type="integer", description="Activity ID"),
+     *             @OA\Property(property="show_in_portal", type="boolean", description="Show in public portal"),
+     *             @OA\Property(
+     *                 property="contacts",
+     *                 type="array",
+     *                 description="Group contacts (max 2)",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="name", type="string"),
+     *                     @OA\Property(property="email", type="string"),
+     *                     @OA\Property(property="phone", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Group created successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id", type="integer"),
+     *             @OA\Property(property="message", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Not authorized to create groups for this organization"
+     *     )
+     * )
+     */
+    public function createGroup(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $organizationId = (int)$args['id'];
+
+            // Check if user has access to modify this organization
+            if (!$this->organizationService->hasAccess($organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Not authorized to create groups for this organization'],
+                    403
+                );
+            }
+
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
+
+            if (empty($data['name'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Group name is required'],
+                    400
+                );
+            }
+
+            $data['organization_id'] = $organizationId;
+            $groupId = $this->organizationService->createGroup($data);
+
+            return ResponseHelper::sendJSONResponse([
+                'id' => $groupId,
+                'message' => 'Group created successfully'
+            ], 201);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/bookingfrontend/organizations/{id}/groups/{group_id}",
+     *     summary="Update a group for an organization",
+     *     tags={"Organizations"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="group_id",
+     *         in="path",
+     *         required=true,
+     *         description="Group ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", description="Group name"),
+     *             @OA\Property(property="shortname", type="string", description="Group short name (max 11 chars)"),
+     *             @OA\Property(property="description", type="string", description="Group description"),
+     *             @OA\Property(property="parent_id", type="integer", description="Parent group ID"),
+     *             @OA\Property(property="activity_id", type="integer", description="Activity ID"),
+     *             @OA\Property(property="show_in_portal", type="boolean", description="Show in public portal"),
+     *             @OA\Property(property="active", type="boolean", description="Group active status (can be toggled to deactivate instead of deleting)"),
+     *             @OA\Property(
+     *                 property="contacts",
+     *                 type="array",
+     *                 description="Group contacts (max 2)",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Contact ID (for updates)"),
+     *                     @OA\Property(property="name", type="string"),
+     *                     @OA\Property(property="email", type="string"),
+     *                     @OA\Property(property="phone", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Group updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Not authorized to update groups for this organization"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Group not found"
+     *     )
+     * )
+     */
+    public function updateGroup(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $organizationId = (int)$args['id'];
+            $groupId = (int)$args['group_id'];
+
+            // Check if user has access to modify this organization
+            if (!$this->organizationService->hasAccess($organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Not authorized to update groups for this organization'],
+                    403
+                );
+            }
+
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
+
+            // Verify group belongs to organization
+            if (!$this->organizationService->groupBelongsToOrganization($groupId, $organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Group not found in this organization'],
+                    404
+                );
+            }
+
+            $this->organizationService->updateGroup($groupId, $data);
+
+            return ResponseHelper::sendJSONResponse(['message' => 'Group updated successfully']);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+
+    /**
      * @OA\Get(
      *     path="/bookingfrontend/organizations/{id}/buildings",
      *     summary="Get buildings used by an organization",

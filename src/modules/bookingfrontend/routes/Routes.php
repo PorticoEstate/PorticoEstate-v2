@@ -68,6 +68,8 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->put('/{id}/delegates/{delegate_id}', OrganizationController::class . ':updateDelegate');
 		$group->delete('/{id}/delegates/{delegate_id}', OrganizationController::class . ':removeDelegate');
 		$group->get('/{id}/groups', OrganizationController::class . ':getGroups');
+		$group->post('/{id}/groups', OrganizationController::class . ':createGroup');
+		$group->put('/{id}/groups/{group_id}', OrganizationController::class . ':updateGroup');
 		$group->get('/{id}/buildings', OrganizationController::class . ':getBuildings');
 		$group->get('/{id}/documents', OrganizationController::class . ':getDocuments');
 		$group->get('/document/{id}/download', OrganizationController::class . ':downloadDocument');

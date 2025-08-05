@@ -1012,6 +1012,19 @@
 				}
 			}
 
+			// Build columnDefs to only enable columnControl for orderable columns
+			var columnDefs = [];
+			for(i=0;i < JqueryPortico.columns.length;i++)
+			{
+				if (JqueryPortico.columns[i]['orderable'] == true)
+				{
+					columnDefs.push({
+						target: i,
+						columnControl: ['order']
+					});
+				}
+			}
+
 			init_multiselect = function(oControl)
 			{
 				try
@@ -1477,7 +1490,9 @@ console.log(app_method_referrer);
 				"search": initial_search,
 				"order": order_def,
 				autoWidth: true,
-				buttons: JqueryPortico.buttons
+				buttons: JqueryPortico.buttons,
+				ordering: {indicators: false,  handler: false},
+				columnDefs: columnDefs
 			});
 			};
 

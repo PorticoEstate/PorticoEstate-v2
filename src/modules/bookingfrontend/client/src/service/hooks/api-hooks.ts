@@ -22,6 +22,7 @@ import {
 	fetchBuildingAgeGroups,
 	fetchBuildingAudience,
 	fetchBuildingSchedule,
+	fetchOrganizationSchedule,
 	fetchBuildingSeasons,
 	fetchDeliveredApplications,
 	fetchFreeTimeSlotsForRange,
@@ -104,6 +105,13 @@ function useServerMessageMutation<TData = unknown, TError = unknown, TVariables 
 // }
 interface UseScheduleOptions {
 	building_id?: number;
+	weeks: DateTime[];
+	instance?: string;
+	initialWeekSchedule?: Record<string, IEvent[]>
+}
+
+interface UseOrganizationScheduleOptions {
+	organization_id?: number;
 	weeks: DateTime[];
 	instance?: string;
 	initialWeekSchedule?: Record<string, IEvent[]>
@@ -337,6 +345,86 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
 		// staleTime: 10000
 		// staleTime: 1000 * 60 * 5, // 5 minutes
 		// cacheTime: 1000 * 60 * 30, // 30 minutes
+	});
+};
+
+/**
+ * Custom hook to fetch and cache organization schedule data by weeks
+ * @param options.organization_id - The ID of the organization
+ * @param options.weekStarts - Array of dates representing the start of each week needed
+ * @param options.instance - Optional instance parameter
+ */
+export const useOrganizationSchedule = ({organization_id, weeks, instance, initialWeekSchedule}: UseOrganizationScheduleOptions) => {
+	const queryClient = useQueryClient();
+	const weekStarts = weeks.map(d => d.set({weekday: 1}).startOf('day'));
+	const keys = weekStarts.map(a => a.toFormat("y-MM-dd"))
+
+	// Helper to get cache key for a week
+	const getWeekCacheKey = useCallback((key: string) => {
+		return ['organizationSchedule', organization_id, key];
+	}, [organization_id]);
+	
+	// Initialize cache with provided initial schedule data
+	useEffect(() => {
+		if (initialWeekSchedule) {
+			Object.entries(initialWeekSchedule).forEach(([weekStart, events]) => {
+				const cacheKey = getWeekCacheKey(weekStart);
+				if (!queryClient.getQueryData(cacheKey)) {
+					queryClient.setQueryData(cacheKey, events);
+				}
+			});
+		}
+	}, [initialWeekSchedule, organization_id, queryClient, getWeekCacheKey]);
+
+	// Fetch function that gets all uncached weeks
+	const fetchUncachedWeeks = async () => {
+		// Filter out weeks that are already in cache
+		const uncachedWeeks = keys.filter(weekStart => {
+			const cacheKey = getWeekCacheKey(weekStart);
+			const d = queryClient.getQueryData(cacheKey);
+			return !d;
+		});
+
+		if (uncachedWeeks.length === 0) {
+			// If all weeks are cached, combine and return cached data
+			const combinedData: IEvent[] = [];
+			keys.forEach(weekStart => {
+				const cacheKey = getWeekCacheKey(weekStart);
+				const weekData = queryClient.getQueryData<IEvent[]>(cacheKey);
+				if (weekData) {
+					combinedData.push(...weekData);
+				}
+			});
+			return combinedData;
+		}
+
+		// Fetch data for all uncached weeks at once
+		const scheduleData = await fetchOrganizationSchedule(organization_id!, uncachedWeeks, instance);
+		// Cache each week's data separately
+		uncachedWeeks.forEach(weekStart => {
+			const weekData: IEvent[] = scheduleData[weekStart] || [];
+			const cacheKey = getWeekCacheKey(weekStart);
+			queryClient.setQueryData(cacheKey, weekData, {});
+		});
+
+		// Return combined data for all requested weeks
+		const combinedData: IEvent[] = [];
+		keys.forEach(weekStart => {
+			const cacheKey = getWeekCacheKey(weekStart);
+			const weekData = queryClient.getQueryData<IEvent[]>(cacheKey);
+			if (weekData) {
+				combinedData.push(...weekData);
+			}
+		});
+
+		return combinedData;
+	};
+
+	// Main query hook
+	return useQuery({
+		queryKey: ['organizationSchedule', organization_id, keys.join(',')],
+		queryFn: organization_id === undefined ? skipToken : fetchUncachedWeeks,
+		enabled: organization_id !== undefined,
 	});
 };
 

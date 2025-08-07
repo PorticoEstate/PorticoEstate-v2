@@ -24,7 +24,12 @@ import {IUpdatePartialApplication} from "@/service/types/api/application.types";
 import {FCallEventConverter} from "@/components/building-calendar/util/event-converter";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useBookingUser, usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
-import {useCurrentBuilding, useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {
+	useCurrentBuilding,
+	useEnabledResources,
+	useIsOrganization,
+	useTempEvents
+} from "@/components/building-calendar/calendar-context";
 import {IEvent} from "@/service/pecalendar.types";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {Season} from "@/service/types/Building";
@@ -40,7 +45,7 @@ interface FullCalendarViewProps {
 	events?: IEvent[],
 	setCurrentDate: (value: (((prevState: DateTime) => DateTime) | DateTime)) => void,
 	currentDate: DateTime,
-	seasons: Season[],
+	seasons?: Season[],
 	onDateChange: Dispatch<DatesSetArg>,
 	currentTempEvent?: Partial<FCallTempEvent>,
 	handleDateSelect?: (selectInfo?: Partial<DateSelectArg>) => void
@@ -68,11 +73,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const {tempEvents: storedTempEvents} = useTempEvents();
 	const {enabledResources} = useEnabledResources();
 	const buildingId = useCurrentBuilding()
-	const {data: building} = useBuilding(+buildingId);
+	const {data: building} = useBuilding(buildingId);
 	const {data: resources} = useBuildingResources(buildingId)
 	const t = useTrans();
 	const {data: user} = useBookingUser();
 	const { addToast } = useToast();
+	const isOrg = useIsOrganization();
 
 	useEffect(() => {
 		if (calendarRef.current) {
@@ -88,7 +94,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 	const generateBusinessHours = useCallback(() => {
 		// Group boundaries by weekday
-		return props.seasons.flatMap(season => {
+		return props.seasons?.flatMap(season => {
 			// Only use active seasons that cover the current date
 			const now = DateTime.now();
 			const seasonStart = DateTime.fromISO(season.from_);
@@ -129,7 +135,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		};
 
 		// Check all season boundaries
-		props.seasons.forEach(season => {
+		props.seasons?.forEach(season => {
 			season.boundaries.forEach(boundary => {
 				if (boundary.from_ < minTime) minTime = boundary.from_;
 				if (boundary.to_ > maxTime) maxTime = boundary.to_;
@@ -145,6 +151,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			if (eventEndTime > maxTime) maxTime = eventEndTime;
 		});
 
+		// If seasons is not set and isOrg is true, set default times for organizations
+		if (!props.seasons && isOrg) {
+			if (minTime === '24:00:00') minTime = '08:00:00';
+			if (maxTime === '00:00:00') maxTime = '23:00:00';
+		}
+
 		// Set default values if no valid times found
 		setSlotMinTime(minTime === "24:00:00" ? '00:00:00' : minTime);
 
@@ -158,7 +170,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				? '24:00:00'          // Allow until midnight
 				: maxTime             // Otherwise respect the boundary
 		);
-	}, [props.seasons, events]);
+	}, [props.seasons, events, isOrg]);
 
 
 	useEffect(() => {
@@ -196,7 +208,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		// Find applicable seasons for the date range
-		const applicableSeasons = seasons.filter(season => {
+		const applicableSeasons = seasons?.filter(season => {
 			const seasonStart = DateTime.fromISO(season.from_);
 			const seasonEnd = DateTime.fromISO(season.to_);
 			return season.active && seasonStart <= endDate && seasonEnd >= startDate;
@@ -207,13 +219,13 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const dayOfWeek = date.weekday;
 
 			// Get boundaries for this day from all applicable seasons
-			const dayBoundaries = applicableSeasons.flatMap(season =>
+			const dayBoundaries = applicableSeasons?.flatMap(season =>
 				season.boundaries.filter(b => b.wday === dayOfWeek)
 			);
 
-			if (dayBoundaries.length > 0) {
+			if ((dayBoundaries?.length || 0) > 0) {
 				// Sort boundaries by start time
-				const sortedBoundaries = [...dayBoundaries].sort((a, b) =>
+				const sortedBoundaries = [...(dayBoundaries || [])].sort((a, b) =>
 					a.from_.localeCompare(b.from_)
 				);
 

@@ -83,6 +83,7 @@ export interface TableProps<T> {
     storageId?: string; // Optional unique identifier for localStorage and enable persistence
     exportFileName?: string; // enables export, and sets filename
     isLoading?: boolean; // Show loading state
+	disableColumnHiding?: boolean; // Hide header column toggle button
 }
 
 // Add localStorage settings interface

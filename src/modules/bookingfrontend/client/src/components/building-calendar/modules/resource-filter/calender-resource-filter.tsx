@@ -2,7 +2,12 @@ import React, {FC, memo, useEffect, useMemo, useState} from 'react';
 import styles from './calender-resource-filter.module.scss';
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {Checkbox, Button, Fieldset, Radio} from "@digdir/designsystemet-react";
-import {useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {
+	useCurrentBuilding,
+	useCurrentOrganization,
+	useEnabledResources, useIsOrganization,
+	useTempEvents
+} from "@/components/building-calendar/calendar-context";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import MobileDialog from "@/components/dialog/mobile-dialog";
 import {useIsMobile} from "@/service/hooks/is-mobile";
@@ -16,6 +21,7 @@ import {useQueryClient} from "@tanstack/react-query";
 import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
 import {useBuilding} from "@/service/api/building";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
+import {IResource} from "@/service/types/resource.types";
 
 
 interface GroupedResources {
@@ -27,13 +33,14 @@ export interface CalendarResourceFilterOption {
 	value: string;
 	label: string;
 	deactivated?: boolean;
+	buildingId: number | string
 }
 
 interface CalendarResourceFilterProps {
 	open: boolean;
 	transparent: boolean;
 	setOpen: (open: boolean) => void;
-	buildingId: string | number;
+	filteredResources?: IResource[];
 }
 
 
@@ -41,15 +48,27 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 																	 open,
 																	 transparent,
 																	 setOpen,
-																	 buildingId
+																	 filteredResources
 																 }) => {
+	const buildingId = useCurrentBuilding();
+	const organization = useCurrentOrganization();
+	const isOrgMode = useIsOrganization();
 	const isMobile = useIsMobile();
 	const t = useTrans();
 	const [popperResource, setPopperResource] = useState<CalendarResourceFilterOption | null>(null);
 	const {setEnabledResources, enabledResources} = useEnabledResources();
 	const queryClient = useQueryClient();
-	const {data: resources} = useBuildingResources(buildingId);
-	const {data: building} = useBuilding(+buildingId);
+	const {data: building} = useBuilding(buildingId);
+	const {data: allResources} = useBuildingResources(buildingId);
+
+	// Use filtered resources if provided, otherwise fall back to all building resources
+	const resources = useMemo(() => {
+		if(isOrgMode) {
+			return filteredResources;
+		}
+		return allResources;
+
+	}, [filteredResources, allResources, isOrgMode])
 
 
 	const resourcesWithSlots = useMemo(() => {
@@ -80,7 +99,8 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 		return (resources || []).map((resource, index) => ({
 			value: resource.id.toString(),
 			label: resource.name,
-			deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application
+			deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application,
+			buildingId: resource.building_id!
 		}));
 	}, [resources, building]);
 
@@ -93,7 +113,8 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 			const option = {
 				value: resource.id.toString(),
 				label: resource.name,
-				deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application
+				deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application,
+				buildingId: resource.building_id!
 			};
 
 			if (ResourceUsesTimeSlots(resource)) {

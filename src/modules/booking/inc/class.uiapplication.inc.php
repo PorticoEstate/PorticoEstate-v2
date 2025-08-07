@@ -53,7 +53,7 @@ class booking_uiapplication extends booking_uicommon
 	protected $building_so;
 	protected $errors = array();
 	private $acl_delete;
-	protected $combine_applications = false;
+	protected $combine_applications = true;
 	var $event_bo, $activity_bo, $audience_bo, $assoc_bo, $agegroup_bo, $resource_bo, $building_bo, $organization_bo,
 		$document_building, $document_resource, $fields, $display_name, $accounts_obj, $sessions;
 

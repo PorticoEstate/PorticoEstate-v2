@@ -393,3 +393,4 @@ zip_code	common	no	Postnummer
 website	common	no	Nettside
 back_to_start	common	no	Tilbake til start
 back_to_organization	common	no	Tilbake til organisasjon
+restore	common	no	Gjenopprett

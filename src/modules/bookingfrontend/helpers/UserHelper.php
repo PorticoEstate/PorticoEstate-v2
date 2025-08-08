@@ -803,9 +803,14 @@ class UserHelper
 			try
 			{
 				$external_user->get_name_from_external_service($ret);
+				
+				// Initialize user data in database if this is first-time login
+				$this->initialize_user_data($ret);
 			}
 			catch (\Exception $exc)
 			{
+				// Log the exception but continue with login
+				error_log("Error fetching external user data: " . $exc->getMessage());
 			}
 		}
 
@@ -822,5 +827,119 @@ class UserHelper
 
 
 		return $ret;
+	}
+
+	/**
+	 * Initialize user data in database if this is first-time login
+	 * @param array $external_data Data retrieved from external service
+	 */
+	private function initialize_user_data($external_data)
+	{
+		if (empty($external_data['ssn'])) {
+			return;
+		}
+
+		$ssn = $external_data['ssn'];
+		
+		// Check if user already exists in database
+		$existing_user = $this->get_user_id($ssn);
+		if ($existing_user) {
+			// User exists, update with latest external data if needed
+			$this->update_user_from_external_data($existing_user, $external_data);
+			return;
+		}
+
+		// First-time user, create new record
+		$this->create_user_from_external_data($external_data);
+	}
+
+	/**
+	 * Create a new user record from external data
+	 * @param array $external_data Data from external service
+	 */
+	private function create_user_from_external_data($external_data)
+	{
+		$fields = [
+			'customer_ssn' => $external_data['ssn'],
+			'name' => $external_data['name'] ?? '',
+			'email' => $external_data['email'] ?? '',
+			'phone' => $external_data['phone'] ?? '',
+			'street' => $external_data['street'] ?? '',
+			'zip_code' => $external_data['zip_code'] ?? '',
+			'city' => $external_data['city'] ?? '',
+			'created' => date('Y-m-d H:i:s')
+		];
+
+		// Filter out empty values
+		$fields = array_filter($fields, function($value) {
+			return $value !== '' && $value !== null;
+		});
+
+		if (empty($fields['customer_ssn'])) {
+			error_log("Cannot create user: SSN is missing");
+			return;
+		}
+
+		$placeholders = implode(',', array_fill(0, count($fields), '?'));
+		$columns = implode(',', array_keys($fields));
+		
+		$sql = "INSERT INTO bb_user ({$columns}) VALUES ({$placeholders})";
+		
+		try {
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute(array_values($fields));
+			
+			$userId = $this->db->lastInsertId();
+			error_log("Created new user with ID: {$userId} for SSN: " . substr($external_data['ssn'], 0, 6) . "****");
+		} catch (\Exception $e) {
+			error_log("Error creating user: " . $e->getMessage());
+		}
+	}
+
+	/**
+	 * Update existing user record with latest external data
+	 * @param int $user_id User ID to update
+	 * @param array $external_data Data from external service
+	 */
+	private function update_user_from_external_data($user_id, $external_data)
+	{
+		// Only update if we have new external data
+		$fields_to_update = [];
+		$params = [':id' => $user_id];
+
+		// Fields that can be updated from external data
+		$updatable_fields = [
+			'name' => $external_data['name'] ?? null,
+			'street' => $external_data['street'] ?? null,
+			'zip_code' => $external_data['zip_code'] ?? null,
+			'city' => $external_data['city'] ?? null
+		];
+
+		foreach ($updatable_fields as $field => $value) {
+			if (!empty($value)) {
+				$fields_to_update[] = "{$field} = :{$field}";
+				$params[":{$field}"] = $value;
+			}
+		}
+
+		if (empty($fields_to_update)) {
+			return; // Nothing to update
+		}
+
+		$params[':updated'] = date('Y-m-d H:i:s');
+		$fields_to_update[] = "updated = :updated";
+
+		$sql = "UPDATE bb_user SET " . implode(', ', $fields_to_update) . " WHERE id = :id";
+		
+		try {
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute($params);
+			
+			if ($stmt->rowCount() > 0) {
+				error_log("Updated user ID: {$user_id} with external data");
+			}
+		} catch (\Exception $e) {
+			error_log("Error updating user: " . $e->getMessage());
+		}
 	}
 }

@@ -35,10 +35,12 @@ const UserMenu: FC<UserMenuProps> = (props) => {
 
     // Show creation modal for first-time users
     useEffect(() => {
-        if (!isLoading && bookingUser?.is_logged_in && bookingUser?.needs_profile_creation) {
+        if (!isLoading && bookingUser?.is_logged_in && bookingUser?.needs_profile_creation && !showCreationModal) {
             setShowCreationModal(true);
-        }
-    }, [bookingUser, isLoading]);
+        } else if (bookingUser?.is_logged_in && !bookingUser?.needs_profile_creation && showCreationModal) {
+			setShowCreationModal(false);
+		}
+    }, [bookingUser, isLoading, showCreationModal]);
 
 
     const handleLogin = async () => {
@@ -60,7 +62,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
     const handleUserCreated = async () => {
         // Refetch user data to get updated information
         await refetch();
-        setShowCreationModal(false);
+        // setShowCreationModal(false);
     };
 
     const handleCloseModal = () => {
@@ -131,7 +133,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                         </Dropdown.List>
                     </Dropdown>
                 </Dropdown.TriggerContext>
-                
+
                 {/* Global user creation modal for first-time users */}
                 <UserCreationModal
                     open={showCreationModal}

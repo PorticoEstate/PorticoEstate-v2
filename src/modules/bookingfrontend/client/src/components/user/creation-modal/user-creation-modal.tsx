@@ -103,7 +103,7 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
     const onSubmit = async (formData: UserCreationFormData) => {
         try {
             setIsSubmitting(true);
-            
+
             // Convert empty strings to null for nullable fields
             const userData = {
                 name: formData.name,
@@ -116,11 +116,11 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
             };
 
             await createUser(userData);
-            
+
             // Call success callback
             onUserCreated?.();
-            onClose();
-            
+            // onClose();
+
         } catch (error) {
             console.error('Failed to create user:', error);
         } finally {
@@ -176,15 +176,15 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
                 {isLoadingExternal && (
                     <p className={styles.loadingText}>{t('common.loading_external_data')}</p>
                 )}
-                
-                <form 
+
+                <form
                     id="user-creation-form"
-                    onSubmit={handleSubmit(onSubmit)} 
+                    onSubmit={handleSubmit(onSubmit)}
                     className={styles.creationForm}
                 >
                     <div className={styles.fieldGroup}>
                         <h3>{t('common.personal information')}</h3>
-                        
+
                         <Controller
                             name="name"
                             control={control}
@@ -256,7 +256,7 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
 
                     <div className={styles.fieldGroup}>
                         <h3>{t('common.address information')}</h3>
-                        
+
                         <Controller
                             name="street"
                             control={control}

@@ -821,3 +821,4 @@ confirm_activate_group	bookingfrontend	en	Are you sure you want to activate the 
 fill_from_delegate	bookingfrontend	en	Fill from delegate
 select_delegate	bookingfrontend	en	Select delegate...
 show_inactive	bookingfrontend	en	Show inactive
+organizer_required	bookingfrontend	en	Organizer name is required

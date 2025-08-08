@@ -35,6 +35,12 @@ import {ColumnDef as TanStackColumnDef, RowSelectionState, SortingState, Visibil
 // }
 
 
+export interface ColumnFilterConfig {
+    type: 'select' | 'multiselect';
+    options?: Array<{label: string; value: string}>;
+    getUniqueValues?: (data: any[]) => Array<{label: string; value: string}>;
+}
+
 export interface ColumnMeta {
     align?: 'start' | 'center' | 'end';
     size?: 0.5 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 'icon';
@@ -42,6 +48,7 @@ export interface ColumnMeta {
     smallHideTitle?: boolean;
     defaultHidden?: boolean;
     toStringEx?: (value: any) => string; // Add toString function to meta
+    filter?: ColumnFilterConfig;
 }
 
 // Properly extending TanStack's ColumnDef
@@ -83,6 +90,8 @@ export interface TableProps<T> {
     storageId?: string; // Optional unique identifier for localStorage and enable persistence
     exportFileName?: string; // enables export, and sets filename
     isLoading?: boolean; // Show loading state
+    enableColumnFilters?: boolean; // Enable column-specific filters
+    onColumnFiltersChange?: (filters: Record<string, any>) => void;
 	disableColumnHiding?: boolean; // Hide header column toggle button
 }
 
@@ -90,4 +99,5 @@ export interface TableProps<T> {
 export interface TableStorageSettings {
     columnVisibility: VisibilityState;
     pageSize: number;
+    columnFilters?: Record<string, any>;
 }

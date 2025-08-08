@@ -47,7 +47,7 @@ trait SerializableTrait
 
                 // If value is null and default annotation exists, use default value
                 if ($value === null && $defaultAnnotation !== null) {
-                    $value = $defaultAnnotation;
+                    $value = $this->processDefaultValue($defaultAnnotation);
                 }
 
                 if ($this->shouldExposeProperty($exposeAnnotation, $property, $context))
@@ -83,7 +83,7 @@ trait SerializableTrait
                 else if ($defaultAnnotation !== null)
                 {
                     // Use default value when property is not exposed
-                    $serialized[$property->getName()] = $defaultAnnotation;
+                    $serialized[$property->getName()] = $this->processDefaultValue($defaultAnnotation);
                 }
             }
         }
@@ -91,7 +91,7 @@ trait SerializableTrait
         return !empty($serialized) ? $serialized : null;
     }
 
-    private function parseDefaultAnnotation(\ReflectionProperty $property): ?string
+    private function parseDefaultAnnotation(\ReflectionProperty $property): ?array
     {
         $className = $property->getDeclaringClass()->getName();
         $propertyName = $property->getName();
@@ -99,14 +99,63 @@ trait SerializableTrait
         if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['default']))
         {
             $docComment = $property->getDocComment();
-            if (preg_match('/@Default\("([^"]+)"\)/', $docComment, $matches)) {
-                self::$annotationCache[$className]['properties'][$propertyName]['default'] = $matches[1];
+            if (preg_match('/@Default\(t"([^"]+)"\)/', $docComment, $matches)) {
+                // Translation key format: t"key"
+                self::$annotationCache[$className]['properties'][$propertyName]['default'] = [
+                    'type' => 'translation',
+                    'value' => $matches[1]
+                ];
+            } elseif (preg_match('/@Default\("([^"]+)"\)/', $docComment, $matches)) {
+                // Regular string format: "value"
+                self::$annotationCache[$className]['properties'][$propertyName]['default'] = [
+                    'type' => 'string',
+                    'value' => $matches[1]
+                ];
             } else {
                 self::$annotationCache[$className]['properties'][$propertyName]['default'] = null;
             }
         }
 
         return self::$annotationCache[$className]['properties'][$propertyName]['default'];
+    }
+
+    /**
+     * Process default value, handling both regular strings and translation keys
+     */
+    private function processDefaultValue(array $defaultAnnotation): string
+    {
+        if ($defaultAnnotation['type'] === 'translation') {
+            return $this->translateKey($defaultAnnotation['value']);
+        }
+        
+        return $defaultAnnotation['value'];
+    }
+
+    /**
+     * Translate a key using the Translation service
+     * Supports i18n-style application dividers: "application.key"
+     */
+    private function translateKey(string $key): string
+    {
+        try {
+            $translation = \App\modules\phpgwapi\services\Translation::getInstance();
+            
+            // Check if key contains application divider (e.g., "bookingfrontend.private_event")
+            if (strpos($key, '.') !== false) {
+                $parts = explode('.', $key, 2);
+                $application = $parts[0];
+                $translationKey = $parts[1];
+                
+                // Use the application-specific translation
+                return $translation->translate($translationKey, [], false, $application);
+            }
+            
+            // Use default translation without forcing application
+            return $translation->translate($key);
+        } catch (\Exception $e) {
+            // If translation fails, return the key with ! prefix as fallback
+            return "!{$key}";
+        }
     }
 
     private function shouldExposeProperty(?array $exposeAnnotation, \ReflectionProperty $property, array $context): bool

@@ -1400,8 +1400,8 @@ class ApplicationService
         $bobooking = CreateObject('booking.bobooking');
 
         // Convert datetime strings to DateTime objects
-        $timezone = !empty($bobooking->userSettings['preferences']['common']['timezone']) ?
-            $bobooking->userSettings['preferences']['common']['timezone'] : 'UTC';
+        $timezone = !empty($this->userSettings['preferences']['common']['timezone']) ?
+            $this->userSettings['preferences']['common']['timezone'] : 'UTC';
         $DateTimeZone = new \DateTimeZone($timezone);
         $fromDateTime = new \DateTime($from, $DateTimeZone);
         $toDateTime = new \DateTime($to, $DateTimeZone);

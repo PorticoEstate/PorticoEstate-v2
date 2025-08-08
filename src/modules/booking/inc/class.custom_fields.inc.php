@@ -10,7 +10,7 @@
 	 * @subpackage booking
 	 * @version $Id: class.custom_fields.inc.php 14622 2016-01-05 08:54:38Z sigurdne $
 	 */
-	/*
+/*
 	  This program is free software: you can redistribute it and/or modify
 	  it under the terms of the GNU General Public License as published by
 	  the Free Software Foundation, either version 2 of the License, or
@@ -25,10 +25,12 @@
 	  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	 */
 
-	/*
+/*
 	 * Import the parent class
 	 */
-	phpgw::import_class('phpgwapi.custom_fields');
+
+	use App\modules\phpgwapi\services\CustomFields;
+
 
 	/**
 	 * Custom Fields
@@ -36,7 +38,7 @@
 	 * @package phpgroupware
 	 * @subpackage booking
 	 */
-	class booking_custom_fields extends phpgwapi_custom_fields
+	class booking_custom_fields extends CustomFields
 	{
 
 		/**

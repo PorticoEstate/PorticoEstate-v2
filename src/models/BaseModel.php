@@ -24,13 +24,21 @@ abstract class BaseModel
 	use SerializableTrait;
 	use ValidatorTrait;
 
+	/**
+	 * @Exclude
+	 */
 	protected Db $db;
 	protected ?int $id = null;
-	
-	// Relationship properties for lazy loading (populated by child classes)
-	protected array $_relationshipCache = [];
-	
+
+
 	/**
+	 * @Exclude
+	 * Relationship properties for lazy loading (populated by child classes)
+	 */
+	protected array $_relationshipCache = [];
+
+	/**
+	 * @Exclude
 	 * Valid field types for validation and marshaling
 	 */
 	protected static array $validFieldTypes = [

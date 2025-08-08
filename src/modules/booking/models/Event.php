@@ -132,11 +132,17 @@ class Event extends BaseModel
 
 	/**
 	 * @Expose
-	 * @SerializeAs(type="array", of="int")
 	 */
 	public array $resources = [];
+	/**
+	 * @Expose
+	 */
 	public array $agegroups = [];
+	/**
+	 * @Expose
+	 */
 	public array $audience = [];
+
 
 	// Relationship properties for lazy loading
 	protected ?array $_audience = null;

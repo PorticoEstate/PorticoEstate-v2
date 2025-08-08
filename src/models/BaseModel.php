@@ -149,11 +149,13 @@ abstract class BaseModel
 	}
 
 	/**
-	 * Validate the model data using the field map
+	 * Validate the model data using the field map and relationships
 	 */
 	public function validate(): array
 	{
 		$errors = [];
+		
+		// Validate field map fields
 		foreach (static::getCompleteFieldMap() as $field => $meta) {
 			$value = $this->$field ?? null;
 
@@ -185,6 +187,12 @@ abstract class BaseModel
 			}
 		}
 
+		// Validate required relationships
+		$relationshipErrors = $this->validateRelationships();
+		if (!empty($relationshipErrors)) {
+			$errors = array_merge($errors, $relationshipErrors);
+		}
+
 		// Call child class custom validation
 		$customErrors = $this->doCustomValidation();
 		if (!empty($customErrors)) {
@@ -192,6 +200,47 @@ abstract class BaseModel
 		}
 
 		return $errors;
+	}
+
+	/**
+	 * Validate required relationships
+	 */
+	protected function validateRelationships(): array
+	{
+		$errors = [];
+		$relationships = static::getRelationshipMap();
+
+		foreach ($relationships as $relationshipName => $config) {
+			if (($config['required'] ?? false)) {
+				// Check if relationship data exists
+				$relationshipData = $this->getRelationshipValidationData($relationshipName, $config);
+				
+				if ($this->isEmpty($relationshipData)) {
+					$errors[] = $this->formatFieldName($relationshipName) . ' is required';
+				}
+			}
+		}
+
+		return $errors;
+	}
+
+	/**
+	 * Get relationship data for validation purposes
+	 */
+	protected function getRelationshipValidationData(string $relationshipName, array $config)
+	{
+		// Check if we have the data as a property first (e.g., for resources array)
+		if (property_exists($this, $relationshipName)) {
+			return $this->$relationshipName;
+		}
+
+		// For relationships not stored as properties, we need to load them
+		// Only do this if we have an ID (for existing records)
+		if ($this->id) {
+			return $this->loadRelationship($relationshipName);
+		}
+
+		return null;
 	}
 
 	/**
@@ -512,11 +561,91 @@ abstract class BaseModel
 	}
 
 	/**
-	 * Save relationships (hook for child classes)
+	 * Save relationships with support for legacy format
 	 */
 	protected function saveRelationships(): void
 	{
-		// Child classes can override this to save specific relationships
+		if (!$this->id) {
+			return;
+		}
+
+		$relationships = static::getRelationshipMap();
+
+		foreach ($relationships as $relationshipName => $config) {
+			// Check if we have data for this relationship
+			$relationshipData = null;
+			
+			// Check if we have the data as a property (e.g., for resources array)
+			if (property_exists($this, $relationshipName) && !is_null($this->$relationshipName)) {
+				$relationshipData = $this->$relationshipName;
+			}
+
+			// Skip if no data to save
+			if (is_null($relationshipData) || (is_array($relationshipData) && empty($relationshipData))) {
+				continue;
+			}
+
+			// Handle legacy format
+			if (isset($config['manytomany'])) {
+				$this->saveLegacyManyToManyRelationship($relationshipName, $config, $relationshipData);
+			}
+			// Join relationships are typically read-only, so we don't save them
+		}
+	}
+
+	/**
+	 * Save legacy many-to-many relationship format
+	 */
+	protected function saveLegacyManyToManyRelationship(string $relationshipName, array $config, $relationshipData): void
+	{
+		$table = $config['manytomany']['table'];
+		$key = $config['manytomany']['key'];
+		$column = $config['manytomany']['column'];
+
+		// Delete existing relationships
+		$deleteSql = "DELETE FROM {$table} WHERE {$key} = ?";
+		$deleteStmt = $this->db->prepare($deleteSql);
+		$deleteStmt->execute([$this->id]);
+
+		// Insert new relationships
+		if (!empty($relationshipData)) {
+			if (is_array($column)) {
+				// Multiple columns - expect array of associative arrays
+				if (is_array($relationshipData) && !empty($relationshipData)) {
+					foreach ($relationshipData as $item) {
+						if (is_array($item)) {
+							$insertFields = [$key];
+							$insertValues = [$this->id];
+							$placeholders = ['?'];
+
+							foreach ($column as $fieldOrInt => $paramsOrFieldName) {
+								$fieldName = is_array($paramsOrFieldName) ? $fieldOrInt : $paramsOrFieldName;
+								if (isset($item[$fieldName])) {
+									$insertFields[] = $fieldName;
+									$insertValues[] = $item[$fieldName];
+									$placeholders[] = '?';
+								}
+							}
+
+							$insertSql = "INSERT INTO {$table} (" . implode(',', $insertFields) . ") VALUES (" . implode(',', $placeholders) . ")";
+							$insertStmt = $this->db->prepare($insertSql);
+							$insertStmt->execute($insertValues);
+						}
+					}
+				}
+			} else {
+				// Single column - expect array of values
+				$insertSql = "INSERT INTO {$table} ({$key}, {$column}) VALUES (?, ?)";
+				$insertStmt = $this->db->prepare($insertSql);
+
+				foreach ($relationshipData as $value) {
+					$insertStmt->execute([$this->id, $value]);
+				}
+			}
+		}
+
+		// Clear cached relationship data
+		unset($this->_relationshipCache[$relationshipName]);
 	}
 
 	/**
@@ -666,7 +795,7 @@ abstract class BaseModel
 	}
 
 	/**
-	 * Generic relationship loading
+	 * Generic relationship loading with support for legacy format
 	 */
 	public function loadRelationship(string $relationshipName): ?array
 	{
@@ -687,24 +816,118 @@ abstract class BaseModel
 		$config = $relationships[$relationshipName];
 		$result = null;
 
-		switch ($config['type']) {
-			case 'many_to_many':
-				$result = $this->loadManyToManyRelationship($config);
-				break;
-			case 'one_to_many':
-				$result = $this->loadOneToManyRelationship($config);
-				break;
-			case 'belongs_to':
-				$result = $this->loadBelongsToRelationship($config);
-				break;
-			case 'has_one':
-				$result = $this->loadHasOneRelationship($config);
-				break;
+		// Handle legacy format from booking system
+		if (isset($config['manytomany'])) {
+			$result = $this->loadLegacyManyToManyRelationship($relationshipName, $config);
+		} elseif (isset($config['join'])) {
+			$result = $this->loadLegacyJoinRelationship($relationshipName, $config);
+		} else {
+			// Handle standard BaseModel relationship types
+			switch ($config['type']) {
+				case 'many_to_many':
+					$result = $this->loadManyToManyRelationship($config);
+					break;
+				case 'one_to_many':
+					$result = $this->loadOneToManyRelationship($config);
+					break;
+				case 'belongs_to':
+					$result = $this->loadBelongsToRelationship($config);
+					break;
+				case 'has_one':
+					$result = $this->loadHasOneRelationship($config);
+					break;
+			}
 		}
 
 		// Cache the result
 		$this->_relationshipCache[$relationshipName] = $result;
 		return $result;
+	}
+
+	/**
+	 * Load legacy many-to-many relationship format
+	 */
+	protected function loadLegacyManyToManyRelationship(string $relationshipName, array $config): array
+	{
+		$table = $config['manytomany']['table'];
+		$key = $config['manytomany']['key'];
+		$column = $config['manytomany']['column'];
+		
+		$result = [];
+
+		if (is_array($column)) {
+			// Multiple columns
+			$columns = [];
+			foreach ($column as $fieldOrInt => $paramsOrFieldName) {
+				$columns[] = is_array($paramsOrFieldName) ? $fieldOrInt : $paramsOrFieldName;
+			}
+			$columnsList = implode(',', $columns);
+			
+			$orderClause = '';
+			if (isset($config['manytomany']['order']) && is_array($config['manytomany']['order'])) {
+				$sort = $config['manytomany']['order']['sort'];
+				$dir = $config['manytomany']['order']['dir'];
+				$orderClause = "ORDER BY {$sort} {$dir}";
+			}
+
+			$sql = "SELECT {$columnsList} FROM {$table} WHERE {$key} = ? {$orderClause}";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([$this->id]);
+			
+			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+				$data = [];
+				foreach ($column as $intOrCol => $paramsOrCol) {
+					if (is_array($paramsOrCol)) {
+						$col = $intOrCol;
+						$type = $paramsOrCol['type'] ?? $config['type'];
+						$modifier = $paramsOrCol['read_callback'] ?? '';
+					} else {
+						$col = $paramsOrCol;
+						$type = $config['type'];
+						$modifier = $config['read_callback'] ?? '';
+					}
+					
+					$data[$col] = static::unmarshalValueWithModifier($row[$col] ?? null, $type, $modifier);
+				}
+				$result[] = $data;
+			}
+		} else {
+			// Single column
+			$sql = "SELECT {$column} FROM {$table} WHERE {$key} = ?";
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([$this->id]);
+			
+			while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+				$modifier = $config['read_callback'] ?? '';
+				$result[] = static::unmarshalValueWithModifier($row[$column], $config['type'], $modifier);
+			}
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Load legacy join relationship format
+	 */
+	protected function loadLegacyJoinRelationship(string $relationshipName, array $config)
+	{
+		$joinConfig = $config['join'];
+		$table = $joinConfig['table'];
+		$fkey = $joinConfig['fkey'];  // foreign key in main table
+		$key = $joinConfig['key'];    // key in joined table
+		$column = $joinConfig['column']; // column to select from joined table
+
+		$sql = "SELECT {$column} FROM {$table} WHERE {$key} = ?";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([$this->{$fkey}]);
+		
+		$row = $stmt->fetch(PDO::FETCH_ASSOC);
+		if (!$row) {
+			return null;
+		}
+
+		$modifier = $config['read_callback'] ?? '';
+		return static::unmarshalValueWithModifier($row[$column], $config['type'], $modifier);
 	}
 
 	/**
@@ -1366,12 +1589,34 @@ abstract class BaseModel
 
 			case 'string':
 			case 'text':
+				return $value;
+			
 			case 'timestamp':
+				// Handle Unix timestamp conversion to ISO format
+				if (is_numeric($value)) {
+					return date('c', $value); // ISO 8601 format
+				}
+				return $value;
+				
 			case 'datetime':
 			case 'date':
 			case 'time':
 			default:
 				return $value;
+		}
+	}
+
+	/**
+	 * Default timezone modifier for timestamps
+	 * Can be overridden by child classes for custom timezone handling
+	 */
+	protected static function modify_by_timezone(&$timestamp)
+	{
+		if (is_numeric($timestamp)) {
+			$date = new \DateTime();
+			$date->setTimestamp($timestamp);
+			$date->setTimezone(new \DateTimeZone('Europe/Oslo')); // Default timezone
+			$timestamp = $date->format('c');
 		}
 	}
 

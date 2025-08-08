@@ -53,7 +53,7 @@ class booking_uiapplication extends booking_uicommon
 	protected $building_so;
 	protected $errors = array();
 	private $acl_delete;
-	protected $combine_applications = false;
+	protected $combine_applications = true;
 	var $event_bo, $activity_bo, $audience_bo, $assoc_bo, $agegroup_bo, $resource_bo, $building_bo, $organization_bo,
 		$document_building, $document_resource, $fields, $display_name, $accounts_obj, $sessions;
 
@@ -261,8 +261,10 @@ class booking_uiapplication extends booking_uicommon
 			$this->add_ownership_change_comment($application, sprintf(lang("User '%s' was assigned"), $this->current_account_fullname()));
 
 			// Handle related applications (for combined applications)
-			$related_info = $this->bo->so->get_related_applications($application['id']);
-			if (!empty($related_info['application_ids']))
+			if ($this->combine_applications)
+			{
+				$related_info = $this->bo->so->get_related_applications($application['id']);
+				if (!empty($related_info['application_ids']))
 			{
 				foreach ($related_info['application_ids'] as $related_app_id)
 				{
@@ -273,7 +275,8 @@ class booking_uiapplication extends booking_uicommon
 						{
 							$related_app['case_officer_id'] = $current_account_id;
 							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $this->current_account_fullname()));
-							$this->bo->update($related_app);
+								$this->bo->update($related_app);
+							}
 						}
 					}
 				}
@@ -295,8 +298,10 @@ class booking_uiapplication extends booking_uicommon
 			$this->add_ownership_change_comment($application, sprintf(lang("User '%s' was unassigned"), $this->current_account_fullname()));
 
 			// Handle related applications (for combined applications)
-			$related_info = $this->bo->so->get_related_applications($application['id']);
-			if (!empty($related_info['application_ids']))
+			if ($this->combine_applications)
+			{
+				$related_info = $this->bo->so->get_related_applications($application['id']);
+				if (!empty($related_info['application_ids']))
 			{
 				foreach ($related_info['application_ids'] as $related_app_id)
 				{
@@ -307,7 +312,8 @@ class booking_uiapplication extends booking_uicommon
 						{
 							$related_app['case_officer_id'] = null;
 							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was unassigned"), $this->current_account_fullname()));
-							$this->bo->update($related_app);
+								$this->bo->update($related_app);
+							}
 						}
 					}
 				}
@@ -331,8 +337,10 @@ class booking_uiapplication extends booking_uicommon
 			$this->add_ownership_change_comment($application, sprintf(lang("User '%s' was assigned"), $case_officer_full_name));
 
 			// Handle related applications (for combined applications)
-			$related_info = $this->bo->so->get_related_applications($application['id']);
-			if (!empty($related_info['application_ids']))
+			if ($this->combine_applications)
+			{
+				$related_info = $this->bo->so->get_related_applications($application['id']);
+				if (!empty($related_info['application_ids']))
 			{
 				foreach ($related_info['application_ids'] as $related_app_id)
 				{
@@ -343,7 +351,8 @@ class booking_uiapplication extends booking_uicommon
 						{
 							$related_app['case_officer_id'] = $account_id;
 							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $case_officer_full_name));
-							$this->bo->update($related_app);
+								$this->bo->update($related_app);
+							}
 						}
 					}
 				}
@@ -931,9 +940,13 @@ class booking_uiapplication extends booking_uicommon
 	{
 		$application_id = Sanitizer::get_var('application_id', 'int');
 
-		// Get related applications (parent + children) for combined display
-		$related_info = $this->bo->so->get_related_applications($application_id);
-		$application_ids = $related_info['application_ids'];
+		// Get related applications (parent + children) for combined display only if combining is enabled
+		$application_ids = array($application_id);
+		if ($this->combine_applications)
+		{
+			$related_info = $this->bo->so->get_related_applications($application_id);
+			$application_ids = $related_info['application_ids'];
+		}
 
 		$params = array(
 			'application_ids' => $application_ids

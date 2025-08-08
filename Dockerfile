@@ -69,7 +69,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install -j$(nproc) curl intl xsl pdo_pgsql pdo_mysql gd \
     shmop soap zip mbstring ftp calendar exif
 
-RUN install-php-extensions imap
+#RUN install-php-extensions imap
 
 # Install PECL extensions
 RUN pecl install apcu && docker-php-ext-enable apcu

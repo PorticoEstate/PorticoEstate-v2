@@ -336,13 +336,13 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				description: existingApplication.description || '',
 				equipment: existingApplication.equipment || '',
 				organizer: existingApplication.organizer || '',
-				resources: existingApplication.resources?.filter(res => 
-					!ResourceUsesTimeSlots(res) && 
+				resources: existingApplication.resources?.filter(res =>
+					!ResourceUsesTimeSlots(res) &&
 					(props.building ? !isApplicationDeactivated(res, props.building) : !res.deactivate_application)
 				).map((res) => res.id.toString()) ||
 					props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
 						const resource = buildingResources?.find(r => r.id === +resId);
-						return resource && 
+						return resource &&
 							!ResourceUsesTimeSlots(resource) &&
 							(props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application);
 					}).map(String) ||
@@ -365,7 +365,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		if (baseApplication) {
 			// Convert orders to ArticleOrder format if they exist
 			const articleOrders: ArticleOrder[] = [];
-			
+
 			// Process orders from base application
 			if (baseApplication.orders && baseApplication.orders.length > 0) {
 				baseApplication.orders.forEach(order => {
@@ -380,7 +380,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					}
 				});
 			}
-			
+
 			return {
 				title: baseApplication.name || '',
 				organizer: baseApplication.organizer || props.bookingUser?.name || '',
@@ -414,7 +414,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			equipment: props.lastSubmittedData?.equipment ?? '',
 			resources: props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
 				const resource = buildingResources?.find(r => r.id === +resId);
-				return resource && 
+				return resource &&
 					!ResourceUsesTimeSlots(resource) &&
 					(props.building ? !isApplicationDeactivated(resource, props.building) : !resource?.deactivate_application);
 			}).map(String) ?? [],
@@ -800,12 +800,12 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
         if (!buildingResources) return;
 
         // Filter out deactivated resources and timeslot resources
-        const activeResources = buildingResources.filter(r => 
-            !ResourceUsesTimeSlots(r) && 
+        const activeResources = buildingResources.filter(r =>
+            !ResourceUsesTimeSlots(r) &&
             (props.building ? !isApplicationDeactivated(r, props.building) : !r.deactivate_application)
         );
         const allActiveResourceIds = activeResources.map(r => String(r.id));
-        
+
         if (selectedResources.length === activeResources.length) {
             setValue('resources', [], {shouldDirty: true});
         } else {
@@ -964,6 +964,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
     return (
         <form onSubmit={handleSubmit(onSubmit)}>
             <MobileDialog
+				dialogId={'application-dialog'}
                 open={true}
                 onClose={props.onClose}
                 size={'hd'}

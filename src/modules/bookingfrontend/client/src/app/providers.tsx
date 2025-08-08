@@ -14,6 +14,7 @@ import ToastContainer from "@/components/toast/toast";
 import {WebSocketProvider} from "@/service/websocket/websocket-context";
 import ServiceWorkerProvider from "@/service/websocket/service-worker-provider";
 import ShoppingCartProvider from "@/components/layout/header/shopping-cart/shopping-cart-provider";
+import {ScrollLockProvider} from "@/contexts/ScrollLockContext";
 
 const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, lang}) => {
 	// NOTE: Avoid useState when initializing the query client if you don't
@@ -32,20 +33,20 @@ const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, la
 				<QueryProvider>
 					<ServiceWorkerProvider disableServiceWorker>
 						<WebSocketProvider disableServiceWorker>
+							<ScrollLockProvider>
+								<ShoppingCartProvider>
+									<ToastProvider>
 
-							<ShoppingCartProvider>
-								<ToastProvider>
-
-									<PrefetchWrapper>
-										<LoadingIndicationWrapper loadingString={t('common.loading')}>
-											{children}
-											<ToastContainer/>
-										</LoadingIndicationWrapper>
-										<ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'}/>
-									</PrefetchWrapper>
-								</ToastProvider>
-
-							</ShoppingCartProvider>
+										<PrefetchWrapper>
+											<LoadingIndicationWrapper loadingString={t('common.loading')}>
+												{children}
+												<ToastContainer/>
+											</LoadingIndicationWrapper>
+											<ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'}/>
+										</PrefetchWrapper>
+									</ToastProvider>
+								</ShoppingCartProvider>
+							</ScrollLockProvider>
 						</WebSocketProvider>
 					</ServiceWorkerProvider>
 				</QueryProvider>

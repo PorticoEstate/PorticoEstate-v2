@@ -8,14 +8,12 @@ import {phpGWLink} from "@/service/util";
 import Link from "next/link";
 import {useSearchParams} from "next/navigation";
 import {useQueryClient} from "@tanstack/react-query";
-import UserCreationModal from "@/components/user/creation-modal/user-creation-modal";
 
 interface UserMenuProps {
 }
 
 const UserMenu: FC<UserMenuProps> = (props) => {
     const [lastClickHistory, setLastClickHistory] = useState<string>();
-    const [showCreationModal, setShowCreationModal] = useState(false);
     const t = useTrans();
     const bookingUserQ = useBookingUser();
     const {data: bookingUser, isLoading, refetch} = bookingUserQ;
@@ -32,20 +30,6 @@ const UserMenu: FC<UserMenuProps> = (props) => {
             queryClient.invalidateQueries({queryKey: ['bookingUser']})
         }
     }, [searchparams, queryClient]);
-
-    // Show creation modal for first-time users
-    useEffect(() => {
-        if (!isLoading && bookingUser?.is_logged_in && bookingUser?.needs_profile_creation && !showCreationModal) {
-            setShowCreationModal(true);
-        } else if (bookingUser?.is_logged_in && !bookingUser?.needs_profile_creation && showCreationModal) {
-			setShowCreationModal(false);
-		}
-    }, [bookingUser, isLoading, showCreationModal]);
-
-    // Filter active delegates
-    const activeDelegates = useMemo(() => {
-        return bookingUser?.delegates?.filter(delegate => delegate.active) || [];
-    }, [bookingUser?.delegates]);
 
 
     const handleLogin = async () => {
@@ -64,20 +48,6 @@ const UserMenu: FC<UserMenuProps> = (props) => {
         }
     };
 
-    const handleUserCreated = async () => {
-        // Refetch user data to get updated information
-        await refetch();
-        // setShowCreationModal(false);
-    };
-
-    const handleCloseModal = () => {
-        // For first-time users, redirect to logout instead of just closing
-        if (bookingUser?.needs_profile_creation) {
-            window.location.href = phpGWLink(['bookingfrontend', 'logout/']);
-        } else {
-            setShowCreationModal(false);
-        }
-    };
 
 
     if (bookingUser?.is_logged_in) {
@@ -135,13 +105,6 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                         </Dropdown.List>
                     </Dropdown>
                 </Dropdown.TriggerContext>
-
-                {/* Global user creation modal for first-time users */}
-                <UserCreationModal
-                    open={showCreationModal}
-                    onClose={handleCloseModal}
-                    onUserCreated={handleUserCreated}
-                />
             </>
         );
     }

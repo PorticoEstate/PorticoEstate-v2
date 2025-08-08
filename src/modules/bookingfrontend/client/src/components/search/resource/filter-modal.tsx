@@ -218,6 +218,7 @@ const FilterModal: FC<FilterModalProps> = ({
 
     return (
         <MobileDialog
+			dialogId={'filter-modal'}
             open={open}
             onClose={onClose}
             title={t('bookingfrontend.more_filters')}

@@ -166,6 +166,7 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
 
     return (
         <MobileDialog
+            dialogId={'user-creation-modal'}
             open={open}
             onClose={handleCancel}
             title={t('bookingfrontend.create_user_account')}

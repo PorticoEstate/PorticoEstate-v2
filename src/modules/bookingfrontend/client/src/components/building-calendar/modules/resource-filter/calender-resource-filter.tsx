@@ -303,7 +303,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	if (isMobile) {
 		return (
 			<div className={styles.resourceToggleContainer}>
-				<MobileDialog open={open} onClose={() => setOpen(false)}>{content}</MobileDialog>
+				<MobileDialog open={open} onClose={() => setOpen(false)} dialogId={'calendar-resource-toggle'}>{content}</MobileDialog>
 			</div>
 		)
 	}

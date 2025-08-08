@@ -80,10 +80,10 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 
 	const handleToggleGroupActive = async (groupId: number, groupName: string, currentActive: boolean) => {
 		const action = currentActive ? 'deactivate' : 'activate'
-		const confirmMessage = currentActive 
+		const confirmMessage = currentActive
 			? t('bookingfrontend.confirm_deactivate_group', { name: groupName })
 			: t('bookingfrontend.confirm_activate_group', { name: groupName })
-		
+
 		if (!confirm(confirmMessage)) {
 			return
 		}
@@ -154,7 +154,7 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 			enableHiding: false,
 			cell: info => {
 				const group = info.row.original
-				
+
 				if (!group.active) {
 					return (
 						<Button
@@ -229,7 +229,7 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 	// Read-only view for unauthenticated users
 	if (isReadOnly) {
 		const activeGroups = filteredGroups.filter(group => group.active)
-		
+
 		return (
 			<GSAccordion data-color={'neutral'} className={className}>
 				<GSAccordion.Heading>
@@ -298,6 +298,7 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 				/>
 
 				<MobileDialog
+					dialogId={'add-group-dialog'}
 					open={showAddForm}
 					onClose={() => setShowAddForm(false)}
 					title={t('bookingfrontend.new_group')}
@@ -333,6 +334,7 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 
 				{editingGroup && (
 					<MobileDialog
+						dialogId={'edit-group-dialog'}
 						open={!!editingGroup}
 						onClose={() => setEditingGroup(null)}
 						title={t('bookingfrontend.edit_group')}

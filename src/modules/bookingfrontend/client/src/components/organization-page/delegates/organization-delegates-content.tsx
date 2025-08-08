@@ -311,6 +311,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 				/>
 
 				<MobileDialog
+					dialogId={'add-delegate-dialog'}
 					open={showAddForm}
 					onClose={() => setShowAddForm(false)}
 					title={t('booking.new delegate')}
@@ -345,6 +346,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 
 				{editingDelegate && (
 					<MobileDialog
+						dialogId={'edit-delegate-dialog'}
 						open={!!editingDelegate}
 						onClose={() => setEditingDelegate(null)}
 						title={t('bookingfrontend.edit_delegate')}

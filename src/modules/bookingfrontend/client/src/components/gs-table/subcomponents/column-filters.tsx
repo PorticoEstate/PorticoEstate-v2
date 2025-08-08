@@ -179,6 +179,7 @@ function ColumnFilters<T>({columns, data, filters, onFiltersChange}: ColumnFilte
                     title="Column Filters"
                     showDefaultHeader={true}
                     closeOnBackdropClick={true}
+					dialogId={'table-column-filters-dialog'}
                 >
                     <div className={styles.mobileDialogContent}>
                         {renderFilterOptions()}

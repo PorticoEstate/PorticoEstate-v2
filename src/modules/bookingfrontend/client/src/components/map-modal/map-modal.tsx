@@ -20,7 +20,7 @@ const MapModal: FC<MapModalProps> = (props) => {
             <Button onClick={() => setIsOpen(true)} className={`${styles.mapModalButton} text-overline default underline`} data-color={'brand1'} variant="tertiary">
                 {props.street && `${props.street}, `}{props.zip}
             </Button>
-            <MobileDialog open={isOpen} onClose={() => setIsOpen(false)} size={'hd'}>
+            <MobileDialog open={isOpen} onClose={() => setIsOpen(false)} size={'hd'} dialogId={'map-modal'}>
                 <div style={{display: 'flex', justifyContent: 'center', alignItems: 'stretch', width: '100%', height: '100%'}}>
                     <iframe id="iframeMap" frameBorder={0} scrolling="no" marginHeight={0} marginWidth={0}
                             style={{width: '100%'}} src={frameUrl}>

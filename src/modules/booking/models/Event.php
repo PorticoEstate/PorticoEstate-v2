@@ -409,23 +409,17 @@ class Event extends BaseModel
 				'sanitize' => 'string',
 				'required' => false,
 			],
-			// Additional fields for controller compatibility
-			'title' => [
-				'type' => 'string',
-				'required' => false, // Maps to 'name' field
-				'sanitize' => 'string',
-			],
-			'source' => [
-				'type' => 'string',
-				'required' => false,
-				'sanitize' => 'string',
-			],
-			'bridge_import' => [
-				'type' => 'bool',
-				'required' => false,
-				'sanitize' => 'bool',
-			],
-			// You can add more fields as needed, e.g. for agegroups, audience, comments, costs, dates, etc.
+			// Additional fields for custom handling
+			// 'source' => [
+			// 	'type' => 'string',
+			// 	'required' => false,
+			// 	'sanitize' => 'string',
+			// ],
+			// 'bridge_import' => [
+			// 	'type' => 'bool',
+			// 	'required' => false,
+			// 	'sanitize' => 'bool',
+			// ],
 		];
 	}
 

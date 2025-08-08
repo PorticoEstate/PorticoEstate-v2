@@ -153,6 +153,13 @@ export interface IWSPartialApplicationsResponse extends IWebSocketMessageBase {
   };
 }
 
+// Interface for booking user refresh message
+export interface IWSRefreshBookingUserMessage extends IWebSocketMessageBase {
+  type: 'refresh_bookinguser';
+  message: string;
+  action: 'refresh';
+}
+
 // Union type for all possible WebSocket messages
 export type WebSocketMessage =
   | IWSNotificationMessage
@@ -171,7 +178,8 @@ export type WebSocketMessage =
   | IWSSessionUpdateConfirmMessage
   | IWSSessionIdRequiredMessage
   | IWSConnectionSuccessMessage
-  | IWSPartialApplicationsResponse;
+  | IWSPartialApplicationsResponse
+  | IWSRefreshBookingUserMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
 
 export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR' | 'FALLBACK_REQUIRED';

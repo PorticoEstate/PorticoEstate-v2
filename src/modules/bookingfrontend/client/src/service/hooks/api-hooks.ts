@@ -352,7 +352,16 @@ class AuthenticationError extends Error {
 
 export function useBookingUser() {
 	const queryClient = useQueryClient();
-	
+
+	// Handle WebSocket messages for booking user refresh
+	useMessageTypeSubscription('refresh_bookinguser', (message) => {
+		console.log('Received booking user refresh WebSocket update');
+
+		// Invalidate the booking user query to trigger a refetch
+		// This ensures the user gets the latest data from the server
+		queryClient.invalidateQueries({queryKey: ['bookingUser']});
+	});
+
 	return useQuery<IBookingUser>({
 		queryKey: ['bookingUser'],
 		queryFn: async () => {
@@ -368,15 +377,16 @@ export function useBookingUser() {
 			}
 
 			const userData = await response.json();
-			
+
 			// Check if this is a first-time user with minimal data
 			// If so, trigger a refetch after a short delay to allow backend initialization to complete
-			if (userData.is_logged_in && (!userData.name || userData.name === '')) {
-				setTimeout(() => {
-					queryClient.invalidateQueries({queryKey: ['bookingUser']});
-				}, 2000); // 2 second delay to allow external data fetch to complete
-			}
-			
+			// This serves as a fallback in case WebSocket notifications fail
+			// if (userData.is_logged_in && (!userData.name || userData.name === '')) {
+			// 	setTimeout(() => {
+			// 		queryClient.invalidateQueries({queryKey: ['bookingUser']});
+			// 	}, 2000); // 2 second delay to allow external data fetch to complete
+			// }
+
 			return userData;
 		},
 		retry: (failureCount, error: AuthenticationError | Error) => {
@@ -493,6 +503,61 @@ export function useUpdateBookingUser() {
 			queryClient.invalidateQueries({queryKey: ['bookingUser']})
 		}
 	})
+}
+
+/**
+ * Hook to create a new booking user
+ */
+export function useCreateBookingUser() {
+	const queryClient = useQueryClient();
+	
+	const createBookingUser = async (userData: Partial<IBookingUser>): Promise<IBookingUser> => {
+		const response = await fetch('/bookingfrontend/user/create', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(userData),
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(errorData.error || 'Failed to create user');
+		}
+
+		const result = await response.json();
+		
+		// Invalidate and refetch user data after creation
+		await queryClient.invalidateQueries({queryKey: ['bookingUser']});
+		
+		return result.user;
+	};
+
+	return { mutateAsync: createBookingUser };
+}
+
+/**
+ * Hook to fetch external user data for form pre-filling
+ */
+export function useExternalUserData() {
+	return useQuery({
+		queryKey: ['externalUserData'],
+		queryFn: async (): Promise<Partial<IBookingUser> | null> => {
+			const response = await fetch('/bookingfrontend/user/external-data');
+			
+			if (!response.ok) {
+				if (response.status === 404) {
+					return null; // No external data available
+				}
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || 'Failed to fetch external data');
+			}
+
+			return await response.json();
+		},
+		retry: false, // Don't retry if external data is not available
+		staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
+	});
 }
 
 

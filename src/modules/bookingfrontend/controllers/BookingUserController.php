@@ -113,6 +113,10 @@ class BookingUserController
 //            }
             $serialized = $userModel->serialize();
 
+            // Check if this is a first-time user who needs to complete their profile
+            $needsProfileCreation = empty($serialized['name']) || trim($serialized['name']) === '';
+            $serialized['needs_profile_creation'] = $needsProfileCreation;
+
             return ResponseHelper::sendJSONResponse($serialized, 200);
 
         } catch (Exception $e)
@@ -346,10 +350,6 @@ class BookingUserController
 
 					$processed_messages[] = $messageData;
 				}
-
-				// Optionally clear messages after retrieving them
-				// Uncomment if you want to clear messages after they've been fetched once
-				// Cache::session_clear('phpgwapi', 'phpgw_messages');
 			}
 
 			// Return the processed messages
@@ -432,7 +432,7 @@ class BookingUserController
 		try {
 			// Get the session ID from PHP's session
 			$sessionId = session_id();
-			
+
 			if (!$sessionId) {
 				return ResponseHelper::sendErrorResponse(
 					['error' => 'No active session found'],
@@ -444,15 +444,227 @@ class BookingUserController
 			return ResponseHelper::sendJSONResponse([
 				'sessionId' => $sessionId
 			], 200);
-				
+
 		} catch (Exception $e) {
 			// Log the error but don't expose internal details
 			error_log("Error retrieving session ID: " . $e->getMessage());
-			
+
 			return ResponseHelper::sendErrorResponse(
 				['error' => 'Internal server error'],
 				500
 			);
+		}
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/user/external-data",
+	 *     summary="Get external user data for pre-filling creation form",
+	 *     tags={"User"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="External user data",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="name", type="string"),
+	 *             @OA\Property(property="email", type="string"),
+	 *             @OA\Property(property="phone", type="string"),
+	 *             @OA\Property(property="street", type="string"),
+	 *             @OA\Property(property="zip_code", type="string"),
+	 *             @OA\Property(property="city", type="string"),
+	 *             @OA\Property(property="ssn", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="User not authenticated"
+	 *     )
+	 * )
+	 */
+	public function getExternalData(Request $request, Response $response): Response
+	{
+		try {
+			$bouser = new UserHelper();
+
+			if (!$bouser->is_logged_in()) {
+				return ResponseHelper::sendErrorResponse(['error' => 'User not authenticated'], 401);
+			}
+
+			// Get external login info which should contain the external data
+			$external_login_info = $bouser->validate_ssn_login([], true);
+
+			if (empty($external_login_info)) {
+				return ResponseHelper::sendErrorResponse(['error' => 'No external data available'], 404);
+			}
+
+			// Return the external data that can be used to pre-fill the form
+			$externalData = [
+				'name' => $external_login_info['name'] ?? '',
+				'email' => $external_login_info['email'] ?? '',
+				'phone' => $external_login_info['phone'] ?? '',
+				'street' => $external_login_info['street'] ?? '',
+				'zip_code' => $external_login_info['zip_code'] ?? '',
+				'city' => $external_login_info['city'] ?? '',
+				'ssn' => $bouser->ssn ?? ''
+			];
+
+			return ResponseHelper::sendJSONResponse($externalData, 200);
+
+		} catch (Exception $e) {
+			error_log("Error getting external user data: " . $e->getMessage());
+			return ResponseHelper::sendErrorResponse(['error' => 'Failed to get external data'], 500);
+		}
+	}
+
+	/**
+	 * @OA\Post(
+	 *     path="/bookingfrontend/user/create",
+	 *     summary="Create user account with external data",
+	 *     tags={"User"},
+	 *     @OA\RequestBody(
+	 *         required=true,
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="name", type="string"),
+	 *             @OA\Property(property="phone", type="string"),
+	 *             @OA\Property(property="email", type="string"),
+	 *             @OA\Property(property="street", type="string"),
+	 *             @OA\Property(property="zip_code", type="string"),
+	 *             @OA\Property(property="city", type="string"),
+	 *             @OA\Property(property="homepage", type="string")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=201,
+	 *         description="User created successfully",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="message", type="string"),
+	 *             @OA\Property(property="user", ref="#/components/schemas/User")
+	 *         )
+	 *     ),
+	 *     @OA\Response(
+	 *         response=400,
+	 *         description="Invalid input or user already exists"
+	 *     ),
+	 *     @OA\Response(
+	 *         response=401,
+	 *         description="User not authenticated"
+	 *     )
+	 * )
+	 */
+	public function create(Request $request, Response $response): Response
+	{
+		try {
+			$bouser = new UserHelper();
+
+			if (!$bouser->is_logged_in()) {
+				return ResponseHelper::sendErrorResponse(['error' => 'User not authenticated'], 401);
+			}
+
+			// Get current user's SSN
+			$userSsn = $bouser->ssn;
+			if (empty($userSsn)) {
+				return ResponseHelper::sendErrorResponse(['error' => 'No SSN found for user'], 400);
+			}
+
+			// Check if user already exists
+			$existingUserId = $bouser->get_user_id($userSsn);
+			if ($existingUserId) {
+				return ResponseHelper::sendErrorResponse(['error' => 'User already exists'], 400);
+			}
+
+			// Get create data from request body
+			$data = json_decode($request->getBody()->getContents(), true);
+			if (json_last_error() !== JSON_ERROR_NONE) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Invalid JSON data'], 400);
+			}
+
+			// Validate required fields
+			if (empty($data['name'])) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Name is required'], 400);
+			}
+
+			// Validate optional fields
+			if (isset($data['email']) && !filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Invalid email format'], 400);
+			}
+
+			if (isset($data['homepage']) && !empty($data['homepage']) && !filter_var($data['homepage'], FILTER_VALIDATE_URL)) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Invalid homepage URL format'], 400);
+			}
+
+			// Prepare user data for creation (only use known valid columns)
+			$createData = [
+				'customer_ssn' => $userSsn,
+				'name' => $data['name']
+			];
+
+			// Add optional fields only if they have values
+			if (!empty($data['email'])) $createData['email'] = $data['email'];
+			if (!empty($data['phone'])) $createData['phone'] = $data['phone'];
+			if (!empty($data['street'])) $createData['street'] = $data['street'];
+			if (!empty($data['zip_code'])) $createData['zip_code'] = $data['zip_code'];
+			if (!empty($data['city'])) $createData['city'] = $data['city'];
+			if (!empty($data['homepage'])) $createData['homepage'] = $data['homepage'];
+
+			// Create the user directly in the database
+			$placeholders = implode(',', array_fill(0, count($createData), '?'));
+			$columns = implode(',', array_keys($createData));
+
+			$sql = "INSERT INTO bb_user ({$columns}) VALUES ({$placeholders})";
+
+			$stmt = $this->db->prepare($sql);
+			$result = $stmt->execute(array_values($createData));
+
+			if (!$result) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Failed to create user'], 500);
+			}
+
+			$userId = $this->db->lastInsertId();
+
+			if (!$userId) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Failed to create user'], 500);
+			}
+
+			// Update the session with the newly created user data
+			$external_login_info = $bouser->validate_ssn_login([], true);
+			if (!empty($external_login_info)) {
+				// Update the session with the current user data including the newly created user
+				$updated_user_data = array_merge($external_login_info, [
+					'name' => $data['name'],
+					'email' => $data['email'] ?? $external_login_info['email'] ?? '',
+					'phone' => $data['phone'] ?? $external_login_info['phone'] ?? '',
+					'street' => $data['street'] ?? $external_login_info['street'] ?? '',
+					'zip_code' => $data['zip_code'] ?? $external_login_info['zip_code'] ?? '',
+					'city' => $data['city'] ?? $external_login_info['city'] ?? '',
+					'homepage' => $data['homepage'] ?? $external_login_info['homepage'] ?? ''
+				]);
+				
+				// Store updated data in session
+				\App\modules\phpgwapi\services\Cache::session_set($bouser->get_module(), \App\modules\bookingfrontend\helpers\UserHelper::USERARRAY_SESSION_KEY, $updated_user_data);
+			}
+
+			// Send WebSocket notification to refresh user data
+			try {
+				if (class_exists('\\App\\modules\\bookingfrontend\\helpers\\WebSocketHelper')) {
+					$helper = new \App\modules\bookingfrontend\helpers\WebSocketHelper();
+					$helper::triggerBookingUserUpdate();
+				}
+			} catch (\Exception $e) {
+				error_log("WebSocket notification failed during user creation: " . $e->getMessage());
+			}
+
+			// Create a fresh UserHelper instance to get updated user data
+			$refreshedBouser = new UserHelper();
+			$userModel = new User($refreshedBouser);
+			$serialized = $userModel->serialize();
+
+			return ResponseHelper::sendJSONResponse([
+				'message' => 'User created successfully',
+				'user' => $serialized
+			], 201);
+
+		} catch (Exception $e) {
+			error_log("Error creating user: " . $e->getMessage());
+			return ResponseHelper::sendErrorResponse(['error' => 'Failed to create user: ' . $e->getMessage()], 500);
 		}
 	}
 
@@ -537,7 +749,7 @@ class BookingUserController
 
 			// Save the updated messages back to the session
 			Cache::session_set('phpgwapi', 'phpgw_messages', $messages);
-			
+
 			// Send WebSocket notification about the deleted message
 			try {
 				if (class_exists('\\App\\modules\\bookingfrontend\\helpers\\WebSocketHelper')) {
@@ -545,8 +757,8 @@ class BookingUserController
 					if (!empty($sessionId)) {
 						$helper = new \App\modules\bookingfrontend\helpers\WebSocketHelper();
 						$helper::sendToSession(
-							$sessionId, 
-							'server_message', 
+							$sessionId,
+							'server_message',
 							[
 								'type' => 'server_message',
 								'action' => 'deleted',

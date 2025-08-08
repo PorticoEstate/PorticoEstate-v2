@@ -8,6 +8,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
 use App\modules\phpgwapi\controllers\OpenIDConnect;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 
 class UserHelper
 {
@@ -840,17 +841,33 @@ class UserHelper
 		}
 
 		$ssn = $external_data['ssn'];
+		$was_first_time_user = false;
 		
 		// Check if user already exists in database
 		$existing_user = $this->get_user_id($ssn);
 		if ($existing_user) {
 			// User exists, update with latest external data if needed
 			$this->update_user_from_external_data($existing_user, $external_data);
-			return;
+		} else {
+			// First-time user, create new record
+			$this->create_user_from_external_data($external_data);
+			$was_first_time_user = true;
 		}
 
-		// First-time user, create new record
-		$this->create_user_from_external_data($external_data);
+		// Send WebSocket notification to refresh user data in connected clients
+		// This is especially important for first-time users or when external data is updated
+		try {
+			if ($was_first_time_user) {
+				error_log("UserHelper: Triggering WebSocket refresh for first-time user initialization");
+			} else {
+				error_log("UserHelper: Triggering WebSocket refresh for user data update");
+			}
+			
+			WebSocketHelper::triggerBookingUserUpdate();
+		} catch (\Exception $e) {
+			// Log WebSocket errors but don't interrupt the user initialization process
+			error_log("UserHelper: WebSocket notification failed: " . $e->getMessage());
+		}
 	}
 
 	/**

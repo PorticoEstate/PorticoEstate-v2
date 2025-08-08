@@ -351,6 +351,8 @@ class AuthenticationError extends Error {
 }
 
 export function useBookingUser() {
+	const queryClient = useQueryClient();
+	
 	return useQuery<IBookingUser>({
 		queryKey: ['bookingUser'],
 		queryFn: async () => {
@@ -365,7 +367,17 @@ export function useBookingUser() {
 				throw new AuthenticationError('Failed to fetch user', response.status);
 			}
 
-			return response.json();
+			const userData = await response.json();
+			
+			// Check if this is a first-time user with minimal data
+			// If so, trigger a refetch after a short delay to allow backend initialization to complete
+			if (userData.is_logged_in && (!userData.name || userData.name === '')) {
+				setTimeout(() => {
+					queryClient.invalidateQueries({queryKey: ['bookingUser']});
+				}, 2000); // 2 second delay to allow external data fetch to complete
+			}
+			
+			return userData;
 		},
 		retry: (failureCount, error: AuthenticationError | Error) => {
 			// Don't retry on 401

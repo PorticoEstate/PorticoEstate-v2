@@ -13,6 +13,11 @@ body {
 	margin: 0;
 }
 
+/* Scroll lock managed by ScrollLockContext */
+body.scroll-locked {
+	overflow: hidden;
+}
+
 /* Prevent mobile browsers from zooming on input focus */
 input,
 select,

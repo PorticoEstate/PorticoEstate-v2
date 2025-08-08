@@ -23,7 +23,7 @@ const ResourceInfoPopper: FC<ResourceInfoPopperProps> = ({resource_id, onClose, 
 
     return (
         <MobileDialog size={'hd'} open={true}
-
+	dialogId={'resource-info-dialog'}
                       onClose={() => {
             // setOpen(false)
             onClose();

@@ -8,15 +8,17 @@ import {phpGWLink} from "@/service/util";
 import Link from "next/link";
 import {useSearchParams} from "next/navigation";
 import {useQueryClient} from "@tanstack/react-query";
+import UserCreationModal from "@/components/user/creation-modal/user-creation-modal";
 
 interface UserMenuProps {
 }
 
 const UserMenu: FC<UserMenuProps> = (props) => {
     const [lastClickHistory, setLastClickHistory] = useState<string>();
+    const [showCreationModal, setShowCreationModal] = useState(false);
     const t = useTrans();
     const bookingUserQ = useBookingUser();
-    const {data: bookingUser, isLoading} = bookingUserQ;
+    const {data: bookingUser, isLoading, refetch} = bookingUserQ;
     const searchparams = useSearchParams();
     const queryClient = useQueryClient();
 
@@ -30,6 +32,15 @@ const UserMenu: FC<UserMenuProps> = (props) => {
             queryClient.invalidateQueries({queryKey: ['bookingUser']})
         }
     }, [searchparams, queryClient]);
+
+    // Show creation modal for first-time users
+    useEffect(() => {
+        if (!isLoading && bookingUser?.is_logged_in && bookingUser?.needs_profile_creation && !showCreationModal) {
+            setShowCreationModal(true);
+        } else if (bookingUser?.is_logged_in && !bookingUser?.needs_profile_creation && showCreationModal) {
+			setShowCreationModal(false);
+		}
+    }, [bookingUser, isLoading, showCreationModal]);
 
     // Filter active delegates
     const activeDelegates = useMemo(() => {
@@ -53,60 +64,86 @@ const UserMenu: FC<UserMenuProps> = (props) => {
         }
     };
 
+    const handleUserCreated = async () => {
+        // Refetch user data to get updated information
+        await refetch();
+        // setShowCreationModal(false);
+    };
+
+    const handleCloseModal = () => {
+        // For first-time users, redirect to logout instead of just closing
+        if (bookingUser?.needs_profile_creation) {
+            window.location.href = phpGWLink(['bookingfrontend', 'logout/']);
+        } else {
+            setShowCreationModal(false);
+        }
+    };
+
 
     if (bookingUser?.is_logged_in) {
-        return (<Dropdown.TriggerContext>
-            <Dropdown.Trigger variant={'tertiary'} color={'accent'} data-size={'sm'}>
-                <PersonFillIcon width="1.875rem" height="1.875rem" /> {bookingUser.name} <ChevronDownIcon fontSize="1.25rem" />
-            </Dropdown.Trigger>
-            <Dropdown>
-                <Dropdown.List>
-                    <Dropdown.Item>
-                        <Dropdown.Button asChild>
-                            <Link href={'/user'}
-                                  className={'link-text link-text-unset normal'}>
-                                <PersonFillIcon fontSize="1.25rem" /> {t('bookingfrontend.my page')}
-                            </Link>
-                        </Dropdown.Button>
-                    </Dropdown.Item>
-                </Dropdown.List>
-                <Divider/>
-                {activeDelegates.length > 0 && (
-                    <>
+        return (
+            <>
+                <Dropdown.TriggerContext>
+                    <Dropdown.Trigger variant={'tertiary'} color={'accent'} data-size={'sm'}>
+                        <PersonFillIcon width="1.875rem" height="1.875rem" /> {bookingUser.name || t('bookingfrontend.user')} <ChevronDownIcon fontSize="1.25rem" />
+                    </Dropdown.Trigger>
+                    <Dropdown>
                         <Dropdown.List>
-                            {activeDelegates.map((delegate) => <Dropdown.Item key={delegate.org_id}>
+                            <Dropdown.Item>
                                 <Dropdown.Button asChild>
-
-                                    <Link href={`/organization/${delegate.org_id}`}
+                                    <Link href={'/user'}
                                           className={'link-text link-text-unset normal'}>
-                                        <TenancyIcon fontSize="1.25rem" /> {delegate.name}
+                                        <PersonFillIcon fontSize="1.25rem" /> {t('bookingfrontend.my page')}
                                     </Link>
                                 </Dropdown.Button>
-
-                            </Dropdown.Item>)}
-
-
+                            </Dropdown.Item>
                         </Dropdown.List>
                         <Divider/>
-                    </>
-                )}
+                {activeDelegates.length > 0 && (
+                            <>
+                                <Dropdown.List>
+                            {activeDelegates.map((delegate) => <Dropdown.Item key={delegate.org_id}>
+                                        <Dropdown.Button asChild>
 
-                <Dropdown.List>
+                                    <Link href={`/organization/${delegate.org_id}`}
+                                                  className={'link-text link-text-unset normal'}>
+                                                <TenancyIcon fontSize="1.25rem" /> {delegate.name}
+                                            </Link>
+                                        </Dropdown.Button>
 
-                    <Dropdown.Item>
-						<Dropdown.Button asChild>
-							<a
-								href={phpGWLink(['bookingfrontend', 'logout/'])}
+                                    </Dropdown.Item>)}
 
-								className={'link-text link-text-unset normal'}>
-								{t('common.logout')}
-							</a>
-						</Dropdown.Button>
 
-                    </Dropdown.Item>
-                </Dropdown.List>
-            </Dropdown>
-        </Dropdown.TriggerContext>);
+                                </Dropdown.List>
+                                <Divider/>
+                            </>
+                        )}
+
+                        <Dropdown.List>
+
+                            <Dropdown.Item>
+                                <Dropdown.Button asChild>
+                                    <a
+                                        href={phpGWLink(['bookingfrontend', 'logout/'])}
+
+                                        className={'link-text link-text-unset normal'}>
+                                        {t('common.logout')}
+                                    </a>
+                                </Dropdown.Button>
+
+                            </Dropdown.Item>
+                        </Dropdown.List>
+                    </Dropdown>
+                </Dropdown.TriggerContext>
+
+                {/* Global user creation modal for first-time users */}
+                <UserCreationModal
+                    open={showCreationModal}
+                    onClose={handleCloseModal}
+                    onUserCreated={handleUserCreated}
+                />
+            </>
+        );
     }
 
     // if(1==1) {

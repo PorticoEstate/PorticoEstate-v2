@@ -167,6 +167,8 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->group('/user', function (RouteCollectorProxy $group) {
 		$group->get('', BookingUserController::class . ':index');
 		$group->patch('', BookingUserController::class . ':update');
+		$group->post('/create', BookingUserController::class . ':create');
+		$group->get('/external-data', BookingUserController::class . ':getExternalData');
 		$group->get('/session', BookingUserController::class . ':getSessionId');
 		$group->get('/messages', BookingUserController::class . ':getMessages');
 		$group->delete('/messages/{id}', BookingUserController::class . ':deleteMessage');
@@ -202,6 +204,7 @@ $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
 		return $response->withHeader('Content-Type', 'text/html');
 	});
 	$group->post('/trigger-partial-update', DebugController::class . ':triggerPartialUpdate');
+	$group->get('/trigger-bookinguser-update', DebugController::class . ':triggerBookingUserUpdate');
 	$group->post('/test-redis', DebugController::class . ':testRedis');
 	$group->get('/session-info', DebugController::class . ':getSessionInfo');
 })->add(new SessionsMiddleware($app->getContainer()));

@@ -92,6 +92,7 @@ export interface TableProps<T> {
     isLoading?: boolean; // Show loading state
     enableColumnFilters?: boolean; // Enable column-specific filters
     onColumnFiltersChange?: (filters: Record<string, any>) => void;
+	disableColumnHiding?: boolean; // Hide header column toggle button
 }
 
 // Add localStorage settings interface

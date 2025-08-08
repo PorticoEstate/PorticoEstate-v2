@@ -28,6 +28,7 @@ class Document
     public const OWNER_BUILDING = 'building';
     public const OWNER_APPLICATION = 'application';
     public const OWNER_RESOURCE = 'resource';
+    public const OWNER_ORGANIZATION = 'organization';
 
 
     /**
@@ -61,7 +62,7 @@ class Document
     public $owner_id;
 
     /**
-     * @OA\Property(type="string", enum={"building", "resource", "application"})
+     * @OA\Property(type="string", enum={"building", "resource", "application", "organization"})
      * @Exclude
      */
     public $owner_type;

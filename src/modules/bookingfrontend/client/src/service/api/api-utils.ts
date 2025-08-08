@@ -11,8 +11,8 @@ import {IApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse
 import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
-import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
-import {BrregOrganization, IOrganization} from "@/service/types/api/organization.types";
+import {IAgeGroup, IAudience, Season, IBuilding} from "@/service/types/Building";
+import {BrregOrganization, IOrganization, IShortOrganization, IShortOrganizationGroup, IShortOrganizationDelegate} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
 import {ISearchDataOptimized, ISearchDataTown, ISearchOrganization} from "@/service/types/api/search.types";
 import {IArticle} from "@/service/types/api/order-articles.types";
@@ -74,6 +74,16 @@ export async function fetchBuildingSchedule(building_id: number, dates: string[]
     const response = await fetch(url, FetchAuthOptions());
     const result = await response.json();
     // console.log("fetchBuildingSchedule", result);
+    return result;
+}
+
+export async function fetchOrganizationSchedule(organization_id: number, dates: string[], instance?: string): Promise<Record<string, IEvent[]>> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organization_id, 'schedule'], {
+        dates: dates,
+    }, true, instance);
+
+    const response = await fetch(url, FetchAuthOptions());
+    const result = await response.json();
     return result;
 }
 
@@ -178,14 +188,215 @@ export async function fetchPartialApplications(): Promise<{ list: IApplication[]
 
 
 
-export async function fetchMyOrganizations(): Promise<IOrganization[]> {
+export async function fetchMyOrganizations(): Promise<IShortOrganization[]> {
     const url = phpGWLink(['bookingfrontend', 'organizations', 'my']);
     const response = await fetch(url);
     const result = await response.json();
     return result?.results;
 }
 
-export async function searchOrganizations(query: string): Promise<IOrganization[]> {
+export async function fetchOrganization(id: string | number, bustCache: boolean = false): Promise<IOrganization> {
+    const params = bustCache ? { _t: Date.now().toString() } : undefined;
+    const url = phpGWLink(['bookingfrontend', 'organizations', id], params);
+    const fetchOptions = bustCache ? { cache: 'no-store' as RequestCache } : {};
+    const response = await fetch(url, fetchOptions);
+    const result = await response.json();
+    return result;
+}
+
+export async function fetchOrganizationGroups(id: string | number): Promise<IShortOrganizationGroup[]> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', id, 'groups']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+export async function fetchOrganizationBuildings(id: string | number): Promise<IBuilding[]> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', id, 'buildings']);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
+export async function fetchOrganizationDelegates(id: string | number): Promise<IShortOrganizationDelegate[] | undefined> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', id, 'delegates']);
+    const response = await fetch(url);
+    
+    if (response.status === 401) {
+        return undefined;
+    }
+    
+    if (!response.ok) {
+        throw new Error(`Failed to fetch organization delegates: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function addOrganizationDelegate(id: string | number, data: {ssn: string, name?: string, email?: string, phone?: string, active?: boolean}): Promise<{message: string}> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', id, 'delegates']);
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to add delegate');
+    }
+    
+    // 204 No Content response doesn't have a body
+    if (response.status === 204) {
+        return {message: 'Delegate added successfully'};
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function updateOrganizationDelegate(organizationId: string | number, delegateId: number, data: {name?: string, email?: string, phone?: string, active?: boolean}): Promise<{message: string}> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'delegates', delegateId]);
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update delegate');
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function deleteOrganizationDelegate(organizationId: string | number, delegateId: number): Promise<void> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'delegates', delegateId]);
+    const response = await fetch(url, {
+        method: 'DELETE',
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete delegate');
+    }
+    
+    // 204 No Content response doesn't have a body
+    return;
+}
+
+// Organization Group API Functions
+
+export async function createOrganizationGroup(organizationId: string | number, data: {
+    name: string;
+    shortname?: string;
+    description?: string;
+    parent_id?: number;
+    activity_id?: number;
+    show_in_portal?: boolean;
+    contacts?: Array<{
+        name: string;
+        email?: string;
+        phone?: string;
+    }>;
+}): Promise<{id: number; message: string}> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'groups']);
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create group');
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function updateOrganizationGroup(organizationId: string | number, groupId: number, data: {
+    name?: string;
+    shortname?: string;
+    description?: string;
+    parent_id?: number;
+    activity_id?: number;
+    show_in_portal?: boolean;
+    active?: boolean;
+    contacts?: Array<{
+        id?: number;
+        name: string;
+        email?: string;
+        phone?: string;
+    }>;
+}): Promise<{message: string}> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'groups', groupId]);
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update group');
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function toggleOrganizationGroupActive(organizationId: string | number, groupId: number, active: boolean): Promise<{message: string}> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'groups', groupId]);
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ active }),
+    });
+    
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to toggle group status');
+    }
+    
+    const result = await response.json();
+    return result;
+}
+
+export async function updateOrganization(id: string | number, data: Partial<Pick<IOrganization, 'name' | 'shortname' | 'phone' | 'email' | 'homepage' | 'activity_id' | 'show_in_portal' | 'street' | 'zip_code' | 'city' | 'description_json'>>): Promise<{message: string}> {
+	const url = phpGWLink(['bookingfrontend', 'organizations', id]);
+    const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update organization');
+    }
+
+    const result = await response.json();
+    return result;
+}
+
+export async function searchOrganizations(query: string): Promise<IShortOrganization[]> {
     const url = phpGWLink(['bookingfrontend', 'organizations', 'list'], {query: query});
     const response = await fetch(url);
     const result = await response.json();

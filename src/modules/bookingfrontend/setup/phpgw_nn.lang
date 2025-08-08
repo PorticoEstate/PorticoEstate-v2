@@ -791,4 +791,34 @@ application_title	bookingfrontend	nn	Søknadstittel
 direct_booking_title	bookingfrontend	nn	Tittel direktebestilling
 direct_booking	bookingfrontend	nn	Direktebestilling
 total_incl_vat	bookingfrontend	nn	Total inkl. mva
-organizer_required	bookingfrontend	nn	Arrangørnamn er påkravd
+timestamp	bookingfrontend	nn	Tidspunkt
+no_groups	bookingfrontend	nn	Ingen grupper funne
+no_delegates	bookingfrontend	nn	Ingen delegatar funne
+edit_organization	bookingfrontend	nn	Rediger organisasjon
+markdown	bookingfrontend	nn	Markdown
+visual	bookingfrontend	nn	Visuell
+enter_description_markdown	bookingfrontend	nn	Skriv inn skildring i markdown-format
+markdown_help_professional	bookingfrontend	nn	Bruk verktøylinja over for å formatere teksten, eller skriv i markdown-syntaks. Klikk førehandsvisning for å sjå resultatet.
+basic_information	bookingfrontend	nn	Grunnleggjande informasjon
+short_name	bookingfrontend	nn	Kort namn
+organization_not_found	bookingfrontend	nn	Organisasjon ikkje funnen
+access_denied	bookingfrontend	nn	Tilgang nekta
+no_permission_edit_organization	bookingfrontend	nn	Du har ikkje løyve til å redigere denne organisasjonen.
+confirm_restore_delegate	bookingfrontend	nn	Er du sikker på at du vil gjenopprette {{name}} som ein aktiv delegat?
+confirm_delete_delegate	bookingfrontend	nn	Er du sikker på at du vil fjerne {{name}} som delegat? Dette vil oppheve deira tilgang til denne organisasjonen.
+group_name	bookingfrontend	nn	Gruppenamn
+group_shortname	bookingfrontend	nn	Kort namn
+new_group	bookingfrontend	nn	Ny gruppe
+edit_group	bookingfrontend	nn	Rediger gruppe
+delete_group	bookingfrontend	nn	Slett gruppe
+confirm_delete_group	bookingfrontend	nn	Er du sikker på at du vil slette gruppa {name}?
+group_contacts	bookingfrontend	nn	Gruppekontaktar
+add_contact	bookingfrontend	nn	Legg til kontakt
+show_in_portal	bookingfrontend	nn	Vis i portal
+deactivate_group	bookingfrontend	nn	Deaktiver gruppe
+activate_group	bookingfrontend	nn	Aktiver gruppe
+confirm_deactivate_group	bookingfrontend	nn	Er du sikker på at du vil deaktivere gruppa {name}?
+confirm_activate_group	bookingfrontend	nn	Er du sikker på at du vil aktivere gruppa {name}?
+fill_from_delegate	bookingfrontend	nn	Fyll ut frå delegat
+select_delegate	bookingfrontend	nn	Vel delegat...
+show_inactive	bookingfrontend	nn	Vis inaktive

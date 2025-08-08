@@ -1,10 +1,10 @@
 'use client';
 import {
-    useReactTable,
-    getCoreRowModel,
-    getSortedRowModel,
-    FilterFnOption,
-    SortingState, RowSelectionState, FilterFn, getFilteredRowModel, VisibilityState,
+	useReactTable,
+	getCoreRowModel,
+	getSortedRowModel,
+	FilterFnOption,
+	SortingState, RowSelectionState, FilterFn, getFilteredRowModel, VisibilityState,
     getPaginationRowModel, ColumnFiltersState
 } from '@tanstack/react-table';
 import {useState, useMemo, useEffect, useRef, useCallback} from 'react';
@@ -25,184 +25,185 @@ import {Spinner} from "@digdir/designsystemet-react";
 
 // Fuzzy filter function
 const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
-    // When there's no search term, show all rows
-    if (!value || typeof value !== 'string') return true;
+	// When there's no search term, show all rows
+	if (!value || typeof value !== 'string') return true;
 
-    const searchTerm = value.toLowerCase();
+	const searchTerm = value.toLowerCase();
 
-    // Get the value of the column
-    const cellValue = row.getValue(columnId);
+	// Get the value of the column
+	const cellValue = row.getValue(columnId);
 
-    // Handle different data types
-    let textToSearch = '';
+	// Handle different data types
+	let textToSearch = '';
 
-    if (typeof cellValue === 'number') {
-        textToSearch = cellValue.toString();
-    } else if (cellValue instanceof Date) {
-        textToSearch = cellValue.toLocaleDateString();
-    } else if (typeof cellValue === 'string') {
-        textToSearch = cellValue;
-    } else if (cellValue === null || cellValue === undefined) {
-        return false;
-    } else {
-        textToSearch = cellValue.toString();
-    }
+	if (typeof cellValue === 'number') {
+		textToSearch = cellValue.toString();
+	} else if (cellValue instanceof Date) {
+		textToSearch = cellValue.toLocaleDateString();
+	} else if (typeof cellValue === 'string') {
+		textToSearch = cellValue;
+	} else if (cellValue === null || cellValue === undefined) {
+		return false;
+	} else {
+		textToSearch = cellValue.toString();
+	}
 
-    // Rank the item using match-sorter's rankItem
-    const itemRank = rankItem(textToSearch.toLowerCase(), searchTerm);
+	// Rank the item using match-sorter's rankItem
+	const itemRank = rankItem(textToSearch.toLowerCase(), searchTerm);
 
-    // Store the itemRank info
-    addMeta({
-        itemRank,
-    });
+	// Store the itemRank info
+	addMeta({
+		itemRank,
+	});
 
-    // Return if the item should be filtered in/out
-    return itemRank.passed;
+	// Return if the item should be filtered in/out
+	return itemRank.passed;
 };
 
 
 // Global filter function
 const globalFilterFn: FilterFnOption<any> = (row, columnId, filterValue) => {
-    const search = filterValue.toLowerCase();
-    const value = row.getValue(columnId);
+	const search = filterValue.toLowerCase();
+	const value = row.getValue(columnId);
 
-    if (typeof value === 'number') {
-        return value.toString().includes(search);
-    }
+	if (typeof value === 'number') {
+		return value.toString().includes(search);
+	}
 
-    if (value instanceof Date) {
-        return value.toLocaleDateString().toLowerCase().includes(search) ||
-            value.toLocaleString().toLowerCase().includes(search);
-    }
+	if (value instanceof Date) {
+		return value.toLocaleDateString().toLowerCase().includes(search) ||
+			value.toLocaleString().toLowerCase().includes(search);
+	}
 
-    if (typeof value === 'string') {
-        return value.toLowerCase().includes(search);
-    }
+	if (typeof value === 'string') {
+		return value.toLowerCase().includes(search);
+	}
 
-    return false;
+	return false;
 };
 
 // Column filter function
 const columnFilter: FilterFn<any> = (row, columnId, filterValue) => {
     if (!filterValue || filterValue.length === 0) return true;
-    
+
     const cellValue = row.getValue(columnId);
     if (cellValue === null || cellValue === undefined) return false;
-    
+
     return filterValue.includes(String(cellValue));
 };
 
 const getStorageKey = (storageId: string | undefined) => {
-    if (!storageId) return null;
-    return `table-settings-${storageId}`;
+	if (!storageId) return null;
+	return `table-settings-${storageId}`;
 };
 
 
 // Load settings from localStorage
 const loadStoredSettings = (storageId: string | undefined): TableStorageSettings | null => {
-    if (!storageId) return null;
-    const key = getStorageKey(storageId);
-    if (!key) return null;
+	if (!storageId) return null;
+	const key = getStorageKey(storageId);
+	if (!key) return null;
 
-    try {
-        const stored = localStorage.getItem(key);
-        return stored ? JSON.parse(stored) : null;
-    } catch (error) {
-        console.warn('Failed to load table settings from localStorage:', error);
-        return null;
-    }
+	try {
+		const stored = localStorage.getItem(key);
+		return stored ? JSON.parse(stored) : null;
+	} catch (error) {
+		console.warn('Failed to load table settings from localStorage:', error);
+		return null;
+	}
 };
 
 // Save settings to localStorage
 const saveSettings = (storageId: string | undefined, settings: TableStorageSettings) => {
-    if (!storageId) return null;
-    const key = getStorageKey(storageId);
-    if (!key) return;
+	if (!storageId) return null;
+	const key = getStorageKey(storageId);
+	if (!key) return;
 
-    try {
-        localStorage.setItem(key, JSON.stringify(settings));
-    } catch (error) {
-        console.warn('Failed to save table settings to localStorage:', error);
-    }
+	try {
+		localStorage.setItem(key, JSON.stringify(settings));
+	} catch (error) {
+		console.warn('Failed to save table settings to localStorage:', error);
+	}
 };
 
 function Table<T>({
-                      data,
-                      columns,
-                      storageId,
-                      empty,
-                      enableSorting = true,
-                      renderExpandedContent,
-                      renderRowButton,
-                      icon,
-                      iconPadding,
-                      rowStyle,
-                      defaultSort = [],
-                      enableRowSelection = false,
-                      enableMultiRowSelection = true,
-                      onSelectionChange,
-                      selectedRows,
-                      utilityHeader,
-                      enableSearch = false,
-                      searchPlaceholder,
-                      onSearchChange,
-                      defaultColumnVisibility,
-                      onColumnVisibilityChange,
-                      pageSize: defaultPageSize = 10,
-                      enablePagination = true,
-                      exportFileName,
-                      isLoading = false,
+					  data,
+					  columns,
+					  storageId,
+					  empty,
+					  enableSorting = true,
+					  renderExpandedContent,
+					  renderRowButton,
+					  icon,
+					  iconPadding,
+					  rowStyle,
+					  defaultSort = [],
+					  enableRowSelection = false,
+					  enableMultiRowSelection = true,
+					  onSelectionChange,
+					  selectedRows,
+					  utilityHeader,
+					  enableSearch = false,
+					  searchPlaceholder,
+					  onSearchChange,
+					  defaultColumnVisibility,
+					  onColumnVisibilityChange,
+					  pageSize: defaultPageSize = 10,
+					  enablePagination = true,
+					  exportFileName,
+					  isLoading = false,
+					  disableColumnHiding = false,
                       enableColumnFilters = false,
                       onColumnFiltersChange
-                  }: TableProps<T>) {
+				  }: TableProps<T>) {
 
-    const isMobile = useIsMobile();
-    const storedSettings = loadStoredSettings(storageId);
-    const [sorting, setSorting] = useState<SortingState>(defaultSort);
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-    const [globalFilter, setGlobalFilter] = useState('');
-    const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
-        storedSettings?.columnVisibility || defaultColumnVisibility || {}
-    );
-    const [pageSize, setPageSize] = useState(
-        storedSettings?.pageSize || defaultPageSize
-    );
+	const isMobile = useIsMobile();
+	const storedSettings = loadStoredSettings(storageId);
+	const [sorting, setSorting] = useState<SortingState>(defaultSort);
+	const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+	const [globalFilter, setGlobalFilter] = useState('');
+	const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+		storedSettings?.columnVisibility || defaultColumnVisibility || {}
+	);
+	const [pageSize, setPageSize] = useState(
+		storedSettings?.pageSize || defaultPageSize
+	);
     const [columnFilters, setColumnFilters] = useState<Record<string, any>>(
         storedSettings?.columnFilters || {}
     );
-    
+
     const tableRef = useRef<HTMLDivElement>(null);
     const [columnWidths, setColumnWidths] = useState<{ [columnId: string]: number }>({});
     const [hasInitialized, setHasInitialized] = useState(false);
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0);
 
-    useEffect(() => {
-        if (!storedSettings?.columnVisibility) {
-            const initialVisibility = columns.reduce((acc, column) => {
+	useEffect(() => {
+		if (!storedSettings?.columnVisibility) {
+			const initialVisibility = columns.reduce((acc, column) => {
                 if (column.meta?.defaultHidden) {
                     const columnId = ('id' in column ? column.id : (column as any).accessorKey) as string;
                     acc[columnId] = false;
-                }
-                return acc;
-            }, {} as VisibilityState);
-            setColumnVisibility(initialVisibility);
-        }
-    }, [columns, storedSettings]);
+				}
+				return acc;
+			}, {} as VisibilityState);
+			setColumnVisibility(initialVisibility);
+		}
+	}, [columns, storedSettings]);
 
 
-    const handleColumnVisibilityChange = (updater: VisibilityState | ((state: VisibilityState) => VisibilityState)) => {
-        const newState = typeof updater === 'function' ? updater(columnVisibility) : updater;
-        setColumnVisibility(newState);
-        onColumnVisibilityChange?.(newState);
-    };
+	const handleColumnVisibilityChange = (updater: VisibilityState | ((state: VisibilityState) => VisibilityState)) => {
+		const newState = typeof updater === 'function' ? updater(columnVisibility) : updater;
+		setColumnVisibility(newState);
+		onColumnVisibilityChange?.(newState);
+	};
 
-    const handlePageSizeChange = (newSize: number) => {
-        setPageSize(newSize);
-        table.setPageSize(newSize);
-    };
+	const handlePageSizeChange = (newSize: number) => {
+		setPageSize(newSize);
+		table.setPageSize(newSize);
+	};
 
     // Add selection column if enabled and set filter functions
-    const tableColumns = useMemo(() => {
+	const tableColumns = useMemo(() => {
         let processedColumns = columns.map(col => {
             // Add filter function for columns that have filter config
             if (col.meta?.filter) {
@@ -216,31 +217,31 @@ function Table<T>({
 
         if (!enableRowSelection) return processedColumns;
 
-        const selectionColumn: ColumnDef<T> = {
-            id: 'select',
-            meta: {size: 'icon', smallHideTitle: true},
-            header: ({table}) => (
-                enableMultiRowSelection ? (
-                    <input
-                        type="checkbox"
-                        checked={table.getIsAllRowsSelected()}
-                        // indeterminate={table.getIsSomeRowsSelected()}
-                        onChange={table.getToggleAllRowsSelectedHandler()}
-                    />
-                ) : null
-            ),
-            cell: ({row}) => (
-                <input
-                    type="checkbox"
-                    checked={row.getIsSelected()}
-                    disabled={!row.getCanSelect()}
-                    onChange={row.getToggleSelectedHandler()}
-                />
-            ),
-        };
+		const selectionColumn: ColumnDef<T> = {
+			id: 'select',
+			meta: {size: 'icon', smallHideTitle: true},
+			header: ({table}) => (
+				enableMultiRowSelection ? (
+					<input
+						type="checkbox"
+						checked={table.getIsAllRowsSelected()}
+						// indeterminate={table.getIsSomeRowsSelected()}
+						onChange={table.getToggleAllRowsSelectedHandler()}
+					/>
+				) : null
+			),
+			cell: ({row}) => (
+				<input
+					type="checkbox"
+					checked={row.getIsSelected()}
+					disabled={!row.getCanSelect()}
+					onChange={row.getToggleSelectedHandler()}
+				/>
+			),
+		};
 
         return [selectionColumn, ...processedColumns];
-    }, [columns, enableRowSelection, enableMultiRowSelection]);
+	}, [columns, enableRowSelection, enableMultiRowSelection]);
 
     // Note: Column widths are not loaded from storage - they're measured fresh each time
 
@@ -329,17 +330,17 @@ function Table<T>({
         }));
     }, [columnFilters]);
 
-    const table = useReactTable({
-        data,
-        columns: tableColumns,
-        state: {
-            sorting,
-            rowSelection: selectedRows || rowSelection,
-            globalFilter,
+	const table = useReactTable({
+		data,
+		columns: tableColumns,
+		state: {
+			sorting,
+			rowSelection: selectedRows || rowSelection,
+			globalFilter,
             columnVisibility,
             columnFilters: tanstackColumnFilters,
-        },
-        onColumnVisibilityChange: handleColumnVisibilityChange,
+		},
+		onColumnVisibilityChange: handleColumnVisibilityChange,
         onColumnFiltersChange: (updater) => {
             const newState = typeof updater === 'function' ? updater(tanstackColumnFilters) : updater;
             const newFilters = newState.reduce((acc: Record<string, any>, filter) => {
@@ -348,56 +349,56 @@ function Table<T>({
             }, {});
             handleColumnFiltersChange(newFilters);
         },
-        filterFns: {
-            fuzzy: fuzzyFilter,
+		filterFns: {
+			fuzzy: fuzzyFilter,
             columnFilter: columnFilter,
-        },
-        globalFilterFn: fuzzyFilter,
-        enableRowSelection,
-        enableMultiRowSelection,
-        enableGlobalFilter: enableSearch,
+		},
+		globalFilterFn: fuzzyFilter,
+		enableRowSelection,
+		enableMultiRowSelection,
+		enableGlobalFilter: enableSearch,
         enableColumnFilters,
-        onRowSelectionChange: (updater) => {
-            const newSelection =
-                typeof updater === 'function'
-                    ? updater(rowSelection)
-                    : updater;
-            setRowSelection(newSelection);
-            onSelectionChange?.(newSelection);
-        },
-        enableSorting,
-        onSortingChange: setSorting,
-        onGlobalFilterChange: (value) => {
-            setGlobalFilter(String(value));
-            onSearchChange?.(String(value));
-        },
-        initialState: {
-            pagination: {
-                pageSize,
-            },
-        },
-        getCoreRowModel: getCoreRowModel(),
-        getSortedRowModel: getSortedRowModel(),
-        getFilteredRowModel: getFilteredRowModel(),
-        getPaginationRowModel: getPaginationRowModel(),
-    });
+		onRowSelectionChange: (updater) => {
+			const newSelection =
+				typeof updater === 'function'
+					? updater(rowSelection)
+					: updater;
+			setRowSelection(newSelection);
+			onSelectionChange?.(newSelection);
+		},
+		enableSorting,
+		onSortingChange: setSorting,
+		onGlobalFilterChange: (value) => {
+			setGlobalFilter(String(value));
+			onSearchChange?.(String(value));
+		},
+		initialState: {
+			pagination: {
+				pageSize,
+			},
+		},
+		getCoreRowModel: getCoreRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+	});
 
-    const gridTemplateColumns = useMemo(() => {
-        const visibleColumns = tableColumns.filter(col => {
-            const id = 'id' in col ? col.id : col.accessorKey;
-            return columnVisibility[id as string] !== false;
-        });
+	const gridTemplateColumns = useMemo(() => {
+		const visibleColumns = tableColumns.filter(col => {
+			const id = 'id' in col ? col.id : col.accessorKey;
+			return columnVisibility[id as string] !== false;
+		});
 
         // Use stored pixel widths if available and initialized
         if (hasInitialized && Object.keys(columnWidths).length > 0 && !isMobile) {
             const widthValues = visibleColumns.map((column) => {
                 const id = 'id' in column ? column.id : column.accessorKey;
                 const storedWidth = columnWidths[id as string];
-                
+
                 if (storedWidth) {
                     return `${storedWidth}px`;
                 }
-                
+
                 // Fallback to original sizing
                 const size = column.meta?.size || 1;
                 if (column.meta?.size === 'icon') {
@@ -405,98 +406,100 @@ function Table<T>({
                 }
                 return `${size}fr`;
             });
-            
+
             return widthValues.join(' ') + ((!!renderExpandedContent || !!renderRowButton) ? ' 4rem' : '');
         }
 
         // Default fractional sizing
-        return visibleColumns
-            .map((column) => {
-                const size = column.meta?.size || 1;
-                if (column.meta?.size === 'icon') {
-                    return '2.5rem';
-                }
-                return `${size}fr`;
-            })
-            .join(' ') + ((!!renderExpandedContent || !!renderRowButton) ? ' 4rem' : '');
+		return visibleColumns
+			.map((column) => {
+				const size = column.meta?.size || 1;
+				if (column.meta?.size === 'icon') {
+					return '2.5rem';
+				}
+				return `${size}fr`;
+			})
+			.join(' ') + ((!!renderExpandedContent || !!renderRowButton) ? ' 4rem' : '');
     }, [tableColumns, columnVisibility, hasInitialized, columnWidths, isMobile, renderExpandedContent, renderRowButton]);
 
-    const combinedUtilityHeader = useMemo(() => ({
-        left: (
-            <>
-                {enableSearch && (
-                    <TableSearch
-                        table={table}
-                        placeholder={searchPlaceholder}
-                    />
-                )}
-                {typeof utilityHeader === 'object' && utilityHeader?.left}
-            </>
-        ),
-        right: (
-            <>
-                {typeof utilityHeader === 'object' && utilityHeader?.right}
-                {!!exportFileName && (
-                    <TableExport
-                        table={table}
-                        fileName={exportFileName}
-                        rowSelection={selectedRows || rowSelection}
-                    />
-                )}
-                {enableColumnFilters && (
-                    <ColumnFilters
-                        columns={tableColumns}
-                        data={data}
-                        filters={columnFilters}
-                        onFiltersChange={handleColumnFiltersChange}
-                    />
-                )}
-                <ColumnToggle table={table} tableColumns={tableColumns} columnVisibility={columnVisibility}/>
-            </>
-        ),
+	const combinedUtilityHeader = useMemo(() => ({
+		left: (
+			<>
+				{enableSearch && (
+					<TableSearch
+						table={table}
+						placeholder={searchPlaceholder}
+					/>
+				)}
+				{typeof utilityHeader === 'object' && utilityHeader?.left}
+			</>
+		),
+		right: (
+			<>
+				{typeof utilityHeader === 'object' && utilityHeader?.right}
+				{!!exportFileName && (
+					<TableExport
+						table={table}
+						fileName={exportFileName}
+						rowSelection={selectedRows || rowSelection}
+					/>
+				)}
+				{enableColumnFilters && (
+					<ColumnFilters
+						columns={tableColumns}
+						data={data}
+						filters={columnFilters}
+						onFiltersChange={handleColumnFiltersChange}
+					/>
+				)}
+				{!disableColumnHiding && (
+					<ColumnToggle table={table} tableColumns={tableColumns} columnVisibility={columnVisibility}/>
+				)}
+			</>
+		),
     }), [enableSearch, table, searchPlaceholder, utilityHeader, exportFileName, selectedRows, rowSelection, tableColumns, columnVisibility, enableColumnFilters, columnFilters, handleColumnFiltersChange, data]);
 
-    return (
+	return (
         <div className={`gs-table ${styles.tableContainer}`} data-is-mobile={isMobile} ref={tableRef}>
-            {!!utilityHeader && (
-                <TableUtilityHeader {...combinedUtilityHeader} />
-            )}
-            <div className={`${styles.table} ${isMobile ? styles.tableMobile : ''}`}
-                 style={{gridTemplateColumns: isMobile ? undefined : gridTemplateColumns}}>
-                <TableHeader
-                    headerGroups={table.getHeaderGroups()}
-                    gridTemplateColumns={isMobile ? undefined : gridTemplateColumns}
-                    renderExpandedContent={!!renderExpandedContent || !!renderRowButton}
-                    icon={!!icon}
-                    iconPadding={iconPadding}
-                    isMobile={isMobile}
-                />
-                {isLoading ? (
-                    <div className={styles.loadingContainer}>
-                        <Spinner data-size={'sm'} aria-label={'loading...'} />
-                    </div>
-                ) : data.length === 0 && empty ? (
-                    empty
-                ) : (
-                    table.getRowModel().rows.map(row => (
-                        <TableRow
-                            key={row.id}
-                            row={row}
-                            gridTemplateColumns={isMobile ? undefined : gridTemplateColumns}
-                            icon={icon}
-                            renderExpandedContent={renderExpandedContent}
-                            renderRowButton={renderRowButton}
-                            rowStyle={rowStyle}
-                            isMobile={isMobile}
-                        />
-                    ))
-                )}
-            </div>
-            {enablePagination && data.length > 0 && (
-                <TablePagination table={table} setPageSize={handlePageSizeChange}/>
-            )}
-        </div>
-    );
+			{!!utilityHeader && (
+				<TableUtilityHeader {...combinedUtilityHeader} />
+			)}
+			<div className={`${styles.table} ${isMobile ? styles.tableMobile : ''}`}
+				 style={{gridTemplateColumns: isMobile ? undefined : gridTemplateColumns}}>
+				<TableHeader
+					headerGroups={table.getHeaderGroups()}
+					gridTemplateColumns={isMobile ? undefined : gridTemplateColumns}
+					renderExpandedContent={!!renderExpandedContent || !!renderRowButton}
+					icon={!!icon}
+					iconPadding={iconPadding}
+					isMobile={isMobile}
+				/>
+				{isLoading ? (
+					<div className={styles.loadingContainer}>
+						<Spinner data-size={'sm'} aria-label={'loading...'}/>
+					</div>
+				) : data.length === 0 && empty ? (
+					empty
+				) : (
+					table.getRowModel().rows.map(row => (
+						<TableRow
+							key={row.id}
+							row={row}
+							gridTemplateColumns={isMobile ? undefined : gridTemplateColumns}
+							icon={icon}
+							renderExpandedContent={renderExpandedContent}
+							renderRowButton={renderRowButton}
+							rowStyle={rowStyle}
+							isMobile={isMobile}
+						/>
+					))
+				)}
+			</div>
+			{enablePagination && data.length > 0 && (
+				<TablePagination table={table} setPageSize={handlePageSizeChange}/>
+			)}
+		</div>
+	);
 }
 
 export default Table;

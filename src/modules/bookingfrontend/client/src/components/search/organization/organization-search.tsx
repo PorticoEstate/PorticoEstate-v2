@@ -115,13 +115,14 @@ const OrganizationSearch: FC<OrganizationSearchProps> = ({ initialOrganizations 
 			return [];
 		}
 
-		let filtered = organizations.filter(org => org.show_in_portal);
+		let filtered = organizations
 
 		// Only apply text search if something has been entered
 		if (textSearchQuery && textSearchQuery.trim() !== '') {
 			const query = textSearchQuery.toLowerCase();
 			filtered = filtered.filter(organization => {
 				const organizationNameMatch = organization.name.toLowerCase().includes(query);
+
 				return organizationNameMatch;
 			});
 
@@ -134,9 +135,9 @@ const OrganizationSearch: FC<OrganizationSearchProps> = ({ initialOrganizations 
 		}
 
 		// District filter
-		if (where) {
-			filtered = filtered.filter(organization => organization.district === where);
-		}
+		// if (where) {
+		// 	filtered = filtered.filter(organization => organization.district === where);
+		// }
 
 		return filtered;
 	}, [organizations, textSearchQuery, where]);

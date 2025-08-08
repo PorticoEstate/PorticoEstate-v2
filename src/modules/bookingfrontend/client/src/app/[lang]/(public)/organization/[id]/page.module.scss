@@ -1,0 +1,63 @@
+@import "../../../../../styles/util.module";
+
+.organizationPageGrid {
+	display: grid;
+	grid-template-columns: 1fr;
+
+	// Mobile layout: Contact above description
+	grid-template-areas:
+    "header"
+    "contact"
+    "description"
+    "buildings"
+    "groups"
+    "delegates"
+    "calendar"
+    "photos";
+
+	// Desktop layout: Description above contact
+	@include tablet {
+		grid-template-areas:
+      "header"
+      "description"
+      "contact"
+      "buildings"
+      "groups"
+      "delegates"
+      "calendar"
+      "photos";
+	}
+}
+
+.header {
+	grid-area: header;
+}
+
+.contact {
+	grid-area: contact;
+}
+
+.description {
+	grid-area: description;
+}
+
+.buildings {
+	grid-area: buildings;
+}
+
+.photos {
+	grid-area: photos;
+}
+
+.groups {
+	grid-area: groups;
+}
+
+.delegates {
+	grid-area: delegates;
+}
+
+.calendar {
+	padding-top: 0.875rem;
+	grid-area: calendar;
+}

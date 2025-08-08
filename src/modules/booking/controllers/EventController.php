@@ -403,7 +403,7 @@ class EventController
 			'organizer' => $eventData['contact_name'] ?? 'Calendar Bridge',
 
 			// Required fields
-			'activity_id' => 1, // Default activity - configurable
+			'activity_id' => $eventData['activity_id'] ?? 1, // Default to 1 if not provided
 			'building_id' => $buildingInfo['id'],
 			'building_name' => $buildingInfo['name'],
 			'cost' => 0.00, // Default to 0 for bridge imports
@@ -433,6 +433,8 @@ class EventController
 
 			// Resource association
 			'resources' => [$resourceId],
+			'agegroups' => $eventData['agegroups'] ?? [],
+			'audience' => $eventData['audience'] ?? [],
 		];
 	}
 

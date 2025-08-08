@@ -20,6 +20,10 @@ class Event extends BaseModel
 {
 	use SerializableTrait;
 
+	// Override BaseModel properties to make them accessible
+	protected array $fieldMap = [];
+	protected array $relationshipMap = [];
+
 	// Field definitions based on booking_soevent constructor
 
 	/**
@@ -131,6 +135,8 @@ class Event extends BaseModel
 	 * @SerializeAs(type="array", of="int")
 	 */
 	public array $resources = [];
+	public array $agegroups = [];
+	public array $audience = [];
 
 	// Relationship properties for lazy loading
 	protected ?array $_audience = null;
@@ -203,7 +209,8 @@ class Event extends BaseModel
 				'type' => 'int',
 				'required' => true,
 				'sanitize' => 'int',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					return self::validatePositive($value, 'Activity ID');
 				},
 			],
@@ -229,7 +236,8 @@ class Event extends BaseModel
 				'required' => false,
 				'maxLength' => 255,
 				'sanitize' => 'string',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					return self::validateUrl($value, 'Homepage');
 				},
 			],
@@ -247,7 +255,8 @@ class Event extends BaseModel
 				'type' => 'int',
 				'required' => true,
 				'sanitize' => 'int',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					return self::validatePositive($value, 'Building ID');
 				},
 			],
@@ -271,7 +280,8 @@ class Event extends BaseModel
 				'type' => 'float',
 				'required' => true,
 				'sanitize' => 'float',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					return self::validateNonNegative($value, 'Cost');
 				},
 			],
@@ -285,7 +295,8 @@ class Event extends BaseModel
 				'type' => 'string',
 				'required' => false,
 				'sanitize' => 'email',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					return self::validateEmail($value, 'Contact email');
 				},
 			],
@@ -294,7 +305,8 @@ class Event extends BaseModel
 				'required' => false,
 				'maxLength' => 50,
 				'sanitize' => 'string',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					return self::validatePhone($value, 'Contact phone');
 				},
 			],
@@ -336,7 +348,8 @@ class Event extends BaseModel
 				'type' => 'int',
 				'required' => false,
 				'sanitize' => 'int',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					if (is_null($value)) return null;
 					return self::validateNonNegative($value, 'Participant limit');
 				},
@@ -360,7 +373,8 @@ class Event extends BaseModel
 				'type' => 'string',
 				'required' => false,
 				'sanitize' => 'string',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					return self::validateNorwegianSSN($value, 'Customer SSN');
 				},
 			],
@@ -368,7 +382,8 @@ class Event extends BaseModel
 				'type' => 'string',
 				'required' => false,
 				'sanitize' => 'string',
-				'validator' => function ($value) {
+				'validator' => function ($value)
+				{
 					return self::validateNorwegianOrSwedishOrgNumber($value, 'Customer organization number');
 				},
 			],
@@ -388,14 +403,6 @@ class Event extends BaseModel
 				'sanitize' => 'string',
 				'required' => false,
 			],
-			'resources' => [
-				'type' => 'array',
-				'required' => true,
-				'sanitize' => 'array_int', // Array of integers
-				'validator' => function ($value) {
-					return self::validateNonEmptyArray($value, 'Resources');
-				},
-			],
 			// Additional fields for controller compatibility
 			'title' => [
 				'type' => 'string',
@@ -412,12 +419,108 @@ class Event extends BaseModel
 				'required' => false,
 				'sanitize' => 'bool',
 			],
-			'resource_ids' => [
-				'type' => 'array',
-				'required' => false, // Maps to 'resources' field
-				'sanitize' => 'array_int', // Array of integers
-			],
 			// You can add more fields as needed, e.g. for agegroups, audience, comments, costs, dates, etc.
+		];
+	}
+
+	/**
+	 * Initialize field map - required by BaseModel
+	 */
+	protected function initializeFieldMap(): void
+	{
+		$this->fieldMap = static::getFieldMap();
+	}
+
+	/**
+	 * Initialize relationship map - optional
+	 */
+	protected function initializeRelationshipMap(): void
+	{
+		$this->relationshipMap = static::getRelationshipMap();
+	}
+
+	/**
+	 * Get relationship map - optional override
+	 */
+	protected static function getRelationshipMap(): array
+	{
+
+		return [
+			'activity_name' => array(
+				'type' => 'string',
+				'query' => true,
+				'join' => array(
+					'table' => 'bb_activity',
+					'fkey' => 'activity_id',
+					'key' => 'id',
+					'column' => 'name'
+				)
+			),
+			'audience' => array(
+				'type' => 'int',
+				'required' => true,
+				'manytomany' => array(
+					'table' => 'bb_event_targetaudience',
+					'key' => 'event_id',
+					'column' => 'targetaudience_id'
+				)
+			),
+			'agegroups' => array(
+				'type' => 'int',
+				'required' => true,
+				'manytomany' => array(
+					'table' => 'bb_event_agegroup',
+					'key' => 'event_id',
+					'column' => array(
+						'agegroup_id' => array('type' => 'int', 'required' => true),
+						'male' => array('type' => 'int', 'required' => true),
+						'female' => array(
+							'type' => 'int',
+							'required' => true
+						)
+					),
+				)
+			),
+			'comments' => array(
+				'type' => 'string',
+				'manytomany' => array(
+					'table' => 'bb_event_comment',
+					'key' => 'event_id',
+					'column' => array('time' => array('type' => 'timestamp', 'read_callback' => 'modify_by_timezone'), 'author', 'comment', 'type'),
+					'order' => array('sort' => 'time', 'dir' => 'ASC')
+				)
+			),
+			'costs' => array(
+				'type' => 'string',
+				'manytomany' => array(
+					'table' => 'bb_event_cost',
+					'key' => 'event_id',
+					'column' => array('time' => array('type' => 'timestamp', 'read_callback' => 'modify_by_timezone'), 'author', 'comment', 'cost'),
+					'order' => array('sort' => 'time', 'dir' => 'ASC')
+				)
+			),
+			'resources' => array(
+				'type' => 'int',
+				'required' => true,
+				'sanitize' => 'array_int', // Array of integers
+				'validator' => function ($value)
+				{
+					return self::validateNonEmptyArray($value, 'Resources');
+				},
+				'manytomany' => array(
+					'table' => 'bb_event_resource',
+					'key' => 'event_id',
+					'column' => 'resource_id'
+				)
+			),
+			'dates' => array(
+				'type' => 'timestamp',
+				'manytomany' => array(
+					'table' => 'bb_event_date',
+					'key' => 'event_id',
+					'column' => array('from_', 'to_', 'id')
+				)
+			),
 		];
 	}
 
@@ -427,16 +530,21 @@ class Event extends BaseModel
 	protected function doCustomValidation(): array
 	{
 		$errors = [];
-		
+
 		// Custom cross-field validation: from_ < to_
-		if (!empty($this->from_) && !empty($this->to_)) {
-			try {
+		if (!empty($this->from_) && !empty($this->to_))
+		{
+			try
+			{
 				$from = new \DateTime($this->from_);
 				$to = new \DateTime($this->to_);
-				if ($from >= $to) {
+				if ($from >= $to)
+				{
 					$errors[] = 'End time must be after start time';
 				}
-			} catch (\Exception $e) {
+			}
+			catch (\Exception $e)
+			{
 				// Already handled by field validation
 			}
 		}
@@ -450,12 +558,14 @@ class Event extends BaseModel
 	protected function create(): bool
 	{
 		// Generate secret if not set
-		if (empty($this->secret)) {
+		if (empty($this->secret))
+		{
 			$this->secret = bin2hex(random_bytes(16));
 		}
 
 		// Call parent create method
-		if (!parent::create()) {
+		if (!parent::create())
+		{
 			return false;
 		}
 
@@ -477,7 +587,8 @@ class Event extends BaseModel
 	protected function update(): bool
 	{
 		// Call parent update method
-		if (!parent::update()) {
+		if (!parent::update())
+		{
 			return false;
 		}
 
@@ -504,40 +615,74 @@ class Event extends BaseModel
 	 */
 	protected function saveRelationships(): void
 	{
-		$this->saveResourceAssociations();
-		$this->saveEventDates();
+		// Use BaseModel's relationship handling for defined relationships
+		parent::saveRelationships();
 		
+		// Handle event dates (main date is already in the main table, but we also store in bb_event_date)
+		$this->saveEventDates();
+
 		// Only save defaults on create
-		if (!$this->id) {
+		if ($this->wasRecentlyCreated()) {
 			$this->saveDefaultAgeGroup();
 			$this->saveDefaultTargetAudience();
 		}
 	}
 
 	/**
-	 * Save resource associations
+	 * Check if this event was recently created (no existing audience/agegroups)
 	 */
-	protected function saveResourceAssociations(): void
+	protected function wasRecentlyCreated(): bool
 	{
-		// Delete existing associations
-		$deleteSql = "DELETE FROM bb_event_resource WHERE event_id = :event_id";
-		$deleteStmt = $this->db->prepare($deleteSql);
-		$deleteStmt->execute([':event_id' => $this->id]);
-
-		// Insert new associations
-		if (!empty($this->resources))
-		{
-			$insertSql = "INSERT INTO bb_event_resource (event_id, resource_id) VALUES (:event_id, :resource_id)";
-			$insertStmt = $this->db->prepare($insertSql);
-
-			foreach ($this->resources as $resourceId)
-			{
-				$insertStmt->execute([
-					':event_id' => $this->id,
-					':resource_id' => (int)$resourceId
-				]);
-			}
+		// If we don't have an ID, it's definitely new
+		if (!$this->id) {
+			return true;
 		}
+
+		// Check if we have existing audience data
+		$existingAudience = $this->loadRelationship('audience');
+		return empty($existingAudience);
+	}
+
+	/**
+	 * Convenience methods for relationships (use BaseModel's loadRelationship)
+	 */
+	public function getAudience(): array
+	{
+		return $this->loadRelationship('audience') ?? [];
+	}
+
+	public function getAgegroups(): array
+	{
+		return $this->loadRelationship('agegroups') ?? [];
+	}
+
+	public function getComments(): array
+	{
+		return $this->loadRelationship('comments') ?? [];
+	}
+
+	public function getCosts(): array
+	{
+		return $this->loadRelationship('costs') ?? [];
+	}
+
+	public function getDates(): array
+	{
+		return $this->loadRelationship('dates') ?? [];
+	}
+
+	public function getActivityName(): ?string
+	{
+		return $this->loadRelationship('activity_name');
+	}
+
+	/**
+	 * Get resources relationship data
+	 * Note: This uses the manytomany relationship definition
+	 */
+	public function getResourcesRelationship(): array
+	{
+		return $this->loadRelationship('resources') ?? [];
 	}
 
 	/**
@@ -678,7 +823,8 @@ class Event extends BaseModel
 	 */
 	protected function deleteRelationships(): void
 	{
-		if (!$this->id) {
+		if (!$this->id)
+		{
 			return;
 		}
 
@@ -687,14 +833,15 @@ class Event extends BaseModel
 		// Delete related tables (order matters due to foreign keys)
 		$relatedTables = [
 			'bb_event_cost',
-			'bb_event_comment', 
+			'bb_event_comment',
 			'bb_event_agegroup',
 			'bb_event_targetaudience',
 			'bb_event_date',
 			'bb_event_resource'
 		];
 
-		foreach ($relatedTables as $table) {
+		foreach ($relatedTables as $table)
+		{
 			$sql = "DELETE FROM $table WHERE event_id = :event_id";
 			$stmt = $this->db->prepare($sql);
 			$stmt->execute([':event_id' => $id]);
@@ -706,13 +853,17 @@ class Event extends BaseModel
 		$orderStmt->execute([':id' => $id]);
 		$order = $orderStmt->fetch(PDO::FETCH_ASSOC);
 
-		if ($order) {
-			if ($order['parent_id']) {
+		if ($order)
+		{
+			if ($order['parent_id'])
+			{
 				// Delete child order
 				$deleteOrderSql = "DELETE FROM bb_purchase_order WHERE id = :order_id";
 				$deleteOrderStmt = $this->db->prepare($deleteOrderSql);
 				$deleteOrderStmt->execute([':order_id' => $order['id']]);
-			} else {
+			}
+			else
+			{
 				// Handle parent order - delete children first
 				$deleteChildOrdersSql = "DELETE FROM bb_purchase_order WHERE parent_id = :parent_id";
 				$deleteChildOrdersStmt = $this->db->prepare($deleteChildOrdersSql);
@@ -731,7 +882,8 @@ class Event extends BaseModel
 		$completedResStmt->execute([':id' => $id]);
 		$completedRes = $completedResStmt->fetch(PDO::FETCH_ASSOC);
 
-		if ($completedRes) {
+		if ($completedRes)
+		{
 			$deleteCompResResourceSql = "DELETE FROM bb_completed_reservation_resource WHERE completed_reservation_id = :comp_res_id";
 			$deleteCompResResourceStmt = $this->db->prepare($deleteCompResResourceSql);
 			$deleteCompResResourceStmt->execute([':comp_res_id' => $completedRes['id']]);
@@ -748,7 +900,8 @@ class Event extends BaseModel
 	public static function find(int $id): ?static
 	{
 		$event = parent::find($id);
-		if ($event) {
+		if ($event)
+		{
 			// Load associated resources
 			$resourceSql = "SELECT resource_id FROM bb_event_resource WHERE event_id = :event_id";
 			$resourceStmt = $event->db->prepare($resourceSql);
@@ -789,61 +942,20 @@ class Event extends BaseModel
 	}
 
 	/**
-	 * Convenience methods for relationships (use BaseModel's loadRelationship)
-	 */
-	public function getAudience(): array
-	{
-		return $this->loadRelationship('audience') ?? [];
-	}
-
-	public function getAgegroups(): array
-	{
-		return $this->loadRelationship('agegroups') ?? [];
-	}
-
-	public function getComments(): array
-	{
-		return $this->loadRelationship('comments') ?? [];
-	}
-
-	public function getCosts(): array
-	{
-		return $this->loadRelationship('costs') ?? [];
-	}
-
-	public function getDates(): array
-	{
-		return $this->loadRelationship('dates') ?? [];
-	}
-
-	public function getBuildingInfo(): ?array
-	{
-		return $this->loadRelationship('building_info');
-	}
-
-	public function getActivityInfo(): ?array
-	{
-		return $this->loadRelationship('activity_info');
-	}
-
-	public function getApplicationInfo(): ?array
-	{
-		return $this->loadRelationship('application_info');
-	}
-
-	/**
 	 * Add a comment to this event
 	 */
 	public function addComment(string $comment, string $type = 'user', ?string $author = null, ?string $authorName = null): bool
 	{
-		if (!$this->id) {
+		if (!$this->id)
+		{
 			return false;
 		}
 
 		$sql = "INSERT INTO bb_event_comment (event_id, comment, type, time, author, author_name) VALUES (:event_id, :comment, :type, :time, :author, :author_name)";
 		$stmt = $this->db->prepare($sql);
 
-		try {
+		try
+		{
 			$result = $stmt->execute([
 				':event_id' => $this->id,
 				':comment' => $comment,
@@ -854,12 +966,15 @@ class Event extends BaseModel
 			]);
 
 			// Clear cached comments to force reload
-			if (isset($this->_relationshipCache['comments'])) {
+			if (isset($this->_relationshipCache['comments']))
+			{
 				unset($this->_relationshipCache['comments']);
 			}
-			
+
 			return $result;
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			error_log("Error adding comment: " . $e->getMessage());
 			return false;
 		}
@@ -870,14 +985,16 @@ class Event extends BaseModel
 	 */
 	public function addCost(float $cost, string $description = ''): bool
 	{
-		if (!$this->id) {
+		if (!$this->id)
+		{
 			return false;
 		}
 
 		$sql = "INSERT INTO bb_event_cost (event_id, cost, description) VALUES (:event_id, :cost, :description)";
 		$stmt = $this->db->prepare($sql);
 
-		try {
+		try
+		{
 			$result = $stmt->execute([
 				':event_id' => $this->id,
 				':cost' => $cost,
@@ -885,12 +1002,15 @@ class Event extends BaseModel
 			]);
 
 			// Clear cached costs to force reload
-			if (isset($this->_relationshipCache['costs'])) {
+			if (isset($this->_relationshipCache['costs']))
+			{
 				unset($this->_relationshipCache['costs']);
 			}
-			
+
 			return $result;
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			error_log("Error adding cost: " . $e->getMessage());
 			return false;
 		}
@@ -901,14 +1021,16 @@ class Event extends BaseModel
 	 */
 	public function addDate(string $from, string $to): bool
 	{
-		if (!$this->id) {
+		if (!$this->id)
+		{
 			return false;
 		}
 
 		$sql = "INSERT INTO bb_event_date (event_id, from_, to_) VALUES (:event_id, :from_, :to_)";
 		$stmt = $this->db->prepare($sql);
 
-		try {
+		try
+		{
 			$result = $stmt->execute([
 				':event_id' => $this->id,
 				':from_' => $from,
@@ -916,12 +1038,15 @@ class Event extends BaseModel
 			]);
 
 			// Clear cached dates to force reload
-			if (isset($this->_relationshipCache['dates'])) {
+			if (isset($this->_relationshipCache['dates']))
+			{
 				unset($this->_relationshipCache['dates']);
 			}
-			
+
 			return $result;
-		} catch (Exception $e) {
+		}
+		catch (Exception $e)
+		{
 			error_log("Error adding date: " . $e->getMessage());
 			return false;
 		}

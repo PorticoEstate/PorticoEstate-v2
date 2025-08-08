@@ -1,5 +1,5 @@
 'use client'
-import React, {FC, useEffect, useState} from 'react';
+import React, {FC, useEffect, useState, useMemo} from 'react';
 import {useBookingUser, useLogin, useLogout} from "@/service/hooks/api-hooks";
 import {Divider, Dropdown} from "@digdir/designsystemet-react";
 import { EnterIcon, PersonFillIcon, ChevronDownIcon, TenancyIcon } from "@navikt/aksel-icons";
@@ -8,7 +8,6 @@ import {phpGWLink} from "@/service/util";
 import Link from "next/link";
 import {useSearchParams} from "next/navigation";
 import {useQueryClient} from "@tanstack/react-query";
-import UserCreationModal from "@/components/user/creation-modal/user-creation-modal";
 
 interface UserMenuProps {
 }
@@ -31,6 +30,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
             queryClient.invalidateQueries({queryKey: ['bookingUser']})
         }
     }, [searchparams, queryClient]);
+
 
     const handleLogin = async () => {
         try {
@@ -69,16 +69,13 @@ const UserMenu: FC<UserMenuProps> = (props) => {
                             </Dropdown.Item>
                         </Dropdown.List>
                         <Divider/>
-                        {!!bookingUser.delegates && bookingUser.delegates.length > 0 && (
+                {activeDelegates.length > 0 && (
                             <>
                                 <Dropdown.List>
-                                    {bookingUser.delegates?.map((delegate) => <Dropdown.Item key={delegate.org_id}>
+                            {activeDelegates.map((delegate) => <Dropdown.Item key={delegate.org_id}>
                                         <Dropdown.Button asChild>
 
-                                            <Link href={phpGWLink('bookingfrontend/', {
-                                                menuaction: 'bookingfrontend.uiorganization.show',
-                                                id: delegate.org_id
-                                            }, false)}
+                                    <Link href={`/organization/${delegate.org_id}`}
                                                   className={'link-text link-text-unset normal'}>
                                                 <TenancyIcon fontSize="1.25rem" /> {delegate.name}
                                             </Link>

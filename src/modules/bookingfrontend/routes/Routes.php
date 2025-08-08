@@ -64,8 +64,19 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->post('', OrganizationController::class . ':create');
 		$group->get('/lookup/{number}', OrganizationController::class . ':lookup');
 		$group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');
+		$group->get('/{id}/delegates', OrganizationController::class . ':getDelegates');
+		$group->put('/{id}/delegates/{delegate_id}', OrganizationController::class . ':updateDelegate');
+		$group->delete('/{id}/delegates/{delegate_id}', OrganizationController::class . ':removeDelegate');
+		$group->get('/{id}/groups', OrganizationController::class . ':getGroups');
+		$group->post('/{id}/groups', OrganizationController::class . ':createGroup');
+		$group->put('/{id}/groups/{group_id}', OrganizationController::class . ':updateGroup');
+		$group->get('/{id}/buildings', OrganizationController::class . ':getBuildings');
+		$group->get('/{id}/documents', OrganizationController::class . ':getDocuments');
+		$group->get('/document/{id}/download', OrganizationController::class . ':downloadDocument');
+		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getOrganizationSchedule');
 		$group->get('/{id}/events', EventController::class . ':getOrganizationEvents');
 		$group->get('/list', OrganizationController::class . ':getList');
+		$group->put('/{id}', OrganizationController::class . ':update');
 		$group->get('/{id}', OrganizationController::class . ':getById');
 	});
 

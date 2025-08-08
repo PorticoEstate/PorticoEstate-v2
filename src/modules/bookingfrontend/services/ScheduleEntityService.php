@@ -72,11 +72,11 @@ class ScheduleEntityService
             foreach ($this->groupByEntity($rows) as $eventGroup) {
                 $event = new Event($eventGroup[0]);
                 $event->resources = array_map([$this, 'formatResource'], $eventGroup);
-                
+
                 // Add edit/cancel links
                 $eventData = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
                 $this->addEditCancelLinks($eventData, $config, 'event', $application);
-                
+
                 $results[] = $eventData;
             }
 
@@ -127,11 +127,11 @@ class ScheduleEntityService
             foreach ($this->groupByEntity($rows) as $allocationGroup) {
                 $allocation = new Allocation($allocationGroup[0]);
                 $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
-                
+
                 // Add edit/cancel links
                 $allocationData = $allocation->serialize();
                 $this->addEditCancelLinks($allocationData, $config, 'allocation', $application);
-                
+
                 $results[] = $allocationData;
             }
 
@@ -186,11 +186,11 @@ class ScheduleEntityService
             foreach ($this->groupByEntity($rows) as $bookingGroup) {
                 $booking = new Booking($bookingGroup[0]);
                 $booking->resources = array_map([$this, 'formatResource'], $bookingGroup);
-                
+
                 // Add edit/cancel links
                 $bookingData = $booking->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
                 $this->addEditCancelLinks($bookingData, $config, 'booking', $application);
-                
+
                 $results[] = $bookingData;
             }
 
@@ -254,6 +254,126 @@ class ScheduleEntityService
         }
 
         return $schedules;
+    }
+
+    /**
+     * Get weekly schedules for multiple dates for an organization
+     * @param int $organization_id The organization ID
+     * @param array $dates Array of DateTime objects
+     * @param int|null $building_id Optional building filter
+     * @param array|null $group_ids Optional group filter for bookings
+     * @return array Array of schedules keyed by week start date
+     * @throws Exception
+     */
+    public function getOrganizationWeeklySchedules(int $organization_id, array $dates, ?int $building_id = null, ?array $group_ids = null): array
+    {
+        // Verify organization exists first
+        $sql = "SELECT id FROM bb_organization WHERE id = ?";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$organization_id]);
+
+        if (!$stmt->fetch()) {
+            throw new Exception("Organization not found");
+        }
+
+        $schedules = [];
+
+        foreach ($dates as $date) {
+            $weekStart = clone $date;
+            // Ensure we start from Monday
+            if ($weekStart->format('w') != 1) {
+                $weekStart->modify('last monday');
+            }
+            $weekStart->setTime(0, 0, 0);
+
+            // Use the Monday date as the key in our response
+            $key = $weekStart->format('Y-m-d');
+            $schedules[$key] = $this->getOrganizationScheduleForWeek($organization_id, $weekStart, $building_id, $group_ids);
+        }
+
+        return $schedules;
+    }
+
+    /**
+     * Get schedule for a specific organization within date range
+     * @param int $organization_id The organization ID
+     * @param DateTime $date The date to get schedule for (will be converted to weekly range)
+     * @param int|null $building_id Optional building filter
+     * @param array|null $group_ids Optional group filter for bookings
+     * @return array Array of schedule entities (events, allocations, bookings)
+     * @throws Exception
+     */
+    public function getOrganizationSchedule(int $organization_id, DateTime $date, ?int $building_id = null, ?array $group_ids = null): array
+    {
+        return $this->getOrganizationScheduleForWeek($organization_id, $date, $building_id, $group_ids);
+    }
+
+    /**
+     * Get schedule for a specific organization for a specific week
+     * @param int $organization_id The organization ID
+     * @param DateTime $date The date to get schedule for (will be converted to weekly range)
+     * @param int|null $building_id Optional building filter
+     * @param array|null $group_ids Optional group filter for bookings
+     * @return array Array of schedule entities (events, allocations, bookings)
+     * @throws Exception
+     */
+    private function getOrganizationScheduleForWeek(int $organization_id, DateTime $date, ?int $building_id = null, ?array $group_ids = null): array
+    {
+        // Calculate weekly date range (Monday to Monday)
+        $from = clone $date;
+        $from->setTime(0, 0, 0);
+        // Make sure $from is a Monday
+        if ($from->format('w') != 1) {
+            $from->modify('last monday');
+        }
+        $to = clone $from;
+        $to->modify('+7 days');
+
+        // Get resources for the organization
+        $resources = $this->getResourcesForOrganization($organization_id, $building_id);
+        $resource_ids = array_column($resources, 'id');
+
+        if (empty($resource_ids)) {
+            return [];
+        }
+
+        $results = [];
+
+        // Get User context for serialization
+        $userOrgs = $this->bouser->organizations ? array_column($this->bouser->organizations, 'orgnr') : null;
+        $userGroups = $this->bouser->getUserGroups();
+        $userGroupIds = $userGroups ? array_column($userGroups, 'id') : null;
+
+        // Get allocations for this organization
+        $allocations = $this->getAllocationsForOrganization($organization_id, $from, $to);
+		foreach ($this->groupByEntity($allocations) as $allocationGroup) {
+
+            $allocation = new Allocation($allocationGroup[0]);
+            $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
+            $results[] = $allocation->serialize();
+        }
+
+        // Get bookings for this organization's groups
+        if (!empty($group_ids)) {
+            $bookings = $this->getBookingsForOrganization($group_ids, $from, $to);
+
+            foreach ($this->groupByEntity($bookings) as $bookingGroup) {
+                $booking = new Booking($bookingGroup[0]);
+                $booking->resources = array_map([$this, 'formatResource'], $bookingGroup);
+                $results[] = $booking->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
+            }
+        }
+
+        // Get events for this organization
+        $events = $this->getEventsForOrganization($organization_id, $from, $to);
+
+        foreach ($this->groupByEntity($events) as $eventGroup) {
+            $event = new Event($eventGroup[0]);
+            $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+            $results[] = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
+        }
+
+        return $results;
     }
 
     /**
@@ -769,14 +889,14 @@ class ScheduleEntityService
         if (!$this->bouser->is_logged_in()) {
             return;
         }
-        
+
         // Check application access if we have application data
         $hasApplicationAccess = true;
         if ($application) {
             $mockRequest = new ServerRequest('GET', '');
             $hasApplicationAccess = $this->applicationHelper->canModifyApplication($application, $mockRequest);
         }
-        
+
         if (!$hasApplicationAccess) {
             return;
         }
@@ -848,22 +968,199 @@ class ScheduleEntityService
             $otherParams = $params;
             $resourceIds = $otherParams['resource_ids'];
             unset($otherParams['resource_ids']);
-            
+
             // Add non-array parameters
             if (!empty($otherParams)) {
                 $query = http_build_query($otherParams);
             }
-            
+
             // Add resource_ids as array parameters
             foreach ($resourceIds as $resourceId) {
                 $query .= ($query ? '&' : '') . 'resource_ids[]=' . urlencode($resourceId);
             }
-            
+
             return "/bookingfrontend/?{$query}";
         }
-        
+
         $query = http_build_query($params);
         return "/bookingfrontend/?{$query}";
+    }
+
+    /**
+     * Get all resources for an organization, optionally filtered by building
+     * @param int $organization_id The organization ID
+     * @param int|null $building_id Optional building filter
+     * @return array Array of resources
+     * @throws Exception
+     */
+    private function getResourcesForOrganization(int $organization_id, ?int $building_id = null): array
+    {
+        try {
+            $sql = "SELECT DISTINCT r.*, a.name as activity_name, br.building_id
+                    FROM bb_resource r
+                    JOIN bb_building_resource br ON r.id = br.resource_id
+                    LEFT JOIN bb_activity a ON r.activity_id = a.id
+                    WHERE r.active = 1
+                    AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)";
+
+            $params = [];
+
+            if ($building_id !== null) {
+                $sql .= " AND br.building_id = ?";
+                $params[] = $building_id;
+            }
+
+            $sql .= " ORDER BY r.id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching resources for organization {$organization_id}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get allocations for a specific organization
+     * @param int $organization_id The organization ID
+     * @param DateTime $from Start date
+     * @param DateTime $to End date
+     * @return array Array of allocations
+     * @throws Exception
+     */
+    private function getAllocationsForOrganization(int $organization_id, DateTime $from, DateTime $to): array
+    {
+        try {
+            $sql = "SELECT a.*,
+                        o.name as organization_name,
+                        o.shortname as organization_shortname,
+                        r.id as resource_id,
+                        r.name as resource_name,
+                        r.activity_id,
+                        act.name as activity_name,
+                        s.name as season_name,
+                        b.name as building_name
+                    FROM bb_allocation a
+                    JOIN bb_allocation_resource ar ON a.id = ar.allocation_id
+                    JOIN bb_resource r ON ar.resource_id = r.id
+                    JOIN bb_organization o ON a.organization_id = o.id
+                    JOIN bb_season s ON a.season_id = s.id
+                    JOIN bb_building_resource br ON r.id = br.resource_id
+                    JOIN bb_building b ON br.building_id = b.id
+                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    WHERE a.organization_id = :organization_id
+                    AND a.active = 1
+                    AND s.active = 1
+                    AND s.status = 'PUBLISHED'
+                    AND ((a.from_ >= :from AND a.from_ < :to)
+                    OR (a.to_ > :from AND a.to_ <= :to)
+                    OR (a.from_ < :from AND a.to_ > :to))
+                    ORDER BY a.id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':organization_id' => $organization_id,
+                ':from' => $from->format('Y-m-d H:i:s'),
+                ':to' => $to->format('Y-m-d H:i:s')
+            ]);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching allocations for organization {$organization_id}: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get bookings for specific group IDs
+     * @param array $group_ids Array of group IDs
+     * @param DateTime $from Start date
+     * @param DateTime $to End date
+     * @return array Array of bookings
+     * @throws Exception
+     */
+    private function getBookingsForOrganization(array $group_ids, DateTime $from, DateTime $to): array
+    {
+        try {
+            $sql = "SELECT b.*,
+                        g.name as group_name,
+                        g.shortname as group_shortname,
+                        r.id as resource_id,
+                        r.name as resource_name,
+                        r.activity_id,
+                        act.name as activity_name,
+                        s.name as season_name,
+                        building.name as building_name
+                    FROM bb_booking b
+                    JOIN bb_booking_resource br ON b.id = br.booking_id
+                    JOIN bb_resource r ON br.resource_id = r.id
+                    JOIN bb_group g ON b.group_id = g.id
+                    JOIN bb_season s ON b.season_id = s.id
+                    JOIN bb_building_resource br2 ON r.id = br2.resource_id
+                    JOIN bb_building building ON br2.building_id = building.id
+                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    WHERE b.group_id IN (" . implode(',', array_map('intval', $group_ids)) . ")
+                    AND b.active = 1
+                    AND s.active = 1
+                    AND s.status = 'PUBLISHED'
+                    AND ((b.from_ >= :from AND b.from_ < :to)
+                    OR (b.to_ > :from AND b.to_ <= :to)
+                    OR (b.from_ < :from AND b.to_ > :to))
+                    ORDER BY b.id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':from' => $from->format('Y-m-d H:i:s'),
+                ':to' => $to->format('Y-m-d H:i:s')
+            ]);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching bookings for organization groups: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get events for a specific organization
+     * @param int $organization_id The organization ID
+     * @param DateTime $from Start date
+     * @param DateTime $to End date
+     * @return array Array of events
+     * @throws Exception
+     */
+    private function getEventsForOrganization(int $organization_id, DateTime $from, DateTime $to): array
+    {
+        try {
+            $sql = "SELECT e.*,
+                        r.id as resource_id,
+                        r.name as resource_name,
+                        r.activity_id,
+                        act.name as activity_name,
+                        building.name as building_name
+                    FROM bb_event e
+                    JOIN bb_event_resource er ON e.id = er.event_id
+                    JOIN bb_resource r ON er.resource_id = r.id
+                    JOIN bb_building_resource br ON r.id = br.resource_id
+                    JOIN bb_building building ON br.building_id = building.id
+                    LEFT JOIN bb_activity act ON r.activity_id = act.id
+                    WHERE e.customer_organization_id = :organization_id
+                    AND e.active = 1
+                    AND ((e.from_ >= :from AND e.from_ < :to)
+                    OR (e.to_ > :from AND e.to_ <= :to)
+                    OR (e.from_ < :from AND e.to_ > :to))
+                    ORDER BY e.id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':organization_id' => $organization_id,
+                ':from' => $from->format('Y-m-d H:i:s'),
+                ':to' => $to->format('Y-m-d H:i:s')
+            ]);
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching events for organization {$organization_id}: " . $e->getMessage());
+        }
     }
 
 }

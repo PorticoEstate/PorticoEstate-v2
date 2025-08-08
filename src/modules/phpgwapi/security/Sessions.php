@@ -333,6 +333,7 @@ class Sessions
 		}
 
 		$Acl = Acl::getInstance();
+		$Acl->set_account_id($this->_account_id);
 
 		if ($Acl->check('anonymous', 1, 'phpgwapi'))
 		{

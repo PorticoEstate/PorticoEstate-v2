@@ -1,0 +1,9 @@
+@import "../../../styles/util.module";
+@import "../../../styles/typography-vars.module";
+
+.buildingsContent {
+    display: flex;
+    flex-direction: row;
+    gap: 1rem;
+	flex-wrap: wrap;
+}

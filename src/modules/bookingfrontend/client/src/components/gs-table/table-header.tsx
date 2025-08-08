@@ -76,6 +76,7 @@ function TableHeader<T>(props: TableHeaderProps<T>): ReactElement {
                                 className={`${styles.tableHeaderCol} ${
                                     canSort ? styles.clickable : styles.notClickable
                                 }`}
+                                data-column-id={header.column.id}
                                 onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
                             >
                                 {!meta?.hideHeader && (

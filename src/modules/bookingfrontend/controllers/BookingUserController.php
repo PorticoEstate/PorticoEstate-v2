@@ -669,7 +669,7 @@ class BookingUserController
 					'city' => $data['city'] ?? $external_login_info['city'] ?? '',
 					'homepage' => $data['homepage'] ?? ''
 				]);
-				
+
 				// Set the updated session data
 				\App\modules\phpgwapi\services\Cache::session_set($bouser->get_module(), \App\modules\bookingfrontend\helpers\UserHelper::USERARRAY_SESSION_KEY, $session_data);
 			}

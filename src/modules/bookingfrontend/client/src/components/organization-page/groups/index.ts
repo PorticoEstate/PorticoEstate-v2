@@ -1,0 +1,1 @@
+export { default as OrganizationGroupsContent } from './organization-groups-content'

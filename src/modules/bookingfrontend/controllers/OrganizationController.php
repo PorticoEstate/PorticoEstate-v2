@@ -4,8 +4,10 @@ namespace App\modules\bookingfrontend\controllers;
 
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\services\OrganizationService;
+use App\modules\bookingfrontend\models\Document;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Exception;
 
 
 /**
@@ -15,12 +17,13 @@ use Psr\Http\Message\ServerRequestInterface as Request;
  * )
  */
 
-class OrganizationController
+class OrganizationController extends DocumentController
 {
     private $organizationService;
 
     public function __construct()
     {
+        parent::__construct(Document::OWNER_ORGANIZATION);
         $this->organizationService = new OrganizationService();
     }
 
@@ -81,13 +84,10 @@ class OrganizationController
 //                $this->organizationService->addDelegate($id, $this->userHelper->ssn);
 //            }
 
-            $response->getBody()->write(json_encode([
+            return ResponseHelper::sendJSONResponse([
                 'id' => $id,
                 'message' => 'Organization created successfully'
-            ]));
-
-            return $response->withStatus(201)
-                ->withHeader('Content-Type', 'application/json');
+            ], 201);
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -155,8 +155,7 @@ class OrganizationController
                 );
             }
 
-            $response->getBody()->write(json_encode($orgData));
-            return $response->withHeader('Content-Type', 'application/json');
+            return ResponseHelper::sendJSONResponse($orgData);
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -185,10 +184,16 @@ class OrganizationController
      *         @OA\JsonContent(
      *             type="object",
      *             @OA\Property(property="name", type="string"),
+     *             @OA\Property(property="shortname", type="string"),
      *             @OA\Property(property="phone", type="string"),
      *             @OA\Property(property="email", type="string"),
      *             @OA\Property(property="homepage", type="string"),
-     *             @OA\Property(property="description", type="string")
+     *             @OA\Property(property="activity_id", type="integer"),
+     *             @OA\Property(property="show_in_portal", type="boolean"),
+     *             @OA\Property(property="street", type="string"),
+     *             @OA\Property(property="zip_code", type="string"),
+     *             @OA\Property(property="city", type="string"),
+     *             @OA\Property(property="description_json", type="string")
      *         )
      *     ),
      *     @OA\Response(
@@ -224,9 +229,7 @@ class OrganizationController
 
             $this->organizationService->updateOrganization($id, $data);
 
-            return $response->withStatus(200)
-                ->withHeader('Content-Type', 'application/json')
-                ->write(json_encode(['message' => 'Organization updated successfully']));
+            return ResponseHelper::sendJSONResponse(['message' => 'Organization updated successfully']);
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -255,7 +258,11 @@ class OrganizationController
      *         @OA\JsonContent(
      *             type="object",
      *             required={"ssn"},
-     *             @OA\Property(property="ssn", type="string", description="Norwegian social security number")
+     *             @OA\Property(property="ssn", type="string", description="Norwegian social security number"),
+     *             @OA\Property(property="name", type="string", description="Delegate name"),
+     *             @OA\Property(property="email", type="string", description="Delegate email address"),
+     *             @OA\Property(property="phone", type="string", description="Delegate phone number"),
+     *             @OA\Property(property="active", type="boolean", description="Whether delegate is active", default=true)
      *         )
      *     ),
      *     @OA\Response(
@@ -292,7 +299,7 @@ class OrganizationController
                 );
             }
 
-            $this->organizationService->addDelegate($id, $data['ssn']);
+            $this->organizationService->addDelegate($id, $data);
 
             return $response->withStatus(204);
 
@@ -342,12 +349,10 @@ class OrganizationController
         try {
             $organizations = $this->organizationService->getMyOrganizations();
 
-            $response->getBody()->write(json_encode([
+            return ResponseHelper::sendJSONResponse([
                 'results' => $organizations,
                 'total_records' => count($organizations)
-            ]));
-
-            return $response->withHeader('Content-Type', 'application/json');
+            ]);
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -430,8 +435,7 @@ class OrganizationController
                 ]
             ];
 
-            $response->getBody()->write(json_encode($responseData));
-            return $response->withHeader('Content-Type', 'application/json');
+            return ResponseHelper::sendJSONResponse($responseData);
 
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
@@ -440,7 +444,7 @@ class OrganizationController
             );
         }
     }
-    
+
     /**
      * @OA\Get(
      *     path="/bookingfrontend/organizations/{id}",
@@ -468,19 +472,519 @@ class OrganizationController
     {
         try {
             $id = (int)$args['id'];
-            
+
             $organization = $this->organizationService->getOrganization($id);
-            
+
             if (!$organization) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'Organization not found'],
                     404
                 );
             }
-            
-            $response->getBody()->write(json_encode($organization));
-            return $response->withHeader('Content-Type', 'application/json');
-            
+
+            // Evaluate user access to this organization
+            $userHasAccess = $this->organizationService->hasAccess($id);
+
+            // Use the model's serialize function with access context
+            return ResponseHelper::sendJSONResponse($organization->serialize(['user_has_access' => $userHasAccess]));
+//            return ResponseHelper::sendJSONResponse(['user_has_access' => $userHasAccess , 'data' => $organization->serialize(['user_has_access' => $userHasAccess])]);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/organizations/{id}/groups",
+     *     summary="Get groups associated with an organization",
+     *     tags={"Organizations"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of groups in short format",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Group")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Organization not found"
+     *     )
+     * )
+     */
+    public function getGroups(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+
+            // Verify organization exists
+            $organization = $this->organizationService->getOrganization($id);
+            if (!$organization) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Organization not found'],
+                    404
+                );
+            }
+
+            $groups = $this->organizationService->getOrganizationGroups($id);
+
+            return ResponseHelper::sendJSONResponse($groups);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/organizations/{id}/groups",
+     *     summary="Create a new group for an organization",
+     *     tags={"Organizations"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             required={"name"},
+     *             @OA\Property(property="name", type="string", description="Group name"),
+     *             @OA\Property(property="shortname", type="string", description="Group short name (max 11 chars)"),
+     *             @OA\Property(property="description", type="string", description="Group description"),
+     *             @OA\Property(property="parent_id", type="integer", description="Parent group ID"),
+     *             @OA\Property(property="activity_id", type="integer", description="Activity ID"),
+     *             @OA\Property(property="show_in_portal", type="boolean", description="Show in public portal"),
+     *             @OA\Property(
+     *                 property="contacts",
+     *                 type="array",
+     *                 description="Group contacts (max 2)",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="name", type="string"),
+     *                     @OA\Property(property="email", type="string"),
+     *                     @OA\Property(property="phone", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Group created successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="id", type="integer"),
+     *             @OA\Property(property="message", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Not authorized to create groups for this organization"
+     *     )
+     * )
+     */
+    public function createGroup(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $organizationId = (int)$args['id'];
+
+            // Check if user has access to modify this organization
+            if (!$this->organizationService->hasAccess($organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Not authorized to create groups for this organization'],
+                    403
+                );
+            }
+
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
+
+            if (empty($data['name'])) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Group name is required'],
+                    400
+                );
+            }
+
+            $data['organization_id'] = $organizationId;
+            $groupId = $this->organizationService->createGroup($data);
+
+            return ResponseHelper::sendJSONResponse([
+                'id' => $groupId,
+                'message' => 'Group created successfully'
+            ], 201);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/bookingfrontend/organizations/{id}/groups/{group_id}",
+     *     summary="Update a group for an organization",
+     *     tags={"Organizations"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="group_id",
+     *         in="path",
+     *         required=true,
+     *         description="Group ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", description="Group name"),
+     *             @OA\Property(property="shortname", type="string", description="Group short name (max 11 chars)"),
+     *             @OA\Property(property="description", type="string", description="Group description"),
+     *             @OA\Property(property="parent_id", type="integer", description="Parent group ID"),
+     *             @OA\Property(property="activity_id", type="integer", description="Activity ID"),
+     *             @OA\Property(property="show_in_portal", type="boolean", description="Show in public portal"),
+     *             @OA\Property(property="active", type="boolean", description="Group active status (can be toggled to deactivate instead of deleting)"),
+     *             @OA\Property(
+     *                 property="contacts",
+     *                 type="array",
+     *                 description="Group contacts (max 2)",
+     *                 @OA\Items(
+     *                     type="object",
+     *                     @OA\Property(property="id", type="integer", description="Contact ID (for updates)"),
+     *                     @OA\Property(property="name", type="string"),
+     *                     @OA\Property(property="email", type="string"),
+     *                     @OA\Property(property="phone", type="string")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Group updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Not authorized to update groups for this organization"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Group not found"
+     *     )
+     * )
+     */
+    public function updateGroup(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $organizationId = (int)$args['id'];
+            $groupId = (int)$args['group_id'];
+
+            // Check if user has access to modify this organization
+            if (!$this->organizationService->hasAccess($organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Not authorized to update groups for this organization'],
+                    403
+                );
+            }
+
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
+
+            // Verify group belongs to organization
+            if (!$this->organizationService->groupBelongsToOrganization($groupId, $organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Group not found in this organization'],
+                    404
+                );
+            }
+
+            $this->organizationService->updateGroup($groupId, $data);
+
+            return ResponseHelper::sendJSONResponse(['message' => 'Group updated successfully']);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/organizations/{id}/buildings",
+     *     summary="Get buildings used by an organization",
+     *     tags={"Organizations"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of buildings in short format",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/Building")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Organization not found"
+     *     )
+     * )
+     */
+    public function getBuildings(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+
+            // Verify organization exists
+            $organization = $this->organizationService->getOrganization($id);
+            if (!$organization) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Organization not found'],
+                    404
+                );
+            }
+
+            $buildings = $this->organizationService->getOrganizationBuildings($id);
+
+            return ResponseHelper::sendJSONResponse($buildings);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/organizations/{id}/delegates",
+     *     summary="Get delegates for an organization (requires authentication)",
+     *     tags={"Organizations"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of delegates in short format",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(ref="#/components/schemas/OrganizationDelegate")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Not authenticated"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Organization not found"
+     *     )
+     * )
+     */
+    public function getDelegates(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+
+            // Check if user is logged in for delegate information
+            if (!$this->organizationService->hasAccess($id)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Authentication required to view delegates'],
+                    401
+                );
+            }
+
+            // Verify organization exists
+            $organization = $this->organizationService->getOrganization($id);
+            if (!$organization) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Organization not found'],
+                    404
+                );
+            }
+
+            $userHasAccess = $this->organizationService->hasAccess($id);
+            $delegates = $this->organizationService->getOrganizationDelegates($id, $userHasAccess);
+
+            return ResponseHelper::sendJSONResponse($delegates);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Put(
+     *     path="/bookingfrontend/organizations/{id}/delegates/{delegate_id}",
+     *     summary="Update a delegate for an organization",
+     *     tags={"Organizations"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="delegate_id",
+     *         in="path",
+     *         required=true,
+     *         description="Delegate ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", description="Delegate name"),
+     *             @OA\Property(property="email", type="string", description="Delegate email address"),
+     *             @OA\Property(property="phone", type="string", description="Delegate phone number"),
+     *             @OA\Property(property="active", type="boolean", description="Whether delegate is active")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Delegate updated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Not authorized to update delegates for this organization"
+     *     )
+     * )
+     */
+    public function updateDelegate(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $organizationId = (int)$args['id'];
+            $delegateId = (int)$args['delegate_id'];
+
+            if (!$this->organizationService->hasAccess($organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Not authorized to update delegates for this organization'],
+                    403
+                );
+            }
+
+            $data = json_decode($request->getBody()->getContents(), true);
+            if (!$data) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Invalid JSON data'],
+                    400
+                );
+            }
+
+            $this->organizationService->updateDelegate($delegateId, $data);
+
+            return ResponseHelper::sendJSONResponse(['message' => 'Delegate updated successfully']);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/bookingfrontend/organizations/{id}/delegates/{delegate_id}",
+     *     summary="Deactivate a delegate from an organization (soft delete)",
+     *     tags={"Organizations"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="delegate_id",
+     *         in="path",
+     *         required=true,
+     *         description="Delegate ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=204,
+     *         description="Delegate deactivated successfully"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Not authorized to remove delegates from this organization"
+     *     )
+     * )
+     */
+    public function removeDelegate(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $organizationId = (int)$args['id'];
+            $delegateId = (int)$args['delegate_id'];
+
+            if (!$this->organizationService->hasAccess($organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Not authorized to remove delegates from this organization'],
+                    403
+                );
+            }
+
+            $this->organizationService->deleteDelegate($delegateId);
+
+            return $response->withStatus(204);
+
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => $e->getMessage()],

@@ -179,13 +179,51 @@ class UserHelper
 
 	public function get_delegate($ssn)
 	{
+		// Handle both plain and encoded SSNs for backward compatibility
+		$encodedSSN = $this->encodeSSN($ssn);
+
 		$sql = "SELECT o.name, o.organization_number, o.active
                 FROM bb_organization o
                 INNER JOIN bb_delegate d ON o.id = d.organization_id
-                WHERE d.customer_ssn = :ssn";
+                WHERE (d.ssn = :ssn OR d.ssn = :encoded_ssn) AND d.active = 1";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':ssn' => $ssn]);
+		$stmt->execute([
+			':ssn' => $ssn,
+			':encoded_ssn' => $encodedSSN
+		]);
 		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+	}
+
+	public function get_all_delegates($ssn)
+	{
+		// Handle both plain and encoded SSNs for backward compatibility
+		$encodedSSN = $this->encodeSSN($ssn);
+
+		$sql = "SELECT o.id as org_id, o.name as name, o.organization_number as organization_number, d.active as active
+                FROM bb_organization o
+                INNER JOIN bb_delegate d ON o.id = d.organization_id
+                WHERE (d.ssn = :ssn OR d.ssn = :encoded_ssn)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([
+			':ssn' => $ssn,
+			':encoded_ssn' => $encodedSSN
+		]);
+		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+	}
+
+	/**
+	 * Encode SSN using SHA1 hash with base64 encoding (same as old system)
+	 */
+	private function encodeSSN(string $ssn): string
+	{
+		// Check if SSN is already encoded
+		if (preg_match('/^{(.+)}(.+)$/', $ssn)) {
+			return $ssn; // Already encoded
+		}
+
+		// Encode using SHA1 + base64 (same as old system)
+		$hash = sha1($ssn);
+		return '{SHA1}' . base64_encode($hash);
 	}
 
 	protected function get_organizations()
@@ -355,21 +393,33 @@ class UserHelper
 		 */
 		if (!$organization_id && $organization_number)
 		{
-			$orgs = (array)Cache::session_get($this->get_module(), self::ORGARRAY_SESSION_KEY);
+			// Check if user has active delegate access to organization by number
+			if ($this->ssn) {
+				$encodedSSN = $this->encodeSSN($this->ssn);
+				
+				$sql = "SELECT 1 FROM bb_organization o
+						INNER JOIN bb_delegate d ON o.id = d.organization_id
+						WHERE o.organization_number = :org_number 
+						AND (d.ssn = :ssn OR d.ssn = :encoded_ssn)
+						AND d.active = 1";
 
-			$orgs_map = array();
-			foreach ($orgs as $org)
-			{
-				$orgs_map[] = $org['orgnr'];
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([
+					':org_number' => $organization_number,
+					':ssn' => $this->ssn,
+					':encoded_ssn' => $encodedSSN
+				]);
+
+				return (bool)$stmt->fetch();
 			}
-			unset($org);
-			return in_array($organization_number, $orgs_map);
+			return false;
 		}
 
 		$organization_info = $this->get_organization_info($organization_id);
 
 		$customer_ssn = $organization_info['customer_ssn'];
 
+		// Check if user is direct owner of organization
 		if ($organization_id && $customer_ssn)
 		{
 			$external_login_info = $this->validate_ssn_login();
@@ -381,7 +431,26 @@ class UserHelper
 			return false;
 		}
 
-		return $organization_id == $this->org_id;
+		// Check if user has active delegate access to this organization
+		if ($this->ssn) {
+			$encodedSSN = $this->encodeSSN($this->ssn);
+			
+			$sql = "SELECT 1 FROM bb_delegate d
+					WHERE d.organization_id = :org_id 
+					AND (d.ssn = :ssn OR d.ssn = :encoded_ssn)
+					AND d.active = 1";
+
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([
+				':org_id' => $organization_id,
+				':ssn' => $this->ssn,
+				':encoded_ssn' => $encodedSSN
+			]);
+
+			return (bool)$stmt->fetch();
+		}
+
+		return false;
 	}
 
 	private function get_organization_info($organization_id)

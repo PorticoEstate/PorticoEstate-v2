@@ -72,13 +72,13 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 
 				return DateTime.fromISO(earliestDate.from_).toMillis();
 			},
-			header: t('bookingfrontend.from'),
-			cell: info => {
-				const timestamp = info.getValue<number | null>();
-				if (timestamp === null) return null;
-
-				return DateTime.fromMillis(timestamp).toFormat('dd.MM.yyyy HH:mm');
-			},
+			// header: t('bookingfrontend.from'),
+			// cell: info => {
+			// 	const timestamp = info.getValue<number | null>();
+			// 	if (timestamp === null) return null;
+			//
+			// 	return DateTime.fromMillis(timestamp).toFormat('dd.MM.yyyy HH:mm');
+			// },
 		},
 
 		{

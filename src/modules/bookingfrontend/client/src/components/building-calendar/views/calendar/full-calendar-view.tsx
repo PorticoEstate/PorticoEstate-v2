@@ -592,7 +592,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			weekNumbers={true}
 			weekText="Uke "
 			locale={DateTime.local().locale}
-			selectable={true}
+			selectable={!isOrg}
 			height={'auto'}
 			eventMaxStack={4}
 			select={handleDateSelect}

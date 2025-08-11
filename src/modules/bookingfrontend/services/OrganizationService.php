@@ -167,7 +167,7 @@ class OrganizationService
         $email = $data['email'] ?? '';
         $phone = $data['phone'] ?? '';
         $active = $data['active'] ?? 1;
-        
+
         // Validate SSN format before encoding (same as old system)
         if (!preg_match('/^{(.+)}(.+)$/', $ssn)) {
             // Raw SSN - validate it
@@ -178,10 +178,10 @@ class OrganizationService
                 throw new Exception($e->getMessage());
             }
         }
-        
+
         // Encode SSN using the same method as the old system
         $ssn = $this->encodeSSN($ssn);
-        
+
         // Check if delegate already exists (active)
         $sql = "SELECT 1 FROM bb_delegate
                 WHERE organization_id = :organization_id
@@ -354,7 +354,7 @@ class OrganizationService
         // First add organizations where user has active delegate access
         if ($this->userHelper->ssn) {
             $encodedSSN = $this->encodeSSN($this->userHelper->ssn);
-            
+
             $sql = "SELECT o.*, true as is_delegate
                     FROM bb_organization o
                     INNER JOIN bb_delegate d ON o.id = d.organization_id
@@ -434,9 +434,9 @@ class OrganizationService
         // Check if user has delegate access to this organization (must be active delegate)
         if ($this->userHelper->ssn) {
             $encodedSSN = $this->encodeSSN($this->userHelper->ssn);
-            
+
             $sql = "SELECT 1 FROM bb_delegate d
-                    WHERE d.organization_id = :org_id 
+                    WHERE d.organization_id = :org_id
                     AND (d.ssn = :ssn OR d.ssn = :encoded_ssn)
                     AND d.active = 1";
 
@@ -641,11 +641,11 @@ class OrganizationService
         try {
             // Check if user has access to this organization (delegate or owner)
             $userHasAccess = $this->hasAccess($organizationId);
-            
+
             // If user has access, show all groups (including inactive)
             // If no access, show only active groups
             $activeFilter = $userHasAccess ? '' : 'AND g.active = 1';
-            
+
             $sql = "SELECT g.*
                     FROM bb_group g
                     WHERE g.organization_id = :organization_id
@@ -661,7 +661,7 @@ class OrganizationService
             $groups = [];
             foreach ($results as $result) {
                 $group = new \App\modules\bookingfrontend\models\Group($result);
-                
+
                 // Fetch and populate contacts for this group
                 $contactsData = $this->getGroupContacts($result['id']);
                 $contacts = [];
@@ -669,7 +669,7 @@ class OrganizationService
                     $contacts[] = new \App\modules\bookingfrontend\models\GroupContact($contactData);
                 }
                 $group->contacts = $contacts;
-                
+
                 // Serialize group with contacts included
                 $groups[] = $group->serialize(['short' => true]);
             }
@@ -694,11 +694,11 @@ class OrganizationService
         try {
             // Check if user has access to this organization (delegate or owner)
             $userHasAccess = $this->hasAccess($organizationId);
-            
+
             // If user has access, show group even if inactive
             // If no access, only show active groups
             $activeFilter = $userHasAccess ? '' : 'AND g.active = 1';
-            
+
             $sql = "SELECT g.*
                     FROM bb_group g
                     WHERE g.organization_id = :organization_id
@@ -719,7 +719,7 @@ class OrganizationService
 
             // Convert to Group model and include contacts
             $group = new \App\modules\bookingfrontend\models\Group($result);
-            
+
             // Fetch and populate contacts for this group
             $contactsData = $this->getGroupContacts($result['id']);
             $contacts = [];
@@ -727,9 +727,9 @@ class OrganizationService
                 $contacts[] = new \App\modules\bookingfrontend\models\GroupContact($contactData);
             }
             $group->contacts = $contacts;
-            
+
             // Return group in short format with contacts included
-            return $group->serialize(['short' => true]);
+            return $group->serialize();
 
         } catch (Exception $e) {
             throw new Exception("Error fetching organization group: " . $e->getMessage());
@@ -799,13 +799,13 @@ class OrganizationService
             // Convert to OrganizationDelegate models and return in short format
             $delegates = [];
             $currentUserSSN = $this->userHelper->is_logged_in() ? $this->userHelper->ssn : null;
-            
+
             foreach ($results as $result) {
                 $delegate = new \App\modules\bookingfrontend\models\OrganizationDelegate($result);
-                
+
                 // Set is_self flag
                 $delegate->is_self = $currentUserSSN && $this->ssnMatches($result['ssn'], $currentUserSSN);
-                
+
                 $delegates[] = $delegate->serialize(['short' => true, 'user_has_access' => $userHasAccess]);
             }
 
@@ -832,29 +832,29 @@ class OrganizationService
             'phone' => true,
             'active' => true
         ];
-        
+
         // Filter out any fields that aren't allowed to be updated
         $updateData = array_intersect_key($data, $allowedFields);
         if (empty($updateData)) {
             throw new Exception('No valid fields to update');
         }
-        
+
         // Build update query dynamically
         $setClauses = [];
         $params = [':id' => $delegateId];
-        
+
         foreach ($updateData as $field => $value) {
             $setClauses[] = "{$field} = :{$field}";
             $params[":{$field}"] = $value;
         }
-        
+
         $sql = "UPDATE bb_delegate
                 SET " . implode(', ', $setClauses) . "
                 WHERE id = :id";
-        
+
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        
+
         if ($stmt->rowCount() === 0) {
             throw new Exception('Delegate not found or no changes made');
         }
@@ -874,7 +874,7 @@ class OrganizationService
             $stmt = $this->db->prepare($sql);
             $stmt->execute([':id' => $delegateId]);
             $delegate = $stmt->fetch();
-            
+
             if ($delegate && $this->ssnMatches($delegate['ssn'], $this->userHelper->ssn)) {
                 throw new Exception('You cannot remove yourself as a delegate');
             }
@@ -901,12 +901,12 @@ class OrganizationService
         if (preg_match('/^{(.+)}(.+)$/', $ssn)) {
             return $ssn; // Already encoded
         }
-        
+
         // Encode using SHA1 + base64 (same as old system)
         $hash = sha1($ssn);
         return '{SHA1}' . base64_encode($hash);
     }
-    
+
     /**
      * Decode an encoded SSN back to plain text (NOTE: This is not possible with SHA1 hash)
      * This method is for reference only - SHA1 is a one-way hash
@@ -920,7 +920,7 @@ class OrganizationService
         // This method exists for documentation purposes
         return null;
     }
-    
+
     /**
      * Check if two SSNs match (handles both encoded and plain text)
      *
@@ -934,11 +934,11 @@ class OrganizationService
         if (preg_match('/^{(.+)}(.+)$/', $ssn1) && preg_match('/^{(.+)}(.+)$/', $ssn2)) {
             return $ssn1 === $ssn2;
         }
-        
+
         // If one is encoded and one is plain, encode the plain one and compare
         $encoded1 = $this->encodeSSN($ssn1);
         $encoded2 = $this->encodeSSN($ssn2);
-        
+
         return $encoded1 === $encoded2;
     }
 
@@ -1132,10 +1132,10 @@ class OrganizationService
                 FROM bb_group_contact
                 WHERE group_id = :group_id
                 ORDER BY id";
-        
+
         $stmt = $this->db->prepare($sql);
         $stmt->execute([':group_id' => $groupId]);
-        
+
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -1166,7 +1166,7 @@ class OrganizationService
         // Check for circular reference by traversing up the hierarchy
         $currentParentId = $parent['parent_id'];
         $visited = [$parentId];
-        
+
         if ($excludeGroupId) {
             $visited[] = $excludeGroupId;
         }
@@ -1177,7 +1177,7 @@ class OrganizationService
             }
 
             $visited[] = $currentParentId;
-            
+
             $sql = "SELECT parent_id FROM bb_group WHERE id = :id AND organization_id = :org_id";
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
@@ -1212,7 +1212,7 @@ class OrganizationService
 
             $sql = "INSERT INTO bb_group_contact (group_id, name, email, phone)
                     VALUES (:group_id, :name, :email, :phone)";
-            
+
             $stmt = $this->db->prepare($sql);
             $stmt->execute([
                 ':group_id' => $groupId,
@@ -1247,10 +1247,10 @@ class OrganizationService
 
             if (!empty($contact['id']) && in_array($contact['id'], $existingIds)) {
                 // Update existing contact
-                $sql = "UPDATE bb_group_contact 
+                $sql = "UPDATE bb_group_contact
                         SET name = :name, email = :email, phone = :phone
                         WHERE id = :id AND group_id = :group_id";
-                
+
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([
                     ':id' => $contact['id'],
@@ -1265,7 +1265,7 @@ class OrganizationService
                 // Create new contact
                 $sql = "INSERT INTO bb_group_contact (group_id, name, email, phone)
                         VALUES (:group_id, :name, :email, :phone)";
-                
+
                 $stmt = $this->db->prepare($sql);
                 $stmt->execute([
                     ':group_id' => $groupId,

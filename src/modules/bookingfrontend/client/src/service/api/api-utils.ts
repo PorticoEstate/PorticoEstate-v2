@@ -12,7 +12,14 @@ import {getQueryClient} from "@/service/query-client";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {IAgeGroup, IAudience, Season, IBuilding} from "@/service/types/Building";
-import {BrregOrganization, IOrganization, IShortOrganization, IShortOrganizationGroup, IShortOrganizationDelegate} from "@/service/types/api/organization.types";
+import {
+	BrregOrganization,
+	IOrganization,
+	IShortOrganization,
+	IShortOrganizationGroup,
+	IShortOrganizationDelegate,
+	IOrganizationGroup
+} from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
 import {ISearchDataOptimized, ISearchDataTown, ISearchOrganization} from "@/service/types/api/search.types";
 import {IArticle} from "@/service/types/api/order-articles.types";
@@ -211,7 +218,7 @@ export async function fetchOrganizationGroups(id: string | number): Promise<ISho
     return result;
 }
 
-export async function fetchOrganizationGroup(organizationId: string | number, groupId: string | number): Promise<IShortOrganizationGroup> {
+export async function fetchOrganizationGroup(organizationId: string | number, groupId: string | number): Promise<IOrganizationGroup> {
     const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'groups', groupId]);
     const response = await fetch(url);
     const result = await response.json();
@@ -228,15 +235,15 @@ export async function fetchOrganizationBuildings(id: string | number): Promise<I
 export async function fetchOrganizationDelegates(id: string | number): Promise<IShortOrganizationDelegate[] | undefined> {
     const url = phpGWLink(['bookingfrontend', 'organizations', id, 'delegates']);
     const response = await fetch(url);
-    
+
     if (response.status === 401) {
         return undefined;
     }
-    
+
     if (!response.ok) {
         throw new Error(`Failed to fetch organization delegates: ${response.status}`);
     }
-    
+
     const result = await response.json();
     return result;
 }
@@ -250,17 +257,17 @@ export async function addOrganizationDelegate(id: string | number, data: {ssn: s
         },
         body: JSON.stringify(data),
     });
-    
+
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to add delegate');
     }
-    
+
     // 204 No Content response doesn't have a body
     if (response.status === 204) {
         return {message: 'Delegate added successfully'};
     }
-    
+
     const result = await response.json();
     return result;
 }
@@ -274,12 +281,12 @@ export async function updateOrganizationDelegate(organizationId: string | number
         },
         body: JSON.stringify(data),
     });
-    
+
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update delegate');
     }
-    
+
     const result = await response.json();
     return result;
 }
@@ -289,12 +296,12 @@ export async function deleteOrganizationDelegate(organizationId: string | number
     const response = await fetch(url, {
         method: 'DELETE',
     });
-    
+
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to delete delegate');
     }
-    
+
     // 204 No Content response doesn't have a body
     return;
 }
@@ -322,12 +329,12 @@ export async function createOrganizationGroup(organizationId: string | number, d
         },
         body: JSON.stringify(data),
     });
-    
+
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to create group');
     }
-    
+
     const result = await response.json();
     return result;
 }
@@ -355,12 +362,12 @@ export async function updateOrganizationGroup(organizationId: string | number, g
         },
         body: JSON.stringify(data),
     });
-    
+
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to update group');
     }
-    
+
     const result = await response.json();
     return result;
 }
@@ -374,12 +381,12 @@ export async function toggleOrganizationGroupActive(organizationId: string | num
         },
         body: JSON.stringify({ active }),
     });
-    
+
     if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to toggle group status');
     }
-    
+
     const result = await response.json();
     return result;
 }

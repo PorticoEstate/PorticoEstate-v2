@@ -1,10 +1,10 @@
 import {useQuery, UseQueryResult, useMutation, useQueryClient, UseMutationResult} from "@tanstack/react-query";
 import {
-    fetchMyOrganizations, 
-    fetchOrganization, 
+    fetchMyOrganizations,
+    fetchOrganization,
     fetchOrganizationGroups,
     fetchOrganizationGroup,
-    fetchOrganizationBuildings, 
+    fetchOrganizationBuildings,
     fetchOrganizationDelegates,
     createOrganizationGroup,
     updateOrganizationGroup,
@@ -13,7 +13,12 @@ import {
     updateOrganizationDelegate,
     deleteOrganizationDelegate
 } from "@/service/api/api-utils";
-import {IOrganization, IShortOrganizationGroup, IShortOrganizationDelegate} from "@/service/types/api/organization.types";
+import {
+	IOrganization,
+	IShortOrganizationGroup,
+	IShortOrganizationDelegate,
+	IOrganizationGroup
+} from "@/service/types/api/organization.types";
 import {useBookingUser} from "./api-hooks";
 import {IBuilding} from "@/service/types/Building";
 
@@ -56,7 +61,7 @@ export function useOrganizationGroups(id: string | number): UseQueryResult<IShor
     );
 }
 
-export function useOrganizationGroup(organizationId: string | number, groupId: string | number): UseQueryResult<IShortOrganizationGroup> {
+export function useOrganizationGroup(organizationId: string | number, groupId: string | number): UseQueryResult<IOrganizationGroup> {
     const { data: user } = useBookingUser();
 
     return useQuery(

@@ -440,6 +440,54 @@ class EventController
 
 
 	/**
+	 *  @OA\Get(
+	 *     path="/booking/events/{event_id}",
+	 *     summary="Get event details",
+	 *     description="Retrieves details of a specific event.",
+	 *     tags={"Events"},
+	 *     @OA\Parameter(
+	 *         name="event_id",
+	 *         in="path",
+	 *         description="ID of the event to retrieve",
+	 *         required=true,
+	 *         @OA\Schema(type="integer", minimum=1)
+	 *     ),
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Event details retrieved successfully",
+	 *         @OA\JsonContent(ref="#/components/schemas/Event")
+	 *     ),
+	 *     @OA\Response(
+	 *         response=404,
+	 *         description="Event not found",
+	 *         @OA\JsonContent(
+	 *             @OA\Property(property="error", type="string", example="Event not found")
+	 *         )
+	 *     )
+	 * )
+	 */
+	public function getEvent(Request $request, Response $response, array $args): Response
+	{
+		// Check permissions
+		if (!$this->acl->check('.application', Acl::READ, 'booking'))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+		$eventId = (int)$args['event_id'];
+		$event = Event::find($eventId);
+
+		if (!$event)
+		{
+			$response->getBody()->write(json_encode(['error' => 'Event not found']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+		}
+
+		$response->getBody()->write(json_encode($event->serialize()));
+		return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+	}
+
+	/**
 	 * @OA\Put(
 	 *     path="/booking/events/{event_id}",
 	 *     summary="Update an existing event",
@@ -1274,62 +1322,7 @@ class EventController
 		}
 	}
 
-	/**
-	 * @OA\Get(
-	 *     path="/booking/events/{id}/building-info",
-	 *     summary="Get building information for an event",
-	 *     description="Retrieves building information associated with the event's resources",
-	 *     tags={"Events", "Relationships"},
-	 *     @OA\Parameter(
-	 *         name="id",
-	 *         in="path",
-	 *         description="Event ID",
-	 *         required=true,
-	 *         @OA\Schema(type="integer", minimum=1)
-	 *     ),
-	 *     @OA\Response(
-	 *         response=200,
-	 *         description="Building information retrieved successfully",
-	 *         @OA\JsonContent(
-	 *             @OA\Property(property="event_id", type="integer", example=123),
-	 *             @OA\Property(property="building_info", type="object",
-	 *                 @OA\Property(property="building_id", type="integer", example=5),
-	 *                 @OA\Property(property="building_name", type="string", example="Main Building")
-	 *             )
-	 *         )
-	 *     ),
-	 *     @OA\Response(response=404, description="Event not found"),
-	 *     @OA\Response(response=500, description="Internal server error")
-	 * )
-	 */
-	public function getEventBuildingInfo(Request $request, Response $response, array $args): Response
-	{
-		try
-		{
-			$eventId = (int) $args['id'];
-			$event = Event::find($eventId);
 
-			if (!$event)
-			{
-				$response->getBody()->write(json_encode(['error' => 'Event not found']));
-				return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
-			}
-
-			$buildingInfo = $event->getBuildingInfo();
-			$responseData = [
-				'event_id' => $eventId,
-				'building_info' => $buildingInfo
-			];
-
-			$response->getBody()->write(json_encode($responseData));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-		}
-		catch (Exception $e)
-		{
-			$response->getBody()->write(json_encode(['error' => 'Internal server error: ' . $e->getMessage()]));
-			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-		}
-	}
 
 	/**
 	 * @OA\Put(
@@ -1348,7 +1341,13 @@ class EventController
 	 *         required=true,
 	 *         @OA\JsonContent(
 	 *             required={"audience_ids"},
-	 *             @OA\Property(property="audience_ids", type="array", @OA\Items(type="integer"), description="Array of audience IDs", example=[1, 2, 3])
+	 *             @OA\Property(
+	 *                 property="audience_ids", 
+	 *                 type="array", 
+	 *                 @OA\Items(type="integer"), 
+	 *                 description="Array of audience IDs",
+	 *                 example={1, 2, 3}
+	 *             )
 	 *         )
 	 *     ),
 	 *     @OA\Response(

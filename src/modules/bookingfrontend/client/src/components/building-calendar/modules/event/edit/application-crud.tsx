@@ -283,7 +283,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			return { start: startTime, end: endTime };
 		};
 
-		if (!existingApplication?.dates || !props.selectedTempApplication?.id || props.date_id === undefined) {
+		if (!existingApplication?.dates || (props.selectedTempApplication && !props.selectedTempApplication?.id) || (props.selectedTempApplication === undefined && props.date_id === undefined)) {
 			const defaultTimes = createDefaultTimes();
 			return {
 				start: props.selectedTempApplication?.start || defaultTimes.start,

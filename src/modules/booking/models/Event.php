@@ -18,7 +18,7 @@ use Exception;
  */
 class Event extends BaseModel
 {
-	use SerializableTrait;
+	// Inherit serialization from BaseModel (which already includes SerializableTrait with relationship support)
 
 	// Override BaseModel properties to make them accessible
 	protected array $fieldMap = [];
@@ -899,16 +899,8 @@ class Event extends BaseModel
 	 */
 	public static function find(int $id): ?static
 	{
-		$event = parent::find($id);
-		if ($event)
-		{
-			// Load associated resources
-			$resourceSql = "SELECT resource_id FROM bb_event_resource WHERE event_id = :event_id";
-			$resourceStmt = $event->db->prepare($resourceSql);
-			$resourceStmt->execute([':event_id' => $id]);
-			$event->resources = $resourceStmt->fetchAll(PDO::FETCH_COLUMN);
-		}
-		return $event;
+	// Defer to BaseModel which eagerly loads and caches relationships
+	return parent::find($id);
 	}
 
 	/**

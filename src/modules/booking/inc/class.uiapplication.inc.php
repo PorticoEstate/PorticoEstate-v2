@@ -86,7 +86,7 @@ class booking_uiapplication extends booking_uicommon
 
 		// Enable combine_applications for test environments
 		$serverSettings = ServerSettings::getInstance();
-		if ($serverSettings->hostname === 'test.aktiv-kommune.no' || $serverSettings->hostname === 'pe-api.test') {
+		if ($serverSettings->is_test_server) {
 			$this->combine_applications = true;
 		}
 

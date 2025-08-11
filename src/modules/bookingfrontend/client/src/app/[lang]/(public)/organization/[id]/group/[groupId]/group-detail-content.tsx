@@ -14,7 +14,7 @@ import styles from './group-detail-content.module.scss'
 
 interface GroupDetailContentProps {
 	organization: IOrganization
-	group: IShortOrganizationGroup
+	group: IOrganizationGroup;
 	organizationId: string | number
 }
 

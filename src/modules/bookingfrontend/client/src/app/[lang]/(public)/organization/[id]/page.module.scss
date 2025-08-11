@@ -13,7 +13,7 @@
     "groups"
     "delegates"
     "calendar"
-    "photos";
+	"photos";
 
 	// Desktop layout: Description above contact
 	@include tablet {
@@ -21,11 +21,11 @@
       "header"
       "description"
       "contact"
+      "photos"
       "buildings"
       "groups"
       "delegates"
-      "calendar"
-      "photos";
+      "calendar";
 	}
 }
 

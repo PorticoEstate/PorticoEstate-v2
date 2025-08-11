@@ -4,8 +4,9 @@
 	display: grid;
 	grid-template-columns: auto 1fr;
 	grid-template-areas: 'avatar name' 'avatar info';
-	gap: 0 1rem;
+	//gap: 0 1rem;
 	img {
+		margin-right: 1rem;
 		grid-area: avatar;
 		align-self: center;
 	}

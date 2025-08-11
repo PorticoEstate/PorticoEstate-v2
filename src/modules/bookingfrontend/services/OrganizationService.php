@@ -682,6 +682,61 @@ class OrganizationService
     }
 
     /**
+     * Get a specific group from an organization
+     *
+     * @param int $organizationId Organization ID
+     * @param int $groupId Group ID
+     * @return array|null Group data in short format or null if not found
+     * @throws Exception If database error occurs
+     */
+    public function getOrganizationGroup(int $organizationId, int $groupId): ?array
+    {
+        try {
+            // Check if user has access to this organization (delegate or owner)
+            $userHasAccess = $this->hasAccess($organizationId);
+            
+            // If user has access, show group even if inactive
+            // If no access, only show active groups
+            $activeFilter = $userHasAccess ? '' : 'AND g.active = 1';
+            
+            $sql = "SELECT g.*
+                    FROM bb_group g
+                    WHERE g.organization_id = :organization_id
+                    AND g.id = :group_id
+                    {$activeFilter}";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':organization_id' => $organizationId,
+                ':group_id' => $groupId
+            ]);
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$result) {
+                return null;
+            }
+
+            // Convert to Group model and include contacts
+            $group = new \App\modules\bookingfrontend\models\Group($result);
+            
+            // Fetch and populate contacts for this group
+            $contactsData = $this->getGroupContacts($result['id']);
+            $contacts = [];
+            foreach ($contactsData as $contactData) {
+                $contacts[] = new \App\modules\bookingfrontend\models\GroupContact($contactData);
+            }
+            $group->contacts = $contacts;
+            
+            // Return group in short format with contacts included
+            return $group->serialize(['short' => true]);
+
+        } catch (Exception $e) {
+            throw new Exception("Error fetching organization group: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Get buildings used by an organization (within last 300 days)
      *
      * @param int $organizationId Organization ID

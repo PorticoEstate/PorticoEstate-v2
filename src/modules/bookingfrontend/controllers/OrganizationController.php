@@ -550,6 +550,70 @@ class OrganizationController extends DocumentController
     }
 
     /**
+     * @OA\Get(
+     *     path="/bookingfrontend/organizations/{id}/groups/{group_id}",
+     *     summary="Get a specific group by ID from an organization",
+     *     tags={"Organizations"},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="group_id",
+     *         in="path",
+     *         required=true,
+     *         description="Group ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Group details",
+     *         @OA\JsonContent(ref="#/components/schemas/Group")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Organization or group not found"
+     *     )
+     * )
+     */
+    public function getGroup(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $id = (int)$args['id'];
+            $groupId = (int)$args['group_id'];
+
+            // Verify organization exists
+            $organization = $this->organizationService->getOrganization($id);
+            if (!$organization) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Organization not found'],
+                    404
+                );
+            }
+
+            // Verify group belongs to organization and get the group
+            $group = $this->organizationService->getOrganizationGroup($id, $groupId);
+            if (!$group) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Group not found in this organization'],
+                    404
+                );
+            }
+
+            return ResponseHelper::sendJSONResponse($group);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
      * @OA\Post(
      *     path="/bookingfrontend/organizations/{id}/groups",
      *     summary="Create a new group for an organization",

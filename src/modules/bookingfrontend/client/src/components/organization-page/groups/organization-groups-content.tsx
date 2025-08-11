@@ -1,16 +1,17 @@
 'use client'
-import {useOrganizationGroups, useCreateOrganizationGroup, useUpdateOrganizationGroup, useToggleOrganizationGroupActive} from "@/service/hooks/organization"
+import {useOrganizationGroups, useCreateOrganizationGroup, useToggleOrganizationGroupActive} from "@/service/hooks/organization"
+import Link from 'next/link'
 import {useBookingUser} from "@/service/hooks/api-hooks"
 import GSAccordion from "@/components/gs-accordion/g-s-accordion"
-import {IShortOrganizationGroup, IOrganizationGroup} from "@/service/types/api/organization.types"
+import {IShortOrganizationGroup} from "@/service/types/api/organization.types"
 import {PlusIcon, PencilIcon, TrashIcon, ArrowUndoIcon} from "@navikt/aksel-icons"
 import {GSTable} from "@/components/gs-table"
 import {ColumnDef} from "@/components/gs-table/table.types"
 import {Button, Checkbox} from "@digdir/designsystemet-react"
 import {useState, useMemo} from "react"
-import {useQueryClient} from "@tanstack/react-query"
 import MobileDialog from "@/components/dialog/mobile-dialog"
-import GroupForm, {GroupFormData, GroupEditFormData} from './group-form'
+import GroupForm, {GroupFormData} from './group-form'
+import EditGroupModal from './edit-group-modal'
 import styles from './organization-groups-content.module.scss'
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
@@ -24,7 +25,6 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 	const {data: user} = useBookingUser()
 	const {data: groups, isLoading, error, refetch} = useOrganizationGroups(organizationId)
 	const t = useTrans()
-	const queryClient = useQueryClient()
 
 	const [showAddForm, setShowAddForm] = useState(false)
 	const [editingGroup, setEditingGroup] = useState<IShortOrganizationGroup | null>(null)
@@ -44,7 +44,6 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 
 	// Mutation hooks
 	const createGroupMutation = useCreateOrganizationGroup(organizationId)
-	const updateGroupMutation = useUpdateOrganizationGroup(organizationId)
 	const toggleGroupActiveMutation = useToggleOrganizationGroupActive(organizationId)
 
 	// CRUD handlers
@@ -61,22 +60,6 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 		}
 	}
 
-	const handleUpdateGroup = async (data: GroupEditFormData) => {
-		if (!editingGroup) return
-		setIsSubmitting(true)
-		setFormError(null)
-		try {
-			await updateGroupMutation.mutateAsync({
-				groupId: editingGroup.id,
-				data
-			})
-			setEditingGroup(null)
-		} catch (error) {
-			setFormError(error instanceof Error ? error.message : 'Failed to update group')
-		} finally {
-			setIsSubmitting(false)
-		}
-	}
 
 	const handleToggleGroupActive = async (groupId: number, groupName: string, currentActive: boolean) => {
 		const action = currentActive ? 'deactivate' : 'activate'
@@ -112,7 +95,12 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 				const group = info.row.original
 				return (
 					<div>
-						<span className={styles.groupTitle}>{group.name}</span>
+						<Link 
+							href={`/organization/${organizationId}/group/${group.id}`} 
+							className={styles.groupTitle}
+						>
+							{group.name}
+						</Link>
 						{group.shortname && (
 							<div className={styles.groupShortname}>{group.shortname}</div>
 						)}
@@ -240,7 +228,12 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 						<div className={styles.readOnlyGroups}>
 							{activeGroups.map(group => (
 								<div key={group.id} className={styles.groupItem}>
-									<span className={styles.groupName}>{group.name}</span>
+									<Link 
+										href={`/organization/${organizationId}/group/${group.id}`} 
+										className={styles.groupName}
+									>
+										{group.name}
+									</Link>
 									{group.shortname && (
 										<span className={styles.groupShortname}>({group.shortname})</span>
 									)}
@@ -333,42 +326,12 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 				</MobileDialog>
 
 				{editingGroup && (
-					<MobileDialog
-						dialogId={'edit-group-dialog'}
-						open={!!editingGroup}
+					<EditGroupModal
+						group={editingGroup}
+						organizationId={organizationId}
+						isOpen={!!editingGroup}
 						onClose={() => setEditingGroup(null)}
-						title={t('bookingfrontend.edit_group')}
-						footer={(attemptClose) => (
-							<div className={styles.formActions}>
-								<Button
-									type="submit"
-									form="edit-group-form"
-									disabled={isSubmitting}
-								>
-									{isSubmitting ? t('common.saving') : t('common.save')}
-								</Button>
-								<Button
-									type="button"
-									variant="tertiary"
-									onClick={attemptClose}
-									disabled={isSubmitting}
-								>
-									{t('common.cancel')}
-								</Button>
-							</div>
-						)}
-					>
-						<GroupForm
-							group={editingGroup as IOrganizationGroup}
-							organizationId={organizationId}
-							onSubmit={(data) => handleUpdateGroup(data as GroupEditFormData)}
-							onCancel={() => setEditingGroup(null)}
-							isSubmitting={isSubmitting}
-							hideActions={true}
-							formId="edit-group-form"
-							isEdit={true}
-						/>
-					</MobileDialog>
+					/>
 				)}
 			</GSAccordion.Content>
 		</GSAccordion>

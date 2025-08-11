@@ -211,6 +211,13 @@ export async function fetchOrganizationGroups(id: string | number): Promise<ISho
     return result;
 }
 
+export async function fetchOrganizationGroup(organizationId: string | number, groupId: string | number): Promise<IShortOrganizationGroup> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'groups', groupId]);
+    const response = await fetch(url);
+    const result = await response.json();
+    return result;
+}
+
 export async function fetchOrganizationBuildings(id: string | number): Promise<IBuilding[]> {
     const url = phpGWLink(['bookingfrontend', 'organizations', id, 'buildings']);
     const response = await fetch(url);

@@ -2,7 +2,8 @@ import {useQuery, UseQueryResult, useMutation, useQueryClient, UseMutationResult
 import {
     fetchMyOrganizations, 
     fetchOrganization, 
-    fetchOrganizationGroups, 
+    fetchOrganizationGroups,
+    fetchOrganizationGroup,
     fetchOrganizationBuildings, 
     fetchOrganizationDelegates,
     createOrganizationGroup,
@@ -51,6 +52,20 @@ export function useOrganizationGroups(id: string | number): UseQueryResult<IShor
             retry: 2,
             refetchOnWindowFocus: false,
             enabled: !!id, // Only run query if id exists
+        }
+    );
+}
+
+export function useOrganizationGroup(organizationId: string | number, groupId: string | number): UseQueryResult<IShortOrganizationGroup> {
+    const { data: user } = useBookingUser();
+
+    return useQuery(
+        {
+            queryKey: ['organizationGroup', organizationId, groupId, user?.id],
+            queryFn: () => fetchOrganizationGroup(organizationId, groupId),
+            retry: 2,
+            refetchOnWindowFocus: false,
+            enabled: !!(organizationId && groupId), // Only run query if both IDs exist
         }
     );
 }

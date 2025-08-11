@@ -107,7 +107,7 @@ const OrganizationEditForm: FC<OrganizationEditFormProps> = ({
 					<div className={styles.fieldGrid}>
 						{/* Organization Number - READ ONLY */}
 						<Field>
-							<Label htmlFor="organization_number" id="organization_number-label">{t('bookingfrontend.organization_number')}</Label>
+							<Label htmlFor="organization_number" id="organization_number-label">{t('booking.organization_number')}</Label>
 							<Textfield
 								id="organization_number"
 								aria-labelledby="organization_number-label"
@@ -219,7 +219,7 @@ const OrganizationEditForm: FC<OrganizationEditFormProps> = ({
 
 						{/* Postal Code */}
 						<Field>
-							<Label htmlFor="zip_code" id="zip_code-label">{t('bookingfrontend.postal_code')}</Label>
+							<Label htmlFor="zip_code" id="zip_code-label">{t('bookingfrontend.zip code')}</Label>
 							<Textfield
 								{...register('zip_code')}
 								id="zip_code"
@@ -233,7 +233,7 @@ const OrganizationEditForm: FC<OrganizationEditFormProps> = ({
 
 						{/* Postal Area (City) */}
 						<Field>
-							<Label htmlFor="city" id="city-label">{t('bookingfrontend.postal_area')}</Label>
+							<Label htmlFor="city" id="city-label">{t('bookingfrontend.postal city')}</Label>
 							<Textfield
 								{...register('city')}
 								id="city"

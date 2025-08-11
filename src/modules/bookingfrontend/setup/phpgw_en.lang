@@ -816,8 +816,8 @@ add_contact	bookingfrontend	en	Add contact
 show_in_portal	bookingfrontend	en	Show in portal
 deactivate_group	bookingfrontend	en	Deactivate group
 activate_group	bookingfrontend	en	Activate group
-confirm_deactivate_group	bookingfrontend	en	Are you sure you want to deactivate the group {name}?
-confirm_activate_group	bookingfrontend	en	Are you sure you want to activate the group {name}?
+confirm_deactivate_group	bookingfrontend	en	Are you sure you want to deactivate the group {{name}}?
+confirm_activate_group	bookingfrontend	en	Are you sure you want to activate the group {{name}}?
 fill_from_delegate	bookingfrontend	en	Fill from delegate
 select_delegate	bookingfrontend	en	Select delegate...
 show_inactive	bookingfrontend	en	Show inactive

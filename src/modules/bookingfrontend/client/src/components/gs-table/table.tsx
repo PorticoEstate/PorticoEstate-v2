@@ -481,7 +481,7 @@ function Table<T>({
 				) : data.length === 0 && empty ? (
 					empty
 				) : (
-					table.getRowModel().rows.map(row => (
+					(enablePagination ? table.getRowModel() : table.getFilteredRowModel()).rows.map(row => (
 						<TableRow
 							key={row.id}
 							row={row}

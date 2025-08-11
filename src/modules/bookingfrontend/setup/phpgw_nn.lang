@@ -817,8 +817,8 @@ add_contact	bookingfrontend	nn	Legg til kontakt
 show_in_portal	bookingfrontend	nn	Vis i portal
 deactivate_group	bookingfrontend	nn	Deaktiver gruppe
 activate_group	bookingfrontend	nn	Aktiver gruppe
-confirm_deactivate_group	bookingfrontend	nn	Er du sikker på at du vil deaktivere gruppa {name}?
-confirm_activate_group	bookingfrontend	nn	Er du sikker på at du vil aktivere gruppa {name}?
+confirm_deactivate_group	bookingfrontend	nn	Er du sikker på at du vil deaktivere gruppa {{name}}?
+confirm_activate_group	bookingfrontend	nn	Er du sikker på at du vil aktivere gruppa {{name}}?
 fill_from_delegate	bookingfrontend	nn	Fyll ut frå delegat
 select_delegate	bookingfrontend	nn	Vel delegat...
 show_inactive	bookingfrontend	nn	Vis inaktive

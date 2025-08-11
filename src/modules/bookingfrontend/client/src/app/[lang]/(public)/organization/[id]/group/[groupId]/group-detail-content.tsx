@@ -63,7 +63,6 @@ const GroupDetailContent = ({organization, group, organizationId}: GroupDetailCo
 					<div className={styles.actions}>
 						<Button
 							variant="secondary"
-							size="medium"
 							onClick={() => setIsEditing(true)}
 						>
 							<PencilIcon aria-hidden="true" />

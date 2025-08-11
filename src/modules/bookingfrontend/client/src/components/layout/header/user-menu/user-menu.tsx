@@ -8,7 +8,6 @@ import {phpGWLink} from "@/service/util";
 import Link from "next/link";
 import {useSearchParams} from "next/navigation";
 import {useQueryClient} from "@tanstack/react-query";
-import UserCreationModal from "@/components/user/creation-modal/user-creation-modal";
 
 interface UserMenuProps {
 }
@@ -31,6 +30,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
             queryClient.invalidateQueries({queryKey: ['bookingUser']})
         }
     }, [searchparams, queryClient]);
+
 
 	// Filter active delegates
 	const activeDelegates = useMemo(() => {

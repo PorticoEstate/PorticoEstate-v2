@@ -59,6 +59,22 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 			id: 'dates',
 			accessorFn: (row) => row.dates,
 			header: t('bookingfrontend.timestamp'),
+			sortingFn: (rowA, rowB) => {
+				const datesA = rowA.getValue('dates') as IApplicationDate[];
+				const datesB = rowB.getValue('dates') as IApplicationDate[];
+				
+				if (datesA.length === 0 && datesB.length === 0) return 0;
+				if (datesA.length === 0) return 1;
+				if (datesB.length === 0) return -1;
+
+				// Get earliest date from each row
+				const earliestA = datesA
+					.sort((a, b) => DateTime.fromISO(a.from_).toMillis() - DateTime.fromISO(b.from_).toMillis())[0];
+				const earliestB = datesB
+					.sort((a, b) => DateTime.fromISO(a.from_).toMillis() - DateTime.fromISO(b.from_).toMillis())[0];
+
+				return DateTime.fromISO(earliestA.from_).toMillis() - DateTime.fromISO(earliestB.from_).toMillis();
+			},
 			cell: info => {
 				const dates = info.getValue<IApplicationDate[]>();
 				if (dates.length === 0) return null;
@@ -69,8 +85,10 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 						DateTime.fromISO(a.from_).toMillis() -
 						DateTime.fromISO(b.from_).toMillis()
 					)[0];
-
-				return DateTime.fromISO(earliestDate.from_).toMillis();
+				if(earliestDate) {
+					return DateTime.fromISO(earliestDate.from_).toFormat('dd.MM.yyyy HH:mm');
+				}
+				return null;
 			},
 			// header: t('bookingfrontend.from'),
 			// cell: info => {

@@ -134,7 +134,6 @@ class ServerSettings
 
     /**
      * @OA\Property(type="string")
-     * @Expose
      */
     public $hostname;
 

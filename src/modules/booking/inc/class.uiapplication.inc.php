@@ -7,6 +7,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\phpgwapi\models\ServerSettings;
 
 
 phpgw::import_class('booking.uicommon');
@@ -53,7 +54,7 @@ class booking_uiapplication extends booking_uicommon
 	protected $building_so;
 	protected $errors = array();
 	private $acl_delete;
-	protected $combine_applications = true;
+	protected $combine_applications = false;
 	var $event_bo, $activity_bo, $audience_bo, $assoc_bo, $agegroup_bo, $resource_bo, $building_bo, $organization_bo,
 		$document_building, $document_resource, $fields, $display_name, $accounts_obj, $sessions;
 
@@ -82,6 +83,12 @@ class booking_uiapplication extends booking_uicommon
 		$this->acl_delete		 = $this->acl->check('.application', ACL_DELETE, 'booking');
 		$this->accounts_obj		 = new Accounts();
 		$this->sessions			 = Sessions::getInstance();
+
+		// Enable combine_applications for test environments
+		$serverSettings = ServerSettings::getInstance();
+		if ($serverSettings->hostname === 'test.aktiv-kommune.no' || $serverSettings->hostname === 'pe-api.test') {
+			$this->combine_applications = true;
+		}
 
 		self::set_active_menu('booking::applications::applications');
 		$this->fields = array(

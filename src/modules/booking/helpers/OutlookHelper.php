@@ -80,10 +80,12 @@ class OutlookHelper
 			return false; // Base URL is not set, return false or handle error as needed
 		}
 
+		Cache::session_clear('booking', "resource_calendar_mapping_{$resource_id}");
+
 		$url = "{$this->baseurl}/mappings/resources";
 		$data = array(
 			'bridge_from' => 'booking_system',
-			'bridge_to' => 'bridge_to',
+			'bridge_to' => 'outlook',
 			'source_calendar_id' => $resource_id,
 			'source_calendar_name' => $resource_id,
 			'target_calendar_id' => $outlook_item_id,
@@ -139,14 +141,21 @@ class OutlookHelper
 	}
 
 
-	public function get_resource_mapping($resource_id)
+	public function get_resource_mapping($source_calendar_id)
 	{
 		if (empty($this->baseurl))
 		{
 			return []; // Base URL is not set, return empty array or handle error as needed
 		}
 
-		$url = "{$this->baseurl}/mappings/resources/by-resource/{$resource_id}";
+		$resource_mapping = Cache::session_get('booking',"resource_calendar_mapping_{$source_calendar_id}");
+
+		if(!empty($resource_mapping))
+		{
+			return $resource_mapping;
+		}
+
+		$url = "{$this->baseurl}/mappings/resources/by-resource/{$source_calendar_id}";
 		//use the cURL library to fetch data (json) from the URL
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
@@ -174,10 +183,13 @@ class OutlookHelper
 				'error' => $result['error']
 			);
 		}
-		return $this->format_resource_mapping($result, $resource_id);
+
+		$resource_mapping = $this->format_resource_mapping($result, $source_calendar_id);
+		Cache::session_set('booking', "resource_calendar_mapping_{$source_calendar_id}", $resource_mapping);
+		return $resource_mapping;
 	}
 
-	public function format_resource_mapping($data, $resource_id)
+	public function format_resource_mapping($data, $source_calendar_id)
 	{
 		$values = [];
 		if (!empty($data['mappings']) && is_array($data['mappings']))
@@ -185,21 +197,24 @@ class OutlookHelper
 			foreach ($data['mappings'] as $mapping)
 			{
 				$values[] = array(
-					'outlook_item_name' => $mapping['calendar_name'],
-					'outlook_item_id' => $mapping['calendar_id'],
+					'outlook_item_name' => $mapping['target_calendar_name'],
+					'outlook_item_id' => $mapping['target_calendar_id'],
 				);
 			}
 		}
 		return $values;
 	}
 
-	public function delete_resource_mapping($resource_id, $outlook_item_id)
+	public function delete_resource_mapping($source_calendar_id, $target_calendar_id)
 	{
 		if (empty($this->baseurl))
 		{
 			return false; // Base URL is not set, return false or handle error as needed
 		}
-		$url = "{$this->baseurl}/mappings/resources/booking_system/{$resource_id}/{$outlook_item_id}";
+
+		Cache::session_clear('booking', "resource_calendar_mapping_{$source_calendar_id}");
+
+		$url = "{$this->baseurl}/mappings/resources/booking_system/{$source_calendar_id}/{$target_calendar_id}";
 		//use the cURL library to delete data (json) from the URL
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
@@ -231,7 +246,7 @@ class OutlookHelper
 		return array(
 			'status' => 'success',
 			'message' => 'Resource mapping deleted successfully.',
-			'resource_id' => $resource_id
+			'resource_id' => $source_calendar_id
 		);
 	}
 }

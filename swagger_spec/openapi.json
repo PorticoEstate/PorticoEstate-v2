@@ -2173,8 +2173,8 @@
                     {
                         "name": "start_date",
                         "in": "query",
-                        "description": "Start date for the schedule (format: YYYY-MM-DD)",
-                        "required": true,
+                        "description": "Start date for the schedule (format: YYYY-MM-DD). Defaults to today if not provided.",
+                        "required": false,
                         "schema": {
                             "type": "string",
                             "format": "date",
@@ -2184,8 +2184,8 @@
                     {
                         "name": "end_date",
                         "in": "query",
-                        "description": "End date for the schedule (format: YYYY-MM-DD)",
-                        "required": true,
+                        "description": "End date for the schedule (format: YYYY-MM-DD). Defaults to start_date + 2 weeks if not provided.",
+                        "required": false,
                         "schema": {
                             "type": "string",
                             "format": "date",
@@ -4650,6 +4650,1104 @@
                     }
                 }
             }
+        },
+        "\/booking\/resources\/{resource_id}\/events": {
+            "post": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Create a new event for a specific resource (Outlook integration)",
+                "description": "Creates a new event from external calendar integration (e.g., Outlook). This endpoint is designed for calendar bridge services.",
+                "operationId": "641e12c3d5519b0cc0b95c64f907fc61",
+                "parameters": [
+                    {
+                        "name": "resource_id",
+                        "in": "path",
+                        "description": "ID of the resource",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Event data from calendar bridge",
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "from_",
+                                    "to_",
+                                    "source"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "description": "Event title",
+                                        "type": "string",
+                                        "example": "Team Meeting"
+                                    },
+                                    "from_": {
+                                        "description": "Event start time (ISO 8601)",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2025-06-25T15:30:00+02:00"
+                                    },
+                                    "to_": {
+                                        "description": "Event end time (ISO 8601)",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2025-06-25T16:00:00+02:00"
+                                    },
+                                    "description": {
+                                        "description": "Event description",
+                                        "type": "string",
+                                        "example": "Weekly team sync meeting"
+                                    },
+                                    "contact_name": {
+                                        "description": "Contact name",
+                                        "type": "string",
+                                        "example": "john.doe@company.com"
+                                    },
+                                    "contact_email": {
+                                        "description": "Contact email",
+                                        "type": "string",
+                                        "example": "attendee@company.com"
+                                    },
+                                    "source": {
+                                        "description": "Source of the event",
+                                        "type": "string",
+                                        "example": "calendar_bridge"
+                                    },
+                                    "bridge_import": {
+                                        "description": "Indicates if this is a bridge import",
+                                        "type": "boolean",
+                                        "example": true
+                                    },
+                                    "type": {
+                                        "description": "Event type",
+                                        "type": "string",
+                                        "example": "event"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Event created successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id": {
+                                            "description": "Created event ID",
+                                            "type": "integer"
+                                        },
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "event": {
+                                            "$ref": "#\/components\/schemas\/Event"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid input data",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid date format or missing required fields"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Resource not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Resource not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - Duplicate or overlapping event",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Time conflict: Overlaps with existing event #123"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Failed to create event"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/booking\/events\/{event_id}": {
+            "get": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Get event details",
+                "description": "Retrieves details of a specific event.",
+                "operationId": "9401efd1635e8a62dbf6ee328a06b78a",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "description": "ID of the event to retrieve",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event details retrieved successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "$ref": "#\/components\/schemas\/Event"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Event not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Update an existing event",
+                "description": "Updates an existing event. Can be used for calendar bridge synchronization or admin updates.",
+                "operationId": "c9c4660dbc8e3464c8386bc4412aa0ae",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "description": "ID of the event to update",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Updated event data",
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "title": {
+                                        "description": "Event title",
+                                        "type": "string",
+                                        "example": "Updated Team Meeting"
+                                    },
+                                    "from_": {
+                                        "description": "Event start time (ISO 8601)",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2025-06-25T15:30:00+02:00"
+                                    },
+                                    "to_": {
+                                        "description": "Event end time (ISO 8601)",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2025-06-25T16:30:00+02:00"
+                                    },
+                                    "description": {
+                                        "description": "Event description",
+                                        "type": "string",
+                                        "example": "Updated weekly team sync meeting"
+                                    },
+                                    "contact_name": {
+                                        "description": "Contact name",
+                                        "type": "string",
+                                        "example": "john.doe@company.com"
+                                    },
+                                    "contact_email": {
+                                        "description": "Contact email",
+                                        "type": "string",
+                                        "example": "attendee@company.com"
+                                    },
+                                    "contact_phone": {
+                                        "description": "Contact phone",
+                                        "type": "string",
+                                        "example": "+47 123 45 678"
+                                    },
+                                    "equipment": {
+                                        "description": "Required equipment",
+                                        "type": "string",
+                                        "example": "Projector, Whiteboard"
+                                    },
+                                    "participant_limit": {
+                                        "description": "Maximum participants",
+                                        "type": "integer",
+                                        "example": 20
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Event updated successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Event updated successfully"
+                                        },
+                                        "event": {
+                                            "$ref": "#\/components\/schemas\/Event"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid input data",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid date format or data"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Event not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - Time conflict with other events",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Time conflict: Overlaps with existing event #123"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Failed to update event"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/booking\/events\/{event_id}\/toggle-active": {
+            "patch": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Toggle the active status of an event",
+                "description": "Toggles the active flag of an event (soft delete\/activate). When active=0, the event is effectively deleted but preserved in the database.",
+                "operationId": "7be3b6d8a2dde291cb2936dd06a94843",
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "description": "ID of the event to toggle",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Optional: explicitly set active status",
+                    "required": false,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "properties": {
+                                    "active": {
+                                        "description": "Set active status explicitly (if not provided, it will be toggled)",
+                                        "type": "boolean",
+                                        "example": false
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Event active status toggled successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Event activated successfully"
+                                        },
+                                        "event_id": {
+                                            "type": "integer",
+                                            "example": 123
+                                        },
+                                        "active": {
+                                            "type": "boolean",
+                                            "example": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid event ID",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid event ID"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Event not found"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Failed to update event status"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/booking\/events": {
+            "post": {
+                "tags": [
+                    "Events"
+                ],
+                "summary": "Create a new event for multiple resources",
+                "description": "Creates a new event that can be associated with multiple resources. This endpoint reuses the single resource creation logic and adds additional resource associations.",
+                "operationId": "05eefb8e777fae6c22b32575d2f91c14",
+                "requestBody": {
+                    "description": "Event data with array of resources",
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "title",
+                                    "from_",
+                                    "to_",
+                                    "resource_ids"
+                                ],
+                                "properties": {
+                                    "title": {
+                                        "description": "Event title",
+                                        "type": "string",
+                                        "example": "Multi-Room Conference"
+                                    },
+                                    "from_": {
+                                        "description": "Event start time (ISO 8601)",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2025-06-25T15:30:00+02:00"
+                                    },
+                                    "to_": {
+                                        "description": "Event end time (ISO 8601)",
+                                        "type": "string",
+                                        "format": "date-time",
+                                        "example": "2025-06-25T17:00:00+02:00"
+                                    },
+                                    "resource_ids": {
+                                        "description": "Array of resource IDs to associate with the event",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            5
+                                        ]
+                                    },
+                                    "description": {
+                                        "description": "Event description",
+                                        "type": "string",
+                                        "example": "Large conference requiring multiple rooms"
+                                    },
+                                    "contact_name": {
+                                        "description": "Contact name",
+                                        "type": "string",
+                                        "example": "john.doe@company.com"
+                                    },
+                                    "contact_email": {
+                                        "description": "Contact email",
+                                        "type": "string",
+                                        "example": "attendee@company.com"
+                                    },
+                                    "contact_phone": {
+                                        "description": "Contact phone",
+                                        "type": "string",
+                                        "example": "+47 123 45 678"
+                                    },
+                                    "source": {
+                                        "description": "Source of the event",
+                                        "type": "string",
+                                        "example": "admin_panel"
+                                    },
+                                    "equipment": {
+                                        "description": "Required equipment",
+                                        "type": "string",
+                                        "example": "Projector, Microphones"
+                                    },
+                                    "participant_limit": {
+                                        "description": "Maximum participants",
+                                        "type": "integer",
+                                        "example": 50
+                                    },
+                                    "is_public": {
+                                        "description": "Whether event is public",
+                                        "type": "boolean",
+                                        "example": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Event created successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "id": {
+                                            "description": "Created event ID",
+                                            "type": "integer"
+                                        },
+                                        "event_id": {
+                                            "description": "Created event ID",
+                                            "type": "integer"
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Event created successfully for 3 resources"
+                                        },
+                                        "event": {
+                                            "$ref": "#\/components\/schemas\/Event"
+                                        },
+                                        "resources": {
+                                            "description": "Resources associated with the event",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request - Invalid input data",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Invalid date format or missing required fields"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "One or more resources not found",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Resource not found: 123, 456"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - Time conflict with existing events\/bookings",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Time conflict on resource 123: Overlaps with existing event #456"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "error": {
+                                            "type": "string",
+                                            "example": "Failed to create event"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "\/booking\/events\/{id}\/audience": {
+            "get": {
+                "tags": [
+                    "Events",
+                    "Relationships"
+                ],
+                "summary": "Get audience for an event",
+                "description": "Retrieves the target audience associated with a specific event",
+                "operationId": "c707362775d07006be7794615673ecc3",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event audience retrieved successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "event_id": {
+                                            "type": "integer",
+                                            "example": 123
+                                        },
+                                        "audience": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "name": {
+                                                        "type": "string",
+                                                        "example": "Adults"
+                                                    },
+                                                    "description": {
+                                                        "type": "string",
+                                                        "example": "Adult participants"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Events",
+                    "Relationships"
+                ],
+                "summary": "Update event audience relationships",
+                "description": "Updates the many-to-many relationship between an event and audience groups",
+                "operationId": "e834d566a9b0b361ef1d9c1edba48872",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "audience_ids"
+                                ],
+                                "properties": {
+                                    "audience_ids": {
+                                        "description": "Array of audience IDs",
+                                        "type": "array",
+                                        "items": {
+                                            "type": "integer"
+                                        },
+                                        "example": [
+                                            1,
+                                            2,
+                                            3
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Audience relationships updated successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Audience relationships updated successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input"
+                    },
+                    "404": {
+                        "description": "Event not found"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "\/booking\/events\/{id}\/comments": {
+            "get": {
+                "tags": [
+                    "Events",
+                    "Relationships"
+                ],
+                "summary": "Get comments for an event",
+                "description": "Retrieves all comments associated with a specific event",
+                "operationId": "111e5d41319d33930f8090c499b07f94",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event comments retrieved successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "event_id": {
+                                            "type": "integer",
+                                            "example": 123
+                                        },
+                                        "comments": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "comment": {
+                                                        "type": "string",
+                                                        "example": "Great event!"
+                                                    },
+                                                    "type": {
+                                                        "type": "string",
+                                                        "example": "user"
+                                                    },
+                                                    "time": {
+                                                        "type": "integer",
+                                                        "example": 1656846631
+                                                    },
+                                                    "author": {
+                                                        "type": "string",
+                                                        "example": "johndoe"
+                                                    },
+                                                    "author_name": {
+                                                        "type": "string",
+                                                        "example": "John Doe"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Events",
+                    "Relationships"
+                ],
+                "summary": "Add a comment to an event",
+                "description": "Adds a new comment to a specific event",
+                "operationId": "77fc4872e7f1aa45b9ab8bbebd290623",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application\/json": {
+                            "schema": {
+                                "required": [
+                                    "comment"
+                                ],
+                                "properties": {
+                                    "comment": {
+                                        "description": "Comment text",
+                                        "type": "string",
+                                        "example": "This event was excellent!"
+                                    },
+                                    "type": {
+                                        "description": "Comment type",
+                                        "type": "string",
+                                        "default": "user",
+                                        "example": "user"
+                                    },
+                                    "author": {
+                                        "description": "Author username",
+                                        "type": "string",
+                                        "example": "johndoe"
+                                    },
+                                    "author_name": {
+                                        "description": "Author display name",
+                                        "type": "string",
+                                        "example": "John Doe"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Comment added successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Comment added successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input"
+                    },
+                    "404": {
+                        "description": "Event not found"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
+        },
+        "\/booking\/events\/{id}\/dates": {
+            "get": {
+                "tags": [
+                    "Events",
+                    "Relationships"
+                ],
+                "summary": "Get dates for an event",
+                "description": "Retrieves all dates associated with a specific event",
+                "operationId": "5e83d75f2c69d0a96f046a1a005914fc",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "Event ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event dates retrieved successfully",
+                        "content": {
+                            "application\/json": {
+                                "schema": {
+                                    "properties": {
+                                        "event_id": {
+                                            "type": "integer",
+                                            "example": 123
+                                        },
+                                        "dates": {
+                                            "type": "array",
+                                            "items": {
+                                                "properties": {
+                                                    "id": {
+                                                        "type": "integer",
+                                                        "example": 1
+                                                    },
+                                                    "from_": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-06-25T15:30:00+02:00"
+                                                    },
+                                                    "to_": {
+                                                        "type": "string",
+                                                        "format": "date-time",
+                                                        "example": "2025-06-25T17:00:00+02:00"
+                                                    }
+                                                },
+                                                "type": "object"
+                                            }
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Event not found"
+                    },
+                    "500": {
+                        "description": "Internal server error"
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -6308,6 +7406,10 @@
         {
             "name": "Database",
             "description": "Database"
+        },
+        {
+            "name": "Relationships",
+            "description": "Relationships"
         }
     ]
 }

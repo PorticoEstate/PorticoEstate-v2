@@ -21,7 +21,8 @@ use InvalidArgumentException;
  */
 abstract class BaseModel
 {
-	use SerializableTrait;
+	// Alias trait methods so we can extend serialization behavior
+	use SerializableTrait { serialize as protected traitSerialize; toArray as protected traitToArray; }
 	use ValidatorTrait;
 
 	/**
@@ -722,7 +723,21 @@ abstract class BaseModel
 			}
 		}
 
-		return new static($data);
+		$model = new static($data);
+
+		// Eagerly load and cache relationships for single-entity fetches
+		$relationships = static::getRelationshipMap();
+		if (!empty($relationships)) {
+			foreach (array_keys($relationships) as $relName) {
+				$value = $model->loadRelationship($relName); // caches internally
+				// If model has a matching property, populate it for serialization
+				if (property_exists($model, $relName)) {
+					$model->$relName = $value;
+				}
+			}
+		}
+
+		return $model;
 	}
 
 	/**
@@ -804,8 +819,9 @@ abstract class BaseModel
 
 	/**
 	 * Generic relationship loading with support for legacy format
+	 * Returns mixed to allow scalar values for simple join lookups
 	 */
-	public function loadRelationship(string $relationshipName): ?array
+	public function loadRelationship(string $relationshipName)
 	{
 		if (!$this->id) {
 			return null;
@@ -847,7 +863,7 @@ abstract class BaseModel
 			}
 		}
 
-		// Cache the result
+	// Cache the result
 		$this->_relationshipCache[$relationshipName] = $result;
 		return $result;
 	}
@@ -1076,6 +1092,46 @@ abstract class BaseModel
 	public function getTableNameProperty(): string
 	{
 		return static::getTableName();
+	}
+
+	/**
+	 * Serialize model including relationship data defined in getRelationshipMap().
+	 * - Starts with trait-based property serialization
+	 * - Merges in relationship fields (join/manytomany/others) if not already present
+	 * - Skips null/empty relationships to avoid noise
+	 */
+	public function serialize(array $context = [], bool $short = false): ?array
+	{
+		// Base serialization from trait (properties only)
+		$data = $this->traitSerialize($context, $short) ?? [];
+
+		// Merge in cached relationship data (no DB calls here)
+		$includeRelations = $context['include_relations'] ?? true;
+		if ($includeRelations && method_exists(static::class, 'getRelationshipMap')) {
+			$relationships = static::getRelationshipMap();
+			foreach ($relationships as $name => $_cfg) {
+				// If property already serialized and has content, skip
+				if (array_key_exists($name, $data) && !(is_array($data[$name]) && count($data[$name]) === 0)) {
+					continue;
+				}
+				if (isset($this->_relationshipCache[$name])) {
+					$value = $this->_relationshipCache[$name];
+					if ($value !== null && !(is_array($value) && count($value) === 0)) {
+						$data[$name] = $value;
+					}
+				}
+			}
+		}
+
+		return !empty($data) ? $data : null;
+	}
+
+	/**
+	 * toArray proxies to serialize so relationship data is included consistently.
+	 */
+	public function toArray(array $context = [], bool $short = false): ?array
+	{
+		return $this->serialize($context, $short);
 	}
 
 	/**

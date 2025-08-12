@@ -38,6 +38,7 @@ $app->group('/booking/events', function (RouteCollectorProxy $group)
 	//create an event for array of resources
 	$group->post('', EventController::class . ':createEvent');
 	$group->put('/{event_id}', EventController::class . ':updateEvent');
+	$group->get('/{event_id}', EventController::class . ':getEvent');
 	$group->patch('/{event_id}/toggle-active', EventController::class . ':toggleActiveStatus');
 })
 ->addMiddleware(new AccessVerifier($container))

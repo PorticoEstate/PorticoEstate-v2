@@ -214,7 +214,8 @@ class OutlookHelper
 
 		Cache::session_clear('booking', "resource_calendar_mapping_{$source_calendar_id}");
 
-		$url = "{$this->baseurl}/mappings/resources/booking_system/{$source_calendar_id}/{$target_calendar_id}";
+		$url = "{$this->baseurl}/mappings/resources/by-key/booking_system/{$source_calendar_id}/{$target_calendar_id}";
+
 		//use the cURL library to delete data (json) from the URL
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);

@@ -85,9 +85,13 @@ class booking_uiapplication extends booking_uicommon
 		$this->sessions			 = Sessions::getInstance();
 
 		// Enable combine_applications for test environments
-		$serverSettings = ServerSettings::getInstance();
-		if ($serverSettings->is_test_server) {
-			$this->combine_applications = true;
+		$serverSettings = ServerSettings::getInstance(true);
+		$this->combine_applications = $serverSettings->booking_config->combined_applications_mode;
+
+		// Allow route parameter to disable combined applications
+		$disable_combined = Sanitizer::get_var('disable_combined', 'bool', 'REQUEST', false);
+		if ($disable_combined) {
+			$this->combine_applications = false;
 		}
 
 		self::set_active_menu('booking::applications::applications');

@@ -292,7 +292,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		}
 
 		const dateId = props.selectedTempApplication?.id || props.date_id;
-		const dateEntry = existingApplication.dates.find(d => +d.id === +dateId);
+		const dateEntry = dateId !== undefined ? existingApplication.dates.find(d => +d.id === +dateId) : undefined;
 
 		if (!dateEntry) {
 			const defaultTimes = createDefaultTimes();

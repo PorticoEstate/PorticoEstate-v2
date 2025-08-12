@@ -13,6 +13,7 @@ class OutlookHelper
 	);
 
 	private $baseurl;
+	private $api_key;
 
 	public function __construct()
 	{
@@ -23,6 +24,10 @@ class OutlookHelper
 		if (!empty($custom_config_data['Outlook']['baseurl']))
 		{
 			$this->baseurl = rtrim($custom_config_data['Outlook']['baseurl'], '/');
+		}
+		if (!empty($custom_config_data['Outlook']['api_key']))
+		{
+			$this->api_key = $custom_config_data['Outlook']['api_key'];
 		}
 	}
 
@@ -50,7 +55,8 @@ class OutlookHelper
 
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json',
-			'Accept: application/json'
+			'Accept: application/json',
+			'api_key: ' . $this->api_key
 		));
 		$response = curl_exec($ch);
 
@@ -101,7 +107,8 @@ class OutlookHelper
 		curl_setopt($ch, CURLOPT_PROXY, '');
 		curl_setopt($ch, CURLOPT_NOPROXY, 'portico_outlook,localhost,127.0.0.1');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-			'Content-Type: application/json'
+			'Content-Type: application/json',
+			'api_key: ' . $this->api_key
 		));
 		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
 		$response = curl_exec($ch);
@@ -165,7 +172,8 @@ class OutlookHelper
 		curl_setopt($ch, CURLOPT_NOPROXY, 'portico_outlook,localhost,127.0.0.1');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json',
-			'Accept: application/json'
+			'Accept: application/json',
+			'api_key: ' . $this->api_key
 		));
 		$response = curl_exec($ch);
 		if (curl_errno($ch))
@@ -225,7 +233,8 @@ class OutlookHelper
 		curl_setopt($ch, CURLOPT_PROXY, '');
 		curl_setopt($ch, CURLOPT_NOPROXY, 'portico_outlook,localhost,127.0.0.1');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
-			'Content-Type: application/json'
+			'Content-Type: application/json',
+			'api_key: ' . $this->api_key
 		));
 		$response = curl_exec($ch);
 		if (curl_errno($ch))

@@ -286,7 +286,12 @@ class booking_uiapplication extends booking_uicommon
 						{
 							$related_app['case_officer_id'] = $current_account_id;
 							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $this->current_account_fullname()));
-								$this->bo->update($related_app);
+							// Also change status from NEW to PENDING for related applications
+							if ($related_app['status'] == 'NEW')
+							{
+								$related_app['status'] = 'PENDING';
+							}
+							$this->bo->update($related_app);
 							}
 						}
 					}
@@ -362,7 +367,12 @@ class booking_uiapplication extends booking_uicommon
 						{
 							$related_app['case_officer_id'] = $account_id;
 							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $case_officer_full_name));
-								$this->bo->update($related_app);
+							// Also change status from NEW to PENDING for related applications
+							if ($related_app['status'] == 'NEW')
+							{
+								$related_app['status'] = 'PENDING';
+							}
+							$this->bo->update($related_app);
 							}
 						}
 					}
@@ -2918,15 +2928,20 @@ class booking_uiapplication extends booking_uicommon
 	public function edit()
 	{
 		$id = Sanitizer::get_var('id', 'int');
+		$selected_app_id = Sanitizer::get_var('selected_app_id', 'int');
+		
 		if (!$id)
 		{
 			phpgw::no_access('booking', lang('missing id'));
 		}
-		$application = $this->bo->read_single($id);
+		
+		// Use selected application ID if provided, otherwise use the original ID
+		$edit_id = $selected_app_id ?: $id;
+		$application = $this->bo->read_single($edit_id);
 
 		if (!$application)
 		{
-			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
+			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $edit_id));
 		}
 
 		$resource_participant_limit_gross = CreateObject('booking.soresource')->get_participant_limit($application['resources'], true);
@@ -3918,6 +3933,25 @@ class booking_uiapplication extends booking_uicommon
 						}
 					}
 				}
+				else
+				{
+					// Handle all other status changes (NEW, PENDING, etc.) for related applications
+					if ($this->combine_applications && !empty($related_info['application_ids']))
+					{
+						foreach ($related_info['application_ids'] as $related_app_id)
+						{
+							if ($related_app_id != $application['id'])
+							{
+								$related_app = $this->bo->read_single($related_app_id);
+								if ($related_app)
+								{
+									$related_app['status'] = $new_status;
+									$this->bo->update($related_app);
+								}
+							}
+						}
+					}
+				}
 
 				$update = true;
 				$notify = true;
@@ -4180,6 +4214,34 @@ JS;
 		}
 		phpgwapi_jquery::load_widget('select2');
 
+		// Add related applications data for combined applications
+		$related_applications = array();
+		$show_edit_selection = false;
+		if ($this->combine_applications)
+		{
+			$related_info = $this->bo->so->get_related_applications($application['id']);
+			if ($related_info['total_count'] > 1)
+			{
+				$show_edit_selection = true;
+				foreach ($related_info['application_ids'] as $app_id)
+				{
+					$related_app = $this->bo->read_single($app_id);
+					if ($related_app)
+					{
+						$related_applications[] = array(
+							'id' => $related_app['id'],
+							'name' => $related_app['name'],
+							'status' => $related_app['status'],
+							'created' => pretty_timestamp($related_app['created']),
+							'dates' => $this->format_application_dates($related_app),
+							'resources' => $this->format_application_resources($related_app),
+							'is_main' => ($app_id == $application['id'])
+						);
+					}
+				}
+			}
+		}
+
 		self::render_template_xsl(
 			'application',
 			array(
@@ -4196,7 +4258,9 @@ JS;
 				'export_pdf_action'	 => self::link(array('menuaction' => 'booking.uiapplication.export_pdf', 'id' => $application['id'])),
 				'external_archive'	 => !empty($this->userSettings['preferences']['common']['archive_user_id']) ? $external_archive : '',
 				'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
-				'internal_notes'	 => $internal_notes
+				'internal_notes'	 => $internal_notes,
+				'show_edit_selection' => $show_edit_selection,
+				'related_applications' => $related_applications
 			)
 		);
 	}
@@ -4368,5 +4432,36 @@ JS;
 	{
 		$historylog	= CreateObject('phpgwapi.historylog', 'booking', '.application');
 		return $historylog->add('C', $id, $internal_note_content);
+	}
+
+
+	private function format_application_dates($application)
+	{
+		if (empty($application['dates']))
+		{
+			return '';
+		}
+
+		$date_strings = array();
+		foreach ($application['dates'] as $date)
+		{
+			$date_strings[] = pretty_timestamp($date['from_']) . ' - ' . pretty_timestamp($date['to_']);
+		}
+		return implode(', ', $date_strings);
+	}
+
+	private function format_application_resources($application)
+	{
+		if (empty($application['resources']))
+		{
+			return '';
+		}
+
+		$resource_names = array();
+		foreach ($application['resources'] as $resource)
+		{
+			$resource_names[] = $resource['name'];
+		}
+		return implode(', ', $resource_names);
 	}
 }

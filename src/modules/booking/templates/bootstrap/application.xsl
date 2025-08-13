@@ -304,8 +304,16 @@
 												<i class="fas fa-flag me-1 text-secondary"></i>
 											</xsl:when>
 											<xsl:otherwise>
-												<xsl:attribute name="onclick">window.location.href='<xsl:value-of select="application/edit_link"/>'</xsl:attribute>
-												<i class="fas fa-flag me-1 text-primary"></i>
+												<xsl:choose>
+													<xsl:when test="show_edit_selection = 1">
+														<xsl:attribute name="onclick">$('#editSelectionModal').modal('show')</xsl:attribute>
+														<i class="fas fa-edit me-1 text-primary"></i>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:attribute name="onclick">window.location.href='<xsl:value-of select="application/edit_link"/>'</xsl:attribute>
+														<i class="fas fa-edit me-1 text-primary"></i>
+													</xsl:otherwise>
+												</xsl:choose>
 											</xsl:otherwise>
 										</xsl:choose>
 										<xsl:value-of select="php:function('lang', 'Edit')" />
@@ -1708,6 +1716,104 @@
 		});
 	</script>
 
+	<!-- Edit Selection Modal for Combined Applications -->
+	<xsl:if test="show_edit_selection = 1">
+		<div class="modal fade" id="editSelectionModal" tabindex="-1" role="dialog" aria-labelledby="editSelectionModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-lg" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="editSelectionModalLabel">
+							<i class="fas fa-edit me-2"></i>Select Application to Edit
+						</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">×</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<p class="text-muted mb-4">
+							This combined application contains <xsl:value-of select="count(related_applications)"/> related applications.
+							Choose which one you want to edit:
+						</p>
+						
+						<div class="row">
+							<xsl:for-each select="related_applications">
+								<div class="col-md-6 mb-3">
+									<div class="card application-selection-card">
+										<xsl:attribute name="class">
+											<xsl:text>card application-selection-card</xsl:text>
+											<xsl:if test="is_main = 1">
+												<xsl:text> border-danger</xsl:text>
+											</xsl:if>
+										</xsl:attribute>
+										
+										<div class="card-body">
+											<div class="d-flex justify-content-between align-items-start mb-2">
+												<h6 class="card-title mb-0">
+													<xsl:value-of select="name"/>
+													<xsl:if test="is_main = 1">
+														<span class="badge badge-danger ml-2">MAIN</span>
+													</xsl:if>
+												</h6>
+												<span class="badge">
+													<xsl:attribute name="class">
+														<xsl:text>badge badge-</xsl:text>
+														<xsl:choose>
+															<xsl:when test="status = 'NEW'">primary</xsl:when>
+															<xsl:when test="status = 'PENDING'">warning</xsl:when>
+															<xsl:when test="status = 'ACCEPTED'">success</xsl:when>
+															<xsl:when test="status = 'REJECTED'">danger</xsl:when>
+															<xsl:otherwise>secondary</xsl:otherwise>
+														</xsl:choose>
+													</xsl:attribute>
+													<xsl:value-of select="status"/>
+												</span>
+											</div>
+											
+											<small class="text-muted">
+												<strong>ID:</strong> <xsl:value-of select="id"/><br/>
+												<strong>Created:</strong> <xsl:value-of select="created"/><br/>
+												<xsl:if test="dates != ''">
+													<strong>Dates:</strong> <xsl:value-of select="dates"/><br/>
+												</xsl:if>
+												<xsl:if test="resources != ''">
+													<strong>Resources:</strong> <xsl:value-of select="resources"/>
+												</xsl:if>
+											</small>
+											
+											<a class="btn btn-primary btn-sm mt-2">
+												<xsl:attribute name="href">
+													<xsl:value-of select="../application/edit_link"/>
+													<xsl:text>&amp;selected_app_id=</xsl:text>
+													<xsl:value-of select="id"/>
+												</xsl:attribute>
+												<i class="fas fa-edit me-1"></i>Edit This Application
+											</a>
+										</div>
+									</div>
+								</div>
+							</xsl:for-each>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">
+							<i class="fas fa-times me-1"></i>Cancel
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+		
+		<style>
+			.application-selection-card {
+				transition: transform 0.2s, box-shadow 0.2s;
+				cursor: pointer;
+			}
+			.application-selection-card:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			}
+		</style>
+	</xsl:if>
 
 </xsl:template>
 <!-- New template-->

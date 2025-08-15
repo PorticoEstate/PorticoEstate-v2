@@ -373,72 +373,9 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 	// Check for a portal container (like a backdrop or modal container)
 	const [portalId, setPortalId] = useState<string | undefined>(undefined);
 	const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
-	const inputRef = useRef<HTMLDivElement>(null);
-	const portalContainer = typeof document !== 'undefined' ?
-		document.getElementById('portalContainer') : null;
-	const shouldUsePortal = !!portalContainer;
 
-	// Function to calculate and update portal position
-	const updatePortalPosition = useCallback(() => {
-		if (shouldUsePortal && portalContainer && inputRef.current && portalId) {
-			const existingPortal = document.getElementById(portalId);
-			if (existingPortal) {
-				// Get input position relative to the viewport
-				const inputRect = inputRef.current.getBoundingClientRect();
-				const backdropRect = portalContainer.getBoundingClientRect();
 
-				// Calculate position relative to the backdrop
-				const relativeLeft = inputRect.left - backdropRect.left;
-				const relativeTop = inputRect.bottom - backdropRect.top + 4; // 4px offset
 
-				existingPortal.style.left = `${relativeLeft}px`;
-				existingPortal.style.top = `${relativeTop}px`;
-			}
-		}
-	}, [shouldUsePortal, portalContainer, portalId]);
-
-	// Create/remove portal when calendar opens/closes
-	useEffect(() => {
-		if (shouldUsePortal && portalContainer && inputRef.current && isCalendarOpen && !portalId) {
-			// Create portal when calendar opens
-			const id = `datepicker-portal-${Date.now()}`;
-
-			const portalDiv = document.createElement('div');
-			portalDiv.id = id;
-			portalDiv.style.position = 'absolute';
-			portalDiv.style.pointerEvents = 'none';
-			portalDiv.style.zIndex = '13';
-
-			portalContainer.appendChild(portalDiv);
-			setPortalId(id);
-		} else if (!isCalendarOpen && portalId) {
-			// Remove portal when calendar closes
-			const existingPortal = document.getElementById(portalId);
-			if (existingPortal) {
-				existingPortal.remove();
-			}
-			setPortalId(undefined);
-		}
-	}, [shouldUsePortal, portalContainer, isCalendarOpen, portalId]);
-
-	// Update position when portal is created or on scroll
-	useEffect(() => {
-		if (isCalendarOpen && portalId) {
-			// Initial position
-			updatePortalPosition();
-
-			// Add scroll listeners for repositioning
-			const handleScroll = () => updatePortalPosition();
-
-			window.addEventListener('scroll', handleScroll, true);
-			window.addEventListener('resize', handleScroll);
-
-			return () => {
-				window.removeEventListener('scroll', handleScroll, true);
-				window.removeEventListener('resize', handleScroll);
-			};
-		}
-	}, [isCalendarOpen, portalId, updatePortalPosition]);
 
 	// Use native date inputs on mobile
 	if (isMobile) {
@@ -489,7 +426,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 	}
 
 	return (
-		<div className={styles.datePicker} ref={inputRef}>
+		<div className={styles.datePicker}>
 			<DatePicker
 				selected={currentDate}
 				onChange={(date) => onDateChange(date as any)}
@@ -499,20 +436,6 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 				renderCustomHeader={(props) => <CustomHeader {...props} />}
 				calendarClassName="cdp-calendar"
 				wrapperClassName={styles.wrapper}
-				popperClassName={styles.popper}
-				withPortal={shouldUsePortal}
-				portalId={portalId}
-				popperPlacement={shouldUsePortal ? undefined : "bottom-start"}
-				popperModifiers={shouldUsePortal ? undefined : {
-					offset: {
-						enabled: true,
-						offset: '0px, 4px'
-					},
-					preventOverflow: {
-						enabled: true,
-						padding: 8
-					}
-				}}
 				onCalendarOpen={() => setIsCalendarOpen(true)}
 				onCalendarClose={() => setIsCalendarOpen(false)}
 				monthsShown={1}

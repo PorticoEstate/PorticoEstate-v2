@@ -10,7 +10,7 @@ import {useIsMobile} from "@/service/hooks/is-mobile";
 interface CalendarDatePickerBaseProps {
 	view: string;
 	showTimeSelect?: boolean;
-timeIntervals?: number;
+	timeIntervals?: number;
 	dateFormat?: string;
 	minTime?: string;
 	maxTime?: string;
@@ -64,7 +64,7 @@ interface TimePickerProps {
 
 const TimePicker: FC<TimePickerProps & { minTime?: string; maxTime?: string }> =
 	({date, onChangeDate, intervals = 30, minTime, maxTime}) => {
-		const t= useTrans();
+		const t = useTrans();
 		const getHourRange = () => {
 			const minHour = minTime ? parseInt(minTime.split(':')[0]) : 0;
 			const maxHour = maxTime ? parseInt(maxTime.split(':')[0]) : 23;
@@ -183,7 +183,7 @@ const CustomHeader: FC<CustomHeaderProps> = ({
 												 nextMonthButtonDisabled
 											 }) => {
 	// Get current language from i18n via HTML attribute
-	const { i18n } = useClientTranslation();
+	const {i18n} = useClientTranslation();
 	const currentLang = i18n.language || 'no';
 
 	return (
@@ -274,7 +274,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 	const allowEmpty = 'allowEmpty' in props && props.allowEmpty === true;
 	const placeholder = allowEmpty ? props.placeholder : undefined;
 	// Get current language from i18n
-	const { i18n } = useClientTranslation();
+	const {i18n} = useClientTranslation();
 	const currentLang = i18n.language || 'no';
 	const isMobile = useIsMobile();
 
@@ -289,6 +289,8 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 		switch (view) {
 			case 'timeGridDay':
 				return luxonDate.toFormat(`d'.' MMMM${showYear ? ' yyyy' : ''}`) + timeStr;
+			case 'dayGridDay':
+				return luxonDate.toFormat(`d'.' MMMM${showYear ? ' yyyy' : ''}`);
 			case 'timeGridWeek':
 			case 'listWeek':
 				const weekStart = luxonDate.startOf('week');
@@ -375,7 +377,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 		const dateTimeValue = currentDate ? DateTime.fromJSDate(alignTimeToInterval(currentDate)).toFormat('yyyy-MM-dd\'T\'HH:mm') : '';
 
 		return (
-			<div >
+			<div>
 				<Field className={styles.datePicker}>
 					<Field.Affixes>
 						<Field.Affix><CalendarIcon title="a11y-title" fontSize="1.5rem"/></Field.Affix>
@@ -408,7 +410,8 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 						fontFamily: 'monospace',
 						wordBreak: 'break-all'
 					}}>
-						<span style={{ fontWeight: 'bold' }}>Debug:</span> {currentDate ? alignTimeToInterval(currentDate).toISOString() : 'null'}
+						<span
+							style={{fontWeight: 'bold'}}>Debug:</span> {currentDate ? alignTimeToInterval(currentDate).toISOString() : 'null'}
 					</div>
 				)}
 			</div>
@@ -439,9 +442,9 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 					currentDate ? <TimePicker onChangeDate={(e) => {
 						onDateChange(e)
 					}}
-								maxTime={maxTime}
-								minTime={minTime}
-								date={currentDate} intervals={timeIntervals}/> : undefined
+											  maxTime={maxTime}
+											  minTime={minTime}
+											  date={currentDate} intervals={timeIntervals}/> : undefined
 				}
 				customInput={(
 					<Field>
@@ -449,7 +452,8 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 							<Field.Affix><CalendarIcon title="a11y-title" fontSize="1.5rem"/></Field.Affix>
 							<Input
 								className={"dateView"}
-								onChange={() => {}}
+								onChange={() => {
+								}}
 								value={formatSelectedDate(showYear)}
 								placeholder={placeholder}
 							/>
@@ -466,7 +470,8 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 					fontFamily: 'monospace',
 					wordBreak: 'break-all'
 				}}>
-					<span style={{ fontWeight: 'bold' }}>Debug:</span> {currentDate ? alignTimeToInterval(currentDate).toISOString() : 'null'}
+					<span
+						style={{fontWeight: 'bold'}}>Debug:</span> {currentDate ? alignTimeToInterval(currentDate).toISOString() : 'null'}
 				</div>
 			)}
 		</div>

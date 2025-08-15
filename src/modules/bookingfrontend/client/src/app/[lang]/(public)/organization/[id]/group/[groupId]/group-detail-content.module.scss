@@ -1,0 +1,199 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.navigation {
+  .backLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--fds-semantic-text-action-first);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--fds-semantic-text-action-first-hover);
+      text-decoration: underline;
+    }
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  .titleSection {
+    flex: 1;
+    min-width: 0;
+
+    .title {
+      margin: 0;
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--fds-semantic-text-neutral-default);
+      line-height: 1.2;
+
+      @media (min-width: 768px) {
+        font-size: 2.5rem;
+      }
+    }
+
+    .shortname {
+      margin-top: 0.25rem;
+      font-size: 1.1rem;
+      color: var(--fds-semantic-text-neutral-subtle);
+      font-weight: 400;
+    }
+  }
+
+  .actions {
+    flex-shrink: 0;
+  }
+}
+
+.infoSection, .contactsSection {
+  .sectionTitle {
+    margin: 0 0 1.5rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--fds-semantic-text-neutral-default);
+  }
+}
+
+.infoGrid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .infoItem {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .label {
+      font-weight: 600;
+      color: var(--fds-semantic-text-neutral-default);
+      margin: 0;
+    }
+
+    .value {
+      color: var(--fds-semantic-text-neutral-subtle);
+      margin: 0;
+      word-break: break-word;
+
+      .organizationLink {
+        color: var(--fds-semantic-text-action-first);
+        text-decoration: none;
+        font-weight: 500;
+
+        &:hover {
+          color: var(--fds-semantic-text-action-first-hover);
+          text-decoration: underline;
+        }
+      }
+
+      .activeStatus, .inactiveStatus {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.75rem;
+        border-radius: 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+      }
+
+      .activeStatus {
+        background-color: var(--fds-semantic-surface-success-subtle);
+        color: var(--fds-semantic-text-success-default);
+      }
+
+      .inactiveStatus {
+        background-color: var(--fds-semantic-surface-neutral-subtle);
+        color: var(--fds-semantic-text-neutral-default);
+      }
+    }
+  }
+}
+
+.placeholder {
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--fds-semantic-surface-neutral-subtle);
+  border-radius: 0.5rem;
+  color: var(--fds-semantic-text-neutral-subtle);
+
+  p {
+    margin: 0;
+  }
+}
+
+.contactsList {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.contactItem {
+  //padding: 1.5rem;
+  background-color: var(--fds-semantic-surface-neutral-subtle);
+  border-radius: 0.5rem;
+  border: 1px solid var(--fds-semantic-border-neutral-subtle);
+
+  .contactName {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--fds-semantic-text-neutral-default);
+    margin-bottom: 0.75rem;
+  }
+
+  .contactDetail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    .contactLabel {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--fds-semantic-text-neutral-subtle);
+    }
+
+    .contactLink {
+      color: var(--fds-semantic-text-action-first);
+      text-decoration: none;
+      font-weight: 500;
+      word-break: break-all;
+
+      &:hover {
+        color: var(--fds-semantic-text-action-first-hover);
+        text-decoration: underline;
+      }
+    }
+  }
+}

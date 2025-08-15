@@ -1,0 +1,28 @@
+@import "../../../styles/util.module";
+@import "../../../styles/typography-vars.module";
+
+.contactWrapper {
+    .mobileOnly {
+        @include tablet {
+            display: none;
+        }
+    }
+
+    .desktopOnly {
+        display: none;
+
+        @include tablet {
+            display: block;
+        }
+    }
+
+    .contentSection {
+        .sectionTitle {
+            margin-bottom: 1rem;
+        }
+
+        .sectionContent {
+            // Inherits styles from the contact content component
+        }
+    }
+}

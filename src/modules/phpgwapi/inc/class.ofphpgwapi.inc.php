@@ -110,6 +110,10 @@ class phpgwapi_ofphpgwapi extends phpgwapi_object_factory
 				$app = ($p1 !== '_UNDEF_') ? $p1 : null;
 				return new \App\modules\phpgwapi\services\Config($app);
 
+			case 'custom_fields':
+				$appname = ($p1 !== '_UNDEF_') ? $p1 : null;
+				return new \App\modules\phpgwapi\services\CustomFields($appname);
+
 			case 'crypto':
 				$_key = ($p1 !== '_UNDEF_') ? $p1 : null;
 				$_iv = ($p2 !== '_UNDEF_') ? $p2 : null;

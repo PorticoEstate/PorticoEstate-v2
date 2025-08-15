@@ -32,10 +32,7 @@ const Delegates: FC<DelegatesProps> = (props) => {
                     // className="link-text link-text-unset normal"
 
                 >
-                    <NXLink href={phpGWLink('bookingfrontend/', {
-                        menuaction: 'bookingfrontend.uiorganization.show',
-                        id: orgId
-                    }, false)}
+                    <NXLink href={`/organization/${orgId}`}
                             target={'_blank'}
                     >
                         {name}

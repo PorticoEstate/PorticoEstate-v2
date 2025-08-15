@@ -1,13 +1,13 @@
 import React, {Fragment, useMemo, useState, FC, useCallback, useEffect, useRef} from 'react';
-import { IResource } from '@/service/types/resource.types';
+import {IResource} from '@/service/types/resource.types';
 import {
-    Button,
-    Chip, Details,
-    Field,
-    Select, Spinner,
-    Tag,
-    Textfield,
-    ValidationMessage
+	Button,
+	Chip, Details,
+	Field,
+	Select, Spinner,
+	Tag,
+	Textfield,
+	ValidationMessage
 } from '@digdir/designsystemet-react';
 import {DateTime} from 'luxon';
 import MobileDialog from '@/components/dialog/mobile-dialog';
@@ -41,119 +41,119 @@ import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
 
 interface ApplicationCrudProps {
-    selectedTempApplication?: Partial<FCallTempEvent>;
-    building_id: string | number;
-    applicationId?: number;
-    date_id?: number;
-    onClose: () => void;
-    showDebug?: boolean;
+	selectedTempApplication?: Partial<FCallTempEvent>;
+	building_id: string | number;
+	applicationId?: number;
+	date_id?: number;
+	onClose: () => void;
+	showDebug?: boolean;
 }
 
 interface ApplicationCrudInnerProps extends ApplicationCrudProps {
-    building?: IBuilding;
-    buildingResources?: IResource[];
-    partials?: { list: IApplication[], total_sum: number };
-    audience?: IAudience[];
-    agegroups?: IAgeGroup[];
-    existingApplication?: IApplication;
-    onSubmitSuccess?: (data: ApplicationFormData) => void;
-    lastSubmittedData?: Partial<ApplicationFormData> | null;
-    bookingUser?: IBookingUser;
+	building?: IBuilding;
+	buildingResources?: IResource[];
+	partials?: { list: IApplication[], total_sum: number };
+	audience?: IAudience[];
+	agegroups?: IAgeGroup[];
+	existingApplication?: IApplication;
+	onSubmitSuccess?: (data: ApplicationFormData) => void;
+	lastSubmittedData?: Partial<ApplicationFormData> | null;
+	bookingUser?: IBookingUser;
 	seasons?: Season[];
-    events?: IEvent[];
+	events?: IEvent[];
 }
 
 const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
-    const [lastSubmittedData, setLastSubmittedData] = useState<Partial<ApplicationFormData> | null>(null);
+	const [lastSubmittedData, setLastSubmittedData] = useState<Partial<ApplicationFormData> | null>(null);
 
-    // Only fetch if we have a building_id
-    const building_id = props.building_id || props.selectedTempApplication?.extendedProps?.building_id;
+	// Only fetch if we have a building_id
+	const building_id = props.building_id || props.selectedTempApplication?.extendedProps?.building_id;
 
-    const {data: building, isLoading: buildingLoading} = useBuilding(
-        building_id ? +building_id : undefined
-    );
+	const {data: building, isLoading: buildingLoading} = useBuilding(
+		building_id ? +building_id : undefined
+	);
 
 	const {data: seasons, isLoading: seasonsLoading} = useBuildingSeasons(building_id ? +building_id : undefined);
-    const {data: buildingResources, isLoading: buildingResourcesLoading} = useBuildingResources(
-        building_id
-    );
-    const {data: partials, isLoading: partialsLoading} = usePartialApplications();
-    const {data: audience, isLoading: audienceLoading} = useBuildingAudience(
-        building_id ? +building_id : undefined
-    );
-    const {data: agegroups, isLoading: agegroupsLoading} = useBuildingAgeGroups(
-        building_id ? +building_id : undefined
-    );
-    const {data: bookingUser, isLoading: userLoading} = useBookingUser();
-    const {data: events, isLoading: eventsLoading} = useBuildingSchedule({
-        building_id: building_id ? +building_id : undefined,
-        weeks: [DateTime.now()]
-    });
+	const {data: buildingResources, isLoading: buildingResourcesLoading} = useBuildingResources(
+		building_id
+	);
+	const {data: partials, isLoading: partialsLoading} = usePartialApplications();
+	const {data: audience, isLoading: audienceLoading} = useBuildingAudience(
+		building_id ? +building_id : undefined
+	);
+	const {data: agegroups, isLoading: agegroupsLoading} = useBuildingAgeGroups(
+		building_id ? +building_id : undefined
+	);
+	const {data: bookingUser, isLoading: userLoading} = useBookingUser();
+	const {data: events, isLoading: eventsLoading} = useBuildingSchedule({
+		building_id: building_id ? +building_id : undefined,
+		weeks: [DateTime.now()]
+	});
 
-    const existingApplication = useMemo(() => {
-        const applicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
-        if (applicationId === undefined) {
-            return null;
-        }
-        if (!partials) {
-            return undefined;
-        }
-        return partials.list.find(a => a.id === applicationId) || null;
-    }, [props.selectedTempApplication, partials, props.applicationId]);
+	const existingApplication = useMemo(() => {
+		const applicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
+		if (applicationId === undefined) {
+			return null;
+		}
+		if (!partials) {
+			return undefined;
+		}
+		return partials.list.find(a => a.id === applicationId) || null;
+	}, [props.selectedTempApplication, partials, props.applicationId]);
 
-    // Don't show loading state if we don't have a building_id
-    if (!building_id) {
-        return null;
-    }
+	// Don't show loading state if we don't have a building_id
+	if (!building_id) {
+		return null;
+	}
 
-    if (seasonsLoading || userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || eventsLoading || existingApplication === undefined) {
-        return null;
-    }
+	if (seasonsLoading || userLoading || buildingLoading || buildingResourcesLoading || partialsLoading || agegroupsLoading || audienceLoading || eventsLoading || existingApplication === undefined) {
+		return null;
+	}
 
-    const isOpen = props.selectedTempApplication !== undefined || props.applicationId !== undefined;
+	const isOpen = props.selectedTempApplication !== undefined || props.applicationId !== undefined;
 
-    if(!isOpen) {
-        return null;
-    }
+	if (!isOpen) {
+		return null;
+	}
 
-    return (
-        <div style={{ display: isOpen ? 'block' : 'none' }}>
-            <ApplicationCrud
-                agegroups={agegroups}
-                building={building}
-                existingApplication={existingApplication || undefined}
-                audience={audience}
-                buildingResources={buildingResources}
-                partials={partials}
-                lastSubmittedData={lastSubmittedData}
-                bookingUser={bookingUser}
-                seasons={seasons}
-                events={events}
-                showDebug={isDevMode()} // Always enable debug in dev mode
-                onSubmitSuccess={(data) => setLastSubmittedData(data)}
-                {...props}
-            />
-        </div>
-    );
+	return (
+		<div style={{display: isOpen ? 'block' : 'none'}}>
+			<ApplicationCrud
+				agegroups={agegroups}
+				building={building}
+				existingApplication={existingApplication || undefined}
+				audience={audience}
+				buildingResources={buildingResources}
+				partials={partials}
+				lastSubmittedData={lastSubmittedData}
+				bookingUser={bookingUser}
+				seasons={seasons}
+				events={events}
+				showDebug={isDevMode()} // Always enable debug in dev mode
+				onSubmitSuccess={(data) => setLastSubmittedData(data)}
+				{...props}
+			/>
+		</div>
+	);
 }
 
 const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
-    const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
-    const [isUploadingFiles, setIsUploadingFiles] = useState(false);
-    const {building, buildingResources, audience, agegroups, partials, existingApplication, events} = props;
-    const t = useTrans();
-    const [isEditingResources, setIsEditingResources] = useState(false);
-    const createMutation = useCreatePartialApplication();
-    const deleteMutation = useDeletePartialApplication();
-    const updateMutation = useUpdatePartialApplication();
-    const uploadDocumentMutation = useUploadApplicationDocument();
-    const deleteDocumentMutation = useDeleteApplicationDocument();
-    const participantsSectionRef = useRef<HTMLDivElement>(null);
-    const {data: serverSettings} = useServerSettings();
+	const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
+	const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+	const {building, buildingResources, audience, agegroups, partials, existingApplication, events} = props;
+	const t = useTrans();
+	const [isEditingResources, setIsEditingResources] = useState(false);
+	const createMutation = useCreatePartialApplication();
+	const deleteMutation = useDeletePartialApplication();
+	const updateMutation = useUpdatePartialApplication();
+	const uploadDocumentMutation = useUploadApplicationDocument();
+	const deleteDocumentMutation = useDeleteApplicationDocument();
+	const participantsSectionRef = useRef<HTMLDivElement>(null);
+	const {data: serverSettings} = useServerSettings();
 	const [minTime, maxTime] = useMemo(() => {
 		let minTime = '24:00:00';
 		let maxTime = '00:00:00';
-		if(!props.seasons) {
+		if (!props.seasons) {
 			return ['00:00:00', '24:00:00']
 		}
 
@@ -190,7 +190,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	}, [props.seasons]);
 
 	const isWithinBusinessHours = useCallback((date: Date): boolean => {
-		if(!props.seasons) {
+		if (!props.seasons) {
 			return true;
 		}
 		const dt = DateTime.fromJSDate(date);
@@ -252,7 +252,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			// Check if this time range is within business hours
 			if (!isWithinBusinessHours(startTime) || !isWithinBusinessHours(endTime)) {
 				// Move to middle of next day
-				const tomorrow = DateTime.fromJSDate(startTime).plus({ days: 1 });
+				const tomorrow = DateTime.fromJSDate(startTime).plus({days: 1});
 				// Find active season for tomorrow
 				const tomorrowActiveSeasons = props.seasons!.filter(season => {
 					const seasonStart = DateTime.fromISO(season.from_);
@@ -273,14 +273,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						const middleHour = Math.floor((startHour + endHour) / 2);
 
 						return {
-							start: tomorrow.set({ hour: middleHour, minute: 0 }).toJSDate(),
-							end: tomorrow.set({ hour: middleHour + 1, minute: 0 }).toJSDate()
+							start: tomorrow.set({hour: middleHour, minute: 0}).toJSDate(),
+							end: tomorrow.set({hour: middleHour + 1, minute: 0}).toJSDate()
 						};
 					}
 				}
 			}
 
-			return { start: startTime, end: endTime };
+			return {start: startTime, end: endTime};
 		};
 
 		if (!existingApplication?.dates || (props.selectedTempApplication && !props.selectedTempApplication?.id) || (props.selectedTempApplication === undefined && props.date_id === undefined)) {
@@ -337,9 +337,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				equipment: existingApplication.equipment || '',
 				organizer: existingApplication.organizer || '',
 				resources: existingApplication.resources?.filter(res =>
-					!ResourceUsesTimeSlots(res) &&
-					(props.building ? !isApplicationDeactivated(res, props.building) : !res.deactivate_application)
-				).map((res) => res.id.toString()) ||
+						!ResourceUsesTimeSlots(res) &&
+						(props.building ? !isApplicationDeactivated(res, props.building) : !res.deactivate_application)
+					).map((res) => res.id.toString()) ||
 					props.selectedTempApplication?.extendedProps?.resources?.filter(resId => {
 						const resource = buildingResources?.find(r => r.id === +resId);
 						return resource &&
@@ -443,16 +443,16 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	} = useForm<ApplicationFormData>({
 		resolver: zodResolver(applicationFormSchema),
 		defaultValues: defaultValues
-    });
+	});
 
-    // Scroll to participant counts error if it exists after form submission
-    useEffect(() => {
-        if (isSubmitted && errors.agegroups?.['root']?.message && participantsSectionRef.current) {
-            participantsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }, [isSubmitted, errors.agegroups]);
+	// Scroll to participant counts error if it exists after form submission
+	useEffect(() => {
+		if (isSubmitted && errors.agegroups?.['root']?.message && participantsSectionRef.current) {
+			participantsSectionRef.current.scrollIntoView({behavior: 'smooth', block: 'start'});
+		}
+	}, [isSubmitted, errors.agegroups]);
 
-    const selectedResources = watch('resources');
+	const selectedResources = watch('resources');
 	const startTime = watch('start');
 	const endTime = watch('end');
 
@@ -498,7 +498,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				newEndTime.setSeconds(0);
 			}
 
-			setValue('end', newEndTime, { shouldDirty: true });
+			setValue('end', newEndTime, {shouldDirty: true});
 		}
 	}, [startTime, isWithinBusinessHours, setError, clearErrors, t, setValue, getValues, maxTime]);
 
@@ -523,81 +523,81 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			clearErrors('end');
 		}
 	}, [endTime, isWithinBusinessHours, setError, clearErrors, t]);
-    const formatDateForInput = (date: Date) => {
-        return DateTime.fromJSDate(date).toFormat('yyyy-MM-dd\'T\'HH:mm');
-    };
+	const formatDateForInput = (date: Date) => {
+		return DateTime.fromJSDate(date).toFormat('yyyy-MM-dd\'T\'HH:mm');
+	};
 
-    const checkEventOverlap = useCallback((startDate: Date, endDate: Date, resourceIds: string[]): boolean => {
-        // Get current events from context or props
-        if (!events) return false; // No events to check against
+	const checkEventOverlap = useCallback((startDate: Date, endDate: Date, resourceIds: string[]): boolean => {
+		// Get current events from context or props
+		if (!events) return false; // No events to check against
 
-        const selectStart = DateTime.fromJSDate(startDate);
-        const selectEnd = DateTime.fromJSDate(endDate);
+		const selectStart = DateTime.fromJSDate(startDate);
+		const selectEnd = DateTime.fromJSDate(endDate);
 
-        // Prevent selections in the past
-        const now = DateTime.now();
-        if (selectStart < now) {
-            return false;
-        }
+		// Prevent selections in the past
+		const now = DateTime.now();
+		if (selectStart < now) {
+			return false;
+		}
 
-        // Filter to only get actual events (not background events) for selected resources
-        const selectedResourceIds = resourceIds.map(Number);
+		// Filter to only get actual events (not background events) for selected resources
+		const selectedResourceIds = resourceIds.map(Number);
 
-        // Check for resources with deny_application_if_booked flag
-        const resourcesWithDenyFlag = buildingResources
-            ?.filter(res => selectedResourceIds.includes(res.id) && res.deny_application_if_booked === 1);
+		// Check for resources with deny_application_if_booked flag
+		const resourcesWithDenyFlag = buildingResources
+			?.filter(res => selectedResourceIds.includes(res.id) && res.deny_application_if_booked === 1);
 
-        const hasResourceWithDenyFlag = resourcesWithDenyFlag && resourcesWithDenyFlag.length > 0;
+		const hasResourceWithDenyFlag = resourcesWithDenyFlag && resourcesWithDenyFlag.length > 0;
 
-        // If no resources have deny flag, allow the booking
-        if (!hasResourceWithDenyFlag) return true;
+		// If no resources have deny flag, allow the booking
+		if (!hasResourceWithDenyFlag) return true;
 
-        // Get all events for the selected resources
-        const relevantEvents = events
-            .filter(event => {
-                // Check if event has any of the selected resources
-                const eventHasSelectedResource = event.resources.some(res =>
-                    selectedResourceIds.includes(res.id)
-                );
+		// Get all events for the selected resources
+		const relevantEvents = events
+			.filter(event => {
+				// Check if event has any of the selected resources
+				const eventHasSelectedResource = event.resources.some(res =>
+					selectedResourceIds.includes(res.id)
+				);
 
-                // Skip if editing existing event
-                if (existingApplication && existingApplication.id === event.id) {
-                    return false;
-                }
+				// Skip if editing existing event
+				if (existingApplication && existingApplication.id === event.id) {
+					return false;
+				}
 
-                return eventHasSelectedResource;
-            });
+				return eventHasSelectedResource;
+			});
 
-        // Check for overlap with each event's times
-        const hasOverlap = relevantEvents.some(event => {
-            const eventStart = DateTime.fromISO(event.from_);
-            const eventEnd = DateTime.fromISO(event.to_);
+		// Check for overlap with each event's times
+		const hasOverlap = relevantEvents.some(event => {
+			const eventStart = DateTime.fromISO(event.from_);
+			const eventEnd = DateTime.fromISO(event.to_);
 
-            // Check if the selection overlaps with this event
-            return !(selectEnd <= eventStart || selectStart >= eventEnd);
-        });
+			// Check if the selection overlaps with this event
+			return !(selectEnd <= eventStart || selectStart >= eventEnd);
+		});
 
-        // If no overlap, return true (booking is allowed)
-        return !hasOverlap;
-    }, [events, buildingResources, existingApplication]);
+		// If no overlap, return true (booking is allowed)
+		return !hasOverlap;
+	}, [events, buildingResources, existingApplication]);
 
-    const onSubmit = async (data: ApplicationFormData) => {
-        if (!building || !buildingResources) {
-            return;
-        }
+	const onSubmit = async (data: ApplicationFormData) => {
+		if (!building || !buildingResources) {
+			return;
+		}
 
-        // Check for dates in the past
-        const now = new Date();
-        const startInPast = data.start < now;
-        const endInPast = data.end < now;
+		// Check for dates in the past
+		const now = new Date();
+		const startInPast = data.start < now;
+		const endInPast = data.end < now;
 
-        // Check for times outside business hours
+		// Check for times outside business hours
 		const startOutsideHours = !isWithinBusinessHours(data.start);
 		const endOutsideHours = !isWithinBusinessHours(data.end);
 
-        // Check if any selected resource denies applications if already booked
-        const selectedResources = buildingResources.filter(res => data.resources.some(id => +id === res.id));
-        const hasResourceWithDenyFlag = selectedResources.some(res => res.deny_application_if_booked === 1);
+		// Check if any selected resource denies applications if already booked
+		const selectedResources = buildingResources.filter(res => data.resources.some(id => +id === res.id));
+		const hasResourceWithDenyFlag = selectedResources.some(res => res.deny_application_if_booked === 1);
 
 		// Validate dates
 		if (startInPast || endInPast || startOutsideHours || endOutsideHours) {
@@ -647,383 +647,384 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 		// If any resource has deny_application_if_booked=1, check for overlaps
 		if (hasResourceWithDenyFlag) {
-            // Use our checkEventOverlap function to check for overlaps
-            const noOverlap = checkEventOverlap(data.start, data.end, data.resources);
+			// Use our checkEventOverlap function to check for overlaps
+			const noOverlap = checkEventOverlap(data.start, data.end, data.resources);
 
-            if (!noOverlap) {
-                setError('resources', {
-                    type: 'manual',
-                    message: t('bookingfrontend.resource_overlap_detected')
-                });
-                return;
-            }
+			if (!noOverlap) {
+				setError('resources', {
+					type: 'manual',
+					message: t('bookingfrontend.resource_overlap_detected')
+				});
+				return;
+			}
 		}
 
-        if (existingApplication) {
-            const updatedApplication: IUpdatePartialApplication = {
-                id: existingApplication.id,
-                building_id: +props.building_id,
-            }
-            if (dirtyFields.start || dirtyFields.end) {
-                updatedApplication.dates = existingApplication.dates?.map(date => {
-                    const dateId = props.selectedTempApplication?.id || props.date_id;
-                    if (date.id && dateId && +dateId === +date.id) {
-                        return {
-                            ...date,
-                            from_: data.start.toISOString(),
-                            to_: data.end.toISOString()
-                        }
-                    }
-                    return date
-                })
-            }
-            if (dirtyFields.resources) {
-                updatedApplication.resources = buildingResources.filter(res => data.resources.some(selected => (+selected === res.id)))
-            }
+		if (existingApplication) {
+			const updatedApplication: IUpdatePartialApplication = {
+				id: existingApplication.id,
+				building_id: +props.building_id,
+			}
+			if (dirtyFields.start || dirtyFields.end) {
+				updatedApplication.dates = existingApplication.dates?.map(date => {
+					const dateId = props.selectedTempApplication?.id || props.date_id;
+					if (date.id && dateId && +dateId === +date.id) {
+						return {
+							...date,
+							from_: data.start.toISOString(),
+							to_: data.end.toISOString()
+						}
+					}
+					return date
+				})
+			}
+			if (dirtyFields.resources) {
+				updatedApplication.resources = buildingResources.filter(res => data.resources.some(selected => (+selected === res.id)))
+			}
 
 			if (dirtyFields.articles) {
 				updatedApplication.articles = data.articles;
 			}
 
-            if (dirtyFields.agegroups) {
-                updatedApplication.agegroups = data.agegroups.map(ag => ({
-                    ...ag,
-                    female: 0 // Since we're only tracking male numbers
-                }));
-            }
+			if (dirtyFields.agegroups) {
+				updatedApplication.agegroups = data.agegroups.map(ag => ({
+					...ag,
+					female: 0 // Since we're only tracking male numbers
+				}));
+			}
 			if (dirtyFields.title) {
 				updatedApplication.name = data.title;
 			}
-            const checkFields: (keyof typeof dirtyFields)[] = [
-                'audience',
-                'homepage',
-                'description',
-                'equipment',
-                'organizer'
-            ]
-            for (const checkField of checkFields) {
-                if (dirtyFields[checkField]) {
-                    (updatedApplication as any)[checkField] = data[checkField];
-                }
-            }
+			const checkFields: (keyof typeof dirtyFields)[] = [
+				'audience',
+				'homepage',
+				'description',
+				'equipment',
+				'organizer'
+			]
+			for (const checkField of checkFields) {
+				if (dirtyFields[checkField]) {
+					(updatedApplication as any)[checkField] = data[checkField];
+				}
+			}
 
 
-            const result = await updateMutation.mutateAsync({
-                id: existingApplication.id,
-                application: updatedApplication
-            });
+			const result = await updateMutation.mutateAsync({
+				id: existingApplication.id,
+				application: updatedApplication
+			});
 
-            props.onSubmitSuccess?.(data);
-            props.onClose();
-            return;
-        }
+			props.onSubmitSuccess?.(data);
+			props.onClose();
+			return;
+		}
 
-        const newApplication: NewPartialApplication = {
-            building_name: building!.name,
-            building_id: building!.id,
-            dates: [
-                {
-                    from_: data.start.toISOString(),
-                    to_: data.end.toISOString()
-                }
-            ],
-            audience: data.audience,
-            agegroups: data.agegroups.map(ag => ({
-                ...ag,
-                female: 0 // Since we're only tracking male numbers
-            })),
+		const newApplication: NewPartialApplication = {
+			building_name: building!.name,
+			building_id: building!.id,
+			dates: [
+				{
+					from_: data.start.toISOString(),
+					to_: data.end.toISOString()
+				}
+			],
+			audience: data.audience,
+			agegroups: data.agegroups.map(ag => ({
+				...ag,
+				female: 0 // Since we're only tracking male numbers
+			})),
 			articles: data.articles,
-            organizer: data.organizer || '',
-            name: data.title,
-            resources: data.resources.map(res => (+res)),
-            activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1
+			organizer: data.organizer || '',
+			name: data.title,
+			resources: data.resources.map(res => (+res)),
+			activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1
 
-        }
+		}
 
-        const result = await createMutation.mutateAsync(newApplication);
-        if (filesToUpload && filesToUpload.length > 0) {
-            setIsUploadingFiles(true);
-            const formData = new FormData();
-            Array.from(filesToUpload).forEach(file => {
-                formData.append('files[]', file);
-            });
+		const result = await createMutation.mutateAsync(newApplication);
+		if (filesToUpload && filesToUpload.length > 0) {
+			setIsUploadingFiles(true);
+			const formData = new FormData();
+			Array.from(filesToUpload).forEach(file => {
+				formData.append('files[]', file);
+			});
 
-            await uploadDocumentMutation.mutateAsync({
-                id: result.id,
-                files: formData
-            });
-            setIsUploadingFiles(false);
-        }
-        props.onSubmitSuccess?.(data);
-        props.onClose();
-    };
+			await uploadDocumentMutation.mutateAsync({
+				id: result.id,
+				files: formData
+			});
+			setIsUploadingFiles(false);
+		}
+		props.onSubmitSuccess?.(data);
+		props.onClose();
+	};
 
-    const handleDelete = () => {
-        if (existingApplication) {
-            // TODO: fix deleting
-            deleteMutation.mutate(existingApplication.id);
+	const handleDelete = () => {
+		if (existingApplication) {
+			// TODO: fix deleting
+			deleteMutation.mutate(existingApplication.id);
 
-            // setTempEvents(prev => {
-            //     const newEvents = {...prev};
-            //     delete newEvents[selectedTempEvent.id!];
-            //     return newEvents;
-            // });
-        }
-        props.onClose();
-    };
+			// setTempEvents(prev => {
+			//     const newEvents = {...prev};
+			//     delete newEvents[selectedTempEvent.id!];
+			//     return newEvents;
+			// });
+		}
+		props.onClose();
+	};
 
-    const toggleResource = (resourceId: string) => {
-        // Check if resource is deactivated or uses timeslots
-        const resource = buildingResources?.find(r => r.id === +resourceId);
-        if (resource && (
-            ResourceUsesTimeSlots(resource) ||
-            (props.building ? isApplicationDeactivated(resource, props.building) : resource?.deactivate_application)
-        )) {
-            return; // Prevent selection of deactivated resources or timeslot resources
-        }
+	const toggleResource = (resourceId: string) => {
+		// Check if resource is deactivated or uses timeslots
+		const resource = buildingResources?.find(r => r.id === +resourceId);
+		if (resource && (
+			ResourceUsesTimeSlots(resource) ||
+			(props.building ? isApplicationDeactivated(resource, props.building) : resource?.deactivate_application)
+		)) {
+			return; // Prevent selection of deactivated resources or timeslot resources
+		}
 
-        const currentResources = watch('resources');
-        const resourceIndex = currentResources.indexOf(resourceId);
+		const currentResources = watch('resources');
+		const resourceIndex = currentResources.indexOf(resourceId);
 
-        if (resourceIndex === -1) {
-            setValue('resources', [...currentResources, resourceId], {shouldDirty: true});
-        } else {
-            setValue(
-                'resources',
-                currentResources.filter(id => id !== resourceId),
-                {shouldDirty: true}
-            );
-        }
-    };
+		if (resourceIndex === -1) {
+			setValue('resources', [...currentResources, resourceId], {shouldDirty: true});
+		} else {
+			setValue(
+				'resources',
+				currentResources.filter(id => id !== resourceId),
+				{shouldDirty: true}
+			);
+		}
+	};
 
-    const toggleAllResources = () => {
-        if (!buildingResources) return;
+	const toggleAllResources = () => {
+		if (!buildingResources) return;
 
-        // Filter out deactivated resources and timeslot resources
-        const activeResources = buildingResources.filter(r =>
-            !ResourceUsesTimeSlots(r) &&
-            (props.building ? !isApplicationDeactivated(r, props.building) : !r.deactivate_application)
-        );
-        const allActiveResourceIds = activeResources.map(r => String(r.id));
+		// Filter out deactivated resources and timeslot resources
+		const activeResources = buildingResources.filter(r =>
+			!ResourceUsesTimeSlots(r) &&
+			(props.building ? !isApplicationDeactivated(r, props.building) : !r.deactivate_application)
+		);
+		const allActiveResourceIds = activeResources.map(r => String(r.id));
 
-        if (selectedResources.length === activeResources.length) {
-            setValue('resources', [], {shouldDirty: true});
-        } else {
-            setValue('resources', allActiveResourceIds, {shouldDirty: true});
-        }
-    };
+		if (selectedResources.length === activeResources.length) {
+			setValue('resources', [], {shouldDirty: true});
+		} else {
+			setValue('resources', allActiveResourceIds, {shouldDirty: true});
+		}
+	};
 
-    const renderResourceList = () => {
-        if (!buildingResources) return null;
+	const renderResourceList = () => {
+		if (!buildingResources) return null;
 
-        if (!isEditingResources) {
-            // Show only selected resources with edit button
-            return (
-                <div className={styles.selectedResourcesList}>
-                    <div className={styles.resourcesHeader}>
-                        <h4>{t('bookingfrontend.chosen rent object')}</h4>
-                        <Button
-                            variant="tertiary"
-                            data-size="sm"
-                            onClick={() => setIsEditingResources(true)}
-                        >
-                            {t('common.edit')}
-                        </Button>
-                    </div>
-                    <div style={{
-                        display: 'flex',
-                        gap: '0.5rem'
-                    }}>
+		if (!isEditingResources) {
+			// Show only selected resources with edit button
+			return (
+				<div className={styles.selectedResourcesList}>
+					<div className={styles.resourcesHeader}>
+						<h4>{t('bookingfrontend.chosen rent object')}</h4>
+						<Button
+							variant="tertiary"
+							data-size="sm"
+							onClick={() => setIsEditingResources(true)}
+						>
+							{t('common.edit')}
+						</Button>
+					</div>
+					<div style={{
+						display: 'flex',
+						gap: '0.5rem'
+					}}>
 
-                        <div style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '0.5rem'
-                        }}>
-                            {buildingResources
-                                .filter(resource => selectedResources.includes(String(resource.id)))
-                                .map(resource => (
-                                    <Tag
-                                        data-color={'neutral'} data-size={"md"} key={resource.id}
-                                        className={styles.selectedResourceItem}>
-                                        <ColourCircle resourceId={resource.id} size="medium"/>
-                                        <span className={styles.resourceName}>{resource.name}</span>
-                                    </Tag>
-                                ))}
+						<div style={{
+							display: 'flex',
+							flexWrap: 'wrap',
+							gap: '0.5rem'
+						}}>
+							{buildingResources
+								.filter(resource => selectedResources.includes(String(resource.id)))
+								.map(resource => (
+									<Tag
+										data-color={'neutral'} data-size={"md"} key={resource.id}
+										className={styles.selectedResourceItem}>
+										<ColourCircle resourceId={resource.id} size="medium"/>
+										<span className={styles.resourceName}>{resource.name}</span>
+									</Tag>
+								))}
 
-                        </div>
-                        {/*<Button*/}
-                        {/*    variant="tertiary"*/}
-                        {/*    data-size="sm"*/}
-                        {/*    onClick={() => setIsEditingResources(true)}*/}
-                        {/*    icon={true}*/}
-                        {/*>*/}
-                        {/*    <FontAwesomeIcon icon={faPen}/>*/}
-                        {/*</Button>*/}
-                    </div>
+						</div>
+						{/*<Button*/}
+						{/*    variant="tertiary"*/}
+						{/*    data-size="sm"*/}
+						{/*    onClick={() => setIsEditingResources(true)}*/}
+						{/*    icon={true}*/}
+						{/*>*/}
+						{/*    <FontAwesomeIcon icon={faPen}/>*/}
+						{/*</Button>*/}
+					</div>
 
 
-                </div>
-            );
-        }
+				</div>
+			);
+		}
 
-        // Show all resources with checkboxes when editing
-        return (
-            <div className={styles.resourceList}>
-                <div className={styles.resourcesHeader}>
-                    <h4>{t('bookingfrontend.choose resources')}</h4>
-                    <Button
-                        variant="tertiary"
-                        data-size="sm"
-                        onClick={() => setIsEditingResources(false)}
-                    >
-                        {t('common.done')}
-                    </Button>
-                </div>
-                {/*<Checkbox*/}
-                {/*    value="select-all"*/}
-                {/*    id="resource-all"*/}
-                {/*    label={`${t('common.select all')} ${t('bookingfrontend.resources').toLowerCase()}`}*/}
-                {/*    checked={buildingResources && selectedResources.length === buildingResources.length}*/}
-                {/*    onChange={toggleAllResources}*/}
-                {/*    className={styles.resourceCheckbox}*/}
-                {/*/>*/}
-                <div style={{
-                    display: 'flex',
-                    gap: '0.5rem'
-                }}>
+		// Show all resources with checkboxes when editing
+		return (
+			<div className={styles.resourceList}>
+				<div className={styles.resourcesHeader}>
+					<h4>{t('bookingfrontend.choose resources')}</h4>
+					<Button
+						variant="tertiary"
+						data-size="sm"
+						onClick={() => setIsEditingResources(false)}
+					>
+						{t('common.done')}
+					</Button>
+				</div>
+				{/*<Checkbox*/}
+				{/*    value="select-all"*/}
+				{/*    id="resource-all"*/}
+				{/*    label={`${t('common.select all')} ${t('bookingfrontend.resources').toLowerCase()}`}*/}
+				{/*    checked={buildingResources && selectedResources.length === buildingResources.length}*/}
+				{/*    onChange={toggleAllResources}*/}
+				{/*    className={styles.resourceCheckbox}*/}
+				{/*/>*/}
+				<div style={{
+					display: 'flex',
+					gap: '0.5rem'
+				}}>
 
-                    <div style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '0.5rem'
-                    }}>
-                        {buildingResources
-                            .filter(resource => !ResourceUsesTimeSlots(resource))
-                            .map(resource => (
-                            // <div key={resource.id} className={styles.resourceItem}>
-                            <Chip.Checkbox
-                                value={String(resource.id)}
-                                id={`resource-${resource.id}`}
-                                key={resource.id}
-                                data-color={'brand1'}
-                                data-size={"md"}
-                                checked={selectedResources.includes(String(resource.id))}
-                                disabled={props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application}
-                                onChange={() => toggleResource(String(resource.id))}
-                                className={`${styles.resourceItem} ${props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application ? styles.deactivated : ''}`}
-                            >
-                                <ColourCircle resourceId={resource.id} size="medium"/>
-                                <span>{resource.name}</span>
-                                {(props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application) && (
-                                    <span className={styles.deactivatedText}>
+					<div style={{
+						display: 'flex',
+						flexWrap: 'wrap',
+						gap: '0.5rem'
+					}}>
+						{buildingResources
+							.filter(resource => !ResourceUsesTimeSlots(resource))
+							.map(resource => (
+								// <div key={resource.id} className={styles.resourceItem}>
+								<Chip.Checkbox
+									value={String(resource.id)}
+									id={`resource-${resource.id}`}
+									key={resource.id}
+									data-color={'brand1'}
+									data-size={"md"}
+									checked={selectedResources.includes(String(resource.id))}
+									disabled={props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application}
+									onChange={() => toggleResource(String(resource.id))}
+									className={`${styles.resourceItem} ${props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application ? styles.deactivated : ''}`}
+								>
+									<ColourCircle resourceId={resource.id} size="medium"/>
+									<span>{resource.name}</span>
+									{(props.building ? isApplicationDeactivated(resource, props.building) : resource.deactivate_application) && (
+										<span className={styles.deactivatedText}>
                                         ({t('bookingfrontend.booking_unavailable')})
                                     </span>
-                                )}
-                            </Chip.Checkbox>
-                            // </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    };
+									)}
+								</Chip.Checkbox>
+								// </div>
+							))}
+					</div>
+				</div>
+			</div>
+		);
+	};
 	// console.log("max-min time", maxTime, minTime)
 
-    // Enhanced debug logging for time constraints and business hours validation
-    if (props.showDebug) {
-        console.log("Application CRUD time constraints:", {
-            minTime,
-            maxTime,
-            startTime: startTime ? {
-                date: startTime,
-                formatted: DateTime.fromJSDate(startTime).toFormat('HH:mm:ss'),
-                isWithinHours: isWithinBusinessHours(startTime)
-            } : null,
-            endTime: endTime ? {
-                date: endTime,
-                formatted: DateTime.fromJSDate(endTime).toFormat('HH:mm:ss'),
-                isWithinHours: isWithinBusinessHours(endTime)
-            } : null,
-            activeSeasons: props.seasons?.filter(season => {
-                const now = DateTime.now();
-                const seasonStart = DateTime.fromISO(season.from_);
-                const seasonEnd = DateTime.fromISO(season.to_);
-                return season.active && now >= seasonStart && now <= seasonEnd;
-            }).map(s => ({
-                id: s.id,
-                boundaries: s.boundaries.map(b => ({
-                    wday: b.wday,
-                    from: b.from_,
-                    to: b.to_
-                }))
-            }))
-        });
-    }
+	// Enhanced debug logging for time constraints and business hours validation
+	if (props.showDebug) {
+		console.log("Application CRUD time constraints:", {
+			minTime,
+			maxTime,
+			startTime: startTime ? {
+				date: startTime,
+				formatted: DateTime.fromJSDate(startTime).toFormat('HH:mm:ss'),
+				isWithinHours: isWithinBusinessHours(startTime)
+			} : null,
+			endTime: endTime ? {
+				date: endTime,
+				formatted: DateTime.fromJSDate(endTime).toFormat('HH:mm:ss'),
+				isWithinHours: isWithinBusinessHours(endTime)
+			} : null,
+			activeSeasons: props.seasons?.filter(season => {
+				const now = DateTime.now();
+				const seasonStart = DateTime.fromISO(season.from_);
+				const seasonEnd = DateTime.fromISO(season.to_);
+				return season.active && now >= seasonStart && now <= seasonEnd;
+			}).map(s => ({
+				id: s.id,
+				boundaries: s.boundaries.map(b => ({
+					wday: b.wday,
+					from: b.from_,
+					to: b.to_
+				}))
+			}))
+		});
+	}
 
-    return (
-        <form onSubmit={handleSubmit(onSubmit)}>
-            <MobileDialog
-                open={true}
-                onClose={props.onClose}
-                size={'hd'}
-                title={
-                    <div className={styles.dialogHeader}>
-                        <h3>{existingApplication ? t('bookingfrontend.edit application') : t('bookingfrontend.new application')}</h3>
-                    </div>
-                }
-                footer={
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                        {existingApplication && (
-                            <Button
-                                variant="tertiary"
-                                color="danger"
-                                onClick={handleDelete}
-                                type="button"
-                            >
-                                {t('common.delete')}
-                            </Button>
-                        )}
-                        <Button
-                            variant="primary"
-                            type="submit"
-                            disabled={!(isDirty || !existingApplication)}
-                        >
-                            {t('common.save')}
-                        </Button>
-                    </div>
-                }
-            >
-                <section className={styles.eventForm}>
-                    <div className={`${styles.formGroup}`}>
-                        <Controller
-                            name="title"
-                            control={control}
-                            render={({field}) => (
-                                <Textfield
-                                    label={t('bookingfrontend.title')}
-                                    {...field}
-                                    error={errors.title?.message ? t(errors.title.message) : undefined}
-                                    placeholder={t('bookingfrontend.enter_title')}
-                                />
-                            )}
-                        />
-                    </div>
+	return (
+		<form onSubmit={handleSubmit(onSubmit)}>
+			<MobileDialog
+				dialogId={'application-dialog'}
+				open={true}
+				onClose={props.onClose}
+				size={'hd'}
+				title={
+					<div className={styles.dialogHeader}>
+						<h3>{existingApplication ? t('bookingfrontend.edit application') : t('bookingfrontend.new application')}</h3>
+					</div>
+				}
+				footer={
+					<div style={{display: 'flex', gap: '1rem'}}>
+						{existingApplication && (
+							<Button
+								variant="tertiary"
+								color="danger"
+								onClick={handleDelete}
+								type="button"
+							>
+								{t('common.delete')}
+							</Button>
+						)}
+						<Button
+							variant="primary"
+							type="submit"
+							disabled={!(isDirty || !existingApplication)}
+						>
+							{t('common.save')}
+						</Button>
+					</div>
+				}
+			>
+				<section className={styles.eventForm}>
+					<div className={`${styles.formGroup}`}>
+						<Controller
+							name="title"
+							control={control}
+							render={({field}) => (
+								<Textfield
+									label={t('bookingfrontend.title')}
+									{...field}
+									error={errors.title?.message ? t(errors.title.message) : undefined}
+									placeholder={t('bookingfrontend.enter_title')}
+								/>
+							)}
+						/>
+					</div>
 
-                    <div className={styles.dateTimeGroup}>
-                        <div className={styles.dateTimeInput}>
-                            <Controller
-                                name="start"
-                                control={control}
-                                render={({field: {value, onChange, ...field}}) => (
-                                    <>
-                                        <label>{t('common.start')}</label>
-                                        {/*<input*/}
-                                        {/*    type="datetime-local"*/}
-                                        {/*    {...field}*/}
-                                        {/*    value={formatDateForInput(value)}*/}
-                                        {/*    onChange={e => onChange(new Date(e.target.value))}*/}
-                                        {/*/>*/}
+					<div className={styles.dateTimeGroup}>
+						<div className={styles.dateTimeInput}>
+							<Controller
+								name="start"
+								control={control}
+								render={({field: {value, onChange, ...field}}) => (
+									<>
+										<label>{t('common.start')}</label>
+										{/*<input*/}
+										{/*    type="datetime-local"*/}
+										{/*    {...field}*/}
+										{/*    value={formatDateForInput(value)}*/}
+										{/*    onChange={e => onChange(new Date(e.target.value))}*/}
+										{/*/>*/}
 										<CalendarDatePicker
 											currentDate={value}
 											view={'timeGridDay'}
@@ -1036,25 +1037,25 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 										/>
 
 
-                                        {errors.start &&
-                                            <span className={styles.error}>{errors.start.message}</span>}
-                                    </>
-                                )}
-                            />
-                        </div>
-                        <div className={styles.dateTimeInput}>
-                            <Controller
-                                name="end"
-                                control={control}
-                                render={({field: {value, onChange, ...field}}) => (
-                                    <>
-                                        <label>{t('common.end')}</label>
-                                        {/*<input*/}
-                                        {/*    type="datetime-local"*/}
-                                        {/*    {...field}*/}
-                                        {/*    value={formatDateForInput(value)}*/}
-                                        {/*    onChange={e => onChange(new Date(e.target.value))}*/}
-                                        {/*/>*/}
+										{errors.start &&
+											<span className={styles.error}>{errors.start.message}</span>}
+									</>
+								)}
+							/>
+						</div>
+						<div className={styles.dateTimeInput}>
+							<Controller
+								name="end"
+								control={control}
+								render={({field: {value, onChange, ...field}}) => (
+									<>
+										<label>{t('common.end')}</label>
+										{/*<input*/}
+										{/*    type="datetime-local"*/}
+										{/*    {...field}*/}
+										{/*    value={formatDateForInput(value)}*/}
+										{/*    onChange={e => onChange(new Date(e.target.value))}*/}
+										{/*/>*/}
 										<CalendarDatePicker
 											currentDate={value}
 											view={'timeGridDay'}
@@ -1065,20 +1066,20 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											allowPastDates={existingApplication !== undefined}
 											showDebug={props.showDebug || isDevMode()}
 										/>
-                                        {errors.end &&
-                                            <span className={styles.error}>{errors.end.message}</span>}
-                                    </>
-                                )}
-                            />
-                        </div>
-                    </div>
+										{errors.end &&
+											<span className={styles.error}>{errors.end.message}</span>}
+									</>
+								)}
+							/>
+						</div>
+					</div>
 
-                    <div className={`${styles.formGroup} ${styles.wide}`}>
-                        {renderResourceList()}
-                        {errors.resources?.message && (
-                            <span className={styles.error}>{t(errors.resources.message)}</span>
-                        )}
-                    </div>
+					<div className={`${styles.formGroup} ${styles.wide}`}>
+						{renderResourceList()}
+						{errors.resources?.message && (
+							<span className={styles.error}>{t(errors.resources.message)}</span>
+						)}
+					</div>
 
 					{/* Articles section - only show if activated in server settings */}
 					{selectedResources.length > 0 && serverSettings?.booking_config?.activate_application_articles === true && (
@@ -1089,7 +1090,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							<Controller
 								name="articles"
 								control={control}
-								render={({ field }) => (
+								render={({field}) => (
 									<ArticleTable
 										resourceIds={selectedResources.map(id => parseInt(id))}
 										selectedArticles={field.value || []}
@@ -1101,250 +1102,250 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							/>
 						</div>
 					)}
-                    <div className={`${styles.formGroup}`}>
-                        <div className={styles.resourcesHeader}>
-                            <h4>{t('bookingfrontend.target audience')}</h4>
-                        </div>
-                        <Controller
-                            name="audience"
-                            control={control}
-                            defaultValue={existingApplication?.audience || []}
-                            render={({field}) => (
-                                <Field>
-                                    <Select
-                                        required
-                                        {...field}
-                                        value={field.value?.[0]}
-                                        onChange={(event) => field.onChange([(Number(event.target.value))])}
-                                        aria-invalid={!!errors.audience}
-                                    >
-                                        <Select.Option value="" disabled selected={!field.value?.[0]}>
-                                            {t('bookingfrontend.choose target audience')}
-                                        </Select.Option>
-                                        {audience?.map(item => (
-                                            <Select.Option key={item.id} value={item.id}>
-                                                {item.name}
-                                            </Select.Option>
-                                        ))}
-                                    </Select>
-                                    {errors.audience && (
-                                        <ValidationMessage>
-                                            {errors.audience.message}
-                                        </ValidationMessage>
-                                    )}
-                                </Field>
-                            )}
-                        />
-                    </div>
+					<div className={`${styles.formGroup}`}>
+						<div className={styles.resourcesHeader}>
+							<h4>{t('bookingfrontend.target audience')}</h4>
+						</div>
+						<Controller
+							name="audience"
+							control={control}
+							defaultValue={existingApplication?.audience || []}
+							render={({field}) => (
+								<Field>
+									<Select
+										required
+										{...field}
+										value={field.value?.[0]}
+										onChange={(event) => field.onChange([(Number(event.target.value))])}
+										aria-invalid={!!errors.audience}
+									>
+										<Select.Option value="" disabled selected={!field.value?.[0]}>
+											{t('bookingfrontend.choose target audience')}
+										</Select.Option>
+										{audience?.map(item => (
+											<Select.Option key={item.id} value={item.id}>
+												{item.name}
+											</Select.Option>
+										))}
+									</Select>
+									{errors.audience && (
+										<ValidationMessage>
+											{errors.audience.message}
+										</ValidationMessage>
+									)}
+								</Field>
+							)}
+						/>
+					</div>
 
-                    <div className={`${styles.formGroup}`} style={{gridColumn: 1}} ref={participantsSectionRef}>
-                        <div className={styles.resourcesHeader}
-                             style={{flexDirection: 'column', alignItems: 'flex-start'}}>
-                            <h4>{t('bookingfrontend.estimated number of participants')}</h4>
-                            {errors.agegroups?.['root']?.message && (
-                                <span className={styles.error}>{t(errors.agegroups?.['root']?.message)}</span>
-                            )}
-                        </div>
+					<div className={`${styles.formGroup}`} style={{gridColumn: 1}} ref={participantsSectionRef}>
+						<div className={styles.resourcesHeader}
+							 style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+							<h4>{t('bookingfrontend.estimated number of participants')}</h4>
+							{errors.agegroups?.['root']?.message && (
+								<span className={styles.error}>{t(errors.agegroups?.['root']?.message)}</span>
+							)}
+						</div>
 
-                        {agegroups?.map((agegroup, index) => (
-                            <Fragment key={agegroup.id}>
-                                {/* Visible male count input */}
-                                <Controller
-                                    name={`agegroups.${index}.male`}
-                                    control={control}
-                                    defaultValue={existingApplication?.agegroups?.find(ag => ag.id === agegroup.id)?.male || 0}
-                                    render={({field}) => (
-                                        <Textfield
-                                            type="number"
-                                            label={agegroup.name}
-                                            {...field}
-                                            value={field.value === 0 ? '' : field.value}
-                                            placeholder="0"
-                                            min={0}
-                                            inputMode="numeric"
-                                            pattern="[0-9]*"
-                                            description={agegroup.description}
-                                            onChange={(e) => {
-                                                const value = e.target.value === '' ? 0 : Number(e.target.value);
-                                                field.onChange(value);
-                                            }}
-                                            error={errors.agegroups?.[0]?.message ? t(errors.agegroups?.[0]?.message) : undefined}
-                                            className={styles.participantInput}
-                                        />
-                                    )}
-                                />
-                                {/* Hidden fields for other required data */}
-                                <Controller
-                                    name={`agegroups.${index}.id`}
-                                    control={control}
-                                    defaultValue={agegroup.id}
-                                    render={({field}) => <input type="hidden" {...field} />}
-                                />
-                                <Controller
-                                    name={`agegroups.${index}.female`}
-                                    control={control}
-                                    defaultValue={0}
-                                    render={({field}) => <input type="hidden" {...field} />}
-                                />
-                                <Controller
-                                    name={`agegroups.${index}.name`}
-                                    control={control}
-                                    defaultValue={agegroup.name}
-                                    render={({field}) => <input type="hidden" {...field} />}
-                                />
-                                <Controller
-                                    name={`agegroups.${index}.description`}
-                                    control={control}
-                                    defaultValue={agegroup.description || ''}
-                                    render={({field}) => <input type="hidden" {...field} value={field.value || ''}/>}
-                                />
-                                <Controller
-                                    name={`agegroups.${index}.sort`}
-                                    control={control}
-                                    defaultValue={agegroup.sort}
-                                    render={({field}) => <input type="hidden" {...field} />}
-                                />
-                            </Fragment>
-                        ))}
+						{agegroups?.map((agegroup, index) => (
+							<Fragment key={agegroup.id}>
+								{/* Visible male count input */}
+								<Controller
+									name={`agegroups.${index}.male`}
+									control={control}
+									defaultValue={existingApplication?.agegroups?.find(ag => ag.id === agegroup.id)?.male || 0}
+									render={({field}) => (
+										<Textfield
+											type="number"
+											label={agegroup.name}
+											{...field}
+											value={field.value === 0 ? '' : field.value}
+											placeholder="0"
+											min={0}
+											inputMode="numeric"
+											pattern="[0-9]*"
+											description={agegroup.description}
+											onChange={(e) => {
+												const value = e.target.value === '' ? 0 : Number(e.target.value);
+												field.onChange(value);
+											}}
+											error={errors.agegroups?.[0]?.message ? t(errors.agegroups?.[0]?.message) : undefined}
+											className={styles.participantInput}
+										/>
+									)}
+								/>
+								{/* Hidden fields for other required data */}
+								<Controller
+									name={`agegroups.${index}.id`}
+									control={control}
+									defaultValue={agegroup.id}
+									render={({field}) => <input type="hidden" {...field} />}
+								/>
+								<Controller
+									name={`agegroups.${index}.female`}
+									control={control}
+									defaultValue={0}
+									render={({field}) => <input type="hidden" {...field} />}
+								/>
+								<Controller
+									name={`agegroups.${index}.name`}
+									control={control}
+									defaultValue={agegroup.name}
+									render={({field}) => <input type="hidden" {...field} />}
+								/>
+								<Controller
+									name={`agegroups.${index}.description`}
+									control={control}
+									defaultValue={agegroup.description || ''}
+									render={({field}) => <input type="hidden" {...field} value={field.value || ''}/>}
+								/>
+								<Controller
+									name={`agegroups.${index}.sort`}
+									control={control}
+									defaultValue={agegroup.sort}
+									render={({field}) => <input type="hidden" {...field} />}
+								/>
+							</Fragment>
+						))}
 
 
-                    </div>
+					</div>
 
-                    <div className={`${styles.formGroup} ${styles.wide}`}>
-                        <Details data-color={'neutral'}>
-                            <Details.Summary>
+					<div className={`${styles.formGroup} ${styles.wide}`}>
+						<Details data-color={'neutral'}>
+							<Details.Summary>
 								{t('bookingfrontend.additional_information')}
-                            </Details.Summary>
-                            <Details.Content style={{backgroundColor: "inherit"}} className={styles.eventForm}>
-                                <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
-                                    <Controller
-                                        name="homepage"
-                                        control={control}
-                                        render={({field}) => (
-                                            <Textfield
-                                                label={t('bookingfrontend.homepage')}
-                                                {...field}
-                                                error={errors.homepage?.message}
-                                                placeholder={t('bookingfrontend.event/activity homepage')}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                                <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
-                                    <Controller
-                                        name="description"
-                                        control={control}
-                                        render={({field}) => (
-                                            <Textfield
-                                                label={t('bookingfrontend.description')}
-                                                {...field}
-                                                multiline={true}
-                                                rows={3}
-                                                error={errors.description?.message}
-                                                placeholder={t('bookingfrontend.event/activity description')}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                                <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
-                                    <Controller
-                                        name="equipment"
-                                        control={control}
-                                        render={({field}) => (
-                                            <Textfield
-                                                label={t('bookingfrontend.equipment text')}
-                                                {...field}
-                                                multiline={true}
-                                                rows={3}
-                                                error={errors.equipment?.message}
-                                                placeholder={t('bookingfrontend.equipment text')}
-                                            />
-                                        )}
-                                    />
-                                </div>
-                                <div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
-                                    <div className={styles.resourcesHeader}>
-                                        <h4>{t('bookingfrontend.documents')}</h4>
-                                    </div>
+							</Details.Summary>
+							<Details.Content style={{backgroundColor: "inherit"}} className={styles.eventForm}>
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+									<Controller
+										name="homepage"
+										control={control}
+										render={({field}) => (
+											<Textfield
+												label={t('bookingfrontend.homepage')}
+												{...field}
+												error={errors.homepage?.message}
+												placeholder={t('bookingfrontend.event/activity homepage')}
+											/>
+										)}
+									/>
+								</div>
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+									<Controller
+										name="description"
+										control={control}
+										render={({field}) => (
+											<Textfield
+												label={t('bookingfrontend.description')}
+												{...field}
+												multiline={true}
+												rows={3}
+												error={errors.description?.message}
+												placeholder={t('bookingfrontend.event/activity description')}
+											/>
+										)}
+									/>
+								</div>
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+									<Controller
+										name="equipment"
+										control={control}
+										render={({field}) => (
+											<Textfield
+												label={t('bookingfrontend.equipment text')}
+												{...field}
+												multiline={true}
+												rows={3}
+												error={errors.equipment?.message}
+												placeholder={t('bookingfrontend.equipment text')}
+											/>
+										)}
+									/>
+								</div>
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+									<div className={styles.resourcesHeader}>
+										<h4>{t('bookingfrontend.documents')}</h4>
+									</div>
 
-                                    {existingApplication ? (
-                                        // Show existing documents and direct upload for existing applications
-                                        <>
-                                            {existingApplication.documents?.length > 0 && (
-                                                <div className={styles.documentsList}>
-                                                    {existingApplication.documents.map(doc => (
-                                                        <div key={doc.id} className={styles.documentItem}>
-                                                            <span>{doc.name}</span>
-                                                            <Button
-                                                                variant="tertiary"
-                                                                data-color={'danger'}
-                                                                // color="danger"
-                                                                data-size={'sm'}
-                                                                onClick={() => deleteDocumentMutation.mutate(doc.id)}
-                                                                loading={deleteDocumentMutation.isPending}
-                                                            >
-                                                                {t('common.delete')}
-                                                            </Button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
+									{existingApplication ? (
+										// Show existing documents and direct upload for existing applications
+										<>
+											{existingApplication.documents?.length > 0 && (
+												<div className={styles.documentsList}>
+													{existingApplication.documents.map(doc => (
+														<div key={doc.id} className={styles.documentItem}>
+															<span>{doc.name}</span>
+															<Button
+																variant="tertiary"
+																data-color={'danger'}
+																// color="danger"
+																data-size={'sm'}
+																onClick={() => deleteDocumentMutation.mutate(doc.id)}
+																loading={deleteDocumentMutation.isPending}
+															>
+																{t('common.delete')}
+															</Button>
+														</div>
+													))}
+												</div>
+											)}
 
-                                            <input
-                                                type="file"
-                                                multiple
-                                                value={""}
-                                                onChange={(e) => {
-                                                    if (e.target.files && existingApplication.id) {
-                                                        const formData = new FormData();
-                                                        Array.from(e.target.files).forEach(file => {
-                                                            formData.append('files[]', file);
-                                                        });
+											<input
+												type="file"
+												multiple
+												value={""}
+												onChange={(e) => {
+													if (e.target.files && existingApplication.id) {
+														const formData = new FormData();
+														Array.from(e.target.files).forEach(file => {
+															formData.append('files[]', file);
+														});
 
-                                                        uploadDocumentMutation.mutate({
-                                                            id: existingApplication.id,
-                                                            files: formData
-                                                        });
-                                                    }
-                                                }}
-                                            />
-                                            {uploadDocumentMutation.isPending && (
-                                                <Spinner aria-label={t('common.uploading')}/>
-                                            )}
-                                        </>
-                                    ) : (
-                                        // For new applications, just store the files to be uploaded after creation
-                                        <>
-                                            <input
-                                                type="file"
-                                                multiple
-                                                onChange={(e) => setFilesToUpload(e.target.files)}
-                                            />
-                                            {filesToUpload && (
-                                                <div className={styles.selectedFiles}>
-                                                    {Array.from(filesToUpload).map((file, index) => (
-                                                        <div key={index} className={styles.selectedFileItem}>
-                                                            {file.name}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            {isUploadingFiles && (
-                                                <Spinner aria-label={t('common.uploading')}/>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
+														uploadDocumentMutation.mutate({
+															id: existingApplication.id,
+															files: formData
+														});
+													}
+												}}
+											/>
+											{uploadDocumentMutation.isPending && (
+												<Spinner aria-label={t('common.uploading')}/>
+											)}
+										</>
+									) : (
+										// For new applications, just store the files to be uploaded after creation
+										<>
+											<input
+												type="file"
+												multiple
+												onChange={(e) => setFilesToUpload(e.target.files)}
+											/>
+											{filesToUpload && (
+												<div className={styles.selectedFiles}>
+													{Array.from(filesToUpload).map((file, index) => (
+														<div key={index} className={styles.selectedFileItem}>
+															{file.name}
+														</div>
+													))}
+												</div>
+											)}
+											{isUploadingFiles && (
+												<Spinner aria-label={t('common.uploading')}/>
+											)}
+										</>
+									)}
+								</div>
 
-                            </Details.Content>
-                        </Details>
-                    </div>
+							</Details.Content>
+						</Details>
+					</div>
 
 
-                </section>
-            </MobileDialog>
-        </form>
-    );
+				</section>
+			</MobileDialog>
+		</form>
+	);
 };
 
 export default ApplicationCrudWrapper;

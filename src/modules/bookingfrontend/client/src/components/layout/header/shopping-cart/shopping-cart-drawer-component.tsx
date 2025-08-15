@@ -5,6 +5,7 @@ import ShoppingCartContent from "@/components/layout/header/shopping-cart/shoppi
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
 import styles from "./shopping-cart-drawer.module.scss";
 import { useShoppingCartDrawer } from './shopping-cart-drawer-context';
+import {useScrollLockEffect} from '@/contexts/ScrollLockContext';
 
 const ShoppingCartDrawerComponent: React.FC = () => {
     const { isOpen, setIsOpen, anchorRef } = useShoppingCartDrawer();
@@ -15,6 +16,9 @@ const ShoppingCartDrawerComponent: React.FC = () => {
     }>();
     const drawerRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = React.useState(false);
+
+    // Use scroll lock context to manage body overflow
+    useScrollLockEffect('shopping-cart-drawer-component', isOpen);
 
     // Set mounted state on client-side
     useEffect(() => {
@@ -40,17 +44,6 @@ const ShoppingCartDrawerComponent: React.FC = () => {
         }
     }, [isOpen, setIsOpen, anchorRef]);
 
-    // Add/remove overflow hidden class on body when drawer is open
-    useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = '';
-        }
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, [isOpen]);
 
     // Don't render anything if not open or not mounted
     if ( !mounted) {

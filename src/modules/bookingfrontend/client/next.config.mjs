@@ -4,6 +4,7 @@ const nextConfig = {
     assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH,
 	productionBrowserSourceMaps: true,
     output: "standalone",
+    distDir: process.env.NEXT_DIST_DIR || ".next",
     images: {
         remotePatterns: [
             {

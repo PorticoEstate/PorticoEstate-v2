@@ -13,6 +13,8 @@ interface CheckoutEventDetailsProps {
 	onDetailsChange: (data: CheckoutEventDetailsData) => void;
 	user: IBookingUser;
 	partials: IApplication[];
+	showError?: boolean;
+	onErrorClear?: () => void;
 }
 
 
@@ -27,7 +29,7 @@ function getCommonValue<T extends { [key: string]: any }>(arr: (T[] | undefined)
 	return res;
 }
 
-const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, user, partials}) => {
+const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, user, partials, showError = false, onErrorClear}) => {
 	const t = useTrans();
 
 	const defaultValues = useMemo(() => ({
@@ -46,9 +48,15 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 	}, [defaultValues, onDetailsChange]);
 
 	useEffect(() => {
-		const subscription = watch((value) => onDetailsChange(value as CheckoutEventDetailsData));
+		const subscription = watch((value) => {
+			onDetailsChange(value as CheckoutEventDetailsData);
+			// Clear error when user starts typing
+			if (showError && onErrorClear && value.organizerName) {
+				onErrorClear();
+			}
+		});
 		return () => subscription.unsubscribe();
-	}, [watch, onDetailsChange]);
+	}, [watch, onDetailsChange, showError, onErrorClear]);
 
 	return (
 		<section className={styles.eventDetails}>
@@ -60,7 +68,7 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 						<Textfield
 							label={t('bookingfrontend.organizer')}
 							{...field}
-							error={fieldState.error?.message}
+							error={fieldState.error?.message || (showError && !field.value ? t('bookingfrontend.organizer_required') : undefined)}
 						/>
 					)}
 				/>

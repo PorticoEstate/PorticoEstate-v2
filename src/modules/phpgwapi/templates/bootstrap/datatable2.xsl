@@ -36,6 +36,7 @@
 
 		var number_of_toolbar_items = 0;
 		var filter_selects = {};
+		var customFilters = {}; // Store custom filter values for modern DataTables compatibility
 		var lang = <xsl:value-of select="php:function('js_lang', 'Search')"/>;
 	</script>
 	<xsl:call-template name="jquery_phpgw_i18n"/>
@@ -1011,6 +1012,19 @@
 				}
 			}
 
+			// Build columnDefs to only enable columnControl for orderable columns
+			var columnDefs = [];
+			for(i=0;i < JqueryPortico.columns.length;i++)
+			{
+				if (JqueryPortico.columns[i]['orderable'] == true)
+				{
+					columnDefs.push({
+						target: i,
+						columnControl: ['order']
+					});
+				}
+			}
+
 			init_multiselect = function(oControl)
 			{
 				try
@@ -1282,6 +1296,15 @@ console.log(app_method_referrer);
 							$('#reset_filter').hide();
 						}
 
+						// Add custom filters for modern DataTables compatibility
+						if (customFilters) {
+							for (var param in customFilters) {
+								if (customFilters.hasOwnProperty(param)) {
+									aoData[param] = customFilters[param];
+								}
+							}
+						}
+
 					},
 					dataSrc: function ( json ) {
 						if (typeof(json.sessionExpired) != 'undefined' && json.sessionExpired == true)
@@ -1467,7 +1490,9 @@ console.log(app_method_referrer);
 				"search": initial_search,
 				"order": order_def,
 				autoWidth: true,
-				buttons: JqueryPortico.buttons
+				buttons: JqueryPortico.buttons,
+				ordering: {indicators: false,  handler: false},
+				columnDefs: columnDefs
 			});
 			};
 
@@ -1823,6 +1848,9 @@ console.log(app_method_referrer);
 
 		reset_filter = function()
 		{
+			// Clear custom filters for modern DataTables compatibility
+			customFilters = {};
+			
 			var api = oTable.api();
 			for (var i in filter_selects)
 			{
@@ -1882,13 +1910,33 @@ console.log(app_method_referrer);
 
 		function filterData(param, value)
 		{
-			oTable.dataTableSettings[0]['ajax']['data'][param] = value;
-			oTable.api().draw();
+			// Store the filter value in the custom filters object for modern DataTables compatibility
+			customFilters[param] = value;
+			
+			// Also update the legacy way for backward compatibility
+			try {
+				oTable.dataTableSettings[0]['ajax']['data'][param] = value;
+			} catch(e) {
+				// Legacy method failed, modern approach will handle it
+			}
+			
+			// Reload the table data
+			oTable.api().ajax.reload();
 		}
 
 		function clearFilterParam(param)
 		{
-			oTable.dataTableSettings[0]['ajax']['data'][param] = '';
+			// Clear from custom filters
+			if (customFilters && customFilters.hasOwnProperty(param)) {
+				delete customFilters[param];
+			}
+			
+			// Also clear from legacy way for backward compatibility
+			try {
+				oTable.dataTableSettings[0]['ajax']['data'][param] = '';
+			} catch(e) {
+				// Legacy method failed, modern approach will handle it
+			}
 		}
 
 		function reloadData()

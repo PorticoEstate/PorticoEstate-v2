@@ -40,12 +40,7 @@ const OrganizationResultItem: FC<OrganizationResultItemProps> = ({organization})
 		>
 			<div className={styles.cardContent}>
 				<DigdirLink asChild data-color='accent'>
-					{/* TODO: new org page link */}
-					{/*<Link href={`/organization/${organization.id}`} className={styles.titleLink}>*/}
-					<Link href={phpGWLink('bookingfrontend/', {
-						menuaction: 'bookingfrontend.uiorganization.show',
-						id: organization.id
-					}, false)} className={styles.titleLink}>
+					<Link href={`/organization/${organization.id}`} className={styles.titleLink}>
 						<Heading level={3} data-size="xs" className={styles.organizationHeading}>
 							{/*<BuildingIcon fontSize="1em"/>*/}
 							{organization.name}

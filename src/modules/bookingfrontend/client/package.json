@@ -5,6 +5,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
+        "build:alt": "rm -rf build-alt && NEXT_DIST_DIR=build-alt next build",
         "start": "next start",
         "lint": "next lint",
         "start:development": "next dev",
@@ -40,6 +41,7 @@
         "@teskon/react-slidedown": "^1.0.1",
         "@types/luxon": "^3.4.2",
         "@types/turndown": "^5.0.5",
+        "@uiw/react-md-editor": "^4.0.8",
         "accept-language": "^3.0.20",
         "axios": "^1.7.4",
         "he": "^1.2.0",

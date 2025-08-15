@@ -122,7 +122,7 @@ class User
         $this->orgname = $userHelper->orgname;
         $this->org_id = $userHelper->org_id;
         $this->is_logged_in = $userHelper->is_logged_in();
-        $this->delegates = $userHelper->organizations;
+        $this->delegates = $userHelper->get_all_delegates($userHelper->ssn);
 
 
         if ($this->is_logged_in) {

@@ -64,7 +64,7 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
     if (isMobile) {
         return (
             <>
-                <MobileDialog open={props.open} onClose={() => props.setOpen(false)}>
+                <MobileDialog open={props.open} onClose={() => props.setOpen(false)} dialogId={'shopping-cart-drawer-component'}>
                     {content}
                 </MobileDialog>
                 {currentApplication && (

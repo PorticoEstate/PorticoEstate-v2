@@ -59,16 +59,6 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 			<div className={styles.eventPopperContent}>
 
 				<div className={styles.specList}>
-					{isDevMode() && (
-						<div className={styles.specItem}>
-							<Label className={styles.specTitle}>
-								#ID DEBUG
-							</Label>
-							<Paragraph className={styles.specContent}>
-								{event.id}
-							</Paragraph>
-						</div>
-					)}
 					{IEventIsAPIEvent(eventData) && eventData?.organizer && <div className={styles.specItem}>
 						<Label className={styles.specTitle}>
 							{t('booking.organizer')}
@@ -90,7 +80,7 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 							{t('bookingfrontend.type')}
 						</Label>
 						<Paragraph className={styles.specContent}>
-							{t('bookingfrontend.' + eventData.type)}
+							{t('bookingfrontend.' + eventData.type)} (#{event.id})
 						</Paragraph>
 					</div>
 					<div className={styles.specItem}>

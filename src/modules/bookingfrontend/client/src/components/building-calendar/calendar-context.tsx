@@ -12,7 +12,8 @@ interface CalendarContextType {
 	enabledResources: Set<string>
 	setResourcesHidden: (value: boolean) => void
 	resourcesHidden: boolean
-	currentBuilding: number | string;
+	currentBuilding?: number | string;
+	currentOrganization?: number | string;
 	calendarViewMode: ICalendarViewMode;
 }
 
@@ -42,6 +43,16 @@ export const useCurrentBuilding = () => {
 	return ctx.currentBuilding;
 }
 
+export const useCurrentOrganization = () => {
+	const ctx = useCalendarContext();
+	return ctx.currentOrganization;
+}
+
+export const useIsOrganization = () => {
+	const ctx = useCalendarContext();
+	return !!ctx.currentOrganization && !ctx.currentBuilding;
+}
+
 
 export const useEnabledResources = () => {
 	const {setEnabledResources, enabledResources} = useCalendarContext();
@@ -65,8 +76,12 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 
 
 	const viewMode: ICalendarViewMode = useMemo(() => {
+		if(props.currentOrganization) {
+			return 'calendar'
+		}
 		if (!resources || !props.enabledResources) {
-			return 'none';
+			// Default to calendar view for organization mode when resources aren't loaded
+			return 'calendar';
 		}
 
 		if(props.enabledResources.size === 0) {
@@ -87,8 +102,11 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 
 
 	const tempEvents: Record<string, FCallTempEvent> = useMemo(() => {
+		if(props.currentOrganization !== undefined || !props.currentBuilding) {
+			return {}
+		}
 		return (cartItems?.list || []).reduce<Record<string, FCallTempEvent>>((all, curr) => {
-			if (!curr.resources?.some(res => res.building_id != null && +res.building_id === +props.currentBuilding)) {
+			if (!curr.resources?.some(res => res.building_id != null && +res.building_id === +props.currentBuilding!)) {
 				return all;
 			}
 
@@ -121,6 +139,7 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 	return (
 		<CalendarContext.Provider value={{
 			currentBuilding: props.currentBuilding,
+			currentOrganization: props.currentOrganization,
 			setResourcesHidden: props.setResourcesHidden,
 			resourcesHidden: props.resourcesHidden,
 			tempEvents: tempEvents,

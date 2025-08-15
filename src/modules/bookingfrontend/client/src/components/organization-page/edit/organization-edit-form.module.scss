@@ -1,0 +1,56 @@
+@import "../../../styles/typography-vars.module";
+
+.editFormContainer {
+	max-width: 64rem;
+	margin: 0 auto;
+	padding: 1.5rem;
+}
+
+.form {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+
+	:global {
+		@layer ds.components {
+			.ds-field:has([aria-disabled="true"]:not(u-option, [role="option"][aria-disabled="true"]), :disabled:not(option)) > * {
+				cursor: not-allowed;
+				opacity: 1;
+			}
+		}
+	}
+}
+
+.title {
+	margin-bottom: 1.5rem;
+}
+
+.fieldGrid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1.5rem;
+
+	@media (min-width: 768px) {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.fullWidthField {
+	grid-column: 1 / -1;
+}
+
+
+.descriptionField {
+	textarea {
+		min-height: 120px;
+	}
+}
+
+.actionButtons {
+	display: flex;
+	justify-content: flex-end;
+	gap: 1rem;
+	padding-top: 1.5rem;
+	border-top: 1px solid #e5e7eb;
+}
+

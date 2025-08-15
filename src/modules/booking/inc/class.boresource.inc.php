@@ -1,4 +1,6 @@
 <?php
+
+use App\modules\booking\helpers\OutlookHelper;
 phpgw::import_class('booking.bocommon_authorized');
 
 class booking_boresource extends booking_bocommon_authorized
@@ -8,6 +10,11 @@ class booking_boresource extends booking_bocommon_authorized
 		$building_bo,
 		$activity_bo,
 		$facility_bo;
+
+	public $public_functions = array
+	(
+		'get_outlook_resources' => true,
+	);
 
 	function __construct()
 	{
@@ -81,6 +88,15 @@ class booking_boresource extends booking_bocommon_authorized
 			),
 			$defaultPermissions
 		);
+	}
+
+	
+	function read_single($id)
+	{
+		$resource = parent::read_single($id);
+		$OutlookHelper = new OutlookHelper();
+		$resource['outlook_items'] = $OutlookHelper->get_resource_mapping($id);
+		return $resource;
 	}
 
 	/**
@@ -289,6 +305,35 @@ class booking_boresource extends booking_bocommon_authorized
 		}
 		return false;
 	}
+
+	function add_outlook_item($entity, $resource_id, $outlook_item_id, $outlook_item_name)
+	{
+		if ($this->authorize_write($entity))
+		{
+			$OutlookHelper = new OutlookHelper();
+			return $OutlookHelper->add_resource_mapping($resource_id, $outlook_item_name, $outlook_item_id);
+
+		}
+		return false;
+	}
+
+	function remove_outlook_item($entity, $resource_id, $outlook_item_id)
+	{
+		if ($this->authorize_write($entity))
+		{
+			$OutlookHelper = new OutlookHelper();
+			return $OutlookHelper->delete_resource_mapping($resource_id, $outlook_item_id);
+		}
+		return false;
+	}
+
+	function get_outlook_resources()
+	{
+		$query = Sanitizer::get_var('query');
+		$OutlookHelper = new OutlookHelper();
+		return $OutlookHelper->get_outlook_resources($query);
+	}
+
 
 	function add_e_lock($entity, $resource_id, $e_lock_system_id, $e_lock_resource_id, $e_lock_name = '', $access_code_format = '', $access_instruction = '')
 	{

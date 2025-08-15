@@ -327,7 +327,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							<Textfield
 								label={t('bookingfrontend.contact_name')}
 								{...field}
-								error={errors.contactName?.message}
+								error={errors.contactName?.message as string}
 							/>
 						)}
 					/>
@@ -340,7 +340,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.contact_email')}
 								type="email"
 								{...field}
-								error={errors.contactEmail?.message}
+								error={errors.contactEmail?.message as string}
 							/>
 						)}
 					/>
@@ -353,7 +353,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.confirm_email')}
 								type="email"
 								{...field}
-								error={errors.contactEmailConfirm?.message}
+								error={errors.contactEmailConfirm?.message as string}
 							/>
 						)}
 					/>
@@ -366,7 +366,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.contact_phone')}
 								type="tel"
 								{...field}
-								error={errors.contactPhone?.message}
+								error={errors.contactPhone?.message as string}
 							/>
 						)}
 					/>
@@ -378,7 +378,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							<Textfield
 								label={t('bookingfrontend.responsible_street')}
 								{...field}
-								error={errors.street?.message}
+								error={errors.street?.message as string}
 							/>
 						)}
 					/>
@@ -390,7 +390,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							<Textfield
 								label={t('bookingfrontend.responsible_zip_code')}
 								{...field}
-								error={errors.zipCode?.message}
+								error={errors.zipCode?.message as string}
 							/>
 						)}
 					/>
@@ -402,7 +402,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							<Textfield
 								label={t('bookingfrontend.responsible_city')}
 								{...field}
-								error={errors.city?.message}
+								error={errors.city?.message as string}
 							/>
 						)}
 					/>

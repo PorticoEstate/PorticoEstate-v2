@@ -75,7 +75,7 @@ const LanguageSwitcher: React.FC = () => {
 				<ReactCountryFlag countryCode={currentLang.countryCode} svg
 				/> <ChevronDownIcon width="1.875rem" height="1.875rem" />
 			</Button>
-			<Dialog open={isOpen} onClose={() => setIsOpen(false)}>
+			<Dialog open={isOpen} onClose={() => setIsOpen(false)} dialogId={'language-switcher'}>
 
 				<div style={{
 					display: 'flex',

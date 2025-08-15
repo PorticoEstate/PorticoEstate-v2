@@ -98,6 +98,60 @@ class DebugController
     }
     
     /**
+     * Trigger a booking user update for debugging
+     *
+     * @param Request $request
+     * @param Response $response
+     * @return Response
+     */
+    public function triggerBookingUserUpdate(Request $request, Response $response): Response
+    {
+        try {
+            // Get sessionId from query parameter or use current session
+            $params = $request->getQueryParams();
+            $sessionId = $params['sessionId'] ?? null;
+            
+            if (!$sessionId) {
+                // Try to get from current session
+                $session = Sessions::getInstance();
+                $sessionId = $session->get_session_id();
+            }
+            
+            if (!$sessionId) {
+                return ResponseHelper::sendJSONResponse([
+                    'success' => false,
+                    'message' => 'No session ID available',
+                    'note' => 'You can provide a specific sessionId as a query parameter: ?sessionId=your-session-id'
+                ], 400);
+            }
+            
+            error_log("DebugController: Triggering booking user update for session: " . substr($sessionId, 0, 8) . "...");
+            
+            // Trigger the booking user update
+            $success = WebSocketHelper::triggerBookingUserUpdate($sessionId);
+            
+            error_log("DebugController: Booking user update trigger result: " . ($success ? 'success' : 'failure'));
+            
+            return ResponseHelper::sendJSONResponse([
+                'success' => $success,
+                'message' => $success ? 'Booking user update triggered successfully' : 'Failed to trigger booking user update',
+                'messageType' => 'refresh_bookinguser',
+                'sessionId' => substr($sessionId, 0, 8) . '...',
+                'description' => 'This sent a WebSocket message to refresh booking user data in connected clients',
+                'usage' => 'You can also specify a sessionId: GET /bookingfrontend/debug/trigger-bookinguser-update?sessionId=your-session-id',
+                'timestamp' => date('c')
+            ]);
+            
+        } catch (\Exception $e) {
+            error_log("DebugController booking user update error: " . $e->getMessage());
+            return ResponseHelper::sendJSONResponse([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Get current session information
      *
      * @param Request $request

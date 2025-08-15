@@ -164,7 +164,7 @@ class booking_soresource extends booking_socommon
 						'key' => 'resource_id',
 						'column' => array('e_lock_system_id', 'e_lock_resource_id', 'e_lock_name', 'access_code_format', 'access_instruction', 'active', 'modified_on', 'modified_by'),
 					)
-				),
+				)
 			)
 		);
 		$this->account = $this->userSettings['account_id'];
@@ -376,6 +376,7 @@ class booking_soresource extends booking_socommon
 			return false;
 		}
 	}
+
 
 	function get_seasons($resource_id)
 	{

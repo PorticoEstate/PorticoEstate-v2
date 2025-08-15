@@ -390,3 +390,7 @@ your search returned %1 matchs	common	no	ditt søk gav %1 treff
 your search returned 1 match	common	no	ditt søk gav 1 treff
 your settings have been updated	common	no	Dine innstillinger har blitt oppdatert
 zip_code	common	no	Postnummer
+website	common	no	Nettside
+back_to_start	common	no	Tilbake til start
+back_to_organization	common	no	Tilbake til organisasjon
+restore	common	no	Gjenopprett

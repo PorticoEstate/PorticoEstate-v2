@@ -463,6 +463,31 @@ try {
                                     'success' => $success,
                                     'sessionId' => substr($sessionId, 0, 8) . '...'
                                 ]);
+                            }
+                            // Handle refresh_bookinguser message type
+                            else if ($messageType === 'refresh_bookinguser' && isset($data['sessionId'])) {
+                                $sessionId = $data['sessionId'];
+
+                                $logger->info("Booking user refresh request received", [
+                                    'sessionId' => substr($sessionId, 0, 8) . '...',
+                                    'timestamp' => date('c')
+                                ]);
+
+                                // Send refresh message to connected clients for this session
+                                $refreshMessage = [
+                                    'type' => 'refresh_bookinguser',
+                                    'message' => $data['message'] ?? 'User data has been updated',
+                                    'action' => $data['action'] ?? 'refresh',
+                                    'timestamp' => date('c')
+                                ];
+
+                                $payload = json_encode($refreshMessage);
+                                $success = $webSocket->sendToSessionRoom($sessionId, $payload);
+
+                                $logger->info("Booking user refresh delivery", [
+                                    'success' => $success,
+                                    'sessionId' => substr($sessionId, 0, 8) . '...'
+                                ]);
                             } else {
                                 $logger->warning("Invalid session message format", [
                                     'type' => $messageType,

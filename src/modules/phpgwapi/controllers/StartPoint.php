@@ -460,6 +460,10 @@ class StartPoint
 					'bookingfrontend.uiresource.show' => '/bookingfrontend/client/resource/%id%',
 					'bookingfrontend.uiuser.show' => '/bookingfrontend/client/user/details',
 					'bookingfrontend.uiapplication.add_contact' => '/bookingfrontend/client/checkout',
+					'bookingfrontend.uiorganization.show' => '/bookingfrontend/client/organization/%id%',
+					'bookingfrontend.uiorganization.edit' => '/bookingfrontend/client/organization/%id%/edit',
+					'bookingfrontend.uieventsearch.show' => '/bookingfrontend/client/search/event',
+					'bookingfrontend.uiapplication.show' => '/bookingfrontend/client/user/applications/%id%',
 
 						// Add more mappings as needed
 					];

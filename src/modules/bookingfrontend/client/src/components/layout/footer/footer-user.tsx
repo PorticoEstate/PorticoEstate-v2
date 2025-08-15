@@ -65,10 +65,7 @@ const FooterUser: FC<FooterUserProps> = (props) => {
             </li>
             <li>
                 {bookingUser?.is_logged_in && bookingUser?.orgname !== '000000000' && (
-                    <Link href={phpGWLink('bookingfrontend/', {
-                        menuaction: 'bookingfrontend.uiorganization.show',
-                        id: bookingUser.org_id!
-                    }, false)}
+                    <Link href={`/organization/${bookingUser.org_id!}`}
                           rel="noopener noreferrer" className="link-text link-text-secondary normal">
                         <EnterIcon fontSize="1.25rem" /> {bookingUser.orgname}
                     </Link>)}

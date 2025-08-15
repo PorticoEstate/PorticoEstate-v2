@@ -143,6 +143,12 @@ class ServerSettings
     public $install_id;
 
     /**
+     * @OA\Property(type="boolean")
+     * @Expose
+     */
+    public $is_test_server;
+
+    /**
      * @OA\Property(type="object")
      */
     public $lang_ctimes;
@@ -315,6 +321,7 @@ class ServerSettings
     {
         $this->populate($data); // Populate first to set the initial values
         $this->setDefaults();   // Then set defaults for properties that were not set in populate
+        $this->setTestServerFlag(); // Determine if this is a test server based on hostname
         if ($includeConfigs) {
             $this->loadConfigs();
         }
@@ -359,6 +366,11 @@ class ServerSettings
                 }
             }
         }
+    }
+
+    private function setTestServerFlag()
+    {
+        $this->is_test_server = in_array($this->hostname, ['test.aktiv-kommune.no', 'pe-api.test']);
     }
 
 

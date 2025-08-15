@@ -544,7 +544,7 @@ class ApplicationRepository
             'status', 'name', 'contact_name', 'contact_email', 'contact_phone',
             'responsible_street', 'responsible_zip_code', 'responsible_city',
             'customer_identifier_type', 'customer_organization_number',
-            'customer_organization_name', 'description', 'equipment', 'organizer', 'parent_id', 'customer_ssn',
+            'customer_organization_name', 'customer_organization_id', 'description', 'equipment', 'organizer', 'parent_id', 'customer_ssn',
             'session_id'
         ];
 

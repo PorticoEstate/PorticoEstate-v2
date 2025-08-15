@@ -1,0 +1,168 @@
+@import "../../../styles/util.module";
+@import "../../../styles/typography-vars.module";
+
+.groupsContent {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+
+    .groupItem {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--ds-color-surface-subtle);
+        border-radius: var(--ds-border-radius-md);
+        gap: 1rem;
+
+        @include mobile {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .groupInfo {
+            flex: 1;
+
+            .groupName {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                margin-bottom: 0.25rem;
+
+                .groupIcon {
+                    width: 1rem;
+                    height: 1rem;
+                    color: var(--ds-color-text-subtle);
+                    flex-shrink: 0;
+                }
+
+                .groupTitle {
+                    @include applyFontProperties('label');
+                    font-weight: $text-medium;
+                    color: var(--ds-color-text-default);
+                }
+            }
+
+            .groupShortname {
+                @include applyFontProperties('caption');
+                color: var(--ds-color-text-subtle);
+                margin: 0;
+            }
+        }
+
+        //.groupStatus {
+        //    flex-shrink: 0;
+		//
+        //    @include mobile {
+        //        align-self: flex-end;
+        //    }
+		//
+        //    .activeStatus {
+        //        @include applyFontProperties('caption');
+        //        color: var(--ds-color-success-text-default);
+        //        font-weight: $text-medium;
+        //    }
+		//
+        //    .inactiveStatus {
+        //        @include applyFontProperties('caption');
+        //        color: var(--ds-color-warning-text-default);
+        //        font-weight: $text-medium;
+        //    }
+        //}
+    }
+}
+
+.loading, .error, .empty {
+    @include applyFontProperties('body');
+    color: var(--ds-color-text-subtle);
+    text-align: center;
+    padding: 1rem;
+}
+
+.error {
+    color: var(--ds-color-danger-text-default);
+}
+
+.groupTitle {
+    @include applyFontProperties('label');
+    font-weight: $text-medium;
+    color: var(--ds-color-text-default);
+}
+
+.groupShortname {
+    @include applyFontProperties('caption');
+    color: var(--ds-color-text-subtle);
+    margin: 0;
+}
+
+.activeStatus {
+    @include applyFontProperties('caption');
+    color: var(--ds-color-success-text-default);
+    font-weight: $text-medium;
+}
+
+.inactiveStatus {
+    @include applyFontProperties('caption');
+    color: var(--ds-color-warning-text-default);
+    font-weight: $text-medium;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.formActions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+    }
+}
+
+.showInactiveToggle {
+    user-select: none;
+}
+
+// Read-only view styles
+.readOnlyGroups {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    .groupItem {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: var(--ds-color-surface-subtle);
+        border-radius: var(--ds-border-radius-md);
+        border-left: 3px solid var(--ds-color-accent-background-default);
+
+        .groupName {
+            @include applyFontProperties('label');
+            font-weight: $text-medium;
+            color: var(--ds-color-text-default);
+        }
+
+        .groupShortname {
+            @include applyFontProperties('caption');
+            color: var(--ds-color-text-subtle);
+            font-style: italic;
+        }
+    }
+}
+
+.noGroups {
+    @include applyFontProperties('body');
+    color: var(--ds-color-text-subtle);
+    text-align: center;
+    padding: 2rem 1rem;
+    
+    p {
+        margin: 0;
+    }
+}

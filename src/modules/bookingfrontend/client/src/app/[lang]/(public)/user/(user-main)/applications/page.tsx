@@ -12,7 +12,6 @@ export default async function ApplicationsPage() {
 
   return (
     <main>
-      <PageHeader title={t('bookingfrontend.applications')} />
       <ApplicationsTable initialApplications={applications} />
     </main>
   );

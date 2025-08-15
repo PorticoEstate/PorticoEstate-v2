@@ -74,6 +74,7 @@ export interface IBookingUser {
     city: string | null;
     delegates?: IDelegate[];
     customer_number?: string;
+    needs_profile_creation?: boolean;
 }
 export interface IDelegate {
     name: string;

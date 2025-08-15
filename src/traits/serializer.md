@@ -61,8 +61,9 @@ public $conditionalProperty;
 ```
 
 ### @Default
-Specifies a default value to use when a property is not exposed based on conditions, or when the value is null.
+Specifies a default value to use when a property is not exposed based on conditions, or when the value is null. Supports both literal strings and translation keys.
 
+#### Literal String Values
 ```php
 /**
  * @Expose(when={"is_public=1"})
@@ -70,6 +71,32 @@ Specifies a default value to use when a property is not exposed based on conditi
  */
 public $name;
 ```
+
+#### Translation Keys (i18n)
+```php
+/**
+ * @Expose(when={"is_public=1"})
+ * @Default(t"bookingfrontend.private_event")
+ */
+public $name;
+
+/**
+ * @Expose(when={"is_public=1"})
+ * @Default(t"common.yes")
+ */
+public $status;
+
+/**
+ * @Expose(when={"is_public=1"})
+ * @Default(t"simple_key")
+ */
+public $type;
+```
+
+Translation keys use the `t"key"` syntax and support application dividers:
+- `t"application.key"` - Translates `key` from specific `application`
+- `t"key"` - Translates `key` from current application
+- Falls back to `!key` format if translation fails
 
 ### @Exclude
 Explicitly excludes a property from serialization.
@@ -211,6 +238,94 @@ Example:
 public $description;
 ```
 
+## Internationalization (i18n) Support
+
+The serializer supports internationalization through translation keys in `@Default` annotations. This allows default values to be automatically translated based on the current locale.
+
+### Translation Key Format
+
+Translation keys use the `t"key"` syntax and support application/module namespacing:
+
+```php
+/**
+ * @Expose(when={"is_public=1"})
+ * @Default(t"bookingfrontend.private_event")
+ */
+public $name;
+```
+
+### Application Dividers
+
+Use dot notation to specify which application's translation to use:
+
+```php
+/**
+ * @Default(t"bookingfrontend.private_event")  // From bookingfrontend application
+ */
+public $eventName;
+
+/**
+ * @Default(t"common.yes")  // From common application
+ */
+public $status;
+
+/**
+ * @Default(t"simple_key")  // From current application
+ */
+public $type;
+```
+
+### Translation Process
+
+1. **Key Parsing**: `t"bookingfrontend.private_event"` is parsed into:
+   - Application: `bookingfrontend`
+   - Key: `private_event`
+
+2. **Translation Service Call**: 
+   ```php
+   Translation::getInstance()->translate('private_event', [], false, 'bookingfrontend');
+   ```
+
+3. **Fallback**: If translation fails, returns `!private_event`
+
+### Real-World Example
+
+```php
+class Event {
+    use SerializableTrait;
+
+    /**
+     * @Expose(when={
+     *   "is_public=1",
+     *   "customer_identifier_type=ssn&&customer_ssn=$user_ssn"
+     * })
+     * @Default(t"bookingfrontend.private_event")
+     * @EscapeString(mode="default")
+     */
+    public $name;
+
+    /**
+     * @Expose(when={"is_public=1"})
+     * @Default(t"common.no_description")
+     */
+    public $description;
+
+    /**
+     * @Expose
+     * @Default(t"booking.confirmed")
+     */
+    public $status;
+}
+```
+
+### Benefits
+
+- **Consistency**: All default values use the same translation system
+- **Maintainability**: Translation keys are managed centrally
+- **Localization**: Automatic locale-based translations
+- **Namespacing**: Avoid key conflicts between modules
+- **Fallback**: Graceful degradation when translations are missing
+
 ## Timestamp Handling
 
 ### Basic Usage
@@ -285,14 +400,14 @@ class Event {
      *   "customer_identifier_type=ssn&&customer_ssn=$user_ssn",
      *   "customer_identifier_type=organization_number&&customer_organization_number=$organization_number"
      * })
-     * @Default("PRIVATE EVENT")
+     * @Default(t"bookingfrontend.private_event")
      * @EscapeString(mode="default")
      */
     public $name;
 
     /**
      * @Expose(when={"is_public=1"})
-     * @Default("")
+     * @Default(t"common.no_description")
      */
     public $description;
 
@@ -301,6 +416,12 @@ class Event {
      * @Timestamp(format="c")
      */
     public $created_at;
+
+    /**
+     * @Expose
+     * @Default(t"bookingfrontend.event")
+     */
+    public $type;
 
     /**
      * @Expose
@@ -409,6 +530,12 @@ public function getEventData(string $userSsn, array $organizationNumbers): array
 
 8. **Documentation**: Include example output in property documentation
 
+9. **Translation Keys**: Use `t"key"` syntax for user-facing default values to support internationalization
+
+10. **Application Namespacing**: Use application dividers (`t"app.key"`) to avoid translation key conflicts
+
+11. **Translation Fallbacks**: Design your application to handle `!key` fallback values gracefully
+
 ## Common Issues and Solutions
 
 ### Missing Properties
@@ -435,3 +562,18 @@ Solutions:
 ### Circular References
 Problem: Infinite recursion in nested objects
 Solution: Use `@SerializeAs` with careful object structure and consider using `short=true` for nested objects
+
+### Translation Issues
+Problem: Default values showing as `!key` instead of translated text
+Solutions:
+- Check that translation keys exist in the specified application
+- Verify the Translation service is properly configured
+- Ensure the application name matches the translation file structure
+- Use `@Default("literal")` for non-translatable defaults
+
+### Translation Key Syntax
+Problem: Translation keys not being recognized
+Solutions:
+- Use the correct `t"key"` syntax (not `"t:key"` or other variants)
+- Ensure proper quoting: `@Default(t"app.key")` not `@Default(t'app.key')`
+- Check for typos in application names and keys

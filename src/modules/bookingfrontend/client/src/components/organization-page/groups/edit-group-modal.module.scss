@@ -1,0 +1,23 @@
+.error {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: var(--fds-semantic-surface-danger-subtle);
+  color: var(--fds-semantic-text-danger-default);
+  border-radius: 0.5rem;
+  border: 1px solid var(--fds-semantic-border-danger-default);
+}
+
+.formActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+
+  @media (max-width: 480px) {
+    flex-direction: column-reverse;
+    
+    button {
+      width: 100%;
+    }
+  }
+}

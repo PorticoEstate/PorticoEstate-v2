@@ -8,6 +8,7 @@ use App\modules\phpgwapi\services\Cache;
 use App\Database\Db;
 use App\modules\phpgwapi\controllers\OpenIDConnect;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 
 class UserHelper
 {
@@ -178,13 +179,51 @@ class UserHelper
 
 	public function get_delegate($ssn)
 	{
+		// Handle both plain and encoded SSNs for backward compatibility
+		$encodedSSN = $this->encodeSSN($ssn);
+
 		$sql = "SELECT o.name, o.organization_number, o.active
                 FROM bb_organization o
                 INNER JOIN bb_delegate d ON o.id = d.organization_id
-                WHERE d.customer_ssn = :ssn";
+                WHERE (d.ssn = :ssn OR d.ssn = :encoded_ssn) AND d.active = 1";
 		$stmt = $this->db->prepare($sql);
-		$stmt->execute([':ssn' => $ssn]);
+		$stmt->execute([
+			':ssn' => $ssn,
+			':encoded_ssn' => $encodedSSN
+		]);
 		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+	}
+
+	public function get_all_delegates($ssn)
+	{
+		// Handle both plain and encoded SSNs for backward compatibility
+		$encodedSSN = $this->encodeSSN($ssn);
+
+		$sql = "SELECT o.id as org_id, o.name as name, o.organization_number as organization_number, d.active as active
+                FROM bb_organization o
+                INNER JOIN bb_delegate d ON o.id = d.organization_id
+                WHERE (d.ssn = :ssn OR d.ssn = :encoded_ssn)";
+		$stmt = $this->db->prepare($sql);
+		$stmt->execute([
+			':ssn' => $ssn,
+			':encoded_ssn' => $encodedSSN
+		]);
+		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+	}
+
+	/**
+	 * Encode SSN using SHA1 hash with base64 encoding (same as old system)
+	 */
+	private function encodeSSN(string $ssn): string
+	{
+		// Check if SSN is already encoded
+		if (preg_match('/^{(.+)}(.+)$/', $ssn)) {
+			return $ssn; // Already encoded
+		}
+
+		// Encode using SHA1 + base64 (same as old system)
+		$hash = sha1($ssn);
+		return '{SHA1}' . base64_encode($hash);
 	}
 
 	protected function get_organizations()
@@ -354,21 +393,33 @@ class UserHelper
 		 */
 		if (!$organization_id && $organization_number)
 		{
-			$orgs = (array)Cache::session_get($this->get_module(), self::ORGARRAY_SESSION_KEY);
+			// Check if user has active delegate access to organization by number
+			if ($this->ssn) {
+				$encodedSSN = $this->encodeSSN($this->ssn);
+				
+				$sql = "SELECT 1 FROM bb_organization o
+						INNER JOIN bb_delegate d ON o.id = d.organization_id
+						WHERE o.organization_number = :org_number 
+						AND (d.ssn = :ssn OR d.ssn = :encoded_ssn)
+						AND d.active = 1";
 
-			$orgs_map = array();
-			foreach ($orgs as $org)
-			{
-				$orgs_map[] = $org['orgnr'];
+				$stmt = $this->db->prepare($sql);
+				$stmt->execute([
+					':org_number' => $organization_number,
+					':ssn' => $this->ssn,
+					':encoded_ssn' => $encodedSSN
+				]);
+
+				return (bool)$stmt->fetch();
 			}
-			unset($org);
-			return in_array($organization_number, $orgs_map);
+			return false;
 		}
 
 		$organization_info = $this->get_organization_info($organization_id);
 
 		$customer_ssn = $organization_info['customer_ssn'];
 
+		// Check if user is direct owner of organization
 		if ($organization_id && $customer_ssn)
 		{
 			$external_login_info = $this->validate_ssn_login();
@@ -380,7 +431,26 @@ class UserHelper
 			return false;
 		}
 
-		return $organization_id == $this->org_id;
+		// Check if user has active delegate access to this organization
+		if ($this->ssn) {
+			$encodedSSN = $this->encodeSSN($this->ssn);
+			
+			$sql = "SELECT 1 FROM bb_delegate d
+					WHERE d.organization_id = :org_id 
+					AND (d.ssn = :ssn OR d.ssn = :encoded_ssn)
+					AND d.active = 1";
+
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute([
+				':org_id' => $organization_id,
+				':ssn' => $this->ssn,
+				':encoded_ssn' => $encodedSSN
+			]);
+
+			return (bool)$stmt->fetch();
+		}
+
+		return false;
 	}
 
 	private function get_organization_info($organization_id)
@@ -803,9 +873,14 @@ class UserHelper
 			try
 			{
 				$external_user->get_name_from_external_service($ret);
+				
+				// Initialize user data in database if this is first-time login
+				$this->initialize_user_data($ret);
 			}
 			catch (\Exception $exc)
 			{
+				// Log the exception but continue with login
+				error_log("Error fetching external user data: " . $exc->getMessage());
 			}
 		}
 
@@ -822,5 +897,135 @@ class UserHelper
 
 
 		return $ret;
+	}
+
+	/**
+	 * Initialize user data in database if this is first-time login
+	 * @param array $external_data Data retrieved from external service
+	 */
+	private function initialize_user_data($external_data)
+	{
+		if (empty($external_data['ssn'])) {
+			return;
+		}
+
+		$ssn = $external_data['ssn'];
+		$was_first_time_user = false;
+		
+		// Check if user already exists in database
+		$existing_user = $this->get_user_id($ssn);
+		if ($existing_user) {
+			// User exists, update with latest external data if needed
+			$this->update_user_from_external_data($existing_user, $external_data);
+		} else {
+			// First-time user, create new record
+			$this->create_user_from_external_data($external_data);
+			$was_first_time_user = true;
+		}
+
+		// Send WebSocket notification to refresh user data in connected clients
+		// This is especially important for first-time users or when external data is updated
+		try {
+			if ($was_first_time_user) {
+				error_log("UserHelper: Triggering WebSocket refresh for first-time user initialization");
+			} else {
+				error_log("UserHelper: Triggering WebSocket refresh for user data update");
+			}
+			
+			WebSocketHelper::triggerBookingUserUpdate();
+		} catch (\Exception $e) {
+			// Log WebSocket errors but don't interrupt the user initialization process
+			error_log("UserHelper: WebSocket notification failed: " . $e->getMessage());
+		}
+	}
+
+	/**
+	 * Create a new user record from external data
+	 * @param array $external_data Data from external service
+	 */
+	private function create_user_from_external_data($external_data)
+	{
+		$fields = [
+			'customer_ssn' => $external_data['ssn'],
+			'name' => $external_data['name'] ?? '',
+			'email' => $external_data['email'] ?? '',
+			'phone' => $external_data['phone'] ?? '',
+			'street' => $external_data['street'] ?? '',
+			'zip_code' => $external_data['zip_code'] ?? '',
+			'city' => $external_data['city'] ?? '',
+			'created' => date('Y-m-d H:i:s')
+		];
+
+		// Filter out empty values
+		$fields = array_filter($fields, function($value) {
+			return $value !== '' && $value !== null;
+		});
+
+		if (empty($fields['customer_ssn'])) {
+			error_log("Cannot create user: SSN is missing");
+			return;
+		}
+
+		$placeholders = implode(',', array_fill(0, count($fields), '?'));
+		$columns = implode(',', array_keys($fields));
+		
+		$sql = "INSERT INTO bb_user ({$columns}) VALUES ({$placeholders})";
+		
+		try {
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute(array_values($fields));
+			
+			$userId = $this->db->lastInsertId();
+			error_log("Created new user with ID: {$userId} for SSN: " . substr($external_data['ssn'], 0, 6) . "****");
+		} catch (\Exception $e) {
+			error_log("Error creating user: " . $e->getMessage());
+		}
+	}
+
+	/**
+	 * Update existing user record with latest external data
+	 * @param int $user_id User ID to update
+	 * @param array $external_data Data from external service
+	 */
+	private function update_user_from_external_data($user_id, $external_data)
+	{
+		// Only update if we have new external data
+		$fields_to_update = [];
+		$params = [':id' => $user_id];
+
+		// Fields that can be updated from external data
+		$updatable_fields = [
+			'name' => $external_data['name'] ?? null,
+			'street' => $external_data['street'] ?? null,
+			'zip_code' => $external_data['zip_code'] ?? null,
+			'city' => $external_data['city'] ?? null
+		];
+
+		foreach ($updatable_fields as $field => $value) {
+			if (!empty($value)) {
+				$fields_to_update[] = "{$field} = :{$field}";
+				$params[":{$field}"] = $value;
+			}
+		}
+
+		if (empty($fields_to_update)) {
+			return; // Nothing to update
+		}
+
+		$params[':updated'] = date('Y-m-d H:i:s');
+		$fields_to_update[] = "updated = :updated";
+
+		$sql = "UPDATE bb_user SET " . implode(', ', $fields_to_update) . " WHERE id = :id";
+		
+		try {
+			$stmt = $this->db->prepare($sql);
+			$stmt->execute($params);
+			
+			if ($stmt->rowCount() > 0) {
+				error_log("Updated user ID: {$user_id} with external data");
+			}
+		} catch (\Exception $e) {
+			error_log("Error updating user: " . $e->getMessage());
+		}
 	}
 }

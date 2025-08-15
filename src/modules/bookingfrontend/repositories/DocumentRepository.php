@@ -23,6 +23,7 @@ class DocumentRepository
             Document::OWNER_BUILDING => 'bb_document_building',
             Document::OWNER_APPLICATION => 'bb_document_application',
             Document::OWNER_RESOURCE => 'bb_document_resource',
+            Document::OWNER_ORGANIZATION => 'bb_document_organization',
             default => 'bb_document_building',
         };
     }

@@ -442,4 +442,48 @@ class WebSocketHelper
             self::triggerPartialApplicationsUpdate($sessionId);
         });
     }
+
+    /**
+     * Trigger an update of booking user data for a specific session
+     *
+     * Call this method whenever user data is initialized or updated from external sources
+     * to notify connected WebSocket clients to refresh their booking user data.
+     *
+     * @param string|null $sessionId The session ID to update or default to current session
+     * @return bool Success status
+     */
+    public static function triggerBookingUserUpdate(string $sessionId = null): bool
+    {
+        if (!isset($sessionId)) {
+            $session = Sessions::getInstance();
+            $sessionId = $session->get_session_id();
+        }
+        
+        error_log("WebSocketHelper: Triggering booking user update for session: " . substr($sessionId, 0, 8) . "...");
+
+        // Create the update message
+        $updateMessage = [
+            'type' => 'refresh_bookinguser',
+            'sessionId' => $sessionId,
+            'message' => 'User data has been updated',
+            'action' => 'refresh',
+            'timestamp' => date('c')
+        ];
+
+        // Send to session_messages channel
+        return self::sendRedisNotification($updateMessage, self::$redisSessionChannel);
+    }
+
+    /**
+     * Asynchronously trigger an update of booking user data for a specific session
+     *
+     * @param string $sessionId The session ID to update
+     * @return bool Success status of forking (not the notification itself)
+     */
+    public static function triggerBookingUserUpdateAsync(string $sessionId): bool
+    {
+        return self::forkNotification(function() use ($sessionId) {
+            self::triggerBookingUserUpdate($sessionId);
+        });
+    }
 }

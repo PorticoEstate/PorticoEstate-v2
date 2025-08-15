@@ -1,258 +1,14 @@
-import React, {FC, useEffect, useRef, useState, useCallback} from 'react';
+import React, {FC, useState, useRef, useEffect} from 'react';
 import DatePicker from "react-datepicker";
-import {CalendarIcon, ChevronLeftIcon, ChevronRightIcon} from "@navikt/aksel-icons";
-import {Button, Field, Input, Label, Select} from "@digdir/designsystemet-react";
+import {CalendarIcon} from "@navikt/aksel-icons";
+import {Field, Input} from "@digdir/designsystemet-react";
 import styles from './calendar-date-picker.module.scss';
 import {DateTime} from "luxon";
-import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
-
-interface CalendarDatePickerBaseProps {
-	view: string;
-	showTimeSelect?: boolean;
-	timeIntervals?: number;
-	dateFormat?: string;
-	minTime?: string;
-	maxTime?: string;
-	/** If true, dates in the past can be selected (defaults to false) */
-	allowPastDates?: boolean;
-	/** Specify a custom minimum date (takes precedence over allowPastDates) */
-	minDate?: Date;
-	/** If true, shows debug information (ISO string of the date) below the input */
-	showDebug?: boolean;
-	/** If true, always shows the year in the formatted date regardless of view (defaults to false) */
-	showYear?: boolean;
-}
-
-interface CalendarDatePickerNonEmptyProps extends CalendarDatePickerBaseProps {
-	currentDate: Date;
-	onDateChange: (date: Date) => void;
-	placeholder?: never;
-	allowEmpty?: false;
-}
-
-interface CalendarDatePickerEmptyProps extends CalendarDatePickerBaseProps {
-	currentDate: Date | null | undefined;
-	onDateChange: (date: Date | null) => void;
-	/** Placeholder text to show when date is empty */
-	placeholder?: string;
-	allowEmpty: true;
-}
-
-type CalendarDatePickerProps = CalendarDatePickerNonEmptyProps | CalendarDatePickerEmptyProps;
-
-
-interface CustomHeaderProps {
-	date: Date;
-	changeYear: (year: number) => void;
-	changeMonth: (month: number) => void;
-	decreaseMonth: () => void;
-	increaseMonth: () => void;
-	prevMonthButtonDisabled: boolean;
-	nextMonthButtonDisabled: boolean;
-	decreaseYear?: () => void;
-	increaseYear?: () => void;
-	prevYearButtonDisabled?: boolean;
-	nextYearButtonDisabled?: boolean;
-}
-
-interface TimePickerProps {
-	date: Date;
-	onChangeDate: (date: Date) => void;
-	intervals?: number;
-}
-
-const TimePicker: FC<TimePickerProps & { minTime?: string; maxTime?: string }> =
-	({date, onChangeDate, intervals = 30, minTime, maxTime}) => {
-		const t = useTrans();
-		const getHourRange = () => {
-			const minHour = minTime ? parseInt(minTime.split(':')[0]) : 0;
-			const maxHour = maxTime ? parseInt(maxTime.split(':')[0]) : 23;
-			return Array.from({length: maxHour - minHour + 1}, (_, i) => i + minHour);
-		};
-
-		const hours = getHourRange();
-		const minutes = Array.from({length: 60 / intervals}, (_, i) => i * intervals);
-
-		const hoursListRef = useRef<HTMLDivElement>(null);
-		const minutesListRef = useRef<HTMLDivElement>(null);
-
-		const selectedHour = date.getHours();
-		const selectedMinute = date.getMinutes();
-
-		useEffect(() => {
-			// Scroll to selected hour
-			if (hoursListRef.current) {
-				const hourElement = hoursListRef.current.querySelector(`[data-hour="${selectedHour}"]`);
-				if (hourElement) {
-					hourElement.scrollIntoView({block: 'center', behavior: 'smooth'});
-				}
-			}
-
-			// Scroll to selected minute
-			if (minutesListRef.current) {
-				const minuteElement = minutesListRef.current.querySelector(`[data-minute="${selectedMinute}"]`);
-				if (minuteElement) {
-					minuteElement.scrollIntoView({block: 'center', behavior: 'smooth'});
-				}
-			}
-		}, [selectedHour, selectedMinute]);
-
-		const handleHourClick = (hour: number) => {
-			const newDate = new Date(date);
-			newDate.setHours(hour);
-
-			// If 24:00 (midnight) is selected, force minutes to 00
-			if (hour === 24) {
-				newDate.setMinutes(0);
-				newDate.setSeconds(0);
-			}
-
-			onChangeDate(newDate);
-		};
-
-		const handleMinuteClick = (minute: number) => {
-			const newDate = new Date(date);
-			const currentHour = date.getHours();
-
-			// If the current hour is 24 (midnight), force minutes to 00 regardless of selection
-			if (currentHour === 24) {
-				newDate.setMinutes(0);
-				newDate.setSeconds(0);
-			} else {
-				newDate.setMinutes(minute);
-			}
-
-			onChangeDate(newDate);
-		};
-
-		return (
-			<div className="cdp-timeInput">
-				<div className="cdp-timeColumns">
-					<div className="cdp-timeColumn">
-						<div className="cdp-timeColumnHeader">{t('bookingfrontend.hour')}</div>
-						<div className="cdp-timeColumnList" ref={hoursListRef}>
-							{hours.map(hour => (
-								<div
-									key={hour}
-									data-hour={hour}
-									className={`cdp-timeColumnListItem ${
-										hour === selectedHour ? 'cdp-timeColumnListItemSelected' : ''
-									}`}
-									onClick={() => handleHourClick(hour)}
-								>
-									{hour.toString().padStart(2, '0')}
-								</div>
-							))}
-						</div>
-					</div>
-					<div className="cdp-timeColumn">
-						<div className="cdp-timeColumnHeader">{t('bookingfrontend.minute')}</div>
-						<div className="cdp-timeColumnList" ref={minutesListRef}>
-							{minutes.map(minute => {
-								// When hour is 24, only show 00 minutes and disable others
-								const isDisabled = selectedHour === 24 && minute !== 0;
-								return (
-									<div
-										key={minute}
-										data-minute={minute}
-										className={`cdp-timeColumnListItem ${
-											minute === selectedMinute ? 'cdp-timeColumnListItemSelected' : ''
-										} ${isDisabled ? 'disabled' : ''}`}
-										onClick={() => isDisabled ? null : handleMinuteClick(minute)}
-									>
-										{minute.toString().padStart(2, '0')}
-									</div>
-								);
-							})}
-						</div>
-					</div>
-				</div>
-			</div>
-		);
-	};
-
-
-const CustomHeader: FC<CustomHeaderProps> = ({
-												 date,
-												 changeYear,
-												 changeMonth,
-												 decreaseMonth,
-												 increaseMonth,
-												 prevMonthButtonDisabled,
-												 nextMonthButtonDisabled
-											 }) => {
-	// Get current language from i18n via HTML attribute
-	const {i18n} = useClientTranslation();
-	const currentLang = i18n.language || 'no';
-
-	return (
-		<div className="cdp-header">
-			<Button
-				onClick={decreaseMonth}
-				disabled={prevMonthButtonDisabled}
-				className={styles.navButton}
-				data-size="sm"
-				variant="tertiary"
-				icon={true}
-				style={{borderRadius: "50%"}}
-			>
-				<ChevronLeftIcon style={{
-					height: '100%',
-					width: '100%'
-				}}/>
-			</Button>
-
-			<div className="cdp-selects">
-				<Select
-					className="cdp-select"
-					value={date.getMonth()}
-					onChange={({target: {value}}) => changeMonth(parseInt(value, 10))}
-				>
-					{Array.from({length: 12}, (_, i) => i).map((month) => (
-						<Select.Option key={month} value={month}>
-							{new Date(date.getFullYear(), month).toLocaleString(currentLang, {
-								month: 'short',
-							})}
-						</Select.Option>
-					))}
-				</Select>
-				<Select
-					className="cdp-select"
-					value={date.getFullYear()}
-					onChange={({target: {value}}) => changeYear(parseInt(value, 10))}
-				>
-					{Array.from(
-						{length: 12},
-						(_, i) => date.getFullYear() - 5 + i
-					).map((year) => (
-						<Select.Option key={year} value={year}>
-							{year}
-						</Select.Option>
-					))}
-				</Select>
-
-
-			</div>
-
-			<Button
-				onClick={increaseMonth}
-				disabled={nextMonthButtonDisabled}
-				className={styles.navButton}
-				data-size="sm"
-				variant="tertiary"
-				icon={true}
-				style={{borderRadius: "50%"}}
-			>
-				<ChevronRightIcon style={{
-					height: '100%',
-					width: '100%'
-				}}/>
-			</Button>
-		</div>
-	);
-};
-
+import TimePicker from './components/TimePicker';
+import CustomHeader from './components/CustomHeader';
+import type {CalendarDatePickerProps} from './types/interfaces';
 
 const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 	const {
@@ -273,10 +29,55 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 	// Type guard to determine if this is an empty variant
 	const allowEmpty = 'allowEmpty' in props && props.allowEmpty === true;
 	const placeholder = allowEmpty ? props.placeholder : undefined;
+	
 	// Get current language from i18n
 	const {i18n} = useClientTranslation();
 	const currentLang = i18n.language || 'no';
 	const isMobile = useIsMobile();
+	
+	const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
+	const datePickerRef = useRef<DatePicker>(null);
+	const inputContainerRef = useRef<HTMLDivElement>(null);
+
+	// Check if element is in viewport
+	const isElementInViewport = (element: HTMLElement) => {
+		const rect = element.getBoundingClientRect();
+		return (
+			rect.top >= 0 &&
+			rect.left >= 0 &&
+			rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+			rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+		);
+	};
+
+	// Handle scroll events to close calendar if input is out of view
+	useEffect(() => {
+		if (!isCalendarOpen || isMobile) return;
+
+		const handleScroll = () => {
+			if (inputContainerRef.current && !isElementInViewport(inputContainerRef.current)) {
+				// Input is out of view, close the calendar
+				if (datePickerRef.current) {
+					datePickerRef.current.setOpen(false);
+				}
+				setIsCalendarOpen(false);
+			}
+		};
+
+		// Add scroll listeners to window and all scrollable parents
+		const addScrollListeners = () => {
+			window.addEventListener('scroll', handleScroll, true);
+			window.addEventListener('resize', handleScroll);
+		};
+
+		const removeScrollListeners = () => {
+			window.removeEventListener('scroll', handleScroll, true);
+			window.removeEventListener('resize', handleScroll);
+		};
+
+		addScrollListeners();
+		return removeScrollListeners;
+	}, [isCalendarOpen, isMobile]);
 
 	const formatSelectedDate = (showYear?: boolean) => {
 		if (!currentDate) {
@@ -338,8 +139,6 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 	};
 
 	// Determine the minimum date
-	// If minDate is specifically set, use that
-	// Otherwise, use today's date unless allowPastDates is true
 	const effectiveMinDate = minDate ? minDate : allowPastDates ? undefined : new Date(new Date().setHours(0, 0, 0, 0));
 
 	// Format the min date for HTML inputs
@@ -352,7 +151,6 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 			return DateTime.now().toFormat('yyyy-MM-dd');
 		}
 
-		// If past dates are allowed, don't set a min value
 		return undefined;
 	};
 
@@ -370,16 +168,8 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 		return result;
 	};
 
-	// Check for a portal container (like a backdrop or modal container)
-	const [portalId, setPortalId] = useState<string | undefined>(undefined);
-	const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
-
-
-
-
 	// Use native date inputs on mobile
 	if (isMobile) {
-		// Handle null date for mobile inputs
 		const dateValue = currentDate ? DateTime.fromJSDate(alignTimeToInterval(currentDate)).toFormat('yyyy-MM-dd') : '';
 		const dateTimeValue = currentDate ? DateTime.fromJSDate(alignTimeToInterval(currentDate)).toFormat('yyyy-MM-dd\'T\'HH:mm') : '';
 
@@ -394,7 +184,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 								value={dateTimeValue}
 								onChange={handleNativeDateChange}
 								min={minDateString ? minDateString + "T00:00" : undefined}
-								step={timeIntervals * 60} // Convert minutes to seconds for step attribute
+								step={timeIntervals * 60}
 								placeholder={placeholder}
 							/>
 						) : (
@@ -409,7 +199,6 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 					</Field.Affixes>
 				</Field>
 				{showDebug && currentDate && (
-					/* DEBUG: Display JavaScript Date as ISO string */
 					<div style={{
 						fontSize: '10px',
 						color: '#666',
@@ -417,8 +206,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 						fontFamily: 'monospace',
 						wordBreak: 'break-all'
 					}}>
-						<span
-							style={{fontWeight: 'bold'}}>Debug:</span> {currentDate ? alignTimeToInterval(currentDate).toISOString() : 'null'}
+						<span style={{fontWeight: 'bold'}}>Debug:</span> {currentDate ? alignTimeToInterval(currentDate).toISOString() : 'null'}
 					</div>
 				)}
 			</div>
@@ -426,8 +214,9 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 	}
 
 	return (
-		<div className={styles.datePicker}>
+		<div className={styles.datePicker} ref={inputContainerRef}>
 			<DatePicker
+				ref={datePickerRef}
 				selected={currentDate}
 				onChange={(date) => onDateChange(date as any)}
 				showMonthYearPicker={view === 'dayGridMonth'}
@@ -444,17 +233,18 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 				showTimeInput={showTimeSelect}
 				locale={currentLang}
 				minDate={effectiveMinDate}
-				isClearable={/*allowEmpty*/false}
-				// popoverProps={{ withinPortal: true }}
+				isClearable={false}
 				placeholderText={placeholder}
-
 				customTimeInput={
-					currentDate ? <TimePicker onChangeDate={(e) => {
-						onDateChange(e)
-					}}
-											  maxTime={maxTime}
-											  minTime={minTime}
-											  date={currentDate} intervals={timeIntervals}/> : undefined
+					currentDate ? (
+						<TimePicker
+							onChangeDate={(e) => onDateChange(e)}
+							maxTime={maxTime}
+							minTime={minTime}
+							date={currentDate}
+							intervals={timeIntervals}
+						/>
+					) : undefined
 				}
 				customInput={(
 					<Field>
@@ -462,8 +252,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 							<Field.Affix><CalendarIcon title="a11y-title" fontSize="1.5rem"/></Field.Affix>
 							<Input
 								className={"dateView"}
-								onChange={() => {
-								}}
+								onChange={() => {}}
 								value={formatSelectedDate(showYear)}
 								placeholder={placeholder}
 							/>
@@ -472,7 +261,6 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 				)}
 			/>
 			{showDebug && (
-				/* DEBUG: Display JavaScript Date as ISO string */
 				<div style={{
 					fontSize: '10px',
 					color: '#666',
@@ -480,8 +268,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 					fontFamily: 'monospace',
 					wordBreak: 'break-all'
 				}}>
-					<span
-						style={{fontWeight: 'bold'}}>Debug:</span> {currentDate ? alignTimeToInterval(currentDate).toISOString() : 'null'}
+					<span style={{fontWeight: 'bold'}}>Debug:</span> {currentDate ? alignTimeToInterval(currentDate).toISOString() : 'null'}
 				</div>
 			)}
 		</div>

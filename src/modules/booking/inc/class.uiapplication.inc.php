@@ -653,7 +653,7 @@ class booking_uiapplication extends booking_uicommon
 
 		if ($this->combine_applications)
 		{
-			$filters['where'] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL)";
+			$filters['where'] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL OR bb_application.parent_id = bb_application.id)";
 		}
 		else
 		{

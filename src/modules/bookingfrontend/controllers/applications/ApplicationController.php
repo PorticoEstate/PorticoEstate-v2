@@ -453,6 +453,15 @@ class ApplicationController extends DocumentController
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
      *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
      *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="recurring_info",
+     *                 type="object",
+     *                 nullable=true,
+     *                 description="Recurring booking settings",
+     *                 @OA\Property(property="repeat_until", type="string", format="date", description="End date for repetition (YYYY-MM-DD)"),
+     *                 @OA\Property(property="field_interval", type="integer", description="Week intervals between repetitions (default: 1)"),
+     *                 @OA\Property(property="outseason", type="boolean", description="Allow repetition beyond season end")
      *             )
      *         )
      *     ),
@@ -498,6 +507,13 @@ class ApplicationController extends DocumentController
             $data['status'] = 'NEWPARTIAL1';
             $data['active'] = '1';
             $data['created'] = 'now';
+
+            // Handle recurring_info - convert object to JSON string for database storage
+            if (isset($data['recurring_info']) && is_array($data['recurring_info'])) {
+                $data['recurring_info'] = json_encode($data['recurring_info']);
+            } elseif (isset($data['recurring_info']) && empty($data['recurring_info'])) {
+                $data['recurring_info'] = null;
+            }
 
             // Add dummy data for required fields
             $this->populateDummyData($data);
@@ -665,6 +681,15 @@ class ApplicationController extends DocumentController
      *                     @OA\Property(property="quantity", type="integer", description="Quantity ordered"),
      *                     @OA\Property(property="parent_id", type="integer", nullable=true, description="Optional parent mapping ID for sub-items")
      *                 )
+     *             ),
+     *             @OA\Property(
+     *                 property="recurring_info",
+     *                 type="object",
+     *                 nullable=true,
+     *                 description="Recurring booking settings",
+     *                 @OA\Property(property="repeat_until", type="string", format="date", description="End date for repetition (YYYY-MM-DD)"),
+     *                 @OA\Property(property="field_interval", type="integer", description="Week intervals between repetitions (default: 1)"),
+     *                 @OA\Property(property="outseason", type="boolean", description="Allow repetition beyond season end")
      *             )
      *         )
      *     ),
@@ -714,6 +739,16 @@ class ApplicationController extends DocumentController
                     ['error' => 'Invalid JSON data'],
                     400
                 );
+            }
+
+            // Handle recurring_info - convert object to JSON string for database storage
+            if (isset($data['recurring_info'])) {
+                if (is_array($data['recurring_info']) && !empty($data['recurring_info'])) {
+                    $data['recurring_info'] = json_encode($data['recurring_info']);
+                } elseif (empty($data['recurring_info'])) {
+                    $data['recurring_info'] = null;
+                }
+                // If already a string, leave as-is
             }
 
             $data['id'] = $id;

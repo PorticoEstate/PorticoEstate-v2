@@ -22,8 +22,10 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 		minTime,
 		allowPastDates = false,
 		minDate,
+		maxDate,
 		showDebug = false,
-		showYear = false
+		showYear = false,
+		seasons
 	} = props;
 
 	// Type guard to determine if this is an empty variant
@@ -141,7 +143,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 	// Determine the minimum date
 	const effectiveMinDate = minDate ? minDate : allowPastDates ? undefined : new Date(new Date().setHours(0, 0, 0, 0));
 
-	// Format the min date for HTML inputs
+	// Format the min/max dates for HTML inputs
 	const getMinDateString = () => {
 		if (minDate) {
 			return DateTime.fromJSDate(minDate).toFormat('yyyy-MM-dd');
@@ -154,7 +156,16 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 		return undefined;
 	};
 
+	const getMaxDateString = () => {
+		if (maxDate) {
+			return DateTime.fromJSDate(maxDate).toFormat('yyyy-MM-dd');
+		}
+
+		return undefined;
+	};
+
 	const minDateString = getMinDateString();
+	const maxDateString = getMaxDateString();
 
 	// Helper function to ensure time aligns with the intervals
 	const alignTimeToInterval = (date: Date): Date => {
@@ -166,6 +177,51 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 		result.setMinutes(roundedMinutes);
 		result.setSeconds(0);
 		return result;
+	};
+
+	// Function to get season info for a specific date
+	const getSeasonForDate = (date: Date) => {
+		if (!seasons) return null;
+
+		const dt = DateTime.fromJSDate(date);
+		return seasons.find(season => {
+			if (!season.active) return false;
+			const seasonStart = DateTime.fromISO(season.from_);
+			const seasonEnd = DateTime.fromISO(season.to_);
+			return dt >= seasonStart.startOf('day') && dt <= seasonEnd.endOf('day');
+		});
+	};
+
+	// Function to check if a date is a season transition boundary
+	const isSeasonBoundary = (date: Date) => {
+		if (!seasons || seasons.length <= 1) return false;
+
+		const dt = DateTime.fromJSDate(date);
+		
+		// Check if this date is the start or end of any season
+		return seasons.some(season => {
+			if (!season.active) return false;
+			const seasonStart = DateTime.fromISO(season.from_).startOf('day');
+			const seasonEnd = DateTime.fromISO(season.to_).endOf('day');
+			return dt.equals(seasonStart) || dt.equals(seasonEnd);
+		});
+	};
+
+	// Custom day content renderer with season boundaries
+	const renderDayContents = (day: number, date: Date) => {
+		const isBoundary = isSeasonBoundary(date);
+		const season = getSeasonForDate(date);
+		
+		return (
+			<div className={`${styles.dayContent} ${isBoundary ? styles.seasonBoundary : ''}`}>
+				<span className={styles.dayNumber}>{day}</span>
+				{isBoundary && (
+					<div className={styles.boundaryIndicator} title={season ? `Season: ${season.name}` : 'Season boundary'}>
+						●
+					</div>
+				)}
+			</div>
+		);
 	};
 
 	// Use native date inputs on mobile
@@ -184,6 +240,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 								value={dateTimeValue}
 								onChange={handleNativeDateChange}
 								min={minDateString ? minDateString + "T00:00" : undefined}
+								max={maxDateString ? maxDateString + "T23:59" : undefined}
 								step={timeIntervals * 60}
 								placeholder={placeholder}
 							/>
@@ -193,6 +250,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 								value={dateValue}
 								onChange={handleNativeDateChange}
 								min={minDateString}
+								max={maxDateString}
 								placeholder={placeholder}
 							/>
 						)}
@@ -223,6 +281,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 				showWeekNumbers={true}
 				showWeekPicker={view === 'timeGridWeek' || view === 'listWeek'}
 				renderCustomHeader={(props) => <CustomHeader {...props} />}
+				renderDayContents={seasons ? renderDayContents : undefined}
 				calendarClassName="cdp-calendar"
 				wrapperClassName={styles.wrapper}
 				onCalendarOpen={() => setIsCalendarOpen(true)}
@@ -233,6 +292,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 				showTimeInput={showTimeSelect}
 				locale={currentLang}
 				minDate={effectiveMinDate}
+				maxDate={maxDate}
 				isClearable={false}
 				placeholderText={placeholder}
 				customTimeInput={

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Season } from '@/service/types/Building';
 
 export interface CalendarDatePickerBaseProps {
 	view: string;
@@ -11,10 +12,14 @@ export interface CalendarDatePickerBaseProps {
 	allowPastDates?: boolean;
 	/** Specify a custom minimum date (takes precedence over allowPastDates) */
 	minDate?: Date;
+	/** Specify a custom maximum date */
+	maxDate?: Date;
 	/** If true, shows debug information (ISO string of the date) below the input */
 	showDebug?: boolean;
 	/** If true, always shows the year in the formatted date regardless of view (defaults to false) */
 	showYear?: boolean;
+	/** Season data for displaying season boundaries in the calendar */
+	seasons?: Season[];
 }
 
 export interface CalendarDatePickerNonEmptyProps extends CalendarDatePickerBaseProps {

@@ -866,6 +866,7 @@ Tilsynsvakt telephone	booking	no	Telefon tilsynsvakt
 time default end	booking	no	Slutt/innlevering time
 time default start	booking	no	Start/utlevering time
 Time is set wrong	booking	no	Et av klokkeslettene er registrert feil
+time_period	booking	no	Tidsperiode
 title	booking	no	Tittel
 Title for filter boxes	booking	no	Tittel for filtreringsbokser
 Title for upcoming events	booking	no	Tittel for liste med kommende arrangementer
@@ -920,9 +921,11 @@ we	booking	no	on.
 week template	booking	no	Ukeplan
 weekday	booking	no	Ukedag
 Weekdays	booking	no	Ukedager
+weekend	booking	no	Helg
 What	booking	no	Hva
 when	booking	no	Når
 when?	booking	no	Når?
+when_and_where	booking	no	Når og hvor?
 where	booking	no	Hvor
 where?	booking	no	Hvor?
 who	booking	no	Hvem
@@ -936,5 +939,3 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been processed and confirmation emails have been sent to you.	booking	no	Søknadene er behandlet, og bekreftelser er sendt til deg på e-post.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	no	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	no	Postnummer
-when_and_where	booking	no	Når og hvor?
-time_period	booking	no	Tidsperiode

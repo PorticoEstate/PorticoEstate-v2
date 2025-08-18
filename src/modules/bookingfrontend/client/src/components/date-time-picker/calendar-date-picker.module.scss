@@ -74,5 +74,35 @@
     position: fixed !important;
 }
 
+// Season boundary styles
+.dayContent {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dayNumber {
+    display: block;
+}
+
+.seasonBoundary {
+    .dayNumber {
+        font-weight: 600;
+        color: var(--ds-color-accent-base);
+    }
+}
+
+.boundaryIndicator {
+    position: absolute;
+    bottom: 1px;
+    right: 1px;
+    font-size: 6px;
+    color: var(--ds-color-accent-base);
+    line-height: 1;
+}
+
 
 

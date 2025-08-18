@@ -29,12 +29,31 @@ export const applicationFormSchema = z.object({
 		{
 			message: ("bookingfrontend.number of participants is required")
 		}
-	)
+	),
+	// Recurring booking fields
+	isRecurring: z.boolean().default(false),
+	recurring_info: z.object({
+		repeat_until: z.string().min(1, 'Repeat until date is required'),
+		field_interval: z.number().min(1, 'Interval must be at least 1 week').default(1),
+		outseason: z.boolean().default(false)
+	}).optional()
 }).refine(
 	(data) => data.end > data.start,
 	{
 		message: "bookingfrontend.end_time_must_be_after_start_time",
 		path: ["end"]
+	}
+).refine(
+	(data) => {
+		// If recurring is enabled, recurring_info is required
+		if (data.isRecurring) {
+			return !!data.recurring_info;
+		}
+		return true;
+	},
+	{
+		message: "Recurring booking settings are required",
+		path: ["recurring_info"]
 	}
 );
 

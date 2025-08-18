@@ -4,6 +4,7 @@ import {useIsMobile} from "@/service/hooks/is-mobile";
 import ShoppingCartContent from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import MobileDialog from "@/components/dialog/mobile-dialog";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
+import {useBookingUser} from "@/service/hooks/api-hooks";
 
 interface ShoppingCartPopperProps {
     anchor: HTMLButtonElement | null;
@@ -20,6 +21,7 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
     }>();
     const arrowRef = useRef<HTMLDivElement | null>(null);
     const isMobile = useIsMobile();
+    const {data: bookingUser} = useBookingUser();
 
 
     const {x, y, strategy, refs, middlewareData, update} = useFloating({
@@ -55,6 +57,41 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
         }
     }, [props.open, props.anchor, props.setOpen, refs.floating]);
 
+    // Auto-open ApplicationCrud for existing applications when user logs in with pending recurring data
+    useEffect(() => {
+        if (bookingUser && !currentApplication) {
+            const pendingData = localStorage.getItem('pendingRecurringApplication');
+            if (pendingData) {
+                try {
+                    const storedData = JSON.parse(pendingData);
+                    
+                    // Check if data is expired (10 minutes = 600000 ms)
+                    const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
+                    
+                    if (isExpired) {
+                        localStorage.removeItem('pendingRecurringApplication');
+                        return;
+                    }
+                    
+                    // Check if this is for an EXISTING application (must have applicationId, building_id, and date_id)
+                    if (storedData.applicationId && storedData.building_id && storedData.date_id) {
+                        // Open the existing application for editing
+                        setCurrentApplication({
+                            application_id: storedData.applicationId,
+                            date_id: storedData.date_id,
+                            building_id: storedData.building_id
+                        });
+                        
+                        // Also open the shopping cart to show context
+                        props.setOpen(true);
+                    }
+                } catch (error) {
+                    console.error('Error parsing pending recurring application data:', error);
+                    localStorage.removeItem('pendingRecurringApplication');
+                }
+            }
+        }
+    }, [bookingUser, currentApplication, props.setOpen]);
 
     const {x: arrowX, y: arrowY} = middlewareData.arrow || {};
 

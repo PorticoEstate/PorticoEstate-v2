@@ -228,6 +228,19 @@
             background-color: var(--dsc-button-background--hover);
             border-color: var(--dsc-button-border-color);
         }
+
+        &--disabled {
+            opacity: 0.3;
+            color: var(--ds-color-text-disabled);
+            cursor: not-allowed;
+            background-color: transparent !important;
+            
+            &:hover {
+                background-color: transparent !important;
+                color: var(--ds-color-text-disabled) !important;
+                cursor: not-allowed;
+            }
+        }
     }
 
     &__week-number {

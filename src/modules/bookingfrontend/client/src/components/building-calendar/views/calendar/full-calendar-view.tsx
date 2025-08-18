@@ -68,6 +68,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const [calendarEvents, setCalendarEvents] = useState<(FCallBaseEvent)[]>([]);
 	const [slotMinTime, setSlotMinTime] = useState('00:00:00');
 	const [slotMaxTime, setSlotMaxTime] = useState('24:00:00');
+	const [viewStart, setViewStart] = useState<DateTime | null>(null);
+	const [viewEnd, setViewEnd] = useState<DateTime | null>(null);
 	const {data: partials} = usePartialApplications();
 	const updateMutation = useUpdatePartialApplication();
 	const {tempEvents: storedTempEvents} = useTempEvents();
@@ -93,25 +95,28 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	}, [currentDate, calendarRef]);
 
 	const generateBusinessHours = useCallback(() => {
-		// Group boundaries by weekday
-		return props.seasons?.flatMap(season => {
-			// Only use active seasons that cover the current date
-			const now = DateTime.now();
+		// For business hours, we'll use a simplified approach that doesn't mix seasons
+		// The detailed season handling will be done in renderBackgroundEvents
+		if (!viewStart || !viewEnd || !props.seasons) return [];
+		
+		// Find the primary season that covers most of the view period
+		const viewMiddle = viewStart.plus({milliseconds: viewEnd.diff(viewStart).milliseconds / 2});
+		const primarySeason = props.seasons.find(season => {
+			if (!season.active) return false;
 			const seasonStart = DateTime.fromISO(season.from_);
 			const seasonEnd = DateTime.fromISO(season.to_);
-
-			if (!season.active || now < seasonStart || now > seasonEnd) {
-				return [];
-			}
-
-			// Map each boundary to business hours
-			return season.boundaries.map(boundary => ({
-				daysOfWeek: [boundary.wday === 7 ? 0 : boundary.wday], // Convert Sunday from 7 to 0
-				startTime: boundary.from_,
-				endTime: boundary.to_
-			}));
+			return viewMiddle >= seasonStart && viewMiddle <= seasonEnd;
 		});
-	}, [props.seasons]);
+
+		if (!primarySeason) return [];
+
+		// Use the primary season's boundaries for business hours
+		return primarySeason.boundaries.map(boundary => ({
+			daysOfWeek: [boundary.wday === 7 ? 0 : boundary.wday], // Convert Sunday from 7 to 0
+			startTime: boundary.from_,
+			endTime: boundary.to_
+		}));
+	}, [props.seasons, viewStart, viewEnd]);
 
 	const generateEventConstraint = useCallback(() => {
 		return {
@@ -134,8 +139,19 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			return dt.toFormat('HH:mm:ss');
 		};
 
-		// Check all season boundaries
+		// Check season boundaries that are relevant to the current calendar view
 		props.seasons?.forEach(season => {
+			if (!season.active) return;
+			
+			const seasonStart = DateTime.fromISO(season.from_);
+			const seasonEnd = DateTime.fromISO(season.to_);
+			
+			// If we have view dates, only consider seasons that overlap with the view
+			if (viewStart && viewEnd) {
+				const seasonOverlapsView = seasonStart <= viewEnd && seasonEnd >= viewStart;
+				if (!seasonOverlapsView) return;
+			}
+			
 			season.boundaries.forEach(boundary => {
 				if (boundary.from_ < minTime) minTime = boundary.from_;
 				if (boundary.to_ > maxTime) maxTime = boundary.to_;
@@ -170,12 +186,13 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				? '24:00:00'          // Allow until midnight
 				: maxTime             // Otherwise respect the boundary
 		);
-	}, [props.seasons, events, isOrg]);
+	}, [props.seasons, events, isOrg, viewStart, viewEnd]);
 
 
 	useEffect(() => {
 		calculateAbsoluteMinMaxTimes();
 	}, [calculateAbsoluteMinMaxTimes]);
+
 
 	const handleDateClick = useCallback((arg: { date: Date; dateStr: string; allDay: boolean; }) => {
 		if (viewMode === 'dayGridMonth') {
@@ -190,8 +207,10 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const renderBackgroundEvents = useCallback(() => {
 		const backgroundEvents: FCallBackgroundEvent[] = [];
 		const today = DateTime.now();
-		const startDate = currentDate.startOf('week');
-		const endDate = startDate.plus({weeks: 4});
+		
+		// Use actual calendar view dates if available, fallback to current date based calculation
+		const startDate = viewStart || currentDate.startOf('week');
+		const endDate = viewEnd || startDate.plus({weeks: 4});
 
 		// Add past dates background
 		if (startDate.toMillis() < today.toMillis()) {
@@ -207,74 +226,104 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			});
 		}
 
-		// Find applicable seasons for the date range
-		const applicableSeasons = seasons?.filter(season => {
-			const seasonStart = DateTime.fromISO(season.from_);
-			const seasonEnd = DateTime.fromISO(season.to_);
-			return season.active && seasonStart <= endDate && seasonEnd >= startDate;
-		});
+		// Since we're now using businessHours for constraints, we only need to add 
+		// background events for transition periods where different days might have 
+		// different seasons but the same weekday. FullCalendar's businessHours 
+		// will handle the standard closed hours display.
+		
+		// Check if we have season transitions during the view period
+		const hasSeasonTransition = seasons && seasons.length > 1 && seasons.some(season1 => 
+			seasons.some(season2 => 
+				season1.id !== season2.id && 
+				season1.active && season2.active &&
+				DateTime.fromISO(season1.to_) >= viewStart &&
+				DateTime.fromISO(season2.from_) <= viewEnd
+			)
+		);
 
-		// Add closed hours for each day
-		for (let date = startDate; date < endDate; date = date.plus({days: 1})) {
-			const dayOfWeek = date.weekday;
+		// Only add custom background events during season transitions
+		if (hasSeasonTransition) {
+			for (let date = startDate; date < endDate; date = date.plus({days: 1})) {
+				const dayOfWeek = date.weekday;
 
-			// Get boundaries for this day from all applicable seasons
-			const dayBoundaries = applicableSeasons?.flatMap(season =>
-				season.boundaries.filter(b => b.wday === dayOfWeek)
-			);
+				// Find the season that applies to this specific day
+				const applicableSeasons = seasons?.filter(season => {
+					if (!season.active) return false;
+					const seasonStart = DateTime.fromISO(season.from_);
+					const seasonEnd = DateTime.fromISO(season.to_);
+					// Check if this day falls within the season's date range
+					return date >= seasonStart.startOf('day') && date <= seasonEnd.endOf('day');
+				}) || [];
 
-			if ((dayBoundaries?.length || 0) > 0) {
-				// Sort boundaries by start time
-				const sortedBoundaries = [...(dayBoundaries || [])].sort((a, b) =>
-					a.from_.localeCompare(b.from_)
-				);
+				// If multiple seasons apply to the same day, prioritize the one that starts most recently
+				const daysSeason = applicableSeasons.sort((a, b) => {
+					const aStart = DateTime.fromISO(a.from_);
+					const bStart = DateTime.fromISO(b.from_);
+					return bStart.toMillis() - aStart.toMillis(); // Most recent first
+				})[0];
 
-				// Add background for time before first opening - but only if start time isn't midnight
-				const firstBoundaryFrom = sortedBoundaries[0].from_;
-				if (firstBoundaryFrom !== "00:00:00") {
-					backgroundEvents.push({
-						start: date.startOf('day').toJSDate(),
-						end: date.set({
-							hour: parseInt(firstBoundaryFrom.split(':')[0]),
-							minute: parseInt(firstBoundaryFrom.split(':')[1])
-						}).toJSDate(),
-						display: 'background',
-						classNames: styles.closedHours,
-						extendedProps: {
-							closed: true,
-							type: 'background',
-							source: 'seasonBeforeStart'
-						}
-					});
-				}
+				if (!daysSeason) continue;
 
-				// Add background for time after last closing
-				const lastBoundary = sortedBoundaries[sortedBoundaries.length - 1];
-				const lastBoundaryTo = lastBoundary.to_;
+				const dayBoundaries = daysSeason.boundaries.filter(b => b.wday === dayOfWeek);
+				if (dayBoundaries.length === 0) continue;
 
-				// Only add after-hours background if the venue doesn't close near midnight
-				// (Skip if closing time is 23:45:00 or later)
-				if (lastBoundaryTo < "23:45:00") {
-					backgroundEvents.push({
-						start: date.set({
-							hour: parseInt(lastBoundaryTo.split(':')[0]),
-							minute: parseInt(lastBoundaryTo.split(':')[1])
-						}).toJSDate(),
-						end: date.plus({days: 1}).startOf('day').toJSDate(),
-						display: 'background',
-						classNames: styles.closedHours,
-						extendedProps: {
-							closed: true,
-							type: 'background',
-							source:'seasonAfterHours'
-						}
-					});
+				// Check if this day's season boundaries differ from the primary season used for businessHours
+				const viewMiddle = viewStart.plus({milliseconds: viewEnd.diff(viewStart).milliseconds / 2});
+				const primarySeason = seasons.find(season => {
+					if (!season.active) return false;
+					const seasonStart = DateTime.fromISO(season.from_);
+					const seasonEnd = DateTime.fromISO(season.to_);
+					return viewMiddle >= seasonStart && viewMiddle <= seasonEnd;
+				});
+
+				// Only add background events if this day uses a different season than the primary one
+				if (daysSeason.id !== primarySeason?.id) {
+					const sortedBoundaries = dayBoundaries.sort((a, b) => a.from_.localeCompare(b.from_));
+
+					// Add background for time before first opening
+					const firstBoundaryFrom = sortedBoundaries[0].from_;
+					if (firstBoundaryFrom !== "00:00:00") {
+						backgroundEvents.push({
+							start: date.startOf('day').toJSDate(),
+							end: date.set({
+								hour: parseInt(firstBoundaryFrom.split(':')[0]),
+								minute: parseInt(firstBoundaryFrom.split(':')[1])
+							}).toJSDate(),
+							display: 'background',
+							classNames: styles.closedHours,
+							extendedProps: {
+								closed: true,
+								type: 'background',
+								source: `season-${daysSeason.id}-beforeStart`
+							}
+						});
+					}
+
+					// Add background for time after last closing
+					const lastBoundary = sortedBoundaries[sortedBoundaries.length - 1];
+					const lastBoundaryTo = lastBoundary.to_;
+					if (lastBoundaryTo < "23:45:00") {
+						backgroundEvents.push({
+							start: date.set({
+								hour: parseInt(lastBoundaryTo.split(':')[0]),
+								minute: parseInt(lastBoundaryTo.split(':')[1])
+							}).toJSDate(),
+							end: date.plus({days: 1}).startOf('day').toJSDate(),
+							display: 'background',
+							classNames: styles.closedHours,
+							extendedProps: {
+								closed: true,
+								type: 'background',
+								source: `season-${daysSeason.id}-afterHours`
+							}
+						});
+					}
 				}
 			}
 		}
 
 		return backgroundEvents;
-	}, [currentDate, seasons]);
+	}, [currentDate, seasons, viewStart, viewEnd]);
 
 
 	useEffect(() => {
@@ -394,6 +443,75 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				});
 			}
 			return false;
+		}
+
+		// Check if selection is within business hours for each specific day
+		// Only do this validation if we have seasons and this is a final selection (not just validation calls)
+		if (props.seasons && span.start && span.end && span.allDay === false) {
+			const selectionStart = DateTime.fromJSDate(span.start);
+			const selectionEnd = DateTime.fromJSDate(span.end);
+			
+			// Check each day in the selection span
+			for (let date = selectionStart.startOf('day'); date <= selectionEnd.startOf('day'); date = date.plus({days: 1})) {
+				// Find the season that applies to this specific day
+				const daysSeason = props.seasons.find(season => {
+					if (!season.active) return false;
+					const seasonStart = DateTime.fromISO(season.from_);
+					const seasonEnd = DateTime.fromISO(season.to_);
+					return date >= seasonStart.startOf('day') && date <= seasonEnd.endOf('day');
+				});
+
+				if (!daysSeason) continue; // No season = allow (fallback)
+
+				// Get boundaries for this day's weekday
+				const dayOfWeek = date.weekday;
+				const dayBoundaries = daysSeason.boundaries.filter(b => b.wday === dayOfWeek);
+				
+				if (dayBoundaries.length === 0) continue; // No boundaries = allow (fallback)
+
+				// Check if the selection overlaps with this day
+				const dayStart = date.startOf('day');
+				const dayEnd = date.endOf('day');
+				const selectionStartOnDay = DateTime.max(selectionStart, dayStart);
+				const selectionEndOnDay = DateTime.min(selectionEnd, dayEnd);
+
+				if (selectionStartOnDay >= selectionEndOnDay) continue; // No overlap with this day
+
+				// Selection overlaps with this day - check business hours
+				let isWithinBusinessHours = false;
+				
+				for (const boundary of dayBoundaries) {
+					const boundaryStart = date.set({
+						hour: parseInt(boundary.from_.split(':')[0]),
+						minute: parseInt(boundary.from_.split(':')[1]),
+						second: 0
+					});
+					const boundaryEnd = date.set({
+						hour: parseInt(boundary.to_.split(':')[0]),
+						minute: parseInt(boundary.to_.split(':')[1]),
+						second: 0
+					});
+
+					// Check if the selection for this day is within this boundary
+					if (selectionStartOnDay >= boundaryStart && selectionEndOnDay <= boundaryEnd) {
+						isWithinBusinessHours = true;
+						break;
+					}
+				}
+
+				if (!isWithinBusinessHours) {
+					// Outside business hours - only show toast for complete selections
+					if (span.end && span.start && selectionEnd.diff(selectionStart).milliseconds > 0) {
+						addToast({
+							type: 'info',
+							text: t('bookingfrontend.outside_opening_hours') || 'Outside opening hours',
+							autoHide: true,
+							messageId: 'outside_business_hours'
+						});
+					}
+					return false;
+				}
+			}
 		}
 
 		// Get all events in the calendar
@@ -557,6 +675,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			datesSet={(dateInfo) => {
 				props.onDateChange(dateInfo);
 				setCurrentDate(DateTime.fromJSDate(dateInfo.start));
+				// Update view dates for season-based calculations
+				setViewStart(DateTime.fromJSDate(dateInfo.start));
+				setViewEnd(DateTime.fromJSDate(dateInfo.end));
 			}}
 			eventContent={(eventInfo: FCEventContentArg<FCallEvent | FCallTempEvent>) => renderEventContent(eventInfo)}
 			views={{

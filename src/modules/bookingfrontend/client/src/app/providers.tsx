@@ -29,7 +29,6 @@ const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, la
 
 	return (
 		<LoadingProvider>
-			<div id={'toplevelTippTopp'}></div>
 			<ClientTranslationProvider lang={lang} initialTranslations={translations}>
 				<QueryProvider>
 					<ServiceWorkerProvider disableServiceWorker>

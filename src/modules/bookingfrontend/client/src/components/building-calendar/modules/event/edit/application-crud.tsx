@@ -2,6 +2,7 @@ import React, {Fragment, useMemo, useState, FC, useCallback, useEffect, useRef} 
 import {IResource} from '@/service/types/resource.types';
 import {
 	Button,
+	Checkbox,
 	Chip, Details,
 	Field,
 	Select, Spinner,
@@ -27,7 +28,7 @@ import {
 	useUpdatePartialApplication, useUploadApplicationDocument, useBuildingSchedule,
 	useServerSettings
 } from "@/service/hooks/api-hooks";
-import {NewPartialApplication, IUpdatePartialApplication, IApplication} from "@/service/types/api/application.types";
+import {NewPartialApplication, IUpdatePartialApplication, IApplication, RecurringInfo, RecurringInfoUtils} from "@/service/types/api/application.types";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import {IAgeGroup, IAudience, IBuilding, Season} from "@/service/types/Building";
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
@@ -35,7 +36,7 @@ import {ApplicationFormData, applicationFormSchema} from './application-form';
 import {IBookingUser} from "@/service/types/api.types";
 import ArticleTable from "@/components/article-table/article-table";
 import {ArticleOrder} from "@/service/types/api/order-articles.types";
-import {isDevMode} from "@/service/util";
+import {isDevMode, phpGWLink} from "@/service/util";
 import {IEvent} from "@/service/pecalendar.types";
 import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
@@ -150,44 +151,6 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const deleteDocumentMutation = useDeleteApplicationDocument();
 	const participantsSectionRef = useRef<HTMLDivElement>(null);
 	const {data: serverSettings} = useServerSettings();
-	const [minTime, maxTime] = useMemo(() => {
-		let minTime = '24:00:00';
-		let maxTime = '00:00:00';
-		if (!props.seasons) {
-			return ['00:00:00', '24:00:00']
-		}
-
-		// Get currently active seasons
-		const now = DateTime.now();
-		const activeSeasons = props.seasons?.filter(season => {
-			const seasonStart = DateTime.fromISO(season.from_);
-			const seasonEnd = DateTime.fromISO(season.to_);
-			return season.active && now >= seasonStart && now <= seasonEnd;
-		});
-
-		// Check all boundaries from active seasons
-		activeSeasons?.forEach(season => {
-			season.boundaries.forEach(boundary => {
-				if (boundary.from_ < minTime) minTime = boundary.from_;
-				if (boundary.to_ > maxTime) maxTime = boundary.to_;
-			});
-		});
-
-		// Set default values if no valid times found
-		// For min time, use the earliest boundary time or default to 6am
-		const effectiveMinTime = minTime === '24:00:00' ? '06:00:00' : minTime;
-
-		// For max time, check if the calculated time is very late (23:45 or later)
-		// If so, extend it to midnight (24:00). Otherwise respect the boundary.
-		// This ensures consistency with calendar view behavior.
-		const effectiveMaxTime =
-			maxTime === '00:00:00' || // No boundaries found
-			maxTime >= '23:45:00'     // Season closes very late
-				? '24:00:00'          // Allow until midnight
-				: maxTime;            // Otherwise respect the boundary
-
-		return [effectiveMinTime, effectiveMaxTime];
-	}, [props.seasons]);
 
 	const isWithinBusinessHours = useCallback((date: Date): boolean => {
 		if (!props.seasons) {
@@ -308,7 +271,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		};
 	}, [existingApplication, props.selectedTempApplication, props.date_id]);
 
-	// In defaultValues section, add articles field:
+	// In defaultValues section, add articles field and recurring fields:
 	const defaultValues = useMemo(() => {
 		if (existingApplication) {
 			// Convert orders to ArticleOrder format if they exist
@@ -356,7 +319,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					name: ag.name,
 					description: ag.description,
 					sort: ag.sort,
-				})) || []
+				})) || [],
+				// Parse existing recurring_info if available
+				isRecurring: !!RecurringInfoUtils.parse(existingApplication.recurring_info),
+				recurring_info: RecurringInfoUtils.parse(existingApplication.recurring_info) || undefined
 			};
 		}
 
@@ -399,7 +365,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					name: ag.name,
 					description: ag.description,
 					sort: ag.sort,
-				})) || []
+				})) || [],
+				// Parse existing recurring_info if available from baseApplication
+				isRecurring: !!RecurringInfoUtils.parse(baseApplication.recurring_info),
+				recurring_info: RecurringInfoUtils.parse(baseApplication.recurring_info) || undefined
 			};
 		}
 
@@ -427,7 +396,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				name: ag.name,
 				description: ag.description,
 				sort: ag.sort,
-			})) || []
+			})) || [],
+			// Default values for recurring booking
+			isRecurring: false,
+			recurring_info: undefined
 		};
 	}, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication, props.bookingUser]);
 
@@ -445,6 +417,64 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		defaultValues: defaultValues
 	});
 
+	const startTime = watch('start');
+	const endTime = watch('end');
+
+	// Function to calculate min/max times for a specific date
+	const getTimeBoundariesForDate = useCallback((date: Date | null): [string, string] => {
+		let minTime = '24:00:00';
+		let maxTime = '00:00:00';
+		
+		if (!props.seasons || !date) {
+			return ['00:00:00', '24:00:00'];
+		}
+
+		const referenceDate = DateTime.fromJSDate(date);
+		const dayOfWeek = referenceDate.weekday;
+		
+		// Find the season that applies to this specific date
+		const applicableSeason = props.seasons.find(season => {
+			if (!season.active) return false;
+			const seasonStart = DateTime.fromISO(season.from_);
+			const seasonEnd = DateTime.fromISO(season.to_);
+			return referenceDate >= seasonStart.startOf('day') && referenceDate <= seasonEnd.endOf('day');
+		});
+
+		if (!applicableSeason) {
+			return ['06:00:00', '24:00:00']; // Default fallback
+		}
+
+		// Get boundaries for this day of the week
+		const dayBoundaries = applicableSeason.boundaries.filter(b => b.wday === dayOfWeek);
+		
+		if (dayBoundaries.length === 0) {
+			return ['06:00:00', '24:00:00']; // Default fallback
+		}
+
+		// Check all boundaries for this specific day
+		dayBoundaries.forEach(boundary => {
+			if (boundary.from_ < minTime) minTime = boundary.from_;
+			if (boundary.to_ > maxTime) maxTime = boundary.to_;
+		});
+
+		// Set default values if no valid times found
+		const effectiveMinTime = minTime === '24:00:00' ? '06:00:00' : minTime;
+		const effectiveMaxTime =
+			maxTime === '00:00:00' || maxTime >= '23:45:00' ? '24:00:00' : maxTime;
+
+		return [effectiveMinTime, effectiveMaxTime];
+	}, [props.seasons]);
+
+	// Calculate time boundaries for start time
+	const [startMinTime, startMaxTime] = useMemo(() => {
+		return getTimeBoundariesForDate(startTime);
+	}, [getTimeBoundariesForDate, startTime]);
+
+	// Calculate time boundaries for end time
+	const [endMinTime, endMaxTime] = useMemo(() => {
+		return getTimeBoundariesForDate(endTime);
+	}, [getTimeBoundariesForDate, endTime]);
+
 	// Scroll to participant counts error if it exists after form submission
 	useEffect(() => {
 		if (isSubmitted && errors.agegroups?.['root']?.message && participantsSectionRef.current) {
@@ -452,9 +482,64 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		}
 	}, [isSubmitted, errors.agegroups]);
 
+	// Check for pending recurring application data after login
+	useEffect(() => {
+		if (props.bookingUser) {
+			const pendingData = localStorage.getItem('pendingRecurringApplication');
+			if (pendingData) {
+				try {
+					const storedData = JSON.parse(pendingData);
+					
+					// Check if data is expired (10 minutes = 600000 ms)
+					const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
+					
+					if (isExpired) {
+						localStorage.removeItem('pendingRecurringApplication');
+						return;
+					}
+					
+					// Check if this matches the current application context
+					if (storedData.building_id === props.building_id &&
+						storedData.applicationId === props.applicationId &&
+						storedData.date_id === props.date_id) {
+						
+						// Restore form data with proper date handling
+						Object.keys(storedData).forEach(key => {
+							if (key !== 'building_id' && key !== 'selectedTempApplication' && 
+								key !== 'applicationId' && key !== 'date_id' && key !== 'timestamp') {
+								
+								// Handle Date objects that were serialized as ISO strings
+								if ((key === 'start' || key === 'end') && typeof storedData[key] === 'string') {
+									setValue(key as any, new Date(storedData[key]), { shouldDirty: true });
+								} else {
+									setValue(key as any, storedData[key], { shouldDirty: true });
+								}
+							}
+						});
+						
+						// Initialize recurring data
+						if (storedData.isRecurring) {
+							const startDate = storedData.start ? new Date(storedData.start) : new Date();
+							const oneWeekLater = new Date(startDate);
+							oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+							
+							setValue('recurring_info.repeat_until', oneWeekLater.toISOString().split('T')[0]);
+							setValue('recurring_info.field_interval', 1);
+							setValue('recurring_info.outseason', false);
+						}
+						
+						// Clear the stored data
+						localStorage.removeItem('pendingRecurringApplication');
+					}
+				} catch (error) {
+					console.error('Error parsing pending recurring application data:', error);
+					localStorage.removeItem('pendingRecurringApplication');
+				}
+			}
+		}
+	}, [props.bookingUser, props.building_id, props.applicationId, props.date_id, setValue]);
+
 	const selectedResources = watch('resources');
-	const startTime = watch('start');
-	const endTime = watch('end');
 
 
 	// Add useEffect to check times when they change
@@ -500,7 +585,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 			setValue('end', newEndTime, {shouldDirty: true});
 		}
-	}, [startTime, isWithinBusinessHours, setError, clearErrors, t, setValue, getValues, maxTime]);
+	}, [startTime, isWithinBusinessHours, setError, clearErrors, t, setValue, getValues, startMaxTime]);
 
 	useEffect(() => {
 		if (!endTime) return;
@@ -707,6 +792,15 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				}
 			}
 
+			// Handle recurring_info
+			if (dirtyFields.isRecurring || dirtyFields.recurring_info) {
+				if (data.isRecurring && data.recurring_info) {
+					updatedApplication.recurring_info = data.recurring_info;
+				} else {
+					updatedApplication.recurring_info = undefined;
+				}
+			}
+
 
 			const result = await updateMutation.mutateAsync({
 				id: existingApplication.id,
@@ -736,8 +830,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			organizer: data.organizer || '',
 			name: data.title,
 			resources: data.resources.map(res => (+res)),
-			activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1
-
+			activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1,
+			// Add recurring info if enabled
+			recurring_info: data.isRecurring && data.recurring_info ? data.recurring_info : undefined
 		}
 
 		const result = await createMutation.mutateAsync(newApplication);
@@ -933,8 +1028,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	// Enhanced debug logging for time constraints and business hours validation
 	if (props.showDebug) {
 		console.log("Application CRUD time constraints:", {
-			minTime,
-			maxTime,
+			startMinTime,
+			startMaxTime,
+			endMinTime,
+			endMaxTime,
 			startTime: startTime ? {
 				date: startTime,
 				formatted: DateTime.fromJSDate(startTime).toFormat('HH:mm:ss'),
@@ -946,10 +1043,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				isWithinHours: isWithinBusinessHours(endTime)
 			} : null,
 			activeSeasons: props.seasons?.filter(season => {
-				const now = DateTime.now();
+				const referenceDate = startTime ? DateTime.fromJSDate(startTime) : DateTime.now();
 				const seasonStart = DateTime.fromISO(season.from_);
 				const seasonEnd = DateTime.fromISO(season.to_);
-				return season.active && now >= seasonStart && now <= seasonEnd;
+				return season.active && referenceDate >= seasonStart && referenceDate <= seasonEnd;
 			}).map(s => ({
 				id: s.id,
 				boundaries: s.boundaries.map(b => ({
@@ -1030,10 +1127,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											view={'timeGridDay'}
 											showTimeSelect
 											onDateChange={onChange}
-											minTime={minTime}
-											maxTime={maxTime}
+											minTime={startMinTime}
+											maxTime={startMaxTime}
 											allowPastDates={existingApplication !== undefined}
 											showDebug={props.showDebug || isDevMode()}
+											seasons={props.seasons}
 										/>
 
 
@@ -1061,10 +1159,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											view={'timeGridDay'}
 											showTimeSelect
 											onDateChange={onChange}
-											minTime={minTime}
-											maxTime={maxTime}
+											minTime={endMinTime}
+											maxTime={endMaxTime}
 											allowPastDates={existingApplication !== undefined}
 											showDebug={props.showDebug || isDevMode()}
+											seasons={props.seasons}
 										/>
 										{errors.end &&
 											<span className={styles.error}>{errors.end.message}</span>}
@@ -1072,6 +1171,131 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 								)}
 							/>
 						</div>
+					</div>
+
+					{/* Recurring Booking Section */}
+					<div className={`${styles.formGroup} ${styles.wide}`}>
+						<Controller
+							name="isRecurring"
+							control={control}
+							render={({field}) => (
+								<div>
+									<Checkbox
+										checked={field.value || false}
+										onChange={(e) => {
+											const isChecked = e.target.checked;
+											
+											if (isChecked && !props.bookingUser) {
+												// User is not logged in and trying to enable recurring
+												// Store current form data in localStorage with timestamp
+												const currentFormData = getValues();
+												// Ensure dates are properly serialized
+												const dataToStore = {
+													...currentFormData,
+													start: currentFormData.start?.toISOString(),
+													end: currentFormData.end?.toISOString(),
+													isRecurring: true,
+													building_id: props.building_id,
+													selectedTempApplication: props.selectedTempApplication,
+													applicationId: props.applicationId,
+													date_id: props.date_id,
+													timestamp: Date.now() // Add timestamp for expiration
+												};
+												localStorage.setItem('pendingRecurringApplication', JSON.stringify(dataToStore));
+												
+												// Redirect to login with after parameter
+												const afterPath = window.location.href.split('bookingfrontend')[1];
+												window.location.href = phpGWLink(['bookingfrontend', 'login/'], {after: encodeURI(afterPath)});
+												return;
+											}
+											
+											field.onChange(isChecked);
+
+											if (isChecked) {
+												// Initialize recurring data when checkbox is turned on
+												const startDate = watch('start');
+												const oneWeekLater = new Date(startDate);
+												oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+
+												setValue('recurring_info.repeat_until', oneWeekLater.toISOString().split('T')[0]);
+												setValue('recurring_info.field_interval', 1);
+												setValue('recurring_info.outseason', false);
+											} else {
+												// Clear recurring data when checkbox is turned off
+												setValue('recurring_info.repeat_until', '');
+												setValue('recurring_info.field_interval', 1);
+												setValue('recurring_info.outseason', false);
+											}
+										}}
+										label={t('bookingfrontend.make_recurring')}
+									/>
+									{!props.bookingUser && (
+										<small style={{color: 'var(--ds-color-text-subtle)', marginTop: '0.25rem', display: 'block'}}>
+											{t('bookingfrontend.login_required_for_recurring')}
+										</small>
+									)}
+								</div>
+							)}
+						/>
+
+						{/* Show recurring fields only when checkbox is checked */}
+						{watch('isRecurring') && (
+							<div style={{marginTop: '1rem', paddingLeft: '1.5rem', borderLeft: '3px solid var(--ds-color-border-brand1)'}}>
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
+									<Controller
+										name="recurring_info.repeat_until"
+										control={control}
+										render={({field: {value, onChange, ...field}}) => (
+											<>
+												<label>{t('bookingfrontend.repeat_until')}</label>
+												<CalendarDatePicker
+													currentDate={value ? new Date(value) : undefined}
+													view={'dayGridDay'}
+													showTimeSelect={false}
+													onDateChange={(date) => onChange(date ? date.toISOString().split('T')[0] : '')}
+													allowPastDates={false}
+													showDebug={props.showDebug}
+													seasons={props.seasons}
+												/>
+												{errors.recurring_info?.repeat_until &&
+													<span className={styles.error}>{errors.recurring_info.repeat_until.message}</span>}
+											</>
+										)}
+									/>
+								</div>
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
+									<Controller
+										name="recurring_info.field_interval"
+										control={control}
+										render={({field}) => (
+											<Textfield
+												label={t('bookingfrontend.repeat_every_weeks')}
+												{...field}
+												type="number"
+												min={1}
+												value={field.value || 1}
+												onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+												error={errors.recurring_info?.field_interval?.message}
+												placeholder="1"
+											/>
+										)}
+									/>
+								</div>
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+									<Controller
+										name="recurring_info.outseason"
+										control={control}
+										render={({field}) => (
+											<Checkbox
+												checked={field.value || false}
+												onChange={(e) => field.onChange(e.target.checked)}
+												label={t('bookingfrontend.allow_outseason')}
+											/>
+										)}
+									/>
+								</div>
+							</div>
+						)}
 					</div>
 
 					<div className={`${styles.formGroup} ${styles.wide}`}>
@@ -1341,8 +1565,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						</Details>
 					</div>
 
-
-				</section>
+			</section>
 			</MobileDialog>
 		</form>
 	);

@@ -383,7 +383,7 @@
 			{
 				case 'BASE64':
 					// use imap_base64 to decode
-					return imap_base64($_mimeMessage);
+					return IMAPManager::imap_base64($_mimeMessage);
 					break;
 				case 'QUOTED-PRINTABLE':
 					// use imap_qprint to decode
@@ -418,7 +418,8 @@
 
 				$string = preg_replace('/\?=\s+=\?/', '?= =?', $_string);
 
-				$elements=imap_mime_header_decode($string);
+				require_once __DIR__ . '/../../email/inc/imap_config.php';
+				$elements=IMAPManager::imap_mime_header_decode($string);
 
 				foreach((array)$elements as $element) {
 					if ($element->charset == 'default')
@@ -1002,7 +1003,7 @@
 			switch ($structure->encoding) {
 				case 'BASE64':
 					// use imap_base64 to decode
-					$attachment = imap_base64($attachment);
+					$attachment = IMAPManager::imap_base64($attachment);
 					break;
 				case 'QUOTED-PRINTABLE':
 					// use imap_qprint to decode
@@ -1071,7 +1072,7 @@
 			switch ($structure->encoding) {
 				case 'BASE64':
 					// use imap_base64 to decode
-					$attachment = imap_base64($attachment);
+					$attachment = IMAPManager::imap_base64($attachment);
 					break;
 				case 'QUOTED-PRINTABLE':
 					// use imap_qprint to decode
@@ -1574,7 +1575,7 @@
 				$recepientList = array('FROM', 'TO', 'CC', 'BCC', 'SENDER', 'REPLY_TO');
 				foreach($recepientList as $recepientType) {
 					if(isset($headers[$recepientType])) {
-						$addresses = imap_rfc822_parse_adrlist($headers[$recepientType], '');
+						$addresses = IMAPManager::imap_rfc822_parse_adrlist($headers[$recepientType], '');
 						foreach($addresses as $singleAddress) {
 							$addressData = array(
 								'PERSONAL_NAME'		=> $singleAddress->personal ? $singleAddress->personal : 'NIL',
@@ -1584,7 +1585,7 @@
 								'EMAIL'			=> $singleAddress->host ? $singleAddress->mailbox.'@'.$singleAddress->host : $singleAddress->mailbox,
 							);
 							if($addressData['PERSONAL_NAME'] != 'NIL') {
-								$addressData['RFC822_EMAIL'] = imap_rfc822_write_address($singleAddress->mailbox, $singleAddress->host, $singleAddress->personal);
+								$addressData['RFC822_EMAIL'] = IMAPManager::imap_rfc822_write_address($singleAddress->mailbox, $singleAddress->host, $singleAddress->personal);
 							} else {
 								$addressData['RFC822_EMAIL'] = 'NIL';
 							}

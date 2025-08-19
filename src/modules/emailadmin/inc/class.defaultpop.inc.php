@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../email/inc/imap_config.php';
 	/***************************************************************************\
 	* EGroupWare - EMailAdmin                                                   *
 	* http://www.egroupware.org                                                 *
@@ -38,7 +39,7 @@
 			}
 			
 			// if not
-			return imap_utf7_encode($_folderName);
+			return IMAPManager::imap_utf7_encode($_folderName);
 		}
 
 		function getMailboxString($_folderName='')

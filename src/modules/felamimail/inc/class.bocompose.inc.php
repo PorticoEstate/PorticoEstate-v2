@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../email/inc/imap_config.php';
 	/***************************************************************************\
 	* eGroupWare - FeLaMiMail                                                   *
 	* http://www.linux-at-work.de                                               *
@@ -813,7 +814,7 @@
 			}
 
 			foreach((array)$_formData['to'] as $address) {
-				$address_array	= imap_rfc822_parse_adrlist($address, '');
+				$address_array	= IMAPManager::imap_rfc822_parse_adrlist($address, '');
 				foreach((array)$address_array as $addressObject) {
 					$emailAddress = $addressObject->mailbox. (!empty($addressObject->host) ? '@'.$addressObject->host : '');
 					#$emailName = $bofelamimail->encodeHeader($addressObject->personal, 'q');
@@ -823,7 +824,7 @@
 			}
 
 			foreach((array)$_formData['cc'] as $address) {
-				$address_array	= imap_rfc822_parse_adrlist($address,'');
+				$address_array	= IMAPManager::imap_rfc822_parse_adrlist($address,'');
 				foreach((array)$address_array as $addressObject) {
 					$emailAddress = $addressObject->mailbox. (!empty($addressObject->host) ? '@'.$addressObject->host : '');
 					#$emailName = $bofelamimail->encodeHeader($addressObject->personal, 'q');
@@ -833,7 +834,7 @@
 			}
 			
 			foreach((array)$_formData['bcc'] as $address) {
-				$address_array	= imap_rfc822_parse_adrlist($address,'');
+				$address_array	= IMAPManager::imap_rfc822_parse_adrlist($address,'');
 				foreach((array)$address_array as $addressObject) {
 					$emailAddress = $addressObject->mailbox. (!empty($addressObject->host) ? '@'.$addressObject->host : '');
 					#$emailName = $bofelamimail->encodeHeader($addressObject->personal, 'q');
@@ -843,7 +844,7 @@
 			}
 			
 			foreach((array)$_formData['replyto'] as $address) {
-				$address_array  = imap_rfc822_parse_adrlist($address,'');
+				$address_array  = IMAPManager::imap_rfc822_parse_adrlist($address,'');
 				foreach((array)$address_array as $addressObject) {
 					$emailAddress = $addressObject->mailbox. (!empty($addressObject->host) ? '@'.$addressObject->host : '');
 					#$emailName = $bofelamimail->encodeHeader($addressObject->personal, 'q');
@@ -935,7 +936,7 @@
 			$this->sessionData['bcc']   = $_formData['bcc'];
 			$this->sessionData['signatureID'] = $_formData['signatureID'];
 			foreach((array)$this->sessionData['bcc'] as $address) {
-				$address_array  = imap_rfc822_parse_adrlist($address,'');
+				$address_array  = IMAPManager::imap_rfc822_parse_adrlist($address,'');
 				foreach((array)$address_array as $addressObject) {
 					$emailAddress = $addressObject->mailbox. (!empty($addressObject->host) ? '@'.$addressObject->host : '');
 					$mailAddr[] = array($emailAddress, $addressObject->personal);
@@ -1071,7 +1072,7 @@
 			if (count($folder) > 0) {
 
 				foreach((array)$this->sessionData['bcc'] as $address) {
-					$address_array  = imap_rfc822_parse_adrlist($address,'');
+					$address_array  = IMAPManager::imap_rfc822_parse_adrlist($address,'');
 					foreach((array)$address_array as $addressObject) {
 						$emailAddress = $addressObject->mailbox. (!empty($addressObject->host) ? '@'.$addressObject->host : '');
 						$mailAddr[] = array($emailAddress, $addressObject->personal);

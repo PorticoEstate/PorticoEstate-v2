@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../email/inc/imap_config.php';
 /**
  * eGroupWare API - Translations
  * 
@@ -131,14 +132,14 @@ class felamimail_translation
 			if ($to == 'utf7-imap' && function_exists(imap_utf7_encode)) 
 			{
 				$convertedData = iconv($from, 'iso-8859-1', $data);
-				$convertedData = imap_utf7_encode($convertedData);
+				$convertedData = IMAPManager::imap_utf7_encode($convertedData);
 				
 				return $convertedData;
 			}
 
 			if ($from == 'utf7-imap' && function_exists(imap_utf7_decode)) 
 			{
-				$convertedData = imap_utf7_decode($data);
+				$convertedData = IMAPManager::imap_utf7_decode($data);
 				$convertedData = iconv('iso-8859-1', $to, $convertedData);
 
 				return $convertedData;

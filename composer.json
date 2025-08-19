@@ -30,7 +30,8 @@
 		"react/socket": "^1.16",
 		"clue/redis-react": "^2.8",
 		"predis/predis": "^2.3",
-		"lbuchs/webauthn": "^2.0"
+		"lbuchs/webauthn": "^2.0",
+		"webklex/php-imap": "^4.0"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "^9.0"

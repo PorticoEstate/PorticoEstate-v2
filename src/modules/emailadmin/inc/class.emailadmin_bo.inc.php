@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../email/inc/imap_config.php';
 	/***************************************************************************\
 	* eGroupWare                                                                *
 	* http://www.egroupware.org                                                 *
@@ -281,7 +282,7 @@
 						return $_string;
 					}
 					
-					$string = imap_8bit($_string);
+					$string = IMAPManager::imap_8bit($_string);
 					$stringParts = explode("=\r\n",$string);
 					//while(list($key,$value) = each($stringParts))
 					if (is_array($stringParts))

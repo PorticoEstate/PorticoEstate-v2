@@ -34,16 +34,22 @@ else \
     echo "Skipping Oracle support installation."; \
 fi
 
+# Add contrib and non-free repositories
+RUN echo "deb http://deb.debian.org/debian trixie main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian-security trixie-security main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian trixie-updates main contrib non-free" >> /etc/apt/sources.list
+
 # Install necessary packages
-RUN apt-get update && apt-get install -y software-properties-common \
+RUN apt-get update && apt-get install -y \
     apt-utils libcurl4-openssl-dev libicu-dev libxslt-dev libpq-dev \
     zlib1g-dev libpng-dev libfreetype-dev libjpeg62-turbo-dev \
-    libc-client-dev libkrb5-dev libzip-dev libonig-dev \
+    libkrb5-dev libzip-dev libonig-dev \
     git \
     less vim-tiny \
     apg \
     sudo \
-    libaio1 locales wget \
+    gnupg \
+    libaio1t64 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \
     cron \
@@ -51,7 +57,7 @@ RUN apt-get update && apt-get install -y software-properties-common \
     net-tools \
     psmisc \
     supervisor \
-    wkhtmltopdf
+    chromium
 
 RUN touch /etc/cron.d/cronjob && chmod 0644 /etc/cron.d/cronjob
 
@@ -69,7 +75,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install -j$(nproc) curl intl xsl pdo_pgsql pdo_mysql gd \
     shmop soap zip mbstring ftp calendar exif
 
-RUN install-php-extensions imap
+# Skip IMAP extension for now due to missing libc-client in Debian Trixie
+# RUN pecl install imap && docker-php-ext-enable imap
 
 # Install PECL extensions
 RUN pecl install apcu && docker-php-ext-enable apcu
@@ -127,11 +134,7 @@ RUN echo 'post_max_size = 55M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 50M' >> /usr/local/etc/php/php.ini
 
 # Install Java
-RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg
-
-RUN wget https://packages.microsoft.com/config/debian/$(cat /etc/debian_version | cut -d. -f1)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-RUN dpkg -i packages-microsoft-prod.deb
-RUN apt-get update && apt-get install -y msopenjdk-21
+RUN apt-get update && apt-get install -y openjdk-21-jdk
 
 ## Verify Java installation
 RUN java -version

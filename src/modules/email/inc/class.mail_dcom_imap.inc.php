@@ -13,6 +13,9 @@
 
 	phpgw::import_class('email.mail_dcom_base');
 
+	// Include modern IMAP configuration
+	require_once __DIR__ . '/imap_config.php';
+
 
 	/**
 	* Mail function abstraction for IMAP servers
@@ -24,31 +27,31 @@
 		function append($stream, $folder, $message, $flags=0)
 		{
 			$folder = $this->utf7_encode($folder);
-			$return = imap_append($stream, $folder, $message, $flags);
+			$return = IMAPManager::imap_append($stream, $folder, $message, $flags);
 		}
 
 		function base64($text)
 		{
-			return imap_base64($text);
+			return IMAPManager::imap_base64($text);
 		}
 
 		function close($stream,$flags=0)
 		{
-			return imap_close($stream,$flags);
+			return IMAPManager::imap_close($stream,$flags);
 		}
 
 		function createmailbox($stream,$mailbox)
 		{
 			$mailbox = $this->utf7_encode($mailbox);
 			$this->folder_list_did_change();
-			return imap_createmailbox($stream,$mailbox);
+			return IMAPManager::imap_createmailbox($stream,$mailbox);
 		}
 
 		function deletemailbox($stream,$mailbox)
 		{
 			$this->folder_list_did_change();
 			$mailbox = $this->utf7_encode($mailbox);
-			return imap_deletemailbox($stream,$mailbox);
+			return IMAPManager::imap_deletemailbox($stream,$mailbox);
 		} 
 
 		function renamemailbox($stream,$mailbox_old,$mailbox_new)
@@ -56,7 +59,7 @@
 			$this->folder_list_did_change();
 			$mailbox_old = $this->utf7_encode($mailbox_old);
 			$mailbox_new = $this->utf7_encode($mailbox_new);
-			return imap_renamemailbox($stream,$mailbox_old,$mailbox_new);
+			return IMAPManager::imap_renamemailbox($stream,$mailbox_old,$mailbox_new);
 		}
 
 		function delete($stream,$msg_num,$flags=0)
@@ -67,18 +70,18 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_delete($stream,$msg_num,$flags);
+			return IMAPManager::imap_delete($stream,$msg_num,$flags);
 		}
 
 		function expunge($stream)
 		{
-			return imap_expunge($stream);
+			return IMAPManager::imap_expunge($stream);
 		}
 
 		function empty_trash($stream)
 		{
-			$val = imap_delete($stream, '1:*');
-			imap_expunge($stream);
+			$val = IMAPManager::imap_delete($stream, '1:*');
+			IMAPManager::imap_expunge($stream);
 			return $val;
 		}
 
@@ -90,7 +93,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_fetchbody($stream,$msgnr,$partnr,$flags);
+			return IMAPManager::imap_fetchbody($stream,$msgnr,$partnr,$flags);
 		}
 
 		function header($stream,$msg_nr,$fromlength=0,$tolength=0,$defaulthost='')
@@ -99,18 +102,18 @@
 			if ($this->force_msg_uids == True)
 			{
 				// this function can nothandle UIDs, switch to sequence number
-				$new_msg_nr = imap_msgno($stream,$msg_nr);
+				$new_msg_nr = IMAPManager::imap_msgno($stream,$msg_nr);
 				if ($new_msg_nr)
 				{
 					$msg_nr = $new_msg_nr;
 				}
 			}
-			return imap_header($stream,$msg_nr,$fromlength,$tolength,$defaulthost);
+			return IMAPManager::imap_header($stream,$msg_nr,$fromlength,$tolength,$defaulthost);
 		}
 		
 		function headers($stream)
 		{
-			return imap_headers($stream);
+			return IMAPManager::imap_headers($stream);
 		} 
 
 		function fetch_raw_mail($stream,$msg_num,$flags=0)
@@ -122,7 +125,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_fetchheader($stream,$msg_num,$flags);
+			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
 		}
 
 		function fetchheader($stream,$msg_num,$flags=0)
@@ -133,7 +136,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_fetchheader($stream,$msg_num,$flags);
+			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
 		}
 
 		function fetchstructure($stream,$msg_num,$flags=0)
@@ -144,7 +147,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_fetchstructure($stream,$msg_num,$flags);
+			return IMAPManager::imap_fetchstructure($stream,$msg_num,$flags);
 		}
 
 		function get_body($stream,$msg_num,$flags=0)
@@ -155,7 +158,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_body($stream,$msg_num,$flags);
+			return IMAPManager::imap_body($stream,$msg_num,$flags);
 		}
 
 		function get_header($stream,$msg_num,$flags)
@@ -172,13 +175,13 @@
 			}
 			//return imap_listmailbox($stream,$ref,$pattern);
 			$pattern = $this->utf7_encode($pattern);
-			$return_list = imap_list($stream,$ref,$pattern);
+			$return_list = IMAPManager::imap_list($stream,$ref,$pattern);
 			return $this->utf7_decode($return_list);
 		}
 
 		function mailboxmsginfo($stream)
 		{
-			return imap_mailboxmsginfo($stream);
+			return IMAPManager::imap_mailboxmsginfo($stream);
 		}
 
 		function mailcopy($stream,$msg_list,$mailbox,$flags=0)
@@ -190,7 +193,7 @@
 				$flags |= CP_UID;
 			}
 			$mailbox = $this->utf7_encode($mailbox);
-			return imap_mail_copy($stream,$msg_list,$mailbox,$flags);
+			return IMAPManager::imap_mail_copy($stream,$msg_list,$mailbox,$flags);
 		}
 
 		function mail_move($stream,$msg_list,$mailbox,$flags=0)
@@ -202,23 +205,23 @@
 				$flags |= CP_UID;
 			}
 			$mailbox = $this->utf7_encode($mailbox, 'mail_move');
-			return imap_mail_move($stream,$msg_list,$mailbox,$flags);
+			return IMAPManager::imap_mail_move($stream,$msg_list,$mailbox,$flags);
 		}
 
 		function num_msg($stream) // returns number of messages in the mailbox
 		{ 
-			return imap_num_msg($stream);
+			return IMAPManager::imap_num_msg($stream);
 		}
 		
 		function noop_ping_test($stream)
 		{ 
-			return imap_ping($stream);
+			return IMAPManager::imap_ping($stream);
 		}
 
 		function open($mailbox,$username,$password,$flags=0)
 		{
 			$mailbox = $this->utf7_encode($mailbox);
-			return @imap_open($mailbox, $username, $password, $flags,2);
+			return IMAPManager::imap_open($mailbox, $username, $password, $flags,2);
 		}
 
 		function qprint($message)
@@ -231,13 +234,13 @@
 		function reopen($stream,$mailbox,$flags=0)
 		{
 			$mailbox = $this->utf7_encode($mailbox);
-			return imap_reopen($stream,$mailbox,$flags);
+			return IMAPManager::imap_reopen($stream,$mailbox,$flags);
 		}
 
 		function server_last_error()
 		{
 			// supported in PHP >= 3.0.12
-			return imap_last_error();
+			return IMAPManager::imap_last_error();
 		}
 
 		function i_search($stream,$criteria,$flags=0)
@@ -248,7 +251,7 @@
 			{
 				$flags |= SE_UID;
 			}
-			return imap_search($stream,$criteria,$flags);
+			return IMAPManager::imap_search($stream,$criteria,$flags);
 		}
 		
 		function sort($stream,$criteria,$reverse=0,$flags=0)
@@ -260,7 +263,7 @@
 				$flags |= SE_UID;
 			}
 			//echo 'class dcom: sort: $this->force_msg_uids= '.serialize($this->force_msg_uids).'; $flags: ['.serialize($flags).']<br />';
-			return imap_sort($stream,$criteria,$reverse,$flags);
+			return IMAPManager::imap_sort($stream,$criteria,$reverse,$flags);
 		}
 
 		function status($stream,$mailbox,$options=0)
@@ -270,7 +273,7 @@
 				return;
 			}
 			$mailbox = $this->utf7_encode($mailbox);
-			return imap_status($stream,$mailbox,$options);
+			return IMAPManager::imap_status($stream,$mailbox,$options);
 		}
 
 		function construct_folder_str($folder)
@@ -296,7 +299,7 @@
 			{
 				$uids |= ST_UID;
 			}
-			return imap_setflag_full($stream, $msgnum, $flag, $uids);
+			return IMAPManager::imap_setflag_full($stream, $msgnum, $flag, $uids);
 		}
 
 		/* rfc_get_flag() is more "rfc safe", as RFC822 allows
@@ -324,7 +327,7 @@
 				$flags |= FT_UID;
 			}
 			$fieldCount = 0;
-			$header = imap_fetchheader ($stream, $msg_num, $flags);
+			$header = IMAPManager::imap_fetchheader ($stream, $msg_num, $flags);
 			$header = explode("\n", $header);
 			$flag = strtolower($flag);
 

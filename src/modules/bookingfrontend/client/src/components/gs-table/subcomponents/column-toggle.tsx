@@ -37,7 +37,7 @@ function ColumnToggle<T>({table, tableColumns, columnVisibility}: ColumnTogglePr
     // Get fresh column data
     const allColumns = table.getAllLeafColumns().filter(column => column.getCanHide())
     const hiddenColumnsCount = Object.values(columnVisibility).filter(v => !v).length;
-    
+
     // Close both the dropdown and dialog
     const handleClose = () => {
         setIsOpen(false);
@@ -110,7 +110,8 @@ function ColumnToggle<T>({table, tableColumns, columnVisibility}: ColumnTogglePr
 
             {/* Mobile Dialog */}
             {isMobile ? (
-                <Dialog 
+                <Dialog
+					dialogId={'table-column-toggle-dialog'}
                     open={isOpen}
                     onClose={handleClose}
                     title="Column Visibility"

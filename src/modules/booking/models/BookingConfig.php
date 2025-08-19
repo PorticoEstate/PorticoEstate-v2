@@ -456,6 +456,13 @@ class BookingConfig
      */
     public $voucher_type;
 
+    /**
+     * @OA\Property(type="boolean")
+	 * @Expose
+	 * @ParseBool
+     */
+    public $combined_applications_mode;
+
     public function __construct(?array $data)
     {
         if (is_array($data))

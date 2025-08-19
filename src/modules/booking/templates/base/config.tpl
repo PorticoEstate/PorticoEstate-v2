@@ -123,6 +123,15 @@
 				</table>
 			</td>
 		</tr>
+		<tr >
+			<td>{lang_combined_applications_mode}:</td>
+			<td>
+				<select name="newsettings[combined_applications_mode]" class="pure-u-1">
+					<option value="">{lang_No}</option>
+					<option value="True"{selected_combined_applications_mode_True}>{lang_Yes}</option>
+				</select>
+			</td>
+		</tr>
 
 		<!-- END body -->
 		<!-- BEGIN footer -->

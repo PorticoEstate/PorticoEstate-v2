@@ -790,3 +790,35 @@ application_title	bookingfrontend	en	Application title
 direct_booking_title	bookingfrontend	en	Direct booking title
 direct_booking	bookingfrontend	en	Direct booking
 total_incl_vat	bookingfrontend	en	Total incl. VAT
+timestamp	bookingfrontend	en	Timestamp
+no_groups	bookingfrontend	en	No groups found
+no_delegates	bookingfrontend	en	No delegates found
+edit_organization	bookingfrontend	en	Edit Organization
+markdown	bookingfrontend	en	Markdown
+visual	bookingfrontend	en	Visual
+enter_description_markdown	bookingfrontend	en	Enter description in markdown format
+markdown_help_professional	bookingfrontend	en	Use the toolbar above to format your text, or write in markdown syntax. Click preview to see the result.
+basic_information	bookingfrontend	en	Basic Information
+short_name	bookingfrontend	en	Short Name
+organization_not_found	bookingfrontend	en	Organization not found
+access_denied	bookingfrontend	en	Access Denied
+no_permission_edit_organization	bookingfrontend	en	You do not have permission to edit this organization.
+confirm_restore_delegate	bookingfrontend	en	Are you sure you want to restore {{name}} as an active delegate?
+confirm_delete_delegate	bookingfrontend	en	Are you sure you want to remove {{name}} as a delegate? This will revoke their access to this organization.
+group_name	bookingfrontend	en	Group name
+group_shortname	bookingfrontend	en	Short name
+new_group	bookingfrontend	en	New group
+edit_group	bookingfrontend	en	Edit group
+delete_group	bookingfrontend	en	Delete group
+confirm_delete_group	bookingfrontend	en	Are you sure you want to delete the group {name}?
+group_contacts	bookingfrontend	en	Group contacts
+add_contact	bookingfrontend	en	Add contact
+show_in_portal	bookingfrontend	en	Show in portal
+deactivate_group	bookingfrontend	en	Deactivate group
+activate_group	bookingfrontend	en	Activate group
+confirm_deactivate_group	bookingfrontend	en	Are you sure you want to deactivate the group {{name}}?
+confirm_activate_group	bookingfrontend	en	Are you sure you want to activate the group {{name}}?
+fill_from_delegate	bookingfrontend	en	Fill from delegate
+select_delegate	bookingfrontend	en	Select delegate...
+show_inactive	bookingfrontend	en	Show inactive
+organizer_required	bookingfrontend	en	Organizer name is required

@@ -77,7 +77,7 @@ export interface IBuilding {
     opening_hours?: string;
 
     /** Description in JSON format */
-    description_json?: string; // JSON object, can use a more specific type if needed
+	description_json?: string; // JSON object, can use a more specific type if needed
 }
 
 

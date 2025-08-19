@@ -59,7 +59,7 @@ const VersionSwitcher: React.FC = () => {
       >
         {t(versionLabel)} <ChevronDownIcon width="1.875rem" height="1.875rem" />
       </Button>
-      <Dialog open={isOpen} onClose={() => setIsOpen(false)}>
+      <Dialog open={isOpen} onClose={() => setIsOpen(false)} dialogId={'version-switcher'}>
         <div style={{
           display: 'flex',
           flexDirection: 'column',

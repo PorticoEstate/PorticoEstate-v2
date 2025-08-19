@@ -36,7 +36,11 @@ export const applicationFormSchema = z.object({
 		repeat_until: z.string().min(1, 'Repeat until date is required'),
 		field_interval: z.number().min(1, 'Interval must be at least 1 week').default(1),
 		outseason: z.boolean().default(false)
-	}).optional()
+	}).optional(),
+	// Organization selection for recurring bookings
+	organization_id: z.number().optional(),
+	organization_number: z.string().optional(),
+	organization_name: z.string().optional()
 }).refine(
 	(data) => data.end > data.start,
 	{
@@ -54,6 +58,18 @@ export const applicationFormSchema = z.object({
 	{
 		message: "Recurring booking settings are required",
 		path: ["recurring_info"]
+	}
+).refine(
+	(data) => {
+		// If recurring is enabled, organization is required
+		if (data.isRecurring) {
+			return !!data.organization_id;
+		}
+		return true;
+	},
+	{
+		message: "Organization selection is required for recurring bookings",
+		path: ["organization_id"]
 	}
 );
 

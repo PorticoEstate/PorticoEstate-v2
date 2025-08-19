@@ -824,3 +824,11 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	no	Søknadene er godkjent, og en bekreftelse har blitt sendt til deg på e-post.
 your_applications	bookingfrontend	no	Dine søknader
 zip code	bookingfrontend	no	Postnummer
+make_recurring	bookingfrontend	no	Gjør denne til en gjentakende booking
+login_required_for_recurring	bookingfrontend	no	Innlogging kreves for gjentakende bookinger
+repeat_until	bookingfrontend	no	Gjenta til
+repeat_every_weeks	bookingfrontend	no	Gjenta hver (uker)
+allow_outseason	bookingfrontend	no	Tillat bookinger utover sesongslutt
+recurring_not_vipps_eligible	bookingfrontend	no	Gjentakende bookinger er ikke tilgjengelige for ekstern betaling
+recurring_applications	bookingfrontend	no	Gjentakende søknader
+recurring_applications_note	bookingfrontend	no	Disse søknadene vil bli behandlet individuelt og krever godkjenning

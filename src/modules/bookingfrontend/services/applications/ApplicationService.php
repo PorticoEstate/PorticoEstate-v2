@@ -275,7 +275,15 @@ class ApplicationService
                 }
             }
 
-            $parent_id = $data['parent_id'] ?? $applications[0]['id'];
+            // Find the first regular (non-recurring) application to use as parent_id fallback
+            $fallbackParentId = null;
+            foreach ($applications as $app) {
+                if (empty($app['recurring_info'])) {
+                    $fallbackParentId = $app['id'];
+                    break;
+                }
+            }
+            $parent_id = $data['parent_id'] ?? $fallbackParentId;
 
             // Prepare base update data
             $baseUpdateData = [
@@ -287,14 +295,16 @@ class ApplicationService
                 'responsible_city' => $data['city'],
 //                'name' => $data['eventTitle'],
                 'organizer' => $data['organizerName'],
-                'customer_identifier_type' => $data['customerType'],
-                'customer_organization_number' => $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null,
-                'customer_organization_name' => $data['customerType'] === 'organization_number' ? $data['organizationName'] : null,
-                'modified' => date('Y-m-d H:i:s'),
-                'customer_ssn' => $data['customerType'] === 'ssn' ? $this->userHelper->ssn : null
+                'modified' => date('Y-m-d H:i:s')
             ];
 
-            // Handle organization ID - use provided ID if available, otherwise look up by number
+            // Prepare customer data for checkout
+            $baseUpdateData['customer_identifier_type'] = $data['customerType'];
+            $baseUpdateData['customer_organization_number'] = $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null;
+            $baseUpdateData['customer_organization_name'] = $data['customerType'] === 'organization_number' ? $data['organizationName'] : null;
+            $baseUpdateData['customer_ssn'] = $data['customerType'] === 'ssn' ? $this->userHelper->ssn : null;
+
+            // Handle organization ID
             if ($data['customerType'] === 'organization_number') {
                 if (!empty($data['organizationId'])) {
                     // Use organization ID provided by client
@@ -345,11 +355,33 @@ class ApplicationService
 
             foreach ($applications as $application)
             {
-                $this->patchApplicationMainData($baseUpdateData, $application['id']);
+                // For recurring applications that already have organization data, preserve it
+                $updateData = $baseUpdateData;
+                // For recurring applications, preserve organization data if it was set during creation
+                if (!empty($application['recurring_info']) && 
+                    isset($application['customer_identifier_type']) &&
+                    $application['customer_identifier_type'] === 'organization_number') {
+                    
+                    // Preserve existing organization data for recurring applications
+                    unset($updateData['customer_identifier_type']);
+                    unset($updateData['customer_organization_number']);
+                    unset($updateData['customer_organization_name']);
+                    unset($updateData['customer_organization_id']);
+                    unset($updateData['customer_ssn']);
+                    
+                    error_log("RECURRING APP DEBUG: Preserving org data for app {$application['id']}, removed customer fields from update data");
+                    error_log("RECURRING APP DEBUG: updateData keys after unset: " . implode(', ', array_keys($updateData)));
+                } else {
+                    error_log("RECURRING APP DEBUG: App {$application['id']} - recurring_info: " . (!empty($application['recurring_info']) ? 'yes' : 'no') . 
+                             ", customer_identifier_type: " . ($application['customer_identifier_type'] ?? 'null') . 
+                             ", customer_organization_id: " . ($application['customer_organization_id'] ?? 'null'));
+                }
 
-                $baseUpdateData['session_id'] = $application['session_id']; // Keep session_id for partial applications
+                $this->patchApplicationMainData($updateData, $application['id']);
 
-                $updatedApplications[] = array_merge($application, $baseUpdateData);
+                $updateData['session_id'] = $application['session_id']; // Keep session_id for partial applications
+
+                $updatedApplications[] = array_merge($application, $updateData);
             }
 
             // Only commit if we started the transaction
@@ -523,7 +555,15 @@ class ApplicationService
             // First update all applications with contact info and validate limits
             $updatedApplications = $this->updateApplicationsWithContactInfo($session_id, $data);
 
-            $parent_id = $data['parent_id'] ?? $updatedApplications[0]['id'];
+            // Find the first regular (non-recurring) application to use as parent_id fallback
+            $fallbackParentId = null;
+            foreach ($updatedApplications as $app) {
+                if (empty($app['recurring_info'])) {
+                    $fallbackParentId = $app['id'];
+                    break;
+                }
+            }
+            $parent_id = $data['parent_id'] ?? $fallbackParentId;
             $finalUpdatedApplications = [];
             $skippedApplications = [];
             $collisionDebugInfo = []; // Debug information for collisions
@@ -562,7 +602,8 @@ class ApplicationService
                         // Reject the application with collision
                         $updateData = [
                             'status' => 'REJECTED',
-                            'parent_id' => $application['id'] == $parent_id ? null : $parent_id
+                            // Don't set parent_id for recurring applications - they are processed individually
+                            'parent_id' => (!empty($application['recurring_info']) || $application['id'] == $parent_id) ? null : $parent_id
                         ];
 
                         $this->patchApplicationMainData($updateData, $application['id']);
@@ -576,7 +617,8 @@ class ApplicationService
                         // No collision - proceed with direct booking
                         $updateData = [
                             'status' => 'ACCEPTED',
-                            'parent_id' => $application['id'] == $parent_id ? null : $parent_id
+                            // Don't set parent_id for recurring applications - they are processed individually
+                            'parent_id' => (!empty($application['recurring_info']) || $application['id'] == $parent_id) ? null : $parent_id
                         ];
 
                         $this->patchApplicationMainData($updateData, $application['id']);
@@ -587,7 +629,8 @@ class ApplicationService
                     // Not eligible for direct booking - process normally
                     $updateData = [
                         'status' => 'NEW',
-                        'parent_id' => $application['id'] == $parent_id ? null : $parent_id
+                        // Don't set parent_id for recurring applications - they are processed individually
+                        'parent_id' => (!empty($application['recurring_info']) || $application['id'] == $parent_id) ? null : $parent_id
                     ];
 
                     $this->patchApplicationMainData($updateData, $application['id']);

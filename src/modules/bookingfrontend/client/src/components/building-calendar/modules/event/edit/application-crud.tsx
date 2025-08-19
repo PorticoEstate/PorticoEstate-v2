@@ -322,7 +322,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				})) || [],
 				// Parse existing recurring_info if available
 				isRecurring: !!RecurringInfoUtils.parse(existingApplication.recurring_info),
-				recurring_info: RecurringInfoUtils.parse(existingApplication.recurring_info) || undefined
+				recurring_info: RecurringInfoUtils.parse(existingApplication.recurring_info) || undefined,
+				// Set organization data if existing application has it
+				organization_id: existingApplication.customer_organization_id || undefined,
+				organization_number: existingApplication.customer_organization_number || undefined,
+				organization_name: existingApplication.customer_organization_name || undefined
 			};
 		}
 
@@ -368,7 +372,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				})) || [],
 				// Parse existing recurring_info if available from baseApplication
 				isRecurring: !!RecurringInfoUtils.parse(baseApplication.recurring_info),
-				recurring_info: RecurringInfoUtils.parse(baseApplication.recurring_info) || undefined
+				recurring_info: RecurringInfoUtils.parse(baseApplication.recurring_info) || undefined,
+				// Set organization data from baseApplication if available
+				organization_id: baseApplication.customer_organization_id || undefined,
+				organization_number: baseApplication.customer_organization_number || undefined,
+				organization_name: baseApplication.customer_organization_name || undefined
 			};
 		}
 
@@ -399,7 +407,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			})) || [],
 			// Default values for recurring booking
 			isRecurring: false,
-			recurring_info: undefined
+			recurring_info: undefined,
+			// Default organization values
+			organization_id: undefined,
+			organization_number: undefined,
+			organization_name: undefined
 		};
 	}, [existingApplication, props.lastSubmittedData, defaultStartEnd, agegroups, props.selectedTempApplication, props.bookingUser]);
 
@@ -801,6 +813,22 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				}
 			}
 
+			// Handle organization data for recurring bookings
+			if (dirtyFields.isRecurring || dirtyFields.organization_id || dirtyFields.organization_number || dirtyFields.organization_name) {
+				if (data.isRecurring && data.organization_id) {
+					(updatedApplication as any).customer_identifier_type = 'organization_number';
+					(updatedApplication as any).customer_organization_id = data.organization_id;
+					(updatedApplication as any).customer_organization_number = data.organization_number;
+					(updatedApplication as any).customer_organization_name = data.organization_name;
+				} else {
+					// Clear organization data if recurring is disabled
+					(updatedApplication as any).customer_identifier_type = undefined;
+					(updatedApplication as any).customer_organization_id = undefined;
+					(updatedApplication as any).customer_organization_number = undefined;
+					(updatedApplication as any).customer_organization_name = undefined;
+				}
+			}
+
 
 			const result = await updateMutation.mutateAsync({
 				id: existingApplication.id,
@@ -833,6 +861,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1,
 			// Add recurring info if enabled
 			recurring_info: data.isRecurring && data.recurring_info ? data.recurring_info : undefined
+		}
+
+		// If recurring booking, set organization data and customer type
+		if (data.isRecurring && data.organization_id) {
+			(newApplication as any).customer_identifier_type = 'organization_number';
+			(newApplication as any).customer_organization_id = data.organization_id;
+			(newApplication as any).customer_organization_number = data.organization_number;
+			(newApplication as any).customer_organization_name = data.organization_name;
 		}
 
 		const result = await createMutation.mutateAsync(newApplication);
@@ -1220,11 +1256,19 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 												setValue('recurring_info.repeat_until', oneWeekLater.toISOString().split('T')[0]);
 												setValue('recurring_info.field_interval', 1);
 												setValue('recurring_info.outseason', false);
+												// Clear organization fields to force selection
+												setValue('organization_id', undefined);
+												setValue('organization_number', undefined);
+												setValue('organization_name', undefined);
 											} else {
 												// Clear recurring data when checkbox is turned off
 												setValue('recurring_info.repeat_until', '');
 												setValue('recurring_info.field_interval', 1);
 												setValue('recurring_info.outseason', false);
+												// Clear organization fields
+												setValue('organization_id', undefined);
+												setValue('organization_number', undefined);
+												setValue('organization_name', undefined);
 											}
 										}}
 										label={t('bookingfrontend.make_recurring')}
@@ -1241,6 +1285,42 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						{/* Show recurring fields only when checkbox is checked */}
 						{watch('isRecurring') && (
 							<div style={{marginTop: '1rem', paddingLeft: '1.5rem', borderLeft: '3px solid var(--ds-color-border-brand1)'}}>
+								{/* Organization selector for recurring bookings */}
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
+									<Controller
+										name="organization_id"
+										control={control}
+										render={({field}) => (
+											<>
+												<label>{t('bookingfrontend.organization')}</label>
+												<Select
+													{...field}
+													value={field.value || ''}
+													onChange={(e) => {
+														const selectedOrgId = parseInt(e.target.value);
+														field.onChange(selectedOrgId || undefined);
+														
+														// Also set organization number and name
+														const selectedDelegate = props.bookingUser?.delegates?.find(d => d.org_id === selectedOrgId);
+														if (selectedDelegate) {
+															setValue('organization_number', selectedDelegate.organization_number);
+															setValue('organization_name', selectedDelegate.name);
+														}
+													}}
+												>
+													<option value="">{t('bookingfrontend.select_organization')}</option>
+													{props.bookingUser?.delegates?.filter(delegate => delegate.active).map((delegate) => (
+														<option key={delegate.org_id} value={delegate.org_id}>
+															{delegate.name} ({delegate.organization_number})
+														</option>
+													))}
+												</Select>
+												{errors.organization_id &&
+													<span className={styles.error}>{errors.organization_id.message}</span>}
+											</>
+										)}
+									/>
+								</div>
 								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
 									<Controller
 										name="recurring_info.repeat_until"

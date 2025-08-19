@@ -26,12 +26,28 @@ const CheckoutContent: FC = () => {
     const [billingDetails, setBillingDetails] = useState<BillingFormData>();
     const [selectedParentId, setSelectedParentId] = useState<number>();
 
-    // Preselect the first application as parent when applications load
+    // Separate applications into regular and recurring
+    const {regularApplications, recurringApplications} = useMemo(() => {
+        const regular: any[] = [];
+        const recurring: any[] = [];
+        
+        applications?.list?.forEach(app => {
+            if (app.recurring_info && app.recurring_info.trim() !== '') {
+                recurring.push(app);
+            } else {
+                regular.push(app);
+            }
+        });
+        
+        return { regularApplications: regular, recurringApplications: recurring };
+    }, [applications?.list]);
+
+    // Preselect the first regular (non-recurring) application as parent when applications load
     useEffect(() => {
-        if (applications?.list?.length && !selectedParentId) {
-            setSelectedParentId(applications.list[0].id);
+        if (regularApplications.length > 0 && !selectedParentId) {
+            setSelectedParentId(regularApplications[0].id);
         }
-    }, [applications?.list, selectedParentId]);
+    }, [regularApplications, selectedParentId]);
     const [currentApplication, setCurrentApplication] = useState<{
         application_id: number,
         date_id: number,
@@ -41,11 +57,12 @@ const CheckoutContent: FC = () => {
 
     // Extract all resources from applications with their building IDs
     const resources = useMemo(() => {
-        if (!applications?.list) return [];
+        const allApps = [...regularApplications, ...recurringApplications];
+        if (allApps.length === 0) return [];
 
         const resourceMap = new Map<number, { id: number, building_id?: number }>();
 
-        applications.list.forEach(app => {
+        allApps.forEach(app => {
             if (app.resources && Array.isArray(app.resources)) {
                 app.resources.forEach(resource => {
                     if (resource.id) {
@@ -59,7 +76,7 @@ const CheckoutContent: FC = () => {
         });
 
         return Array.from(resourceMap.values());
-    }, [applications]);
+    }, [regularApplications, recurringApplications]);
 
     // Fetch regulation documents for all resources
     const { data: regulationDocuments, isLoading: docsLoading } = useResourceRegulationDocuments(resources);

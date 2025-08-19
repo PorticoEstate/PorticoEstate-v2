@@ -1,5 +1,5 @@
 // app/[lang]/(public)/checkout/components/cart-section.tsx
-import {Dispatch, FC} from 'react';
+import {Dispatch, FC, useMemo} from 'react';
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {IApplication} from "@/service/types/api/application.types";
 import styles from './checkout.module.scss';
@@ -22,20 +22,61 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
         })
     }
 
+    // Separate recurring and regular applications
+    const {regularApplications, recurringApplications} = useMemo(() => {
+        const regular: IApplication[] = [];
+        const recurring: IApplication[] = [];
+        
+        applications.forEach(app => {
+            if (app.recurring_info && app.recurring_info.trim() !== '') {
+                recurring.push(app);
+            } else {
+                regular.push(app);
+            }
+        });
+        
+        return {
+            regularApplications: regular,
+            recurringApplications: recurring
+        };
+    }, [applications]);
+
     return (
-        <section className={styles.cartSection}>
-            <h2>{t('bookingfrontend.your_applications')}</h2>
-            <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
-                {t('bookingfrontend.select_main_application_note')}
-            </p>
-            <ShoppingCartTable 
-                basketData={applications} 
-                openEdit={openEdit}
-                showParentSelection={true}
-                selectedParentId={selectedParentId}
-                onParentIdChange={onParentIdChange}
-            />
-        </section>
+        <div>
+            {/* Regular Applications Section */}
+            {regularApplications.length > 0 && (
+                <section className={styles.cartSection}>
+                    <h2>{t('bookingfrontend.your_applications')}</h2>
+                    <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
+                        {t('bookingfrontend.select_main_application_note')}
+                    </p>
+                    <ShoppingCartTable 
+                        basketData={regularApplications} 
+                        openEdit={openEdit}
+                        showParentSelection={true}
+                        selectedParentId={selectedParentId}
+                        onParentIdChange={onParentIdChange}
+                    />
+                </section>
+            )}
+            
+            {/* Recurring Applications Section */}
+            {recurringApplications.length > 0 && (
+                <section className={styles.cartSection} style={{marginTop: regularApplications.length > 0 ? '2rem' : '0'}}>
+                    <h2>{t('bookingfrontend.recurring_applications')}</h2>
+                    <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
+                        {t('bookingfrontend.recurring_applications_note')}
+                    </p>
+                    <ShoppingCartTable 
+                        basketData={recurringApplications} 
+                        openEdit={openEdit}
+                        showParentSelection={false}
+                        selectedParentId={selectedParentId}
+                        onParentIdChange={onParentIdChange}
+                    />
+                </section>
+            )}
+        </div>
     );
 };
 

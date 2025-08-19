@@ -387,6 +387,16 @@ class CheckoutController
 
             // 1. Validate and update applications with contact info
             try {
+                // First check if any applications have recurring data - Vipps is not allowed for recurring bookings
+                $applications = $this->applicationService->getPartialApplications($session_id);
+                foreach ($applications as $application) {
+                    if (!empty($application['recurring_info'])) {
+                        return ResponseHelper::sendErrorResponse([
+                            'error' => lang('recurring_not_vipps_eligible')
+                        ], 400);
+                    }
+                }
+
                 $updatedApplications = $this->applicationService->updateApplicationsWithContactInfo($session_id, $data, false);
 
                 // 2. Separate applications into direct bookings and normal applications

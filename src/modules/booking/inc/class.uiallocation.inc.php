@@ -326,6 +326,85 @@
 			$invalid_dates = array();
 			$valid_dates = array();
 
+			// Handle recurring application pre-fill early
+			$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+			$allocation = array();
+			if ($recurring_app_id) {
+	
+				// Load the application data
+				$application_bo = createObject('booking.boapplication');
+				$recurring_app = $application_bo->read_single($recurring_app_id);
+
+	
+				if ($recurring_app && !empty($recurring_app['recurring_info'])) {
+					// Parse recurring info
+					$recurring_data = json_decode($recurring_app['recurring_info'], true);
+
+					if ($recurring_data && is_array($recurring_data)) {
+						// Pre-fill recurring form data
+						$_POST['field_interval'] = $recurring_data['field_interval'] ?? 1;
+						$_POST['repeat_until'] = $recurring_data['repeat_until'] ?? '';
+						$_POST['outseason'] = $recurring_data['outseason'] ?? false;
+					}
+
+					// Pre-fill application data
+					$allocation['application_id'] = $recurring_app['id'];
+					$allocation['building_id'] = $recurring_app['building_id'];
+					$allocation['building_name'] = $recurring_app['building_name'];
+					
+					// Set default season - get current active season
+					$current_seasons = $this->season_bo->read(array('filters' => array('active' => 1), 'sort' => 'to_', 'dir' => 'desc', 'results' => 1));
+					if (!empty($current_seasons['results'][0])) {
+						$allocation['season_id'] = $current_seasons['results'][0]['id'];
+						$_POST['season_id'] = $current_seasons['results'][0]['id'];
+					}
+
+					// Pre-fill organization data if available
+					if (!empty($recurring_app['customer_organization_id'])) {
+						$allocation['organization_id'] = $recurring_app['customer_organization_id'];
+						$allocation['organization_name'] = $recurring_app['customer_organization_name'];
+						$_POST['organization_id'] = $recurring_app['customer_organization_id'];
+						$_POST['organization_name'] = $recurring_app['customer_organization_name'];
+					} elseif (!empty($recurring_app['customer_organization_number'])) {
+						// Handle organization by number
+						$organizations = createObject('booking.soorganization')->read(array('results' => -1, 'filters' => array('organization_number' => $recurring_app['customer_organization_number'], 'active' => 1)));
+						if (!empty($organizations['results'][0])) {
+							$allocation['organization_id'] = $organizations['results'][0]['id'];
+							$allocation['organization_name'] = $organizations['results'][0]['name'];
+							$_POST['organization_id'] = $organizations['results'][0]['id'];
+							$_POST['organization_name'] = $organizations['results'][0]['name'];
+						}
+					}
+
+					// Pre-fill resource data
+					if (!empty($recurring_app['resources']) && is_array($recurring_app['resources'])) {
+						$allocation['resources'] = $recurring_app['resources'];
+						$_POST['resources'] = $recurring_app['resources'];
+					}
+
+					// Pre-fill time data from first date
+					if (!empty($recurring_app['dates']) && is_array($recurring_app['dates'])) {
+						$first_date = $recurring_app['dates'][0];
+						$from_date = new DateTime($first_date['from_']);
+						$to_date = new DateTime($first_date['to_']);
+
+						// Set datetime values in user's preferred format for the allocation array
+						$dateformat = $this->userSettings['preferences']['common']['dateformat'];
+						$allocation['from_'] = $from_date->format("{$dateformat} H:i");
+						$allocation['to_'] = $to_date->format("{$dateformat} H:i");
+						
+						// Set timestamps for jqcal2 listeners (this is the key!)
+						$_timeFrom = $from_date->getTimestamp();
+						$_timeTo = $to_date->getTimestamp();
+
+						// Set the weekday for recurring logic
+						$weekday = strtolower($from_date->format('l'));
+						$_POST['weekday'] = $weekday;
+					}
+
+						}
+			}
+
 			if ($_SERVER['REQUEST_METHOD'] == 'POST')
 			{
 				$season = $this->season_bo->read_single(Sanitizer::get_var('season_id', 'int'));
@@ -355,7 +434,8 @@
 
 				}
 
-				$allocation = extract_values($_POST, $this->fields);
+				$post_allocation = extract_values($_POST, $this->fields);
+			$allocation = array_merge($allocation, $post_allocation);
 				$allocation['skip_bas'] = (int)Sanitizer::get_var('skip_bas', 'int');
 				if ($_POST['cost'])
 				{
@@ -562,8 +642,9 @@
 					}
 				}
 			}
-			if (Sanitizer::get_var('building_name', 'string') == '')
+			if (Sanitizer::get_var('building_name', 'string') == '' && empty($allocation['building_name']))
 			{
+	
 				array_set_default($allocation, 'resources', array());
 				$weekday = 'monday';
 			}
@@ -572,6 +653,14 @@
 				$dateformat =  Sanitizer::get_var('dateformat', 'string');
 				$dateTimeFrom = Sanitizer::get_var('from_', 'string');
 				$dateTimeTo = Sanitizer::get_var('to_', 'string');
+				
+				// Handle pre-filled datetime from recurring application
+				if (empty($dateTimeFrom) && !empty($allocation['from_'])) {
+					$dateTimeFrom = date('Y-m-d H:i:s', phpgwapi_datetime::date_to_timestamp($allocation['from_']));
+				}
+				if (empty($dateTimeTo) && !empty($allocation['to_'])) {
+					$dateTimeTo = date('Y-m-d H:i:s', phpgwapi_datetime::date_to_timestamp($allocation['to_']));
+				}
 				if(is_array($dateTimeFrom))
 				{
 					$dateTimeFrom = $dateTimeFrom[0];
@@ -596,6 +685,7 @@
 				array_set_default($allocation, 'from_', $timeFrom);
 				array_set_default($allocation, 'to_', $timeTo);
 				$weekday = Sanitizer::get_var('weekday', 'string');
+
 			}
 
 			$this->flash_form_errors($errors);

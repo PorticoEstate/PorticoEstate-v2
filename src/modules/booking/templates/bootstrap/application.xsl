@@ -332,6 +332,22 @@
 							</div>
 						</div>
 					</li>
+					
+					<!-- Modern recurring allocation button for applications with recurring data -->
+					<xsl:if test="show_recurring_button = 1">
+						<li class="list-inline-item mb-2">
+							<a class="btn btn-success btn-sm shadow-sm" role="button">
+								<xsl:attribute name="href">
+									<xsl:value-of select="recurring_allocation_url"/>
+								</xsl:attribute>
+								<xsl:attribute name="title">
+									Opprett gjentakende tildeling basert på denne søknaden
+								</xsl:attribute>
+								<i class="fas fa-calendar-plus me-2"></i>
+								<span class="fw-medium">Opprett gjentakende tildeling</span>
+							</a>
+						</li>
+					</xsl:if>
 				</ul>
 			</div>
 			<div class="col-6">

@@ -674,7 +674,7 @@ class booking_uiapplication extends booking_uicommon
 
 		if ($this->combine_applications)
 		{
-			$filters['where'] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL)";
+			$filters['where'] = "(bb_application.id IN ({$filter_id_sql})) AND (bb_application.parent_id IS NULL OR bb_application.parent_id = bb_application.id)";
 		}
 		else
 		{
@@ -2929,12 +2929,12 @@ class booking_uiapplication extends booking_uicommon
 	{
 		$id = Sanitizer::get_var('id', 'int');
 		$selected_app_id = Sanitizer::get_var('selected_app_id', 'int');
-		
+
 		if (!$id)
 		{
 			phpgw::no_access('booking', lang('missing id'));
 		}
-		
+
 		// Use selected application ID if provided, otherwise use the original ID
 		$edit_id = $selected_app_id ?: $id;
 		$application = $this->bo->read_single($edit_id);
@@ -4242,6 +4242,22 @@ JS;
 			}
 		}
 
+		// Check if application has recurring data and prepare button
+		$show_recurring_button = false;
+		$recurring_allocation_url = '';
+		if (!empty($application['recurring_info']) && trim($application['recurring_info']) !== '') {
+			$show_recurring_button = true;
+
+			// Use simple approach - just pass the application ID
+			$recurring_params = array(
+				'menuaction' => 'booking.uiallocation.add',
+				'recurring_application_id' => $application['id']
+			);
+
+			$recurring_allocation_url = self::link($recurring_params);
+		}
+
+
 		self::render_template_xsl(
 			'application',
 			array(
@@ -4260,7 +4276,9 @@ JS;
 				'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
 				'internal_notes'	 => $internal_notes,
 				'show_edit_selection' => $show_edit_selection,
-				'related_applications' => $related_applications
+				'related_applications' => $related_applications,
+				'show_recurring_button' => $show_recurring_button,
+				'recurring_allocation_url' => $recurring_allocation_url
 			)
 		);
 	}

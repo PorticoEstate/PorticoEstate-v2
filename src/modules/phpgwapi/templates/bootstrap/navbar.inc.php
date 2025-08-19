@@ -691,9 +691,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return pathParts.length > 0 ? pathParts.join(' → ') : 'Main Menu';
     }
     
+    // Norwegian character mapping for American keyboard
+    function mapNorwegianChars(text) {
+        return text.replace(/;/g, 'ø')
+                  .replace(/\[/g, 'å')
+                  .replace(/'/g, 'æ');
+    }
+    
+    
     // Search and filter menu items
     searchInput.addEventListener('input', function() {
         const query = this.value.toLowerCase();
+        const mappedQuery = mapNorwegianChars(query.toLowerCase());
         selectedIndex = -1;
         
         if (!query) {
@@ -702,9 +711,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        const filtered = menuItems.filter(item => 
-            item.text.toLowerCase().includes(query)
-        );
+        const filtered = menuItems.filter(item => {
+            const itemText = item.text.toLowerCase();
+            // Match both original query and mapped query
+            return itemText.includes(query) || itemText.includes(mappedQuery);
+        });
         
         // Remove duplicates based on URL (keeping first occurrence)
         const uniqueFiltered = [];
@@ -757,8 +768,22 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function highlightMatch(text, query) {
         if (!query) return text;
-        const regex = new RegExp(`(${query})`, 'gi');
-        return text.replace(regex, '<mark class="bg-warning text-dark">$1</mark>');
+        const mappedQuery = mapNorwegianChars(query.toLowerCase());
+        
+        // Create regex for both original and mapped query
+        let highlightedText = text;
+        
+        // Highlight mapped characters (Norwegian) if they exist in the text
+        if (mappedQuery !== query.toLowerCase()) {
+            const mappedRegex = new RegExp(`(${mappedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            highlightedText = highlightedText.replace(mappedRegex, '<mark class="bg-warning text-dark">$1</mark>');
+        }
+        
+        // Also highlight exact matches of what was typed
+        const originalRegex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        highlightedText = highlightedText.replace(originalRegex, '<mark class="bg-warning text-dark">$1</mark>');
+        
+        return highlightedText;
     }
     
     function selectItem(index) {
@@ -784,6 +809,7 @@ document.addEventListener('DOMContentLoaded', function() {
     searchInput.addEventListener('keydown', function(e) {
         const items = resultsContainer.querySelectorAll('.list-group-item');
         
+        // Handle navigation keys
         switch(e.key) {
             case 'ArrowDown':
                 e.preventDefault();
@@ -800,9 +826,12 @@ document.addEventListener('DOMContentLoaded', function() {
             case 'Enter':
                 e.preventDefault();
                 if (selectedIndex >= 0 && items[selectedIndex]) {
-                    const filtered = menuItems.filter(item => 
-                        item.text.toLowerCase().includes(searchInput.value.toLowerCase())
-                    );
+                    const query = searchInput.value.toLowerCase();
+                    const mappedQuery = mapNorwegianChars(query);
+                    const filtered = menuItems.filter(item => {
+                        const itemText = item.text.toLowerCase();
+                        return itemText.includes(query) || itemText.includes(mappedQuery);
+                    });
                     
                     // Apply same deduplication logic as in search
                     const uniqueFiltered = [];

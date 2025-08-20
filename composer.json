@@ -31,7 +31,8 @@
 		"clue/redis-react": "^2.8",
 		"predis/predis": "^2.3",
 		"lbuchs/webauthn": "^2.0",
-		"webklex/php-imap": "^4.0"
+		"webklex/php-imap": "^4.0",
+		"twig/twig": "^3.21"
 	},
 	"require-dev": {
 		"phpunit/phpunit": "^9.0"

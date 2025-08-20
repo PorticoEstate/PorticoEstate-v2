@@ -253,5 +253,13 @@
 				warning_text.style.display = "none"
 			}
 		});
+
+		// Add Enter key support for login form
+		document.getElementById("form-login").addEventListener("keypress", function(event) {
+			if (event.key === "Enter") {
+				event.preventDefault();
+				do_login();
+			}
+		});
 	</script>
 </html>

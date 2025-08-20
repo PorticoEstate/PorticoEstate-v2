@@ -1,5 +1,5 @@
 'use client'
-import React, {FC, useEffect, useState} from 'react';
+import React, {FC, useEffect, useState, useMemo} from 'react';
 import {useBookingUser, useLogin, useLogout} from "@/service/hooks/api-hooks";
 import {Divider, Dropdown} from "@digdir/designsystemet-react";
 import { EnterIcon, PersonFillIcon, ChevronDownIcon, TenancyIcon } from "@navikt/aksel-icons";
@@ -16,7 +16,7 @@ const UserMenu: FC<UserMenuProps> = (props) => {
     const [lastClickHistory, setLastClickHistory] = useState<string>();
     const t = useTrans();
     const bookingUserQ = useBookingUser();
-    const {data: bookingUser, isLoading} = bookingUserQ;
+    const {data: bookingUser, isLoading, refetch} = bookingUserQ;
     const searchparams = useSearchParams();
     const queryClient = useQueryClient();
 
@@ -32,7 +32,14 @@ const UserMenu: FC<UserMenuProps> = (props) => {
     }, [searchparams, queryClient]);
 
 
-    const handleLogin = async () => {
+	// Filter active delegates
+	const activeDelegates = useMemo(() => {
+		return bookingUser?.delegates?.filter(delegate => delegate.active) || [];
+	}, [bookingUser?.delegates]);
+
+
+
+	const handleLogin = async () => {
         try {
             await login.mutateAsync();
         } catch (error) {
@@ -49,62 +56,64 @@ const UserMenu: FC<UserMenuProps> = (props) => {
     };
 
 
-    if (bookingUser?.is_logged_in) {
-        return (<Dropdown.TriggerContext>
-            <Dropdown.Trigger variant={'tertiary'} color={'accent'} data-size={'sm'}>
-                <PersonFillIcon width="1.875rem" height="1.875rem" /> {bookingUser.name} <ChevronDownIcon fontSize="1.25rem" />
-            </Dropdown.Trigger>
-            <Dropdown>
-                <Dropdown.List>
-                    <Dropdown.Item>
-                        <Dropdown.Button asChild>
-                            <Link href={'/user'}
-                                  className={'link-text link-text-unset normal'}>
-                                <PersonFillIcon fontSize="1.25rem" /> {t('bookingfrontend.my page')}
-                            </Link>
-                        </Dropdown.Button>
-                    </Dropdown.Item>
-                </Dropdown.List>
-                <Divider/>
-                {!!bookingUser.delegates && bookingUser.delegates.length > 0 && (
-                    <>
-                        <Dropdown.List>
-                            {bookingUser.delegates?.map((delegate) => <Dropdown.Item key={delegate.org_id}>
-                                <Dropdown.Button asChild>
 
-                                    <Link href={phpGWLink('bookingfrontend/', {
-                                        menuaction: 'bookingfrontend.uiorganization.show',
-                                        id: delegate.org_id
-                                    }, false)}
+    if (bookingUser?.is_logged_in) {
+        return (
+            <>
+                <Dropdown.TriggerContext>
+                    <Dropdown.Trigger variant={'tertiary'} color={'accent'} data-size={'sm'}>
+                        <PersonFillIcon width="1.875rem" height="1.875rem" /> {bookingUser.name || t('bookingfrontend.user')} <ChevronDownIcon fontSize="1.25rem" />
+                    </Dropdown.Trigger>
+                    <Dropdown>
+                        <Dropdown.List>
+                            <Dropdown.Item>
+                                <Dropdown.Button asChild>
+                                    <Link href={'/user'}
                                           className={'link-text link-text-unset normal'}>
-                                        <TenancyIcon fontSize="1.25rem" /> {delegate.name}
+                                        <PersonFillIcon fontSize="1.25rem" /> {t('bookingfrontend.my page')}
                                     </Link>
                                 </Dropdown.Button>
-
-                            </Dropdown.Item>)}
-
-
+                            </Dropdown.Item>
                         </Dropdown.List>
                         <Divider/>
-                    </>
-                )}
+                {activeDelegates.length > 0 && (
+                            <>
+                                <Dropdown.List>
+                            {activeDelegates.map((delegate) => <Dropdown.Item key={delegate.org_id}>
+                                        <Dropdown.Button asChild>
 
-                <Dropdown.List>
+                                    <Link href={`/organization/${delegate.org_id}`}
+                                                  className={'link-text link-text-unset normal'}>
+                                                <TenancyIcon fontSize="1.25rem" /> {delegate.name}
+                                            </Link>
+                                        </Dropdown.Button>
 
-                    <Dropdown.Item>
-						<Dropdown.Button asChild>
-							<a
-								href={phpGWLink(['bookingfrontend', 'logout/'])}
+                                    </Dropdown.Item>)}
 
-								className={'link-text link-text-unset normal'}>
-								{t('common.logout')}
-							</a>
-						</Dropdown.Button>
 
-                    </Dropdown.Item>
-                </Dropdown.List>
-            </Dropdown>
-        </Dropdown.TriggerContext>);
+                                </Dropdown.List>
+                                <Divider/>
+                            </>
+                        )}
+
+                        <Dropdown.List>
+
+                            <Dropdown.Item>
+                                <Dropdown.Button asChild>
+                                    <a
+                                        href={phpGWLink(['bookingfrontend', 'logout/'])}
+
+                                        className={'link-text link-text-unset normal'}>
+                                        {t('common.logout')}
+                                    </a>
+                                </Dropdown.Button>
+
+                            </Dropdown.Item>
+                        </Dropdown.List>
+                    </Dropdown>
+                </Dropdown.TriggerContext>
+            </>
+        );
     }
 
     // if(1==1) {

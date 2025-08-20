@@ -13,6 +13,8 @@ interface CheckoutEventDetailsProps {
 	onDetailsChange: (data: CheckoutEventDetailsData) => void;
 	user: IBookingUser;
 	partials: IApplication[];
+	showError?: boolean;
+	onErrorClear?: () => void;
 }
 
 
@@ -27,11 +29,10 @@ function getCommonValue<T extends { [key: string]: any }>(arr: (T[] | undefined)
 	return res;
 }
 
-const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, user, partials}) => {
+const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, user, partials, showError = false, onErrorClear}) => {
 	const t = useTrans();
 
 	const defaultValues = useMemo(() => ({
-		title: getCommonValue(partials, 'name'),
 		// If all partials have same organizer, use that, otherwise fall back to user name
 		organizerName: getCommonValue(partials, 'organizer') || user?.name || '',
 	}), [user, partials]);
@@ -47,24 +48,19 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 	}, [defaultValues, onDetailsChange]);
 
 	useEffect(() => {
-		const subscription = watch((value) => onDetailsChange(value as CheckoutEventDetailsData));
+		const subscription = watch((value) => {
+			onDetailsChange(value as CheckoutEventDetailsData);
+			// Clear error when user starts typing
+			if (showError && onErrorClear && value.organizerName) {
+				onErrorClear();
+			}
+		});
 		return () => subscription.unsubscribe();
-	}, [watch, onDetailsChange]);
+	}, [watch, onDetailsChange, showError, onErrorClear]);
 
 	return (
 		<section className={styles.eventDetails}>
 			<div className={styles.formFields}>
-				<Controller
-					name="title"
-					control={control}
-					render={({field, fieldState}) => (
-						<Textfield
-							label={t('bookingfrontend.event_title')}
-							{...field}
-							error={fieldState.error?.message}
-						/>
-					)}
-				/>
 				<Controller
 					name="organizerName"
 					control={control}
@@ -72,7 +68,7 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 						<Textfield
 							label={t('bookingfrontend.organizer')}
 							{...field}
-							error={fieldState.error?.message}
+							error={fieldState.error?.message || (showError && !field.value ? t('bookingfrontend.organizer_required') : undefined)}
 						/>
 					)}
 				/>

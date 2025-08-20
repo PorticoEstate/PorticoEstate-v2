@@ -59,7 +59,7 @@ if ($tracker_id)
 	phpgwapi_js::getInstance()->add_code('', $tracker_code2);
 }
 
-$template = Template::getInstance(PHPGW_TEMPLATE_DIR);
+$template = new Template(PHPGW_TEMPLATE_DIR);
 $template->set_unknowns('remove');
 $template->set_file('head', 'head.tpl');
 $template->set_block('head', 'stylesheet', 'stylesheets');
@@ -190,8 +190,8 @@ if (!empty($serverSettings['bakcground_image']))
 $bodoc	 = CreateObject('booking.bodocumentation');
 $manual	 = $bodoc->so->getFrontendDoc();
 
-$menuaction	 = Sanitizer::get_var('menuaction', 'GET');
-$id			 = Sanitizer::get_var('id', 'GET');
+$menuaction	 = Sanitizer::get_var('menuaction', 'string', 'GET', '');
+$id			 = Sanitizer::get_var('id', 'int', 'GET');
 if (strpos($menuaction, 'organization'))
 {
 	$boorganization	 = CreateObject('booking.boorganization');
@@ -309,24 +309,15 @@ $self_uri	 = $_SERVER['REQUEST_URI'];
 $separator	 = strpos($self_uri, '?') ? '&' : '?';
 $self_uri	 = str_replace(array("{$separator}lang=no", "{$separator}lang=en"), '', $self_uri);
 
-// Check for beta client cookie
-$beta_client_raw = Sanitizer::get_var('beta_client', 'raw', 'COOKIE');
-$beta_client = ($beta_client_raw === 'true');
-
 // Initialize all selection states to empty
 $selected_bookingfrontend = '';
 $selected_bookingfrontend_2 = '';
-$beta_selected = '';
 
 // Determine which option should be selected
 if ($userSettings['preferences']['common']['template_set'] === 'bookingfrontend') {
 	$selected_bookingfrontend = ' checked';
 } else if ($userSettings['preferences']['common']['template_set'] === 'bookingfrontend_2') {
-	if ($beta_client) {
-		$beta_selected = ' checked';
-	} else {
-		$selected_bookingfrontend_2 = ' checked';
-	}
+	$selected_bookingfrontend_2 = ' checked';
 }
 $about	 = "https://www.aktiv-kommune.no/";
 $faq	 = "https://www.aktiv-kommune.no/manual/";
@@ -337,7 +328,6 @@ if ($config_frontend['develope_mode'])
 	$version_ingress = lang('which_version_do_you_want');
 	$version_old = lang('old');
 	$version_new = lang('new');
-	$version_beta = lang('beta_version');
 	$template_selector = <<<HTML
               <div>
                 <h3>{$version_title}</h3>
@@ -348,14 +338,9 @@ if ($config_frontend['develope_mode'])
                     {$version_old}
                     <span class="choice__radio"></span>
                   </label>
-                  <label class="choice mb-3">
+                  <label class="choice mb-5">
                     <input type="radio" id="template_bookingfrontend_2" name="select_template" value="bookingfrontend_2" {$selected_bookingfrontend_2} />
                     {$version_new}
-                    <span class="choice__radio"></span>
-                  </label>
-                  <label class="choice mb-5">
-                    <input type="radio" id="template_beta" name="select_template" value="beta" {$beta_selected} />
-                    {$version_beta}
                     <span class="choice__radio"></span>
                   </label>
                 </form>

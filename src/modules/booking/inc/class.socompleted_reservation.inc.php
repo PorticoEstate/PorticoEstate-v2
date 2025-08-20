@@ -378,7 +378,7 @@ class booking_socompleted_reservation extends booking_socommon
 		static $cache = array();
 
 		!$sogroup and $sogroup = CreateObject('booking.sogroup');
-		!$soorg and $soorg = CreateObject('booking.soorganization');
+		!$soorg and $soorg = CreateObject('booking.soorganization', true);//get ssn
 
 		if (isset($cache[$booking['group_id']]))
 		{
@@ -401,7 +401,7 @@ class booking_socompleted_reservation extends booking_socommon
 		static $soorg;
 		static $cache = array();
 
-		!$soorg and $soorg = CreateObject('booking.soorganization');
+		!$soorg and $soorg = CreateObject('booking.soorganization', true); //get ssn
 		if (isset($cache[$allocation['organization_id']]))
 		{
 			$org = $cache[$allocation['organization_id']];
@@ -425,7 +425,7 @@ class booking_socompleted_reservation extends booking_socommon
 			static $soorg;
 			static $cache = array();
 
-			!$soorg and $soorg = CreateObject('booking.soorganization');
+			!$soorg and $soorg = CreateObject('booking.soorganization', true); //get ssn
 			if (isset($cache[$event['customer_organization_id']]))
 			{
 				$org = $cache[$event['customer_organization_id']];

@@ -20,19 +20,80 @@ The WebSocket server runs on port 8080 inside the Docker container and is access
 
 ## How to Use WebSockets in Your Application
 
-### 1. Connect to the WebSocket Server (Client-Side JavaScript)
+### 1. Using the WebSocket Client Library
+
+The recommended way to connect to the WebSocket server is to use the provided client library (`client.js`):
+
+```javascript
+// Include the client library in your HTML
+// <script src="/src/WebSocket/client.js"></script>
+
+// Create a new WebSocket client
+const client = createWebSocketClient();
+
+// Listen for connection success
+window.addEventListener('portico:connected', (event) => {
+    console.log('Connected to WebSocket server');
+
+    // After connection, set the user ID (required for user-specific data)
+    // The user ID should come from your authentication system
+    client.updateUserInfo(123); // Replace with actual user ID
+});
+
+// Listen for notifications
+window.addEventListener('portico:notification', (event) => {
+    console.log('Notification received:', event.detail.message);
+});
+
+// Get partial applications for the current user
+function fetchPartialApplications() {
+    client.getPartialApplications()
+        .then(data => {
+            if (!data.error) {
+                console.log('Partial applications:', data.applications);
+                // Process applications here
+            } else {
+                console.error('Error fetching partial applications:', data.message);
+            }
+        })
+        .catch(err => console.error('Error:', err));
+}
+
+// Or listen for partial applications events
+window.addEventListener('portico:partial_applications', event => {
+    const data = event.detail;
+    if (!data.error) {
+        console.log('Received partial applications:', data.applications);
+        // Update UI with applications
+    }
+});
+
+// Send a message
+client.sendMessage('chat', 'Hello, world!');
+```
+
+### 2. Manual WebSocket Connection (Alternative)
+
+If you need more control, you can create a manual WebSocket connection:
 
 ```javascript
 // Create WebSocket connection
-const wsUrl = window.location.protocol === 'https:' 
-    ? `wss://${window.location.host}/wss` 
+const wsUrl = window.location.protocol === 'https:'
+    ? `wss://${window.location.host}/wss`
     : `ws://${window.location.host}/wss`;
-    
+
 const ws = new WebSocket(wsUrl);
 
 // Handle connection open
 ws.onopen = function() {
     console.log('WebSocket connection established');
+
+    // Set user ID after connection (required for user-specific data)
+    ws.send(JSON.stringify({
+        type: 'update_user_info',
+        userId: 123, // Replace with actual user ID
+        timestamp: new Date().toISOString()
+    }));
 };
 
 // Handle incoming messages
@@ -40,9 +101,14 @@ ws.onmessage = function(event) {
     try {
         const data = JSON.parse(event.data);
         console.log('Received message:', data);
+
         // Handle different message types
         if (data.type === 'notification') {
             console.log('Notification:', data.message);
+        } else if (data.type === 'partial_applications_response') {
+            console.log('Partial applications:', data.data.applications);
+        } else if (data.type === 'user_info_update_confirmation') {
+            console.log('User info updated:', data.success);
         }
     } catch (e) {
         console.log('Received non-JSON message:', event.data);
@@ -66,6 +132,18 @@ function sendMessage(type, message, additionalData = {}) {
             type: type,
             message: message,
             ...additionalData,
+            timestamp: new Date().toISOString()
+        }));
+    } else {
+        console.error('WebSocket is not connected');
+    }
+}
+
+// Request partial applications
+function getPartialApplications() {
+    if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            type: 'get_partial_applications',
             timestamp: new Date().toISOString()
         }));
     } else {
@@ -98,10 +176,17 @@ The WebSocket server currently supports the following message types:
 
 1. `chat` - General chat messages
 2. `notification` - System notifications
+3. `update_user_info` - Set or update the user ID for the current connection
+4. `get_partial_applications` - Request partial applications for the current user
 
 All messages should be JSON formatted with at least the following properties:
 - `type` - The message type (e.g., 'chat', 'notification')
-- `message` - The main message text
+- Additional properties depend on the message type
+
+For the `update_user_info` message type, include:
+- `userId` - The numeric user ID to associate with the connection
+
+For the `get_partial_applications` message type, no additional properties are required, but the user ID must be set first using the `update_user_info` message.
 
 ## Testing
 
@@ -162,6 +247,29 @@ $redis->publish('notifications', json_encode($notification));
 
 If Redis is unavailable, the system will automatically fall back to a file-based notification system, ensuring reliable message delivery in all scenarios.
 
+## Configuration
+
+The WebSocket server can be configured using environment variables. The following variables are available:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `WSS_LOG_ENABLED` | Master switch for all logging | `true` |
+| `WSS_DEBUG_LOG_ENABLED` | Enable detailed debug logs | `false` (in production), `true` (in development) |
+| `WSS_LOG_TO_DOCKER` | Enable Docker log integration | `true` |
+
+You can set these variables in the Docker Compose file or pass them as environment variables when running the WebSocket server:
+
+```yaml
+# In docker-compose.yml
+websocket:
+  environment:
+    WSS_LOG_ENABLED: "true"
+    WSS_DEBUG_LOG_ENABLED: "false"
+    WSS_LOG_TO_DOCKER: "true"
+```
+
+In production, only critical logs, error messages, warnings, notices, and essential connection messages will be shown by default. Regular info messages and debug logs are suppressed unless `WSS_DEBUG_LOG_ENABLED=true` is set. This significantly reduces log verbosity while still capturing important events.
+
 ## Troubleshooting
 
 If you encounter any issues with the WebSocket server, check the following:
@@ -171,3 +279,4 @@ If you encounter any issues with the WebSocket server, check the following:
 3. Verify the WebSocket port (8080) is properly exposed in the Docker configuration
 4. Check Redis connection: `docker exec portico_api redis-cli -h redis ping`
 5. Check the Redis logs: `docker logs portico_redis`
+6. Enable debug logging by setting `WSS_DEBUG_LOG_ENABLED=true` in your environment

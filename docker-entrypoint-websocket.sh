@@ -8,10 +8,12 @@ if ! php -m | grep -q "redis"; then
     docker-php-ext-enable redis
 fi
 
-# Check if composer dependencies are installed
-if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
-    echo "Installing Composer dependencies..."
-    composer install --no-dev --optimize-autoloader
+# Check if composer dependencies need to be updated or installed
+if [ ! -d "/var/www/html/vendor" ] || [ ! -f "/var/www/html/vendor/autoload.php" ] || [ -f "/var/www/html/composer.json" -a "/var/www/html/composer.json" -nt "/var/www/html/vendor/composer/installed.json" ]; then
+    echo "Vendor directory missing or out of date. Installing dependencies..."
+    cd /var/www/html && composer install --no-dev --optimize-autoloader
+else
+    echo "Composer dependencies are up to date"
 fi
 
 # Create redis_data directory if it doesn't exist
@@ -52,6 +54,9 @@ fi
 echo "Environment:"
 echo "  REDIS_HOST: $REDIS_HOST"
 echo "  REDIS_PORT: $REDIS_PORT"
+echo "  WSS_LOG_ENABLED: ${WSS_LOG_ENABLED:-true}"
+echo "  WSS_DEBUG_LOG_ENABLED: ${WSS_DEBUG_LOG_ENABLED:-false}"
+echo "  WSS_LOG_TO_DOCKER: ${WSS_LOG_TO_DOCKER:-true}"
 
 # Execute the original command
 exec "$@"

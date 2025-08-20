@@ -256,6 +256,14 @@
 						placeholder="10.0.0.0/8, 192.168.1.5" />
 				</td>
 			</tr>
+			<!--Omitt error logging from IP-Addresses, in case of penetration testing-->
+			<tr>
+				<td>{lang_omitt_error_logging_from_IP_addresses}:</td>
+				<td>
+					<input name="newsettings[omitt_error_logging_from_ips]" value="{value_omitt_error_logging_from_ips}"
+						class="pure-u-1" placeholder="83.118.176.122" />
+				</td>
+			</tr>
 			<tr class="pure-table-odd">
 				<td>{lang_Deny_all_users_access_to_grant_other_users_access_to_their_entries}?:</td>
 				<td>

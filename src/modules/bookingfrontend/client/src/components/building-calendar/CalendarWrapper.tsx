@@ -7,7 +7,7 @@ import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {DatesSetArg} from "@fullcalendar/core";
 import {IBuilding, Season} from "@/service/types/Building";
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
-import {useBuildingSchedule} from "@/service/hooks/api-hooks";
+import {useBuildingSchedule, useOrganizationSchedule} from "@/service/hooks/api-hooks";
 import CalendarProvider from "@/components/building-calendar/calendar-context";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 import {useQueryClient} from "@tanstack/react-query";
@@ -15,15 +15,20 @@ import styles from "@/components/building-calendar/building-calender.module.scss
 import CalendarResourceFilter from "@/components/building-calendar/modules/resource-filter/calender-resource-filter";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useBuilding} from "@/service/api/building";
+import { IResource } from '@/service/types/resource.types';
+import FullCalendar from "@fullcalendar/react";
 
 interface CalendarWrapperProps {
     initialFreeTime: Record<string, IFreeTimeSlot[]>; // [resourceId]: Array<IFreeTimeSlot>
-    buildingId: number;
-    resources: IResource[];
-    seasons: Season[];
-    building: IBuilding;
+    buildingId?: number;
+    organizationId?: number;
+    resources?: IResource[];
+    seasons?: Season[];
+    building?: IBuilding;
+    buildings?: IBuilding[];
     initialDate: Date;
     resourceId?: string;
+    readOnly?: boolean;
 }
 
 
@@ -31,10 +36,13 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
                                                              initialDate,
                                                              initialFreeTime,
                                                              buildingId,
+                                                             organizationId,
                                                              resources,
                                                              seasons,
                                                              building,
+                                                             buildings,
                                                              resourceId,
+                                                             readOnly = false,
                                                          }) => {
     const initialEnabledResources = new Set<string>(
         resourceId ? [resourceId] : []
@@ -46,21 +54,27 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
     const [resourcesContainerRendered, setResourcesContainerRendered] = useState<boolean>(!resourceId && !(window.innerWidth < 601));
     const [resourcesHidden, setSResourcesHidden] = useState<boolean>(!!resourceId || window.innerWidth < 601);
 	const [dates, setDates] = useState<DateTime[]>([DateTime.fromJSDate(initialDate)]);
+    const calendarRef = useRef<FullCalendar>(null);
 
-	const {data: _, isLoading, isStale} = useBuilding(building.id, undefined, building);
-
+	const {data: _, isLoading, isStale} = useBuilding(building?.id, undefined, building);
 
 	useEffect(() => {
-        resources.forEach((res) => queryClient.setQueryData<IResource>(['resource', `${res.id}`], res))
+        resources?.forEach((res) => queryClient.setQueryData<IResource>(['resource', `${res.id}`], res))
         queryClient.setQueryData(['buildingResources', `${resourceId}`], resources);
     }, [resources, queryClient, resourceId]);
 
-
-    const QCRES = useBuildingSchedule({
-        building_id: building.id,
+    const buildingScheduleQuery = useBuildingSchedule({
+        building_id: buildingId,
         weeks: dates,
-        // initialWeekSchedule: initialWeekSchedule
     });
+
+    const organizationScheduleQuery = useOrganizationSchedule({
+        organization_id: organizationId,
+        weeks: dates,
+    });
+
+    // Use the appropriate query result based on mode
+    const QCRES = buildingId ? buildingScheduleQuery : organizationScheduleQuery;
 
     const prioritizeEvents = useCallback((events: IEvent[], enabledResources: Set<string>): IEvent[] => {
         // First get all events that affect enabled resources
@@ -154,9 +168,31 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
         });
     }, []);
 
-    const prioritizedEvents = useMemo(() =>
-            QCRES.data ? prioritizeEvents(QCRES.data, enabledResources) : [],
-        [QCRES.data, enabledResources, prioritizeEvents]);
+    // Extract resources that actually exist in the schedule data
+    const scheduleResources = useMemo(() => {
+        if (!QCRES.data) return [];
+
+        const resourceMap = new Map();
+        QCRES.data.forEach(event => {
+            event.resources.forEach(resource => {
+                resourceMap.set(resource.id, resource);
+            });
+        });
+
+        return Array.from(resourceMap.values());
+    }, [QCRES.data]);
+
+    const prioritizedEvents = useMemo(() => {
+        if (!QCRES.data) return [];
+
+        // In organization mode, show all events without resource filtering initially
+        if (organizationId && !buildingId) {
+            return QCRES.data;
+        }
+
+        // In building mode, apply priority filtering
+        return prioritizeEvents(QCRES.data, enabledResources);
+    }, [QCRES.data, enabledResources, prioritizeEvents, organizationId, buildingId]);
 
 
 
@@ -207,6 +243,12 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
         if (resourcesHidden) {
             setResourcesContainerRendered(false);
         }
+
+        // Force FullCalendar to rerender after sidebar animation completes
+        if (calendarRef.current) {
+            const calendarApi = calendarRef.current.getApi();
+            (calendarApi as any).render();
+        }
     };
 
 
@@ -228,24 +270,28 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
             setResourcesHidden={setResourcesHidden}
             resourcesHidden={resourcesHidden}
             currentBuilding={buildingId}
+			currentOrganization={organizationId}
         >
 
             <div className={`${styles.calendar} ${resourcesHidden ? styles.closed : ''} `}
                 // onTransitionStart={handleBeforeTransition}
                  onTransitionEnd={handleAfterTransition}>
                 {/*<CalendarHeader view={view} calendarRef={calendarRef} setView={(v) => setView(v)}/>*/}
-                <CalendarResourceFilter
-                    transparent={resourcesHidden}
-                    open={resourcesContainerRendered}
-                    setOpen={setResourcesContainerRendered}
-                    buildingId={building.id}
-                />
+                    <CalendarResourceFilter
+                        transparent={resourcesHidden}
+                        open={resourcesContainerRendered}
+                        setOpen={setResourcesContainerRendered}
+                        filteredResources={scheduleResources}
+                    />
                 <BuildingCalendarClient
+                    ref={calendarRef}
                     initialDate={DateTime.fromJSDate(initialDate)}
                     events={prioritizedEvents}
                     onDateChange={handleDateChange}
                     seasons={seasons}
                     building={building}
+                    buildings={buildings}
+                    readOnly={readOnly}
                     initialEnabledResources={enabledResources}
                 />
             </div>

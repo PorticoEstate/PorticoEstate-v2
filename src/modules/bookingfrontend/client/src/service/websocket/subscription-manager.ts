@@ -27,6 +27,7 @@ const wsLog = (message: string, data: any = null, ...optionalParams: any[]) => w
 
 
 const SILENT_SOCKET_TYPES: Record<WebSocketMessage['type'], boolean> = {
+	refresh_bookinguser: false,
 	'ping': true,
 	'pong': true,
 	'server_ping': true,
@@ -36,6 +37,7 @@ const SILENT_SOCKET_TYPES: Record<WebSocketMessage['type'], boolean> = {
 	'subscription_confirmation': true,
 	'connection_success': true,
 	session_update_confirmation: true,
+	partial_applications_response: false,
 	entity_event: false,
 	notification: false,
 	reconnect_required: false,
@@ -44,7 +46,7 @@ const SILENT_SOCKET_TYPES: Record<WebSocketMessage['type'], boolean> = {
 	session_id_required: false,
 	subscribe: false,
 	unsubscribe: false,
-	update_session: false,
+	update_session: false
 }
 
 /**

@@ -132,27 +132,48 @@ class bookingfrontend_vipps_helper
 
 		$soapplication->get_purchase_order($applications);
 
+		$total_amount = 0;
+		$unpaid_order_ids = array();
+		$building_names = array();
+		$contact_phone = null;
+
 		foreach ($applications['results'] as $application)
 		{
-			$dates			 = implode(', ', array_map(array($this, 'get_date_range'), $application['dates']));
-			$contact_phone	 = $application['contact_phone'];
+			$contact_phone = $application['contact_phone'];
+			
+			if (!empty($application['building_name']) && !in_array($application['building_name'], $building_names))
+			{
+				$building_names[] = $application['building_name'];
+			}
 
 			foreach ($application['orders'] as $order)
 			{
 				if (empty($order['paid']))
 				{
-					$remote_order_id = $soapplication->add_payment($order['order_id'], $this->msn);
-					$transaction	 = [
-						"amount"					 => (float)$order['sum'] * 100,
-						"orderId"					 => $remote_order_id,
-						"transactionText"			 => 'Aktiv kommune, bookingdato: ' . $dates,
-						"skipLandingPage"			 => false,
-						"scope"						 => "name address email",
-						"useExplicitCheckoutFlow"	 => true
-					];
-					break 2;
+					$total_amount += (float)$order['sum'];
+					$unpaid_order_ids[] = $order['order_id'];
 				}
 			}
+		}
+
+		if ($total_amount > 0)
+		{
+			$building_text = !empty($building_names) ? implode(', ', $building_names) : '';
+			$transaction_text = !empty($building_text) ? 'Aktiv kommune, ' . $building_text : 'Aktiv kommune';
+			
+			$remote_order_id = $soapplication->add_payment($unpaid_order_ids, $this->msn);
+			$transaction	 = [
+				"amount"					 => $total_amount * 100,
+				"orderId"					 => $remote_order_id,
+				"transactionText"			 => $transaction_text,
+				"skipLandingPage"			 => false,
+				"scope"						 => "name address email",
+				"useExplicitCheckoutFlow"	 => true
+			];
+		}
+		else
+		{
+			return array('error' => 'No unpaid orders found for payment initiation');
 		}
 
 		$path	 = '/ecomm/v2/payments';
@@ -251,10 +272,11 @@ class bookingfrontend_vipps_helper
 	{
 		$sopurchase_order = createObject('booking.sopurchase_order');
 		$soapplication	 = CreateObject('booking.soapplication');
-		$id				 = $soapplication->get_application_from_payment_order($remote_order_id);
+		$application_ids = $soapplication->get_application_from_payment_order($remote_order_id);
 		$status			 = array('deleted' => false);
 		$session_id		 = Sessions::getInstance()->get_session_id();
-		if (!empty($session_id) && $id > 0)
+		
+		if (!empty($session_id) && !empty($application_ids))
 		{
 			$partials = CreateObject('booking.uiapplication')->get_partials($session_id);
 
@@ -262,25 +284,28 @@ class bookingfrontend_vipps_helper
 
 			$bo_block = createObject('booking.boblock');
 
-			$exists = false;
-			foreach ($partials['list'] as $partial)
+			foreach ($application_ids as $application_id)
 			{
-				if ($partial['id'] == $id)
+				$exists = false;
+				foreach ($partials['list'] as $partial)
 				{
-					$bo_block->cancel_block($session_id, $partial['dates'], $partial['resources']);
-					$exists = true;
-					break;
+					if ($partial['id'] == $application_id)
+					{
+						$bo_block->cancel_block($session_id, $partial['dates'], $partial['resources']);
+						$exists = true;
+						break;
+					}
+				}
+				if ($exists)
+				{
+					$sopurchase_order->delete_purchase_order($application_id);
+					$soapplication->delete_application($application_id);
+					$status['deleted'] = true;
 				}
 			}
-			if ($exists)
-			{
-				$application_id		 = $id;
-
-				$sopurchase_order->delete_purchase_order($application_id);
-				$soapplication->update_payment_status($remote_order_id, 'voided', $remote_state);
-				$soapplication->delete_application($application_id);
-				$status['deleted']	 = true;
-			}
+			
+			// Update payment status once for all applications
+			$soapplication->update_payment_status($remote_order_id, 'voided', $remote_state);
 
 			Db::getInstance()->transaction_commit();
 		}
@@ -539,64 +564,69 @@ class bookingfrontend_vipps_helper
 		$_amount = ($amount / 100);
 		$boapplication = CreateObject('booking.boapplication');
 
-		$application_id				 = $boapplication->so->get_application_from_payment_order($remote_order_id);
-		$application				 = $boapplication->so->read_single($application_id);
-		$application['status']		 = 'ACCEPTED';
-		$receipt					 = $boapplication->update($application);
-		$event						 = $application;
-		unset($event['id']);
-		unset($event['id_string']);
-		$event['application_id']	 = $application['id'];
-		$event['is_public']			 = 0;
-		$event['include_in_list']	 = 0;
-		$event['reminder']			 = 0;
-		$event['customer_internal']	 = 0;
-		$event['cost']				 = $_amount;
-		$event['completed']			 = 1; //paid !
-
-		$building_info			 = $boapplication->so->get_building_info($application['id']);
-		$event['building_id']	 = $building_info['id'];
-		$this->add_comment($event, lang('Event was created'));
-		$this->add_cost_history($event, lang('cost is set'), $_amount);
-
-		$booking_boevent		 = createObject('booking.boevent');
-		$errors					 = array();
-
-		/**
-		 * Validate timeslots
-		 */
-		foreach ($application['dates'] as $checkdate)
-		{
-			$event['from_']	 = $checkdate['from_'];
-			$event['to_']	 = $checkdate['to_'];
-			$errors			 = array_merge($errors, $booking_boevent->validate($event));
-		}
-		unset($checkdate);
-
+		$application_ids = $boapplication->so->get_application_from_payment_order($remote_order_id);
 		$ret = false;
-		if (!$errors)
+		
+		foreach ($application_ids as $application_id)
 		{
-			$session_id = Sessions::getInstance()->get_session_id();
+			$application = $boapplication->so->read_single($application_id);
+			$application['status'] = 'ACCEPTED';
+			$receipt = $boapplication->update($application);
+			
+			$event = $application;
+			unset($event['id']);
+			unset($event['id_string']);
+			$event['application_id'] = $application['id'];
+			$event['is_public'] = 0;
+			$event['include_in_list'] = 0;
+			$event['reminder'] = 0;
+			$event['customer_internal'] = 0;
+			$event['cost'] = $_amount;
+			$event['completed'] = 1; //paid !
 
-			CreateObject('booking.souser')->collect_users($application['customer_ssn']);
-			$bo_block = createObject('booking.boblock');
-			$bo_block->cancel_block($session_id, $application['dates'], $application['resources']);
+			$building_info = $boapplication->so->get_building_info($application['id']);
+			$event['building_id'] = $building_info['id'];
+			$this->add_comment($event, lang('Event was created'));
+			$this->add_cost_history($event, lang('cost is set'), $_amount);
+
+			$booking_boevent = createObject('booking.boevent');
+			$errors = array();
 
 			/**
-			 * Add event for each timeslot
+			 * Validate timeslots
 			 */
 			foreach ($application['dates'] as $checkdate)
 			{
-				$event['from_']	 = $checkdate['from_'];
-				$event['to_']	 = $checkdate['to_'];
-				$receipt		 = $booking_boevent->so->add($event);
+				$event['from_'] = $checkdate['from_'];
+				$event['to_'] = $checkdate['to_'];
+				$errors = array_merge($errors, $booking_boevent->validate($event));
 			}
+			unset($checkdate);
 
-			$booking_boevent->so->update_id_string();
-			createObject('booking.sopurchase_order')->identify_purchase_order($application['id'], $receipt['id'], 'event');
+			if (!$errors)
+			{
+				$session_id = Sessions::getInstance()->get_session_id();
 
-			$boapplication->send_notification($application);
-			$ret = true;
+				CreateObject('booking.souser')->collect_users($application['customer_ssn']);
+				$bo_block = createObject('booking.boblock');
+				$bo_block->cancel_block($session_id, $application['dates'], $application['resources']);
+
+				/**
+				 * Add event for each timeslot
+				 */
+				foreach ($application['dates'] as $checkdate)
+				{
+					$event['from_'] = $checkdate['from_'];
+					$event['to_'] = $checkdate['to_'];
+					$receipt = $booking_boevent->so->add($event);
+				}
+
+				$booking_boevent->so->update_id_string();
+				createObject('booking.sopurchase_order')->identify_purchase_order($application['id'], $receipt['id'], 'event');
+
+				$boapplication->send_notification($application);
+				$ret = true;
+			}
 		}
 
 		return $ret;

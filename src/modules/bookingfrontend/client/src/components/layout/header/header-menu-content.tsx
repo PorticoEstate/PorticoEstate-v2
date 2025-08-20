@@ -1,24 +1,16 @@
 'use client'
-import {FC, useState, useEffect, PropsWithChildren} from 'react';
+import {FC, useState, PropsWithChildren} from 'react';
 import { Button } from "@digdir/designsystemet-react";
-import styles from './header-menu-content.module.scss'
+import styles from './header-menu-content.module.scss';
+import {useScrollLockEffect} from '@/contexts/ScrollLockContext';
 
 interface HeaderMenuContentProps extends PropsWithChildren{}
 
 const HeaderMenuContent: FC<HeaderMenuContentProps> = (props) => {
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
 
-    useEffect(() => {
-        if (drawerOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            document.body.style.overflow = 'unset';
-        }
-
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [drawerOpen]);
+    // Use scroll lock context to manage body overflow
+    useScrollLockEffect('header-menu', drawerOpen);
 
     const toggleDrawer = () => {
         setDrawerOpen(!drawerOpen);

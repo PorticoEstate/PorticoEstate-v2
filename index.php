@@ -66,17 +66,33 @@ $app->add(function ($request, $handler)
 $datbaseProvider = new DatabaseServiceProvider();
 $webSocketProvider = new WebSocketServiceProvider();
 
-$datbaseProvider->register($app);
+$datbaseProvider->register($container);
 $webSocketProvider->register($container);
 
 // Register WebSocket routes class
-$container->set(Routes::class, function($c) {
-    // Get the WebSocketServer instance from the container
-    return new Routes($c->get(\App\WebSocket\WebSocketServer::class));
+$container->set(Routes::class, function ($c)
+{
+	// Get the WebSocketServer instance from the container
+	return new Routes($c->get(\App\WebSocket\WebSocketServer::class));
 });
 
 //require all routes
 require_once __DIR__ . '/src/routes/RegisterRoutes.php';
+
+// Generic registry routes are now included in individual module route files
+// (e.g., booking module routes include their registry routes)
+
+// Test route registration (remove in production)
+// if (isset($_GET['test_routes']))
+// {
+// 	$routes = $app->getRouteCollector()->getRoutes();
+// 	echo "Registered routes:\n<br/>";
+// 	foreach ($routes as $route)
+// 	{
+// 		echo $route->getPattern() . " (" . implode(', ', $route->getMethods()) . ")\n<br/>";
+// 	}
+// 	exit;
+// }
 
 $displayErrorDetails = true; // Set to false in production
 $logErrors = true;

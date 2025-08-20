@@ -8,22 +8,23 @@ import CalendarDatePicker from "@/components/date-time-picker/calendar-date-pick
 import FullCalendar from "@fullcalendar/react";
 import ButtonGroup from "@/components/button-group/button-group";
 import {
-	useCalenderViewMode,
-	useEnabledResources,
+	useCalenderViewMode, useCurrentOrganization,
+	useEnabledResources, useIsOrganization,
 	useResourcesHidden,
 } from "@/components/building-calendar/calendar-context";
 import {DateTime} from "luxon";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
+import {useOrganization} from "@/service/hooks/organization";
 
 interface CalendarInnerHeaderProps {
 
 	setView: Dispatch<string>;
 	setLastCalendarView: Dispatch<void>;
 	view: string;
-	building: IBuilding;
+	building?: IBuilding;
 	calendarRef: MutableRefObject<FullCalendar | null>;
-	createNew: () => void;
+	createNew?: () => void;
 	currentDate: DateTime;
 	setCurrentDate: (date: DateTime) => void;
 }
@@ -35,7 +36,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 	const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
 	const calendarViewMode = useCalenderViewMode();
 	const isMobile = useIsMobile();
-
+	const isOrg = useIsOrganization();
+	const currentOrganization = useCurrentOrganization();
+	const {data: org} = useOrganization(currentOrganization);
 	const partials = usePartialApplications();
 
 	const c = calendarRef.current;
@@ -93,7 +96,8 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					onClick={() => setResourcesHidden(!resourcesHidden)}>
 
 
-				{props.building.name}
+				{!isOrg && props.building && props.building.name}
+				{isOrg && org && org.name}
 				<ChevronLeftIcon
 					className={`${styles.expandCollapseIcon} ${resourcesHidden ? styles.closed : styles.open}`}
 					fontSize='2.25rem'/>
@@ -167,8 +171,15 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 				</ButtonGroup>
 			}
 			{
-				calendarViewMode === 'calendar' &&
-				<Button variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'} data-color={'accent'} onClick={props.createNew} data-size={'sm'} className={styles.orderButton}>
+				!isOrg && calendarViewMode === 'calendar' &&
+				<Button
+					variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'}
+					data-color={'accent'}
+					onClick={props.createNew}
+					data-size={'sm'}
+					className={styles.orderButton}
+					disabled={!props.building || props.building.deactivate_application}
+				>
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}
 

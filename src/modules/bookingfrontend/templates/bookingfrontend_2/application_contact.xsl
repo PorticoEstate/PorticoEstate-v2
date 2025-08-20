@@ -81,6 +81,7 @@
 					</p>
 					<div data-bind="visible: applicationCartItems().length != 0">
 						<div data-bind="foreach: applicationCartItems" class="mb-2r">
+							<input type="hidden" data-bind="value:id" name="application_id[]" class="application_id"/>
 							<div class="article-table-wrapper pb-0 mb-2r">
 								<div class="article-table-header">
 									<div class="resource-name d-flex gap-2 align-items-center">
@@ -425,7 +426,19 @@
 
 
 						<!--						<hr class="mt-5"></hr>-->
-						<div class="row  d-flex align-items-center justify-content-end">
+						<div style="display: flex; flex-direction: row; align-items: center; gap: 0.5rem; justify-content: flex-end">
+							<xsl:if test="count(payment_methods) > 0">
+								<div id="external_payment_method" style="display: flex;" data-bind="visible: applicationCartTotalSum() != 0">
+									<xsl:for-each select="payment_methods">
+										<button type="button" id="payment_{method}"
+										   style="width: fit-content; border: none; background: transparent; padding: 0; cursor: pointer;"
+										   data-bind="click: () => initiate_payment('{method}')">
+											<img src="{logo}" class="ml-5">
+											</img>
+										</button>
+									</xsl:for-each>
+								</div>
+							</xsl:if>
 								<button
 									class="pe-btn pe-btn-primary  align-items-center gap-2"
 									style="width: fit-content"
@@ -444,23 +457,6 @@
 										<i class="fa-solid fa-arrow-right"></i>
 									</div>
 								</button>
-							<xsl:if test="count(payment_methods) > 0">
-
-
-<!--									<div id="external_payment_method" data-bind="">-->
-
-										<xsl:for-each select="payment_methods">
-											<a id="payment_{method}" href="#"
-											   style="width: fit-content"
-											   data-bind="visible: applicationCartTotalSum() != 0; click: () => initiate_payment('{method}')">
-												<img src="{logo}" class="ml-5" OnClick="">
-												</img>
-												<!--												<xsl:text></xsl:text>-->
-												<!--												<xsl:value-of select="php:function('lang', 'new organization')"/>-->
-											</a>
-										</xsl:for-each>
-<!--									</div>-->
-							</xsl:if>
 
 						</div>
 

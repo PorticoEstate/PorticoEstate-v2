@@ -99,6 +99,7 @@ applications	booking	no	Søknader
 Apply for time	booking	no	Søk om tid
 approve	booking	no	Godkjenn
 archived	booking	no	Arkivert
+are you sure you want to approve?	booking	no	Er du sikker på at søknad skal godkjennes?
 Are you sure you want to delete?	booking	no	Er du sikker på at søknad skal avvises?
 Article	booking	no	Artikkel
 article code	booking	no	Artikkelkode
@@ -531,6 +532,7 @@ Message	booking	no	Melding
 Message about new event	booking	no	Melding om nytt arrangement
 Message from Bergen county - AktivBy	booking	no	Melding fra AktivKommune
 Message sent about the changes in the reservations	booking	no	Melding sendt om endringer på reserverasjoner
+Message to send with approval	booking	no	Melding som sendes med godkjenning
 Messages	booking	no	Meldinger
 Metadata	common	no	Metadata
 meter	booking	no	Meter
@@ -695,6 +697,7 @@ Public event	booking	no	Offentlig arrangement
 published	booking	no	Publisert
 quantity	booking	no	Mengde
 Re-assign to me	booking	no	Bli saksbehandler
+reason for rejection	booking	no	Årsak til avslag
 receipt	booking	no	Kvittering
 Recipients	booking	no	Mottakere
 Recurring allocation	booking	no	Gjenta tildelingen
@@ -933,3 +936,5 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been processed and confirmation emails have been sent to you.	booking	no	Søknadene er behandlet, og bekreftelser er sendt til deg på e-post.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	no	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	no	Postnummer
+when_and_where	booking	no	Når og hvor?
+time_period	booking	no	Tidsperiode

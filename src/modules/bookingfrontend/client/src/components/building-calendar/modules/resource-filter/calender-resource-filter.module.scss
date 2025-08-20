@@ -109,11 +109,21 @@
     cursor: pointer;
     overflow-x: hidden;
     min-width: unset;
+	.resourceTitle {
+		display: grid;
+		grid-template-columns: 1fr;
+		align-items: flex-start;
+		flex-grow: 1;
+		overflow-x: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
     > span {
         flex-grow: 1;
         overflow-x: hidden;
     }
-    div {
+
+    .resourceLabelWrapper {
         display: flex;
         align-items: center;
         gap: 0.5rem;

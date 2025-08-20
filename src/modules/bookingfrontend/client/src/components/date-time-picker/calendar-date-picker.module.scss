@@ -11,7 +11,7 @@
     --dsc-button-size: var(--ds-size-12);
 
     --dsc-card-border-color: var(--ds-color-border-subtle);
-    
+
     width: 100%;  /* Full width by default */
 
     &[data-variant='secondary'],
@@ -50,7 +50,7 @@
     border-radius: 5rem;
 
     .datePickerButton {
-        justify-content: start;
+        justify-content: flex-start;
         display: flex;
 
         @media (min-width: 768px) {
@@ -68,6 +68,7 @@
             margin-top: 0.5rem;
             padding: 1rem;
             max-height: 350px;
+			user-select: none;
             &__aria-live {
                 display: none;
             }
@@ -281,7 +282,7 @@
 
 .wrapper {
     width: 100%;
-    
+
     :global(.ds-input) {
         width: 100%;
     }
@@ -330,6 +331,14 @@
                     width: 2rem;
                     &:hover {
                         background: var(--dsc-button-background--hover);
+                    }
+
+                    &.disabled {
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                        &:hover {
+                            background: transparent;
+                        }
                     }
 
                     &Selected {

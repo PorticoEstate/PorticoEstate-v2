@@ -329,15 +329,15 @@ class RoomService
     }
     
     /**
-     * Create a safe room ID from a session ID
+     * Create a room ID from a session ID
      * 
      * @param string $sessionId Session ID
-     * @return string Safe room ID
+     * @return string Room ID
      */
     public function createRoomIdFromSession(string $sessionId): string
     {
-        // Create a hashed room ID for security (we don't want to expose raw session IDs)
-        return 'session_' . substr(md5($sessionId), 0, 10);
+        // Use the actual session ID in the room ID
+        return 'session_' . $sessionId;
     }
     
     /**

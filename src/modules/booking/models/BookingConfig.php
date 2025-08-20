@@ -19,6 +19,8 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
+     * @ParseBool
      */
     public $activate_application_articles;
 
@@ -284,6 +286,7 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
      */
     public $frontimagetext;
 
@@ -294,11 +297,13 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
      */
     public $frontpagetext;
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
      */
     public $frontpagetitle;
 
@@ -422,6 +427,7 @@ class BookingConfig
     /**
      * @OA\Property(type="string")
 	 * @Expose
+	 * @ParseBool
      */
     public $user_can_delete_allocations;
 
@@ -449,6 +455,13 @@ class BookingConfig
      * @OA\Property(type="string")
      */
     public $voucher_type;
+
+    /**
+     * @OA\Property(type="boolean")
+	 * @Expose
+	 * @ParseBool
+     */
+    public $combined_applications_mode;
 
     public function __construct(?array $data)
     {

@@ -48,7 +48,7 @@ const Resource = async (props: ResourceProps) => {
     return (
         <main>
             <ResourceHeader building={building} resource={resource} town={town} />
-			<BuildingPhotos object={building} type={'building'} />
+			<BuildingPhotos object={resource} type={'resource'} />
 
             <section className={'my-2'}>
 

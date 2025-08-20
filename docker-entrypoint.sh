@@ -20,23 +20,33 @@ if [ -f /var/www/html/src/WebSocket/ws ]; then
 fi
 
 # Set Apache environment variables
-NEXTJS_SERVER="${NEXTJS_HOST:-nextjs}:3000"
+NEXTJS_SERVER="${NEXTJS_HOST:-portico_nextjs}:3000"
+WEBSOCKET_SERVER="${WEBSOCKET_HOST:-portico_websocket}:8080"
 
 # Export variables for Apache
 export NEXTJS_SERVER
 export SLIM_SERVER
+export WEBSOCKET_SERVER
 
 # Pass environment variables to Apache
 echo "SetEnv NEXTJS_SERVER ${NEXTJS_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
+echo "SetEnv WEBSOCKET_SERVER ${WEBSOCKET_SERVER}" >> /etc/apache2/conf-enabled/environment.conf
 
-# Make sure Ratchet is installed
-if [ ! -d /var/www/html/vendor/cboden/ratchet ]; then
-    echo "Installing Ratchet WebSocket library..."
-    cd /var/www/html && composer require cboden/ratchet react/socket
+# Check if composer dependencies need to be updated (development scenario with mounted volumes)
+if [ -f /var/www/html/composer.json ]; then
+    if [ ! -d /var/www/html/vendor ] || [ ! -f /var/www/html/vendor/autoload.php ] || [ /var/www/html/composer.json -nt /var/www/html/vendor/composer/installed.json ]; then
+        echo "Updating Composer dependencies..."
+        cd /var/www/html && composer install --no-dev --optimize-autoloader
+    else
+        echo "Composer dependencies are up to date"
+    fi
 fi
 
 # Create log directory for Supervisor
 mkdir -p /var/log/supervisor
+
+# Clean up stale Apache2 PID files to prevent startup issues
+rm -f /var/run/apache2/apache2.pid
 
 # Enable required modules for WebSocket
 a2enmod proxy proxy_http proxy_wstunnel rewrite

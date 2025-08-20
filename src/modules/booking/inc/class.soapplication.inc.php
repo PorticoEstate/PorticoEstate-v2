@@ -27,6 +27,7 @@ class booking_soapplication extends booking_socommon
 				'building_id'					 => array('type' => 'int', 'required' => true),
 				'frontend_modified'				 => array('type' => 'timestamp'), //,'read_callback' => 'modify_by_timezone'),
 				'owner_id'						 => array('type' => 'int', 'required' => true),
+				'parent_id'						 => array('type' => 'int', 'required' => false),
 				'case_officer_id'				 => array('type' => 'int', 'required' => false),
 				'activity_id'					 => array('type' => 'int', 'required' => true),
 				'status'						 => array('type' => 'string', 'required' => true),
@@ -376,7 +377,7 @@ class booking_soapplication extends booking_socommon
 			$results = array();
 			while ($row = $stmt->fetch())
 			{
-				$results[] = $row['name'];
+				$results[] = $this->db->unmarshal($row['name'], 'string');
 			}
 
 			return $results;
@@ -680,6 +681,62 @@ class booking_soapplication extends booking_socommon
 
 		return array('data' => $data);
 	}
+
+	function get_application_articles($params)
+	{
+		$application_ids = array();
+
+		// Handle both single application_id and multiple application_ids
+		if (isset($params['application_id']) && $params['application_id']) {
+			$application_ids = array((int)$params['application_id']);
+		} elseif (isset($params['application_ids']) && $params['application_ids']) {
+			$application_ids = array_map('intval', $params['application_ids']);
+		}
+
+		if (empty($application_ids))
+		{
+			return array('data' => array());
+		}
+
+		$application_ids_string = implode(',', $application_ids);
+
+		// Get all purchase order lines for these applications, aggregated by article_mapping_id
+		$sql = "SELECT bb_purchase_order_line.article_mapping_id,
+			SUM(bb_purchase_order_line.quantity) as total_quantity, 
+			SUM(bb_purchase_order_line.amount) as total_amount,
+			bb_purchase_order_line.currency, bb_article_mapping.unit,
+			CASE WHEN (bb_resource.name IS NULL)
+				THEN bb_service.name
+				ELSE bb_resource.name
+			END AS article_name
+			FROM bb_purchase_order
+			JOIN bb_purchase_order_line ON bb_purchase_order.id = bb_purchase_order_line.order_id
+			JOIN bb_article_mapping ON bb_purchase_order_line.article_mapping_id = bb_article_mapping.id
+			LEFT JOIN bb_service ON (bb_article_mapping.article_id = bb_service.id AND bb_article_mapping.article_cat_id = 2)
+			LEFT JOIN bb_resource ON (bb_article_mapping.article_id = bb_resource.id AND bb_article_mapping.article_cat_id = 1)
+			WHERE bb_purchase_order.cancelled IS NULL
+			AND bb_purchase_order.application_id IN (" . $application_ids_string . ")
+			GROUP BY bb_purchase_order_line.article_mapping_id, bb_purchase_order_line.currency, 
+				bb_article_mapping.unit, article_name
+			ORDER BY article_name";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		$articles = array();
+		while ($this->db->next_record()) {
+			$articles[] = array(
+				'article_mapping_id' => (int)$this->db->f('article_mapping_id'),
+				'article' => $this->db->f('article_name', true),
+				'quantity' => (float)$this->db->f('total_quantity'),
+				'unit' => $this->db->f('unit', true),
+				'cost' => number_format((float)$this->db->f('total_amount'), 2, '.', ' '),
+				'currency' => $this->db->f('currency', true)
+			);
+		}
+
+		return array('data' => $articles);
+	}
+
 	/**
 	 *
 	 * @param string $payment_order_id
@@ -821,59 +878,74 @@ class booking_soapplication extends booking_socommon
 	function delete_payment($remote_order_id)
 	{
 		$remote_id = $this->db->db_addslashes($remote_order_id);
-		$this->db->query("SELECT * FROM bb_payment WHERE remote_id ='{$remote_id}'", __LINE__, __FILE__);
+		$sql = "DELETE FROM bb_payment WHERE remote_id = '{$remote_id}'";
+		return $this->db->query($sql, __LINE__, __FILE__);
 	}
 
 	function add_payment($order_id, $msn, $mode = 'live',  $payment_method_id = 1)
 	{
+		// Handle both single order_id and array of order_ids
+		$order_ids = is_array($order_id) ? $order_id : [$order_id];
+		$primary_order_id = $order_ids[0];
 
-		$sql = "SELECT count(id) AS cnt FROM bb_payment WHERE order_id =" . (int)$order_id;
+		$sql = "SELECT count(id) AS cnt FROM bb_payment WHERE order_id =" . (int)$primary_order_id;
 
 		$this->db->query($sql, __LINE__, __FILE__);
 		$this->db->next_record();
 		$cnt		 = (int)$this->db->f('cnt');
 		$payment_attempt = $cnt + 1;
-		$remote_id	 = "{$msn}-{$order_id}-order-{$order_id}-{$payment_attempt}";
+		$random_hash = substr(bin2hex(random_bytes(2)), 0, 4);
+		$remote_id	 = "{$msn}-{$primary_order_id}-order-{$primary_order_id}-{$payment_attempt}-{$random_hash}";
 
-		//			$order = $this->get_single_purchase_order($order_id);
-		$order = createObject('booking.sopurchase_order')->get_single_purchase_order($order_id);
+		$sopurchase_order = createObject('booking.sopurchase_order');
 
+		// Create payment records for all orders with the same remote_id
+		foreach ($order_ids as $single_order_id) {
+			$order = $sopurchase_order->get_single_purchase_order($single_order_id);
 
-		$value_set = array(
-			'order_id' => $order_id,
-			'payment_method_id'	 => (int) $payment_method_id,
-			'payment_gateway_mode' => $mode, //test and live.
-			'remote_id' => $remote_id,
-			'remote_state' => null,
-			'amount' => $order['sum'],
-			'currency' => 'NOK',
-			'refunded_amount' => '0.0',
-			'refunded_currency' => 'NOK',
-			'status' => 'new', // pending, completed, voided, partially_refunded, refunded
-			'created' => time(),
-			'autorized' => null,
-			'expires' => null,
-			'completet' => null,
-			'captured' => null,
-			//			'avs_response_code' => array('type' => 'varchar', 'precision' => '15', 'nullable' => true),
-			//			'avs_response_code_label' => array('type' => 'varchar', 'precision' => '35', 'nullable' => true),
-		);
+			$value_set = array(
+				'order_id' => $single_order_id,
+				'payment_method_id'	 => (int) $payment_method_id,
+				'payment_gateway_mode' => $mode, //test and live.
+				'remote_id' => $remote_id,
+				'remote_state' => null,
+				'amount' => $order['sum'],
+				'currency' => 'NOK',
+				'refunded_amount' => '0.0',
+				'refunded_currency' => 'NOK',
+				'status' => 'new', // pending, completed, voided, partially_refunded, refunded
+				'created' => time(),
+				'autorized' => null,
+				'expires' => null,
+				'completet' => null,
+				'captured' => null,
+				//			'avs_response_code' => array('type' => 'varchar', 'precision' => '15', 'nullable' => true),
+				//			'avs_response_code_label' => array('type' => 'varchar', 'precision' => '35', 'nullable' => true),
+			);
 
-		$this->db->query('INSERT INTO bb_payment (' . implode(',', array_keys($value_set)) . ') VALUES ('
-			. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
+			$this->db->query('INSERT INTO bb_payment (' . implode(',', array_keys($value_set)) . ') VALUES ('
+				. $this->db->validate_insert(array_values($value_set)) . ')', __LINE__, __FILE__);
+		}
+
 		return $remote_id;
 	}
 
 	function get_application_from_payment_order($payment_order_id)
 	{
 		$remote_id	 = $this->db->db_addslashes($payment_order_id);
-		$sql = "SELECT application_id FROM bb_payment"
+		$sql = "SELECT DISTINCT application_id FROM bb_payment"
 			. " JOIN bb_purchase_order ON bb_payment.order_id = bb_purchase_order.id"
 			. "	WHERE remote_id = '{$remote_id}'";
 
 		$this->db->query($sql, __LINE__, __FILE__);
-		$this->db->next_record();
-		return $this->db->f('application_id');
+		
+		$application_ids = array();
+		while ($this->db->next_record())
+		{
+			$application_ids[] = (int)$this->db->f('application_id');
+		}
+		
+		return $application_ids;
 	}
 
 	/**
@@ -908,13 +980,13 @@ class booking_soapplication extends booking_socommon
 		$dir = isset($params['dir']) && strtolower($params['dir']) === 'asc' ? 'ASC' : 'DESC';
 
 		// Base query with payment_method join
-		$sql_base = "FROM 
+		$sql_base = "FROM
                 bb_payment
-            JOIN 
+            JOIN
                 bb_purchase_order ON bb_payment.order_id = bb_purchase_order.id
             LEFT JOIN
                 bb_payment_method ON bb_payment.payment_method_id = bb_payment_method.id
-            WHERE 
+            WHERE
                 bb_payment.posted_to_accounting IS NULL AND bb_payment_method.id != 2"; // Exclude 'Etterfakturering' payment method
 
 		// Add status filter if provided
@@ -930,7 +1002,7 @@ class booking_soapplication extends booking_socommon
 		$total = (int)$this->db->f('total');
 
 		// Get data with pagination
-		$sql = "SELECT 
+		$sql = "SELECT
                 bb_payment.remote_id AS remote_order_id,
                 bb_payment.amount,
                 bb_payment.created AS date,
@@ -938,7 +1010,7 @@ class booking_soapplication extends booking_socommon
 				bb_payment.remote_state,
                 bb_payment_method.payment_gateway_name,
                 bb_payment_method.payment_gateway_mode,
-                CASE 
+                CASE
                     WHEN bb_purchase_order.reservation_type = 'event' THEN (
                         SELECT string_agg(bb_event.name, ', ')
                         FROM bb_event
@@ -993,8 +1065,8 @@ class booking_soapplication extends booking_socommon
 		$remote_id = $this->db->db_addslashes($remote_order_id);
 		$timestamp = time(); // Current Unix timestamp
 
-		$sql = "UPDATE bb_payment 
-            SET posted_to_accounting = {$timestamp} 
+		$sql = "UPDATE bb_payment
+            SET posted_to_accounting = {$timestamp}
             WHERE remote_id = '{$remote_id}'";
 
 		return $this->db->query($sql, __LINE__, __FILE__);
@@ -1030,13 +1102,13 @@ class booking_soapplication extends booking_socommon
 		$dir = isset($params['dir']) && strtolower($params['dir']) === 'asc' ? 'ASC' : 'DESC';
 
 		// Base query with payment_method join
-		$sql_base = "FROM 
+		$sql_base = "FROM
             bb_payment
-        JOIN 
+        JOIN
             bb_purchase_order ON bb_payment.order_id = bb_purchase_order.id
         LEFT JOIN
             bb_payment_method ON bb_payment.payment_method_id = bb_payment_method.id
-        WHERE 
+        WHERE
             (bb_payment.status = 'refunded' OR bb_payment.status = 'partially_refunded')
             AND bb_payment.refunded_amount > 0
             AND bb_payment.refund_posted_to_accounting IS NULL AND bb_payment_method.id != 2";
@@ -1048,7 +1120,7 @@ class booking_soapplication extends booking_socommon
 		$total = (int)$this->db->f('total');
 
 		// Get data with pagination
-		$sql = "SELECT 
+		$sql = "SELECT
             bb_payment.remote_id AS remote_order_id,
             bb_payment.refunded_amount AS amount,
             bb_payment.created AS date,
@@ -1056,7 +1128,7 @@ class booking_soapplication extends booking_socommon
             bb_payment.remote_state,
             bb_payment_method.payment_gateway_name,
             bb_payment_method.payment_gateway_mode,
-            CASE 
+            CASE
                 WHEN bb_purchase_order.reservation_type = 'event' THEN (
                     SELECT string_agg(bb_event.name, ', ')
                     FROM bb_event
@@ -1112,9 +1184,9 @@ class booking_soapplication extends booking_socommon
 		$remote_id = $this->db->db_addslashes($remote_order_id);
 		$timestamp = time(); // Current Unix timestamp
 
-		$sql = "UPDATE bb_payment 
-        SET refund_posted_to_accounting = {$timestamp} 
-        WHERE remote_id = '{$remote_id}' 
+		$sql = "UPDATE bb_payment
+        SET refund_posted_to_accounting = {$timestamp}
+        WHERE remote_id = '{$remote_id}'
         AND (status = 'refunded' OR status = 'partially_refunded')
         AND refunded_amount > 0";
 
@@ -1129,7 +1201,7 @@ class booking_soapplication extends booking_socommon
 	 */
 	public function get_refunded_posted_payments($params = array())
 	{
-		$sql = "SELECT 
+		$sql = "SELECT
 					bp.remote_id AS remote_order_id,
 					bp.refunded_amount AS amount,
 					bp.created AS date,
@@ -1137,7 +1209,7 @@ class booking_soapplication extends booking_socommon
 					bp.remote_state,
 					bpm.payment_gateway_name,
 					bpm.payment_gateway_mode,
-					CASE 
+					CASE
 						WHEN bpo.reservation_type = 'event' THEN (
 							SELECT string_agg(bb_event.name, ', ')
 							FROM bb_event
@@ -1150,36 +1222,101 @@ class booking_soapplication extends booking_socommon
 						)
 						ELSE NULL
 					END AS description
-				FROM 
+				FROM
 					bb_payment bp
-				JOIN 
+				JOIN
 					bb_purchase_order bpo ON bp.order_id = bpo.id
 				LEFT JOIN
 					bb_payment_method bpm ON bp.payment_method_id = bpm.id
-				WHERE 
-					bp.posted_to_accounting IS NOT NULL 
-					AND (bp.status = 'refunded' OR bp.status = 'partially_refunded') 
+				WHERE
+					bp.posted_to_accounting IS NOT NULL
+					AND (bp.status = 'refunded' OR bp.status = 'partially_refunded')
 					AND bp.refunded_amount > 0
 					AND bp.refund_posted_to_accounting IS NULL
 					AND bp.payment_method_id != 2"; // Exclude 'Etterfakturering' payment method
-		
+
 		$this->db->query($sql, __LINE__, __FILE__);
-		
+
 		$refunds_needing_posting = [];
 		while ($this->db->next_record()) {
 			$refunds_needing_posting[] = [
 				'remote_order_id' => $this->db->f('remote_order_id'),
 				'amount' => (float)$this->db->f('amount'),
 				'date' => $this->db->f('date'),
-				'description' => $this->db->f('description', true) ? 
-					"Refusjon: " . $this->db->f('description', true) : 
+				'description' => $this->db->f('description', true) ?
+					"Refusjon: " . $this->db->f('description', true) :
 					"Refusjon av betaling",
 				'original_transaction_id' => $this->db->f('remote_order_id'),
 				'payment_method' => $this->db->f('payment_gateway_name', true)
 			];
 		}
-		
+
 		return $refunds_needing_posting;
+	}
+
+	/**
+	 * Get child applications by parent_id
+	 *
+	 * @param int $parent_id The parent application ID
+	 * @return array Array of child application IDs
+	 */
+	public function get_child_applications($parent_id)
+	{
+		$parent_id = (int)$parent_id;
+		$sql = "SELECT id FROM bb_application WHERE parent_id = {$parent_id} AND active = 1";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+		$child_ids = array();
+
+		while ($this->db->next_record())
+		{
+			$child_ids[] = (int)$this->db->f('id');
+		}
+
+		return $child_ids;
+	}
+
+	/**
+	 * Get all related applications (parent + children) for a given application ID
+	 *
+	 * @param int $application_id The application ID to find related applications for
+	 * @return array Array containing parent_id and all related application IDs
+	 */
+	public function get_related_applications($application_id)
+	{
+		$application_id = (int)$application_id;
+
+		// First, get the current application to check if it has a parent
+		$sql = "SELECT parent_id FROM bb_application WHERE id = {$application_id}";
+		$this->db->query($sql, __LINE__, __FILE__);
+		$this->db->next_record();
+		$parent_id = $this->db->f('parent_id');
+
+		$related_ids = array();
+
+		if ($parent_id)
+		{
+			// This is a child application - get parent and all siblings
+			$parent_id = (int)$parent_id;
+			$related_ids[] = $parent_id;
+
+			// Get all children of the parent (including current application)
+			$child_ids = $this->get_child_applications($parent_id);
+			$related_ids = array_merge($related_ids, $child_ids);
+		}
+		else
+		{
+			// This is a parent application - get current + all children
+			$related_ids[] = $application_id;
+			$child_ids = $this->get_child_applications($application_id);
+			$related_ids = array_merge($related_ids, $child_ids);
+		}
+
+		return array(
+			'parent_id' => $parent_id ?: $application_id,
+			'application_ids' => array_unique($related_ids),
+			'total_count' => count(array_unique($related_ids))
+		);
 	}
 }
 

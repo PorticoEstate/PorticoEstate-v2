@@ -266,7 +266,7 @@
 						<div class="pure-u-1">
 							<div class="heading">
 								<!--<legend>-->
-								<h3>3. <xsl:value-of select="php:function('lang', 'Where?')" /></h3>
+								<h3>3. <xsl:value-of select="php:function('lang', 'when_and_where')" /></h3>
 								<!--</legend>-->
 							</div>
 							<div class="pure-control-group">
@@ -280,23 +280,18 @@
 									</a>)
 								</span>
 							</div>
-							<!--Revizar esta linea luego-->
-							<div class="pure-control-group">
-								<label>&nbsp;</label>
-								<div id="resources_container" class="pure-form-contentTable"></div>
-							</div>
-							<div class="pure-control-group">
-								<label>&nbsp;</label>
-								<div id="articles_container" style="display:inline-block;" class="pure-form-contentTable"></div>
-							</div>
 
-						</div>
-						<div class="pure-u-1">
-							<div class="heading">
-								<!--<legend>-->
-								<h3>4. <xsl:value-of select="php:function('lang', 'When?')" /></h3>
-								<!--</legend>-->
-							</div>
+							<!-- Display application count if multiple applications -->
+							<xsl:if test="application/related_application_count > 1">
+								<div class="pure-control-group">
+									<label>
+										<xsl:value-of select="php:function('lang', 'Applications')" />
+									</label>
+									<span style="font-weight: bold; color: #2c5aa0;">
+										<xsl:value-of select="application/related_application_count"/> applications combined
+									</span>
+								</div>
+							</xsl:if>
 							<p>
 								<small>
 									<xsl:value-of select="php:function('lang', 'date format')" />:
@@ -319,30 +314,37 @@
 							<script type="text/javascript">
 								building_id = <xsl:value-of select="application/building_id"/>;
 							</script>
-							<xsl:for-each select="application/dates">
-								<div class="pure-control-group">
-									<label>
-										<xsl:value-of select="php:function('lang', 'From')" />:</label>
-									<span>
-										<xsl:value-of select="php:function('pretty_timestamp', from_)"/>
-									</span>
-									<xsl:if test="../case_officer/is_current_user">
-										<xsl:if test="contains($collisiondata, from_)">
-											<xsl:if test="not(contains($assocdata, from_))">
-												<a href="javascript: void(0)"
-												   onclick="open_schedule(building_id,'{from_}');return false;">
-													<i class="fa fa-exclamation-circle"></i>
-												</a>
+							<xsl:for-each select="application/combined_dates">
+								<div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px;">
+									<div class="pure-control-group">
+										<label style="font-weight: bold;">
+											<xsl:value-of select="php:function('lang', 'time_period')" />:</label>
+										<span>
+											<xsl:value-of select="php:function('pretty_timestamp', from_)"/>
+											<xsl:text> - </xsl:text>
+											<xsl:value-of select="php:function('pretty_timestamp', to_)"/>
+										</span>
+										<xsl:if test="../case_officer/is_current_user">
+											<xsl:if test="contains($collisiondata, from_)">
+												<xsl:if test="not(contains($assocdata, from_))">
+													<a href="javascript: void(0)"
+													   onclick="open_schedule(building_id,'{from_}');return false;">
+														<i class="fa fa-exclamation-circle"></i>
+													</a>
+												</xsl:if>
 											</xsl:if>
 										</xsl:if>
-									</xsl:if>
-								</div>
-								<div class="pure-control-group">
-									<label>
-										<xsl:value-of select="php:function('lang', 'To')" />:</label>
-									<span>
-										<xsl:value-of select="php:function('pretty_timestamp', to_)"/>
-									</span>
+									</div>
+									<div class="pure-control-group">
+										<label>
+											<xsl:value-of select="php:function('lang', 'Resources')" />:</label>
+										<span>
+											<xsl:for-each select="resource_names">
+												<xsl:value-of select="."/>
+												<xsl:if test="position() != last()">, </xsl:if>
+											</xsl:for-each>
+										</span>
+									</div>
 								</div>
 								<xsl:if test="../edit_link">
 									<script type="text/javascript">
@@ -384,7 +386,7 @@
 						<div class="pure-u-1">
 							<div class="heading">
 								<!--<legend>-->
-								<h3>5. <xsl:value-of select="php:function('lang', 'Who?')" /></h3>
+								<h3>4. <xsl:value-of select="php:function('lang', 'Who?')" /></h3>
 								<!--</legend>-->
 							</div>
 							<xsl:if test="simple != 1">
@@ -793,7 +795,7 @@
 
 		var colDefsDocuments = [{key: 'name', label: lang['Document'], formatter: genericLink}];
 
-		createTable('resources_container',resourcesURL,colDefsResources, '', 'pure-table pure-table-bordered');
+		// Resources now shown with dates instead of separate table
 		createTable('associated_container',associatedURL,colDefsAssociated,'results', 'pure-table pure-table-bordered');
 		createTable('regulation_documents',documentsURL,colDefsDocuments, '', 'pure-table pure-table-bordered');
 

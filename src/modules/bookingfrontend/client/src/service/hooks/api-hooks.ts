@@ -7,12 +7,22 @@ import {
 	UseQueryResult,
 	MutationOptions
 } from "@tanstack/react-query";
-import {IBookingUser, IDocument, IServerSettings} from "@/service/types/api.types";
+import { useWebSocketContext } from '../websocket/websocket-context';
+import {IBookingUser, IDocument, IServerSettings, IMultiDomain, IDocumentCategoryQuery} from "@/service/types/api.types";
 import {
+	fetchApplication,
+	fetchApplicationComments,
+	fetchApplicationDocuments,
+	fetchApplicationScheduleEntities,
+	addApplicationComment,
+	updateApplicationStatus,
 	fetchArticlesForResources,
+	fetchAvailableResources,
+	fetchAvailableResourcesMultiDomain,
 	fetchBuildingAgeGroups,
 	fetchBuildingAudience,
 	fetchBuildingSchedule,
+	fetchOrganizationSchedule,
 	fetchBuildingSeasons,
 	fetchDeliveredApplications,
 	fetchFreeTimeSlotsForRange,
@@ -25,12 +35,13 @@ import {
 	fetchSessionId,
 	fetchTowns,
 	fetchUpcomingEvents,
+	fetchMultiDomains,
 	patchBookingUser
 } from "@/service/api/api-utils";
-import {IApplication, IUpdatePartialApplication, NewPartialApplication} from "@/service/types/api/application.types";
+import {IApplication, IUpdatePartialApplication, NewPartialApplication, GetCommentsResponse, AddCommentRequest, AddCommentResponse, UpdateStatusRequest, UpdateStatusResponse} from "@/service/types/api/application.types";
 import {ICompletedReservation} from "@/service/types/api/invoices.types";
 import {phpGWLink} from "@/service/util";
-import {IEvent, IFreeTimeSlot, IShortEvent} from "@/service/pecalendar.types";
+import {IEvent, IFreeTimeSlot, IShortEvent, IAPIEvent, IAPIBooking, IAPIAllocation} from "@/service/pecalendar.types";
 import {DateTime} from "luxon";
 import {useCallback, useEffect} from "react";
 import {IAgeGroup, IAudience, Season} from "@/service/types/Building";
@@ -94,6 +105,13 @@ function useServerMessageMutation<TData = unknown, TError = unknown, TVariables 
 // }
 interface UseScheduleOptions {
 	building_id?: number;
+	weeks: DateTime[];
+	instance?: string;
+	initialWeekSchedule?: Record<string, IEvent[]>
+}
+
+interface UseOrganizationScheduleOptions {
+	organization_id?: number;
 	weeks: DateTime[];
 	instance?: string;
 	initialWeekSchedule?: Record<string, IEvent[]>
@@ -330,6 +348,86 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
 	});
 };
 
+/**
+ * Custom hook to fetch and cache organization schedule data by weeks
+ * @param options.organization_id - The ID of the organization
+ * @param options.weekStarts - Array of dates representing the start of each week needed
+ * @param options.instance - Optional instance parameter
+ */
+export const useOrganizationSchedule = ({organization_id, weeks, instance, initialWeekSchedule}: UseOrganizationScheduleOptions) => {
+	const queryClient = useQueryClient();
+	const weekStarts = weeks.map(d => d.set({weekday: 1}).startOf('day'));
+	const keys = weekStarts.map(a => a.toFormat("y-MM-dd"))
+
+	// Helper to get cache key for a week
+	const getWeekCacheKey = useCallback((key: string) => {
+		return ['organizationSchedule', organization_id, key];
+	}, [organization_id]);
+	
+	// Initialize cache with provided initial schedule data
+	useEffect(() => {
+		if (initialWeekSchedule) {
+			Object.entries(initialWeekSchedule).forEach(([weekStart, events]) => {
+				const cacheKey = getWeekCacheKey(weekStart);
+				if (!queryClient.getQueryData(cacheKey)) {
+					queryClient.setQueryData(cacheKey, events);
+				}
+			});
+		}
+	}, [initialWeekSchedule, organization_id, queryClient, getWeekCacheKey]);
+
+	// Fetch function that gets all uncached weeks
+	const fetchUncachedWeeks = async () => {
+		// Filter out weeks that are already in cache
+		const uncachedWeeks = keys.filter(weekStart => {
+			const cacheKey = getWeekCacheKey(weekStart);
+			const d = queryClient.getQueryData(cacheKey);
+			return !d;
+		});
+
+		if (uncachedWeeks.length === 0) {
+			// If all weeks are cached, combine and return cached data
+			const combinedData: IEvent[] = [];
+			keys.forEach(weekStart => {
+				const cacheKey = getWeekCacheKey(weekStart);
+				const weekData = queryClient.getQueryData<IEvent[]>(cacheKey);
+				if (weekData) {
+					combinedData.push(...weekData);
+				}
+			});
+			return combinedData;
+		}
+
+		// Fetch data for all uncached weeks at once
+		const scheduleData = await fetchOrganizationSchedule(organization_id!, uncachedWeeks, instance);
+		// Cache each week's data separately
+		uncachedWeeks.forEach(weekStart => {
+			const weekData: IEvent[] = scheduleData[weekStart] || [];
+			const cacheKey = getWeekCacheKey(weekStart);
+			queryClient.setQueryData(cacheKey, weekData, {});
+		});
+
+		// Return combined data for all requested weeks
+		const combinedData: IEvent[] = [];
+		keys.forEach(weekStart => {
+			const cacheKey = getWeekCacheKey(weekStart);
+			const weekData = queryClient.getQueryData<IEvent[]>(cacheKey);
+			if (weekData) {
+				combinedData.push(...weekData);
+			}
+		});
+
+		return combinedData;
+	};
+
+	// Main query hook
+	return useQuery({
+		queryKey: ['organizationSchedule', organization_id, keys.join(',')],
+		queryFn: organization_id === undefined ? skipToken : fetchUncachedWeeks,
+		enabled: organization_id !== undefined,
+	});
+};
+
 class AuthenticationError extends Error {
 	statusCode: number;
 
@@ -341,6 +439,17 @@ class AuthenticationError extends Error {
 }
 
 export function useBookingUser() {
+	const queryClient = useQueryClient();
+
+	// Handle WebSocket messages for booking user refresh
+	useMessageTypeSubscription('refresh_bookinguser', (message) => {
+		console.log('Received booking user refresh WebSocket update');
+
+		// Invalidate the booking user query to trigger a refetch
+		// This ensures the user gets the latest data from the server
+		queryClient.invalidateQueries({queryKey: ['bookingUser']});
+	});
+
 	return useQuery<IBookingUser>({
 		queryKey: ['bookingUser'],
 		queryFn: async () => {
@@ -355,7 +464,18 @@ export function useBookingUser() {
 				throw new AuthenticationError('Failed to fetch user', response.status);
 			}
 
-			return response.json();
+			const userData = await response.json();
+
+			// Check if this is a first-time user with minimal data
+			// If so, trigger a refetch after a short delay to allow backend initialization to complete
+			// This serves as a fallback in case WebSocket notifications fail
+			// if (userData.is_logged_in && (!userData.name || userData.name === '')) {
+			// 	setTimeout(() => {
+			// 		queryClient.invalidateQueries({queryKey: ['bookingUser']});
+			// 	}, 2000); // 2 second delay to allow external data fetch to complete
+			// }
+
+			return userData;
 		},
 		retry: (failureCount, error: AuthenticationError | Error) => {
 			// Don't retry on 401
@@ -473,27 +593,234 @@ export function useUpdateBookingUser() {
 	})
 }
 
+/**
+ * Hook to create a new booking user
+ */
+export function useCreateBookingUser() {
+	const queryClient = useQueryClient();
+	
+	const createBookingUser = async (userData: Partial<IBookingUser>): Promise<IBookingUser> => {
+		const response = await fetch('/bookingfrontend/user/create', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(userData),
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(errorData.error || 'Failed to create user');
+		}
+
+		const result = await response.json();
+		
+		// Invalidate and refetch user data after creation
+		await queryClient.invalidateQueries({queryKey: ['bookingUser']});
+		
+		return result.user;
+	};
+
+	return { mutateAsync: createBookingUser };
+}
+
+/**
+ * Hook to fetch external user data for form pre-filling
+ */
+export function useExternalUserData() {
+	return useQuery({
+		queryKey: ['externalUserData'],
+		queryFn: async (): Promise<Partial<IBookingUser> | null> => {
+			const response = await fetch('/bookingfrontend/user/external-data');
+			
+			if (!response.ok) {
+				if (response.status === 404) {
+					return null; // No external data available
+				}
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || 'Failed to fetch external data');
+			}
+
+			return await response.json();
+		},
+		retry: false, // Don't retry if external data is not available
+		staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
+	});
+}
+
 
 export function usePartialApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
+	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
+
+	// Handle WebSocket messages with partial application updates
+	useMessageTypeSubscription('partial_applications_response', (message) => {
+		console.log('Received partial applications WebSocket update');
+
+		// Update the query cache with the new data
+		if (message.data.error === false) {
+			queryClient.setQueryData(['partialApplications'], {
+				list: message.data.applications,
+				total_sum: message.data.applications.reduce((sum, app) => {
+					// Calculate total sum from orders if they exist
+					const orderSum = app.orders?.reduce((acc, order) => acc + (Number(order.sum) || 0), 0) || 0;
+					return sum + orderSum;
+				}, 0)
+			});
+		}
+	});
+
 	return useQuery(
 		{
 			queryKey: ['partialApplications'],
 			queryFn: () => fetchPartialApplications(), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			refetchInterval: () => {
+				// Check if websocket connection is active
+				const isWebSocketActive = wsReady &&
+					wsStatus === 'OPEN' &&
+					sessionConnected;
+
+				// If websocket is not active, refetch every 30 seconds
+				// Otherwise rely on WebSocket updates
+				return isWebSocketActive ? false : 30000;
+			}
 		}
 	);
 }
 
-export function useApplications(): UseQueryResult<{ list: IApplication[], total_sum: number }> {
+export function useApplications(
+  options?: {
+    initialData?: { list: IApplication[], total_sum: number };
+    includeOrganizations?: boolean;
+  }
+): UseQueryResult<{ list: IApplication[], total_sum: number }> {
+	const includeOrganizations = options?.includeOrganizations ?? false;
+
 	return useQuery(
 		{
-			queryKey: ['deliveredApplications'],
-			queryFn: () => fetchDeliveredApplications(), // Fetch function
+			queryKey: ['deliveredApplications', includeOrganizations],
+			queryFn: () => fetchDeliveredApplications(includeOrganizations), // Fetch function
 			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default,
+			initialData: options?.initialData,
 		}
 	);
+}
+
+export function useApplication(
+    id: number,
+    options?: { initialData?: IApplication }
+): UseQueryResult<IApplication> {
+    return useQuery(
+        {
+            queryKey: ['application', id],
+            queryFn: () => fetchApplication(id),
+            retry: 2,
+            refetchOnWindowFocus: false,
+            initialData: options?.initialData,
+        }
+    );
+}
+
+/**
+ * Hook to fetch comments for an application
+ * @param applicationId The application ID
+ * @param types Optional comma-separated list of comment types to filter by
+ * @param secret Optional secret for external access
+ * @returns Comments and statistics
+ */
+export function useApplicationComments(
+    applicationId: number,
+    types?: string,
+    secret?: string
+): UseQueryResult<GetCommentsResponse> {
+    return useQuery({
+        queryKey: ['applicationComments', applicationId, types, secret],
+        queryFn: () => fetchApplicationComments(applicationId, types, secret),
+        retry: 2,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
+ * Hook to fetch events, allocations and bookings related to an application
+ * @param applicationId The application ID
+ * @param secret Optional secret for external access
+ * @returns Query result with events, allocations and bookings
+ */
+export function useApplicationScheduleEntities(
+    applicationId: number,
+    secret?: string
+): UseQueryResult<{events: IAPIEvent[], allocations: IAPIAllocation[], bookings: IAPIBooking[]}> {
+    return useQuery({
+        queryKey: ['applicationEventsAllocationsBookings', applicationId, secret],
+        queryFn: () => fetchApplicationScheduleEntities(applicationId, secret),
+        retry: 2,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
+ * Hook to add a comment to an application
+ * @param options Mutation options
+ * @returns Mutation object for adding comments
+ */
+export function useAddApplicationComment(
+    options?: MutationOptions<AddCommentResponse, Error, { applicationId: number; commentData: AddCommentRequest; secret?: string }>
+) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ applicationId, commentData, secret }) =>
+            addApplicationComment(applicationId, commentData, secret),
+        onSuccess: (data, variables) => {
+            // Invalidate comments cache
+            queryClient.invalidateQueries({
+                queryKey: ['applicationComments', variables.applicationId]
+            });
+
+            // Invalidate application cache to refresh any related data
+            queryClient.invalidateQueries({
+                queryKey: ['application', variables.applicationId]
+            });
+        },
+        ...options,
+    });
+}
+
+/**
+ * Hook to update an application's status
+ * @param options Mutation options
+ * @returns Mutation object for updating status
+ */
+export function useUpdateApplicationStatus(
+    options?: MutationOptions<UpdateStatusResponse, Error, { applicationId: number; statusData: UpdateStatusRequest; secret?: string }>
+) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ applicationId, statusData, secret }) =>
+            updateApplicationStatus(applicationId, statusData, secret),
+        onSuccess: (data, variables) => {
+            // Invalidate comments cache (status changes create comments)
+            queryClient.invalidateQueries({
+                queryKey: ['applicationComments', variables.applicationId]
+            });
+
+            // Invalidate application cache to refresh status
+            queryClient.invalidateQueries({
+                queryKey: ['application', variables.applicationId]
+            });
+
+            // Invalidate applications list cache
+            queryClient.invalidateQueries({
+                queryKey: ['applications']
+            });
+        },
+        ...options,
+    });
 }
 
 export function useServerMessages(): UseQueryResult<IServerMessage[]> {
@@ -682,20 +1009,24 @@ export function useDeleteServerMessage() {
 }
 
 
-export function useInvoices(): UseQueryResult<ICompletedReservation[]> {
-	return useQuery(
-		{
-			queryKey: ['invoices'],
-			queryFn: () => fetchInvoices(), // Fetch function
-			retry: 2, // Number of retry attempts if the query fails
-			refetchOnWindowFocus: false, // Do not refetch on window focus by default
-		}
-	);
+export function useInvoices(
+    options?: { initialData?: ICompletedReservation[] }
+): UseQueryResult<ICompletedReservation[]> {
+    return useQuery(
+        {
+            queryKey: ['invoices'],
+            queryFn: () => fetchInvoices(), // Fetch function
+            retry: 2, // Number of retry attempts if the query fails
+            refetchOnWindowFocus: false, // Do not refetch on window focus by default
+            initialData: options?.initialData,
+        }
+    );
 }
 
 
 export function useCreatePartialApplication() {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected,isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (newApplication: Partial<NewPartialApplication>) => {
@@ -719,14 +1050,24 @@ export function useCreatePartialApplication() {
 			return response.json();
 		},
 		onSuccess: () => {
-			// Invalidate and refetch partial applications queries
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			// Check if websocket connection is active
+			const isWebSocketActive = wsReady &&
+				wsStatus === 'OPEN' &&
+				sessionConnected;
+
+			// Only invalidate if WebSocket is not active
+			// If WebSocket is active, the server will send a message with the updated data
+			if (!isWebSocketActive) {
+				// Invalidate and refetch partial applications queries
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			}
 		},
 	});
 }
 
 export function useUpdatePartialApplication() {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async ({id, application}: { id: number, application: IUpdatePartialApplication }) => {
@@ -783,14 +1124,24 @@ export function useUpdatePartialApplication() {
 			}
 		},
 		onSettled: () => {
-			// Always refetch after error or success to ensure data is correct
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			// Check if websocket connection is active
+			const isWebSocketActive = wsReady &&
+				wsStatus === 'OPEN' &&
+				sessionConnected;
+
+			// Only invalidate if WebSocket is not active
+			// If WebSocket is active, the server will send a message with the updated data
+			if (!isWebSocketActive) {
+				// Always refetch after error or success to ensure data is correct
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			}
 		},
 	});
 }
 
 export function useDeletePartialApplication() {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (id: number) => {
@@ -798,7 +1149,7 @@ export function useDeletePartialApplication() {
 			const response = await fetch(url, {method: 'DELETE'});
 
 			if (!response.ok) {
-				throw new Error('Failed to update partial application');
+				throw new Error('Failed to delete partial application');
 			}
 
 			return id
@@ -832,8 +1183,17 @@ export function useDeletePartialApplication() {
 			}
 		},
 		onSettled: () => {
-			// Always refetch after error or success to ensure data is correct
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			// Check if websocket connection is active
+			const isWebSocketActive = wsReady &&
+				wsStatus === 'OPEN' &&
+				sessionConnected;
+
+			// Only invalidate if WebSocket is not active
+			// If WebSocket is active, the server will send a message with the updated data
+			if (!isWebSocketActive) {
+				// Always refetch after error or success to ensure data is correct
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			}
 		},
 	});
 }
@@ -841,6 +1201,7 @@ export function useDeletePartialApplication() {
 
 export function useCreateSimpleApplication() {
 	const queryClient = useQueryClient();
+	const { status: wsStatus, sessionConnected, isReady: wsReady } = useWebSocketContext();
 
 	return useServerMessageMutation({
 		mutationFn: async (params: { timeslot: IFreeTimeSlot, building_id: number }) => {
@@ -868,38 +1229,35 @@ export function useCreateSimpleApplication() {
 			return response.json();
 		},
 		onSuccess: (data, variables) => {
-			// Invalidate and refetch partial applications queries
-			queryClient.invalidateQueries({queryKey: ['partialApplications']});
+			// Check if websocket connection is active
+			const isWebSocketActive = wsReady &&
+				wsStatus === 'OPEN' &&
+				sessionConnected;
 
-			// // Invalidate timeslots to refresh available slots after booking
-			// const buildingId = variables.building_id;
-			// if (buildingId) {
-			// 	// Most thorough approach - invalidate ALL buildingFreeTime queries for this building
-			// 	queryClient.invalidateQueries({
-			// 		predicate: (query) => {
-			// 			const queryKey = query.queryKey;
-			// 			return (
-			// 				Array.isArray(queryKey) &&
-			// 				queryKey[0] === 'buildingFreeTime' &&
-			// 				(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
-			// 			);
-			// 		}
-			// 	});
-			//
-			// 	// Force a refresh of any combined queries that may use comma-separated week keys
-			// 	setTimeout(() => {
-			// 		queryClient.refetchQueries({
-			// 			predicate: (query) => {
-			// 				const queryKey = query.queryKey;
-			// 				return (
-			// 					Array.isArray(queryKey) &&
-			// 					queryKey[0] === 'buildingFreeTime' &&
-			// 					query.queryKey.length > 2
-			// 				);
-			// 			}
-			// 		});
-			// 	}, 100);
-			// }
+			// Only invalidate if WebSocket is not active
+			// If WebSocket is active, the server will send messages with the updated data
+			if (!isWebSocketActive) {
+				// Invalidate and refetch partial applications queries
+				queryClient.invalidateQueries({queryKey: ['partialApplications']});
+
+				// Invalidate building timeslots if needed
+				const buildingId = variables.building_id;
+				if (buildingId) {
+					queryClient.invalidateQueries({
+						predicate: (query) => {
+							const queryKey = query.queryKey;
+							return (
+								Array.isArray(queryKey) &&
+								queryKey[0] === 'buildingFreeTime' &&
+								(queryKey[1] === buildingId || queryKey.includes(buildingId.toString()))
+							);
+						}
+					});
+				}
+			}
+			// Note: When WebSocket is active, the server will send:
+			// 1. partial_applications_response for updating applications
+			// 2. room_message for updating building timeslots
 		},
 	});
 }
@@ -1056,7 +1414,7 @@ export function useUpcomingEvents(params: {
 	});
 }
 
-export function useResourceRegulationDocuments(resources: { id: number, building_id?: number }[]) {
+export function useResourceRegulationDocuments(resources: { id: number, building_id?: number | null }[]) {
 	const queryClient = useQueryClient();
 	const resourceIds = resources.map(r => r.id);
 
@@ -1281,5 +1639,82 @@ export function useResourceArticles({
 	return useQuery({
 		queryKey: ['resourceArticles', resourceIds.sort().join(',')],
 		queryFn: fetchArticles,
+	});
+}
+
+/**
+ * Hook to fetch multi-domains data using the dedicated endpoint
+ * @param options - Query options including initialData for server-side rendering
+ */
+export function useMultiDomains(options?: {
+	initialData?: IMultiDomain[]
+}): UseQueryResult<IMultiDomain[]> {
+	return useQuery(
+		{
+			queryKey: ['multiDomains'],
+			queryFn: () => fetchMultiDomains(), // Fetch function
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 60 * 60 * 1000, // Consider data fresh for 1 hour (cached)
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			initialData: options?.initialData, // Use server-side fetched data if available
+		}
+	);
+}
+
+/**
+ * Hook to fetch available resources for a specific date
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @returns Query result containing array of available resource IDs
+ */
+export function useAvailableResources(date?: string): UseQueryResult<number[]> {
+	return useQuery(
+		{
+			queryKey: ['availableResources', date],
+			queryFn: date ? () => fetchAvailableResources(date) : skipToken,
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			enabled: !!date, // Only run query if date is provided
+		}
+	);
+}
+
+/**
+ * Hook to fetch available resources for a specific date across all domains
+ * @param date - The date to check availability for (format: YYYY-MM-DD)
+ * @param multiDomains - Array of domain configurations
+ * @returns Query result containing map of domain names to available resource IDs
+ */
+export function useAvailableResourcesMultiDomain(
+	date?: string,
+	multiDomains?: IMultiDomain[]
+): UseQueryResult<Record<string, number[]>> {
+	return useQuery(
+		{
+			queryKey: ['availableResourcesMultiDomain', date, multiDomains?.map(d => d.name).join(',')],
+			queryFn: (date && multiDomains) ? () => fetchAvailableResourcesMultiDomain(date, multiDomains) : skipToken,
+			retry: 2, // Number of retry attempts if the query fails
+			staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+			refetchOnWindowFocus: false, // Do not refetch on window focus by default
+			enabled: !!(date && multiDomains), // Only run query if date and domains are provided
+		}
+	);
+}
+
+/**
+ * Hook to fetch documents for an application
+ * @param applicationId The application ID
+ * @param typeFilter Optional document type filter(s)
+ * @returns Query result containing array of documents
+ */
+export function useApplicationDocuments(
+	applicationId: number | string,
+	typeFilter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]
+): UseQueryResult<IDocument[]> {
+	return useQuery({
+		queryKey: ['applicationDocuments', applicationId, typeFilter],
+		queryFn: () => fetchApplicationDocuments(applicationId, typeFilter),
+		retry: 2,
+		refetchOnWindowFocus: false,
 	});
 }

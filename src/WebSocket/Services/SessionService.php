@@ -4,14 +4,37 @@ namespace App\WebSocket\Services;
 
 use Psr\Log\LoggerInterface;
 use Ratchet\ConnectionInterface;
+use App\WebSocket\Services\DatabaseService;
 
 class SessionService
 {
     private $logger;
+    private $dbService = null;
 
     public function __construct(LoggerInterface $logger)
     {
         $this->logger = $logger;
+        $this->initDatabaseService();
+    }
+
+    /**
+     * Initialize the database service
+     */
+    private function initDatabaseService()
+    {
+        try {
+            $this->dbService = new DatabaseService($this->logger);
+            if (!$this->dbService->isConnected()) {
+                $this->logger->warning("Database service initialized but not connected");
+            } else {
+                $this->logger->info("Database service initialized and connected");
+            }
+        } catch (\Exception $e) {
+            $this->logger->error("Failed to initialize database service", [
+                'error' => $e->getMessage()
+            ]);
+            $this->dbService = null;
+        }
     }
 
     /**
@@ -89,19 +112,33 @@ class SessionService
     }
     
     /**
-     * Check if the session exists (simplified version without extracting user data)
+     * Extract user information from session
      *
-     * @param string $bookingSessionId Session ID
-     * @return array Basic session info
+     * @param string $sessionId Session ID
+     * @return array User information
      */
-    private function extractUserInfoFromSession(string $bookingSessionId): array
+    private function extractUserInfoFromSession(string $sessionId): array
     {
-        // We're not actually extracting user data anymore - just returning 
-        // basic session validation info without accessing the session
-        return [
+        // Create basic session info structure with just the session ID
+        $this->logger->info("Creating session info for sessionId: " . substr($sessionId, 0, 8) . '...');
+
+        // For bookingfrontend sessions, we assume it's a booking session type
+        $isBookingSession = strpos($sessionId, 'bookingfrontend') !== false;
+        
+        // Create basic session info without user ID
+        $sessionInfo = [
             'sessionFound' => true,
-            'sessionId' => substr($bookingSessionId, 0, 8) . '****' // Masked session ID
+            'sessionId' => substr($sessionId, 0, 8) . '****',
+            'sessionType' => $isBookingSession ? 'booking' : 'standard'
         ];
+        
+        // Log that we're creating a session without user ID
+        $this->logger->info("Created session info without userId. Client must provide user info in subsequent communications", [
+            'sessionType' => $sessionInfo['sessionType'],
+            'sessionIdMasked' => $sessionInfo['sessionId']
+        ]);
+        
+        return $sessionInfo;
     }
     
     /**
@@ -216,7 +253,9 @@ class SessionService
             'success' => true,
             'action' => $oldSessionId ? 'updated' : 'set',
             'message' => $oldSessionId ? 'Session ID updated' : 'Session ID set',
-            'roomId' => $newRoomId
+            'roomId' => $newRoomId,
+            'roomJoined' => true,
+            'roomSize' => $roomService->getRoomSize($newRoomId)
         ];
     }
 }

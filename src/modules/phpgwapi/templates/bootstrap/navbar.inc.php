@@ -493,6 +493,37 @@ HTML;
 		        <!-- Navbar-->
 				{$topmenu}
 			</nav>
+			
+			<!-- Command Palette Modal -->
+			<div class="modal fade" id="commandPalette" tabindex="-1" aria-labelledby="commandPaletteLabel" aria-hidden="true">
+				<div class="modal-dialog modal-lg modal-dialog-centered">
+					<div class="modal-content" style="background: #2d3748; border: 1px solid #4a5568;">
+						<div class="modal-header border-0 pb-2">
+							<div class="w-100">
+								<input type="text" class="form-control bg-transparent text-white border-0 fs-4" 
+									   id="commandSearch" placeholder="Type a command..." 
+									   style="outline: none; box-shadow: none; color: #fff;" autofocus>
+								<style>
+									#commandSearch::placeholder {
+										color: #a0aec0 !important;
+										opacity: 1;
+									}
+								</style>
+							</div>
+						</div>
+						<div class="modal-body pt-0 pb-2" style="max-height: 400px; overflow-y: auto;">
+							<div id="commandResults" class="list-group list-group-flush"></div>
+						</div>
+						<div class="modal-footer border-0 pt-0 pb-3">
+							<small style="color: #a0aec0;">
+								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">↑↓</kbd> Navigate 
+								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">Enter</kbd> Select 
+								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">Esc</kbd> Close
+							</small>
+						</div>
+					</div>
+				</div>
+			</div>
 HTML;
 	}
 
@@ -529,6 +560,307 @@ HTML;
 			echo $message['msgbox_text'];
 			echo '</div>';
 		}
+	}
+
+	// Command Palette JavaScript
+	if (Sanitizer::get_var('phpgw_return_as') != 'json') {
+		echo <<<'SCRIPT'
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let shiftPressCount = 0;
+    let shiftTimer;
+    let commandPalette = new bootstrap.Modal(document.getElementById('commandPalette'));
+    let searchInput = document.getElementById('commandSearch');
+    let resultsContainer = document.getElementById('commandResults');
+    let selectedIndex = -1;
+    let menuItems = [];
+    
+    // Double shift detection
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Shift') {
+            shiftPressCount++;
+            
+            if (shiftTimer) {
+                clearTimeout(shiftTimer);
+            }
+            
+            if (shiftPressCount === 2) {
+                e.preventDefault();
+                openCommandPalette();
+                shiftPressCount = 0;
+                return;
+            }
+            
+            shiftTimer = setTimeout(() => {
+                shiftPressCount = 0;
+            }, 300);
+        }
+    });
+    
+    function openCommandPalette() {
+        if (!menuItems.length) {
+            loadMenuItems();
+        }
+        commandPalette.show();
+        // Only focus if not already focused or if input is empty
+        setTimeout(() => {
+            if (document.activeElement !== searchInput || !searchInput.value) {
+                searchInput.focus();
+                if (!searchInput.value) {
+                    searchInput.select();
+                }
+            }
+        }, 100);
+    }
+    
+    // Load menu items from the sidebar
+    function loadMenuItems() {
+        menuItems = [];
+        
+        // Get menu items from sidebar navigation with path context
+        const navItems = document.querySelectorAll('#navbar a.context-menu-nav');
+        navItems.forEach(item => {
+            if (item.textContent.trim() && item.href) {
+                const path = getMenuPath(item);
+                menuItems.push({
+                    text: item.textContent.trim(),
+                    url: item.href,
+                    id: item.id || '',
+                    element: item,
+                    path: path
+                });
+            }
+        });
+        
+        // Also get items from top menu
+        const topNavItems = document.querySelectorAll('.navbar-nav a');
+        topNavItems.forEach(item => {
+            if (item.textContent.trim() && item.href && !item.classList.contains('dropdown-toggle')) {
+                menuItems.push({
+                    text: item.textContent.trim(),
+                    url: item.href,
+                    id: item.id || '',
+                    element: item,
+                    path: 'Top Menu'
+                });
+            }
+        });
+    }
+    
+    // Build menu path by traversing up the DOM hierarchy and using element ID
+    function getMenuPath(element) {
+        const pathParts = [];
+        
+        // Extract path from element ID if available (e.g., "navbar::admin::users")
+        if (element.id && element.id.startsWith('navbar::')) {
+            const idParts = element.id.split('::').slice(1); // Remove 'navbar' prefix
+            
+            // Map common app names to display names
+            const appDisplayNames = {
+                'admin': 'Administration',
+                'booking': 'Booking',
+                'property': 'Property',
+                'controller': 'Controller',
+                'rental': 'Rental',
+                'helpdesk': 'Helpdesk',
+                'calendar': 'Calendar',
+                'addressbook': 'Address Book',
+                'messenger': 'Messenger',
+                'preferences': 'Preferences'
+            };
+            
+            // Build path from ID parts
+            for (let i = 0; i < idParts.length - 1; i++) {
+                const part = idParts[i];
+                const displayName = appDisplayNames[part] || part.charAt(0).toUpperCase() + part.slice(1);
+                pathParts.push(displayName);
+            }
+        }
+        
+        // Fallback: traverse DOM hierarchy
+        if (pathParts.length === 0) {
+            let current = element.parentElement;
+            
+            while (current && current !== document.body) {
+                // Look for collapse toggles (parent menu items)
+                const parentToggle = current.querySelector('a.dropdown-toggle');
+                if (parentToggle && !pathParts.includes(parentToggle.textContent.trim())) {
+                    pathParts.unshift(parentToggle.textContent.trim());
+                }
+                
+                // Look for main navbar items
+                const navbarItem = current.querySelector('a[id^="navbar::"]');
+                if (navbarItem && navbarItem !== element && !pathParts.includes(navbarItem.textContent.trim())) {
+                    pathParts.unshift(navbarItem.textContent.trim());
+                }
+                
+                current = current.parentElement;
+            }
+        }
+        
+        return pathParts.length > 0 ? pathParts.join(' → ') : 'Main Menu';
+    }
+    
+    // Search and filter menu items
+    searchInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        selectedIndex = -1;
+        
+        if (!query) {
+            resultsContainer.innerHTML = '';
+            selectedIndex = -1;
+            return;
+        }
+        
+        const filtered = menuItems.filter(item => 
+            item.text.toLowerCase().includes(query)
+        );
+        
+        // Remove duplicates based on URL (keeping first occurrence)
+        const uniqueFiltered = [];
+        const seenUrls = new Set();
+        
+        for (const item of filtered) {
+            // Normalize URL by removing query parameters that might differ
+            const url = new URL(item.url, window.location.origin);
+            const normalizedUrl = url.origin + url.pathname + '?menuaction=' + (url.searchParams.get('menuaction') || '');
+            
+            if (!seenUrls.has(normalizedUrl)) {
+                seenUrls.add(normalizedUrl);
+                uniqueFiltered.push(item);
+            }
+        }
+        
+        const results = uniqueFiltered.slice(0, 8); // Limit to 8 results
+        
+        displayResults(results);
+        
+        // Auto-highlight first result
+        if (results.length > 0) {
+            selectItem(0);
+        }
+    });
+    
+    function displayResults(items) {
+        resultsContainer.innerHTML = '';
+        
+        items.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'list-group-item list-group-item-action bg-transparent text-white border-0 py-2';
+            
+            div.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-sitemap me-3" style="color: #a0aec0;"></i>
+                    <div class="flex-grow-1">
+                        <div class="fw-medium">${highlightMatch(item.text, searchInput.value)}</div>
+                        <div style="color: #63b3ed; font-weight: 500; font-size: 0.875rem;">${item.path || 'Menu'}</div>
+                    </div>
+                </div>
+            `;
+            
+            div.addEventListener('click', () => navigateToItem(item));
+            div.addEventListener('mouseenter', () => selectItem(index));
+            
+            resultsContainer.appendChild(div);
+        });
+    }
+    
+    function highlightMatch(text, query) {
+        if (!query) return text;
+        const regex = new RegExp(`(${query})`, 'gi');
+        return text.replace(regex, '<mark class="bg-warning text-dark">$1</mark>');
+    }
+    
+    function selectItem(index) {
+        const items = resultsContainer.querySelectorAll('.list-group-item');
+        items.forEach((item, i) => {
+            if (i === index) {
+                item.style.setProperty('background-color', '#2b6cb0', 'important'); // Info blue background
+                item.style.setProperty('border-color', '#3182ce', 'important');
+            } else {
+                item.style.setProperty('background-color', 'transparent', 'important');
+                item.style.setProperty('border-color', 'transparent', 'important');
+            }
+        });
+        selectedIndex = index;
+    }
+    
+    function navigateToItem(item) {
+        commandPalette.hide();
+        window.location.href = item.url;
+    }
+    
+    // Keyboard navigation
+    searchInput.addEventListener('keydown', function(e) {
+        const items = resultsContainer.querySelectorAll('.list-group-item');
+        
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
+                selectItem(selectedIndex);
+                break;
+                
+            case 'ArrowUp':
+                e.preventDefault();
+                selectedIndex = Math.max(selectedIndex - 1, 0);
+                selectItem(selectedIndex);
+                break;
+                
+            case 'Enter':
+                e.preventDefault();
+                if (selectedIndex >= 0 && items[selectedIndex]) {
+                    const filtered = menuItems.filter(item => 
+                        item.text.toLowerCase().includes(searchInput.value.toLowerCase())
+                    );
+                    
+                    // Apply same deduplication logic as in search
+                    const uniqueFiltered = [];
+                    const seenUrls = new Set();
+                    
+                    for (const item of filtered) {
+                        const url = new URL(item.url, window.location.origin);
+                        const normalizedUrl = url.origin + url.pathname + '?menuaction=' + (url.searchParams.get('menuaction') || '');
+                        
+                        if (!seenUrls.has(normalizedUrl)) {
+                            seenUrls.add(normalizedUrl);
+                            uniqueFiltered.push(item);
+                        }
+                    }
+                    
+                    if (uniqueFiltered[selectedIndex]) {
+                        navigateToItem(uniqueFiltered[selectedIndex]);
+                    }
+                }
+                break;
+                
+            case 'Escape':
+                commandPalette.hide();
+                break;
+        }
+    });
+    
+    // Handle modal events
+    const paletteModal = document.getElementById('commandPalette');
+    
+    paletteModal.addEventListener('shown.bs.modal', function() {
+        // Only focus and select if input doesn't already have focus and content
+        if (document.activeElement !== searchInput) {
+            searchInput.focus();
+            if (!searchInput.value) {
+                searchInput.select();
+            }
+        }
+    });
+    
+    paletteModal.addEventListener('hidden.bs.modal', function() {
+        searchInput.value = '';
+        resultsContainer.innerHTML = '';
+        selectedIndex = -1;
+    });
+});
+</script>
+SCRIPT;
 	}
 
 	// Hooks

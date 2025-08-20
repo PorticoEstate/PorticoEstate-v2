@@ -10,7 +10,8 @@ import {ArrowRightIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
-import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping-cart-table";
+import ShoppingCartCardList from "@/components/layout/header/shopping-cart/shopping-cart-card-list";
+import { calculateTotalCartCost, formatCurrency } from "@/utils/cost-utils";
 
 interface ShoppingCartContentProps {
     setOpen: Dispatch<boolean>;
@@ -53,23 +54,45 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                 )}
 
                 {!isLoading && (basketData?.list.length || 0) > 0 && (
-                    <ShoppingCartTable
+                    <ShoppingCartCardList
                         basketData={basketData!.list}
                         openEdit={openEdit}
+                        onLinkClick={() => props.setOpen(false)}
                     />
                 )}
 
+                {!isLoading && (basketData?.list.length || 0) > 0 && calculateTotalCartCost(basketData!.list) > 0 && (
+                    <div className={styles.totalCost}>
+                        <span className={styles.totalLabel}>{t('bookingfrontend.total')}:</span>
+                        <span className={styles.totalAmount}>
+                            {formatCurrency(calculateTotalCartCost(basketData!.list))}
+                        </span>
+                    </div>
+                )}
+
                 <div className={styles.eventPopperFooter}>
-                    <Button onClick={() => props.setOpen(false)} variant="tertiary" className={'default'}
-                            data-size={'sm'}>{t('booking.close')}</Button>
+                    <Button 
+                        onClick={() => props.setOpen(false)} 
+                        variant="tertiary" 
+                        className={'default'}
+                        data-size={'sm'}
+                    >
+                        {t('booking.close')}
+                    </Button>
 
-                    <Button variant="primary" className={'default'} asChild
-                            data-size={'sm'}><Link
-
-                        href={'/checkout'}
-                        className={'link-text link-text-unset normal'}>
-                        {t('bookingfrontend.submit_application')} <ArrowRightIcon fontSize="1.5rem" />
-                    </Link>
+                    <Button 
+                        variant="primary" 
+                        className={'default'} 
+                        asChild
+                        data-size={'sm'}
+                    >
+                        <Link
+                            href={'/checkout'}
+                            className={'link-text link-text-unset normal'}
+                            onClick={() => props.setOpen(false)}
+                        >
+                            {t('bookingfrontend.submit_application')} <ArrowRightIcon fontSize="1.5rem" />
+                        </Link>
                     </Button>
                 </div>
             </div>

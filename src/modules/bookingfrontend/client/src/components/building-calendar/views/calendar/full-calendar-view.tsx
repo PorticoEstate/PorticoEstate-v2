@@ -1,4 +1,5 @@
 import React, {Dispatch, FC, useCallback, useEffect, useMemo, useState} from 'react';
+import { IResource } from '@/service/types/resource.types';
 import interactionPlugin, {EventResizeDoneArg} from "@fullcalendar/interaction";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
@@ -23,12 +24,18 @@ import {IUpdatePartialApplication} from "@/service/types/api/application.types";
 import {FCallEventConverter} from "@/components/building-calendar/util/event-converter";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {useBookingUser, usePartialApplications, useUpdatePartialApplication} from "@/service/hooks/api-hooks";
-import {useCurrentBuilding, useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {
+	useCurrentBuilding,
+	useEnabledResources,
+	useIsOrganization,
+	useTempEvents
+} from "@/components/building-calendar/calendar-context";
 import {IEvent} from "@/service/pecalendar.types";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {Season} from "@/service/types/Building";
-import {useBuildingResources} from "@/service/api/building";
+import {useBuilding, useBuildingResources} from "@/service/api/building";
 import { useToast } from "@/components/toast/toast-context";
+import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 
 interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
@@ -38,7 +45,7 @@ interface FullCalendarViewProps {
 	events?: IEvent[],
 	setCurrentDate: (value: (((prevState: DateTime) => DateTime) | DateTime)) => void,
 	currentDate: DateTime,
-	seasons: Season[],
+	seasons?: Season[],
 	onDateChange: Dispatch<DatesSetArg>,
 	currentTempEvent?: Partial<FCallTempEvent>,
 	handleDateSelect?: (selectInfo?: Partial<DateSelectArg>) => void
@@ -65,11 +72,13 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 	const updateMutation = useUpdatePartialApplication();
 	const {tempEvents: storedTempEvents} = useTempEvents();
 	const {enabledResources} = useEnabledResources();
-	const building = useCurrentBuilding()
-	const {data: resources} = useBuildingResources(building)
+	const buildingId = useCurrentBuilding()
+	const {data: building} = useBuilding(buildingId);
+	const {data: resources} = useBuildingResources(buildingId)
 	const t = useTrans();
 	const {data: user} = useBookingUser();
 	const { addToast } = useToast();
+	const isOrg = useIsOrganization();
 
 	useEffect(() => {
 		if (calendarRef.current) {
@@ -85,7 +94,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 	const generateBusinessHours = useCallback(() => {
 		// Group boundaries by weekday
-		return props.seasons.flatMap(season => {
+		return props.seasons?.flatMap(season => {
 			// Only use active seasons that cover the current date
 			const now = DateTime.now();
 			const seasonStart = DateTime.fromISO(season.from_);
@@ -108,6 +117,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		return {
 			businessHours: generateBusinessHours(),
 			startTime: slotMinTime,
+			// Use the calculated slotMaxTime which respects boundaries
+			// but also extends to midnight when appropriate
 			endTime: slotMaxTime
 		};
 	}, [generateBusinessHours, slotMinTime, slotMaxTime]);
@@ -124,7 +135,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		};
 
 		// Check all season boundaries
-		props.seasons.forEach(season => {
+		props.seasons?.forEach(season => {
 			season.boundaries.forEach(boundary => {
 				if (boundary.from_ < minTime) minTime = boundary.from_;
 				if (boundary.to_ > maxTime) maxTime = boundary.to_;
@@ -140,10 +151,26 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			if (eventEndTime > maxTime) maxTime = eventEndTime;
 		});
 
+		// If seasons is not set and isOrg is true, set default times for organizations
+		if (!props.seasons && isOrg) {
+			if (minTime === '24:00:00') minTime = '08:00:00';
+			if (maxTime === '00:00:00') maxTime = '23:00:00';
+		}
+
 		// Set default values if no valid times found
-		setSlotMinTime(minTime === "24:00:00" ? '06:00:00' : minTime);
-		setSlotMaxTime(maxTime === "00:00:00" ? '24:00:00' : maxTime);
-	}, [props.seasons, events]);
+		setSlotMinTime(minTime === "24:00:00" ? '00:00:00' : minTime);
+
+		// For max time, check if the calculated time is very late (23:45 or later)
+		// If so, extend it to the end of day (24:00). Otherwise respect the boundary.
+		// This means we'll respect season boundaries for display but allow booking until
+		// midnight for seasons that end very late or when no boundaries exist.
+		setSlotMaxTime(
+			maxTime === "00:00:00" || // No boundaries found
+			maxTime >= "23:45:00"     // Season closes very late
+				? '24:00:00'          // Allow until midnight
+				: maxTime             // Otherwise respect the boundary
+		);
+	}, [props.seasons, events, isOrg]);
 
 
 	useEffect(() => {
@@ -174,13 +201,14 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				display: 'background',
 				classNames: styles.closedHours,
 				extendedProps: {
-					type: 'background'
+					type: 'background',
+					source: 'past'
 				}
 			});
 		}
 
 		// Find applicable seasons for the date range
-		const applicableSeasons = seasons.filter(season => {
+		const applicableSeasons = seasons?.filter(season => {
 			const seasonStart = DateTime.fromISO(season.from_);
 			const seasonEnd = DateTime.fromISO(season.to_);
 			return season.active && seasonStart <= endDate && seasonEnd >= startDate;
@@ -191,46 +219,57 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const dayOfWeek = date.weekday;
 
 			// Get boundaries for this day from all applicable seasons
-			const dayBoundaries = applicableSeasons.flatMap(season =>
+			const dayBoundaries = applicableSeasons?.flatMap(season =>
 				season.boundaries.filter(b => b.wday === dayOfWeek)
 			);
 
-			if (dayBoundaries.length > 0) {
+			if ((dayBoundaries?.length || 0) > 0) {
 				// Sort boundaries by start time
-				const sortedBoundaries = [...dayBoundaries].sort((a, b) =>
+				const sortedBoundaries = [...(dayBoundaries || [])].sort((a, b) =>
 					a.from_.localeCompare(b.from_)
 				);
 
-				// Add background for time before first opening
-				backgroundEvents.push({
-					start: date.startOf('day').toJSDate(),
-					end: date.set({
-						hour: parseInt(sortedBoundaries[0].from_.split(':')[0]),
-						minute: parseInt(sortedBoundaries[0].from_.split(':')[1])
-					}).toJSDate(),
-					display: 'background',
-					classNames: styles.closedHours,
-					extendedProps: {
-						closed: true,
-						type: 'background'
-					}
-				});
+				// Add background for time before first opening - but only if start time isn't midnight
+				const firstBoundaryFrom = sortedBoundaries[0].from_;
+				if (firstBoundaryFrom !== "00:00:00") {
+					backgroundEvents.push({
+						start: date.startOf('day').toJSDate(),
+						end: date.set({
+							hour: parseInt(firstBoundaryFrom.split(':')[0]),
+							minute: parseInt(firstBoundaryFrom.split(':')[1])
+						}).toJSDate(),
+						display: 'background',
+						classNames: styles.closedHours,
+						extendedProps: {
+							closed: true,
+							type: 'background',
+							source: 'seasonBeforeStart'
+						}
+					});
+				}
 
 				// Add background for time after last closing
 				const lastBoundary = sortedBoundaries[sortedBoundaries.length - 1];
-				backgroundEvents.push({
-					start: date.set({
-						hour: parseInt(lastBoundary.to_.split(':')[0]),
-						minute: parseInt(lastBoundary.to_.split(':')[1])
-					}).toJSDate(),
-					end: date.plus({days: 1}).startOf('day').toJSDate(),
-					display: 'background',
-					classNames: styles.closedHours,
-					extendedProps: {
-						closed: true,
-						type: 'background'
-					}
-				});
+				const lastBoundaryTo = lastBoundary.to_;
+
+				// Only add after-hours background if the venue doesn't close near midnight
+				// (Skip if closing time is 23:45:00 or later)
+				if (lastBoundaryTo < "23:45:00") {
+					backgroundEvents.push({
+						start: date.set({
+							hour: parseInt(lastBoundaryTo.split(':')[0]),
+							minute: parseInt(lastBoundaryTo.split(':')[1])
+						}).toJSDate(),
+						end: date.plus({days: 1}).startOf('day').toJSDate(),
+						display: 'background',
+						classNames: styles.closedHours,
+						extendedProps: {
+							closed: true,
+							type: 'background',
+							source:'seasonAfterHours'
+						}
+					});
+				}
 			}
 		}
 
@@ -323,6 +362,40 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			return false;
 		}
 
+		// Check if the calendar is deactivated for the building
+		if (building?.deactivate_calendar) {
+			// Only show toast for actual user selection attempts
+			if (span.end && span.start) {
+				addToast({
+					type: 'warning',
+					text: t('bookingfrontend.booking_unavailable'),
+					autoHide: true,
+					messageId: 'calendar_deactivated'
+				});
+			}
+			return false;
+		}
+
+		// Check if any selected resources have deactivated applications
+		const selectedResources = [...enabledResources].map(Number);
+		const deactivatedResources = selectedResources.filter(resourceId => {
+			const resource = resources?.find(r => r.id === resourceId);
+			return resource && building ? isApplicationDeactivated(resource, building) : resource?.deactivate_application;
+		});
+
+		if (deactivatedResources.length > 0) {
+			// Only show toast for actual user selection attempts
+			if (span.end && span.start) {
+				addToast({
+					type: 'warning',
+					text: t('bookingfrontend.booking_unavailable'),
+					autoHide: true,
+					messageId: 'booking_unavailable'
+				});
+			}
+			return false;
+		}
+
 		// Get all events in the calendar
 		const allEvents = calendarApi.getEvents();
 
@@ -344,7 +417,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		// Check for resources with deny_application_if_booked flag
-		const selectedResources = [...enabledResources].map(Number);
+		// selectedResources already defined above
 		let resourcesWithDenyFlagArr = events
 			?.flatMap(event => event.resources)
 			.filter(res => selectedResources.includes(res.id) && (resources?.find(r => r.id === res.id)?.deny_application_if_booked === 1 || checkDirectBooking(resources?.find(r => r.id === res.id))));
@@ -353,6 +426,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 		// Check for overlap with each event's actual times
 		let overlapEventName = '';
+
 		const hasNoOverlap = !relevantEvents.some(event => {
 			// Get actual start and end times from extendedProps
 			const eventStart = DateTime.fromJSDate(event.extendedProps.actualStart || event.start!);
@@ -374,11 +448,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			}
 
 			// If there's no deny flag, use the standard rules (only block closed)
-			if (overlap && (event.extendedProps.closed)) {
-				return true;
-			}
+			return !!(overlap && (event.extendedProps.closed));
 
-			return false;
+
 		});
 
 		// If we have an overlap, show a toast notification ONLY on final user selection
@@ -407,7 +479,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		return hasNoOverlap;
-	}, [enabledResources, events, resources, addToast, t]);
+	}, [enabledResources, events, resources, addToast, t, buildingId]);
 
 	const handleEventResize = useCallback((resizeInfo: EventResizeDoneArg | EventDropArg) => {
 		const newEnd = resizeInfo.event.end;
@@ -520,7 +592,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			weekNumbers={true}
 			weekText="Uke "
 			locale={DateTime.local().locale}
-			selectable={true}
+			selectable={!isOrg}
 			height={'auto'}
 			eventMaxStack={4}
 			select={handleDateSelect}

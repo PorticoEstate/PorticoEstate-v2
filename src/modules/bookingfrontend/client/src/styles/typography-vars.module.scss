@@ -84,6 +84,9 @@ $mobile: (
 	&-small {
 		@include applyFontProperties('caption');
 	}
+	&-tiny {
+		@include applyFontProperties('tiny');
+	}
 
 	&-overline {
 		@include applyFontProperties('overline');

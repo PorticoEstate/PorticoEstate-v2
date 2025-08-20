@@ -17,5 +17,9 @@ Dockerfile.local
 .idea
 *.local
 structure.txt
+docker-compose.override.yml
 
 .env
+/portico/tmp/
+
+**/.claude/settings.local.json

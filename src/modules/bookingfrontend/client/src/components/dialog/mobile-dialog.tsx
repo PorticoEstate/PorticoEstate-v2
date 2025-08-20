@@ -4,12 +4,15 @@ import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {XMarkIcon, ExpandIcon, ShrinkIcon} from '@navikt/aksel-icons';
 import {Button, Tooltip} from '@digdir/designsystemet-react';
 import {useIsMobile} from "@/service/hooks/is-mobile";
+import {useScrollLockEffect} from '@/contexts/ScrollLockContext';
 
 interface DialogProps extends PropsWithChildren {
 	/** Boolean to control the visibility of the modal */
 	open: boolean;
 	/** Function to close the modal */
 	onClose: () => void;
+	/** Unique identifier for this dialog instance (required for scroll lock management) */
+	dialogId: string;
 	/** Boolean to control whether the default header is shown */
 	showDefaultHeader?: boolean;
 	/** Size of the dialog */
@@ -34,6 +37,7 @@ interface DialogProps extends PropsWithChildren {
  *
  * @param open - Controls whether the modal is open or closed
  * @param onClose - Callback function to close the modal
+ * @param dialogId - Unique identifier for this dialog instance (required for scroll lock management)
  * @param showDefaultHeader - Controls whether the default header is shown (default: true)
  * @param confirmOnClose - Prompts the user for confirmation before closing (default: false)
  * @param footer - Optional footer content to be rendered at the bottom of the dialog
@@ -43,6 +47,7 @@ interface DialogProps extends PropsWithChildren {
 const Dialog: React.FC<DialogProps> = ({
 										   open,
 										   onClose,
+										   dialogId,
 										   showDefaultHeader = true,
 										   children,
 										   size,
@@ -59,6 +64,9 @@ const Dialog: React.FC<DialogProps> = ({
 	const t = useTrans();
 	const [scrolled, setScrolled] = useState<boolean>(false);
 	const isMobile = useIsMobile();
+
+	// Use scroll lock context to manage body overflow
+	useScrollLockEffect(dialogId, open);
 
 	// Attempt to close the dialog, with confirmation if necessary
 	const attemptClose = useCallback(() => {
@@ -117,45 +125,36 @@ const Dialog: React.FC<DialogProps> = ({
 	// Simplified dialog management
 	useEffect(() => {
 		const dialog = dialogRef.current;
-		const scrollY = window.scrollY;
 
 		if (open) {
 			if (dialog) {
 				dialog.showModal();
 				setTimeout(() => setShow(true), 10);
 			}
-			
-			// Simple approach to disable scrolling
-			document.body.style.overflow = 'hidden';
 		} else {
 			if (dialog) {
 				setShow(false);
 				setTimeout(() => dialog.close(), 300);
 			}
-			
-			// Restore scrolling
-			document.body.style.overflow = '';
 		}
-
-		return () => {
-			document.body.style.overflow = '';
-		};
-	}, [open]);
+	}, [open, dialogId]);
 
 	return (
-		<dialog
-			ref={dialogRef}
-			className={`${show ? styles.show : ''} ${styles.modal} ${size ? styles[size] : ''} ${
-				isFullscreen ? styles.fullscreen : ''
-			}`}
-			onClick={handleBackdropClick}
-			style={{ 
-				maxWidth: '100%', 
-				maxHeight: '100%',
-				width: isMobile ? '100%' : 'auto',
-				height: isMobile ? '100%' : '90vh'
-			}}
-		>
+		<>
+			{show && <div className={styles.customBackdrop} onClick={closeOnBackdropClick ? attemptClose : undefined} />}
+			<dialog
+				ref={dialogRef}
+				className={`${show ? styles.show : ''} ${styles.modal} ${size ? styles[size] : ''} ${
+					isFullscreen ? styles.fullscreen : ''
+				}`}
+				onClick={handleBackdropClick}
+				style={{ 
+					maxWidth: '100%', 
+					maxHeight: '100%',
+					width: isMobile ? '100%' : 'auto',
+					height: isMobile ? '100%' : '90vh'
+				}}
+			>
 			<div className={styles.dialogContainer}>
 				{showDefaultHeader && (
 					<div className={`${styles.dialogHeader} ${scrolled ? styles.scrolled : ''}`}>
@@ -198,6 +197,7 @@ const Dialog: React.FC<DialogProps> = ({
 					className={`${stickyFooter ? styles.sticky : ''} ${styles.dialogFooter}`}>{typeof footer === "function" ? footer(attemptClose) : footer}</div>}
 			</div>
 		</dialog>
+		</>
 	);
 };
 

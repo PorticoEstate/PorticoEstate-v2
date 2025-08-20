@@ -438,9 +438,20 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 	{
 		var ajax_def = {
 			url: ajax_url,
-			type: 'GET',
+			type: 'POST',
 			data: function (d)
 			{
+
+				$('#toolbar select, #toolbar input').each(function ()
+				{
+					var $el = $(this);
+					var name = $el.attr('name') || $el.attr('id');
+					if (name)
+					{
+						d[name] = $el.val();
+					}
+				});
+
 				// This replaces the old fnServerParams functionality
 				try
 				{

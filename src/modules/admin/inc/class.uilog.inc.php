@@ -18,6 +18,7 @@ use App\helpers\Template;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Hooks;
+use App\modules\phpgwapi\services\Twig;
 
 
 class admin_uilog
@@ -81,49 +82,31 @@ class admin_uilog
 		$bo = createObject('admin.bolog');
 		$nextmatches = createObject('phpgwapi.nextmatchs');
 
-		$t   = new Template();
-		$t->set_root(PHPGW_APP_TPL);
-
-		$t->set_file(array(
-			'errorlog'		=> 'errorlog_view.tpl',
-			'form_button'	=> 'form_button_script.tpl'
-		));
-
-		$t->set_block('errorlog', 'list');
-		$t->set_block('errorlog', 'row');
-		$t->set_block('errorlog', 'row_empty');
-
 		$total_records = $bo->total($account_id, $date);
 
-		$var = array(
+		// Prepare data for Twig template
+		$templateData = array(
 			'nextmatchs_left'  => $nextmatches->left('/index.php', $start, $total_records, "&menuaction=admin.uilog.list_log&account_id={$account_id}&date={$date_string}"),
 			'nextmatchs_right' => $nextmatches->right('/index.php', $start, $total_records, "&menuaction=admin.uilog.list_log&account_id={$account_id}&date={$date_string}"),
 			'showing'          => $nextmatches->show_hits($total_records, $start),
-			'lang_loginid'     => lang('LoginID'),
-			'lang_date'        => lang('time'),
-			'lang_app'         => lang('module'),
-			'lang_severity'    => lang('severity'),
-			'lang_line'        => lang('line'),
-			'lang_file'        => lang('file'),
-			'lang_message'     => lang('log message'),
-			'lang_total'       => lang('Total')
+			'value_date'       => Sanitizer::get_var('date')
 		);
 
-		$__account	 = (new Accounts())->get($account_id);
+		$__account = (new Accounts())->get($account_id);
 		if ($__account->enabled)
 		{
-			$accounts[]	 = array(
-				'id'	 => $__account->id,
-				'name'	 => $__account->__toString()
+			$accounts[] = array(
+				'id'   => $__account->id,
+				'name' => $__account->__toString()
 			);
 		}
 
 		phpgw::import_class('phpgwapi.jquery');
 		phpgwapi_jquery::load_widget('select2');
 
-		$account_list	 = "<div>";
-		$account_list	 .= '<select name="account_id" id="account_id" onChange="this.form.submit();" style="width:50%;">';
-		$account_list	 .= "<option value=''>" . lang('select user') . '</option>';
+		$account_list = "<div>";
+		$account_list .= '<select name="account_id" id="account_id" onChange="this.form.submit();" style="width:50%;">';
+		$account_list .= "<option value=''>" . lang('select user') . '</option>';
 		foreach ($accounts as $account)
 		{
 			$account_list .= "<option value='{$account['id']}'";
@@ -133,12 +116,12 @@ class admin_uilog
 			}
 			$account_list .= "> {$account['name']}</option>\n";
 		}
-		$account_list	 .= '</select>';
-		$account_list	 .= '<noscript><input type="submit" name="user" value="Select"></noscript>';
-		$account_list	 .= '</div>';
+		$account_list .= '</select>';
+		$account_list .= '<noscript><input type="submit" name="user" value="Select"></noscript>';
+		$account_list .= '</div>';
 
 		$lang_user = lang('Search for a user');
-		$account_list	 .= <<<HTML
+		$account_list .= <<<HTML
 					<script>
 						var oArgs = {menuaction: 'preferences.boadmin_acl.get_users'};
 						var strURL = phpGWLink('index.php', oArgs, true);
@@ -174,18 +157,18 @@ class admin_uilog
 						});
 					</script>
 HTML;
-		$var['select_user'] =  $account_list;
-		$var['value_date']	= Sanitizer::get_var('date');
-		$t->set_var($var);
+		$templateData['select_user'] = $account_list;
 
+		// Process records and render rows
+		$rows_access = '';
 		$records = $bo->list_log($account_id, $start, $order, $sort, $date);
 		if (!is_array($records) || !count($records))
 		{
-			$t->set_var(array(
-				'row_message'	=> lang('No error log records exist for this user'),
-				'tr_class'		=> 'row_on'
-			));
-			$t->fp('rows_access', 'row_empty', true);
+			$rowEmptyData = [
+				'row_message' => lang('No error log records exist for this user'),
+				'tr_class' => 'row_on'
+			];
+			$rows_access = Twig::getInstance()->renderBlock('errorlog_view.html.twig', 'row_empty', $rowEmptyData, 'admin');
 		}
 		else
 		{
@@ -193,61 +176,65 @@ HTML;
 			foreach ($records as $record)
 			{
 				$tr_class = $nextmatches->alternate_row_class($tr_class);
-				$t->set_var(array(
-					'row_date' 		=> $record['log_date'],
-					'row_loginid'   => $record['log_account_lid'],
-					'row_app'      	=> $record['log_app'],
-					'row_severity'  => $record['log_severity'],
-					'row_file'      => $record['log_file'],
-					'row_line'      => $record['log_line'],
-					'row_message'   => htmlentities(str_replace("''", "'", $record['log_msg'])),
-					'tr_class'		=> $tr_class
-				));
-				$t->parse('rows_access', 'row', true);
+				$rowData = [
+					'row_date' => $record['log_date'],
+					'row_loginid' => $record['log_account_lid'],
+					'row_app' => $record['log_app'],
+					'row_severity' => $record['log_severity'],
+					'row_file' => $record['log_file'],
+					'row_line' => $record['log_line'],
+					'row_message' => str_replace("''", "'", $record['log_msg']),
+					'tr_class' => $tr_class
+				];
+				$rows_access .= Twig::getInstance()->renderBlock('errorlog_view.html.twig', 'row', $rowData, 'admin');
 			}
 		}
+
+		$templateData['rows_access'] = $rows_access;
 
 		if ($total_records)
 		{
 			if ($account_id)
 			{
-				$var = array(
-					'submit_button'			=> lang('Delete'),
-					'action_url_button'     => phpgw::link('/index.php', array('menuaction' => 'admin.uilog.purge_log', 'account_id' => $account_id)),
-					'action_text_button'    => ' ' . lang('Delete all log records for %1', $this->phpgwapi_common->grab_owner_name($account_id)),
+				$buttonData = [
+					'submit_button' => lang('Delete'),
+					'action_url_button' => phpgw::link('/index.php', array('menuaction' => 'admin.uilog.purge_log', 'account_id' => $account_id)),
+					'action_text_button' => ' ' . lang('Delete all log records for %1', $this->phpgwapi_common->grab_owner_name($account_id)),
 					'action_confirm_button' => '',
-					'action_extra_field'    => ''
-				);
+					'action_extra_field' => ''
+				];
 			}
 			else
 			{
-				$var = array(
-					'submit_button'			=> lang('Delete'),
-					'action_url_button'     => phpgw::link('/index.php', array('menuaction' => 'admin.uilog.purge_log')),
-					'action_text_button'    => ' ' . lang('Delete all log records'),
+				$buttonData = [
+					'submit_button' => lang('Delete'),
+					'action_url_button' => phpgw::link('/index.php', array('menuaction' => 'admin.uilog.purge_log')),
+					'action_text_button' => ' ' . lang('Delete all log records'),
 					'action_confirm_button' => '',
-					'action_extra_field'    => ''
-				);
+					'action_extra_field' => ''
+				];
 			}
-			$t->set_var($var);
-			$var['purge_log_button'] = $t->fp('button', 'form_button', true);
 
-			$t->set_var($var);
+			// Use the legacy template for the button since we haven't converted that yet
+			$t = new Template();
+			$t->set_root(PHPGW_APP_TPL);
+			$t->set_file(['form_button' => 'form_button_script.tpl']);
+			$t->set_var($buttonData);
+			$templateData['purge_log_button'] = $t->fp('button', 'form_button', true);
 		}
 
 		if ($account_id)
 		{
 			$account_name = $this->phpgwapi_common->grab_owner_name($account_id);
-			$var = array('footer_total' => lang('Total records for %1 : %2', $account_name, $total_records));
+			$templateData['footer_total'] = lang('Total records for %1 : %2', $account_name, $total_records);
 		}
 		else
 		{
-			$var = array('footer_total' => lang('Total records: %1', $total_records));
+			$templateData['footer_total'] = lang('Total records: %1', $total_records);
 		}
 
-
-		//$t->set_var($var);
-		$t->pfp('out', 'list');
+		// Render the template with Twig
+		echo Twig::getInstance()->renderBlock('errorlog_view.html.twig', 'list', $templateData, 'admin');
 	}
 
 	public function purge_log()

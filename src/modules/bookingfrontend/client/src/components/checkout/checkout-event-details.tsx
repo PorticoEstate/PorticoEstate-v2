@@ -37,7 +37,7 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 		organizerName: getCommonValue(partials, 'organizer') || user?.name || '',
 	}), [user, partials]);
 
-	const {control, watch} = useForm<CheckoutEventDetailsData>({
+	const {control, watch, setValue, getValues} = useForm<CheckoutEventDetailsData>({
 		resolver: zodResolver(checkoutEventDetailsSchema),
 		defaultValues: defaultValues
 	});
@@ -46,6 +46,15 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 	useEffect(() => {
 		onDetailsChange(defaultValues);
 	}, [defaultValues, onDetailsChange]);
+
+	// Effect to refill blank fields when user data refreshes
+	useEffect(() => {
+		const currentValues = getValues();
+		// Only refill organizerName if it's currently blank and user has a name
+		if (!currentValues.organizerName && user?.name) {
+			setValue('organizerName', user.name);
+		}
+	}, [user, setValue, getValues]);
 
 	useEffect(() => {
 		const subscription = watch((value) => {

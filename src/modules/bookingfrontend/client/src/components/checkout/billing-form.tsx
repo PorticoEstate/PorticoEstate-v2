@@ -118,7 +118,8 @@ const BillingForm: FC<BillingFormProps> = ({
 		handleSubmit,
 		formState: {errors},
 		watch,
-		setValue
+		setValue,
+		getValues
 	} = useForm<BillingFormData>({
 		resolver: zodResolver(billingFormSchema),
 		defaultValues: {
@@ -147,6 +148,36 @@ const BillingForm: FC<BillingFormProps> = ({
 		};
 		onBillingChange(defaultValues);
 	}, [user, onBillingChange]);
+
+	// Effect to refill blank fields when user data refreshes
+	useEffect(() => {
+		const currentValues = getValues();
+		const customerType = currentValues.customerType;
+		
+		// Only refill fields if they are currently blank and user has the data
+		// Also only refill personal fields when customerType is 'ssn' (private)
+		if (customerType === 'ssn') {
+			if (!currentValues.contactName && user?.name) {
+				setValue('contactName', user.name);
+			}
+			if (!currentValues.contactEmail && user?.email) {
+				setValue('contactEmail', user.email);
+				setValue('contactEmailConfirm', user.email);
+			}
+			if (!currentValues.contactPhone && user?.phone) {
+				setValue('contactPhone', user.phone);
+			}
+			if (!currentValues.street && user?.street) {
+				setValue('street', user.street);
+			}
+			if (!currentValues.zipCode && user?.zip_code) {
+				setValue('zipCode', user.zip_code);
+			}
+			if (!currentValues.city && user?.city) {
+				setValue('city', user.city);
+			}
+		}
+	}, [user, setValue, getValues]);
 
 
 	const customerType = watch('customerType');

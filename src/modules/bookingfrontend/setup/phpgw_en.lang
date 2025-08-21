@@ -831,3 +831,11 @@ allow_outseason	bookingfrontend	en	Allow bookings beyond season end
 recurring_not_vipps_eligible	bookingfrontend	en	Recurring bookings are not eligible for external payment
 recurring_applications	bookingfrontend	en	Recurring Applications
 recurring_applications_note	bookingfrontend	en	These applications will be processed individually and require approval
+every_week	bookingfrontend	en	Every week
+every_2_weeks	bookingfrontend	en	Every 2 weeks
+every_3_weeks	bookingfrontend	en	Every 3 weeks
+every_4_weeks	bookingfrontend	en	Every 4 weeks
+repeat_until_options	bookingfrontend	en	Repeat Until Options
+repeat_until_end_of_season	bookingfrontend	en	Repeat until end of season
+repeat_until_date	bookingfrontend	en	Repeat until date
+current_season_ends	bookingfrontend	en	Current season ends

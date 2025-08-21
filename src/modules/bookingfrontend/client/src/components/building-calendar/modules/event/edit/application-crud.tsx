@@ -431,6 +431,27 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 	const startTime = watch('start');
 	const endTime = watch('end');
+	const isRecurring = watch('isRecurring');
+	const outseason = watch('recurring_info.outseason');
+
+	// Function to find the current season based on start/end time
+	const getCurrentSeason = useCallback(() => {
+		if (!props.seasons || !startTime) return null;
+		
+		const referenceDate = DateTime.fromJSDate(startTime);
+		return props.seasons.find(season => {
+			if (!season.active) return false;
+			const seasonStart = DateTime.fromISO(season.from_);
+			const seasonEnd = DateTime.fromISO(season.to_);
+			return referenceDate >= seasonStart.startOf('day') && referenceDate <= seasonEnd.endOf('day');
+		});
+	}, [props.seasons, startTime]);
+
+	// Calculate max date for repeat until (end of current season)
+	const maxRepeatUntilDate = useMemo(() => {
+		const currentSeason = getCurrentSeason();
+		return currentSeason ? DateTime.fromISO(currentSeason.to_).toJSDate() : null;
+	}, [getCurrentSeason]);
 
 	// Function to calculate min/max times for a specific date
 	const getTimeBoundariesForDate = useCallback((date: Date | null): [string, string] => {
@@ -1253,7 +1274,18 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 												const oneWeekLater = new Date(startDate);
 												oneWeekLater.setDate(oneWeekLater.getDate() + 7);
 
-												setValue('recurring_info.repeat_until', oneWeekLater.toISOString().split('T')[0]);
+												// Set default to one week later or end of season, whichever is earlier
+												const currentSeason = getCurrentSeason();
+												let defaultEndDate = oneWeekLater.toISOString().split('T')[0];
+												
+												if (currentSeason) {
+													const seasonEnd = DateTime.fromISO(currentSeason.to_).toJSDate();
+													if (oneWeekLater > seasonEnd) {
+														defaultEndDate = seasonEnd.toISOString().split('T')[0];
+													}
+												}
+
+												setValue('recurring_info.repeat_until', defaultEndDate);
 												setValue('recurring_info.field_interval', 1);
 												setValue('recurring_info.outseason', false);
 												// Clear organization fields to force selection
@@ -1321,58 +1353,129 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 										)}
 									/>
 								</div>
+
+								{/* Repeat interval selection */}
 								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
-									<Controller
-										name="recurring_info.repeat_until"
-										control={control}
-										render={({field: {value, onChange, ...field}}) => (
-											<>
-												<label>{t('bookingfrontend.repeat_until')}</label>
-												<CalendarDatePicker
-													currentDate={value ? new Date(value) : undefined}
-													view={'dayGridDay'}
-													showTimeSelect={false}
-													onDateChange={(date) => onChange(date ? date.toISOString().split('T')[0] : '')}
-													allowPastDates={false}
-													showDebug={props.showDebug}
-													seasons={props.seasons}
-												/>
-												{errors.recurring_info?.repeat_until &&
-													<span className={styles.error}>{errors.recurring_info.repeat_until.message}</span>}
-											</>
-										)}
-									/>
-								</div>
-								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
+									<div className={styles.resourcesHeader}>
+										<h4>{t('bookingfrontend.repeat_every_weeks')}</h4>
+									</div>
 									<Controller
 										name="recurring_info.field_interval"
 										control={control}
 										render={({field}) => (
-											<Textfield
-												label={t('bookingfrontend.repeat_every_weeks')}
-												{...field}
-												type="number"
-												min={1}
-												value={field.value || 1}
-												onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
-												error={errors.recurring_info?.field_interval?.message}
-												placeholder="1"
-											/>
+											<Field>
+												<Select
+													{...field}
+													value={field.value || 1}
+													onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+													aria-invalid={!!errors.recurring_info?.field_interval}
+												>
+													<Select.Option value={1}>{t('bookingfrontend.every_week')}</Select.Option>
+													<Select.Option value={2}>{t('bookingfrontend.every_2_weeks')}</Select.Option>
+													<Select.Option value={3}>{t('bookingfrontend.every_3_weeks')}</Select.Option>
+													<Select.Option value={4}>{t('bookingfrontend.every_4_weeks')}</Select.Option>
+												</Select>
+												{errors.recurring_info?.field_interval && (
+													<ValidationMessage>
+														{errors.recurring_info.field_interval.message}
+													</ValidationMessage>
+												)}
+											</Field>
 										)}
 									/>
 								</div>
-								<div className={`${styles.formGroup}`} style={{gridColumn: 1}}>
+
+								{/* Repeat until options */}
+								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
+									<div className={styles.resourcesHeader}>
+										<h4>{t('bookingfrontend.repeat_until_options')}</h4>
+									</div>
+									
+									{/* Show current season end date info */}
+									{getCurrentSeason() && (
+										<div style={{
+											marginBottom: '1rem', 
+											padding: '0.5rem', 
+											backgroundColor: 'var(--ds-color-surface-neutral-subtle)', 
+											borderRadius: '4px',
+											fontSize: '0.875rem',
+											color: 'var(--ds-color-text-subtle)'
+										}}>
+											{t('bookingfrontend.current_season_ends')}: {DateTime.fromISO(getCurrentSeason()!.to_).toFormat('dd.MM.yyyy')}
+										</div>
+									)}
+									
+									{/* Out-season checkbox */}
 									<Controller
 										name="recurring_info.outseason"
 										control={control}
 										render={({field}) => (
 											<Checkbox
 												checked={field.value || false}
-												onChange={(e) => field.onChange(e.target.checked)}
-												label={t('bookingfrontend.allow_outseason')}
+												onChange={(e) => {
+													const isChecked = e.target.checked;
+													field.onChange(isChecked);
+													
+													if (isChecked) {
+														// Clear repeat until when outseason is selected
+														setValue('recurring_info.repeat_until', '');
+													} else {
+														// Set default repeat until date when outseason is unchecked
+														const startDate = watch('start');
+														const oneWeekLater = new Date(startDate);
+														oneWeekLater.setDate(oneWeekLater.getDate() + 7);
+														
+														const currentSeason = getCurrentSeason();
+														let defaultEndDate = oneWeekLater.toISOString().split('T')[0];
+														
+														if (currentSeason) {
+															const seasonEnd = DateTime.fromISO(currentSeason.to_).toJSDate();
+															if (oneWeekLater > seasonEnd) {
+																defaultEndDate = seasonEnd.toISOString().split('T')[0];
+															}
+														}
+														
+														setValue('recurring_info.repeat_until', defaultEndDate);
+													}
+												}}
+												label={t('bookingfrontend.repeat_until_end_of_season')}
 											/>
 										)}
 									/>
+
+									{/* Repeat until date picker - only show when outseason is not checked */}
+									{!outseason && (
+										<div style={{marginTop: '1rem'}}>
+											<Controller
+												name="recurring_info.repeat_until"
+												control={control}
+												render={({field: {value, onChange, ...field}}) => (
+													<>
+														<label>{t('bookingfrontend.repeat_until_date')}</label>
+														<CalendarDatePicker
+															currentDate={value ? new Date(value) : undefined}
+															view={'dayGridDay'}
+															showTimeSelect={false}
+															onDateChange={(date) => {
+																if (date && maxRepeatUntilDate && date > maxRepeatUntilDate) {
+																	// Don't allow dates beyond current season end
+																	onChange(maxRepeatUntilDate.toISOString().split('T')[0]);
+																} else {
+																	onChange(date ? date.toISOString().split('T')[0] : '');
+																}
+															}}
+															maxDate={maxRepeatUntilDate}
+															allowPastDates={false}
+															showDebug={props.showDebug}
+															seasons={props.seasons}
+														/>
+														{errors.recurring_info?.repeat_until &&
+															<span className={styles.error}>{errors.recurring_info.repeat_until.message}</span>}
+													</>
+												)}
+											/>
+										</div>
+									)}
 								</div>
 							</div>
 						)}

@@ -831,3 +831,11 @@ allow_outseason	bookingfrontend	nn	Tillat bookingar utover sesongslutt
 recurring_not_vipps_eligible	bookingfrontend	nn	Gjentakande bookingar er ikkje tilgjengelege for ekstern betaling
 recurring_applications	bookingfrontend	nn	Gjentakande søknader
 recurring_applications_note	bookingfrontend	nn	Desse søknadene vil bli handsama individuelt og krev godkjenning
+every_week	bookingfrontend	nn	Kvar veke
+every_2_weeks	bookingfrontend	nn	Kvar 2. veke
+every_3_weeks	bookingfrontend	nn	Kvar 3. veke
+every_4_weeks	bookingfrontend	nn	Kvar 4. veke
+repeat_until_options	bookingfrontend	nn	Gjenta til-val
+repeat_until_end_of_season	bookingfrontend	nn	Gjenta til sesongsslutt
+repeat_until_date	bookingfrontend	nn	Gjenta til dato
+current_season_ends	bookingfrontend	nn	Noverande sesong sluttar

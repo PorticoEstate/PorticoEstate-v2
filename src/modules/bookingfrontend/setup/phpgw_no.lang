@@ -823,3 +823,7 @@ fill_from_delegate	bookingfrontend	no	Fyll ut fra delegat
 select_delegate	bookingfrontend	no	Velg delegat...
 show_inactive	bookingfrontend	no	Vis inaktive
 organizer_required	bookingfrontend	no	Arrangørnavn er påkrevd
+emails_dont_match	bookingfrontend	no	E-postadressene stemmer ikke overens
+documents_confirmation_required	bookingfrontend	no	Du må bekrefte at du har lest alle forskriftsdokumenter
+field_wild_required	bookingfrontend	no	{{field}} er påkrevd
+field_wild_invalid	bookingfrontend	no	{{field}} har ugyldig format

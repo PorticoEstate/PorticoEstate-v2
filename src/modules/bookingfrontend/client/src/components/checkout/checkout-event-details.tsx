@@ -4,7 +4,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Textfield} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import styles from './checkout.module.scss';
-import {CheckoutEventDetailsData, checkoutEventDetailsSchema} from './checkout-event-details-schema';
+import {CheckoutEventDetailsData, createCheckoutEventDetailsSchema} from './checkout-event-details-schema';
 import {IBookingUser} from "@/service/types/api.types";
 import {IApplication} from "@/service/types/api/application.types";
 import {useUpdatePartialApplication} from "@/service/hooks/api-hooks";
@@ -38,7 +38,7 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 	}), [user, partials]);
 
 	const {control, watch, setValue, getValues} = useForm<CheckoutEventDetailsData>({
-		resolver: zodResolver(checkoutEventDetailsSchema),
+		resolver: zodResolver(createCheckoutEventDetailsSchema(t)),
 		defaultValues: defaultValues
 	});
 

@@ -13,7 +13,7 @@ import {
 } from "@digdir/designsystemet-react";
 import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
 import styles from './checkout.module.scss';
-import {BillingFormData, billingFormSchema} from "@/components/checkout/billing-form-schema";
+import {BillingFormData, createBillingFormSchema} from "@/components/checkout/billing-form-schema";
 import {IBookingUser} from "@/service/types/api.types";
 import {useMyOrganizations} from "@/service/hooks/organization";
 import {searchOrganizations, validateOrgNum} from "@/service/api/api-utils";
@@ -121,7 +121,7 @@ const BillingForm: FC<BillingFormProps> = ({
 		setValue,
 		getValues
 	} = useForm<BillingFormData>({
-		resolver: zodResolver(billingFormSchema),
+		resolver: zodResolver(createBillingFormSchema(t)),
 		defaultValues: {
 			customerType: 'ssn',
 			contactName: user?.name || '',
@@ -241,11 +241,22 @@ const BillingForm: FC<BillingFormProps> = ({
 	};
 
 
-	// Custom submit handler that checks document validation
+	// Custom submit handler that runs after form validation passes
 	const submitForm = (data: BillingFormData) => {
-		// Always call onSubmit - it will handle document validation internally
-		// and show errors if needed
+		// Only called if form validation passes
+		// Now handle document validation and proceed
 		onSubmit();
+	};
+
+	// Handler for Vipps payment that validates form first
+	const handleVippsPaymentClick = () => {
+		// Trigger form validation and call Vipps payment if valid
+		handleSubmit((data) => {
+			// Only called if form validation passes
+			if (onVippsPayment && !vippsLoading) {
+				onVippsPayment();
+			}
+		})();
 	};
 
 	return (
@@ -534,12 +545,7 @@ const BillingForm: FC<BillingFormProps> = ({
 											<VippsCheckoutButton
 												key={method.method}
 												type="button"
-												onClick={() => {
-													console.log("Vipps button clicked!");
-													if (onVippsPayment && !vippsLoading) {
-														onVippsPayment();
-													}
-												}}
+												onClick={handleVippsPaymentClick}
 												brand="vipps"
 												language={vippsLanguage}
 												variant="primary"
@@ -557,10 +563,7 @@ const BillingForm: FC<BillingFormProps> = ({
 
 								{/* Invoice Payment Button */}
 								<Button
-									onClick={(e) => {
-										e.preventDefault();
-										onSubmit();
-									}}
+									type="submit"
 									disabled={vippsLoading}
 									className={styles.invoiceButton}
 								>
@@ -572,10 +575,7 @@ const BillingForm: FC<BillingFormProps> = ({
 						/* Show single submit button when no Vipps eligibility */
 						<Button
 							variant="primary"
-							onClick={(e) => {
-								e.preventDefault();
-								onSubmit();
-							}}
+							type="submit"
 						>
 							{t('bookingfrontend.submit_application')}
 						</Button>

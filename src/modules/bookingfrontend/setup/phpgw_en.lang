@@ -822,3 +822,7 @@ fill_from_delegate	bookingfrontend	en	Fill from delegate
 select_delegate	bookingfrontend	en	Select delegate...
 show_inactive	bookingfrontend	en	Show inactive
 organizer_required	bookingfrontend	en	Organizer name is required
+emails_dont_match	bookingfrontend	en	Emails don't match
+documents_confirmation_required	bookingfrontend	en	You must confirm that you have read all regulation documents
+field_wild_required	bookingfrontend	en	{{field}} is required
+field_wild_invalid	bookingfrontend	en	{{field}} has invalid format

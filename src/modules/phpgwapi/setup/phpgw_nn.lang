@@ -475,3 +475,12 @@ website	common	nn	Nettstad
 back_to_start	common	nn	Tilbake til start
 back_to_organization	common	nn	Tilbake til organisasjon
 restore	common	nn	Gjenopprett
+create_account	common	nn	Opprett konto
+creating	common	nn	Opprettar...
+loading_external_data	common	nn	Lastar eksterne data...
+invalid_phone_format_norwegian	common	nn	Ugyldig telefonnummerformat. For norske nummer bruk format: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
+invalid_email_address	common	nn	Ugyldig e-postadresse
+zip_code_min_length	common	nn	Postnummer må vere minst 4 teikn
+invalid_url_format	common	nn	Ugyldig URL-format
+phone_number_required	common	nn	Telefonnummer er påkrevd
+email_required	common	nn	E-post er påkrevd

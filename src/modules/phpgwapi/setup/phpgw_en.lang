@@ -588,3 +588,12 @@ website	common	en	Website
 back_to_start	common	en	Back to start
 back_to_organization	common	en	Back to organization
 restore	common	en	Restore
+create_account	common	en	Create Account
+creating	common	en	Creating...
+loading_external_data	common	en	Loading external data...
+invalid_phone_format_norwegian	common	en	Invalid phone number format. For Norwegian numbers, use format: +47 XXXXXXXX or 9XXXXXXX or 4XXXXXXX
+invalid_email_address	common	en	Invalid email address
+zip_code_min_length	common	en	Zip code must be at least 4 characters
+invalid_url_format	common	en	Invalid URL format
+phone_number_required	common	en	Phone number is required
+email_required	common	en	Email is required

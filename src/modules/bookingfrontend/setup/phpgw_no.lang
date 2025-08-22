@@ -827,3 +827,4 @@ emails_dont_match	bookingfrontend	no	E-postadressene stemmer ikke overens
 documents_confirmation_required	bookingfrontend	no	Du må bekrefte at du har lest alle forskriftsdokumenter
 field_wild_required	bookingfrontend	no	{{field}} er påkrevd
 field_wild_invalid	bookingfrontend	no	{{field}} har ugyldig format
+create_user_account	bookingfrontend	no	Opprett brukerkonto

@@ -95,6 +95,7 @@ $stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.cs
 $stylesheets[]	 = "/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css";
 
 $stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
+$stylesheets[] = "/phpgwapi/templates/base/css/flag-icons.min.css";
 
 if ($app != 'frontend')
 {

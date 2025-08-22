@@ -168,11 +168,6 @@
 				<td><input type ="password" name="newsettings[external_db_password]" value="{value_external_db_password}" autocomplete="off"
 						   readonly="readonly" onfocus="this.removeAttribute('readonly');" class="pure-u-1"/></td>
 			</tr>
-
-			<tr>
-				<td>{lang_path_to_wkhtmltopdf}:</td>
-				<td><input name="newsettings[path_to_wkhtmltopdf]" value="{value_path_to_wkhtmltopdf}" class="pure-u-1"/></td>
-			</tr>
 			<tr>
 				<td valign = 'top'>{lang_contract_types}:</td>
 				<td>

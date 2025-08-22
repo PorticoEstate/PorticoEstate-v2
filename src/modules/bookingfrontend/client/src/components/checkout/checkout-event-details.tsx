@@ -4,7 +4,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {Textfield} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import styles from './checkout.module.scss';
-import {CheckoutEventDetailsData, checkoutEventDetailsSchema} from './checkout-event-details-schema';
+import {CheckoutEventDetailsData, createCheckoutEventDetailsSchema} from './checkout-event-details-schema';
 import {IBookingUser} from "@/service/types/api.types";
 import {IApplication} from "@/service/types/api/application.types";
 import {useUpdatePartialApplication} from "@/service/hooks/api-hooks";
@@ -37,8 +37,8 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 		organizerName: getCommonValue(partials, 'organizer') || user?.name || '',
 	}), [user, partials]);
 
-	const {control, watch} = useForm<CheckoutEventDetailsData>({
-		resolver: zodResolver(checkoutEventDetailsSchema),
+	const {control, watch, setValue, getValues} = useForm<CheckoutEventDetailsData>({
+		resolver: zodResolver(createCheckoutEventDetailsSchema(t)),
 		defaultValues: defaultValues
 	});
 
@@ -46,6 +46,15 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 	useEffect(() => {
 		onDetailsChange(defaultValues);
 	}, [defaultValues, onDetailsChange]);
+
+	// Effect to refill blank fields when user data refreshes
+	useEffect(() => {
+		const currentValues = getValues();
+		// Only refill organizerName if it's currently blank and user has a name
+		if (!currentValues.organizerName && user?.name) {
+			setValue('organizerName', user.name);
+		}
+	}, [user, setValue, getValues]);
 
 	useEffect(() => {
 		const subscription = watch((value) => {
@@ -69,6 +78,7 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 							label={t('bookingfrontend.organizer')}
 							{...field}
 							error={fieldState.error?.message || (showError && !field.value ? t('bookingfrontend.organizer_required') : undefined)}
+							required
 						/>
 					)}
 				/>

@@ -840,3 +840,69 @@ repeat_until_options	bookingfrontend	no	Gjenta til-valg
 repeat_until_end_of_season	bookingfrontend	no	Gjenta til sesongsslutt
 repeat_until_date	bookingfrontend	no	Gjenta til dato
 current_season_ends	bookingfrontend	no	Nåværende sesong slutter
+application_registered_single	bookingfrontend	no	Søknaden har blitt sendt inn, og en bekreftelse har blitt sendt til deg på e-post.
+application_processed_single	bookingfrontend	no	Søknaden din har blitt behandlet og en bekreftelse har blitt sendt til deg på e-post.
+applications_registered_multiple	bookingfrontend	no	Søknadene har blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
+applications_processed_multiple	bookingfrontend	no	Søknadene dine har blitt behandlet og bekreftelser har blitt sendt til deg på e-post.
+case_officer_review_single	bookingfrontend	no	En saksbehandler vil behandle søknaden din så snart som mulig.
+case_officer_review_multiple	bookingfrontend	no	En saksbehandler vil behandle søknadene dine så snart som mulig.
+vipps_payment_confirmed	bookingfrontend	no	Din Vipps-betaling er bekreftet og søknadene dine er godkjent.
+choose_checkout_method	bookingfrontend	no	Velg betalingsmåte
+both_buttons_submit_applications	bookingfrontend	no	Begge knappene sender inn søknader
+pay_now_with_vipps	bookingfrontend	no	Betal nå med Vipps
+pay_later_with_invoice	bookingfrontend	no	Betal senere med faktura
+vipps_immediate_payment	bookingfrontend	no	Hele beløpet for direktebookinger betales nå
+applications_sent_simultaneously	bookingfrontend	no	Søknader sendes samtidig
+invoice_created_for_direct_bookings	bookingfrontend	no	Faktura opprettes for direktebookinger
+applications_may_contain_paid_services	bookingfrontend	no	Søknader kan inneholde betalte tilleggstjenester
+invoiced_only_if_approved	bookingfrontend	no	Disse faktureres kun hvis søknaden godkjennes
+after_submission_title	bookingfrontend	no	Etter innsending
+direct_bookings_confirmation_title	bookingfrontend	no	Direktebookinger
+payment_completed_and_confirmed	bookingfrontend	no	Betaling er fullført og bekreftet
+bookings_are_completed	bookingfrontend	no	Bookingene dine er fullført og bekreftet
+applications_for_review_title	bookingfrontend	no	Søknader til saksbehandling
+applications_sent_and_will_receive_email	bookingfrontend	no	Søknader er sendt og du vil få svar på e-post
+invoice_will_come_if_approved	bookingfrontend	no	Faktura vil bli sendt hvis søknaden godkjennes
+payment_if_approved	bookingfrontend	no	Betales hvis søknad godkjennes
+pay_now_or_later	bookingfrontend	no	Betal nå eller med faktura
+application_title	bookingfrontend	no	Søknadstittel
+direct_booking_title	bookingfrontend	no	Tittel direktebestilling
+direct_booking	bookingfrontend	no	Direktebestilling
+total_incl_vat	bookingfrontend	no	Total inkl. mva
+timestamp	bookingfrontend	no	Tidspunkt
+no_groups	bookingfrontend	no	Ingen grupper funnet
+no_delegates	bookingfrontend	no	Ingen delegater funnet
+edit_organization	bookingfrontend	no	Rediger organisasjon
+markdown	bookingfrontend	no	Markdown
+visual	bookingfrontend	no	Visuell
+enter_description_markdown	bookingfrontend	no	Skriv inn beskrivelse i markdown-format
+markdown_help_professional	bookingfrontend	no	Bruk verktøylinjen over for å formatere teksten, eller skriv i markdown-syntaks. Klikk forhåndsvisning for å se resultatet.
+basic_information	bookingfrontend	no	Grunnleggende informasjon
+short_name	bookingfrontend	no	Kort navn
+organization_not_found	bookingfrontend	no	Organisasjon ikke funnet
+access_denied	bookingfrontend	no	Tilgang nektet
+no_permission_edit_organization	bookingfrontend	no	Du har ikke tillatelse til å redigere denne organisasjonen.
+confirm_restore_delegate	bookingfrontend	no	Er du sikker på at du vil gjenopprette {{name}} som en aktiv delegat?
+confirm_delete_delegate	bookingfrontend	no	Er du sikker på at du vil fjerne {{name}} som delegat? Dette vil oppheve deres tilgang til denne organisasjonen.
+group_name	bookingfrontend	no	Gruppenavn
+group_shortname	bookingfrontend	no	Kort navn
+new_group	bookingfrontend	no	Ny gruppe
+edit_group	bookingfrontend	no	Rediger gruppe
+delete_group	bookingfrontend	no	Slett gruppe
+confirm_delete_group	bookingfrontend	no	Er du sikker på at du vil slette gruppen {name}?
+group_contacts	bookingfrontend	no	Gruppekontakter
+add_contact	bookingfrontend	no	Legg til kontakt
+show_in_portal	bookingfrontend	no	Vis i portal
+deactivate_group	bookingfrontend	no	Deaktiver gruppe
+activate_group	bookingfrontend	no	Aktiver gruppe
+confirm_deactivate_group	bookingfrontend	no	Er du sikker på at du vil deaktivere gruppen {{name}}?
+confirm_activate_group	bookingfrontend	no	Er du sikker på at du vil aktivere gruppen {{name}}?
+fill_from_delegate	bookingfrontend	no	Fyll ut fra delegat
+select_delegate	bookingfrontend	no	Velg delegat...
+show_inactive	bookingfrontend	no	Vis inaktive
+organizer_required	bookingfrontend	no	Arrangørnavn er påkrevd
+emails_dont_match	bookingfrontend	no	E-postadressene stemmer ikke overens
+documents_confirmation_required	bookingfrontend	no	Du må bekrefte at du har lest alle forskriftsdokumenter
+field_wild_required	bookingfrontend	no	{{field}} er påkrevd
+field_wild_invalid	bookingfrontend	no	{{field}} har ugyldig format
+create_user_account	bookingfrontend	no	Opprett brukerkonto

@@ -394,3 +394,16 @@ your search returned %1 matchs	common	no	ditt søk gav %1 treff
 your search returned 1 match	common	no	ditt søk gav 1 treff
 your settings have been updated	common	no	Dine innstillinger har blitt oppdatert
 zip_code	common	no	Postnummer
+website	common	no	Nettside
+back_to_start	common	no	Tilbake til start
+back_to_organization	common	no	Tilbake til organisasjon
+restore	common	no	Gjenopprett
+create_account	common	no	Opprett konto
+creating	common	no	Oppretter...
+loading_external_data	common	no	Laster eksterne data...
+invalid_phone_format_norwegian	common	no	Ugyldig telefonnummerformat. For norske nummer bruk format: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
+invalid_email_address	common	no	Ugyldig e-postadresse
+zip_code_min_length	common	no	Postnummer må være minst 4 tegn
+invalid_url_format	common	no	Ugyldig URL-format
+phone_number_required	common	no	Telefonnummer er påkrevd
+email_required	common	no	E-post er påkrevd

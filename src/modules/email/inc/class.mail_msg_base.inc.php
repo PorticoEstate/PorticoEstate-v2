@@ -1921,7 +1921,8 @@
 			//$imap_err = $this->phpgw_server_last_error($acctnum);
 			if (function_exists('imap_last_error'))
 			{
-				$imap_err = imap_last_error();
+				require_once __DIR__ . '/imap_config.php';
+				$imap_err = IMAPManager::imap_last_error();
 			}
 			else
 			{
@@ -4046,7 +4047,8 @@ HTML;
 		{
 			if (function_exists('imap_qprint'))
 			{
-				return imap_qprint($string);
+				require_once __DIR__ . '/imap_config.php';
+				return IMAPManager::imap_qprint($string);
 			}
 			else
 			{

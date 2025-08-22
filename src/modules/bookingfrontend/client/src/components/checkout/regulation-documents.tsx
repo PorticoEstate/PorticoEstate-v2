@@ -31,7 +31,7 @@ const RegulationDocuments: FC<RegulationDocumentsProps> = ({
 	return (
 		<div className={styles.documentsSection}>
 			<Heading level={2} data-size="md">
-				{t('bookingfrontend.terms and conditions')}
+				{t('bookingfrontend.terms and conditions')} <span className="required-asterisk">*</span>
 			</Heading>
 
 			<div className={styles.documentsContainer}>

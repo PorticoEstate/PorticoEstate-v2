@@ -2,7 +2,7 @@
 import React, {FC, useState, useMemo, useEffect} from 'react';
 import CartSection from "./cart-section";
 import {useBookingUser, usePartialApplications, useUpdatePartialApplication, useResourceRegulationDocuments} from "@/service/hooks/api-hooks";
-import { CheckoutEventDetailsData, checkoutEventDetailsSchema } from './checkout-event-details-schema';
+import { CheckoutEventDetailsData, createCheckoutEventDetailsSchema } from './checkout-event-details-schema';
 import { BillingFormData } from './billing-form-schema';
 import CheckoutEventDetails from "@/components/checkout/checkout-event-details";
 import BillingForm from "@/components/checkout/billing-form";
@@ -141,7 +141,7 @@ const CheckoutContent: FC = () => {
         }
 
         // Validate organizer field using the schema
-        const organizerValidation = checkoutEventDetailsSchema.safeParse(eventDetails);
+        const organizerValidation = createCheckoutEventDetailsSchema(t).safeParse(eventDetails);
         if (!organizerValidation.success) {
             // Show error state
             setShowOrganizerError(true);
@@ -213,7 +213,7 @@ const CheckoutContent: FC = () => {
         }
 
         // Validate organizer field using the schema
-        const organizerValidation = checkoutEventDetailsSchema.safeParse(eventDetails);
+        const organizerValidation = createCheckoutEventDetailsSchema(t).safeParse(eventDetails);
         if (!organizerValidation.success) {
             // Show error state
             setShowOrganizerError(true);

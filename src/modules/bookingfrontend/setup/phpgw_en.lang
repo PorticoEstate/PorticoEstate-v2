@@ -839,3 +839,69 @@ repeat_until_options	bookingfrontend	en	Repeat Until Options
 repeat_until_end_of_season	bookingfrontend	en	Repeat until end of season
 repeat_until_date	bookingfrontend	en	Repeat until date
 current_season_ends	bookingfrontend	en	Current season ends
+application_registered_single	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
+application_processed_single	bookingfrontend	en	Your application has now been processed and a confirmation email has been sent to you.
+applications_registered_multiple	bookingfrontend	en	Your applications have now been registered and confirmation emails have been sent to you.
+applications_processed_multiple	bookingfrontend	en	Your applications have now been processed and confirmation emails have been sent to you.
+case_officer_review_single	bookingfrontend	en	A Case officer will review your application as soon as possible.
+case_officer_review_multiple	bookingfrontend	en	A Case officer will review your applications as soon as possible.
+vipps_payment_confirmed	bookingfrontend	en	Your Vipps payment has been confirmed and your applications have been approved.
+choose_checkout_method	bookingfrontend	en	Choose checkout method
+both_buttons_submit_applications	bookingfrontend	en	Both buttons submit applications
+pay_now_with_vipps	bookingfrontend	en	Pay now with Vipps
+pay_later_with_invoice	bookingfrontend	en	Pay later with invoice
+vipps_immediate_payment	bookingfrontend	en	Full amount for direct bookings is paid now
+applications_sent_simultaneously	bookingfrontend	en	Applications are sent simultaneously
+invoice_created_for_direct_bookings	bookingfrontend	en	Invoice is created for direct bookings
+applications_may_contain_paid_services	bookingfrontend	en	Applications may contain paid additional services
+invoiced_only_if_approved	bookingfrontend	en	These are invoiced only if the application is approved
+after_submission_title	bookingfrontend	en	After submission
+direct_bookings_confirmation_title	bookingfrontend	en	Direct bookings
+payment_completed_and_confirmed	bookingfrontend	en	Payment has been completed and confirmed
+bookings_are_completed	bookingfrontend	en	Your bookings are completed and confirmed
+applications_for_review_title	bookingfrontend	en	Applications for review
+applications_sent_and_will_receive_email	bookingfrontend	en	Applications have been sent and you will receive a response by email
+invoice_will_come_if_approved	bookingfrontend	en	An invoice will be sent if the application is approved
+payment_if_approved	bookingfrontend	en	Paid if application is approved
+pay_now_or_later	bookingfrontend	en	Pay now or with invoice
+application_title	bookingfrontend	en	Application title
+direct_booking_title	bookingfrontend	en	Direct booking title
+direct_booking	bookingfrontend	en	Direct booking
+total_incl_vat	bookingfrontend	en	Total incl. VAT
+timestamp	bookingfrontend	en	Timestamp
+no_groups	bookingfrontend	en	No groups found
+no_delegates	bookingfrontend	en	No delegates found
+edit_organization	bookingfrontend	en	Edit Organization
+markdown	bookingfrontend	en	Markdown
+visual	bookingfrontend	en	Visual
+enter_description_markdown	bookingfrontend	en	Enter description in markdown format
+markdown_help_professional	bookingfrontend	en	Use the toolbar above to format your text, or write in markdown syntax. Click preview to see the result.
+basic_information	bookingfrontend	en	Basic Information
+short_name	bookingfrontend	en	Short Name
+organization_not_found	bookingfrontend	en	Organization not found
+access_denied	bookingfrontend	en	Access Denied
+no_permission_edit_organization	bookingfrontend	en	You do not have permission to edit this organization.
+confirm_restore_delegate	bookingfrontend	en	Are you sure you want to restore {{name}} as an active delegate?
+confirm_delete_delegate	bookingfrontend	en	Are you sure you want to remove {{name}} as a delegate? This will revoke their access to this organization.
+group_name	bookingfrontend	en	Group name
+group_shortname	bookingfrontend	en	Short name
+new_group	bookingfrontend	en	New group
+edit_group	bookingfrontend	en	Edit group
+delete_group	bookingfrontend	en	Delete group
+confirm_delete_group	bookingfrontend	en	Are you sure you want to delete the group {name}?
+group_contacts	bookingfrontend	en	Group contacts
+add_contact	bookingfrontend	en	Add contact
+show_in_portal	bookingfrontend	en	Show in portal
+deactivate_group	bookingfrontend	en	Deactivate group
+activate_group	bookingfrontend	en	Activate group
+confirm_deactivate_group	bookingfrontend	en	Are you sure you want to deactivate the group {{name}}?
+confirm_activate_group	bookingfrontend	en	Are you sure you want to activate the group {{name}}?
+fill_from_delegate	bookingfrontend	en	Fill from delegate
+select_delegate	bookingfrontend	en	Select delegate...
+show_inactive	bookingfrontend	en	Show inactive
+organizer_required	bookingfrontend	en	Organizer name is required
+emails_dont_match	bookingfrontend	en	Emails don't match
+documents_confirmation_required	bookingfrontend	en	You must confirm that you have read all regulation documents
+field_wild_required	bookingfrontend	en	{{field}} is required
+field_wild_invalid	bookingfrontend	en	{{field}} has invalid format
+create_user_account	bookingfrontend	en	Create User Account

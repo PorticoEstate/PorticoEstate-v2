@@ -871,7 +871,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		return (
 			<div className={styles.resourceList}>
 				<div className={styles.resourcesHeader}>
-					<h4>{t('bookingfrontend.choose resources')}</h4>
+					<h4>{t('bookingfrontend.choose resources')} <span className="required-asterisk">*</span></h4>
 					<Button
 						variant="tertiary"
 						data-size="sm"
@@ -1006,6 +1006,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 									{...field}
 									error={errors.title?.message ? t(errors.title.message) : undefined}
 									placeholder={t('bookingfrontend.enter_title')}
+									required
 								/>
 							)}
 						/>
@@ -1104,7 +1105,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					)}
 					<div className={`${styles.formGroup}`}>
 						<div className={styles.resourcesHeader}>
-							<h4>{t('bookingfrontend.target audience')}</h4>
+							<h4>{t('bookingfrontend.target audience')} <span className="required-asterisk">*</span></h4>
 						</div>
 						<Controller
 							name="audience"
@@ -1141,7 +1142,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					<div className={`${styles.formGroup}`} style={{gridColumn: 1}} ref={participantsSectionRef}>
 						<div className={styles.resourcesHeader}
 							 style={{flexDirection: 'column', alignItems: 'flex-start'}}>
-							<h4>{t('bookingfrontend.estimated number of participants')}</h4>
+							<h4>{t('bookingfrontend.estimated number of participants')} <span className="required-asterisk">*</span></h4>
 							{errors.agegroups?.['root']?.message && (
 								<span className={styles.error}>{t(errors.agegroups?.['root']?.message)}</span>
 							)}

@@ -121,6 +121,26 @@ select option:disabled {
 	text-transform: capitalize;
 }
 
+// Automatically add asterisk to required field labels
+.ds-field:has(input[required]) .ds-label::after,
+.ds-field:has(textarea[required]) .ds-label::after,
+.ds-field:has(select[required]) .ds-label::after {
+    content: " *";
+    color: var(--fds-semantic-text-danger-default, #d73027);
+}
+
+// Style asterisks as red
+.required-asterisk {
+    color: var(--fds-semantic-text-danger-default, #d73027);
+}
+
+// Style asterisks in headings as red using a more reliable method
+h1, h2, h3, h4, h5, h6 {
+    & > span.required-asterisk {
+        color: var(--fds-semantic-text-danger-default, #d73027);
+    }
+}
+
 .pswp img {
 	max-width: none;
 	object-fit: contain;

@@ -19,7 +19,8 @@ const validatePhone = (phone: string) => {
 
     const norwegianPattern = /^(0047|\+47|\d{8})/;
     if (norwegianPattern.test(phone)) {
-        const trimmedNumber = phone.replace(/^(0047|\+47)/, '');
+        // Remove prefix and any whitespace/separators to get clean number
+        const trimmedNumber = phone.replace(/^(0047|\+47)/, '').replace(/[- _]/g, '');
         return trimmedNumber.length === 8 && (trimmedNumber[0] === '9' || trimmedNumber[0] === '4');
     }
 

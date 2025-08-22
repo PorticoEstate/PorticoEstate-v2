@@ -78,6 +78,7 @@ const CheckoutEventDetails: FC<CheckoutEventDetailsProps> = ({onDetailsChange, u
 							label={t('bookingfrontend.organizer')}
 							{...field}
 							error={fieldState.error?.message || (showError && !field.value ? t('bookingfrontend.organizer_required') : undefined)}
+							required
 						/>
 					)}
 				/>

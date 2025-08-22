@@ -313,7 +313,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							render={({field}) => (
 								<Field>
 									<Label>
-										{t('bookingfrontend.organization')}
+										{t('bookingfrontend.organization')} <span className="required-asterisk">*</span>
 									</Label>
 									<AsyncSelect
 										cacheOptions
@@ -370,6 +370,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.contact_name')}
 								{...field}
 								error={errors.contactName?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -383,6 +384,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								type="email"
 								{...field}
 								error={errors.contactEmail?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -396,6 +398,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								type="email"
 								{...field}
 								error={errors.contactEmailConfirm?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -409,6 +412,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								type="tel"
 								{...field}
 								error={errors.contactPhone?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -421,6 +425,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.responsible_street')}
 								{...field}
 								error={errors.street?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -433,6 +438,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.responsible_zip_code')}
 								{...field}
 								error={errors.zipCode?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -445,6 +451,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.responsible_city')}
 								{...field}
 								error={errors.city?.message as string}
+								required
 							/>
 						)}
 					/>

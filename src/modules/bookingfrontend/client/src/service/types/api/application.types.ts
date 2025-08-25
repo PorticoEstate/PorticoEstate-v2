@@ -46,8 +46,36 @@ export interface IApplication {
     agegroups: IApplicationAgeGroup[];
     articles?: ArticleOrder[];
     application_type?: 'personal' | 'organization';
+    recurring_info?: string | null; // JSON string of RecurringInfo
 }
 
+// Interface for the parsed recurring_info JSON
+export interface RecurringInfo {
+    repeat_until?: string; // ISO date string (YYYY-MM-DD)
+    field_interval?: number; // Week intervals between repetitions (default: 1)
+    outseason?: boolean; // Allow repetition beyond season end
+}
+
+// Utility functions for handling recurring_info
+export const RecurringInfoUtils = {
+    parse: (recurring_info: string | null | undefined): RecurringInfo | null => {
+        if (!recurring_info) return null;
+        try {
+            return JSON.parse(recurring_info);
+        } catch {
+            return null;
+        }
+    },
+    
+    stringify: (recurringInfo: RecurringInfo | null | undefined): string | null => {
+        if (!recurringInfo) return null;
+        return JSON.stringify(recurringInfo);
+    },
+    
+    isRecurring: (application: IApplication): boolean => {
+        return !!RecurringInfoUtils.parse(application.recurring_info);
+    }
+};
 
 export interface IApplicationDate {
     from_: string;
@@ -97,7 +125,7 @@ export interface NewPartialApplication extends Pick<IApplication, 'name' | 'buil
     agegroups?: IApplicationAgeGroup[];
     audience?: number[];
 	articles?: ArticleOrder[];
-
+    recurring_info?: RecurringInfo; // For convenience, will be JSON.stringify'd
 }
 export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'dates' | 'resources'>>{
     id: number;
@@ -109,6 +137,7 @@ export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'd
     resources?: Array<IShortResource | IResource>;
     agegroups?: IApplicationAgeGroup[];
 	articles?: ArticleOrder[];
+    recurring_info?: RecurringInfo; // For convenience, will be JSON.stringify'd
 }
 
 export interface ApplicationComment {

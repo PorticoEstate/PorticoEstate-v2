@@ -26,12 +26,28 @@ const CheckoutContent: FC = () => {
     const [billingDetails, setBillingDetails] = useState<BillingFormData>();
     const [selectedParentId, setSelectedParentId] = useState<number>();
 
-    // Preselect the first application as parent when applications load
+    // Separate applications into regular and recurring
+    const {regularApplications, recurringApplications} = useMemo(() => {
+        const regular: any[] = [];
+        const recurring: any[] = [];
+        
+        applications?.list?.forEach(app => {
+            if (app.recurring_info && app.recurring_info.trim() !== '') {
+                recurring.push(app);
+            } else {
+                regular.push(app);
+            }
+        });
+        
+        return { regularApplications: regular, recurringApplications: recurring };
+    }, [applications?.list]);
+
+    // Preselect the first regular (non-recurring) application as parent when applications load
     useEffect(() => {
-        if (applications?.list?.length && !selectedParentId) {
-            setSelectedParentId(applications.list[0].id);
+        if (regularApplications.length > 0 && !selectedParentId) {
+            setSelectedParentId(regularApplications[0].id);
         }
-    }, [applications?.list, selectedParentId]);
+    }, [regularApplications, selectedParentId]);
     const [currentApplication, setCurrentApplication] = useState<{
         application_id: number,
         date_id: number,
@@ -41,11 +57,12 @@ const CheckoutContent: FC = () => {
 
     // Extract all resources from applications with their building IDs
     const resources = useMemo(() => {
-        if (!applications?.list) return [];
+        const allApps = [...regularApplications, ...recurringApplications];
+        if (allApps.length === 0) return [];
 
         const resourceMap = new Map<number, { id: number, building_id?: number }>();
 
-        applications.list.forEach(app => {
+        allApps.forEach(app => {
             if (app.resources && Array.isArray(app.resources)) {
                 app.resources.forEach(resource => {
                     if (resource.id) {
@@ -59,7 +76,7 @@ const CheckoutContent: FC = () => {
         });
 
         return Array.from(resourceMap.values());
-    }, [applications]);
+    }, [regularApplications, recurringApplications]);
 
     // Fetch regulation documents for all resources
     const { data: regulationDocuments, isLoading: docsLoading } = useResourceRegulationDocuments(resources);
@@ -118,6 +135,13 @@ const CheckoutContent: FC = () => {
     }, [areAllDocumentsChecked]);
 
     const handleFormSubmit = async () => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🐛 CheckoutContent: handleFormSubmit called');
+            console.log('🐛 CheckoutContent: eventDetails:', eventDetails);
+            console.log('🐛 CheckoutContent: applications:', applications);
+            console.log('🐛 CheckoutContent: billingDetails:', billingDetails);
+        }
+        
         if (!eventDetails || !applications || !billingDetails) {
             console.log('missing Data', eventDetails, billingDetails);
             return;
@@ -162,6 +186,23 @@ const CheckoutContent: FC = () => {
         }
 
         try {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('🐛 CheckoutContent: About to call checkoutMutation.mutateAsync with data:', {
+                    organizerName: eventDetails.organizerName,
+                    customerType: billingDetails?.customerType || 'ssn',
+                    organizationNumber: billingDetails.organizationNumber,
+                    organizationName: billingDetails.organizationName,
+                    contactName: billingDetails.contactName,
+                    contactEmail: billingDetails.contactEmail,
+                    contactPhone: billingDetails.contactPhone,
+                    street: billingDetails.street,
+                    zipCode: billingDetails.zipCode,
+                    city: billingDetails.city,
+                    documentsRead: billingDetails.documentsRead,
+                    parent_id: selectedParentId
+                });
+            }
+            
             checkoutMutation.mutateAsync({
                 organizerName: eventDetails.organizerName,
                 customerType: billingDetails?.customerType || 'ssn',
@@ -176,9 +217,21 @@ const CheckoutContent: FC = () => {
                 documentsRead: billingDetails.documentsRead,
                 parent_id: selectedParentId
             }).then(() => {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('🐛 CheckoutContent: checkoutMutation success, redirecting to /user/applications');
+                }
                 router.push('/user/applications');
-            })
+            }).catch((error) => {
+                if (process.env.NODE_ENV === 'development') {
+                    console.error('🐛 CheckoutContent: checkoutMutation error:', error);
+                }
+                console.error('Error updating applications:', error);
+                // TODO: Handle error (show error message to user)
+            });
         } catch (error) {
+            if (process.env.NODE_ENV === 'development') {
+                console.error('🐛 CheckoutContent: Outer try-catch error:', error);
+            }
             console.error('Error updating applications:', error);
             // TODO: Handle error (show error message to user)
         }
@@ -284,6 +337,32 @@ const CheckoutContent: FC = () => {
                 selectedParentId={selectedParentId}
                 onParentIdChange={setSelectedParentId}
             />
+
+            {process.env.NODE_ENV === 'development' && (
+                <div style={{ 
+                    background: '#f0f8ff', 
+                    border: '1px solid #007acc', 
+                    padding: '10px', 
+                    margin: '10px 0',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontFamily: 'monospace'
+                }}>
+                    <strong>🐛 Debug: Form Validity Status</strong>
+                    <div>Event Details: {eventDetails ? '✅ Valid' : '❌ Missing'}</div>
+                    <div>Billing Details: {billingDetails ? '✅ Valid' : '❌ Missing'}</div>
+                    <div>Organizer Valid: {eventDetails ? (createCheckoutEventDetailsSchema(t).safeParse(eventDetails).success ? '✅ Yes' : '❌ No') : '❌ N/A'}</div>
+                    <div>Documents Required: {regulationDocuments?.length || 0}</div>
+                    <div>Documents Checked: {areAllDocumentsChecked ? '✅ All' : '❌ Incomplete'}</div>
+                    <div>Can Submit: {
+                        eventDetails && 
+                        billingDetails && 
+                        createCheckoutEventDetailsSchema(t).safeParse(eventDetails).success &&
+                        (!regulationDocuments?.length || areAllDocumentsChecked) 
+                        ? '✅ Yes' : '❌ No'
+                    }</div>
+                </div>
+            )}
 
             <BillingForm
                 user={user}

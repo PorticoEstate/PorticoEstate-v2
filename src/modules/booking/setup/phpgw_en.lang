@@ -776,6 +776,7 @@ Tilsynsvakt telephone	booking	en	Tilsynsvakt telephone
 time default end	booking	en	Time default end
 time default start	booking	en	Time default start
 Time is set wrong	booking	en	Time is set wrong
+time_period	booking	en	Time period
 title	booking	en	Title
 Title for filter boxes	booking	en	Title for filter boxes
 Title for upcoming events	booking	en	Title for upcoming events
@@ -824,9 +825,11 @@ we	booking	en	We
 week template	booking	en	Week template
 weekday	booking	en	Weekday
 Weekdays	booking	en	Weekdays
+weekend	booking	en	Weekend
 What	booking	en	What
 when	booking	en	When
 when?	booking	en	When?
+when_and_where	booking	en	When and Where?
 where	booking	en	Where
 where?	booking	en	Where?
 who	booking	en	Who
@@ -839,5 +842,4 @@ Your application has now been registered and a confirmation email has been sent 
 Your application with event details has been added. You can add another application, or finalise the application with contact details.	booking	en	Your application with event details has been added. You can add another application, or finalise the application with contact details.
 Your applications have now been processed and confirmation emails have been sent to you.	booking	en	Your applications have now been processed and confirmation emails have been sent to you.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	en	Your applications have now been registered and confirmation emails have been sent to you.
-when_and_where	booking	en	When and Where?
-time_period	booking	en	Time period
+create_recurring_allocation	booking	en	Create Recurring Allocation

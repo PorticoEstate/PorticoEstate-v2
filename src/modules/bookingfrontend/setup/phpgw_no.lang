@@ -12,10 +12,12 @@ About the service	bookingfrontend	no	Om tjenesten
 accept application	bookingfrontend	no	Godta søknaden
 accepted	bookingfrontend	no	Akseptert
 Access denied	bookingfrontend	no	Ingen tilgang
+access_denied	bookingfrontend	no	Tilgang nektet
 account	bookingfrontend	no	Bruker
 Account Codes	bookingfrontend	no	konterings-streng
 account status	bookingfrontend	no	Kontostatus
 actions	bookingfrontend	no	Handling
+activate_group	bookingfrontend	no	Aktiver gruppe
 active	bookingfrontend	no	Aktiv
 active applications	bookingfrontend	no	Aktive søknader
 Activities (2018)	bookingfrontend	no	Tilrettelagt for
@@ -30,6 +32,7 @@ add document	bookingfrontend	no	Legg til dokument
 Add group	bookingfrontend	no	Ny gruppe
 add new event	bookingfrontend	no	Legg til arrangement
 add permission	bookingfrontend	no	Legg til rettighet
+add_contact	bookingfrontend	no	Legg til kontakt
 add_date	bookingfrontend	no	Legg til dato
 add_rent_object	bookingfrontend	no	Legg til leieobjekt
 add_rental_period	bookingfrontend	no	Legg til leieperiode
@@ -39,6 +42,7 @@ address	bookingfrontend	no	Besøksadresse
 admin 1	bookingfrontend	no	Bookingansvarlig 1
 admin 2	bookingfrontend	no	Bookingansvarlig 2
 admins	bookingfrontend	no	Bookingansvarlige
+after_submission_title	bookingfrontend	no	Etter innsending
 again	booking	no	Igjen
 age group	bookingfrontend	no	Aldersgruppe
 agegroup	bookingfrontend	no	Aldersgruppe
@@ -59,11 +63,20 @@ application add	bookingfrontend	no	Legg til søknad
 Application basket	bookingfrontend	no	Søknadskurv
 Application cart	bookingfrontend	no	Handlekurv
 application_documents	bookingfrontend	no	Søknadsdokumenter
+application_processed_single	bookingfrontend	no	Søknaden din har blitt behandlet og en bekreftelse har blitt sendt til deg på e-post.
 application_registered_confirmation	bookingfrontend	no	Søknaden har blitt sendt inn, og en bekreftelse har blitt sendt til deg på e-post.
+application_registered_single	bookingfrontend	no	Søknaden har blitt sendt inn, og en bekreftelse har blitt sendt til deg på e-post.
+application_title	bookingfrontend	no	Søknadstittel
 applications	bookingfrontend	no	Søknader
 applications.description	bookingfrontend	no	Se og administrer dine søknader
+applications_for_review_title	bookingfrontend	no	Søknader til saksbehandling
+applications_may_contain_paid_services	bookingfrontend	no	Søknader kan inneholde betalte tilleggstjenester
 applications_overview	bookingfrontend	no	Her er en oversikt over dine søknader som er klar for innsending og godkjennelse.
+applications_processed_multiple	bookingfrontend	no	Søknadene dine har blitt behandlet og bekreftelser har blitt sendt til deg på e-post.
 applications_ready_for_submission	bookingfrontend	no	Søknader klar for innsending
+applications_registered_multiple	bookingfrontend	no	Søknadene har blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
+applications_sent_and_will_receive_email	bookingfrontend	no	Søknader er sendt og du vil få svar på e-post
+applications_sent_simultaneously	bookingfrontend	no	Søknader sendes samtidig
 Apply filter	bookingfrontend	no	Aktiver filter
 Apply for time	bookingfrontend	no	Søk om tid
 apr	bookingfrontend	no	april
@@ -78,6 +91,7 @@ available	bookingfrontend	no	Ledig
 back	bookingfrontend	no	Tilbake
 Back to user list	booking	no	Tilbake til brukerlisten
 back_to_start	bookingfrontend	no	Tilbake til start
+basic_information	bookingfrontend	no	Grunnleggende informasjon
 beta_version	bookingfrontend	no	Betaversjon
 billing	bookingfrontend	no	Fakturering
 billing_information	bookingfrontend	no	Fakturainformasjon
@@ -104,6 +118,8 @@ bookings	bookingfrontend	no	Interntildelinger
 Bookings and allocations deleted on	bookingfrontend	no	Interntildelinger og tildelinger er slettet på
 Bookings deleted on	bookingfrontend	no	Interntildelinger er slettet på
 Bookings that can be created	bookingfrontend	no	Interntildelinger som kan lages
+bookings_are_completed	bookingfrontend	no	Bookingene dine er fullført og bekreftet
+both_buttons_submit_applications	bookingfrontend	no	Begge knappene sender inn søknader
 boundaries	bookingfrontend	no	Rammetid
 building	bookingfrontend	no	Bygg/anlegg
 Building information	bookingfrontend	no	Informasjon
@@ -139,6 +155,8 @@ Cannot change end time	bookingfrontend	no	Endring av sluttidspunkt feilet. Slutt
 Cannot change start time	bookingfrontend	no	Endring av startidspunkt feilet. Startdato kan ikke være senere enn sluttdato
 case officer	bookingfrontend	no	Saksbehandler
 case_officer	bookingfrontend	no	Saksbehandler
+case_officer_review_multiple	bookingfrontend	no	En saksbehandler vil behandle søknadene dine så snart som mulig.
+case_officer_review_single	bookingfrontend	no	En saksbehandler vil behandle søknaden din så snart som mulig.
 category	bookingfrontend	no	Kategori
 Change organization	common	no	Bytt organisasjon
 Change the allocation	bookingfrontend	no	Endre tildeling
@@ -157,6 +175,7 @@ choose rent period	bookingfrontend	no	Velg leieperiode
 Choose resources	bookingfrontend	no	Velg lokaler
 choose target audience	bookingfrontend	no	Velg målgruppe for arrangement / aktiviteten
 choose_a	bookingfrontend	no	Velg fakturatype
+choose_checkout_method	bookingfrontend	no	Velg betalingsmåte
 chosen rent object	bookingfrontend	no	Valgte ressurser
 chosen rent period	bookingfrontend	no	Valgte leieperioder
 city	bookingfrontend	no	Poststed
@@ -175,7 +194,12 @@ Complete applications	bookingfrontend	no	Fullfør søknad
 complete applications	bookingfrontend	no	Fullfør søknad
 complete_applications	bookingfrontend	no	Fullfør søknad
 Confirm e-mail address	bookingfrontend	no	Bekreft e-postadressen
+confirm_activate_group	bookingfrontend	no	Er du sikker på at du vil aktivere gruppen {{name}}?
+confirm_deactivate_group	bookingfrontend	no	Er du sikker på at du vil deaktivere gruppen {{name}}?
+confirm_delete_delegate	bookingfrontend	no	Er du sikker på at du vil fjerne {{name}} som delegat? Dette vil oppheve deres tilgang til denne organisasjonen.
+confirm_delete_group	bookingfrontend	no	Er du sikker på at du vil slette gruppen {name}?
 confirm_email	bookingfrontend	no	Bekreft e-post
+confirm_restore_delegate	bookingfrontend	no	Er du sikker på at du vil gjenopprette {{name}} som en aktiv delegat?
 confirm_this_document	bookingfrontend	no	Bekreft dette dokumentet
 CONFIRMED	bookingfrontend	no	BEKREFTET
 contact	bookingfrontend	no	Kontakt
@@ -217,6 +241,7 @@ dates	bookingfrontend	no	Fra/Til
 day	bookingfrontend	no	Dag
 day of the week	bookingfrontend	no	Ukedag
 days	bookingfrontend	no	Dager
+deactivate_group	bookingfrontend	no	Deaktiver gruppe
 dec	bookingfrontend	no	desember
 Decrease of from time overlap with existing booking	bookingfrontend	no	Kan ikke endre dato. Starttidspunkt overlapper med eksisterende interntildeling
 Decrease of to time overlap with existing booking	bookingfrontend	no	Kan ikke endre dato. Sluttidspunkt overlapper med eksisterende interntildeling
@@ -226,12 +251,16 @@ delete	bookingfrontend	no	Slett
 Delete Event	bookingfrontend	no	Slett arrangement
 Delete information	bookingfrontend	no	Hvis du kun skal slette tildeling på valgt dato, velg Slett-knappen nederst og tiden blir vist som ledig i kalenderen, og kan tildeles andre klubber/org.
 Delete information2	bookingfrontend	no	Skal du slette flere kan du velge Ut sesong eller Slett til og velg en dato, du kan også velge intervall (f.eks. annen hver uke).
+delete_group	bookingfrontend	no	Slett gruppe
 delete_rentobject	bookingfrontend	no	Slette leieobjekt
 delete_rentobject_body	bookingfrontend	no	Er du sikker på du vil slette dette utleieobjektet fra handlekurven?
 Deleted on	bookingfrontend	no	Avbestilling i
 description	bookingfrontend	no	Beskrivelse
 description not available	bookingfrontend	no	Beskrivelse ikke tilgjengelig
 deselect_all	bookingfrontend	no	Velg ingen
+direct_booking	bookingfrontend	no	Direktebestilling
+direct_booking_title	bookingfrontend	no	Tittel direktebestilling
+direct_bookings_confirmation_title	bookingfrontend	no	Direktebookinger
 district	bookingfrontend	no	Område
 Do you really want to collect users	booking	no	Vil du virkelig samle brukere?
 do you really want to collect users again	booking	no	Vil du virkelig samle brukere igjen?
@@ -259,12 +288,15 @@ edit organization	bookingfrontend	no	Rediger organisasjon
 Edit System Message	bookingfrontend	no	Rediger systemmelding
 Edit until	bookingfrontend	no	Endre til
 edit_event	bookingfrontend	no	Rediger arrangement
+edit_group	bookingfrontend	no	Rediger gruppe
+edit_organization	bookingfrontend	no	Rediger organisasjon
 editer	bookingfrontend	no	Rediger
 empty_cart	bookingfrontend	no	Du har ingenting i handlekurven
 end_time	bookingfrontend	no	Slutt tidspunkt
 end_time_in_past	bookingfrontend	no	Sluttidspunktet kan ikke være i fortiden
 end_time_must_be_after_start_time	bookingfrontend	no	Sluttidspunktet må være etter starttidspunktet
 end_time_outside_business_hours	bookingfrontend	no	Sluttidspunktet må være innenfor åpningstider
+enter_description_markdown	bookingfrontend	no	Skriv inn beskrivelse i markdown-format
 enter_team_organization_name	bookingfrontend	no	Skriv navn på lag/organisasjon
 enter_title	bookingfrontend	no	Angi en tittel
 enter_your_comment_here	bookingfrontend	no	Skriv inn kommentaren din her
@@ -297,6 +329,7 @@ female	bookingfrontend	no	Kvinne
 fetching data	bookingfrontend	no	Henter data
 Field %1 is required	bookingfrontend	no	Feltet '%1' må fylles ut
 Field %1: Invalid format	bookingfrontend	no	Feltet '%1': ugyldig format
+fill_from_delegate	bookingfrontend	no	Fyll ut fra delegat
 filnavn	bookingfrontend	no	Dokument
 filter	bookingfrontend	no	Filter
 Find available	bookingfrontend	no	Finn tilgjengelig
@@ -326,7 +359,10 @@ Go to allocation	bookingfrontend	no	Gå til tildeling
 google tracker id	bookingfrontend	no	Goggle sporer id
 group	bookingfrontend	no	Gruppe/Lag
 Group shortname	bookingfrontend	no	Kortnavn
+group_contacts	bookingfrontend	no	Gruppekontakter
 group_id	bookingfrontend	no	Gruppe/Lag
+group_name	bookingfrontend	no	Gruppenavn
+group_shortname	bookingfrontend	no	Kort navn
 Happening in Bergen	bookingfrontend	no	Dette skjer i Bergen kommune
 history	bookingfrontend	no	Historikk
 history and comments (%1)	bookingfrontend	no	Historikk (%1)
@@ -353,7 +389,10 @@ invoice	bookingfrontend	no	Faktura
 invoice information	bookingfrontend	no	Fakturainformasjon
 Invoice Instruction	bookingfrontend	no	Topptekst til faktura
 invoice.description	bookingfrontend	no	Se dine fakturaer
+invoice_created_for_direct_bookings	bookingfrontend	no	Faktura opprettes for direktebookinger
+invoice_will_come_if_approved	bookingfrontend	no	Faktura vil bli sendt hvis søknaden godkjennes
 invoiced	bookingfrontend	no	Fakturert
+invoiced_only_if_approved	bookingfrontend	no	Disse faktureres kun hvis søknaden godkjennes
 It is currently not possible to rent anything here	bookingfrontend	no	NB! Det er for tiden ikke mulig å leie noe her
 jan	bookingfrontend	no	januar
 jul	bookingfrontend	no	juli
@@ -398,6 +437,8 @@ male	bookingfrontend	no	Mann
 manual	bookingfrontend	no	Manual
 manual	common	no	Brukerveiledning
 mar	bookingfrontend	no	mars
+markdown	bookingfrontend	no	Markdown
+markdown_help_professional	bookingfrontend	no	Bruk verktøylinjen over for å formatere teksten, eller skriv i markdown-syntaks. Klikk forhåndsvisning for å se resultatet.
 Mass update	bookingfrontend	no	Masseoppdatering
 max_participants	bookingfrontend	no	Maks {{count}} deltakere
 may	bookingfrontend	no	mai
@@ -441,6 +482,7 @@ new root permission	bookingfrontend	no	Nye systemrettigheter
 new season	bookingfrontend	no	Ny sesong
 new season permission	bookingfrontend	no	Nye rettigheter sesong
 New system message	bookingfrontend	no	Ny systemmelding
+new_group	bookingfrontend	no	Ny gruppe
 Next step	bookingfrontend	no	Gå videre
 No available options	bookingfrontend	no	Ingen tilgjengelige valg
 no Data.	bookingfrontend	no	Ingen treff
@@ -449,9 +491,12 @@ no parents	bookingfrontend	no	Ingen overordnet
 no records found.	bookingfrontend	no	Ingen funnet!
 No rent object chosen	bookingfrontend	no	Ingen leieobjekter er valgt
 No valid identification returned from login	common	no	Ingen gyldig identifikasjon returnert fra innlogging.
+no_delegates	bookingfrontend	no	Ingen delegater funnet
 no_documents_to_accept	bookingfrontend	no	Det er ingen dokumenter å godkjenne for denne søknaden.
+no_groups	bookingfrontend	no	Ingen grupper funnet
 no_history_available	bookingfrontend	no	Ingen historikk tilgjengelig
 no_overlap	bookingfrontend	no	{{res}} tillater ikke overlappende bookinger.
+no_permission_edit_organization	bookingfrontend	no	Du har ikke tillatelse til å redigere denne organisasjonen.
 no_resources_found	bookingfrontend	no	Ingen ressurser funnet for den valgte datoen
 nov	bookingfrontend	no	november
 number of participants	bookingfrontend	no	Antall deltakere
@@ -470,11 +515,14 @@ organization number	bookingfrontend	no	Organisasjonnummer
 Organization shortname	bookingfrontend	no	Kortnavn
 organization type	bookingfrontend	no	Organisasjonstype
 organization_calendar	bookingfrontend	no	Organisasjonskalender
+organization_not_found	bookingfrontend	no	Organisasjon ikke funnet
 organizations	bookingfrontend	no	Organisasjoner
 organizer	bookingfrontend	no	Arrangør
 organizer/responsible seeker	bookingfrontend	no	Navn på arrangør eller ansvarlig søker
+organizer_required	bookingfrontend	no	Arrangørnavn er påkrevd
 other	bookingfrontend	no	Annet
 Out season	bookingfrontend	no	Ut denne sesongen
+outside_opening_hours	bookingfrontend	no	Utenfor åpningstider
 Overlaps other organizations allocation	bookingfrontend	no	Overlapper med en annen organisasjons tildeling
 Overlaps with existing allocation	bookingfrontend	no	Overlapper med eksisterende tildeling
 Overlaps with existing booking	bookingfrontend	no	Overlapper med eksisterende interntildeling
@@ -485,6 +533,11 @@ parent id	bookingfrontend	no	Overordnet id
 part of town	common	no	Navn på område
 Part of town (2018)	bookingfrontend	no	Bydel
 participants	bookingfrontend	no	Deltakere
+pay_later_with_invoice	bookingfrontend	no	Betal senere med faktura
+pay_now_or_later	bookingfrontend	no	Betal nå eller med faktura
+pay_now_with_vipps	bookingfrontend	no	Betal nå med Vipps
+payment_completed_and_confirmed	bookingfrontend	no	Betaling er fullført og bekreftet
+payment_if_approved	bookingfrontend	no	Betales hvis søknad godkjennes
 Pending	bookingfrontend	no	Under behandling
 permissions	bookingfrontend	no	Rettigheter
 personal	bookingfrontend	no	Personlig
@@ -608,6 +661,7 @@ select date	bookingfrontend	no	Velg dato
 select method	bookingfrontend	no	Velg metode
 select role...	bookingfrontend	no	Velg rolle
 select_all	bookingfrontend	no	Velg alle
+select_delegate	bookingfrontend	no	Velg delegat...
 select_main_application_note	bookingfrontend	no	Velg hvilken søknad som skal være hovedsøknaden. Dette hjelper saksbehandleren å få bedre oversikt når søknadene skal behandles.
 select_organization	bookingfrontend	no	Velg eller søk etter organisasjon
 selected	bookingfrontend	no	Valgt
@@ -619,8 +673,11 @@ sep	bookingfrontend	no	september
 Service	bookingfrontend	no	Tjeneste
 settings	bookingfrontend	no	Innstillinger
 Short description. For public events, activities and training under the direction of organizations and clubs, this information will be displayed on the internet	bookingfrontend	no	Gi en kort beskrivelse av arrangementet. For åpne arrangement, aktiviteter og trening i regi av organisasjoner og klubber vises denne informasjonen på internett
+short_name	bookingfrontend	no	Kort navn
 Show more results	bookingfrontend	no	Last inn flere resultater
 show only active	bookingfrontend	no	Skjul
+show_in_portal	bookingfrontend	no	Vis i portal
+show_inactive	bookingfrontend	no	Vis inaktive
 show_less	bookingfrontend	no	Vis mindre
 show_more	bookingfrontend	no	Vis mer
 show_only_available	bookingfrontend	no	Vis kun tilgjengelige
@@ -674,6 +731,7 @@ Tilsynsvakt telephone	bookingfrontend	no	Telefonnummer til tilsynsvakt
 Time is set wrong	bookingfrontend	no	Et av klokkeslettene er feil
 timeslot_resources	bookingfrontend	no	Tidsslot ressurser
 timeslot_resources_description	bookingfrontend	no	Velg enkelt en tid
+timestamp	bookingfrontend	no	Tidspunkt
 title	bookingfrontend	no	Tittel
 to	bookingfrontend	no	Til
 To application site	bookingfrontend	no	Til bestilling
@@ -683,6 +741,7 @@ To cancel booking use this link	bookingfrontend	no	For å slette interntildeling
 To time	bookingfrontend	no	Til kl
 to_date	bookingfrontend	no	Til dato
 total	bookingfrontend	no	Total
+total_incl_vat	bookingfrontend	no	Total inkl. mva
 Town part	bookingfrontend	no	Område/bydel
 try_again	bookingfrontend	no	Prøv igjen
 tu	bookingfrontend	no	tir
@@ -723,11 +782,13 @@ vipps_applications_approved	bookingfrontend	no	Søknadene dine er godkjent
 vipps_back_to_checkout	bookingfrontend	no	Tilbake til kassen
 vipps_check_again	bookingfrontend	no	Sjekk igjen
 vipps_checking_payment	bookingfrontend	no	Sjekker betalingsstatus
+vipps_immediate_payment	bookingfrontend	no	Hele beløpet for direktebookinger betales nå
 vipps_init_failed	bookingfrontend	no	Kunne ikke starte Vipps-betaling
 vipps_no_payment_id	bookingfrontend	no	Ingen betalings-ID oppgitt
 vipps_not_configured	bookingfrontend	no	Vipps-betaling er ikke riktig konfigurert
 vipps_payment_cancelled	bookingfrontend	no	Betaling avbrutt
 vipps_payment_completed	bookingfrontend	no	Bookingen din er fullført via Vipps-betaling
+vipps_payment_confirmed	bookingfrontend	no	Din Vipps-betaling er bekreftet og søknadene dine er godkjent.
 vipps_payment_error	bookingfrontend	no	Betalingsfeil
 vipps_payment_id	bookingfrontend	no	Betalings-ID
 vipps_payment_pending	bookingfrontend	no	Betaling pågår
@@ -735,6 +796,7 @@ vipps_payment_successful	bookingfrontend	no	Betaling vellykket
 vipps_processing_payment	bookingfrontend	no	Behandler betalingen din...
 vipps_redirecting_shortly	bookingfrontend	no	Omdirigerer deg snart...
 vipps_try_again	bookingfrontend	no	Prøv igjen
+visual	bookingfrontend	no	Visuell
 we	bookingfrontend	no	ons
 week	bookingfrontend	no	uke
 week template	bookingfrontend	no	Ukeplan
@@ -762,6 +824,22 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	no	Søknadene er godkjent, og en bekreftelse har blitt sendt til deg på e-post.
 your_applications	bookingfrontend	no	Dine søknader
 zip code	bookingfrontend	no	Postnummer
+make_recurring	bookingfrontend	no	Gjør denne til en gjentakende booking
+login_required_for_recurring	bookingfrontend	no	Innlogging kreves for gjentakende bookinger
+repeat_until	bookingfrontend	no	Gjenta til
+repeat_every_weeks	bookingfrontend	no	Gjenta hver (uker)
+allow_outseason	bookingfrontend	no	Tillat bookinger utover sesongslutt
+recurring_not_vipps_eligible	bookingfrontend	no	Gjentakende bookinger er ikke tilgjengelige for ekstern betaling
+recurring_applications	bookingfrontend	no	Gjentakende søknader
+recurring_applications_note	bookingfrontend	no	Disse søknadene vil bli behandlet individuelt og krever godkjenning
+every_week	bookingfrontend	no	Hver uke
+every_2_weeks	bookingfrontend	no	Hver 2. uke
+every_3_weeks	bookingfrontend	no	Hver 3. uke
+every_4_weeks	bookingfrontend	no	Hver 4. uke
+repeat_until_options	bookingfrontend	no	Gjenta til-valg
+repeat_until_end_of_season	bookingfrontend	no	Gjenta til sesongsslutt
+repeat_until_date	bookingfrontend	no	Gjenta til dato
+current_season_ends	bookingfrontend	no	Nåværende sesong slutter
 application_registered_single	bookingfrontend	no	Søknaden har blitt sendt inn, og en bekreftelse har blitt sendt til deg på e-post.
 application_processed_single	bookingfrontend	no	Søknaden din har blitt behandlet og en bekreftelse har blitt sendt til deg på e-post.
 applications_registered_multiple	bookingfrontend	no	Søknadene har blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
@@ -828,3 +906,5 @@ documents_confirmation_required	bookingfrontend	no	Du må bekrefte at du har les
 field_wild_required	bookingfrontend	no	{{field}} er påkrevd
 field_wild_invalid	bookingfrontend	no	{{field}} har ugyldig format
 create_user_account	bookingfrontend	no	Opprett brukerkonto
+recurring_login_link_text	bookingfrontend	no	For å lage en gjentakende booking, vennligst <linkTag>Logg inn</linkTag>. Dette krever at du er delegat for en organisasjon.
+no_organizations_for_recurring	bookingfrontend	no	Du har ingen organisasjoner tilgjengelig for gjentakende bookinger.

@@ -292,6 +292,12 @@
 			return $this->so_boundary->add($boundary);
 		}
 
+		function update_boundary( $boundary )
+		{
+			$this->authorize_write($boundary['season_id']);
+			return $this->so_boundary->update($boundary);
+		}
+
 		function get_boundaries( $season_id )
 		{
 			return $this->so_boundary->read(array('filters' => array('season_id' => $season_id),

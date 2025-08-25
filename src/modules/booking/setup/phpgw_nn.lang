@@ -878,6 +878,7 @@ Tilsynsvakt telephone	booking	nn	Telefon tilsynsvakt
 time default end	booking	nn	Slutt/innlevering time
 time default start	booking	nn	Start/utlevering time
 Time is set wrong	booking	nn	Eit av klokkesletta er registrert feil
+time_period	booking	nn	Tidsperiode
 title	booking	nn	Tittel
 Title for filter boxes	booking	nn	Tittel for filtreringsbokser
 Title for upcoming events	booking	nn	Tittel for liste med kommende arrangementer
@@ -932,9 +933,11 @@ we	booking	nn	on.
 week template	booking	nn	Vekeplan
 weekday	booking	nn	Vekedag
 Weekdays	booking	nn	Ukedager
+weekend	booking	nn	Helg
 What	booking	nn	Kva
 when	booking	nn	Når
 when?	booking	nn	Når?
+when_and_where	booking	nn	Når og kvar?
 where	booking	nn	Kvar
 where?	booking	nn	Kvar?
 who	booking	nn	Kven
@@ -948,5 +951,4 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been processed and confirmation emails have been sent to you.	booking	nn	Søknadene er handsama, og stadfestingar er sendt til deg på e-post.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	nn	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	nn	Postnummer
-when_and_where	booking	nn	Når og kvar?
-time_period	booking	nn	Tidsperiode
+create_recurring_allocation	booking	nn	Opprett gjentakande tildeling

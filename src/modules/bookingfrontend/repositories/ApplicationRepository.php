@@ -441,13 +441,13 @@ class ApplicationRepository
         activity_id, contact_name, contact_email, contact_phone,
         responsible_street, responsible_zip_code, responsible_city,
         customer_identifier_type, customer_organization_number,
-        created, modified, secret, owner_id, name, organizer
+        created, modified, secret, owner_id, name, organizer, recurring_info
     ) VALUES (
         :status, :session_id, :building_name, :building_id,
         :activity_id, :contact_name, :contact_email, :contact_phone,
         :responsible_street, :responsible_zip_code, :responsible_city,
         :customer_identifier_type, :customer_organization_number,
-        NOW(), NOW(), :secret, :owner_id, :name, :organizer
+        NOW(), NOW(), :secret, :owner_id, :name, :organizer, :recurring_info
     )";
 
         $params = [
@@ -467,7 +467,8 @@ class ApplicationRepository
             ':secret' => $this->generateSecret(),
             ':owner_id' => $data['owner_id'],
             ':name' => $data['name'] ?? '',
-            ':organizer' => $data['organizer'] ?? ''
+            ':organizer' => $data['organizer'] ?? '',
+            ':recurring_info' => $data['recurring_info'] ?? null
         ];
 
         $stmt = $this->db->prepare($sql);
@@ -495,6 +496,7 @@ class ApplicationRepository
         customer_organization_number = :customer_organization_number,
         name = :name,
         organizer = :organizer,
+        recurring_info = :recurring_info,
         modified = NOW()
         WHERE id = :id AND session_id = :session_id";
 
@@ -513,7 +515,8 @@ class ApplicationRepository
             ':customer_identifier_type' => $data['customer_identifier_type'],
             ':customer_organization_number' => $data['customer_organization_number'],
             ':organizer' => $data['organizer'] ?? '',
-            ':name' => $data['name'] ?? ''
+            ':name' => $data['name'] ?? '',
+            ':recurring_info' => $data['recurring_info'] ?? null
         ];
 
         $stmt = $this->db->prepare($sql);
@@ -545,7 +548,7 @@ class ApplicationRepository
             'responsible_street', 'responsible_zip_code', 'responsible_city',
             'customer_identifier_type', 'customer_organization_number',
             'customer_organization_name', 'customer_organization_id', 'description', 'equipment', 'organizer', 'parent_id', 'customer_ssn',
-            'session_id'
+            'session_id', 'recurring_info'
         ];
 
         foreach ($data as $field => $value)

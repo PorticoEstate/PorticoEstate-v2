@@ -32,3 +32,6 @@ docker-compose.override.yml
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Test scripts
+test_scripts/

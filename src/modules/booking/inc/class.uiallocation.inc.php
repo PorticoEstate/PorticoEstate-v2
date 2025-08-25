@@ -344,7 +344,8 @@
 						// Pre-fill recurring form data
 						$_POST['field_interval'] = $recurring_data['field_interval'] ?? 1;
 						$_POST['repeat_until'] = $recurring_data['repeat_until'] ?? '';
-						$_POST['outseason'] = $recurring_data['outseason'] ?? false;
+						// Handle outseason checkbox - convert 1 to 'on' for checkbox
+						$_POST['outseason'] = ($recurring_data['outseason'] ?? false) ? 'on' : false;
 					}
 
 					// Pre-fill application data
@@ -352,11 +353,35 @@
 					$allocation['building_id'] = $recurring_app['building_id'];
 					$allocation['building_name'] = $recurring_app['building_name'];
 					
-					// Set default season - get current active season
-					$current_seasons = $this->season_bo->read(array('filters' => array('active' => 1), 'sort' => 'to_', 'dir' => 'desc', 'results' => 1));
-					if (!empty($current_seasons['results'][0])) {
-						$allocation['season_id'] = $current_seasons['results'][0]['id'];
-						$_POST['season_id'] = $current_seasons['results'][0]['id'];
+					// Set season based on application dates - find season that contains the first application date
+					if (!empty($recurring_app['dates']) && is_array($recurring_app['dates'])) {
+						$first_date = $recurring_app['dates'][0];
+						$app_date = date('Y-m-d', strtotime($first_date['from_']));
+						
+						// Find seasons for this building that are active and contain the application date
+						$matching_seasons = $this->season_bo->read(array(
+							'filters' => array(
+								'active' => 1, 
+								'building_id' => $recurring_app['building_id'],
+								'where' => array(
+									"%%table%%.from_ <= '{$app_date}'",
+									"%%table%%.to_ >= '{$app_date}'"
+								)
+							), 
+							'results' => 1
+						));
+						
+						if (!empty($matching_seasons['results'][0])) {
+							$allocation['season_id'] = $matching_seasons['results'][0]['id'];
+							$_POST['season_id'] = $matching_seasons['results'][0]['id'];
+						} else {
+							// Fallback to current active season if no matching season found
+							$current_seasons = $this->season_bo->read(array('filters' => array('active' => 1, 'building_id' => $recurring_app['building_id']), 'sort' => 'to_', 'dir' => 'desc', 'results' => 1));
+							if (!empty($current_seasons['results'][0])) {
+								$allocation['season_id'] = $current_seasons['results'][0]['id'];
+								$_POST['season_id'] = $current_seasons['results'][0]['id'];
+							}
+						}
 					}
 
 					// Pre-fill organization data if available
@@ -656,11 +681,13 @@
 				
 				// Handle pre-filled datetime from recurring application
 				if (empty($dateTimeFrom) && !empty($allocation['from_'])) {
-					$dateTimeFrom = date('Y-m-d H:i:s', phpgwapi_datetime::date_to_timestamp($allocation['from_']));
+					$dateTimeFrom = $allocation['from_']; // Use as-is from recurring pre-fill
+					// Don't force dateformat since allocation['from_'] is already in ISO format
 				}
 				if (empty($dateTimeTo) && !empty($allocation['to_'])) {
-					$dateTimeTo = date('Y-m-d H:i:s', phpgwapi_datetime::date_to_timestamp($allocation['to_']));
+					$dateTimeTo = $allocation['to_']; // Use as-is from recurring pre-fill
 				}
+				
 				if(is_array($dateTimeFrom))
 				{
 					$dateTimeFrom = $dateTimeFrom[0];

@@ -219,6 +219,14 @@ const BillingForm: FC<BillingFormProps> = ({
 		return () => subscription.unsubscribe();
 	}, [watch, onBillingChange]);
 
+	// Sync documentsRead field with parent's areAllDocumentsChecked state
+	useEffect(() => {
+		const currentDocumentsRead = getValues('documentsRead');
+		if (currentDocumentsRead !== areAllDocumentsChecked) {
+			setValue('documentsRead', areAllDocumentsChecked, { shouldValidate: true });
+		}
+	}, [areAllDocumentsChecked, getValues, setValue]);
+
 
 	const handleOrgChange = async (orgNumber: string) => {
 		if (!orgNumber) return;
@@ -245,6 +253,11 @@ const BillingForm: FC<BillingFormProps> = ({
 	const submitForm = (data: BillingFormData) => {
 		// Only called if form validation passes
 		// Now handle document validation and proceed
+		if (process.env.NODE_ENV === 'development') {
+			console.log('🐛 BillingForm: submitForm called with data:', data);
+			console.log('🐛 BillingForm: documentsValidated:', documentsValidated);
+			console.log('🐛 BillingForm: about to call onSubmit()');
+		}
 		onSubmit();
 	};
 
@@ -265,8 +278,20 @@ const BillingForm: FC<BillingFormProps> = ({
 				onSubmit={(e) => {
 					// Prevent default form submission
 					e.preventDefault();
+					if (process.env.NODE_ENV === 'development') {
+						console.log('🐛 BillingForm: Form submit event triggered');
+						console.log('🐛 BillingForm: Current form errors:', errors);
+						console.log('🐛 BillingForm: Current form values:', getValues());
+					}
 					// Run form validation
-					handleSubmit(submitForm)(e);
+					handleSubmit(
+						submitForm,
+						(errors) => {
+							if (process.env.NODE_ENV === 'development') {
+								console.error('🐛 BillingForm: Form validation failed with errors:', errors);
+							}
+						}
+					)(e);
 				}}
 				className={styles.checkoutForm}>
 				<h2>{t('bookingfrontend.billing_information')}</h2>
@@ -465,8 +490,13 @@ const BillingForm: FC<BillingFormProps> = ({
 							checkedDocuments={checkedDocuments}
 							onDocumentCheck={onDocumentCheck}
 							areAllChecked={areAllDocumentsChecked}
-							showError={showDocumentsError}
+							showError={showDocumentsError || !!errors.documentsRead}
 						/>
+						{(errors.documentsRead || (!areAllDocumentsChecked && showDocumentsError)) && (
+							<ValidationMessage>
+								{errors.documentsRead?.message || t('bookingfrontend.you_must_confirm_all_documents')}
+							</ValidationMessage>
+						)}
 					</div>
 				)}
 

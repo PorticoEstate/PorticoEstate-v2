@@ -904,3 +904,5 @@ documents_confirmation_required	bookingfrontend	nn	Du må stadfeste at du har le
 field_wild_required	bookingfrontend	nn	{{field}} er påkrevd
 field_wild_invalid	bookingfrontend	nn	{{field}} har ugyldig format
 create_user_account	bookingfrontend	nn	Opprett brukarkonto
+recurring_login_link_text	bookingfrontend	nn	For å lage ei gjentakande booking, ver snill og <linkTag>Logg inn</linkTag>. Dette krever at du er delegat for ei organisasjon.
+no_organizations_for_recurring	bookingfrontend	nn	Du har ingen organisasjonar tilgjengelege for gjentakande bookingar.

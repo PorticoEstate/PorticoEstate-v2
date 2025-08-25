@@ -47,6 +47,7 @@ export interface FCallTempEvent {
         applicationId?: string | number;
         building_id: string | number;
         baseApplication?: Partial<IApplication>;
+        restorePendingData?: boolean;
     };
 }
 

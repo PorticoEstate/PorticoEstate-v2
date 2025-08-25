@@ -32,6 +32,6 @@ export interface IResource {
     booking_buffer_deadline: number | null;
     deny_application_if_booked: 0 | 1 | null;
     building_id: number | null;
-    description_json:string;
+	description_json?: string;
 }
 

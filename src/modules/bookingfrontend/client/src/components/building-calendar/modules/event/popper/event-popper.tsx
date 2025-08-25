@@ -60,7 +60,7 @@ const EventPopper: FC<EventPopperProps> = ({ event, onClose, anchor, placement }
 
     if (isMobile) {
         return (
-            <MobileDialog open={open} onClose={onClose}>
+            <MobileDialog open={open} onClose={onClose} dialogId={'event-dialog'}>
                 {content}
             </MobileDialog>
         );

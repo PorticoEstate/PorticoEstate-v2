@@ -22,6 +22,7 @@ import {
 	fetchBuildingAgeGroups,
 	fetchBuildingAudience,
 	fetchBuildingSchedule,
+	fetchOrganizationSchedule,
 	fetchBuildingSeasons,
 	fetchDeliveredApplications,
 	fetchFreeTimeSlotsForRange,
@@ -104,6 +105,13 @@ function useServerMessageMutation<TData = unknown, TError = unknown, TVariables 
 // }
 interface UseScheduleOptions {
 	building_id?: number;
+	weeks: DateTime[];
+	instance?: string;
+	initialWeekSchedule?: Record<string, IEvent[]>
+}
+
+interface UseOrganizationScheduleOptions {
+	organization_id?: number;
 	weeks: DateTime[];
 	instance?: string;
 	initialWeekSchedule?: Record<string, IEvent[]>
@@ -340,6 +348,86 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
 	});
 };
 
+/**
+ * Custom hook to fetch and cache organization schedule data by weeks
+ * @param options.organization_id - The ID of the organization
+ * @param options.weekStarts - Array of dates representing the start of each week needed
+ * @param options.instance - Optional instance parameter
+ */
+export const useOrganizationSchedule = ({organization_id, weeks, instance, initialWeekSchedule}: UseOrganizationScheduleOptions) => {
+	const queryClient = useQueryClient();
+	const weekStarts = weeks.map(d => d.set({weekday: 1}).startOf('day'));
+	const keys = weekStarts.map(a => a.toFormat("y-MM-dd"))
+
+	// Helper to get cache key for a week
+	const getWeekCacheKey = useCallback((key: string) => {
+		return ['organizationSchedule', organization_id, key];
+	}, [organization_id]);
+	
+	// Initialize cache with provided initial schedule data
+	useEffect(() => {
+		if (initialWeekSchedule) {
+			Object.entries(initialWeekSchedule).forEach(([weekStart, events]) => {
+				const cacheKey = getWeekCacheKey(weekStart);
+				if (!queryClient.getQueryData(cacheKey)) {
+					queryClient.setQueryData(cacheKey, events);
+				}
+			});
+		}
+	}, [initialWeekSchedule, organization_id, queryClient, getWeekCacheKey]);
+
+	// Fetch function that gets all uncached weeks
+	const fetchUncachedWeeks = async () => {
+		// Filter out weeks that are already in cache
+		const uncachedWeeks = keys.filter(weekStart => {
+			const cacheKey = getWeekCacheKey(weekStart);
+			const d = queryClient.getQueryData(cacheKey);
+			return !d;
+		});
+
+		if (uncachedWeeks.length === 0) {
+			// If all weeks are cached, combine and return cached data
+			const combinedData: IEvent[] = [];
+			keys.forEach(weekStart => {
+				const cacheKey = getWeekCacheKey(weekStart);
+				const weekData = queryClient.getQueryData<IEvent[]>(cacheKey);
+				if (weekData) {
+					combinedData.push(...weekData);
+				}
+			});
+			return combinedData;
+		}
+
+		// Fetch data for all uncached weeks at once
+		const scheduleData = await fetchOrganizationSchedule(organization_id!, uncachedWeeks, instance);
+		// Cache each week's data separately
+		uncachedWeeks.forEach(weekStart => {
+			const weekData: IEvent[] = scheduleData[weekStart] || [];
+			const cacheKey = getWeekCacheKey(weekStart);
+			queryClient.setQueryData(cacheKey, weekData, {});
+		});
+
+		// Return combined data for all requested weeks
+		const combinedData: IEvent[] = [];
+		keys.forEach(weekStart => {
+			const cacheKey = getWeekCacheKey(weekStart);
+			const weekData = queryClient.getQueryData<IEvent[]>(cacheKey);
+			if (weekData) {
+				combinedData.push(...weekData);
+			}
+		});
+
+		return combinedData;
+	};
+
+	// Main query hook
+	return useQuery({
+		queryKey: ['organizationSchedule', organization_id, keys.join(',')],
+		queryFn: organization_id === undefined ? skipToken : fetchUncachedWeeks,
+		enabled: organization_id !== undefined,
+	});
+};
+
 class AuthenticationError extends Error {
 	statusCode: number;
 
@@ -351,6 +439,17 @@ class AuthenticationError extends Error {
 }
 
 export function useBookingUser() {
+	const queryClient = useQueryClient();
+
+	// Handle WebSocket messages for booking user refresh
+	useMessageTypeSubscription('refresh_bookinguser', (message) => {
+		console.log('Received booking user refresh WebSocket update');
+
+		// Invalidate the booking user query to trigger a refetch
+		// This ensures the user gets the latest data from the server
+		queryClient.invalidateQueries({queryKey: ['bookingUser']});
+	});
+
 	return useQuery<IBookingUser>({
 		queryKey: ['bookingUser'],
 		queryFn: async () => {
@@ -365,7 +464,18 @@ export function useBookingUser() {
 				throw new AuthenticationError('Failed to fetch user', response.status);
 			}
 
-			return response.json();
+			const userData = await response.json();
+
+			// Check if this is a first-time user with minimal data
+			// If so, trigger a refetch after a short delay to allow backend initialization to complete
+			// This serves as a fallback in case WebSocket notifications fail
+			// if (userData.is_logged_in && (!userData.name || userData.name === '')) {
+			// 	setTimeout(() => {
+			// 		queryClient.invalidateQueries({queryKey: ['bookingUser']});
+			// 	}, 2000); // 2 second delay to allow external data fetch to complete
+			// }
+
+			return userData;
 		},
 		retry: (failureCount, error: AuthenticationError | Error) => {
 			// Don't retry on 401
@@ -481,6 +591,61 @@ export function useUpdateBookingUser() {
 			queryClient.invalidateQueries({queryKey: ['bookingUser']})
 		}
 	})
+}
+
+/**
+ * Hook to create a new booking user
+ */
+export function useCreateBookingUser() {
+	const queryClient = useQueryClient();
+	
+	const createBookingUser = async (userData: Partial<IBookingUser>): Promise<IBookingUser> => {
+		const response = await fetch('/bookingfrontend/user/create', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(userData),
+		});
+
+		if (!response.ok) {
+			const errorData = await response.json().catch(() => ({}));
+			throw new Error(errorData.error || 'Failed to create user');
+		}
+
+		const result = await response.json();
+		
+		// Invalidate and refetch user data after creation
+		await queryClient.invalidateQueries({queryKey: ['bookingUser']});
+		
+		return result.user;
+	};
+
+	return { mutateAsync: createBookingUser };
+}
+
+/**
+ * Hook to fetch external user data for form pre-filling
+ */
+export function useExternalUserData() {
+	return useQuery({
+		queryKey: ['externalUserData'],
+		queryFn: async (): Promise<Partial<IBookingUser> | null> => {
+			const response = await fetch('/bookingfrontend/user/external-data');
+			
+			if (!response.ok) {
+				if (response.status === 404) {
+					return null; // No external data available
+				}
+				const errorData = await response.json().catch(() => ({}));
+				throw new Error(errorData.error || 'Failed to fetch external data');
+			}
+
+			return await response.json();
+		},
+		retry: false, // Don't retry if external data is not available
+		staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes
+	});
 }
 
 

@@ -32,13 +32,13 @@ use App\modules\phpgwapi\controllers\Locations;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
+use App\modules\phpgwapi\services\CustomFields;
 
 
 /*
 	 * Import the parent class
 	 */
 
-phpgw::import_class('phpgwapi.custom_fields');
 
 /**
  * Custom Fields
@@ -47,7 +47,7 @@ phpgw::import_class('phpgwapi.custom_fields');
  * @subpackage phpgwapi
  */
 
-class property_custom_fields extends phpgwapi_custom_fields
+class property_custom_fields extends CustomFields
 {
 	var $_db2, $contacts, $userSettings, $phpgwapi_common, $accounts;
 	/**

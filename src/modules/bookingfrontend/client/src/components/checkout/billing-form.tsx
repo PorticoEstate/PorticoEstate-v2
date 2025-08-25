@@ -13,7 +13,7 @@ import {
 } from "@digdir/designsystemet-react";
 import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
 import styles from './checkout.module.scss';
-import {BillingFormData, billingFormSchema} from "@/components/checkout/billing-form-schema";
+import {BillingFormData, createBillingFormSchema} from "@/components/checkout/billing-form-schema";
 import {IBookingUser} from "@/service/types/api.types";
 import {useMyOrganizations} from "@/service/hooks/organization";
 import {searchOrganizations, validateOrgNum} from "@/service/api/api-utils";
@@ -118,9 +118,10 @@ const BillingForm: FC<BillingFormProps> = ({
 		handleSubmit,
 		formState: {errors},
 		watch,
-		setValue
+		setValue,
+		getValues
 	} = useForm<BillingFormData>({
-		resolver: zodResolver(billingFormSchema),
+		resolver: zodResolver(createBillingFormSchema(t)),
 		defaultValues: {
 			customerType: 'ssn',
 			contactName: user?.name || '',
@@ -147,6 +148,36 @@ const BillingForm: FC<BillingFormProps> = ({
 		};
 		onBillingChange(defaultValues);
 	}, [user, onBillingChange]);
+
+	// Effect to refill blank fields when user data refreshes
+	useEffect(() => {
+		const currentValues = getValues();
+		const customerType = currentValues.customerType;
+		
+		// Only refill fields if they are currently blank and user has the data
+		// Also only refill personal fields when customerType is 'ssn' (private)
+		if (customerType === 'ssn') {
+			if (!currentValues.contactName && user?.name) {
+				setValue('contactName', user.name);
+			}
+			if (!currentValues.contactEmail && user?.email) {
+				setValue('contactEmail', user.email);
+				setValue('contactEmailConfirm', user.email);
+			}
+			if (!currentValues.contactPhone && user?.phone) {
+				setValue('contactPhone', user.phone);
+			}
+			if (!currentValues.street && user?.street) {
+				setValue('street', user.street);
+			}
+			if (!currentValues.zipCode && user?.zip_code) {
+				setValue('zipCode', user.zip_code);
+			}
+			if (!currentValues.city && user?.city) {
+				setValue('city', user.city);
+			}
+		}
+	}, [user, setValue, getValues]);
 
 
 	const customerType = watch('customerType');
@@ -210,11 +241,22 @@ const BillingForm: FC<BillingFormProps> = ({
 	};
 
 
-	// Custom submit handler that checks document validation
+	// Custom submit handler that runs after form validation passes
 	const submitForm = (data: BillingFormData) => {
-		// Always call onSubmit - it will handle document validation internally
-		// and show errors if needed
+		// Only called if form validation passes
+		// Now handle document validation and proceed
 		onSubmit();
+	};
+
+	// Handler for Vipps payment that validates form first
+	const handleVippsPaymentClick = () => {
+		// Trigger form validation and call Vipps payment if valid
+		handleSubmit((data) => {
+			// Only called if form validation passes
+			if (onVippsPayment && !vippsLoading) {
+				onVippsPayment();
+			}
+		})();
 	};
 
 	return (
@@ -271,7 +313,7 @@ const BillingForm: FC<BillingFormProps> = ({
 							render={({field}) => (
 								<Field>
 									<Label>
-										{t('bookingfrontend.organization')}
+										{t('bookingfrontend.organization')} <span className="required-asterisk">*</span>
 									</Label>
 									<AsyncSelect
 										cacheOptions
@@ -327,7 +369,8 @@ const BillingForm: FC<BillingFormProps> = ({
 							<Textfield
 								label={t('bookingfrontend.contact_name')}
 								{...field}
-								error={errors.contactName?.message}
+								error={errors.contactName?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -340,7 +383,8 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.contact_email')}
 								type="email"
 								{...field}
-								error={errors.contactEmail?.message}
+								error={errors.contactEmail?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -353,7 +397,8 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.confirm_email')}
 								type="email"
 								{...field}
-								error={errors.contactEmailConfirm?.message}
+								error={errors.contactEmailConfirm?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -366,7 +411,8 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.contact_phone')}
 								type="tel"
 								{...field}
-								error={errors.contactPhone?.message}
+								error={errors.contactPhone?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -378,7 +424,8 @@ const BillingForm: FC<BillingFormProps> = ({
 							<Textfield
 								label={t('bookingfrontend.responsible_street')}
 								{...field}
-								error={errors.street?.message}
+								error={errors.street?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -390,7 +437,8 @@ const BillingForm: FC<BillingFormProps> = ({
 							<Textfield
 								label={t('bookingfrontend.responsible_zip_code')}
 								{...field}
-								error={errors.zipCode?.message}
+								error={errors.zipCode?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -402,7 +450,8 @@ const BillingForm: FC<BillingFormProps> = ({
 							<Textfield
 								label={t('bookingfrontend.responsible_city')}
 								{...field}
-								error={errors.city?.message}
+								error={errors.city?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -503,12 +552,7 @@ const BillingForm: FC<BillingFormProps> = ({
 											<VippsCheckoutButton
 												key={method.method}
 												type="button"
-												onClick={() => {
-													console.log("Vipps button clicked!");
-													if (onVippsPayment && !vippsLoading) {
-														onVippsPayment();
-													}
-												}}
+												onClick={handleVippsPaymentClick}
 												brand="vipps"
 												language={vippsLanguage}
 												variant="primary"
@@ -526,10 +570,7 @@ const BillingForm: FC<BillingFormProps> = ({
 
 								{/* Invoice Payment Button */}
 								<Button
-									onClick={(e) => {
-										e.preventDefault();
-										onSubmit();
-									}}
+									type="submit"
 									disabled={vippsLoading}
 									className={styles.invoiceButton}
 								>
@@ -541,10 +582,7 @@ const BillingForm: FC<BillingFormProps> = ({
 						/* Show single submit button when no Vipps eligibility */
 						<Button
 							variant="primary"
-							onClick={(e) => {
-								e.preventDefault();
-								onSubmit();
-							}}
+							type="submit"
 						>
 							{t('bookingfrontend.submit_application')}
 						</Button>

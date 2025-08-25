@@ -791,3 +791,40 @@ application_title	bookingfrontend	no	Søknadstittel
 direct_booking_title	bookingfrontend	no	Tittel direktebestilling
 direct_booking	bookingfrontend	no	Direktebestilling
 total_incl_vat	bookingfrontend	no	Total inkl. mva
+timestamp	bookingfrontend	no	Tidspunkt
+no_groups	bookingfrontend	no	Ingen grupper funnet
+no_delegates	bookingfrontend	no	Ingen delegater funnet
+edit_organization	bookingfrontend	no	Rediger organisasjon
+markdown	bookingfrontend	no	Markdown
+visual	bookingfrontend	no	Visuell
+enter_description_markdown	bookingfrontend	no	Skriv inn beskrivelse i markdown-format
+markdown_help_professional	bookingfrontend	no	Bruk verktøylinjen over for å formatere teksten, eller skriv i markdown-syntaks. Klikk forhåndsvisning for å se resultatet.
+basic_information	bookingfrontend	no	Grunnleggende informasjon
+short_name	bookingfrontend	no	Kort navn
+organization_not_found	bookingfrontend	no	Organisasjon ikke funnet
+access_denied	bookingfrontend	no	Tilgang nektet
+no_permission_edit_organization	bookingfrontend	no	Du har ikke tillatelse til å redigere denne organisasjonen.
+confirm_restore_delegate	bookingfrontend	no	Er du sikker på at du vil gjenopprette {{name}} som en aktiv delegat?
+confirm_delete_delegate	bookingfrontend	no	Er du sikker på at du vil fjerne {{name}} som delegat? Dette vil oppheve deres tilgang til denne organisasjonen.
+group_name	bookingfrontend	no	Gruppenavn
+group_shortname	bookingfrontend	no	Kort navn
+new_group	bookingfrontend	no	Ny gruppe
+edit_group	bookingfrontend	no	Rediger gruppe
+delete_group	bookingfrontend	no	Slett gruppe
+confirm_delete_group	bookingfrontend	no	Er du sikker på at du vil slette gruppen {name}?
+group_contacts	bookingfrontend	no	Gruppekontakter
+add_contact	bookingfrontend	no	Legg til kontakt
+show_in_portal	bookingfrontend	no	Vis i portal
+deactivate_group	bookingfrontend	no	Deaktiver gruppe
+activate_group	bookingfrontend	no	Aktiver gruppe
+confirm_deactivate_group	bookingfrontend	no	Er du sikker på at du vil deaktivere gruppen {{name}}?
+confirm_activate_group	bookingfrontend	no	Er du sikker på at du vil aktivere gruppen {{name}}?
+fill_from_delegate	bookingfrontend	no	Fyll ut fra delegat
+select_delegate	bookingfrontend	no	Velg delegat...
+show_inactive	bookingfrontend	no	Vis inaktive
+organizer_required	bookingfrontend	no	Arrangørnavn er påkrevd
+emails_dont_match	bookingfrontend	no	E-postadressene stemmer ikke overens
+documents_confirmation_required	bookingfrontend	no	Du må bekrefte at du har lest alle forskriftsdokumenter
+field_wild_required	bookingfrontend	no	{{field}} er påkrevd
+field_wild_invalid	bookingfrontend	no	{{field}} har ugyldig format
+create_user_account	bookingfrontend	no	Opprett brukerkonto

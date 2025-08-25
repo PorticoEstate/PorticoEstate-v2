@@ -106,10 +106,27 @@ RUN install-php-extensions imagick
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
 RUN php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
 
-# Conditionally install MSSQL support
+# Conditionally install MSSQL support (ODBC + PHP drivers)
 RUN if [ "${INSTALL_MSSQL}" = "true" ]; then \
-     install-php-extensions sqlsrv pdo_sqlsrv;\
-fi
+            set -eux; \
+            export DEBIAN_FRONTEND=noninteractive; \
+            export ACCEPT_EULA=Y; \
+            . /etc/os-release; \
+            MS_VER="12"; \
+            case "${VERSION_CODENAME}" in \
+                bookworm) MS_VER="12" ;; \
+                bullseye) MS_VER="11" ;; \
+                trixie)   MS_VER="12" ;; \
+                *)        MS_VER="12" ;; \
+            esac; \
+            apt-get update && apt-get install -y --no-install-recommends ca-certificates gnupg wget apt-transport-https unixodbc-dev; \
+            wget -O /tmp/packages-microsoft-prod.deb "https://packages.microsoft.com/config/debian/${MS_VER}/packages-microsoft-prod.deb"; \
+            dpkg -i /tmp/packages-microsoft-prod.deb; rm -f /tmp/packages-microsoft-prod.deb; \
+            apt-get update; \
+            apt-get install -y --no-install-recommends msodbcsql18 mssql-tools18; \
+            echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' > /etc/profile.d/mssql-tools.sh; \
+            install-php-extensions sqlsrv pdo_sqlsrv; \
+        fi
 
 # PHP configuration
 RUN if [ "${INSTALL_XDEBUG}" = "true" ]; then \

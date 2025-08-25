@@ -20,10 +20,12 @@ import {isCalendarDeactivated} from "@/service/utils/deactivation-utils";
 interface BuildingCalendarProps {
 	events?: IEvent[];
 	onDateChange: Dispatch<DatesSetArg>
-	seasons: Season[];
-	building: IBuilding;
+	seasons?: Season[];
+	building?: IBuilding;
+	buildings?: IBuilding[];
 	initialDate: DateTime;
 	initialEnabledResources: Set<string>;
+	readOnly?: boolean;
 }
 
 Settings.defaultLocale = "nb";
@@ -31,7 +33,7 @@ Settings.defaultLocale = "nb";
 
 const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarProps>((props, ref) => {
 	const t = useTrans();
-	const {events} = props;
+	const {events, building, buildings, readOnly = false} = props;
 	const [currentDate, setCurrentDate] = useState<DateTime>(props.initialDate);
 	const internalRef = useRef<FullCalendar | null>(null);
 	const calendarRef = (ref || internalRef) as React.MutableRefObject<FullCalendar | null>;
@@ -39,6 +41,12 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 	const [lastCalendarView, setLastCalendarView] = useState<string>('timeGridWeek');
 	const calendarViewMode = useCalenderViewMode();
 	const {enabledResources} = useEnabledResources();
+
+	// Determine if we're in organization mode
+	const isOrganizationMode = !building && buildings && buildings.length > 0;
+
+	// For organization mode, use the first building as fallback or create a mock building
+	const currentBuilding = building;
 
 	const [selectedEvent, setSelectedEvent] = useState<FCallEvent | FCallTempEvent | null>(null);
 	const [popperAnchorEl, setPopperAnchorEl] = useState<HTMLElement | null>(null);
@@ -105,8 +113,8 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 
 
 	const handleDateSelect = useCallback((selectInfo?: Partial<DateSelectArg>) => {
-		// Prevent date selection if calendar is deactivated
-		if (props.building.deactivate_calendar) {
+		// Prevent date selection if calendar is deactivated or in read-only mode
+		if (readOnly || (currentBuilding?.deactivate_calendar)) {
 			return;
 		}
 
@@ -116,6 +124,11 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 
 		// Prevent creating events in the past
 		if (selectInfo?.start && DateTime.fromJSDate(selectInfo.start) < DateTime.now()) {
+			return;
+		}
+
+		// Don't allow creating events in organization mode
+		if (isOrganizationMode) {
 			return;
 		}
 
@@ -131,12 +144,12 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 			extendedProps: {
 				type: 'temporary',
 				resources: [...enabledResources],
-				building_id: props.building.id,
+				building_id: currentBuilding?.id || 0,
 			},
 		};
 		selectEvent(newEvent, undefined);
 		selectInfo?.view?.calendar.unselect(); // Clear selection
-	}, [t, enabledResources, props.building.id, props.building.deactivate_calendar, selectEvent]);
+	}, [t, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent]);
 
 	return (
 		<React.Fragment>
@@ -148,9 +161,9 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 			<CalendarInnerHeader view={view} calendarRef={calendarRef}
 								 setView={(v) => setView(v)}
 								 currentDate={currentDate} setCurrentDate={setCurrentDate}
-								 setLastCalendarView={() => setView(lastCalendarView)} building={props.building}
-								 createNew={() => handleDateSelect()}/>
-			{calendarViewMode === 'calendar' && !props.building.deactivate_calendar && (
+								 setLastCalendarView={() => setView(lastCalendarView)} building={currentBuilding}
+								 createNew={readOnly || isOrganizationMode ? undefined : () => handleDateSelect()}/>
+			{calendarViewMode === 'calendar' && !currentBuilding?.deactivate_calendar && (
 				<FullCalendarView
 					calendarRef={calendarRef}
 					viewMode={view}
@@ -162,11 +175,11 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 					seasons={props.seasons}
 					currentTempEvent={currentTempEvent}
 					onDateChange={props.onDateChange}
-					handleDateSelect={handleDateSelect}
+					handleDateSelect={readOnly || isOrganizationMode ? undefined : handleDateSelect}
 				/>
 
 			)}
-			{calendarViewMode === 'calendar' && props.building.deactivate_calendar && (
+			{calendarViewMode === 'calendar' && currentBuilding?.deactivate_calendar && (
 				<div style={{
 					padding: '2rem',
 					textAlign: 'center',
@@ -181,11 +194,11 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 					{t('bookingfrontend.calendar_view_disabled')}
 				</div>
 			)}
-			{calendarViewMode === 'timeslots' && (
+			{calendarViewMode === 'timeslots' && currentBuilding && (
 				<TimeslotView
 					viewMode={view}
 					currentDate={currentDate}
-					building={props.building}
+					building={currentBuilding}
 				/>
 			)}
 
@@ -199,8 +212,10 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 				setPopperAnchorEl(null);
 			}}/>
 
-			<ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
-							 building_id={props.building.id}/>
+			{!readOnly && !isOrganizationMode && currentBuilding && (
+				<ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
+								 building_id={currentBuilding.id}/>
+			)}
 
 
 		</React.Fragment>

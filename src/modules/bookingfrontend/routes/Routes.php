@@ -64,8 +64,20 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->post('', OrganizationController::class . ':create');
 		$group->get('/lookup/{number}', OrganizationController::class . ':lookup');
 		$group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');
+		$group->get('/{id}/delegates', OrganizationController::class . ':getDelegates');
+		$group->put('/{id}/delegates/{delegate_id}', OrganizationController::class . ':updateDelegate');
+		$group->delete('/{id}/delegates/{delegate_id}', OrganizationController::class . ':removeDelegate');
+		$group->get('/{id}/groups', OrganizationController::class . ':getGroups');
+		$group->post('/{id}/groups', OrganizationController::class . ':createGroup');
+		$group->get('/{id}/groups/{group_id}', OrganizationController::class . ':getGroup');
+		$group->put('/{id}/groups/{group_id}', OrganizationController::class . ':updateGroup');
+		$group->get('/{id}/buildings', OrganizationController::class . ':getBuildings');
+		$group->get('/{id}/documents', OrganizationController::class . ':getDocuments');
+		$group->get('/document/{id}/download', OrganizationController::class . ':downloadDocument');
+		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getOrganizationSchedule');
 		$group->get('/{id}/events', EventController::class . ':getOrganizationEvents');
 		$group->get('/list', OrganizationController::class . ':getList');
+		$group->put('/{id}', OrganizationController::class . ':update');
 		$group->get('/{id}', OrganizationController::class . ':getById');
 	});
 
@@ -156,6 +168,8 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->group('/user', function (RouteCollectorProxy $group) {
 		$group->get('', BookingUserController::class . ':index');
 		$group->patch('', BookingUserController::class . ':update');
+		$group->post('/create', BookingUserController::class . ':create');
+		$group->get('/external-data', BookingUserController::class . ':getExternalData');
 		$group->get('/session', BookingUserController::class . ':getSessionId');
 		$group->get('/messages', BookingUserController::class . ':getMessages');
 		$group->delete('/messages/{id}', BookingUserController::class . ':deleteMessage');
@@ -191,6 +205,7 @@ $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
 		return $response->withHeader('Content-Type', 'text/html');
 	});
 	$group->post('/trigger-partial-update', DebugController::class . ':triggerPartialUpdate');
+	$group->get('/trigger-bookinguser-update', DebugController::class . ':triggerBookingUserUpdate');
 	$group->post('/test-redis', DebugController::class . ':testRedis');
 	$group->get('/session-info', DebugController::class . ':getSessionInfo');
 })->add(new SessionsMiddleware($app->getContainer()));

@@ -232,7 +232,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		// will handle the standard closed hours display.
 		
 		// Check if we have season transitions during the view period
-		const hasSeasonTransition = seasons && seasons.length > 1 && seasons.some(season1 => 
+		const hasSeasonTransition = seasons && seasons.length > 1 && viewStart && viewEnd && seasons.some(season1 => 
 			seasons.some(season2 => 
 				season1.id !== season2.id && 
 				season1.active && season2.active &&

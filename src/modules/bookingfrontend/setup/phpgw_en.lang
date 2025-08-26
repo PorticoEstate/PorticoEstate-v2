@@ -827,3 +827,4 @@ documents_confirmation_required	bookingfrontend	en	You must confirm that you hav
 field_wild_required	bookingfrontend	en	{{field}} is required
 field_wild_invalid	bookingfrontend	en	{{field}} has invalid format
 create_user_account	bookingfrontend	en	Create User Account
+you_must_confirm_all_documents	bookingfrontend	en	You must confirm that you have read all regulation documents

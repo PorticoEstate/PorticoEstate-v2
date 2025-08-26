@@ -22,8 +22,8 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
         })
     }
 
-    // Separate recurring and regular applications
-    const {regularApplications, recurringApplications} = useMemo(() => {
+    // Separate recurring and regular applications, then group regular applications by building
+    const {regularApplicationsByBuilding, recurringApplications} = useMemo(() => {
         const regular: IApplication[] = [];
         const recurring: IApplication[] = [];
         
@@ -35,34 +35,48 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             }
         });
         
+        // Group regular applications by building_id
+        const groupedByBuilding = new Map<number, IApplication[]>();
+        regular.forEach(app => {
+            const buildingId = app.building_id;
+            if (!groupedByBuilding.has(buildingId)) {
+                groupedByBuilding.set(buildingId, []);
+            }
+            groupedByBuilding.get(buildingId)!.push(app);
+        });
+        
         return {
-            regularApplications: regular,
+            regularApplicationsByBuilding: Array.from(groupedByBuilding.entries()).map(([buildingId, apps]) => ({
+                buildingId,
+                buildingName: apps[0].building_name,
+                applications: apps
+            })),
             recurringApplications: recurring
         };
     }, [applications]);
 
     return (
         <div>
-            {/* Regular Applications Section */}
-            {regularApplications.length > 0 && (
-                <section className={styles.cartSection}>
-                    <h2>{t('bookingfrontend.your_applications')}</h2>
+            {/* Regular Applications Sections - Grouped by Building */}
+            {regularApplicationsByBuilding.map((buildingGroup, index) => (
+                <section key={buildingGroup.buildingId} className={styles.cartSection} style={{marginTop: index > 0 ? '2rem' : '0'}}>
+                    <h2>{buildingGroup.buildingName}</h2>
                     <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
                         {t('bookingfrontend.select_main_application_note')}
                     </p>
                     <ShoppingCartTable 
-                        basketData={regularApplications} 
+                        basketData={buildingGroup.applications} 
                         openEdit={openEdit}
                         showParentSelection={true}
                         selectedParentId={selectedParentId}
                         onParentIdChange={onParentIdChange}
                     />
                 </section>
-            )}
+            ))}
             
             {/* Recurring Applications Section */}
             {recurringApplications.length > 0 && (
-                <section className={styles.cartSection} style={{marginTop: regularApplications.length > 0 ? '2rem' : '0'}}>
+                <section className={styles.cartSection} style={{marginTop: regularApplicationsByBuilding.length > 0 ? '2rem' : '0'}}>
                     <h2>{t('bookingfrontend.recurring_applications')}</h2>
                     <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
                         {t('bookingfrontend.recurring_applications_note')}

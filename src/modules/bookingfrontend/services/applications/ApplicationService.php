@@ -10,6 +10,8 @@ use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\Database\Db;
 use App\modules\bookingfrontend\services\DocumentService;
 use App\modules\bookingfrontend\services\EventService;
+use App\modules\bookingfrontend\services\EmailService;
+use App\modules\bookingfrontend\services\TestEmailService;
 use App\modules\phpgwapi\services\Settings;
 use PDO;
 use Exception;
@@ -21,6 +23,7 @@ class ApplicationService
 {
     private $db;
     private $documentService;
+    private $emailService;
     private $userHelper;
     private $userSettings;
     public $applicationRepository; // Made public to access from controller
@@ -30,6 +33,7 @@ class ApplicationService
     {
         $this->db = Db::getInstance();
         $this->documentService = new DocumentService(Document::OWNER_APPLICATION);
+        $this->emailService = new EmailService();
         $this->userHelper = new UserHelper();
         $this->userSettings = Settings::getInstance()->get('user');
         $this->articleRepository = new ArticleRepository();
@@ -316,7 +320,7 @@ class ApplicationService
                     $stmt->bindParam(':org_number', $data['organizationNumber'], \PDO::PARAM_STR);
                     $stmt->execute();
                     $organization = $stmt->fetch(\PDO::FETCH_ASSOC);
-                    
+
                     if ($organization) {
                         $baseUpdateData['customer_organization_id'] = (int)$organization['id'];
                         $baseUpdateData['customer_organization_name'] = $organization['name']; // Use DB name, not client name
@@ -330,9 +334,9 @@ class ApplicationService
                                 'customer_identifier_type' => 'organization_number',
                                 'customer_organization_number' => $data['organizationNumber']
                             ];
-                            
+
                             $organizationId = $organizationService->createOrganization($organizationData);
-                            
+
                             if ($organizationId) {
                                 $baseUpdateData['customer_organization_id'] = (int)$organizationId;
                                 // Use the name as validated/processed by OrganizationService
@@ -358,22 +362,22 @@ class ApplicationService
                 // For recurring applications that already have organization data, preserve it
                 $updateData = $baseUpdateData;
                 // For recurring applications, preserve organization data if it was set during creation
-                if (!empty($application['recurring_info']) && 
+                if (!empty($application['recurring_info']) &&
                     isset($application['customer_identifier_type']) &&
                     $application['customer_identifier_type'] === 'organization_number') {
-                    
+
                     // Preserve existing organization data for recurring applications
                     unset($updateData['customer_identifier_type']);
                     unset($updateData['customer_organization_number']);
                     unset($updateData['customer_organization_name']);
                     unset($updateData['customer_organization_id']);
                     unset($updateData['customer_ssn']);
-                    
+
                     error_log("RECURRING APP DEBUG: Preserving org data for app {$application['id']}, removed customer fields from update data");
                     error_log("RECURRING APP DEBUG: updateData keys after unset: " . implode(', ', array_keys($updateData)));
                 } else {
-                    error_log("RECURRING APP DEBUG: App {$application['id']} - recurring_info: " . (!empty($application['recurring_info']) ? 'yes' : 'no') . 
-                             ", customer_identifier_type: " . ($application['customer_identifier_type'] ?? 'null') . 
+                    error_log("RECURRING APP DEBUG: App {$application['id']} - recurring_info: " . (!empty($application['recurring_info']) ? 'yes' : 'no') .
+                             ", customer_identifier_type: " . ($application['customer_identifier_type'] ?? 'null') .
                              ", customer_organization_id: " . ($application['customer_organization_id'] ?? 'null'));
                 }
 
@@ -388,7 +392,7 @@ class ApplicationService
             if ($startedTransaction) {
                 $this->db->commit();
             }
-            
+
             return $updatedApplications;
 
         } catch (Exception $e)
@@ -448,12 +452,11 @@ class ApplicationService
                 // Cancel blocks for this session to free up resources
                 $this->cancelBlocksForApplication($application_id);
 
-                // Send notification email (this already exists and works)
-                //FIXE: call to undefined method send_notification()
-                $this->send_notification($application_id);
-
                 $approvedApplications[] = array_merge($application, $updateData);
             }
+
+            // Group applications by parent_id for email notifications
+            $this->sendGroupedApplicationNotifications($approvedApplications);
 
             // Update payment status to completed (once for all applications)
             $soapplication->update_payment_status($remote_order_id, 'completed', 'CAPTURE');
@@ -636,11 +639,13 @@ class ApplicationService
                     $this->patchApplicationMainData($updateData, $application['id']);
                 }
 
-                // Send notification and add to updated list
-                $this->sendApplicationNotification($application['id']);
+                // Add to updated list but don't send notification yet
                 $finalUpdatedApplications[] = array_merge($application, $updateData);
             }
-            
+
+            // Group applications by parent_id for email notifications
+            $this->sendGroupedApplicationNotifications($finalUpdatedApplications);
+
             $this->db->commit();
             return [
                 'updated' => $finalUpdatedApplications,
@@ -931,7 +936,73 @@ class ApplicationService
     }
 
     /**
-     * Send notification for completed application
+     * Send grouped notifications for applications with the same parent_id
+     */
+    private function sendGroupedApplicationNotifications(array $applications): void
+    {
+        if (empty($applications)) {
+            return;
+        }
+
+        // Group applications by parent_id (null parent_id gets grouped with its own id)
+        $groupedApplications = [];
+        foreach ($applications as $application) {
+            $groupKey = $application['parent_id'] ?? $application['id'];
+            if (!isset($groupedApplications[$groupKey])) {
+                $groupedApplications[$groupKey] = [];
+            }
+            $groupedApplications[$groupKey][] = $application;
+        }
+
+        // Send email for each group
+        foreach ($groupedApplications as $groupKey => $group) {
+            if (count($group) > 1) {
+                // Multiple applications with same parent_id - send grouped email
+                $this->sendGroupApplicationNotification($group);
+            } else {
+                // Single application - send individual email
+                $this->sendApplicationNotification($group[0]['id']);
+            }
+        }
+    }
+
+    /**
+     * Send notification for a group of applications using modern EmailService
+     */
+    private function sendGroupApplicationNotification(array $applications): void
+    {
+        if (empty($applications)) {
+            return;
+        }
+
+        // Get full application data for each application
+        $fullApplications = [];
+        foreach ($applications as $application) {
+            $fullApp = $this->getFullApplication($application['id']);
+            if ($fullApp) {
+                $_application = (array)$fullApp;
+                $resources_array = $_application['resources'] ?? [];
+
+                // Extract only the id values from the resources array
+                $_application['resources'] = array_map(function($resource) {
+                    return is_array($resource) ? (int)$resource['id'] : (int)$resource;
+                }, $resources_array);
+
+                $fullApplications[] = $_application;
+            }
+        }
+
+        if (!empty($fullApplications)) {
+            // Determine if this is a newly created application
+            $created = $fullApplications[0]['status'] === 'NEW';
+
+            // Use modern EmailService group notification
+            $this->emailService->sendApplicationGroupNotification($fullApplications, $created);
+        }
+    }
+
+    /**
+     * Send notification for completed application using modern EmailService (single application)
      */
     private function sendApplicationNotification(int $application_id): void
     {
@@ -946,11 +1017,12 @@ class ApplicationService
             $_application['resources'] = array_map(function($resource) {
                 return is_array($resource) ? (int)$resource['id'] : (int)$resource;
             }, $resources_array);
-            // Call existing notification method from booking.boapplication
 
-            $created = $_application['status'] === 'NEW' ? true : false;
-            $bo = CreateObject('booking.boapplication');
-            $bo->send_notification((array)$_application, $created);
+            // Determine if this is a newly created application
+            $created = $_application['status'] === 'NEW';
+
+            // Use modern EmailService instead of legacy method
+            $this->emailService->sendApplicationNotification($_application, $created);
         }
     }
 

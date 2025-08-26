@@ -219,6 +219,14 @@ const BillingForm: FC<BillingFormProps> = ({
 		return () => subscription.unsubscribe();
 	}, [watch, onBillingChange]);
 
+	// Sync documentsRead field with parent's areAllDocumentsChecked state
+	useEffect(() => {
+		const currentDocumentsRead = getValues('documentsRead');
+		if (currentDocumentsRead !== areAllDocumentsChecked) {
+			setValue('documentsRead', areAllDocumentsChecked, { shouldValidate: true });
+		}
+	}, [areAllDocumentsChecked, getValues, setValue]);
+
 
 	const handleOrgChange = async (orgNumber: string) => {
 		if (!orgNumber) return;
@@ -465,8 +473,13 @@ const BillingForm: FC<BillingFormProps> = ({
 							checkedDocuments={checkedDocuments}
 							onDocumentCheck={onDocumentCheck}
 							areAllChecked={areAllDocumentsChecked}
-							showError={showDocumentsError}
+							showError={showDocumentsError || !!errors.documentsRead}
 						/>
+						{(!areAllDocumentsChecked && showDocumentsError) && (
+							<ValidationMessage>
+								{t('bookingfrontend.you_must_confirm_all_documents')}
+							</ValidationMessage>
+						)}
 					</div>
 				)}
 

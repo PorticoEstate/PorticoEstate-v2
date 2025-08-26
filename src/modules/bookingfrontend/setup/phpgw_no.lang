@@ -828,3 +828,4 @@ documents_confirmation_required	bookingfrontend	no	Du må bekrefte at du har les
 field_wild_required	bookingfrontend	no	{{field}} er påkrevd
 field_wild_invalid	bookingfrontend	no	{{field}} har ugyldig format
 create_user_account	bookingfrontend	no	Opprett brukerkonto
+you_must_confirm_all_documents	bookingfrontend	no	Du må bekrefte at du har lest alle forskriftsdokumenter

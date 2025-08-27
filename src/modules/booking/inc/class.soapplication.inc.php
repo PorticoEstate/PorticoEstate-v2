@@ -136,6 +136,7 @@ class booking_soapplication extends booking_socommon
 				'session_id'					 => array('type' => 'string', 'required' => false),
 				'agreement_requirements'		 => array('type' => 'string', 'required' => false),
 				'external_archive_key'			 => array('type' => 'string', 'required' => false),
+				'recurring_info'				 => array('type' => 'json', 'required' => false),
 				'customer_organization_name'	 => array(
 					'type'		 => 'string',
 					'required'	 => False,

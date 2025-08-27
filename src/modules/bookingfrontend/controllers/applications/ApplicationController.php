@@ -885,6 +885,10 @@ class ApplicationController extends DocumentController
                 $reasons[] = 'Application not included - no matching criteria';
             }
 
+            // Get user organizations for the response
+            $bouser = new UserHelper();
+            $userOrganizations = $bouser->organizations ?? [];
+            
             return [
                 'application_id' => $applicationId,
                 'found' => true,
@@ -895,6 +899,7 @@ class ApplicationController extends DocumentController
                     'org_check_enabled' => $includeOrganizations,
                     'status_filter' => 'status != NEWPARTIAL1'
                 ],
+                'user_organizations' => $userOrganizations,
                 'application_data' => [
                     'id' => $application['id'] ?? null,
                     'customer_ssn' => $application['customer_ssn'] ?? null,

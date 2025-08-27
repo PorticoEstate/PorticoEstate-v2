@@ -3,6 +3,7 @@ namespace App\modules\bookingfrontend\repositories;
 
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Article;
+use App\modules\bookingfrontend\models\User;
 use PDO;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
@@ -18,12 +19,14 @@ class ApplicationRepository
     private $db;
     private $articleRepository;
     private $userHelper;
+    private $userModel;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->articleRepository = new ArticleRepository();
         $this->userHelper = new UserHelper();
+        $this->userModel = new User($this->userHelper);
     }
 
     /**
@@ -109,8 +112,8 @@ class ApplicationRepository
         $params = [':ssn' => $ssn];
 
         if ($includeOrganizations) {
-            // Get user's organization memberships using UserHelper
-            $organizations = $this->userHelper->organizations;
+            // Get user's organization memberships using User model (same as /user endpoint)
+            $organizations = $this->userModel->delegates ?? [];
             if (!empty($organizations)) {
                 $orgIds = [];
                 $orgNumbers = [];
@@ -119,8 +122,8 @@ class ApplicationRepository
                     if (!empty($org['org_id'])) {
                         $orgIds[] = $org['org_id'];
                     }
-                    if (!empty($org['orgnr'])) {
-                        $orgNumbers[] = $org['orgnr'];
+                    if (!empty($org['organization_number'])) {
+                        $orgNumbers[] = $org['organization_number'];
                     }
                 }
 

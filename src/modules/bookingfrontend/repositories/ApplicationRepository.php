@@ -19,14 +19,14 @@ class ApplicationRepository
     private $db;
     private $articleRepository;
     private $userHelper;
-    private $userModel;
+    private $userModel = null;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->articleRepository = new ArticleRepository();
         $this->userHelper = new UserHelper();
-        $this->userModel = new User($this->userHelper);
+        // Don't initialize User model here - wait until we need it and have valid SSN
     }
 
     /**
@@ -112,8 +112,12 @@ class ApplicationRepository
         $params = [':ssn' => $ssn];
 
         if ($includeOrganizations) {
-            // Get user's organization memberships using User model (same as /user endpoint)
-            $organizations = $this->userModel->delegates ?? [];
+            // Create User model with the provided SSN to get delegates (same as /user endpoint)
+            $tempUserHelper = new UserHelper();
+            $tempUserHelper->ssn = $ssn; // Set the SSN we're querying for
+            $tempUserModel = new User($tempUserHelper);
+            $organizations = $tempUserModel->delegates ?? [];
+            
             if (!empty($organizations)) {
                 $orgIds = [];
                 $orgNumbers = [];

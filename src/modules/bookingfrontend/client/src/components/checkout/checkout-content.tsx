@@ -13,6 +13,7 @@ import {useCheckoutApplications, useVippsPayment, useExternalPaymentEligibility}
 import {useRouter} from "next/navigation";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import RegulationDocuments from './regulation-documents';
+import {IShortResource} from "@/service/pecalendar.types";
 
 const CheckoutContent: FC = () => {
 	const t = useTrans();
@@ -64,7 +65,7 @@ const CheckoutContent: FC = () => {
 
         allApps.forEach(app => {
             if (app.resources && Array.isArray(app.resources)) {
-                app.resources.forEach(resource => {
+                app.resources.forEach((resource: IShortResource) => {
                     if (resource.id) {
                         resourceMap.set(resource.id, {
                             id: resource.id,

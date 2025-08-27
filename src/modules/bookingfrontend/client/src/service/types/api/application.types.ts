@@ -127,7 +127,7 @@ export interface NewPartialApplication extends Pick<IApplication, 'name' | 'buil
 	articles?: ArticleOrder[];
     recurring_info?: RecurringInfo; // For convenience, will be JSON.stringify'd
 }
-export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'dates' | 'resources'>>{
+export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'dates' | 'resources' | 'recurring_info'>>{
     id: number;
     dates?: Array<{
         id?: number;

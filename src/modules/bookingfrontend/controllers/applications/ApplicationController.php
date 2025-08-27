@@ -833,8 +833,10 @@ class ApplicationController extends DocumentController
 
             // Check organization applications if includeOrganizations is true
             if ($includeOrganizations) {
+                // Use the same approach as /user endpoint - create proper User model
                 $bouser = new UserHelper();
-                $userOrganizations = $bouser->organizations; // Use the same property as repository
+                $userModel = new \App\modules\bookingfrontend\models\User($bouser);
+                $userOrganizations = $userModel->delegates ?? [];
                 
                 if (!empty($userOrganizations)) {
                     $orgIds = [];
@@ -845,8 +847,8 @@ class ApplicationController extends DocumentController
                         if (!empty($org['org_id'])) {
                             $orgIds[] = $org['org_id'];
                         }
-                        if (!empty($org['orgnr'])) {
-                            $orgNumbers[] = $org['orgnr'];
+                        if (!empty($org['organization_number'])) {
+                            $orgNumbers[] = $org['organization_number'];
                         }
                     }
                     
@@ -885,9 +887,10 @@ class ApplicationController extends DocumentController
                 $reasons[] = 'Application not included - no matching criteria';
             }
 
-            // Get user organizations for the response
+            // Get user organizations for the response using same approach as /user endpoint
             $bouser = new UserHelper();
-            $userOrganizations = $bouser->organizations ?? [];
+            $userModel = new \App\modules\bookingfrontend\models\User($bouser);
+            $userOrganizations = $userModel->delegates ?? [];
             
             return [
                 'application_id' => $applicationId,

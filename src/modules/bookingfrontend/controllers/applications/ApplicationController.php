@@ -834,7 +834,7 @@ class ApplicationController extends DocumentController
             // Check organization applications if includeOrganizations is true
             if ($includeOrganizations) {
                 // Use the same approach as /user endpoint - create proper User model
-                $bouser = new UserHelper();
+                $bouser = UserHelper::fromSSN($userSsn);
                 $userModel = new \App\modules\bookingfrontend\models\User($bouser);
                 $userOrganizations = $userModel->delegates ?? [];
                 
@@ -888,7 +888,7 @@ class ApplicationController extends DocumentController
             }
 
             // Get user organizations for the response using same approach as /user endpoint
-            $bouser = new UserHelper();
+            $bouser = UserHelper::fromSSN($userSsn);
             $userModel = new \App\modules\bookingfrontend\models\User($bouser);
             $userOrganizations = $userModel->delegates ?? [];
             

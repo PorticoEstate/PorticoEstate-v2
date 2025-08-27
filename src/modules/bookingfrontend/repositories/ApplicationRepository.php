@@ -113,8 +113,7 @@ class ApplicationRepository
 
         if ($includeOrganizations) {
             // Create User model with the provided SSN to get delegates (same as /user endpoint)
-            $tempUserHelper = new UserHelper();
-            $tempUserHelper->ssn = $ssn; // Set the SSN we're querying for
+            $tempUserHelper = UserHelper::fromSSN($ssn);
             $tempUserModel = new User($tempUserHelper);
             $organizations = $tempUserModel->delegates ?? [];
             

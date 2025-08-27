@@ -119,7 +119,10 @@ class bookingfrontend_external_user_name extends UserHelper
 		//            [0] => Ospeskogveien
 		//            [1] => 0758 OSLO
 		//            [2] => Norge
-		//        )
+		//        ),
+		//    [adressebeskyttelse] => ugradert
+		//    [epostadresse] => xxx@example.com
+		//    [mobiltelefonnummer] => +4790xxxxxx
 		//)
 		//
 
@@ -153,7 +156,9 @@ class bookingfrontend_external_user_name extends UserHelper
 		$data['street']			 = $street;
 		$data['zip_code']		 = $poststed[0];
 		$data['city']			 = mb_convert_case($poststed[1],  MB_CASE_TITLE);
-		$data['address_type']	 = $ret['adressegradering']; //"fortrolig"
+		$data['address_type']	 = $ret['adressebeskyttelse']; //"fortrolig"
+		$data['email']			 = isset($ret['epostadresse']) ? $ret['epostadresse'] : '';
+		$data['phone']			 = isset($ret['mobiltelefonnummer']) ? $ret['mobiltelefonnummer'] : '';
 
 		if ($this->debug)
 		{

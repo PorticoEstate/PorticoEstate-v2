@@ -161,10 +161,10 @@ class ApplicationController extends DocumentController
             ];
 
             // Handle test_application_id parameter for debugging
-            if ($testApplicationId) {
-                $testResult = $this->analyzeApplicationInclusion($testApplicationId, $ssn, $includeOrganizations);
-                $responseData['test_result'] = $testResult;
-            }
+            // if ($testApplicationId) {
+            //     $testResult = $this->analyzeApplicationInclusion($testApplicationId, $ssn, $includeOrganizations);
+            //     $responseData['test_result'] = $testResult;
+            // }
 
             $response->getBody()->write(json_encode($responseData));
             return $response->withHeader('Content-Type', 'application/json');

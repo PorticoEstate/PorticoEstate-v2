@@ -3,6 +3,7 @@ namespace App\modules\bookingfrontend\repositories;
 
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Article;
+use App\modules\bookingfrontend\models\User;
 use PDO;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
@@ -18,12 +19,14 @@ class ApplicationRepository
     private $db;
     private $articleRepository;
     private $userHelper;
+    private $userModel = null;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->articleRepository = new ArticleRepository();
         $this->userHelper = new UserHelper();
+        // Don't initialize User model here - wait until we need it and have valid SSN
     }
 
     /**
@@ -109,8 +112,11 @@ class ApplicationRepository
         $params = [':ssn' => $ssn];
 
         if ($includeOrganizations) {
-            // Get user's organization memberships using UserHelper
-            $organizations = $this->userHelper->organizations;
+            // Create User model with the provided SSN to get delegates (same as /user endpoint)
+            $tempUserHelper = UserHelper::fromSSN($ssn);
+            $tempUserModel = new User($tempUserHelper);
+            $organizations = $tempUserModel->delegates ?? [];
+            
             if (!empty($organizations)) {
                 $orgIds = [];
                 $orgNumbers = [];
@@ -119,8 +125,8 @@ class ApplicationRepository
                     if (!empty($org['org_id'])) {
                         $orgIds[] = $org['org_id'];
                     }
-                    if (!empty($org['orgnr'])) {
-                        $orgNumbers[] = $org['orgnr'];
+                    if (!empty($org['organization_number'])) {
+                        $orgNumbers[] = $org['organization_number'];
                     }
                 }
 

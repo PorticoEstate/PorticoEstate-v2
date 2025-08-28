@@ -104,6 +104,13 @@ class ApplicationController extends DocumentController
      *         description="Include applications from organizations the user belongs to",
      *         @OA\Schema(type="boolean", default=false)
      *     ),
+     *     @OA\Parameter(
+     *         name="test_application_id",
+     *         in="query",
+     *         required=false,
+     *         description="Test why a specific application ID would be included or excluded from results",
+     *         @OA\Schema(type="integer")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of applications",
@@ -139,10 +146,11 @@ class ApplicationController extends DocumentController
                 );
             }
 
-            // Get query parameter for including organization applications
+            // Get query parameters
             $queryParams = $request->getQueryParams();
             $includeOrganizations = isset($queryParams['include_organizations']) && 
                                    filter_var($queryParams['include_organizations'], FILTER_VALIDATE_BOOLEAN);
+            $testApplicationId = isset($queryParams['test_application_id']) ? (int)$queryParams['test_application_id'] : null;
 
             $applications = $this->applicationService->getApplicationsBySsn($ssn, $includeOrganizations);
             $total_sum = $this->applicationService->calculateTotalSum($applications);
@@ -151,6 +159,12 @@ class ApplicationController extends DocumentController
                 'list' => $applications,
                 'total_sum' => $total_sum
             ];
+
+            // Handle test_application_id parameter for debugging
+            // if ($testApplicationId) {
+            //     $testResult = $this->analyzeApplicationInclusion($testApplicationId, $ssn, $includeOrganizations);
+            //     $responseData['test_result'] = $testResult;
+            // }
 
             $response->getBody()->write(json_encode($responseData));
             return $response->withHeader('Content-Type', 'application/json');
@@ -772,6 +786,142 @@ class ApplicationController extends DocumentController
 
 
 
+
+    /**
+     * Analyze why a specific application would be included or excluded from the base query
+     * This matches the exact logic in ApplicationRepository::getApplicationsBySsnAndOrganizations
+     */
+    private function analyzeApplicationInclusion(int $applicationId, string $userSsn, bool $includeOrganizations): array
+    {
+        try {
+            // Get the application details
+            $application = $this->applicationService->getApplicationById($applicationId);
+            
+            if (!$application) {
+                return [
+                    'application_id' => $applicationId,
+                    'found' => false,
+                    'reason' => 'Application not found in database',
+                    'included' => false
+                ];
+            }
+
+            $reasons = [];
+            $included = false;
+
+            // First check: NEWPARTIAL1 status exclusion (applies to all)
+            if (isset($application['status']) && $application['status'] === 'NEWPARTIAL1') {
+                return [
+                    'application_id' => $applicationId,
+                    'found' => true,
+                    'included' => false,
+                    'reasons' => ['Application excluded because status is NEWPARTIAL1'],
+                    'application_data' => [
+                        'status' => $application['status'],
+                        'customer_ssn' => $application['customer_ssn'] ?? null,
+                        'customer_organization_id' => $application['customer_organization_id'] ?? null,
+                        'customer_organization_number' => $application['customer_organization_number'] ?? null
+                    ]
+                ];
+            }
+
+            // Check personal applications: customer_ssn = user_ssn
+            if (isset($application['customer_ssn']) && $application['customer_ssn'] === $userSsn) {
+                $reasons[] = 'Included as personal application (customer_ssn matches user SSN)';
+                $included = true;
+            }
+
+            // Check organization applications if includeOrganizations is true
+            if ($includeOrganizations) {
+                // Use the same approach as /user endpoint - create proper User model
+                $bouser = UserHelper::fromSSN($userSsn);
+                $userModel = new \App\modules\bookingfrontend\models\User($bouser);
+                $userOrganizations = $userModel->delegates ?? [];
+                
+                if (!empty($userOrganizations)) {
+                    $orgIds = [];
+                    $orgNumbers = [];
+                    
+                    // Extract organization IDs and numbers (same as repository logic)
+                    foreach ($userOrganizations as $org) {
+                        if (!empty($org['org_id'])) {
+                            $orgIds[] = $org['org_id'];
+                        }
+                        if (!empty($org['organization_number'])) {
+                            $orgNumbers[] = $org['organization_number'];
+                        }
+                    }
+                    
+                    // Check customer_organization_id match
+                    if (!empty($orgIds) && isset($application['customer_organization_id']) && 
+                        in_array($application['customer_organization_id'], $orgIds)) {
+                        $reasons[] = 'Included as organization application (customer_organization_id matches user org membership)';
+                        $included = true;
+                    }
+                    
+                    // Check customer_organization_number match 
+                    if (!empty($orgNumbers) && isset($application['customer_organization_number']) && 
+                        in_array($application['customer_organization_number'], $orgNumbers)) {
+                        
+                        // Repository excludes duplicates: (customer_ssn IS NULL OR customer_ssn != :ssn2)
+                        if (empty($application['customer_ssn']) || $application['customer_ssn'] !== $userSsn) {
+                            $reasons[] = 'Included as organization application (customer_organization_number matches user org membership)';
+                            $included = true;
+                        } else {
+                            $reasons[] = 'Organization match found but excluded to prevent duplicate (already included via SSN)';
+                        }
+                    }
+                    
+                    if (!$included && !empty($userOrganizations)) {
+                        $reasons[] = 'Not included via organizations - no match with user organization IDs: [' . 
+                                    implode(', ', $orgIds) . '] or numbers: [' . implode(', ', $orgNumbers) . ']';
+                    }
+                } else {
+                    $reasons[] = 'User has no organization memberships';
+                }
+            } else {
+                $reasons[] = 'Organization applications not checked (include_organizations=false)';
+            }
+            
+            if (!$included) {
+                $reasons[] = 'Application not included - no matching criteria';
+            }
+
+            // Get user organizations for the response using same approach as /user endpoint
+            $bouser = UserHelper::fromSSN($userSsn);
+            $userModel = new \App\modules\bookingfrontend\models\User($bouser);
+            $userOrganizations = $userModel->delegates ?? [];
+            
+            return [
+                'application_id' => $applicationId,
+                'found' => true,
+                'included' => $included,
+                'reasons' => $reasons,
+                'query_logic' => [
+                    'personal_check' => 'customer_ssn = ' . $userSsn,
+                    'org_check_enabled' => $includeOrganizations,
+                    'status_filter' => 'status != NEWPARTIAL1'
+                ],
+                'user_organizations' => $userOrganizations,
+                'application_data' => [
+                    'id' => $application['id'] ?? null,
+                    'customer_ssn' => $application['customer_ssn'] ?? null,
+                    'customer_organization_id' => $application['customer_organization_id'] ?? null,
+                    'customer_organization_number' => $application['customer_organization_number'] ?? null,
+                    'status' => $application['status'] ?? null,
+                    'active' => $application['active'] ?? null
+                ]
+            ];
+
+        } catch (Exception $e) {
+            return [
+                'application_id' => $applicationId,
+                'found' => false,
+                'reason' => 'Error analyzing application: ' . $e->getMessage(),
+                'included' => false
+            ];
+        }
+    }
 
     /**
      * Helper function to populate required dummy data

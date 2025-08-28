@@ -159,6 +159,19 @@
 					}
 					elseif (count($this->bo_allocation->filter_conflict_errors($errors)) === 0)
 					{
+						if(isset($errors['allocation']))
+						{
+							$allocation['conflict'] = implode(', ', $errors['allocation']);
+						}
+						if (isset($errors['booking']))
+						{
+							$allocation['conflict'] = implode(', ', $errors['booking']);
+						}
+						if (isset($errors['event']))
+						{
+							$allocation['conflict'] = implode(', ', $errors['event']);
+						}
+
 						$invalid[] = $allocation;
 					}
 					else

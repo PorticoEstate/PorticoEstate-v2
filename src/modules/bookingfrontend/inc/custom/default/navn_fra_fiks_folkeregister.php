@@ -123,6 +123,7 @@ class bookingfrontend_external_user_name extends UserHelper
 		//    [adressebeskyttelse] => ugradert
 		//    [epostadresse] => xxx@example.com
 		//    [mobiltelefonnummer] => +4790xxxxxx
+		//    [spraak] => nb
 		//)
 		//
 
@@ -159,6 +160,7 @@ class bookingfrontend_external_user_name extends UserHelper
 		$data['address_type']	 = $ret['adressebeskyttelse']; //"fortrolig"
 		$data['email']			 = isset($ret['epostadresse']) ? $ret['epostadresse'] : '';
 		$data['phone']			 = isset($ret['mobiltelefonnummer']) ? $ret['mobiltelefonnummer'] : '';
+		$data['language']		 = isset($ret['spraak']) ? $ret['spraak'] : '';
 
 		if ($this->debug)
 		{

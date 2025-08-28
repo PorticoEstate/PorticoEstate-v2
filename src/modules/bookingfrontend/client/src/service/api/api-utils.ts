@@ -860,6 +860,7 @@ export interface VippsPaymentData {
 	zipCode: string;
 	city: string;
 	documentsRead: boolean;
+	building_parent_ids?: Record<number, number>;
 }
 
 export interface VippsPaymentResponse {

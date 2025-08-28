@@ -148,16 +148,14 @@ class ApplicationController extends DocumentController
 
             // Get query parameters
             $queryParams = $request->getQueryParams();
-            $includeOrganizations = isset($queryParams['include_organizations']) && 
+            $includeOrganizations = isset($queryParams['include_organizations']) &&
                                    filter_var($queryParams['include_organizations'], FILTER_VALIDATE_BOOLEAN);
             $testApplicationId = isset($queryParams['test_application_id']) ? (int)$queryParams['test_application_id'] : null;
 
             $applications = $this->applicationService->getApplicationsBySsn($ssn, $includeOrganizations);
-            $total_sum = $this->applicationService->calculateTotalSum($applications);
 
             $responseData = [
                 'list' => $applications,
-                'total_sum' => $total_sum
             ];
 
             // Handle test_application_id parameter for debugging

@@ -120,6 +120,7 @@ class booking_uiapplication extends booking_uicommon
 			'customer_organization_name' => 'string',
 			'customer_identifier_type' => 'string',
 			'parent_id' => 'int',
+			'recurring_info' => 'string',
 		);
 
 		$this->display_name = lang('application');
@@ -1029,6 +1030,12 @@ class booking_uiapplication extends booking_uicommon
 		$entity['agegroups'] = array();
 		$this->agegroup_bo->extract_form_data($entity);
 		$this->extract_customer_identifier($entity);
+		
+		// Handle recurring_info - convert empty string to null for JSON field
+		if (isset($entity['recurring_info']) && $entity['recurring_info'] === '') {
+			$entity['recurring_info'] = null;
+		}
+		
 		return $entity;
 	}
 

@@ -144,6 +144,7 @@ class booking_article_mapping extends phpgwapi_model
 				'type'			 => 'string',
 				'query'			 => true,
 				'label'			 => 'name',
+				'sortable'	 => true,
 				'public'		 => true,
 				'multiple_join'	 => array(
 					'statement'	 => ' JOIN bb_article_view ON bb_article_view.id = bb_article_mapping.article_id'
@@ -156,6 +157,7 @@ class booking_article_mapping extends phpgwapi_model
 				'type'		 => 'string',
 				'required'	 => true,
 				'label'		 => 'article code',
+				'sortable'	 => true,
 				'public'	 => true
 			),
 			'article_alternative_code'		 => array(
@@ -164,6 +166,7 @@ class booking_article_mapping extends phpgwapi_model
 				'required'	 => false,
 				'query'	 => true,
 				'label'	 => 'alternative article code',
+				'sortable'	 => true,
 				'public'	 => true,
 			),
 			'unit'				 => array(
@@ -171,6 +174,7 @@ class booking_article_mapping extends phpgwapi_model
 				'type'		 => 'string',
 				'required'	 => true,
 				'label'		 => 'unit',
+				'sortable'	 => true,
 				'public'	 => true
 			),
 			'group_id'			 => array(
@@ -184,6 +188,7 @@ class booking_article_mapping extends phpgwapi_model
 				'type'	 => 'string',
 				'query'	 => true,
 				'label'	 => 'article group',
+				'sortable'	 => true,
 				'public'	 => true,
 				'join'	 => array(
 					'table'	 => 'bb_article_group',
@@ -203,6 +208,7 @@ class booking_article_mapping extends phpgwapi_model
 				'type'	 => 'string',
 				'query'	 => true,
 				'label'	 => 'tax code',
+				'sortable'	 => true,
 				'public'	 => true,
 				'join'	 => array(
 					'table'	 => 'fm_ecomva',
@@ -212,9 +218,11 @@ class booking_article_mapping extends phpgwapi_model
 				)
 			),
 			'deactivate_in_frontend' => array(
-				'action'	 => ACL_ADD | ACL_EDIT,
+				'action'	 => ACL_READ | ACL_ADD | ACL_EDIT,
 				'type'		 => 'int',
+				'label'	 => 'deactivate in frontend',
 				'required'	 => false,
+				'sortable'	 => true,
 				'public'	 => true
 			),
 		);

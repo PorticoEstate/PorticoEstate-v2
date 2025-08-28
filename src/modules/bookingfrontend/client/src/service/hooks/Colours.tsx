@@ -59,7 +59,7 @@ const colors: string[] = [
 	"#FFFFFF"  // Hvit (White)                      56
 ];
 
-export const useColours = (): Array<string> | undefined => {
+export const useColours = (): Array<string> => {
     return useMemo(() => colors, []);
 }
 

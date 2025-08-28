@@ -10,6 +10,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
+use App\modules\bookingfrontend\helpers\ResponseHelper;
 
 /**
  * @OA\Tag(
@@ -107,9 +108,22 @@ class ResourceController extends DocumentController
         $sort = in_array($sort, $allowedSortFields) ? $sort : 'id';
         $dir = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
 
-        $sql = "SELECT r.*, br.building_id
+        // Get current date for participant limit filtering
+        $currentDate = date('Y-m-d H:i:s');
+        
+        $sql = "SELECT r.*, br.building_id, pl.quantity as participant_limit
                 FROM bb_resource r
                 LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                LEFT JOIN (
+                    SELECT pl.resource_id, pl.quantity 
+                    FROM bb_participant_limit pl
+                    INNER JOIN (
+                        SELECT resource_id, MAX(from_) as latest_from
+                        FROM bb_participant_limit
+                        WHERE from_ <= :current_date
+                        GROUP BY resource_id
+                    ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from
+                ) pl ON r.id = pl.resource_id
                 WHERE r.active = 1 AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)
                 ORDER BY r.$sort $dir";
 
@@ -121,6 +135,7 @@ class ResourceController extends DocumentController
         try
         {
             $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':current_date', $currentDate);
             if ($perPage > 0)
             {
                 $stmt->bindParam(':limit', $perPage, \PDO::PARAM_INT);
@@ -183,15 +198,28 @@ class ResourceController extends DocumentController
     {
         $resourceId = (int)$args['id'];
 
-        $sql = "SELECT r.*, br.building_id
+        $currentDate = date('Y-m-d H:i:s');
+        
+        $sql = "SELECT r.*, br.building_id, pl.quantity as participant_limit
                 FROM bb_resource r
                 LEFT JOIN bb_building_resource br ON r.id = br.resource_id
+                LEFT JOIN (
+                    SELECT pl.resource_id, pl.quantity 
+                    FROM bb_participant_limit pl
+                    INNER JOIN (
+                        SELECT resource_id, MAX(from_) as latest_from
+                        FROM bb_participant_limit
+                        WHERE from_ <= :current_date
+                        GROUP BY resource_id
+                    ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from
+                ) pl ON r.id = pl.resource_id
                 WHERE r.id = :id";
 
         try
         {
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':id', $resourceId, \PDO::PARAM_INT);
+            $stmt->bindParam(':current_date', $currentDate);
             $stmt->execute();
             $result = $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -310,9 +338,21 @@ class ResourceController extends DocumentController
         $sort = in_array($sort, $allowedSortFields) ? $sort : 'id';
         $dir = strtolower($dir) === 'desc' ? 'DESC' : 'ASC';
 
-        $sql = "SELECT r.*, br.building_id
+        $currentDate = date('Y-m-d H:i:s');
+        
+        $sql = "SELECT r.*, br.building_id, pl.quantity as participant_limit
                 FROM bb_resource r
                 JOIN bb_building_resource br ON r.id = br.resource_id
+                LEFT JOIN (
+                    SELECT pl.resource_id, pl.quantity 
+                    FROM bb_participant_limit pl
+                    INNER JOIN (
+                        SELECT resource_id, MAX(from_) as latest_from
+                        FROM bb_participant_limit
+                        WHERE from_ <= :current_date
+                        GROUP BY resource_id
+                    ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from
+                ) pl ON r.id = pl.resource_id
                 WHERE br.building_id = :building_id
                 AND r.active = 1
                 AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)
@@ -327,6 +367,7 @@ class ResourceController extends DocumentController
         {
             $stmt = $this->db->prepare($sql);
             $stmt->bindParam(':building_id', $buildingId, \PDO::PARAM_INT);
+            $stmt->bindParam(':current_date', $currentDate);
             if ($perPage > 0)
             {
                 $stmt->bindParam(':limit', $perPage, \PDO::PARAM_INT);

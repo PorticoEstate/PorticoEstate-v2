@@ -1,0 +1,127 @@
+#!/bin/bash
+
+# WebSocket Manager Command-line tool
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Function to show usage
+usage() {
+    echo -e "${BLUE}WebSocket Server Manager${NC}"
+    echo ""
+    echo "Usage: ws [command]"
+    echo ""
+    echo "Commands:"
+    echo "  start    - Start the WebSocket server"
+    echo "  stop     - Stop the WebSocket server"
+    echo "  restart  - Restart the WebSocket server"
+    echo "  status   - Check if WebSocket server is running"
+    echo "  log      - Show WebSocket server log"
+    echo "  help     - Show this help message"
+    echo ""
+}
+
+# Check WebSocket server status
+check_status() {
+    if pgrep -f "php /var/www/html/src/WebSocket/server.php" > /dev/null; then
+        echo -e "${GREEN}WebSocket server is running${NC}"
+        pid=$(pgrep -f "php /var/www/html/src/WebSocket/server.php")
+        echo "PID: $pid"
+        
+        # Check port
+        if netstat -an | grep -q 8080; then
+            echo -e "${GREEN}WebSocket server is listening on port 8080${NC}"
+        else
+            echo -e "${YELLOW}WebSocket server is running but not listening on port 8080${NC}"
+        fi
+        
+        return 0
+    else
+        echo -e "${RED}WebSocket server is not running${NC}"
+        return 1
+    fi
+}
+
+# Start WebSocket server
+start_websocket() {
+    if check_status > /dev/null; then
+        echo -e "${YELLOW}WebSocket server is already running${NC}"
+    else
+        echo -e "${BLUE}Starting WebSocket server...${NC}"
+        /var/www/html/src/WebSocket/run_websocket.sh
+        
+        # Check if it started successfully
+        sleep 2
+        if check_status > /dev/null; then
+            echo -e "${GREEN}WebSocket server started successfully${NC}"
+        else
+            echo -e "${RED}Failed to start WebSocket server${NC}"
+        fi
+    fi
+}
+
+# Stop WebSocket server
+stop_websocket() {
+    if check_status > /dev/null; then
+        echo -e "${BLUE}Stopping WebSocket server...${NC}"
+        pkill -f "php /var/www/html/src/WebSocket/server.php"
+        
+        # Check if it stopped successfully
+        sleep 2
+        if ! check_status > /dev/null; then
+            echo -e "${GREEN}WebSocket server stopped successfully${NC}"
+        else
+            echo -e "${RED}Failed to stop WebSocket server${NC}"
+            echo -e "${YELLOW}Trying to kill forcefully...${NC}"
+            pkill -9 -f "php /var/www/html/src/WebSocket/server.php"
+        fi
+    else
+        echo -e "${YELLOW}WebSocket server is not running${NC}"
+    fi
+}
+
+# Show WebSocket log
+show_log() {
+    echo -e "${BLUE}WebSocket Server Log:${NC}"
+    echo ""
+    if [ -f /var/log/apache2/websocket.log ]; then
+        cat /var/log/apache2/websocket.log
+    else
+        echo -e "${YELLOW}Log file not found${NC}"
+    fi
+}
+
+# Process commands
+case "$1" in
+    start)
+        start_websocket
+        ;;
+    stop)
+        stop_websocket
+        ;;
+    restart)
+        stop_websocket
+        sleep 2
+        start_websocket
+        ;;
+    status)
+        check_status
+        ;;
+    log)
+        show_log
+        ;;
+    help|--help|-h|"")
+        usage
+        ;;
+    *)
+        echo -e "${RED}Unknown command: $1${NC}"
+        usage
+        exit 1
+        ;;
+esac
+
+exit 0

@@ -1734,6 +1734,9 @@ phpgw::import_class('booking.bocommon_authorized');
 							
 							// Add detailed overlap information or applicationLink based on detailed_overlap parameter
 							if ($detailed_overlap) {
+								// Add the resource_id when using detailed_overlap
+								$timeslot['resource_id'] = $resource['id'];
+								
 								// Add the detailed overlap information if it's available
 								if ($overlap_reason) {
 									$timeslot['overlap_reason'] = $overlap_reason;

@@ -659,6 +659,7 @@ class property_uilocation extends phpgwapi_uicommon_jquery
 				'order'		 => 'descr'
 			)
 		);
+		array_unshift($values_combo_box[0], array('id' => '-1', 'name' => lang('all')));
 		array_unshift($values_combo_box[0], array('id' => '', 'name' => lang('no category')));
 		$combos[]			 = array(
 			'type'	 => 'filter',
@@ -1662,7 +1663,7 @@ JS;
 
 	function responsiblility_role()
 	{
-		$user_id = Sanitizer::get_var('user_id', 'int', 'request', $this->account);
+		$user_id = Sanitizer::get_var('user_id', 'int', 'REQUEST', $this->account);
 		$role_id = Sanitizer::get_var('role_id', 'int');
 		$type_id = Sanitizer::get_var('type_id', 'int');
 

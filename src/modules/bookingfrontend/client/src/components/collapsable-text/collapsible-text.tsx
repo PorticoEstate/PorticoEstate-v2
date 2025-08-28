@@ -2,8 +2,7 @@
 import React, {useState, useRef, useEffect, PropsWithChildren} from 'react';
 import styles from './collapsible-text.module.scss';
 import {Button} from "@digdir/designsystemet-react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faChevronDown, faChevronUp} from "@fortawesome/free-solid-svg-icons";
+import { ChevronDownIcon, ChevronUpIcon } from "@navikt/aksel-icons";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 
 /**
@@ -70,7 +69,7 @@ const CollapsibleText: React.FC<CollapsibleTextProps> = ({children}) => {
                     ) : (
                         <span>{t('bookingfrontend.show_more')}</span>
                     )}
-                    <FontAwesomeIcon icon={descriptionExpanded ? faChevronUp : faChevronDown}/>
+                    {descriptionExpanded ? <ChevronUpIcon fontSize="1.25rem" /> : <ChevronDownIcon fontSize="1.25rem" />}
                 </Button>
             )}
         </div>

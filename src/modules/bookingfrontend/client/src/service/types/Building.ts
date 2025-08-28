@@ -4,6 +4,9 @@ export interface IBuilding {
     /** Unique identifier for the building */
     id: number;
 
+	/** Town id link */
+    town_id: number;
+
     /** Name of the building */
     name: string;
 
@@ -34,11 +37,11 @@ export interface IBuilding {
     /** Location code of the building */
     location_code?: string;
 
-    /** Whether the calendar is deactivated, 0 or 1 */
-    deactivate_calendar: number;
+    /** Whether the calendar is deactivated */
+    deactivate_calendar: boolean;
 
-    /** Whether applications are deactivated, 0 or 1 */
-    deactivate_application: number;
+    /** Whether applications are deactivated */
+    deactivate_application: boolean;
 
     /** Whether sending messages is deactivated, 0 or 1 */
     deactivate_sendmessage: number;
@@ -74,7 +77,7 @@ export interface IBuilding {
     opening_hours?: string;
 
     /** Description in JSON format */
-    description_json?: string; // JSON object, can use a more specific type if needed
+	description_json?: string; // JSON object, can use a more specific type if needed
 }
 
 

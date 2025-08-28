@@ -1,5 +1,5 @@
 import {FC} from 'react';
-import { fetchSearchData } from "@/service/api/api-utils-static";
+import { fetchSearchDataWithMultiDomains, fetchMultiDomainsStatic } from "@/service/api/api-utils-static";
 import { ISearchDataOptimized } from "@/service/types/api/search.types";
 import ResourceSearch from "@/components/search/resource/resource-search";
 
@@ -10,12 +10,18 @@ interface SearchProps {
 export const revalidate = 3600;
 
 const Search: FC<SearchProps> = async () => {
-	// Fetch search data server-side
-	const initialSearchData: ISearchDataOptimized = await fetchSearchData();
+
+	const multiDomains = await fetchMultiDomainsStatic();
+	const initialSearchData = await fetchSearchDataWithMultiDomains(multiDomains);
+	// Fetch search data from all domains server-side
 
 	return (
 		<main>
-			<ResourceSearch initialSearchData={initialSearchData} />
+			<ResourceSearch
+				initialSearchData={initialSearchData}
+				initialTowns={initialSearchData.towns}
+				initialMultiDomains={multiDomains}
+			/>
 		</main>
 	);
 }

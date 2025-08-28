@@ -1,17 +1,18 @@
 'use client'
 import 'photoswipe/dist/photoswipe.css'
+import './photoswipe-custom.css'
 import {Gallery, Item} from 'react-photoswipe-gallery'
 import {IDocument} from "@/service/types/api.types";
 import styles from './photos-grid.module.scss';
 import {getDocumentLink} from "@/service/api/building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {Button} from "@digdir/designsystemet-react";
-import {useEffect, useState} from "react";
+import {Fragment, useEffect, useState} from "react";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface PhotosGridProps {
 	photos: IDocument[];
-	type: 'building' | 'resource';
+	type: 'building' | 'resource' | 'organization';
 }
 
 const PhotosGrid = (props: PhotosGridProps) => {
@@ -50,32 +51,27 @@ const PhotosGrid = (props: PhotosGridProps) => {
 
 	return (
 		<div className={styles.photosContainer}>
-			{/*<h3>{t('bookingfrontend.pictures')}</h3>*/}
-
 			<Gallery options={{
-				gallery: '#gallery--dynamic-zoom-level'
+				showHideAnimationType: 'fade',
+				imageClickAction: 'zoom',
+				tapAction: 'zoom',
+				doubleTapAction: 'zoom',
+				secondaryZoomLevel: 2,
+				maxZoomLevel: 4,
+				preloaderDelay: 0
 			}}>
 				<div className={styles.photoGrid}>
+					{/* Render ALL photos as gallery items, but only show some visually */}
 					{props.photos.map((photo, index) => {
 						const url = getDocumentLink(photo, props.type);
 						const isVisible = index < photosToShow;
-						const isLast = isVisible && index === photosToShow - 1 && hasMorePhotos;
-
-						// if (!isVisible) {
-						//     // Just render the item for gallery but not visible in the grid
-						//     return (
-						//         <Item
-						//             key={`hidden-${photo.id}`}
-						//             original={url}
-						//             thumbnail={url}
-						//             width={1200}
-						//             height={800}
-						//         >{() => <span />}</Item>
-						//     );
-						// }
+						const isLast = index === photosToShow - 1 && hasMorePhotos;
 
 						return (
-							<div key={photo.id} className={styles.photoItem} style={isVisible ? {} : {display: 'none'}}>
+							<div
+								key={photo.id}
+								className={`${styles.photoItem} ${!isVisible ? styles.hidden : ''}`}
+							>
 								<Item
 									original={url}
 									thumbnail={url}
@@ -95,7 +91,6 @@ const PhotosGrid = (props: PhotosGridProps) => {
 												<div
 													onClick={open}
 													className={styles.viewAllOverlay}
-
 												>
 													<Button asChild variant="secondary" data-size="md">
 														<span>

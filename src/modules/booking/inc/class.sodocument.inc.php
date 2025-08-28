@@ -1,5 +1,7 @@
 <?php
 
+use App\modules\phpgwapi\services\Settings;
+
 phpgw::import_class('booking.socommon');
 
 	abstract class booking_sodocument extends booking_socommon
@@ -36,6 +38,8 @@ phpgw::import_class('booking.socommon');
 
 		function __construct()
 		{
+			$flags = Settings::getInstance()->get('flags');
+
 			$this->ownerType = substr(get_class($this), 19);
 
 			$fields = array(
@@ -59,7 +63,7 @@ phpgw::import_class('booking.socommon');
 					)
 				);
 			}
-			else if($this->get_owner_type() == 'application' && $this->flags['currentapp'] == 'bookingfrontend')
+			else if($this->get_owner_type() == 'application' && $flags['currentapp'] == 'bookingfrontend')
 			{
 				$fields['secret'] = array(
 					'type' => 'string',

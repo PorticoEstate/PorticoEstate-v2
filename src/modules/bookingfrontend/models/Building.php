@@ -35,6 +35,18 @@ class Building
     public $id;
 
     /**
+     * @ORM\Column(type="integer", nullable=true)
+     * @Expose
+     * @Short
+     * @OA\Property(
+     *      description="Town ID associated with the building",
+     *      type="integer",
+     *      nullable=true
+     * )
+     */
+    public $town_id;
+
+    /**
      * @ORM\Column(type="string", length=150)
      * @Expose
      * @Short
@@ -155,7 +167,8 @@ class Building
      * @ORM\Column(type="integer", options={"default" : 0})
      * @Expose
      * @Short
-     * @OA\Property(
+	 * @ParseBool
+	 * @OA\Property(
      *      description="Whether the calendar is deactivated, 0 or 1",
      *      type="integer"
      * )
@@ -164,7 +177,8 @@ class Building
 
     /**
      * @ORM\Column(type="integer", options={"default" : 0})
-     * @Expose
+	 * @Expose
+	 * @ParseBool
      * @Short
      * @OA\Property(
      *      description="Whether applications are deactivated, 0 or 1",
@@ -318,6 +332,7 @@ class Building
     public function populate(array $data)
     {
         $this->id = $data['id'] ?? null;
+        $this->town_id = $data['town_id'] ?? null;
         $this->name = $data['name'] ?? '';
         $this->homepage = $data['homepage'] ?? '';
         $this->phone = $data['phone'] ?? '';
@@ -348,6 +363,7 @@ class Building
     {
         return [
             'id' => $this->id,
+            'town_id' => $this->town_id,
             'name' => $this->name,
             'homepage' => $this->homepage,
             'phone' => $this->phone,

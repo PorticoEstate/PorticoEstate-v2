@@ -76,7 +76,7 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
     }
     const mainEvent: FCallEvent = {
         id: event.id,
-        title: (is_public === 1 ? name : 'Private Event') + ` \n`,
+        title: name + ` \n`,
         start: startDateTime.toJSDate(),
         // in all day, END is EXCLUSIVE
         end: allDay ? displayEndDateTime.plus({days: 1}).toJSDate() : displayEndDateTime.toJSDate(),
@@ -98,7 +98,8 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
         display: 'background',
         classNames: `${styles.allDayEventBackground} ${styles.eventAllDay} ${styles[`event-${event.type}-background`]}`,
         extendedProps: {
-            type: 'background'
+            type: 'background',
+			source: 'EventConv'
         }
     } : null;
 

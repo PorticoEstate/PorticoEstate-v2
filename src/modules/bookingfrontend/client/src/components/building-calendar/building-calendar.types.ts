@@ -1,6 +1,7 @@
 import {IEvent, IShortResource} from "@/service/pecalendar.types";
 import {EventClickArg, EventContentArg} from "@fullcalendar/core";
 import {EventImpl} from "@fullcalendar/core/internal";
+import {IApplication} from "@/service/types/api/application.types";
 
 
 export type ValidCalendarType = IEvent['type'] | 'temporary' | 'background'
@@ -39,11 +40,13 @@ export interface FCallTempEvent {
     end?: Date;
     allDay: boolean
     editable: boolean,
+	// className: string[] | string;
     extendedProps: {
         type: 'temporary',
         resources: (string | number)[],
         applicationId?: string | number;
         building_id: string | number;
+        baseApplication?: Partial<IApplication>;
     };
 }
 
@@ -56,5 +59,7 @@ export interface FCallBackgroundEvent {
     extendedProps: {
         closed?: boolean;
         type: 'background'
+		source?: string;
+		debug?: any;
     }
 }

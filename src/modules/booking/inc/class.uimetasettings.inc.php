@@ -14,6 +14,7 @@ class booking_uimetasettings extends booking_uicommon
 	var $fields;
 	public function __construct()
 	{
+		parent::__construct();
 		$is_admin = $this->acl->check('run', Acl::READ, 'admin');
 		$local_admin = false;
 		if (!$is_admin)

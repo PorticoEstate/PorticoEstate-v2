@@ -34,7 +34,7 @@ const ServerMessages: FC<ServerMessagesProps> = (props) => {
 							<Paragraph dangerouslySetInnerHTML={{ __html: message.text }}>
 							</Paragraph>
 						</div>
-						<Button icon data-color='neutral' variant='tertiary' aria-label='Lukk melding' onClick={() => {deleteMessages.mutate(message.id)}}>
+						<Button icon data-color='neutral' variant='tertiary' aria-label={t('bookingfrontend.close_message')} onClick={() => {deleteMessages.mutate(message.id)}}>
 							<XMarkIcon aria-hidden />
 						</Button>
 
@@ -48,5 +48,3 @@ const ServerMessages: FC<ServerMessagesProps> = (props) => {
 }
 
 export default ServerMessages
-
-

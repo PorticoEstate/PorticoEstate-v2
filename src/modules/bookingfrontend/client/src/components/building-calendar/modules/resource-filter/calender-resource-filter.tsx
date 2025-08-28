@@ -2,7 +2,12 @@ import React, {FC, memo, useEffect, useMemo, useState} from 'react';
 import styles from './calender-resource-filter.module.scss';
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {Checkbox, Button, Fieldset, Radio} from "@digdir/designsystemet-react";
-import {useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
+import {
+	useCurrentBuilding,
+	useCurrentOrganization,
+	useEnabledResources, useIsOrganization,
+	useTempEvents
+} from "@/components/building-calendar/calendar-context";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import MobileDialog from "@/components/dialog/mobile-dialog";
 import {useIsMobile} from "@/service/hooks/is-mobile";
@@ -14,6 +19,9 @@ import ResourceLabel from "@/components/building-calendar/modules/resource-filte
 import {FreeTimeSlotsResponse} from "@/service/hooks/api-hooks";
 import {useQueryClient} from "@tanstack/react-query";
 import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
+import {useBuilding} from "@/service/api/building";
+import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
+import {IResource} from "@/service/types/resource.types";
 
 
 interface GroupedResources {
@@ -24,13 +32,15 @@ interface GroupedResources {
 export interface CalendarResourceFilterOption {
 	value: string;
 	label: string;
+	deactivated?: boolean;
+	buildingId: number | string
 }
 
 interface CalendarResourceFilterProps {
 	open: boolean;
 	transparent: boolean;
 	setOpen: (open: boolean) => void;
-	buildingId: string | number;
+	filteredResources?: IResource[];
 }
 
 
@@ -38,14 +48,27 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 																	 open,
 																	 transparent,
 																	 setOpen,
-																	 buildingId
+																	 filteredResources
 																 }) => {
+	const buildingId = useCurrentBuilding();
+	const organization = useCurrentOrganization();
+	const isOrgMode = useIsOrganization();
 	const isMobile = useIsMobile();
 	const t = useTrans();
 	const [popperResource, setPopperResource] = useState<CalendarResourceFilterOption | null>(null);
 	const {setEnabledResources, enabledResources} = useEnabledResources();
 	const queryClient = useQueryClient();
-	const {data: resources} = useBuildingResources(buildingId)
+	const {data: building} = useBuilding(buildingId);
+	const {data: allResources} = useBuildingResources(buildingId);
+
+	// Use filtered resources if provided, otherwise fall back to all building resources
+	const resources = useMemo(() => {
+		if(isOrgMode) {
+			return filteredResources;
+		}
+		return allResources;
+
+	}, [filteredResources, allResources, isOrgMode])
 
 
 	const resourcesWithSlots = useMemo(() => {
@@ -75,9 +98,11 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	const resourceOptions = useMemo<CalendarResourceFilterOption[]>(() => {
 		return (resources || []).map((resource, index) => ({
 			value: resource.id.toString(),
-			label: resource.name
+			label: resource.name,
+			deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application,
+			buildingId: resource.building_id!
 		}));
-	}, [resources]);
+	}, [resources, building]);
 
 
 	const groupedResources = useMemo<GroupedResources>(() => {
@@ -87,7 +112,9 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 		(resources || []).forEach(resource => {
 			const option = {
 				value: resource.id.toString(),
-				label: resource.name
+				label: resource.name,
+				deactivated: building ? isApplicationDeactivated(resource, building) : resource.deactivate_application,
+				buildingId: resource.building_id!
 			};
 
 			if (ResourceUsesTimeSlots(resource)) {
@@ -111,7 +138,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 		// }
 		//
 		// return { slotted, normal: [] };
-	}, [resources]);
+	}, [resources, building]);
 
 	useEffect(() => {
 		// Only run this once when component mounts
@@ -120,11 +147,9 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 			if (prevEnabled.size === 0) {
 				if (groupedResources) {
 					if (groupedResources.normal.length < groupedResources.slotted.length) {
-						return new Set([groupedResources.slotted?.[0].value.toString()]);
+						return new Set([groupedResources.slotted?.[0]?.value.toString()].filter(Boolean));
 					}
 					return new Set(groupedResources.normal.map(r => r.value.toString()));
-
-
 				}
 				const normalResources = (resources || []).filter((res, index) => !ResourceUsesTimeSlots(res));
 				return new Set(normalResources.map(r => r.id.toString()));
@@ -198,7 +223,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 					</Fieldset.Description>
 					{groupedResources.slotted.map(resource => (
 						<div key={resource.value}
-							 className={`${styles.resourceItem} ${enabledResources.has(resource.value) ? styles.active : ''}`}>
+							 className={`${styles.resourceItem} ${enabledResources.has(resource.value) ? styles.active : ''} ${resource.deactivated ? styles.deactivated : ''}`}>
 
 							<Radio
 								key={resource.value}
@@ -211,6 +236,11 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 										<div>
 											<ColourCircle resourceId={+resource.value} size={'medium'}/>
 											<span>{resource.label}</span>
+											{resource.deactivated && (
+												<span className={styles.deactivatedText}>
+													({t('bookingfrontend.booking_unavailable')})
+												</span>
+											)}
 										</div>
 										{!isMobile && (
 											<Button
@@ -245,7 +275,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 					</div>
 					{groupedResources.normal.map(resource => (
 						<div key={resource.value}
-							 className={`${styles.resourceItem} ${enabledResources.has(resource.value) ? styles.active : ''}`}>
+							 className={`${styles.resourceItem} ${enabledResources.has(resource.value) ? styles.active : ''} ${resource.deactivated ? styles.deactivated : ''}`}>
 							<Checkbox
 								value={resource.value}
 								id={`resource-${resource.value}`}
@@ -273,7 +303,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	if (isMobile) {
 		return (
 			<div className={styles.resourceToggleContainer}>
-				<MobileDialog open={open} onClose={() => setOpen(false)}>{content}</MobileDialog>
+				<MobileDialog open={open} onClose={() => setOpen(false)} dialogId={'calendar-resource-toggle'}>{content}</MobileDialog>
 			</div>
 		)
 	}

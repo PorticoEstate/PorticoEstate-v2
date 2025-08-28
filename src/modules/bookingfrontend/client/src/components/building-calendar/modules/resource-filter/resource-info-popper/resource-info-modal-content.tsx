@@ -34,7 +34,7 @@ const ResourceInfoModalContent: FC<ResourceInfoPopperContentProps> = (props) => 
                         opacity: '75%',
                         top: 5,
                         right: 5
-                    }}><Spinner aria-label='Laster ressurs info'/></div>
+                    }}><Spinner aria-label={t('bookingfrontend.loading_resource_info')}/></div>
                 }
 
                 {!resource.isLoading && (<Fragment>
@@ -46,13 +46,13 @@ const ResourceInfoModalContent: FC<ResourceInfoPopperContentProps> = (props) => 
                     )}
                     {resource.data?.opening_hours && (
                         <div>
-                            <h4>{t('bookingfrontend.description')}</h4>
+                            <h4>{t('booking.opening hours')}</h4>
                             <div>{parse(unescapeHTML(resource.data.opening_hours))}</div>
                         </div>
                     )}
                     {resource.data?.contact_info && (
                         <div>
-                            <h4>{t('bookingfrontend.description')}</h4>
+                            <h4>{t('bookingfrontend.contact information')}</h4>
                             <div>{parse(unescapeHTML(resource.data.contact_info))}</div>
                         </div>
                     )}

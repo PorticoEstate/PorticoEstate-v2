@@ -100,8 +100,8 @@
 				<td><input size="8" name="newsettings[redis_host]" value="{value_redis_host}" class="pure-u-1" /></td>
 			</tr>
 			<tr class="pure-table-odd">
-				<td>{lang_redis_database}: (0 - 15)</td>
-				<td><input type="number" min="0" max="15" name="newsettings[redis_database]"
+				<td>{lang_redis_database}: (1 - 15)</td>
+				<td><input type="number" min="1" max="15" name="newsettings[redis_database]"
 						value="{value_redis_database}" class="pure-u-1" /></td>
 			</tr>
 			<tr class="pure-table-odd">
@@ -254,6 +254,14 @@
 				<td>
 					<input name="newsettings[trusted_proxies]" value="{value_trusted_proxies}" class="pure-u-1"
 						placeholder="10.0.0.0/8, 192.168.1.5" />
+				</td>
+			</tr>
+			<!--Omitt error logging from IP-Addresses, in case of penetration testing-->
+			<tr>
+				<td>{lang_omitt_error_logging_from_IP_addresses}:</td>
+				<td>
+					<input name="newsettings[omitt_error_logging_from_ips]" value="{value_omitt_error_logging_from_ips}"
+						class="pure-u-1" placeholder="83.118.176.122" />
 				</td>
 			</tr>
 			<tr class="pure-table-odd">

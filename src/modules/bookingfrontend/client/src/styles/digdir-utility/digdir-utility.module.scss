@@ -3,3 +3,14 @@
 		color: var(--ds-color-accent-base-default);
 	}
 }
+
+
+.ds-button[data-variant="primary"] {
+	&.subtle {
+		--dsc-button-background: var(--ds-color-surface-active);
+		--dsc-button-background--hover: var(--ds-color-surface-hover);
+		--dsc-button-background--active: var(--ds-color-surface-active);
+		--dsc-button-color: var(--ds-color-text-default);
+		--dsc-button-color--hover: var(--ds-color-text-default);
+	}
+}

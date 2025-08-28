@@ -60,7 +60,7 @@ class property_uisubstitute extends phpgwapi_uicommon_jquery
 
 		$this->flags['xslt_app']	 = true;
 		Settings::getInstance()->update('flags', ['xslt_app' => true]);
-		$this->account_id							 = $this->userSettings;
+		$this->account_id 							 = (int) $this->userSettings['account_id'];
 		$this->bo									 = CreateObject('property.bosubstitute');
 		$this->bocommon								 = CreateObject('property.bocommon');
 		$this->start								 = $this->bo->start;

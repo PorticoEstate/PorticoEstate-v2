@@ -2,10 +2,9 @@
 import {useMemo} from 'react';
 import {Table, CellContext, RowSelectionState} from '@tanstack/react-table';
 import {Button} from '@digdir/designsystemet-react';
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome';
-import {faDownload} from '@fortawesome/free-solid-svg-icons';
 import {Badge} from '@digdir/designsystemet-react';
 import {ColumnMeta} from "@/components/gs-table/table.types";
+import {DownloadIcon} from "@navikt/aksel-icons";
 
 interface TableExportProps<T> {
     table: Table<T>;
@@ -141,7 +140,7 @@ function TableExport<T>({table, fileName = 'exported-data', rowSelection}: Table
                     data-size="sm"
                     count={selectedCount || undefined}
                 />
-                <FontAwesomeIcon icon={faDownload}/>
+				<DownloadIcon fontSize="1.25rem" />
 
             </Badge.Position>
         </Button>

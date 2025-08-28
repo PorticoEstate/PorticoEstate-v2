@@ -5,6 +5,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
+        "build:alt": "rm -rf build-alt && NEXT_DIST_DIR=build-alt next build",
         "start": "next start",
         "lint": "next lint",
         "start:development": "next dev",
@@ -39,6 +40,8 @@
         "@tanstack/react-table": "^8.20.5",
         "@teskon/react-slidedown": "^1.0.1",
         "@types/luxon": "^3.4.2",
+        "@types/turndown": "^5.0.5",
+        "@uiw/react-md-editor": "^4.0.8",
         "accept-language": "^3.0.20",
         "axios": "^1.7.4",
         "he": "^1.2.0",
@@ -56,10 +59,13 @@
         "react-dom": "^18",
         "react-hook-form": "^7.53.2",
         "react-i18next": "^15.0.1",
+        "react-markdown": "^10.1.0",
         "react-photoswipe-gallery": "^3.0.2",
         "react-select": "^5.8.0",
         "sass": "^1.77.6",
         "sharp": "^0.33.5",
+        "timeago-react": "^3.0.7",
+        "turndown": "^7.2.0",
         "zod": "^3.23.8"
     },
     "devDependencies": {

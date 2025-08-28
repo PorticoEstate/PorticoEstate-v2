@@ -3,6 +3,7 @@ import {skipToken, useQuery} from "@tanstack/react-query";
 import {IBuilding} from "@/service/types/Building";
 import {IAPIQueryResponse, IDocument, IDocumentCategoryQuery} from "@/service/types/api.types";
 import {IShortResource} from "@/service/pecalendar.types";
+import { IResource } from "@/service/types/resource.types";
 
 
 export async function fetchBuilding(building_id: number, instance?: string): Promise<IBuilding> {
@@ -44,13 +45,13 @@ export async function fetchResource(resource_id: number | string, instance?: str
  * @param initialData - Optional initial data, skrip fetching from db
  * @returns {object} - Returns the query object from TanStack Query.
  */
-export function useBuilding(building_id?: number, instance?: string, initialData?: IBuilding) {
+export function useBuilding(building_id?: number | string, instance?: string, initialData?: IBuilding) {
     return useQuery<IBuilding>(
         {
-            queryKey: ['building', building_id],
+            queryKey: ['building', building_id === undefined ? building_id : +building_id],
             queryFn: building_id === undefined ? skipToken : () => {
-                console.log('fetching building', building_id)
-                return fetchBuilding(building_id, instance)
+                // console.log('fetching building', building_id)
+                return fetchBuilding(+building_id, instance)
             }, // Fetch function
             enabled: building_id !== undefined, // Only run the query if building_id is provided
             retry: 2, // Number of retry attempts if the query fails
@@ -122,6 +123,15 @@ export async function fetchBuildingDocuments(buildingId: number | string, type_f
 
     return result;
 }
+export async function fetchOrganizationDocuments(buildingId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
+    const url = phpGWLink(["bookingfrontend", 'organizations', buildingId, 'documents'],
+        type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
+	console.log(url);
+    const response = await fetch(url);
+    const result = await response.json();
+
+    return result;
+}
 
 
 export async function fetchResourceDocuments(buildingId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
@@ -133,7 +143,7 @@ export async function fetchResourceDocuments(buildingId: number | string, type_f
     return result;
 }
 
-export function getDocumentLink(doc: IDocument, type: 'building' | 'resource'): string {
+export function getDocumentLink(doc: IDocument, type: 'building' | 'resource' | 'application' | 'organization'): string {
     const url = phpGWLink(['bookingfrontend', type + 's', 'document', doc.id, 'download']);
     return url
 }

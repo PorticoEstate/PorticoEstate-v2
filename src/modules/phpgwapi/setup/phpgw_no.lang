@@ -15,6 +15,7 @@ add attribute	common	no	Legg til egenskap
 add files	common	no	Legg til filer
 add section	common	no	Legg til seksjon
 add sub	common	no	Legg til underkategori
+address information	common	no	Adresseinformasjon
 admin	common	no	Admin
 administration	common	no	Administrasjon
 all users	common	no	Alle brukere
@@ -53,6 +54,7 @@ char	common	no	Char
 charset	common	no	utf-8
 choose "Log out" if you want to end the session	common	no	Velg "Logg ut" om du vil avslutte sesjonen.
 choose language	common	no	Velg språk
+city	common	no	Poststed
 clear	common	no	Clear
 clear cache	common	no	Slett cache (minne)
 clear form	common	no	Tøm skjema
@@ -161,6 +163,7 @@ high	common	no	Høy
 history	common	no	Historie
 home	common	no	Hjem
 home screen message	common	no	Melding på hjemmeside
+homepage	common	no	Hjemmeside
 hour	common	no	Time
 inactive	common	no	Inaktiv
 inactive and hidden	common	no	Inaktiv og gjemt
@@ -216,6 +219,7 @@ my preferences	common	no	Mine innstillinger
 name	common	no	Navn
 name of the user, eg. %1	common	no	Fullt navn på bruker, %1
 Never	common	no	Aldri
+new	common	no	Ny
 new account	login	no	Registrer ny bruker
 new account and login	login	no	Registrer ny bruker, og logg inn
 new account and login	common	no	Registrering av ny bruker, og pålogging
@@ -248,6 +252,7 @@ of total	common	no	Av totalt
 ok	common	no	OK
 only yours	common	no	kun dine
 organisation	common	no	Organsisasjon
+original	common	no	Original
 outdated browser: %1	common	no	Utdatert nettleser: %1
 page prepared in %1 seconds.	common	no	Side produsert på %1 sekunder
 password	common	no	Passord
@@ -259,6 +264,9 @@ Password must contain at least 1 number	common	no	Passord må inneholde minst 1 
 Password must contain at least 2 lower case characters	common	no	Passord må inneholde minst 2 små bosktaver
 Password must contain at least 2 upper case characters	common	no	Passord må inneholde minst 2 store bosktaver
 percent	common	no	Prosent
+personal information	common	no	Personlig informasjon
+phone	common	no	Telefon
+phone_helper	common	no	Norske telefonnummer: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
 please, check your password	common	no	Kontroller passord
 powered by phpgroupware version %1	common	no	Powered by <a href="http://www.phpgroupware.org">phpGroupWare</a> version %1
 precision	common	no	Presisjon
@@ -284,7 +292,9 @@ right	common	no	Rettighet
 rows selected	common	no	rader er valgt
 saturday	common	no	Lørdag
 save	common	no	Lagre
+save changes	common	no	Lagre endringer
 save the attribute	common	no	Lagre egenskap
+saving	common	no	Lagrer...
 scale	common	no	Scale
 search	common	no	Søk
 select a location!	common	no	Velg en lokasjon
@@ -320,6 +330,7 @@ start upload	common	no	Start opplasting
 status	common	no	Status
 statustext	common	no	Statustekst
 statustext not entered!	common	no	Statustekst er ikke angitt!
+street	common	no	Gate
 submit	common	no	Submit
 sunday	common	no	Søndag
 the api is current	common	no	API er oppdatert
@@ -349,6 +360,7 @@ use a valid username and password to gain access to %1	login	no	Angi et gyldig b
 use cookies	login	no	use cookies
 User access	common	no	Brukertilgang
 user data	common	no	Brukerdata
+user data.description	common	no	Se og rediger din brukerinformasjon
 username	common	no	Brukernavn
 Username already taken	common	no	Brukernavnet er allerede registrert
 users	common	no	Brukere
@@ -377,3 +389,17 @@ your message has been sent	common	no	Din melding har blitt sent
 your search returned %1 matchs	common	no	ditt søk gav %1 treff
 your search returned 1 match	common	no	ditt søk gav 1 treff
 your settings have been updated	common	no	Dine innstillinger har blitt oppdatert
+zip_code	common	no	Postnummer
+website	common	no	Nettside
+back_to_start	common	no	Tilbake til start
+back_to_organization	common	no	Tilbake til organisasjon
+restore	common	no	Gjenopprett
+create_account	common	no	Opprett konto
+creating	common	no	Oppretter...
+loading_external_data	common	no	Laster eksterne data...
+invalid_phone_format_norwegian	common	no	Ugyldig telefonnummerformat. For norske nummer bruk format: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
+invalid_email_address	common	no	Ugyldig e-postadresse
+zip_code_min_length	common	no	Postnummer må være minst 4 tegn
+invalid_url_format	common	no	Ugyldig URL-format
+phone_number_required	common	no	Telefonnummer er påkrevd
+email_required	common	no	E-post er påkrevd

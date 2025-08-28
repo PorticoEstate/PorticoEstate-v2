@@ -1,0 +1,51 @@
+.responsiveCard {
+  // Mobile: Use card styling (default Card behavior)
+  @media (min-width: 768px) {
+    // Desktop: Remove card styling
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (min-width: 768px) {
+    grid-template-columns: auto 1fr;
+    grid-auto-rows: auto;
+    gap: 1rem 1rem;
+  }
+}
+
+.detailItem {
+  @media (min-width: 768px) {
+    display: contents;
+  }
+}
+
+.desktopContainer {
+  @media (min-width: 768px) {
+    padding: 0;
+    background: none;
+  }
+}
+
+.mobileOnly {
+  @media (min-width: 768px) {
+    display: none;
+  }
+}
+
+.desktopOnly {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: block;
+  }
+}

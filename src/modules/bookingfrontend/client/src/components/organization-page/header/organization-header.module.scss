@@ -1,0 +1,41 @@
+@import "../../../styles/typography-vars.module";
+
+.organizationHeader {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	grid-template-areas: 'avatar name' 'avatar info';
+	//gap: 0 1rem;
+	img {
+		margin-right: 1rem;
+		grid-area: avatar;
+		align-self: center;
+	}
+    .organizationName {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+		grid-area: name;
+
+        .heading {
+            margin: 0;
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .editButton {
+            margin-left: auto;
+        }
+    }
+	.infoLine {
+		flex-wrap: wrap;
+		grid-area: info;
+	}
+    .infoLine, .infoLine span {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+
+        @extend .text-overline;
+    }
+}

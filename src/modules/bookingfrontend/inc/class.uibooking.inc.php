@@ -4,6 +4,7 @@ use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
 use Kigkonsult\Icalcreator\Vcalendar;
 use App\modules\bookingfrontend\helpers\UserHelper;
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
 
 
 phpgw::import_class('booking.uibooking');
@@ -65,6 +66,10 @@ class bookingfrontend_uibooking extends booking_uibooking
 		
 		// Get the detailed_overlap parameter (default to false)
 		$detailed_overlap = Sanitizer::get_var('detailed_overlap', 'bool', 'REQUEST', false);
+		
+		// Get the stop_on_end_date parameter (default to false)
+		// Set it to true if detailed_overlap is true for backward compatibility
+		$stop_on_end_date = Sanitizer::get_var('stop_on_end_date', 'bool', 'REQUEST', $detailed_overlap);
 
 		$weekdays = array();
 		$timezone = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
@@ -79,7 +84,7 @@ class bookingfrontend_uibooking extends booking_uibooking
 
 		try
 		{
-			$freetime = $this->bo->get_free_events($building_id, $resource_id, new DateTime(date('Y-m-d', $start_date), $DateTimeZone), new DateTime(date('Y-m-d', $end_date), $DateTimeZone), $weekdays, false, false, $detailed_overlap);
+			$freetime = $this->bo->get_free_events($building_id, $resource_id, new DateTime(date('Y-m-d', $start_date), $DateTimeZone), new DateTime(date('Y-m-d', $end_date), $DateTimeZone), $weekdays, $stop_on_end_date, false, $detailed_overlap);
 		} catch (Exception $exc)
 		{
 			return "booking_bobooking::get_free_events() - " . $exc->getMessage();

@@ -100,6 +100,7 @@ Apply for time	booking	nn	Søk om tid
 approve	booking	nn	Godkjenn
 apr	booking	nn	april
 archived	booking	nn	Arkivert
+are you sure you want to approve?	booking	nn	Er du sikker på at søknad skal godkjennast?
 Are you sure you want to delete?	booking	nn	Er du sikker på at søknad skal avvisast?
 Article	booking	nn	Artikkel
 article code	booking	nn	Artikkelkode
@@ -117,7 +118,7 @@ At least one activity must be selected	booking	nn	Det må velges minst én aktiv
 audience	booking	nn	Målgruppe
 aug	booking	nn	august
 Author	booking	nn	Forfattar
-Back	booking	nn	Attende
+Back	booking	nn	Tilbake
 Back to Dashboard	booking	nn	Attende til Skrivebord
 Back to season	booking	nn	Gå attende til sesong
 Back to user list	booking	nn	Tilbake til brukarliste
@@ -135,6 +136,7 @@ Booking application settings	booking	nn	Booking søknads oppsett.
 booking async task generate payment	booking	nn	Generer betalingskrav (ny)
 Booking Canceled Subject	booking	nn	Interntildeling avbestilt e-postemne
 Booking changed	booking	nn	Ein interntildeling er endra
+booking confirmed	booking	nn	Booking bekreftet
 Booking Delete information	booking	nn	Dersom du skal slette booking på valgt dato, velg Slett-knappen nederst.
 Booking Delete information3	booking	nn	Dersom tiden skal bli vist som ledig i kalenderen, krysser du av for slett tildeling.
 Booking deleted on	booking	nn	Interntildeling er sletta på
@@ -147,11 +149,11 @@ booking new	booking	nn	Ny interntildeling
 booking settings	booking	nn	Bookinginnstillinger
 Booking system settings	booking	nn	Systeminnstillingar i Bookingmodul
 booking_async_task_anonyminizer	booking	nn	Anonymiser kunderegister
-booking_async_task_postToAccountingSystem	booking	nn	Overfør bokføring til regnskapssystem
 booking_async_task_clean_up_old_posts	booking	nn	Deaktivere gamle søknader og sesongar
 booking_async_task_delete_access_log	booking	nn	Slette aksesslogg for anonym frontend-brukar
 booking_async_task_delete_expired_blocks	booking	nn	Slette ubrukte reservasjoner
 booking_async_task_delete_participants	booking	nn	Slette gamle deltagerregistreringer
+booking_async_task_postToAccountingSystem	booking	nn	Overfør bokføring til regnskapssystem
 booking_async_task_send_access_request	booking	nn	Send bestilling om tilgang til API for E-lås
 booking_async_task_send_reminder_enabled	booking	nn	Send purremail til kontaktpersonar på tildelingar, interntildelingar og arrangementer
 booking_async_task_update_reservation_state_enabled	booking	nn	Generer fakturagrunnlag
@@ -539,6 +541,7 @@ Message	booking	nn	Melding
 Message about new event	booking	nn	Melding om nytt arrangement
 Message from Bergen county - AktivBy	booking	nn	Melding frå AktivKommune
 Message sent about the changes in the reservations	booking	nn	Melding sendt om endringar på reserverasjoner
+Message to send with approval	booking	nn	Melding som skal sendast med godkjenning
 Messages	booking	nn	Meldingar
 Metadata	common	nn	Metadata
 meter	booking	nn	Meter
@@ -705,6 +708,7 @@ Public event	booking	nn	Offentleg arrangement
 published	booking	nn	Publisert
 quantity	booking	nn	Mengde
 Re-assign to me	booking	nn	Bli saksbehandler
+reason for rejection	booking	nn	Årsak til avslag
 receipt	booking	nn	Kvittering
 Recipients	booking	nn	Mottakarar
 Recurring allocation	booking	nn	Gjenta tildelingen
@@ -941,7 +945,8 @@ why?	booking	nn	Kvifor?
 your application has now been processed and a confirmation email has been sent to you.	booking	nn	Søknaden er handsama, og ein kvittering er sendt til deg på e-post.
 Your application has now been registered and a confirmation email has been sent to you.	booking	nn	Søknaden er sendt inn, og ein kvittering er sendt til deg på e-post.
 Your application with event details has been added. You can add another application, or finalise the application with contact details.	booking	nn	Din søknad er lagt til. Du kan legge til en ny søknad, eller gå videre for å fullføre søknadsprosessen
-Your applications have now been registered and confirmation emails have been sent to you.	booking	nn	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 Your applications have now been processed and confirmation emails have been sent to you.	booking	nn	Søknadene er handsama, og stadfestingar er sendt til deg på e-post.
+Your applications have now been registered and confirmation emails have been sent to you.	booking	nn	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	nn	Postnummer
-booking confirmed	booking	nn	Booking bekreftet
+when_and_where	booking	nn	Når og kvar?
+time_period	booking	nn	Tidsperiode

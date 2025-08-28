@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/imap_config.php';
 	/**
 	* EMail - Data Communications Core Functions
 	*
@@ -126,7 +127,7 @@
 				// translate
 				if (function_exists('recode_string') == False)
 				{
-					$name['folder_after'] = imap_utf7_encode($name['folder_before']);
+					$name['folder_after'] = IMAPManager::imap_utf7_encode($name['folder_before']);
 				}
 				else
 				{
@@ -143,7 +144,7 @@
 				// there is NO {SERVER} part in this name, this is OK some commands do not require it (mail_move same acct)
 				$name['folder_before'] = $data_str;
 				// translate
-				$name['folder_after'] = imap_utf7_encode($name['folder_before']);
+				$name['folder_after'] = IMAPManager::imap_utf7_encode($name['folder_before']);
 				$name['translated'] = $name['folder_after'];
 			}
 			if ($this->debug_utf7 > 1) { echo ' _ mail_dcom_base: utf7_encode_string ('.__LINE__.'): $name DUMP: ['.htmlspecialchars(serialize($name)).']<br />'; } 
@@ -216,7 +217,7 @@
 			// get rid of that 'needle' "}"
 			$name['folder_before'] = substr($name['folder_before'], 1);
 			// translate
-			$name['folder_after'] = imap_utf7_decode($name['folder_before']);
+			$name['folder_after'] = IMAPManager::imap_utf7_decode($name['folder_before']);
 			// "imap_utf7_decode" returns False if no translation occured
 			if ($name['folder_after'] == False)
 			{
@@ -248,7 +249,7 @@
 				// translate
 				if (function_exists('recode_string') == False)
 				{
-					$name['folder_after'] = imap_utf7_decode($name['folder_before']);
+					$name['folder_after'] = IMAPManager::imap_utf7_decode($name['folder_before']);
 				}
 				else
 				{
@@ -278,7 +279,7 @@
 				// there is NO {SERVER} part in this name, 
 				// DOES THIS EVER HAPPEN comming *from* the server? I DO NOT THINK SO, but just in case
 				// translate
-				$name['translated'] = imap_utf7_decode($data_str);
+				$name['translated'] = IMAPManager::imap_utf7_decode($data_str);
 				// "imap_utf7_decode" returns False if no translation occured
 				if (($name['translated'] == False)
 				|| ($name['folder_before'] == $data_str) )

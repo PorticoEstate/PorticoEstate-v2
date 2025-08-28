@@ -1,8 +1,18 @@
 import {z} from "zod";
 
-export const checkoutEventDetailsSchema = z.object({
-    title: z.string().min(1, 'Event title is required'),
-    organizerName: z.string().min(1, 'Organizer name is required'),
+// Type for translation function
+type TranslationFunction = (key: string, options?: any) => string;
+
+export const createCheckoutEventDetailsSchema = (t: TranslationFunction) => z.object({
+    organizerName: z.string().min(1, t('bookingfrontend.organizer_required')),
 });
 
-export type CheckoutEventDetailsData = z.infer<typeof checkoutEventDetailsSchema>;
+// Keep the original schema for backward compatibility
+export const checkoutEventDetailsSchema = createCheckoutEventDetailsSchema((key: string, options?: any) => {
+    const fallbacks: Record<string, string> = {
+        'bookingfrontend.organizer_required': 'Organizer name is required',
+    };
+    return fallbacks[key] || key.split('.').pop() || key;
+});
+
+export type CheckoutEventDetailsData = z.infer<ReturnType<typeof createCheckoutEventDetailsSchema>>;

@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/imap_config.php';
 	/**
 	* EMail - POP3 Mail Wrapper for Imap Enabled PHP
 	*
@@ -19,12 +20,12 @@
 	{
 		function base64($text)
 		{
-			return imap_base64($text);
+			return IMAPManager::imap_base64($text);
 		}
 
 		function close($stream,$flags='')
 		{
-			return imap_close($stream,$flags);
+			return IMAPManager::imap_close($stream,$flags);
 		}
 
 		function createmailbox($stream,$mailbox) 
@@ -41,7 +42,7 @@
 
 		function delete($stream,$msg_num,$flags='',$currentfolder='')
 		{
-			return imap_delete($stream,$msg_num);
+			return IMAPManager::imap_delete($stream,$msg_num);
 		}
      
 		function expunge($stream)
@@ -52,22 +53,22 @@
      
 		function fetchbody($stream,$msgnr,$partnr,$flags='')
 		{
-			return imap_fetchbody($stream,$msgnr,$partnr,$flags);
+			return IMAPManager::imap_fetchbody($stream,$msgnr,$partnr,$flags);
 		}
 
 		function header($stream,$msg_nr,$fromlength='',$tolength='',$defaulthost='')
 		{
-			return imap_header($stream,$msg_nr,$fromlength,$tolength,$defaulthost);
+			return IMAPManager::imap_header($stream,$msg_nr,$fromlength,$tolength,$defaulthost);
 		}
 
 		function fetch_raw_mail($stream,$msg_num)
 		{
-			return imap_fetchheader($stream,$msg_num,FT_PREFETCHTEXT);
+			return IMAPManager::imap_fetchheader($stream,$msg_num,FT_PREFETCHTEXT);
 		}
 
 		function fetchheader($stream,$msg_num)
 		{
-			return imap_fetchheader($stream,$msg_num);
+			return IMAPManager::imap_fetchheader($stream,$msg_num);
 		}
 
 		function get_header($stream,$msg_num)
@@ -78,12 +79,12 @@
 
 		function fetchstructure($stream,$msg_num,$flags='')
 		{
-			return imap_fetchstructure($stream,$msg_num);
+			return IMAPManager::imap_fetchstructure($stream,$msg_num);
 		}
 
 		function get_body($stream,$msg_num,$flags='')
 		{
-			return imap_body($stream,$msg_num,$flags);
+			return IMAPManager::imap_body($stream,$msg_num,$flags);
 		}
 
 		function listmailbox($stream,$ref,$pattern)
@@ -94,12 +95,12 @@
 
 		function num_msg($stream) // returns number of messages in the mailbox
 		{ 
-			return imap_num_msg($stream);
+			return IMAPManager::imap_num_msg($stream);
 		}
 
 		function mailboxmsginfo($stream) 
 		{
-			return imap_mailboxmsginfo($stream);
+			return IMAPManager::imap_mailboxmsginfo($stream);
 		}
 
 		function mailcopy($stream,$msg_list,$mailbox,$flags)
@@ -116,7 +117,7 @@
 
 		function open($mailbox,$username,$password,$flags='')
 		{
-			return imap_open($mailbox,$username,$password,$flags);
+			return IMAPManager::imap_open($mailbox,$username,$password,$flags);
 		}
 
 		function qprint($message)
@@ -134,12 +135,12 @@
 
 		function sort($stream,$criteria,$reverse='',$options='',$msg_info='')
 		{
-			return imap_sort($stream,$criteria,$reverse,$options);
+			return IMAPManager::imap_sort($stream,$criteria,$reverse,$options);
 		}
 
 		function status($stream,$mailbox,$options)
 		{
-			return imap_status($stream,$mailbox,$options);
+			return IMAPManager::imap_status($stream,$mailbox,$options);
 			//return imap_num_recent($stream);
 		}
 

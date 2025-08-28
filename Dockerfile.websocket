@@ -1,0 +1,51 @@
+FROM php:8.4-cli
+
+RUN apt-get update && \
+    apt-get install -y \
+    git \
+    unzip \
+    libzip-dev \
+    supervisor \
+    cron \
+    # Install PostgreSQL dependencies
+    libpq-dev \
+    # Install dependencies for other PHP extensions
+    libxml2-dev \
+    libxslt1-dev \
+    libgd-dev \
+    libicu-dev \
+    # Install any other database drivers you might need
+    && pecl install redis \
+    && docker-php-ext-enable redis \
+    # Install PostgreSQL driver
+    && docker-php-ext-install pdo_pgsql \
+    # Install missing extensions
+    && docker-php-ext-install soap xsl gd opcache intl ftp \
+    # Other extensions
+    && docker-php-ext-install zip sockets
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+# Create directory for websocket logs
+RUN mkdir -p /var/log/websocket && \
+    chmod -R 777 /var/log/websocket
+
+# Create supervisor directories
+RUN mkdir -p /var/log/supervisor /etc/supervisor/conf.d
+
+# Copy supervisor configuration
+COPY supervisord-websocket.conf /etc/supervisor/supervisord.conf
+
+# Set an entrypoint to handle any initialization before running WebSocket server
+COPY docker-entrypoint-websocket.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint-websocket.sh
+
+# Setup healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD php /var/www/html/src/WebSocket/health_check.sh || exit 1
+
+ENTRYPOINT ["docker-entrypoint-websocket.sh"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

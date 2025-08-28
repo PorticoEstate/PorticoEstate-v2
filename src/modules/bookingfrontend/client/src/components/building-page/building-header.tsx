@@ -5,25 +5,27 @@ import MapModal from "@/components/map-modal/map-modal";
 import {Buildings3Icon} from "@navikt/aksel-icons";
 import {Heading} from "@digdir/designsystemet-react";
 import DividerCircle from "@/components/util/DividerCircle";
+import {ISearchDataTown} from "@/service/types/api/search.types";
 
 interface BuildingHeaderProps {
 	building: IBuilding;
+	town?: ISearchDataTown;
 }
 
 const BuildingHeader = async (props: BuildingHeaderProps) => {
-	const {building} = props
+	const {building, town} = props
 	const {t} = await getTranslation()
 	return (
 		<section className={`${styles.buildingHeader}`}>
 			<div className={styles.buildingName}>
 				<Heading level={2} data-size="md" className={styles.heading}>
-					<Buildings3Icon fontSize="20px"/>
+					<Buildings3Icon fontSize="24px"/>
 					{building.name}
 				</Heading>
 			</div>
 			<div className={styles.infoLine}>
 				<span>{building.city}</span>
-				<span><DividerCircle/> {building.district}</span>
+				<span><DividerCircle/> {town?.name || building.district}</span>
 
 				<span><DividerCircle/> <MapModal city={building.city} street={building.street} zip={building.zip_code}/></span>
 			</div>

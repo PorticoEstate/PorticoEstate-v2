@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../../email/inc/imap_config.php';
 	/***************************************************************************\
 	* eGroupWare - FeLaMiMail                                                   *
 	* http://www.egroupware.org                                                 *
@@ -416,7 +417,7 @@
 					// sent or draft or template folder
 					if(!empty($header['to_name'])) {
 						list($mailbox, $host) = explode('@',$header['to_address']);
-						$senderAddress  = imap_rfc822_write_address($mailbox,
+						$senderAddress  = IMAPManager::imap_rfc822_write_address($mailbox,
 								$host,
 								$header['to_name']);
 					} else {
@@ -425,7 +426,7 @@
 				} else {
 					if(!empty($header['sender_name'])) {
 						list($mailbox, $host) = explode('@',$header['sender_address']);
-						$senderAddress  = imap_rfc822_write_address($mailbox,
+						$senderAddress  = IMAPManager::imap_rfc822_write_address($mailbox,
 								$host,
 								$header['sender_name']);
 					} else {

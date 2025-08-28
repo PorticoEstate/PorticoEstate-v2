@@ -91,6 +91,7 @@ class OrderLine
 
     /**
      * @OA\Property(type="string")
+	 * @EscapeString(mode="default")
      * @Expose
      */
     public $name;

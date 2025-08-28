@@ -5,6 +5,15 @@
     position: relative;
 }
 
+.mobileDialogContent {
+    padding: 1rem;
+    
+    .columns {
+        max-height: none;
+        padding: 0;
+    }
+}
+
 .toggleButton {
     display: flex;
     align-items: center;
@@ -97,6 +106,12 @@
     max-height: 300px;
     overflow-y: auto;
     padding: 0.5rem;
+    
+    /* Ensure columns are full-width in mobile */
+    .mobileDialogContent & {
+        max-height: none;
+        width: 100%;
+    }
 
     &::-webkit-scrollbar {
         width: 8px;

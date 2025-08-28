@@ -1,6 +1,7 @@
 import {phpGWLink} from "../../helpers/util";
 import {
     getSearchDateString,
+    getIsoDateString,
 } from "./search-util";
 
 import './info-cards/event-info-card'
@@ -39,11 +40,64 @@ class EventSearch {
             this.result_shown(this.result_shown() + 25);
         }
     }
+    isValidDate(dateArray) {
+        if (!dateArray || dateArray.length !== 3) {
+            return false;
+        }
+        
+        const [day, month, year] = dateArray;
+        
+        // Check if all parts are valid numbers
+        if (isNaN(parseInt(day)) || isNaN(parseInt(month)) || isNaN(parseInt(year))) {
+            return false;
+        }
+        
+        // Check if year has 4 digits
+        if (year.length !== 4) {
+            return false;
+        }
+        
+        // Create a date object and check if it's valid
+        const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        return date instanceof Date && !isNaN(date) && 
+               date.getDate() === parseInt(day) && 
+               date.getMonth() === parseInt(month) - 1 && 
+               date.getFullYear() === parseInt(year);
+    }
+    
     fetchEventOnDates() {
         const from = this.from_date()?.split(".");
         const to = this.to_date()?.split(".");
-        const fromDate = from && from.length > 1 ? `${from[2]}-${from[1]}-${from[0]}T00:00:00` : getIsoDateString(new Date()); // year-month-day
-        const toDate = to && to.length > 1 ? `${to[2]}-${to[1]}-${to[0]}T23:59:59` : `${from[2]}-${from[1]}-${from[0]}T23:59:59`;
+        
+        // Validate dates before proceeding
+        const fromIsValid = this.isValidDate(from);
+        const toIsValid = this.isValidDate(to);
+        
+        if (!fromIsValid) {
+            console.log("Invalid from date, using current date instead");
+            this.from_date(getSearchDateString(new Date()));
+            return; // Exit and wait for the subscription to trigger again with valid date
+        }
+        
+        if (!toIsValid && to && to.length > 0) {
+            console.log("Invalid to date, using from date + 7 days instead");
+            const fromDate = new Date(parseInt(from[2]), parseInt(from[1]) - 1, parseInt(from[0]));
+            const sevenDaysLater = new Date(fromDate.getTime() + (7 * 86400 * 1000));
+            this.to_date(getSearchDateString(sevenDaysLater));
+            return; // Exit and wait for the subscription to trigger again with valid date
+        }
+        
+        // Double-check dates again in case they've been modified
+        const recheckedFrom = this.from_date()?.split(".");
+        const recheckedTo = this.to_date()?.split(".");
+        
+        if (!this.isValidDate(recheckedFrom) || !this.isValidDate(recheckedTo)) {
+            console.log("Dates still invalid after correction, aborting search");
+            return; // Don't proceed with the search if dates are still invalid
+        }
+        
+        const fromDate = `${recheckedFrom[2]}-${recheckedFrom[1]}-${recheckedFrom[0]}T00:00:00`; // year-month-day
+        const toDate = `${recheckedTo[2]}-${recheckedTo[1]}-${recheckedTo[0]}T23:59:59`;
         const buildingID = "";
         const facilityTypeID = "";
         const start = 0;
@@ -60,6 +114,8 @@ class EventSearch {
             end,
             length: -1
         }, true);
+        
+        // Only make the AJAX call if both dates are properly formatted
         $.ajax({
             url,
             success: response => {

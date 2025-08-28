@@ -1,14 +1,14 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
-import {useSearchData} from "@/service/hooks/api-hooks";
+import {useOrganizations} from "@/service/hooks/api-hooks";
 import {Textfield, Button, Chip, Spinner} from '@digdir/designsystemet-react';
 import styles from './organization-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import {ISearchDataOptimized, ISearchOrganization} from '@/service/types/api/search.types';
+import {ISearchOrganization} from '@/service/types/api/search.types';
 import OrganizationResultItem from "./organization-result-item";
 
 interface OrganizationSearchProps {
-	initialSearchData?: ISearchDataOptimized;
+	initialOrganizations?: ISearchOrganization[];
 }
 
 // Interface for localStorage search state
@@ -21,14 +21,14 @@ interface StoredSearchState {
 const STORAGE_KEY = 'organization_search_state';
 const STORAGE_TTL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
-const OrganizationSearch: FC<OrganizationSearchProps> = ({ initialSearchData }) => {
+const OrganizationSearch: FC<OrganizationSearchProps> = ({ initialOrganizations }) => {
 	// Initialize state for search filters
 	const [textSearchQuery, setTextSearchQuery] = useState<string>('');
 	const [where, setWhere] = useState<string>('');
 
-	// Fetch all search data, using initialSearchData as default
-	const {data: searchData, isLoading, error} = useSearchData({
-		initialData: initialSearchData
+	// Fetch organizations using the dedicated endpoint
+	const {data: organizations, isLoading, error} = useOrganizations({
+		initialData: initialOrganizations
 	});
 	const t = useTrans();
 
@@ -60,14 +60,14 @@ const OrganizationSearch: FC<OrganizationSearchProps> = ({ initialSearchData }) 
 
 	// Extract unique districts from organizations
 	const districts = useMemo(() => {
-		if (!searchData?.organizations) return [];
+		if (!organizations) return [];
 
 		const uniqueDistricts = Array.from(
-			new Set(searchData.organizations.map(org => org.district).filter(Boolean))
+			new Set(organizations.map(org => org.district).filter(Boolean))
 		);
 
 		return uniqueDistricts.sort();
-	}, [searchData?.organizations]);
+	}, [organizations]);
 
 	// Calculate similarity score for sorting
 	const calculateSimilarity = (
@@ -108,20 +108,21 @@ const OrganizationSearch: FC<OrganizationSearchProps> = ({ initialSearchData }) 
 
 	// Apply all filters to organizations and sort by relevance
 	const filteredOrganizations = useMemo(() => {
-		if (!searchData?.organizations?.length) return [];
+		if (!organizations?.length) return [];
 
 		// If no filters are applied, return empty array (don't show results by default)
 		if (!textSearchQuery.trim() && !where) {
 			return [];
 		}
 
-		let filtered = searchData.organizations.filter(org => org.show_in_portal);
+		let filtered = organizations
 
 		// Only apply text search if something has been entered
 		if (textSearchQuery && textSearchQuery.trim() !== '') {
 			const query = textSearchQuery.toLowerCase();
 			filtered = filtered.filter(organization => {
 				const organizationNameMatch = organization.name.toLowerCase().includes(query);
+
 				return organizationNameMatch;
 			});
 
@@ -134,12 +135,12 @@ const OrganizationSearch: FC<OrganizationSearchProps> = ({ initialSearchData }) 
 		}
 
 		// District filter
-		if (where) {
-			filtered = filtered.filter(organization => organization.district === where);
-		}
+		// if (where) {
+		// 	filtered = filtered.filter(organization => organization.district === where);
+		// }
 
 		return filtered;
-	}, [searchData?.organizations, textSearchQuery, where]);
+	}, [organizations, textSearchQuery, where]);
 
 	// Clear all filters
 	const clearFilters = () => {

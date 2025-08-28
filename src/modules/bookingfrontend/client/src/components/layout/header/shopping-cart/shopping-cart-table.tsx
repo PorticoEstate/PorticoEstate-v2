@@ -1,25 +1,21 @@
 import React, { FC, useState } from 'react';
-import { Button, Table, List, Badge } from "@digdir/designsystemet-react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrashCan } from "@fortawesome/free-solid-svg-icons";
+import { Button, Table, List, Badge, Radio } from "@digdir/designsystemet-react";
 import { IApplication } from "@/service/types/api/application.types";
 import { deletePartialApplication } from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
-import { PencilIcon } from "@navikt/aksel-icons";
+import { PencilIcon, TrashIcon } from "@navikt/aksel-icons";
 import styles from "./shopping-cart-content.module.scss";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import {DateTime} from "luxon";
-import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 
 interface ShoppingCartTableProps {
     basketData: IApplication[];
     openEdit: (item: IApplication) => void;
+    showParentSelection?: boolean;
+    selectedParentId?: number;
+    onParentIdChange?: (parentId: number) => void;
 }
-
-
-
-
-
 
 const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [string, string] => {
     const localizedFromDate = fromDate.setLocale(i18n.language);
@@ -57,7 +53,7 @@ const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [st
 };
 
 
-const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit }) => {
+const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, showParentSelection, selectedParentId, onParentIdChange }) => {
     const {i18n} = useClientTranslation();
     const [expandedId, setExpandedId] = useState<number>();
 
@@ -80,7 +76,7 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
                 })}
             </List.Unordered>
         }
-        return <span><Badge count={application.dates?.length || 0} color={'neutral'}/> Flere tidspunkt</span>
+        return <span><Badge count={application.dates?.length || 0} color={'neutral'}/> {i18n.t('bookingfrontend.multiple_time_slots')}</span>
     }
 
     return (
@@ -92,11 +88,13 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
         >
             <Table.Head>
                 <Table.Row>
-                    <Table.HeaderCell>Start tidspunkt</Table.HeaderCell>
-                    <Table.HeaderCell>Hvor</Table.HeaderCell>
-                    <Table.HeaderCell>Hva</Table.HeaderCell>
-                    <Table.HeaderCell>Rediger</Table.HeaderCell>
-                    <Table.HeaderCell>Fjern søknad</Table.HeaderCell>
+                    {showParentSelection && <Table.HeaderCell></Table.HeaderCell>}
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.title')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.start_time')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.where')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.what')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.edit')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.remove_application')}</Table.HeaderCell>
                 </Table.Row>
             </Table.Head>
             <Table.Body>
@@ -108,6 +106,22 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
                         }
                         setExpandedId(item.id);
                     }}>
+                        {showParentSelection && (
+                            <Table.Cell>
+                                <Radio
+                                    name="parent-application"
+                                    value={item.id.toString()}
+                                    checked={selectedParentId === item.id}
+                                    onChange={(e) => {
+                                        onParentIdChange?.(item.id);
+                                        e.stopPropagation();
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    aria-label={`Select application ${item.id} as main application`}
+                                />
+                            </Table.Cell>
+                        )}
+                        <Table.Cell>{item.name}</Table.Cell>
                         <Table.Cell>{getStartTime(item)}</Table.Cell>
                         <Table.Cell>{item.building_name}</Table.Cell>
                         <Table.Cell>
@@ -128,7 +142,7 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit })
                         </Table.Cell>
                         <Table.Cell>
                             <Button variant="tertiary" onClick={() => deletePartialApplication(item.id)}>
-                                <FontAwesomeIcon icon={faTrashCan}/>
+                                <TrashIcon />
                             </Button>
                         </Table.Cell>
                     </Table.Row>

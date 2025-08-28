@@ -34,21 +34,30 @@ else \
     echo "Skipping Oracle support installation."; \
 fi
 
+# Add contrib and non-free repositories
+RUN echo "deb http://deb.debian.org/debian trixie main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian-security trixie-security main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian trixie-updates main contrib non-free" >> /etc/apt/sources.list
+
 # Install necessary packages
-RUN apt-get update && apt-get install -y software-properties-common \
+RUN apt-get update && apt-get install -y \
     apt-utils libcurl4-openssl-dev libicu-dev libxslt-dev libpq-dev \
     zlib1g-dev libpng-dev libfreetype-dev libjpeg62-turbo-dev \
-    libc-client-dev libkrb5-dev libzip-dev libonig-dev \
+    libkrb5-dev libzip-dev libonig-dev \
     git \
     less vim-tiny \
     apg \
     sudo \
-    libaio1 locales wget \
+    gnupg \
+    libaio1t64 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \
-	cron \
-	iputils-ping \
-	wkhtmltopdf
+    cron \
+    iputils-ping \
+    net-tools \
+    psmisc \
+    supervisor \
+    chromium
 
 RUN touch /etc/cron.d/cronjob && chmod 0644 /etc/cron.d/cronjob
 
@@ -66,7 +75,8 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 RUN docker-php-ext-install -j$(nproc) curl intl xsl pdo_pgsql pdo_mysql gd \
     shmop soap zip mbstring ftp calendar exif
 
-RUN install-php-extensions imap
+# Skip IMAP extension for now due to missing libc-client in Debian Trixie
+# RUN pecl install imap && docker-php-ext-enable imap
 
 # Install PECL extensions
 RUN pecl install apcu && docker-php-ext-enable apcu
@@ -96,10 +106,27 @@ RUN install-php-extensions imagick
 RUN curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
 RUN php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
 
-# Conditionally install MSSQL support
+# Conditionally install MSSQL support (ODBC + PHP drivers)
 RUN if [ "${INSTALL_MSSQL}" = "true" ]; then \
-     install-php-extensions sqlsrv pdo_sqlsrv;\
-fi
+            set -eux; \
+            export DEBIAN_FRONTEND=noninteractive; \
+            export ACCEPT_EULA=Y; \
+            . /etc/os-release; \
+            MS_VER="12"; \
+            case "${VERSION_CODENAME}" in \
+                bookworm) MS_VER="12" ;; \
+                bullseye) MS_VER="11" ;; \
+                trixie)   MS_VER="12" ;; \
+                *)        MS_VER="12" ;; \
+            esac; \
+            apt-get update && apt-get install -y --no-install-recommends ca-certificates gnupg wget apt-transport-https unixodbc-dev; \
+            wget -O /tmp/packages-microsoft-prod.deb "https://packages.microsoft.com/config/debian/${MS_VER}/packages-microsoft-prod.deb"; \
+            dpkg -i /tmp/packages-microsoft-prod.deb; rm -f /tmp/packages-microsoft-prod.deb; \
+            apt-get update; \
+            apt-get install -y --no-install-recommends msodbcsql18 mssql-tools18; \
+            echo 'export PATH="$PATH:/opt/mssql-tools18/bin"' > /etc/profile.d/mssql-tools.sh; \
+            install-php-extensions sqlsrv pdo_sqlsrv; \
+        fi
 
 # PHP configuration
 RUN if [ "${INSTALL_XDEBUG}" = "true" ]; then \
@@ -124,11 +151,7 @@ RUN echo 'post_max_size = 55M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 50M' >> /usr/local/etc/php/php.ini
 
 # Install Java
-RUN wget -qO - https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/trusted.gpg.d/microsoft.asc.gpg
-
-RUN wget https://packages.microsoft.com/config/debian/$(cat /etc/debian_version | cut -d. -f1)/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-RUN dpkg -i packages-microsoft-prod.deb
-RUN apt-get update && apt-get install -y msopenjdk-21
+RUN apt-get update && apt-get install -y openjdk-21-jdk
 
 ## Verify Java installation
 RUN java -version
@@ -165,6 +188,7 @@ ENV APACHE_RUN_GROUP=www-data
 ENV APACHE_LOG_DIR=/var/log/apache2
 ENV APP_DOCUMENT_ROOT=/var/www/html
 
+# Expose ports
 EXPOSE 80
 
 
@@ -176,6 +200,7 @@ RUN a2enmod headers
 RUN a2enmod ssl
 RUN a2enmod proxy
 RUN a2enmod proxy_http
+RUN a2enmod proxy_wstunnel  # Required for WebSockets
 
 # Set Apache LogFormat to combined format
 RUN echo 'LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined' > /etc/apache2/conf-available/custom-log-format.conf \
@@ -185,6 +210,18 @@ RUN echo 'LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\
 
 # Copy Apache configuration
 COPY apache-config.conf /etc/apache2/sites-available/000-default.conf
+
+# Copy Supervisor configuration
+COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Set up working directory
+WORKDIR /var/www/html
+
+# Copy composer files first to leverage Docker cache
+COPY composer.json composer.lock* ./
+
+# Install all dependencies during build time
+RUN composer install --no-dev --optimize-autoloader
 
 # Clean up
 RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*

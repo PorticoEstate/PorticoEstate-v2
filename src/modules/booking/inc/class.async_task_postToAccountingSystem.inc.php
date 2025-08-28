@@ -21,8 +21,9 @@ class booking_async_task_postToAccountingSystem extends booking_async_task
 
 	public function run($options = array())
 	{
-		$vipps_helper = CreateObject('bookingfrontend_vipps_helper');
-		$vipps_helper->postToAccountingSystem();
+		echo "(disabled): Running booking_async_task_postToAccountingSystem<br/>\n";
+		//$vipps_helper = CreateObject('bookingfrontend.vipps_helper');
+		//$vipps_helper->postToAccountingSystem();
 	}
 
 }

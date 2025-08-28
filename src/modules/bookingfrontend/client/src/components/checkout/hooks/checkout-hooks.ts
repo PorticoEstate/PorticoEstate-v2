@@ -1,10 +1,23 @@
-import {useMutation, useQueryClient} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {phpGWLink} from "@/service/util";
 import {IApplication} from "@/service/types/api/application.types";
+import {
+    initiateVippsPayment, 
+    VippsPaymentData, 
+    VippsPaymentResponse, 
+    fetchExternalPaymentEligibility,
+    checkVippsPaymentStatus,
+    getVippsPaymentDetails,
+    cancelVippsPayment,
+    refundVippsPayment,
+    VippsPaymentStatusResponse,
+    VippsPaymentDetailsResponse,
+    VippsCancelPaymentResponse,
+    VippsRefundPaymentResponse
+} from "@/service/api/api-utils";
 
 export interface CheckoutFormData {
     // Event Details
-    eventTitle: string;
     organizerName: string;
 
     // Customer Type
@@ -26,6 +39,9 @@ export interface CheckoutFormData {
 
     // Optional parent application ID
     parent_id?: number;
+    
+    // Documents consent
+    documentsRead: boolean;
 }
 
 export interface CheckoutResponse {
@@ -95,5 +111,113 @@ export function useCheckoutApplications() {
             // Always refetch to ensure data is correct
             queryClient.invalidateQueries({queryKey: ['partialApplications']});
         },
+    });
+}
+
+export function useVippsPayment() {
+    return useMutation({
+        mutationFn: async (paymentData: VippsPaymentData) => {
+            return await initiateVippsPayment(paymentData);
+        },
+        onSuccess: (data: VippsPaymentResponse) => {
+            if (data.success && data.redirect_url) {
+                // Redirect to Vipps payment page
+                window.location.href = data.redirect_url;
+            }
+        },
+        onError: (error: Error) => {
+            console.error('Vipps payment error:', error);
+            // Error handling will be done by the component
+        }
+    });
+}
+
+export function useExternalPaymentEligibility() {
+    const queryClient = useQueryClient();
+    const partialApplicationsData = queryClient.getQueryData<{ list: IApplication[], total_sum: number }>(['partialApplications']);
+    
+    return useQuery({
+        queryKey: ['externalPaymentEligibility', partialApplicationsData?.list?.length, partialApplicationsData?.total_sum],
+        queryFn: fetchExternalPaymentEligibility,
+        retry: false,
+        refetchOnWindowFocus: false,
+        // Only fetch when we have partial applications
+        enabled: !!partialApplicationsData?.list?.length
+    });
+}
+
+/**
+ * Hook for checking Vipps payment status
+ * This can be used for polling payment status or checking after returning from Vipps
+ */
+export function useVippsPaymentStatus() {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: async (payment_order_id: string) => {
+            return await checkVippsPaymentStatus(payment_order_id);
+        },
+        onSuccess: (data: VippsPaymentStatusResponse) => {
+            // If payment was completed successfully, invalidate relevant queries
+            if (data.status === 'completed' && data.applications_approved) {
+                queryClient.invalidateQueries({queryKey: ['partialApplications']});
+                queryClient.invalidateQueries({queryKey: ['applications']});
+            }
+        },
+        onError: (error: Error) => {
+            console.error('Vipps payment status check error:', error);
+        }
+    });
+}
+
+/**
+ * Hook for getting detailed Vipps payment information
+ */
+export function useVippsPaymentDetails(payment_order_id: string | null, enabled: boolean = true) {
+    return useQuery({
+        queryKey: ['vippsPaymentDetails', payment_order_id],
+        queryFn: () => getVippsPaymentDetails(payment_order_id!),
+        enabled: !!payment_order_id && enabled,
+        retry: false,
+        refetchOnWindowFocus: false,
+    });
+}
+
+/**
+ * Hook for cancelling Vipps payments
+ */
+export function useVippsCancelPayment() {
+    const queryClient = useQueryClient();
+    
+    return useMutation({
+        mutationFn: async (payment_order_id: string) => {
+            return await cancelVippsPayment(payment_order_id);
+        },
+        onSuccess: (data: VippsCancelPaymentResponse) => {
+            if (data.success) {
+                // Refresh applications since cancelled payments might affect partial applications
+                queryClient.invalidateQueries({queryKey: ['partialApplications']});
+            }
+        },
+        onError: (error: Error) => {
+            console.error('Vipps payment cancellation error:', error);
+        }
+    });
+}
+
+/**
+ * Hook for refunding Vipps payments
+ */
+export function useVippsRefundPayment() {
+    return useMutation({
+        mutationFn: async ({ payment_order_id, amount }: { payment_order_id: string, amount: number }) => {
+            return await refundVippsPayment(payment_order_id, amount);
+        },
+        onSuccess: (data: VippsRefundPaymentResponse) => {
+            console.log('Vipps refund successful:', data);
+        },
+        onError: (error: Error) => {
+            console.error('Vipps refund error:', error);
+        }
     });
 }

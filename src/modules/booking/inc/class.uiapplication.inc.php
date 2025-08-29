@@ -4252,7 +4252,7 @@ JS;
 		// Check if application has recurring data and prepare button
 		$show_recurring_button = false;
 		$recurring_allocation_url = '';
-		if (!empty($application['recurring_info']) && trim($application['recurring_info']) !== '') {
+		if (!empty($application['recurring_info'])) {
 			$show_recurring_button = true;
 
 			// Use simple approach - just pass the application ID

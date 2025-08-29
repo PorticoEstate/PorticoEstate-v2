@@ -337,8 +337,10 @@
 
 	
 				if ($recurring_app && !empty($recurring_app['recurring_info'])) {
-					// Parse recurring info
-					$recurring_data = json_decode($recurring_app['recurring_info'], true);
+					// Parse recurring info - handle both string and already parsed array
+					$recurring_data = is_string($recurring_app['recurring_info']) 
+						? json_decode($recurring_app['recurring_info'], true) 
+						: $recurring_app['recurring_info'];
 
 					if ($recurring_data && is_array($recurring_data)) {
 						// Pre-fill recurring form data

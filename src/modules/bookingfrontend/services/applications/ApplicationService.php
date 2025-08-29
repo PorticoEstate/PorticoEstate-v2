@@ -10,7 +10,7 @@ use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\Database\Db;
 use App\modules\bookingfrontend\services\DocumentService;
 use App\modules\bookingfrontend\services\EventService;
-use App\modules\bookingfrontend\services\EmailService;
+use App\modules\booking\services\EmailService;
 use App\modules\bookingfrontend\services\TestEmailService;
 use App\modules\phpgwapi\services\Settings;
 use PDO;

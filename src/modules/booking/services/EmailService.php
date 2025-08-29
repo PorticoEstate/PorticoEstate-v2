@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\bookingfrontend\services;
+namespace App\modules\booking\services;
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Send;
@@ -9,6 +9,7 @@ use Exception;
 
 /**
  * Modern email service for booking applications
+ * Shared between booking frontend and backend systems
  * Ports functionality from legacy booking.boapplication->send_notification
  */
 class EmailService

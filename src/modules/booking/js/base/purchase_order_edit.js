@@ -425,7 +425,7 @@ function set_mandatory(xTable)
 					alertify.myAlert(unit_price_select, {
 						numberField: {
 							name: 'custom_amount',
-							label: (typeof lang !== 'undefined' && lang['amount']) ? lang['amount'] : 'Amount',
+							label: (typeof lang !== 'undefined' && lang['unit cost']) ? lang['unit cost'] : 'Unit Cost',
 							value: $(unit_price_cell).html(),
 							min: 0,
 							step: 0.01
@@ -821,10 +821,16 @@ if (!alertify.myAlert)
 					wrap.appendChild(label);
 					wrap.appendChild(input);
 
-					// When the user selects an option, clear the custom input
+					// When the user selects an option, set the custom input to the selected value
 					if (selectEl) {
 						selectEl.addEventListener('change', function () {
-							input.value = '';
+							var v = selectEl.value;
+							if (v !== undefined && v !== null && v !== '') {
+								var num = parseFloat(v);
+								input.value = isNaN(num) ? '' : num.toFixed(2);
+							} else {
+								input.value = '';
+							}
 						});
 					}
 				}

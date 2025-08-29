@@ -154,7 +154,8 @@ class booking_uiseason extends booking_uicommon
 
 	public function query()
 	{
-		$seasons = $this->bo->read();
+		$params = $this->bo->build_default_read_params();
+		$seasons = $this->bo->read($params);
 		array_walk($seasons["results"], array($this, "_add_links"), "booking.uiseason.show");
 
 		$lang_week_template = lang('week template');

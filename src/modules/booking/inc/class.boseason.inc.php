@@ -25,7 +25,25 @@
 			$this->so_wtemplate_alloc = new booking_sowtemplate_alloc();
 		}
 
-		
+		function build_default_read_params()
+		{
+			$filters = array();
+
+			$filter_now = Sanitizer::get_var('filter_now', 'bool');
+
+			if ($filter_now)
+			{
+				$now = date('Y-m-d');
+				$filters['where'] = "(bb_season.to_ > '{$now}')";
+			}
+
+			$params = parent::build_default_read_params();
+			$params['filters'] = $params['filters'] ?? [];
+			$params['filters'] = array_merge($params['filters'], $filters);
+
+			return $params;
+		}		
+
 		function copy_permissions($from_id, $to_id)
 		{
 			$so_permission = CreateObject('booking.sopermission_season');

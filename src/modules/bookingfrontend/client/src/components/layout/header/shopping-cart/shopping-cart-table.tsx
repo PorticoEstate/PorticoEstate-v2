@@ -15,6 +15,7 @@ interface ShoppingCartTableProps {
     showParentSelection?: boolean;
     selectedParentId?: number;
     onParentIdChange?: (parentId: number) => void;
+    buildingId?: number;
 }
 
 const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [string, string] => {
@@ -53,7 +54,7 @@ const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [st
 };
 
 
-const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, showParentSelection, selectedParentId, onParentIdChange }) => {
+const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, showParentSelection, selectedParentId, onParentIdChange, buildingId }) => {
     const {i18n} = useClientTranslation();
     const [expandedId, setExpandedId] = useState<number>();
 
@@ -109,7 +110,7 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, s
                         {showParentSelection && (
                             <Table.Cell>
                                 <Radio
-                                    name="parent-application"
+                                    name={`parent-application-building-${buildingId || 'default'}`}
                                     value={item.id.toString()}
                                     checked={selectedParentId === item.id}
                                     onChange={(e) => {

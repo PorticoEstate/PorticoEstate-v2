@@ -8,11 +8,11 @@ import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping
 interface CartSectionProps {
     applications: IApplication[];
     setCurrentApplication: Dispatch<{ application_id: number, date_id: number, building_id: number } | undefined>;
-    selectedParentId?: number;
-    onParentIdChange?: (parentId: number) => void;
+    buildingParentIds?: Record<number, number>;
+    onBuildingParentIdChange?: (buildingId: number, parentId: number) => void;
 }
 
-const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, selectedParentId, onParentIdChange}) => {
+const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication, buildingParentIds, onBuildingParentIdChange}) => {
     const t = useTrans();
     const openEdit = (item: IApplication) =>  {
         setCurrentApplication({
@@ -62,14 +62,15 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                 <section key={buildingGroup.buildingId} className={styles.cartSection} style={{marginTop: index > 0 ? '2rem' : '0'}}>
                     <h2>{buildingGroup.buildingName}</h2>
                     <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
-                        {t('bookingfrontend.select_main_application_note')}
+                        {t('bookingfrontend.select_main_application_note')} {t('bookingfrontend.building_parent_constraint_note')}
                     </p>
                     <ShoppingCartTable 
                         basketData={buildingGroup.applications} 
                         openEdit={openEdit}
                         showParentSelection={true}
-                        selectedParentId={selectedParentId}
-                        onParentIdChange={onParentIdChange}
+                        selectedParentId={buildingParentIds?.[buildingGroup.buildingId]}
+                        onParentIdChange={onBuildingParentIdChange ? (parentId) => onBuildingParentIdChange(buildingGroup.buildingId, parentId) : undefined}
+                        buildingId={buildingGroup.buildingId}
                     />
                 </section>
             ))}
@@ -85,8 +86,8 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                         basketData={recurringApplications} 
                         openEdit={openEdit}
                         showParentSelection={false}
-                        selectedParentId={selectedParentId}
-                        onParentIdChange={onParentIdChange}
+                        selectedParentId={undefined}
+                        onParentIdChange={undefined}
                     />
                 </section>
             )}

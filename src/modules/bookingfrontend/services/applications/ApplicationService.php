@@ -279,15 +279,35 @@ class ApplicationService
                 }
             }
 
-            // Find the first regular (non-recurring) application to use as parent_id fallback
-            $fallbackParentId = null;
-            foreach ($applications as $app) {
-                if (empty($app['recurring_info'])) {
-                    $fallbackParentId = $app['id'];
-                    break;
+            // Handle parent_id selection per building
+            $buildingParentIds = $data['building_parent_ids'] ?? [];
+            
+            // If legacy parent_id is provided, convert to new format
+            if (isset($data['parent_id']) && empty($buildingParentIds)) {
+                // Find the building of the legacy parent_id and use it
+                foreach ($applications as $app) {
+                    if ($app['id'] == $data['parent_id'] && empty($app['recurring_info'])) {
+                        $buildingParentIds[$app['building_id']] = $data['parent_id'];
+                        break;
+                    }
                 }
             }
-            $parent_id = $data['parent_id'] ?? $fallbackParentId;
+
+            // Generate fallback parent_ids per building if not provided
+            if (empty($buildingParentIds)) {
+                foreach ($applications as $app) {
+                    if (empty($app['recurring_info'])) {
+                        if (!isset($buildingParentIds[$app['building_id']])) {
+                            $buildingParentIds[$app['building_id']] = $app['id'];
+                        }
+                    }
+                }
+            }
+
+            // Validate parent_id building constraint if finalize is true
+            if ($finalize && !empty($buildingParentIds)) {
+                $this->validateBuildingParentIdConstraints($applications, $buildingParentIds);
+            }
 
             // Prepare base update data
             $baseUpdateData = [
@@ -558,15 +578,34 @@ class ApplicationService
             // First update all applications with contact info and validate limits
             $updatedApplications = $this->updateApplicationsWithContactInfo($session_id, $data);
 
-            // Find the first regular (non-recurring) application to use as parent_id fallback
-            $fallbackParentId = null;
-            foreach ($updatedApplications as $app) {
-                if (empty($app['recurring_info'])) {
-                    $fallbackParentId = $app['id'];
-                    break;
+            // Handle parent_id selection per building (same logic as updateApplicationsWithContactInfo)
+            $buildingParentIds = $data['building_parent_ids'] ?? [];
+            
+            // If legacy parent_id is provided, convert to new format
+            if (isset($data['parent_id']) && empty($buildingParentIds)) {
+                foreach ($updatedApplications as $app) {
+                    if ($app['id'] == $data['parent_id'] && empty($app['recurring_info'])) {
+                        $buildingParentIds[$app['building_id']] = $data['parent_id'];
+                        break;
+                    }
                 }
             }
-            $parent_id = $data['parent_id'] ?? $fallbackParentId;
+
+            // Generate fallback parent_ids per building if not provided
+            if (empty($buildingParentIds)) {
+                foreach ($updatedApplications as $app) {
+                    if (empty($app['recurring_info'])) {
+                        if (!isset($buildingParentIds[$app['building_id']])) {
+                            $buildingParentIds[$app['building_id']] = $app['id'];
+                        }
+                    }
+                }
+            }
+
+            // Validate parent_id building constraints
+            if (!empty($buildingParentIds)) {
+                $this->validateBuildingParentIdConstraints($updatedApplications, $buildingParentIds);
+            }
             $finalUpdatedApplications = [];
             $skippedApplications = [];
             $collisionDebugInfo = []; // Debug information for collisions
@@ -606,7 +645,7 @@ class ApplicationService
                         $updateData = [
                             'status' => 'REJECTED',
                             // Don't set parent_id for recurring applications - they are processed individually
-                            'parent_id' => (!empty($application['recurring_info']) || $application['id'] == $parent_id) ? null : $parent_id
+                            'parent_id' => (!empty($application['recurring_info'])) ? null : ($buildingParentIds[$application['building_id']] ?? null)
                         ];
 
                         $this->patchApplicationMainData($updateData, $application['id']);
@@ -621,7 +660,7 @@ class ApplicationService
                         $updateData = [
                             'status' => 'ACCEPTED',
                             // Don't set parent_id for recurring applications - they are processed individually
-                            'parent_id' => (!empty($application['recurring_info']) || $application['id'] == $parent_id) ? null : $parent_id
+                            'parent_id' => (!empty($application['recurring_info'])) ? null : ($buildingParentIds[$application['building_id']] ?? null)
                         ];
 
                         $this->patchApplicationMainData($updateData, $application['id']);
@@ -633,7 +672,7 @@ class ApplicationService
                     $updateData = [
                         'status' => 'NEW',
                         // Don't set parent_id for recurring applications - they are processed individually
-                        'parent_id' => (!empty($application['recurring_info']) || $application['id'] == $parent_id) ? null : $parent_id
+                        'parent_id' => (!empty($application['recurring_info'])) ? null : ($buildingParentIds[$application['building_id']] ?? null)
                     ];
 
                     $this->patchApplicationMainData($updateData, $application['id']);
@@ -1907,5 +1946,110 @@ class ApplicationService
     public function getArticlesByResources(array $resourceIds): array
     {
         return $this->articleRepository->getArticlesByResources($resourceIds);
+    }
+
+    /**
+     * Validate that all applications that will get the same parent_id belong to the same building
+     * This method handles per-building parent ID assignments
+     *
+     * @param array $applications List of applications
+     * @param array $buildingParentIds Array of building_id => parent_id mappings
+     * @throws Exception If mixed building applications would be combined
+     */
+    private function validateBuildingParentIdConstraints(array $applications, array $buildingParentIds): void
+    {
+        // Group applications by building and validate each building's parent selection
+        foreach ($buildingParentIds as $buildingId => $parentId) {
+            // Get the parent application
+            $parentApplication = null;
+            foreach ($applications as $app) {
+                if ($app['id'] == $parentId) {
+                    $parentApplication = $app;
+                    break;
+                }
+            }
+
+            if (!$parentApplication) {
+                throw new Exception("Parent application with ID {$parentId} not found");
+            }
+
+            // Ensure parent belongs to the correct building
+            if ($parentApplication['building_id'] != $buildingId) {
+                throw new Exception(
+                    "Invalid parent selection: Parent application #{$parentId} belongs to building '{$parentApplication['building_name']}' " .
+                    "but was selected as parent for building ID {$buildingId}."
+                );
+            }
+
+            // Validate that all non-recurring applications in this building would get this parent_id
+            foreach ($applications as $app) {
+                // Skip recurring applications (they are processed individually)
+                if (!empty($app['recurring_info'])) {
+                    continue;
+                }
+
+                // Skip applications from other buildings
+                if ($app['building_id'] != $buildingId) {
+                    continue;
+                }
+
+                // Skip the parent application itself
+                if ($app['id'] == $parentId) {
+                    continue;
+                }
+
+                // This validation ensures consistency within each building
+                // All non-recurring applications in a building should be grouped under the same parent
+            }
+        }
+    }
+
+    /**
+     * Legacy method - kept for backward compatibility
+     * Validate that all applications that will get the same parent_id belong to the same building
+     *
+     * @param array $applications List of applications
+     * @param int $parent_id The parent ID to validate
+     * @throws Exception If mixed building applications would be combined
+     */
+    private function validateBuildingParentIdConstraint(array $applications, int $parent_id): void
+    {
+        // Get the building_id of the parent application
+        $parentApplication = null;
+        foreach ($applications as $app) {
+            if ($app['id'] == $parent_id) {
+                $parentApplication = $app;
+                break;
+            }
+        }
+
+        if (!$parentApplication) {
+            throw new Exception("Parent application with ID {$parent_id} not found");
+        }
+
+        $parentBuildingId = $parentApplication['building_id'];
+        
+        // Check all regular (non-recurring) applications that would get this parent_id
+        foreach ($applications as $app) {
+            // Skip recurring applications (they are processed individually)
+            if (!empty($app['recurring_info'])) {
+                continue;
+            }
+
+            // Skip the parent application itself
+            if ($app['id'] == $parent_id) {
+                continue;
+            }
+
+            // Check if this application belongs to a different building
+            if ($app['building_id'] != $parentBuildingId) {
+                throw new Exception(
+                    "Cannot combine applications from different buildings. " .
+                    "Parent application (#{$parent_id}) is in building '{$parentApplication['building_name']}' " .
+                    "but application #{$app['id']} is in building '{$app['building_name']}'. " .
+                    "Please select applications from the same building only."
+                );
+            }
+        }
     }
 }

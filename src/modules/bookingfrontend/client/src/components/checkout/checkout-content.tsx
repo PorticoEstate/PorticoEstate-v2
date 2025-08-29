@@ -25,7 +25,7 @@ const CheckoutContent: FC = () => {
     const vippsPaymentMutation = useVippsPayment();
     const {data: paymentEligibility, isLoading: eligibilityLoading} = useExternalPaymentEligibility();
     const [billingDetails, setBillingDetails] = useState<BillingFormData>();
-    const [selectedParentId, setSelectedParentId] = useState<number>();
+    const [buildingParentIds, setBuildingParentIds] = useState<Record<number, number>>({});
 
     // Separate applications into regular and recurring
     const {regularApplications, recurringApplications} = useMemo(() => {
@@ -43,12 +43,53 @@ const CheckoutContent: FC = () => {
         return { regularApplications: regular, recurringApplications: recurring };
     }, [applications?.list]);
 
-    // Preselect the first regular (non-recurring) application as parent when applications load
+    // Preselect the first regular application per building when applications load
     useEffect(() => {
-        if (regularApplications.length > 0 && !selectedParentId) {
-            setSelectedParentId(regularApplications[0].id);
+        if (regularApplications.length > 0 && Object.keys(buildingParentIds).length === 0) {
+            const newBuildingParentIds: Record<number, number> = {};
+            
+            // Group applications by building and select first one as parent for each building
+            regularApplications.forEach(app => {
+                if (!newBuildingParentIds[app.building_id]) {
+                    newBuildingParentIds[app.building_id] = app.id;
+                }
+            });
+            
+            setBuildingParentIds(newBuildingParentIds);
         }
-    }, [regularApplications, selectedParentId]);
+    }, [regularApplications, buildingParentIds]);
+
+    // Building parent ID change handler
+    const handleBuildingParentIdChange = (buildingId: number, parentId: number) => {
+        setBuildingParentIds(prev => ({
+            ...prev,
+            [buildingId]: parentId
+        }));
+    };
+
+    // Validate parent ID selection per building
+    const parentIdValidation = useMemo(() => {
+        if (regularApplications.length === 0) {
+            return { valid: true, message: null };
+        }
+
+        // Validate each building's parent selection
+        for (const [buildingId, parentId] of Object.entries(buildingParentIds)) {
+            const parentApp = regularApplications.find(app => app.id === parentId);
+            if (!parentApp) {
+                return { valid: false, message: `Parent application not found for building ID ${buildingId}` };
+            }
+
+            if (parentApp.building_id !== parseInt(buildingId)) {
+                return {
+                    valid: false,
+                    message: `Invalid parent selection: Parent application belongs to "${parentApp.building_name}" but was selected for a different building.`
+                };
+            }
+        }
+
+        return { valid: true, message: null };
+    }, [buildingParentIds, regularApplications]);
     const [currentApplication, setCurrentApplication] = useState<{
         application_id: number,
         date_id: number,
@@ -200,7 +241,7 @@ const CheckoutContent: FC = () => {
                     zipCode: billingDetails.zipCode,
                     city: billingDetails.city,
                     documentsRead: billingDetails.documentsRead,
-                    parent_id: selectedParentId
+                    building_parent_ids: buildingParentIds
                 });
             }
             
@@ -216,7 +257,7 @@ const CheckoutContent: FC = () => {
                 zipCode: billingDetails.zipCode,
                 city: billingDetails.city,
                 documentsRead: billingDetails.documentsRead,
-                parent_id: selectedParentId
+                building_parent_ids: buildingParentIds
             }).then(() => {
                 if (process.env.NODE_ENV === 'development') {
                     console.log('🐛 CheckoutContent: checkoutMutation success, redirecting to /user/applications');
@@ -300,7 +341,8 @@ const CheckoutContent: FC = () => {
                 street: billingDetails.street,
                 zipCode: billingDetails.zipCode,
                 city: billingDetails.city,
-                documentsRead: billingDetails.documentsRead
+                documentsRead: billingDetails.documentsRead,
+                building_parent_ids: buildingParentIds
             };
             console.log('Payment data:', paymentData);
 
@@ -335,8 +377,8 @@ const CheckoutContent: FC = () => {
             <CartSection
                 applications={applications.list}
                 setCurrentApplication={setCurrentApplication}
-                selectedParentId={selectedParentId}
-                onParentIdChange={setSelectedParentId}
+                buildingParentIds={buildingParentIds}
+                onBuildingParentIdChange={handleBuildingParentIdChange}
             />
 
             {process.env.NODE_ENV === 'development' && (

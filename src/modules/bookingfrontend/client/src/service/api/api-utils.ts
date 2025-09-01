@@ -195,7 +195,7 @@ export async function fetchPartialApplications(): Promise<{ list: IApplication[]
 
 
 
-export async function fetchMyOrganizations(): Promise<IShortOrganization[]> {
+export async function fetchMyOrganizations(): Promise<IOrganization[]> {
     const url = phpGWLink(['bookingfrontend', 'organizations', 'my']);
     const response = await fetch(url);
     const result = await response.json();

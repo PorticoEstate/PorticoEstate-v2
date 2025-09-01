@@ -11,6 +11,7 @@ import { DateTime } from "luxon";
 import { useClientTranslation } from "@/app/i18n/ClientTranslationProvider";
 import Link from "next/link";
 import { calculateApplicationCost, formatCurrency, getApplicationCurrency } from "@/utils/cost-utils";
+import { RecurringInfoUtils, getRecurringDescription } from '@/utils/recurring-utils';
 
 interface ShoppingCartCardListProps {
     basketData: IApplication[];
@@ -95,7 +96,20 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
 
 						<div className={styles.infoItem}>
 							<CalendarIcon aria-hidden className={styles.infoIcon}/>
-							{(item.dates?.length || 0) === 1 ? (
+							{RecurringInfoUtils.isRecurring(item) ? (
+								<span className={styles.recurringInfo}>
+									<span>
+                                        {formatDateRange(
+											applicationTimeToLux(item.dates[0].from_),
+											applicationTimeToLux(item.dates[0].to_),
+											i18n
+										).join(' | ')}
+									</span>
+									<span className={styles.recurringPattern}>
+										{getRecurringDescription(item, undefined, t)}
+									</span>
+								</span>
+							) : (item.dates?.length || 0) === 1 ? (
 								<span>
                                     {formatDateRange(
 										applicationTimeToLux(item.dates[0].from_),

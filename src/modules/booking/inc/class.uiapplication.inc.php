@@ -8,6 +8,7 @@ use App\Database\Db;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\phpgwapi\models\ServerSettings;
+use App\modules\booking\services\EmailService;
 
 
 phpgw::import_class('booking.uicommon');
@@ -4034,7 +4035,15 @@ class booking_uiapplication extends booking_uicommon
 				$log_msg = '';
 				$_application = $application;
 				$_application['status'] = Sanitizer::get_var('status', 'string', 'POST');
-				$recipient = $this->bo->send_notification($_application);
+				
+				// Use group notification for combined applications
+				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1) {
+					$recipient = $this->sendGroupNotification($related_info['application_ids'], $_application);
+				} else {
+					// Single application notification
+					$recipient = $this->bo->send_notification($_application);
+				}
+				
 				if ($recipient)
 				{
 					$log_msg .= "Epost er sendt til {$recipient}";
@@ -4488,5 +4497,41 @@ JS;
 			$resource_names[] = $resource['name'];
 		}
 		return implode(', ', $resource_names);
+	}
+
+	/**
+	 * Send group notification for combined applications using modern EmailService
+	 */
+	private function sendGroupNotification($application_ids, $primary_application)
+	{
+		try {
+			// Load all related applications
+			$applications = [];
+			foreach ($application_ids as $app_id) {
+				$app = $this->bo->read_single($app_id);
+				if ($app) {
+					// Set the same status for all applications
+					$app['status'] = $primary_application['status'];
+					$app['comment'] = $primary_application['comment'] ?? '';
+					$applications[] = $app;
+				}
+			}
+
+			if (empty($applications)) {
+				return '';
+			}
+
+			// Use modern EmailService for group notification
+			$emailService = new EmailService();
+			$created = false; // These are status updates, not new applications
+			$success = $emailService->sendApplicationGroupNotification($applications, $created);
+
+			// Return the contact email for logging purposes
+			return $success ? $applications[0]['contact_email'] : '';
+
+		} catch (Exception $e) {
+			Cache::message_set("Group notification failed: " . $e->getMessage(), 'error');
+			return '';
+		}
 	}
 }

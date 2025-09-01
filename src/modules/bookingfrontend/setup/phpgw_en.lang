@@ -908,3 +908,4 @@ create_user_account	bookingfrontend	en	Create User Account
 recurring_login_link_text	bookingfrontend	en	To make a recurring booking, please <linkTag>Login</linkTag>. This requires being a delegate of an organization.
 no_organizations_for_recurring	bookingfrontend	en	You have no organizations available for recurring bookings.
 you_must_confirm_all_documents	bookingfrontend	en	You must confirm that you have read all regulation documents
+new_repeating	bookingfrontend	en	New repeating

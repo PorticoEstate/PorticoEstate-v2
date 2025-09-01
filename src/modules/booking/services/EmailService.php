@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\bookingfrontend\services;
+namespace App\modules\booking\services;
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Send;
@@ -9,6 +9,7 @@ use Exception;
 
 /**
  * Modern email service for booking applications
+ * Shared between booking frontend and backend systems
  * Ports functionality from legacy booking.boapplication->send_notification
  */
 class EmailService
@@ -347,41 +348,25 @@ class EmailService
         if ($created) {
             $body = "<p>" . $config['application_mail_created'] . "</p>";
             
-            // Add application details
-            $body .= "<h3>Søknadsdetaljer:</h3>";
+            // Add combined application header
+            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner:</h3>";
             if (!empty($primaryApplication['name'])) {
                 $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
             }
             if (!empty($primaryApplication['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
-            $body .= "<p><strong>Ressurs:</strong> " . $resourcename . "</p>";
-            $body .= "<p><strong>Lokasjon:</strong> " . $primaryApplication['building_name'] . "</p>";
             
-            // Add requested dates from all applications
-            $allDates = [];
-            foreach ($applications as $application) {
-                if (!empty($application['dates'])) {
-                    foreach ($application['dates'] as $date) {
-                        $from = date($this->datetimeformat, strtotime($date['from_']));
-                        $to = date($this->datetimeformat, strtotime($date['to_']));
-                        $allDates[] = "\t{$from} - {$to}";
-                    }
-                }
-            }
-            
-            if (!empty($allDates)) {
-                $body .= "<p><strong>Ønskede tider:</strong></p>";
-                $body .= "<pre>" . implode("\n", $allDates) . "</pre>";
-            }
+            // Show details for each application separately if they have different resources
+            $body .= $this->buildApplicationDetailsSection($applications);
             
             $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
         }
         elseif ($primaryApplication['status'] == 'PENDING') {
-            $body = "<p>Din søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $primaryApplication['building_name'] . " er " . lang($primaryApplication['status']) . '</p>';
+            $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
             
-            // Add application details
-            $body .= "<h3>Søknadsdetaljer:</h3>";
+            // Add combined application details
+            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner:</h3>";
             if (!empty($primaryApplication['name'])) {
                 $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
             }
@@ -389,22 +374,8 @@ class EmailService
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
             
-            // Add requested dates from all applications
-            $allDates = [];
-            foreach ($applications as $application) {
-                if (!empty($application['dates'])) {
-                    foreach ($application['dates'] as $date) {
-                        $from = date($this->datetimeformat, strtotime($date['from_']));
-                        $to = date($this->datetimeformat, strtotime($date['to_']));
-                        $allDates[] = "\t{$from} - {$to}";
-                    }
-                }
-            }
-            
-            if (!empty($allDates)) {
-                $body .= "<p><strong>Ønskede tider:</strong></p>";
-                $body .= "<pre>" . implode("\n", $allDates) . "</pre>";
-            }
+            // Show details for each application separately
+            $body .= $this->buildApplicationDetailsSection($applications);
             
             if (!empty($primaryApplication['comment'])) {
                 $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $primaryApplication['comment'] . '</p>';
@@ -414,10 +385,10 @@ class EmailService
             $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
         }
         elseif ($primaryApplication['status'] == 'ACCEPTED') {
-            $body = "<p>Din søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $primaryApplication['building_name'] . " er " . lang($primaryApplication['status']) . '</p>';
+            $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
 
-            // Add application details
-            $body .= "<h3>Søknadsdetaljer:</h3>";
+            // Add combined application details
+            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner godkjent:</h3>";
             if (!empty($primaryApplication['name'])) {
                 $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
             }
@@ -425,28 +396,13 @@ class EmailService
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
 
-            // Get associated dates and costs from all applications
-            $allAdates = [];
-            $totalCost = 0;
+            // Show detailed breakdown per application with approved times and costs
+            $body .= $this->buildAcceptedApplicationDetailsSection($applications);
 
-            foreach ($applications as $application) {
-                $associations = $this->getApplicationAssociations($application['id']);
-                foreach ($associations as $assoc) {
-                    if ($assoc['active']) {
-                        $from = date($this->datetimeformat, strtotime($assoc['from_']));
-                        $to = date($this->datetimeformat, strtotime($assoc['to_']));
-                        $allAdates[] = "\t{$from} - {$to}";
-                        $totalCost += (float)$assoc['cost'];
-                    }
-                }
-            }
-
-            if (!empty($allAdates)) {
-                $body .= "<pre>Godkjent tid:\n" . implode("\n", $allAdates) . "</pre><br />";
-            }
-
+            // Calculate and show total cost
+            $totalCost = $this->calculateTotalCost($applications);
             if ($totalCost > 0) {
-                $body .= "<pre>Totalkostnad: kr " . number_format($totalCost, 2, ",", '.') . "</pre><br />";
+                $body .= "<p><strong>Totalkostnad for alle bookinger: kr " . number_format($totalCost, 2, ",", '.') . "</strong></p>";
             }
 
             if (!empty($primaryApplication['agreement_requirements'])) {
@@ -466,10 +422,10 @@ class EmailService
             }
         }
         elseif ($primaryApplication['status'] == 'REJECTED') {
-            $body = "<p>Din søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $primaryApplication['building_name'] . " er " . lang($primaryApplication['status']) . '</p>';
+            $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
             
-            // Add application details
-            $body .= "<h3>Søknadsdetaljer:</h3>";
+            // Add combined application details
+            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner avslått:</h3>";
             if (!empty($primaryApplication['name'])) {
                 $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
             }
@@ -477,22 +433,8 @@ class EmailService
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
             
-            // Add requested dates from all applications
-            $allDates = [];
-            foreach ($applications as $application) {
-                if (!empty($application['dates'])) {
-                    foreach ($application['dates'] as $date) {
-                        $from = date($this->datetimeformat, strtotime($date['from_']));
-                        $to = date($this->datetimeformat, strtotime($date['to_']));
-                        $allDates[] = "\t{$from} - {$to}";
-                    }
-                }
-            }
-            
-            if (!empty($allDates)) {
-                $body .= "<p><strong>Forespurte tider:</strong></p>";
-                $body .= "<pre>" . implode("\n", $allDates) . "</pre>";
-            }
+            // Show details for each application separately
+            $body .= $this->buildApplicationDetailsSection($applications);
             
             if (!empty($primaryApplication['comment'])) {
                 $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $primaryApplication['comment'] . '</p>';
@@ -684,7 +626,8 @@ class EmailService
     private function getApplicationAssociations(int $application_id): array
     {
         try {
-            $assoc_bo = CreateObject('booking.booking_boapplication_association');
+            // Use the global namespace to access the legacy class
+            $assoc_bo = new \booking_boapplication_association();
             $associations = $assoc_bo->so->read([
                 'filters' => ['application_id' => $application_id],
                 'sort' => 'from_',
@@ -853,5 +796,125 @@ class EmailService
         } catch (Exception $e) {
             error_log("Failed to send building notification: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Build application details section showing individual applications with their resources and dates
+     */
+    private function buildApplicationDetailsSection(array $applications): string
+    {
+        $section = "";
+
+        foreach ($applications as $application) {
+            $section .= "<div style='border-left: 3px solid #007cba; padding-left: 10px; margin: 10px 0;'>";
+            
+            // Use the application name (part name) as the header
+            $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
+            $section .= "<h4>{$applicationName} (ID: {$application['id']}):</h4>";
+
+            // Resource information for this application
+            if (!empty($application['resources'])) {
+                $resourceNames = $this->getResourceNames($application['resources']);
+                $section .= "<p><strong>Ressurs:</strong> {$resourceNames}</p>";
+            }
+
+            // Building information
+            if (!empty($application['building_name'])) {
+                $section .= "<p><strong>Lokasjon:</strong> {$application['building_name']}</p>";
+            }
+
+            // Dates for this application
+            if (!empty($application['dates'])) {
+                $dates = [];
+                foreach ($application['dates'] as $date) {
+                    $from = date($this->datetimeformat, strtotime($date['from_']));
+                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $dates[] = "\t{$from} - {$to}";
+                }
+                if (!empty($dates)) {
+                    $section .= "<p><strong>Ønskede tider:</strong></p>";
+                    $section .= "<pre>" . implode("\n", $dates) . "</pre>";
+                }
+            }
+
+            $section .= "</div>";
+        }
+
+        return $section;
+    }
+
+    /**
+     * Build accepted application details section with approved times and costs per application
+     */
+    private function buildAcceptedApplicationDetailsSection(array $applications): string
+    {
+        $section = "";
+
+        foreach ($applications as $application) {
+            $section .= "<div style='border-left: 3px solid #28a745; padding-left: 10px; margin: 10px 0;'>";
+            
+            // Use the application name (part name) as the header for accepted applications
+            $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
+            $section .= "<h4>✅ {$applicationName} - Godkjent (ID: {$application['id']}):</h4>";
+
+            // Resource information
+            if (!empty($application['resources'])) {
+                $resourceNames = $this->getResourceNames($application['resources']);
+                $section .= "<p><strong>Ressurs:</strong> {$resourceNames}</p>";
+            }
+
+            // Building information
+            if (!empty($application['building_name'])) {
+                $section .= "<p><strong>Lokasjon:</strong> {$application['building_name']}</p>";
+            }
+
+            // Approved dates and costs for this specific application
+            $associations = $this->getApplicationAssociations($application['id']);
+            $adates = [];
+            $applicationCost = 0;
+
+            foreach ($associations as $assoc) {
+                if ($assoc['active']) {
+                    $from = date($this->datetimeformat, strtotime($assoc['from_']));
+                    $to = date($this->datetimeformat, strtotime($assoc['to_']));
+                    $cost = (float)$assoc['cost'];
+                    $costText = $cost > 0 ? " (kr " . number_format($cost, 2, ",", '.') . ")" : "";
+                    $adates[] = "\t{$from} - {$to}{$costText}";
+                    $applicationCost += $cost;
+                }
+            }
+
+            if (!empty($adates)) {
+                $section .= "<p><strong>Godkjente tider:</strong></p>";
+                $section .= "<pre>" . implode("\n", $adates) . "</pre>";
+                
+                if ($applicationCost > 0) {
+                    $section .= "<p><strong>Kostnad for {$applicationName}: kr " . number_format($applicationCost, 2, ",", '.') . "</strong></p>";
+                }
+            }
+
+            $section .= "</div>";
+        }
+
+        return $section;
+    }
+
+    /**
+     * Calculate total cost from all applications
+     */
+    private function calculateTotalCost(array $applications): float
+    {
+        $totalCost = 0;
+        
+        foreach ($applications as $application) {
+            $associations = $this->getApplicationAssociations($application['id']);
+            foreach ($associations as $assoc) {
+                if ($assoc['active']) {
+                    $totalCost += (float)$assoc['cost'];
+                }
+            }
+        }
+        
+        return $totalCost;
     }
 }

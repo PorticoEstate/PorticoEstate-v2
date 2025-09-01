@@ -41,7 +41,7 @@ interface FullCalendarViewProps {
 	calendarRef: React.MutableRefObject<FullCalendar | null>,
 	viewMode: string,
 	setViewMode: (viewMode: string) => void,
-	selectEvent: (event: FCallEvent | FCallTempEvent, targetEl?: HTMLElement) => void,
+	selectEvent: (event: FCallEvent | FCallTempEvent, storedTempEvents: FCallTempEvent[], targetEl?: HTMLElement) => void,
 	events?: IEvent[],
 	setCurrentDate: (value: (((prevState: DateTime) => DateTime) | DateTime)) => void,
 	currentDate: DateTime,
@@ -385,6 +385,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			eventInfo={eventInfo as FCEventContentArg<FCallEvent>}
 		/>
 	}
+	const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
 
 	const handleEventClick = useCallback((clickInfo: FCEventClickArg<FCallBaseEvent>) => {
 		// Check if the clicked event is a background event
@@ -395,9 +396,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 		// Check if the event is a valid, interactive event
 		if ('id' in clickInfo.event && clickInfo.event.id) {
-			selectEvent(clickInfo.event, clickInfo.el);
+			selectEvent(clickInfo.event, tempEventArr, clickInfo.el);
 		}
-	}, [selectEvent]);
+	}, [selectEvent, tempEventArr]);
 
 	const checkEventOverlap = useCallback((span: DateSpanApi, movingEvent: EventImpl | null): boolean => {
 		const calendarApi = calendarRef.current?.getApi();
@@ -740,7 +741,6 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 
 	}, [partials?.list, updateMutation, checkEventOverlap]);
 
-	const tempEventArr = useMemo(() => Object.values(storedTempEvents), [storedTempEvents])
 
 
 	const calendarVisEvents = useMemo(() => [...calendarEvents, ...tempEventArr, currentTempEvent].filter(Boolean) as EventInput[], [calendarEvents, tempEventArr, currentTempEvent]);

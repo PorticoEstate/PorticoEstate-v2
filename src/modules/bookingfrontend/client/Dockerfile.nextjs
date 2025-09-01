@@ -14,7 +14,9 @@ ENV https_proxy=${https_proxy}
 RUN if [ -n "${http_proxy}" ]; then \
  sed -i 's/https/http/' /etc/apk/repositories; \
 fi
-RUN apk add --no-cache git
+RUN apk add --no-cache git openssh-client && \
+    mkdir -p ~/.ssh && \
+    ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
 
 RUN apk add --no-cache libc6-compat
@@ -34,6 +36,7 @@ FROM base AS builder
 ARG NEXT_ENV=production
 ARG GIT_COMMIT_ID=unknown
 WORKDIR /app
+RUN apk add --no-cache git
 COPY --from=deps /app/node_modules ./node_modules
 COPY ${base_path}/src ./src
 COPY ${base_path}/public ./public
@@ -43,11 +46,16 @@ COPY ${base_path}/tsconfig.json ./tsconfig.json
 COPY ${base_path}/yarn.lock ./yarn.lock
 COPY ${base_path}/package.json ./package.json
 COPY ${base_path}/package.json ./package.json
-COPY /.git ./.git
+COPY .git ./.git
 
 RUN echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" > ./.build-time
 
-RUN echo "$(git rev-parse HEAD)" > ./.git-commit-id
+RUN if [ -d .git ]; then \
+    echo "Git directory found, getting commit ID..."; \
+    git rev-parse HEAD > ./.git-commit-id 2>/dev/null || echo "git rev-parse failed" > ./.git-commit-id; \
+  else \
+    echo ".git directory not found in $(pwd)" > ./.git-commit-id; \
+  fi
 
 # Only build in production mode
 RUN \

@@ -2,6 +2,7 @@
 
 use App\modules\phpgwapi\services\Cache;
 use App\modules\phpgwapi\services\Log;
+use App\modules\booking\services\EmailService;
 
 phpgw::import_class('booking.bocommon');
 
@@ -202,298 +203,116 @@ class booking_boapplication extends booking_bocommon
 
 	function send_notification($application, $created = false, $assocciated = false)
 	{
-		if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server']))
-		{
-			//				return;
+		// Use modern EmailService for email notifications
+		$emailService = new EmailService();
+		$success = $emailService->sendApplicationNotification($application, $created, $assocciated);
+		
+		// Handle additional notifications to case officers (BCC functionality)
+		if ($created) {
+			$this->sendCaseOfficerNotifications($application);
 		}
-
-		$send = CreateObject('phpgwapi.send');
-
-		$config = CreateObject('phpgwapi.config', 'booking');
-		$config->read();
-		$from = isset($config->config_data['email_sender']) && $config->config_data['email_sender'] ? $config->config_data['email_sender'] : "noreply<noreply@{$this->serverSettings['hostname']}>";
-		$reply_to = !empty($config->config_data['email_reply_to']) ? $config->config_data['email_reply_to'] : '';
-		$external_site_address = !empty($config->config_data['external_site_address']) ? $config->config_data['external_site_address'] : $this->serverSettings['webserver_url'];
-
-
-		$resourcename = implode(", ", $this->get_resource_name($application['resources']));
-
-		$resources = CreateObject('booking.soresource')->read(array(
-			'filters' => array('id' => $application['resources']),
-			'results'	 => 100
-		));
-
-		$bogeneric = createObject('booking.bogeneric');
-		$e_lock_instructions = array();
-		foreach ($resources['results'] as $resource)
-		{
-			if (!$resource['e_locks'])
-			{
-				continue;
-			}
-
-			foreach ($resource['e_locks'] as $e_lock)
-			{
-				if (!$e_lock['e_lock_system_id'] || !$e_lock['e_lock_resource_id'])
-				{
-					continue;
-				}
-
-				$lock_system = $bogeneric->read_single(
-					array(
-						'id'			 => $e_lock['e_lock_system_id'],
-						'location_info'	 => array(
-							'type' => 'e_lock_system'
-						)
-					)
-				);
-
-				$e_lock_instructions[] = $lock_system['instruction'];
-			}
+		
+		// Handle SMS notifications (legacy functionality preserved)
+		if ($created) {
+			$this->sendSmsNotifications($application);
 		}
+		
+		// Return recipient email for compatibility with existing code
+		return $success ? $application['contact_email'] : '';
+	}
 
-		$subject = $config->config_data['application_mail_subject'];
-
-
-		$link = $external_site_address . '/bookingfrontend/?menuaction=bookingfrontend.uiapplication.show&id=' . $application['id'] . '&secret=' . $application['secret'];
-
-
-		$attachments = array();
-		if ($created)
-		{
-			$body = "<p>" . $config->config_data['application_mail_created'] . "</p>";
-			$body .= '<p><a href="' . $link . '">Link til ' . $config->config_data['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
+	/**
+	 * Send notifications to case officers (preserves legacy BCC functionality)
+	 */
+	private function sendCaseOfficerNotifications($application)
+	{
+		if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])) {
+			return;
 		}
-		elseif ($application['status'] == 'PENDING')
-		{
-			$body = "<p>Din søknad i " . $config->config_data['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . lang($application['status']) . '</p>';
-			if ($application['comment'] != '')
-			{
-				$body .= '<p>Kommentar fra saksbehandler:<br />' . $application['comment'] . '</p>';
-			}
-			$body .= "<p>" . $config->config_data['application_mail_pending'] . "</p>";
-			$body .= '<p><a href="' . $link . '">Link til ' . $config->config_data['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
-		}
-		elseif ($application['status'] == 'ACCEPTED')
-		{
-			// Sigurd:
-			// Check if any bookings, allocations or events are associated with this application
-			$assoc_bo = new booking_boapplication_association();
-			$associations = $assoc_bo->so->read(array(
-				'filters' => array('application_id' => $application['id']),
-				'sort' => 'from_', 'dir' => 'asc', 'results' => 'all'
-			));
-			$_adates = array();
-
-			$cost = 0;
-			foreach ($associations['results'] as $assoc)
-			{
-				if ($assoc['active'])
-				{
-					$_from = date($this->datetimeformat, strtotime($assoc['from_']));
-					$_to = date($this->datetimeformat, strtotime($assoc['to_']));
-					
-					$_adates[] = "\t{$_from} - {$_to}";
-					$cost += (float)$assoc['cost'];
-				}
-			}
-
-			$adates = implode("\n", $_adates);
-
-			//FIXME Sigurd 2. sept 2015: Something wrong with this one;
-			//				$rejected = $this->so->get_rejected($application['id']);
-			$rejected = array();
-			$rdates = "";
-			foreach ($rejected as $key => $date)
-			{
-				if ($key === 0)
-				{
-					$rdates .= implode(" - ", $date) . "\n";
-				}
-				else
-				{
-					$rdates .= "\t" . implode(" - ", $date) . "\n";
-				}
-			}
-
-			$body = "<p>Din søknad i " . $config->config_data['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . lang($application['status']) . '</p>';
-
-			if ($adates)
-			{
-				$body .= "<pre>Godkjent tid:\n" . $adates . "</pre>";
-				$body .= "<br />";
-			}
-
-			if ($cost)
-			{
-				$body .= "<pre>Totalkostnad: kr " .  number_format($cost, 2, ",", '.') . "</pre>";
-				$body .= "<br />";
-			}
-
-			if ($rdates)
-			{
-				$body .= "<pre>Avvist: " . $rdates . "</pre>";
-				$body .= "<br />";
-			}
-
-			if ($application['agreement_requirements'] != '')
-			{
-				$lang_additional_requirements = lang('additional requirements');
-				$body .= "{$lang_additional_requirements}:<br />" . $application['agreement_requirements'] . "<br />";
-			}
-			if ($application['comment'] != '')
-			{
-				$body .= "<p>Kommentar fra saksbehandler:<br />" . $application['comment'] . "</p>";
-			}
-			$body .= "<p>{$config->config_data['application_mail_accepted']}</p>"
-				. "<br /><a href=\"{$link}\">Link til {$config->config_data['application_mail_systemname']}: søknad #{$application['id']}</a>";
-
-			if ($e_lock_instructions)
-			{
-				$body .= "\n" . implode("\n", $e_lock_instructions);
-			}
-
-			$attachments = $this->get_related_files($application);
-
-			if (isset($config->config_data['application_notify_on_accepted']) && $config->config_data['application_notify_on_accepted'] == 1)
-			{
-				$buildingemail = $this->so->get_tilsyn_email($application['building_name']);
-				if ($buildingemail['email1'] != '' || $buildingemail['email2'] != '' || $buildingemail['email3'] != '')
-				{
-					$subject_notify_on_accepted = $config->config_data['application_mail_subject'] . ": En søknad om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er godkjent";
-					$body_notify_on_accepted = "<p>" . $application['contact_name'] . " sin søknad  om leie/lån av " . $resourcename . " på " . $application['building_name'] . "</p>";
-
-					if ($adates)
-					{
-						$body_notify_on_accepted .= "<pre>Godkjent:\n" . $adates . "</pre>";
-					}
-
-					if ($application['equipment'] && $application['equipment'] != 'dummy')
-					{
-						$body_notify_on_accepted .= "<p><b>{$config->config_data['application_equipment']}:</b><br />" . $application['equipment'] . "</p>";
-					}
-
-					$_buildingemail = array_unique($buildingemail);
-					foreach ($_buildingemail as $email_notify_on_accepted)
-					{
-						if (!$email_notify_on_accepted)
-						{
-							continue;
-						}
-
-						try
-						{
-							$send->msg('email', $email_notify_on_accepted, $subject_notify_on_accepted, $body_notify_on_accepted, '', '', '', $from, 'AktivKommune', 'html', '', array(), false, $reply_to);
-						}
-						catch (Exception $e)
-						{
-							// TODO: Inform user if something goes wrong
-						}
-					}
-				}
-			}
-		}
-		elseif ($application['status'] == 'REJECTED')
-		{
-			$body = "<p>Din søknad i " . $config->config_data['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . lang($application['status']) . '</p>';
-			if ($application['comment'] != '')
-			{
-				$body .= '<p>Kommentar fra saksbehandler:<br />' . $application['comment'] . '</p>';
-			}
-			$body .= '<p>' . $config->config_data['application_mail_rejected'] . ' <a href="' . $link . '">Link til ' . $config->config_data['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
-		}
-		else
-		{
-			$subject = $config->config_data['application_comment_mail_subject'];
-			$body = "<p>" . $config->config_data['application_comment_added_mail'] . "</p>";
-			$body .= '<p>Kommentar fra saksbehandler:<br />' . $application['comment'] . '</p>';
-			$body .= '<p><a href="' . $link . '">Link til ' . $config->config_data['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
-		}
-		$body .= "<p>" . $config->config_data['application_mail_signature'] . "</p>";
 
 		$building_info = $this->so->get_building_info($application['id']);
-
 		$extra_mail_addresses = $this->get_mail_addresses($building_info['id'], $application['case_officer_id']);
 
 		$mail_addresses = array();
-		$cellphones = array();
-		foreach ($extra_mail_addresses as $user_id => $extra_mail_addresse)
-		{
+		foreach ($extra_mail_addresses as $user_id => $extra_mail_address) {
 			$prefs = CreateObject('phpgwapi.preferences', $user_id)->read();
-
-			if (isset($prefs['booking']['notify_on_new']) && ($prefs['booking']['notify_on_new'] & 1))
-			{
-				$mail_addresses[] =  $prefs['common']['email'];
-			}
-			if (isset($prefs['booking']['notify_on_new']) && ($prefs['booking']['notify_on_new'] & 2))
-			{
-				$cellphones[] =  $prefs['common']['cellphone'];
+			if (isset($prefs['booking']['notify_on_new']) && ($prefs['booking']['notify_on_new'] & 1)) {
+				$mail_addresses[] = $prefs['common']['email'];
 			}
 		}
 
-		$bcc = implode(';', $mail_addresses);
-		$recipient = '';
-
-		try
-		{
-			$rcpt = $send->msg('email', $application['contact_email'], $subject, $body, '', '', '', $from, 'AktivKommune', 'html', '', $attachments, false, $reply_to);
-
-			if ($rcpt && $this->flags['currentapp'] == 'booking')
-			{
-				$recipient = $application['contact_email'];
-			}
-		}
-		catch (Exception $e)
-		{
-			Cache::message_set("Epost feilet for {$application['contact_email']}", 'error');
-			Cache::message_set($e->getMessage(), 'error');
+		if (empty($mail_addresses)) {
+			return;
 		}
 
-		if ($bcc && $created)
-		{
-			try
-			{
-				/**
-				 * Evil hack
-				 */
-				$enforce_ssl = $this->serverSettings['enforce_ssl'];
-				$this->serverSettings['enforce_ssl'] = true;
-				$link_backend =  phpgw::link('/index.php', array('menuaction' => 'booking.uiapplication.show', 'id' => $application['id']), false, true, true);
-				$this->serverSettings['enforce_ssl'] = $enforce_ssl;
+		try {
+			$config = CreateObject('phpgwapi.config', 'booking');
+			$config->read();
+			
+			$from = isset($config->config_data['email_sender']) && $config->config_data['email_sender'] 
+				? $config->config_data['email_sender'] 
+				: "noreply<noreply@{$this->serverSettings['hostname']}>";
 
-				$new_body = "<h1>NB!! KOPI av epost til {$application['contact_email']}</h1>"
-					. "$body"
-					. "<br/>"
-					. "<p>Forresten...:<br/>"
-					. "<a href=\"{$link_backend}\">Link til søknad i backend</a></p>";
+			$subject = "KOPI::" . $config->config_data['application_mail_subject'];
+			$external_site_address = !empty($config->config_data['external_site_address']) 
+				? $config->config_data['external_site_address'] 
+				: $this->serverSettings['webserver_url'];
 
-				$send->msg('email', $bcc, "KOPI::$subject", $new_body, '', '', '', $from, 'AktivKommune', 'html', '', array(), false);
-			}
-			catch (Exception $ex)
-			{
-				Cache::message_set("Epost feilet for {$application['contact_email']}", 'error');
-				Cache::message_set($e->getMessage(), 'error');
+			// Create backend link
+			$enforce_ssl = $this->serverSettings['enforce_ssl'];
+			$this->serverSettings['enforce_ssl'] = true;
+			$link_backend = phpgw::link('/index.php', array('menuaction' => 'booking.uiapplication.show', 'id' => $application['id']), false, true, true);
+			$this->serverSettings['enforce_ssl'] = $enforce_ssl;
+
+			$resourcename = implode(", ", $this->get_resource_name($application['resources']));
+
+			$body = "<h1>NB!! KOPI av epost til {$application['contact_email']}</h1>"
+				. "<p>Ny søknad i " . $config->config_data['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . "</p>"
+				. "<p>" . $config->config_data['application_mail_created'] . "</p>"
+				. "<p>Forresten...:<br/>"
+				. "<a href=\"{$link_backend}\">Link til søknad i backend</a></p>"
+				. "<p>" . $config->config_data['application_mail_signature'] . "</p>";
+
+			$send = CreateObject('phpgwapi.send');
+			$bcc = implode(';', $mail_addresses);
+			$send->msg('email', $bcc, $subject, $body, '', '', '', $from, 'AktivKommune', 'html', '', array(), false);
+
+		} catch (Exception $e) {
+			Cache::message_set("Case officer notification failed: " . $e->getMessage(), 'error');
+		}
+	}
+
+	/**
+	 * Send SMS notifications (preserves legacy functionality)
+	 */
+	private function sendSmsNotifications($application)
+	{
+		$building_info = $this->so->get_building_info($application['id']);
+		$extra_mail_addresses = $this->get_mail_addresses($building_info['id'], $application['case_officer_id']);
+
+		$cellphones = array();
+		foreach ($extra_mail_addresses as $user_id => $extra_mail_address) {
+			$prefs = CreateObject('phpgwapi.preferences', $user_id)->read();
+			if (isset($prefs['booking']['notify_on_new']) && ($prefs['booking']['notify_on_new'] & 2)) {
+				$cellphones[] = $prefs['common']['cellphone'];
 			}
 		}
 
-		if ($cellphones && $created)
-		{
-			try
-			{
-				$sms = CreateObject('sms.sms');
-				$sms_message = "Ny søknad på {$application['building_name']}";
-				foreach ($cellphones as $cellphone)
-				{
+		if (empty($cellphones)) {
+			return;
+		}
+
+		try {
+			$sms = CreateObject('sms.sms');
+			$sms_message = "Ny søknad på {$application['building_name']}";
+			foreach ($cellphones as $cellphone) {
+				if ($cellphone) {
 					$sms->websend2pv($this->userSettings['account_id'], $cellphone, $sms_message);
 				}
 			}
-			catch (Exception $e)
-			{
-				// TODO: Inform user if something goes wrong
-			}
+		} catch (Exception $e) {
+			error_log("SMS notification failed: " . $e->getMessage());
 		}
-
-		return $recipient;
 	}
 
 

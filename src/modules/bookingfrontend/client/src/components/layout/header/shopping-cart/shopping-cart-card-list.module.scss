@@ -186,3 +186,15 @@
 .dateTime {
 	color: var(--ds-text-default);
 }
+
+.recurringInfo {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.recurringPattern {
+	font-size: var(--ds-font-size-xs);
+	color: var(--ds-text-subtle);
+	font-style: italic;
+}

@@ -184,7 +184,12 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
 
             {layout.showTitle && (
                 <div className={styles.titleContainer}>
-                    <div className={styles.title}>{t('bookingfrontend.new application')}</div>
+                    <div className={styles.title}>
+                        {eventInfo.event.extendedProps?.isRecurringInstance 
+                            ? t('bookingfrontend.new_repeating')
+                            : t('bookingfrontend.new application')
+                        }
+                    </div>
                     {layout.showSubtitle && (
                         <div className={styles.subtitleText}>{eventInfo.event.title}</div>
                     )}

@@ -9,7 +9,7 @@ import {
 	FCallEvent,
 	FCallTempEvent
 } from "@/components/building-calendar/building-calendar.types";
-import {useCalenderViewMode, useEnabledResources} from "@/components/building-calendar/calendar-context";
+import {useCalenderViewMode, useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {IBuilding, Season} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
@@ -80,15 +80,15 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 			if (pendingData) {
 				try {
 					const storedData = JSON.parse(pendingData);
-					
+
 					// Check if data is expired (10 minutes = 600000 ms)
 					const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
-					
+
 					if (isExpired) {
 						localStorage.removeItem('pendingRecurringApplication');
 						return;
 					}
-					
+
 					// Check if this matches the current building context AND is for a NEW application (no applicationId)
 					if (storedData.building_id && +storedData.building_id === +currentBuilding.id && !storedData.applicationId) {
 						// Create a temp event to trigger the ApplicationCrud
@@ -106,7 +106,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 								restorePendingData: true // Flag to indicate this should restore data
 							}
 						};
-						
+
 						setCurrentTempEvent(tempEvent);
 					}
 				} catch (error) {
@@ -118,9 +118,16 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 	}, [bookingUser, currentBuilding, currentTempEvent, readOnly, isOrganizationMode, enabledResources, t]);
 
 
-	const selectEvent = useCallback((event: FCallEvent | FCallTempEvent, targetEl?: HTMLElement) => {
+	const selectEvent = useCallback((event: FCallEvent | FCallTempEvent, storedTempEvents?: FCallTempEvent[], targetEl?: HTMLElement) => {
 		if (event.extendedProps.type === 'temporary') {
-			setCurrentTempEvent(event as FCallTempEvent);
+			console.log(event, storedTempEvents)
+			let tempEv;
+			if(event.extendedProps.isRecurringInstance) {
+				const appId = event.extendedProps.applicationId!;
+				tempEv = storedTempEvents ? storedTempEvents.find(a => +a.id === +appId) : event;
+			}
+
+			setCurrentTempEvent((tempEv || event) as FCallTempEvent);
 		} else {
 			if (!targetEl) {
 				throw new Error("No selected target element")
@@ -193,7 +200,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 				building_id: currentBuilding?.id || 0,
 			},
 		};
-		selectEvent(newEvent, undefined);
+		selectEvent(newEvent);
 		selectInfo?.view?.calendar.unselect(); // Clear selection
 	}, [t, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent]);
 
@@ -259,7 +266,8 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 			}}/>
 
 			{!readOnly && !isOrganizationMode && currentBuilding && (
-				<ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
+				<ApplicationCrud onClose={() => setCurrentTempEvent(undefined)}
+								 selectedTempApplication={currentTempEvent}
 								 building_id={currentBuilding.id}/>
 			)}
 

@@ -1654,7 +1654,7 @@ SQL;
 			$navn = $this->db->f('navn');
 
 			$mva = 75;
-			if (in_array($tjenestested, array(26555)) || (in_array($owner_type_id,array(1, 2)) && $tjenestested == 26550))
+			if (in_array($tjenestested, array(26550, 26555)) || (in_array($owner_type_id,array(1, 2)) && $tjenestested == 26550))
 			{
 				$mva = 0;
 			}

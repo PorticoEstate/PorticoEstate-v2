@@ -573,7 +573,22 @@
 						}
 
 						$this->bo->so->update_id_string();
-						self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $receipt['id']));
+						
+						// Check if this came from recurring application and redirect back to application  
+						$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+						if ($recurring_app_id) {
+							// Auto-approve the application when allocations are created
+							$application_bo = createObject('booking.boapplication');
+							$application = $application_bo->read_single($recurring_app_id);
+							if ($application && $application['status'] !== 'ACCEPTED') {
+								$application['status'] = 'ACCEPTED';
+								$application_bo->update($application);
+							}
+							
+							self::redirect(array('menuaction' => 'booking.uiapplication.show', 'id' => $recurring_app_id));
+						} else {
+							self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $receipt['id']));
+						}
 					}
 					catch (booking_unauthorized_exception $e)
 					{
@@ -675,12 +690,22 @@
 					if ($step == 3)
 					{
 						$this->bo->so->update_id_string();
-						if ($last_successful_id)
-						{
+						
+						// Check if this came from recurring application and redirect back to application
+						$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+						if ($recurring_app_id && $last_successful_id) {
+							// Auto-approve the application when allocations are created
+							$application_bo = createObject('booking.boapplication');
+							$application = $application_bo->read_single($recurring_app_id);
+							if ($application && $application['status'] !== 'ACCEPTED') {
+								$application['status'] = 'ACCEPTED';
+								$application_bo->update($application);
+							}
+							
+							self::redirect(array('menuaction' => 'booking.uiapplication.show', 'id' => $recurring_app_id));
+						} elseif ($last_successful_id) {
 							self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $last_successful_id));
-						}
-						else
-						{
+						} else {
 							self::redirect(array('menuaction' => 'booking.uiallocation.index'));
 						}
 					}

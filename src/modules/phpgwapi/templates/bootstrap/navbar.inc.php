@@ -732,33 +732,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    let shiftPressCount = 0;
-    let shiftTimer;
     let commandPalette = new bootstrap.Modal(document.getElementById('commandPalette'));
     let searchInput = document.getElementById('commandSearch');
     let resultsContainer = document.getElementById('commandResults');
     let selectedIndex = -1;
     let menuItems = [];
 
-    // Double shift detection
+    // Cmd/Ctrl + Shift + Enter detection
     document.addEventListener('keydown', function(e) {
-        if (e.key === 'Shift') {
-            shiftPressCount++;
-
-            if (shiftTimer) {
-                clearTimeout(shiftTimer);
-            }
-
-            if (shiftPressCount === 2) {
-                e.preventDefault();
-                openCommandPalette();
-                shiftPressCount = 0;
-                return;
-            }
-
-            shiftTimer = setTimeout(() => {
-                shiftPressCount = 0;
-            }, 300);
+        if (e.key === 'Enter' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+            e.preventDefault();
+            openCommandPalette();
         }
     });
 

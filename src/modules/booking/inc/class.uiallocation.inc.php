@@ -531,6 +531,7 @@
 				{
 					$step++;
 				}
+				
 				if ($errors  && Sanitizer::get_var('repeat_until', 'bool'))
 				{
 					$_POST['repeat_until'] = date("Y-m-d", phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']));
@@ -584,9 +585,12 @@
 
 					if (Sanitizer::get_var('repeat_until', 'bool'))
 					{
-						$repeat_until = phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']) + 60 * 60 * 24;
+						// Use the parameter value if POST is empty
+						$repeat_until_date = !empty($_POST['repeat_until']) ? $_POST['repeat_until'] : Sanitizer::get_var('repeat_until', 'string');
+						
+						$repeat_until = phpgwapi_datetime::date_to_timestamp($repeat_until_date) + 60 * 60 * 24;
 						/*hack to preserve dateformat for next step*/
-						$_POST['repeat_until'] = date("Y-m-d", phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']));
+						$_POST['repeat_until'] = date("Y-m-d", phpgwapi_datetime::date_to_timestamp($repeat_until_date));
 					}
 					else
 					{
@@ -609,6 +613,8 @@
 					$max_dato = strtotime($_POST['to_']); // highest date from input
 					$interval = $_POST['field_interval'] * 60 * 60 * 24 * 7; // weeks in seconds
 					$i = 0;
+					$last_successful_id = null;
+					
 					// calculating valid and invalid dates from the first booking's to-date to the repeat_until date is reached
 					// the form from step 1 should validate and if we encounter any errors they are caused by double bookings.
 					while (($max_dato + ($interval * $i)) <= $repeat_until)
@@ -617,6 +623,7 @@
 						$todate = date('Y-m-d H:i', strtotime($_POST['to_']) + ($interval * $i));
 						$allocation['from_'] = $fromdate;
 						$allocation['to_'] = $todate;
+						
 						$err = $this->bo->validate($allocation);
 						if ($err)
 						{
@@ -627,12 +634,14 @@
 						{
 							$valid_dates[$i]['from_'] = $fromdate;
 							$valid_dates[$i]['to_'] = $todate;
+							
 							if ($step == 3)
 							{
 								try
 								{
 									$receipt = $this->bo->add($allocation);
 									$allocation['id'] = $receipt['id'];
+									$last_successful_id = $receipt['id'];
 
 									if(!empty($purchase_order['lines']) && empty($allocation['application_id']))
 									{
@@ -662,10 +671,18 @@
 						}
 						$i++;
 					}
+					
 					if ($step == 3)
 					{
 						$this->bo->so->update_id_string();
-						self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $receipt['id']));
+						if ($last_successful_id)
+						{
+							self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $last_successful_id));
+						}
+						else
+						{
+							self::redirect(array('menuaction' => 'booking.uiallocation.index'));
+						}
 					}
 				}
 			}

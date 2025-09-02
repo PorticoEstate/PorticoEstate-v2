@@ -843,3 +843,12 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been processed and confirmation emails have been sent to you.	booking	en	Your applications have now been processed and confirmation emails have been sent to you.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	en	Your applications have now been registered and confirmation emails have been sent to you.
 create_recurring_allocation	booking	en	Create Recurring Allocation
+recurring_allocation	booking	en	Recurring allocation
+follows_season	booking	en	Follows season
+create_all_allocations	booking	en	Create all allocations
+allocations_to_be_created	booking	en	Allocations to be created
+only_case_officer_can_create	booking	en	Only case officer can create allocations
+not_created_yet	booking	en	Not created yet
+follows_season_end	booking	en	Follows season end
+conflict	booking	en	Conflict
+pending	booking	en	Pending

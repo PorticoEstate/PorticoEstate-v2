@@ -940,3 +940,12 @@ Your applications have now been processed and confirmation emails have been sent
 Your applications have now been registered and confirmation emails have been sent to you.	booking	no	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	no	Postnummer
 create_recurring_allocation	booking	no	Opprett gjentakende tildeling
+recurring_allocation	booking	no	Gjentakende tildeling
+follows_season	booking	no	Følger sesong
+create_all_allocations	booking	no	Opprett alle tildelinger
+allocations_to_be_created	booking	no	Tildelinger som vil bli opprettet
+only_case_officer_can_create	booking	no	Kun saksbehandler kan opprette tildelinger
+not_created_yet	booking	no	Ikke opprettet ennå
+follows_season_end	booking	no	Følger sesongslutt
+conflict	booking	no	Konflikt
+pending	booking	no	Venter

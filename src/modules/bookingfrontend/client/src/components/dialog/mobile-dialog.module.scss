@@ -5,7 +5,7 @@
     background-color: $grey-24;
     position: absolute;
     z-index: 12; /* Above backdrop, below portal */
-    
+
     /* Simple grid layout like the example */
     display: grid;
     grid-template-columns: 1fr;
@@ -84,6 +84,7 @@
         display: flex;
         justify-content: flex-end;
         align-items: center;
+		gap: 0.5rem;
     }
 }
 
@@ -96,7 +97,7 @@
     pointer-events: none;
     transition: transform 0.3s ease, opacity 0.3s ease;
     overscroll-behavior: none; /* Prevent pull-to-refresh */
-    
+
     /* Reset default dialog styles that might cause gaps */
     border: none;
     outline: none;
@@ -120,7 +121,7 @@
 
     @include tablet {
         transform: translateY(100%);
-        
+
         &.fullscreen {
             transform: translateY(100%);
         }

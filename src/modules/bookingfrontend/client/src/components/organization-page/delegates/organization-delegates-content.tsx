@@ -351,7 +351,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 						onClose={() => setEditingDelegate(null)}
 						title={t('bookingfrontend.edit_delegate')}
 						footer={(attemptClose) => (
-							<div className={styles.formActions}>
+							<>
 								<Button
 									type="submit"
 									form="edit-delegate-form"
@@ -367,7 +367,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 								>
 									{t('common.cancel')}
 								</Button>
-							</div>
+							</>
 						)}
 					>
 						<DelegateForm

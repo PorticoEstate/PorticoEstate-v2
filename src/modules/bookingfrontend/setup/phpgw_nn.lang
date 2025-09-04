@@ -908,3 +908,5 @@ recurring_login_link_text	bookingfrontend	nn	For å lage ei gjentakande booking,
 no_organizations_for_recurring	bookingfrontend	nn	Du har ingen organisasjonar tilgjengelege for gjentakande bookingar.
 you_must_confirm_all_documents	bookingfrontend	nn	Du må stadfeste at du har lese alle forskriftsdokument
 new_repeating	bookingfrontend	nn	Ny repeterande
+
+edit_delegate	bookingfrontend	nn	Rediger delegat

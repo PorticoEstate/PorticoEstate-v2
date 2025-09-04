@@ -122,6 +122,7 @@ const GroupForm = ({group, organizationId, onSubmit, onCancel, isSubmitting, isE
 						aria-labelledby="name-label"
 						error={!!errors.name}
 						disabled={isSubmitting}
+						maxLength={150}
 					/>
 					{errors.name && (
 						<ValidationMessage>{String(errors.name.message)}</ValidationMessage>
@@ -136,6 +137,7 @@ const GroupForm = ({group, organizationId, onSubmit, onCancel, isSubmitting, isE
 						aria-labelledby="shortname-label"
 						error={!!errors.shortname}
 						disabled={isSubmitting}
+						maxLength={11}
 					/>
 					{errors.shortname && (
 						<ValidationMessage>{String(errors.shortname?.message)}</ValidationMessage>

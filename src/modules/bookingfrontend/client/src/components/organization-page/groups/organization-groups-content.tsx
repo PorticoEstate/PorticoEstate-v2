@@ -94,7 +94,7 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 			cell: info => {
 				const group = info.row.original
 				return (
-					<div>
+					<div className={styles.groupNameCell}>
 						<Link 
 							href={`/organization/${organizationId}/group/${group.id}`} 
 							className={styles.groupTitle}

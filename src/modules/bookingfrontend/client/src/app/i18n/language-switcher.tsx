@@ -1,9 +1,8 @@
 'use client'
-import React, {useState} from 'react';
+import React from 'react';
 import {useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
 import {ILanguage, languages} from '@/app/i18n/settings';
-import Dialog from "@/components/dialog/mobile-dialog";
-import {Button} from "@digdir/designsystemet-react";
+import {Button, Dropdown} from "@digdir/designsystemet-react";
 import {useParams, usePathname, useRouter} from "next/navigation";
 import ReactCountryFlag from "react-country-flag";
 import {phpGWLink} from "@/service/util";
@@ -20,7 +19,6 @@ const LanguageSwitcher: React.FC = () => {
 	const params = useParams();
 	const router = useRouter();
 	const {i18n, t} = useClientTranslation();
-	const [isOpen, setIsOpen] = useState(false);
 
 	const currentLang = languages.find(a => a.key === params.lang)!;
 
@@ -46,8 +44,6 @@ const LanguageSwitcher: React.FC = () => {
 	};
 
 	const handleLanguageChange = (lang: ILanguage) => {
-		setIsOpen(false);
-
 		// Always use hard reload for language changes to ensure all components get new translations
 		if (typeof window !== 'undefined') {
 			// Store useful info in sessionStorage for debugging if needed
@@ -65,55 +61,36 @@ const LanguageSwitcher: React.FC = () => {
 	// console.log(redirectedPathname(languages[1]))
 
 	return (
-		<>
-			<Button
-				onClick={() => setIsOpen(true)}
+		<Dropdown.TriggerContext>
+			<Dropdown.Trigger
 				variant={"tertiary"}
 				color={"accent"}
 				data-size={'sm'}
 			>
 				<ReactCountryFlag countryCode={currentLang.countryCode} svg
 				/> <ChevronDownIcon width="1.875rem" height="1.875rem" />
-			</Button>
-			<Dialog open={isOpen} onClose={() => setIsOpen(false)} dialogId={'language-switcher'}>
-
-				<div style={{
-					display: 'flex',
-					flexDirection: 'column',
-					justifyContent: 'center',
-					alignItems: 'center',
-					height: '100%',
-					gap: '5px'
-				}}>
+			</Dropdown.Trigger>
+			<Dropdown>
+				<Dropdown.List>
 					{languages.map((lang) => (
-						<Button
-							asChild
-							key={lang.key}
-							// onClick={() => handleLanguageChange(lang)}
-							variant={currentLang.key === lang.key ? "secondary" : "tertiary"}
-							style={{
-								width: '200px',
-								display: 'flex',
-								flexDirection: 'row',
-								justifyContent: 'flex-start'
-							}}
-						>
-							<a
-								key={lang.key}
-								href={redirectedPathname(lang)}
-								className={'link-text link-text-unset'}
-								style={{width: 200}}
-								rel="noopener noreferrer"
-							>
-
-								<ReactCountryFlag countryCode={lang.countryCode} svg/> {lang.label}
-							</a>
-
-						</Button>
+						<Dropdown.Item key={lang.key}>
+							<Dropdown.Button asChild>
+								<a
+									href={redirectedPathname(lang)}
+									className={'link-text link-text-unset'}
+									rel="noopener noreferrer"
+									style={{
+										fontWeight: currentLang.key === lang.key ? 'bold' : 'normal'
+									}}
+								>
+									<ReactCountryFlag countryCode={lang.countryCode} svg/> {lang.label}
+								</a>
+							</Dropdown.Button>
+						</Dropdown.Item>
 					))}
-				</div>
-			</Dialog>
-		</>
+				</Dropdown.List>
+			</Dropdown>
+		</Dropdown.TriggerContext>
 	);
 };
 

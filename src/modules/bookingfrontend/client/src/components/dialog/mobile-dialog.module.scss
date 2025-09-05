@@ -95,7 +95,7 @@
     margin: 0 !important;
     opacity: 0;
     pointer-events: none;
-    transition: transform 0.3s ease, opacity 0.3s ease;
+    transition: opacity 0.3s ease;
     overscroll-behavior: none; /* Prevent pull-to-refresh */
 
     /* Reset default dialog styles that might cause gaps */
@@ -114,31 +114,11 @@
     &::backdrop {
         background: transparent; /* Hide the native backdrop since we're using a custom one */
     }
-
-    @include mobile {
-        transform: translateY(100%);
-    }
-
-    @include tablet {
-        transform: translateY(100%);
-
-        &.fullscreen {
-            transform: translateY(100%);
-        }
-    }
 }
 
 .show {
     pointer-events: all;
     opacity: 1;
-
-    @include mobile {
-        transform: translateY(0);
-    }
-
-    @include tablet {
-        transform: translateY(0);
-    }
 }
 
 .customBackdrop {

@@ -561,6 +561,14 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							setValue('recurring_info.repeat_until', oneWeekLater.toISOString().split('T')[0]);
 							setValue('recurring_info.field_interval', 1);
 							setValue('recurring_info.outseason', false);
+							
+							// Set default organization if not already set from stored data
+							if (!storedData.organization_id && props.bookingUser?.delegates?.filter(delegate => delegate.active).length > 0) {
+								const firstOrg = props.bookingUser.delegates.filter(delegate => delegate.active)[0];
+								setValue('organization_id', firstOrg.org_id, { shouldDirty: true, shouldValidate: true });
+								setValue('organization_number', firstOrg.organization_number, { shouldDirty: true });
+								setValue('organization_name', firstOrg.name, { shouldDirty: true });
+							}
 						}
 
 						// Clear the stored data
@@ -1273,9 +1281,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 													// Set default to first organization
 													const firstOrg = props.bookingUser?.delegates?.filter(delegate => delegate.active)[0];
 													if (firstOrg) {
-														setValue('organization_id', firstOrg.org_id);
-														setValue('organization_number', firstOrg.organization_number);
-														setValue('organization_name', firstOrg.name);
+														setValue('organization_id', firstOrg.org_id, { shouldDirty: true, shouldValidate: true });
+														setValue('organization_number', firstOrg.organization_number, { shouldDirty: true });
+														setValue('organization_name', firstOrg.name, { shouldDirty: true });
 													}
 												} else {
 													// Clear recurring data when checkbox is turned off
@@ -1345,7 +1353,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 												<label>{t('bookingfrontend.organization')}</label>
 												<Select
 													{...field}
-													value={field.value || props.bookingUser?.delegates?.filter(delegate => delegate.active)[0]?.org_id || ''}
+													value={field.value?.toString() || ''}
 													onChange={(e) => {
 														const selectedOrgId = parseInt(e.target.value);
 														field.onChange(selectedOrgId || undefined);

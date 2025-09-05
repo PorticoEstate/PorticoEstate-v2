@@ -11,6 +11,7 @@
 
 body {
 	margin: 0;
+	touch-action: manipulation;
 }
 
 /* Scroll lock managed by ScrollLockContext */

@@ -14,6 +14,7 @@ import {addOrganizationDelegate, updateOrganizationDelegate, deleteOrganizationD
 import {useQueryClient} from "@tanstack/react-query"
 import MobileDialog from "@/components/dialog/mobile-dialog"
 import DelegateForm, {DelegateFormData, DelegateEditFormData} from './delegate-form'
+import Link from 'next/link'
 
 
 interface OrganizationDelegatesContentProps {
@@ -133,7 +134,14 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 			header: t('bookingfrontend.name'),
 			cell: info => {
 				const delegate = info.row.original
-				return <span>{delegate.name}</span>
+				return (
+					<Link 
+						href={`/organization/${organizationId}/delegate/${delegate.id}`}
+						className={styles.delegateLink}
+					>
+						{delegate.name}
+					</Link>
+				)
 			},
 		},
 		{

@@ -563,7 +563,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							setValue('recurring_info.outseason', false);
 							
 							// Set default organization if not already set from stored data
-							if (!storedData.organization_id && props.bookingUser?.delegates?.filter(delegate => delegate.active).length > 0) {
+							if (!storedData.organization_id && props.bookingUser?.delegates?.filter(delegate => delegate.active).length && props.bookingUser.delegates.filter(delegate => delegate.active).length > 0) {
 								const firstOrg = props.bookingUser.delegates.filter(delegate => delegate.active)[0];
 								setValue('organization_id', firstOrg.org_id, { shouldDirty: true, shouldValidate: true });
 								setValue('organization_number', firstOrg.organization_number, { shouldDirty: true });

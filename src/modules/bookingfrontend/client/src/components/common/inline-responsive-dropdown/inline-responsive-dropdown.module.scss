@@ -1,0 +1,62 @@
+@import '../../../styles/util.module';
+@import '../../../styles/colors';
+
+.mobileExpandableList {
+    display: flex;
+    flex-direction: column;
+	border-bottom: 1px solid var(--ds-color-neutral-border-default, #e0e0e0);
+
+}
+
+.mobileToggleButton {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: space-between;
+    text-align: left;
+	span {
+		text-transform: capitalize;
+		color: var(--ds-color-neutral-text-default);
+	}
+	div {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+}
+
+.mobileOptionsList {
+	display: flex;
+	flex-direction: column;
+    //position: relative;
+    //width: 100%;
+    //background: var(--ds-color-neutral-background-subtle, #f9f9f9);
+    //border-radius: 4px;
+    //padding: 0.25rem 0;
+    //margin-top: 0.25rem;
+    animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 200px;
+    }
+}
+
+.mobileOption {
+    display: flex;
+	justify-content: flex-start;
+    text-align: left;
+}
+
+.selected {
+    font-weight: bold;
+    background-color: var(--ds-color-accent-surface-default, rgba(233, 223, 236, 0.5));
+}

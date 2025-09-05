@@ -7,6 +7,7 @@ import {useParams, usePathname, useRouter} from "next/navigation";
 import ReactCountryFlag from "react-country-flag";
 import {phpGWLink} from "@/service/util";
 import {ChevronDownIcon} from "@navikt/aksel-icons";
+import InlineResponsiveDropdown from "@/components/common/inline-responsive-dropdown/inline-responsive-dropdown";
 
 // Create a utility function to refresh translations
 const refreshPage = () => {
@@ -36,11 +37,11 @@ const LanguageSwitcher: React.FC = () => {
 	// 	return `${origin}${path}`;
 	// };
 
-	const redirectedPathname = (lang: ILanguage) => {
+	const redirectedPathname = (lang: string) => {
 		if (!pathname) return '/';
 		const segments = pathname.split('/');
-		segments[1] = lang.key;
-		return phpGWLink(['bookingfrontend','client', ...segments.filter(Boolean)]);
+		segments[1] = lang;
+		return phpGWLink(['bookingfrontend', 'client', ...segments.filter(Boolean)]);
 	};
 
 	const handleLanguageChange = (lang: ILanguage) => {
@@ -52,45 +53,28 @@ const LanguageSwitcher: React.FC = () => {
 			sessionStorage.setItem('newLanguage', lang.key);
 
 			// Force a full page reload by using window.location
-			window.location.replace(redirectedPathname(lang));
+			window.location.replace(redirectedPathname(lang.key));
 		} else {
 			// This fallback should never happen in a client component
-			router.push(redirectedPathname(lang));
+			router.push(redirectedPathname(lang.key));
 		}
 	};
 	// console.log(redirectedPathname(languages[1]))
-
+	const dropdownOptions = languages.map(ver => ({
+		value: ver.key,
+		label: t(ver.label),
+		icon: <ReactCountryFlag countryCode={ver.countryCode} svg/>
+	}));
 	return (
-		<Dropdown.TriggerContext>
-			<Dropdown.Trigger
-				variant={"tertiary"}
-				color={"accent"}
-				data-size={'sm'}
-			>
-				<ReactCountryFlag countryCode={currentLang.countryCode} svg
-				/> <ChevronDownIcon width="1.875rem" height="1.875rem" />
-			</Dropdown.Trigger>
-			<Dropdown>
-				<Dropdown.List>
-					{languages.map((lang) => (
-						<Dropdown.Item key={lang.key}>
-							<Dropdown.Button asChild>
-								<a
-									href={redirectedPathname(lang)}
-									className={'link-text link-text-unset'}
-									rel="noopener noreferrer"
-									style={{
-										fontWeight: currentLang.key === lang.key ? 'bold' : 'normal'
-									}}
-								>
-									<ReactCountryFlag countryCode={lang.countryCode} svg/> {lang.label}
-								</a>
-							</Dropdown.Button>
-						</Dropdown.Item>
-					))}
-				</Dropdown.List>
-			</Dropdown>
-		</Dropdown.TriggerContext>
+		<InlineResponsiveDropdown
+			triggerContent={
+				<ReactCountryFlag countryCode={currentLang.countryCode} svg/>
+			}
+			title={t('preferences.language')}
+			options={dropdownOptions}
+			currentValue={currentLang.key}
+			onValueChange={(value) => redirectedPathname(value as any)}
+		/>
 	);
 };
 

@@ -62,7 +62,7 @@ const LanguageSwitcher: React.FC = () => {
 	// console.log(redirectedPathname(languages[1]))
 	const dropdownOptions = languages.map(ver => ({
 		value: ver.key,
-		label: t(ver.label),
+		label: ver.label,
 		icon: <ReactCountryFlag countryCode={ver.countryCode} svg/>
 	}));
 	return (
@@ -73,7 +73,7 @@ const LanguageSwitcher: React.FC = () => {
 			title={t('preferences.language')}
 			options={dropdownOptions}
 			currentValue={currentLang.key}
-			onValueChange={(value) => redirectedPathname(value as any)}
+			onValueChange={(value) => window.location.replace(redirectedPathname(value))}
 		/>
 	);
 };

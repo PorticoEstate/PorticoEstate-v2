@@ -166,3 +166,19 @@
 .showInactiveToggle {
     user-select: none;
 }
+
+.delegateLink {
+    color: var(--ds-color-accent-text-default);
+    text-decoration: none;
+    font-weight: $text-medium;
+    
+    &:hover {
+        text-decoration: underline;
+    }
+    
+    &:focus {
+        outline: 2px solid var(--ds-color-accent-border-default);
+        outline-offset: 2px;
+        border-radius: 2px;
+    }
+}

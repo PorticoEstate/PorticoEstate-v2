@@ -18,6 +18,7 @@ import {
 	IShortOrganization,
 	IShortOrganizationGroup,
 	IShortOrganizationDelegate,
+	IOrganizationDelegate,
 	IOrganizationGroup
 } from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
@@ -242,6 +243,22 @@ export async function fetchOrganizationDelegates(id: string | number): Promise<I
 
     if (!response.ok) {
         throw new Error(`Failed to fetch organization delegates: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+}
+
+export async function fetchOrganizationDelegate(organizationId: string | number, delegateId: string | number): Promise<IOrganizationDelegate | undefined> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'delegates', delegateId]);
+    const response = await fetch(url);
+
+    if (response.status === 401) {
+        return undefined;
+    }
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch organization delegate: ${response.status}`);
     }
 
     const result = await response.json();

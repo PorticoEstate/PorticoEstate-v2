@@ -79,7 +79,7 @@ export interface IAPIEvent extends IAPIScheduleEntity {
 }
 
 
-export type IShortEvent = Pick<IAPIEvent, 'id' | 'customer_organization_number' | 'customer_organization_name' | 'name' | 'building_id' | 'organizer' | 'resources' | 'from_' | 'to_' | 'building_name'>
+export type IShortEvent = Pick<IAPIEvent, 'id' | 'customer_organization_number' | 'customer_organization_id' |  'customer_organization_name' | 'name' | 'building_id' | 'organizer' | 'resources' | 'from_' | 'to_' | 'building_name'>
 
 export interface IEventOLD {
 	type: 'booking' | 'allocation' | 'event'

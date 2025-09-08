@@ -328,6 +328,7 @@
 
 			// Handle recurring application pre-fill early
 			$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+			$skip_conflicts = Sanitizer::get_var('skip_conflicts', 'int', 'GET', 0);
 			$allocation = array();
 			if ($recurring_app_id) {
 	
@@ -642,8 +643,12 @@
 						$err = $this->bo->validate($allocation);
 						if ($err)
 						{
-							$invalid_dates[$i]['from_'] = $fromdate;
-							$invalid_dates[$i]['to_'] = $todate;
+							// If skip_conflicts is enabled, don't save invalid dates - just skip them
+							if (!$skip_conflicts) {
+								$invalid_dates[$i]['from_'] = $fromdate;
+								$invalid_dates[$i]['to_'] = $todate;
+							}
+							// Move to next iteration without creating allocation
 						}
 						else
 						{

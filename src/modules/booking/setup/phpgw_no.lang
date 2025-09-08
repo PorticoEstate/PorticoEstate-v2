@@ -949,3 +949,14 @@ not_created_yet	booking	no	Ikke opprettet ennå
 follows_season_end	booking	no	Følger sesongslutt
 conflict	booking	no	Konflikt
 pending	booking	no	Venter
+conflict_block	booking	no	Blokk
+conflict_allocation	booking	no	Tildeling
+conflict_event	booking	no	Arrangement
+conflict_unknown_org	booking	no	Ukjent org
+conflict_unknown_detected	booking	no	Ukjent konflikt oppdaget
+conflict_unknown_check_schedule	booking	no	Ukjent konflikt - se timeplan for detaljer
+conflict_with	booking	no	Konflikt med:
+view_details	booking	no	Vis detaljer
+view_schedule_this_day	booking	no	Se timeplan for denne dagen
+view_schedule	booking	no	Se timeplan
+create_non_conflicting_allocations	booking	no	Opprett tildelinger uten konflikt

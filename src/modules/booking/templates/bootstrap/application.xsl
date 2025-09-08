@@ -1661,6 +1661,12 @@
 				</label>
 				<textarea name="acceptance_message" id="acceptance_message" class="form-control" rows="4"></textarea>
 			  </div>
+			  <div class="form-group form-check">
+				<input type="checkbox" class="form-check-input" id="send_acceptance_email" name="send_acceptance_email" value="1" checked="checked"/>
+				<label class="form-check-label" for="send_acceptance_email">
+				  <xsl:value-of select="php:function('lang', 'send_email_to_applicant')" />
+				</label>
+			  </div>
 			  <input type="hidden" name="status" value="ACCEPTED"/>
 			</div>
 			<div class="modal-footer">
@@ -1695,6 +1701,12 @@
 				  <xsl:value-of select="php:function('lang', 'Reason for rejection')" />
 				</label>
 				<textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="4"></textarea>
+			  </div>
+			  <div class="form-group form-check">
+				<input type="checkbox" class="form-check-input" id="send_rejection_email" name="send_rejection_email" value="1" checked="checked"/>
+				<label class="form-check-label" for="send_rejection_email">
+				  <xsl:value-of select="php:function('lang', 'send_email_to_applicant')" />
+				</label>
 			  </div>
 			  <input type="hidden" name="status" value="REJECTED"/>
 			</div>

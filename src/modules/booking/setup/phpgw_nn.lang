@@ -82,6 +82,7 @@ Allocations that is going to be deleted	booking	nn	Tildelingar for sletting
 Allocations that will be deleted (%1)	booking	nn	Tildelingar som vert sletta (%1)
 Allocations with existing bookings (%1)	booking	nn	Tildelingar med eksisterande interntildelingar (%1)
 Allocations with still existing bookings (%1)	booking	nn	Tildelingar som ikkje vert sletta på grunn av eksisterande bookingar (%1)
+allocations_to_be_created	booking	nn	Tildelingar som vil bli oppretta
 alternative article code	booking	nn	Alternativ artikkelkode
 amount	booking	nn	Beløp
 and	booking	nn	og
@@ -220,6 +221,14 @@ Completed reservations	booking	nn	Fullførte reservasjoner
 Confirm application	booking	nn	Stadfest søknad
 Confirm e-mail address	booking	nn	Stadfest e-postadressa
 confirmed	booking	nn	Stadfesta
+conflict	booking	nn	Konflikt
+conflict_allocation	booking	nn	Tildeling
+conflict_block	booking	nn	Blokk
+conflict_event	booking	nn	Arrangement
+conflict_unknown_check_schedule	booking	nn	Ukjent konflikt - sjå timeplan for detaljar
+conflict_unknown_detected	booking	nn	Ukjent konflikt oppdaga
+conflict_unknown_org	booking	nn	Ukjent org
+conflict_with	booking	nn	Konflikt med:
 contact	booking	nn	Kontakt
 contact 1	booking	nn	Kontakt 1
 contact 2	booking	nn	Kontakt 2
@@ -250,6 +259,9 @@ Create booking	booking	nn	Lag interntildeling
 Create event	booking	nn	Lag arrangement
 Create new booking	booking	nn	Lag ny interntildeling
 Create report	booking	nn	Lag rapport
+create_all_allocations	booking	nn	Opprett alle tildelingar
+create_non_conflicting_allocations	booking	nn	Opprett tildelingar utan konflikt
+create_recurring_allocation	booking	nn	Opprett gjentakande tildeling
 created	booking	nn	Oppretta
 currency	booking	nn	Valuta
 current activities	booking	nn	Aktivitetar
@@ -409,6 +421,8 @@ file attributes	common	nn	Filattributer
 file categories	common	nn	Filkategorier
 file configuration	common	nn	Filkonfigurasjon
 filnavn	booking	nn	Dokument
+follows_season	booking	nn	Følgjer sesong
+follows_season_end	booking	nn	Følgjer sesongslutt
 For rent	booking	nn	Til leie
 Format	booking	nn	Format
 found %1 results	booking	nn	%1 treff
@@ -607,6 +621,7 @@ Not a top level activity	booking	nn	Det er valgt aktiviteter som ikke er på top
 not completed	booking	nn	Ikkje fullført
 Not Generated	booking	nn	Ikkje generert
 Not selected	booking	nn	Ikkje valgt
+not_created_yet	booking	nn	Ikkje oppretta enno
 Nothing to export	booking	nn	Fann ingenting å eksportere
 notify on accepted	booking	nn	Send kvittering til ansvarlig ved akseptert.
 Notify on new application	booking	nn	Varsle ved ny søknad
@@ -623,6 +638,7 @@ officer	booking	nn	Saksbehandlar
 One e-mail pr. line.	booking	nn	Berre ei e-postadresse pr. linje.
 One filter box per line	booking	nn	Bare én filtreringsboks per linje
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	nn	Ein eller fleire interntildelinger, tildelinger eller arrangementer må opprettast før ein søknad kan aksepterast
+only_case_officer_can_create	booking	nn	Berre sakshandsamar kan opprette tildelingar
 Opening hours	booking	nn	Åpningstider
 Optional e-mail adress	booking	nn	Valfri e-post adresse
 Or	booking	nn	eller
@@ -664,6 +680,7 @@ payment method	booking	nn	Refundér
 payments	booking	nn	Betalingar
 PDF-export to archive	booking	nn	Eksporter saken som pdf til arkiv
 Pending	booking	nn	UNDER HANDSAMING
+pending	booking	nn	Ventar
 permission add	booking	nn	Legg til tilgang
 Permission already exists	booking	nn	Tilgangen finnest
 permissions	booking	nn	Tilgangar
@@ -714,6 +731,7 @@ Recipients	booking	nn	Mottakarar
 Recurring allocation	booking	nn	Gjenta tildelingen
 Recurring allocation deletion	booking	nn	Slett i intervall
 Recurring booking	booking	nn	Gjenta interntildeling
+recurring_allocation	booking	nn	Gjentakande tildeling
 Reference	booking	nn	Referanse
 refund	booking	nn	Refundér
 refunded	booking	nn	Refundert
@@ -929,6 +947,9 @@ Users of current season or users the last 300 days	booking	nn	Brukarar gjeldande
 value is ignored for -1	booking	nn	Verdien blir ignorert for -1
 variables	booking	nn	Variablar
 vertical	booking	nn	Vertikal
+view_details	booking	nn	Vis detaljar
+view_schedule	booking	nn	Sjå timeplan
+view_schedule_this_day	booking	nn	Sjå timeplan for denne dagen
 we	booking	nn	on.
 week template	booking	nn	Vekeplan
 weekday	booking	nn	Vekedag
@@ -951,24 +972,5 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been processed and confirmation emails have been sent to you.	booking	nn	Søknadene er handsama, og stadfestingar er sendt til deg på e-post.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	nn	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	nn	Postnummer
-create_recurring_allocation	booking	nn	Opprett gjentakande tildeling
-recurring_allocation	booking	nn	Gjentakande tildeling
-follows_season	booking	nn	Følgjer sesong
-create_all_allocations	booking	nn	Opprett alle tildelingar
-allocations_to_be_created	booking	nn	Tildelingar som vil bli oppretta
-only_case_officer_can_create	booking	nn	Berre sakshandsamar kan opprette tildelingar
-not_created_yet	booking	nn	Ikkje oppretta enno
-follows_season_end	booking	nn	Følgjer sesongslutt
-conflict	booking	nn	Konflikt
-pending	booking	nn	Ventar
-conflict_block	booking	nn	Blokk
-conflict_allocation	booking	nn	Tildeling
-conflict_event	booking	nn	Arrangement
-conflict_unknown_org	booking	nn	Ukjent org
-conflict_unknown_detected	booking	nn	Ukjent konflikt oppdaga
-conflict_unknown_check_schedule	booking	nn	Ukjent konflikt - sjå timeplan for detaljar
-conflict_with	booking	nn	Konflikt med:
-view_details	booking	nn	Vis detaljar
-view_schedule_this_day	booking	nn	Sjå timeplan for denne dagen
-view_schedule	booking	nn	Sjå timeplan
-create_non_conflicting_allocations	booking	nn	Opprett tildelingar utan konflikt
+regular	booking	nn	Vanleg
+repeating	booking	nn	Gjentakande

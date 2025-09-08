@@ -76,6 +76,7 @@ Allocations that is going to be deleted	booking	en	Allocations that is going to 
 Allocations that will be deleted (%1)	booking	en	Allocations that will be deleted (%1)
 Allocations with existing bookings (%1)	booking	en	Allocations with existing bookings (%1)
 Allocations with still existing bookings (%1)	booking	en	Allocations with still existing bookings (%1)
+allocations_to_be_created	booking	en	Allocations to be created
 and	booking	en	And
 application	booking	en	Application
 application add	booking	en	Application add
@@ -192,6 +193,14 @@ Completed reservations	booking	en	Completed reservations
 Confirm application	booking	en	Confirm application
 Confirm e-mail address	booking	en	Confirm e-mail address
 confirmed	booking	en	Confirmed
+conflict	booking	en	Conflict
+conflict_allocation	booking	en	Allocation
+conflict_block	booking	en	Block
+conflict_event	booking	en	Event
+conflict_unknown_check_schedule	booking	en	Unknown conflict - see schedule for details
+conflict_unknown_detected	booking	en	Unknown conflict detected
+conflict_unknown_org	booking	en	Unknown org
+conflict_with	booking	en	Conflict with:
 contact	booking	en	Contact
 contact 1	booking	en	Contact 1
 contact 2	booking	en	Contact 2
@@ -218,6 +227,9 @@ Create booking	booking	en	Create booking
 Create event	booking	en	Create event
 Create new booking	booking	en	Create new booking
 Create report	booking	en	Create report
+create_all_allocations	booking	en	Create all allocations
+create_non_conflicting_allocations	booking	en	Create non-conflicting allocations
+create_recurring_allocation	booking	en	Create Recurring Allocation
 created	booking	en	Created
 current activities	booking	en	Current activities
 Current external billing sequence number	booking	en	Current external billing sequence number
@@ -361,6 +373,8 @@ file attributes	common	en	File attributes
 file categories	common	en	File categories
 file configuration	common	en	File configuration
 filnavn	booking	en	Filnavn
+follows_season	booking	en	Follows season
+follows_season_end	booking	en	Follows season end
 For rent	booking	en	For rent
 Format	booking	en	Format
 found %1 results	booking	en	Found %1 results
@@ -534,6 +548,7 @@ Not a top level activity	booking	en	Not a top level activity
 not completed	booking	en	Not completed
 Not Generated	booking	en	Not generated
 Not selected	booking	en	Not selected
+not_created_yet	booking	en	Not created yet
 Nothing to export	booking	en	Nothing to export
 notify on accepted	booking	en	Notify on accepted
 Notify on new application	booking	en	Notify on new application
@@ -548,6 +563,7 @@ officer	booking	en	Officer
 One e-mail pr. line.	booking	en	One e-mail pr. line.
 One filter box per line	booking	en	One filter box per line
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	en	One or more bookings, allocations or events needs to be created before an application can be accepted
+only_case_officer_can_create	booking	en	Only case officer can create allocations
 Opening hours	booking	en	Opening hours
 Optional e-mail adress	booking	en	Optional e-mail adress
 Or	booking	en	Or
@@ -586,6 +602,7 @@ Participants Per Age Group Per Month	booking	en	Participants per age group per m
 participants per agegroupe	booking	en	Participants per agegroupe
 PDF-export to archive	booking	en	Pdf-export to archive
 Pending	booking	en	Pending
+pending	booking	en	Pending
 permission add	booking	en	Permission add
 Permission already exists	booking	en	Permission already exists
 permissions	booking	en	Permissions
@@ -629,6 +646,7 @@ Recipients	booking	en	Recipients
 Recurring allocation	booking	en	Recurring allocation
 Recurring allocation deletion	booking	en	Recurring allocation deletion
 Recurring booking	booking	en	Recurring booking
+recurring_allocation	booking	en	Recurring allocation
 Reference	booking	en	Reference
 Register in	booking	en	Register in
 Register out	booking	en	Register out
@@ -821,6 +839,9 @@ Users of current season or users the last 300 days	booking	en	Users of current s
 value is ignored for -1	booking	en	Value is ignored for -1
 variables	booking	en	Variables
 vertical	booking	en	Vertical
+view_details	booking	en	View details
+view_schedule	booking	en	View schedule
+view_schedule_this_day	booking	en	View schedule for this day
 we	booking	en	We
 week template	booking	en	Week template
 weekday	booking	en	Weekday
@@ -842,24 +863,5 @@ Your application has now been registered and a confirmation email has been sent 
 Your application with event details has been added. You can add another application, or finalise the application with contact details.	booking	en	Your application with event details has been added. You can add another application, or finalise the application with contact details.
 Your applications have now been processed and confirmation emails have been sent to you.	booking	en	Your applications have now been processed and confirmation emails have been sent to you.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	en	Your applications have now been registered and confirmation emails have been sent to you.
-create_recurring_allocation	booking	en	Create Recurring Allocation
-recurring_allocation	booking	en	Recurring allocation
-follows_season	booking	en	Follows season
-create_all_allocations	booking	en	Create all allocations
-allocations_to_be_created	booking	en	Allocations to be created
-only_case_officer_can_create	booking	en	Only case officer can create allocations
-not_created_yet	booking	en	Not created yet
-follows_season_end	booking	en	Follows season end
-conflict	booking	en	Conflict
-pending	booking	en	Pending
-conflict_block	booking	en	Block
-conflict_allocation	booking	en	Allocation
-conflict_event	booking	en	Event
-conflict_unknown_org	booking	en	Unknown org
-conflict_unknown_detected	booking	en	Unknown conflict detected
-conflict_unknown_check_schedule	booking	en	Unknown conflict - see schedule for details
-conflict_with	booking	en	Conflict with:
-view_details	booking	en	View details
-view_schedule_this_day	booking	en	View schedule for this day
-view_schedule	booking	en	View schedule
-create_non_conflicting_allocations	booking	en	Create non-conflicting allocations
+regular	booking	en	Regular
+repeating	booking	en	Repeating

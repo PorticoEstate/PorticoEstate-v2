@@ -580,6 +580,10 @@ class booking_uiapplication extends booking_uicommon
 						'label' => lang('Status')
 					),
 					array(
+						'key' => 'type',
+						'label' => lang('Type')
+					),
+					array(
 						'key' => 'building_name',
 						'label' => lang('Building')
 					),
@@ -773,6 +777,9 @@ class booking_uiapplication extends booking_uicommon
 			$application['created'] = pretty_timestamp($application['created']);
 			$application['modified'] = pretty_timestamp($application['modified']);
 			$application['frontend_modified'] = pretty_timestamp($application['frontend_modified']);
+			
+			// Add type based on recurring_info
+			$application['type'] = !empty($application['recurring_info']) ? lang('repeating') : lang('regular');
 			$resources = $this->resource_bo->so->read(array('results' => 'all', 'filters' => array(
 				'id' => $application['resources']
 			)));

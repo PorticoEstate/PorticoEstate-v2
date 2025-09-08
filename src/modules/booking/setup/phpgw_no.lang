@@ -82,6 +82,7 @@ Allocations that is going to be deleted	booking	no	Tildelinger for sletting
 Allocations that will be deleted (%1)	booking	no	Tildelinger som vil bli slettet (%1)
 Allocations with existing bookings (%1)	booking	no	Tildelinger med eksisterende interntildelinger (%1)
 Allocations with still existing bookings (%1)	booking	no	Tildelinger som ikke blir slettet på grunn av eksisterende bookinger (%1)
+allocations_to_be_created	booking	no	Tildelinger som vil bli opprettet
 alternative article code	booking	no	Alternativ artikkelkode
 amount	booking	no	Beløp
 and	booking	no	og
@@ -218,6 +219,14 @@ Completed reservations	booking	no	Fullførte reservasjoner
 Confirm application	booking	no	Bekreft søknad
 Confirm e-mail address	booking	no	Bekreft e-postadressen
 confirmed	booking	no	Bekreftet
+conflict	booking	no	Konflikt
+conflict_allocation	booking	no	Tildeling
+conflict_block	booking	no	Blokk
+conflict_event	booking	no	Arrangement
+conflict_unknown_check_schedule	booking	no	Ukjent konflikt - se timeplan for detaljer
+conflict_unknown_detected	booking	no	Ukjent konflikt oppdaget
+conflict_unknown_org	booking	no	Ukjent org
+conflict_with	booking	no	Konflikt med:
 contact	booking	no	Kontakt
 contact 1	booking	no	Kontakt 1
 contact 2	booking	no	Kontakt 2
@@ -248,6 +257,9 @@ Create booking	booking	no	Lag interntildeling
 Create event	booking	no	Lag arrangement
 Create new booking	booking	no	Lag ny interntildeling
 Create report	booking	no	Lag rapport
+create_all_allocations	booking	no	Opprett alle tildelinger
+create_non_conflicting_allocations	booking	no	Opprett tildelinger uten konflikt
+create_recurring_allocation	booking	no	Opprett gjentakende tildeling
 created	booking	no	Opprettet
 currency	booking	no	Valuta
 current activities	booking	no	Aktiviteter
@@ -405,6 +417,8 @@ file attributes	common	no	Fil attributer
 file categories	common	no	Fil kategorier
 file configuration	common	no	Fil konfigurasjon
 filnavn	booking	no	Dokument
+follows_season	booking	no	Følger sesong
+follows_season_end	booking	no	Følger sesongslutt
 For rent	booking	no	Til leie
 Format	booking	no	Format
 found %1 results	booking	no	%1 treff
@@ -598,6 +612,7 @@ Not a top level activity	booking	no	Det er valgt aktiviteter som ikke er på top
 not completed	booking	no	Ikke fullført
 Not Generated	booking	no	Ikke generert
 Not selected	booking	no	Ikke valgt
+not_created_yet	booking	no	Ikke opprettet ennå
 Nothing to export	booking	no	Fant ingenting å eksportere
 notify on accepted	booking	no	Send kvittering til ansvarlig ved akseptert.
 Notify on new application	booking	no	Varsle ved ny søknad
@@ -612,6 +627,7 @@ officer	booking	no	Saksbehandler
 One e-mail pr. line.	booking	no	Bare en e-post adresse pr. linje.
 One filter box per line	booking	no	Bare én filtreringsboks per linje
 One or more bookings, allocations or events needs to be created before an application can be Accepted	booking	no	En eller flere interntildelinger, tildelinger eller arrangementer må lages før en søknad kan aksepteres
+only_case_officer_can_create	booking	no	Kun saksbehandler kan opprette tildelinger
 Opening hours	booking	no	Åpningstider
 Optional e-mail adress	booking	no	Valgfri e-post adresse
 Or	booking	no	eller
@@ -653,6 +669,7 @@ payment method	booking	no	Betalingsmetode
 payments	booking	no	Betalinger
 PDF-export to archive	booking	no	Eksporter saken som pdf til arkiv
 Pending	booking	no	UNDER BEHANDLING
+pending	booking	no	Venter
 permission add	booking	no	Legg til tilatelse
 Permission already exists	booking	no	Rettigheten finnes
 permissions	booking	no	Rettigheter
@@ -703,6 +720,7 @@ Recipients	booking	no	Mottakere
 Recurring allocation	booking	no	Gjenta tildelingen
 Recurring allocation deletion	booking	no	Slett i intervall
 Recurring booking	booking	no	Gjenta interntildeling
+recurring_allocation	booking	no	Gjentakende tildeling
 Reference	booking	no	Referanse
 refund	booking	no	Refundér
 refunded	booking	no	Refundert
@@ -917,6 +935,9 @@ Users of current season or users the last 300 days	booking	no	Brukere denne seso
 value is ignored for -1	booking	no	Verdien blir ignorert for -1
 variables	booking	no	Variabler
 vertical	booking	no	Vertikal
+view_details	booking	no	Vis detaljer
+view_schedule	booking	no	Se timeplan
+view_schedule_this_day	booking	no	Se timeplan for denne dagen
 we	booking	no	on.
 week template	booking	no	Ukeplan
 weekday	booking	no	Ukedag
@@ -939,24 +960,5 @@ Your application with event details has been added. You can add another applicat
 Your applications have now been processed and confirmation emails have been sent to you.	booking	no	Søknadene er behandlet, og bekreftelser er sendt til deg på e-post.
 Your applications have now been registered and confirmation emails have been sent to you.	booking	no	Søknadene har nå blitt sendt inn, og bekreftelser har blitt sendt til deg på e-post.
 zip code	booking	no	Postnummer
-create_recurring_allocation	booking	no	Opprett gjentakende tildeling
-recurring_allocation	booking	no	Gjentakende tildeling
-follows_season	booking	no	Følger sesong
-create_all_allocations	booking	no	Opprett alle tildelinger
-allocations_to_be_created	booking	no	Tildelinger som vil bli opprettet
-only_case_officer_can_create	booking	no	Kun saksbehandler kan opprette tildelinger
-not_created_yet	booking	no	Ikke opprettet ennå
-follows_season_end	booking	no	Følger sesongslutt
-conflict	booking	no	Konflikt
-pending	booking	no	Venter
-conflict_block	booking	no	Blokk
-conflict_allocation	booking	no	Tildeling
-conflict_event	booking	no	Arrangement
-conflict_unknown_org	booking	no	Ukjent org
-conflict_unknown_detected	booking	no	Ukjent konflikt oppdaget
-conflict_unknown_check_schedule	booking	no	Ukjent konflikt - se timeplan for detaljer
-conflict_with	booking	no	Konflikt med:
-view_details	booking	no	Vis detaljer
-view_schedule_this_day	booking	no	Se timeplan for denne dagen
-view_schedule	booking	no	Se timeplan
-create_non_conflicting_allocations	booking	no	Opprett tildelinger uten konflikt
+regular	booking	no	Vanlig
+repeating	booking	no	Gjentagende

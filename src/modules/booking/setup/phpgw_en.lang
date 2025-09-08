@@ -865,3 +865,4 @@ Your applications have now been processed and confirmation emails have been sent
 Your applications have now been registered and confirmation emails have been sent to you.	booking	en	Your applications have now been registered and confirmation emails have been sent to you.
 regular	booking	en	Regular
 repeating	booking	en	Repeating
+send_email_to_applicant	booking	en	Send email to applicant

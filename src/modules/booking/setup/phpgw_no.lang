@@ -962,3 +962,4 @@ Your applications have now been registered and confirmation emails have been sen
 zip code	booking	no	Postnummer
 regular	booking	no	Vanlig
 repeating	booking	no	Gjentagende
+send_email_to_applicant	booking	no	Send e-post til søker

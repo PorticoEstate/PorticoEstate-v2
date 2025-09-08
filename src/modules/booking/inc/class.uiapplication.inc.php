@@ -3969,7 +3969,14 @@ class booking_uiapplication extends booking_uicommon
 				}
 
 				$update = true;
-				$notify = true;
+				// For rejected or accepted status, only notify if checkbox is checked
+				if ($application['status'] == 'REJECTED') {
+					$notify = Sanitizer::get_var('send_rejection_email', 'bool', 'POST') ? true : false;
+				} else if ($application['status'] == 'ACCEPTED') {
+					$notify = Sanitizer::get_var('send_acceptance_email', 'bool', 'POST') ? true : false;
+				} else {
+					$notify = true;
+				}
 				$return_after_action = true;
 			}
 			else if ($_FILES)

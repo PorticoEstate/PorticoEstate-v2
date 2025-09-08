@@ -974,3 +974,4 @@ Your applications have now been registered and confirmation emails have been sen
 zip code	booking	nn	Postnummer
 regular	booking	nn	Vanleg
 repeating	booking	nn	Gjentakande
+send_email_to_applicant	booking	nn	Send e-post til søkjar

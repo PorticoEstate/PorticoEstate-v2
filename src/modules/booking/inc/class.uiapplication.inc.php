@@ -4263,6 +4263,9 @@ JS;
 		$recurring_preview = array();
 		$show_recurring_button = false;
 		$recurring_allocation_url = '';
+		$create_button_text = 'create_all_allocations';
+		$create_button_count = 0;
+		$has_conflicts = false;
 
 		if (!empty($application['recurring_info'])) {
 			$show_recurring_button = true;
@@ -4272,17 +4275,42 @@ JS;
 				? json_decode($application['recurring_info'], true)
 				: $application['recurring_info'];
 
-			// Create allocation URL
+			// Generate preview of expected allocations first to check for conflicts
+			if ($recurring_data && !empty($application['dates'])) {
+				$recurring_preview = $this->generate_recurring_preview($application, $recurring_data);
+			}
+
+			// Check if there are any conflicts in the preview
+			$has_conflicts = false;
+			$conflicts_count = 0;
+			$non_conflict_count = 0;
+			
+			if (!empty($recurring_preview)) {
+				foreach ($recurring_preview as $item) {
+					if (isset($item['has_conflict']) && $item['has_conflict']) {
+						$has_conflicts = true;
+						$conflicts_count++;
+					} else if (!isset($item['exists']) || !$item['exists']) {
+						$non_conflict_count++;
+					}
+				}
+			}
+
+			// Create allocation URL - add skip_conflicts parameter if there are conflicts
 			$recurring_params = array(
 				'menuaction' => 'booking.uiallocation.add',
 				'recurring_application_id' => $application['id']
 			);
+			
+			if ($has_conflicts) {
+				$recurring_params['skip_conflicts'] = 1;
+			}
+			
 			$recurring_allocation_url = self::link($recurring_params);
 
-			// Generate preview of expected allocations
-			if ($recurring_data && !empty($application['dates'])) {
-				$recurring_preview = $this->generate_recurring_preview($application, $recurring_data);
-			}
+			// Determine button text based on conflict status
+			$create_button_text = $has_conflicts ? 'create_non_conflicting_allocations' : 'create_all_allocations';
+			$create_button_count = $has_conflicts ? $non_conflict_count : count($recurring_preview);
 		}
 
 
@@ -4353,7 +4381,10 @@ JS;
 				'recurring_allocation_url' => $recurring_allocation_url,
 				'recurring_data' => $recurring_data,
 				'recurring_preview' => $recurring_preview,
-				'season_info' => $season_info
+				'season_info' => $season_info,
+				'create_button_text' => $create_button_text,
+				'create_button_count' => $create_button_count,
+				'has_conflicts' => $has_conflicts
 			)
 		);
 	}
@@ -4539,7 +4570,51 @@ JS;
 				
 				if ($collision) {
 					$preview_item['has_conflict'] = true;
-					$preview_item['conflict_errors'] = array('collision' => 'Scheduling conflict detected');
+					
+					// Get detailed conflict information
+					$conflicts = $this->get_conflict_details($application['resources'], $fromdate, $todate);
+					$conflict_details = array();
+					$conflict_links = array();
+					
+					foreach ($conflicts as $conflict) {
+						$conflict_name = $conflict['name'];
+						$conflict_details[] = $conflict_name;
+						$conflict_links['item_' . count($conflict_links)] = array(
+							'name' => $conflict_name,
+							'link' => $conflict['link'],
+							'type' => $conflict['type']
+						);
+					}
+					
+					$preview_item['conflict_details'] = implode(', ', $conflict_details);
+					$preview_item['conflict_links'] = $conflict_links;
+					$preview_item['conflict_count'] = count($conflicts);
+					
+					// Debug: Force show some test data for debugging
+					if (empty($conflicts)) {
+						$preview_item['conflict_details'] = lang('conflict_unknown_detected');
+						$preview_item['conflict_links'] = array(
+							'unknown_item' => array(
+								'name' => lang('conflict_unknown_check_schedule'),
+								'link' => self::link(array(
+									'menuaction' => 'booking.uischedule.index',
+									'building_id' => $application['building_id'],
+									'date' => $current_from->format('d.m.Y'),
+									'filter_resource' => implode(',', $application['resources'])
+								)),
+								'type' => 'unknown'
+							)
+						);
+					}
+					
+					// Create link to schedule view for this time slot
+					$schedule_params = array(
+						'menuaction' => 'booking.uischedule.index',
+						'building_id' => $application['building_id'],
+						'date' => $current_from->format('d.m.Y'),
+						'filter_resource' => implode(',', $application['resources'])
+					);
+					$preview_item['schedule_link'] = self::link($schedule_params);
 				}
 			}
 
@@ -4786,5 +4861,59 @@ JS;
 			Cache::message_set("Group notification failed: " . $e->getMessage(), 'error');
 			return '';
 		}
+	}
+
+	/**
+	 * Get detailed information about conflicting bookings/events/blocks for a time slot
+	 * Uses the new get_collision_details method for exact results
+	 */
+	private function get_conflict_details($resources, $from_, $to_)
+	{
+		$conflicts = array();
+		
+		if (empty($resources) || !is_array($resources)) {
+			return $conflicts;
+		}
+		
+		// Use the new method that returns exact collision details
+		$collision_details = $this->bo->so->get_collision_details($resources, $from_, $to_);
+		
+		foreach ($collision_details as $collision) {
+			$time_display = date('H:i', strtotime($collision['from_'])) . ' - ' . date('H:i', strtotime($collision['to_']));
+			$name = $collision['name'];
+			
+			// Add specific naming based on type  
+			if ($collision['type'] == 'block') {
+				$name = lang('conflict_block') . ' #' . $collision['id'];
+			} elseif ($collision['type'] == 'allocation') {
+				// Name is already formatted as "Tildeling (Org Name)" from SQL
+				$name = $collision['name'];
+			} elseif ($collision['type'] == 'event') {
+				$name = ($collision['name'] == lang('conflict_event')) ? lang('conflict_event') . ' #' . $collision['id'] : $collision['name'];
+			}
+			
+			// Create appropriate link based on type
+			$link = '';
+			switch ($collision['type']) {
+				case 'block':
+					$link = self::link(array('menuaction' => 'booking.uiblock.show', 'id' => $collision['id']));
+					break;
+				case 'allocation':
+					$link = self::link(array('menuaction' => 'booking.uiallocation.show', 'id' => $collision['id']));
+					break;
+				case 'event':
+					$link = self::link(array('menuaction' => 'booking.uievent.edit', 'id' => $collision['id']));
+					break;
+			}
+			
+			$conflicts[] = array(
+				'id' => $collision['id'],
+				'type' => $collision['type'],
+				'name' => $name . ' (' . $time_display . ')',
+				'link' => $link
+			);
+		}
+		
+		return $conflicts;
 	}
 }

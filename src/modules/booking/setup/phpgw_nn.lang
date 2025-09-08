@@ -961,3 +961,14 @@ not_created_yet	booking	nn	Ikkje oppretta enno
 follows_season_end	booking	nn	Følgjer sesongslutt
 conflict	booking	nn	Konflikt
 pending	booking	nn	Ventar
+conflict_block	booking	nn	Blokk
+conflict_allocation	booking	nn	Tildeling
+conflict_event	booking	nn	Arrangement
+conflict_unknown_org	booking	nn	Ukjent org
+conflict_unknown_detected	booking	nn	Ukjent konflikt oppdaga
+conflict_unknown_check_schedule	booking	nn	Ukjent konflikt - sjå timeplan for detaljar
+conflict_with	booking	nn	Konflikt med:
+view_details	booking	nn	Vis detaljar
+view_schedule_this_day	booking	nn	Sjå timeplan for denne dagen
+view_schedule	booking	nn	Sjå timeplan
+create_non_conflicting_allocations	booking	nn	Opprett tildelingar utan konflikt

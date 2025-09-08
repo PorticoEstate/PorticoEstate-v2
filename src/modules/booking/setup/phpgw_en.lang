@@ -852,3 +852,14 @@ not_created_yet	booking	en	Not created yet
 follows_season_end	booking	en	Follows season end
 conflict	booking	en	Conflict
 pending	booking	en	Pending
+conflict_block	booking	en	Block
+conflict_allocation	booking	en	Allocation
+conflict_event	booking	en	Event
+conflict_unknown_org	booking	en	Unknown org
+conflict_unknown_detected	booking	en	Unknown conflict detected
+conflict_unknown_check_schedule	booking	en	Unknown conflict - see schedule for details
+conflict_with	booking	en	Conflict with:
+view_details	booking	en	View details
+view_schedule_this_day	booking	en	View schedule for this day
+view_schedule	booking	en	View schedule
+create_non_conflicting_allocations	booking	en	Create non-conflicting allocations

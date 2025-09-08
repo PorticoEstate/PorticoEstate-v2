@@ -1118,8 +1118,18 @@
 					<xsl:attribute name="href">
 						<xsl:value-of select="recurring_allocation_url"/>
 					</xsl:attribute>
-					<i class="fas fa-plus-circle me-2"></i>
-					<xsl:value-of select="php:function('lang', 'create_all_allocations')" />
+					<xsl:choose>
+						<xsl:when test="has_conflicts = 1">
+							<i class="fas fa-exclamation-triangle me-2"></i>
+						</xsl:when>
+						<xsl:otherwise>
+							<i class="fas fa-plus-circle me-2"></i>
+						</xsl:otherwise>
+					</xsl:choose>
+					<xsl:value-of select="php:function('lang', string(create_button_text))" />
+					<xsl:if test="create_button_count > 0">
+						<span class="badge bg-light text-dark ms-2"><xsl:value-of select="create_button_count"/></span>
+					</xsl:if>
 				</a>
 			</xsl:when>
 			<xsl:otherwise>
@@ -1128,7 +1138,10 @@
 						<xsl:value-of select="php:function('lang', 'only_case_officer_can_create')" />
 					</xsl:attribute>
 					<i class="fas fa-lock me-2"></i>
-					<xsl:value-of select="php:function('lang', 'create_all_allocations')" />
+					<xsl:value-of select="php:function('lang', string(create_button_text))" />
+					<xsl:if test="create_button_count > 0">
+						<span class="badge bg-light text-dark ms-2"><xsl:value-of select="create_button_count"/></span>
+					</xsl:if>
 				</button>
 			</xsl:otherwise>
 		</xsl:choose>
@@ -1217,6 +1230,52 @@
 											<i class="fas fa-eye me-1"></i>
 											Vis
 										</a>
+									</xsl:when>
+									<xsl:when test="has_conflict = 1">
+										<div class="d-flex flex-column align-items-start">
+											<small class="text-danger mb-1">
+												<i class="fas fa-exclamation-triangle me-1"></i>
+												<xsl:value-of select="php:function('lang', 'conflict_with')" />
+											</small>
+											<div class="mb-2">
+												<xsl:for-each select="conflict_links/*">
+													<a class="btn btn-outline-danger btn-sm me-1 mb-1">
+														<xsl:attribute name="href">
+															<xsl:value-of select="link"/>
+														</xsl:attribute>
+														<xsl:attribute name="title">
+															<xsl:value-of select="php:function('lang', 'view_details')" />
+														</xsl:attribute>
+														<xsl:attribute name="target">_blank</xsl:attribute>
+														<xsl:choose>
+															<xsl:when test="type = 'block'">
+																<i class="fas fa-ban me-1"></i>
+															</xsl:when>
+															<xsl:when test="type = 'allocation'">
+																<i class="fas fa-calendar-check me-1"></i>
+															</xsl:when>
+															<xsl:when test="type = 'event'">
+																<i class="fas fa-star me-1"></i>
+															</xsl:when>
+														</xsl:choose>
+														<xsl:value-of select="name"/>
+													</a>
+												</xsl:for-each>
+											</div>
+											<xsl:if test="schedule_link != ''">
+												<a class="btn btn-outline-warning btn-sm">
+													<xsl:attribute name="href">
+														<xsl:value-of select="schedule_link"/>
+													</xsl:attribute>
+													<xsl:attribute name="title">
+														<xsl:value-of select="php:function('lang', 'view_schedule_this_day')" />
+													</xsl:attribute>
+													<xsl:attribute name="target">_blank</xsl:attribute>
+													<i class="fas fa-calendar me-1"></i>
+													<xsl:value-of select="php:function('lang', 'view_schedule')" />
+												</a>
+											</xsl:if>
+										</div>
 									</xsl:when>
 									<xsl:otherwise>
 										<span class="text-muted small">

@@ -669,7 +669,7 @@ payment method	booking	no	Betalingsmetode
 payments	booking	no	Betalinger
 PDF-export to archive	booking	no	Eksporter saken som pdf til arkiv
 Pending	booking	no	UNDER BEHANDLING
-pending	booking	no	Venter
+pending	booking	no	UNDER BEHANDLING
 permission add	booking	no	Legg til tilatelse
 Permission already exists	booking	no	Rettigheten finnes
 permissions	booking	no	Rettigheter

@@ -680,7 +680,7 @@ payment method	booking	nn	Refundér
 payments	booking	nn	Betalingar
 PDF-export to archive	booking	nn	Eksporter saken som pdf til arkiv
 Pending	booking	nn	UNDER HANDSAMING
-pending	booking	nn	Ventar
+pending	booking	nn	UNDER HANDSAMING
 permission add	booking	nn	Legg til tilgang
 Permission already exists	booking	nn	Tilgangen finnest
 permissions	booking	nn	Tilgangar

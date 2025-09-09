@@ -4611,8 +4611,8 @@ JS;
 							'unknown_item' => array(
 								'name' => lang('conflict_unknown_check_schedule'),
 								'link' => self::link(array(
-									'menuaction' => 'booking.uischedule.index',
-									'building_id' => $application['building_id'],
+									'menuaction' => 'booking.uibuilding.schedule',
+									'id' => $application['building_id'],
 									'date' => $current_from->format('d.m.Y'),
 									'filter_resource' => implode(',', $application['resources'])
 								)),
@@ -4623,8 +4623,8 @@ JS;
 					
 					// Create link to schedule view for this time slot
 					$schedule_params = array(
-						'menuaction' => 'booking.uischedule.index',
-						'building_id' => $application['building_id'],
+						'menuaction' => 'booking.uibuilding.schedule',
+						'id' => $application['building_id'],
 						'date' => $current_from->format('d.m.Y'),
 						'filter_resource' => implode(',', $application['resources'])
 					);

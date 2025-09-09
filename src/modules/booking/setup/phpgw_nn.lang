@@ -975,3 +975,4 @@ zip code	booking	nn	Postnummer
 regular	booking	nn	Vanleg
 repeating	booking	nn	Gjentakande
 send_email_to_applicant	booking	nn	Send e-post til søkjar
+confirm_approve_after_allocation	booking	nn	Tildelingar er oppretta. Vil du godkjenne denne søknaden no?

@@ -3591,6 +3591,9 @@ class booking_uiapplication extends booking_uicommon
 		{
 			phpgw::no_access('booking', lang('missing id'));
 		}
+		
+		// Check if we should open the approve modal after allocation creation
+		$open_approve_modal = Sanitizer::get_var('open_approve_modal', 'int', 'GET', 0);
 		$application = $this->bo->read_single($id);
 
 		if (!$application)
@@ -4398,7 +4401,8 @@ JS;
 				'season_info' => $season_info,
 				'create_button_text' => $create_button_text,
 				'create_button_count' => $create_button_count,
-				'has_conflicts' => $has_conflicts
+				'has_conflicts' => $has_conflicts,
+				'open_approve_modal' => $open_approve_modal
 			)
 		);
 	}

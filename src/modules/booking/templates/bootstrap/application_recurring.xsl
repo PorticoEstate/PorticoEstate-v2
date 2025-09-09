@@ -1614,6 +1614,24 @@
 
 		createTable('payments_container', paymentURL, colDefsPayment,'', 'pure-table pure-table-bordered');
 
+		// Auto-open approval modal if requested after allocation creation
+		<xsl:if test="open_approve_modal = '1'">
+			<![CDATA[
+			$(document).ready(function() {
+				// Check if approve modal exists and is not disabled
+				var acceptModal = $('#acceptApplicationModal');
+				var approveButton = $('button[data-bs-target="#acceptApplicationModal"]');
+				
+				if (acceptModal.length > 0 && approveButton.length > 0 && !approveButton.prop('disabled')) {
+					// Show confirmation and then open modal
+					if (confirm(']]><xsl:value-of select="php:function('lang', 'confirm_approve_after_allocation')"/><![CDATA[')) {
+						acceptModal.modal('show');
+					}
+				}
+			});
+			]]>
+		</xsl:if>
+
 	</script>
 
 

@@ -828,5 +828,20 @@
 
 		createTable('payments_container', paymentURL, colDefsPayment,'', 'pure-table pure-table-bordered');
 
+		// Auto-trigger approval if requested after allocation creation
+		<xsl:if test="open_approve_modal = '1'">
+			<![CDATA[
+			$(document).ready(function() {
+				// Find the approve form and submit it automatically
+				var approveForm = $('form input[name="status"][value="ACCEPTED"]').closest('form');
+				if (approveForm.length > 0 && !approveForm.find('input[disabled]').length) {
+					if (confirm(']]><xsl:value-of select="php:function('lang', 'confirm_approve_after_allocation')"/><![CDATA[')) {
+						approveForm.submit();
+					}
+				}
+			});
+			]]>
+		</xsl:if>
+
 	</script>
 </xsl:template>

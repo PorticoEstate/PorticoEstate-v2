@@ -3591,6 +3591,9 @@ class booking_uiapplication extends booking_uicommon
 		{
 			phpgw::no_access('booking', lang('missing id'));
 		}
+		
+		// Check if we should open the approve modal after allocation creation
+		$open_approve_modal = Sanitizer::get_var('open_approve_modal', 'int', 'GET', 0);
 		$application = $this->bo->read_single($id);
 
 		if (!$application)
@@ -4398,7 +4401,8 @@ JS;
 				'season_info' => $season_info,
 				'create_button_text' => $create_button_text,
 				'create_button_count' => $create_button_count,
-				'has_conflicts' => $has_conflicts
+				'has_conflicts' => $has_conflicts,
+				'open_approve_modal' => $open_approve_modal
 			)
 		);
 	}
@@ -4611,8 +4615,8 @@ JS;
 							'unknown_item' => array(
 								'name' => lang('conflict_unknown_check_schedule'),
 								'link' => self::link(array(
-									'menuaction' => 'booking.uischedule.index',
-									'building_id' => $application['building_id'],
+									'menuaction' => 'booking.uibuilding.schedule',
+									'id' => $application['building_id'],
 									'date' => $current_from->format('d.m.Y'),
 									'filter_resource' => implode(',', $application['resources'])
 								)),
@@ -4623,8 +4627,8 @@ JS;
 					
 					// Create link to schedule view for this time slot
 					$schedule_params = array(
-						'menuaction' => 'booking.uischedule.index',
-						'building_id' => $application['building_id'],
+						'menuaction' => 'booking.uibuilding.schedule',
+						'id' => $application['building_id'],
 						'date' => $current_from->format('d.m.Y'),
 						'filter_resource' => implode(',', $application['resources'])
 					);

@@ -568,7 +568,7 @@ class booking_uiapplication extends booking_uicommon
 					'menuaction' => 'booking.uiapplication.index',
 					'phpgw_return_as' => 'json'
 				)),
-				'sorted_by' => array('key' => 4, 'dir' => 'desc'), //created
+				'sorted_by' => array('key' => 5, 'dir' => 'desc'), //created
 				'field' => array(
 					array(
 						'key' => 'id',

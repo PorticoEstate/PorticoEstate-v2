@@ -161,35 +161,42 @@ $(document).ready(function() {
 		}
 	}, 100);  // Wait 100ms for DOM to be fully ready
 	
-	// Form validation for boundaries
+	// Form validation for boundaries - only apply on boundaries page
 	$('form[name="form"]').on('submit', function(e) {
 		var $checkedDays = $('input[name="wday[]"]:checked');
-		if ($checkedDays.length === 0) {
+		// Only validate weekdays if weekday checkboxes exist on this page
+		if ($('input[name="wday[]"]').length > 0 && $checkedDays.length === 0) {
 			alert('Please select at least one day of the week.');
 			e.preventDefault();
 			return false;
 		}
 		
-		var fromTime = $('input[name="from_"]').val();
-		var toTime = $('input[name="to_"]').val();
+		// Only validate times if we're on the boundaries page (has time fields)
+		var $fromTime = $('input[name="from_"]');
+		var $toTime = $('input[name="to_"]');
 		
-		if (!fromTime || !toTime) {
-			alert('Please fill in both from and to times.');
-			e.preventDefault();
-			return false;
-		}
-		
-		// Simple time validation (HH:MM format)
-		if (!/^\d{2}:\d{2}$/.test(fromTime) || !/^\d{2}:\d{2}$/.test(toTime)) {
-			alert('Please enter times in HH:MM format.');
-			e.preventDefault();
-			return false;
-		}
-		
-		if (fromTime >= toTime) {
-			alert('From time must be earlier than to time.');
-			e.preventDefault();
-			return false;
+		if ($fromTime.length > 0 && $toTime.length > 0 && $('input[name="wday[]"]').length > 0) {
+			var fromTime = $fromTime.val();
+			var toTime = $toTime.val();
+			
+			if (!fromTime || !toTime) {
+				alert('Please fill in both from and to times.');
+				e.preventDefault();
+				return false;
+			}
+			
+			// Simple time validation (HH:MM format)
+			if (!/^\d{2}:\d{2}$/.test(fromTime) || !/^\d{2}:\d{2}$/.test(toTime)) {
+				alert('Please enter times in HH:MM format.');
+				e.preventDefault();
+				return false;
+			}
+			
+			if (fromTime >= toTime) {
+				alert('From time must be earlier than to time.');
+				e.preventDefault();
+				return false;
+			}
 		}
 	});
 });

@@ -568,7 +568,7 @@ class booking_uiapplication extends booking_uicommon
 					'menuaction' => 'booking.uiapplication.index',
 					'phpgw_return_as' => 'json'
 				)),
-				'sorted_by' => array('key' => 5, 'dir' => 'desc'), //created
+				'sorted_by' => array('key' => 0, 'dir' => 'desc'), //id
 				'field' => array(
 					array(
 						'key' => 'id',
@@ -777,7 +777,7 @@ class booking_uiapplication extends booking_uicommon
 			$application['created'] = pretty_timestamp($application['created']);
 			$application['modified'] = pretty_timestamp($application['modified']);
 			$application['frontend_modified'] = pretty_timestamp($application['frontend_modified']);
-			
+
 			// Add type based on recurring_info
 			$application['type'] = !empty($application['recurring_info']) ? lang('repeating') : lang('regular');
 			$resources = $this->resource_bo->so->read(array('results' => 'all', 'filters' => array(
@@ -3591,7 +3591,7 @@ class booking_uiapplication extends booking_uicommon
 		{
 			phpgw::no_access('booking', lang('missing id'));
 		}
-		
+
 		// Check if we should open the approve modal after allocation creation
 		$open_approve_modal = Sanitizer::get_var('open_approve_modal', 'int', 'GET', 0);
 		$application = $this->bo->read_single($id);
@@ -4301,7 +4301,7 @@ JS;
 			$has_conflicts = false;
 			$conflicts_count = 0;
 			$non_conflict_count = 0;
-			
+
 			if (!empty($recurring_preview)) {
 				foreach ($recurring_preview as $item) {
 					if (isset($item['has_conflict']) && $item['has_conflict']) {
@@ -4318,11 +4318,11 @@ JS;
 				'menuaction' => 'booking.uiallocation.add',
 				'recurring_application_id' => $application['id']
 			);
-			
+
 			if ($has_conflicts) {
 				$recurring_params['skip_conflicts'] = 1;
 			}
-			
+
 			$recurring_allocation_url = self::link($recurring_params);
 
 			// Determine button text based on conflict status
@@ -4340,7 +4340,7 @@ JS;
 			$season_bo = createObject('booking.boseason');
 			$first_date = $application['dates'][0];
 			$app_date = date('Y-m-d', strtotime($first_date['from_']));
-			
+
 			$seasons = $season_bo->read(array(
 				'filters' => array(
 					'active' => 1,
@@ -4352,7 +4352,7 @@ JS;
 				),
 				'results' => 1
 			));
-			
+
 			if (!empty($seasons['results'][0])) {
 				$season = $seasons['results'][0];
 				$season_info = array(
@@ -4363,7 +4363,7 @@ JS;
 					'has_custom_end' => !empty($recurring_data['repeat_until']),
 					'end_reason' => ''
 				);
-				
+
 				if (!empty($recurring_data['repeat_until'])) {
 					$season_info['end_reason'] = 'Slutter ' . $recurring_data['repeat_until'] . ' (før sesongslutt)';
 				} elseif (!empty($recurring_data['outseason'])) {
@@ -4372,7 +4372,7 @@ JS;
 					$season_info['end_reason'] = 'Begrenset periode (ikke til sesongslutt)';
 				}
 			}
-			
+
 		}
 
 		self::render_template_xsl(
@@ -4427,7 +4427,7 @@ JS;
 		// Get season info like allocation wizard does
 		$season_bo = createObject('booking.boseason');
 		$app_date = $from_time->format('Y-m-d');
-		
+
 		// Find the specific season for this application using same logic as allocation wizard
 		$seasons = $season_bo->read(array(
 			'filters' => array(
@@ -4440,10 +4440,10 @@ JS;
 			),
 			'results' => 1
 		));
-		
+
 		if (!empty($seasons['results'][0])) {
 			$season = $seasons['results'][0];
-			
+
 			// Use custom repeat_until if specified and outseason is enabled, otherwise use season end
 			if (!empty($recurring_data['repeat_until']) && !empty($recurring_data['outseason'])) {
 				$repeat_until = new DateTime($recurring_data['repeat_until']);
@@ -4489,7 +4489,7 @@ JS;
 			'completed' => '0',
 			'skip_bas' => 0
 		);
-		
+
 		// Add organization data if available, or find it by organization number
 		if (!empty($application['customer_organization_id'])) {
 			$base_allocation['organization_id'] = $application['customer_organization_id'];
@@ -4497,7 +4497,7 @@ JS;
 		} elseif (!empty($application['customer_organization_number'])) {
 			// Look up organization by number like allocation wizard does
 			$organizations = createObject('booking.soorganization')->read(array(
-				'results' => -1, 
+				'results' => -1,
 				'filters' => array(
 					'organization_number' => $application['customer_organization_number'],
 					'active' => 1
@@ -4508,16 +4508,16 @@ JS;
 				$base_allocation['organization_name'] = $organizations['results'][0]['name'];
 			}
 		}
-		
+
 		// Add cost field to satisfy validation (default to 0 like allocation wizard)
 		$base_allocation['cost'] = '0';
-		
+
 		// Find and set season_id like allocation wizard does
 		if (!empty($seasons['results'][0])) {
 			$base_allocation['season_id'] = $seasons['results'][0]['id'];
 			$base_allocation['season_name'] = $seasons['results'][0]['name'];
 		}
-		
+
 		// Get resource names for display
 		$resource_names = array();
 		if (!empty($application['resources'])) {
@@ -4547,20 +4547,20 @@ JS;
 			// Calculate dates using allocation wizard method
 			$fromdate = date('Y-m-d H:i', $from_time->getTimestamp() + ($interval_seconds * $i));
 			$todate = date('Y-m-d H:i', $to_time->getTimestamp() + ($interval_seconds * $i));
-			
+
 			$current_from = new DateTime($fromdate);
 			$current_to = new DateTime($todate);
-			
+
 			// Use Norwegian date formatting like other parts of the system
 			$date_formatted = pretty_timestamp($fromdate);
 			$weekday_no = date('w', $current_from->getTimestamp());
 			$weekdays_no = array('søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag');
 			$months_no = array('', 'januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember');
-			
+
 			$day_no = $weekdays_no[$weekday_no];
 			$month_no = $months_no[(int)$current_from->format('n')];
 			$date_display_no = ucfirst($day_no) . ' ' . $current_from->format('j') . '. ' . $month_no . ' ' . $current_from->format('Y');
-			
+
 			$preview_item = array(
 				'from' => $fromdate,
 				'to' => $todate,
@@ -4585,15 +4585,15 @@ JS;
 			} else {
 				// Use direct collision checking like application show page does
 				$collision = $this->bo->so->check_collision($application['resources'], $fromdate, $todate);
-				
+
 				if ($collision) {
 					$preview_item['has_conflict'] = true;
-					
+
 					// Get detailed conflict information
 					$conflicts = $this->get_conflict_details($application['resources'], $fromdate, $todate);
 					$conflict_details = array();
 					$conflict_links = array();
-					
+
 					foreach ($conflicts as $conflict) {
 						$conflict_name = $conflict['name'];
 						$conflict_details[] = $conflict_name;
@@ -4603,11 +4603,11 @@ JS;
 							'type' => $conflict['type']
 						);
 					}
-					
+
 					$preview_item['conflict_details'] = implode(', ', $conflict_details);
 					$preview_item['conflict_links'] = $conflict_links;
 					$preview_item['conflict_count'] = count($conflicts);
-					
+
 					// Debug: Force show some test data for debugging
 					if (empty($conflicts)) {
 						$preview_item['conflict_details'] = lang('conflict_unknown_detected');
@@ -4624,7 +4624,7 @@ JS;
 							)
 						);
 					}
-					
+
 					// Create link to schedule view for this time slot
 					$schedule_params = array(
 						'menuaction' => 'booking.uibuilding.schedule',
@@ -4641,7 +4641,7 @@ JS;
 			// Move to next iteration (like allocation wizard)
 			$i++;
 		}
-		
+
 		return $preview;
 	}
 
@@ -4888,19 +4888,19 @@ JS;
 	private function get_conflict_details($resources, $from_, $to_)
 	{
 		$conflicts = array();
-		
+
 		if (empty($resources) || !is_array($resources)) {
 			return $conflicts;
 		}
-		
+
 		// Use the new method that returns exact collision details
 		$collision_details = $this->bo->so->get_collision_details($resources, $from_, $to_);
-		
+
 		foreach ($collision_details as $collision) {
 			$time_display = date('H:i', strtotime($collision['from_'])) . ' - ' . date('H:i', strtotime($collision['to_']));
 			$name = $collision['name'];
-			
-			// Add specific naming based on type  
+
+			// Add specific naming based on type
 			if ($collision['type'] == 'block') {
 				$name = lang('conflict_block') . ' #' . $collision['id'];
 			} elseif ($collision['type'] == 'allocation') {
@@ -4909,7 +4909,7 @@ JS;
 			} elseif ($collision['type'] == 'event') {
 				$name = ($collision['name'] == lang('conflict_event')) ? lang('conflict_event') . ' #' . $collision['id'] : $collision['name'];
 			}
-			
+
 			// Create appropriate link based on type
 			$link = '';
 			switch ($collision['type']) {
@@ -4923,7 +4923,7 @@ JS;
 					$link = self::link(array('menuaction' => 'booking.uievent.edit', 'id' => $collision['id']));
 					break;
 			}
-			
+
 			$conflicts[] = array(
 				'id' => $collision['id'],
 				'type' => $collision['type'],
@@ -4931,7 +4931,7 @@ JS;
 				'link' => $link
 			);
 		}
-		
+
 		return $conflicts;
 	}
 }

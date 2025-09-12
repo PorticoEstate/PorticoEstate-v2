@@ -33,7 +33,7 @@
 					<div class="col-12">
 						<h6 class="text-muted mb-3">
 							<i class="fas fa-exclamation-triangle me-1"></i>
-							<xsl:value-of select="php:function('lang', 'Allocations with existing allocations or bookings')" />
+							<xsl:value-of select="php:function('lang', 'allocations_cannot_be_created_conflicts')" />
 							<span class="badge bg-light text-dark ms-2">
 								<xsl:value-of select="count(invalid_dates)"/> stk
 							</span>

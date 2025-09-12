@@ -764,11 +764,11 @@ class booking_uiapplication extends booking_uicommon
 			// Add child application count only if combining applications
 			if ($this->combine_applications)
 			{
-				$child_count = count($this->bo->so->get_child_applications($application['id']));
-				$application['child_count'] = $child_count;
-				if ($child_count > 0)
+				$related_info = $this->bo->so->get_related_applications($application['id']);
+				$total_count = $related_info['total_count'];
+				$application['child_count'] = $total_count - 1; // For backward compatibility
+				if ($total_count > 1)
 				{
-					$total_count = $child_count + 1;
 					$application['name'] = $application['name'] . ' (' . $total_count . ' ' . lang('applications') . ')';
 				}
 			}

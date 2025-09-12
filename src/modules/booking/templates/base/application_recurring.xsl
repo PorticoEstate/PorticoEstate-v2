@@ -2009,6 +2009,153 @@
 		</style>
 	</xsl:if>
 
+	<!-- Recurring Approval Summary Modal -->
+	<xsl:if test="show_recurring_summary = '1' and recurring_approval_summary">
+		<div class="modal fade" id="recurringApprovalSummaryModal" tabindex="-1" role="dialog" aria-labelledby="recurringApprovalSummaryModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="recurringApprovalSummaryModalLabel">
+							<i class="fas fa-calendar-check me-2"></i>
+							<xsl:value-of select="php:function('lang', 'recurring_allocations_summary')" />
+						</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						<div class="row mb-4">
+							<div class="col-12">
+								<div class="alert alert-success d-flex align-items-center">
+									<i class="fas fa-check-circle fa-2x me-3"></i>
+									<div>
+										<h6 class="mb-1">Søknad godkjent!</h6>
+										<p class="mb-0">Gjentakende tildelinger er opprettet automatisk.</p>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Summary Statistics -->
+						<div class="row mb-4">
+							<div class="col-md-4">
+								<div class="card bg-light text-center">
+									<div class="card-body">
+										<h3 class="text-success mb-1">
+											<xsl:value-of select="count(recurring_approval_summary/created/*)"/>
+										</h3>
+										<small class="text-muted">Opprettet</small>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-4">
+								<div class="card bg-light text-center">
+									<div class="card-body">
+										<h3 class="text-warning mb-1">
+											<xsl:value-of select="count(recurring_approval_summary/failed/*)"/>
+										</h3>
+										<small class="text-muted">Feilet</small>
+									</div>
+								</div>
+							</div>
+							<div class="col-md-4">
+								<div class="card bg-light text-center">
+									<div class="card-body">
+										<h3 class="text-primary mb-1">
+											<xsl:value-of select="recurring_approval_summary/total_attempted"/>
+										</h3>
+										<small class="text-muted">Totalt</small>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<!-- Successfully Created Allocations -->
+						<xsl:if test="count(recurring_approval_summary/created/*) > 0">
+							<div class="mb-4">
+								<h6 class="text-success mb-3">
+									<i class="fas fa-check-circle me-2"></i>
+									Opprettede tildelinger (<xsl:value-of select="count(recurring_approval_summary/created/*)"/>)
+								</h6>
+								<div class="table-responsive">
+									<table class="table table-sm">
+										<thead class="table-success">
+											<tr>
+												<th>Dato</th>
+												<th>Tid</th>
+												<th>Ressurser</th>
+												<th>Handling</th>
+											</tr>
+										</thead>
+										<tbody>
+											<xsl:for-each select="recurring_approval_summary/created/*">
+												<tr>
+													<td><xsl:value-of select="date"/></td>
+													<td><xsl:value-of select="time"/></td>
+													<td><xsl:value-of select="resources"/></td>
+													<td>
+														<a class="btn btn-sm btn-outline-primary" target="_blank">
+															<xsl:attribute name="href">
+																<xsl:value-of select="php:function('link_to_url', 'booking.uiallocation.edit', '', array('id', id))" />
+															</xsl:attribute>
+															<i class="fas fa-edit me-1"></i>Rediger
+														</a>
+													</td>
+												</tr>
+											</xsl:for-each>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</xsl:if>
+
+						<!-- Failed Allocations -->
+						<xsl:if test="count(recurring_approval_summary/failed/*) > 0">
+							<div class="mb-4">
+								<h6 class="text-warning mb-3">
+									<i class="fas fa-exclamation-triangle me-2"></i>
+									Tildelinger som ikke kunne opprettes (<xsl:value-of select="count(recurring_approval_summary/failed/*)"/>)
+								</h6>
+								<div class="table-responsive">
+									<table class="table table-sm">
+										<thead class="table-warning">
+											<tr>
+												<th>Dato</th>
+												<th>Tid</th>
+												<th>Ressurser</th>
+												<th>Årsak</th>
+											</tr>
+										</thead>
+										<tbody>
+											<xsl:for-each select="recurring_approval_summary/failed/*">
+												<tr>
+													<td><xsl:value-of select="date"/></td>
+													<td><xsl:value-of select="time"/></td>
+													<td><xsl:value-of select="resources"/></td>
+													<td><span class="badge bg-warning"><xsl:value-of select="reason"/></span></td>
+												</tr>
+											</xsl:for-each>
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</xsl:if>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+							<i class="fas fa-check me-1"></i>OK
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+			$(document).ready(function() {
+				// Auto-show the recurring summary modal
+				$('#recurringApprovalSummaryModal').modal('show');
+			});
+		</script>
+	</xsl:if>
+
 </xsl:template>
 <!-- New template-->
 <xsl:template match="options">

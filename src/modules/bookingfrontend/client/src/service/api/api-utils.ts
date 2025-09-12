@@ -473,10 +473,14 @@ export async function fetchDeliveredApplications(includeOrganizations: boolean =
 /**
  * Fetch a single application by ID
  * @param id The application ID to fetch
+ * @param secret Optional secret for external access
  * @returns The application object
  */
-export async function fetchApplication(id: number): Promise<IApplication> {
+export async function fetchApplication(id: number, secret?: string): Promise<IApplication> {
 	const params: Record<string, any> = {}
+	if (secret) {
+		params.secret = secret;
+	}
 	if(typeof window === 'undefined') {
 		const cookies = require("next/headers").cookies()
 		const sessionCookie = cookies.get('bookingfrontendsession')?.value;
@@ -487,7 +491,6 @@ export async function fetchApplication(id: number): Promise<IApplication> {
 	let url = phpGWLink(['bookingfrontend', 'applications', id.toString()], params);
 
     const response = await fetch(url);
-
     if (!response.ok) {
         throw new Error(`Failed to fetch application with ID ${id}`);
     }

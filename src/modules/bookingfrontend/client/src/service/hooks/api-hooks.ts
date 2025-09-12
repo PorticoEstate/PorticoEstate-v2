@@ -711,12 +711,12 @@ export function useApplications(
 
 export function useApplication(
     id: number,
-    options?: { initialData?: IApplication }
+    options?: { initialData?: IApplication; secret?: string }
 ): UseQueryResult<IApplication> {
     return useQuery(
         {
-            queryKey: ['application', id],
-            queryFn: () => fetchApplication(id),
+            queryKey: ['application', id, options?.secret],
+            queryFn: () => fetchApplication(id, options?.secret),
             retry: 2,
             refetchOnWindowFocus: false,
             initialData: options?.initialData,

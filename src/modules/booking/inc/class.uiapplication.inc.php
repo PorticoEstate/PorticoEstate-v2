@@ -3594,6 +3594,16 @@ class booking_uiapplication extends booking_uicommon
 
 		// Check if we should open the approve modal after allocation creation
 		$open_approve_modal = Sanitizer::get_var('open_approve_modal', 'int', 'GET', 0);
+		
+		// Check if we should show recurring allocation summary after approval
+		$show_recurring_summary = Sanitizer::get_var('show_recurring_summary', 'int', 'GET', 0);
+		$recurring_approval_summary = null;
+		if ($show_recurring_summary) {
+			$recurring_approval_summary = Cache::session_get('booking', 'recurring_approval_summary');
+			// Clear from session after retrieving
+			Cache::session_clear('booking', 'recurring_approval_summary');
+		}
+		
 		$application = $this->bo->read_single($id);
 
 		if (!$application)
@@ -3913,6 +3923,13 @@ class booking_uiapplication extends booking_uicommon
 						$this->add_comment($application, $acceptance_message);
 					}
 
+					// Handle recurring allocations creation for approved applications
+					$recurring_summary = null;
+					if (!empty($application['recurring_info']))
+					{
+						$recurring_summary = $this->create_recurring_allocations_on_approval($application);
+					}
+
 					// Handle all related applications only if combining is enabled
 					if ($this->combine_applications && !empty($related_info['application_ids']))
 					{
@@ -4078,7 +4095,16 @@ class booking_uiapplication extends booking_uicommon
 				}
 			}
 
-			self::redirect(array('menuaction' => $this->url_prefix . '.show', 'id' => $application['id'], 'return_after_action' => $return_after_action));
+			// Add recurring summary to redirect if it exists
+			$redirect_params = array('menuaction' => $this->url_prefix . '.show', 'id' => $application['id'], 'return_after_action' => $return_after_action);
+			if (isset($recurring_summary) && $recurring_summary)
+			{
+				// Store summary in session and add flag to show modal
+				Cache::session_set('booking', 'recurring_approval_summary', $recurring_summary);
+				$redirect_params['show_recurring_summary'] = 1;
+			}
+
+			self::redirect($redirect_params);
 		}
 
 		$application['dashboard_link'] = self::link(array('menuaction' => 'booking.uidashboard.index'));
@@ -4398,7 +4424,9 @@ JS;
 				'create_button_text' => $create_button_text,
 				'create_button_count' => $create_button_count,
 				'has_conflicts' => $has_conflicts,
-				'open_approve_modal' => $open_approve_modal
+				'open_approve_modal' => $open_approve_modal,
+				'show_recurring_summary' => $show_recurring_summary,
+				'recurring_approval_summary' => $recurring_approval_summary
 			)
 		);
 	}
@@ -4933,5 +4961,144 @@ JS;
 		}
 
 		return $conflicts;
+	}
+
+	/**
+	 * Create recurring allocations when an application is approved
+	 * Returns a summary of created and failed allocations
+	 */
+	private function create_recurring_allocations_on_approval($application)
+	{
+		$summary = array(
+			'created' => array(),
+			'failed' => array(),
+			'total_attempted' => 0
+		);
+
+		if (empty($application['recurring_info'])) {
+			return $summary;
+		}
+
+		// Parse recurring info
+		$recurring_data = is_string($application['recurring_info'])
+			? json_decode($application['recurring_info'], true)
+			: $application['recurring_info'];
+
+		if (!$recurring_data || empty($application['dates'])) {
+			return $summary;
+		}
+
+		// Generate the recurring preview to know what to create
+		$recurring_preview = $this->generate_recurring_preview($application, $recurring_data);
+		$summary['total_attempted'] = count($recurring_preview);
+
+		// Create allocation BO to handle the creation
+		$allocation_bo = createObject('booking.boallocation');
+
+		// Get resource names for display
+		$resource_names = array();
+		if (!empty($application['resources'])) {
+			$resource_bo = createObject('booking.boresource');
+			$resources = $resource_bo->read(array(
+				'filters' => array('id' => $application['resources']),
+				'sort' => 'name',
+				'results' => -1
+			));
+			if (!empty($resources['results'])) {
+				foreach ($resources['results'] as $resource) {
+					$resource_names[] = $resource['name'];
+				}
+			}
+		}
+		$resource_display = implode(', ', $resource_names);
+
+		// Try to create each allocation
+		foreach ($recurring_preview as $preview_item) {
+			// Skip if allocation already exists
+			if ($preview_item['exists']) {
+				continue;
+			}
+
+			// Skip if there are conflicts 
+			if ($preview_item['has_conflict']) {
+				$summary['failed'][] = array(
+					'date' => $preview_item['date_display'],
+					'time' => $preview_item['time_display'],
+					'resources' => $resource_display,
+					'reason' => 'Konflikt',
+					'from' => $preview_item['from'],
+					'to' => $preview_item['to']
+				);
+				continue;
+			}
+
+			// Build allocation data
+			$allocation = array(
+				'application_id' => $application['id'],
+				'building_id' => $application['building_id'],
+				'resources' => $application['resources'],
+				'from_' => $preview_item['from'],
+				'to_' => $preview_item['to'],
+				'active' => '1',
+				'completed' => '0',
+				'cost' => '0',
+				'organization_id' => $application['customer_organization_id'] ?? '',
+				'skip_bas' => 0
+			);
+
+			// Add season info if available
+			$season_bo = createObject('booking.boseason');
+			$app_date = date('Y-m-d', strtotime($preview_item['from']));
+			$seasons = $season_bo->read(array(
+				'filters' => array(
+					'active' => 1,
+					'building_id' => $application['building_id'],
+					'where' => array(
+						"%%table%%.from_ <= '$app_date'",
+						"%%table%%.to_ >= '$app_date'"
+					)
+				),
+				'results' => 1
+			));
+
+			if (!empty($seasons['results'][0])) {
+				$allocation['season_id'] = $seasons['results'][0]['id'];
+			}
+
+			// Try to create the allocation
+			try {
+				$receipt = $allocation_bo->add($allocation);
+				if ($receipt && !empty($receipt['id'])) {
+					$summary['created'][] = array(
+						'id' => $receipt['id'],
+						'date' => $preview_item['date_display'],
+						'time' => $preview_item['time_display'],
+						'resources' => $resource_display,
+						'from' => $preview_item['from'],
+						'to' => $preview_item['to']
+					);
+				} else {
+					$summary['failed'][] = array(
+						'date' => $preview_item['date_display'],
+						'time' => $preview_item['time_display'],
+						'resources' => $resource_display,
+						'reason' => 'Ukjent feil ved opprettelse',
+						'from' => $preview_item['from'],
+						'to' => $preview_item['to']
+					);
+				}
+			} catch (Exception $e) {
+				$summary['failed'][] = array(
+					'date' => $preview_item['date_display'],
+					'time' => $preview_item['time_display'],
+					'resources' => $resource_display,
+					'reason' => $e->getMessage(),
+					'from' => $preview_item['from'],
+					'to' => $preview_item['to']
+				);
+			}
+		}
+
+		return $summary;
 	}
 }

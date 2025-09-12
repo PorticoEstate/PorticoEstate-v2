@@ -1162,11 +1162,11 @@
 			<table class="table table-sm table-hover">
 				<thead class="table-light">
 					<tr>
-						<th><i class="fas fa-calendar me-1"></i>Dato</th>
-						<th><i class="fas fa-clock me-1"></i>Tid</th>
-						<th><i class="fas fa-cube me-1"></i><xsl:value-of select="php:function('lang', 'resources')" /></th>
-						<th><i class="fas fa-check-circle me-1"></i>Status</th>
-						<th><i class="fas fa-cogs me-1"></i>Handling</th>
+						<th style="width: 20%;"><i class="fas fa-calendar me-1"></i>Dato</th>
+						<th style="width: 15%;"><i class="fas fa-clock me-1"></i>Tid</th>
+						<th style="width: 15%;"><i class="fas fa-cube me-1"></i><xsl:value-of select="php:function('lang', 'resources')" /></th>
+						<th style="width: 20%;"><i class="fas fa-check-circle me-1"></i>Status</th>
+						<th style="width: 30%;"><i class="fas fa-cogs me-1"></i>Handling</th>
 					</tr>
 				</thead>
 				<tbody>

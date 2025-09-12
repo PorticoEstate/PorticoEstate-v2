@@ -4313,15 +4313,11 @@ JS;
 				}
 			}
 
-			// Create allocation URL - add skip_conflicts parameter if there are conflicts
+			// Create allocation URL
 			$recurring_params = array(
 				'menuaction' => 'booking.uiallocation.add',
 				'recurring_application_id' => $application['id']
 			);
-
-			if ($has_conflicts) {
-				$recurring_params['skip_conflicts'] = 1;
-			}
 
 			$recurring_allocation_url = self::link($recurring_params);
 
@@ -4444,13 +4440,17 @@ JS;
 		if (!empty($seasons['results'][0])) {
 			$season = $seasons['results'][0];
 
-			// Use custom repeat_until if specified and outseason is enabled, otherwise use season end
-			if (!empty($recurring_data['repeat_until']) && !empty($recurring_data['outseason'])) {
+			// If outseason is enabled, use season end date, otherwise use custom repeat_until
+			if (!empty($recurring_data['outseason'])) {
+				// Use season end date when outseason is enabled
+				$repeat_until = new DateTime($season['to_']);
+				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
+			} else if (!empty($recurring_data['repeat_until'])) {
+				// Use custom repeat_until date when outseason is not enabled
 				$repeat_until = new DateTime($recurring_data['repeat_until']);
 			} else {
-				// Use season end date like allocation wizard
+				// Fallback to season end if neither outseason nor repeat_until is set
 				$repeat_until = new DateTime($season['to_']);
-				// Update recurring_data to show the calculated end date in template
 				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
 			}
 		} else {

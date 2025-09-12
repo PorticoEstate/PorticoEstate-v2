@@ -640,6 +640,25 @@
 							if (!$skip_conflicts) {
 								$invalid_dates[$i]['from_'] = $fromdate;
 								$invalid_dates[$i]['to_'] = $todate;
+								
+								// Get conflict details for display
+								$conflicts = $this->get_conflict_details($allocation['resources'], $fromdate, $todate);
+								$conflict_details = array();
+								$conflict_links = array();
+								
+								foreach ($conflicts as $conflict) {
+									$conflict_name = $conflict['name'];
+									$conflict_details[] = $conflict_name;
+									$conflict_links['item_' . count($conflict_links)] = array(
+										'name' => $conflict_name,
+										'link' => $conflict['link'],
+										'type' => $conflict['type']
+									);
+								}
+								
+								$invalid_dates[$i]['conflict_details'] = implode(', ', $conflict_details);
+								$invalid_dates[$i]['conflict_links'] = $conflict_links;
+								$invalid_dates[$i]['conflict_count'] = count($conflicts);
 							}
 							// Move to next iteration without creating allocation
 						}
@@ -1333,5 +1352,56 @@
 			$allocation['when'] = pretty_timestamp($allocation['from_']) . ' - ' . pretty_timestamp($allocation['to_']);
 			self::render_template_xsl('allocation_info', array('allocation' => $allocation));
 			phpgwapi_xslttemplates::getInstance()->set_output('wml'); // Evil hack to disable page chrome
+		}
+
+		/**
+		 * Get detailed information about conflicting bookings/events/blocks for a time slot
+		 * Uses the new get_collision_details method for exact results
+		 */
+		private function get_conflict_details($resources, $from_, $to_)
+		{
+			$conflicts = array();
+
+			if (empty($resources) || !is_array($resources)) {
+				return $conflicts;
+			}
+
+			// Use the application so object which has the get_collision_details method
+			$application_so = createObject('booking.soapplication');
+			$collision_details = $application_so->get_collision_details($resources, $from_, $to_);
+
+			foreach ($collision_details as $detail) {
+				$conflict = array(
+					'name' => $detail['name'],
+					'type' => $detail['type'],
+					'link' => ''
+				);
+
+				// Generate appropriate links based on conflict type
+				switch ($detail['type']) {
+					case 'allocation':
+						$conflict['link'] = self::link(array(
+							'menuaction' => 'booking.uiallocation.edit',
+							'id' => $detail['id']
+						));
+						break;
+					case 'booking':
+						$conflict['link'] = self::link(array(
+							'menuaction' => 'booking.uibooking.edit',
+							'id' => $detail['id']
+						));
+						break;
+					case 'event':
+						$conflict['link'] = self::link(array(
+							'menuaction' => 'booking.uievent.edit',
+							'id' => $detail['id']
+						));
+						break;
+				}
+
+				$conflicts[] = $conflict;
+			}
+
+			return $conflicts;
 		}
 	}

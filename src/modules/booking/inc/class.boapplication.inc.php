@@ -203,6 +203,11 @@ class booking_boapplication extends booking_bocommon
 
 	function send_notification($application, $created = false, $assocciated = false)
 	{
+		// Skip email notifications for PENDING status
+		if ($application['status'] == 'PENDING' && !$created) {
+			return true;
+		}
+		
 		// Use modern EmailService for email notifications
 		$emailService = new EmailService();
 		$success = $emailService->sendApplicationNotification($application, $created, $assocciated);

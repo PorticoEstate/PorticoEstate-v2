@@ -11,7 +11,7 @@
 .cartCard {
 	display: grid;
 	grid-template-columns: 1fr auto;
-	grid-template-areas: 'title action' 'info action' 'where action' 'price_title price';
+	grid-template-areas: 'title action' 'content action';
 
 	background-color: var(--ds-color-neutral-surface-subtle);
 	border-radius: var(--ds-radius-medium);
@@ -19,6 +19,7 @@
 	box-shadow: var(--ds-shadow-small);
 	cursor: pointer;
 	transition: transform 0.2s ease, box-shadow 0.2s ease;
+	border-bottom: 1px solid var(--ds-color-neutral-border-subtle);
 
 	&:hover {
 		box-shadow: var(--ds-shadow-medium);
@@ -48,13 +49,21 @@
 	flex-direction: column;
 }
 
+.cardContent {
+	grid-area: content;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 0.5rem;
+}
+
 .cardCost {
-	display: contents;
-	justify-content: space-between;
+	display: flex;
 	align-items: center;
-	margin: 0.75rem 0;
+	margin: 0;
 	border-radius: var(--ds-radius-small);
 	background-color: var(--ds-color-neutral-surface-light);
+	padding: 0.25rem 0.5rem;
 }
 
 .costLabel {
@@ -72,15 +81,16 @@
 }
 
 .cardInfo {
-	grid-area: info;
 	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
+	flex-direction: row;
+	gap: 1rem;
+	flex-wrap: nowrap;
+	align-items: center;
 
-	@media (min-width: 480px) {
-		flex-direction: row;
-		flex-wrap: wrap;
-		gap: 1rem;
+	@media (max-width: 768px) {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 0.5rem;
 	}
 }
 
@@ -119,8 +129,9 @@
 }
 
 .resourcesContainer {
-	grid-area: where;
-	margin-top: 0.75rem;
+	display: flex;
+	align-items: center;
+	margin: 0;
 }
 
 .expandedResourcesList {
@@ -197,4 +208,9 @@
 	font-size: var(--ds-font-size-xs);
 	color: var(--ds-text-subtle);
 	font-style: italic;
+}
+
+.seasonName {
+	font-weight: var(--ds-font-weight-medium);
+	color: var(--ds-color-accent-text-default);
 }

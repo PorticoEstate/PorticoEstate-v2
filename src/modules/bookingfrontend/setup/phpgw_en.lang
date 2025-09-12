@@ -910,3 +910,7 @@ no_organizations_for_recurring	bookingfrontend	en	You have no organizations avai
 you_must_confirm_all_documents	bookingfrontend	en	You must confirm that you have read all regulation documents
 new_repeating	bookingfrontend	en	New repeating
 edit_delegate	bookingfrontend	en	Edit delegate
+every_n_weeks	bookingfrontend	en	Every {{n}} weeks
+until_date	bookingfrontend	en	until {{date}}
+until_end_of_season	bookingfrontend	en	until end of season
+indefinitely	bookingfrontend	en	indefinitely

@@ -910,5 +910,8 @@ recurring_login_link_text	bookingfrontend	no	For å lage en gjentakende booking,
 no_organizations_for_recurring	bookingfrontend	no	Du har ingen organisasjoner tilgjengelig for gjentakende bookinger.
 you_must_confirm_all_documents	bookingfrontend	no	Du må bekrefte at du har lest alle forskriftsdokumenter
 new_repeating	bookingfrontend	no	Ny repeterende
-
 edit_delegate	bookingfrontend	no	Rediger delegat
+every_n_weeks	bookingfrontend	no	Hver {{n}} uke
+until_date	bookingfrontend	no	til {{date}}
+until_end_of_season	bookingfrontend	no	til slutten av sesongen
+indefinitely	bookingfrontend	no	på ubestemt tid

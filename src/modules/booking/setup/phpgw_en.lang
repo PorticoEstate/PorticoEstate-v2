@@ -867,3 +867,5 @@ regular	booking	en	Regular
 repeating	booking	en	Repeating
 send_email_to_applicant	booking	en	Send email to applicant
 confirm_approve_after_allocation	booking	en	Allocations have been created. Do you want to approve this application now?
+allocations_cannot_be_created_conflicts	booking	en	Allocations that cannot be created due to conflicts
+recurring_allocations_summary	booking	en	Recurring Allocations Summary

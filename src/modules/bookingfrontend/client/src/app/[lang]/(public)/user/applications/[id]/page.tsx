@@ -4,14 +4,18 @@ interface ApplicationDetailProps {
   params: {
     id: string;
   }
+  searchParams: {
+    secret?: string;
+  }
 }
 
 
 
-const ApplicationDetailPage = async ({params}: ApplicationDetailProps) => {
+const ApplicationDetailPage = async ({params, searchParams}: ApplicationDetailProps) => {
   const applicationId = parseInt(params.id, 10);
-  const initialApplication = await fetchApplication(applicationId);
-  return <ApplicationDetails applicationId={applicationId} initialApplication={initialApplication} />
+  const secret = searchParams.secret;
+  const initialApplication = await fetchApplication(applicationId, secret);
+  return <ApplicationDetails applicationId={applicationId} initialApplication={initialApplication} secret={secret} />
 };
 
 export default ApplicationDetailPage;

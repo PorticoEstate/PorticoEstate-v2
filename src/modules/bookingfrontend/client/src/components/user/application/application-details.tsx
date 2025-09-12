@@ -1,5 +1,5 @@
 'use client'
-import React, {FC, useMemo} from 'react';
+import React, {FC, useMemo, useEffect} from 'react';
 import {IApplication} from "@/service/types/api/application.types";
 import {
 	useApplication,
@@ -33,6 +33,7 @@ import ArticleTable from "@/components/article-table/article-table";
 interface ApplicationDetailsProps {
 	initialApplication?: IApplication;
 	applicationId: number;
+	secret?: string;
 }
 
 const getStatusColor = (status: string): "neutral" | "danger" | "info" | "success" | "warning" => {
@@ -70,7 +71,8 @@ const getStatusColor = (status: string): "neutral" | "danger" | "info" | "succes
 
 const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 	const {data: application, isLoading, error} = useApplication(props.applicationId, {
-		initialData: props.initialApplication
+		initialData: props.initialApplication,
+		secret: props.secret
 	});
 	const {data: regulationDocuments} = useResourceRegulationDocuments(
 		application?.resources || []
@@ -79,6 +81,13 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 	const {data: applicationDocuments} = useApplicationDocuments(props.applicationId);
 
 	const t = useTrans();
+
+	// Update document title when application is loaded and using secret access
+	useEffect(() => {
+		if (application && props.secret) {
+			document.title = application.name || `Application ${props.applicationId}`;
+		}
+	}, [application, props.secret, props.applicationId]);
 
 	// State for copy functionality
 	const [showCopyDialog, setShowCopyDialog] = React.useState(false);
@@ -309,7 +318,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 			<section className="my-2">
 				<ApplicationComments
 					applicationId={props.applicationId}
-					secret={application?.secret || undefined}
+					secret={props.secret || application?.secret || undefined}
 				/>
 
 				<GSAccordion data-color="neutral">
@@ -317,7 +326,7 @@ const ApplicationDetails: FC<ApplicationDetailsProps> = (props) => {
 						<h3>{t('bookingfrontend.events_allocations')}</h3>
 					</GSAccordion.Heading>
 					<GSAccordion.Content>
-						<ApplicationSchedule applicationId={props.applicationId} />
+						<ApplicationSchedule applicationId={props.applicationId} secret={props.secret} />
 					</GSAccordion.Content>
 				</GSAccordion>
 

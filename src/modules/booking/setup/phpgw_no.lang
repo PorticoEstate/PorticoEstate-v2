@@ -964,3 +964,5 @@ regular	booking	no	Vanlig
 repeating	booking	no	Gjentagende
 send_email_to_applicant	booking	no	Send e-post til søker
 confirm_approve_after_allocation	booking	no	Tildelinger er opprettet. Vil du godkjenne denne søknaden nå?
+allocations_cannot_be_created_conflicts	booking	no	Tildelinger som ikke kan opprettes grunnet konflikter
+recurring_allocations_summary	booking	no	Sammendrag av gjentakende tildelinger

@@ -53,7 +53,7 @@ export interface IApplication {
 export interface RecurringInfo {
     repeat_until?: string; // ISO date string (YYYY-MM-DD)
     field_interval?: number; // Week intervals between repetitions (default: 1)
-    outseason?: boolean; // Allow repetition beyond season end
+    outseason?: boolean; // Repeat until end of season, xor repeat_until / outseason
 }
 
 // Utility functions for handling recurring_info
@@ -66,12 +66,12 @@ export const RecurringInfoUtils = {
             return null;
         }
     },
-    
+
     stringify: (recurringInfo: RecurringInfo | null | undefined): string | null => {
         if (!recurringInfo) return null;
         return JSON.stringify(recurringInfo);
     },
-    
+
     isRecurring: (application: IApplication): boolean => {
         return !!RecurringInfoUtils.parse(application.recurring_info);
     }

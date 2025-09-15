@@ -174,8 +174,18 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
             activity.id === resource.activity_id
         )?.name.toLowerCase() || '';
 
-        // Check resource name, building name, and activity name
-        const nameToCheck = [resourceName, buildingName, activityName];
+        // Also get additional activities from resource_activities
+        const resourceActivities = searchData?.resource_activities?.filter(
+            ra => ra.resource_id === resource.id
+        ) || [];
+        
+        const additionalActivityNames = resourceActivities
+            .map(ra => searchData?.activities.find(a => a.id === ra.activity_id))
+            .filter(Boolean)
+            .map(activity => activity!.name.toLowerCase());
+
+        // Check resource name, building name, primary activity name, and additional activity names
+        const nameToCheck = [resourceName, buildingName, activityName, ...additionalActivityNames];
         let highestScore = 0;
 
         for (const name of nameToCheck) {
@@ -227,6 +237,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         // Only apply text search if something has been entered
         if (textSearchQuery && textSearchQuery.trim() !== '') {
             const query = textSearchQuery.toLowerCase();
+            
             filtered = filtered.filter(resource => {
                 const resourceNameMatch = resource.name.toLowerCase().includes(query);
                 const buildingNameMatch = resource.building?.name?.toLowerCase().includes(query);
@@ -238,7 +249,20 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                         activity.name.toLowerCase().includes(query)
                     ) : null;
 
-                return resourceNameMatch || buildingNameMatch || !!activityMatch;
+                const resourceActivity = resource.activity_id ? 
+                    searchData?.activities.find(a => a.id === resource.activity_id) : null;
+
+                // Also check resource_activities for additional activity connections
+                const resourceActivities = searchData?.resource_activities?.filter(
+                    ra => ra.resource_id === resource.id
+                ) || [];
+                
+                const additionalActivityMatches = resourceActivities
+                    .map(ra => searchData?.activities.find(a => a.id === ra.activity_id))
+                    .filter(Boolean)
+                    .filter(activity => activity!.name.toLowerCase().includes(query));
+
+                return resourceNameMatch || buildingNameMatch || !!activityMatch || additionalActivityMatches.length > 0;
             });
 
             // Sort by relevance/similarity
@@ -247,6 +271,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                 const scoreB = calculateSimilarity(b, textSearchQuery);
                 return scoreB - scoreA;
             });
+
         }
 
         // Town filter - using building's town_id to filter

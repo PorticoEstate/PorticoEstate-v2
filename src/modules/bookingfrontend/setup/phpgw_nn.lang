@@ -828,3 +828,11 @@ field_wild_required	bookingfrontend	nn	{{field}} er påkrevd
 field_wild_invalid	bookingfrontend	nn	{{field}} har ugyldig format
 create_user_account	bookingfrontend	nn	Opprett brukarkonto
 you_must_confirm_all_documents	bookingfrontend	nn	Du må stadfeste at du har lese alle forskriftsdokument
+
+validation_name_required	bookingfrontend	nn	Namn er påkravd
+validation_phone_required	bookingfrontend	nn	Telefonnummer er påkravd
+validation_phone_format	bookingfrontend	nn	Ugyldig telefonnummer. For norske nummer, bruk format: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
+validation_email_required	bookingfrontend	nn	E-postadresse er påkravd
+validation_email_format	bookingfrontend	nn	Ugyldig e-postadresse
+validation_zipcode_min_length	bookingfrontend	nn	Postnummer må vera minst 4 teikn
+validation_homepage_format	bookingfrontend	nn	Ugyldig URL-format

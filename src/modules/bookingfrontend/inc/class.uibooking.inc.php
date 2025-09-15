@@ -71,6 +71,21 @@ class bookingfrontend_uibooking extends booking_uibooking
 		// Set it to true if detailed_overlap is true for backward compatibility
 		$stop_on_end_date = Sanitizer::get_var('stop_on_end_date', 'bool', 'REQUEST', $detailed_overlap);
 
+		// Apply booking horizon limitations
+		$max_end_date = $this->calculate_booking_horizon_end_date($building_id, $resource_id);
+		
+		// If start date is beyond the booking horizon, return empty result
+		if ($start_date > $max_end_date)
+		{
+			return array(); // Return empty result when start date is beyond horizon
+		}
+		
+		// If end date is beyond horizon, limit it
+		if ($end_date > $max_end_date)
+		{
+			$end_date = $max_end_date;
+		}
+
 		$weekdays = array();
 		$timezone = !empty($this->userSettings['preferences']['common']['timezone']) ? $this->userSettings['preferences']['common']['timezone'] : 'UTC';
 
@@ -2119,5 +2134,57 @@ class bookingfrontend_uibooking extends booking_uibooking
 			'user_can_delete_bookings' => $user_can_delete_bookings,
 			'datatable_def' => $datatable_def
 		));
+	}
+
+	/**
+	 * Calculate the maximum end date based on booking horizon limitations
+	 * Replicates frontend JavaScript logic for booking_month_horizon
+	 */
+	private function calculate_booking_horizon_end_date($building_id, $resource_id = null)
+	{
+		// Default booking horizon in months (matches frontend default)
+		$booking_month_horizon = 2;
+		
+		// If we have a specific resource, check its booking_month_horizon
+		if ($resource_id)
+		{
+			$resource = $this->resource_bo->read_single($resource_id);
+			if ($resource && !empty($resource['booking_month_horizon']))
+			{
+				// Apply the same logic as frontend: if resource horizon > (current + 1), use resource horizon + 1
+				if ($resource['booking_month_horizon'] > ($booking_month_horizon + 1))
+				{
+					$booking_month_horizon = $resource['booking_month_horizon'] + 1;
+				}
+			}
+		}
+		else
+		{
+			// If no specific resource, check all resources in the building for maximum horizon
+			$resources = $this->resource_bo->so->read(array(
+				'filters' => array('building_id' => $building_id),
+				'sort' => 'name'
+			));
+			
+			if ($resources && !empty($resources['results']))
+			{
+				foreach ($resources['results'] as $resource)
+				{
+					if (!empty($resource['booking_month_horizon']) && $resource['booking_month_horizon'] > ($booking_month_horizon + 1))
+					{
+						$booking_month_horizon = $resource['booking_month_horizon'] + 1;
+					}
+				}
+			}
+		}
+		
+		// Calculate end date: current date + booking_month_horizon months, last day of that month
+		// This matches frontend logic: new Date(checkDate.getFullYear(), checkDate.getMonth() + booking_month_horizon, 0)
+		$current_date = new DateTime();
+		$end_date = clone $current_date;
+		$end_date->add(new DateInterval("P{$booking_month_horizon}M"));
+		$end_date->modify('last day of this month');
+		
+		return $end_date->getTimestamp();
 	}
 }

@@ -568,6 +568,22 @@
 																	</small>
 																</p>
 															</xsl:if>
+															<xsl:if test="equipment and normalize-space(equipment)">
+																<p class="card-text mb-1">
+																	<small><strong><xsl:value-of select="php:function('lang', 'Equipment (2018)')" />:</strong></small>
+																</p>
+																<p class="card-text">
+																	<small><xsl:value-of select="equipment" disable-output-escaping="yes"/></small>
+																</p>
+															</xsl:if>
+															<xsl:if test="description and normalize-space(description)">
+																<p class="card-text mb-1">
+																	<small><strong><xsl:value-of select="php:function('lang', 'Description')" />:</strong></small>
+																</p>
+																<p class="card-text">
+																	<small><xsl:value-of select="description" disable-output-escaping="yes"/></small>
+																</p>
+															</xsl:if>
 														</div>
 													</div>
 												</div>
@@ -1112,6 +1128,15 @@
 																			</xsl:choose>
 																		</span>
 																	</div>
+																	<xsl:if test="equipment and normalize-space(equipment)">
+																		<div class="pure-control-group">
+																			<label>
+																				<xsl:value-of select="php:function('lang', 'Equipment (2018)')" />:</label>
+																			<span>
+																				<xsl:value-of select="equipment" disable-output-escaping="yes"/>
+																			</span>
+																		</div>
+																	</xsl:if>
 																</div>
 															</div>
 															<xsl:if test="../edit_link">

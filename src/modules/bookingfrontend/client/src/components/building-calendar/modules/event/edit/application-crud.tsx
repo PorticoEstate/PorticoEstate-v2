@@ -888,6 +888,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			articles: data.articles,
 			organizer: data.organizer || '',
 			name: data.title,
+			homepage: data.homepage,
+			description: data.description,
+			equipment: data.equipment,
 			resources: data.resources.map(res => (+res)),
 			activity_id: buildingResources!.find(a => a.id === +data.resources[0] && !!a.activity_id)?.activity_id || 1,
 			// Add recurring info if enabled

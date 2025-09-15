@@ -811,7 +811,35 @@ class booking_uiapplication extends booking_uicommon
 			$case_officer = true;
 		}
 
-		$associations = $this->assoc_bo->read();
+		// Get associations from all related applications for combined display only if combining is enabled
+		if ($this->combine_applications)
+		{
+			$related_info = $this->bo->so->get_related_applications($application_id);
+			$application_ids = $related_info['application_ids'];
+
+			// Get associations from all related applications
+			$all_associations = array();
+			foreach ($application_ids as $app_id)
+			{
+				$app_associations = $this->assoc_bo->so->read(array(
+					'filters' => array('application_id' => $app_id),
+					'results' => 'all'
+				));
+				if (!empty($app_associations['results']))
+				{
+					$all_associations = array_merge($all_associations, $app_associations['results']);
+				}
+			}
+			$associations = array('results' => $all_associations);
+		}
+		else
+		{
+			// Single application - use existing logic
+			$associations = $this->assoc_bo->so->read(array(
+				'filters' => array('application_id' => $application_id),
+				'results' => 'all'
+			));
+		}
 		foreach ($associations['results'] as &$association)
 		{
 			if ($this->flags['currentapp'] == 'bookingfrontend')
@@ -3657,7 +3685,8 @@ class booking_uiapplication extends booking_uicommon
 						'id' => $date['id'],
 						'resources' => $app['resources'], // Keep original resources for this specific application
 						'application_ids' => array($app_id),
-						'application_name' => $app['name'] // Add application name for potential display
+						'application_name' => $app['name'], // Add application name for potential display
+						'equipment' => $app['equipment'] // Add equipment for display
 					);
 				}
 			}
@@ -3707,7 +3736,9 @@ class booking_uiapplication extends booking_uicommon
 					'status' => $app['status'],
 					'date_ranges' => $date_ranges,
 					'resource_names' => is_array($resource_names) ? $resource_names : array(),
-					'created' => pretty_timestamp($app['created'])
+					'created' => pretty_timestamp($app['created']),
+					'equipment' => $app['equipment'],
+					'description' => $app['description']
 				);
 			}
 		}

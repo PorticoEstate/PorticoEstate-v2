@@ -1508,7 +1508,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'location')"/>
 					</label>
-					<input name="values[location_code]" value="{location_code}" class="forms">
+					<input name="values[location_code]" value="{location_code}" class="pure-input-1-3">
 						<xsl:attribute name="readonly">
 							<xsl:text>readonly</xsl:text>
 						</xsl:attribute>
@@ -1524,7 +1524,7 @@
 					</label>
 					<xsl:choose>
 						<xsl:when test="b_account_as_listbox = 1">
-							<select name="values[b_account_id]" class="pure-input-3-4">
+							<select name="values[b_account_id]" class="pure-input-1-3">
 								<xsl:attribute name="title">
 									<xsl:value-of select="$lang_budget_account"/>
 								</xsl:attribute>
@@ -1539,7 +1539,7 @@
 						</xsl:when>
 						<xsl:otherwise>
 							<input type="hidden" id="b_account_id" name="values[b_account_id]"  value="{b_account_data/value_b_account_id}"/>
-							<input type="text" id="b_account_name" name="values[b_account_name]" value="{b_account_data/value_b_account_id} {b_account_data/value_b_account_name}" class="pure-input-3-4">
+							<input type="text" id="b_account_name" name="values[b_account_name]" value="{b_account_data/value_b_account_id} {b_account_data/value_b_account_name}" class="pure-input-1-3">
 								<xsl:attribute name="data-validation">
 									<xsl:text>required</xsl:text>
 								</xsl:attribute>
@@ -1557,7 +1557,7 @@
 						<xsl:value-of select="php:function('lang', 'external project')"/>
 					</label>
 					<input type="hidden" id="external_project_id" name="values[external_project_id]"  value="{value_external_project_id}"/>
-					<input type="text" id="external_project_name" name="values[external_project_name]" value="{value_external_project_name}" class="pure-input-3-4"/>
+					<input type="text" id="external_project_name" name="values[external_project_name]" value="{value_external_project_name}" class="pure-input-1-3"/>
 					<div id="external_project_container"/>
 				</div>
 
@@ -1574,7 +1574,7 @@
 					<xsl:if test="mode='edit' and project_ecodimb =''">
 						<input type="hidden" id="ecodimb" name="values[ecodimb]"  value="{ecodimb_data/value_ecodimb}"/>
 					</xsl:if>
-					<input type="text" id="ecodimb_name" name="values[ecodimb_name]" value="{ecodimb_data/value_ecodimb} {ecodimb_data/value_ecodimb_descr}" class="pure-input-3-4">
+					<input type="text" id="ecodimb_name" name="values[ecodimb_name]" value="{ecodimb_data/value_ecodimb} {ecodimb_data/value_ecodimb_descr}" class="pure-input-1-3">
 						<xsl:attribute name="data-validation">
 							<xsl:text>required</xsl:text>
 						</xsl:attribute>
@@ -1596,7 +1596,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'contract')"/>
 					</label>
-					<select id="vendor_contract_id" name="values[contract_id]" class="pure-input-3-4">
+					<select id="vendor_contract_id" name="values[contract_id]" class="pure-input-1-3">
 						<xsl:if test="count(contract_list/options) &gt; 0">
 							<xsl:attribute name="data-validation">
 								<xsl:text>required</xsl:text>
@@ -1612,7 +1612,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'janitor')"/>
 					</label>
-					<select name="values[janitor]" class="forms">
+					<select name="values[janitor]" class="pure-input-1-3">
 						<option value="">
 							<xsl:value-of select="php:function('lang', 'no janitor')"/>
 						</option>
@@ -1634,7 +1634,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'B - responsible')"/>
 					</label>
-					<select name="values[budget_responsible]" class="forms">
+					<select name="values[budget_responsible]" class="pure-input-1-3">
 						<option value="">
 							<xsl:value-of select="php:function('lang', 'Select B-Responsible')"/>
 						</option>
@@ -1645,7 +1645,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'order id')"/>
 					</label>
-					<input type="text" name="values[order_id]" value="{value_order_id}" >
+					<input type="text" name="values[order_id]" value="{value_order_id}" class="pure-input-1-3">
 						<xsl:attribute name="title">
 							<xsl:value-of select="php:function('lang', 'Order # that initiated the invoice')"/>
 						</xsl:attribute>
@@ -1655,7 +1655,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'tax code')"/>
 					</label>
-					<select name="values[tax_code]" class="forms" >
+					<select name="values[tax_code]" class="pure-input-1-3">
 						<xsl:attribute name="title">
 							<xsl:value-of select="php:function('lang', 'tax code')"/>
 						</xsl:attribute>
@@ -1671,7 +1671,7 @@
 						<xsl:value-of select="php:function('lang', 'Type invoice II')"/>
 
 					</label>
-					<select name="values[artid]" class="forms" >
+					<select name="values[artid]" class="pure-input-1-3">
 						<xsl:attribute name="required">
 							<xsl:text>required</xsl:text>
 						</xsl:attribute>
@@ -1704,7 +1704,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'voucher id')"/>
 					</label>
-					<input type="text" name="values[voucher_out_id]" value="{value_voucher_out_id}">
+					<input type="text" name="values[voucher_out_id]" value="{value_voucher_out_id}" class="pure-input-1-3">
 						<xsl:attribute name="required">
 							<xsl:text>required</xsl:text>
 						</xsl:attribute>
@@ -1717,7 +1717,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'Invoice Number')"/>
 					</label>
-					<input type="text" name="values[invoice_id]" value="{value_invoice_id}">
+					<input type="text" name="values[invoice_id]" value="{value_invoice_id}" class="pure-input-1-3">
 						<xsl:attribute name="title">
 							<xsl:value-of select="php:function('lang', 'Enter Invoice Number')"/>
 						</xsl:attribute>
@@ -1727,7 +1727,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'KID nr')"/>
 					</label>
-					<input type="text" name="values[kidnr]" value="{value_kidnr}" >
+					<input type="text" name="values[kidnr]" value="{value_kidnr}" class="pure-input-1-3">
 						<xsl:attribute name="title">
 							<xsl:value-of select="php:function('lang', 'Enter Kid nr')"/>
 						</xsl:attribute>
@@ -1735,9 +1735,9 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
-						<xsl:value-of select="php:function('lang', 'amount')"/>
+						<xsl:value-of select="php:function('lang', 'amount')"/> <xsl:text> (brutto)</xsl:text>
 					</label>
-					<input type="text" name="values[amount]" value="{value_amount}">
+					<input type="text" name="values[amount]" value="{value_amount}" class="pure-input-1-3">
 						<xsl:attribute name="title">
 							<xsl:value-of select="php:function('lang', 'amount of the invoice')"/>
 						</xsl:attribute>
@@ -1777,7 +1777,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'remark')"/>
 					</label>
-					<textarea class="pure-input-3-4" rows="10" name="values[merknad]">
+					<textarea class="pure-input-1-3" rows="10" name="values[merknad]">
 						<xsl:value-of select="value_merknad"/>
 					</textarea>
 				</div>
@@ -1785,7 +1785,7 @@
 					<label>
 						<xsl:value-of select="php:function('lang', 'upload file')"/>
 					</label>
-					<input type="file" id="file" name="file" class="pure-input-3-4">
+					<input type="file" id="file" name="file" class="pure-input-1-3">
 					</input>
 				</div>
 			</div>

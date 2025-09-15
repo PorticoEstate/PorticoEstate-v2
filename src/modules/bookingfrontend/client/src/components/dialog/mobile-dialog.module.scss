@@ -117,8 +117,16 @@
 }
 
 .show {
-    pointer-events: all;
-    opacity: 1;
+    pointer-events: all !important;
+    opacity: 1 !important;
+
+    @include mobile {
+        transform: translateY(0);
+    }
+
+    @include tablet {
+        transform: translate(-50%, -50%) scale(1);
+    }
 }
 
 .customBackdrop {

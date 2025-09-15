@@ -1082,26 +1082,30 @@ SQL;
 
 	function legg_til_objekt_phpgw()
 	{
-		$sql = "SELECT boei_objekt.objekt_id, boei_objekt.navn, boei_objekt.bydel_id, boei_objekt.eier_id,boei_objekt.tjenestested, boei_objekt.postnr_id"
+		$sql = "SELECT boei_objekt.objekt_id, boei_objekt.navn, boei_objekt.bydel_id, boei_objekt.eier_id, boei_objekt.tjenestested, boei_objekt.postnr_id, boei_eier.eiertype_id"
 			. " FROM fm_location1 RIGHT OUTER JOIN "
 			. " boei_objekt ON fm_location1.loc1 = boei_objekt.objekt_id"
+			. " JOIN boei_eier ON boei_objekt.eier_id = boei_eier.eier_id"
 			. " WHERE fm_location1.loc1 IS NULL";
 
 		$this->db->query($sql, __LINE__, __FILE__);
 		$objekt_latin = array();
 		while ($this->db->next_record())
 		{
+			$eiertype_id	 = (int)$this->db->f('eiertype_id') == 0 ? 5 : (int)$this->db->f('eiertype_id');
 			$tjenestested = (int)$this->db->f('tjenestested');
 			$loc1		  = $this->db->f('objekt_id');
+
 			/*
- * Alle kostraid’er skal ha mva/AV-kode 75
- * Bortsett fra
- * 26550 som jeg ønsker varsel på,
- * og 26555 som ikke finnes enda, men som kanskje blir opprettet på innleieboliger.
-*/
+			* Alle tjenestested skal ha mva/AV-kode 75
+			* 26550 som ikke er våre(owner_type_id = 5) skal ha 0.
+			* 26550 som er våre, skal ha 75.
+			* 26555 innleieboliger, skal ha 0.
+			*/
+
 
 			$mva = 75;
-			if (in_array($tjenestested, array(26550, 26555)))
+			if (in_array($tjenestested, array(26555)) || (!in_array($eiertype_id, array(5)) && $tjenestested == 26550))
 			{
 				$mva = 0;
 			}
@@ -1653,8 +1657,17 @@ SQL;
 			$owner_type_id 	  = (int)$this->db->f('owner_type_id');
 			$navn = $this->db->f('navn');
 
+
+			/*
+				* Alle tjenestested skal ha mva/AV-kode 75
+				* 26550 som ikke er våre(owner_type_id = 5) skal ha 0.
+				* 26550 som er våre, skal ha 75.
+				* 26555 innleieboliger, skal ha 0.
+				*/
+
+
 			$mva = 75;
-			if (in_array($tjenestested, array(26550, 26555)) || (in_array($owner_type_id,array(1, 2)) && $tjenestested == 26550))
+			if (in_array($tjenestested, array(26555)) || (!in_array($owner_type_id,array(5)) && $tjenestested == 26550))
 			{
 				$mva = 0;
 			}
@@ -1698,13 +1711,6 @@ SQL;
 				. " mva = " . $mva . ","
 				. " kostra_id = " . $tjenestested
 				. " WHERE  loc1 = '" . $this->db->f('objekt_id') . "'";
-
-			/*
-				* Alle kostraid’er skal ha mva/AV-kode 75
-				* Bortsett fra
-				* 26550 som jeg ønsker varsel på,
-				* og 26555 som ikke finnes enda, men som kanskje blir opprettet på innleieboliger.
-				*/
 
 
 			$this->db2->query($sql2, __LINE__, __FILE__);

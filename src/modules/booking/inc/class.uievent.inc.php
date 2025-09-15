@@ -1136,7 +1136,12 @@ class booking_uievent extends booking_uicommon
 				{
 					$event['customer_identifier_type'] = 'organization_number';
 					$event['customer_internal'] = $organization['customer_internal'];
-					if ((strlen($organization['customer_number']) == 6) || (strlen($organization['customer_number']) == 5))
+					$customer_organization_number = Sanitizer::get_var('customer_organization_number', 'string', 'POST');
+					if ((strlen($customer_organization_number) == 6) || (strlen($customer_organization_number) == 5))
+					{
+						$event['customer_organization_number'] = $customer_organization_number;
+					}
+					else if ((strlen($organization['customer_number']) == 6) || (strlen($organization['customer_number']) == 5))
 					{
 						$event['customer_organization_number'] = $organization['customer_number'];
 					}
@@ -1163,7 +1168,8 @@ class booking_uievent extends booking_uicommon
 			 * Maker sure: Check if organization is registered
 			 */
 
-			$orginfo = $this->bo->so->get_org($event['customer_organization_number']);
+	//		$orginfo = $this->bo->so->get_org($event['customer_organization_id']);
+			$orginfo = $this->organization_bo->read_single(intval($event['customer_organization_id']));
 
 			if (empty($orginfo['id']))
 			{

@@ -186,6 +186,9 @@ $app->group('/bookingfrontend/auth', function (RouteCollectorProxy $group) {
 $app->post('/bookingfrontend/version', VersionController::class . ':setVersion')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/bookingfrontend/version', VersionController::class . ':getVersion')->add(new SessionsMiddleware($app->getContainer()));
 
+$app->post('/bookingfrontend/language', VersionController::class . ':setLanguage')->add(new SessionsMiddleware($app->getContainer()));
+$app->get('/bookingfrontend/language', VersionController::class . ':getLanguage')->add(new SessionsMiddleware($app->getContainer()));
+
 // Debug routes
 $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {
 	$group->get('/websocket', function ($request, $response) {

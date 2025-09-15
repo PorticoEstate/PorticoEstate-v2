@@ -766,9 +766,9 @@ class booking_soapplication extends booking_socommon
 
 		$application_ids_string = implode(',', $application_ids);
 
-		// Get all purchase order lines for these applications, aggregated by article_mapping_id
+		// Get purchase order lines for these applications that have a cost > 0, aggregated by article_mapping_id
 		$sql = "SELECT bb_purchase_order_line.article_mapping_id,
-			SUM(bb_purchase_order_line.quantity) as total_quantity, 
+			SUM(bb_purchase_order_line.quantity) as total_quantity,
 			SUM(bb_purchase_order_line.amount) as total_amount,
 			bb_purchase_order_line.currency, bb_article_mapping.unit,
 			CASE WHEN (bb_resource.name IS NULL)
@@ -782,8 +782,9 @@ class booking_soapplication extends booking_socommon
 			LEFT JOIN bb_resource ON (bb_article_mapping.article_id = bb_resource.id AND bb_article_mapping.article_cat_id = 1)
 			WHERE bb_purchase_order.cancelled IS NULL
 			AND bb_purchase_order.application_id IN (" . $application_ids_string . ")
-			GROUP BY bb_purchase_order_line.article_mapping_id, bb_purchase_order_line.currency, 
+			GROUP BY bb_purchase_order_line.article_mapping_id, bb_purchase_order_line.currency,
 				bb_article_mapping.unit, article_name
+			HAVING SUM(bb_purchase_order_line.amount) > 0
 			ORDER BY article_name";
 
 		$this->db->query($sql, __LINE__, __FILE__);
@@ -854,6 +855,7 @@ class booking_soapplication extends booking_socommon
 			. " LEFT JOIN bb_service ON (bb_article_mapping.article_id = bb_service.id AND bb_article_mapping.article_cat_id = 2)"
 			. " LEFT JOIN bb_resource ON (bb_article_mapping.article_id = bb_resource.id AND bb_article_mapping.article_cat_id = 1)"
 			. " WHERE bb_purchase_order.cancelled IS NULL AND bb_purchase_order.application_id IN (" . implode(',', $application_ids) . ")"
+			. " AND (bb_purchase_order_line.amount > 0 OR bb_purchase_order_line.tax > 0)"
 			. " ORDER BY bb_purchase_order_line.id";
 
 		$this->db->query($sql, __LINE__, __FILE__);

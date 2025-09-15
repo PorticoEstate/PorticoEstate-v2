@@ -58,11 +58,14 @@ interface UserCreationModalProps {
     onUserCreated?: () => void;
 }
 
+const DEBUG_USER_MODAL = false;
+
 const UserCreationModal: React.FC<UserCreationModalProps> = ({
     open,
     onClose,
     onUserCreated
 }) => {
+    if (DEBUG_USER_MODAL) console.log('UserCreationModal render - open:', open);
     const t = useTrans();
     const { data: externalData, isLoading: isLoadingExternal } = useExternalUserData();
     const { mutateAsync: createUser } = useCreateBookingUser();
@@ -130,6 +133,7 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
     };
 
     const handleCancel = () => {
+        if (DEBUG_USER_MODAL) console.log('UserCreationModal handleCancel called');
         reset();
         onClose();
     };

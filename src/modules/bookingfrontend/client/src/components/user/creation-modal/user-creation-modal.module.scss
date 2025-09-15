@@ -32,18 +32,10 @@
 
 .modalFooter {
     display: flex;
+    flex-direction: row;
     justify-content: flex-end;
     gap: 0.75rem;
     padding: 1rem;
     border-top: 1px solid var(--fds-semantic-border-neutral-subtle);
     background: var(--fds-semantic-surface-neutral-default);
-
-    @media (max-width: 768px) {
-        flex-direction: column;
-        gap: 0.5rem;
-        
-        button {
-            width: 100%;
-        }
-    }
 }

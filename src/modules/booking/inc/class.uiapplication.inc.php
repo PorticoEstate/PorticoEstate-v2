@@ -3657,7 +3657,8 @@ class booking_uiapplication extends booking_uicommon
 						'id' => $date['id'],
 						'resources' => $app['resources'], // Keep original resources for this specific application
 						'application_ids' => array($app_id),
-						'application_name' => $app['name'] // Add application name for potential display
+						'application_name' => $app['name'], // Add application name for potential display
+						'equipment' => $app['equipment'] // Add equipment for display
 					);
 				}
 			}
@@ -3707,7 +3708,9 @@ class booking_uiapplication extends booking_uicommon
 					'status' => $app['status'],
 					'date_ranges' => $date_ranges,
 					'resource_names' => is_array($resource_names) ? $resource_names : array(),
-					'created' => pretty_timestamp($app['created'])
+					'created' => pretty_timestamp($app['created']),
+					'equipment' => $app['equipment'],
+					'description' => $app['description']
 				);
 			}
 		}

@@ -5,25 +5,31 @@ import {z} from 'zod'
 import {Button, Textfield, Checkbox, Field, Label, ValidationMessage} from "@digdir/designsystemet-react"
 import {useTrans} from "@/app/i18n/ClientTranslationProvider"
 import {IShortOrganizationDelegate} from "@/service/types/api/organization.types"
+import {validateNorwegianSSN} from "@/utils/norwegian-ssn-validator"
 import styles from './organization-delegates-content.module.scss'
 
-// Zod schema for delegate form validation
-const delegateSchema = z.object({
-	ssn: z.string().regex(/^\d{11}$/, 'SSN must be 11 digits'),
-	name: z.string().min(1, 'Name is required'),
-	email: z.string().optional().refine((val) => !val || val === '' || z.string().email().safeParse(val).success, {
-		message: 'Must be a valid email'
+// Create Zod schema factory that accepts translation function
+const createDelegateSchema = (t: (key: string) => string) => z.object({
+	ssn: z.string().refine((val) => {
+		const result = validateNorwegianSSN(val);
+		return result.isValid;
+	}, {
+		message: t('booking.ssn is invalid')
 	}),
-	phone: z.string().optional().refine((val) => !val || val === '' || /^[\+]?[0-9\s\-\(\)]{8,15}$/.test(val), {
-		message: 'Invalid phone number format'
+	name: z.string().min(1, t('bookingfrontend.validation_name_required')),
+	email: z.string().optional().refine((val) => !val || val === '' || z.string().email().safeParse(val).success, {
+		message: t('bookingfrontend.validation_email_format')
+	}),
+	phone: z.string().optional().refine((val) => !val || val === '' || /^[+]?[0-9\s\-()]{8,15}$/.test(val), {
+		message: t('bookingfrontend.validation_phone_format')
 	}),
 	active: z.boolean()
 })
 
-const delegateEditSchema = delegateSchema.omit({ ssn: true, active: true })
+const createDelegateEditSchema = (t: (key: string) => string) => createDelegateSchema(t).omit({ ssn: true, active: true })
 
-export type DelegateFormData = z.infer<typeof delegateSchema>
-export type DelegateEditFormData = z.infer<typeof delegateEditSchema>
+export type DelegateFormData = z.infer<ReturnType<typeof createDelegateSchema>>
+export type DelegateEditFormData = z.infer<ReturnType<typeof createDelegateEditSchema>>
 
 export interface DelegateFormProps {
 	delegate?: IShortOrganizationDelegate
@@ -39,7 +45,7 @@ export interface DelegateFormProps {
 const DelegateForm = ({ delegate, onSubmit, onCancel, isSubmitting, title, isEdit = false, hideActions = false, formId }: DelegateFormProps) => {
 	const t = useTrans()
 
-	const schema = isEdit ? delegateEditSchema : delegateSchema
+	const schema = isEdit ? createDelegateEditSchema(t) : createDelegateSchema(t)
 
 	const {
 		register,

@@ -135,7 +135,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 			cell: info => {
 				const delegate = info.row.original
 				return (
-					<Link 
+					<Link
 						href={`/organization/${organizationId}/delegate/${delegate.id}`}
 						className={styles.delegateLink}
 					>
@@ -324,7 +324,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 					onClose={() => setShowAddForm(false)}
 					title={t('booking.new delegate')}
 					footer={(attemptClose) => (
-						<div className={styles.formActions}>
+						<>
 							<Button
 								type="submit"
 								form="add-delegate-form"
@@ -340,7 +340,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 															>
 								{t('common.cancel')}
 							</Button>
-						</div>
+						</>
 					)}
 				>
 					<DelegateForm

@@ -24,9 +24,9 @@ export interface IApplication {
     name: string;
     secret?: string | null;
     organizer: string;
-    homepage: string | null;
-    description: string | null;
-    equipment: string | null;
+    homepage?: string | null;
+    description?: string | null;
+    equipment?: string | null;
     contact_name: string;
     contact_email: string;
     contact_phone: string;

@@ -828,3 +828,11 @@ field_wild_required	bookingfrontend	en	{{field}} is required
 field_wild_invalid	bookingfrontend	en	{{field}} has invalid format
 create_user_account	bookingfrontend	en	Create User Account
 you_must_confirm_all_documents	bookingfrontend	en	You must confirm that you have read all regulation documents
+
+validation_name_required	bookingfrontend	en	Name is required
+validation_phone_required	bookingfrontend	en	Phone number is required
+validation_phone_format	bookingfrontend	en	Invalid phone number format. For Norwegian numbers use format: +47 XXXXXXXX or 9XXXXXXX or 4XXXXXXX
+validation_email_required	bookingfrontend	en	Email is required
+validation_email_format	bookingfrontend	en	Invalid email address
+validation_zipcode_min_length	bookingfrontend	en	Zip code must be at least 4 characters
+validation_homepage_format	bookingfrontend	en	Invalid URL format

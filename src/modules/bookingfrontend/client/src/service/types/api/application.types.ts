@@ -24,9 +24,9 @@ export interface IApplication {
     name: string;
     secret?: string | null;
     organizer: string;
-    homepage: string | null;
-    description: string | null;
-    equipment: string | null;
+    homepage?: string | null;
+    description?: string | null;
+    equipment?: string | null;
     contact_name: string;
     contact_email: string;
     contact_phone: string;
@@ -88,7 +88,7 @@ interface IApplicationAgeGroup {
 }
 
 
-export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'building_id' | 'activity_id' | 'organizer'>{
+export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'building_id' | 'activity_id' | 'organizer' | 'homepage' | 'description' | 'equipment'>{
     dates: Array<{
         from_: string;    // ISO date string
         to_: string;      // ISO date string

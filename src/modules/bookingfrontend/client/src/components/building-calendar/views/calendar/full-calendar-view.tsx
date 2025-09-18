@@ -100,7 +100,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const seasonStart = DateTime.fromISO(season.from_);
 			const seasonEnd = DateTime.fromISO(season.to_);
 
-			if (!season.active || now < seasonStart || now > seasonEnd) {
+			// Check if season has any resources that match enabled resources
+			const hasMatchingResources = season.resources.some(seasonResource =>
+				enabledResources.has(seasonResource.id.toString())
+			);
+
+			if (!season.active || now < seasonStart || now > seasonEnd || !hasMatchingResources) {
 				return [];
 			}
 
@@ -111,7 +116,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				endTime: boundary.to_
 			}));
 		});
-	}, [props.seasons]);
+	}, [props.seasons, enabledResources]);
 
 	const generateEventConstraint = useCallback(() => {
 		return {
@@ -134,12 +139,19 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			return dt.toFormat('HH:mm:ss');
 		};
 
-		// Check all season boundaries
+		// Check all season boundaries for enabled resources only
 		props.seasons?.forEach(season => {
-			season.boundaries.forEach(boundary => {
-				if (boundary.from_ < minTime) minTime = boundary.from_;
-				if (boundary.to_ > maxTime) maxTime = boundary.to_;
-			});
+			// Check if season has any resources that match enabled resources
+			const hasMatchingResources = season.resources.some(seasonResource =>
+				enabledResources.has(seasonResource.id.toString())
+			);
+
+			if (hasMatchingResources) {
+				season.boundaries.forEach(boundary => {
+					if (boundary.from_ < minTime) minTime = boundary.from_;
+					if (boundary.to_ > maxTime) maxTime = boundary.to_;
+				});
+			}
 		});
 
 		// Check events
@@ -170,7 +182,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				? '24:00:00'          // Allow until midnight
 				: maxTime             // Otherwise respect the boundary
 		);
-	}, [props.seasons, events, isOrg]);
+	}, [props.seasons, events, isOrg, enabledResources]);
 
 
 	useEffect(() => {
@@ -211,7 +223,16 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		const applicableSeasons = seasons?.filter(season => {
 			const seasonStart = DateTime.fromISO(season.from_);
 			const seasonEnd = DateTime.fromISO(season.to_);
-			return season.active && seasonStart <= endDate && seasonEnd >= startDate;
+
+			// Check if season has any resources that match enabled resources
+			const hasMatchingResources = season.resources.some(seasonResource =>
+				enabledResources.has(seasonResource.id.toString())
+			);
+
+			return season.active &&
+				   seasonStart <= endDate &&
+				   seasonEnd >= startDate &&
+				   hasMatchingResources;
 		});
 
 		// Add closed hours for each day
@@ -274,7 +295,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		return backgroundEvents;
-	}, [currentDate, seasons]);
+	}, [currentDate, seasons, enabledResources]);
 
 
 	useEffect(() => {

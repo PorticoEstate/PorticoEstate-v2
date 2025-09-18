@@ -116,7 +116,7 @@ interface IApplicationAgeGroup {
 }
 
 
-export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'building_id' | 'activity_id' | 'organizer' | 'homepage' | 'description'>{
+export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'building_id' | 'activity_id' | 'organizer' | 'homepage' | 'description' | 'equipment'>{
     dates: Array<{
         from_: string;    // ISO date string
         to_: string;      // ISO date string

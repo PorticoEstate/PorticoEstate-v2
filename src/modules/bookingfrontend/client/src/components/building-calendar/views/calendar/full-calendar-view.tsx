@@ -105,7 +105,13 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			if (!season.active) return false;
 			const seasonStart = DateTime.fromISO(season.from_);
 			const seasonEnd = DateTime.fromISO(season.to_);
-			return viewMiddle >= seasonStart && viewMiddle <= seasonEnd;
+
+			// Check if season has any resources that match enabled resources (from V2)
+			const hasMatchingResources = season.resources.some(seasonResource =>
+				enabledResources.has(seasonResource.id.toString())
+			);
+
+			return viewMiddle >= seasonStart && viewMiddle <= seasonEnd && hasMatchingResources;
 		});
 
 		if (!primarySeason) return [];
@@ -116,7 +122,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			startTime: boundary.from_,
 			endTime: boundary.to_
 		}));
-	}, [props.seasons, viewStart, viewEnd]);
+	}, [props.seasons, viewStart, viewEnd, enabledResources]);
 
 	const generateEventConstraint = useCallback(() => {
 		return {
@@ -139,25 +145,32 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			return dt.toFormat('HH:mm:ss');
 		};
 
-		// Check season boundaries that are relevant to the current calendar view
+		// Check all season boundaries
+// Check season boundaries that are relevant to the current calendar view
 		props.seasons?.forEach(season => {
 			if (!season.active) return;
 
 			const seasonStart = DateTime.fromISO(season.from_);
 			const seasonEnd = DateTime.fromISO(season.to_);
 
-			// If we have view dates, only consider seasons that overlap with the view
+			// If we have view dates, only consider seasons that overlap with the view (from V1)
 			if (viewStart && viewEnd) {
 				const seasonOverlapsView = seasonStart <= viewEnd && seasonEnd >= viewStart;
 				if (!seasonOverlapsView) return;
 			}
+
+			// Check if season has any resources that match enabled resources (from V2)
+			const hasMatchingResources = season.resources.some(seasonResource =>
+				enabledResources.has(seasonResource.id.toString())
+			);
+
+			if (!hasMatchingResources) return;
 
 			season.boundaries.forEach(boundary => {
 				if (boundary.from_ < minTime) minTime = boundary.from_;
 				if (boundary.to_ > maxTime) maxTime = boundary.to_;
 			});
 		});
-
 		// Check events
 		(events || []).forEach(event => {
 			const eventStartTime = extractTime(event.from_);
@@ -186,8 +199,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				? '24:00:00'          // Allow until midnight
 				: maxTime             // Otherwise respect the boundary
 		);
-	}, [props.seasons, events, isOrg, viewStart, viewEnd]);
-
+	}, [props.seasons, events, isOrg, viewStart, viewEnd, enabledResources]);
 
 	useEffect(() => {
 		calculateAbsoluteMinMaxTimes();
@@ -226,11 +238,6 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			});
 		}
 
-		// Since we're now using businessHours for constraints, we only need to add
-		// background events for transition periods where different days might have
-		// different seasons but the same weekday. FullCalendar's businessHours
-		// will handle the standard closed hours display.
-
 		// Check if we have season transitions during the view period
 		const hasSeasonTransition = seasons && seasons.length > 1 && viewStart && viewEnd && seasons.some(season1 =>
 			seasons.some(season2 =>
@@ -251,8 +258,14 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					if (!season.active) return false;
 					const seasonStart = DateTime.fromISO(season.from_);
 					const seasonEnd = DateTime.fromISO(season.to_);
+
+					// Check if season has any resources that match enabled resources (from V2)
+					const hasMatchingResources = season.resources.some(seasonResource =>
+						enabledResources.has(seasonResource.id.toString())
+					);
+
 					// Check if this day falls within the season's date range
-					return date >= seasonStart.startOf('day') && date <= seasonEnd.endOf('day');
+					return date >= seasonStart.startOf('day') && date <= seasonEnd.endOf('day') && hasMatchingResources;
 				}) || [];
 
 				// If multiple seasons apply to the same day, prioritize the one that starts most recently
@@ -273,7 +286,13 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					if (!season.active) return false;
 					const seasonStart = DateTime.fromISO(season.from_);
 					const seasonEnd = DateTime.fromISO(season.to_);
-					return viewMiddle >= seasonStart && viewMiddle <= seasonEnd;
+
+					// Check resources (from V2)
+					const hasMatchingResources = season.resources.some(seasonResource =>
+						enabledResources.has(seasonResource.id.toString())
+					);
+
+					return viewMiddle >= seasonStart && viewMiddle <= seasonEnd && hasMatchingResources;
 				});
 
 				// Only add background events if this day uses a different season than the primary one
@@ -323,7 +342,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		return backgroundEvents;
-	}, [currentDate, seasons, viewStart, viewEnd]);
+	}, [currentDate, seasons, viewStart, viewEnd, enabledResources]);
 
 
 	useEffect(() => {

@@ -74,7 +74,7 @@ class DataStore
 		try {
 			// Get all resources
 			$resourceRows = $this->getRowsAsArray("SELECT * from bb_resource where active=1 and hidden_in_frontend=0 and deactivate_calendar=0");
-			
+
 			// Get the latest participant limits for all resources
 			$currentDate = date('Y-m-d H:i:s');
 			$participantLimits = $this->getRowsAsArray("SELECT pl.resource_id, pl.quantity
@@ -86,13 +86,13 @@ class DataStore
               GROUP BY resource_id
           ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
 			[':currentDate' => $currentDate]);
-			
+
 			// Create a map of resource_id to participant limit quantity
 			$participantLimitMap = [];
 			foreach ($participantLimits as $pl) {
 				$participantLimitMap[$pl['resource_id']] = $pl['quantity'];
 			}
-			
+
 			// Add participant limit to resources
 			$resources = [];
 			foreach ($resourceRows as $row) {
@@ -101,7 +101,7 @@ class DataStore
 				}
 				$resources[] = $row;
 			}
-			
+
 			$data = [
 				'activities' => $this->getRowsAsArray("SELECT * from bb_activity where active=1"),
 				'buildings' => $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
@@ -174,7 +174,7 @@ class DataStore
 			$rows = $this->getRowsAsArray("SELECT id, name, activity_id, active, simple_booking, deactivate_calendar,
               deactivate_application, rescategory_id
               FROM bb_resource WHERE active=1 AND hidden_in_frontend=0");
-			
+
 			// Get the latest participant limits for all resources
 			$currentDate = date('Y-m-d H:i:s');
 			$participantLimits = $this->getRowsAsArray("SELECT pl.resource_id, pl.quantity
@@ -186,20 +186,20 @@ class DataStore
                   GROUP BY resource_id
               ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
 			[':currentDate' => $currentDate]);
-			
+
 			// Create a map of resource_id to participant limit quantity
 			$participantLimitMap = [];
 			foreach ($participantLimits as $pl) {
 				$participantLimitMap[$pl['resource_id']] = $pl['quantity'];
 			}
-			
+
 			foreach ($rows as $row) {
-				$resource = new Resource($row);
-				// Set participant_limit if available, otherwise leave as null
-				if (isset($participantLimitMap[$resource->id])) {
-					$resource->participant_limit = $participantLimitMap[$resource->id];
-				}
-				$resources[] = $resource->serialize([], true);
+					$resource = new Resource($row);
+					// Set participant_limit if available, otherwise leave as null
+					if (isset($participantLimitMap[$resource->id])) {
+						$resource->participant_limit = $participantLimitMap[$resource->id];
+					}
+					$resources[] = $resource->serialize([], true);
 			}
 			$data['resources'] = $resources;
 

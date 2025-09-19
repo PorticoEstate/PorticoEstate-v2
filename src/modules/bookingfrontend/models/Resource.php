@@ -287,6 +287,7 @@ class Resource
                 $this->$key = $value;
             }
         }
+		$this->deactivate_calendar = 0;
     }
 
     public function toArray()

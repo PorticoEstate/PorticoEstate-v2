@@ -12,6 +12,9 @@ interface DescriptionAccordionProps {
 
 const DescriptionAccordion = async (props: DescriptionAccordionProps) => {
     const {t, i18n} = await getTranslation();
+	if (!props.description_json) {
+		return null
+	}
     const descriptionJson = JSON.parse(props.description_json || '');
     let description = descriptionJson[i18n.language];
     if (!description) {

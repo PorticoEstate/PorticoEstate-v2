@@ -1,9 +1,9 @@
-interface ValidationResult {
+export interface ValidationResult {
 	isValid: boolean;
 	error?: string;
 }
 
-class NorwegianSSNValidator {
+export class NorwegianSSNValidator {
 	private fullRequired: boolean;
 
 	constructor(fullRequired: boolean = true) {
@@ -74,4 +74,3 @@ export function validateNorwegianSSN(ssn: string): ValidationResult {
 	return validator.validate(ssn);
 }
 
-export { NorwegianSSNValidator, ValidationResult };

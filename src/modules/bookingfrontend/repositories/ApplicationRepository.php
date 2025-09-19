@@ -9,6 +9,7 @@ use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
@@ -20,6 +21,7 @@ class ApplicationRepository
     private $articleRepository;
     private $userHelper;
     private $userModel = null;
+    private $resourceRepository;
 
     public function __construct()
     {
@@ -27,6 +29,7 @@ class ApplicationRepository
         $this->articleRepository = new ArticleRepository();
         $this->userHelper = new UserHelper();
         // Don't initialize User model here - wait until we need it and have valid SSN
+        $this->resourceRepository = new ResourceRepository();
     }
 
     /**
@@ -116,7 +119,7 @@ class ApplicationRepository
             $tempUserHelper = UserHelper::fromSSN($ssn);
             $tempUserModel = new User($tempUserHelper);
             $organizations = $tempUserModel->delegates ?? [];
-            
+
             if (!empty($organizations)) {
                 $orgIds = [];
                 $orgNumbers = [];
@@ -851,10 +854,7 @@ class ApplicationRepository
         $stmt->execute([':application_id' => $application_id]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        return array_map(function ($resourceData)
-        {
-            return (new Resource($resourceData))->serialize();
-        }, $results);
+        return $this->resourceRepository->createAndSerialize($results);
     }
 
     /**

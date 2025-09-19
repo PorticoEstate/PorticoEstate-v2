@@ -7,6 +7,7 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Event;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\repositories\EventRepository;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use DateTime;
 use Exception;
 use PDO;
@@ -16,12 +17,14 @@ class EventService
     private $db;
     private $bouser;
     public $repository;
+    private $resourceRepository;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->bouser = new UserHelper();
         $this->repository = new EventRepository();
+        $this->resourceRepository = new ResourceRepository();
     }
 
     private function patchEventMainData(array $data, array $existingEvent)
@@ -434,19 +437,12 @@ class EventService
 			// Process resources if available with complete data for proper serialization
 			$resources = [];
 			if (isset($eventData['resources']) && $eventData['resources']) {
-				$resourceData = json_decode($eventData['resources'], true);
-				if ($resourceData) {
-					foreach ($resourceData as $id => $name) {
-						$resourceEntity = new Resource([
-							'id' => $id,
-							'name' => $name,
-							'activity_id' => $eventData['activity_id'] ?? null,
-							'activity_name' => $eventData['activity_name'] ?? null,
-							'building_id' => $eventData['building_id'] ?? null
-						]);
-						$resources[] = $resourceEntity;
-					}
-				}
+				$additionalData = [
+					'activity_id' => $eventData['activity_id'] ?? null,
+					'activity_name' => $eventData['activity_name'] ?? null,
+					'building_id' => $eventData['building_id'] ?? null
+				];
+				$resources = $this->resourceRepository->createFromResourcesJson($eventData['resources'], $additionalData);
 			}
 
 			// Create Event model instance with data

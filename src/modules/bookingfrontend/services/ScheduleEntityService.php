@@ -6,6 +6,7 @@ use App\Database\Db;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\ApplicationHelper;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Event;
 use App\modules\bookingfrontend\models\Booking;
 use App\modules\bookingfrontend\models\Allocation;
@@ -24,6 +25,7 @@ class ScheduleEntityService
     private $bouser;
     private $applicationHelper;
     private $applicationRepository;
+    private $resourceRepository;
 
     public function __construct()
     {
@@ -31,6 +33,7 @@ class ScheduleEntityService
         $this->bouser = new UserHelper();
         $this->applicationHelper = new ApplicationHelper();
         $this->applicationRepository = new ApplicationRepository();
+        $this->resourceRepository = new ResourceRepository();
     }
 
     /**
@@ -329,9 +332,12 @@ class ScheduleEntityService
         $to = clone $from;
         $to->modify('+7 days');
 
-        // Get resources for the organization
-        $resources = $this->getResourcesForOrganization($organization_id, $building_id);
-        $resource_ids = array_column($resources, 'id');
+        // Get resources for the organization with participant limits
+        $resourcesData = $this->getResourcesForOrganizationData($organization_id, $building_id);
+        $resource_ids = array_column($resourcesData, 'id');
+
+        // Get resources with participant limits
+        $resources = $this->resourceRepository->getWithParticipantLimits($resource_ids);
 
         if (empty($resource_ids)) {
             return [];
@@ -350,7 +356,7 @@ class ScheduleEntityService
 
             $allocation = new Allocation($allocationGroup[0]);
             $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
-            $results[] = $allocation->serialize();
+            $results[] = $allocation;
         }
 
         // Get bookings for this organization's groups
@@ -360,7 +366,7 @@ class ScheduleEntityService
             foreach ($this->groupByEntity($bookings) as $bookingGroup) {
                 $booking = new Booking($bookingGroup[0]);
                 $booking->resources = array_map([$this, 'formatResource'], $bookingGroup);
-                $results[] = $booking->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
+                $results[] = $booking;
             }
         }
 
@@ -370,10 +376,43 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
-            $results[] = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
+            $results[] = $event;
         }
 
-        return $results;
+        // Now fetch resources with participant limits and update all schedule entities
+        $resourcesWithLimits = $this->resourceRepository->getWithParticipantLimits($resource_ids);
+
+        // Create a map of resource_id -> participant_limit for quick lookup
+        $participantLimitMap = [];
+        foreach ($resourcesWithLimits as $resourceWithLimit) {
+            $participantLimitMap[$resourceWithLimit->id] = $resourceWithLimit->participant_limit ?? null;
+        }
+
+        // Update resources in all schedule entities with participant limits
+        foreach ($results as $entity) {
+            if (isset($entity->resources) && is_array($entity->resources)) {
+                foreach ($entity->resources as &$resource) {
+                    $resourceId = $resource['id'] ?? $resource['resource_id'] ?? null;
+                    if ($resourceId && isset($participantLimitMap[$resourceId])) {
+                        $resource['participant_limit'] = $participantLimitMap[$resourceId];
+                    }
+                }
+            }
+        }
+
+        // Now serialize all the results
+        $serializedResults = [];
+        foreach ($results as $entity) {
+            if ($entity instanceof Allocation) {
+                $serializedResults[] = $entity->serialize();
+            } elseif ($entity instanceof Booking) {
+                $serializedResults[] = $entity->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
+            } elseif ($entity instanceof Event) {
+                $serializedResults[] = $entity->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
+            }
+        }
+
+        return $serializedResults;
     }
 
     /**
@@ -987,16 +1026,12 @@ class ScheduleEntityService
     }
 
     /**
-     * Get all resources for an organization, optionally filtered by building
-     * @param int $organization_id The organization ID
-     * @param int|null $building_id Optional building filter
-     * @return array Array of resources
-     * @throws Exception
+     * Get basic resource data for an organization (used for getting resource IDs)
      */
-    private function getResourcesForOrganization(int $organization_id, ?int $building_id = null): array
+    private function getResourcesForOrganizationData(int $organization_id, ?int $building_id = null): array
     {
         try {
-            $sql = "SELECT DISTINCT r.*, a.name as activity_name, br.building_id
+            $sql = "SELECT DISTINCT r.id, r.name, a.name as activity_name, br.building_id
                     FROM bb_resource r
                     JOIN bb_building_resource br ON r.id = br.resource_id
                     LEFT JOIN bb_activity a ON r.activity_id = a.id

@@ -332,7 +332,7 @@
 							</div>
 						</div>
 					</li>
-					
+
 					<!-- Modern recurring allocation button for applications with recurring data -->
 					<xsl:if test="show_recurring_button = 1">
 						<li class="list-inline-item mb-2">
@@ -416,11 +416,12 @@
 
 				<div class="row mt-3">
 					<div class="d-flex w-100 justify-content-between">
-						<p class="mb-1">
+						<h5 class="mb-1">
 							<xsl:value-of select="php:function('lang', 'case officer')" />
-						</p>
+						</h5>
+						<small></small>
 					</div>
-					<div class="d-flex w-100">
+					<p class="mb-1 font-weight-bold">
 						<xsl:choose>
 							<xsl:when test="application/case_officer_full_name !=''">
 								<xsl:value-of select="application/case_officer_full_name"/>
@@ -429,7 +430,7 @@
 								<xsl:value-of select="php:function('lang', 'none')" />
 							</xsl:otherwise>
 						</xsl:choose>
-					</div>
+					</p>
 					<div class="d-flex w-100">
 						<xsl:choose>
 							<xsl:when test="not(application/case_officer)">
@@ -508,46 +509,57 @@
 								<!-- Show related applications summary if multiple applications -->
 								<xsl:if test="application/related_application_count > 1">
 									<div class="alert alert-info mb-4">
-										<h5 class="alert-heading">
+										<h5 class="alert-heading pb-2">
 											<i class="fas fa-info-circle me-2"></i>
-											<xsl:value-of select="php:function('lang', 'Combined Applications Summary')" />
+											<xsl:value-of select="php:function('lang', 'combined_application')" />
+											<span class="badge bg-primary text-white ms-2">
+												<xsl:value-of select="application/related_application_count"/>
+											</span>
 										</h5>
-										<p class="mb-3">
-											<xsl:value-of select="php:function('lang', 'This view combines information from')" />
-											<xsl:text> </xsl:text>
-											<strong><xsl:value-of select="application/related_application_count"/></strong>
-											<xsl:text> </xsl:text>
-											<xsl:value-of select="php:function('lang', 'related applications')" />:
-										</p>
+
 										<div class="row">
 											<xsl:for-each select="application/related_applications_info">
 												<div class="col-md-6 mb-3">
 													<div class="card border-light">
 														<div class="card-body p-3">
 															<h6 class="card-title">
+																<strong><xsl:value-of select="name"/></strong>
+															</h6>
+															<p class="card-text mb-2">
 																<strong>
 																	<xsl:value-of select="php:function('lang', 'Application')" />
 																	<xsl:text> #</xsl:text>
 																	<xsl:value-of select="id"/>
 																</strong>
-															</h6>
-															<p class="card-text mb-2">
-																<strong><xsl:value-of select="name"/></strong>
+															</p>
+															<p class="card-text mb-1">
+																<small><strong><xsl:value-of select="php:function('lang', 'Status')" />:</strong></small>
 															</p>
 															<p class="card-text mb-2">
-																<small class="text-muted">
-																	<xsl:value-of select="php:function('lang', 'Status')" />:
-																	<span class="badge bg-primary text-white"><xsl:value-of select="php:function('lang', string(status))"/></span>
-																</small>
+																<small><span class="badge bg-primary text-white"><xsl:value-of select="php:function('lang', string(status))"/></span></small>
+															</p>
+															<p class="card-text mb-1">
+																<small><strong><xsl:value-of select="php:function('lang', 'Created')" />:</strong></small>
 															</p>
 															<p class="card-text mb-2">
-																<small class="text-muted">
-																	<xsl:value-of select="php:function('lang', 'Created')" />: <xsl:value-of select="created"/>
-																</small>
+																<small><xsl:value-of select="created"/></small>
 															</p>
+															<xsl:if test="agegroups">
+																<xsl:variable name="total_male" select="sum(agegroups/male)"/>
+																<xsl:variable name="total_female" select="sum(agegroups/female)"/>
+																<xsl:variable name="total_participants" select="$total_male + $total_female"/>
+																<xsl:if test="$total_participants > 0">
+																	<p class="card-text mb-1">
+																		<small><strong><xsl:value-of select="php:function('lang', 'participants')" />:</strong></small>
+																	</p>
+																	<p class="card-text mb-2">
+																		<small><xsl:value-of select="$total_participants"/></small>
+																	</p>
+																</xsl:if>
+															</xsl:if>
 															<xsl:if test="date_ranges">
 																<p class="card-text mb-1">
-																	<small><strong><xsl:value-of select="php:function('lang', 'Dates')" />:</strong></small>
+																	<small><strong><xsl:value-of select="php:function('lang', 'timeslots')" />:</strong></small>
 																</p>
 																<ul class="list-unstyled mb-2">
 																	<xsl:for-each select="date_ranges">
@@ -826,52 +838,80 @@
 															<small></small>
 														</div>
 														<div class="list-group-item flex-column align-items-start">
-															<div class="d-flex w-100 justify-content-between">
-																<h5 class="mb-1">
-																	<xsl:value-of select="php:function('lang', 'Number of participants')" />
-																</h5>
-																<small></small>
-															</div>
-															<p class="mb-1 font-weight-bold">
-																<div class="pure-form-contentTable">
-																	<table id="agegroup" class="pure-table pure-table-striped">
-																		<thead>
-																			<tr>
-																				<th>
-																					<xsl:value-of select="php:function('lang', 'Name')" />
-																				</th>
-																				<th>
-																					<xsl:value-of select="php:function('lang', 'Male')" />
-																				</th>
-																				<th>
-																					<xsl:value-of select="php:function('lang', 'Female')" />
-																				</th>
-																			</tr>
-																		</thead>
-																		<tbody>
-																			<xsl:for-each select="agegroups">
-																				<xsl:variable name="id">
-																					<xsl:value-of select="id"/>
-																				</xsl:variable>
 
-																				<xsl:if test="(../application/agegroups/male[../agegroup_id = $id]) > 0 or (../application/agegroups/female[../agegroup_id = $id]) > 0">
-																					<tr>
-																						<td>
+															<xsl:choose>
+																<!-- Show individual application participants if multiple applications -->
+																<xsl:when test="application/related_application_count > 1">
+																	<xsl:for-each select="application/related_applications_info">
+																		<xsl:if test="agegroups">
+																				<div class="card-body">
+																					<h6 class="card-title">
+																						<strong>
 																							<xsl:value-of select="name"/>
-																						</td>
-																						<td>
-																							<xsl:value-of select="../application/agegroups/male[../agegroup_id = $id]"/>
-																						</td>
-																						<td>
-																							<xsl:value-of select="../application/agegroups/female[../agegroup_id = $id]"/>
-																						</td>
+																							<xsl:text> (#</xsl:text>
+																							<xsl:value-of select="id"/>
+																							<xsl:text>)</xsl:text>
+																						</strong>
+																					</h6>
+																					<div class="pure-form-contentTable">
+																						<table class="pure-table pure-table-striped">
+																							<thead>
+																								<tr>
+																									<th><xsl:value-of select="php:function('lang', 'Name')" /></th>
+																									<th><xsl:value-of select="php:function('lang', 'participants')" /></th>
+																								</tr>
+																							</thead>
+																							<tbody>
+																								<xsl:for-each select="agegroups">
+																									<xsl:variable name="total" select="male + female"/>
+																									<xsl:variable name="current_agegroup_id" select="agegroup_id"/>
+																									<xsl:if test="$total > 0">
+																										<tr>
+																											<td>
+																												<xsl:value-of select="//agegroups[id = $current_agegroup_id]/name"/>
+																											</td>
+																											<td><xsl:value-of select="$total"/></td>
+																										</tr>
+																									</xsl:if>
+																								</xsl:for-each>
+																							</tbody>
+																						</table>
+																					</div>
+																			</div>
+																		</xsl:if>
+																	</xsl:for-each>
+																</xsl:when>
+																<!-- Show combined participants for single application -->
+																<xsl:otherwise>
+																	<p class="mb-1 font-weight-bold">
+																		<div class="pure-form-contentTable">
+																			<table id="agegroup" class="pure-table pure-table-striped">
+																				<thead>
+																					<tr>
+																						<th><xsl:value-of select="php:function('lang', 'Name')" /></th>
+																						<th><xsl:value-of select="php:function('lang', 'Male')" /></th>
+																						<th><xsl:value-of select="php:function('lang', 'Female')" /></th>
 																					</tr>
-																				</xsl:if>
-																			</xsl:for-each>
-																		</tbody>
-																	</table>
-																</div>
-															</p>
+																				</thead>
+																				<tbody>
+																					<xsl:for-each select="agegroups">
+																						<xsl:variable name="id">
+																							<xsl:value-of select="id"/>
+																						</xsl:variable>
+																						<xsl:if test="(../application/agegroups/male[../agegroup_id = $id]) > 0 or (../application/agegroups/female[../agegroup_id = $id]) > 0">
+																							<tr>
+																								<td><xsl:value-of select="name"/></td>
+																								<td><xsl:value-of select="../application/agegroups/male[../agegroup_id = $id]"/></td>
+																								<td><xsl:value-of select="../application/agegroups/female[../agegroup_id = $id]"/></td>
+																							</tr>
+																						</xsl:if>
+																					</xsl:for-each>
+																				</tbody>
+																			</table>
+																		</div>
+																	</p>
+																</xsl:otherwise>
+															</xsl:choose>
 															<small></small>
 														</div>
 													</div>
@@ -1092,12 +1132,15 @@
 																				<xsl:value-of select="php:function('lang', 'Application')" />:</label>
 																			<span style="font-weight: bold;">
 																				<xsl:value-of select="application_name"/>
+																				<xsl:text> (#</xsl:text>
+																				<xsl:value-of select="application_id"/>
+																				<xsl:text>)</xsl:text>
 																			</span>
 																		</div>
 																	</xsl:if>
 																	<div class="pure-control-group">
 																		<label style="font-weight: bold;">
-																			<xsl:value-of select="php:function('lang', 'time_period')" />:</label>
+																			<xsl:value-of select="php:function('lang', 'timeslot')" />:</label>
 																		<span>
 																			<xsl:value-of select="php:function('pretty_timestamp', from_)"/>
 																			<xsl:text> - </xsl:text>
@@ -1787,7 +1830,7 @@
 							This combined application contains <xsl:value-of select="count(related_applications)"/> related applications.
 							Choose which one you want to edit:
 						</p>
-						
+
 						<div class="row">
 							<xsl:for-each select="related_applications">
 								<div class="col-md-6 mb-3">
@@ -1798,7 +1841,7 @@
 												<xsl:text> border-danger</xsl:text>
 											</xsl:if>
 										</xsl:attribute>
-										
+
 										<div class="card-body">
 											<div class="d-flex justify-content-between align-items-start mb-2">
 												<h6 class="card-title mb-0">
@@ -1821,7 +1864,7 @@
 													<xsl:value-of select="status"/>
 												</span>
 											</div>
-											
+
 											<small class="text-muted">
 												<strong>ID:</strong> <xsl:value-of select="id"/><br/>
 												<strong>Created:</strong> <xsl:value-of select="created"/><br/>
@@ -1832,7 +1875,7 @@
 													<strong>Resources:</strong> <xsl:value-of select="resources"/>
 												</xsl:if>
 											</small>
-											
+
 											<a class="btn btn-primary btn-sm mt-2">
 												<xsl:attribute name="href">
 													<xsl:value-of select="../application/edit_link"/>
@@ -1855,7 +1898,7 @@
 				</div>
 			</div>
 		</div>
-		
+
 		<style>
 			.application-selection-card {
 				transition: transform 0.2s, box-shadow 0.2s;

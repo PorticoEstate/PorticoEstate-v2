@@ -3622,7 +3622,7 @@ class booking_uiapplication extends booking_uicommon
 
 		// Check if we should open the approve modal after allocation creation
 		$open_approve_modal = Sanitizer::get_var('open_approve_modal', 'int', 'GET', 0);
-		
+
 		// Check if we should show recurring allocation summary after approval
 		$show_recurring_summary = Sanitizer::get_var('show_recurring_summary', 'int', 'GET', 0);
 		$recurring_approval_summary = null;
@@ -3631,7 +3631,7 @@ class booking_uiapplication extends booking_uicommon
 			// Clear from session after retrieving
 			Cache::session_clear('booking', 'recurring_approval_summary');
 		}
-		
+
 		$application = $this->bo->read_single($id);
 
 		if (!$application)
@@ -3685,6 +3685,7 @@ class booking_uiapplication extends booking_uicommon
 						'id' => $date['id'],
 						'resources' => $app['resources'], // Keep original resources for this specific application
 						'application_ids' => array($app_id),
+						'application_id' => $app_id, // Add direct application_id for easier template access
 						'application_name' => $app['name'], // Add application name for potential display
 						'equipment' => $app['equipment'] // Add equipment for display
 					);
@@ -3738,7 +3739,8 @@ class booking_uiapplication extends booking_uicommon
 					'resource_names' => is_array($resource_names) ? $resource_names : array(),
 					'created' => pretty_timestamp($app['created']),
 					'equipment' => $app['equipment'],
-					'description' => $app['description']
+					'description' => $app['description'],
+					'agegroups' => !empty($app['agegroups']) ? $app['agegroups'] : array()
 				);
 			}
 		}
@@ -4427,7 +4429,35 @@ JS;
 			}
 
 		}
-
+//		_debug_array(array(
+//			'application'		 => $application,
+//			'organization'		 => $organization,
+//			'audience'			 => $audience,
+//			'agegroups'			 => $agegroups,
+//			'num_associations'	 => $num_associations,
+//			'assoc'				 => $from,
+//			'collision'			 => $collision_dates,
+//			'comments'			 => $comments,
+//			'simple'			 => $simple,
+//			'config'			 => $config,
+//			'export_pdf_action'	 => self::link(array('menuaction' => 'booking.uiapplication.export_pdf', 'id' => $application['id'])),
+//			'external_archive'	 => !empty($this->userSettings['preferences']['common']['archive_user_id']) ? $external_archive : '',
+//			'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
+//			'internal_notes'	 => $internal_notes,
+//			'show_edit_selection' => $show_edit_selection,
+//			'related_applications' => $related_applications,
+//			'show_recurring_button' => $show_recurring_button,
+//			'recurring_allocation_url' => $recurring_allocation_url,
+//			'recurring_data' => $recurring_data,
+//			'recurring_preview' => $recurring_preview,
+//			'season_info' => $season_info,
+//			'create_button_text' => $create_button_text,
+//			'create_button_count' => $create_button_count,
+//			'has_conflicts' => $has_conflicts,
+//			'open_approve_modal' => $open_approve_modal,
+//			'show_recurring_summary' => $show_recurring_summary,
+//			'recurring_approval_summary' => $recurring_approval_summary
+//		));
 		self::render_template_xsl(
 			$template_name,
 			array(
@@ -5050,7 +5080,7 @@ JS;
 				continue;
 			}
 
-			// Skip if there are conflicts 
+			// Skip if there are conflicts
 			if ($preview_item['has_conflict']) {
 				$summary['failed'][] = array(
 					'date' => $preview_item['date_display'],

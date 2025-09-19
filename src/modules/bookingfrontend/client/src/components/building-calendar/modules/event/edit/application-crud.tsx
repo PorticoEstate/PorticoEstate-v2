@@ -154,65 +154,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const participantsSectionRef = useRef<HTMLDivElement>(null);
 	const {data: serverSettings} = useServerSettings();
 
-	// Calculate time boundaries for start time
-	const [startMinTime, startMaxTime] = useMemo(() => {
-		return getTimeBoundariesForDate(startTime);
-	}, [getTimeBoundariesForDate, startTime]);
 
-	// Calculate time boundaries for end time
-	const [endMinTime, endMaxTime] = useMemo(() => {
-		return getTimeBoundariesForDate(endTime);
-	}, [getTimeBoundariesForDate, endTime]);
-
-	// Helper function to calculate min/max times based on seasons and resources
-	const calculateMinMaxTimes = useCallback((resourceIds: string[] = []) => {
-		let minTime = '24:00:00';
-		let maxTime = '00:00:00';
-		if (!props.seasons) {
-			return ['00:00:00', '24:00:00']
-		}
-
-		// Get currently active seasons that match selected resources
-		const now = DateTime.now();
-		const activeSeasons = props.seasons?.filter(season => {
-			const seasonStart = DateTime.fromISO(season.from_);
-			const seasonEnd = DateTime.fromISO(season.to_);
-
-			// Check if season has any resources that match selected resources
-			const hasMatchingResources = resourceIds.length === 0 ||
-				season.resources.some(seasonResource =>
-					resourceIds.includes(seasonResource.id.toString())
-				);
-
-			return season.active && now >= seasonStart && now <= seasonEnd && hasMatchingResources;
-		});
-
-		// Check all boundaries from active seasons
-		activeSeasons?.forEach(season => {
-			season.boundaries.forEach(boundary => {
-				if (boundary.from_ < minTime) minTime = boundary.from_;
-				if (boundary.to_ > maxTime) maxTime = boundary.to_;
-			});
-		});
-
-		// Set default values if no valid times found
-		// For min time, use the earliest boundary time or default to 6am
-		const effectiveMinTime = minTime === '24:00:00' ? '06:00:00' : minTime;
-
-		// For max time, check if the calculated time is very late (23:45 or later)
-		// If so, extend it to midnight (24:00). Otherwise respect the boundary.
-		// This ensures consistency with calendar view behavior.
-		const effectiveMaxTime =
-			maxTime === '00:00:00' || // No boundaries found
-			maxTime >= '23:45:00'     // Season closes very late
-				? '24:00:00'          // Allow until midnight
-				: maxTime;            // Otherwise respect the boundary
-
-		return [effectiveMinTime, effectiveMaxTime];
-	}, [props.seasons]);
-
-	// Initial calculation with empty resources for form setup
-	const [initialMinTime, initialMaxTime] = calculateMinMaxTimes([]);
 
 	const isWithinBusinessHours = useCallback((date: Date, resourceIds: string[] = []): boolean => {
 		if (!props.seasons) {
@@ -502,7 +444,6 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const endTime = watch('end');
 	const isRecurring = watch('isRecurring');
 	const outseason = watch('recurring_info.outseason');
-
 	// Function to find the current season based on start/end time
 	const getCurrentSeason = useCallback(() => {
 		if (!props.seasons || !startTime) return null;
@@ -588,15 +529,6 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	}, [props.seasons]);
 
 
-	// Calculate time boundaries for start time
-	const [startMinTime, startMaxTime] = useMemo(() => {
-		return getTimeBoundariesForDate(startTime, selectedResources || []);
-	}, [getTimeBoundariesForDate, startTime, selectedResources]);
-
-	// Calculate time boundaries for end time
-	const [endMinTime, endMaxTime] = useMemo(() => {
-		return getTimeBoundariesForDate(endTime, selectedResources || []);
-	}, [getTimeBoundariesForDate, endTime, selectedResources]);
 
 	// Scroll to participant counts error if it exists after form submission
 	useEffect(() => {
@@ -672,11 +604,15 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 	const selectedResources = watch('resources');
 
-	// Reactive min/max times based on selected resources
-	const [minTime, maxTime] = useMemo(() => {
-		return calculateMinMaxTimes(selectedResources || []);
-	}, [calculateMinMaxTimes, selectedResources]);
+	// Calculate time boundaries for start time
+	const [startMinTime, startMaxTime] = useMemo(() => {
+		return getTimeBoundariesForDate(startTime, selectedResources || []);
+	}, [getTimeBoundariesForDate, startTime, selectedResources]);
 
+	// Calculate time boundaries for end time
+	const [endMinTime, endMaxTime] = useMemo(() => {
+		return getTimeBoundariesForDate(endTime, selectedResources || []);
+	}, [getTimeBoundariesForDate, endTime, selectedResources]);
 
 	// Add useEffect to check times when they change
 	useEffect(() => {
@@ -1291,8 +1227,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											view={'timeGridDay'}
 											showTimeSelect
 											onDateChange={onChange}
-											minTime={startMinTime || initialStartMinTime}
-											maxTime={startMaxTime || initialStartMaxTime}
+											minTime={startMinTime}
+											maxTime={startMaxTime}
 											allowPastDates={existingApplication !== undefined}
 											showDebug={props.showDebug || isDevMode()}
 											seasons={props.seasons}
@@ -1323,8 +1259,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											view={'timeGridDay'}
 											showTimeSelect
 											onDateChange={onChange}
-											minTime={endMinTime || initialEndMinTime}
-											maxTime={endMaxTime || initialEndMaxTime}
+											minTime={endMinTime}
+											maxTime={endMaxTime}
 											allowPastDates={existingApplication !== undefined}
 											showDebug={props.showDebug || isDevMode()}
 											seasons={props.seasons}

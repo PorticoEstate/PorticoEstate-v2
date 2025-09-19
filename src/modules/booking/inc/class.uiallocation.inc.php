@@ -776,7 +776,15 @@
 			self::add_javascript('booking', 'base', 'allocation.js');
 
 			$allocation['resources_json'] = json_encode(array_map('intval', $allocation['resources']));
-			$allocation['cancel_link'] = self::link(array('menuaction' => 'booking.uiallocation.index'));
+
+			// Check if this came from a recurring application - if so, route back to application
+			$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+			if ($recurring_app_id) {
+				$allocation['cancel_link'] = self::link(array('menuaction' => 'booking.uiapplication.show', 'id' => $recurring_app_id));
+			} else {
+				$allocation['cancel_link'] = self::link(array('menuaction' => 'booking.uiallocation.index'));
+			}
+
 			array_set_default($allocation, 'cost', '0');
 
 //			$_timeFrom = $timeFrom ? $timeFrom : '';

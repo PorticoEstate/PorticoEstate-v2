@@ -869,3 +869,6 @@ send_email_to_applicant	booking	en	Send email to applicant
 confirm_approve_after_allocation	booking	en	Allocations have been created. Do you want to approve this application now?
 allocations_cannot_be_created_conflicts	booking	en	Allocations that cannot be created due to conflicts
 recurring_allocations_summary	booking	en	Recurring Allocations Summary
+combined_application	booking	en	Combined Application
+timeslots	booking	en	Time slots
+timeslot	booking	en	Time slot

@@ -978,3 +978,6 @@ send_email_to_applicant	booking	nn	Send e-post til søkjar
 confirm_approve_after_allocation	booking	nn	Tildelingar er oppretta. Vil du godkjenne denne søknaden no?
 allocations_cannot_be_created_conflicts	booking	nn	Tildelingar som ikkje kan opprettast grunna konfliktar
 recurring_allocations_summary	booking	nn	Samandrag av gjentakande tildelingar
+combined_application	booking	nn	Kombinert søknad
+timeslots	booking	nn	Tidsrom
+timeslot	booking	nn	Tidsrom

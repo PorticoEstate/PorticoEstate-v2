@@ -167,6 +167,28 @@ public $created_at;
 
 If no format is specified, defaults to ISO 8601 format ("c").
 
+### @ParseBool
+Automatically converts string boolean values to actual booleans.
+
+```php
+/**
+ * @Expose
+ * @ParseBool
+ */
+public $isActive; // "true", "yes", "1" -> true; "false", "no", "0" -> false
+```
+
+### @ParseInt
+Automatically converts string values to integers.
+
+```php
+/**
+ * @Expose
+ * @ParseInt
+ */
+public $count; // "123" -> 123; "" or non-numeric -> null
+```
+
 ## Conditional Exposure
 
 The @Expose decorator supports complex conditions to control when properties are exposed:

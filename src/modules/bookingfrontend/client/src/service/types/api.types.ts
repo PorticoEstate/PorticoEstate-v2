@@ -193,6 +193,7 @@ export interface IBookingConfig {
     voucher_client?: string;
     voucher_responsible?: string;
     voucher_type?: string;
+	participant_limit?: number;
 }
 
 

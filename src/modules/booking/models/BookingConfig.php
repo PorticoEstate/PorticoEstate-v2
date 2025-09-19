@@ -427,6 +427,13 @@ class BookingConfig
     /**
      * @OA\Property(type="string")
 	 * @Expose
+	 * @ParseInt
+     */
+    public $participant_limit;
+
+    /**
+     * @OA\Property(type="string")
+	 * @Expose
 	 * @ParseBool
      */
     public $user_can_delete_allocations;

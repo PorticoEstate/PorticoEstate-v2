@@ -6,6 +6,7 @@ use App\modules\bookingfrontend\services\ScheduleEntityService;
 use App\modules\phpgwapi\services\Settings;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use PDO;
 
 use Psr\Container\ContainerInterface;
@@ -18,12 +19,14 @@ class ResourceController
 	protected ScheduleEntityService $scheduleEntityService;
 	protected array $userSettings;
 	protected Db $db;
+	protected ResourceRepository $resourceRepository;
 
 	public function __construct(ContainerInterface $container)
 	{
 		$this->scheduleEntityService = new ScheduleEntityService($container);
 		$this->userSettings = Settings::getInstance()->get('user');
 		$this->db = Db::getInstance();
+		$this->resourceRepository = new ResourceRepository();
 	}
 
 	public function index(Request $request, Response $response): Response
@@ -63,11 +66,7 @@ class ResourceController
 			$stmt->execute();
 			$results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-			$resources = array_map(function ($data) use ($short)
-			{
-				$resource = new Resource($data);
-				return $resource->serialize([], $short);
-			}, $results);
+			$resources = $this->resourceRepository->createAndSerialize($results, [], $short);
 
 			$totalCount = $this->getTotalCount();
 

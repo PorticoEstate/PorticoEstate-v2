@@ -8,6 +8,7 @@ use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
@@ -18,12 +19,14 @@ class ApplicationRepository
     private $db;
     private $articleRepository;
     private $userHelper;
+    private $resourceRepository;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->articleRepository = new ArticleRepository();
         $this->userHelper = new UserHelper();
+        $this->resourceRepository = new ResourceRepository();
     }
 
     /**
@@ -842,10 +845,7 @@ class ApplicationRepository
         $stmt->execute([':application_id' => $application_id]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        return array_map(function ($resourceData)
-        {
-            return (new Resource($resourceData))->serialize();
-        }, $results);
+        return $this->resourceRepository->createAndSerialize($results);
     }
 
     /**

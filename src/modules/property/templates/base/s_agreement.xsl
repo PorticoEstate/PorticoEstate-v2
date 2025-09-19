@@ -294,7 +294,7 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
-						<xsl:value-of select="lang_category"/>
+						<xsl:value-of select="lang_category"/> <xsl:text> I</xsl:text>
 					</label>
 					<select id="cat_id" name="values[cat_id]" class="pure-input-3-4">
 						<xsl:attribute name="title">
@@ -357,7 +357,7 @@
 				</xsl:call-template>
 				<div class="pure-control-group">
 					<label>
-						<xsl:value-of select="lang_category"/>
+						<xsl:value-of select="lang_category"/> <xsl:text> II</xsl:text>
 					</label>
 					<xsl:call-template name="categories">
 						<xsl:with-param name="class">pure-input-3-4</xsl:with-param>
@@ -529,34 +529,56 @@
 							</xsl:for-each>
 						</div>
 					</div>
+					<!-- ...existing code... -->
 					<div class="pure-control-group">
 						<xsl:value-of select="alarm_data/add_alarm/lang_add_alarm"/>
 						<xsl:text> : </xsl:text>
-						<xsl:value-of select="alarm_data/add_alarm/lang_day_statustext"/>
-						<xsl:value-of select="alarm_data/add_alarm/lang_hour_statustext"/>
-						<xsl:value-of select="alarm_data/add_alarm/lang_minute_statustext"/>
-						<xsl:value-of select="alarm_data/add_alarm/lang_user"/>
 					</div>
 					<div class="pure-control-group">
 						<!--div id="datatable-buttons_1"/-->
-						<select name="values[alarm_data/add_alarm/day_list]" class="form" title="{lang_days_statustext}" id="day_list">
-							<xsl:apply-templates select="alarm_data/add_alarm/day_list"/>
-						</select>
-                                                                    
-						<select name="values[alarm_data/add_alarm/hour_list]" class="form" title="{alarm_data/add_alarm/lang_hour_statustext}" id="hour_list">
-							<xsl:apply-templates select="alarm_data/add_alarm/hour_list"/>
-						</select>
-                                                                    
-						<select name="values[alarm_data/add_alarm/minute_list]" class="form" title="{alarm_data/add_alarm/lang_minute_statustext}" id="minute_list">
-							<xsl:apply-templates select="alarm_data/add_alarm/minute_list"/>
-						</select>
-                                                                    
-						<select name="values[alarm_data/add_alarm/user_list]" class="form" title="{alarm_data/add_alarm/lang_user}" id="user_list">
-							<xsl:apply-templates select="alarm_data/add_alarm/user_list"/>
-						</select>
-						<input type="hidden" id="agreementid" name="agreementid" value="{value_s_agreement_id}" />
-						<input type="button" name="" value="Add" id="values[add_alarm]" onClick="onAddClick_Alarm('add_alarm');"/>
+						<div style="display: inline-block; margin-right: 10px;">
+							<div style="margin-bottom: 5px;">
+								<xsl:value-of select="alarm_data/add_alarm/lang_day_statustext"/>
+							</div>
+							<select name="values[alarm_data/add_alarm/day_list]" class="pure-button" title="{lang_days_statustext}" id="day_list">
+								<xsl:apply-templates select="alarm_data/add_alarm/day_list"/>
+							</select>
+						</div>
+						
+						<!--div style="display: inline-block; margin-right: 10px;">
+							<div style="margin-bottom: 5px;">
+								<xsl:value-of select="alarm_data/add_alarm/lang_hour_statustext"/>
+							</div>
+							<select name="values[alarm_data/add_alarm/hour_list]" class="pure-button" title="{alarm_data/add_alarm/lang_hour_statustext}" id="hour_list">
+								<xsl:apply-templates select="alarm_data/add_alarm/hour_list"/>
+							</select>
+						</div-->
+						
+						<!--div style="display: inline-block; margin-right: 10px;">
+							<div style="margin-bottom: 5px;">
+								<xsl:value-of select="alarm_data/add_alarm/lang_minute_statustext"/>
+							</div>
+							<select name="values[alarm_data/add_alarm/minute_list]" class="pure-button" title="{alarm_data/add_alarm/lang_minute_statustext}" id="minute_list">
+								<xsl:apply-templates select="alarm_data/add_alarm/minute_list"/>
+							</select>
+						</div-->
+						
+						<div style="display: inline-block; margin-right: 10px;">
+							<div style="margin-bottom: 5px;">
+								<xsl:value-of select="alarm_data/add_alarm/lang_user"/>
+							</div>
+							<select name="values[alarm_data/add_alarm/user_list]" class="pure-button" title="{alarm_data/add_alarm/lang_user}" id="user_list">
+								<xsl:apply-templates select="alarm_data/add_alarm/user_list"/>
+							</select>
+						</div>
+						
+						<div style="display: inline-block;">
+							<div style="margin-bottom: 5px;">&#160;</div> <!-- Spacer for alignment -->
+							<input type="hidden" id="agreementid" name="agreementid" value="{value_s_agreement_id}" />
+							<input type="button" name="" value="Add" id="values[add_alarm]" onClick="onAddClick_Alarm('add_alarm');" class="pure-button"/>
+						</div>
 					</div>
+					<!-- ...existing code... -->
 				</fieldset>
 			</form>
 		</div>
@@ -707,10 +729,10 @@
 	</xsl:variable>
 
 	<script type="text/javascript">
-		$('#b_account_id').attr("data-validation","budget").attr("data-validation-error-msg", "<xsl:value-of select="$lang_budget_validation" />");
-		$('#field_ecodimb').attr("data-validation","budget").attr("data-validation-error-msg", "<xsl:value-of select="$lang_budget_validation" />");
-		$('#global_category_id').attr("data-validation","budget").attr("data-validation-error-msg", "<xsl:value-of select="$lang_budget_validation" />");
-		$('#field_budget').attr("data-validation","budget").attr("data-validation-error-msg", "<xsl:value-of select="$lang_budget_validation" />");
+		$('#b_account_id').attr("data-validation","required").attr("data-validation-error-msg", "Art");
+		$('#field_ecodimb').attr("data-validation","required").attr("data-validation-error-msg", "Ansvarssted");
+		$('#global_category_id').attr("data-validation","required").attr("data-validation-error-msg", "Kategori");
+		$('#field_budget').attr("data-validation","required").attr("data-validation-error-msg", "Budsjett");
 
 	</script>
 
@@ -723,13 +745,12 @@
 		<xsl:value-of select="lookup_functions"/>
 	</script>
 	<script type="text/javascript">
-		var property_js = <xsl:value-of select="property_js"/>;
 		var base_java_url = <xsl:value-of select="base_java_url"/>;
 		var datatable = new Array();
 		var myColumnDefs = new Array();
 		var myButtons = new Array();
 
-		<xsl:for-each select="datatable">
+		<!--xsl:for-each select="datatable">
 			datatable[<xsl:value-of select="name"/>] = [
 			{
 			values:<xsl:value-of select="values"/>,
@@ -739,7 +760,7 @@
 			footer:<xsl:value-of select="footer"/>
 			}
 			]
-		</xsl:for-each>
+		</xsl:for-each-->
 
 		<xsl:for-each select="myColumnDefs">
 			myColumnDefs[<xsl:value-of select="name"/>] = <xsl:value-of select="values"/>
@@ -812,30 +833,24 @@
 						<xsl:value-of select="lang_save"/>
 					</xsl:variable>
 					<input type="submit" class="pure-button pure-button-primary" name="values[save]" value="{$lang_save}">
-						<xsl:attribute name="onMouseover">
-							<xsl:text>window.status='</xsl:text>
+						<xsl:attribute name="title">
 							<xsl:value-of select="lang_save_statustext"/>
-							<xsl:text>'; return true;</xsl:text>
 						</xsl:attribute>
 					</input>
 					<xsl:variable name="lang_apply">
 						<xsl:value-of select="lang_apply"/>
 					</xsl:variable>
 					<input type="submit" class="pure-button pure-button-primary" name="values[apply]" value="{$lang_apply}">
-						<xsl:attribute name="onMouseover">
-							<xsl:text>window.status='</xsl:text>
+						<xsl:attribute name="title">
 							<xsl:value-of select="lang_apply_statustext"/>
-							<xsl:text>'; return true;</xsl:text>
 						</xsl:attribute>
 					</input>
 					<xsl:variable name="lang_cancel">
 						<xsl:value-of select="lang_cancel"/>
 					</xsl:variable>
 					<input type="submit"  class="pure-button pure-button-primary" name="values[cancel]" value="{$lang_cancel}">
-						<xsl:attribute name="onMouseover">
-							<xsl:text>window.status='</xsl:text>
+						<xsl:attribute name="title">
 							<xsl:value-of select="lang_cancel_statustext"/>
-							<xsl:text>'; return true;</xsl:text>
 						</xsl:attribute>
 					</input>
 				</div>

@@ -170,7 +170,10 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}
 
 		// Set default values if no valid times found
-		setSlotMinTime(minTime === "24:00:00" ? '00:00:00' : minTime);
+		const finalMinTime = minTime === "24:00:00" ? '00:00:00' : minTime;
+		// Round down to the nearest full hour
+		const minHour = Math.floor(parseInt(finalMinTime.split(':')[0]));
+		setSlotMinTime(`${minHour.toString().padStart(2, '0')}:00:00`);
 
 		// For max time, check if the calculated time is very late (23:45 or later)
 		// If so, extend it to the end of day (24:00). Otherwise respect the boundary.

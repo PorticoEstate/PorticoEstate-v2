@@ -1424,7 +1424,7 @@
 						'service'	 => array
 							(
 							'url'	 => phpgw::link('/index.php', array('menuaction' => 'property.uis_agreement.index')),
-							'text'	 => lang('Service')
+							'text'	 => lang('service agreement')
 						),
 						'alarm'		 => array
 							(

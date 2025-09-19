@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\controllers;
 
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -22,12 +23,14 @@ class ResourceController extends DocumentController
 {
     private $db;
     private $userSettings;
+    private $resourceRepository;
 
     public function __construct(ContainerInterface $container)
     {
         parent::__construct(Document::OWNER_RESOURCE);
         $this->db = Db::getInstance();
         $this->userSettings = Settings::getInstance()->get('user');
+        $this->resourceRepository = new ResourceRepository();
     }
 
     private function getUserRoles()
@@ -144,11 +147,7 @@ class ResourceController extends DocumentController
             $stmt->execute();
             $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            $resources = array_map(function ($data) use ($short)
-            {
-                $resource = new Resource($data);
-                return $resource->serialize($this->getUserRoles(), $short);
-            }, $results);
+            $resources = $this->resourceRepository->createAndSerialize($results, $this->getUserRoles(), $short);
 
             $totalCount = $this->getTotalCount();
 
@@ -229,7 +228,7 @@ class ResourceController extends DocumentController
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
             }
 
-            $resource = new Resource($result);
+            $resource = $this->resourceRepository->createResource($result);
             $serializedResource = $resource->serialize($this->getUserRoles());
 
             $response->getBody()->write(json_encode($serializedResource));
@@ -376,11 +375,7 @@ class ResourceController extends DocumentController
             $stmt->execute();
             $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            $resources = array_map(function ($data) use ($short)
-            {
-                $resource = new Resource($data);
-                return $resource->serialize($this->getUserRoles(), $short);
-            }, $results);
+            $resources = $this->resourceRepository->createAndSerialize($results, $this->getUserRoles(), $short);
 
             $totalCount = $this->getTotalCountByBuilding($buildingId);
 

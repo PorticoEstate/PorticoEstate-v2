@@ -872,3 +872,8 @@ recurring_allocations_summary	booking	en	Recurring Allocations Summary
 combined_application	booking	en	Combined Application
 timeslots	booking	en	Time slots
 timeslot	booking	en	Time slot
+confirm_application_approval	booking	en	Confirm application approval
+approval_description	booking	en	You are about to approve this application. The organizer will receive an email with a summary and any comment you add here.
+comment_to_organizer	booking	en	Comment to organizer
+comment_placeholder	booking	en	Write a brief message to the organizer about the approval, e.g. practical information or important clarifications. The message will be included in the summary.
+send_email_organizer_summary	booking	en	Send email to organizer with summary and comment

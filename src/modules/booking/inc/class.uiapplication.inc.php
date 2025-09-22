@@ -129,6 +129,15 @@ class booking_uiapplication extends booking_uicommon
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 	}
 
+	/**
+	 * Get the combine_applications setting
+	 * @return bool
+	 */
+	public function get_combine_applications()
+	{
+		return $this->combine_applications;
+	}
+
 	public function get_applications()
 	{
 		if (!$this->acl->check('.application', ACL_READ, 'booking'))
@@ -3625,12 +3634,6 @@ class booking_uiapplication extends booking_uicommon
 
 		// Check if we should show recurring allocation summary after approval
 		$show_recurring_summary = Sanitizer::get_var('show_recurring_summary', 'int', 'GET', 0);
-		$recurring_approval_summary = null;
-		if ($show_recurring_summary) {
-			$recurring_approval_summary = Cache::session_get('booking', 'recurring_approval_summary');
-			// Clear from session after retrieving
-			Cache::session_clear('booking', 'recurring_approval_summary');
-		}
 
 		$application = $this->bo->read_single($id);
 
@@ -4130,10 +4133,9 @@ class booking_uiapplication extends booking_uicommon
 
 			// Add recurring summary to redirect if it exists
 			$redirect_params = array('menuaction' => $this->url_prefix . '.show', 'id' => $application['id'], 'return_after_action' => $return_after_action);
-			if (isset($recurring_summary) && $recurring_summary)
+			if (!empty($application['recurring_info']))
 			{
-				// Store summary in session and add flag to show modal
-				Cache::session_set('booking', 'recurring_approval_summary', $recurring_summary);
+				// Show modal with the existing recurring preview data
 				$redirect_params['show_recurring_summary'] = 1;
 			}
 
@@ -4486,8 +4488,7 @@ JS;
 				'create_button_count' => $create_button_count,
 				'has_conflicts' => $has_conflicts,
 				'open_approve_modal' => $open_approve_modal,
-				'show_recurring_summary' => $show_recurring_summary,
-				'recurring_approval_summary' => $recurring_approval_summary
+				'show_recurring_summary' => $show_recurring_summary
 			)
 		);
 	}

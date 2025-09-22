@@ -969,3 +969,8 @@ recurring_allocations_summary	booking	no	Sammendrag av gjentakende tildelinger
 combined_application	booking	no	Kombinert søknad
 timeslots	booking	no	Tidsrom
 timeslot	booking	no	Tidsrom
+confirm_application_approval	booking	no	Bekreft godkjenning av søknad
+approval_description	booking	no	Du er i ferd med å godkjenne denne søknaden. Arrangøren får en e-post med oppsummering og eventuell kommentar du legger til her.
+comment_to_organizer	booking	no	Kommentar til arrangør
+comment_placeholder	booking	no	Skriv en kort melding til arrangøren om godkjenning, f.eks. praktisk info eller viktige avklaringer. Meldingen legges ved oppsummeringen.
+send_email_organizer_summary	booking	no	Send e-post til arrangør med oppsummering og kommentar

@@ -1105,6 +1105,7 @@ class property_soagreement
 		$this->db->query($sql);
 
 		$activity_list = array();
+		$activity_list_result = array();
 		while ($this->db->next_record())
 		{
 			$activity_list[$this->db->f('id')] = array(

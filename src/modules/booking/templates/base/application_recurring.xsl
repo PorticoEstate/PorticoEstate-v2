@@ -1291,7 +1291,7 @@
 			</table>
 		</div>
 
-		<xsl:if test="count(recurring_preview/*) = 0">
+		<xsl:if test="not(recurring_preview/*)">
 			<div class="text-center text-muted py-4">
 				<i class="fas fa-calendar-times fa-3x mb-3 text-muted"></i>
 				<p class="mb-0">Ingen gjentakende tildelinger funnet</p>
@@ -2008,7 +2008,7 @@
 	</xsl:if>
 
 	<!-- Recurring Approval Summary Modal -->
-	<xsl:if test="show_recurring_summary = '1' and recurring_approval_summary">
+	<xsl:if test="show_recurring_summary = '1' and recurring_preview">
 		<div class="modal fade" id="recurringApprovalSummaryModal" tabindex="-1" role="dialog" aria-labelledby="recurringApprovalSummaryModalLabel" aria-hidden="true">
 			<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
 				<div class="modal-content">
@@ -2038,9 +2038,9 @@
 								<div class="card bg-light text-center">
 									<div class="card-body">
 										<h3 class="text-success mb-1">
-											<xsl:value-of select="count(recurring_approval_summary/created/*)"/>
+											<xsl:value-of select="count(recurring_preview/*[exists = 1])"/>
 										</h3>
-										<small class="text-muted">Opprettet</small>
+										<small class="text-muted"><xsl:value-of select="php:function('lang', 'created')" /></small>
 									</div>
 								</div>
 							</div>
@@ -2048,7 +2048,7 @@
 								<div class="card bg-light text-center">
 									<div class="card-body">
 										<h3 class="text-warning mb-1">
-											<xsl:value-of select="count(recurring_approval_summary/failed/*)"/>
+											<xsl:value-of select="count(recurring_preview/*[has_conflict = 1 or (exists != 1 and not(has_conflict = 1))])"/>
 										</h3>
 										<small class="text-muted">Feilet</small>
 									</div>
@@ -2058,7 +2058,7 @@
 								<div class="card bg-light text-center">
 									<div class="card-body">
 										<h3 class="text-primary mb-1">
-											<xsl:value-of select="recurring_approval_summary/total_attempted"/>
+											<xsl:value-of select="count(recurring_preview/*)"/>
 										</h3>
 										<small class="text-muted">Totalt</small>
 									</div>
@@ -2067,75 +2067,95 @@
 						</div>
 
 						<!-- Successfully Created Allocations -->
-						<xsl:if test="count(recurring_approval_summary/created/*) > 0">
-							<div class="mb-4">
-								<h6 class="text-success mb-3">
-									<i class="fas fa-check-circle me-2"></i>
-									Opprettede tildelinger (<xsl:value-of select="count(recurring_approval_summary/created/*)"/>)
-								</h6>
-								<div class="table-responsive">
-									<table class="table table-sm">
-										<thead class="table-success">
+						<div class="mb-4">
+							<h6 class="text-success mb-3">
+								<i class="fas fa-check-circle me-2"></i>
+								Opprettede tildelinger (<xsl:value-of select="count(recurring_preview/*[exists = 1])"/>)
+							</h6>
+							<div class="table-responsive">
+								<table class="table table-sm">
+									<thead class="table-success">
+										<tr>
+											<th>Dato</th>
+											<th>Tid</th>
+											<th>Ressurser</th>
+											<th>Handling</th>
+										</tr>
+									</thead>
+									<tbody>
+										<xsl:for-each select="recurring_preview/*[exists = 1]">
 											<tr>
-												<th>Dato</th>
-												<th>Tid</th>
-												<th>Ressurser</th>
-												<th>Handling</th>
+												<td>
+													<span class="fw-medium">
+														<xsl:value-of select="date_display"/>
+													</span>
+												</td>
+												<td>
+													<span class="font-monospace">
+														<xsl:value-of select="time_display"/>
+													</span>
+												</td>
+												<td>
+													<span class="text-muted small">
+														<xsl:value-of select="resource_display"/>
+													</span>
+												</td>
+												<td>
+													<a class="btn btn-outline-primary btn-sm">
+														<xsl:attribute name="href">
+															<xsl:value-of select="allocation_link"/>
+														</xsl:attribute>
+														<xsl:attribute name="title">
+															Vis tildeling ID <xsl:value-of select="allocation_id"/>
+														</xsl:attribute>
+														<i class="fas fa-eye me-1"></i>Vis
+													</a>
+												</td>
 											</tr>
-										</thead>
-										<tbody>
-											<xsl:for-each select="recurring_approval_summary/created/*">
-												<tr>
-													<td><xsl:value-of select="date"/></td>
-													<td><xsl:value-of select="time"/></td>
-													<td><xsl:value-of select="resources"/></td>
-													<td>
-														<a class="btn btn-sm btn-outline-primary" target="_blank">
-															<xsl:attribute name="href">
-																<xsl:value-of select="php:function('link_to_url', 'booking.uiallocation.edit', '', array('id', id))" />
-															</xsl:attribute>
-															<i class="fas fa-edit me-1"></i>Rediger
-														</a>
-													</td>
-												</tr>
-											</xsl:for-each>
-										</tbody>
-									</table>
-								</div>
+										</xsl:for-each>
+									</tbody>
+								</table>
 							</div>
-						</xsl:if>
+						</div>
 
 						<!-- Failed Allocations -->
-						<xsl:if test="count(recurring_approval_summary/failed/*) > 0">
-							<div class="mb-4">
-								<h6 class="text-warning mb-3">
-									<i class="fas fa-exclamation-triangle me-2"></i>
-									Tildelinger som ikke kunne opprettes (<xsl:value-of select="count(recurring_approval_summary/failed/*)"/>)
-								</h6>
-								<div class="table-responsive">
-									<table class="table table-sm">
-										<thead class="table-warning">
+						<div class="mb-4">
+							<h6 class="text-warning mb-3">
+								<i class="fas fa-exclamation-triangle me-2"></i>
+								Tildelinger som ikke kunne opprettes (<xsl:value-of select="count(recurring_preview/*[has_conflict = 1 or (exists != 1 and not(has_conflict = 1))])"/>)
+							</h6>
+							<div class="table-responsive">
+								<table class="table table-sm">
+									<thead class="table-warning">
+										<tr>
+											<th>Dato</th>
+											<th>Tid</th>
+											<th>Ressurser</th>
+											<th>Årsak</th>
+										</tr>
+									</thead>
+									<tbody>
+										<xsl:for-each select="recurring_preview/*[has_conflict = 1 or (exists != 1 and not(has_conflict = 1))]">
 											<tr>
-												<th>Dato</th>
-												<th>Tid</th>
-												<th>Ressurser</th>
-												<th>Årsak</th>
+												<td><xsl:value-of select="date_display"/></td>
+												<td><xsl:value-of select="time_display"/></td>
+												<td><xsl:value-of select="resource_display"/></td>
+												<td>
+													<xsl:choose>
+														<xsl:when test="has_conflict = 1">
+															<span class="badge bg-warning">Konflikt</span>
+														</xsl:when>
+														<xsl:otherwise>
+															<span class="badge bg-secondary">Feilet</span>
+														</xsl:otherwise>
+													</xsl:choose>
+												</td>
 											</tr>
-										</thead>
-										<tbody>
-											<xsl:for-each select="recurring_approval_summary/failed/*">
-												<tr>
-													<td><xsl:value-of select="date"/></td>
-													<td><xsl:value-of select="time"/></td>
-													<td><xsl:value-of select="resources"/></td>
-													<td><span class="badge bg-warning"><xsl:value-of select="reason"/></span></td>
-												</tr>
-											</xsl:for-each>
-										</tbody>
-									</table>
-								</div>
+										</xsl:for-each>
+									</tbody>
+								</table>
 							</div>
-						</xsl:if>
+						</div>
 					</div>
 					<div class="modal-footer">
 						<button type="button" class="btn btn-primary" data-bs-dismiss="modal">

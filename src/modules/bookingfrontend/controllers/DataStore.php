@@ -176,7 +176,7 @@ class DataStore
 			$resources = [];
 			$rows = $this->getRowsAsArray("SELECT id, name, activity_id, active, simple_booking, deactivate_calendar,
               deactivate_application, rescategory_id
-              FROM bb_resource WHERE active=1 AND hidden_in_frontend=0 AND deactivate_calendar=0");
+              FROM bb_resource WHERE active=1 AND hidden_in_frontend=0");
 			
 			// Get the latest participant limits for all resources
 			$currentDate = date('Y-m-d H:i:s');

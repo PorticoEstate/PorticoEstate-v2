@@ -357,7 +357,7 @@
 		function save_item( $values, $values_attribute = '' )
 		{
 
-			//while (is_array($values['location']) && list(, $value) = each($values['location']))
+			$location = array();
 			foreach ($values['location'] as $value)
 			{
 				if ($value)
@@ -366,7 +366,13 @@
 				}
 			}
 
-			$values['location_code'] = @implode("-", $location);
+			if(!$location)
+			{
+				$receipt = array();
+				$receipt['error'][] = array('msg' => lang('Please select a location !'));
+				return $receipt;
+			}
+			$values['location_code'] = implode("-", $location);
 
 			if (is_array($values_attribute))
 			{

@@ -1375,7 +1375,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 						{/* Show recurring fields only when switch is checked */}
 						{watch('isRecurring') && (
-							<div style={{marginTop: '1rem', borderLeft: '3px solid var(--ds-color-border-brand1)'}}>
+							<div style={{borderLeft: '3px solid var(--ds-color-border-brand1)'}}>
 								{/* Organization selector for recurring bookings */}
 								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
 									<Controller

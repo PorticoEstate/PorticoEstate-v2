@@ -6,6 +6,7 @@ import {
 	Chip, Details,
 	Field,
 	Select, Spinner,
+	Switch,
 	Tag,
 	Textfield,
 	ValidationMessage
@@ -1284,14 +1285,15 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 									control={control}
 									render={({field}) => (
 										<div>
-											<Checkbox
+											<Switch
+												label={t('bookingfrontend.make_recurring')}
 												checked={field.value || false}
 												onChange={(e) => {
 												const isChecked = e.target.checked;
 												field.onChange(isChecked);
 
 												if (isChecked) {
-													// Initialize recurring data when checkbox is turned on
+													// Initialize recurring data when switch is turned on
 													const startDate = watch('start');
 													const oneWeekLater = new Date(startDate);
 													oneWeekLater.setDate(oneWeekLater.getDate() + 7);
@@ -1318,7 +1320,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 														setValue('organization_name', firstOrg.name, { shouldDirty: true });
 													}
 												} else {
-													// Clear recurring data when checkbox is turned off
+													// Clear recurring data when switch is turned off
 													setValue('recurring_info.repeat_until', '');
 													setValue('recurring_info.field_interval', 1);
 													setValue('recurring_info.outseason', false);
@@ -1328,7 +1330,6 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 													setValue('organization_name', undefined);
 												}
 											}}
-											label={t('bookingfrontend.make_recurring')}
 										/>
 									</div>
 								)}
@@ -1372,9 +1373,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							</div>
 						)}
 
-						{/* Show recurring fields only when checkbox is checked */}
+						{/* Show recurring fields only when switch is checked */}
 						{watch('isRecurring') && (
-							<div style={{marginTop: '1rem', paddingLeft: '1.5rem', borderLeft: '3px solid var(--ds-color-border-brand1)'}}>
+							<div style={{marginTop: '1rem', borderLeft: '3px solid var(--ds-color-border-brand1)'}}>
 								{/* Organization selector for recurring bookings */}
 								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
 									<Controller
@@ -1413,24 +1414,27 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 								{/* Repeat interval selection */}
 								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
-									<div className={styles.resourcesHeader}>
-										<h4>{t('bookingfrontend.repeat_every_weeks')}</h4>
-									</div>
 									<Controller
 										name="recurring_info.field_interval"
 										control={control}
 										render={({field}) => (
 											<Field>
+												<label>{t('bookingfrontend.repeat_every_weeks')}</label>
+
 												<Select
 													{...field}
 													value={field.value || 1}
 													onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
 													aria-invalid={!!errors.recurring_info?.field_interval}
 												>
-													<Select.Option value={1}>{t('bookingfrontend.every_week')}</Select.Option>
-													<Select.Option value={2}>{t('bookingfrontend.every_2_weeks')}</Select.Option>
-													<Select.Option value={3}>{t('bookingfrontend.every_3_weeks')}</Select.Option>
-													<Select.Option value={4}>{t('bookingfrontend.every_4_weeks')}</Select.Option>
+													<Select.Option
+														value={1}>{t('bookingfrontend.every_week')}</Select.Option>
+													<Select.Option
+														value={2}>{t('bookingfrontend.every_2_weeks')}</Select.Option>
+													<Select.Option
+														value={3}>{t('bookingfrontend.every_3_weeks')}</Select.Option>
+													<Select.Option
+														value={4}>{t('bookingfrontend.every_4_weeks')}</Select.Option>
 												</Select>
 												{errors.recurring_info?.field_interval && (
 													<ValidationMessage>
@@ -1444,24 +1448,43 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 								{/* Repeat until options */}
 								<div className={`${styles.formGroup}`} style={{gridColumn: 1, marginBottom: '1rem'}}>
-									<div className={styles.resourcesHeader}>
-										<h4>{t('bookingfrontend.repeat_until_options')}</h4>
-									</div>
 
-									{/* Show current season end date info */}
-									{getCurrentSeason() && (
-										<div style={{
-											marginBottom: '1rem',
-											padding: '0.5rem',
-											backgroundColor: 'var(--ds-color-surface-neutral-subtle)',
-											borderRadius: '4px',
-											fontSize: '0.875rem',
-											color: 'var(--ds-color-text-subtle)'
-										}}>
-											{t('bookingfrontend.current_season_ends')}: {DateTime.fromISO(getCurrentSeason()!.to_).toFormat('dd.MM.yyyy')}
+
+
+									{/* Repeat until date picker - only show when outseason is not checked */}
+									{!outseason && (
+										<div>
+											<Controller
+												name="recurring_info.repeat_until"
+												control={control}
+												render={({field: {value, onChange, ...field}}) => (
+													<>
+														<label>{t('bookingfrontend.repeat_until_date')}</label>
+														<CalendarDatePicker
+															currentDate={value ? new Date(value) : undefined}
+															view={'dayGridDay'}
+															showTimeSelect={false}
+															onDateChange={(date) => {
+																if (date && maxRepeatUntilDate && date > maxRepeatUntilDate) {
+																	// Don't allow dates beyond current season end
+																	onChange(maxRepeatUntilDate.toISOString().split('T')[0]);
+																} else {
+																	onChange(date ? date.toISOString().split('T')[0] : '');
+																}
+															}}
+															maxDate={maxRepeatUntilDate || undefined}
+															allowPastDates={false}
+															allowEmpty={true}
+															showDebug={props.showDebug}
+															seasons={props.seasons}
+														/>
+														{errors.recurring_info?.repeat_until &&
+															<span className={styles.error}>{errors.recurring_info.repeat_until.message}</span>}
+													</>
+												)}
+											/>
 										</div>
 									)}
-
 									{/* Out-season checkbox */}
 									<Controller
 										name="recurring_info.outseason"
@@ -1496,44 +1519,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 													}
 												}}
 												label={t('bookingfrontend.repeat_until_end_of_season')}
+												description={getCurrentSeason() ? `${t('bookingfrontend.current_season_ends')}: ${DateTime.fromISO(getCurrentSeason()!.to_).toFormat('dd.MM.yyyy')}` : undefined}
+
 											/>
 										)}
 									/>
-
-									{/* Repeat until date picker - only show when outseason is not checked */}
-									{!outseason && (
-										<div style={{marginTop: '1rem'}}>
-											<Controller
-												name="recurring_info.repeat_until"
-												control={control}
-												render={({field: {value, onChange, ...field}}) => (
-													<>
-														<label>{t('bookingfrontend.repeat_until_date')}</label>
-														<CalendarDatePicker
-															currentDate={value ? new Date(value) : undefined}
-															view={'dayGridDay'}
-															showTimeSelect={false}
-															onDateChange={(date) => {
-																if (date && maxRepeatUntilDate && date > maxRepeatUntilDate) {
-																	// Don't allow dates beyond current season end
-																	onChange(maxRepeatUntilDate.toISOString().split('T')[0]);
-																} else {
-																	onChange(date ? date.toISOString().split('T')[0] : '');
-																}
-															}}
-															maxDate={maxRepeatUntilDate || undefined}
-															allowPastDates={false}
-															allowEmpty={true}
-															showDebug={props.showDebug}
-															seasons={props.seasons}
-														/>
-														{errors.recurring_info?.repeat_until &&
-															<span className={styles.error}>{errors.recurring_info.repeat_until.message}</span>}
-													</>
-												)}
-											/>
-										</div>
-									)}
 								</div>
 							</div>
 						)}

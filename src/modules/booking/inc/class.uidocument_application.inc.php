@@ -4,9 +4,9 @@
 	class booking_uidocument_application extends booking_uidocument
 	{
 
-		public function __construct()
+		public function __construct($params = array())
 		{
-			parent::__construct();
+			parent::__construct($params);
 			self::set_active_menu('booking::application::documents');
 		}
 
@@ -30,7 +30,7 @@
 
 		public function query_combined()
 		{
-			$owner_id = Sanitizer::get_var('filter_owner_id', 'int');
+			$owner_id = $this->filter_owner_id;
 
 			if (!$owner_id)
 			{
@@ -40,36 +40,44 @@
 			// Check if combining is enabled for applications
 			$application_ui = CreateObject('booking.uiapplication');
 
-			if (!$application_ui->combine_applications)
+			if (!$application_ui->get_combine_applications())
 			{
 				return parent::query();
 			}
 
 			// Get related applications for combined display
-			$application_bo = CreateObject('booking.boapplication');
-			$related_info = $application_bo->so->get_related_applications($owner_id);
+				$application_bo = CreateObject('booking.boapplication');
+				$related_info = $application_bo->so->get_related_applications($owner_id);
 			$application_ids = $related_info['application_ids'];
+
 
 			if (empty($application_ids))
 			{
 				return parent::query();
 			}
 
-			// Get documents from all related applications
 			$all_documents = array();
+			// Use BookingFrontend DocumentService for cleaner, stateless queries
 			foreach ($application_ids as $app_id)
 			{
-				// Temporarily set the owner_id to each application ID
-				$_GET['filter_owner_id'] = $app_id;
-				$documents = parent::query();
-				if (!empty($documents['results']))
-				{
-					$all_documents = array_merge($all_documents, $documents['results']);
+				try {
+					$documentService = new \App\modules\bookingfrontend\services\DocumentService(\App\modules\bookingfrontend\models\Document::OWNER_APPLICATION);
+					$documents = $documentService->getDocumentsForId($app_id);
+
+					// Convert Document models to array format compatible with the old UI
+					foreach ($documents as $document) {
+						$docArray = $document->serialize();
+						// Add the required fields for the UI
+						$docArray['link'] = $this->get_owner_typed_link('download', array('id' => $docArray['id']));
+						$docArray['option_edit'] = $this->get_owner_typed_link('edit', array('id' => $docArray['id']));
+						$docArray['option_delete'] = $this->get_owner_typed_link('delete', array('id' => $docArray['id']));
+						$all_documents[] = $docArray;
+					}
+				} catch (Exception $e) {
+					// Log error but continue with other applications
+					error_log("Error fetching documents for application {$app_id}: " . $e->getMessage());
 				}
 			}
-
-			// Restore original owner_id
-			$_GET['filter_owner_id'] = $owner_id;
 
 			// Remove duplicates based on document ID
 			$unique_documents = array();
@@ -84,8 +92,12 @@
 			}
 
 			return array(
-				'results' => $unique_documents,
-				'total_records' => count($unique_documents)
+				'start' => 0,
+				'sort' => 'name',
+				'dir' => 'asc',
+				'recordsTotal' => count($unique_documents),
+				'recordsFiltered' => count($unique_documents),
+				'data' => $unique_documents
 			);
 		}
 	}

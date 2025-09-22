@@ -129,6 +129,15 @@ class booking_uiapplication extends booking_uicommon
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 	}
 
+	/**
+	 * Get the combine_applications setting
+	 * @return bool
+	 */
+	public function get_combine_applications()
+	{
+		return $this->combine_applications;
+	}
+
 	public function get_applications()
 	{
 		if (!$this->acl->check('.application', ACL_READ, 'booking'))

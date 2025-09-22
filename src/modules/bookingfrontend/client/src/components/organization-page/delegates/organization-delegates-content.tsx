@@ -15,6 +15,7 @@ import {useQueryClient} from "@tanstack/react-query"
 import MobileDialog from "@/components/dialog/mobile-dialog"
 import DelegateForm, {DelegateFormData, DelegateEditFormData} from './delegate-form'
 import Link from 'next/link'
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 
 interface OrganizationDelegatesContentProps {
@@ -27,7 +28,8 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 	const {data: user} = useBookingUser()
 	const {data: delegates, isLoading, error, refetch} = useOrganizationDelegates(organizationId)
 	const t = useTrans();
-	const queryClient = useQueryClient()
+	const queryClient = useQueryClient();
+	const isMobile = useIsMobile();
 
 	const [showAddForm, setShowAddForm] = useState(false)
 	const [editingDelegate, setEditingDelegate] = useState<IShortOrganizationDelegate | null>(null)
@@ -67,14 +69,14 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 	}
 
 	const handleRestoreDelegate = async (delegateId: number, delegateName: string) => {
-		if (!confirm(t('bookingfrontend.confirm_restore_delegate', { name: delegateName }))) {
+		if (!confirm(t('bookingfrontend.confirm_restore_delegate', {name: delegateName}))) {
 			return
 		}
 
 		setIsSubmitting(true)
 		setFormError(null)
 		try {
-			await updateOrganizationDelegate(organizationId, delegateId, { active: true })
+			await updateOrganizationDelegate(organizationId, delegateId, {active: true})
 			await queryClient.invalidateQueries({queryKey: ['organizationDelegates', organizationId]})
 			await refetch()
 		} catch (error) {
@@ -100,7 +102,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 	}
 
 	const handleDeleteDelegate = async (delegateId: number, delegateName: string) => {
-		if (!confirm(t('bookingfrontend.confirm_delete_delegate', { name: delegateName }))) {
+		if (!confirm(t('bookingfrontend.confirm_delete_delegate', {name: delegateName}))) {
 			return
 		}
 
@@ -215,7 +217,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 							aria-label={t('common.restore')}
 							title={t('common.restore')}
 						>
-							<ArrowUndoIcon />
+							<ArrowUndoIcon/>
 						</Button>
 					)
 				}
@@ -228,7 +230,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 							disabled={isSubmitting}
 							aria-label={t('bookingfrontend.edit_delegate')}
 						>
-							<PencilIcon />
+							<PencilIcon/>
 						</Button>
 						<Button
 							variant="tertiary"
@@ -238,7 +240,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 							aria-label={isSelf ? t('bookingfrontend.cannot_delete_yourself') : t('bookingfrontend.delete_delegate')}
 							title={isSelf ? t('bookingfrontend.cannot_delete_yourself') : undefined}
 						>
-							<TrashIcon />
+							<TrashIcon/>
 						</Button>
 					</div>
 				)
@@ -291,7 +293,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 				<GSTable<IShortOrganizationDelegate>
 					data={filteredDelegates}
 					columns={columns}
-					enableSorting={true}
+					enableSorting={!isMobile}
 					disableColumnHiding={true}
 					enableSearch
 					enablePagination={false}
@@ -310,7 +312,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 									onClick={() => setShowAddForm(true)}
 									disabled={isSubmitting}
 								>
-									<PlusIcon />
+									<PlusIcon/>
 									{t('booking.new delegate')}
 								</Button>
 							</>
@@ -329,7 +331,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 								type="submit"
 								form="add-delegate-form"
 								disabled={isSubmitting}
-															>
+							>
 								{isSubmitting ? t('common.saving') : t('common.save')}
 							</Button>
 							<Button
@@ -337,7 +339,7 @@ const OrganizationDelegatesContent = (props: OrganizationDelegatesContentProps) 
 								variant="tertiary"
 								onClick={attemptClose}
 								disabled={isSubmitting}
-															>
+							>
 								{t('common.cancel')}
 							</Button>
 						</>

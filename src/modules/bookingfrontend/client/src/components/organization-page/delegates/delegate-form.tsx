@@ -20,8 +20,22 @@ const createDelegateSchema = (t: (key: string) => string) => z.object({
 	email: z.string().optional().refine((val) => !val || val === '' || z.string().email().safeParse(val).success, {
 		message: t('bookingfrontend.validation_email_format')
 	}),
-	phone: z.string().optional().refine((val) => !val || val === '' || /^[+]?[0-9\s\-()]{8,15}$/.test(val), {
-		message: t('bookingfrontend.validation_phone_format')
+	phone: z.string().optional().refine((val) => {
+		if (!val || val.trim() === '') return true;
+
+		// Remove all spaces, hyphens, and parentheses for validation
+		const cleaned = val.replace(/[\s\-()]/g, '');
+
+		// Norwegian phone number patterns:
+		// Mobile: +47 followed by 8 digits starting with 4, 9, or 5
+		// Landline: +47 followed by 8 digits (various prefixes)
+		// Without country code: 8 digits
+		const norwegianMobilePattern = /^(\+47|0047)?[459]\d{7}$/;
+		const norwegianLandlinePattern = /^(\+47|0047)?(2|3|5|6|7)\d{7}$/;
+
+		return norwegianMobilePattern.test(cleaned) || norwegianLandlinePattern.test(cleaned);
+	}, {
+		message: t('bookingfrontend.validation_phone_norwegian_format')
 	}),
 	active: z.boolean()
 })

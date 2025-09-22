@@ -921,3 +921,5 @@ validation_email_required	bookingfrontend	nn	E-postadresse er påkravd
 validation_email_format	bookingfrontend	nn	Ugyldig e-postadresse
 validation_zipcode_min_length	bookingfrontend	nn	Postnummer må vera minst 4 teikn
 validation_homepage_format	bookingfrontend	nn	Ugyldig URL-format
+
+validation_phone_norwegian_format	bookingfrontend	nn	Venlegast skriv inn eit gyldig norsk telefonnummer (8 siffer, eventuelt med +47 prefiks)

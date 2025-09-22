@@ -14,6 +14,7 @@ import GroupForm, {GroupFormData} from './group-form'
 import EditGroupModal from './edit-group-modal'
 import styles from './organization-groups-content.module.scss'
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface OrganizationGroupsContentProps {
 	organizationId: string | number
@@ -25,6 +26,7 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 	const {data: user} = useBookingUser()
 	const {data: groups, isLoading, error, refetch} = useOrganizationGroups(organizationId)
 	const t = useTrans()
+	const isMobile = useIsMobile();
 
 	const [showAddForm, setShowAddForm] = useState(false)
 	const [editingGroup, setEditingGroup] = useState<IShortOrganizationGroup | null>(null)
@@ -95,8 +97,8 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 				const group = info.row.original
 				return (
 					<div className={styles.groupNameCell}>
-						<Link 
-							href={`/organization/${organizationId}/group/${group.id}`} 
+						<Link
+							href={`/organization/${organizationId}/group/${group.id}`}
 							className={styles.groupTitle}
 						>
 							{group.name}
@@ -228,8 +230,8 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 						<div className={styles.readOnlyGroups}>
 							{activeGroups.map(group => (
 								<div key={group.id} className={styles.groupItem}>
-									<Link 
-										href={`/organization/${organizationId}/group/${group.id}`} 
+									<Link
+										href={`/organization/${organizationId}/group/${group.id}`}
 										className={styles.groupName}
 									>
 										{group.name}
@@ -263,7 +265,7 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 				<GSTable<IShortOrganizationGroup>
 					data={filteredGroups}
 					columns={columns}
-					enableSorting={true}
+					enableSorting={!isMobile}
 					disableColumnHiding={true}
 					enableSearch
 					enablePagination={false}

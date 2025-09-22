@@ -48,6 +48,9 @@
             height: 960px;
         }
     }
+	@include tablet {
+		min-width: 960px;
+	}
 
     .dialogHeader {
         grid-area: header;

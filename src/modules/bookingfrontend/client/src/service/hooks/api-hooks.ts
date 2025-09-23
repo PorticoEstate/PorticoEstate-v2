@@ -363,7 +363,7 @@ export const useOrganizationSchedule = ({organization_id, weeks, instance, initi
 	const getWeekCacheKey = useCallback((key: string) => {
 		return ['organizationSchedule', organization_id, key];
 	}, [organization_id]);
-	
+
 	// Initialize cache with provided initial schedule data
 	useEffect(() => {
 		if (initialWeekSchedule) {
@@ -598,7 +598,7 @@ export function useUpdateBookingUser() {
  */
 export function useCreateBookingUser() {
 	const queryClient = useQueryClient();
-	
+
 	const createBookingUser = async (userData: Partial<IBookingUser>): Promise<IBookingUser> => {
 		const response = await fetch('/bookingfrontend/user/create', {
 			method: 'POST',
@@ -614,10 +614,10 @@ export function useCreateBookingUser() {
 		}
 
 		const result = await response.json();
-		
+
 		// Invalidate and refetch user data after creation
 		await queryClient.invalidateQueries({queryKey: ['bookingUser']});
-		
+
 		return result.user;
 	};
 
@@ -632,7 +632,7 @@ export function useExternalUserData() {
 		queryKey: ['externalUserData'],
 		queryFn: async (): Promise<Partial<IBookingUser> | null> => {
 			const response = await fetch('/bookingfrontend/user/external-data');
-			
+
 			if (!response.ok) {
 				if (response.status === 404) {
 					return null; // No external data available
@@ -1444,7 +1444,7 @@ export function useResourceRegulationDocuments(resources: { id: number, building
 
 					try {
 						// Fetch regulation documents for this resource
-						const docs = await fetchResourceDocuments(resourceId, 'regulation');
+						const docs = await fetchResourceDocuments(resourceId, ['regulation', 'HMS_document', 'price_list']);
 
 						// Add owner type to identify the document source
 						const docsWithType = docs.map(doc => ({
@@ -1473,7 +1473,7 @@ export function useResourceRegulationDocuments(resources: { id: number, building
 
 					try {
 						// Fetch regulation documents for this building
-						const docs = await fetchBuildingDocuments(buildingId, 'regulation');
+						const docs = await fetchBuildingDocuments(buildingId, ['regulation', 'HMS_document', 'price_list']);
 
 						// Add owner type to identify the document source
 						const docsWithType = docs.map(doc => ({

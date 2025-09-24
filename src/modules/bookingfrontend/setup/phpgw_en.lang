@@ -914,7 +914,6 @@ every_n_weeks	bookingfrontend	en	Every {{n}} weeks
 until_date	bookingfrontend	en	until {{date}}
 until_end_of_season	bookingfrontend	en	until end of season
 indefinitely	bookingfrontend	en	indefinitely
-
 validation_name_required	bookingfrontend	en	Name is required
 validation_phone_required	bookingfrontend	en	Phone number is required
 validation_phone_format	bookingfrontend	en	Invalid phone number format. For Norwegian numbers use format: +47 XXXXXXXX or 9XXXXXXX or 4XXXXXXX
@@ -922,5 +921,6 @@ validation_email_required	bookingfrontend	en	Email is required
 validation_email_format	bookingfrontend	en	Invalid email address
 validation_zipcode_min_length	bookingfrontend	en	Zip code must be at least 4 characters
 validation_homepage_format	bookingfrontend	en	Invalid URL format
-
+vipps_payment_completed	bookingfrontend	en	Your booking has been completed via Vipps payment
+time_booking_conflicts	bookingfrontend	en	The selected time conflicts with existing bookings
 validation_phone_norwegian_format	bookingfrontend	en	Please enter a valid Norwegian phone number (8 digits, optionally with +47 prefix)

@@ -913,7 +913,6 @@ every_n_weeks	bookingfrontend	nn	Kvar {{n}} veke
 until_date	bookingfrontend	nn	til {{date}}
 until_end_of_season	bookingfrontend	nn	til slutten av sesongen
 indefinitely	bookingfrontend	nn	på ubestemt tid
-
 validation_name_required	bookingfrontend	nn	Namn er påkravd
 validation_phone_required	bookingfrontend	nn	Telefonnummer er påkravd
 validation_phone_format	bookingfrontend	nn	Ugyldig telefonnummer. For norske nummer, bruk format: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
@@ -921,5 +920,6 @@ validation_email_required	bookingfrontend	nn	E-postadresse er påkravd
 validation_email_format	bookingfrontend	nn	Ugyldig e-postadresse
 validation_zipcode_min_length	bookingfrontend	nn	Postnummer må vera minst 4 teikn
 validation_homepage_format	bookingfrontend	nn	Ugyldig URL-format
-
+organizer_required	bookingfrontend	nn	Arrangørnamn er påkravd
+time_booking_conflicts	bookingfrontend	nn	Den valde tida er i konflikt med eksisterande bookingar
 validation_phone_norwegian_format	bookingfrontend	nn	Venlegast skriv inn eit gyldig norsk telefonnummer (8 siffer, eventuelt med +47 prefiks)

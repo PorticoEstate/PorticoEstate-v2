@@ -915,7 +915,6 @@ every_n_weeks	bookingfrontend	no	Hver {{n}} uke
 until_date	bookingfrontend	no	til {{date}}
 until_end_of_season	bookingfrontend	no	til slutten av sesongen
 indefinitely	bookingfrontend	no	på ubestemt tid
-
 validation_name_required	bookingfrontend	no	Navn er påkrevd
 validation_phone_required	bookingfrontend	no	Telefonnummer er påkrevd
 validation_phone_format	bookingfrontend	no	Ugyldig telefonnummer. For norske nummer, bruk format: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
@@ -923,5 +922,5 @@ validation_email_required	bookingfrontend	no	E-postadresse er påkrevd
 validation_email_format	bookingfrontend	no	Ugyldig e-postadresse
 validation_zipcode_min_length	bookingfrontend	no	Postnummer må være minst 4 tegn
 validation_homepage_format	bookingfrontend	no	Ugyldig URL-format
-
+time_booking_conflicts	bookingfrontend	no	Den valgte tiden er i konflikt med eksisterende bookinger
 validation_phone_norwegian_format	bookingfrontend	no	Vennligst skriv inn et gyldig norsk telefonnummer (8 siffer, eventuelt med +47 prefiks)

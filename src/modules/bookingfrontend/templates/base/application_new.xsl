@@ -4,7 +4,7 @@
 			<div class="row">
 
 				<div class="col-md-8 offset-md-2">
-			
+
 					<a class="exitBtn float-right">
 						<xsl:attribute name="href">
 							<xsl:value-of select="application/frontpage_link"/>
@@ -12,8 +12,8 @@
 						<i class="fas fa-times" />
 						<xsl:value-of select="php:function('lang', 'Exit to homepage')"/>
 					</a>
-				
-					
+
+
 					<h1 class="font-weight-bold">
 						<xsl:value-of select="php:function('lang', 'New application')"/>
 					</h1>
@@ -40,7 +40,7 @@
 					</p>
 
 					<div class="form-group">
-					
+
 						<div class="form-group">
 							<span class="font-weight-bold d-block mt-2 span-label">
 								<xsl:value-of select="php:function('lang', 'Chosen rent object')" />:
@@ -52,9 +52,9 @@
 								<xsl:value-of select="php:function('lang', 'No rent object chosen')" />
 							</span>
 						</div>
-					
 
-						<div class="">	
+
+						<div class="">
 							<div type="input"  class="choseResource form-control text-left dropdown-toggle w-100" data-toggle="dropdown">
 								<xsl:value-of select="php:function('lang', 'choose')" />
 								<span class="caret"></span>
@@ -98,10 +98,15 @@
 									<input class="datetime" required="true" name="from_[]" hidden="hidden" data-bind="value: from_"/>
 									<input class="datetime" required="true" name="to_[]" hidden="hidden" data-bind="value: to_"/>
 									<span data-bind='text: formatedPeriode'></span>
-									
+
 									<button class="ml-2" data-bind="click: $parent.removeDate">
 										<i class="fas fa-minus-circle"></i>
 									</button>
+
+									<!-- Show collision message for this specific date -->
+									<div data-bind="if: hasCollision" style="color: red; font-weight: bold; font-size: 0.9em; margin-top: 5px;">
+										<span data-bind="text: collisionMessage">Collision detected</span>
+									</div>
 								</div>
 							</div>
 							<span id="inputTime" data-bind="if: date().length == 0" class="validationMessage applicationSelectedDates">
@@ -158,7 +163,7 @@
 							</div>
 						</div>
 					</div>
-					
+
 					<!-- Information About Event -->
 					<hr class="mt-5 mb-5"></hr>
 					<h2 class="font-weight-bold mb-4">
@@ -180,7 +185,7 @@
 							<!-- <a class="dropdown-item" data-bind="text: name, id: id, click: $root.audienceSelected" href="#"></a> -->
 						</ul>
 						<input class="form-control" id="inputTargetAudience" required="true" type="text" style="display: none" name="audience[]"  data-bind="value: audienceSelectedValue"/>
-					</div>		
+					</div>
 					<!-- Event Name -->
 					<div class="form-group">
 						<label>
@@ -297,12 +302,12 @@
 									<xsl:value-of select="php:function('lang', 'optional')" />
 								</label>
 							</div>
-						
+
 							<div id="attachment-upload">
 								<label for="field_name" class="upload-button">
 									<xsl:value-of select="php:function('lang', 'Upload')" />
 								</label>
-								
+
 							</div>
 							<div id="show-attachment">
 								<span id="field_name_input"></span>
@@ -312,7 +317,7 @@
 								</input>
 							</div>
 							<!-- Remove Attachment -->
-							
+
 						</div>
 					</xsl:if>
 
@@ -339,7 +344,7 @@
 							<xsl:value-of select="php:function('lang', 'Please fill all fields')"/>
 						</div>
 					</div>
-					
+
 					<!-- Submit error modal -->
 					<!-- <div id="errorModal" class="modal fade">
 						<div class="modal-dialog modal-confirm">
@@ -351,7 +356,7 @@
 									<button type="button" class="btn-close" data-dismiss="modal" aria-hidden="true"></button>
 								</div>
 								<div class="modal-body text-center">
-									<h4>Ooops!</h4>	
+									<h4>Ooops!</h4>
 									<p>Something went wrong. File was not uploaded.</p>
 									<button class="btn btn-success" data-dismiss="modal">Try Again</button>
 								</div>

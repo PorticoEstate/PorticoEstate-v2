@@ -836,3 +836,5 @@ validation_email_required	bookingfrontend	en	Email is required
 validation_email_format	bookingfrontend	en	Invalid email address
 validation_zipcode_min_length	bookingfrontend	en	Zip code must be at least 4 characters
 validation_homepage_format	bookingfrontend	en	Invalid URL format
+vipps_payment_completed	bookingfrontend	en	Your booking has been completed via Vipps payment
+time_booking_conflicts	bookingfrontend	en	The selected time conflicts with existing bookings

@@ -836,3 +836,5 @@ validation_email_required	bookingfrontend	nn	E-postadresse er påkravd
 validation_email_format	bookingfrontend	nn	Ugyldig e-postadresse
 validation_zipcode_min_length	bookingfrontend	nn	Postnummer må vera minst 4 teikn
 validation_homepage_format	bookingfrontend	nn	Ugyldig URL-format
+organizer_required	bookingfrontend	nn	Arrangørnamn er påkravd
+time_booking_conflicts	bookingfrontend	nn	Den valde tida er i konflikt med eksisterande bookingar

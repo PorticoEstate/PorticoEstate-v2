@@ -147,9 +147,64 @@ function applicationModel()
 	});
 	self.activityId = ko.observable();
 	self.date = ko.observableArray();
+
+	// Computed observable to check for collisions whenever dates or resources change
+	self.collisionCheck = ko.computed(function ()
+	{
+		var dates = self.date();
+		var selectedResources = [];
+
+		// Get currently selected resources
+		for (var i = 0; i < self.bookableResource().length; i++)
+		{
+			if (self.bookableResource()[i].selected())
+			{
+				selectedResources.push(self.bookableResource()[i].id);
+			}
+		}
+
+		// Check each date for collisions
+		if (dates.length > 0 && selectedResources.length > 0)
+		{
+			dates.forEach(function(dateItem, index) {
+				// Use stored Date objects if available, otherwise try to parse formatted strings
+				var start, end;
+				if (dateItem.startDate && dateItem.endDate) {
+					start = dateItem.startDate;
+					end = dateItem.endDate;
+				} else if (dateItem.from_ && dateItem.to_) {
+					// Fallback: try to parse formatted strings (for legacy compatibility)
+					try {
+						start = new Date(dateItem.from_.replace(" ", "T"));
+						end = new Date(dateItem.to_.replace(" ", "T"));
+					} catch (e) {
+						console.warn("Could not parse date:", dateItem.from_, dateItem.to_);
+						return; // Skip this date if parsing fails
+					}
+				} else {
+					return; // Skip if no date information available
+				}
+
+				checkCollisionForDenyResourcesSync(selectedResources, start, end, function(collisionResponse) {
+					// Update the date item observables with collision status and details
+					dateItem.hasCollision(collisionResponse.has_collision || false);
+					dateItem.collisionMessage(collisionResponse.message || '');
+					dateItem.conflictingResources(collisionResponse.resources_checked || []);
+
+					// Update UI for all dates (will show specific conflicts)
+					updateCollisionUIForAllDates(dates);
+				});
+			});
+		}
+		else
+		{
+			// No dates or resources selected, clear any collision warnings
+			updateCollisionUIForAllDates([]);
+		}
+	});
+
 	self.addDate = function ()
 	{
-
 		if (self.bookingDate() && self.bookingStartTime() && self.bookingEndTime())
 		{
 			var start = new Date(self.bookingDate());
@@ -168,26 +223,31 @@ function applicationModel()
 
 				if (!match)
 				{
-					//			if (direct_booking == 0 || (direct_booking == 1 && self.date().length < 1))
-					{
-						self.date.push({
-							id: [start, end
-							].join(""), from_: formatSingleDate(start), to_: formatSingleDate(end), formatedPeriode: formatDate(start, end)
-						});  /*repeat: self.repeat(),*/
-					}
+					// Add date - collision checking will be handled by computed observable
+					var dateItem = {
+						id: [start, end].join(""),
+						from_: formatSingleDate(start),
+						to_: formatSingleDate(end),
+						formatedPeriode: formatDate(start, end),
+						hasCollision: ko.observable(false),  // Observable for template binding
+						collisionMessage: ko.observable(''),  // Observable for message
+						conflictingResources: ko.observable([]), // Observable for resources
+						startDate: start,     // Store original Date objects for collision checking
+						endDate: end
+					};
+					self.date.push(dateItem);
 
+					// Clear form fields after adding date
 					setTimeout(function ()
 					{
 						self.bookingDate("");
 						self.bookingStartTime("");
 						self.bookingEndTime("");
-						$(".applicationSelectedDates").html("");
 						if (typeof (post_handle_order_table) === 'function')
 						{
 							post_handle_order_table();
 						}
-
-					}, 500); //self.repeat(false);
+					}, 500);
 
 				}
 			}
@@ -357,6 +417,21 @@ $(document).ready(function ()
 		{
 			alert(errorAcceptedDocs);
 			event.preventDefault();
+			return false;
+		}
+
+		// Check for collision dates
+		var hasCollisionDates = false;
+		am.date().forEach(function(dateItem) {
+			if (dateItem.hasCollision && dateItem.hasCollision()) {
+				hasCollisionDates = true;
+			}
+		});
+
+		if (hasCollisionDates) {
+			alert('Du kan ikke sende inn søknaden med tidspunkter som er allerede opptatt. Vennligst fjern eller endre de konflikterende tidspunktene først.');
+			event.preventDefault();
+			return false;
 		}
 	});
 
@@ -432,7 +507,18 @@ function PopulatePostedDate()
 		{
 			var from_ = (initialDates[i].from_).replace(" ", "T");
 			var to_ = (initialDates[i].to_).replace(" ", "T");
-			am.date.push({ from_: formatSingleDate(new Date(from_)), to_: formatSingleDate(new Date(to_)), formatedPeriode: formatDate(new Date(from_), new Date(to_)) });
+			var startDate = new Date(from_);
+			var endDate = new Date(to_);
+			am.date.push({
+				from_: formatSingleDate(startDate),
+				to_: formatSingleDate(endDate),
+				formatedPeriode: formatDate(startDate, endDate),
+				hasCollision: ko.observable(false),  // Observable for template binding
+				collisionMessage: ko.observable(''),  // Observable for message
+				conflictingResources: ko.observable([]), // Observable for resources
+				startDate: startDate, // Store original Date objects for collision checking
+				endDate: endDate
+			});
 		}
 	}
 	else
@@ -441,7 +527,20 @@ function PopulatePostedDate()
 		{
 			if (urlParams['start'].length > 0 && urlParams['end'].length > 0)
 			{
-				am.date.push({ from_: formatSingleDate(new Date(parseInt(urlParams['start']))), to_: formatSingleDate(new Date(parseInt(urlParams['end']))), /*repeat: false,*/ formatedPeriode: formatDate(new Date(parseInt(urlParams['start'])), new Date(parseInt(urlParams['end']))) });
+				var startDate = new Date(parseInt(urlParams['start']));
+				var endDate = new Date(parseInt(urlParams['end']));
+
+				// Add date - collision checking will be handled by computed observable
+				am.date.push({
+					from_: formatSingleDate(startDate),
+					to_: formatSingleDate(endDate),
+					formatedPeriode: formatDate(startDate, endDate),
+					hasCollision: ko.observable(false),  // Observable for template binding
+					collisionMessage: ko.observable(''),  // Observable for message
+					conflictingResources: ko.observable([]), // Observable for resources
+					startDate: startDate, // Store original Date objects for collision checking
+					endDate: endDate
+				});
 			}
 		}
 	}
@@ -728,6 +827,54 @@ if (attInput)
 }
 
 
+/**
+ * Synchronous version of collision check for use in computed observables
+ * @param {Array} resources - Array of resource IDs
+ * @param {Date} start - Start date/time
+ * @param {Date} end - End date/time
+ * @param {Function} callback - Callback function with collision response object
+ */
+function checkCollisionForDenyResourcesSync(resources, start, end, callback) {
+	if (resources.length === 0) {
+		callback({has_collision: false, message: '', resources_checked: []});
+		return;
+	}
+
+	// Format dates for API call
+	var fromFormatted = formatSingleDate(start);
+	var toFormatted = formatSingleDate(end);
+
+	// Make AJAX call to check collision
+	$.ajax({
+		url: phpGWLink('bookingfrontend/', {
+			menuaction: 'bookingfrontend.uiapplication.check_collision_for_deny_resources',
+			phpgw_return_as: 'json'
+		}, true),
+		type: 'POST',
+		data: {
+			resources: resources,
+			from_: fromFormatted,
+			to_: toFormatted
+		},
+		dataType: 'json',
+		success: function(response) {
+			callback(response || {has_collision: false, message: '', resources_checked: []});
+		},
+		error: function() {
+			// On error, don't block the booking (fail gracefully)
+			callback({has_collision: false, message: '', resources_checked: []});
+		}
+	});
+}
+
+/**
+ * Update the UI - now handled by template bindings, this just triggers knockout updates
+ * @param {Array} dates - Array of date objects
+ */
+function updateCollisionUIForAllDates(dates) {
+	// The template now handles individual date collision messages via data-bind
+	// This function is kept for compatibility but UI updates are handled by Knockout bindings
+}
 
 
 window.onload = function ()

@@ -490,6 +490,15 @@ class booking_soapplication extends booking_socommon
 		$db->query($sql, __LINE__, __FILE__);
 	}
 
+	public function update_from_field( int|null $application_id)
+	{
+		$table_name	 = $this->table_name;
+		$db			 = $this->db;
+		$filter		 = $application_id ? " WHERE id = {$application_id}" : '';
+		$sql		 = "UPDATE $table_name SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = $table_name.id)$filter";
+		$db->query($sql, __LINE__, __FILE__);
+	}
+
 	public function delete_application($id)
 	{
 		if ($this->db->get_transaction())

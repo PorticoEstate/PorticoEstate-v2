@@ -7740,3 +7740,35 @@ function booking_upgrade0_2_111($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.112';
+function booking_upgrade0_2_112($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	// I want a field 'from_' in bb_application that is a copy of the field 'from_' with the earliest value in bb_application_date for the same application_id.
+	$oProc->AddColumn(
+		'bb_application',
+		'from_',
+		array('type' => 'datetime', 'nullable' => true),
+	);
+
+	// Populate existing rows with the earliest date
+	$oProc->m_odb->query("
+        UPDATE bb_application a
+        SET from_ = d.min_from
+        FROM (
+            SELECT application_id, MIN(from_) AS min_from
+            FROM bb_application_date
+            GROUP BY application_id
+        ) d
+        WHERE a.id = d.application_id
+    ");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.113';
+		return $currentver;
+	}
+}
+

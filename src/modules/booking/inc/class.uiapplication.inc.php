@@ -588,7 +588,7 @@ class booking_uiapplication extends booking_uicommon
 					array(
 						'key' => 'from_',
 						'label' => lang('From'),
-						'sortable' => false
+						'sortable' => true
 					),
 					array(
 						'key' => 'name',
@@ -1733,6 +1733,7 @@ class booking_uiapplication extends booking_uicommon
 				}
 				/** End attachment * */
 				$this->bo->so->update_id_string();
+				$this->bo->so->update_from_field($application['id']);
 				if ($is_partial1)
 				{
 					// Redirect to same URL so as to present a new, empty form
@@ -3031,6 +3032,8 @@ class booking_uiapplication extends booking_uicommon
 			if (!$errors)
 			{
 				$receipt = $this->bo->update($application);
+				$this->bo->so->update_from_field($application['id']);
+
 				/**
 				 * Start dealing with the purchase_order..
 				 */

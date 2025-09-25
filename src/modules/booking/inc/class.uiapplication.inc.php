@@ -557,12 +557,17 @@ class booking_uiapplication extends booking_uicommon
 					'menuaction' => 'booking.uiapplication.index',
 					'phpgw_return_as' => 'json'
 				)),
-				'sorted_by' => array('key' => 4, 'dir' => 'desc'), //created
+				'sorted_by' => array('key' => 0, 'dir' => 'desc'), //created
 				'field' => array(
 					array(
 						'key' => 'id',
 						'label' => lang('ID'),
 						'formatter' => 'JqueryPortico.formatLink'
+					),
+					array(
+						'key' => 'from_',
+						'label' => lang('From'),
+						'sortable' => true
 					),
 					array(
 						'key' => 'status',
@@ -584,11 +589,6 @@ class booking_uiapplication extends booking_uicommon
 					array(
 						'key' => 'modified',
 						'label' => lang('last modified')
-					),
-					array(
-						'key' => 'from_',
-						'label' => lang('From'),
-						'sortable' => true
 					),
 					array(
 						'key' => 'name',

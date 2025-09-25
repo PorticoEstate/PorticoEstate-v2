@@ -898,7 +898,8 @@ class booking_uiresource extends booking_uicommon
 				'msg' => lang('missing outlook item id')
 			);
 		}
-		if (!$outlook_item_id || !preg_match('/^[a-zA-Z0-9-]+$/', $outlook_item_id))
+
+		if (!filter_var($outlook_item_id, FILTER_VALIDATE_EMAIL))
 		{
 			return array(
 				'ok' => false,

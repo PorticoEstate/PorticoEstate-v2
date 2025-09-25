@@ -1714,7 +1714,7 @@
 		<div class="modal-content">
 		  <div class="modal-header">
 			<h5 class="modal-title" id="acceptApplicationModalLabel">
-			  <xsl:value-of select="php:function('lang', 'Accept Application')" />
+			  <xsl:value-of select="php:function('lang', 'confirm_application_approval')" />
 			</h5>
 			<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
 			  <span aria-hidden="true">x</span>
@@ -1722,17 +1722,17 @@
 		  </div>
 		  <form method="POST">
 			<div class="modal-body">
-			  <p><xsl:value-of select="php:function('lang', 'Are you sure you want to approve?')" /></p>
+			  <p><xsl:value-of select="php:function('lang', 'approval_description')" /></p>
 			  <div class="form-group">
-				<label for="acceptance_message">
-				  <xsl:value-of select="php:function('lang', 'Message to send with approval')" />
-				</label>
-				<textarea name="acceptance_message" id="acceptance_message" class="form-control" rows="4"></textarea>
+				<h5>
+				  <xsl:value-of select="php:function('lang', 'comment_to_organizer')" />
+				</h5>
+				<textarea name="acceptance_message" id="acceptance_message" class="form-control" rows="4" placeholder="{php:function('lang', 'comment_placeholder')}"></textarea>
 			  </div>
 			  <div class="form-group form-check">
 				<input type="checkbox" class="form-check-input" id="send_acceptance_email" name="send_acceptance_email" value="1" checked="checked"/>
 				<label class="form-check-label" for="send_acceptance_email">
-				  <xsl:value-of select="php:function('lang', 'send_email_to_applicant')" />
+				  <xsl:value-of select="php:function('lang', 'send_email_organizer_summary')" />
 				</label>
 			  </div>
 			  <input type="hidden" name="status" value="ACCEPTED"/>

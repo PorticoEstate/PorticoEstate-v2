@@ -3883,6 +3883,7 @@ class booking_uiapplication extends booking_uicommon
 
 			$update = false;
 			$notify = false;
+			$recurring_summary = null; // Track when recurring allocations are created
 
 			$return_after_action = false;
 
@@ -4014,7 +4015,6 @@ class booking_uiapplication extends booking_uicommon
 					}
 
 					// Handle recurring allocations creation for approved applications
-					$recurring_summary = null;
 					if (!empty($application['recurring_info']))
 					{
 						$recurring_summary = $this->create_recurring_allocations_on_approval($application);
@@ -4185,11 +4185,11 @@ class booking_uiapplication extends booking_uicommon
 				}
 			}
 
-			// Add recurring summary to redirect if it exists
+			// Add recurring summary to redirect only when recurring allocations were created during approval
 			$redirect_params = array('menuaction' => $this->url_prefix . '.show', 'id' => $application['id'], 'return_after_action' => $return_after_action);
-			if (!empty($application['recurring_info']))
+			if (!empty($recurring_summary) && isset($_POST['status']) && Sanitizer::get_var('status', 'string', 'POST') == 'ACCEPTED')
 			{
-				// Show modal with the existing recurring preview data
+				// Show modal with the recurring allocation creation summary
 				$redirect_params['show_recurring_summary'] = 1;
 			}
 

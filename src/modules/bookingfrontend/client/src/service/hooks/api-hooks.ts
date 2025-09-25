@@ -1508,6 +1508,31 @@ export function useResourceRegulationDocuments(resources: { id: number, building
 	});
 }
 
+export function useBuildingDocuments(buildingId: string) {
+	return useQuery({
+		queryKey: ['buildingDocuments', buildingId],
+		queryFn: async () => {
+			try {
+				// Fetch building documents (excluding only pictures)
+				const buildingDocs = await fetchBuildingDocuments(buildingId, ['drawing', 'price_list', 'other', 'regulation', 'HMS_document']);
+
+				// Add owner type to identify the document source
+				const docsWithType = buildingDocs.map((doc: IDocument) => ({
+					...doc,
+					owner_type: 'building' as const
+				}));
+
+				return docsWithType;
+			} catch (error) {
+				console.error(`Error fetching documents for building ${buildingId}:`, error);
+				return [];
+			}
+		},
+		enabled: Boolean(buildingId),
+		staleTime: 5 * 60 * 1000 // Consider data fresh for 5 minutes
+	});
+}
+
 export function useResourceArticles({
 										resourceIds,
 										initialArticles

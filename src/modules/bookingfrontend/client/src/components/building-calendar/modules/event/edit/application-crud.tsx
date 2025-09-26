@@ -1372,7 +1372,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 											if (filesToUpload && filesToUpload.length > 0) {
 												const fileNames = Array.from(filesToUpload).map(file => file.name).join(', ');
 												const message = t('bookingfrontend.files_will_be_lost_on_login', {
-													files: fileNames,
+													fileNames: fileNames,
 													defaultValue: `You have selected files (${fileNames}) that will be lost when you log in. Do you want to continue?`
 												});
 												const shouldProceed = window.confirm(message);

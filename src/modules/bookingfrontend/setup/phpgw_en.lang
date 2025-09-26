@@ -924,3 +924,4 @@ validation_homepage_format	bookingfrontend	en	Invalid URL format
 vipps_payment_completed	bookingfrontend	en	Your booking has been completed via Vipps payment
 time_booking_conflicts	bookingfrontend	en	The selected time conflicts with existing bookings
 validation_phone_norwegian_format	bookingfrontend	en	Please enter a valid Norwegian phone number (8 digits, optionally with +47 prefix)
+files_will_be_lost_on_login	bookingfrontend	en	You have selected files ({{fileNames}}) that will be lost when you log in. Do you want to continue?

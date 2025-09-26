@@ -505,14 +505,22 @@ class booking_soapplication extends booking_socommon
 				$filter";
 		$db->query($sql, __LINE__, __FILE__);
 		
-		// Update parent applications with minimum from_ date from all child applications
+		// Update parent applications with minimum from_ date from parent AND all child applications combined
 		$sql = "UPDATE bb_application parent_app
 				SET from_ = (
-					SELECT MIN(child_dates.from_)
-					FROM bb_application child_app
-					JOIN bb_application_date child_dates ON child_app.id = child_dates.application_id
-					WHERE child_app.parent_id = parent_app.id
-					AND child_app.active = 1
+					SELECT MIN(all_dates.from_)
+					FROM (
+						-- Parent's own dates
+						SELECT from_ FROM bb_application_date 
+						WHERE application_id = parent_app.id
+						UNION ALL
+						-- Children's dates
+						SELECT child_dates.from_
+						FROM bb_application child_app
+						JOIN bb_application_date child_dates ON child_app.id = child_dates.application_id
+						WHERE child_app.parent_id = parent_app.id
+						AND child_app.active = 1
+					) as all_dates
 				)
 				WHERE parent_app.id IN (
 					SELECT DISTINCT parent_id 

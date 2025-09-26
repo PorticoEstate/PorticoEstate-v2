@@ -69,6 +69,7 @@ interface ApplicationCrudInnerProps extends ApplicationCrudProps {
 
 const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 	const [lastSubmittedData, setLastSubmittedData] = useState<Partial<ApplicationFormData> | null>(null);
+	const [restoredProps, setRestoredProps] = useState<ApplicationCrudProps | null>(null);
 
 	// Only fetch if we have a building_id
 	const building_id = props.building_id || props.selectedTempApplication?.extendedProps?.building_id;
@@ -94,16 +95,68 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 		weeks: [DateTime.now()]
 	});
 
+	// Check for pending recurring application data after login and update props if needed
+	useEffect(() => {
+		if (bookingUser) {
+			const pendingData = localStorage.getItem('pendingRecurringApplication');
+			if (pendingData) {
+				try {
+					const storedData = JSON.parse(pendingData);
+
+					// Check if data is expired (10 minutes = 600000 ms)
+					const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
+
+					if (isExpired) {
+						localStorage.removeItem('pendingRecurringApplication');
+						return;
+					}
+
+					// Use the same applicationId resolution logic as existingApplication
+					const currentApplicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
+
+					// More lenient context matching - if we have stored selectedTempApplication and building matches,
+					// then we can restore the props even if applicationId doesn't match (catch-22 situation)
+					const buildingMatches = storedData.building_id === props.building_id;
+					const dateMatches = storedData.date_id === props.date_id;
+					const applicationMatches = storedData.applicationId === currentApplicationId;
+					const hasStoredApplication = storedData.selectedTempApplication && storedData.applicationId;
+
+					// Match context if building and date match, and we have stored application data
+					// Don't require applicationId match since that creates a catch-22
+					if (buildingMatches && dateMatches && hasStoredApplication) {
+						// Always restore the selectedTempApplication from stored data
+						// This ensures the existingApplication calculation can find the correct application
+						setRestoredProps({
+							...props,
+							selectedTempApplication: storedData.selectedTempApplication,
+							applicationId: storedData.applicationId
+						});
+
+						// Clear the stored data
+						localStorage.removeItem('pendingRecurringApplication');
+					}
+				} catch (error) {
+					console.error('Error parsing pending recurring application data:', error);
+					localStorage.removeItem('pendingRecurringApplication');
+				}
+			}
+		}
+	}, [bookingUser, props]);
+
 	const existingApplication = useMemo(() => {
-		const applicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
+		// Use restored props if available, otherwise use original props
+		const effectiveProps = restoredProps || props;
+		const applicationId = effectiveProps.applicationId || effectiveProps.selectedTempApplication?.extendedProps?.applicationId;
+
 		if (applicationId === undefined) {
 			return null;
 		}
 		if (!partials) {
 			return undefined;
 		}
+
 		return partials.list.find(a => a.id === applicationId) || null;
-	}, [props.selectedTempApplication, partials, props.applicationId]);
+	}, [props.selectedTempApplication, partials, props.applicationId, restoredProps]);
 
 	// Don't show loading state if we don't have a building_id
 	if (!building_id) {
@@ -114,7 +167,8 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 		return null;
 	}
 
-	const isOpen = props.selectedTempApplication !== undefined || props.applicationId !== undefined;
+	const effectiveProps = restoredProps || props;
+	const isOpen = effectiveProps.selectedTempApplication !== undefined || effectiveProps.applicationId !== undefined;
 
 	if (!isOpen) {
 		return null;
@@ -134,8 +188,22 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 				seasons={seasons}
 				events={events}
 				showDebug={isDevMode()} // Always enable debug in dev mode
-				onSubmitSuccess={(data) => setLastSubmittedData(data)}
-				{...props}
+				onSubmitSuccess={(data) => {
+					setLastSubmittedData(data);
+					// Clear restored props after successful submission
+					if (restoredProps) {
+						setRestoredProps(null);
+					}
+				}}
+
+				{...effectiveProps}
+				onClose={() => {
+					// Clear restored props when dialog is closed
+					if (restoredProps) {
+						setRestoredProps(null);
+					}
+					effectiveProps.onClose();
+				}}
 			/>
 		</div>
 	);
@@ -144,6 +212,7 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const [filesToUpload, setFilesToUpload] = useState<FileList | null>(null);
 	const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+	const [hasExternalChanges, setHasExternalChanges] = useState(false);
 	const {building, buildingResources, audience, agegroups, partials, existingApplication, events} = props;
 	const t = useTrans();
 	const [isEditingResources, setIsEditingResources] = useState(false);
@@ -538,7 +607,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 		}
 	}, [isSubmitted, errors.agegroups]);
 
-	// Check for pending recurring application data after login
+	// Check for pending recurring application data after login and restore form data
 	useEffect(() => {
 		if (props.bookingUser) {
 			const pendingData = localStorage.getItem('pendingRecurringApplication');
@@ -550,14 +619,18 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
 
 					if (isExpired) {
-						localStorage.removeItem('pendingRecurringApplication');
-						return;
+						return; // Don't remove here since wrapper handles it
 					}
 
-					// Check if this matches the current application context
+					// Use the same applicationId resolution logic as existingApplication
+					const currentApplicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
+
 					if (storedData.building_id === props.building_id &&
-						storedData.applicationId === props.applicationId &&
+						storedData.applicationId === currentApplicationId &&
 						storedData.date_id === props.date_id) {
+
+						// For existing applications, don't mark fields as dirty to prevent duplicate creation
+						const shouldMarkDirty = !existingApplication;
 
 						// Restore form data with proper date handling
 						Object.keys(storedData).forEach(key => {
@@ -566,9 +639,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 								// Handle Date objects that were serialized as ISO strings
 								if ((key === 'start' || key === 'end') && typeof storedData[key] === 'string') {
-									setValue(key as any, new Date(storedData[key]), { shouldDirty: true });
+									setValue(key as any, new Date(storedData[key]), { shouldDirty: shouldMarkDirty });
 								} else {
-									setValue(key as any, storedData[key], { shouldDirty: true });
+									setValue(key as any, storedData[key], { shouldDirty: shouldMarkDirty });
 								}
 							}
 						});
@@ -579,29 +652,25 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							const oneWeekLater = new Date(startDate);
 							oneWeekLater.setDate(oneWeekLater.getDate() + 7);
 
-							setValue('recurring_info.repeat_until', oneWeekLater.toISOString().split('T')[0]);
-							setValue('recurring_info.field_interval', 1);
-							setValue('recurring_info.outseason', false);
+							setValue('recurring_info.repeat_until', oneWeekLater.toISOString().split('T')[0], { shouldDirty: shouldMarkDirty });
+							setValue('recurring_info.field_interval', 1, { shouldDirty: shouldMarkDirty });
+							setValue('recurring_info.outseason', false, { shouldDirty: shouldMarkDirty });
 
 							// Set default organization if not already set from stored data
 							if (!storedData.organization_id && props.bookingUser?.delegates?.filter(delegate => delegate.active).length && props.bookingUser.delegates.filter(delegate => delegate.active).length > 0) {
 								const firstOrg = props.bookingUser.delegates.filter(delegate => delegate.active)[0];
-								setValue('organization_id', firstOrg.org_id, { shouldDirty: true, shouldValidate: true });
-								setValue('organization_number', firstOrg.organization_number, { shouldDirty: true });
-								setValue('organization_name', firstOrg.name, { shouldDirty: true });
+								setValue('organization_id', firstOrg.org_id, { shouldDirty: shouldMarkDirty, shouldValidate: true });
+								setValue('organization_number', firstOrg.organization_number, { shouldDirty: shouldMarkDirty });
+								setValue('organization_name', firstOrg.name, { shouldDirty: shouldMarkDirty });
 							}
 						}
-
-						// Clear the stored data
-						localStorage.removeItem('pendingRecurringApplication');
 					}
 				} catch (error) {
 					console.error('Error parsing pending recurring application data:', error);
-					localStorage.removeItem('pendingRecurringApplication');
 				}
 			}
 		}
-	}, [props.bookingUser, props.building_id, props.applicationId, props.date_id, setValue]);
+	}, [props.bookingUser, props.building_id, props.applicationId, props.date_id, setValue, existingApplication]);
 
 	const selectedResources = watch('resources');
 
@@ -759,23 +828,6 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 
 		// Validate dates
 		if (startInPast || endInPast || startOutsideHours || endOutsideHours) {
-			// Add debug info when validation fails
-			if (props.showDebug) {
-				console.log("Time validation failed:", {
-					startInPast,
-					endInPast,
-					startOutsideHours,
-					endOutsideHours,
-					start: {
-						time: data.start,
-						formatted: DateTime.fromJSDate(data.start).toFormat('HH:mm:ss')
-					},
-					end: {
-						time: data.end,
-						formatted: DateTime.fromJSDate(data.end).toFormat('HH:mm:ss')
-					}
-				});
-			}
 
 			if (startInPast) {
 				setError('start', {
@@ -870,7 +922,8 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				if (data.isRecurring && data.recurring_info) {
 					updatedApplication.recurring_info = data.recurring_info;
 				} else {
-					updatedApplication.recurring_info = undefined;
+					// Explicitly set to null to clear recurring info in backend
+					updatedApplication.recurring_info = null;
 				}
 			}
 
@@ -882,11 +935,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 					(updatedApplication as any).customer_organization_number = data.organization_number;
 					(updatedApplication as any).customer_organization_name = data.organization_name;
 				} else {
-					// Clear organization data if recurring is disabled
-					(updatedApplication as any).customer_identifier_type = undefined;
-					(updatedApplication as any).customer_organization_id = undefined;
-					(updatedApplication as any).customer_organization_number = undefined;
-					(updatedApplication as any).customer_organization_name = undefined;
+					// Explicitly set to null to clear organization data in backend
+					(updatedApplication as any).customer_identifier_type = null;
+					(updatedApplication as any).customer_organization_id = null;
+					(updatedApplication as any).customer_organization_number = null;
+					(updatedApplication as any).customer_organization_name = null;
 				}
 			}
 
@@ -1123,40 +1176,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			</div>
 		);
 	};
-	// console.log("max-min time", maxTime, minTime)
 
-	// Enhanced debug logging for time constraints and business hours validation
-	if (props.showDebug) {
-		console.log("Application CRUD time constraints:", {
-			startMinTime,
-			startMaxTime,
-			endMinTime,
-			endMaxTime,
-			startTime: startTime ? {
-				date: startTime,
-				formatted: DateTime.fromJSDate(startTime).toFormat('HH:mm:ss'),
-				isWithinHours: isWithinBusinessHours(startTime)
-			} : null,
-			endTime: endTime ? {
-				date: endTime,
-				formatted: DateTime.fromJSDate(endTime).toFormat('HH:mm:ss'),
-				isWithinHours: isWithinBusinessHours(endTime)
-			} : null,
-			activeSeasons: props.seasons?.filter(season => {
-				const referenceDate = startTime ? DateTime.fromJSDate(startTime) : DateTime.now();
-				const seasonStart = DateTime.fromISO(season.from_);
-				const seasonEnd = DateTime.fromISO(season.to_);
-				return season.active && referenceDate >= seasonStart && referenceDate <= seasonEnd;
-			}).map(s => ({
-				id: s.id,
-				boundaries: s.boundaries.map(b => ({
-					wday: b.wday,
-					from: b.from_,
-					to: b.to_
-				}))
-			}))
-		});
-	}
 
 	return (
 		<form onSubmit={handleSubmit(onSubmit)}>
@@ -1184,10 +1204,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 						)}
 						<Button
 							variant="primary"
-							type="submit"
-							disabled={!(isDirty || !existingApplication)}
+							type={existingApplication && !isDirty && hasExternalChanges ? "button" : "submit"}
+							disabled={!(isDirty || !existingApplication || hasExternalChanges)}
+							onClick={existingApplication && !isDirty && hasExternalChanges ? props.onClose : undefined}
 						>
-							{t('common.save')}
+							{existingApplication && !isDirty && hasExternalChanges ? t('common.save') : t('common.save')}
 						</Button>
 					</div>
 				}
@@ -1347,8 +1368,22 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 							<div>
 								<p style={{margin: 0}}>
 									<Trans i18nKey="bookingfrontend.recurring_login_link_text" components={{linkTag: <ApplicationLoginLink onClick={() => {
+											// Check if user has selected files that will be lost
+											if (filesToUpload && filesToUpload.length > 0) {
+												const fileNames = Array.from(filesToUpload).map(file => file.name).join(', ');
+												const message = t('bookingfrontend.files_will_be_lost_on_login', {
+													files: fileNames,
+													defaultValue: `You have selected files (${fileNames}) that will be lost when you log in. Do you want to continue?`
+												});
+												const shouldProceed = window.confirm(message);
+												if (!shouldProceed) return;
+											}
+
 											// Store current form data in localStorage with timestamp
 											const currentFormData = getValues();
+											// Use the same applicationId resolution logic as existingApplication
+											const resolvedApplicationId = props.applicationId || props.selectedTempApplication?.extendedProps?.applicationId;
+
 											// Ensure dates are properly serialized
 											const dataToStore = {
 												...currentFormData,
@@ -1357,7 +1392,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 												isRecurring: true,
 												building_id: props.building_id,
 												selectedTempApplication: props.selectedTempApplication,
-												applicationId: props.applicationId,
+												applicationId: resolvedApplicationId,
 												date_id: props.date_id,
 												timestamp: Date.now() // Add timestamp for expiration
 											};
@@ -1736,7 +1771,11 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 																data-color={'danger'}
 																// color="danger"
 																data-size={'sm'}
-																onClick={() => deleteDocumentMutation.mutate(doc.id)}
+																onClick={() => deleteDocumentMutation.mutate(doc.id, {
+																	onSuccess: () => {
+																		setHasExternalChanges(true);
+																	}
+																})}
 																loading={deleteDocumentMutation.isPending}
 															>
 																{t('common.delete')}
@@ -1760,6 +1799,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 														uploadDocumentMutation.mutate({
 															id: existingApplication.id,
 															files: formData
+														}, {
+															onSuccess: () => {
+																setHasExternalChanges(true);
+															}
 														});
 													}
 												}}

@@ -492,10 +492,34 @@ class booking_soapplication extends booking_socommon
 
 	public function update_from_field( int|null $application_id)
 	{
-		$table_name	 = $this->table_name;
-		$db			 = $this->db;
-		$filter		 = $application_id ? " WHERE id = {$application_id}" : '';
-		$sql		 = "UPDATE $table_name SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = $table_name.id)$filter";
+		$db = $this->db;
+		
+		// Build WHERE clauses for filtering
+		$filter = $application_id ? " AND id = {$application_id}" : '';
+		$parent_filter = $application_id ? " AND parent_app.id = {$application_id}" : '';
+		
+		// Update applications that are not parents (no children referencing them)
+		$sql = "UPDATE bb_application 
+				SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = bb_application.id)
+				WHERE id NOT IN (SELECT DISTINCT parent_id FROM bb_application WHERE parent_id IS NOT NULL)
+				$filter";
+		$db->query($sql, __LINE__, __FILE__);
+		
+		// Update parent applications with minimum from_ date from all child applications
+		$sql = "UPDATE bb_application parent_app
+				SET from_ = (
+					SELECT MIN(child_dates.from_)
+					FROM bb_application child_app
+					JOIN bb_application_date child_dates ON child_app.id = child_dates.application_id
+					WHERE child_app.parent_id = parent_app.id
+					AND child_app.active = 1
+				)
+				WHERE parent_app.id IN (
+					SELECT DISTINCT parent_id 
+					FROM bb_application 
+					WHERE parent_id IS NOT NULL
+				)
+				$parent_filter";
 		$db->query($sql, __LINE__, __FILE__);
 	}
 

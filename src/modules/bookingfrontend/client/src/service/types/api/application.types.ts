@@ -137,7 +137,7 @@ export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'd
     resources?: Array<IShortResource | IResource>;
     agegroups?: IApplicationAgeGroup[];
 	articles?: ArticleOrder[];
-    recurring_info?: RecurringInfo; // For convenience, will be JSON.stringify'd
+    recurring_info?: RecurringInfo | null; // For convenience, will be JSON.stringify'd. Allow null to clear
 }
 
 export interface ApplicationComment {

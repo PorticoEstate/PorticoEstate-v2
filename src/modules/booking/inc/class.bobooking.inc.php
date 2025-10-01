@@ -631,7 +631,7 @@ phpgw::import_class('booking.bocommon_authorized');
 		 * @return array containing values from $array for the keys in $keys.
 		 */
 //        todo: remove debug kode
-		function building_schedule( $building_id, $date )
+		function building_schedule( $building_id, $date, $resource_filter = array() )
 		{
 //            echo "debug:\n";
 			$from = clone $date;
@@ -644,8 +644,17 @@ phpgw::import_class('booking.bocommon_authorized');
 			$to				 = clone $from;
 			$to->modify('+7 days');
 
-			$resources		 = $this->resource_so->read(array('filters'	 => array('building_id'	 => $building_id,
-					'active' => 1), 'results'	 => -1));
+			$filters = array(
+					'building_id'	 => $building_id,
+					'active' => 1
+			);
+
+			if (is_array($resource_filter) && count($resource_filter) > 0)
+			{
+				$filters['id'] = $resource_filter;
+			}
+
+			$resources		 = $this->resource_so->read(array('filters'	 => $filters, 'results'	 => -1));
 			$resource_ids = array(-1);
 			foreach ($resources['results'] as $resource)
 			{

@@ -108,8 +108,12 @@ schedule.updateSchedule = function (date)
 	var url = self.location.href;
 	url = url.substr(0, (url.indexOf("#date")));
 	url += '#date=' + date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
+
+	// Update the URL with the schedule.params.filter_id as filter_id[]=1&filter_id[]=2&filter_id[]=3
+	let datasourceUrl = schedule.datasourceUrl;
+	datasourceUrl += '&filter_id[]=' + (schedule.params.filter_id ? schedule.params.filter_id.join('&filter_id[]=') : '');
 	location.replace(url);
-	schedule.renderSchedule('schedule_container', schedule.datasourceUrl, date, schedule.colFormatter, schedule.includeResource, classTable);
+	schedule.renderSchedule('schedule_container', datasourceUrl, date, schedule.colFormatter, schedule.includeResource, classTable);
 	schedule.date = date;
 }
 
@@ -130,6 +134,12 @@ schedule.prevWeek = function ()
 schedule.nextWeek = function ()
 {
 	schedule.moveWeek(7)
+}
+
+schedule.filter_resource = function (resource_ids)
+{
+	schedule.params.filter_id = resource_ids;
+	schedule.updateSchedule(schedule.date);
 }
 
 

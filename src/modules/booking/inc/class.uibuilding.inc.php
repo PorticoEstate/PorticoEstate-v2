@@ -498,6 +498,7 @@ class booking_uibuilding extends booking_uicommon
 		));
 		self::add_javascript('booking', 'base', 'schedule.js');
 		phpgwapi_jquery::load_widget("datepicker");
+		phpgwapi_jquery::load_widget('bootstrap-multiselect');
 
 		$building['picker_img'] = $this->phpgwapi_common->image('phpgwapi', 'cal');
 
@@ -506,6 +507,23 @@ class booking_uibuilding extends booking_uicommon
 		$active_tab		 = 'generic';
 
 		$building['tabs'] = phpgwapi_jquery::tabview_generate($tabs, $active_tab);
+
+		$resource_so = CreateObject('booking.soresource');
+		$resources = $resource_so->read(array('results' => 'all', 'filters' => array(
+			'active' => 1, 'building_id' => $building['id']
+		)));
+
+		$resource_list = array();
+
+		if ($resources['results'])
+		{
+			foreach ($resources['results'] as $resource)
+			{
+				$resource_list[] = array('id' => $resource['id'], 'name' => $resource['name']);
+			}
+		}
+
+		$building['resource_list'] = array('options' => $resource_list);
 
 		self::render_template_xsl('building_schedule', array('building' => $building));
 	}

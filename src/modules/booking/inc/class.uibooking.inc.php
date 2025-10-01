@@ -333,7 +333,8 @@ class booking_uibooking extends booking_uicommon
 	public function building_schedule()
 	{
 		$date = new DateTime(Sanitizer::get_var('date'));
-		$bookings = $this->bo->building_schedule(Sanitizer::get_var('building_id', 'int'), $date);
+		$resource_ids = Sanitizer::get_var('filter_id', 'int');
+		$bookings = $this->bo->building_schedule(Sanitizer::get_var('building_id', 'int'), $date, $resource_ids);
 		foreach ($bookings['results'] as &$booking)
 		{
 			$booking['resource_link'] = $this->link(array(

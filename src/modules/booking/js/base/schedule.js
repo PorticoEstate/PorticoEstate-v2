@@ -110,8 +110,8 @@ schedule.updateSchedule = function (date)
 	url += '#date=' + date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
 
 	// Update the URL with the schedule.params.filter_id as resource_id[]=1&resource_id[]=2&resource_id[]=3
-	let datasourceUrl = schedule.datasourceUrl.split('&filter_id=');
-	datasourceUrl += '&resource_id[]=' + (schedule.params.filter_id ? schedule.params.filter_id.join('&resource_id[]=') : '');
+	let datasourceUrl = schedule.datasourceUrl.split('&resource_filter=');
+	datasourceUrl += '&resource_filter[]=' + (schedule.params.filter_id ? schedule.params.filter_id.join('&resource_filter[]=') : '');
 	location.replace(url);
 	schedule.renderSchedule('schedule_container', datasourceUrl, date, schedule.colFormatter, schedule.includeResource, classTable);
 	schedule.date = date;

@@ -649,7 +649,7 @@ phpgw::import_class('booking.bocommon_authorized');
 					'active' => 1
 			);
 
-			if (is_array($resource_filter) && count($resource_filter) > 0)
+			if (is_array($resource_filter) && count($resource_filter) > 0 && !empty($resource_filter[0]))
 			{
 				$filters['id'] = $resource_filter;
 			}

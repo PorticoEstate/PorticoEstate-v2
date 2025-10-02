@@ -723,6 +723,7 @@ prizing	booking	nn	Prising
 Project No.	booking	nn	Prosjektnr.
 Public event	booking	nn	Offentleg arrangement
 published	booking	nn	Publisert
+purchase conditions	booking	nn	Kjøpsbetingelser
 quantity	booking	nn	Mengde
 Re-assign to me	booking	nn	Bli saksbehandler
 reason for rejection	booking	nn	Årsak til avslag

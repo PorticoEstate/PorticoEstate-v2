@@ -247,7 +247,36 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				season.boundaries.filter(b => b.wday === dayOfWeek)
 			);
 
-			if ((dayBoundaries?.length || 0) > 0) {
+			// Check if any applicable season covers this date but has no boundary for this weekday
+			const isDateInSeasonWithNoBoundary = applicableSeasons?.some(season => {
+				const seasonStart = DateTime.fromISO(season.from_);
+				const seasonEnd = DateTime.fromISO(season.to_);
+				const hasMatchingResources = season.resources.some(seasonResource =>
+					enabledResources.has(seasonResource.id.toString())
+				);
+
+				// Date is within season range and has matching resources
+				const dateInRange = date >= seasonStart && date <= seasonEnd && hasMatchingResources;
+				// But season has no boundary defined for this weekday
+				const noBoundaryForDay = !season.boundaries.some(b => b.wday === dayOfWeek);
+
+				return dateInRange && noBoundaryForDay;
+			});
+
+			if (isDateInSeasonWithNoBoundary) {
+				// Add full-day closed background for days missing from season boundaries
+				backgroundEvents.push({
+					start: date.startOf('day').toJSDate(),
+					end: date.plus({days: 1}).startOf('day').toJSDate(),
+					display: 'background',
+					classNames: styles.closedHours,
+					extendedProps: {
+						closed: true,
+						type: 'background',
+						source: 'seasonMissingDay'
+					}
+				});
+			} else if ((dayBoundaries?.length || 0) > 0) {
 				// Sort boundaries by start time
 				const sortedBoundaries = [...(dayBoundaries || [])].sort((a, b) =>
 					a.from_.localeCompare(b.from_)
@@ -415,6 +444,44 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					text: t('bookingfrontend.booking_unavailable'),
 					autoHide: true,
 					messageId: 'booking_unavailable'
+				});
+			}
+			return false;
+		}
+
+		// Check if selection is on a day that's within a season but has no boundary defined
+		const selectionDate = selectStart.startOf('day');
+		const selectionWeekday = selectionDate.weekday;
+
+		const isSelectionInClosedSeasonDay = seasons?.some(season => {
+			const seasonStart = DateTime.fromISO(season.from_).startOf('day');
+			const seasonEnd = DateTime.fromISO(season.to_).startOf('day');
+
+			// Check if season has any resources that match enabled resources
+			const hasMatchingResources = season.resources.some(seasonResource =>
+				enabledResources.has(seasonResource.id.toString())
+			);
+
+			// Selection date is within season range and has matching resources
+			const dateInRange = season.active &&
+				selectionDate >= seasonStart &&
+				selectionDate <= seasonEnd &&
+				hasMatchingResources;
+
+			// But season has no boundary defined for this weekday
+			const noBoundaryForDay = !season.boundaries.some(b => b.wday === selectionWeekday);
+
+			return dateInRange && noBoundaryForDay;
+		});
+
+		if (isSelectionInClosedSeasonDay) {
+			// Only show toast for actual user selection attempts
+			if (span.end && span.start) {
+				addToast({
+					type: 'info',
+					text: t('bookingfrontend.booking_unavailable'),
+					autoHide: true,
+					messageId: 'season_day_closed'
 				});
 			}
 			return false;

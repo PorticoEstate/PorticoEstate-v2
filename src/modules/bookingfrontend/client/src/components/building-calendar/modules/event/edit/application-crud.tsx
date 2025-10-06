@@ -233,9 +233,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			season.boundaries.filter(b => b.wday === dayOfWeek)
 		);
 
-		// If no boundaries defined for this day, consider it within hours (will be validated elsewhere)
+		// If no boundaries defined for this day, consider it CLOSED (not within business hours)
+		// This ensures that days missing from season boundaries are treated as closed
 		if (dayBoundaries.length === 0) {
-			return true;
+			return false;
 		}
 
 		// Special handling for late night hours (23:45:00 or later)

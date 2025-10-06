@@ -1618,11 +1618,12 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 		if (!empty($this->config_data['voucher_client']))
 		{
-			$client_id = strtoupper($this->config_data['voucher_client']);
+			//If the client ID is less than 4 characters, it should be padded with spaces on the right side to make it 4 characters long.
+			$client_id = str_pad(strtoupper($this->config_data['voucher_client']), 4, ' ', STR_PAD_RIGHT); //4 chars long
 		}
 		else
 		{
-			$client_id = 'BY';
+			$client_id = 'BY  ';//4 chars long
 		}
 
 		$status = 'N';
@@ -2849,8 +2850,8 @@ class booking_socompleted_reservation_export extends booking_socommon
 			'att_7_id' => str_repeat(' ', 2),
 			'bank_account' => str_repeat(' ', 35),
 			'batch_id' => str_repeat(' ', 12),
-			'client' => str_repeat(' ', 2),
-			'client_ref' => str_repeat(' ', 2),
+			'client' => str_repeat(' ', 4),
+//			'client_ref' => str_repeat(' ', 2), // slått sammen med client for å få 4 posisjoner i 'client'
 			'confirm_date' => str_repeat(' ', 17),
 			'control' => str_repeat(' ', 1),
 			'cur_amount' => str_repeat(' ', 17),

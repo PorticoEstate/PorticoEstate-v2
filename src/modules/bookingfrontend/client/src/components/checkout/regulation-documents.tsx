@@ -46,7 +46,7 @@ const RegulationDocuments: FC<RegulationDocumentsProps> = ({
 								target="_blank"
 								className={styles.documentLink}
 							>
-								{doc.name}
+								{doc.description || doc.name}
 							</Link>}
 							error={showError && !checkedDocuments[doc.id] ?
 								t('bookingfrontend.confirm_this_document') : undefined}

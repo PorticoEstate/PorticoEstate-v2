@@ -21,7 +21,8 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 			'get_partials'					 => true,
 			'set_block'						 => true,
 			'cancel_block'					 => true,
-			'update_contact_informtation'	 => true
+			'update_contact_informtation'	 => true,
+			'check_collision_for_deny_resources' => true
 		);
 
 		function get_activity_data()

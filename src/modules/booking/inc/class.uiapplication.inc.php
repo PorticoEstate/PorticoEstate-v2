@@ -45,7 +45,8 @@ class booking_uiapplication extends booking_uicommon
 		'articles'					 => true,
 		'delete'					 => true,
 		'get_activity_data'			 => true,
-		'get_applications'			 => true
+		'get_applications'			 => true,
+		'check_collision_for_deny_resources' => true
 	);
 	protected $customer_id,
 		$default_module = 'bookingfrontend',
@@ -1192,6 +1193,59 @@ class booking_uiapplication extends booking_uicommon
 			'status' => $status,
 			'message'	=> $message
 		);
+	}
+
+	/**
+	 * Check collision for resources with deny_application_if_booked = 1
+	 * Returns JSON response for AJAX calls
+	 */
+	public function check_collision_for_deny_resources()
+	{
+		$resources = Sanitizer::get_var('resources', 'array', 'REQUEST', array());
+		$from_ = Sanitizer::get_var('from_', 'string', 'REQUEST');
+		$to_ = Sanitizer::get_var('to_', 'string', 'REQUEST');
+
+		// Convert to proper format if needed
+		if ($from_ && $to_) {
+			$from_ = date('Y-m-d H:i:s', phpgwapi_datetime::date_to_timestamp($from_));
+			$to_ = date('Y-m-d H:i:s', phpgwapi_datetime::date_to_timestamp($to_));
+		}
+
+		$session_id = $this->sessions->get_session_id();
+		$has_collision = false;
+		$resources_with_deny_flag = array();
+
+		// Check each resource for deny_application_if_booked flag
+		foreach ($resources as $resource_id) {
+			$resource = $this->resource_bo->so->read_single((int)$resource_id);
+
+			// Only check collision for resources with deny_application_if_booked = 1
+			if ($resource && $resource['deny_application_if_booked'] == 1) {
+				$resources_with_deny_flag[] = $resource_id;
+
+				// Check for collision
+				$collision = $this->bo->so->check_collision(array((int)$resource_id), $from_, $to_, $session_id);
+				if ($collision) {
+					$has_collision = true;
+					break; // No need to check further if we found a collision
+				}
+			}
+		}
+
+		$response = array(
+			'has_collision' => $has_collision,
+			'resources_checked' => $resources_with_deny_flag,
+			'message' => $has_collision ? lang('time_booking_conflicts') : ''
+		);
+
+		// Return JSON for AJAX calls
+		if (Sanitizer::get_var('phpgw_return_as', 'string', 'REQUEST') == 'json') {
+			header('Content-Type: application/json');
+			echo json_encode($response);
+			$this->phpgwapi_common->phpgw_exit();
+		}
+
+		return $response;
 	}
 
 	private function validate_limit_number($resource_id, $ssn, &$errors)

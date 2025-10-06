@@ -291,7 +291,7 @@ class ApplicationService
                 'customer_organization_number' => $data['customerType'] === 'organization_number' ? $data['organizationNumber'] : null,
                 'customer_organization_name' => $data['customerType'] === 'organization_number' ? $data['organizationName'] : null,
                 'modified' => date('Y-m-d H:i:s'),
-                'customer_ssn' => $data['customerType'] === 'ssn' ? $this->userHelper->ssn : null
+                'customer_ssn' => $this->userHelper->ssn
             ];
 
             // Handle organization ID - use provided ID if available, otherwise look up by number

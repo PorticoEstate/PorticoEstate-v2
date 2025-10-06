@@ -102,7 +102,7 @@ class Lang
                             <h2>ERROR</h2>
                             $error
                         </div>
-        
+
         HTML;
 
 				$this->setup_tpl->set_file(array(
@@ -121,13 +121,13 @@ class Lang
                         <div>
                             <a href="../setup/lang">$return</a>
                         </div>
-        
+
         HTML;
 				$footer = $this->html->get_footer();
 				return $header . $error . $footer;
 			}
 
-			Header('Location: ../setup/lang');
+			Header('Location: ../setup/lang?success=1');
 			exit;
 		}
 		else
@@ -142,6 +142,16 @@ class Lang
 				'T_alert_msg'	=> 'msg_alert_msg.tpl',
 				'T_lang_main'	=> 'lang_main.tpl'
 			));
+
+			$success_message = '';
+			if (\Sanitizer::get_var('success', 'bool', 'GET'))
+			{
+				$success_message = <<<HTML
+					<div style="background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 12px; margin: 10px 0; border-radius: 4px;">
+						<strong>Success!</strong> Languages have been installed successfully.
+					</div>
+HTML;
+			}
 
 			$this->setup_tpl->set_block('T_lang_main', 'B_choose_method', 'V_choose_method');
 
@@ -218,7 +228,7 @@ class Lang
 			$header = $this->html->get_header("$stage_title", False, 'config', $this->db->get_domain() . '(' . $db_config['db_type'] . ')');
 			$main = $this->setup_tpl->fp('out', 'T_lang_main');
 			$footer = $this->html->get_footer();
-			return $header . $main . $footer;
+			return $header . $success_message . $main . $footer;
 		}
 	}
 }

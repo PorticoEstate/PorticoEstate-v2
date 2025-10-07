@@ -8,6 +8,7 @@ import {IOrganizationGroup, IShortOrganizationDelegate} from '@/service/types/ap
 import {useOrganizationDelegates} from '@/service/hooks/organization'
 import {PlusIcon, TrashIcon} from '@navikt/aksel-icons'
 import styles from './group-form.module.scss'
+import {useRef, useEffect} from 'react'
 
 const contactSchema = z.object({
 	name: z.string().min(1, 'Contact name is required'),
@@ -46,7 +47,8 @@ export interface GroupFormProps {
 const GroupForm = ({group, organizationId, onSubmit, onCancel, isSubmitting, isEdit = false, hideActions = false, formId}: GroupFormProps) => {
 	const t = useTrans()
 	const {data: delegates} = useOrganizationDelegates(organizationId)
-	
+	const contactsContainerRef = useRef<HTMLDivElement>(null)
+
 	const schema = isEdit ? groupEditSchema : groupSchema
 
 	const {
@@ -94,6 +96,22 @@ const GroupForm = ({group, organizationId, onSubmit, onCancel, isSubmitting, isE
 			append({ name: '', email: '', phone: '' })
 		}
 	}
+
+	// Scroll to bottom when a new contact is added
+	useEffect(() => {
+		if (fields.length > 0 && contactsContainerRef.current) {
+			// Find the scrollable parent (the dialog content)
+			const scrollableParent = contactsContainerRef.current.closest('[class*="dialogContent"]')
+			if (scrollableParent) {
+				setTimeout(() => {
+					scrollableParent.scrollTo({
+						top: scrollableParent.scrollHeight,
+						behavior: 'smooth'
+					})
+				}, 100)
+			}
+		}
+	}, [fields.length])
 
 	const removeContact = (index: number) => {
 		remove(index)
@@ -196,7 +214,7 @@ const GroupForm = ({group, organizationId, onSubmit, onCancel, isSubmitting, isE
 						<ValidationMessage>{String(errors.contacts.message)}</ValidationMessage>
 					)}
 
-					<div className={styles.contactsContainer}>
+					<div className={styles.contactsContainer} ref={contactsContainerRef}>
 						{fields.map((field, index) => (
 						<div key={field.id} className={styles.contactForm}>
 							<div className={styles.contactHeader}>

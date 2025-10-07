@@ -292,40 +292,42 @@ const OrganizationGroupsContent = (props: OrganizationGroupsContentProps) => {
 					}}
 				/>
 
-				<MobileDialog
-					dialogId={'add-group-dialog'}
-					open={showAddForm}
-					onClose={() => setShowAddForm(false)}
-					title={t('bookingfrontend.new_group')}
-					footer={(attemptClose) => (
-						<div className={styles.formActions}>
-							<Button
-								type="submit"
-								form="add-group-form"
-								disabled={isSubmitting}
-							>
-								{isSubmitting ? t('common.saving') : t('common.save')}
-							</Button>
-							<Button
-								type="button"
-								variant="tertiary"
-								onClick={attemptClose}
-								disabled={isSubmitting}
-							>
-								{t('common.cancel')}
-							</Button>
-						</div>
-					)}
-				>
-					<GroupForm
-						organizationId={organizationId}
-						onSubmit={(data) => handleAddGroup(data as GroupFormData)}
-						onCancel={() => setShowAddForm(false)}
-						isSubmitting={isSubmitting}
-						hideActions={true}
-						formId="add-group-form"
-					/>
-				</MobileDialog>
+				{showAddForm && (
+					<MobileDialog
+						dialogId={'add-group-dialog'}
+						open={showAddForm}
+						onClose={() => setShowAddForm(false)}
+						title={t('bookingfrontend.new_group')}
+						footer={(attemptClose) => (
+							<div className={styles.formActions}>
+								<Button
+									type="submit"
+									form="add-group-form"
+									disabled={isSubmitting}
+								>
+									{isSubmitting ? t('common.saving') : t('common.save')}
+								</Button>
+								<Button
+									type="button"
+									variant="tertiary"
+									onClick={attemptClose}
+									disabled={isSubmitting}
+								>
+									{t('common.cancel')}
+								</Button>
+							</div>
+						)}
+					>
+						<GroupForm
+							organizationId={organizationId}
+							onSubmit={(data) => handleAddGroup(data as GroupFormData)}
+							onCancel={() => setShowAddForm(false)}
+							isSubmitting={isSubmitting}
+							hideActions={true}
+							formId="add-group-form"
+						/>
+					</MobileDialog>
+				)}
 
 				{editingGroup && (
 					<EditGroupModal

@@ -89,6 +89,12 @@ const Footer = async (props: FooterProps) => {
 								{t('bookingfrontend.privacy')}
 							</Link>
 						</li>
+						<li>
+							<Link href={`/${props.lang}/purchase-conditions`}
+								  className="link-text link-text-secondary normal">
+								{t('bookingfrontend.purchase_conditions')}
+							</Link>
+						</li>
 					</ul>
 
 				</div>

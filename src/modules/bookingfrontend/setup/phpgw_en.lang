@@ -838,3 +838,4 @@ validation_zipcode_min_length	bookingfrontend	en	Zip code must be at least 4 cha
 validation_homepage_format	bookingfrontend	en	Invalid URL format
 vipps_payment_completed	bookingfrontend	en	Your booking has been completed via Vipps payment
 time_booking_conflicts	bookingfrontend	en	The selected time conflicts with existing bookings
+purchase_conditions	bookingfrontend	en	Purchase Conditions

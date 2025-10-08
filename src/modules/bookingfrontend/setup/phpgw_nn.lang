@@ -838,3 +838,4 @@ validation_zipcode_min_length	bookingfrontend	nn	Postnummer må vera minst 4 tei
 validation_homepage_format	bookingfrontend	nn	Ugyldig URL-format
 organizer_required	bookingfrontend	nn	Arrangørnamn er påkravd
 time_booking_conflicts	bookingfrontend	nn	Den valde tida er i konflikt med eksisterande bookingar
+purchase_conditions	bookingfrontend	nn	Kjøpsbetingelser

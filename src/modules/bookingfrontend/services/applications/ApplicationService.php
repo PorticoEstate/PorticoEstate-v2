@@ -281,7 +281,7 @@ class ApplicationService
 
             // Handle parent_id selection per building
             $buildingParentIds = $data['building_parent_ids'] ?? [];
-            
+
             // If legacy parent_id is provided, convert to new format
             if (isset($data['parent_id']) && empty($buildingParentIds)) {
                 // Find the building of the legacy parent_id and use it
@@ -580,7 +580,7 @@ class ApplicationService
 
             // Handle parent_id selection per building (same logic as updateApplicationsWithContactInfo)
             $buildingParentIds = $data['building_parent_ids'] ?? [];
-            
+
             // If legacy parent_id is provided, convert to new format
             if (isset($data['parent_id']) && empty($buildingParentIds)) {
                 foreach ($updatedApplications as $app) {
@@ -2028,7 +2028,7 @@ class ApplicationService
         }
 
         $parentBuildingId = $parentApplication['building_id'];
-        
+
         // Check all regular (non-recurring) applications that would get this parent_id
         foreach ($applications as $app) {
             // Skip recurring applications (they are processed individually)

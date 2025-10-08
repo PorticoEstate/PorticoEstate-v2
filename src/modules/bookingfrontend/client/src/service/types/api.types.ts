@@ -182,6 +182,7 @@ export interface IBookingConfig {
     output_files?: string;
     participant_limit_sms?: boolean;
     participanttext?: string;
+	purchase_conditions?: string;
     proxy?: string;
     split_pool?: string;
     split_pool4_ids?: string;

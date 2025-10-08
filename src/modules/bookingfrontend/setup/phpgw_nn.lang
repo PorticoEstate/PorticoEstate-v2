@@ -922,5 +922,6 @@ validation_zipcode_min_length	bookingfrontend	nn	Postnummer må vera minst 4 tei
 validation_homepage_format	bookingfrontend	nn	Ugyldig URL-format
 organizer_required	bookingfrontend	nn	Arrangørnamn er påkravd
 time_booking_conflicts	bookingfrontend	nn	Den valde tida er i konflikt med eksisterande bookingar
+purchase_conditions	bookingfrontend	nn	Kjøpsbetingelser
 validation_phone_norwegian_format	bookingfrontend	nn	Venlegast skriv inn eit gyldig norsk telefonnummer (8 siffer, eventuelt med +47 prefiks)
 files_will_be_lost_on_login	bookingfrontend	nn	Du har valt filer ({{fileNames}}) som vil gå tapt når du loggar inn. Vil du halde fram?

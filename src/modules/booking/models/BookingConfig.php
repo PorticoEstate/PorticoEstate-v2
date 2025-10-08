@@ -400,6 +400,12 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
+     */
+    public $purchase_conditions;
+
+    /**
+     * @OA\Property(type="string")
      */
     public $proxy;
 

@@ -60,6 +60,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			case 'timeGridWeek':
 				setCurrentDate(currentDate.minus({weeks: 1}));
 				break;
+			case 'dayGridMonth':
+				setCurrentDate(currentDate.minus({months: 1}));
+				break;
 			default:
 				setCurrentDate(currentDate.minus({days: 1}));
 		}
@@ -75,6 +78,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					break;
 				case 'timeGridWeek':
 					setCurrentDate(currentDate.plus({weeks: 1}));
+					break;
+				case 'dayGridMonth':
+					setCurrentDate(currentDate.plus({months: 1}));
 					break;
 				default:
 					setCurrentDate(currentDate.plus({days: 1}));
@@ -147,9 +153,10 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 							data-size={'sm'}
 							className={'captialize subtle'}
 							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
-					{/*        className={'captialize'}*/}
-					{/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
+					<Button variant={view === 'dayGridMonth' ? 'primary' : 'tertiary'} data-color={'accent'}
+							data-size={'sm'}
+							className={'captialize subtle'}
+							onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>
 					</ButtonGroup>
 				)}
 

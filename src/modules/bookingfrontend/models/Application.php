@@ -304,6 +304,12 @@ class Application
      */
     public array $comments = [];
 
+    /**
+     * @OA\Property(type="object", description="Recurring booking information stored as JSON")
+     * @Expose
+     */
+    public $recurring_info;
+
     public function __construct(array $data = [])
     {
         if (!empty($data)) {

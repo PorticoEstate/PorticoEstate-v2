@@ -29,12 +29,61 @@ export const applicationFormSchema = z.object({
 		{
 			message: ("bookingfrontend.number of participants is required")
 		}
-	)
+	),
+	// Recurring booking fields
+	isRecurring: z.boolean().default(false),
+	recurring_info: z.object({
+		repeat_until: z.string().optional(),
+		field_interval: z.number().refine((val) => [1, 2, 3, 4].includes(val), {
+			message: 'Interval must be 1, 2, 3, or 4 weeks'
+		}).default(1),
+		outseason: z.boolean().default(false)
+	}).optional(),
+	// Organization selection for recurring bookings
+	organization_id: z.number().optional(),
+	organization_number: z.string().optional(),
+	organization_name: z.string().optional()
 }).refine(
 	(data) => data.end > data.start,
 	{
 		message: "bookingfrontend.end_time_must_be_after_start_time",
 		path: ["end"]
+	}
+).refine(
+	(data) => {
+		// If recurring is enabled, recurring_info is required
+		if (data.isRecurring) {
+			return !!data.recurring_info;
+		}
+		return true;
+	},
+	{
+		message: "Recurring booking settings are required",
+		path: ["recurring_info"]
+	}
+).refine(
+	(data) => {
+		// If recurring is enabled, organization is required
+		if (data.isRecurring) {
+			return !!data.organization_id;
+		}
+		return true;
+	},
+	{
+		message: "Organization selection is required for recurring bookings",
+		path: ["organization_id"]
+	}
+).refine(
+	(data) => {
+		// If recurring is enabled, either repeat_until OR outseason must be set
+		if (data.isRecurring && data.recurring_info) {
+			return !!(data.recurring_info.repeat_until && data.recurring_info.repeat_until.length > 0) || data.recurring_info.outseason;
+		}
+		return true;
+	},
+	{
+		message: "Either select a repeat until date or choose to repeat until end of season",
+		path: ["recurring_info", "repeat_until"]
 	}
 );
 

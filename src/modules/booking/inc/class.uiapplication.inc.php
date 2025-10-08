@@ -8,6 +8,7 @@ use App\Database\Db;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\phpgwapi\models\ServerSettings;
+use App\modules\booking\services\EmailService;
 
 
 phpgw::import_class('booking.uicommon');
@@ -121,11 +122,21 @@ class booking_uiapplication extends booking_uicommon
 			'customer_organization_name' => 'string',
 			'customer_identifier_type' => 'string',
 			'parent_id' => 'int',
+			'recurring_info' => 'string',
 		);
 
 		$this->display_name = lang('application');
 		$this->flags['app_header'] = lang('booking') . "::{$this->display_name}";
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
+	}
+
+	/**
+	 * Get the combine_applications setting
+	 * @return bool
+	 */
+	public function get_combine_applications()
+	{
+		return $this->combine_applications;
 	}
 
 	public function get_applications()
@@ -287,7 +298,12 @@ class booking_uiapplication extends booking_uicommon
 						{
 							$related_app['case_officer_id'] = $current_account_id;
 							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $this->current_account_fullname()));
-								$this->bo->update($related_app);
+							// Also change status from NEW to PENDING for related applications
+							if ($related_app['status'] == 'NEW')
+							{
+								$related_app['status'] = 'PENDING';
+							}
+							$this->bo->update($related_app);
 							}
 						}
 					}
@@ -363,7 +379,12 @@ class booking_uiapplication extends booking_uicommon
 						{
 							$related_app['case_officer_id'] = $account_id;
 							$this->add_ownership_change_comment($related_app, sprintf(lang("User '%s' was assigned"), $case_officer_full_name));
-								$this->bo->update($related_app);
+							// Also change status from NEW to PENDING for related applications
+							if ($related_app['status'] == 'NEW')
+							{
+								$related_app['status'] = 'PENDING';
+							}
+							$this->bo->update($related_app);
 							}
 						}
 					}
@@ -574,6 +595,10 @@ class booking_uiapplication extends booking_uicommon
 						'label' => lang('Status')
 					),
 					array(
+						'key' => 'type',
+						'label' => lang('Type')
+					),
+					array(
 						'key' => 'building_name',
 						'label' => lang('Building')
 					),
@@ -749,11 +774,11 @@ class booking_uiapplication extends booking_uicommon
 			// Add child application count only if combining applications
 			if ($this->combine_applications)
 			{
-				$child_count = count($this->bo->so->get_child_applications($application['id']));
-				$application['child_count'] = $child_count;
-				if ($child_count > 0)
+				$related_info = $this->bo->so->get_related_applications($application['id']);
+				$total_count = $related_info['total_count'];
+				$application['child_count'] = $total_count - 1; // For backward compatibility
+				if ($total_count > 1)
 				{
-					$total_count = $child_count + 1;
 					$application['name'] = $application['name'] . ' (' . $total_count . ' ' . lang('applications') . ')';
 				}
 			}
@@ -762,6 +787,9 @@ class booking_uiapplication extends booking_uicommon
 			$application['created'] = pretty_timestamp($application['created']);
 			$application['modified'] = pretty_timestamp($application['modified']);
 			$application['frontend_modified'] = pretty_timestamp($application['frontend_modified']);
+
+			// Add type based on recurring_info
+			$application['type'] = !empty($application['recurring_info']) ? lang('repeating') : lang('regular');
 			$resources = $this->resource_bo->so->read(array('results' => 'all', 'filters' => array(
 				'id' => $application['resources']
 			)));
@@ -793,7 +821,35 @@ class booking_uiapplication extends booking_uicommon
 			$case_officer = true;
 		}
 
-		$associations = $this->assoc_bo->read();
+		// Get associations from all related applications for combined display only if combining is enabled
+		if ($this->combine_applications)
+		{
+			$related_info = $this->bo->so->get_related_applications($application_id);
+			$application_ids = $related_info['application_ids'];
+
+			// Get associations from all related applications
+			$all_associations = array();
+			foreach ($application_ids as $app_id)
+			{
+				$app_associations = $this->assoc_bo->so->read(array(
+					'filters' => array('application_id' => $app_id),
+					'results' => 'all'
+				));
+				if (!empty($app_associations['results']))
+				{
+					$all_associations = array_merge($all_associations, $app_associations['results']);
+				}
+			}
+			$associations = array('results' => $all_associations);
+		}
+		else
+		{
+			// Single application - use existing logic
+			$associations = $this->assoc_bo->so->read(array(
+				'filters' => array('application_id' => $application_id),
+				'results' => 'all'
+			));
+		}
 		foreach ($associations['results'] as &$association)
 		{
 			if ($this->flags['currentapp'] == 'bookingfrontend')
@@ -1020,6 +1076,12 @@ class booking_uiapplication extends booking_uicommon
 		$entity['agegroups'] = array();
 		$this->agegroup_bo->extract_form_data($entity);
 		$this->extract_customer_identifier($entity);
+
+		// Handle recurring_info - convert empty string to null for JSON field
+		if (isset($entity['recurring_info']) && $entity['recurring_info'] === '') {
+			$entity['recurring_info'] = null;
+		}
+
 		return $entity;
 	}
 
@@ -2973,15 +3035,20 @@ class booking_uiapplication extends booking_uicommon
 	public function edit()
 	{
 		$id = Sanitizer::get_var('id', 'int');
+		$selected_app_id = Sanitizer::get_var('selected_app_id', 'int');
+
 		if (!$id)
 		{
 			phpgw::no_access('booking', lang('missing id'));
 		}
-		$application = $this->bo->read_single($id);
+
+		// Use selected application ID if provided, otherwise use the original ID
+		$edit_id = $selected_app_id ?: $id;
+		$application = $this->bo->read_single($edit_id);
 
 		if (!$application)
 		{
-			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $id));
+			phpgw::no_access('booking', lang('missing entry. Id %1 is invalid', $edit_id));
 		}
 
 		$resource_participant_limit_gross = CreateObject('booking.soresource')->get_participant_limit($application['resources'], true);
@@ -3618,6 +3685,13 @@ class booking_uiapplication extends booking_uicommon
 		{
 			phpgw::no_access('booking', lang('missing id'));
 		}
+
+		// Check if we should open the approve modal after allocation creation
+		$open_approve_modal = Sanitizer::get_var('open_approve_modal', 'int', 'GET', 0);
+
+		// Check if we should show recurring allocation summary after approval
+		$show_recurring_summary = Sanitizer::get_var('show_recurring_summary', 'int', 'GET', 0);
+
 		$application = $this->bo->read_single($id);
 
 		if (!$application)
@@ -3671,7 +3745,9 @@ class booking_uiapplication extends booking_uicommon
 						'id' => $date['id'],
 						'resources' => $app['resources'], // Keep original resources for this specific application
 						'application_ids' => array($app_id),
-						'application_name' => $app['name'] // Add application name for potential display
+						'application_id' => $app_id, // Add direct application_id for easier template access
+						'application_name' => $app['name'], // Add application name for potential display
+						'equipment' => $app['equipment'] // Add equipment for display
 					);
 				}
 			}
@@ -3721,7 +3797,10 @@ class booking_uiapplication extends booking_uicommon
 					'status' => $app['status'],
 					'date_ranges' => $date_ranges,
 					'resource_names' => is_array($resource_names) ? $resource_names : array(),
-					'created' => pretty_timestamp($app['created'])
+					'created' => pretty_timestamp($app['created']),
+					'equipment' => $app['equipment'],
+					'description' => $app['description'],
+					'agegroups' => !empty($app['agegroups']) ? $app['agegroups'] : array()
 				);
 			}
 		}
@@ -3807,6 +3886,7 @@ class booking_uiapplication extends booking_uicommon
 
 			$update = false;
 			$notify = false;
+			$recurring_summary = null; // Track when recurring allocations are created
 
 			$return_after_action = false;
 
@@ -3937,6 +4017,12 @@ class booking_uiapplication extends booking_uicommon
 						$this->add_comment($application, $acceptance_message);
 					}
 
+					// Handle recurring allocations creation for approved applications
+					if (!empty($application['recurring_info']))
+					{
+						$recurring_summary = $this->create_recurring_allocations_on_approval($application);
+					}
+
 					// Handle all related applications only if combining is enabled
 					if ($this->combine_applications && !empty($related_info['application_ids']))
 					{
@@ -3975,9 +4061,35 @@ class booking_uiapplication extends booking_uicommon
 						}
 					}
 				}
+				else
+				{
+					// Handle all other status changes (NEW, PENDING, etc.) for related applications
+					if ($this->combine_applications && !empty($related_info['application_ids']))
+					{
+						foreach ($related_info['application_ids'] as $related_app_id)
+						{
+							if ($related_app_id != $application['id'])
+							{
+								$related_app = $this->bo->read_single($related_app_id);
+								if ($related_app)
+								{
+									$related_app['status'] = $new_status;
+									$this->bo->update($related_app);
+								}
+							}
+						}
+					}
+				}
 
 				$update = true;
-				$notify = true;
+				// For rejected or accepted status, only notify if checkbox is checked
+				if ($application['status'] == 'REJECTED') {
+					$notify = Sanitizer::get_var('send_rejection_email', 'bool', 'POST') ? true : false;
+				} else if ($application['status'] == 'ACCEPTED') {
+					$notify = Sanitizer::get_var('send_acceptance_email', 'bool', 'POST') ? true : false;
+				} else {
+					$notify = true;
+				}
 				$return_after_action = true;
 			}
 			else if ($_FILES)
@@ -4050,7 +4162,15 @@ class booking_uiapplication extends booking_uicommon
 				$log_msg = '';
 				$_application = $application;
 				$_application['status'] = Sanitizer::get_var('status', 'string', 'POST');
-				$recipient = $this->bo->send_notification($_application);
+
+				// Use group notification for combined applications
+				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1) {
+					$recipient = $this->sendGroupNotification($related_info['application_ids'], $_application);
+				} else {
+					// Single application notification
+					$recipient = $this->bo->send_notification($_application);
+				}
+
 				if ($recipient)
 				{
 					$log_msg .= "Epost er sendt til {$recipient}";
@@ -4068,7 +4188,15 @@ class booking_uiapplication extends booking_uicommon
 				}
 			}
 
-			self::redirect(array('menuaction' => $this->url_prefix . '.show', 'id' => $application['id'], 'return_after_action' => $return_after_action));
+			// Add recurring summary to redirect only when recurring allocations were created during approval
+			$redirect_params = array('menuaction' => $this->url_prefix . '.show', 'id' => $application['id'], 'return_after_action' => $return_after_action);
+			if (!empty($recurring_summary) && isset($_POST['status']) && Sanitizer::get_var('status', 'string', 'POST') == 'ACCEPTED')
+			{
+				// Show modal with the recurring allocation creation summary
+				$redirect_params['show_recurring_summary'] = 1;
+			}
+
+			self::redirect($redirect_params);
 		}
 
 		$application['dashboard_link'] = self::link(array('menuaction' => 'booking.uidashboard.index'));
@@ -4237,8 +4365,160 @@ JS;
 		}
 		phpgwapi_jquery::load_widget('select2');
 
+		// Add related applications data for combined applications
+		$related_applications = array();
+		$show_edit_selection = false;
+		if ($this->combine_applications)
+		{
+			$related_info = $this->bo->so->get_related_applications($application['id']);
+			if ($related_info['total_count'] > 1)
+			{
+				$show_edit_selection = true;
+				foreach ($related_info['application_ids'] as $app_id)
+				{
+					$related_app = $this->bo->read_single($app_id);
+					if ($related_app)
+					{
+						$related_applications[] = array(
+							'id' => $related_app['id'],
+							'name' => $related_app['name'],
+							'status' => $related_app['status'],
+							'created' => pretty_timestamp($related_app['created']),
+							'dates' => $this->format_application_dates($related_app),
+							'resources' => $this->format_application_resources($related_app),
+							'is_main' => ($app_id == $application['id'])
+						);
+					}
+				}
+			}
+		}
+
+		// Check if application has recurring data and prepare preview
+		$recurring_data = null;
+		$recurring_preview = array();
+		$show_recurring_button = false;
+		$recurring_allocation_url = '';
+		$create_button_text = 'create_all_allocations';
+		$create_button_count = 0;
+		$has_conflicts = false;
+
+		if (!empty($application['recurring_info'])) {
+			$show_recurring_button = true;
+
+			// Parse recurring info
+			$recurring_data = is_string($application['recurring_info'])
+				? json_decode($application['recurring_info'], true)
+				: $application['recurring_info'];
+
+			// Generate preview of expected allocations first to check for conflicts
+			if ($recurring_data && !empty($application['dates'])) {
+				$recurring_preview = $this->generate_recurring_preview($application, $recurring_data);
+			}
+
+			// Check if there are any conflicts in the preview
+			$has_conflicts = false;
+			$conflicts_count = 0;
+			$non_conflict_count = 0;
+
+			if (!empty($recurring_preview)) {
+				foreach ($recurring_preview as $item) {
+					if (isset($item['has_conflict']) && $item['has_conflict']) {
+						$has_conflicts = true;
+						$conflicts_count++;
+					} else if (!isset($item['exists']) || !$item['exists']) {
+						$non_conflict_count++;
+					}
+				}
+			}
+
+			// Create allocation URL
+			$recurring_params = array(
+				'menuaction' => 'booking.uiallocation.add',
+				'recurring_application_id' => $application['id']
+			);
+
+			$recurring_allocation_url = self::link($recurring_params);
+
+			// Determine button text based on conflict status
+			$create_button_text = $has_conflicts ? 'create_non_conflicting_allocations' : 'create_all_allocations';
+			$create_button_count = $has_conflicts ? $non_conflict_count : count($recurring_preview);
+		}
+
+
+		// Choose template based on whether application has recurring data
+		$template_name = !empty($application['recurring_info']) ? 'application_recurring' : 'application';
+
+		// Add season information for recurring template
+		$season_info = null;
+		if ($template_name === 'application_recurring' && !empty($application['dates'])) {
+			$season_bo = createObject('booking.boseason');
+			$first_date = $application['dates'][0];
+			$app_date = date('Y-m-d', strtotime($first_date['from_']));
+
+			$seasons = $season_bo->read(array(
+				'filters' => array(
+					'active' => 1,
+					'building_id' => $application['building_id'],
+					'where' => array(
+						"%%table%%.from_ <= '$app_date'",
+						"%%table%%.to_ >= '$app_date'"
+					)
+				),
+				'results' => 1
+			));
+
+			if (!empty($seasons['results'][0])) {
+				$season = $seasons['results'][0];
+				$season_info = array(
+					'name' => $season['name'],
+					'from_formatted' => date('d/m/Y', strtotime($season['from_'])),
+					'to_formatted' => date('d/m/Y', strtotime($season['to_'])),
+					'is_outseason' => !empty($recurring_data['outseason']),
+					'has_custom_end' => !empty($recurring_data['repeat_until']),
+					'end_reason' => ''
+				);
+
+				if (!empty($recurring_data['repeat_until'])) {
+					$season_info['end_reason'] = 'Slutter ' . $recurring_data['repeat_until'] . ' (før sesongslutt)';
+				} elseif (!empty($recurring_data['outseason'])) {
+					$season_info['end_reason'] = 'Følger sesongslutt (' . $season_info['to_formatted'] . ')';
+				} else {
+					$season_info['end_reason'] = 'Begrenset periode (ikke til sesongslutt)';
+				}
+			}
+
+		}
+//		_debug_array(array(
+//			'application'		 => $application,
+//			'organization'		 => $organization,
+//			'audience'			 => $audience,
+//			'agegroups'			 => $agegroups,
+//			'num_associations'	 => $num_associations,
+//			'assoc'				 => $from,
+//			'collision'			 => $collision_dates,
+//			'comments'			 => $comments,
+//			'simple'			 => $simple,
+//			'config'			 => $config,
+//			'export_pdf_action'	 => self::link(array('menuaction' => 'booking.uiapplication.export_pdf', 'id' => $application['id'])),
+//			'external_archive'	 => !empty($this->userSettings['preferences']['common']['archive_user_id']) ? $external_archive : '',
+//			'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
+//			'internal_notes'	 => $internal_notes,
+//			'show_edit_selection' => $show_edit_selection,
+//			'related_applications' => $related_applications,
+//			'show_recurring_button' => $show_recurring_button,
+//			'recurring_allocation_url' => $recurring_allocation_url,
+//			'recurring_data' => $recurring_data,
+//			'recurring_preview' => $recurring_preview,
+//			'season_info' => $season_info,
+//			'create_button_text' => $create_button_text,
+//			'create_button_count' => $create_button_count,
+//			'has_conflicts' => $has_conflicts,
+//			'open_approve_modal' => $open_approve_modal,
+//			'show_recurring_summary' => $show_recurring_summary,
+//			'recurring_approval_summary' => $recurring_approval_summary
+//		));
 		self::render_template_xsl(
-			'application',
+			$template_name,
 			array(
 				'application'		 => $application,
 				'organization'		 => $organization,
@@ -4253,9 +4533,263 @@ JS;
 				'export_pdf_action'	 => self::link(array('menuaction' => 'booking.uiapplication.export_pdf', 'id' => $application['id'])),
 				'external_archive'	 => !empty($this->userSettings['preferences']['common']['archive_user_id']) ? $external_archive : '',
 				'user_list'			 => array('options' => createObject('booking.sopermission_building')->get_user_list()),
-				'internal_notes'	 => $internal_notes
+				'internal_notes'	 => $internal_notes,
+				'show_edit_selection' => $show_edit_selection,
+				'related_applications' => $related_applications,
+				'show_recurring_button' => $show_recurring_button,
+				'recurring_allocation_url' => $recurring_allocation_url,
+				'recurring_data' => $recurring_data,
+				'recurring_preview' => $recurring_preview,
+				'season_info' => $season_info,
+				'create_button_text' => $create_button_text,
+				'create_button_count' => $create_button_count,
+				'has_conflicts' => $has_conflicts,
+				'open_approve_modal' => $open_approve_modal,
+				'show_recurring_summary' => $show_recurring_summary
 			)
 		);
+	}
+
+	private function generate_recurring_preview($application, $recurring_data)
+	{
+		$preview = array();
+
+		if (empty($application['dates']) || empty($recurring_data)) {
+			return $preview;
+		}
+
+		// Get first date from application
+		$first_date = $application['dates'][0];
+		$from_time = new DateTime($first_date['from_']);
+		$to_time = new DateTime($first_date['to_']);
+
+		// Parse recurring settings - match allocation wizard logic
+		$interval = isset($recurring_data['field_interval']) ? (int)$recurring_data['field_interval'] : 1;
+		$repeat_until = null;
+
+		// Get season info like allocation wizard does
+		$season_bo = createObject('booking.boseason');
+		$app_date = $from_time->format('Y-m-d');
+
+		// Find the specific season for this application using same logic as allocation wizard
+		$seasons = $season_bo->read(array(
+			'filters' => array(
+				'active' => 1,
+				'building_id' => $application['building_id'],
+				'where' => array(
+					"%%table%%.from_ <= '$app_date'",
+					"%%table%%.to_ >= '$app_date'"
+				)
+			),
+			'results' => 1
+		));
+
+		if (!empty($seasons['results'][0])) {
+			$season = $seasons['results'][0];
+
+			// If outseason is enabled, use season end date, otherwise use custom repeat_until
+			if (!empty($recurring_data['outseason'])) {
+				// Use season end date when outseason is enabled
+				$repeat_until = new DateTime($season['to_']);
+				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
+			} else if (!empty($recurring_data['repeat_until'])) {
+				// Use custom repeat_until date when outseason is not enabled
+				$repeat_until = new DateTime($recurring_data['repeat_until']);
+			} else {
+				// Fallback to season end if neither outseason nor repeat_until is set
+				$repeat_until = new DateTime($season['to_']);
+				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
+			}
+		} else {
+			// Fallback - use custom date or 3 months from first date
+			if (!empty($recurring_data['repeat_until'])) {
+				$repeat_until = new DateTime($recurring_data['repeat_until']);
+			} else {
+				$repeat_until = clone $from_time;
+				$repeat_until->add(new DateInterval('P3M'));
+				$recurring_data['calculated_repeat_until'] = $repeat_until->format('d/m/Y');
+			}
+		}
+
+		// Get existing allocations for this application
+		$allocation_bo = createObject('booking.boallocation');
+		$existing_allocations = $allocation_bo->read(array(
+			'filters' => array('application_id' => $application['id']),
+			'results' => -1
+		));
+
+		$existing_by_date = array();
+		if (!empty($existing_allocations['results'])) {
+			foreach ($existing_allocations['results'] as $alloc) {
+				$key = date('Y-m-d H:i', strtotime($alloc['from_'])) . '_' . date('Y-m-d H:i', strtotime($alloc['to_']));
+				$existing_by_date[$key] = $alloc;
+			}
+		}
+
+		// Build base allocation structure for validation (like allocation wizard)
+		$base_allocation = array(
+			'application_id' => $application['id'],
+			'building_id' => $application['building_id'],
+			'building_name' => $application['building_name'],
+			'resources' => $application['resources'],
+			'active' => '1',
+			'completed' => '0',
+			'skip_bas' => 0
+		);
+
+		// Add organization data if available, or find it by organization number
+		if (!empty($application['customer_organization_id'])) {
+			$base_allocation['organization_id'] = $application['customer_organization_id'];
+			$base_allocation['organization_name'] = $application['customer_organization_name'];
+		} elseif (!empty($application['customer_organization_number'])) {
+			// Look up organization by number like allocation wizard does
+			$organizations = createObject('booking.soorganization')->read(array(
+				'results' => -1,
+				'filters' => array(
+					'organization_number' => $application['customer_organization_number'],
+					'active' => 1
+				)
+			));
+			if (!empty($organizations['results'][0])) {
+				$base_allocation['organization_id'] = $organizations['results'][0]['id'];
+				$base_allocation['organization_name'] = $organizations['results'][0]['name'];
+			}
+		}
+
+		// Add cost field to satisfy validation (default to 0 like allocation wizard)
+		$base_allocation['cost'] = '0';
+
+		// Find and set season_id like allocation wizard does
+		if (!empty($seasons['results'][0])) {
+			$base_allocation['season_id'] = $seasons['results'][0]['id'];
+			$base_allocation['season_name'] = $seasons['results'][0]['name'];
+		}
+
+		// Get resource names for display
+		$resource_names = array();
+		if (!empty($application['resources'])) {
+			$resource_bo = createObject('booking.boresource');
+			$resources = $resource_bo->read(array(
+				'filters' => array('id' => $application['resources']),
+				'sort' => 'name',
+				'results' => -1
+			));
+			if (!empty($resources['results'])) {
+				foreach ($resources['results'] as $resource) {
+					$resource_names[] = $resource['name'];
+				}
+			}
+		}
+		$resource_display = implode(', ', $resource_names);
+
+		// Generate preview dates using allocation wizard logic
+		$max_dato = $to_time->getTimestamp(); // highest date from input (like allocation wizard)
+		$interval_seconds = $interval * 60 * 60 * 24 * 7; // weeks in seconds (like allocation wizard)
+		$repeat_until_timestamp = $repeat_until->getTimestamp();
+		$i = 0;
+		$max_iterations = 50; // Safety limit
+
+		// Use allocation wizard's exact loop condition and date calculation
+		while (($max_dato + ($interval_seconds * $i)) <= $repeat_until_timestamp && $i < $max_iterations) {
+			// Calculate dates using allocation wizard method
+			$fromdate = date('Y-m-d H:i', $from_time->getTimestamp() + ($interval_seconds * $i));
+			$todate = date('Y-m-d H:i', $to_time->getTimestamp() + ($interval_seconds * $i));
+
+			$current_from = new DateTime($fromdate);
+			$current_to = new DateTime($todate);
+
+			// Use Norwegian date formatting like other parts of the system
+			$date_formatted = pretty_timestamp($fromdate);
+			$weekday_no = date('w', $current_from->getTimestamp());
+			$weekdays_no = array('søndag', 'mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag');
+			$months_no = array('', 'januar', 'februar', 'mars', 'april', 'mai', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'desember');
+
+			$day_no = $weekdays_no[$weekday_no];
+			$month_no = $months_no[(int)$current_from->format('n')];
+			$date_display_no = ucfirst($day_no) . ' ' . $current_from->format('j') . '. ' . $month_no . ' ' . $current_from->format('Y');
+
+			$preview_item = array(
+				'from' => $fromdate,
+				'to' => $todate,
+				'from_formatted' => $current_from->format('d/m/Y H:i'),
+				'to_formatted' => $current_to->format('H:i'),
+				'date_display' => $date_display_no,
+				'time_display' => $current_from->format('H:i') . ' - ' . $current_to->format('H:i'),
+				'resource_display' => $resource_display,
+				'exists' => false,
+				'allocation_id' => null,
+				'allocation_link' => null,
+				'has_conflict' => false,
+				'conflict_errors' => null
+			);
+
+			// Check if allocation exists for this date/time
+			$key = $fromdate . '_' . $todate;
+			if (isset($existing_by_date[$key])) {
+				$preview_item['exists'] = true;
+				$preview_item['allocation_id'] = $existing_by_date[$key]['id'];
+				$preview_item['allocation_link'] = self::link(array('menuaction' => 'booking.uiallocation.show', 'id' => $existing_by_date[$key]['id']));
+			} else {
+				// Use direct collision checking like application show page does
+				$collision = $this->bo->so->check_collision($application['resources'], $fromdate, $todate);
+
+				if ($collision) {
+					$preview_item['has_conflict'] = true;
+
+					// Get detailed conflict information
+					$conflicts = $this->get_conflict_details($application['resources'], $fromdate, $todate);
+					$conflict_details = array();
+					$conflict_links = array();
+
+					foreach ($conflicts as $conflict) {
+						$conflict_name = $conflict['name'];
+						$conflict_details[] = $conflict_name;
+						$conflict_links['item_' . count($conflict_links)] = array(
+							'name' => $conflict_name,
+							'link' => $conflict['link'],
+							'type' => $conflict['type']
+						);
+					}
+
+					$preview_item['conflict_details'] = implode(', ', $conflict_details);
+					$preview_item['conflict_links'] = $conflict_links;
+					$preview_item['conflict_count'] = count($conflicts);
+
+					// Debug: Force show some test data for debugging
+					if (empty($conflicts)) {
+						$preview_item['conflict_details'] = lang('conflict_unknown_detected');
+						$preview_item['conflict_links'] = array(
+							'unknown_item' => array(
+								'name' => lang('conflict_unknown_check_schedule'),
+								'link' => self::link(array(
+									'menuaction' => 'booking.uibuilding.schedule',
+									'id' => $application['building_id'],
+									'date' => $current_from->format('d.m.Y'),
+									'filter_resource' => implode(',', $application['resources'])
+								)),
+								'type' => 'unknown'
+							)
+						);
+					}
+
+					// Create link to schedule view for this time slot
+					$schedule_params = array(
+						'menuaction' => 'booking.uibuilding.schedule',
+						'id' => $application['building_id'],
+						'date' => $current_from->format('d.m.Y'),
+						'filter_resource' => implode(',', $application['resources'])
+					);
+					$preview_item['schedule_link'] = self::link($schedule_params);
+				}
+			}
+
+			$preview["item_$i"] = $preview_item;
+
+			// Move to next iteration (like allocation wizard)
+			$i++;
+		}
+
+		return $preview;
 	}
 
 	function get_activity_data()
@@ -4425,5 +4959,265 @@ JS;
 	{
 		$historylog	= CreateObject('phpgwapi.historylog', 'booking', '.application');
 		return $historylog->add('C', $id, $internal_note_content);
+	}
+
+
+	private function format_application_dates($application)
+	{
+		if (empty($application['dates']))
+		{
+			return '';
+		}
+
+		$date_strings = array();
+		foreach ($application['dates'] as $date)
+		{
+			$date_strings[] = pretty_timestamp($date['from_']) . ' - ' . pretty_timestamp($date['to_']);
+		}
+		return implode(', ', $date_strings);
+	}
+
+	private function format_application_resources($application)
+	{
+		if (empty($application['resources']))
+		{
+			return '';
+		}
+
+		$resource_names = array();
+		foreach ($application['resources'] as $resource)
+		{
+			$resource_names[] = $resource['name'];
+		}
+		return implode(', ', $resource_names);
+	}
+
+	/**
+	 * Send group notification for combined applications using modern EmailService
+	 */
+	private function sendGroupNotification($application_ids, $primary_application)
+	{
+		try {
+			// Load all related applications
+			$applications = [];
+			foreach ($application_ids as $app_id) {
+				$app = $this->bo->read_single($app_id);
+				if ($app) {
+					// Set the same status for all applications
+					$app['status'] = $primary_application['status'];
+					$app['comment'] = $primary_application['comment'] ?? '';
+					$applications[] = $app;
+				}
+			}
+
+			if (empty($applications)) {
+				return '';
+			}
+
+			// Use modern EmailService for group notification
+			$emailService = new EmailService();
+			$created = false; // These are status updates, not new applications
+			$success = $emailService->sendApplicationGroupNotification($applications, $created);
+
+			// Return the contact email for logging purposes
+			return $success ? $applications[0]['contact_email'] : '';
+
+		} catch (Exception $e) {
+			Cache::message_set("Group notification failed: " . $e->getMessage(), 'error');
+			return '';
+		}
+	}
+
+	/**
+	 * Get detailed information about conflicting bookings/events/blocks for a time slot
+	 * Uses the new get_collision_details method for exact results
+	 */
+	private function get_conflict_details($resources, $from_, $to_)
+	{
+		$conflicts = array();
+
+		if (empty($resources) || !is_array($resources)) {
+			return $conflicts;
+		}
+
+		// Use the new method that returns exact collision details
+		$collision_details = $this->bo->so->get_collision_details($resources, $from_, $to_);
+
+		foreach ($collision_details as $collision) {
+			$time_display = date('H:i', strtotime($collision['from_'])) . ' - ' . date('H:i', strtotime($collision['to_']));
+			$name = $collision['name'];
+
+			// Add specific naming based on type
+			if ($collision['type'] == 'block') {
+				$name = lang('conflict_block') . ' #' . $collision['id'];
+			} elseif ($collision['type'] == 'allocation') {
+				// Name is already formatted as "Tildeling (Org Name)" from SQL
+				$name = $collision['name'];
+			} elseif ($collision['type'] == 'event') {
+				$name = ($collision['name'] == lang('conflict_event')) ? lang('conflict_event') . ' #' . $collision['id'] : $collision['name'];
+			}
+
+			// Create appropriate link based on type
+			$link = '';
+			switch ($collision['type']) {
+				case 'block':
+					$link = self::link(array('menuaction' => 'booking.uiblock.show', 'id' => $collision['id']));
+					break;
+				case 'allocation':
+					$link = self::link(array('menuaction' => 'booking.uiallocation.show', 'id' => $collision['id']));
+					break;
+				case 'event':
+					$link = self::link(array('menuaction' => 'booking.uievent.edit', 'id' => $collision['id']));
+					break;
+			}
+
+			$conflicts[] = array(
+				'id' => $collision['id'],
+				'type' => $collision['type'],
+				'name' => $name . ' (' . $time_display . ')',
+				'link' => $link
+			);
+		}
+
+		return $conflicts;
+	}
+
+	/**
+	 * Create recurring allocations when an application is approved
+	 * Returns a summary of created and failed allocations
+	 */
+	private function create_recurring_allocations_on_approval($application)
+	{
+		$summary = array(
+			'created' => array(),
+			'failed' => array(),
+			'total_attempted' => 0
+		);
+
+		if (empty($application['recurring_info'])) {
+			return $summary;
+		}
+
+		// Parse recurring info
+		$recurring_data = is_string($application['recurring_info'])
+			? json_decode($application['recurring_info'], true)
+			: $application['recurring_info'];
+
+		if (!$recurring_data || empty($application['dates'])) {
+			return $summary;
+		}
+
+		// Generate the recurring preview to know what to create
+		$recurring_preview = $this->generate_recurring_preview($application, $recurring_data);
+		$summary['total_attempted'] = count($recurring_preview);
+
+		// Create allocation BO to handle the creation
+		$allocation_bo = createObject('booking.boallocation');
+
+		// Get resource names for display
+		$resource_names = array();
+		if (!empty($application['resources'])) {
+			$resource_bo = createObject('booking.boresource');
+			$resources = $resource_bo->read(array(
+				'filters' => array('id' => $application['resources']),
+				'sort' => 'name',
+				'results' => -1
+			));
+			if (!empty($resources['results'])) {
+				foreach ($resources['results'] as $resource) {
+					$resource_names[] = $resource['name'];
+				}
+			}
+		}
+		$resource_display = implode(', ', $resource_names);
+
+		// Try to create each allocation
+		foreach ($recurring_preview as $preview_item) {
+			// Skip if allocation already exists
+			if ($preview_item['exists']) {
+				continue;
+			}
+
+			// Skip if there are conflicts
+			if ($preview_item['has_conflict']) {
+				$summary['failed'][] = array(
+					'date' => $preview_item['date_display'],
+					'time' => $preview_item['time_display'],
+					'resources' => $resource_display,
+					'reason' => 'Konflikt',
+					'from' => $preview_item['from'],
+					'to' => $preview_item['to']
+				);
+				continue;
+			}
+
+			// Build allocation data
+			$allocation = array(
+				'application_id' => $application['id'],
+				'building_id' => $application['building_id'],
+				'resources' => $application['resources'],
+				'from_' => $preview_item['from'],
+				'to_' => $preview_item['to'],
+				'active' => '1',
+				'completed' => '0',
+				'cost' => '0',
+				'organization_id' => $application['customer_organization_id'] ?? '',
+				'skip_bas' => 0
+			);
+
+			// Add season info if available
+			$season_bo = createObject('booking.boseason');
+			$app_date = date('Y-m-d', strtotime($preview_item['from']));
+			$seasons = $season_bo->read(array(
+				'filters' => array(
+					'active' => 1,
+					'building_id' => $application['building_id'],
+					'where' => array(
+						"%%table%%.from_ <= '$app_date'",
+						"%%table%%.to_ >= '$app_date'"
+					)
+				),
+				'results' => 1
+			));
+
+			if (!empty($seasons['results'][0])) {
+				$allocation['season_id'] = $seasons['results'][0]['id'];
+			}
+
+			// Try to create the allocation
+			try {
+				$receipt = $allocation_bo->add($allocation);
+				if ($receipt && !empty($receipt['id'])) {
+					$summary['created'][] = array(
+						'id' => $receipt['id'],
+						'date' => $preview_item['date_display'],
+						'time' => $preview_item['time_display'],
+						'resources' => $resource_display,
+						'from' => $preview_item['from'],
+						'to' => $preview_item['to']
+					);
+				} else {
+					$summary['failed'][] = array(
+						'date' => $preview_item['date_display'],
+						'time' => $preview_item['time_display'],
+						'resources' => $resource_display,
+						'reason' => 'Ukjent feil ved opprettelse',
+						'from' => $preview_item['from'],
+						'to' => $preview_item['to']
+					);
+				}
+			} catch (Exception $e) {
+				$summary['failed'][] = array(
+					'date' => $preview_item['date_display'],
+					'time' => $preview_item['time_display'],
+					'resources' => $resource_display,
+					'reason' => $e->getMessage(),
+					'from' => $preview_item['from'],
+					'to' => $preview_item['to']
+				);
+			}
+		}
+
+		return $summary;
 	}
 }

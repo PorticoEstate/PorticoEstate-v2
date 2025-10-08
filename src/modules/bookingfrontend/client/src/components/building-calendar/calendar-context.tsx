@@ -4,6 +4,8 @@ import {usePartialApplications} from "@/service/hooks/api-hooks";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import {useBuildingResources} from "@/service/api/building";
 import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
+import { calculateRecurringInstances, RecurringInfoUtils } from "@/utils/recurring-utils";
+import { Season } from "@/service/types/Building";
 
 
 interface CalendarContextType {
@@ -67,7 +69,7 @@ export const useCalendarContext = () => {
 };
 
 interface CalendarContextProps extends Omit<CalendarContextType, 'tempEvents' | 'calendarViewMode'> {
-
+	seasons?: Season[];
 }
 
 const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) => {
@@ -111,29 +113,62 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 			}
 
 			const temp = all;
-			const dates = curr.dates;
-			dates.forEach(date => {
-				temp[date.id] = {
-					allDay: false,
-					editable: true,
-					start: applicationTimeToLux(date.from_).toJSDate(),
-					end: applicationTimeToLux(date.to_).toJSDate(),
-					extendedProps: {
-						resources: curr.resources.map(a => a.id),
-						type: "temporary",
-						applicationId: curr.id,
-						building_id: curr.building_id
-					},
-					id: `${date.id}`,
-					title: curr.name
-				}
-			})
+			
+			// Check if this is a recurring application
+			if (RecurringInfoUtils.isRecurring(curr)) {
+				// Generate recurring instances
+				const recurringInstances = calculateRecurringInstances(curr, props.seasons);
+				
+				recurringInstances.forEach((instance, index) => {
+					const eventId = index === 0 ? curr.id : parseInt(`${curr.id}${index.toString().padStart(3, '0')}`);
+					
+					temp[eventId] = {
+						allDay: false,
+						editable: true,
+						start: instance.start.toJSDate(),
+						end: instance.end.toJSDate(),
+						extendedProps: {
+							resources: curr.resources.map(a => a.id),
+							type: "temporary",
+							applicationId: curr.id,
+							building_id: curr.building_id,
+							isPartialApplication: true,
+							isRecurringInstance: true,
+							_weekOffset: instance.weekOffset,
+							source: curr // Store the original application for manipulation logic
+						},
+						id: `${eventId}`,
+						title: curr.name
+					}
+				});
+			} else {
+				// Handle non-recurring applications (original logic)
+				const dates = curr.dates;
+				dates.forEach(date => {
+					temp[date.id] = {
+						allDay: false,
+						editable: true,
+						start: applicationTimeToLux(date.from_).toJSDate(),
+						end: applicationTimeToLux(date.to_).toJSDate(),
+						extendedProps: {
+							resources: curr.resources.map(a => a.id),
+							type: "temporary",
+							applicationId: curr.id,
+							building_id: curr.building_id,
+							isPartialApplication: true,
+							isRecurringInstance: false
+						},
+						id: `${date.id}`,
+						title: curr.name
+					}
+				});
+			}
 
 			return temp;
 
 		}, {})
 
-	}, [cartItems?.list, props.currentBuilding])
+	}, [cartItems?.list, props.currentBuilding, props.seasons])
 
 
 	return (

@@ -9,10 +9,11 @@ import {
 	FCallEvent,
 	FCallTempEvent
 } from "@/components/building-calendar/building-calendar.types";
-import {useCalenderViewMode, useEnabledResources} from "@/components/building-calendar/calendar-context";
+import {useCalenderViewMode, useEnabledResources, useTempEvents} from "@/components/building-calendar/calendar-context";
 import {IBuilding, Season} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
+import {useBookingUser} from "@/service/hooks/api-hooks";
 import FullCalendarView from "@/components/building-calendar/views/calendar/full-calendar-view";
 import TimeslotView from "@/components/building-calendar/views/timeslots/timeslot-view";
 import {isCalendarDeactivated} from "@/service/utils/deactivation-utils";
@@ -41,6 +42,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 	const [lastCalendarView, setLastCalendarView] = useState<string>('timeGridWeek');
 	const calendarViewMode = useCalenderViewMode();
 	const {enabledResources} = useEnabledResources();
+	const {data: bookingUser} = useBookingUser();
 
 	// Determine if we're in organization mode
 	const isOrganizationMode = !building && buildings && buildings.length > 0;
@@ -71,10 +73,61 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 		}
 	}, [calendarViewMode, view]);
 
+	// Auto-open ApplicationCrud when user logs in with pending recurring data
+	useEffect(() => {
+		if (bookingUser && currentBuilding && !currentTempEvent && !readOnly && !isOrganizationMode) {
+			const pendingData = localStorage.getItem('pendingRecurringApplication');
+			if (pendingData) {
+				try {
+					const storedData = JSON.parse(pendingData);
 
-	const selectEvent = useCallback((event: FCallEvent | FCallTempEvent, targetEl?: HTMLElement) => {
+					// Check if data is expired (10 minutes = 600000 ms)
+					const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
+
+					if (isExpired) {
+						localStorage.removeItem('pendingRecurringApplication');
+						return;
+					}
+
+					// Check if this matches the current building context AND is for a NEW application (no applicationId)
+					if (storedData.building_id && +storedData.building_id === +currentBuilding.id && !storedData.applicationId) {
+						// Create a temp event to trigger the ApplicationCrud
+						const tempEvent: Partial<FCallTempEvent> = {
+							id: `temp-${Date.now()}`,
+							title: storedData.title || t('bookingfrontend.new application'),
+							start: storedData.start ? new Date(storedData.start) : new Date(),
+							end: storedData.end ? new Date(storedData.end) : new Date(),
+							allDay: false,
+							editable: true,
+							extendedProps: {
+								type: 'temporary',
+								resources: storedData.resources || [...enabledResources],
+								building_id: currentBuilding.id,
+								restorePendingData: true // Flag to indicate this should restore data
+							}
+						};
+
+						setCurrentTempEvent(tempEvent);
+					}
+				} catch (error) {
+					console.error('Error parsing pending recurring application data:', error);
+					localStorage.removeItem('pendingRecurringApplication');
+				}
+			}
+		}
+	}, [bookingUser, currentBuilding, currentTempEvent, readOnly, isOrganizationMode, enabledResources, t]);
+
+
+	const selectEvent = useCallback((event: FCallEvent | FCallTempEvent, storedTempEvents?: FCallTempEvent[], targetEl?: HTMLElement) => {
 		if (event.extendedProps.type === 'temporary') {
-			setCurrentTempEvent(event as FCallTempEvent);
+			console.log(event, storedTempEvents)
+			let tempEv;
+			if(event.extendedProps.isRecurringInstance) {
+				const appId = event.extendedProps.applicationId!;
+				tempEv = storedTempEvents ? storedTempEvents.find(a => +a.id === +appId) : event;
+			}
+
+			setCurrentTempEvent((tempEv || event) as FCallTempEvent);
 		} else {
 			if (!targetEl) {
 				throw new Error("No selected target element")
@@ -147,7 +200,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 				building_id: currentBuilding?.id || 0,
 			},
 		};
-		selectEvent(newEvent, undefined);
+		selectEvent(newEvent);
 		selectInfo?.view?.calendar.unselect(); // Clear selection
 	}, [t, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent]);
 
@@ -213,7 +266,8 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 			}}/>
 
 			{!readOnly && !isOrganizationMode && currentBuilding && (
-				<ApplicationCrud onClose={() => setCurrentTempEvent(undefined)} selectedTempApplication={currentTempEvent}
+				<ApplicationCrud onClose={() => setCurrentTempEvent(undefined)}
+								 selectedTempApplication={currentTempEvent}
 								 building_id={currentBuilding.id}/>
 			)}
 

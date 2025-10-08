@@ -234,21 +234,20 @@ const Dialog: React.FC<DialogProps> = ({
 	}, [open, dialogId]);
 
 	return (
-		<>
+		<dialog
+			ref={dialogRef}
+			className={`${show ? styles.show : ''} ${styles.modal} ${size ? styles[size] : ''} ${
+				isFullscreen ? styles.fullscreen : ''
+			}`}
+			onClick={handleBackdropClick}
+		>
+			{/* Custom backdrop inside dialog */}
 			{show && <div className={styles.customBackdrop} onClick={closeOnBackdropClick ? attemptClose : undefined} />}
-			<dialog
-				ref={dialogRef}
-				className={`${show ? styles.show : ''} ${styles.modal} ${size ? styles[size] : ''} ${
-					isFullscreen ? styles.fullscreen : ''
-				}`}
-				onClick={handleBackdropClick}
-				style={{ 
-					maxWidth: '100%', 
-					maxHeight: '100%',
-					width: isMobile ? '100%' : 'auto',
-					height: isMobile ? '100%' : '90vh'
-				}}
-			>
+			
+			{/* Portal container for calendar popups */}
+			{show && <div className={styles.portalContainer} data-portal="datepicker" id={'portalContainer'} />}
+			
+			{/* Dialog content container */}
 			<div className={styles.dialogContainer}>
 				{showDefaultHeader && (
 					<div className={`${styles.dialogHeader} ${scrolled ? styles.scrolled : ''}`}>
@@ -291,7 +290,6 @@ const Dialog: React.FC<DialogProps> = ({
 					className={`${stickyFooter ? styles.sticky : ''} ${styles.dialogFooter}`}>{typeof footer === "function" ? footer(attemptClose) : footer}</div>}
 			</div>
 		</dialog>
-		</>
 	);
 };
 

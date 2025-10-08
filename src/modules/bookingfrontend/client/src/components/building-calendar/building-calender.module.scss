@@ -87,13 +87,21 @@
         color: white;
     }
 
-    &-temporary {
+
+	&-temporary {
+		--bg-col: var(--ds-color-accent-surface-default);
+		--accent-col: var(--ds-color-accent-border-strong);
+		&.recurring-instance {
+			--bg-col: var(--ds-color-brand1-background-tinted);
+			--accent-col: var(--ds-color-brand1-border-default);
+		}
         position: relative;
         border: none !important;
         border-radius: 6px;
         overflow: visible;
         padding: 2px;
-		background-color: var(--ds-color-accent-surface-default);
+		background-color: var(--bg-col);
+
 		//background-color: var(--ds-color-accent-border-strong);
 
         &::before {
@@ -105,10 +113,10 @@
             bottom: 0;
             border: 1px solid transparent;
             border-radius: 6px;
-            background: linear-gradient(90deg, var(--ds-color-accent-border-strong) 6px, transparent 6px) top/12px 1px repeat-x,
-                        linear-gradient(90deg, var(--ds-color-accent-border-strong) 6px, transparent 6px) bottom/12px 1px repeat-x,
-                        linear-gradient(0deg, var(--ds-color-accent-border-strong) 6px, transparent 6px) left/1px 12px repeat-y,
-                        linear-gradient(0deg, var(--ds-color-accent-border-strong) 6px, transparent 6px) right/1px 12px repeat-y;
+            background: linear-gradient(90deg, var(--accent-col) 6px, transparent 6px) top/12px 1px repeat-x,
+                        linear-gradient(90deg, var(--accent-col) 6px, transparent 6px) bottom/12px 1px repeat-x,
+                        linear-gradient(0deg, var(--accent-col) 6px, transparent 6px) left/1px 12px repeat-y,
+                        linear-gradient(0deg, var(--accent-col) 6px, transparent 6px) right/1px 12px repeat-y;
             pointer-events: none;
         }
 

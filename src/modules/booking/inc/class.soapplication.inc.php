@@ -164,12 +164,12 @@ class booking_soapplication extends booking_socommon
 		$node_id = $entity['parent_id'];
 		while ($entity['id'] && $node_id)
 		{
-			if ($node_id == $entity['id'])
+			$next = $this->read_single($node_id);
+			if ($next['id'] == $entity['parent_id'])
 			{
-				$errors['parent_id'] = lang('Invalid parent activity');
+//				$errors['parent_id'] = lang('Invalid parent application');
 				break;
 			}
-			$next = $this->read_single($node_id);
 			$node_id = $next['parent_id'];
 		}
 		return $errors;

@@ -164,12 +164,12 @@ class booking_soapplication extends booking_socommon
 		$node_id = $entity['parent_id'];
 		while ($entity['id'] && $node_id)
 		{
-			if ($node_id == $entity['id'])
+			$next = $this->read_single($node_id);
+			if ($next['id'] == $entity['parent_id'])
 			{
-				$errors['parent_id'] = lang('Invalid parent activity');
+//				$errors['parent_id'] = lang('Invalid parent application');
 				break;
 			}
-			$next = $this->read_single($node_id);
 			$node_id = $next['parent_id'];
 		}
 		return $errors;
@@ -490,44 +490,60 @@ class booking_soapplication extends booking_socommon
 		$db->query($sql, __LINE__, __FILE__);
 	}
 
-	public function update_from_field( int|null $application_id)
+	public function update_from_field(int|null $application_id)
 	{
 		$db = $this->db;
-		
+
 		// Build WHERE clauses for filtering
 		$filter = $application_id ? " AND id = {$application_id}" : '';
 		$parent_filter = $application_id ? " AND parent_app.id = {$application_id}" : '';
-		
-		// Update applications that are not parents (no children referencing them)
+
+		// Update applications that are not parents (no children referencing them AND not self-referencing)
 		$sql = "UPDATE bb_application 
-				SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = bb_application.id)
-				WHERE id NOT IN (SELECT DISTINCT parent_id FROM bb_application WHERE parent_id IS NOT NULL)
-				$filter";
+            SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = bb_application.id)
+            WHERE id NOT IN (
+                -- Applications referenced by children
+                SELECT DISTINCT parent_id FROM bb_application 
+                WHERE parent_id IS NOT NULL AND parent_id != id
+                UNION
+                -- Self-referencing applications (parent_id = id)
+                SELECT DISTINCT id FROM bb_application 
+                WHERE parent_id = id
+            )
+            $filter";
 		$db->query($sql, __LINE__, __FILE__);
-		
-		// Update parent applications with minimum from_ date from parent AND all child applications combined
+
+		// Update parent applications (traditional parent_id = NULL pattern)
 		$sql = "UPDATE bb_application parent_app
-				SET from_ = (
-					SELECT MIN(all_dates.from_)
-					FROM (
-						-- Parent's own dates
-						SELECT from_ FROM bb_application_date 
-						WHERE application_id = parent_app.id
-						UNION ALL
-						-- Children's dates
-						SELECT child_dates.from_
-						FROM bb_application child_app
-						JOIN bb_application_date child_dates ON child_app.id = child_dates.application_id
-						WHERE child_app.parent_id = parent_app.id
-						AND child_app.active = 1
-					) as all_dates
-				)
-				WHERE parent_app.id IN (
-					SELECT DISTINCT parent_id 
-					FROM bb_application 
-					WHERE parent_id IS NOT NULL
-				)
-				$parent_filter";
+            SET from_ = (
+                SELECT MIN(all_dates.from_)
+                FROM (
+                    -- Parent's own dates
+                    SELECT from_ FROM bb_application_date 
+                    WHERE application_id = parent_app.id
+                    UNION ALL
+                    -- Children's dates
+                    SELECT child_dates.from_
+                    FROM bb_application child_app
+                    JOIN bb_application_date child_dates ON child_app.id = child_dates.application_id
+                    WHERE child_app.parent_id = parent_app.id
+                    AND child_app.active = 1
+                    AND child_app.parent_id != child_app.id  -- Exclude self-referencing records
+                ) as all_dates
+            )
+            WHERE parent_app.id IN (
+                SELECT DISTINCT parent_id 
+                FROM bb_application 
+                WHERE parent_id IS NOT NULL AND parent_id != id
+            )
+            $parent_filter";
+		$db->query($sql, __LINE__, __FILE__);
+
+		// Update self-referencing parent applications (parent_id = id pattern)
+		$sql = "UPDATE bb_application parent_app
+            SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = parent_app.id)
+            WHERE parent_app.parent_id = parent_app.id
+            $parent_filter";
 		$db->query($sql, __LINE__, __FILE__);
 	}
 

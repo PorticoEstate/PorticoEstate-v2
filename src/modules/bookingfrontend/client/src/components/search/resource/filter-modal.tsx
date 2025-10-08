@@ -217,9 +217,6 @@ const FilterModal: FC<FilterModalProps> = ({
     }, [open]);
 
 
-	if(!open) {
-		return	null;
-	}
     return (
         <MobileDialog
 			dialogId={'filter-modal'}

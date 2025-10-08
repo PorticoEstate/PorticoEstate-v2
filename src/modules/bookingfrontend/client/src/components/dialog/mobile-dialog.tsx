@@ -233,6 +233,9 @@ const Dialog: React.FC<DialogProps> = ({
 		}
 	}, [open, dialogId]);
 
+	if(!open) {
+		return null;
+	}
 	return (
 		<dialog
 			ref={dialogRef}
@@ -243,10 +246,10 @@ const Dialog: React.FC<DialogProps> = ({
 		>
 			{/* Custom backdrop inside dialog */}
 			{show && <div className={styles.customBackdrop} onClick={closeOnBackdropClick ? attemptClose : undefined} />}
-			
+
 			{/* Portal container for calendar popups */}
 			{show && <div className={styles.portalContainer} data-portal="datepicker" id={'portalContainer'} />}
-			
+
 			{/* Dialog content container */}
 			<div className={styles.dialogContainer}>
 				{showDefaultHeader && (

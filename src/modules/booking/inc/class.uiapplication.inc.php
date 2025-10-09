@@ -3036,6 +3036,8 @@ class booking_uiapplication extends booking_uicommon
 	{
 		$id = Sanitizer::get_var('id', 'int');
 		$selected_app_id = Sanitizer::get_var('selected_app_id', 'int');
+		$only_invoicing = Sanitizer::get_var('only_invoicing', 'bool');
+		$hide_invoicing = Sanitizer::get_var('hide_invoicing', 'bool');
 
 		if (!$id)
 		{
@@ -3045,6 +3047,14 @@ class booking_uiapplication extends booking_uicommon
 		// Use selected application ID if provided, otherwise use the original ID
 		$edit_id = $selected_app_id ?: $id;
 		$application = $this->bo->read_single($edit_id);
+
+		// Get related applications if only_invoicing mode
+		$related_application_ids = array();
+		if ($only_invoicing && $this->combine_applications)
+		{
+			$related_info = $this->bo->so->get_related_applications($edit_id);
+			$related_application_ids = $related_info['application_ids'];
+		}
 
 		if (!$application)
 		{
@@ -3070,6 +3080,33 @@ class booking_uiapplication extends booking_uicommon
 		$errors = array();
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 		{
+			// Handle only_invoicing mode - update invoice info for all related applications
+			if ($only_invoicing)
+			{
+				// Extract invoice-related fields from POST
+				$invoice_fields = array(
+					'customer_organization_id' => Sanitizer::get_var('customer_organization_id', 'int', 'POST'),
+					'customer_organization_name' => Sanitizer::get_var('customer_organization_name', 'string', 'POST'),
+					'customer_identifier_type' => Sanitizer::get_var('customer_identifier_type', 'string', 'POST'),
+					'customer_ssn' => Sanitizer::get_var('customer_ssn', 'string', 'POST'),
+					'customer_organization_number' => Sanitizer::get_var('customer_organization_number', 'string', 'POST'),
+					'responsible_street' => Sanitizer::get_var('responsible_street', 'string', 'POST'),
+					'responsible_zip_code' => Sanitizer::get_var('responsible_zip_code', 'string', 'POST'),
+					'responsible_city' => Sanitizer::get_var('responsible_city', 'string', 'POST'),
+				);
+
+				// Apply invoice information to all related applications
+				foreach ($related_application_ids as $app_id)
+				{
+					$related_app = $this->bo->read_single($app_id);
+					$related_app = array_merge($related_app, $invoice_fields);
+					$this->bo->update($related_app);
+				}
+
+				self::redirect(array('menuaction' => $this->url_prefix . '.show', 'id' => $id));
+			}
+
+			// Normal edit mode
 			array_set_default($_POST, 'resources', array());
 			array_set_default($_POST, 'accepted_documents', array());
 
@@ -3242,6 +3279,8 @@ class booking_uiapplication extends booking_uicommon
 			'audience' => $audience,
 			'config' => $config,
 			'tax_code_list'	=> json_encode(execMethod('booking.bogeneric.read', array('location_info' => array('type' => 'tax', 'order' => 'id')))),
+			'only_invoicing' => $only_invoicing,
+			'hide_invoicing' => $hide_invoicing,
 		));
 	}
 

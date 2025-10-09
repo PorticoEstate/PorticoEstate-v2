@@ -987,3 +987,6 @@ approval_description	booking	nn	Du er i ferd med å godkjenne denne søknaden. A
 comment_to_organizer	booking	nn	Kommentar til arrangør
 comment_placeholder	booking	nn	Skriv ei kort melding til arrangøren om godkjenninga, t.d. praktisk info eller viktige avklaringar. Meldinga blir lagt ved oppsummeringa.
 send_email_organizer_summary	booking	nn	Send e-post til arrangør med oppsummering og kommentar
+invoicing_only	booking	nn	Berre fakturering
+invoicing_changes_apply_to_all	booking	nn	Endringar i fakturering vil gjelde for alle kombinerte søknader
+combined_view	booking	nn	Kombinert visning

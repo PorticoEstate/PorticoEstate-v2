@@ -306,7 +306,20 @@
 											<xsl:otherwise>
 												<xsl:choose>
 													<xsl:when test="show_edit_selection = 1">
-														<xsl:attribute name="onclick">$('#editSelectionModal').modal('show')</xsl:attribute>
+														<xsl:attribute name="onclick">
+															<xsl:text>window.location.href='</xsl:text>
+															<xsl:value-of select="application/edit_link"/>
+															<xsl:text>&amp;selected_app_id=</xsl:text>
+															<xsl:choose>
+																<xsl:when test="application/parent_id and application/parent_id != ''">
+																	<xsl:value-of select="application/parent_id"/>
+																</xsl:when>
+																<xsl:otherwise>
+																	<xsl:value-of select="application/id"/>
+																</xsl:otherwise>
+															</xsl:choose>
+															<xsl:text>&amp;only_invoicing=true'</xsl:text>
+														</xsl:attribute>
 														<i class="fas fa-edit me-1 text-primary"></i>
 													</xsl:when>
 													<xsl:otherwise>
@@ -522,16 +535,30 @@
 												<div class="col-md-6 mb-3">
 													<div class="card border-light">
 														<div class="card-body p-3">
-															<h6 class="card-title">
-																<strong><xsl:value-of select="name"/></strong>
-															</h6>
-															<p class="card-text mb-2">
-																<strong>
-																	<xsl:value-of select="php:function('lang', 'Application')" />
-																	<xsl:text> #</xsl:text>
-																	<xsl:value-of select="id"/>
-																</strong>
-															</p>
+															<div class="d-flex justify-content-between align-items-start mb-2">
+																<div>
+																	<h6 class="card-title mb-1">
+																		<strong><xsl:value-of select="name"/></strong>
+																	</h6>
+																	<p class="card-text mb-0">
+																		<strong>
+																			<xsl:value-of select="php:function('lang', 'Application')" />
+																			<xsl:text> #</xsl:text>
+																			<xsl:value-of select="id"/>
+																		</strong>
+																	</p>
+																</div>
+																<a class="btn btn-sm btn-primary">
+																	<xsl:attribute name="href">
+																		<xsl:value-of select="../edit_link"/>
+																		<xsl:text>&amp;selected_app_id=</xsl:text>
+																		<xsl:value-of select="id"/>
+																		<xsl:text>&amp;hide_invoicing=1</xsl:text>
+																	</xsl:attribute>
+																	<i class="fas fa-edit me-1"></i>
+																	<xsl:value-of select="php:function('lang', 'Edit')" />
+																</a>
+															</div>
 															<p class="card-text mb-1">
 																<small><strong><xsl:value-of select="php:function('lang', 'Status')" />:</strong></small>
 															</p>

@@ -975,3 +975,6 @@ approval_description	booking	no	Du er i ferd med å godkjenne denne søknaden. A
 comment_to_organizer	booking	no	Kommentar til arrangør
 comment_placeholder	booking	no	Skriv en kort melding til arrangøren om godkjenning, f.eks. praktisk info eller viktige avklaringer. Meldingen legges ved oppsummeringen.
 send_email_organizer_summary	booking	no	Send e-post til arrangør med oppsummering og kommentar
+invoicing_only	booking	no	Kun fakturering
+invoicing_changes_apply_to_all	booking	no	Endringer i fakturering vil gjelde for alle kombinerte søknader
+combined_view	booking	no	Kombinert visning

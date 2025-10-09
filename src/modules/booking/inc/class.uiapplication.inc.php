@@ -4348,7 +4348,15 @@ JS;
 		$orgid = $this->organization_bo->so->get_orgid($application['customer_organization_number']);
 		$organization = $this->organization_bo->read_single($orgid); // empty array if not found
 
-		$this->flags['app_header'] = lang('application') . ' # ' . $application['id'] . ' - ' . $application['building_name'];
+		// Set page title - show combined view title if viewing multiple applications
+		if ($this->combine_applications && !empty($application['related_application_count']) && $application['related_application_count'] > 1)
+		{
+			$this->flags['app_header'] = lang('combined_application') . ' (' . $application['related_application_count'] . ') - ' . $application['building_name'];
+		}
+		else
+		{
+			$this->flags['app_header'] = lang('application') . ' # ' . $application['id'] . ' - ' . $application['building_name'];
+		}
 		$this->flags['breadcrumb_selection'] = $this->flags['app_header'];
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header'], 'breadcrumb_selection' => $this->flags['breadcrumb_selection']]);
 		$this->is_assigned_to($application);

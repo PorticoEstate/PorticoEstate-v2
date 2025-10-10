@@ -143,7 +143,8 @@ class synkroniser_med_boei extends property_cron_parent
 
 			$toarray = array(
 				'hc483@bergen.kommune.no',
-				'Kvale, Silje <Silje.Kvale@bergen.kommune.no>'
+				'Kvale, Silje <Silje.Kvale@bergen.kommune.no>',
+				'Yuliia.Tereshchenko@bergen.kommune.no'
 			);
 			$to		 = implode(';', $toarray);
 

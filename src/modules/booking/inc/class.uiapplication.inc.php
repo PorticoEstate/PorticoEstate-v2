@@ -3110,10 +3110,30 @@ class booking_uiapplication extends booking_uicommon
 			array_set_default($_POST, 'resources', array());
 			array_set_default($_POST, 'accepted_documents', array());
 
-			$application = array_merge($application, extract_values($_POST, $this->fields));
+			// Filter out invoice fields when hide_invoicing is true
+			$fields_to_extract = $this->fields;
+			if ($hide_invoicing)
+			{
+				$invoice_fields = array(
+					'customer_organization_id',
+					'customer_organization_name',
+					'customer_identifier_type',
+					'responsible_street',
+					'responsible_zip_code',
+					'responsible_city'
+				);
+				$fields_to_extract = array_diff_key($this->fields, array_flip($invoice_fields));
+			}
+
+			$application = array_merge($application, extract_values($_POST, $fields_to_extract));
 			$application['message'] = Sanitizer::get_var('comment', 'html', 'POST');
 			$this->agegroup_bo->extract_form_data($application);
-			$this->extract_customer_identifier($application);
+
+			// Skip customer identifier extraction when hide_invoicing is true
+			if (!$hide_invoicing)
+			{
+				$this->extract_customer_identifier($application);
+			}
 
 			if ($application['frontend_modified'] == '')
 			{

@@ -325,4 +325,134 @@ class booking_boevent extends booking_bocommon_authorized
 	{
 		return $this->so->add_single_comment($event_id, $comment, $type);
 	}
+
+	/**
+	 * Override add method to send webhook notifications
+	 */
+	function add($entity)
+	{
+		// Call parent add method
+		$result = parent::add($entity);
+
+		// Get the new event ID
+		$event_id = $result;
+
+		// Get resource IDs if present
+		$resource_ids = array();
+		if (isset($entity['resources']) && is_array($entity['resources']))
+		{
+			$resource_ids = $entity['resources'];
+		}
+
+		// Send webhook notification (async, after response)
+		try
+		{
+			// Close connection to user first (if using php-fpm)
+			if (function_exists('fastcgi_finish_request'))
+			{
+				fastcgi_finish_request();
+			}
+
+			// Now send webhook asynchronously
+			$webhookNotifier = CreateObject('booking.bowebhook_notifier');
+			$webhookNotifier->notifyChange('event', 'created', $event_id, $resource_ids);
+		}
+		catch (Exception $e)
+		{
+			// Log error but don't fail the main operation
+			$logger = CreateObject('phpgwapi.logger')->get_logger('webhook');
+			$logger->error('Webhook notification failed after event creation', array(
+				'event_id' => $event_id,
+				'error' => $e->getMessage()
+			));
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Override update method to send webhook notifications
+	 */
+	function update($entity)
+	{
+		// Call parent update method
+		$result = parent::update($entity);
+
+		// Get event ID
+		$event_id = $entity['id'];
+
+		// Get resource IDs if present
+		$resource_ids = array();
+		if (isset($entity['resources']) && is_array($entity['resources']))
+		{
+			$resource_ids = $entity['resources'];
+		}
+
+		// Send webhook notification (async, after response)
+		try
+		{
+			// Close connection to user first (if using php-fpm)
+			if (function_exists('fastcgi_finish_request'))
+			{
+				fastcgi_finish_request();
+			}
+
+			// Now send webhook asynchronously
+			$webhookNotifier = CreateObject('booking.bowebhook_notifier');
+			$webhookNotifier->notifyChange('event', 'updated', $event_id, $resource_ids);
+		}
+		catch (Exception $e)
+		{
+			// Log error but don't fail the main operation
+			$logger = CreateObject('phpgwapi.logger')->get_logger('webhook');
+			$logger->error('Webhook notification failed after event update', array(
+				'event_id' => $event_id,
+				'error' => $e->getMessage()
+			));
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Override delete method to send webhook notifications
+	 */
+	function delete($id)
+	{
+		// Get event data before deletion (to get resource IDs)
+		$event = $this->read_single($id);
+		$resource_ids = array();
+		if ($event && isset($event['resources']) && is_array($event['resources']))
+		{
+			$resource_ids = $event['resources'];
+		}
+
+		// Call parent delete method
+		$result = parent::delete($id);
+
+		// Send webhook notification (async, after response)
+		try
+		{
+			// Close connection to user first (if using php-fpm)
+			if (function_exists('fastcgi_finish_request'))
+			{
+				fastcgi_finish_request();
+			}
+
+			// Now send webhook asynchronously
+			$webhookNotifier = CreateObject('booking.bowebhook_notifier');
+			$webhookNotifier->notifyChange('event', 'deleted', $id, $resource_ids);
+		}
+		catch (Exception $e)
+		{
+			// Log error but don't fail the main operation
+			$logger = CreateObject('phpgwapi.logger')->get_logger('webhook');
+			$logger->error('Webhook notification failed after event deletion', array(
+				'event_id' => $id,
+				'error' => $e->getMessage()
+			));
+		}
+
+		return $result;
+	}
 }

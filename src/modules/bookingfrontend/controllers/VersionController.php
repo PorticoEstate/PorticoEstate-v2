@@ -4,6 +4,7 @@ namespace App\modules\bookingfrontend\controllers;
 
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -12,7 +13,7 @@ use Sanitizer;
 /**
  * @OA\Tag(
  *     name="Version",
- *     description="API Endpoints for version settings"
+ *     description="API Endpoints for version and language settings"
  * )
  */
 class VersionController
@@ -45,7 +46,13 @@ class VersionController
     public function getVersion(Request $request, Response $response): Response
     {
         // Get the current settings from cookies
-        $template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE', 'bookingfrontend');
+        $template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
+
+        // If cookie is not set, fall back to user preferences
+        if (empty($template_set)) {
+            $userSettings = Settings::getInstance()->get('user');
+            $template_set = $userSettings['preferences']['common']['template_set'] ?? '';
+        }
 
         // Determine version based on cookie values
         $version = ($template_set === 'bookingfrontend_2') ? 'new' : 'original';
@@ -142,6 +149,115 @@ class VersionController
                 'success' => true,
                 'version' => $version,
                 'template_set' => $templateSet,
+            ],
+            200,
+            $response
+        );
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/bookingfrontend/language",
+     *     summary="Get current language preference",
+     *     description="Gets the user's current language preference",
+     *     tags={"Version"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Current language settings",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean"),
+     *             @OA\Property(property="language", type="string"),
+     *         )
+     *     )
+     * )
+     */
+    public function getLanguage(Request $request, Response $response): Response
+    {
+        // Get the current language from cookies
+        $selected_lang = Sanitizer::get_var('selected_lang', 'string', 'COOKIE');
+
+        // If cookie is not set, fall back to user preferences
+        if (empty($selected_lang)) {
+            $userSettings = Settings::getInstance()->get('user');
+            $selected_lang = $userSettings['preferences']['common']['lang'] ?? '';
+        }
+
+        return ResponseHelper::sendErrorResponse(
+            [
+                'success' => true,
+                'language' => $selected_lang,
+            ],
+            200,
+            $response
+        );
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/bookingfrontend/language",
+     *     summary="Set language preference",
+     *     description="Sets the user's preferred language",
+     *     tags={"Version"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"language"},
+     *             @OA\Property(
+     *                 property="language",
+     *                 type="string",
+     *                 description="The language code to set (e.g., 'no', 'en')",
+     *                 example="no"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Language preference set successfully",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="success", type="boolean"),
+     *             @OA\Property(property="language", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Invalid language specified",
+     *         @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(property="error", type="string")
+     *         )
+     *     )
+     * )
+     */
+    public function setLanguage(Request $request, Response $response): Response
+    {
+        // Get the request body and decode it
+        $body = $request->getBody()->getContents();
+        $data = json_decode($body, true) ?? [];
+
+        $language = $data['language'] ?? null;
+
+        if (!$language || empty(trim($language))) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Language code is required'],
+                400
+            );
+        }
+
+        // Get the sessions object for setting cookies
+        $sessions = Sessions::getInstance();
+
+        // Set expiration time (14 days, matching StartPoint behavior)
+        $expirationTime = time() + (60 * 60 * 24 * 14);
+
+        // Set the language cookie
+        $sessions->phpgw_setcookie('selected_lang', $language, $expirationTime);
+
+        return ResponseHelper::sendErrorResponse(
+            [
+                'success' => true,
+                'language' => $language,
             ],
             200,
             $response

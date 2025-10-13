@@ -4,19 +4,22 @@ import { IApplication } from "@/service/types/api/application.types";
 import { deletePartialApplication } from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import { PencilIcon, TrashIcon, CalendarIcon } from "@navikt/aksel-icons";
+import { PencilIcon, TrashIcon, CalendarIcon, Buildings3Icon, LayersIcon, ArrowsCirclepathIcon } from "@navikt/aksel-icons";
 import styles from "./shopping-cart-card-list.module.scss";
 import { applicationTimeToLux } from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import { DateTime } from "luxon";
 import { useClientTranslation } from "@/app/i18n/ClientTranslationProvider";
 import Link from "next/link";
 import { calculateApplicationCost, formatCurrency, getApplicationCurrency } from "@/utils/cost-utils";
+import { RecurringInfoUtils } from '@/utils/recurring-utils';
+import RecurringDescription from './recurring-description';
 
 interface ShoppingCartCardListProps {
     basketData: IApplication[];
     openEdit: (item: IApplication) => void;
     onLinkClick: () => void;
 }
+
 
 const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [string, string] => {
     const localizedFromDate = fromDate.setLocale(i18n.language);
@@ -71,18 +74,9 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
 						</h3>
 					</div>
 
-					{calculateApplicationCost(item) > 0 && (
-						<div className={styles.cardCost}>
-							{/*<span className={styles.costLabel}>{t('bookingfrontend.cost')}:</span>*/}
-							<span className={styles.costAmount}>
-                                {formatCurrency(calculateApplicationCost(item), getApplicationCurrency(item))}
-                            </span>
-						</div>
-					)}
-
-					<div className={styles.cardInfo}>
+					<div className={styles.cardContent}>
 						<div className={styles.infoItem}>
-							{/*<BuildingIcon aria-hidden className={styles.infoIcon} />*/}
+							<Buildings3Icon aria-hidden className={styles.infoIcon} />
 							<DigdirLink asChild>
 								<Link href={`/building/${item.building_id}`} onClick={(e) => {
 									e.stopPropagation();
@@ -95,59 +89,88 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
 
 						<div className={styles.infoItem}>
 							<CalendarIcon aria-hidden className={styles.infoIcon}/>
-							{(item.dates?.length || 0) === 1 ? (
+							{RecurringInfoUtils.isRecurring(item) ? (
 								<span>
-                                    {formatDateRange(
+									{formatDateRange(
 										applicationTimeToLux(item.dates[0].from_),
 										applicationTimeToLux(item.dates[0].to_),
 										i18n
 									).join(' | ')}
-                                </span>
+								</span>
+							) : (item.dates?.length || 0) === 1 ? (
+								<span>
+									{formatDateRange(
+										applicationTimeToLux(item.dates[0].from_),
+										applicationTimeToLux(item.dates[0].to_),
+										i18n
+									).join(' | ')}
+								</span>
 							) : (
 								<span className={styles.multipleDates}>
-                                    <span className={styles.badge}>
-                                        {item.dates?.length || 0}
-                                    </span>
-                                    <span>{t('bookingfrontend.multiple_time_slots')}</span>
-                                </span>
+									<span className={styles.badge}>
+										{item.dates?.length || 0}
+									</span>
+									<span>{t('bookingfrontend.multiple_time_slots')}</span>
+								</span>
 							)}
 						</div>
-					</div>
 
-					<div className={styles.resourcesContainer}>
-						{(item.resources || []).length === 1 ? (
-							<div className={styles.singleResource}>
-								<DigdirLink asChild>
-									<Link href={`/resource/${item.resources[0].id}`} onClick={(e) => {
-										e.stopPropagation();
-										onLinkClick();
-									}}>
-										<span><ColourCircle resourceId={item.resources[0].id}/> {item.resources[0].name}</span>
-									</Link>
-								</DigdirLink>
+						{RecurringInfoUtils.isRecurring(item) && (
+							<div className={styles.infoItem}>
+								<ArrowsCirclepathIcon aria-hidden className={styles.infoIcon} />
+								<span className={styles.recurringPattern}>
+									<RecurringDescription application={item} />
+								</span>
 							</div>
-						) : expandedId === item.id ? (
-							<ul className={styles.expandedResourcesList}>
-								{(item.resources || []).map((resource) => (
-									<li key={resource.id} className={styles.resourceItem}>
+						)}
+
+						<div className={styles.infoItem}>
+							<LayersIcon aria-hidden className={styles.infoIcon} />
+							<div className={styles.resourcesContainer}>
+								{(item.resources || []).length === 1 ? (
+									<div className={styles.singleResource}>
 										<DigdirLink asChild>
-											<Link href={`/resource/${resource.id}`} onClick={(e) => {
+											<Link href={`/resource/${item.resources[0].id}`} onClick={(e) => {
 												e.stopPropagation();
 												onLinkClick();
 											}}>
-												<span><ColourCircle resourceId={resource.id}/> {resource.name}</span>
+												<span><ColourCircle resourceId={item.resources[0].id}/> {item.resources[0].name}</span>
 											</Link>
 										</DigdirLink>
-									</li>
-								))}
-							</ul>
-						) : (
-							<ResourceCircles
-								resources={item.resources || []}
-								maxCircles={6}
-								size={'small'}
-								isExpanded={false}
-							/>
+									</div>
+								) : expandedId === item.id ? (
+									<ul className={styles.expandedResourcesList}>
+										{(item.resources || []).map((resource) => (
+											<li key={resource.id} className={styles.resourceItem}>
+												<DigdirLink asChild>
+													<Link href={`/resource/${resource.id}`} onClick={(e) => {
+														e.stopPropagation();
+														onLinkClick();
+													}}>
+														<span><ColourCircle resourceId={resource.id}/> {resource.name}</span>
+													</Link>
+												</DigdirLink>
+											</li>
+										))}
+									</ul>
+								) : (
+									<ResourceCircles
+										resources={item.resources || []}
+										maxCircles={6}
+										size={'small'}
+										isExpanded={false}
+									/>
+								)}
+							</div>
+						</div>
+
+						{calculateApplicationCost(item) > 0 && (
+							<div className={styles.cardCost}>
+								{/*<span className={styles.costLabel}>{t('bookingfrontend.cost')}:</span>*/}
+								<span className={styles.costAmount}>
+									{formatCurrency(calculateApplicationCost(item), getApplicationCurrency(item))}
+								</span>
+							</div>
 						)}
 					</div>
 					<div className={styles.cardActions}>

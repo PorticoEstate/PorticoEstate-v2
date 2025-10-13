@@ -38,7 +38,8 @@ class booking_uimetasettings extends booking_uicommon
 			'frontpagetitle' => 'string',
 			'frontpagetext' => 'html',
 			'frontimagetext' => 'html',
-			'participanttext' => 'html'
+			'participanttext' => 'html',
+			'purchase_conditions' => 'html'
 		);
 	}
 
@@ -80,6 +81,7 @@ class booking_uimetasettings extends booking_uicommon
 		self::rich_text_editor('field_frontpagetext');
 		self::rich_text_editor('field_frontimagetext');
 		self::rich_text_editor('field_participanttext');
+		self::rich_text_editor('field_purchase_conditions');
 
 		self::render_template_xsl('metasettings', array(
 			'config_data' => $config->config_data,

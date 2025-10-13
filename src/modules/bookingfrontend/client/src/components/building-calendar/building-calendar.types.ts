@@ -30,6 +30,8 @@ export interface FCallEvent {
         isExtended: boolean;
         source: IEvent;
         type: Exclude<IEvent['type'], 'temporary'>
+		isRecurringInstance?: boolean;
+		isPartialApplication?: boolean;
     };
 }
 
@@ -47,6 +49,11 @@ export interface FCallTempEvent {
         applicationId?: string | number;
         building_id: string | number;
         baseApplication?: Partial<IApplication>;
+        restorePendingData?: boolean;
+		isRecurringInstance?: boolean;
+		isPartialApplication?: boolean;
+		_weekOffset?: number;
+		source?: IApplication;
     };
 }
 

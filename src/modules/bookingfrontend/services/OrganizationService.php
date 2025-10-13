@@ -817,6 +817,45 @@ class OrganizationService
     }
 
     /**
+     * Get a specific delegate for an organization
+     *
+     * @param int $organizationId Organization ID
+     * @param int $delegateId Delegate ID
+     * @return array|null OrganizationDelegate data or null if not found
+     * @throws Exception If database error occurs
+     */
+    public function getOrganizationDelegate(int $organizationId, int $delegateId): ?array
+    {
+        try {
+            $sql = "SELECT d.*
+                    FROM bb_delegate d
+                    WHERE d.organization_id = :organization_id
+                    AND d.id = :delegate_id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([
+                ':organization_id' => $organizationId,
+                ':delegate_id' => $delegateId
+            ]);
+
+            $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$result) {
+                return null;
+            }
+
+            $delegate = new \App\modules\bookingfrontend\models\OrganizationDelegate($result);
+            $currentUserSSN = $this->userHelper->is_logged_in() ? $this->userHelper->ssn : null;
+            $delegate->is_self = $currentUserSSN && $this->ssnMatches($result['ssn'], $currentUserSSN);
+
+            return $delegate->serialize(['user_has_access' => true]);
+
+        } catch (Exception $e) {
+            throw new Exception("Error fetching organization delegate: " . $e->getMessage());
+        }
+    }
+
+    /**
      * Update delegate details
      *
      * @param int $delegateId The ID of the delegate

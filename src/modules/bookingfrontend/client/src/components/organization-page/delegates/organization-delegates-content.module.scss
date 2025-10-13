@@ -136,9 +136,9 @@
 }
 
 .delegateForm {
-    background: var(--ds-color-surface-neutral-subtle);
-    border: 1px solid var(--ds-color-border-subtle);
-    border-radius: var(--ds-border-radius-md);
+    //background: var(--ds-color-surface-neutral-subtle);
+    //border: 1px solid var(--ds-color-border-subtle);
+    //border-radius: var(--ds-border-radius-md);
     padding: 1rem;
     margin-bottom: 1rem;
 
@@ -165,4 +165,20 @@
 
 .showInactiveToggle {
     user-select: none;
+}
+
+.delegateLink {
+    color: var(--ds-color-accent-text-default);
+    text-decoration: none;
+    font-weight: $text-medium;
+    
+    &:hover {
+        text-decoration: underline;
+    }
+    
+    &:focus {
+        outline: 2px solid var(--ds-color-accent-border-default);
+        outline-offset: 2px;
+        border-radius: 2px;
+    }
 }

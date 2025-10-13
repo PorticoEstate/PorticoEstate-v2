@@ -2141,11 +2141,11 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 		if (!empty($this->config_data['voucher_client']))
 		{
-			$client_id = str_pad(substr(strtoupper($this->config_data['voucher_client']), 0, 2), 2, ' ');
+			$client_id = str_pad(substr(strtoupper($this->config_data['voucher_client']), 0, 4), 4, ' ', STR_PAD_RIGHT); //4 chars long
 		}
 		else
 		{
-			$client_id = str_pad(substr(strtoupper('BY'), 0, 2), 2, ' ');
+			$client_id = 'BY  '; //4 chars long
 		}
 
 		$currency = str_pad(substr(strtoupper('NOK'), 0, 3), 3, ' ');

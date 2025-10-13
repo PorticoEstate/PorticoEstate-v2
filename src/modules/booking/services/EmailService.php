@@ -541,6 +541,7 @@ class EmailService
             $associations = $this->getApplicationAssociations($application['id']);
             $adates = [];
             $cost = 0;
+            $approvedTimestamps = [];
 
             foreach ($associations as $assoc) {
                 if ($assoc['active']) {
@@ -548,9 +549,78 @@ class EmailService
                     $to = date($this->datetimeformat, strtotime($assoc['to_']));
                     $adates[] = "\t{$from} - {$to}";
                     $cost += (float)$assoc['cost'];
+
+                    // Store approved timestamps for comparison
+                    $approvedTimestamps[] = [
+                        'from' => strtotime($assoc['from_']),
+                        'to' => strtotime($assoc['to_'])
+                    ];
                 }
             }
 
+            // Calculate rejected/not approved dates for recurring applications
+            $notApprovedDates = [];
+
+            // For recurring applications, we need to generate all attempted dates
+            if (!empty($application['recurring_info']) && !empty($application['dates'])) {
+                // Parse recurring info
+                $recurringData = is_string($application['recurring_info'])
+                    ? json_decode($application['recurring_info'], true)
+                    : $application['recurring_info'];
+
+                if ($recurringData) {
+                    // Generate all recurring dates that were attempted
+                    $attemptedDates = $this->generateRecurringDates($application, $recurringData);
+
+                    // Compare attempted dates with approved dates
+                    foreach ($attemptedDates as $attemptedDate) {
+                        $isApproved = false;
+                        foreach ($approvedTimestamps as $approved) {
+                            if ($attemptedDate['from'] == $approved['from'] && $attemptedDate['to'] == $approved['to']) {
+                                $isApproved = true;
+                                break;
+                            }
+                        }
+
+                        if (!$isApproved) {
+                            $from = date($this->datetimeformat, $attemptedDate['from']);
+                            $to = date($this->datetimeformat, $attemptedDate['to']);
+                            $notApprovedDates[] = "\t{$from} - {$to}";
+                        }
+                    }
+                }
+            } else {
+                // For non-recurring applications, compare requested dates with approved dates
+                if (!empty($application['dates'])) {
+                    foreach ($application['dates'] as $requestedDate) {
+                        $requestedFrom = strtotime($requestedDate['from_']);
+                        $requestedTo = strtotime($requestedDate['to_']);
+
+                        // Check if this requested time matches any approved time
+                        $isApproved = false;
+                        foreach ($approvedTimestamps as $approved) {
+                            if ($requestedFrom == $approved['from'] && $requestedTo == $approved['to']) {
+                                $isApproved = true;
+                                break;
+                            }
+                        }
+
+                        // If not approved, add to the not approved list
+                        if (!$isApproved) {
+                            $from = date($this->datetimeformat, $requestedFrom);
+                            $to = date($this->datetimeformat, $requestedTo);
+                            $notApprovedDates[] = "\t{$from} - {$to}";
+                        }
+                    }
+                }
+            }
+
+            // Display not approved times first (if any)
+            if (!empty($notApprovedDates)) {
+                $body .= "<pre style='color: #dc3545;'>Tider du ikke fikk:\n" . implode("\n", $notApprovedDates) . "</pre><br />";
+            }
+
+            // Display approved times
             if (!empty($adates)) {
                 $body .= "<pre>Godkjent tid:\n" . implode("\n", $adates) . "</pre><br />";
             }
@@ -852,7 +922,7 @@ class EmailService
 
         foreach ($applications as $application) {
             $section .= "<div style='border-left: 3px solid #28a745; padding-left: 10px; margin: 10px 0;'>";
-            
+
             // Use the application name (part name) as the header for accepted applications
             $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
             $section .= "<h4>✅ {$applicationName} - Godkjent (ID: {$application['id']}):</h4>";
@@ -887,7 +957,7 @@ class EmailService
             if (!empty($adates)) {
                 $section .= "<p><strong>Godkjente tider:</strong></p>";
                 $section .= "<pre>" . implode("\n", $adates) . "</pre>";
-                
+
                 if ($applicationCost > 0) {
                     $section .= "<p><strong>Kostnad for {$applicationName}: kr " . number_format($applicationCost, 2, ",", '.') . "</strong></p>";
                 }
@@ -905,7 +975,7 @@ class EmailService
     private function calculateTotalCost(array $applications): float
     {
         $totalCost = 0;
-        
+
         foreach ($applications as $application) {
             $associations = $this->getApplicationAssociations($application['id']);
             foreach ($associations as $assoc) {
@@ -914,7 +984,60 @@ class EmailService
                 }
             }
         }
-        
+
         return $totalCost;
+    }
+
+    /**
+     * Generate all recurring dates that were attempted for an application
+     * Uses the exact same logic as generate_recurring_preview in uiapplication
+     */
+    private function generateRecurringDates(array $application, array $recurringData): array
+    {
+        $dates = [];
+
+        if (empty($application['dates']) || empty($recurringData)) {
+            return $dates;
+        }
+
+        // Get first date from application
+        $first_date = $application['dates'][0];
+        $from_time = new \DateTime($first_date['from_']);
+        $to_time = new \DateTime($first_date['to_']);
+
+        // Parse recurring settings - match allocation wizard logic
+        $interval = isset($recurringData['field_interval']) ? (int)$recurringData['field_interval'] : 1;
+        $repeat_until = null;
+
+        if (!empty($recurringData['repeat_until'])) {
+            $repeat_until = new \DateTime($recurringData['repeat_until']);
+        } else {
+            // Fallback to 3 months from first date
+            $repeat_until = clone $from_time;
+            $repeat_until->add(new \DateInterval('P3M'));
+        }
+
+        // Generate preview dates using allocation wizard logic
+        $max_dato = $to_time->getTimestamp(); // highest date from input
+        $interval_seconds = $interval * 60 * 60 * 24 * 7; // weeks in seconds
+        $repeat_until_timestamp = $repeat_until->getTimestamp();
+        $i = 0;
+        $max_iterations = 100; // Safety limit
+
+        // Use allocation wizard's exact loop condition and date calculation
+        while (($max_dato + ($interval_seconds * $i)) <= $repeat_until_timestamp && $i < $max_iterations) {
+            // Calculate dates using allocation wizard method
+            $fromdate = $from_time->getTimestamp() + ($interval_seconds * $i);
+            $todate = $to_time->getTimestamp() + ($interval_seconds * $i);
+
+            $dates[] = [
+                'from' => $fromdate,
+                'to' => $todate
+            ];
+
+            $i++;
+        }
+
+        return $dates;
     }
 }

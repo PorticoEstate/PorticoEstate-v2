@@ -978,3 +978,5 @@ send_email_organizer_summary	booking	no	Send e-post til arrangør med oppsummeri
 invoicing_only	booking	no	Kun fakturering
 invoicing_changes_apply_to_all	booking	no	Endringer i fakturering vil gjelde for alle kombinerte søknader
 combined_view	booking	no	Kombinert visning
+all_allocations_created	booking	no	Alle tildelinger opprettet
+no_allocations_to_create	booking	no	Ingen tildelinger å opprette

@@ -4504,11 +4504,19 @@ JS;
 				'recurring_application_id' => $application['id']
 			);
 
-			$recurring_allocation_url = self::link($recurring_params);
+			// Add skip_conflicts parameter when there are conflicts
+		if ($has_conflicts) {
+			$recurring_params['skip_conflicts'] = 1;
+		}
+
+		$recurring_allocation_url = self::link($recurring_params);
 
 			// Determine button text based on conflict status
 			$create_button_text = $has_conflicts ? 'create_non_conflicting_allocations' : 'create_all_allocations';
 			$create_button_count = $has_conflicts ? $non_conflict_count : count($recurring_preview);
+
+			// Disable button if there are no allocations to create
+			$can_create_allocations = $create_button_count > 0;
 		}
 
 
@@ -4611,6 +4619,7 @@ JS;
 				'create_button_text' => $create_button_text,
 				'create_button_count' => $create_button_count,
 				'has_conflicts' => $has_conflicts,
+				'can_create_allocations' => $can_create_allocations,
 				'open_approve_modal' => $open_approve_modal,
 				'show_recurring_summary' => $show_recurring_summary
 			)

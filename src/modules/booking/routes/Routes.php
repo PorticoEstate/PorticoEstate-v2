@@ -50,7 +50,7 @@ $app->get('/booking/getpendingtransactions/vipps', VippsController::class . ':ge
 	->addMiddleware(new SessionsMiddleware($container));
 
 // Webhook subscription management API
-$app->group('/booking/api/webhooks', function (RouteCollectorProxy $group)
+$app->group('/booking/webhooks', function (RouteCollectorProxy $group)
 {
 	// Validation endpoint (no auth required)
 	$group->get('/validate', WebhookController::class . ':validate');

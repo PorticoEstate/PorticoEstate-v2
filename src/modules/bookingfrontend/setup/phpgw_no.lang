@@ -926,3 +926,5 @@ time_booking_conflicts	bookingfrontend	no	Den valgte tiden er i konflikt med eks
 validation_phone_norwegian_format	bookingfrontend	no	Vennligst skriv inn et gyldig norsk telefonnummer (8 siffer, eventuelt med +47 prefiks)
 files_will_be_lost_on_login	bookingfrontend	no	Du har valgt filer ({{fileNames}}) som vil gå tapt når du logger inn. Vil du fortsette?
 purchase_conditions	bookingfrontend	no	Kjøpsbetingelser
+added_to_cart	bookingfrontend	no	Lagt i handlekurven
+cart_reminder_message	bookingfrontend	no	Husk å fullføre søknaden i handlekurven for at bestillingen skal bli sendt inn.

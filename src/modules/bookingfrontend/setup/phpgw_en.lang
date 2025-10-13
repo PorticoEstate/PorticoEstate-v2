@@ -926,3 +926,5 @@ time_booking_conflicts	bookingfrontend	en	The selected time conflicts with exist
 purchase_conditions	bookingfrontend	en	Purchase Conditions
 validation_phone_norwegian_format	bookingfrontend	en	Please enter a valid Norwegian phone number (8 digits, optionally with +47 prefix)
 files_will_be_lost_on_login	bookingfrontend	en	You have selected files ({{fileNames}}) that will be lost when you log in. Do you want to continue?
+added_to_cart	bookingfrontend	en	Added to cart
+cart_reminder_message	bookingfrontend	en	Remember to complete the application in the cart for the order to be submitted.

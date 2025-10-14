@@ -138,7 +138,7 @@ class WebhookNotifier
 		{
 			$resource_idList = implode(',', array_map('intval', $resource_ids));
 			$sql = "SELECT * FROM bb_webhook_subscriptions 
-					WHERE is_active = TRUE 
+					WHERE is_active = 1 
 					AND expires_at > NOW()
 					AND resource_type IN (:entity_type, 'all')
 					AND (resource_id IS NULL OR resource_id IN ({$resource_idList}))";
@@ -146,7 +146,7 @@ class WebhookNotifier
 		else
 		{
 			$sql = "SELECT * FROM bb_webhook_subscriptions 
-					WHERE is_active = TRUE 
+					WHERE is_active = 1 
 					AND expires_at > NOW()
 					AND resource_type IN (:entity_type, 'all')
 					AND resource_id IS NULL";

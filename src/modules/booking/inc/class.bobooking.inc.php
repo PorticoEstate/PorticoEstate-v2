@@ -2542,24 +2542,21 @@ phpgw::import_class('booking.bocommon_authorized');
 			// Send webhook notification (async, after response)
 			try
 			{
-				// Close connection to user first (if using php-fpm)
-				if (function_exists('fastcgi_finish_request'))
-				{
-					fastcgi_finish_request();
-				}
-
-				// Now send webhook asynchronously
-				$webhookNotifier = CreateObject('booking.bowebhook_notifier');
+				$webhookNotifier = new \App\modules\booking\services\WebhookNotifier();
 				$webhookNotifier->notifyChange('booking', 'created', $booking_id, $resource_ids);
 			}
 			catch (Exception $e)
 			{
 				// Log error but don't fail the main operation
-				$logger = CreateObject('phpgwapi.logger')->get_logger('webhook');
-				$logger->error('Webhook notification failed after booking creation', array(
-					'booking_id' => $booking_id,
-					'error' => $e->getMessage()
+				$log = new App\modules\phpgwapi\services\Log();
+				$log->error(array(
+					'text' => 'Webhook notification failed after event creation for allocation {p1} (resource {p2})',
+					'p1' => $booking_id ? $booking_id : "unknown",
+					'p2' => $resource_ids ? implode(',', $resource_ids) : "none",
+					'line' => __LINE__,
+					'file' => __FILE__
 				));
+
 			}
 
 			return $result;
@@ -2586,23 +2583,19 @@ phpgw::import_class('booking.bocommon_authorized');
 			// Send webhook notification (async, after response)
 			try
 			{
-				// Close connection to user first (if using php-fpm)
-				if (function_exists('fastcgi_finish_request'))
-				{
-					fastcgi_finish_request();
-				}
-
-				// Now send webhook asynchronously
-				$webhookNotifier = CreateObject('booking.bowebhook_notifier');
+				$webhookNotifier = new \App\modules\booking\services\WebhookNotifier();
 				$webhookNotifier->notifyChange('booking', 'updated', $booking_id, $resource_ids);
 			}
 			catch (Exception $e)
 			{
 				// Log error but don't fail the main operation
-				$logger = CreateObject('phpgwapi.logger')->get_logger('webhook');
-				$logger->error('Webhook notification failed after booking update', array(
-					'booking_id' => $booking_id,
-					'error' => $e->getMessage()
+				$log = new App\modules\phpgwapi\services\Log();
+				$log->error(array(
+					'text' => 'Webhook notification failed after event creation for allocation {p1} (resource {p2})',
+					'p1' => $booking_id ? $booking_id : "unknown",
+					'p2' => $resource_ids ? implode(',', $resource_ids) : "none",
+					'line' => __LINE__,
+					'file' => __FILE__
 				));
 			}
 
@@ -2628,23 +2621,19 @@ phpgw::import_class('booking.bocommon_authorized');
 			// Send webhook notification (async, after response)
 			try
 			{
-				// Close connection to user first (if using php-fpm)
-				if (function_exists('fastcgi_finish_request'))
-				{
-					fastcgi_finish_request();
-				}
-
-				// Now send webhook asynchronously
-				$webhookNotifier = CreateObject('booking.bowebhook_notifier');
+				$webhookNotifier = new \App\modules\booking\services\WebhookNotifier();
 				$webhookNotifier->notifyChange('booking', 'deleted', $id, $resource_ids);
 			}
 			catch (Exception $e)
 			{
 				// Log error but don't fail the main operation
-				$logger = CreateObject('phpgwapi.logger')->get_logger('webhook');
-				$logger->error('Webhook notification failed after booking deletion', array(
-					'booking_id' => $id,
-					'error' => $e->getMessage()
+				$log = new App\modules\phpgwapi\services\Log();
+				$log->error(array(
+					'text' => 'Webhook notification failed after event creation for booking {p1} (resource {p2})',
+					'p1' => $id ? $id : "unknown",
+					'p2' => $resource_ids ? implode(',', $resource_ids) : "none",
+					'line' => __LINE__,
+					'file' => __FILE__
 				));
 			}
 

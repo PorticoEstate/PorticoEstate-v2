@@ -3220,7 +3220,7 @@ class booking_uiapplication extends booking_uicommon
 
 		$application['resources_json'] = json_encode(array_map('intval', $application['resources']));
 		$application['accepted_documents_json'] = json_encode($application['accepted_documents']);
-		$application['cancel_link'] = self::link(array('menuaction' => $current_app . '.uiapplication.index'));
+		$application['cancel_link'] = self::link(array('menuaction' => $current_app . '.uiapplication.show', 'id' => $id));
 		$activities = $this->activity_bo->fetch_activities();
 		$activities = $activities['results'];
 		$agegroups = $this->agegroup_bo->fetch_age_groups($top_level_activity, $include_inactive = true);

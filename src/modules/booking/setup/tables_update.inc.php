@@ -7786,7 +7786,7 @@ function booking_upgrade0_2_113($oProc)
 				'subscription_id' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
 				'resource_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
 				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
-				'notification_url' => array('type' => 'text', 'nullable' => false),
+				'webhook_url' => array('type' => 'text', 'nullable' => false),
 				'change_types' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false, 'default' => 'created,updated,deleted'),
 				'client_state' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),
 				'secret_key' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),

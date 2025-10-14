@@ -5,6 +5,7 @@ namespace App\modules\booking\controllers;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use App\modules\phpgwapi\security\Sessions;
+use App\modules\booking\services\WebhookManager;
 
 /**
  * Webhook subscription management REST API controller
@@ -39,7 +40,7 @@ class WebhookController
 		}
 
 		// Create subscription
-		$manager = \CreateObject('booking.bowebhook_manager');
+		$manager = new WebhookManager();
 		$result = $manager->create($data);
 
 		if (isset($result['error']))
@@ -65,15 +66,15 @@ class WebhookController
 			return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
 		}
 
-		$subscriptionId = $args['id'] ?? null;
-		if (!$subscriptionId)
+		$subscription_id = $args['id'] ?? null;
+		if (!$subscription_id)
 		{
 			$response->getBody()->write(json_encode(array('error' => 'Subscription ID required')));
 			return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
 		}
 
-		$manager = \CreateObject('booking.bowebhook_manager');
-		$subscription = $manager->read($subscriptionId);
+		$manager = new WebhookManager();
+		$subscription = $manager->read($subscription_id);
 
 		if (!$subscription)
 		{
@@ -101,23 +102,23 @@ class WebhookController
 		$queryParams = $request->getQueryParams();
 		$filters = array();
 
-		if (isset($queryParams['resourceType']))
+		if (isset($queryParams['resource_type']))
 		{
-			$filters['resourceType'] = $queryParams['resourceType'];
+			$filters['resource_type'] = $queryParams['resource_type'];
 		}
 
-		if (isset($queryParams['resourceId']))
+		if (isset($queryParams['resource_id']))
 		{
-			$filters['resourceId'] = (int)$queryParams['resourceId'];
+			$filters['resource_id'] = (int)$queryParams['resource_id'];
 		}
 
-		if (isset($queryParams['isActive']))
+		if (isset($queryParams['is_active']))
 		{
-			$filters['isActive'] = (bool)$queryParams['isActive'];
+			$filters['is_active'] = (bool)$queryParams['is_active'];
 		}
 
-		$manager = \CreateObject('booking.bowebhook_manager');
-		$subscriptions = $manager->list_subscriptions($filters);
+		$manager = new WebhookManager();
+		$subscriptions = $manager->listSubscriptions($filters);
 
 		$response->getBody()->write(json_encode(array('subscriptions' => $subscriptions)));
 		return $response->withStatus(200)->withHeader('Content-Type', 'application/json');
@@ -136,8 +137,8 @@ class WebhookController
 			return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
 		}
 
-		$subscriptionId = $args['id'] ?? null;
-		if (!$subscriptionId)
+		$subscription_id = $args['id'] ?? null;
+		if (!$subscription_id)
 		{
 			$response->getBody()->write(json_encode(array('error' => 'Subscription ID required')));
 			return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
@@ -153,8 +154,8 @@ class WebhookController
 
 		$expirationMinutes = isset($data['expirationMinutes']) ? (int)$data['expirationMinutes'] : 43200;
 
-		$manager = \CreateObject('booking.bowebhook_manager');
-		$result = $manager->renew($subscriptionId, $expirationMinutes);
+		$manager = new WebhookManager();
+		$result = $manager->renew($subscription_id, $expirationMinutes);
 
 		if (isset($result['error']))
 		{
@@ -179,15 +180,15 @@ class WebhookController
 			return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
 		}
 
-		$subscriptionId = $args['id'] ?? null;
-		if (!$subscriptionId)
+		$subscription_id = $args['id'] ?? null;
+		if (!$subscription_id)
 		{
 			$response->getBody()->write(json_encode(array('error' => 'Subscription ID required')));
 			return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
 		}
 
-		$manager = \CreateObject('booking.bowebhook_manager');
-		$result = $manager->delete($subscriptionId);
+		$manager = new WebhookManager();
+		$result = $manager->delete($subscription_id);
 
 		if (isset($result['error']))
 		{
@@ -212,8 +213,8 @@ class WebhookController
 			return $response->withStatus(401)->withHeader('Content-Type', 'application/json');
 		}
 
-		$subscriptionId = $args['id'] ?? null;
-		if (!$subscriptionId)
+		$subscription_id = $args['id'] ?? null;
+		if (!$subscription_id)
 		{
 			$response->getBody()->write(json_encode(array('error' => 'Subscription ID required')));
 			return $response->withStatus(400)->withHeader('Content-Type', 'application/json');
@@ -222,8 +223,8 @@ class WebhookController
 		$queryParams = $request->getQueryParams();
 		$limit = isset($queryParams['limit']) ? (int)$queryParams['limit'] : 100;
 
-		$manager = \CreateObject('booking.bowebhook_manager');
-		$log = $manager->getDeliveryLog($subscriptionId, $limit);
+		$manager = new WebhookManager();
+		$log = $manager->getDeliveryLog($subscription_id, $limit);
 
 		$response->getBody()->write(json_encode(array('deliveryLog' => $log)));
 		return $response->withStatus(200)->withHeader('Content-Type', 'application/json');

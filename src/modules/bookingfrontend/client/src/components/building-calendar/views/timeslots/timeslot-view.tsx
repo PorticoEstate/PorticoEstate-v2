@@ -4,7 +4,8 @@ import {DateTime} from "luxon";
 import {
 	useBuildingFreeTimeSlots,
 	useCreateSimpleApplication,
-	useDeletePartialApplication
+	useDeletePartialApplication,
+	useBuildingSeasons
 } from "@/service/hooks/api-hooks";
 import {IBuilding} from "@/service/types/Building";
 import {useEnabledResources} from "@/components/building-calendar/calendar-context";
@@ -13,6 +14,7 @@ import {IFreeTimeSlot} from "@/service/pecalendar.types";
 import {Spinner} from "@digdir/designsystemet-react";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useWebSocketContext} from "@/service/websocket/websocket-context";
+import {useResource} from "@/service/api/building";
 
 interface TimeslotViewProps {
 	currentDate: DateTime;
@@ -26,6 +28,16 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 	const deletePartialApp = useDeletePartialApplication();
 	const webSocketService = useWebSocketContext();
 	const t = useTrans();
+
+	// Get current resource ID
+	const currentResourceId = useMemo(() => {
+		if (enabledResources.size !== 1) return undefined;
+		return [...enabledResources][0];
+	}, [enabledResources]);
+
+	// Fetch resource data and seasons
+	const {data: resourceData} = useResource(currentResourceId || 0);
+	const {data: seasons} = useBuildingSeasons(props.building.id);
 	const viewRange = useMemo(() => {
 		if (props.viewMode.includes('Day')) {
 			return 'day'
@@ -64,13 +76,56 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 		weeks,
 		instance: undefined,
 	});
-	const currentResourceId = useMemo(() => {
-		if (enabledResources.size !== 1) return undefined;
 
-		// Get the slots for the single enabled resource
-		const resourceId = [...enabledResources][0];
-		return resourceId
-	}, [enabledResources])
+	// Calculate the booking horizon limit based on resource settings and season
+	const horizonLimit = useMemo(() => {
+		if (!resourceData) return null;
+
+		const now = DateTime.now();
+		let horizonEnd: DateTime | null = null;
+
+		// Replicate PHP month_shifter logic
+		const monthShifter = (from: DateTime, months: number): DateTime => {
+			let adjustedMonths = months;
+
+			// If end of current month is in the future, subtract 1 from months
+			const endOfMonth = from.endOf('month');
+			if (endOfMonth > from) {
+				adjustedMonths = adjustedMonths - 1;
+			}
+
+			return from.plus({ months: adjustedMonths }).endOf('month');
+		};
+
+		// Calculate horizon based on resource settings
+		// PHP logic: day horizon is calculated first but month horizon OVERWRITES it
+		if (resourceData.booking_month_horizon) {
+			// Month horizon: use month_shifter logic and set to end of day (23:59:59)
+			horizonEnd = monthShifter(now, resourceData.booking_month_horizon).endOf('day');
+		} else if (resourceData.booking_day_horizon) {
+			// Only day horizon (no month horizon): simple +X days from now
+			horizonEnd = now.plus({ days: resourceData.booking_day_horizon });
+		}
+
+		// Find active season that contains current date
+		const activeSeason = seasons?.find(season => {
+			const seasonStart = DateTime.fromISO(season.from_);
+			const seasonEnd = DateTime.fromISO(season.to_);
+			return now >= seasonStart && now <= seasonEnd;
+		});
+
+		// If there's a season limit, use the minimum of horizon and season end
+		if (activeSeason) {
+			const seasonEnd = DateTime.fromISO(activeSeason.to_);
+			if (horizonEnd) {
+				return horizonEnd < seasonEnd ? horizonEnd : seasonEnd;
+			}
+			return seasonEnd;
+		}
+
+		// Return horizon limit (or null if no limits configured)
+		return horizonEnd;
+	}, [resourceData, seasons])
 
 	const visibleTimeslots = useMemo(() => {
 		if (!freeTimeSlots || !currentResourceId) return [];
@@ -113,12 +168,17 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 				return false;
 			}
 
+			// Filter by horizon limit (resource booking horizon + season limit)
+			if (horizonLimit && slotStart > horizonLimit) {
+				return false;
+			}
+
 			// Filter by the selected date range
 			return slotStart >= startOfRange && slotEnd <= endOfRange;
 		}).sort((a, b) => {
 			return DateTime.fromISO(a.start_iso) < DateTime.fromISO(b.start_iso) ? -1 : 1;
 		});
-	}, [freeTimeSlots, viewRange, props.currentDate, currentResourceId]);
+	}, [freeTimeSlots, viewRange, props.currentDate, currentResourceId, horizonLimit]);
 
 	// Track which slot is currently being processed
 	const [processingSlotId, setProcessingSlotId] = React.useState<string | null>(null);

@@ -433,6 +433,18 @@ class ScheduleEntityService
         }
 
         $building_id = $resource['building_id'];
+
+        // Get all resources for the building with participant limits
+        $buildingResources = $this->getResourcesForBuilding($building_id);
+
+        // Create a map of resource_id -> participant_limit for quick lookup
+        $participantLimitMap = [];
+        foreach ($buildingResources as $buildingResource) {
+            if (isset($buildingResource['participant_limit']) && $buildingResource['participant_limit'] > 0) {
+                $participantLimitMap[$buildingResource['id']] = (int)$buildingResource['participant_limit'];
+            }
+        }
+
         $results = [];
 
         // Get User orgs
@@ -448,6 +460,14 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($allocations) as $allocationGroup) {
             $allocation = new Allocation($allocationGroup[0]);
             $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
+
+            // Add participant limits to resources
+            foreach ($allocation->resources as &$resourceItem) {
+                if (isset($participantLimitMap[$resourceItem['id']])) {
+                    $resourceItem['participant_limit'] = $participantLimitMap[$resourceItem['id']];
+                }
+            }
+
             $results[] = $allocation->serialize();
         }
 
@@ -456,6 +476,14 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($bookings) as $bookingGroup) {
             $booking = new Booking($bookingGroup[0]);
             $booking->resources = array_map([$this, 'formatResource'], $bookingGroup);
+
+            // Add participant limits to resources
+            foreach ($booking->resources as &$resourceItem) {
+                if (isset($participantLimitMap[$resourceItem['id']])) {
+                    $resourceItem['participant_limit'] = $participantLimitMap[$resourceItem['id']];
+                }
+            }
+
             $results[] = $booking->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
         }
 
@@ -464,6 +492,14 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+
+            // Add participant limits to resources
+            foreach ($event->resources as &$resourceItem) {
+                if (isset($participantLimitMap[$resourceItem['id']])) {
+                    $resourceItem['participant_limit'] = $participantLimitMap[$resourceItem['id']];
+                }
+            }
+
             $results[] = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
         }
 
@@ -482,12 +518,20 @@ class ScheduleEntityService
         $weekEnd = clone $weekStart;
         $weekEnd->modify('+7 days');
 
-        // Get resources for the building
+        // Get resources for the building with participant limits
         $resources = $this->getResourcesForBuilding($building_id);
         $resource_ids = array_column($resources, 'id');
 
         if (empty($resource_ids)) {
             return [];
+        }
+
+        // Create a map of resource_id -> participant_limit for quick lookup
+        $participantLimitMap = [];
+        foreach ($resources as $resource) {
+            if (isset($resource['participant_limit']) && $resource['participant_limit'] > 0) {
+                $participantLimitMap[$resource['id']] = (int)$resource['participant_limit'];
+            }
         }
 
         $results = [];
@@ -504,6 +548,14 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($allocations) as $allocationGroup) {
             $allocation = new Allocation($allocationGroup[0]);
             $allocation->resources = array_map([$this, 'formatResource'], $allocationGroup);
+
+            // Add participant limits to resources
+            foreach ($allocation->resources as &$resource) {
+                if (isset($participantLimitMap[$resource['id']])) {
+                    $resource['participant_limit'] = $participantLimitMap[$resource['id']];
+                }
+            }
+
             $results[] = $allocation->serialize();
         }
 
@@ -512,6 +564,14 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($bookings) as $bookingGroup) {
             $booking = new Booking($bookingGroup[0]);
             $booking->resources = array_map([$this, 'formatResource'], $bookingGroup);
+
+            // Add participant limits to resources
+            foreach ($booking->resources as &$resource) {
+                if (isset($participantLimitMap[$resource['id']])) {
+                    $resource['participant_limit'] = $participantLimitMap[$resource['id']];
+                }
+            }
+
             $results[] = $booking->serialize(['user_ssn' => $this->bouser->ssn, "user_group_id" => $userGroupIds]);
         }
 
@@ -520,6 +580,14 @@ class ScheduleEntityService
         foreach ($this->groupByEntity($events) as $eventGroup) {
             $event = new Event($eventGroup[0]);
             $event->resources = array_map([$this, 'formatResource'], $eventGroup);
+
+            // Add participant limits to resources
+            foreach ($event->resources as &$resource) {
+                if (isset($participantLimitMap[$resource['id']])) {
+                    $resource['participant_limit'] = $participantLimitMap[$resource['id']];
+                }
+            }
+
             $results[] = $event->serialize(['user_ssn' => $this->bouser->ssn, "organization_number" => $userOrgs]);
         }
 
@@ -565,10 +633,12 @@ class ScheduleEntityService
     private function getResourcesForBuilding(int $building_id): array
     {
         try {
-            $sql = "SELECT r.*, a.name as activity_name
+            $sql = "SELECT r.*, a.name as activity_name,
+                    COALESCE(pl.quantity, 0) as participant_limit
                     FROM bb_resource r
                     JOIN bb_building_resource br ON r.id = br.resource_id
                     LEFT JOIN bb_activity a ON r.activity_id = a.id
+                    LEFT JOIN bb_participant_limit pl ON r.id = pl.resource_id
                     WHERE br.building_id = ?
                     AND r.active = 1
                     AND (r.hidden_in_frontend = 0 OR r.hidden_in_frontend IS NULL)";

@@ -11,6 +11,7 @@ import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
 import { calculateApplicationCost, formatCurrency, getApplicationCurrency } from "@/utils/cost-utils";
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
 import { useBuildingSeasons } from "@/service/hooks/api-hooks";
+import { useIsMobile } from "@/service/hooks/is-mobile";
 
 interface ShoppingCartTableProps {
     basketData: IApplication[];
@@ -60,6 +61,7 @@ const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [st
 const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, showParentSelection, selectedParentId, onParentIdChange, buildingId }) => {
     const {i18n} = useClientTranslation();
     const [expandedId, setExpandedId] = useState<number>();
+    const isMobile = useIsMobile();
 
     // Fetch seasons for all unique buildings
     const buildingIds = [...new Set(basketData.map(item => item.building_id))];
@@ -94,6 +96,87 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, s
             </List.Unordered>
         }
         return <span><Badge count={application.dates?.length || 0} color={'neutral'}/> {i18n.t('bookingfrontend.multiple_time_slots')}</span>
+    }
+
+    // Mobile card view
+    if (isMobile) {
+        return (
+            <div className={styles.mobileTableContainer}>
+                {basketData.map((item) => {
+                    const cost = calculateApplicationCost(item);
+                    const currency = getApplicationCurrency(item);
+                    const isRecurring = RecurringInfoUtils.isRecurring(item);
+                    const seasons = seasonsMap.get(item.building_id);
+                    const recurringInstances = isRecurring ? calculateRecurringInstances(item, seasons) : [];
+                    const occurrenceCount = recurringInstances.length;
+
+                    return (
+                        <div key={item.id} className={styles.mobileTableCard}>
+                            {showParentSelection && (
+                                <div className={styles.mobileCardRadio}>
+                                    <Radio
+                                        name={`parent-application-building-${buildingId || 'default'}`}
+                                        value={item.id.toString()}
+                                        checked={selectedParentId === item.id}
+                                        onChange={() => onParentIdChange?.(item.id)}
+                                        aria-label={`Select application ${item.id} as main application`}
+                                    />
+                                    <span className={styles.mobileCardTitle}>{item.name}</span>
+                                </div>
+                            )}
+                            {!showParentSelection && (
+                                <div className={styles.mobileCardTitle}>{item.name}</div>
+                            )}
+
+                            <div className={styles.mobileCardRow}>
+                                <span>{i18n.t('bookingfrontend.start_time')}:</span>
+                                <span>{getStartTime(item)}</span>
+                            </div>
+
+                            <div className={styles.mobileCardRow}>
+                                <span>{i18n.t('bookingfrontend.where')}:</span>
+                                <span>{item.building_name}</span>
+                            </div>
+
+                            <div className={styles.mobileCardRow}>
+                                <span>{i18n.t('bookingfrontend.what')}:</span>
+                                <ResourceCircles
+                                    resources={item.resources || []}
+                                    maxCircles={4}
+                                    size={'small'}
+                                    isExpanded={expandedId === item.id}
+                                />
+                            </div>
+
+                            {cost > 0 && (
+                                <div className={`${styles.mobileCardRow} ${styles.mobileCardPrice}`}>
+                                    <span>{i18n.t('bookingfrontend.price')}:</span>
+                                    {isRecurring ? (
+                                        <div className={styles.mobilePriceBreakdown}>
+                                            <div>{formatCurrency(cost, currency)} {i18n.t('bookingfrontend.per_occurrence_short')}</div>
+                                            <div style={{ fontWeight: 'bold' }}>
+                                                {formatCurrency(cost * occurrenceCount, currency)} ({occurrenceCount} {i18n.t('bookingfrontend.occurrences')})
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <span>{formatCurrency(cost, currency)}</span>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className={styles.mobileCardActions}>
+                                <Button variant="tertiary" data-size="sm" onClick={() => openEdit(item)} aria-label={i18n.t('bookingfrontend.edit')}>
+                                    <PencilIcon /> {i18n.t('bookingfrontend.edit')}
+                                </Button>
+                                <Button variant="tertiary" data-size="sm" onClick={() => deletePartialApplication(item.id)} aria-label={i18n.t('bookingfrontend.delete')}>
+                                    <TrashIcon /> {i18n.t('common.delete')}
+                                </Button>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
     }
 
     return (

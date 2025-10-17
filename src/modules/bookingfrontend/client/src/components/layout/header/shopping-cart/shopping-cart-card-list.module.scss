@@ -80,6 +80,43 @@
 	font-weight: var(--ds-font-weight-semibold);
 }
 
+.priceBreakdown {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+	padding: 0.5rem;
+	border-radius: var(--ds-radius-small);
+	background-color: var(--ds-color-neutral-surface-light);
+	font-size: var(--ds-font-size-sm);
+}
+
+.priceItem {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 1rem;
+
+	span:first-child {
+		color: var(--ds-text-default);
+	}
+
+	span:last-child {
+		font-weight: var(--ds-font-weight-medium);
+		color: var(--ds-color-neutral-dark);
+	}
+}
+
+.totalPrice {
+	margin-top: 0.25rem;
+	padding-top: 0.25rem;
+	border-top: 1px solid var(--ds-color-neutral-border-subtle);
+	font-weight: var(--ds-font-weight-semibold);
+
+	span:last-child {
+		font-weight: var(--ds-font-weight-semibold);
+	}
+}
+
 .cardInfo {
 	display: flex;
 	flex-direction: row;

@@ -8,6 +8,9 @@ import styles from "./shopping-cart-content.module.scss";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import {DateTime} from "luxon";
 import {useClientTranslation} from "@/app/i18n/ClientTranslationProvider";
+import { calculateApplicationCost, formatCurrency, getApplicationCurrency } from "@/utils/cost-utils";
+import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
+import { useBuildingSeasons } from "@/service/hooks/api-hooks";
 
 interface ShoppingCartTableProps {
     basketData: IApplication[];
@@ -58,6 +61,19 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, s
     const {i18n} = useClientTranslation();
     const [expandedId, setExpandedId] = useState<number>();
 
+    // Fetch seasons for all unique buildings
+    const buildingIds = [...new Set(basketData.map(item => item.building_id))];
+    const seasonsQueries = buildingIds.map(id => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        return useBuildingSeasons(id);
+    });
+
+    // Create a map of building_id to seasons for easy lookup
+    const seasonsMap = new Map();
+    buildingIds.forEach((id, index) => {
+        seasonsMap.set(id, seasonsQueries[index]?.data);
+    });
+
     const getStartTime = (application: IApplication) => {
         if ((application.dates?.length || 0) === 1) {
             const from = applicationTimeToLux(application.dates[0].from_);
@@ -94,8 +110,8 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, s
                     <Table.HeaderCell>{i18n.t('bookingfrontend.start_time')}</Table.HeaderCell>
                     <Table.HeaderCell>{i18n.t('bookingfrontend.where')}</Table.HeaderCell>
                     <Table.HeaderCell>{i18n.t('bookingfrontend.what')}</Table.HeaderCell>
-                    <Table.HeaderCell>{i18n.t('bookingfrontend.edit')}</Table.HeaderCell>
-                    <Table.HeaderCell>{i18n.t('bookingfrontend.remove_application')}</Table.HeaderCell>
+                    <Table.HeaderCell>{i18n.t('bookingfrontend.price')}</Table.HeaderCell>
+                    <Table.HeaderCell></Table.HeaderCell>
                 </Table.Row>
             </Table.Head>
             <Table.Body>
@@ -134,17 +150,47 @@ const ShoppingCartTable: FC<ShoppingCartTableProps> = ({ basketData, openEdit, s
                             />
                         </Table.Cell>
                         <Table.Cell>
-                            <Button variant="tertiary" className={'link-text link-text-unset normal'} onClick={(e) => {
-                                openEdit(item);
-                                e.stopPropagation();
-                            }}>
-                                <PencilIcon />
-                            </Button>
+                            {(() => {
+                                const cost = calculateApplicationCost(item);
+                                const currency = getApplicationCurrency(item);
+                                const isRecurring = RecurringInfoUtils.isRecurring(item);
+
+                                if (cost === 0) return '-';
+
+                                if (isRecurring) {
+                                    const seasons = seasonsMap.get(item.building_id);
+                                    const recurringInstances = calculateRecurringInstances(item, seasons);
+                                    const occurrenceCount = recurringInstances.length;
+                                    const totalCost = cost * occurrenceCount;
+
+                                    return (
+                                        <div style={{ fontSize: '0.875rem' }}>
+                                            <div>{formatCurrency(cost, currency)} {i18n.t('bookingfrontend.per_occurrence_short')}</div>
+                                            <div style={{ fontWeight: 'bold', marginTop: '0.25rem' }}>
+                                                {formatCurrency(totalCost, currency)} ({occurrenceCount} {i18n.t('bookingfrontend.occurrences')})
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                return formatCurrency(cost, currency);
+                            })()}
                         </Table.Cell>
                         <Table.Cell>
-                            <Button variant="tertiary" onClick={() => deletePartialApplication(item.id)}>
-                                <TrashIcon />
-                            </Button>
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <Button variant="tertiary" className={'link-text link-text-unset normal'} onClick={(e) => {
+                                    openEdit(item);
+                                    e.stopPropagation();
+                                }} aria-label={i18n.t('bookingfrontend.edit')}>
+                                    <PencilIcon />
+                                </Button>
+                                <Button variant="tertiary" onClick={(e) => {
+                                    deletePartialApplication(item.id);
+                                    e.stopPropagation();
+                                }} aria-label={i18n.t('bookingfrontend.remove_application')}>
+                                    <TrashIcon />
+                                </Button>
+                            </div>
                         </Table.Cell>
                     </Table.Row>
                 ))}

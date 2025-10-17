@@ -839,3 +839,7 @@ validation_homepage_format	bookingfrontend	nn	Ugyldig URL-format
 organizer_required	bookingfrontend	nn	Arrangørnamn er påkravd
 time_booking_conflicts	bookingfrontend	nn	Den valde tida er i konflikt med eksisterande bookingar
 purchase_conditions	bookingfrontend	nn	Kjøpsbetingelser
+add_organization	bookingfrontend	nn	Legg til organisasjon
+invalid_org_number_format	bookingfrontend	nn	Ugyldig organisasjonsnummer format. Må vere 9 siffer.
+org_not_found	bookingfrontend	nn	Organisasjon ikkje funne i Brønnøysundregistera.
+org_create_hint	bookingfrontend	nn	Du kan opprette ei ny organisasjon ved å skrive inn 9-sifra organisasjonsnummer

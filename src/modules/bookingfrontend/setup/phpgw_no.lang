@@ -839,3 +839,7 @@ validation_zipcode_min_length	bookingfrontend	no	Postnummer må være minst 4 te
 validation_homepage_format	bookingfrontend	no	Ugyldig URL-format
 time_booking_conflicts	bookingfrontend	no	Den valgte tiden er i konflikt med eksisterende bookinger
 purchase_conditions	bookingfrontend	no	Kjøpsbetingelser
+add_organization	bookingfrontend	no	Legg til organisasjon
+invalid_org_number_format	bookingfrontend	no	Ugyldig organisasjonsnummer format. Må være 9 siffer.
+org_not_found	bookingfrontend	no	Organisasjon ikke funnet i Brønnøysundregistrene.
+org_create_hint	bookingfrontend	no	Du kan opprette en ny organisasjon ved å skrive inn 9-sifret organisasjonsnummer

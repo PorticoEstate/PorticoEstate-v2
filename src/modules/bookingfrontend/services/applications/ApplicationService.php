@@ -318,9 +318,17 @@ class ApplicationService
                                 'organization_number' => $data['organizationNumber'],
                                 'name' => $data['organizationName'],
                                 'customer_identifier_type' => 'organization_number',
-                                'customer_organization_number' => $data['organizationNumber']
+                                'customer_organization_number' => $data['organizationNumber'],
+                                'customer_ssn' => $this->userHelper->ssn,
+                                'contacts' => [
+                                    [
+                                        'name' => $data['contactName'],
+                                        'email' => $data['contactEmail'],
+                                        'phone' => $data['contactPhone']
+                                    ]
+                                ]
                             ];
-                            
+
                             $organizationId = $organizationService->createOrganization($organizationData);
                             
                             if ($organizationId) {

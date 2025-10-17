@@ -44,7 +44,13 @@ class OrganizationService
      */
     public function createOrganization(array $data): int
     {
+        $startedTransaction = false;
         try {
+            // Reject test organization number
+            if (!empty($data['organization_number']) && $data['organization_number'] == '000000000') {
+                throw new Exception('Invalid organization number: test number not allowed');
+            }
+
             // Verify organization exists in Brønnøysund
             if (!empty($data['organization_number'])) {
                 $brreg_data = $this->lookupOrganization($data['organization_number']);
@@ -57,24 +63,36 @@ class OrganizationService
 
             $this->preValidate($data);
 
-            $this->db->beginTransaction();
+            // Get first active activity as fallback if activity_id not provided (same as legacy)
+            if (empty($data['activity_id'])) {
+                $activities = CreateObject('booking.soactivity')->read(array('filters' => array('active' => 1)));
+                $data['activity_id'] = $activities['results'][0]['id'] ?? null;
+            }
+
+            // Only start transaction if not already in one
+            if (!$this->db->inTransaction()) {
+                $this->db->beginTransaction();
+                $startedTransaction = true;
+            }
 
             $sql = "INSERT INTO bb_organization (
                 name, shortname,
-                street, zip_code, city,
+                street, zip_code, district, city,
                 phone, email, homepage,
                 active, activity_id,
                 customer_identifier_type, customer_organization_number,
                 customer_number, customer_ssn,
-                organization_number
+                organization_number,
+                customer_internal, show_in_portal, description_json
             ) VALUES (
                 :name, :shortname,
-                :street, :zip_code, :city,
+                :street, :zip_code, :district, :city,
                 :phone, :email, :homepage,
                 :active, :activity_id,
                 :customer_identifier_type, :customer_organization_number,
                 :customer_number, :customer_ssn,
-                :organization_number
+                :organization_number,
+                :customer_internal, :show_in_portal, :description_json
             )";
 
             $stmt = $this->db->prepare($sql);
@@ -83,6 +101,7 @@ class OrganizationService
                 ':shortname' => substr($data['name'], 0, 11),
                 ':street' => $data['street'] ?? '',
                 ':zip_code' => $data['zip_code'] ?? '',
+                ':district' => $data['district'] ?? 'N/A',
                 ':city' => $data['city'] ?? '',
                 ':phone' => $data['phone'] ?? 'N/A',
                 ':email' => $data['email'] ?? 'N/A',
@@ -92,8 +111,11 @@ class OrganizationService
                 ':customer_identifier_type' => $data['customer_identifier_type'] ?? 'organization_number',
                 ':customer_organization_number' => $data['organization_number'] ?? null,
                 ':customer_number' => $data['customer_number'] ?? null,
-                ':customer_ssn' => !empty($_POST['customer_ssn']) ? $_POST['customer_ssn'] : null,
-                ':organization_number' => $data['organization_number'] ?? null
+                ':customer_ssn' => $data['customer_ssn'] ?? $_POST['customer_ssn'] ?? $this->userHelper->ssn ?? null,
+                ':organization_number' => $data['organization_number'] ?? null,
+                ':customer_internal' => 0,
+                ':show_in_portal' => 1,
+                ':description_json' => null
             ]);
 
             $id = $this->db->lastInsertId();
@@ -103,11 +125,18 @@ class OrganizationService
                 $this->saveContacts($id, array_slice($data['contacts'], 0, 2));
             }
 
-            $this->db->commit();
+            // Only commit if we started the transaction
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
+
             return $id;
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            // Only rollback if we started the transaction
+            if ($startedTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }

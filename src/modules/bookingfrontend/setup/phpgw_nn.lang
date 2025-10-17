@@ -927,3 +927,7 @@ validation_phone_norwegian_format	bookingfrontend	nn	Venlegast skriv inn eit gyl
 files_will_be_lost_on_login	bookingfrontend	nn	Du har valt filer ({{fileNames}}) som vil gå tapt når du loggar inn. Vil du halde fram?
 added_to_cart	bookingfrontend	nn	Lagt i handlekorga
 cart_reminder_message	bookingfrontend	nn	Hugs å fullføre søknaden i handlekorga for at bestillinga skal bli sendt inn.
+add_organization	bookingfrontend	nn	Legg til organisasjon
+invalid_org_number_format	bookingfrontend	nn	Ugyldig organisasjonsnummer format. Må vere 9 siffer.
+org_not_found	bookingfrontend	nn	Organisasjon ikkje funne i Brønnøysundregistera.
+org_create_hint	bookingfrontend	nn	Du kan opprette ei ny organisasjon ved å skrive inn 9-sifra organisasjonsnummer

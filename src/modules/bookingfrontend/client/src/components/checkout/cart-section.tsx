@@ -7,6 +7,7 @@ import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping
 import { calculateApplicationCost, formatCurrency } from "@/utils/cost-utils";
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
 import { useBuildingSeasons } from "@/service/hooks/api-hooks";
+import {Buildings3Icon} from "@navikt/aksel-icons";
 
 interface CartSectionProps {
     applications: IApplication[];
@@ -58,7 +59,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
     const {regularApplicationsByBuilding, recurringApplications} = useMemo(() => {
         const regular: IApplication[] = [];
         const recurring: IApplication[] = [];
-        
+
         applications.forEach(app => {
             if (app.recurring_info && app.recurring_info.trim() !== '') {
                 recurring.push(app);
@@ -66,7 +67,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                 regular.push(app);
             }
         });
-        
+
         // Group regular applications by building_id
         const groupedByBuilding = new Map<number, IApplication[]>();
         regular.forEach(app => {
@@ -76,7 +77,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
             }
             groupedByBuilding.get(buildingId)!.push(app);
         });
-        
+
         return {
             regularApplicationsByBuilding: Array.from(groupedByBuilding.entries()).map(([buildingId, apps]) => ({
                 buildingId,
@@ -96,7 +97,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                 const sectionTotal = calculateTotal(buildingGroup.applications);
                 return (
                     <section key={buildingGroup.buildingId} className={styles.cartSection} style={{marginTop: index > 0 ? '2rem' : '0'}}>
-                        <h2>{buildingGroup.buildingName}</h2>
+                        <h2><Buildings3Icon fontSize="24px"/> {buildingGroup.buildingName}</h2>
                         <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
                             {t('bookingfrontend.select_main_application_note')} {t('bookingfrontend.building_parent_constraint_note')}
                         </p>

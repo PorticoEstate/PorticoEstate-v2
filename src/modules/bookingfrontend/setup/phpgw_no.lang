@@ -926,3 +926,8 @@ time_booking_conflicts	bookingfrontend	no	Den valgte tiden er i konflikt med eks
 validation_phone_norwegian_format	bookingfrontend	no	Vennligst skriv inn et gyldig norsk telefonnummer (8 siffer, eventuelt med +47 prefiks)
 files_will_be_lost_on_login	bookingfrontend	no	Du har valgt filer ({{fileNames}}) som vil gå tapt når du logger inn. Vil du fortsette?
 purchase_conditions	bookingfrontend	no	Kjøpsbetingelser
+per_occurrence	bookingfrontend	no	Pr gang
+sum_occurrences	bookingfrontend	no	Sum ({{count}} hendelser)
+per_occurrence_short	bookingfrontend	no	pr
+occurrences	bookingfrontend	no	hendelser
+grand_total	bookingfrontend	no	Totalt for alle søknader

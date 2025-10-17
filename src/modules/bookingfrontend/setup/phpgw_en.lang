@@ -924,6 +924,10 @@ validation_homepage_format	bookingfrontend	en	Invalid URL format
 vipps_payment_completed	bookingfrontend	en	Your booking has been completed via Vipps payment
 time_booking_conflicts	bookingfrontend	en	The selected time conflicts with existing bookings
 purchase_conditions	bookingfrontend	en	Purchase Conditions
+add_organization	bookingfrontend	en	Add organization
+invalid_org_number_format	bookingfrontend	en	Invalid organization number format. Must be 9 digits.
+org_not_found	bookingfrontend	en	Organization not found in the Brønnøysund registers.
+org_create_hint	bookingfrontend	en	You can create a new organization by typing its 9-digit organization number
 validation_phone_norwegian_format	bookingfrontend	en	Please enter a valid Norwegian phone number (8 digits, optionally with +47 prefix)
 files_will_be_lost_on_login	bookingfrontend	en	You have selected files ({{fileNames}}) that will be lost when you log in. Do you want to continue?
 per_occurrence	bookingfrontend	en	Per occurrence
@@ -931,3 +935,5 @@ sum_occurrences	bookingfrontend	en	Sum ({{count}} occurrences)
 per_occurrence_short	bookingfrontend	en	per
 occurrences	bookingfrontend	en	occurrences
 grand_total	bookingfrontend	en	Total for all applications
+added_to_cart	bookingfrontend	en	Added to cart
+cart_reminder_message	bookingfrontend	en	Remember to complete the application in the cart for the order to be submitted.

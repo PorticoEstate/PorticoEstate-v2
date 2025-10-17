@@ -10,6 +10,7 @@ export interface ToastMessage {
   text: string | React.ReactNode;
   title?: string | React.ReactNode;
   autoHide?: boolean;
+  duration?: number; // Custom duration in milliseconds (default: 10000)
   messageId?: string; // Optional custom ID for deduplication
   timeoutId?: NodeJS.Timeout; // Track timeout for pause/resume
   remainingTime?: number; // Track remaining time when paused
@@ -57,26 +58,28 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         return; // Skip adding duplicate toast
       }
     }
-    
+
     const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
     const startTime = Date.now();
-    
-    // Auto-hide toast after 10 seconds if autoHide is true (increased from 5 seconds)
+    const duration = message.duration || 10000; // Use custom duration or default to 10 seconds
+
+    // Auto-hide toast after specified duration if autoHide is true
     if (message.autoHide !== false) {
       const timeoutId = setTimeout(() => {
         removeToast(id);
-      }, 10000);
-      
-      const newToast = { 
-        ...message, 
-        id, 
+      }, duration);
+
+      const newToast = {
+        ...message,
+        id,
         timeoutId,
-        remainingTime: 10000,
-        startTime
+        remainingTime: duration,
+        startTime,
+        duration
       };
       setToasts(prev => [...prev, newToast]);
     } else {
-      const newToast = { ...message, id };
+      const newToast = { ...message, id, duration };
       setToasts(prev => [...prev, newToast]);
     }
   };

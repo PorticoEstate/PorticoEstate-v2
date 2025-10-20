@@ -403,7 +403,7 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			// const newView = whichView(window.innerWidth);
 			const calendarApi = calendarRef.current?.getApi(); // Access calendar API
 
-			if (calendarApi && 'timeGridDay' !== viewMode) {
+			if (calendarApi && 'timeGridDay' !== viewMode && 'listWeek' !== viewMode && 'listDay' !== viewMode) {
 				setViewMode('timeGridDay')
 				// calendarApi.changeView(newView); // Change view dynamically
 			}
@@ -423,7 +423,8 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			/>
 		}
 
-		if (calendarRef.current?.getApi().view.type === 'listWeek') {
+		const viewType = calendarRef.current?.getApi().view.type;
+		if (viewType === 'listWeek' || viewType === 'listDay') {
 			return <EventContentList
 				eventInfo={eventInfo as FCEventContentArg<FCallEvent>}
 			/>;

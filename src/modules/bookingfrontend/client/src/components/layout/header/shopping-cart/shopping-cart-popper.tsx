@@ -81,7 +81,7 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
                             date_id: storedData.date_id,
                             building_id: storedData.building_id
                         });
-                        
+
                         // Also open the shopping cart to show context
                         props.setOpen(true);
                     }

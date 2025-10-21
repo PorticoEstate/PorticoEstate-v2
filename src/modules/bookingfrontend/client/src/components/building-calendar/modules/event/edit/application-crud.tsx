@@ -198,6 +198,9 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 
 				{...effectiveProps}
 				onClose={() => {
+					// Clear pending recurring application data from localStorage
+					localStorage.removeItem('pendingRecurringApplication');
+
 					// Clear restored props when dialog is closed
 					if (restoredProps) {
 						setRestoredProps(null);
@@ -950,6 +953,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				application: updatedApplication
 			});
 
+			// Clear pending recurring application data from localStorage
+			localStorage.removeItem('pendingRecurringApplication');
+
 			props.onSubmitSuccess?.(data);
 			props.onClose();
 			return;
@@ -1003,6 +1009,10 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			});
 			setIsUploadingFiles(false);
 		}
+
+		// Clear pending recurring application data from localStorage
+		localStorage.removeItem('pendingRecurringApplication');
+
 		props.onSubmitSuccess?.(data);
 		props.onClose();
 	};

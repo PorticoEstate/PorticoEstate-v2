@@ -40,3 +40,5 @@ next-env.d.ts
 
 /lang-files
 certificates
+/playwright-report/
+/test-results/

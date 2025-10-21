@@ -71,10 +71,13 @@
         "zod": "^3.23.8"
     },
     "devDependencies": {
+        "@axe-core/playwright": "^4.10.2",
+        "@playwright/test": "^1.56.1",
         "@types/he": "^1.2.3",
         "@types/node": "^20",
         "@types/react": "^18",
         "@types/react-dom": "^18",
+        "axe-core": "^4.11.0",
         "eslint": "^8",
         "eslint-config-next": "14.2.4",
         "typescript": "^5"

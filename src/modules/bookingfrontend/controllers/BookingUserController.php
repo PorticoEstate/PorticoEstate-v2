@@ -51,12 +51,8 @@ class BookingUserController
 	 *     tags={"User"},
 	 *     @OA\Response(
 	 *         response=200,
-	 *         description="User details",
+	 *         description="User details or null if not authenticated",
 	 *         @OA\JsonContent(ref="#/components/schemas/User")
-	 *     ),
-	 *     @OA\Response(
-	 *         response=401,
-	 *         description="User not authenticated"
 	 *     )
 	 * )
 	 */
@@ -66,45 +62,18 @@ class BookingUserController
 		{
 			$bouser = new UserHelper();
 
-
+			// If user is not logged in, return null instead of 401
 			if (!$bouser->is_logged_in())
 			{
-//                $sessions = Sessions::getInstance();
-//                $sessionId = $sessions->get_session_id();
-//                $verified = $sessions->verify();
-
-				return ResponseHelper::sendErrorResponse([
-					'error' => 'Not authenticated',
-//                    'debug' => [
-//                        'session_present' => !!$sessions->get_session_id(),
-//                        'session_verified' => $sessions->verify(),
-//                        'session_id' => $sessions->get_session_id(),
-//                        'orgnr' => $bouser->orgnr,
-//                        'ssn' => $bouser->ssn,
-//                        'org_id' => $bouser->org_id,
-//                        'orgname' => $bouser->orgname
-//                    ]
-				], 401);
-			}
-
-
-			// Check if user is logged in first
-			if (!$bouser->is_logged_in())
-			{
-				return ResponseHelper::sendErrorResponse(
-					['error' => 'Not authenticated'],
-					401
-				);
+				return ResponseHelper::sendJSONResponse(null, 200);
 			}
 
 			// Validate SSN login and get user data
 			$external_login_info = $bouser->validate_ssn_login([], true);
 			if (empty($external_login_info))
 			{
-				return ResponseHelper::sendErrorResponse(
-					['error' => 'Invalid or expired session'],
-					401
-				);
+				// Invalid or expired session - return null like unauthenticated
+				return ResponseHelper::sendJSONResponse(null, 200);
 			}
 
 
@@ -481,7 +450,7 @@ class BookingUserController
 	 *     tags={"User"},
 	 *     @OA\Response(
 	 *         response=200,
-	 *         description="External user data",
+	 *         description="External user data or null if not authenticated/available",
 	 *         @OA\JsonContent(
 	 *             @OA\Property(property="name", type="string"),
 	 *             @OA\Property(property="email", type="string"),
@@ -491,10 +460,6 @@ class BookingUserController
 	 *             @OA\Property(property="city", type="string"),
 	 *             @OA\Property(property="ssn", type="string")
 	 *         )
-	 *     ),
-	 *     @OA\Response(
-	 *         response=401,
-	 *         description="User not authenticated"
 	 *     )
 	 * )
 	 */
@@ -506,7 +471,8 @@ class BookingUserController
 
 			if (!$bouser->is_logged_in())
 			{
-				return ResponseHelper::sendErrorResponse(['error' => 'User not authenticated'], 401);
+				// Return null instead of 401 when not authenticated
+				return ResponseHelper::sendJSONResponse(null, 200);
 			}
 
 			// Get external login info which should contain the external data
@@ -514,7 +480,8 @@ class BookingUserController
 
 			if (empty($external_login_info))
 			{
-				return ResponseHelper::sendErrorResponse(['error' => 'No external data available'], 404);
+				// Return null instead of 404 when no external data available
+				return ResponseHelper::sendJSONResponse(null, 200);
 			}
 
 			// Return the external data that can be used to pre-fill the form

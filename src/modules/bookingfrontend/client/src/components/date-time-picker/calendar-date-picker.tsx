@@ -25,7 +25,8 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 		maxDate,
 		showDebug = false,
 		showYear = false,
-		seasons
+		seasons,
+		id
 	} = props;
 
 	// Type guard to determine if this is an empty variant
@@ -236,6 +237,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 						<Field.Affix><CalendarIcon title="a11y-title" fontSize="1.5rem"/></Field.Affix>
 						{showTimeSelect ? (
 							<Input
+								id={id}
 								type="datetime-local"
 								value={dateTimeValue}
 								onChange={handleNativeDateChange}
@@ -246,6 +248,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 							/>
 						) : (
 							<Input
+								id={id}
 								type="date"
 								value={dateValue}
 								onChange={handleNativeDateChange}
@@ -311,6 +314,7 @@ const CalendarDatePicker: FC<CalendarDatePickerProps> = (props) => {
 						<Field.Affixes>
 							<Field.Affix><CalendarIcon title="a11y-title" fontSize="1.5rem"/></Field.Affix>
 							<Input
+								id={id}
 								className={"dateView"}
 								onChange={() => {}}
 								value={formatSelectedDate(showYear)}

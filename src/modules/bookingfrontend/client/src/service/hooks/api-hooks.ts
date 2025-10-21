@@ -428,16 +428,6 @@ export const useOrganizationSchedule = ({organization_id, weeks, instance, initi
 	});
 };
 
-class AuthenticationError extends Error {
-	statusCode: number;
-
-	constructor(message: string = "Failed to fetch user", statusCode?: number) {
-		super(message);
-		this.name = "AuthenticationError";
-		this.statusCode = 401; // HTTP status code for "Unauthorized"
-	}
-}
-
 export function useBookingUser() {
 	const queryClient = useQueryClient();
 
@@ -450,7 +440,7 @@ export function useBookingUser() {
 		queryClient.invalidateQueries({queryKey: ['bookingUser']});
 	});
 
-	return useQuery<IBookingUser>({
+	return useQuery<IBookingUser | null>({
 		queryKey: ['bookingUser'],
 		queryFn: async () => {
 
@@ -461,29 +451,17 @@ export function useBookingUser() {
 			});
 
 			if (!response.ok) {
-				throw new AuthenticationError('Failed to fetch user', response.status);
+				throw new Error(`Failed to fetch user: ${response.status}`);
 			}
 
 			const userData = await response.json();
 
-			// Check if this is a first-time user with minimal data
-			// If so, trigger a refetch after a short delay to allow backend initialization to complete
-			// This serves as a fallback in case WebSocket notifications fail
-			// if (userData.is_logged_in && (!userData.name || userData.name === '')) {
-			// 	setTimeout(() => {
-			// 		queryClient.invalidateQueries({queryKey: ['bookingUser']});
-			// 	}, 2000); // 2 second delay to allow external data fetch to complete
-			// }
+			// userData will be null if user is not authenticated
+			// This is a normal state, not an error
 
 			return userData;
 		},
-		retry: (failureCount, error: AuthenticationError | Error) => {
-			// Don't retry on 401
-			if (error instanceof AuthenticationError && error.statusCode === 401) {
-				return false;
-			}
-			return failureCount < 3;
-		},
+		retry: 3,
 		retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
 		staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
 		refetchOnWindowFocus: true,
@@ -634,14 +612,12 @@ export function useExternalUserData() {
 			const response = await fetch('/bookingfrontend/user/external-data');
 
 			if (!response.ok) {
-				if (response.status === 404) {
-					return null; // No external data available
-				}
-				const errorData = await response.json().catch(() => ({}));
-				throw new Error(errorData.error || 'Failed to fetch external data');
+				throw new Error(`Failed to fetch external data: ${response.status}`);
 			}
 
-			return await response.json();
+			const data = await response.json();
+			// Backend returns null when not authenticated or no external data available
+			return data;
 		},
 		retry: false, // Don't retry if external data is not available
 		staleTime: 5 * 60 * 1000, // Consider data stale after 5 minutes

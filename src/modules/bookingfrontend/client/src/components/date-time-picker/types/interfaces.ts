@@ -20,6 +20,8 @@ export interface CalendarDatePickerBaseProps {
 	showYear?: boolean;
 	/** Season data for displaying season boundaries in the calendar */
 	seasons?: Season[];
+	/** Optional ID for the input element */
+	id?: string;
 }
 
 export interface CalendarDatePickerNonEmptyProps extends CalendarDatePickerBaseProps {

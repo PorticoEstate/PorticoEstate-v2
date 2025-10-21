@@ -56,8 +56,8 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 		}
 
 		const resWithParticipants = eventData.resources.find(a => (a.participant_limit || 0) > 0)
-		if(participant_limit && resWithParticipants) {
-			participant_limit = (serverSettings.data?.booking_config?.participant_limit || 0);
+		if(!participant_limit && resWithParticipants) {
+			participant_limit = (resWithParticipants?.participant_limit || 0);
 		}
 		if(!participant_limit) {
 			participant_limit = (serverSettings.data?.booking_config?.participant_limit || 0);

@@ -173,8 +173,9 @@ const TimeslotView: FC<TimeslotViewProps> = (props) => {
 				return false;
 			}
 
-			// Filter by the selected date range
-			return slotStart >= startOfRange && slotEnd <= endOfRange;
+			// Filter by the selected date range - check if slot overlaps with range
+			// A slot overlaps if it starts before the range ends AND ends after the range starts
+			return slotStart <= endOfRange && slotEnd >= startOfRange;
 		}).sort((a, b) => {
 			return DateTime.fromISO(a.start_iso) < DateTime.fromISO(b.start_iso) ? -1 : 1;
 		});

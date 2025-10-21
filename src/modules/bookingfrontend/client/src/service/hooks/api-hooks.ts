@@ -241,10 +241,11 @@ export function useBuildingFreeTimeSlots({
 
 	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
 		// Always fetch from API for just the current week
+		// Add 1 day buffer on both ends to ensure we get overlapping timeslots
 		return await fetchFreeTimeSlotsForRange(
 			building_id,
-			currentWeek,
-			weekEnd,
+			currentWeek.minus({days: 1}),
+			weekEnd.plus({days: 1}),
 			instance
 		);
 	};

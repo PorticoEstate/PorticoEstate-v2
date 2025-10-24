@@ -696,8 +696,8 @@ class EmailService
     private function getApplicationAssociations(int $application_id): array
     {
         try {
-            // Use the global namespace to access the legacy class
-            $assoc_bo = new \booking_boapplication_association();
+            // Use CreateObject to properly load the legacy class
+            $assoc_bo = \CreateObject('booking.boapplication_association');
             $associations = $assoc_bo->so->read([
                 'filters' => ['application_id' => $application_id],
                 'sort' => 'from_',

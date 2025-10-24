@@ -11,8 +11,9 @@ import { DateTime } from "luxon";
 import { useClientTranslation } from "@/app/i18n/ClientTranslationProvider";
 import Link from "next/link";
 import { calculateApplicationCost, formatCurrency, getApplicationCurrency } from "@/utils/cost-utils";
-import { RecurringInfoUtils } from '@/utils/recurring-utils';
+import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
 import RecurringDescription from './recurring-description';
+import { useBuildingSeasons } from "@/service/hooks/api-hooks";
 
 interface ShoppingCartCardListProps {
     basketData: IApplication[];
@@ -59,6 +60,19 @@ const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [st
 const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openEdit, onLinkClick }) => {
     const { t, i18n } = useClientTranslation();
     const [expandedId, setExpandedId] = useState<number | null>(null);
+
+    // Fetch seasons for all unique buildings in the cart
+    const buildingIds = [...new Set(basketData.map(item => item.building_id))];
+    const seasonsQueries = buildingIds.map(buildingId => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        return useBuildingSeasons(buildingId);
+    });
+
+    // Create a map of building_id to seasons for easy lookup
+    const seasonsMap = new Map();
+    buildingIds.forEach((buildingId, index) => {
+        seasonsMap.set(buildingId, seasonsQueries[index]?.data);
+    });
 
     return (
         <div className={styles.cartListContainer}>
@@ -165,11 +179,74 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
 						</div>
 
 						{calculateApplicationCost(item) > 0 && (
-							<div className={styles.cardCost}>
-								{/*<span className={styles.costLabel}>{t('bookingfrontend.cost')}:</span>*/}
-								<span className={styles.costAmount}>
-									{formatCurrency(calculateApplicationCost(item), getApplicationCurrency(item))}
-								</span>
+							<div className={styles.priceBreakdown}>
+								{/* Price breakdown */}
+								{item.orders && item.orders.length > 0 && (() => {
+									// Calculate resources and articles costs (including VAT)
+									let resourcesCost = 0;
+									let articlesCost = 0;
+
+									item.orders.forEach(order => {
+										order.lines.forEach(line => {
+											// Include VAT in the calculation: amount + tax
+											// Convert to numbers to avoid string concatenation
+											const lineTotal = Number(line.amount) + Number(line.tax || 0);
+
+											// Check if this is a resource (typically has unit 'hour' or similar resource-based pricing)
+											if (line.unit === 'hour' || line.unit === 'dag' || line.unit === 'day') {
+												resourcesCost += lineTotal;
+											} else {
+												articlesCost += lineTotal;
+											}
+										});
+									});
+
+									const isRecurring = RecurringInfoUtils.isRecurring(item);
+									const totalCost = calculateApplicationCost(item);
+									const currency = getApplicationCurrency(item);
+
+									// For recurring applications, calculate actual number of occurrences
+									let occurrenceCount = 1;
+									if (isRecurring) {
+										// Get seasons for this building
+										const seasons = seasonsMap.get(item.building_id);
+
+										// Calculate recurring instances using the same logic as the calendar
+										const recurringInstances = calculateRecurringInstances(item, seasons);
+										occurrenceCount = recurringInstances.length;
+									}
+
+									return (
+										<>
+											{resourcesCost > 0 && (
+												<div className={styles.priceItem}>
+													<span>{t('bookingfrontend.resources')}:</span>
+													<span>{formatCurrency(resourcesCost, currency)}</span>
+												</div>
+											)}
+											{articlesCost > 0 && (
+												<div className={styles.priceItem}>
+													<span>{t('bookingfrontend.articles')}:</span>
+													<span>{formatCurrency(articlesCost, currency)}</span>
+												</div>
+											)}
+											{isRecurring && (
+												<div className={styles.priceItem}>
+													<span>{t('bookingfrontend.per_occurrence')}:</span>
+													<span>{formatCurrency(totalCost, currency)}</span>
+												</div>
+											)}
+											<div className={`${styles.priceItem} ${styles.totalPrice}`}>
+												<span>
+													{isRecurring && occurrenceCount > 1
+														? t('bookingfrontend.sum_occurrences', { count: occurrenceCount })
+														: t('bookingfrontend.sum')}:
+												</span>
+												<span>{formatCurrency(isRecurring && occurrenceCount > 1 ? totalCost * occurrenceCount : totalCost, currency)}</span>
+											</div>
+										</>
+									);
+								})()}
 							</div>
 						)}
 					</div>

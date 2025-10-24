@@ -60,7 +60,7 @@ const ApplicationSchedule: FC<ApplicationScheduleProps> = (props) => {
 							 alignItems: 'center',
 							 justifyContent: 'space-between'
 						 }}>
-						<div 
+						<div
 							onClick={(e) => handleEventClick(ev, e.currentTarget)}
 							style={{
 								cursor: 'pointer',
@@ -68,7 +68,7 @@ const ApplicationSchedule: FC<ApplicationScheduleProps> = (props) => {
 							}}>
 							<EventContentList eventInfo={ev}/>
 						</div>
-						
+
 						{/* Edit/Cancel Links */}
 						{(ev.edit_link || ev.cancel_link) && (
 							<div style={{
@@ -77,7 +77,7 @@ const ApplicationSchedule: FC<ApplicationScheduleProps> = (props) => {
 								marginLeft: '1rem'
 							}}>
 								{ev.edit_link && (
-									<a 
+									<a
 										href={ev.edit_link}
 										style={{
 											color: 'var(--ds-color-foreground-action)',
@@ -96,7 +96,7 @@ const ApplicationSchedule: FC<ApplicationScheduleProps> = (props) => {
 									</a>
 								)}
 								{ev.cancel_link && (
-									<a 
+									<a
 										href={ev.cancel_link}
 										style={{
 											color: 'var(--ds-color-foreground-danger)',
@@ -111,7 +111,7 @@ const ApplicationSchedule: FC<ApplicationScheduleProps> = (props) => {
 											e.currentTarget.style.textDecoration = 'none';
 										}}
 									>
-										{t('bookingfrontend.cancel')}
+										{t(`bookingfrontend.cancel ${ev.type}`)}
 									</a>
 								)}
 							</div>

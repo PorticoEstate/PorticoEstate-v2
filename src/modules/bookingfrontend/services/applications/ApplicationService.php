@@ -664,15 +664,27 @@ class ApplicationService
                     }
                     else
                     {
-                        // No collision - proceed with direct booking
-                        $updateData = [
-                            'status' => 'ACCEPTED',
-                            // Don't set parent_id for recurring applications - they are processed individually
-                            'parent_id' => (!empty($application['recurring_info'])) ? null : ($buildingParentIds[$application['building_id']] ?? null)
-                        ];
-
-                        $this->patchApplicationMainData($updateData, $application['id']);
-                        $this->createEventForApplication($application['id']);
+                        // No collision - check if it's a repeating application
+                        // Repeating direct bookings should be sent for review, not auto-accepted
+                        if (!empty($application['recurring_info']))
+                        {
+                            // Treat as normal repeating application - sent for review
+                            $updateData = [
+                                'status' => 'NEW',
+                                'parent_id' => null // Don't set parent_id for recurring applications
+                            ];
+                            $this->patchApplicationMainData($updateData, $application['id']);
+                        }
+                        else
+                        {
+                            // Proceed with direct booking auto-acceptance
+                            $updateData = [
+                                'status' => 'ACCEPTED',
+                                'parent_id' => $buildingParentIds[$application['building_id']] ?? null
+                            ];
+                            $this->patchApplicationMainData($updateData, $application['id']);
+                            $this->createEventForApplication($application['id']);
+                        }
                     }
                 } else
                 {

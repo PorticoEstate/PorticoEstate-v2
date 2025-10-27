@@ -16,6 +16,7 @@ function parse_navbar($force = False)
 	$flags = Settings::getInstance()->get('flags');
 	$userSettings = Settings::getInstance()->get('user');
 	$phpgwapi_common = new phpgwapi_common();
+	$translation = Translation::getInstance();
 
 
 	$nonavbar = false;
@@ -71,7 +72,7 @@ function parse_navbar($force = False)
 
 	$template_selector = <<<HTML
 
-	   <select id = "template_selector" class="btn btn-link btn-sm nav-item dropdown no-arrow nav-link text-white dropdown-toggle" style="height:2rem;margin-top:5px">
+	   <select id = "template_selector" class="btn btn-link btn-sm nav-item dropdown no-arrow nav-link text-white dropdown-toggle" style="height:2rem">
 		<option class="nav-link text-white" value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
 		<option class="nav-link text-white" value="portico"{$selecte_portico}>Portico</option>
 	   </select>
@@ -218,7 +219,7 @@ HTML;
 
 			$help_text = lang('help');
 			$manual_option .= <<<HTML
-				<li class="nav-item mt-1">
+				<li class="nav-item">
 					<a href="{$help_url}" class="nav-link text-white">{$help_text}</a>
 				</li>
 HTML;
@@ -237,7 +238,7 @@ HTML;
 			'height' => 540
 		));
 		$support_option = <<<HTML
-			<li class="nav-item mt-1">
+			<li class="nav-item">
 				<a href="$support_link" class="nav-link text-white" data-bs-toggle="modal" data-bs-target="#popupModal">{$support_text}</a>
 			</li>
 HTML;
@@ -254,7 +255,7 @@ HTML;
 
 		$debug_text = lang('debug');
 		$debug_option = <<<HTML
-			<li class="nav-item mt-1">
+			<li class="nav-item">
 				<a href="{$debug_url}" class="nav-link text-white">{$debug_text}</a>
 			</li>
 HTML;
@@ -288,7 +289,7 @@ HTML;
 	{
 		$bookmark_option .= <<<HTML
 
-			<li class="nav-item dropdown no-arrow mt-1">
+			<li class="nav-item dropdown no-arrow">
 				<a class="nav-link dropdown-toggle text-white" href="#" id="bookmarkDropdown" role="button"
 					data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 					<span class="me-2 d-none d-lg-inline">{$lang_bookmarks}</span>
@@ -331,7 +332,7 @@ HTML;
 	{
 		$bookmark_option .= <<<HTML
 
-			<li class="nav-item disabled mt-1">
+			<li class="nav-item disabled">
 				<a href="#" class="nav-link text-white">{$lang_bookmarks}</a>
 			</li>
 HTML;
@@ -359,7 +360,7 @@ HTML;
 		$lang_read_messages = Translation::getInstance()->translate('read messages', array(), false, 'messenger');
 
 		$messenger_option = <<<HTML
-                        <li class="nav-item dropdown no-arrow mt-1" onClick="get_messages();">
+                        <li class="nav-item dropdown no-arrow" onClick="get_messages();">
                             <a class="nav-link dropdown-toggle text-white" href="#" id="messagesDropdown" role="button"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-envelope fa-fw"></i>
@@ -377,17 +378,95 @@ HTML;
                         </li>
 HTML;
 	}
+	// Language selector setup (cookie handling is now done in head.inc.php)
+	$installed_langs = $translation->get_installed_langs();
+	$userlang = $userSettings['preferences']['common']['lang'];
+
+	// Get the selected language from cookie or fallback to user preferences
+	$selected_lang = Sanitizer::get_var('selected_lang', 'string', 'COOKIE', $userlang);
+
+	$lang_selector = '';
+	foreach ($installed_langs as $key => $name)
+	{
+		$trans = lang($name);
+
+		switch ($key)
+		{
+			case 'no':
+			case 'nn':
+				$flag_class = 'fi-no';
+				break;
+			case 'en':
+				$flag_class = 'fi-gb';
+				break;
+			default:
+				$flag_class = "fi-{$key}";
+				break;
+		}
+
+		$_selected_lang = $selected_lang == $key ? 'checked' : '';
+		$lang_selector .= <<<HTML
+			<label class="choice mb-3 d-flex align-items-center">
+				<input type="radio" name="select_language" value="{$key}" {$_selected_lang} class="me-2" />
+				<i class="fi {$flag_class} me-2" title="{$key}"></i> {$trans}
+			</label>
+HTML;
+	}
+
+	// Determine selected flag class
+	switch ($selected_lang)
+	{
+		case 'no':
+		case 'nn':
+			$selected_flag_class = 'fi-no';
+			break;
+		case 'en':
+			$selected_flag_class = 'fi-gb';
+			break;
+		default:
+			$selected_flag_class = "fi-{$selected_lang}";
+			break;
+	}
+
+	$choose_lang_trans = lang('choose language');
+	$choose_lang_trans2 = lang('Which language do you want?');
+
+	$language_option = <<<HTML
+		<li class="nav-item dropdown no-arrow">
+			<a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#" id="languageDropdown" role="button"
+			   data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="{$choose_lang_trans}">
+				<i class="fi {$selected_flag_class} me-2" style="font-size: 1.2em;"></i>
+				<span class="d-none d-lg-inline me-1">{$installed_langs[$selected_lang]}</span>
+			</a>
+			<!-- Dropdown - Language Selection -->
+			<div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+				 aria-labelledby="languageDropdown" style="min-width: 250px;">
+				<div class="dropdown-header">
+					<h6 class="mb-1">{$choose_lang_trans}</h6>
+					<p class="mb-0 text-muted small">{$choose_lang_trans2}</p>
+				</div>
+				<div class="dropdown-divider"></div>
+				<div class="px-3 py-2" onclick="event.stopPropagation();">
+					<form id="languageForm">
+						{$lang_selector}
+					</form>
+				</div>
+			</div>
+		</li>
+HTML;
+
 	$topmenu = <<<HTML
 
                     <!-- Topbar Navbar -->
-                    <ul class="navbar-nav ms-auto">
-					<li class="nav-item  mt-1">
+                    <ul class="navbar-nav ms-auto align-items-center">
+					<li class="nav-item ">
 						<a href="{$home_url}" class="nav-link text-white">{$home_text}</a>
 					</li>
 						{$template_selector}
  						{$manual_option}
 						{$debug_option}
 						{$support_option}
+						{$language_option}
 						{$bookmark_option}
                         <!-- Nav Item - Alerts -->
                          <!-- Nav Item - Messages -->
@@ -395,7 +474,7 @@ HTML;
 
                         <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
-                            <a class="nav-link dropdown-toggle text-white" href="#" id="userDropdown" role="button"
+                            <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#" id="userDropdown" role="button"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <span class="me-2 d-none d-lg-inline">$user_fullname</span>
                                 <img class="img-profile rounded-circle" style="height:2rem; width: 2rem;"
@@ -494,15 +573,15 @@ HTML;
 		        <!-- Navbar-->
 				{$topmenu}
 			</nav>
-			
+
 			<!-- Command Palette Modal -->
 			<div class="modal fade" id="commandPalette" tabindex="-1" aria-labelledby="commandPaletteLabel" aria-hidden="true">
 				<div class="modal-dialog modal-lg modal-dialog-centered">
 					<div class="modal-content" style="background: #2d3748; border: 1px solid #4a5568;">
 						<div class="modal-header border-0 pb-2">
 							<div class="w-100">
-								<input type="text" class="form-control bg-transparent text-white border-0 fs-4" 
-									   id="commandSearch" placeholder="Type a command..." 
+								<input type="text" class="form-control bg-transparent text-white border-0 fs-4"
+									   id="commandSearch" placeholder="Type a command..."
 									   style="outline: none; box-shadow: none; color: #fff;" autofocus>
 								<style>
 									#commandSearch::placeholder {
@@ -517,8 +596,8 @@ HTML;
 						</div>
 						<div class="modal-footer border-0 pt-0 pb-3">
 							<small style="color: #a0aec0;">
-								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">↑↓</kbd> Navigate 
-								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">Enter</kbd> Select 
+								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">↑↓</kbd> Navigate
+								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">Enter</kbd> Select
 								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">Esc</kbd> Close
 							</small>
 						</div>
@@ -552,17 +631,113 @@ HTML;
 		}
 	}
 
-	// Command Palette JavaScript
+	// Language selector styles and JavaScript
 	if (Sanitizer::get_var('phpgw_return_as') != 'json') {
 		echo <<<'SCRIPT'
+<style>
+#languageForm .choice {
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+#languageForm .choice:hover {
+    background-color: #f8f9fa;
+}
+#languageForm .choice input[type="radio"] {
+    cursor: pointer;
+}
+#languageForm .fi {
+    font-size: 1.1em;
+        width: 1.5rem !important;
+    height: 1.5rem !important;
+}
+#languageDropdown .fi {
+    font-size: 1.2em;
+    border: none;
+    border-radius: 3px;
+    padding: 2px 4px;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+}
+</style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Language selector functionality
+    const languageForm = document.getElementById('languageForm');
+    if (languageForm) {
+        languageForm.addEventListener('change', function(e) {
+            if (e.target.name === 'select_language') {
+                e.target.changeFired = true;
+                const selectedLang = e.target.value;
+
+                // Update flag immediately for visual feedback
+                const flagElement = document.querySelector('#languageDropdown .fi');
+                if (flagElement) {
+                    // Remove existing flag classes
+                    flagElement.className = flagElement.className.replace(/fi-\w+/g, '');
+
+                    // Add new flag class
+                    let newFlagClass = 'fi-' + selectedLang;
+                    if (selectedLang === 'no' || selectedLang === 'nn') {
+                        newFlagClass = 'fi-no';
+                    } else if (selectedLang === 'en') {
+                        newFlagClass = 'fi-gb';
+                    }
+                    flagElement.classList.add(newFlagClass);
+                }
+
+                // Call API endpoint to set language
+                fetch('/api/set-language/' + selectedLang, {
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Clear jqtree menu cache to force refresh with new language
+                        if (typeof sessionid !== 'undefined') {
+                            localStorage.removeItem('menu_tree_' + sessionid);
+                        }
+
+                        // Also clear any other language-related cache
+                        Object.keys(localStorage).forEach(key => {
+                            if (key.startsWith('menu_tree_') || key.includes('lang_')) {
+                                localStorage.removeItem(key);
+                            }
+                        });
+
+                        // Reload the page to apply the new language
+                        window.location.reload();
+                    } else {
+                        console.error('Failed to set language:', data.error);
+                        // Optionally show user feedback
+                        alert('Failed to change language. Please try again.');
+                    }
+                })
+            }
+        });
+
+        // Add click event listeners to radio buttons to ensure change events fire
+        const radioButtons = languageForm.querySelectorAll('input[name="select_language"]');
+        radioButtons.forEach(radio => {
+            radio.addEventListener('click', function(e) {
+                // Only trigger change event if it wasn't already triggered by the click
+                setTimeout(() => {
+                    if (!e.target.changeFired) {
+                        const changeEvent = new Event('change', { bubbles: true });
+                        e.target.dispatchEvent(changeEvent);
+                    }
+                    e.target.changeFired = false;
+                }, 0);
+            });
+        });
+    }
     let commandPalette = new bootstrap.Modal(document.getElementById('commandPalette'));
     let searchInput = document.getElementById('commandSearch');
     let resultsContainer = document.getElementById('commandResults');
     let selectedIndex = -1;
     let menuItems = [];
-    
+
     // Cmd/Ctrl + Shift + Enter detection
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Enter' && e.shiftKey && (e.metaKey || e.ctrlKey)) {
@@ -570,7 +745,7 @@ document.addEventListener('DOMContentLoaded', function() {
             openCommandPalette();
         }
     });
-    
+
     function openCommandPalette() {
         if (!menuItems.length) {
             loadMenuItems();
@@ -586,11 +761,11 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }, 100);
     }
-    
+
     // Load menu items from the sidebar
     function loadMenuItems() {
         menuItems = [];
-        
+
         // Get menu items from sidebar navigation with path context
         const navItems = document.querySelectorAll('#navbar a.context-menu-nav');
         navItems.forEach(item => {
@@ -605,7 +780,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
-        
+
         // Also get items from top menu
         const topNavItems = document.querySelectorAll('.navbar-nav a');
         topNavItems.forEach(item => {
@@ -620,15 +795,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Build menu path by traversing up the DOM hierarchy and using element ID
     function getMenuPath(element) {
         const pathParts = [];
-        
+
         // Extract path from element ID if available (e.g., "navbar::admin::users")
         if (element.id && element.id.startsWith('navbar::')) {
             const idParts = element.id.split('::').slice(1); // Remove 'navbar' prefix
-            
+
             // Map common app names to display names
             const appDisplayNames = {
                 'admin': 'Administration',
@@ -642,7 +817,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 'messenger': 'Messenger',
                 'preferences': 'Preferences'
             };
-            
+
             // Build path from ID parts
             for (let i = 0; i < idParts.length - 1; i++) {
                 const part = idParts[i];
@@ -650,78 +825,89 @@ document.addEventListener('DOMContentLoaded', function() {
                 pathParts.push(displayName);
             }
         }
-        
+
         // Fallback: traverse DOM hierarchy
         if (pathParts.length === 0) {
             let current = element.parentElement;
-            
+
             while (current && current !== document.body) {
                 // Look for collapse toggles (parent menu items)
                 const parentToggle = current.querySelector('a.dropdown-toggle');
                 if (parentToggle && !pathParts.includes(parentToggle.textContent.trim())) {
                     pathParts.unshift(parentToggle.textContent.trim());
                 }
-                
+
                 // Look for main navbar items
                 const navbarItem = current.querySelector('a[id^="navbar::"]');
                 if (navbarItem && navbarItem !== element && !pathParts.includes(navbarItem.textContent.trim())) {
                     pathParts.unshift(navbarItem.textContent.trim());
                 }
-                
+
                 current = current.parentElement;
             }
         }
-        
+
         return pathParts.length > 0 ? pathParts.join(' → ') : 'Main Menu';
     }
-    
+
+    // Norwegian character mapping for American keyboard
+    function mapNorwegianChars(text) {
+        return text.replace(/;/g, 'ø')
+                  .replace(/\[/g, 'å')
+                  .replace(/'/g, 'æ');
+    }
+
+
     // Search and filter menu items
     searchInput.addEventListener('input', function() {
         const query = this.value.toLowerCase();
+        const mappedQuery = mapNorwegianChars(query.toLowerCase());
         selectedIndex = -1;
-        
+
         if (!query) {
             resultsContainer.innerHTML = '';
             selectedIndex = -1;
             return;
         }
-        
-        const filtered = menuItems.filter(item => 
-            item.text.toLowerCase().includes(query)
-        );
-        
+
+        const filtered = menuItems.filter(item => {
+            const itemText = item.text.toLowerCase();
+            // Match both original query and mapped query
+            return itemText.includes(query) || itemText.includes(mappedQuery);
+        });
+
         // Remove duplicates based on URL (keeping first occurrence)
         const uniqueFiltered = [];
         const seenUrls = new Set();
-        
+
         for (const item of filtered) {
             // Normalize URL by removing query parameters that might differ
             const url = new URL(item.url, window.location.origin);
             const normalizedUrl = url.origin + url.pathname + '?menuaction=' + (url.searchParams.get('menuaction') || '');
-            
+
             if (!seenUrls.has(normalizedUrl)) {
                 seenUrls.add(normalizedUrl);
                 uniqueFiltered.push(item);
             }
         }
-        
+
         const results = uniqueFiltered.slice(0, 8); // Limit to 8 results
-        
+
         displayResults(results);
-        
+
         // Auto-highlight first result
         if (results.length > 0) {
             selectItem(0);
         }
     });
-    
+
     function displayResults(items) {
         resultsContainer.innerHTML = '';
-        
+
         items.forEach((item, index) => {
             const div = document.createElement('div');
             div.className = 'list-group-item list-group-item-action bg-transparent text-white border-0 py-2';
-            
+
             div.innerHTML = `
                 <div class="d-flex align-items-center">
                     <i class="fas fa-sitemap me-3" style="color: #a0aec0;"></i>
@@ -731,20 +917,34 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
             `;
-            
+
             div.addEventListener('click', () => navigateToItem(item));
             div.addEventListener('mouseenter', () => selectItem(index));
-            
+
             resultsContainer.appendChild(div);
         });
     }
-    
+
     function highlightMatch(text, query) {
         if (!query) return text;
-        const regex = new RegExp(`(${query})`, 'gi');
-        return text.replace(regex, '<mark class="bg-warning text-dark">$1</mark>');
+        const mappedQuery = mapNorwegianChars(query.toLowerCase());
+
+        // Create regex for both original and mapped query
+        let highlightedText = text;
+
+        // Highlight mapped characters (Norwegian) if they exist in the text
+        if (mappedQuery !== query.toLowerCase()) {
+            const mappedRegex = new RegExp(`(${mappedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+            highlightedText = highlightedText.replace(mappedRegex, '<mark class="bg-warning text-dark">$1</mark>');
+        }
+
+        // Also highlight exact matches of what was typed
+        const originalRegex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+        highlightedText = highlightedText.replace(originalRegex, '<mark class="bg-warning text-dark">$1</mark>');
+
+        return highlightedText;
     }
-    
+
     function selectItem(index) {
         const items = resultsContainer.querySelectorAll('.list-group-item');
         items.forEach((item, i) => {
@@ -758,65 +958,69 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         selectedIndex = index;
     }
-    
+
     function navigateToItem(item) {
         commandPalette.hide();
         window.location.href = item.url;
     }
-    
+
     // Keyboard navigation
     searchInput.addEventListener('keydown', function(e) {
         const items = resultsContainer.querySelectorAll('.list-group-item');
-        
+
+        // Handle navigation keys
         switch(e.key) {
             case 'ArrowDown':
                 e.preventDefault();
                 selectedIndex = Math.min(selectedIndex + 1, items.length - 1);
                 selectItem(selectedIndex);
                 break;
-                
+
             case 'ArrowUp':
                 e.preventDefault();
                 selectedIndex = Math.max(selectedIndex - 1, 0);
                 selectItem(selectedIndex);
                 break;
-                
+
             case 'Enter':
                 e.preventDefault();
                 if (selectedIndex >= 0 && items[selectedIndex]) {
-                    const filtered = menuItems.filter(item => 
-                        item.text.toLowerCase().includes(searchInput.value.toLowerCase())
-                    );
-                    
+                    const query = searchInput.value.toLowerCase();
+                    const mappedQuery = mapNorwegianChars(query);
+                    const filtered = menuItems.filter(item => {
+                        const itemText = item.text.toLowerCase();
+                        return itemText.includes(query) || itemText.includes(mappedQuery);
+                    });
+
                     // Apply same deduplication logic as in search
                     const uniqueFiltered = [];
                     const seenUrls = new Set();
-                    
+
                     for (const item of filtered) {
                         const url = new URL(item.url, window.location.origin);
                         const normalizedUrl = url.origin + url.pathname + '?menuaction=' + (url.searchParams.get('menuaction') || '');
-                        
+
                         if (!seenUrls.has(normalizedUrl)) {
                             seenUrls.add(normalizedUrl);
                             uniqueFiltered.push(item);
                         }
                     }
-                    
+
                     if (uniqueFiltered[selectedIndex]) {
                         navigateToItem(uniqueFiltered[selectedIndex]);
                     }
                 }
                 break;
-                
+
             case 'Escape':
                 commandPalette.hide();
                 break;
         }
     });
-    
+
     // Handle modal events
     const paletteModal = document.getElementById('commandPalette');
-    
+
     paletteModal.addEventListener('shown.bs.modal', function() {
         // Only focus and select if input doesn't already have focus and content
         if (document.activeElement !== searchInput) {
@@ -826,7 +1030,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
+
     paletteModal.addEventListener('hidden.bs.modal', function() {
         searchInput.value = '';
         resultsContainer.innerHTML = '';

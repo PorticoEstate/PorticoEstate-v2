@@ -241,10 +241,11 @@ export function useBuildingFreeTimeSlots({
 
 	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
 		// Always fetch from API for just the current week
+		// Add 1 day buffer on both ends to ensure we get overlapping timeslots
 		return await fetchFreeTimeSlotsForRange(
 			building_id,
-			currentWeek,
-			weekEnd,
+			currentWeek.minus({days: 1}),
+			weekEnd.plus({days: 1}),
 			instance
 		);
 	};
@@ -711,12 +712,12 @@ export function useApplications(
 
 export function useApplication(
     id: number,
-    options?: { initialData?: IApplication }
+    options?: { initialData?: IApplication; secret?: string }
 ): UseQueryResult<IApplication> {
     return useQuery(
         {
-            queryKey: ['application', id],
-            queryFn: () => fetchApplication(id),
+            queryKey: ['application', id, options?.secret],
+            queryFn: () => fetchApplication(id, options?.secret),
             retry: 2,
             refetchOnWindowFocus: false,
             initialData: options?.initialData,
@@ -1504,6 +1505,31 @@ export function useResourceRegulationDocuments(resources: { id: number, building
 			return uniqueDocs;
 		},
 		enabled: resourceIds.length > 0 || buildingIds.length > 0,
+		staleTime: 5 * 60 * 1000 // Consider data fresh for 5 minutes
+	});
+}
+
+export function useBuildingDocuments(buildingId: string) {
+	return useQuery({
+		queryKey: ['buildingDocuments', buildingId],
+		queryFn: async () => {
+			try {
+				// Fetch building documents (excluding only pictures)
+				const buildingDocs = await fetchBuildingDocuments(buildingId, ['drawing', 'price_list', 'other', 'regulation', 'HMS_document']);
+
+				// Add owner type to identify the document source
+				const docsWithType = buildingDocs.map((doc: IDocument) => ({
+					...doc,
+					owner_type: 'building' as const
+				}));
+
+				return docsWithType;
+			} catch (error) {
+				console.error(`Error fetching documents for building ${buildingId}:`, error);
+				return [];
+			}
+		},
+		enabled: Boolean(buildingId),
 		staleTime: 5 * 60 * 1000 // Consider data fresh for 5 minutes
 	});
 }

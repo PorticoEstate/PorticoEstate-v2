@@ -35,6 +35,19 @@ class CheckoutService
                 ];
             }
 
+            // Check if any applications have recurring booking data
+            // Recurring bookings should not be eligible for external payment as they require approval
+            foreach ($applications as $application) {
+                if (!empty($application['recurring_info'])) {
+                    return [
+                        'eligible' => false,
+                        'reason' => lang('recurring_not_vipps_eligible'),
+                        'total_amount' => 0,
+                        'payment_methods' => []
+                    ];
+                }
+            }
+
             // Calculate total amount
             $totalAmount = $this->applicationService->calculateTotalSum($applications);
             

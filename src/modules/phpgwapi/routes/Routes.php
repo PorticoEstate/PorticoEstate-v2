@@ -1,6 +1,7 @@
 <?php
 
 use App\modules\phpgwapi\controllers\ServerSettingsController;
+use App\modules\phpgwapi\controllers\LanguageController;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Psr\Http\Message\ResponseInterface as Response;
 use App\modules\phpgwapi\controllers\StartPoint;
@@ -76,6 +77,9 @@ $app->group('/api', function (RouteCollectorProxy $group)
 {
 	$group->get('/server-settings', ServerSettingsController::class . ':index');
 });
+
+$app->get('/api/set-language/{lng}', LanguageController::class . ':setLanguage')
+	->add(new SessionsMiddleware($app->getContainer()));
 
 
 $app->get('/swagger[/]', function ($request, $response) use ($container)

@@ -127,11 +127,11 @@
 									<tr>
 										<th></th>
 										<th>
-											<xsl:value-of select="php:function('lang', 'Male')" />
+											<xsl:value-of select="php:function('lang', 'estimated number of participants')" />
 										</th>
-										<th>
+										<!--th>
 											<xsl:value-of select="php:function('lang', 'Female')" />
-										</th>
+										</th-->
 									</tr>
 								</thead>
 								<tbody id = "agegroup_tbody">

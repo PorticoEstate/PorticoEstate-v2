@@ -65,6 +65,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/lookup/{number}', OrganizationController::class . ':lookup');
 		$group->post('/{id}/delegates', OrganizationController::class . ':addDelegate');
 		$group->get('/{id}/delegates', OrganizationController::class . ':getDelegates');
+		$group->get('/{id}/delegates/{delegate_id}', OrganizationController::class . ':getDelegate');
 		$group->put('/{id}/delegates/{delegate_id}', OrganizationController::class . ':updateDelegate');
 		$group->delete('/{id}/delegates/{delegate_id}', OrganizationController::class . ':removeDelegate');
 		$group->get('/{id}/groups', OrganizationController::class . ':getGroups');
@@ -184,6 +185,9 @@ $app->group('/bookingfrontend/auth', function (RouteCollectorProxy $group) {
 
 $app->post('/bookingfrontend/version', VersionController::class . ':setVersion')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/bookingfrontend/version', VersionController::class . ':getVersion')->add(new SessionsMiddleware($app->getContainer()));
+
+$app->post('/bookingfrontend/language', VersionController::class . ':setLanguage')->add(new SessionsMiddleware($app->getContainer()));
+$app->get('/bookingfrontend/language', VersionController::class . ':getLanguage')->add(new SessionsMiddleware($app->getContainer()));
 
 // Debug routes
 $app->group('/bookingfrontend/debug', function (RouteCollectorProxy $group) {

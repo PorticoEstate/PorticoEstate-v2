@@ -208,8 +208,12 @@ const Dialog: React.FC<DialogProps> = ({
 					clearTimeout(closeTimeoutRef.current);
 					closeTimeoutRef.current = null;
 				}
-
-				dialog.showModal();
+				try {
+					dialog.showModal()
+				} catch (e) {
+					console.log('Failed to spawn modal, offloading to timeout',e)
+				}
+				// dialog.showModal();
 				setTimeout(() => {
 					if (DEBUG_DIALOGS) console.log('Setting show to TRUE for dialog:', dialogId);
 					setShow(true);

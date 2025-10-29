@@ -11,6 +11,7 @@ import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
 import {Link, Checkbox, Button} from "@digdir/designsystemet-react";
 import { ArrowsCirclepathIcon, PersonFillIcon, TenancyIcon } from '@navikt/aksel-icons';
+import ClientPHPGWLink from '@/components/layout/header/ClientPHPGWLink';
 
 interface ApplicationsTableProps {
 	initialApplications?: { list: IApplication[], total_sum: number };
@@ -48,25 +49,26 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 						asChild
 						color={'neutral'}
 					>
-						{/*<ClientPHPGWLink strURL={'bookingfrontend/'} oArgs={{*/}
-						{/*	menuaction: 'bookingfrontend.uiapplication.show',*/}
-						{/*	id,*/}
-						{/*}}>*/}
-						{/*	{name}*/}
-						{/*</ClientPHPGWLink>*/}
-						<NXLink
-							href={`/user/applications/${id}`}
-							style={{
-								display: 'block',
-								maxWidth: '100%',
-								overflow: 'hidden',
-								textOverflow: 'ellipsis',
-								whiteSpace: 'nowrap'
-							}}
-							title={name}
-						>
+						<ClientPHPGWLink strURL={'bookingfrontend/'} oArgs={{
+							menuaction: 'bookingfrontend.uiapplication.show',
+							id,
+							secret: info.row.original.secret
+						}}>
 							{name}
-						</NXLink>
+						</ClientPHPGWLink>
+						{/*<NXLink*/}
+						{/*	href={`/user/applications/${id}`}*/}
+						{/*	style={{*/}
+						{/*		display: 'block',*/}
+						{/*		maxWidth: '100%',*/}
+						{/*		overflow: 'hidden',*/}
+						{/*		textOverflow: 'ellipsis',*/}
+						{/*		whiteSpace: 'nowrap'*/}
+						{/*	}}*/}
+						{/*	title={name}*/}
+						{/*>*/}
+						{/*	{name}*/}
+						{/*</NXLink>*/}
 					</Link>
 				);
 			},

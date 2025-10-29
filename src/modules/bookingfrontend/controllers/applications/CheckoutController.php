@@ -111,12 +111,16 @@ class CheckoutController
                 if ($has_direct_booking) {
                     $messages = array(
                         'one' => array(
-                            'registered' => 'application_processed_single',
-                            'review' => ''
+							'registered' => 'application_registered_single',
+							'review' => 'case_officer_review_single'
+//                            'registered' => 'application_processed_single',
+//                            'review' => ''
                         ),
                         'multiple' => array(
-                            'registered' => 'applications_processed_multiple',
-                            'review' => ''
+							'registered' => 'applications_registered_multiple',
+							'review' => 'case_officer_review_multiple'
+//                            'registered' => 'applications_processed_multiple',
+//                            'review' => ''
                         )
                     );
                 } else {

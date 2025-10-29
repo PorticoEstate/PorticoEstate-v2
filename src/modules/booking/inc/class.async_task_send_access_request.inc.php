@@ -155,7 +155,7 @@ class booking_async_task_send_access_request extends booking_async_task
 								$_from = date($this->dateTimeFormat, strtotime($reservation['from_']));
 								$_to = date($this->dateTimeFormat, strtotime($reservation['to_']));
 								$sms_text = "Hei {$reservation['contact_name']}\n "
-									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$_from} - {$_to}.";
+									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$_from} - {$_to}.\nKoden for adgang vil bli sendt 10 minutter før tidspunktet for tilgang.\n ";
 								/**
 								 * send email - only if not already sent for this reservation
 								 */

@@ -7772,3 +7772,123 @@ function booking_upgrade0_2_112($oProc)
 	}
 }
 
+/**
+ * Update booking version from 0.2.113 to 0.2.114
+ *
+ */
+$test[] = '0.2.113';
+function booking_upgrade0_2_113($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$location_obj = new Locations();
+	$location_id = $location_obj->get_id('booking', '.article');
+
+	if (!$location_id)
+	{
+		$location_obj->add('.article', 'article', 'booking');
+		$location_obj->add('.application', 'Application', 'booking');
+
+		$custom_config = CreateObject('admin.soconfig', $location_obj->get_id('booking', 'run'));
+
+		$receipt_section_common = $custom_config->add_section(
+			array(
+				'name'	=> 'payment',
+				'descr' => 'payment method config'
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_common['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'method',
+				'descr'		 => 'Payment method',
+				'choice'	 => array('Vipps'),
+			)
+		);
+
+		$receipt_section_vipps = $custom_config->add_section(
+			array(
+				'name'	=> 'Vipps',
+				'descr' => 'Vipps config'
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'base_url',
+				'descr'		 => 'base_url',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'client_id',
+				'descr'		 => 'client_id',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'password',
+				'name'		 => 'client_secret',
+				'descr'		 => 'client_secret',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'password',
+				'name'		 => 'subscription_key',
+				'descr'		 => 'subscription_key',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'msn',
+				'descr'		 => 'Merchant Serial Number',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'debug',
+				'descr'		 => 'debug',
+				'choice'	 => array(1),
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'active',
+				'descr'		 => 'Aktiv',
+				'choice'	 => array('active'),
+			)
+		);
+	}
+
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.114';
+		return $currentver;
+	}
+}

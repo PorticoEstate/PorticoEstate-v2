@@ -87,7 +87,7 @@
 														<xsl:text>col-4</xsl:text>
 													</xsl:when>
 													<xsl:otherwise>
-														<xsl:text>col-6</xsl:text>
+														<xsl:text>col-2</xsl:text>
 													</xsl:otherwise>
 												</xsl:choose>
 											</xsl:otherwise>
@@ -288,6 +288,34 @@
 													<xsl:value-of select="phpgw:conditional(not(id), '', id)"/>
 												</xsl:attribute>
 											</label>
+										</xsl:when>
+										<xsl:when test="type = 'checkbox'">
+											<div class="form-check ps-0">
+												<input id="innertoolbar_{name}">
+													<xsl:attribute name="type">
+														<xsl:value-of select="phpgw:conditional(not(type), '', type)"/>
+													</xsl:attribute>
+													<xsl:attribute name="name">
+														<xsl:value-of select="phpgw:conditional(not(name), '', name)"/>
+													</xsl:attribute>
+													<xsl:attribute name="onclick">
+														<xsl:value-of select="phpgw:conditional(not(onClick), '', onClick)"/>
+													</xsl:attribute>
+													<xsl:attribute name="value">
+														<xsl:value-of select="phpgw:conditional(not(value), '', value)"/>
+													</xsl:attribute>
+													<xsl:attribute name="class">
+														<xsl:text>form-check-input ms-0</xsl:text>
+														<xsl:if test="class">
+															<xsl:text></xsl:text>
+															<xsl:value-of select="class"/>
+														</xsl:if>
+													</xsl:attribute>
+													<xsl:attribute name="checked">
+														<xsl:value-of select="phpgw:conditional(not(checked), '', checked)"/>
+													</xsl:attribute>
+												</input>
+											</div>
 										</xsl:when>
 										<xsl:otherwise>
 											<input id="innertoolbar_{name}" class="form-control">
@@ -1875,6 +1903,12 @@ console.log(app_method_referrer);
 
 			oControls.each(function()
 			{
+				if($(this).is(':checkbox'))
+				{
+					$(this).prop('checked', false);
+					return;
+				}
+
 				var test = $(this).val();
 				if ( !$(this).is('select') && $(this).attr('name') && test != null && test.constructor !== Array)
 				{

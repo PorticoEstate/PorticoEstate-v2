@@ -1879,6 +1879,12 @@ console.log(app_method_referrer);
 
 			oControls.each(function()
 			{
+				if($(this).is(':checkbox'))
+				{
+					$(this).prop('checked', false);
+					return;
+				}
+
 				var test = $(this).val();
 				if ( !$(this).is('select') && $(this).attr('name') && test != null && test.constructor !== Array)
 				{

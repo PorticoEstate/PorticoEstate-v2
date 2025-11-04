@@ -4,20 +4,21 @@
  *
  * To rebuild or modify this file with the latest versions of the included
  * software please visit:
- *   https://datatables.net/download/#dt/jszip-3.10.1/pdfmake-0.2.7/dt-2.3.2/af-2.7.0/b-3.2.4/b-colvis-3.2.4/b-html5-3.2.4/b-print-3.2.4/cr-2.1.1/cc-1.0.7/date-1.5.6/fc-5.0.4/fh-4.0.3/kt-2.12.1/r-3.0.5/rg-1.5.2/rr-1.5.0/sc-2.4.3/sb-1.8.3/sp-2.3.4/sl-3.0.1/sr-1.4.1
+ *   https://datatables.net/download/#dt/jszip-3.10.1/pdfmake-0.2.7/dt-2.3.4/af-2.7.1/b-3.2.5/b-colvis-3.2.5/b-html5-3.2.5/b-print-3.2.5/cr-2.1.2/cc-1.1.1/date-1.6.1/fc-5.0.5/fh-4.0.4/kt-2.12.1/r-3.0.7/rg-1.6.0/rr-1.5.0/sc-2.4.3/sb-1.8.4/sp-2.3.5/sl-3.1.3/sr-1.4.3
  *
  * Included libraries:
- *   JSZip 3.10.1, pdfmake 0.2.7, DataTables 2.3.2, AutoFill 2.7.0, Buttons 3.2.4, Column visibility 3.2.4, HTML5 export 3.2.4, Print view 3.2.4, ColReorder 2.1.1, ColumnControl 1.0.7, DateTime 1.5.6, FixedColumns 5.0.4, FixedHeader 4.0.3, KeyTable 2.12.1, Responsive 3.0.5, RowGroup 1.5.2, RowReorder 1.5.0, Scroller 2.4.3, SearchBuilder 1.8.3, SearchPanes 2.3.4, Select 3.0.1, StateRestore 1.4.1
+ *   JSZip 3.10.1, pdfmake 0.2.7, DataTables 2.3.4, AutoFill 2.7.1, Buttons 3.2.5, Column visibility 3.2.5, HTML5 export 3.2.5, Print view 3.2.5, ColReorder 2.1.2, ColumnControl 1.1.1, DateTime 1.6.1, FixedColumns 5.0.5, FixedHeader 4.0.4, KeyTable 2.12.1, Responsive 3.0.7, RowGroup 1.6.0, RowReorder 1.5.0, Scroller 2.4.3, SearchBuilder 1.8.4, SearchPanes 2.3.5, Select 3.1.3, StateRestore 1.4.3
  */
 
 :root {
   --dt-row-selected: 13, 110, 253;
   --dt-row-selected-text: 255, 255, 255;
-  --dt-row-selected-link: 9, 10, 11;
+  --dt-row-selected-link: 228, 228, 228;
   --dt-row-stripe: 0, 0, 0;
   --dt-row-hover: 0, 0, 0;
   --dt-column-ordering: 0, 0, 0;
   --dt-header-align-items: center;
+  --dt-header-vertical-align: middle;
   --dt-html-background: white;
 }
 :root.dark {
@@ -144,7 +145,8 @@ table.dataTable thead > tr > td.dt-ordering-asc span.dt-column-order:before,
 table.dataTable thead > tr > td.dt-ordering-desc span.dt-column-order:after {
   opacity: 0.6;
 }
-table.dataTable thead > tr > th.sorting_desc_disabled span.dt-column-order:after, table.dataTable thead > tr > th.sorting_asc_disabled span.dt-column-order:before,
+table.dataTable thead > tr > th.dt-orderable-none:not(.dt-ordering-asc, .dt-ordering-desc) span.dt-column-order:empty, table.dataTable thead > tr > th.sorting_desc_disabled span.dt-column-order:after, table.dataTable thead > tr > th.sorting_asc_disabled span.dt-column-order:before,
+table.dataTable thead > tr > td.dt-orderable-none:not(.dt-ordering-asc, .dt-ordering-desc) span.dt-column-order:empty,
 table.dataTable thead > tr > td.sorting_desc_disabled span.dt-column-order:after,
 table.dataTable thead > tr > td.sorting_asc_disabled span.dt-column-order:before {
   display: none;
@@ -340,6 +342,7 @@ table.dataTable thead td,
 table.dataTable tfoot th,
 table.dataTable tfoot td {
   text-align: left;
+  vertical-align: var(--dt-header-vertical-align);
 }
 table.dataTable thead th.dt-head-left,
 table.dataTable thead td.dt-head-left,
@@ -478,7 +481,7 @@ table.dataTable > tbody > tr.selected > * {
   color: rgb(var(--dt-row-selected-text));
 }
 table.dataTable > tbody > tr.selected a {
-  color: rgb(9, 10, 11);
+  color: rgb(228, 228, 228);
   color: rgb(var(--dt-row-selected-link));
 }
 table.dataTable > tbody > tr > th,
@@ -1657,15 +1660,18 @@ table.dataTable div.dt-column-header span.dt-column-title:empty + span.dtcc {
   flex-grow: 1;
   margin-left: auto;
 }
+
 table.dataTable .dt-type-numeric div.dt-column-header span.dt-column-title:empty + span.dtcc,
 table.dataTable .dt-type-date div.dt-column-header span.dt-column-title:empty + span.dtcc,
 table.dataTable .dt-right div.dt-column-header span.dt-column-title:empty + span.dtcc {
   margin-right: auto;
   margin-left: 0;
 }
+
 table.dataTable > thead > tr.dtcc-row_no-bottom-border > * {
   border-bottom: none !important;
 }
+
 table.dataTable > thead > tr.dtcc-row_no-top-padding > * {
   padding-top: 0 !important;
 }
@@ -1676,6 +1682,7 @@ table.dataTable span.dtcc {
   display: inline-flex;
   align-items: center;
 }
+
 table.dataTable span.dtcc button.dtcc-button {
   display: inline-flex;
   padding: var(--dtcc-button_padding);
@@ -1685,28 +1692,35 @@ table.dataTable span.dtcc button.dtcc-button {
   cursor: pointer;
   opacity: var(--dtcc-button_opacity);
 }
+
 table.dataTable span.dtcc button.dtcc-button:hover {
   border: var(--dtcc-button_hover-border);
   background: var(--dtcc-button_hover-background);
   opacity: var(--dtcc-button_hover-opacity);
 }
+
 table.dataTable span.dtcc button.dtcc-button.dtcc-button_disabled {
   cursor: initial;
   opacity: var(--dtcc-button_disabled-opacity);
 }
+
 table.dataTable span.dtcc button.dtcc-button > span.dtcc-button-state {
   display: none;
 }
+
 table.dataTable span.dtcc button.dtcc-button > span.dtcc-button-extra {
   display: none;
 }
+
 table.dataTable span.dtcc button.dtcc-button_active {
   opacity: 1;
 }
+
 table.dataTable span.dtcc input {
   box-sizing: border-box;
   width: 100%;
 }
+
 table.dataTable span.dtcc span.dtcc-button-icon {
   display: inline-block;
   box-sizing: content-box;
@@ -1715,14 +1729,17 @@ table.dataTable span.dtcc span.dtcc-button-icon {
   line-height: var(--dtcc-button-icon_size);
   height: var(--dtcc-button-icon_size);
 }
+
 table.dataTable span.dtcc span.dtcc-button-icon svg {
   width: var(--dtcc-button-icon_size);
   height: var(--dtcc-button-icon_size);
   vertical-align: initial;
 }
+
 table.dataTable span.dtcc span.dtcc-button-text {
   display: none;
 }
+
 table.dataTable span.dtcc div.dtcc-spacer {
   display: inline-block;
   margin: 0 var(--dtcc-spacer_margin);
@@ -1732,30 +1749,38 @@ table.dataTable span.dtcc div.dtcc-spacer {
   white-space: nowrap;
   cursor: initial;
 }
+
 table.dataTable span.dtcc div.dtcc-spacer:empty {
   width: 1px;
   height: 1em;
   padding-left: 0;
 }
+
 table.dataTable span.dtcc div.dtcc-search {
   flex-grow: 1;
 }
+
 table.dataTable span.dtcc div.dtcc-search div.dtcc-search-title {
   margin-bottom: 0.25em;
   text-align: left;
 }
+
 table.dataTable span.dtcc div.dtcc-search:empty {
   display: none;
 }
+
 table.dataTable span.dtcc div.dtcc-search.dtcc-search_active > div div.dtcc-search-type-icon svg {
   opacity: 1;
 }
+
 table.dataTable span.dtcc div.dtcc-search:not(.dtcc-search_active) span.dtcc-search-clear {
   display: none;
 }
+
 table.dataTable span.dtcc div.dtcc-search > div {
   position: relative;
 }
+
 table.dataTable span.dtcc div.dtcc-search > div div.dtcc-search-type-icon {
   display: flex;
   position: absolute;
@@ -1765,6 +1790,7 @@ table.dataTable span.dtcc div.dtcc-search > div div.dtcc-search-type-icon {
   width: 30px;
   height: 100%;
 }
+
 table.dataTable span.dtcc div.dtcc-search > div div.dtcc-search-type-icon svg {
   width: var(--dtcc-search-icon_size);
   height: var(--dtcc-search-icon_size);
@@ -1772,9 +1798,11 @@ table.dataTable span.dtcc div.dtcc-search > div div.dtcc-search-type-icon svg {
   opacity: var(--dtcc-search-icon_opacity);
   vertical-align: initial;
 }
+
 table.dataTable span.dtcc div.dtcc-search > div div.dtcc-search-type-icon:hover {
   background-color: var(--dtcc-search-icon_hover-background);
 }
+
 table.dataTable span.dtcc div.dtcc-search > div select {
   position: absolute;
   top: 0;
@@ -1784,6 +1812,7 @@ table.dataTable span.dtcc div.dtcc-search > div select {
   opacity: 0;
   background-color: var(--dtcc-search-input_background);
 }
+
 table.dataTable span.dtcc div.dtcc-search > div span.dtcc-search-clear {
   display: flex;
   position: absolute;
@@ -1794,9 +1823,11 @@ table.dataTable span.dtcc div.dtcc-search > div span.dtcc-search-clear {
   height: 100%;
   cursor: pointer;
 }
+
 table.dataTable span.dtcc div.dtcc-search > div div.dtcc-search-icon {
   display: none;
 }
+
 table.dataTable span.dtcc div.dtcc-search > div input {
   padding: var(--dtcc-search-input_padding);
   border: var(--dtcc-search-input_border);
@@ -1804,36 +1835,45 @@ table.dataTable span.dtcc div.dtcc-search > div input {
   background-color: var(--dtcc-search-input_background);
   color: inherit;
 }
+
 table.dataTable span.dtcc div.dtcc-searchText > div div.dtcc-search-type-icon {
   right: 0;
   z-index: 1;
 }
+
 table.dataTable span.dtcc div.dtcc-searchText > div select {
   right: 0;
   z-index: 2;
   padding: 0;
 }
+
 table.dataTable span.dtcc div.dtcc-searchText > div span.dtcc-search-clear {
   right: 28px;
   z-index: 1;
 }
+
 table.dataTable span.dtcc div.dtcc-searchText > div input {
   padding-right: 46px;
 }
+
 table.dataTable span.dtcc div.dtcc-searchNumber > div div.dtcc-search-type-icon,
 table.dataTable span.dtcc div.dtcc-searchDateTime > div div.dtcc-search-type-icon {
   left: 0;
   z-index: 1;
 }
+
 table.dataTable span.dtcc div.dtcc-searchNumber > div select,
 table.dataTable span.dtcc div.dtcc-searchDateTime > div select {
   left: 0;
   z-index: 2;
+  padding: 0;
 }
+
 table.dataTable span.dtcc div.dtcc-searchNumber > div span.dtcc-search-clear,
 table.dataTable span.dtcc div.dtcc-searchDateTime > div span.dtcc-search-clear {
   left: 28px;
 }
+
 table.dataTable span.dtcc div.dtcc-searchNumber > div input,
 table.dataTable span.dtcc div.dtcc-searchDateTime > div input {
   padding-left: 46px;
@@ -1854,6 +1894,7 @@ div.dtcc-dropdown {
   background: var(--dtcc-dropdown_background);
   box-shadow: var(--dtcc-dropdown_box-shadow);
 }
+
 div.dtcc-dropdown button.dtcc-button {
   display: flex;
   position: relative;
@@ -1866,59 +1907,72 @@ div.dtcc-dropdown button.dtcc-button {
   text-align: left;
   cursor: pointer;
 }
+
 div.dtcc-dropdown button.dtcc-button:focus {
   outline-offset: -2px;
 }
+
 div.dtcc-dropdown button.dtcc-button:hover {
   background: var(--dtcc-dropdown-button_hover-background);
 }
+
 div.dtcc-dropdown button.dtcc-button.dtcc-button_disabled {
   cursor: initial;
   opacity: var(--dtcc-button_disabled-opacity);
 }
+
 div.dtcc-dropdown button.dtcc-button.dtcc-button_empty span.dtcc-button-text {
   opacity: var(--dtcc-button_empty-opacity);
   font-style: italic;
 }
+
 div.dtcc-dropdown button.dtcc-button > span.dtcc-button-state {
   display: block;
   width: var(--dtcc-button-icon_size);
   height: var(--dtcc-button-icon_size);
   margin: 0 0 0 var(--dtcc-button-icon_margin);
 }
+
 div.dtcc-dropdown button.dtcc-button > span.dtcc-button-state:empty {
   display: none;
 }
+
 div.dtcc-dropdown button.dtcc-button > span.dtcc-button-state svg {
   width: var(--dtcc-button-icon_size);
   height: var(--dtcc-button-icon_size);
   vertical-align: initial;
 }
+
 div.dtcc-dropdown button.dtcc-button > span.dtcc-button-extra:empty {
   display: none;
 }
+
 div.dtcc-dropdown button.dtcc-button span.dtcc-button-icon {
   width: var(--dtcc-button-icon_size);
   height: var(--dtcc-button-icon_size);
   margin: 0 var(--dtcc-button-icon_margin) 0 0;
 }
+
 div.dtcc-dropdown button.dtcc-button span.dtcc-button-icon svg {
   width: var(--dtcc-button-icon_size);
   height: var(--dtcc-button-icon_size);
   vertical-align: var(--dtcc-dropdown-icon_vertical-align);
 }
+
 div.dtcc-dropdown button.dtcc-button span.dtcc-button-text {
   flex-grow: 1;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 div.dtcc-dropdown div.dtcc-spacer {
   margin: var(--dtcc-spacer_margin) 0;
   padding: 0;
   border-bottom: var(--dtcc-spacer_border);
   border-left: none;
 }
+
 div.dtcc-dropdown div.dtcc-title {
   margin: var(--dtcc-title_margin);
   padding: var(--dtcc-title_padding);
@@ -1929,9 +1983,11 @@ div.dtcc-dropdown div.dtcc-title {
   background: var(--dtcc-title_background);
   text-align: var(--dtcc-title_text-align);
 }
+
 div.dtcc-dropdown div.dtcc-search {
   padding: var(--dtcc-dropdown-search_padding);
 }
+
 div.dtcc-dropdown div.dtcc-search > div {
   display: flex;
   position: relative;
@@ -1941,18 +1997,21 @@ div.dtcc-dropdown div.dtcc-search > div {
   background: var(--dtcc-dropdown-button_background);
   color: var(--dtcc-dropdown-button_color);
 }
+
 div.dtcc-dropdown div.dtcc-search > div div {
   flex: 0 0 var(--dtcc-button-icon_size);
   width: var(--dtcc-button-icon_size);
   height: var(--dtcc-button-icon_size);
   margin: 0 var(--dtcc-button-icon_margin) 0 0;
 }
+
 div.dtcc-dropdown div.dtcc-search > div div svg {
   width: var(--dtcc-search-icon_size);
   height: var(--dtcc-search-icon_size);
   color: var(--dtcc-search-icon_color);
   vertical-align: var(--dtcc-dropdown-icon_vertical-align);
 }
+
 div.dtcc-dropdown div.dtcc-search > div select,
 div.dtcc-dropdown div.dtcc-search > div input {
   box-sizing: border-box;
@@ -1964,17 +2023,21 @@ div.dtcc-dropdown div.dtcc-search > div input {
   border-radius: var(--dtcc-search-input_border-radius);
   background-color: var(--dtcc-search-input_background-color);
 }
+
 div.dtcc-dropdown div.dtcc-search > div select option,
 div.dtcc-dropdown div.dtcc-search > div input option {
   background-color: var(--dtcc-search-input_background-color);
 }
+
 div.dtcc-dropdown div.dtcc-search > div input,
 div.dtcc-dropdown div.dtcc-search > div div.dtcc-search-icon {
   margin-top: var(--dtcc-search-input_margin-top);
 }
+
 div.dtcc-dropdown div.dtcc-search > div input {
   padding-right: var(--dtcc-search-input_padding-right);
 }
+
 div.dtcc-dropdown div.dtcc-search > div span.dtcc-search-clear {
   position: absolute;
   right: var(--dtcc-search-clear_right);
@@ -1982,24 +2045,32 @@ div.dtcc-dropdown div.dtcc-search > div span.dtcc-search-clear {
   width: 14px;
   cursor: pointer;
 }
+
 div.dtcc-dropdown div.dtcc-search:not(.dtcc-search_active) span.dtcc-search-clear {
   display: none;
 }
-div.dtcc-dropdown div.dtcc-list div.dtcc-list-title {
+
+div.dtcc-dropdown div.dtcc-list div.dtcc-list-title,
+div.dtcc-dropdown div.dtcc-list div.dtcc-list-empty {
   padding: var(--dtcc-dropdown-button_padding);
   font-style: italic;
 }
-div.dtcc-dropdown div.dtcc-list div.dtcc-list-title:empty {
+
+div.dtcc-dropdown div.dtcc-list div.dtcc-list-title:empty,
+div.dtcc-dropdown div.dtcc-list div.dtcc-list-empty:empty {
   display: none;
 }
+
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls {
   display: grid;
   padding: var(--dtcc-dropdown-button_padding);
   gap: 0.5em;
 }
+
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls:empty {
   display: none;
 }
+
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls button.dtcc-list-selectAll,
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls button.dtcc-list-selectNone {
   width: 100%;
@@ -2011,15 +2082,18 @@ div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls button.dtcc-list-selectNo
   text-align: center;
   cursor: pointer;
 }
+
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls button.dtcc-list-selectAll:hover,
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls button.dtcc-list-selectNone:hover {
   text-decoration: underline;
 }
+
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls button.dtcc-list-selectAll span,
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls button.dtcc-list-selectNone span {
   display: inline-block;
   padding-left: 0.25em;
 }
+
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls input.dtcc-list-search {
   box-sizing: border-box;
   grid-column: 1/3;
@@ -2029,42 +2103,119 @@ div.dtcc-dropdown div.dtcc-list div.dtcc-list-controls input.dtcc-list-search {
   border-radius: var(--dtcc-search-input_border-radius);
   background-color: var(--dtcc-search-input_background-color);
 }
+
 div.dtcc-dropdown div.dtcc-list div.dtcc-list-buttons {
   max-height: var(--dtcc-list-buttons_max-height);
   overflow: auto;
   background: var(--dtcc-list-buttons_background);
 }
+
 div.dtcc-dropdown div.dtcc-list span.dtcc-button-icon:empty {
   display: none;
 }
 
 
+:root {
+  --dt-datetime_background: white;
+  --dt-datetime_zindex: 2050;
+  --dt-datetime_border: 1px solid #ccc;
+  --dt-datetime_box-shadow: 0 5px 15px -5px rgba(0,0,0,.5);
+  --dt-datetime_padding: 6px 20px;
+  --dt-datetime_width: 275px;
+  --dt-datetime_border-radius: 5px;
+  --dt-datetime-inline_padding: 6px 0;
+  --dt-datetime-inline_background: transparent;
+  --dt-datetime-title_padding: 5px 0px 3px;
+  --dt-datetime-buttons-link_padding: 0 0.5em 0.5em 0.5em;
+  --dt-datetime-buttons-link_font-size: 0.9em;
+  --dt-datetime-table-header_font-size: 0.8em;
+  --dt-datetime-table-header_color: #777;
+  --dt-datetime-table-header_padding: 0 0 4px 0;
+  --dt-datetime-table-body_font-size: 0.9em;
+  --dt-datetime-table-body_color: #444;
+  --dt-datetime-table-body_padding: 0;
+  --dt-datetime-table-selectable_background: #f5f5f5;
+  --dt-datetime-table-selectable_disabled-color: #aaa;
+  --dt-datetime-table-selectable_disabled-background: white;
+  --dt-datetime-table-selectable_disabled-hover-color: #aaa;
+  --dt-datetime-table-selectable_disabled-hover-background: white;
+  --dt-datetime-table_hover-background: #ff8000;
+  --dt-datetime-table_hover-color: white;
+  --dt-datetime-table-now_background: #ddd;
+  --dt-datetime-table-selected_background: #4E6CA3;
+  --dt-datetime-table-selected_color: white;
+  --dt-datetime-label_height: 30px;
+  --dt-datetime-label_border: 1px solid transparent;
+  --dt-datetime-label_padding: 5px 6px;
+  --dt-datetime-label_hover-border: 1px solid #ddd;
+  --dt-datetime-label_hover-background: #f5f5f5;
+  --dt-datetime-icon_border: 1px solid transparent;
+  --dt-datetime-icon-opacity: 0.3;
+  --dt-datetime-icon_hover-border: 1px solid #ccc;
+  --dt-datetime-icon_hover-background: #f0f0f0;
+  --dt-datetime-icon_hover-opacity: 0.6;
+  --dt-datetime-icon-triangle_border-color: black;
+  --dt-datetime-error_color: #b11f1f;
+}
+
+html.dark,
+:root[data-theme=dark],
+:root[data-bs-theme=dark] {
+  --dt-datetime_background: rgb(33, 37, 41);
+  --dt-datetime_border: 1px solid rgb(89, 91, 94);
+  --dt-datetime_box-shadow: 3px 4px 10px 1px rgba(0, 0, 0, 0.8);
+  --dt-datetime-table-header_color: #ccc;
+  --dt-datetime-table-body_color: #eee;
+  --dt-datetime-table-selectable_background: rgb(55, 60, 65);
+  --dt-datetime-table-selectable_disabled-color: #aaa;
+  --dt-datetime-table-selectable_disabled-background: rgb(23, 27, 31);
+  --dt-datetime-table-selectable_disabled-hover-color: #aaa;
+  --dt-datetime-table-selectable_disabled-hover-background: rgb(23, 27, 31);
+  --dt-datetime-table_hover-background: #ff8000;
+  --dt-datetime-table_hover-color: black;
+  --dt-datetime-table-now_background: rgb(75, 80, 85);
+  --dt-datetime-table-selected_background: #6ea8fe;
+  --dt-datetime-table-selected_color: black;
+  --dt-datetime-label_border: 1px solid transparent;
+  --dt-datetime-label_hover-border: 1px solid transparent;
+  --dt-datetime-label_hover-background: rgba(255, 255, 255, 0.1);
+  --dt-datetime-icon_border: 1px solid transparent;
+  --dt-datetime-icon_hover-border: 1px solid transparent;
+  --dt-datetime-icon_hover-background: rgba(255, 255, 255, 0.1);
+  --dt-datetime-icon-triangle_border-color: white;
+  --dt-datetime-error_color: #b11f1f;
+}
+
 div.dt-datetime {
   position: absolute;
-  background-color: white;
-  z-index: 2050;
-  border: 1px solid #ccc;
-  box-shadow: 0 5px 15px -5px rgba(0, 0, 0, 0.5);
-  padding: 6px 20px;
-  width: 275px;
-  border-radius: 5px;
+  background-color: var(--dt-datetime_background);
+  z-index: var(--dt-datetime_zindex);
+  border: var(--dt-datetime_border);
+  box-shadow: var(--dt-datetime_box-shadow);
+  padding: var(--dt-datetime_padding);
+  width: var(--dt-datetime_width);
+  border-radius: var(--dt-datetime_border-radius);
 }
 div.dt-datetime.inline {
   position: relative;
   box-shadow: none;
+  border: none;
+  z-index: inherit;
+  padding: var(--dt-datetime-inline_padding);
+  background-color: var(--dt-datetime-inline_background);
 }
 div.dt-datetime div.dt-datetime-title {
   text-align: center;
-  padding: 5px 0px 3px;
+  padding: var(--dt-datetime-title_padding);
 }
 div.dt-datetime div.dt-datetime-buttons {
   text-align: center;
 }
 div.dt-datetime div.dt-datetime-buttons a {
   display: inline-block;
-  padding: 0 0.5em 0.5em 0.5em;
+  padding: var(--dt-datetime-buttons-link_padding);
   margin: 0;
-  font-size: 0.9em;
+  font-size: var(--dt-datetime-buttons-link_font-size);
 }
 div.dt-datetime div.dt-datetime-buttons a:hover {
   text-decoration: underline;
@@ -2078,44 +2229,44 @@ div.dt-datetime table.dt-datetime-table-nospace {
   margin-top: -12px;
 }
 div.dt-datetime table th {
-  font-size: 0.8em;
-  color: #777;
+  font-size: var(--dt-datetime-table-header_font-size);
+  color: var(--dt-datetime-table-header_color);
   font-weight: normal;
   width: 14.285714286%;
-  padding: 0 0 4px 0;
+  padding: var(--dt-datetime-table-header_padding);
   text-align: center;
 }
 div.dt-datetime table td {
-  font-size: 0.9em;
-  color: #444;
-  padding: 0;
+  font-size: var(--dt-datetime-table-body_font-size);
+  color: var(--dt-datetime-table-body_color);
+  padding: var(--dt-datetime-table-body_padding);
 }
 div.dt-datetime table td.selectable {
   text-align: center;
-  background: #f5f5f5;
+  background: var(--dt-datetime-table-selectable_background);
 }
 div.dt-datetime table td.selectable.disabled {
-  color: #aaa;
-  background: white;
+  color: var(--dt-datetime-table-selectable_disabled-color);
+  background: var(--dt-datetime-table-selectable_disabled-background);
 }
 div.dt-datetime table td.selectable.disabled button:hover {
-  color: #aaa;
-  background: white;
+  color: var(--dt-datetime-table-selectable_disabled-hover-color);
+  background: var(--dt-datetime-table-selectable_disabled-hover-background);
 }
 div.dt-datetime table td.selectable.now {
-  background-color: #ddd;
+  background-color: var(--dt-datetime-table-now_background);
 }
 div.dt-datetime table td.selectable.now button {
   font-weight: bold;
 }
 div.dt-datetime table td.selectable.selected button {
-  background: #4E6CA3;
-  color: white;
+  background: var(--dt-datetime-table-selected_background);
+  color: var(--dt-datetime-table-selected_color);
   border-radius: 2px;
 }
 div.dt-datetime table td.selectable button:hover {
-  background: #ff8000;
-  color: white;
+  background: var(--dt-datetime-table_hover-background);
+  color: var(--dt-datetime-table_hover-color);
   border-radius: 2px;
 }
 div.dt-datetime table td.dt-datetime-week {
@@ -2147,16 +2298,16 @@ div.dt-datetime div.dt-datetime-calendar table {
 div.dt-datetime div.dt-datetime-label {
   position: relative;
   display: inline-block;
-  height: 30px;
-  padding: 5px 6px;
-  border: 1px solid transparent;
+  height: var(--dt-datetime-label_height);
+  padding: var(--dt-datetime-label_padding);
+  border: var(--dt-datetime-label_border);
   box-sizing: border-box;
   cursor: pointer;
 }
 div.dt-datetime div.dt-datetime-label:hover {
-  border: 1px solid #ddd;
+  border: var(--dt-datetime-label_hover-border);
   border-radius: 2px;
-  background-color: #f5f5f5;
+  background-color: var(--dt-datetime-label_hover-background);
 }
 div.dt-datetime div.dt-datetime-label select {
   position: absolute;
@@ -2202,17 +2353,17 @@ div.dt-datetime div.dt-datetime-iconRight {
   height: 30px;
   background-position: center;
   background-repeat: no-repeat;
-  opacity: 0.3;
+  opacity: var(--dt-datetime-icon-opacity);
   overflow: hidden;
   box-sizing: border-box;
-  border: 1px solid transparent;
+  border: var(--dt-datetime-icon_border);
 }
 div.dt-datetime div.dt-datetime-iconLeft:hover,
 div.dt-datetime div.dt-datetime-iconRight:hover {
-  border: 1px solid #ccc;
+  border: var(--dt-datetime-icon_hover-border);
   border-radius: 2px;
-  background-color: #f0f0f0;
-  opacity: 0.6;
+  background-color: var(--dt-datetime-icon_hover-background);
+  opacity: var(--dt-datetime-icon_hover-opacity);
 }
 div.dt-datetime div.dt-datetime-iconLeft button,
 div.dt-datetime div.dt-datetime-iconRight button {
@@ -2239,7 +2390,7 @@ div.dt-datetime div.dt-datetime-iconLeft:after {
   display: block;
   content: "";
   border-top: 7px solid transparent;
-  border-right: 7px solid black;
+  border-right: 7px solid var(--dt-datetime-icon-triangle_border-color);
   border-bottom: 7px solid transparent;
 }
 div.dt-datetime div.dt-datetime-iconRight {
@@ -2258,7 +2409,7 @@ div.dt-datetime div.dt-datetime-iconRight:after {
   display: block;
   content: "";
   border-top: 7px solid transparent;
-  border-left: 7px solid black;
+  border-left: 7px solid var(--dt-datetime-icon-triangle_border-color);
   border-bottom: 7px solid transparent;
 }
 
@@ -2269,105 +2420,32 @@ div.dt-datetime-error {
   font-size: 11px;
   line-height: 1.25em;
   text-align: center;
-  color: #b11f1f;
+  color: var(--dt-datetime-error_color);
 }
 
 html.dark input.dt-datetime,
+html.dark select,
 :root[data-theme=dark] input.dt-datetime,
-:root[data-bs-theme=dark] input.dt-datetime {
+:root[data-theme=dark] select,
+:root[data-bs-theme=dark] input.dt-datetime,
+:root[data-bs-theme=dark] select {
   color-scheme: dark;
 }
-html.dark div.dt-datetime,
-:root[data-theme=dark] div.dt-datetime,
-:root[data-bs-theme=dark] div.dt-datetime {
-  border: 1px solid #595b5e;
-  background-color: #212529;
-  box-shadow: 3px 4px 10px 1px rgba(0, 0, 0, 0.8);
+html.dark.inline,
+:root[data-theme=dark].inline,
+:root[data-bs-theme=dark].inline {
+  box-shadow: none;
+  border: none;
 }
-html.dark div.dt-datetime table th,
-:root[data-theme=dark] div.dt-datetime table th,
-:root[data-bs-theme=dark] div.dt-datetime table th {
-  color: #ccc;
+
+:root {
+  --dtfc_background: white;
+  --dtfc-thead-cell_background: var(--dtfc_background);
+  --dtfc-tbody-cell_background: var(--dtfc_background);
 }
-html.dark div.dt-datetime table td,
-:root[data-theme=dark] div.dt-datetime table td,
-:root[data-bs-theme=dark] div.dt-datetime table td {
-  color: #eee;
-}
-html.dark div.dt-datetime table td.selectable,
-:root[data-theme=dark] div.dt-datetime table td.selectable,
-:root[data-bs-theme=dark] div.dt-datetime table td.selectable {
-  background: #373c41;
-}
-html.dark div.dt-datetime table td.selectable.disabled,
-:root[data-theme=dark] div.dt-datetime table td.selectable.disabled,
-:root[data-bs-theme=dark] div.dt-datetime table td.selectable.disabled {
-  color: #aaa;
-  background: #171b1f;
-}
-html.dark div.dt-datetime table td.selectable.disabled button:hover,
-:root[data-theme=dark] div.dt-datetime table td.selectable.disabled button:hover,
-:root[data-bs-theme=dark] div.dt-datetime table td.selectable.disabled button:hover {
-  color: #aaa;
-  background: #171b1f;
-}
-html.dark div.dt-datetime table td.selectable.now,
-:root[data-theme=dark] div.dt-datetime table td.selectable.now,
-:root[data-bs-theme=dark] div.dt-datetime table td.selectable.now {
-  background: #4b5055;
-}
-html.dark div.dt-datetime table td.selectable.selected button,
-:root[data-theme=dark] div.dt-datetime table td.selectable.selected button,
-:root[data-bs-theme=dark] div.dt-datetime table td.selectable.selected button {
-  background: #6ea8fe;
-  color: black;
-}
-html.dark div.dt-datetime table td.selectable button:hover,
-:root[data-theme=dark] div.dt-datetime table td.selectable button:hover,
-:root[data-bs-theme=dark] div.dt-datetime table td.selectable button:hover {
-  background: #ff8000;
-  color: black;
-}
-html.dark div.dt-datetime div.dt-datetime-label:hover,
-:root[data-theme=dark] div.dt-datetime div.dt-datetime-label:hover,
-:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-label:hover {
-  border: 1px solid transparent;
-  background-color: rgba(255, 255, 255, 0.1);
-}
-html.dark div.dt-datetime div.dt-datetime-iconLeft:hover,
-html.dark div.dt-datetime div.dt-datetime-iconRight:hover,
-html.dark div.dt-datetime div.dt-datetime-iconUp:hover,
-html.dark div.dt-datetime div.dt-datetime-iconDown:hover,
-:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconLeft:hover,
-:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconRight:hover,
-:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconUp:hover,
-:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconDown:hover,
-:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconLeft:hover,
-:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconRight:hover,
-:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconUp:hover,
-:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconDown:hover {
-  border: 1px solid transparent;
-  background-color: rgba(255, 255, 255, 0.1);
-}
-html.dark div.dt-datetime div.dt-datetime-iconLeft:after,
-:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconLeft:after,
-:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconLeft:after {
-  border-right-color: white;
-}
-html.dark div.dt-datetime div.dt-datetime-iconRight:after,
-:root[data-theme=dark] div.dt-datetime div.dt-datetime-iconRight:after,
-:root[data-bs-theme=dark] div.dt-datetime div.dt-datetime-iconRight:after {
-  border-left-color: white;
-}
-html.dark div.dt-datetime select,
-:root[data-theme=dark] div.dt-datetime select,
-:root[data-bs-theme=dark] div.dt-datetime select {
-  color-scheme: dark;
-}
-html.dark div.dt-datetime-error,
-:root[data-theme=dark] div.dt-datetime-error,
-:root[data-bs-theme=dark] div.dt-datetime-error {
-  color: #b11f1f;
+
+:root.dark {
+  --dtfc_background: rgb(33, 37, 41);
 }
 
 table.dataTable thead tr > .dtfc-fixed-start,
@@ -2377,12 +2455,12 @@ table.dataTable tfoot tr > .dtfc-fixed-end {
   top: 0;
   bottom: 0;
   z-index: 3;
-  background-color: white;
+  background-color: var(--dtfc-thead-cell_background);
 }
 table.dataTable tbody tr > .dtfc-fixed-start,
 table.dataTable tbody tr > .dtfc-fixed-end {
   z-index: 1;
-  background-color: white;
+  background-color: var(--dtfc-tbody-cell_background);
 }
 table.dataTable tr > .dtfc-fixed-left::after,
 table.dataTable tr > .dtfc-fixed-right::after {
@@ -2421,19 +2499,9 @@ div.dt-scroll div.dtfc-bottom-blocker,
 div.dtfh-floatingparent div.dtfc-top-blocker,
 div.dtfh-floatingparent div.dtfc-bottom-blocker {
   position: absolute;
-  background-color: white;
+  background-color: var(--dtfc-thead-cell_background);
 }
 
-html.dark table.dataTable thead tr > .dtfc-fixed-start,
-html.dark table.dataTable thead tr > .dtfc-fixed-end,
-html.dark table.dataTable tfoot tr > .dtfc-fixed-start,
-html.dark table.dataTable tfoot tr > .dtfc-fixed-end {
-  background-color: var(--dt-html-background);
-}
-html.dark table.dataTable tbody tr > .dtfc-fixed-start,
-html.dark table.dataTable tbody tr > .dtfc-fixed-end {
-  background-color: var(--dt-html-background);
-}
 html.dark table.dataTable.dtfc-scrolling-left tbody > tr > .dtfc-fixed-left::after {
   box-shadow: inset 10px 0 8px -8px rgba(0, 0, 0, 0.3);
 }
@@ -2442,10 +2510,6 @@ html.dark table.dataTable.dtfc-scrolling-right tbody > tr > .dtfc-fixed-right::a
 }
 html.dark table.dataTable.dtfc-scrolling-right tbody > tr > .dtfc-fixed-right + .dtfc-fixed-right::after {
   box-shadow: none;
-}
-html.dark div.dtfc-top-blocker,
-html.dark div.dtfc-bottom-blocker {
-  background-color: var(--dt-html-background);
 }
 
 
@@ -3290,6 +3354,8 @@ div.dt-button-collection div.dtsp-panesContainer {
 
 div.dtsp-panesContainer {
   margin-bottom: 1em;
+  max-width: 100%;
+  flex-grow: 1;
 }
 
 div.dtsp-searchPane div.dt-container,
@@ -3300,8 +3366,12 @@ div.dtsp-searchPane div.dt-container div.dataTables_layout_cell,
 div.dtsp-searchPane div.dataTables_wrapper div.dataTables_layout_cell {
   padding: 0;
 }
-div.dtsp-searchPane div.dt-container div.dt-layout-row:not(.dt-layout-table),
-div.dtsp-searchPane div.dataTables_wrapper div.dt-layout-row:not(.dt-layout-table) {
+div.dtsp-searchPane div.dt-container div.dt-layout-row,
+div.dtsp-searchPane div.dataTables_wrapper div.dt-layout-row {
+  margin: 0;
+}
+div.dtsp-searchPane div.dt-container div.dt-layout-row div.dt-scroll,
+div.dtsp-searchPane div.dataTables_wrapper div.dt-layout-row div.dt-scroll {
   margin: 0;
 }
 div.dtsp-searchPane div.dt-container div.dt-scroll-head,
@@ -3436,7 +3506,8 @@ div.dtsp-panesContainer button.dtsp-showAll {
   float: right;
 }
 
-div.dtsp-hidden {
+div.dtsp-hidden,
+div.dts.dtsp-hidden {
   display: none !important;
 }
 
@@ -3605,7 +3676,20 @@ html.dark div.dtsp-searchPane div.dataTables_wrapper div.dataTables_scrollBody d
 
 table.dataTable > tbody > tr > .selected {
   background-color: rgba(13, 110, 253, 0.9);
-  color: white;
+  color: rgb(var(--dt-row-selected-text));
+}
+
+div.dt-container span.select-info,
+div.dt-container span.select-item {
+  margin-left: 0.5em;
+}
+
+@media screen and (max-width: 640px) {
+  div.dt-container span.select-info,
+  div.dt-container span.select-item {
+    margin-left: 0;
+    display: block;
+  }
 }
 table.dataTable > tbody > tr > .dt-select {
   text-align: center;
@@ -3613,6 +3697,11 @@ table.dataTable > tbody > tr > .dt-select {
 }
 table.dataTable > thead > tr > .dt-select {
   text-align: center;
+  vertical-align: middle;
+}
+table.dataTable > thead > tr > .dt-select input.dt-select-checkbox {
+  margin-left: auto;
+  margin-right: auto;
 }
 table.dataTable input.dt-select-checkbox {
   appearance: none;
@@ -3683,22 +3772,9 @@ table.dataTable.compact > tbody > tr.selected > th.select-checkbox:after {
   margin-top: -16px;
 }
 
-div.dt-container span.select-info,
-div.dt-container span.select-item {
-  margin-left: 0.5em;
-}
-
 html.dark table.dataTable input.dt-select-checkbox:indeterminate:after,
 html[data-bs-theme=dark] table.dataTable input.dt-select-checkbox:indeterminate:after {
   background-color: white;
-}
-
-@media screen and (max-width: 640px) {
-  div.dt-container span.select-info,
-  div.dt-container span.select-item {
-    margin-left: 0;
-    display: block;
-  }
 }
 
 

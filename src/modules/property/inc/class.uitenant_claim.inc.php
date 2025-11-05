@@ -55,6 +55,7 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		'query2'					 => true,
 		'index'						 => true,
 		'check'						 => true,
+		'new'						 => true,
 		'view'						 => true,
 		'edit'						 => true,
 		'delete'					 => true,
@@ -269,10 +270,13 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 					'project_id'		 => $this->project_id,
 					'phpgw_return_as'	 => 'json'
 				)),
+				// 'new_item'		 => self::link(array(
+				// 	'menuaction' => 'property.uiproject.index',
+				// 	'lookup'	 => '1',
+				// 	'from'		 => 'tenant_claim'
+				// )),
 				'new_item'		 => self::link(array(
-					'menuaction' => 'property.uiproject.index',
-					'lookup'	 => '1',
-					'from'		 => 'tenant_claim'
+					'menuaction' => 'property.uitenant_claim.new',
 				)),
 				'allrows'		 => true,
 				'editor_action'	 => '',
@@ -623,6 +627,117 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		}
 	}
 
+	function new()
+	{
+		if (!$this->acl_edit)
+		{
+			phpgw::no_access();
+		}
+
+		$errors = [];
+
+		if (!empty($_POST['create']))
+		{
+			$values = Sanitizer::get_var('values', 'string', 'POST');
+
+			if (!$values['location_code'])
+			{
+				$errors[] = lang('Please select a location !');
+			}
+			if (!$values['ssn'])
+			{
+				$errors[] = lang('Please select a tenant !');
+			}
+
+
+			if (!$errors)
+			{
+				$receipt			 = $this->bo->save($values);
+				$claim_id			 = $receipt['claim_id'];
+			}
+			else
+			{
+				foreach ($errors as $error)
+				{
+					Cache::message_set($error, 'error');
+				}
+				$claim_id = null;
+			}
+
+
+			if ($claim_id)
+			{
+				Cache::message_set(lang('Tenant claim') . " " . $claim_id . " " . lang("has been created"), 'message');
+				phpgw::redirect_link('/index.php', array(
+					'menuaction' => 'property.uitenant_claim.edit',
+					'claim_id'	 => $claim_id
+				));
+			}
+		}
+
+		$claim_types = array(
+			array(
+				'id'	 => 'project',
+				'name'	 => lang('project'),
+				'disabled' => true
+			),
+			array(
+				'id'	 => 'ticket',
+				'name'	 => lang('ticket'),
+				'disabled' => true
+			),
+			array(
+				'id'	 => 'rental',
+				'name'	 => lang('rental')
+			),
+			array(
+				'id'	 => 'key_order',
+				'name'	 => lang('key order')
+			),
+			array(
+				'id'	 => 'garbage',
+				'name'	 => lang('garbage')
+			),
+			array(
+				'id'	 => 'fire_alarm',
+				'name'	 => lang('fire alarm')
+			),
+			array(
+				'id'	 => 'refund',
+				'name'	 => lang('refund')
+			)
+		);
+
+		$data = array(
+			'claim_types' => array('options' => $claim_types),
+			'currency'	 => $this->userSettings['preferences']['common']['currency'],
+			'form_url'	 => self::link(array(
+				'menuaction' => 'property.uitenant_claim.new'
+			))
+		);
+
+		$jqcal = createObject('phpgwapi.jqcal2');
+		$jqcal->add_listener('claim_date');
+
+		$appname		 = lang('tenant claim');
+		$function_msg	 = lang('new');
+//		phpgwapi_jquery::load_widget('file-upload-minimum');
+
+		phpgwapi_jquery::formvalidator_generate(array());
+		$this->flags['app_header']	 = lang('property') . ' - ' . $appname . ': ' . $function_msg;
+		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
+
+		self::add_javascript('phpgwapi', 'autonumeric', 'autoNumeric.min.js');
+
+		phpgwapi_jquery::load_widget('core');
+		phpgwapi_jquery::load_widget('autocomplete');
+		phpgwapi_jquery::formvalidator_generate(array());
+
+		self::render_template_xsl(array('tenant_claim'), array(
+			'new' => $data
+		));
+	}
+	
 	function edit($data = array(), $mode = 'edit')
 	{
 

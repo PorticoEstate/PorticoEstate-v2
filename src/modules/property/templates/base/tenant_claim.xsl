@@ -6,7 +6,139 @@
 		<xsl:when test="edit">
 			<xsl:apply-templates select="edit"/>
 		</xsl:when>
+		<xsl:when test="new">
+			<xsl:apply-templates select="new"/>
+		</xsl:when>
 	</xsl:choose>
+</xsl:template>
+
+<!-- new -->
+<xsl:template xmlns:php="http://php.net/xsl" match="new">
+
+<script type="text/javascript">
+
+$(document).ready(function ()
+{
+	JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction: 'property.bolocation.get_locations', level: 4, get_tenant_name: true}, true),	'location_name', 'location_code', 'location_container');
+
+	//mark required fields
+	$('#form').find('input[required], select[required], textarea[required]').each(function(){
+		var label = $("label[for='" + $(this).attr('id') + "']");
+		if(label.length)
+		{
+			label.addClass('required');
+		}
+	});
+
+		//trigger autoNumeric
+	var	anElement = new AutoNumeric('.amount',{
+		caretPositionOnFocus: "decimalRight",
+		decimalCharacter: ",",
+		digitGroupSeparator: " "
+	});
+});
+</script>
+
+<style type="text/css">
+	label.required:after {
+		content: " *";
+		color: red;
+	}
+</style>
+	<xsl:variable name="form_url">
+		<xsl:value-of select="form_url"/>
+	</xsl:variable>
+	<form ENCTYPE="multipart/form-data" class="pure-form pure-form-aligned" name="form" id="form" method="post" action="{$form_url}">
+
+		<div id="location_selector" class="pure-control-group">
+			<label for='location_name'>
+				<xsl:value-of select="php:function('lang', 'location')"/>
+			</label>
+			<input type="hidden" id="location_code" name="values[location_code]" />
+			<input type="text" id="location_name" name="values[location_name]" required="required" class="pure-input-3-4"/>
+			<div id="location_container"/>
+		</div>
+		
+			<div class="pure-control-group">
+			<label for='claim_type'>
+				<xsl:value-of select="php:function('lang', 'claim type')"/>
+			</label>
+			<select id="claim_type" name="values[claim_type]"  required="required" class="pure-input-3-4">
+			<xsl:apply-templates select="claim_types/options"/>
+			</select>
+		</div>
+
+
+	<div class="pure-control-group">
+			<label for='ssn'>
+				<xsl:value-of select="php:function('lang', 'ssn')"/>
+			</label>
+			<input type="text" id="ssn" name="values[ssn]" value="" class="pure-input-3-4">
+				<xsl:attribute name="title">
+					<xsl:value-of select="php:function('lang', 'ssn_statustext')"/>
+				</xsl:attribute>
+			</input>
+		</div>
+
+		<div class="pure-control-group">
+			<label for='claim_date'>
+				<xsl:value-of select="php:function('lang', 'Date')"/>
+			</label>
+			<input type="text" id="claim_date" name="values[claim_date]" value="" required="required" class="date pure-input-3-4">
+				<xsl:attribute name="title">
+					<xsl:value-of select="php:function('lang', 'date_statustext')"/>
+				</xsl:attribute>
+			</input>
+			
+		</div>
+	
+	<div class="pure-control-group">
+			<label for='amount'>
+				<xsl:value-of select="php:function('lang', 'amount')"/>
+			</label>
+			<input type="text" id="amount" name="values[amount]" value="" required="required" class="amount pure-input-3-4">
+				<xsl:attribute name="title">
+					<xsl:value-of select="php:function('lang', 'amount_statustext')"/>
+				</xsl:attribute>
+			</input>
+			<xsl:text> </xsl:text> [ <xsl:value-of select="currency"/> ]
+		</div>
+	
+		<div class="pure-control-group">
+			<label for='remark'>
+				<xsl:value-of select="php:function('lang', 'remark')"/>
+			</label>
+			<textarea cols="60" rows="6" id="remark" name="values[remark]" class="pure-input-3-4">
+				<xsl:attribute name="title">
+					<xsl:value-of select="php:function('lang', 'remark_statustext')"/>
+				</xsl:attribute>
+			</textarea>
+		</div>
+
+		<div class="pure-control-group">
+			<label for='attachments'>
+				<xsl:value-of select="php:function('lang', 'attachments')"/>
+			</label>
+			<input type="file"  id="attachments" name="files[]" class="pure-input-3-4">
+				<xsl:attribute name="multiple">
+					<xsl:text>multiple</xsl:text>
+				</xsl:attribute>
+			</input>
+		</div>
+
+
+
+		<div class="pure-control-group">
+			<xsl:variable name="lang_create_new_claim">
+				<xsl:value-of select="php:function('lang', 'create new claim')"/>
+			</xsl:variable>
+			<input type="submit" class="pure-button pure-button-primary" name="create" value="{$lang_create_new_claim}">
+				<xsl:attribute name="title">
+					<xsl:value-of select="php:function('lang', 'create new claim')"/>
+				</xsl:attribute>
+			</input>
+		</div>
+	</form>
 </xsl:template>
 
 <!-- add / edit -->
@@ -489,4 +621,16 @@
 			</xsl:choose>
 		</td>
 	</tr>
+</xsl:template>
+<!-- New template-->
+<xsl:template match="options">
+	<option value="{id}">
+		<xsl:if test="selected != 0">
+			<xsl:attribute name="selected" value="selected"/>
+		</xsl:if>
+		<xsl:if test="disabled = 1">
+			<xsl:attribute name="disabled" value="disabled"/>
+		</xsl:if>
+		<xsl:value-of disable-output-escaping="yes" select="name"/>
+	</option>
 </xsl:template>

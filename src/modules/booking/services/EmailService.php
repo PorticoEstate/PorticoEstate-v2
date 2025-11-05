@@ -16,14 +16,52 @@ class EmailService
 {
     private $settings;
     private $serverSettings;
+    private $userSettings;
     private $send;
     private $datetimeformat = 'Y-m-d H:i';
+    private $userTimezone;
 
     public function __construct()
     {
         $this->settings = Settings::getInstance();
         $this->serverSettings = $this->settings->get('server');
+        $this->userSettings = $this->settings->get('user');
         $this->send = new Send();
+
+        // Get user's timezone from preferences, default to Europe/Oslo
+        $this->userTimezone = !empty($this->userSettings['preferences']['common']['timezone'])
+            ? $this->userSettings['preferences']['common']['timezone']
+            : 'Europe/Oslo';
+    }
+
+    /**
+     * Format a datetime string with proper timezone handling
+     *
+     * @param string $datetimeString ISO 8601 datetime string (e.g., "2025-11-06T11:00:00+01:00")
+     * @param string $format Output format (default: 'Y-m-d H:i')
+     * @return string Formatted datetime in user's timezone
+     */
+    private function formatDateTime(string $datetimeString, string $format = null): string
+    {
+        if ($format === null) {
+            $format = $this->datetimeformat;
+        }
+
+        try {
+            // Parse the datetime string (respects timezone in the string)
+            $datetime = new \DateTime($datetimeString);
+
+            // Convert to user's timezone
+            $userTz = new \DateTimeZone($this->userTimezone);
+            $datetime->setTimezone($userTz);
+
+            // Format and return
+            return $datetime->format($format);
+        } catch (\Exception $e) {
+            // Fallback to original behavior if parsing fails
+            error_log("Failed to parse datetime '{$datetimeString}': " . $e->getMessage());
+            return date($format, strtotime($datetimeString));
+        }
     }
 
     /**
@@ -480,8 +518,8 @@ class EmailService
             if (!empty($application['dates'])) {
                 $dates = [];
                 foreach ($application['dates'] as $date) {
-                    $from = date($this->datetimeformat, strtotime($date['from_']));
-                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $from = $this->formatDateTime($date['from_']);
+                    $to = $this->formatDateTime($date['to_']);
                     $dates[] = "\t{$from} - {$to}";
                 }
                 if (!empty($dates)) {
@@ -508,8 +546,8 @@ class EmailService
             if (!empty($application['dates'])) {
                 $dates = [];
                 foreach ($application['dates'] as $date) {
-                    $from = date($this->datetimeformat, strtotime($date['from_']));
-                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $from = $this->formatDateTime($date['from_']);
+                    $to = $this->formatDateTime($date['to_']);
                     $dates[] = "\t{$from} - {$to}";
                 }
                 if (!empty($dates)) {
@@ -545,8 +583,8 @@ class EmailService
 
             foreach ($associations as $assoc) {
                 if ($assoc['active']) {
-                    $from = date($this->datetimeformat, strtotime($assoc['from_']));
-                    $to = date($this->datetimeformat, strtotime($assoc['to_']));
+                    $from = $this->formatDateTime($assoc['from_']);
+                    $to = $this->formatDateTime($assoc['to_']);
                     $adates[] = "\t{$from} - {$to}";
                     $cost += (float)$assoc['cost'];
 
@@ -661,8 +699,8 @@ class EmailService
             if (!empty($application['dates'])) {
                 $dates = [];
                 foreach ($application['dates'] as $date) {
-                    $from = date($this->datetimeformat, strtotime($date['from_']));
-                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $from = $this->formatDateTime($date['from_']);
+                    $to = $this->formatDateTime($date['to_']);
                     $dates[] = "\t{$from} - {$to}";
                 }
                 if (!empty($dates)) {
@@ -756,8 +794,8 @@ class EmailService
                 $associations = $this->getApplicationAssociations($application['id']);
                 foreach ($associations as $assoc) {
                     if ($assoc['active']) {
-                        $from_time = date($this->datetimeformat, strtotime($assoc['from_']));
-                        $to_time = date($this->datetimeformat, strtotime($assoc['to_']));
+                        $from_time = $this->formatDateTime($assoc['from_']);
+                        $to_time = $this->formatDateTime($assoc['to_']);
                         $allAdates[] = "\t{$from_time} - {$to_time}";
                     }
                 }
@@ -824,8 +862,8 @@ class EmailService
             $adates = [];
             foreach ($associations as $assoc) {
                 if ($assoc['active']) {
-                    $from_time = date($this->datetimeformat, strtotime($assoc['from_']));
-                    $to_time = date($this->datetimeformat, strtotime($assoc['to_']));
+                    $from_time = $this->formatDateTime($assoc['from_']);
+                    $to_time = $this->formatDateTime($assoc['to_']);
                     $adates[] = "\t{$from_time} - {$to_time}";
                 }
             }
@@ -899,8 +937,8 @@ class EmailService
             if (!empty($application['dates'])) {
                 $dates = [];
                 foreach ($application['dates'] as $date) {
-                    $from = date($this->datetimeformat, strtotime($date['from_']));
-                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $from = $this->formatDateTime($date['from_']);
+                    $to = $this->formatDateTime($date['to_']);
                     $dates[] = "\t{$from} - {$to}";
                 }
                 if (!empty($dates)) {
@@ -947,8 +985,8 @@ class EmailService
 
             foreach ($associations as $assoc) {
                 if ($assoc['active']) {
-                    $from = date($this->datetimeformat, strtotime($assoc['from_']));
-                    $to = date($this->datetimeformat, strtotime($assoc['to_']));
+                    $from = $this->formatDateTime($assoc['from_']);
+                    $to = $this->formatDateTime($assoc['to_']);
                     $cost = (float)$assoc['cost'];
                     $costText = $cost > 0 ? " (kr " . number_format($cost, 2, ",", '.') . ")" : "";
                     $adates[] = "\t{$from} - {$to}{$costText}";

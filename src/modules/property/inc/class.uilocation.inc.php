@@ -1578,6 +1578,17 @@ JS;
 				);
 			}
 
+
+			$data['datatable']['actions'][] = array(
+				'my_name'	 => 'edit',
+				'text'		 => 'Dashboard',
+				'action'	 => phpgw::link('/index.php', array(
+					'menuaction'	 => 'property.uilocation.dashboard'
+				)),
+				'target'	 => '_blank',
+				'parameters' => json_encode($parameters)
+			);
+
 			foreach ($_integration_set as $_integration)
 			{
 				$data['datatable']['actions'][] = array(

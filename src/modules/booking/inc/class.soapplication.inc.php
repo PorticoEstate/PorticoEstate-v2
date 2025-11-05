@@ -741,8 +741,8 @@ class booking_soapplication extends booking_socommon
 			. " ON bb_application.id = bb_application_resource.application_id AND bb_application_resource.resource_id = " . (int)$resource_id
 			. " WHERE "
 			. "( customer_ssn = '{$ssn}' AND status != 'REJECTED' "
-			. " AND ((EXTRACT(EPOCH from (to_- current_date))) > -$booking_horizont_seconds"
-			. " OR (EXTRACT(EPOCH from (current_date - from_))) < $booking_horizont_seconds)"
+			. " AND ((EXTRACT(EPOCH from (bb_application_date.to_- current_date))) > -$booking_horizont_seconds"
+			. " OR (EXTRACT(EPOCH from (current_date - bb_application_date.from_))) < $booking_horizont_seconds)"
 			. ")"
 			. " OR (status = 'NEWPARTIAL1' AND session_id = '$session_id')"
 			. " ) as t";

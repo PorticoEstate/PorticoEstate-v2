@@ -43,6 +43,7 @@ import {isApplicationDeactivated} from "@/service/utils/deactivation-utils";
 import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
 import {Trans} from "react-i18next";
 import ApplicationLoginLink from "@/components/building-calendar/modules/event/edit/application-login-link";
+import {useToast} from "@/components/toast/toast-context";
 
 interface ApplicationCrudProps {
 	selectedTempApplication?: Partial<FCallTempEvent>;
@@ -198,6 +199,9 @@ const ApplicationCrudWrapper: FC<ApplicationCrudProps> = (props) => {
 
 				{...effectiveProps}
 				onClose={() => {
+					// Clear pending recurring application data from localStorage
+					localStorage.removeItem('pendingRecurringApplication');
+
 					// Clear restored props when dialog is closed
 					if (restoredProps) {
 						setRestoredProps(null);
@@ -223,6 +227,7 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 	const deleteDocumentMutation = useDeleteApplicationDocument();
 	const participantsSectionRef = useRef<HTMLDivElement>(null);
 	const {data: serverSettings} = useServerSettings();
+	const {addToast} = useToast();
 
 
 
@@ -950,6 +955,9 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 				application: updatedApplication
 			});
 
+			// Clear pending recurring application data from localStorage
+			localStorage.removeItem('pendingRecurringApplication');
+
 			props.onSubmitSuccess?.(data);
 			props.onClose();
 			return;
@@ -1003,6 +1011,25 @@ const ApplicationCrud: React.FC<ApplicationCrudInnerProps> = (props) => {
 			});
 			setIsUploadingFiles(false);
 		}
+
+		// Show toast notification only once per session when item is added to cart
+		const hasShownToast = sessionStorage.getItem('cartToastShown');
+		if (!hasShownToast) {
+			addToast({
+				type: 'info',
+				title: t('bookingfrontend.added_to_cart'),
+				text: t('bookingfrontend.cart_reminder_message'),
+				messageId: 'cart-reminder',
+				autoHide: true,
+				duration: 4000 // 4 seconds as per requirements
+			});
+			sessionStorage.setItem('cartToastShown', 'true');
+		}
+
+
+		// Clear pending recurring application data from localStorage
+		localStorage.removeItem('pendingRecurringApplication');
+
 		props.onSubmitSuccess?.(data);
 		props.onClose();
 	};

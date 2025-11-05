@@ -35,6 +35,7 @@
         "@navikt/aksel-icons": "^7.17.4",
         "@next/env": "^14.2.7",
         "@porticoestate/design-tokens": "https://github.com/PorticoEstate/digdir-design-tokens.git",
+        "@sentry/nextjs": "^10",
         "@tanstack/match-sorter-utils": "^8.19.4",
         "@tanstack/react-query": "^5.51.23",
         "@tanstack/react-query-devtools": "^5.61.0",

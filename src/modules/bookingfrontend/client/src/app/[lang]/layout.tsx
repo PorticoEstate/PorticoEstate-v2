@@ -10,6 +10,7 @@ import '@porticoestate/design-tokens';
 import "@/app/globals.scss";
 import {FC, PropsWithChildren} from "react";
 import {fetchServerSettings} from "@/service/api/api-utils";
+import * as Sentry from "@sentry/nextjs";
 
 export async function generateStaticParams() {
     return languages.map((lng) => ({lng}))
@@ -39,7 +40,9 @@ export async function generateMetadata(): Promise<Metadata> {
 				},
 			],
 		},
-
+		other: {
+			...Sentry.getTraceData(),
+		}
     }
 }
 

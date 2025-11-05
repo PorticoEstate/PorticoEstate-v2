@@ -34,9 +34,8 @@ const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, la
 					<ServiceWorkerProvider disableServiceWorker>
 						<WebSocketProvider disableServiceWorker>
 							<ScrollLockProvider>
-								<ShoppingCartProvider>
-									<ToastProvider>
-
+								<ToastProvider>
+									<ShoppingCartProvider>
 										<PrefetchWrapper>
 											<LoadingIndicationWrapper loadingString={t('common.loading')}>
 												{children}
@@ -44,8 +43,8 @@ const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, la
 											</LoadingIndicationWrapper>
 											<ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'}/>
 										</PrefetchWrapper>
-									</ToastProvider>
-								</ShoppingCartProvider>
+									</ShoppingCartProvider>
+								</ToastProvider>
 							</ScrollLockProvider>
 						</WebSocketProvider>
 					</ServiceWorkerProvider>

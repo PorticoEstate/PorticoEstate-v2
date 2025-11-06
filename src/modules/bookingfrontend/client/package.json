@@ -10,7 +10,13 @@
         "lint": "next lint",
         "start:development": "next dev",
         "start:production": "next start",
-        "postinstall": "patch-package"
+        "postinstall": "patch-package",
+        "test": "playwright test",
+        "test:ui": "playwright test --ui",
+        "test:headed": "playwright test --headed",
+        "test:debug": "playwright test --debug",
+        "test:report": "playwright show-report",
+        "test:cart": "playwright test e2e/shopping-cart.spec.ts"
     },
     "dependencies": {
         "@digdir/designsystemet-css": "1.0.1",

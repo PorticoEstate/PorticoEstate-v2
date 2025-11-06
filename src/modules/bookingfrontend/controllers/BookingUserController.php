@@ -398,6 +398,13 @@ class BookingUserController
 	 *     path="/bookingfrontend/user/session",
 	 *     summary="Get current user's session ID",
 	 *     tags={"User"},
+	 *     @OA\Parameter(
+	 *         name="force_new",
+	 *         in="query",
+	 *         required=false,
+	 *         description="Set to 1 to force generate a new session ID",
+	 *         @OA\Schema(type="string", enum={"1"})
+	 *     ),
 	 *     @OA\Response(
 	 *         response=200,
 	 *         description="Session ID successfully retrieved",
@@ -415,6 +422,10 @@ class BookingUserController
 	{
 		try
 		{
+			// Check if force_new parameter is set
+			$queryParams = $request->getQueryParams();
+			$forceNew = isset($queryParams['force_new']) && $queryParams['force_new'] === '1';
+
 			// Get the session ID from PHP's session
 			$sessionId = session_id();
 
@@ -424,6 +435,15 @@ class BookingUserController
 					['error' => 'No active session found'],
 					401
 				);
+			}
+
+			// Force regenerate session ID if requested
+			if ($forceNew)
+			{
+				// Regenerate session ID while keeping session data
+				session_regenerate_id(true);
+				$sessionId = session_id();
+				error_log("Session ID regenerated: " . $sessionId);
 			}
 
 			// Return the session ID

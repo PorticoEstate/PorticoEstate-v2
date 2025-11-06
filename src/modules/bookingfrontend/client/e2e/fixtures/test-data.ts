@@ -65,6 +65,15 @@ export const TEST_IDS = {
   },
 };
 
+/**
+ * Test authentication URLs
+ */
+export const TEST_AUTH = {
+  sessionUrl: 'http://pe-api.test/bookingfrontend/user/session?force_new=1',
+  loginUrl: 'http://pe-api.test/bookingfrontend/login/?after=%2Fclient%2Fno%2Fresource%2F482',
+  logoutUrl: 'http://pe-api.test/bookingfrontend/logout/',
+};
+
 export const LANGUAGES = {
   norwegian: 'no',
   english: 'en',
@@ -105,6 +114,21 @@ export const SELECTORS = {
   calendarResources: 'text=Kalender ressurser',
   resourceCheckbox: 'input[type="checkbox"]',
   newApplicationButton: 'button:has-text("Ny søknad")',
+
+  // Shopping cart
+  shoppingCartFab: 'button:has-text("Handlekurv")',
+  shoppingCartBadge: '[data-color="brand3"]',
+  shoppingCartDrawer: 'h2:has-text("Søknader klar for innsending")',
+  editApplicationButton: 'button:has-text("Rediger")',
+  deleteApplicationButton: 'button:has-text("Fjern søknad")',
+  submitApplicationButton: 'a:has-text("Send inn søknad")',
+  closeDrawerButton: 'button:has-text("Lukk")',
+
+  // Application dialog
+  applicationDialog: 'dialog:has-text("søknad"), [role="dialog"]',
+  applicationTitleInput: 'input[type="text"]',
+  saveApplicationButton: 'button:has-text("Lagre")',
+  recurringBookingSwitch: 'switch:has-text("gjentakende")',
 
   // Footer
   footer: 'footer',

@@ -11541,3 +11541,42 @@
 			return	'0.9.17.764';
 		}
 	}
+
+	/**
+	 * Update property version from 0.9.17.564 to 0.9.17.565
+	 * add column to fm_tenant_claim
+	 */
+	$test[] = '0.9.17.764';
+	function property_upgrade0_9_17_764($oProc)
+	{
+		$oProc->m_odb->transaction_begin();
+
+		$oProc->AddColumn('fm_tenant_claim', 'claim_type', array(
+			'type' => 'varchar',
+			'precision' => 15,
+			'nullable' => True
+		));
+
+		$oProc->AddColumn('fm_tenant_claim', 'claim_date', array(
+			'type' => 'int',
+			'precision' => 8,
+			'nullable' => True
+		));
+
+		$oProc->AddColumn('fm_tenant_claim', 'location_code', array(
+			'type' => 'varchar',
+			'precision' => 255,
+			'nullable' => True
+		));
+
+		$sql = "UPDATE fm_tenant_claim set claim_type = 'project' WHERE project_id > 0";
+		$oProc->query($sql, __LINE__, __FILE__);
+
+		$sql = "UPDATE fm_tenant_claim set claim_type = 'ticket' WHERE ticket_id > 0";
+		$oProc->query($sql, __LINE__, __FILE__);
+
+		if ($oProc->m_odb->transaction_commit())
+		{
+			return	'0.9.17.765';
+		}
+	}

@@ -187,11 +187,17 @@
 
 			$claims				 = $this->so->read($data);
 			$this->total_records = $this->so->total_records;
+			$status_text = [
+				'open' => lang('open'),
+				'closed' => lang('closed'),
+				'ready' => lang('ready for processing claim')
+			];
 
-			foreach ($claims as &$entry)
+
+		foreach ($claims as &$entry)
 			{
 				$entry['entry_date']	 = $this->phpgwapi_common->show_date($entry['entry_date'], $this->userSettings['preferences']['common']['dateformat']);
-				$entry['status']		 = lang($entry['status']);
+				$entry['status']		 = $status_text[$entry['status']];
 				$entry['user']			 = $this->accounts_obj->get($entry['user_id'])->__toString();
 				$location_info			 = execMethod('property.solocation.read_single', $entry['location_code']);
 				$entry['loc1_name']		 = $location_info['loc1_name'];
@@ -355,5 +361,10 @@
 		public function close( $id )
 		{
 			return $this->so->close($id);
+		}
+
+		public function get_reskontro( $location_code )
+		{
+			return $this->so->get_reskontro($location_code);
 		}
 	}

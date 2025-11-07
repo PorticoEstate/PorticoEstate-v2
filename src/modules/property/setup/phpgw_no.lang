@@ -2451,3 +2451,8 @@ limit	property	no	grense
 approve all lines	property	no	Godkjenn alle linjer
 send workorder as pdf	property	no	Send bestilling som pdf
 recently used	property	no	Nylig brukt
+key order	property	no	Nøkkelbestilling
+garbage	property	no	Avfallshåndtering
+fire alarm	property	no	Brannalarm
+refund	property	no	Refusjon
+claim type	property	no	Kravtype

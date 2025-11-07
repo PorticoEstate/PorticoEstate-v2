@@ -32,30 +32,36 @@
 				<xsl:value-of select="php:function('lang', 'location')"/>
 			</label>
 			<input type="hidden" id="location_code" name="values[location_code]" />
-			<input type="text" id="location_name" name="values[location_name]" required="required" class="pure-input-3-4"/>
+			<input type="text" id="location_name" name="values[location_name]" required="required" class="pure-input-3-4">
+			<xsl:attribute name="placeholder">
+				<xsl:value-of select="php:function('lang', 'search')"/>
+			</xsl:attribute>
+			</input>
+
 			<div id="location_container"/>
 		</div>
-		
+
+		<div class="pure-control-group">
+			<label for='reskontro'>
+				<xsl:text>Reskontro</xsl:text>
+			</label>
+			<select id="reskontro" name="values[reskontro]" class="pure-input-3-4">
+				<xsl:attribute name="required">
+					<xsl:text>required</xsl:text>
+				</xsl:attribute>
+			</select>
+		</div>		
+
 		<div class="pure-control-group">
 			<label for='claim_type'>
 				<xsl:value-of select="php:function('lang', 'claim type')"/>
 			</label>
 			<select id="claim_type" name="values[claim_type]"  required="required" class="pure-input-3-4">
+			<option value="">-- Select --</option>
 			<xsl:apply-templates select="claim_types/options"/>
 			</select>
 		</div>
 
-
-	<div class="pure-control-group">
-			<label for='ssn'>
-				<xsl:value-of select="php:function('lang', 'ssn')"/>
-			</label>
-			<input type="text" id="ssn" name="values[ssn]" value="" required="required" class="pure-input-3-4">
-				<xsl:attribute name="title">
-					<xsl:value-of select="php:function('lang', 'ssn_statustext')"/>
-				</xsl:attribute>
-			</input>
-		</div>
 
 		<div class="pure-control-group">
 			<label for='claim_date'>
@@ -68,7 +74,6 @@
 			</input>
 			
 		</div>
-		<xsl:call-template name="b_account_form"/>	
 
 		<div class="pure-control-group">
 			<label>
@@ -102,17 +107,16 @@
 			</textarea>
 		</div>
 
-		<!--div class="pure-control-group">
+		<div class="pure-control-group">
 			<label for='attachments'>
 				<xsl:value-of select="php:function('lang', 'attachments')"/>
 			</label>
-			<input type="file"  id="attachments" name="files[]" class="pure-input-3-4">
-				<xsl:attribute name="multiple">
-					<xsl:text>multiple</xsl:text>
+			<input type="file"  id="attachments" name="file" class="pure-input-3-4">
+				<xsl:attribute name="required">
+					<xsl:text>required</xsl:text>
 				</xsl:attribute>
 			</input>
-		</div-->
-
+		</div>
 
 
 		<div class="pure-control-group">
@@ -162,17 +166,17 @@
 						</div>
 					</xsl:when>
 				</xsl:choose>
-<xsl:call-template name="location_view"/>
-<xsl:choose>
-	<xsl:when test="contact_phone !=''">
-		<div class="pure-control-group">
-			<label>
-				<xsl:value-of select="lang_contact_phone"/>
-			</label>
-			<xsl:value-of select="contact_phone"/>
-		</div>
-	</xsl:when>
-</xsl:choose>
+				<xsl:call-template name="location_view"/>
+				<xsl:choose>
+					<xsl:when test="contact_phone !=''">
+						<div class="pure-control-group">
+							<label>
+								<xsl:value-of select="lang_contact_phone"/>
+							</label>
+							<xsl:value-of select="contact_phone"/>
+						</div>
+					</xsl:when>
+				</xsl:choose>
 				<xsl:choose>
 					<xsl:when test="value_parent_id!=''">
 						<div class="pure-control-group">

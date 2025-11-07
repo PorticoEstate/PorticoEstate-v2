@@ -215,7 +215,7 @@ class property_sotenant_claim
 					fm_tenant_claim.remark,fm_tenant_claim.user_id,fm_tenant_claim.entry_date,
 					fm_tenant_claim.ticket_id,
 					fm_tenant_claim_category.descr as claim_category, fm_tenant.last_name, fm_tenant.first_name,district_id,
-					fm_tenant_claim.location_code as address, fm_tenant_claim.location_code, fm_tenant_claim.amount as actual_cost
+					fm_tenant_claim.location_code as address, fm_tenant_claim.location_code, 0 as actual_cost
 					FROM fm_tenant_claim 
 					$this->join fm_tenant_claim_category on fm_tenant_claim.category=fm_tenant_claim_category.id
 					$this->join fm_tenant on fm_tenant_claim.tenant_id=fm_tenant.id
@@ -350,13 +350,24 @@ class property_sotenant_claim
 		return $claim;
 	}
 
-	function get_tenant_by_ssn($ssn)
+	function get_tenant_by_reskontro($reskontro)
 	{
-		$ssn = $this->db->db_addslashes($ssn);
-		$this->db->query("SELECT id FROM fm_tenant WHERE ssn='{$ssn}'", __LINE__, __FILE__);
+		$reskontro = $this->db->db_addslashes($reskontro);
+		$reskontro_parts = explode('.', $reskontro);
+
+		if (count($reskontro_parts) != 3)
+		{
+			return 0;
+		}
+
+		$this->db->query("SELECT leietaker_id FROM boei_reskontro 
+		WHERE objekt_id = '{$reskontro_parts[0]}' 
+		AND leie_id = '{$reskontro_parts[1]}' 
+		AND flyttenr = '{$reskontro_parts[2]}'", __LINE__, __FILE__);
+
 		if ($this->db->next_record())
 		{
-			return (int)$this->db->f('id');
+			return (int)$this->db->f('leietaker_id');
 		}
 		return 0;
 	}
@@ -368,9 +379,9 @@ class property_sotenant_claim
 		$claim['name']	 = $this->db->db_addslashes($claim['name']);
 		$claim['amount'] = str_replace(",", ".", $claim['amount']);
 
-		if ($claim['ssn'] && !$claim['tenant_id'])
+		if ($claim['reskontro'] && !$claim['tenant_id'])
 		{
-			$tenant_id = $this->get_tenant_by_ssn($claim['ssn']);
+			$tenant_id = $this->get_tenant_by_reskontro($claim['reskontro']);
 			if ($tenant_id)
 			{
 				$claim['tenant_id'] = $tenant_id;
@@ -412,7 +423,7 @@ class property_sotenant_claim
 			$claim['remark'],
 			$this->account,
 			time(),
-			$claim['status']?? 'open'
+			$claim['status']?? 'ready'
 		);
 
 		$values_insert = $this->db->validate_insert($values_insert);
@@ -603,4 +614,44 @@ class property_sotenant_claim
 
 		return $this->db->transaction_commit();
 	}
+
+	public function get_reskontro($location_code)
+	{
+		$values = array();
+
+		if (!$location_code)
+		{
+			return $values;
+		}
+
+		$filtermethod = '';
+
+		$filtermethod = " WHERE location_code {$this->like} '$location_code%'";
+
+		$sql = "SELECT boei_reskontro.flyttenr, location_code, contact_phone, concat(last_name || ', ' || first_name) AS name,"
+			. " concat(boei_reskontro.objekt_id || '.' || boei_reskontro.leie_id || '.' || boei_reskontro.flyttenr) AS reskontro_code,"
+			. "boei_reskontro.innflyttetdato"
+			. " FROM fm_location4"
+			. " JOIN boei_reskontro ON (fm_location4.loc1 = boei_reskontro.objekt_id) AND (fm_location4.loc4 = boei_reskontro.leie_id)"
+			. " JOIN fm_tenant ON boei_reskontro.leietaker_id = fm_tenant.id"
+			. " {$filtermethod}"
+			. " ORDER BY boei_reskontro.flyttenr DESC";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		while ($this->db->next_record())
+		{
+			$values[] = array(
+				'location_code'	 => $this->db->f('location_code', true),
+				'name'			 => $this->db->f('name', true),
+				'contact_phone'	 => $this->db->f('contact_phone', true),
+				'reskontro_code' => $this->db->f('reskontro_code', true),
+				'innflyttetdato' => $this->db->f('innflyttetdato')
+			);
+		}
+		
+
+		return $values;
+	}
+
 }

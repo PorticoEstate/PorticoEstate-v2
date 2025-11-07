@@ -62,7 +62,8 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		'view_file'					 => true,
 		'close'						 => true,
 		'handle_multi_upload_file'	 => true,
-		'update_data'				 => true
+		'update_data'				 => true,
+		'get_reskontro'				 => true
 	);
 
 	function __construct()
@@ -633,6 +634,14 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		}
 	}
 
+	public function get_reskontro()
+	{
+		$location_code = Sanitizer::get_var('location_code', 'string');
+
+		$reskontro = $this->bo->get_reskontro($location_code);
+
+		return $reskontro;
+	}
 
 	private function get_claim_types($selected = '')
 	{
@@ -713,11 +722,14 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			{
 				$errors[] = lang('Please select a location !');
 			}
-			if (!$values['ssn'])
+			if (!$values['reskontro'])
 			{
-				$errors[] = lang('Please select a tenant !');
+				$errors[] = lang('Please select a tenant');
 			}
-
+			if (!$values['claim_type'])
+			{
+				$errors[] = lang('Please select a claim type !');
+			}
 
 			if (!$errors)
 			{
@@ -733,6 +745,10 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 				$claim_id = null;
 			}
 
+			if(!empty($_FILES['file']['name']) && $claim_id)
+			{
+				$this->_handle_files($claim_id);
+			}
 
 			if ($claim_id)
 			{
@@ -794,6 +810,52 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		));
 	}
 
+
+	private function _handle_files($id)
+	{
+		$id = (int)$id;
+		if (!$id)
+		{
+			throw new Exception('uitenant_claim::_handle_files() - missing id');
+		}
+		$bofiles = CreateObject('property.bofiles');
+
+		$file_name = str_replace(array(' ', '..'), array('_', '.'), $_FILES['file']['name']);
+
+		if ($file_name)
+		{
+			if (!is_file($_FILES['file']['tmp_name']))
+			{
+				Cache::message_set(lang('Failed to upload file !'), 'error');
+				return;
+			}
+
+			$to_file = "{$bofiles->fakebase}/tenant_claim/{$id}/{$file_name}";
+			if ($bofiles->vfs->file_exists(array(
+				'string'	 => $to_file,
+				'relatives'	 => array(RELATIVE_NONE)
+			)))
+			{
+				Cache::message_set(lang('This file already exists !'), 'error');
+			}
+			else
+			{
+				$bofiles->create_document_dir("tenant_claim/{$id}");
+				$bofiles->vfs->override_acl = 1;
+
+				if (!$bofiles->vfs->cp(array(
+					'from'		 => $_FILES['file']['tmp_name'],
+					'to'		 => $to_file,
+					'relatives'	 => array(RELATIVE_NONE | VFS_REAL, RELATIVE_ALL)
+				)))
+				{
+					Cache::message_set(lang('Failed to upload file !'), 'error');
+				}
+				$bofiles->vfs->override_acl = 0;
+			}
+		}
+	}
+
 	function edit($data = array(), $mode = 'edit')
 	{
 
@@ -850,7 +912,7 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 			if (!$values['b_account_id'])
 			{
-				$receipt['error'][] = array('msg' => lang('Please select a budget account !'));
+//				$receipt['error'][] = array('msg' => lang('Please select a budget account !'));
 			}
 
 			if (in_array($values['claim_type'], ['project', 'ticket']) && !$values['workorder'] && !$values['ticket'])

@@ -11565,7 +11565,7 @@
 
 		$oProc->AddColumn('fm_tenant_claim', 'location_code', array(
 			'type' => 'varchar',
-			'precision' => 255,
+			'precision' => 50,
 			'nullable' => True
 		));
 

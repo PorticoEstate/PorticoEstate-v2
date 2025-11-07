@@ -121,7 +121,7 @@
 
 		<div class="pure-control-group">
 			<xsl:variable name="lang_create_new_claim">
-				<xsl:value-of select="php:function('lang', 'create new claim')"/>
+				<xsl:value-of select="php:function('lang', 'save')"/>
 			</xsl:variable>
 			<input type="submit" class="pure-button pure-button-primary" name="create" value="{$lang_create_new_claim}">
 				<xsl:attribute name="title">

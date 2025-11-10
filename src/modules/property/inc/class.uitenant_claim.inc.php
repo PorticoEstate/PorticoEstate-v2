@@ -315,12 +315,12 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 					array(
 						'key'		 => 'lang_type',
 						'label'		 => lang('type'),
-						'sortable'	 => TRUE
+						'sortable'	 => false
 					),
 					array(
 						'key'		 => 'type_id',
 						'label'		 => lang('id'),
-						'sortable'	 => TRUE
+						'sortable'	 => false
 					),
 					array(
 						'key'		 => 'name',
@@ -656,10 +656,10 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 				'name'	 => lang('ticket'),
 				'disabled' => true
 			),
-			array(
-				'id'	 => 'rental',
-				'name'	 => lang('rental')
-			),
+			// array(
+			// 	'id'	 => 'rental',
+			// 	'name'	 => lang('rental')
+			// ),
 			array(
 				'id'	 => 'key_order',
 				'name'	 => lang('key order')

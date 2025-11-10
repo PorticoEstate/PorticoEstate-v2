@@ -1113,7 +1113,7 @@
 	</div>
 	<div class="col-md-6 text-end">
 		<xsl:choose>
-			<xsl:when test="application/case_officer/is_current_user">
+			<xsl:when test="application/case_officer/is_current_user and can_create_allocations = 1">
 				<a class="btn btn-success btn-sm shadow-sm">
 					<xsl:attribute name="href">
 						<xsl:value-of select="recurring_allocation_url"/>
@@ -1131,6 +1131,15 @@
 						<span class="badge bg-light text-dark ms-2"><xsl:value-of select="create_button_count"/></span>
 					</xsl:if>
 				</a>
+			</xsl:when>
+			<xsl:when test="application/case_officer/is_current_user and can_create_allocations = 0">
+				<button class="btn btn-secondary btn-sm shadow-sm" disabled="disabled">
+					<xsl:attribute name="title">
+						<xsl:value-of select="php:function('lang', 'no_allocations_to_create')" />
+					</xsl:attribute>
+					<i class="fas fa-check-circle me-2"></i>
+					<xsl:value-of select="php:function('lang', 'all_allocations_created')" />
+				</button>
 			</xsl:when>
 			<xsl:otherwise>
 				<button class="btn btn-success btn-sm shadow-sm" disabled="disabled">

@@ -56,7 +56,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 
 
 	useEffect(() => {
-		if (view === 'listWeek') {
+		if (view === 'listWeek' || view === 'listDay') {
 			return;
 		}
 		if (view === lastCalendarView) {
@@ -68,10 +68,29 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 
 	// Force day view when in calendar mode on mobile
 	useEffect(() => {
-		if (window.innerWidth < 601 && calendarViewMode === 'calendar' && view !== 'timeGridDay' && view !== 'listWeek') {
+		if (window.innerWidth < 601 && calendarViewMode === 'calendar' && view !== 'timeGridDay' && view !== 'listWeek' && view !== 'listDay') {
 			setView('timeGridDay');
 		}
 	}, [calendarViewMode, view]);
+
+	// Switch between listDay and listWeek on resize
+	useEffect(() => {
+		const handleResize = () => {
+			const isMobileSize = window.innerWidth < 601;
+
+			// Switch from listDay to listWeek when resizing to desktop
+			if (!isMobileSize && view === 'listDay') {
+				setView('listWeek');
+			}
+			// Switch from listWeek to listDay when resizing to mobile
+			else if (isMobileSize && view === 'listWeek') {
+				setView('listDay');
+			}
+		};
+
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, [view]);
 
 	// Auto-open ApplicationCrud when user logs in with pending recurring data
 	useEffect(() => {
@@ -144,6 +163,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 			case 'timeGridDay':
 				return 'bottom-start';
 			case 'listWeek':
+			case 'listDay':
 				return 'bottom-start';
 			default:
 				const el = popperAnchorEl;
@@ -187,11 +207,37 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 
 		const title = t('bookingfrontend.new application');
 
+		// Determine the start date/time
+		let startDate: Date | undefined;
+		let endDate: Date | undefined;
+
+		if (selectInfo?.start && selectInfo?.end) {
+			// User clicked/dragged on the calendar
+			startDate = selectInfo.start;
+			endDate = selectInfo.end;
+		} else {
+			// User clicked "New Application" button - use currentDate or next future day
+			const now = DateTime.now();
+			let baseDate = currentDate;
+
+			// If currentDate is in the past, use tomorrow
+			if (baseDate < now.startOf('day')) {
+				baseDate = now.plus({ days: 1 }).startOf('day');
+			}
+
+			// Set default time to 13:00 (1:00 PM)
+			const startTime = baseDate.set({ hour: 13, minute: 0, second: 0, millisecond: 0 });
+			const endTime = startTime.plus({ hours: 1 }); // Default 1 hour duration (13:00-14:00)
+
+			startDate = startTime.toJSDate();
+			endDate = endTime.toJSDate();
+		}
+
 		const newEvent: FCallTempEvent = {
 			id: `temp-${Date.now()}`,
 			title,
-			start: selectInfo?.start,
-			end: selectInfo?.end,
+			start: startDate,
+			end: endDate,
 			allDay: selectInfo?.allDay ?? false,
 			editable: true,
 			extendedProps: {
@@ -202,7 +248,7 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 		};
 		selectEvent(newEvent);
 		selectInfo?.view?.calendar.unselect(); // Clear selection
-	}, [t, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent]);
+	}, [t, enabledResources, currentBuilding?.id, currentBuilding?.deactivate_calendar, readOnly, isOrganizationMode, selectEvent, currentDate]);
 
 	return (
 		<React.Fragment>

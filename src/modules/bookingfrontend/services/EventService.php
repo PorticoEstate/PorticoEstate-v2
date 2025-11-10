@@ -18,6 +18,8 @@ class EventService
     private $bouser;
     public $repository;
     private $resourceRepository;
+    private $userSettings;
+    private $userTimezone;
 
     public function __construct()
     {
@@ -25,6 +27,12 @@ class EventService
         $this->bouser = new UserHelper();
         $this->repository = new EventRepository();
         $this->resourceRepository = new ResourceRepository();
+
+        // Get user settings and timezone for proper date handling
+        $this->userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+        $this->userTimezone = !empty($this->userSettings['preferences']['common']['timezone'])
+            ? $this->userSettings['preferences']['common']['timezone']
+            : 'Europe/Oslo';
     }
 
     private function patchEventMainData(array $data, array $existingEvent)
@@ -308,23 +316,39 @@ class EventService
 
 	/**
 	 * Normalize date format for database storage
+	 * Ensures all dates are stored in the user's configured timezone for consistency
 	 */
 	private function formatDateForDatabase($dateString): string
 	{
-		// Handle ISO format with timezone (e.g. "2004-09-21T08:00:00+02:00")
-		if (strpos($dateString, 'T') !== false) {
-			$dateTime = new DateTime($dateString);
-			// Convert to UTC if needed
-			return $dateTime->format('Y-m-d H:i:s');
-		}
+		try {
+			// Handle ISO format with timezone (e.g. "2004-09-21T08:00:00+02:00")
+			if (strpos($dateString, 'T') !== false) {
+				$dateTime = new \DateTime($dateString);
+				// Convert to user's timezone before storing
+				$userTz = new \DateTimeZone($this->userTimezone);
+				$dateTime->setTimezone($userTz);
+				$formatted = $dateTime->format('Y-m-d H:i:s');
+				error_log("EventService: formatDateForDatabase - Input: {$dateString}, User TZ: {$this->userTimezone}, Output: {$formatted}");
+				return $formatted;
+			}
 
-		// Handle timestamp in milliseconds (e.g. 1741777200000)
-		if (is_numeric($dateString) && strlen($dateString) > 10) {
-			return date('Y-m-d H:i:s', (int)$dateString / 1000);
-		}
+			// Handle timestamp in milliseconds (e.g. 1741777200000)
+			if (is_numeric($dateString) && strlen($dateString) > 10) {
+				$timestamp = (int)$dateString / 1000;
+				$dateTime = new \DateTime('@' . $timestamp); // Create from Unix timestamp
+				// Convert to user's timezone
+				$userTz = new \DateTimeZone($this->userTimezone);
+				$dateTime->setTimezone($userTz);
+				return $dateTime->format('Y-m-d H:i:s');
+			}
 
-		// If already in SQL format (e.g. "2000-03-14 08:00:00")
-		return $dateString;
+			// If already in SQL format (e.g. "2000-03-14 08:00:00"), assume it's already in user's timezone
+			return $dateString;
+		} catch (\Exception $e) {
+			error_log("Error formatting date for database: " . $e->getMessage() . " for input: " . $dateString);
+			// Fallback to original string
+			return $dateString;
+		}
 	}
 
 	/**

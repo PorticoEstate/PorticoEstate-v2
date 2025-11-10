@@ -11,6 +11,7 @@ import ResourceCircles from "@/components/resource-circles/resource-circles";
 import {default as NXLink} from "next/link";
 import {Link, Checkbox, Button} from "@digdir/designsystemet-react";
 import { ArrowsCirclepathIcon, PersonFillIcon, TenancyIcon } from '@navikt/aksel-icons';
+import ClientPHPGWLink from '@/components/layout/header/ClientPHPGWLink';
 
 interface ApplicationsTableProps {
 	initialApplications?: { list: IApplication[], total_sum: number };
@@ -33,23 +34,41 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 
 	const columns: ColumnDef<IApplication>[] = [
 		{
-			id: 'id',
-			accessorFn: (row) => row.id,
-			header: '#',
+			id: 'name',
+			accessorFn: (row) => row.name,
+			header: t('bookingfrontend.title'),
 			meta: {
-				size: 0.5
+				size: 1
 			},
 			enableHiding: false,
 			cell: info => {
-				const id = info.getValue<number>();
+				const name = info.getValue<string>();
+				const id = info.row.original.id;
 				return (
 					<Link
 						asChild
 						color={'neutral'}
 					>
-						<NXLink href={`/user/applications/${id}`}>
-							{id}
-						</NXLink>
+						<ClientPHPGWLink strURL={'bookingfrontend/'} oArgs={{
+							menuaction: 'bookingfrontend.uiapplication.show',
+							id,
+							secret: info.row.original.secret
+						}}>
+							{name}
+						</ClientPHPGWLink>
+						{/*<NXLink*/}
+						{/*	href={`/user/applications/${id}`}*/}
+						{/*	style={{*/}
+						{/*		display: 'block',*/}
+						{/*		maxWidth: '100%',*/}
+						{/*		overflow: 'hidden',*/}
+						{/*		textOverflow: 'ellipsis',*/}
+						{/*		whiteSpace: 'nowrap'*/}
+						{/*	}}*/}
+						{/*	title={name}*/}
+						{/*>*/}
+						{/*	{name}*/}
+						{/*</NXLink>*/}
 					</Link>
 				);
 			},
@@ -62,7 +81,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 			sortingFn: (rowA, rowB) => {
 				const datesA = rowA.getValue('dates') as IApplicationDate[];
 				const datesB = rowB.getValue('dates') as IApplicationDate[];
-				
+
 				if (datesA.length === 0 && datesB.length === 0) return 0;
 				if (datesA.length === 0) return 1;
 				if (datesB.length === 0) return -1;
@@ -152,6 +171,30 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 		},
 
 		{
+			id: 'customer_organization_name',
+			accessorFn: (row) => row.customer_organization_name,
+			header: t('bookingfrontend.organization'),
+			cell: info => info.getValue<string | null>() || '-',
+			meta: {
+				size: 1,
+				filter: {
+					type: 'select' as const,
+					getUniqueValues: (data: IApplication[]) => {
+						const uniqueOrgs = Array.from(new Set(
+							data
+								.map(app => app.customer_organization_name)
+								.filter(org => org !== null && org !== undefined)
+						));
+						return uniqueOrgs.map(org => ({
+							label: org!,
+							value: org!
+						}));
+					}
+				}
+			}
+		},
+
+		{
 			id: 'customer_organization_number',
 			accessorFn: (row) => row.customer_organization_number,
 			header: t('bookingfrontend.organization number'),
@@ -182,15 +225,16 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 		},
 
 		{
-			id: 'contact_name',
-			accessorFn: (row) => row.contact_name,
-			header: t('bookingfrontend.contact'),
+			id: 'organizer',
+			accessorFn: (row) => row.organizer,
+			header: t('bookingfrontend.organizer'),
 		},
 
 		{
 			id: 'application_type',
 			accessorFn: (row) => row.application_type,
 			header: t('bookingfrontend.type'),
+			enableSorting: false,
 			meta: {
 				size: 0.5,
 				filter: {
@@ -244,6 +288,7 @@ const ApplicationsTable: FC<ApplicationsTableProps> = ({initialApplications}) =>
 				isLoading={isFetching}
 				storageId="applications-table"
 				defaultColumnVisibility={{
+					'customer_organization_name': false,
 					'customer_organization_number': false
 				}}
 				utilityHeader={{

@@ -7772,71 +7772,119 @@ function booking_upgrade0_2_112($oProc)
 	}
 }
 
+/**
+ * Update booking version from 0.2.113 to 0.2.114
+ *
+ */
 $test[] = '0.2.113';
 function booking_upgrade0_2_113($oProc)
 {
 	$oProc->m_odb->transaction_begin();
+	$location_obj = new Locations();
+	$location_id = $location_obj->get_id('booking', '.article');
 
-	// Create webhook subscriptions table
-	$oProc->CreateTable(
-		'bb_webhook_subscriptions',
-		array(
-			'fd' => array(
-				'id' => array('type' => 'auto', 'nullable' => false),
-				'subscription_id' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
-				'resource_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
-				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
-				'webhook_url' => array('type' => 'text', 'nullable' => false),
-				'change_types' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false, 'default' => 'created,updated,deleted'),
-				'client_state' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),
-				'secret_key' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),
-				'is_active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
-				'expires_at' => array('type' => 'timestamp', 'nullable' => false),
-				'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
-				'created_at' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
-				'last_notification_at' => array('type' => 'timestamp', 'nullable' => true),
-				'notification_count' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
-				'failure_count' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
-			),
-			'pk' => array('id'),
-			'fk' => array(
-				'phpgw_accounts' => array('created_by' => 'account_id')
-			),
-			'ix' => array(
-				array('resource_type', 'resource_id'),
-				array('is_active', 'expires_at')
-			),
-			'uc' => array('subscription_id')
-		)
-	);
+	if (!$location_id)
+	{
+		$location_obj->add('.article', 'article', 'booking');
+		$location_obj->add('.application', 'Application', 'booking');
 
-	// Create webhook delivery log table
-	$oProc->CreateTable(
-		'bb_webhook_delivery_log',
-		array(
-			'fd' => array(
-				'id' => array('type' => 'auto', 'nullable' => false),
-				'subscription_id' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
-				'change_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
-				'entity_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
-				'entity_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
-				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
-				'http_status_code' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
-				'response_time_ms' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
-				'error_message' => array('type' => 'text', 'nullable' => true),
-				'created_at' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
-			),
-			'pk' => array('id'),
-			'fk' => array(
-				'bb_webhook_subscriptions' => array('subscription_id' => 'subscription_id')
-			),
-			'ix' => array(
-				array('subscription_id', 'created_at'),
-				array('entity_type', 'entity_id')
-			),
-			'uc' => array()
-		)
-	);
+		$custom_config = CreateObject('admin.soconfig', $location_obj->get_id('booking', 'run'));
+
+		$receipt_section_common = $custom_config->add_section(
+			array(
+				'name'	=> 'payment',
+				'descr' => 'payment method config'
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_common['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'method',
+				'descr'		 => 'Payment method',
+				'choice'	 => array('Vipps'),
+			)
+		);
+
+		$receipt_section_vipps = $custom_config->add_section(
+			array(
+				'name'	=> 'Vipps',
+				'descr' => 'Vipps config'
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'base_url',
+				'descr'		 => 'base_url',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'client_id',
+				'descr'		 => 'client_id',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'password',
+				'name'		 => 'client_secret',
+				'descr'		 => 'client_secret',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'password',
+				'name'		 => 'subscription_key',
+				'descr'		 => 'subscription_key',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'msn',
+				'descr'		 => 'Merchant Serial Number',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'debug',
+				'descr'		 => 'debug',
+				'choice'	 => array(1),
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'active',
+				'descr'		 => 'Aktiv',
+				'choice'	 => array('active'),
+			)
+		);
+	}
+
 
 	if ($oProc->m_odb->transaction_commit())
 	{
@@ -7844,4 +7892,3 @@ function booking_upgrade0_2_113($oProc)
 		return $currentver;
 	}
 }
-

@@ -163,16 +163,16 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			{
 				calendarViewMode === 'calendar' &&
 				<ButtonGroup data-color='accent' className={styles.modeSelect}>
-					<Button variant={view !== 'listWeek' ? 'primary' : 'tertiary'}
+					<Button variant={view !== 'listWeek' && view !== 'listDay' ? 'primary' : 'tertiary'}
 							aria-current={'true'} data-size={'sm'}
 							className={'captialize subtle'} onClick={() => {
 						props.setLastCalendarView()
 					}}><CalendarIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
-					<Button variant={view === 'listWeek' ? 'primary' : 'tertiary'}
+					<Button variant={view === 'listWeek' || view === 'listDay' ? 'primary' : 'tertiary'}
 							data-size={'sm'}
 							className={'captialize subtle'} onClick={() => {
-						props.setView('listWeek')
+						props.setView(isMobile ? 'listDay' : 'listWeek')
 					}}><TableIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
 				</ButtonGroup>

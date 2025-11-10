@@ -1664,6 +1664,7 @@ SQL;
 				* 26550 som ikke er våre(owner_type_id = 5) skal ha 0.
 				* 26550 som er våre, skal ha 75.
 				* 26555 innleieboliger, skal ha 0.
+				* eksempel: 5369 skal 75.
 				*/
 
 

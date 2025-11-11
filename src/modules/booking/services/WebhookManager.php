@@ -31,10 +31,10 @@ class WebhookManager
 	 */
 	public function create(array $data): array
 	{
-		// Default resource_type to 'all' if not provided
-		if (empty($data['resource_type']))
+		// Default entity_type to 'all' if not provided
+		if (empty($data['entity_type']))
 		{
-			$data['resource_type'] = 'resource';
+			$data['entity_type'] = 'all';
 		}
 
 		// Validate notification URL is required
@@ -59,7 +59,7 @@ class WebhookManager
 		$expires_at = date('Y-m-d H:i:s', strtotime("+{$expirationMinutes} minutes"));
 
 		// Prepare values
-		$resource_type = $this->db->db_addslashes($data['resource_type']);
+		$entity_type = $this->db->db_addslashes($data['entity_type']);
 		$resource_id = isset($data['calendar_id']) ? (int)$data['calendar_id'] : null;
 		$webhook_url = $this->db->db_addslashes($data['webhook_url']);
 		$change_types = isset($data['change_types']) && is_array($data['change_types']) 
@@ -70,11 +70,11 @@ class WebhookManager
 
 		// Insert subscription
 		$sql = "INSERT INTO bb_webhook_subscriptions 
-				(subscription_id, resource_type, resource_id, webhook_url, change_types, 
+				(subscription_id, entity_type, resource_id, webhook_url, change_types, 
 				 client_state, secret_key, is_active, expires_at, created_by, created_at)
 				VALUES (
 					:subscription_id,
-					:resource_type,
+					:entity_type,
 					:resource_id,
 					:webhook_url,
 					:change_types,
@@ -88,7 +88,7 @@ class WebhookManager
 
 		$params = [
 			'subscription_id' => $subscription_id,
-			'resource_type' => $resource_type,
+			'entity_type' => $entity_type,
 			'resource_id' => $resource_id,
 			'webhook_url' => $webhook_url,
 			'change_types' => $this->db->db_addslashes($change_types),
@@ -105,7 +105,7 @@ class WebhookManager
 		{
 			$this->log->info('Webhook subscription created', [
 				'subscription_id' => $subscription_id,
-				'resource_type' => $data['resource_type'],
+				'entity_type' => $data['entity_type'],
 				'resource_id' => $data['resource_id'] ?? null
 			]);
 
@@ -113,7 +113,7 @@ class WebhookManager
 				'success' => true,
 				'subscription' => [
 					'subscription_id' => $subscription_id,
-					'resource_type' => $data['resource_type'],
+					'entity_type' => $data['entity_type'],
 					'resource_id' => $data['resource_id'] ?? null,
 					'webhook_url' => $data['webhook_url'],
 					'change_types' => explode(',', $change_types),
@@ -146,7 +146,7 @@ class WebhookManager
 		{
 			return [
 				'subscription_id' => $row['subscription_id'],
-				'resource_type' => $row['resource_type'],
+				'entity_type' => $row['entity_type'],
 				'resource_id' => $row['resource_id'],
 				'webhook_url' => $row['webhook_url'],
 				'change_types' => explode(',', $row['change_types']),
@@ -175,10 +175,10 @@ class WebhookManager
 		$sql = "SELECT * FROM bb_webhook_subscriptions WHERE 1=1";
 		$params = [];
 
-		if (isset($filters['resource_type']))
+		if (isset($filters['entity_type']))
 		{
-			$sql .= " AND resource_type = :resource_type";
-			$params['resource_type'] = $this->db->db_addslashes($filters['resource_type']);
+			$sql .= " AND entity_type = :entity_type";
+			$params['entity_type'] = $this->db->db_addslashes($filters['entity_type']);
 		}
 
 		if (isset($filters['resource_id']))
@@ -203,7 +203,7 @@ class WebhookManager
 		{
 			$subscriptions[] = [
 				'subscription_id' => $row['subscription_id'],
-				'resource_type' => $row['resource_type'],
+				'entity_type' => $row['entity_type'],
 				'resource_id' => $row['resource_id'],
 				'webhook_url' => $row['webhook_url'],
 				'change_types' => explode(',', $row['change_types']),

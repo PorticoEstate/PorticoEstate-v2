@@ -7905,7 +7905,7 @@ function booking_upgrade0_2_114($oProc)
 			'fd' => array(
 				'id' => array('type' => 'auto', 'nullable' => false),
 				'subscription_id' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
-				'resource_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+				'entity_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
 				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
 				'webhook_url' => array('type' => 'text', 'nullable' => false),
 				'change_types' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false, 'default' => 'created,updated,deleted'),
@@ -7924,7 +7924,7 @@ function booking_upgrade0_2_114($oProc)
 				'phpgw_accounts' => array('created_by' => 'account_id')
 			),
 			'ix' => array(
-				array('resource_type', 'resource_id'),
+				array('entity_type', 'resource_id'),
 				array('is_active', 'expires_at')
 			),
 			'uc' => array('subscription_id')

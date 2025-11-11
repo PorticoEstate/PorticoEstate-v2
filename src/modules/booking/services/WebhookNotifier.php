@@ -140,7 +140,7 @@ class WebhookNotifier
 			$sql = "SELECT * FROM bb_webhook_subscriptions 
 					WHERE is_active = 1 
 					AND expires_at > NOW()
-					AND resource_type IN (:entity_type, 'all')
+					AND entity_type IN (:entity_type, 'all')
 					AND (resource_id IS NULL OR resource_id IN ({$resource_idList}))";
 		}
 		else
@@ -148,7 +148,7 @@ class WebhookNotifier
 			$sql = "SELECT * FROM bb_webhook_subscriptions 
 					WHERE is_active = 1 
 					AND expires_at > NOW()
-					AND resource_type IN (:entity_type, 'all')
+					AND entity_type IN (:entity_type, 'all')
 					AND resource_id IS NULL";
 		}
 
@@ -211,7 +211,7 @@ class WebhookNotifier
 				[
 					'subscription_id' => $subscription['subscription_id'],
 					'change_type' => $change_type,
-					'resource_type' => $entity_type,
+					'entity_type' => $entity_type,
 					'resource_id' => $subscription['resource_id'],
 					'entity_type' => $entity_type,
 					'entityId' => $entity_data['id'],

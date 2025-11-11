@@ -776,6 +776,9 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			'form_url'		 => self::link(array(
 				'menuaction' => 'property.uitenant_claim.new'
 			)),
+			'cancel_url'	 => self::link(array(
+				'menuaction' => 'property.uitenant_claim.index'
+			)),
 			'b_account_data' => $b_account_data,
 			'values'		 => isset($values) ? $values : array(),
 			'select_name'	 => 'values[cat_id]',

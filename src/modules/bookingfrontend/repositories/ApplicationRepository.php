@@ -997,8 +997,11 @@ class ApplicationRepository
             $utcDate->setTimezone($osloTz);
 
             // Format for MySQL
-            return $utcDate->format('Y-m-d H:i:s');
+            $formatted = $utcDate->format('Y-m-d H:i:s');
+            error_log("ApplicationRepository: formatDateForDatabase - Input: {$dateString}, Output: {$formatted}");
+            return $formatted;
         }
+        error_log("ApplicationRepository: formatDateForDatabase - Input (no conversion): {$dateString}");
         return $dateString; // Already in correct format
     }
 

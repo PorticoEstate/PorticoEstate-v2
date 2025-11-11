@@ -14,16 +14,68 @@ use Exception;
  */
 class EmailService
 {
+    // Set to true to enable email content logging to /tmp for debugging
+    private static $DEBUG_EMAIL_LOGGING = true;
+
     private $settings;
     private $serverSettings;
+    private $userSettings;
     private $send;
     private $datetimeformat = 'Y-m-d H:i';
+    private $userTimezone;
 
     public function __construct()
     {
         $this->settings = Settings::getInstance();
         $this->serverSettings = $this->settings->get('server');
+        $this->userSettings = $this->settings->get('user');
         $this->send = new Send();
+
+        // Get user's timezone from preferences, default to Europe/Oslo
+        $this->userTimezone = !empty($this->userSettings['preferences']['common']['timezone'])
+            ? $this->userSettings['preferences']['common']['timezone']
+            : 'Europe/Oslo';
+    }
+
+    /**
+     * Format a datetime string with proper timezone handling
+     *
+     * @param string $datetimeString ISO 8601 datetime string (e.g., "2025-11-06T11:00:00+01:00")
+     * @param string $format Output format (default: 'Y-m-d H:i')
+     * @return string Formatted datetime in user's timezone
+     */
+    private function formatDateTime(string $datetimeString, string $format = null): string
+    {
+        if ($format === null) {
+            $format = $this->datetimeformat;
+        }
+
+        try {
+            // Parse the datetime string
+            // If the string has timezone info (e.g., "2025-11-07T11:00:00+01:00"), DateTime respects it
+            // If the string has no timezone info (e.g., "2025-11-07 12:00:00" from database),
+            // we must assume it's already in the user's timezone, not UTC
+            if (strpos($datetimeString, 'T') !== false || strpos($datetimeString, '+') !== false || strpos($datetimeString, 'Z') !== false) {
+                // ISO format with timezone - parse as-is
+                $datetime = new \DateTime($datetimeString);
+            } else {
+                // Plain datetime from database - assume it's in user's timezone
+                $datetime = new \DateTime($datetimeString, new \DateTimeZone($this->userTimezone));
+            }
+
+            // Ensure we're displaying in user's timezone
+            $userTz = new \DateTimeZone($this->userTimezone);
+            $datetime->setTimezone($userTz);
+
+            // Format and return
+            $result = $datetime->format($format);
+//            error_log("EmailService: formatDateTime - Input: {$datetimeString}, UserTZ: {$this->userTimezone}, Output: {$result}");
+            return $result;
+        } catch (\Exception $e) {
+            // Fallback to original behavior if parsing fails
+            error_log("Failed to parse datetime '{$datetimeString}': " . $e->getMessage());
+            return date($format, strtotime($datetimeString));
+        }
     }
 
     /**
@@ -42,7 +94,7 @@ class EmailService
 
         // Use the first application for common data (contact info, etc.)
         $primaryApplication = reset($applications);
-        
+
         // Skip if SMTP is not configured
         if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])) {
             return false;
@@ -56,34 +108,34 @@ class EmailService
             }
 
             // Get email settings
-            $from = isset($config['email_sender']) && $config['email_sender'] 
-                ? $config['email_sender'] 
+            $from = isset($config['email_sender']) && $config['email_sender']
+                ? $config['email_sender']
                 : "noreply<noreply@{$this->serverSettings['hostname']}>";
-            
+
             $reply_to = !empty($config['email_reply_to']) ? $config['email_reply_to'] : '';
-            
-            $external_site_address = !empty($config['external_site_address']) 
-                ? $config['external_site_address'] 
+
+            $external_site_address = !empty($config['external_site_address'])
+                ? $config['external_site_address']
                 : $this->serverSettings['webserver_url'];
 
             // Collect all resources and e-lock instructions from all applications
             $allResources = [];
             $allELockInstructions = [];
             $allAttachments = [];
-            
+
             foreach ($applications as $application) {
                 // Collect resources
                 if (!empty($application['resources'])) {
                     $allResources = array_merge($allResources, $application['resources']);
                 }
-                
+
                 // Get resources data for e-lock instructions
                 $resources = $this->getResourcesData($application['resources']);
                 $e_lock_instructions = $this->getELockInstructions($resources);
                 if (!empty($e_lock_instructions)) {
                     $allELockInstructions = array_merge($allELockInstructions, $e_lock_instructions);
                 }
-                
+
                 // Get attachments for accepted applications
                 if ($application['status'] == 'ACCEPTED') {
                     $attachments = $this->getRelatedFiles($application);
@@ -96,7 +148,7 @@ class EmailService
             // Remove duplicate resources and get resource names
             $allResources = array_unique($allResources);
             $resourcename = $this->getResourceNames($allResources);
-            
+
             // Remove duplicate e-lock instructions and attachments
             $allELockInstructions = array_unique($allELockInstructions);
             $allAttachments = array_unique($allAttachments, SORT_REGULAR);
@@ -106,6 +158,13 @@ class EmailService
             $link = $external_site_address . '/bookingfrontend/?menuaction=bookingfrontend.uiapplication.show&id=' . $primaryApplication['id'] . '&secret=' . $primaryApplication['secret'];
 
             $body = $this->buildEmailBodyForGroup($applications, $config, $created, $resourcename, $link, $allELockInstructions);
+
+            // Debug logging if enabled
+            if (self::$DEBUG_EMAIL_LOGGING) {
+                $debug_file = sys_get_temp_dir() . '/email_debug_' . date('Y-m-d_His') . '_group_app_' . $primaryApplication['id'] . '.html';
+                file_put_contents($debug_file, "Subject: {$subject}\n\nTo: {$primaryApplication['contact_email']}\n\nBody:\n{$body}");
+                error_log("DEBUG: Group email content saved to {$debug_file}");
+            }
 
             // Send the main email to the applicant
             $success = $this->send->msg(
@@ -126,10 +185,10 @@ class EmailService
             );
 
             // Send notification to building contacts for accepted applications
-            if ($primaryApplication['status'] == 'ACCEPTED' && 
-                isset($config['application_notify_on_accepted']) && 
+            if ($primaryApplication['status'] == 'ACCEPTED' &&
+                isset($config['application_notify_on_accepted']) &&
                 $config['application_notify_on_accepted'] == 1) {
-                
+
                 $this->sendBuildingNotificationForGroup($applications, $config, $resourcename, $from, $reply_to);
             }
 
@@ -166,14 +225,14 @@ class EmailService
             }
 
             // Get email settings
-            $from = isset($config['email_sender']) && $config['email_sender'] 
-                ? $config['email_sender'] 
+            $from = isset($config['email_sender']) && $config['email_sender']
+                ? $config['email_sender']
                 : "noreply<noreply@{$this->serverSettings['hostname']}>";
-            
+
             $reply_to = !empty($config['email_reply_to']) ? $config['email_reply_to'] : '';
-            
-            $external_site_address = !empty($config['external_site_address']) 
-                ? $config['external_site_address'] 
+
+            $external_site_address = !empty($config['external_site_address'])
+                ? $config['external_site_address']
                 : $this->serverSettings['webserver_url'];
 
             // Get resource names
@@ -188,11 +247,18 @@ class EmailService
             $link = $external_site_address . '/bookingfrontend/?menuaction=bookingfrontend.uiapplication.show&id=' . $application['id'] . '&secret=' . $application['secret'];
 
             $body = $this->buildEmailBody($application, $config, $created, $resourcename, $link, $e_lock_instructions);
-            
+
             // Get attachments for accepted applications
             $attachments = [];
             if ($application['status'] == 'ACCEPTED') {
                 $attachments = $this->getRelatedFiles($application);
+            }
+
+            // Debug logging if enabled
+            if (self::$DEBUG_EMAIL_LOGGING) {
+                $debug_file = sys_get_temp_dir() . '/email_debug_' . date('Y-m-d_His') . '_app_' . $application['id'] . '.html';
+                file_put_contents($debug_file, "Subject: {$subject}\n\nTo: {$application['contact_email']}\n\nBody:\n{$body}");
+                error_log("DEBUG: Email content saved to {$debug_file}");
             }
 
             // Send the main email to the applicant
@@ -214,10 +280,10 @@ class EmailService
             );
 
             // Send notification to building contacts for accepted applications
-            if ($application['status'] == 'ACCEPTED' && 
-                isset($config['application_notify_on_accepted']) && 
+            if ($application['status'] == 'ACCEPTED' &&
+                isset($config['application_notify_on_accepted']) &&
                 $config['application_notify_on_accepted'] == 1) {
-                
+
                 $this->sendBuildingNotification($application, $config, $resourcename, $from, $reply_to);
             }
 
@@ -304,10 +370,10 @@ class EmailService
     protected function getELockInstructions(array $resources): array
     {
         $instructions = [];
-        
+
         try {
             $bogeneric = CreateObject('booking.bogeneric');
-            
+
             foreach ($resources as $resource) {
                 if (!isset($resource['e_locks']) || !$resource['e_locks']) {
                     continue;
@@ -347,7 +413,7 @@ class EmailService
 
         if ($created) {
             $body = "<p>" . $config['application_mail_created'] . "</p>";
-            
+
             // Add combined application header
             $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner:</h3>";
             if (!empty($primaryApplication['name'])) {
@@ -356,15 +422,15 @@ class EmailService
             if (!empty($primaryApplication['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
-            
+
             // Show details for each application separately if they have different resources
             $body .= $this->buildApplicationDetailsSection($applications);
-            
+
             $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
         }
         elseif ($primaryApplication['status'] == 'PENDING') {
             $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
-            
+
             // Add combined application details
             $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner:</h3>";
             if (!empty($primaryApplication['name'])) {
@@ -373,14 +439,14 @@ class EmailService
             if (!empty($primaryApplication['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
-            
+
             // Show details for each application separately
             $body .= $this->buildApplicationDetailsSection($applications);
-            
+
             if (!empty($primaryApplication['comment'])) {
                 $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $primaryApplication['comment'] . '</p>';
             }
-            
+
             $body .= "<p>" . $config['application_mail_pending'] . "</p>";
             $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
         }
@@ -423,7 +489,7 @@ class EmailService
         }
         elseif ($primaryApplication['status'] == 'REJECTED') {
             $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
-            
+
             // Add combined application details
             $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner avslått:</h3>";
             if (!empty($primaryApplication['name'])) {
@@ -432,14 +498,14 @@ class EmailService
             if (!empty($primaryApplication['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
-            
+
             // Show details for each application separately
             $body .= $this->buildApplicationDetailsSection($applications);
-            
+
             if (!empty($primaryApplication['comment'])) {
                 $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $primaryApplication['comment'] . '</p>';
             }
-            
+
             $body .= '<p>' . $config['application_mail_rejected'] . ' <a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
         }
         else {
@@ -464,7 +530,7 @@ class EmailService
 
         if ($created) {
             $body = "<p>" . $config['application_mail_created'] . "</p>";
-            
+
             // Add application details
             $body .= "<h3>Søknadsdetaljer:</h3>";
             if (!empty($application['name'])) {
@@ -475,13 +541,13 @@ class EmailService
             }
             $body .= "<p><strong>Ressurs:</strong> " . $resourcename . "</p>";
             $body .= "<p><strong>Lokasjon:</strong> " . $application['building_name'] . "</p>";
-            
+
             // Add requested dates
             if (!empty($application['dates'])) {
                 $dates = [];
                 foreach ($application['dates'] as $date) {
-                    $from = date($this->datetimeformat, strtotime($date['from_']));
-                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $from = $this->formatDateTime($date['from_']);
+                    $to = $this->formatDateTime($date['to_']);
                     $dates[] = "\t{$from} - {$to}";
                 }
                 if (!empty($dates)) {
@@ -489,12 +555,12 @@ class EmailService
                     $body .= "<pre>" . implode("\n", $dates) . "</pre>";
                 }
             }
-            
+
             $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
         }
         elseif ($application['status'] == 'PENDING') {
             $body = "<p>Din søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . lang($application['status']) . '</p>';
-            
+
             // Add application details
             $body .= "<h3>Søknadsdetaljer:</h3>";
             if (!empty($application['name'])) {
@@ -503,13 +569,13 @@ class EmailService
             if (!empty($application['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $application['organizer'] . "</p>";
             }
-            
+
             // Add requested dates
             if (!empty($application['dates'])) {
                 $dates = [];
                 foreach ($application['dates'] as $date) {
-                    $from = date($this->datetimeformat, strtotime($date['from_']));
-                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $from = $this->formatDateTime($date['from_']);
+                    $to = $this->formatDateTime($date['to_']);
                     $dates[] = "\t{$from} - {$to}";
                 }
                 if (!empty($dates)) {
@@ -517,11 +583,11 @@ class EmailService
                     $body .= "<pre>" . implode("\n", $dates) . "</pre>";
                 }
             }
-            
+
             if (!empty($application['comment'])) {
                 $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $application['comment'] . '</p>';
             }
-            
+
             $body .= "<p>" . $config['application_mail_pending'] . "</p>";
             $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
         }
@@ -545,8 +611,8 @@ class EmailService
 
             foreach ($associations as $assoc) {
                 if ($assoc['active']) {
-                    $from = date($this->datetimeformat, strtotime($assoc['from_']));
-                    $to = date($this->datetimeformat, strtotime($assoc['to_']));
+                    $from = $this->formatDateTime($assoc['from_']);
+                    $to = $this->formatDateTime($assoc['to_']);
                     $adates[] = "\t{$from} - {$to}";
                     $cost += (float)$assoc['cost'];
 
@@ -647,7 +713,7 @@ class EmailService
         }
         elseif ($application['status'] == 'REJECTED') {
             $body = "<p>Din søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . " er " . lang($application['status']) . '</p>';
-            
+
             // Add application details
             $body .= "<h3>Søknadsdetaljer:</h3>";
             if (!empty($application['name'])) {
@@ -656,13 +722,13 @@ class EmailService
             if (!empty($application['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $application['organizer'] . "</p>";
             }
-            
+
             // Add requested dates
             if (!empty($application['dates'])) {
                 $dates = [];
                 foreach ($application['dates'] as $date) {
-                    $from = date($this->datetimeformat, strtotime($date['from_']));
-                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $from = $this->formatDateTime($date['from_']);
+                    $to = $this->formatDateTime($date['to_']);
                     $dates[] = "\t{$from} - {$to}";
                 }
                 if (!empty($dates)) {
@@ -670,11 +736,11 @@ class EmailService
                     $body .= "<pre>" . implode("\n", $dates) . "</pre>";
                 }
             }
-            
+
             if (!empty($application['comment'])) {
                 $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $application['comment'] . '</p>';
             }
-            
+
             $body .= '<p>' . $config['application_mail_rejected'] . ' <a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $application['id'] . '</a></p>';
         }
         else {
@@ -756,8 +822,8 @@ class EmailService
                 $associations = $this->getApplicationAssociations($application['id']);
                 foreach ($associations as $assoc) {
                     if ($assoc['active']) {
-                        $from_time = date($this->datetimeformat, strtotime($assoc['from_']));
-                        $to_time = date($this->datetimeformat, strtotime($assoc['to_']));
+                        $from_time = $this->formatDateTime($assoc['from_']);
+                        $to_time = $this->formatDateTime($assoc['to_']);
                         $allAdates[] = "\t{$from_time} - {$to_time}";
                     }
                 }
@@ -824,8 +890,8 @@ class EmailService
             $adates = [];
             foreach ($associations as $assoc) {
                 if ($assoc['active']) {
-                    $from_time = date($this->datetimeformat, strtotime($assoc['from_']));
-                    $to_time = date($this->datetimeformat, strtotime($assoc['to_']));
+                    $from_time = $this->formatDateTime($assoc['from_']);
+                    $to_time = $this->formatDateTime($assoc['to_']);
                     $adates[] = "\t{$from_time} - {$to_time}";
                 }
             }
@@ -879,7 +945,7 @@ class EmailService
 
         foreach ($applications as $application) {
             $section .= "<div style='border-left: 3px solid #007cba; padding-left: 10px; margin: 10px 0;'>";
-            
+
             // Use the application name (part name) as the header
             $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
             $section .= "<h4>{$applicationName} (ID: {$application['id']}):</h4>";
@@ -899,8 +965,8 @@ class EmailService
             if (!empty($application['dates'])) {
                 $dates = [];
                 foreach ($application['dates'] as $date) {
-                    $from = date($this->datetimeformat, strtotime($date['from_']));
-                    $to = date($this->datetimeformat, strtotime($date['to_']));
+                    $from = $this->formatDateTime($date['from_']);
+                    $to = $this->formatDateTime($date['to_']);
                     $dates[] = "\t{$from} - {$to}";
                 }
                 if (!empty($dates)) {
@@ -947,8 +1013,8 @@ class EmailService
 
             foreach ($associations as $assoc) {
                 if ($assoc['active']) {
-                    $from = date($this->datetimeformat, strtotime($assoc['from_']));
-                    $to = date($this->datetimeformat, strtotime($assoc['to_']));
+                    $from = $this->formatDateTime($assoc['from_']);
+                    $to = $this->formatDateTime($assoc['to_']);
                     $cost = (float)$assoc['cost'];
                     $costText = $cost > 0 ? " (kr " . number_format($cost, 2, ",", '.') . ")" : "";
                     $adates[] = "\t{$from} - {$to}{$costText}";

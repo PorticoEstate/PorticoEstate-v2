@@ -128,6 +128,15 @@
 					<xsl:value-of select="php:function('lang', 'create new claim')"/>
 				</xsl:attribute>
 			</input>
+
+			<xsl:variable name="lang_cancel">
+				<xsl:value-of select="php:function('lang', 'cancel')"/>
+			</xsl:variable>
+			<input type="button" class="pure-button pure-button-primary" name="cancel" value="{$lang_cancel}" onclick="window.location.href='{cancel_url}'">
+				<xsl:attribute name="title">
+					<xsl:value-of select="php:function('lang', 'cancel')"/>
+				</xsl:attribute>
+			</input>
 		</div>
 	</form>
 </xsl:template>

@@ -713,8 +713,13 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		$errors = [];
 
-		if (!empty($_POST['create']))
+		if (!empty($_POST['save']))
 		{
+			if (phpgw::is_repost()) //stop double clicks
+			{
+				phpgw::redirect_link('/index.php', array('menuaction' => 'property.uitenant_claim.index'));
+			}
+
 			$values = Sanitizer::get_var('values', 'string', 'POST');
 			$values['b_account_id'] = Sanitizer::get_var('b_account_id', 'int', 'POST');
 
@@ -738,20 +743,42 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			}
 			else
 			{
-				foreach ($errors as $error)
+
+				if (Sanitizer::get_var('phpgw_return_as') == 'json')
 				{
-					Cache::message_set($error, 'error');
+					return array(
+						'status' => 'error',
+						'id' => 0,
+						'message' => isset($errors) && $errors ? implode(', ', $errors) : ''
+					);
 				}
-				$claim_id = null;
+				else
+				{
+					foreach ($errors as $error)
+					{
+						Cache::message_set($error, 'error');
+					}
+					$claim_id = null;
+				}
 			}
+
 
 			if(!empty($_FILES['file']['name']) && $claim_id)
 			{
-				$this->_handle_files($claim_id);
+//				$this->_handle_files($claim_id);
 			}
 
 			if ($claim_id)
 			{
+				if (Sanitizer::get_var('phpgw_return_as') == 'json')
+				{
+					return array(
+						'status' => 'saved',
+						'id' => $claim_id,
+						'message' => isset($receipt['error']) && $receipt['error'] ? implode(', ', $receipt['error']) : ''
+					);
+				}
+
 				Cache::message_set(lang('Tenant claim') . " " . $claim_id . " " . lang("has been created"), 'message');
 				phpgw::redirect_link('/index.php', array(
 					'menuaction' => 'property.uitenant_claim.edit',
@@ -788,6 +815,9 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 				'type'		 => 'tenant_claim',
 				'order'		 => 'descr'
 			)),
+			'multi_upload_action'				 => phpgw::link('/index.php', array('menuaction' => 'property.uitenant_claim.handle_multi_upload_file')),
+			'multiple_uploader'					 => true,
+
 		);
 
 		$jqcal = createObject('phpgwapi.jqcal2');
@@ -797,7 +827,6 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		$function_msg	 = lang('new');
 		//		phpgwapi_jquery::load_widget('file-upload-minimum');
 
-		phpgwapi_jquery::formvalidator_generate(array());
 		$this->flags['app_header']	 = lang('property') . ' - ' . $appname . ': ' . $function_msg;
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
 
@@ -806,9 +835,11 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		phpgwapi_jquery::load_widget('core');
 		phpgwapi_jquery::load_widget('autocomplete');
-		phpgwapi_jquery::formvalidator_generate(array());
+		phpgwapi_jquery::formvalidator_generate(array('date', 'security', 'file'));
+		phpgwapi_jquery::load_widget('file-upload-minimum');
 
-		self::render_template_xsl(array('tenant_claim'), array(
+
+		self::render_template_xsl(array('tenant_claim', 'files', 'multi_upload_file_inline'), array(
 			'new' => $data
 		));
 	}

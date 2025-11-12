@@ -36,6 +36,12 @@
 			<xsl:attribute name="placeholder">
 				<xsl:value-of select="php:function('lang', 'search')"/>
 			</xsl:attribute>
+			<xsl:attribute name="data-validation">
+				<xsl:text>required</xsl:text>
+			</xsl:attribute>
+			<xsl:attribute name="data-validation-error-msg">
+				<xsl:value-of select="php:function('lang', 'location')"/>
+			</xsl:attribute>
 			</input>
 
 			<div id="location_container"/>
@@ -49,6 +55,13 @@
 				<xsl:attribute name="required">
 					<xsl:text>required</xsl:text>
 				</xsl:attribute>
+			<xsl:attribute name="data-validation">
+				<xsl:text>required</xsl:text>
+			</xsl:attribute>
+			<xsl:attribute name="data-validation-error-msg">
+				<xsl:text>Reskontro</xsl:text>
+			</xsl:attribute>
+
 			</select>
 		</div>		
 
@@ -57,6 +70,12 @@
 				<xsl:value-of select="php:function('lang', 'claim type')"/>
 			</label>
 			<select id="claim_type" name="values[claim_type]"  required="required" class="pure-input-3-4">
+			<xsl:attribute name="data-validation">
+				<xsl:text>required</xsl:text>
+			</xsl:attribute>
+			<xsl:attribute name="data-validation-error-msg">
+				<xsl:value-of select="php:function('lang', 'claim type')"/>
+			</xsl:attribute>
 			<option value="">-- Select --</option>
 			<xsl:apply-templates select="claim_types/options"/>
 			</select>
@@ -68,6 +87,12 @@
 				<xsl:value-of select="php:function('lang', 'Date')"/>
 			</label>
 			<input type="text" id="claim_date" name="values[claim_date]" value="" required="required" class="date pure-input-3-4">
+			<xsl:attribute name="data-validation">
+				<xsl:text>required</xsl:text>
+			</xsl:attribute>
+			<xsl:attribute name="data-validation-error-msg">
+				<xsl:value-of select="php:function('lang', 'Date')"/>
+			</xsl:attribute>
 				<xsl:attribute name="title">
 					<xsl:value-of select="php:function('lang', 'date_statustext')"/>
 				</xsl:attribute>
@@ -76,11 +101,13 @@
 		</div>
 
 		<div class="pure-control-group">
-			<label>
+			<label for="category">
 					<xsl:value-of select="php:function('lang', 'category')"/>
 			</label>
 			<xsl:call-template name="cat_select">
 				<xsl:with-param name="class">pure-input-3-4</xsl:with-param>
+				<xsl:with-param name="required">required</xsl:with-param>
+				<xsl:with-param name="id">category</xsl:with-param>
 			</xsl:call-template>
 		</div>
 
@@ -89,6 +116,12 @@
 				<xsl:value-of select="php:function('lang', 'amount')"/>
 			</label>
 			<input type="text" id="amount" name="values[amount]" value="" required="required" class="amount pure-input-3-4">
+			<xsl:attribute name="data-validation">
+				<xsl:text>required</xsl:text>
+			</xsl:attribute>
+			<xsl:attribute name="data-validation-error-msg">
+				<xsl:value-of select="php:function('lang', 'amount')"/>
+			</xsl:attribute>
 				<xsl:attribute name="title">
 					<xsl:value-of select="php:function('lang', 'amount_statustext')"/>
 				</xsl:attribute>
@@ -107,7 +140,7 @@
 			</textarea>
 		</div>
 
-		<div class="pure-control-group">
+		<!--div class="pure-control-group">
 			<label for='attachments'>
 				<xsl:value-of select="php:function('lang', 'attachments')"/>
 			</label>
@@ -116,14 +149,63 @@
 					<xsl:text>required</xsl:text>
 				</xsl:attribute>
 			</input>
+		</div-->
+		<div class="pure-control-group">
+			<label for="fileupload">
+				<xsl:value-of select="php:function('lang', 'Upload file')"/>
+			</label>
+			<div id="drop-area" class="pure-input-3-4 pure-custom">
+				<div style="border: 2px dashed #ccc; padding: 20px;">
+					<p>
+						<xsl:value-of select="php:function('lang', 'Upload multiple files with the file dialog, or by dragging and dropping images onto the dashed region')"/>
+					</p>
+					<div class="fileupload-buttonbar">
+						<div class="fileupload-buttons">
+							<!-- The fileinput-button span is used to style the file input field as button -->
+							<span class="fileinput-button pure-button">
+								<span>
+									<xsl:value-of select="php:function('lang', 'Add files')"/>
+									<xsl:text>...</xsl:text>
+								</span>
+								<input id="fileupload" type="file" name="files[]" multiple="multiple">
+									<xsl:attribute name="data-url">
+										<xsl:value-of select="multi_upload_action"/>
+									</xsl:attribute>
+									<xsl:attribute name="required">
+										<xsl:text>required</xsl:text>
+									</xsl:attribute>
+									<!--xsl:attribute name="capture">camera</xsl:attribute-->
+								</input>
+							</span>
+							<!-- The global file processing state -->
+							<span class="fileupload-process"></span>
+						</div>
+						<div class="fileupload-count">
+							<xsl:value-of select="php:function('lang', 'Number files')"/>: 
+							<span id="files-count"></span>
+						</div>
+						<div class="fileupload-progress" style="display:none">
+							<!-- The global progress bar -->
+							<div id = 'progress' class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"></div>
+							<!-- The extended global progress state -->
+							<div class="progress-extended">&nbsp;</div>
+						</div>
+					</div>
+					<!-- The table listing the files available for upload/download -->
+					<div class="content_upload_download">
+						<div class="presentation files" style="display: inline-table;"></div>
+					</div>
+				</div>
+			</div>
 		</div>
-
-
+		<input type="hidden" id="save" name="save" value=""/>
+		<input type="hidden" id="apply" name="apply" value=""/>
+		<input type="hidden" id="cancel" name="cancel" value=""/>
 		<div class="pure-control-group">
 			<xsl:variable name="lang_create_new_claim">
 				<xsl:value-of select="php:function('lang', 'save')"/>
 			</xsl:variable>
-			<input type="submit" class="pure-button pure-button-primary" name="create" value="{$lang_create_new_claim}">
+			<input type="button" class="pure-button pure-button-primary" name="create" value="{$lang_create_new_claim}" onClick="confirm_session('save');">
 				<xsl:attribute name="title">
 					<xsl:value-of select="php:function('lang', 'create new claim')"/>
 				</xsl:attribute>
@@ -430,29 +512,28 @@
 						<xsl:value-of select="value_remark"/>
 					</textarea>
 				</div>
+				<div class="pure-control-group">
+					<label>
+						<xsl:value-of select="php:function('lang', 'files')"/>
+					</label>
+					<!--div id="paging_1"> </div-->
+					<div class="pure-u-md-3-4">
+						<xsl:for-each select="datatable_def">
+							<xsl:if test="container = 'datatable-container_1'">
+								<xsl:call-template name="table_setup">
+									<xsl:with-param name="container" select ='container'/>
+									<xsl:with-param name="requestUrl" select ='requestUrl' />
+									<xsl:with-param name="ColumnDefs" select ='ColumnDefs' />
+									<xsl:with-param name="tabletools" select ='tabletools' />
+									<xsl:with-param name="data" select ='data' />
+									<xsl:with-param name="config" select ='config' />
+								</xsl:call-template>
+							</xsl:if>
+						</xsl:for-each>
+					</div>
+				</div>
 				<xsl:choose>
 					<xsl:when test="value_claim_id!='' and mode='edit'">
-						<div class="pure-control-group">
-							<label>
-								<xsl:value-of select="php:function('lang', 'files')"/>
-							</label>
-							<div id="paging_1"> </div>
-							<!--div id="datatable-container_1"/-->
-							<div class="pure-custom" style="width: 100%;">
-								<xsl:for-each select="datatable_def">
-									<xsl:if test="container = 'datatable-container_1'">
-										<xsl:call-template name="table_setup">
-											<xsl:with-param name="container" select ='container'/>
-											<xsl:with-param name="requestUrl" select ='requestUrl' />
-											<xsl:with-param name="ColumnDefs" select ='ColumnDefs' />
-											<xsl:with-param name="tabletools" select ='tabletools' />
-											<xsl:with-param name="data" select ='data' />
-											<xsl:with-param name="config" select ='config' />
-										</xsl:call-template>
-									</xsl:if>
-								</xsl:for-each>
-							</div>
-						</div>
 						<xsl:call-template name="file_upload"/>
 					</xsl:when>
 				</xsl:choose>

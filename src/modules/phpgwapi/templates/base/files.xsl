@@ -15,11 +15,12 @@
 	<xsl:param name="section" />
 	<xsl:param name="class" />
 	<xsl:param name="capture" />
+	<xsl:param name="required" />
 	
 	<div class="pure-control-group">
 		<xsl:choose>
 			<xsl:when test="multiple_uploader=1">
-				<label>
+				<label for="fileupload{$section}">
 					<xsl:value-of select="php:function('lang', 'upload files')"/>
 				</label>
 
@@ -39,6 +40,9 @@
 							</xsl:with-param>
 							<xsl:with-param name="capture">
 								<xsl:value-of select="$capture"/>
+							</xsl:with-param>
+							<xsl:with-param name="required">
+								<xsl:value-of select="$required"/>
 							</xsl:with-param>
 						</xsl:call-template>
 

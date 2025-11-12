@@ -290,7 +290,8 @@ $(document).ready(function ()
 				var file_size = formatFileSize(file.size);
 
 				data.context = $('<p class="file">')
-					.append($('<span>').text(data.files[0].name + ' ' + file_size))
+					.append($('<span class="file-name">').text(data.files[0].name + ' ' + file_size))
+					.append($('<span class="file-progress" style="margin-left: 10px; color: #666;"></span>'))
 					.appendTo($(".content_upload_download"))
 					.append($('<button type="button" class="start_file_upload" style="display:none">start</button>')
 						.click(function ()
@@ -308,6 +309,7 @@ $(document).ready(function ()
 		{
 			var progress = parseInt((data.loaded / data.total) * 100, 10);
 			data.context.css("background-position-x", 100 - progress + "%");
+			data.context.find('.file-progress').text(' (' + progress + '%)');
 		},
 		done: function (e, data)
 		{
@@ -319,13 +321,14 @@ $(document).ready(function ()
 			{
 				data.context
 					.removeClass("file")
-					.addClass("error")
-					.append($('<span>').text(' Error: ' + result.files[0].error));
+					.addClass("error");
+				data.context.find('.file-progress').text(' Error: ' + result.files[0].error).css('color', 'red');
 			}
 			else
 			{
 				data.context
 					.addClass("done");
+				data.context.find('.file-progress').text(' (100% - ferdig)').css('color', 'green');
 			}
 
 			if (file_count === pendingList)

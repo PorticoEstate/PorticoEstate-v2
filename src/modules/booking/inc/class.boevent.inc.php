@@ -389,8 +389,9 @@ class booking_boevent extends booking_bocommon_authorized
 		// Send webhook notification (async, after response)
 		try
 		{
+			$change_type = $entity['active'] == 1 ? 'updated' : 'deleted';
 			$webhookNotifier = new \App\modules\booking\services\WebhookNotifier();
-			$webhookNotifier->notifyChange('event', 'updated', $event_id, $resource_ids);
+			$webhookNotifier->notifyChange('event', $change_type, $event_id, $resource_ids);
 		}
 		catch (Exception $e)
 		{

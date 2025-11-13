@@ -176,22 +176,64 @@ class WebhookNotifier
 	 */
 	private function loadEntityData(string $entity_type, int $entityId): ?array
 	{
+		$data = null;
+		
 		switch ($entity_type)
 		{
 			case 'event':
 				$bo = CreateObject('booking.boevent');
-				return $bo->read_single($entityId);
+				$data = $bo->read_single($entityId);
+				break;
 
 			case 'allocation':
 				$bo = CreateObject('booking.boallocation');
-				return $bo->read_single($entityId);
+				$data = $bo->read_single($entityId);
+				break;
 
 			case 'booking':
 				$bo = CreateObject('booking.bobooking');
-				return $bo->read_single($entityId);
+				$data = $bo->read_single($entityId);
+				break;
 
 			default:
 				return null;
+		}
+		
+		// Add timezone information to datetime fields
+		if ($data && isset($data['from_']))
+		{
+			$data['from_'] = $this->addTimezoneToDatetime($data['from_']);
+		}
+		if ($data && isset($data['to_']))
+		{
+			$data['to_'] = $this->addTimezoneToDatetime($data['to_']);
+		}
+		
+		return $data;
+	}
+	
+	/**
+	 * Add timezone information to datetime string
+	 */
+	private function addTimezoneToDatetime(string $datetime): string
+	{
+		// If datetime already has timezone info, return as is
+		if (strpos($datetime, '+') !== false || strpos($datetime, 'Z') !== false)
+		{
+			return $datetime;
+		}
+		
+		// Parse the datetime and add Europe/Oslo timezone
+		try
+		{
+			$dt = new \DateTime($datetime, new \DateTimeZone('Europe/Oslo'));
+			// Return in ISO 8601 format with timezone
+			return $dt->format('Y-m-d\TH:i:sP');
+		}
+		catch (\Exception $e)
+		{
+			// If parsing fails, return original
+			return $datetime;
 		}
 	}
 
@@ -264,7 +306,7 @@ class WebhookNotifier
 		{
 			$headers[] = 'X-Booking-Signature: sha256=' . $signature;
 		}
-
+//_debug_array($payloadJson);die();
 		// Send HTTP POST request (following OutlookHelper pattern)
 		$ch = curl_init($url);
 		curl_setopt($ch, CURLOPT_POST, true);

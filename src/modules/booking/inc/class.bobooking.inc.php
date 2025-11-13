@@ -2583,8 +2583,9 @@ phpgw::import_class('booking.bocommon_authorized');
 			// Send webhook notification (async, after response)
 			try
 			{
+				$change_type = $entity['active'] == 1 ? 'updated' : 'deleted';
 				$webhookNotifier = new \App\modules\booking\services\WebhookNotifier();
-				$webhookNotifier->notifyChange('booking', 'updated', $booking_id, $resource_ids);
+				$webhookNotifier->notifyChange('booking', $change_type, $booking_id, $resource_ids);
 			}
 			catch (Exception $e)
 			{

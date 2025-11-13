@@ -369,8 +369,9 @@
 			try
 			{
 
+				$change_type = $entity['active'] == 1 ? 'updated' : 'deleted';
 				$webhookNotifier = new \App\modules\booking\services\WebhookNotifier();
-				$webhookNotifier->notifyChange('allocation', 'updated', $allocation_id, $resource_ids);
+				$webhookNotifier->notifyChange('allocation', $change_type, $allocation_id, $resource_ids);
 			}
 			catch (Exception $e)
 			{

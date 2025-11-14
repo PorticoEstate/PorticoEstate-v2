@@ -616,10 +616,11 @@ class EmailService
                     $adates[] = "\t{$from} - {$to}";
                     $cost += (float)$assoc['cost'];
 
-                    // Store approved timestamps for comparison
+                    // Store approved datetime strings (normalized to Oslo time) for comparison
+                    // Using formatted strings avoids timezone conversion issues
                     $approvedTimestamps[] = [
-                        'from' => strtotime($assoc['from_']),
-                        'to' => strtotime($assoc['to_'])
+                        'from' => $from,
+                        'to' => $to
                     ];
                 }
             }
@@ -649,8 +650,13 @@ class EmailService
                         }
 
                         if (!$isApproved) {
-                            $from = date($this->datetimeformat, $attemptedDate['from']);
-                            $to = date($this->datetimeformat, $attemptedDate['to']);
+                            // attemptedDate contains Unix timestamps, convert to datetime string first
+                            $fromDatetime = new \DateTime('@' . $attemptedDate['from']);
+                            $fromDatetime->setTimezone(new \DateTimeZone($this->userTimezone));
+                            $toDatetime = new \DateTime('@' . $attemptedDate['to']);
+                            $toDatetime->setTimezone(new \DateTimeZone($this->userTimezone));
+                            $from = $fromDatetime->format($this->datetimeformat);
+                            $to = $toDatetime->format($this->datetimeformat);
                             $notApprovedDates[] = "\t{$from} - {$to}";
                         }
                     }
@@ -659,13 +665,15 @@ class EmailService
                 // For non-recurring applications, compare requested dates with approved dates
                 if (!empty($application['dates'])) {
                     foreach ($application['dates'] as $requestedDate) {
-                        $requestedFrom = strtotime($requestedDate['from_']);
-                        $requestedTo = strtotime($requestedDate['to_']);
+                        // Format requested dates to Oslo time strings (same format as approved dates)
+                        $requestedFrom = $this->formatDateTime($requestedDate['from_']);
+                        $requestedTo = $this->formatDateTime($requestedDate['to_']);
 
                         // Check if this requested time matches any approved time
+                        // Compare normalized Oslo time strings directly
                         $isApproved = false;
                         foreach ($approvedTimestamps as $approved) {
-                            if ($requestedFrom == $approved['from'] && $requestedTo == $approved['to']) {
+                            if ($requestedFrom === $approved['from'] && $requestedTo === $approved['to']) {
                                 $isApproved = true;
                                 break;
                             }
@@ -673,9 +681,7 @@ class EmailService
 
                         // If not approved, add to the not approved list
                         if (!$isApproved) {
-                            $from = date($this->datetimeformat, $requestedFrom);
-                            $to = date($this->datetimeformat, $requestedTo);
-                            $notApprovedDates[] = "\t{$from} - {$to}";
+                            $notApprovedDates[] = "\t{$requestedFrom} - {$requestedTo}";
                         }
                     }
                 }

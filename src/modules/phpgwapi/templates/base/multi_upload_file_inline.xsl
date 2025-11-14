@@ -5,6 +5,7 @@
 	<xsl:param name="multi_upload_action" />
 	<xsl:param name="capture" />
 	<xsl:param name="section" />
+	<xsl:param name="required" />
 
 	<style>
 		.file {
@@ -51,6 +52,14 @@
 							<xsl:if test="$capture !=''">
 								<xsl:attribute name="capture">
 									<xsl:value-of select="$capture"/>
+								</xsl:attribute>
+							</xsl:if>
+							<xsl:if test="$required != ''">
+								<xsl:attribute name="data-validation">
+									<xsl:text>required</xsl:text>
+								</xsl:attribute>
+								<xsl:attribute name="required">
+									<xsl:text>required</xsl:text>
 								</xsl:attribute>
 							</xsl:if>
 

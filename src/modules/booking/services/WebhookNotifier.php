@@ -18,6 +18,7 @@ class WebhookNotifier
 	private $api_key;
 	private $webhook_secret;
 	private $webhook_enabled;
+	private $resource_bo;
 
 	public function __construct()
 	{
@@ -28,6 +29,7 @@ class WebhookNotifier
 		$location_obj = new Locations();
 		$location_id = $location_obj->get_id('booking', 'run');
 		$custom_config_data = (new ConfigLocation($location_id))->read();
+		$this->resource_bo = CreateObject('booking.boresource');
 
 		if (!empty($custom_config_data['Outlook']['api_key']))
 		{
@@ -248,6 +250,25 @@ class WebhookNotifier
 		array $resource_ids
 	): array
 	{
+		if (!empty($resource_ids))
+		{
+			$resources = $this->resource_bo->so->read(array(
+				'sort'    => 'sort',
+				'results' => 'all',
+				'filters' => array('id' => $resource_ids),
+				'results' => 'all'
+			));
+			$resource_names = array();
+			if ($resources['results'])
+			{
+				foreach ($resources['results'] as $resource)
+				{
+					$resource_names[] = $resource['name'];
+				}
+			}
+			$entity_data['resource_names'] = implode(', ', $resource_names);
+		}
+		
 		return [
 			'value' => [
 				[
@@ -260,7 +281,7 @@ class WebhookNotifier
 					'entity_data' => $entity_data,
 					'clientState' => $subscription['client_state'],
 					'timestamp' => date('Y-m-d\TH:i:s\Z'),
-					'resources' => $resource_ids
+					'resources' => $resource_ids,
 				]
 			]
 		];

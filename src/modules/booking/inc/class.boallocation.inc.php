@@ -315,7 +315,7 @@
 			$result = parent::add($entity);
 
 			// Get the new allocation ID
-			$allocation_id = $result;
+			$allocation_id = $result['id'];
 
 			// Get resource IDs if present
 			$resource_ids = array();

@@ -2530,7 +2530,7 @@ phpgw::import_class('booking.bocommon_authorized');
 			$result = parent::add($entity);
 
 			// Get the new booking ID
-			$booking_id = $result;
+			$booking_id = $result['id'];
 
 			// Get resource IDs if present
 			$resource_ids = array();

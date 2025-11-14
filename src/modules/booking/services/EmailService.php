@@ -15,7 +15,7 @@ use Exception;
 class EmailService
 {
     // Set to true to enable email content logging to /tmp for debugging
-    private static $DEBUG_EMAIL_LOGGING = false;
+    private static $DEBUG_EMAIL_LOGGING = true;
 
     private $settings;
     private $serverSettings;
@@ -68,7 +68,9 @@ class EmailService
             $datetime->setTimezone($userTz);
 
             // Format and return
-            return $datetime->format($format);
+            $result = $datetime->format($format);
+//            error_log("EmailService: formatDateTime - Input: {$datetimeString}, UserTZ: {$this->userTimezone}, Output: {$result}");
+            return $result;
         } catch (\Exception $e) {
             // Fallback to original behavior if parsing fails
             error_log("Failed to parse datetime '{$datetimeString}': " . $e->getMessage());

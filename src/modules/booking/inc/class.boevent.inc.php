@@ -423,9 +423,6 @@ class booking_boevent extends booking_bocommon_authorized
 			$resource_ids = $event['resources'];
 		}
 
-		// Call parent delete method
-		$result = parent::delete($id);
-
 		// Send webhook notification (async, after response)
 		try
 		{
@@ -445,6 +442,9 @@ class booking_boevent extends booking_bocommon_authorized
 				'file' => __FILE__
 			));
 		}
+
+		// Call parent delete method
+		$result = parent::delete($id);
 
 		return $result;
 	}

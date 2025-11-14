@@ -7898,7 +7898,7 @@ function booking_upgrade0_2_114($oProc)
 {
 	$oProc->m_odb->transaction_begin();
 
-	// Create webhook subscriptions table
+ 	// Create webhook subscriptions table
 	$oProc->CreateTable(
 		'bb_webhook_subscriptions',
 		array(
@@ -7958,6 +7958,63 @@ function booking_upgrade0_2_114($oProc)
 			'uc' => array()
 		)
 	);
+ 
+	$location_obj = new Locations();
+
+	$custom_config = CreateObject('admin.soconfig', $location_obj->get_id('booking', 'run'));
+
+
+	$receipt_Outlook = $custom_config->add_section(
+		array(
+			'name' => 'Outlook',
+			'descr' => 'Outlook webhook configuration'
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_Outlook['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'baseurl',
+			'descr'			=> 'Base URL',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_Outlook['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'tenant_id',
+			'descr'			=> 'Tenant ID',
+			'value'			=> '',
+		)
+	);
+
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_Outlook['section_id'],
+			'input_type'	=> 'password',
+			'name'			=> 'api_key',
+			'descr'			=> 'API Key',
+			'value'			=> '',
+		)
+	);
+
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_Outlook['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'webhook_enabled',
+			'descr'			=> 'Enable Webhooks',
+			'choice'		=> array('active'),
+			'value'			=> [],
+		)
+	);
+
+
 
 	if ($oProc->m_odb->transaction_commit())
 	{

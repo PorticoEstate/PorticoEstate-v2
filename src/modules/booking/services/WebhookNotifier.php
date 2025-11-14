@@ -16,7 +16,6 @@ class WebhookNotifier
 	private $db;
 	private $log;
 	private $api_key;
-	private $webhook_secret;
 	private $webhook_enabled;
 	private $resource_bo;
 
@@ -35,17 +34,13 @@ class WebhookNotifier
 		{
 			$this->api_key = $custom_config_data['Outlook']['api_key'];
 		}
-		if (!empty($custom_config_data['Outlook']['webhook_secret']))
-		{
-			$this->webhook_secret = $custom_config_data['Outlook']['webhook_secret'];
-		}
-		if (isset($custom_config_data['Outlook']['webhook_enabled']))
+		if (!empty($custom_config_data['Outlook']['webhook_enabled']))
 		{
 			$this->webhook_enabled = (bool)$custom_config_data['Outlook']['webhook_enabled'];
 		}
 		else
 		{
-			$this->webhook_enabled = true; // Default to enabled
+			$this->webhook_enabled = false; // Default to disabled
 		}
 	}
 

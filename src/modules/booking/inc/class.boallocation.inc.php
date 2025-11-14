@@ -402,9 +402,6 @@
 				$resource_ids = $allocation['resources'];
 			}
 
-			// Call parent delete method
-			$result = parent::delete($id);
-
 			try
 			{
 				$webhookNotifier = new \App\modules\booking\services\WebhookNotifier();
@@ -421,7 +418,10 @@
 					'line' => __LINE__,
 					'file' => __FILE__
 				));
-			}		
+			}
+
+			// Call parent delete method
+			$result = parent::delete_allocation($id);
 
 			return $result;
 		}

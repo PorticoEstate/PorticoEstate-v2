@@ -2529,7 +2529,7 @@ phpgw::import_class('booking.bocommon_authorized');
 			// Call parent add method
 			$result = parent::add($entity);
 
-			// Get the new booking ID
+/* 			// Get the new booking ID
 			$booking_id = $result['id'];
 
 			// Get resource IDs if present
@@ -2558,7 +2558,7 @@ phpgw::import_class('booking.bocommon_authorized');
 				));
 
 			}
-
+ */
 			return $result;
 		}
 
@@ -2569,7 +2569,7 @@ phpgw::import_class('booking.bocommon_authorized');
 		{
 			// Call parent update method
 			$result = parent::update($entity);
-
+/* 
 			// Get booking ID
 			$booking_id = $entity['id'];
 
@@ -2599,7 +2599,7 @@ phpgw::import_class('booking.bocommon_authorized');
 					'file' => __FILE__
 				));
 			}
-
+ */
 			return $result;
 		}
 
@@ -2608,6 +2608,7 @@ phpgw::import_class('booking.bocommon_authorized');
 		 */
 		function delete($id)
 		{
+/* 
 			// Get booking data before deletion (to get resource IDs)
 			$booking = $this->read_single($id);
 			$resource_ids = array();
@@ -2615,9 +2616,6 @@ phpgw::import_class('booking.bocommon_authorized');
 			{
 				$resource_ids = $booking['resources'];
 			}
-
-			// Call parent delete method
-			$result = parent::delete($id);
 
 			// Send webhook notification (async, after response)
 			try
@@ -2637,6 +2635,9 @@ phpgw::import_class('booking.bocommon_authorized');
 					'file' => __FILE__
 				));
 			}
+ */
+			// Call parent delete method
+			$result = parent::delete($id);
 
 			return $result;
 		}

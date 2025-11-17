@@ -111,12 +111,16 @@ class CheckoutController
                 if ($has_direct_booking) {
                     $messages = array(
                         'one' => array(
-                            'registered' => 'application_processed_single',
-                            'review' => ''
+							'registered' => 'application_registered_single',
+							'review' => 'case_officer_review_single'
+//                            'registered' => 'application_processed_single',
+//                            'review' => ''
                         ),
                         'multiple' => array(
-                            'registered' => 'applications_processed_multiple',
-                            'review' => ''
+							'registered' => 'applications_registered_multiple',
+							'review' => 'case_officer_review_multiple'
+//                            'registered' => 'applications_processed_multiple',
+//                            'review' => ''
                         )
                     );
                 } else {
@@ -322,7 +326,7 @@ class CheckoutController
         } catch (Exception $e) {
             // Log the error but don't expose sensitive configuration details
             error_log("External payment eligibility check failed: " . $e->getMessage());
-            
+
             // Return a safe error response
             return ResponseHelper::sendJSONResponse([
                 'eligible' => false,
@@ -387,14 +391,24 @@ class CheckoutController
 
             // 1. Validate and update applications with contact info
             try {
+                // First check if any applications have recurring data - Vipps is not allowed for recurring bookings
+                $applications = $this->applicationService->getPartialApplications($session_id);
+                foreach ($applications as $application) {
+                    if (!empty($application['recurring_info'])) {
+                        return ResponseHelper::sendErrorResponse([
+                            'error' => lang('recurring_not_vipps_eligible')
+                        ], 400);
+                    }
+                }
+
                 $updatedApplications = $this->applicationService->updateApplicationsWithContactInfo($session_id, $data, false);
 
                 // 2. Separate applications into direct bookings and normal applications
                 $directApplications = [];
                 $normalApplications = [];
-                
+
                 $currentUnixTime = time();
-                
+
                 foreach ($updatedApplications as $application) {
                     $isDirectBooking = false;
                     if (isset($application['resources']) && is_array($application['resources'])) {
@@ -408,7 +422,7 @@ class CheckoutController
                             }
                         }
                     }
-                    
+
                     if ($isDirectBooking) {
                         $directApplications[] = $application;
                     } else {
@@ -422,7 +436,7 @@ class CheckoutController
                     // Store current partial applications and restore only normal ones for checkout
                     $session = Sessions::getInstance();
                     $originalPartials = $this->applicationService->getPartialApplications($session_id);
-                    
+
                     // Temporarily clear partials and add only normal applications
                     $uiApplication = CreateObject('booking.uiapplication');
                     foreach ($originalPartials as $original) {
@@ -431,10 +445,10 @@ class CheckoutController
                             $uiApplication->remove_partial($session_id, $original['id']);
                         }
                     }
-                    
+
                     // Submit normal applications
                     $normalResult = $this->applicationService->checkoutPartials($session_id, $data);
-                    
+
                     // Restore direct applications to partial state for payment
                     foreach ($directApplications as $directApp) {
                         $uiApplication->add_partial($directApp, $session_id);
@@ -606,7 +620,7 @@ class CheckoutController
     {
         try {
             $payment_order_id = $args['payment_order_id'] ?? '';
-            
+
             if (empty($payment_order_id)) {
                 return ResponseHelper::sendErrorResponse(
                     ['error' => 'payment_order_id is required'],

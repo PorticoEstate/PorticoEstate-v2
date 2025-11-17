@@ -2610,7 +2610,7 @@ class property_solocation
 	 *
 	 * @return array array of hits
 	 */
-	public function get_locations($location_code, $level = null)
+	public function get_locations($location_code, $level = null, $get_tenant_name = false)
 	{
 
 		$config = $this->soadmin_location->read_config('');
@@ -2634,8 +2634,8 @@ class property_solocation
 		$limit_search	 = 10;
 		if (ctype_digit($location_arr[0]))
 		{
-			$filtermethod1	 = "WHERE location_code {$this->like} '{$location_code}%' AND category !='99'";
-			$filtermethod2	 = $filtermethod1;
+			$filtermethod1	 = "WHERE fm_location{$current_level}.location_code {$this->like} '{$location_code}%' AND fm_location{$current_level}.category !='99'";
+			$filtermethod2	 = "WHERE fm_location{$next_level}.location_code {$this->like} '{$location_code}%' AND fm_location{$next_level}.category !='99'";
 		}
 		else
 		{
@@ -2644,8 +2644,8 @@ class property_solocation
 			$current_level	 = $level ? $level : 1;
 			$next_level		 = $current_level + 1;
 			$query			 = $this->db->db_addslashes($location_arr[0]);
-			$filtermethod1	 = "WHERE loc{$current_level}_name {$this->like} '%{$query}%' AND category !='99'";
-			$filtermethod2	 = "WHERE loc{$next_level}_name {$this->like} '%{$query}%' AND category !='99'";
+			$filtermethod1	 = "WHERE fm_location{$current_level}.loc{$current_level}_name {$this->like} '%{$query}%' AND fm_location{$current_level}.category !='99'";
+			$filtermethod2	 = "WHERE fm_location{$next_level}.loc{$next_level}_name {$this->like} '%{$query}%' AND fm_location{$next_level}.category !='99'";
 		}
 
 		$metadata1 = $this->db->metadata("fm_location{$current_level}");
@@ -2655,20 +2655,38 @@ class property_solocation
 			return array();
 		}
 
+		$include_tenant = $get_tenant_name && !empty($__config['tenant_id']) && $__config['tenant_id'] == $current_level;
+		$tenant_select = '';
+		$tenant_join = '';
+		$tenant_null_select = '';
+		if ($include_tenant)
+		{
+			$tenant_select = ", fm_tenant.first_name AS tenant_first_name, fm_tenant.last_name AS tenant_last_name, fm_tenant.contact_phone AS tenant_contact_phone";
+			$tenant_join = " {$this->left_join} fm_tenant ON (fm_location{$current_level}.tenant_id = fm_tenant.id)";
+			$tenant_null_select = ", NULL AS tenant_first_name, NULL AS tenant_last_name, NULL AS tenant_contact_phone";
+		}
 
 		if ($__config['street_id'] == $current_level)
 		{
 			$name_field = "fm_streetaddress.descr || ' ' || fm_location{$current_level}.street_number || ' (' || fm_location{$current_level}.loc{$current_level}_name ||')'";
-			$sql = "SELECT location_code, {$name_field} AS name"
-				. " FROM fm_location{$current_level}"
+			if ($include_tenant)
+			{
+				$name_field .= " || ' ' || COALESCE(fm_tenant.last_name,'') || ' ' || COALESCE(fm_tenant.first_name,'')";
+			}
+			$sql = "SELECT location_code, {$name_field} AS name{$tenant_select}"
+				. " FROM fm_location{$current_level}{$tenant_join}"
 				. " {$this->join} fm_streetaddress ON (fm_location{$current_level}.street_id = fm_streetaddress.id)"
 				. " {$filtermethod1}";
 		}
 		else
 		{
 			$name_field = "loc{$current_level}_name";
-			$sql = "SELECT location_code, {$name_field} AS name"
-				. " FROM fm_location{$current_level} {$filtermethod1}";
+			if ($include_tenant)
+			{
+				$name_field .= " || ' ' || COALESCE(fm_tenant.last_name,'') || ' ' || COALESCE(fm_tenant.first_name,'')";
+			}
+			$sql = "SELECT location_code, {$name_field} AS name{$tenant_select}"
+				. " FROM fm_location{$current_level}{$tenant_join} {$filtermethod1}";
 		}
 
 
@@ -2681,6 +2699,7 @@ class property_solocation
 				$name_field = "fm_streetaddress.descr || ' ' || fm_location{$next_level}.street_number  || ' (' || fm_location{$next_level}.loc{$next_level}_name ||')'";
 				$sql .= " UNION"
 					. " SELECT location_code, $name_field AS name"
+					. ($include_tenant ? $tenant_null_select : '')
 					. " FROM fm_location{$next_level}"
 					. " {$this->join} fm_streetaddress ON (fm_location{$next_level}.street_id = fm_streetaddress.id)"
 					. " {$filtermethod2}";
@@ -2690,6 +2709,7 @@ class property_solocation
 				$name_field = "loc{$next_level}_name";
 				$sql .= " UNION"
 					. " SELECT location_code, $name_field AS name"
+					. ($include_tenant ? $tenant_null_select : '')
 					. " FROM fm_location{$next_level} {$filtermethod2}";
 			}
 		}
@@ -2706,20 +2726,36 @@ class property_solocation
 				if ($__config['street_id'] == $j)
 				{
 					$name_field = "fm_streetaddress.descr || ' ' || fm_location{$j}.street_number";
+					$include_tenant_level = $include_tenant && $__config['tenant_id'] == $j;
+					$_tenant_select = $include_tenant_level ? $tenant_select : ($include_tenant ? $tenant_null_select : '');
+					$_tenant_join = $include_tenant_level ? " {$this->left_join} fm_tenant ON (fm_location{$j}.tenant_id = fm_tenant.id)" : '';
+					if ($include_tenant_level)
+					{
+						$name_field .= " || ' ' || COALESCE(fm_tenant.last_name,'') || ' ' || COALESCE(fm_tenant.first_name,'')";
+					}
 					if (isset($metadata['etasje']))
 					{
 						$name_field .= " || ' Etasje:' || fm_location{$j}.etasje";
 					}
 
 					$_sql[] = " SELECT location_code, {$name_field} AS name"
-						. " FROM fm_location{$j} {$this->join} fm_streetaddress ON (fm_location{$j}.street_id = fm_streetaddress.id)"
-						. " WHERE {$name_field} {$this->like} '%{$query}%' AND category !='99'";
+						. ($_tenant_select ? $_tenant_select : '')
+						. " FROM fm_location{$j}{$_tenant_join} {$this->join} fm_streetaddress ON (fm_location{$j}.street_id = fm_streetaddress.id)"
+						. " WHERE {$name_field} {$this->like} '%{$query}%' AND fm_location{$j}.category !='99'";
 				}
 				else
 				{
+					$include_tenant_level = $include_tenant && $__config['tenant_id'] == $j;
+					$_tenant_select = $include_tenant_level ? $tenant_select : ($include_tenant ? $tenant_null_select : '');
+					$_tenant_join = $include_tenant_level ? " {$this->left_join} fm_tenant ON (fm_location{$j}.tenant_id = fm_tenant.id)" : '';
+					if ($include_tenant_level)
+					{
+						$name_field .= " || ' ' || COALESCE(fm_tenant.last_name,'') || ' ' || COALESCE(fm_tenant.first_name,'')";
+					}
 					$_sql[] = " SELECT location_code, {$name_field} AS name"
-						. " FROM fm_location{$j}"
-						. " WHERE {$name_field} {$this->like} '%{$query}%' AND category !='99'";
+						. ($_tenant_select ? $_tenant_select : '')
+						. " FROM fm_location{$j}{$_tenant_join}"
+						. " WHERE {$name_field} {$this->like} '%{$query}%' AND fm_location{$j}.category !='99'";
 				}
 
 				$j++;
@@ -2736,11 +2772,17 @@ class property_solocation
 			while ($this->db->next_record())
 			{
 				$_location_code = $this->db->f('location_code');
-
-				$values[] = array(
+				$entry = array(
 					'id'	 => $_location_code,
 					'name'	 => $_location_code . '::' . $this->db->f('name', true)
 				);
+				if ($include_tenant)
+				{
+					$entry['tenant_first_name'] = $this->db->f('tenant_first_name', true);
+					$entry['tenant_last_name'] = $this->db->f('tenant_last_name', true);
+					$entry['tenant_contact_phone'] = $this->db->f('tenant_contact_phone', true);
+				}
+				$values[] = $entry;
 			}
 		}
 		return $values;

@@ -29,6 +29,7 @@ trait SerializableTrait
             $defaultAnnotation = $this->parseDefaultAnnotation($property);
             $timestampAnnotation = $this->parseTimestampAnnotation($property);
             $parseBoolAnnotation = $this->parseParseBoolAnnotation($property);
+            $parseIntAnnotation = $this->parseParseIntAnnotation($property);
 
             if ($excludeAnnotation)
             {
@@ -64,6 +65,12 @@ trait SerializableTrait
                     if ($parseBoolAnnotation)
                     {
                         $value = $this->parseStringBoolean($value);
+                    }
+
+                    // Apply ParseInt transformation if annotation exists
+                    if ($parseIntAnnotation)
+                    {
+                        $value = $this->parseStringInteger($value);
                     }
 
                     if ($serializeAsAnnotation)
@@ -698,6 +705,31 @@ trait SerializableTrait
     }
 
     /**
+     * Parse @ParseInt annotation
+     *
+     * This annotation enables automatic conversion of string values to integers:
+     * - "123", "0", "-456" -> 123, 0, -456
+     * - null, "", non-numeric strings -> null
+     * - Already integers are returned as-is
+     *
+     * Example: @ParseInt
+     *
+     * @return bool Returns true if annotation is present, false otherwise
+     */
+    private function parseParseIntAnnotation(\ReflectionProperty $property): bool
+    {
+        $className = $property->getDeclaringClass()->getName();
+        $propertyName = $property->getName();
+
+        if (!isset(self::$annotationCache[$className]['properties'][$propertyName]['parseInt']))
+        {
+            $docComment = $property->getDocComment();
+            self::$annotationCache[$className]['properties'][$propertyName]['parseInt'] = strpos($docComment, '@ParseInt') !== false;
+        }
+        return self::$annotationCache[$className]['properties'][$propertyName]['parseInt'];
+    }
+
+    /**
      * Convert string boolean values to actual boolean values
      *
      * Converts:
@@ -728,6 +760,43 @@ trait SerializableTrait
 
         if ($value === null) {
             return false;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Convert string values to integers
+     *
+     * Converts:
+     * - "123", "0", "-456" -> 123, 0, -456
+     * - null, "", non-numeric strings -> null
+     * - Already integers are returned as-is
+     * - Floats are cast to integers
+     */
+    private function parseStringInteger($value): mixed
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            return (int) $value;
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+            if ($trimmed === '' || $trimmed === null) {
+                return null;
+            }
+            if (is_numeric($trimmed)) {
+                return (int) $trimmed;
+            }
+            return null;
+        }
+
+        if ($value === null) {
+            return null;
         }
 
         return $value;

@@ -52,7 +52,7 @@ var alertify;
 function close_ticket_with_comment(parameters)
 {
 	var selected = new Array();
-	var aTrs = oTable.fnGetNodes();
+	var aTrs = oTable.api().rows().nodes();
 	for (var i = 0; i < aTrs.length; i++)
 	{
 		if ($(aTrs[i]).hasClass('context-menu-active'))

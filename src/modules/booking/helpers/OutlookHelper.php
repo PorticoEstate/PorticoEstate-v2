@@ -61,7 +61,7 @@ class OutlookHelper
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json',
 			'Accept: application/json',
-			'api_key: ' . $this->api_key,
+			'X-API-Key: ' . $this->api_key,
 			'X-Tenant-Id: ' . $this->tenant_id
 		));
 		$response = curl_exec($ch);
@@ -81,6 +81,12 @@ class OutlookHelper
 		$result['recordsTotal'] = isset($result['count']) ? $result['count'] : 0;
 		$result['data'] = isset($result['resources']) ? $result['resources'] : array();
 		unset($result['resources']);
+
+		// Transform the data into the desired format: set 'id' = 'email'
+		foreach ($result['data'] as &$item)
+		{
+			$item['id'] = $item['email'];
+		}
 
 		return $result;
 	}
@@ -114,7 +120,7 @@ class OutlookHelper
 		curl_setopt($ch, CURLOPT_NOPROXY, 'portico_outlook,localhost,127.0.0.1');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json',
-			'api_key: ' . $this->api_key,
+			'X-API-Key: ' . $this->api_key,
 			'X-Tenant-Id: ' . $this->tenant_id
 		));
 		curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
@@ -180,7 +186,7 @@ class OutlookHelper
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json',
 			'Accept: application/json',
-			'api_key: ' . $this->api_key,
+			'X-API-Key: ' . $this->api_key,
 			'X-Tenant-Id: ' . $this->tenant_id
 		));
 		$response = curl_exec($ch);
@@ -242,7 +248,7 @@ class OutlookHelper
 		curl_setopt($ch, CURLOPT_NOPROXY, 'portico_outlook,localhost,127.0.0.1');
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array(
 			'Content-Type: application/json',
-			'api_key: ' . $this->api_key,
+			'X-API-Key: ' . $this->api_key,
 			'X-Tenant-Id: ' . $this->tenant_id
 		));
 		$response = curl_exec($ch);

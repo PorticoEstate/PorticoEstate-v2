@@ -40,16 +40,20 @@ class MailerSmtp extends PHPMailer
 
 		parent::__construct(true); // enable exceptions
 		$this->IsSMTP(true);
-		$this->Host = $this->serverSettings['smtp_server'];
-		$this->Port = isset($this->serverSettings['smtp_port']) ? $this->serverSettings['smtp_port'] : 25;
-		$this->SMTPSecure = isset($this->serverSettings['smtpSecure']) ? $this->serverSettings['smtpSecure'] : '';
+		
+		// SMTP configuration with environment variable overrides
+		$this->Host = getenv('SMTP_HOST') ?: ($this->serverSettings['smtp_server'] ?? '');
+		$this->Port = getenv('SMTP_PORT') ?: ($this->serverSettings['smtp_port'] ?? 25);
+		$this->SMTPSecure = getenv('SMTP_SECURE') ?: ($this->serverSettings['smtpSecure'] ?? '');
 		$this->CharSet = 'utf-8';
-		$this->Timeout = isset($this->serverSettings['smtp_timeout']) && $this->serverSettings['smtp_timeout'] ? (int)$this->serverSettings['smtp_timeout'] : 10;
+		$this->Timeout = getenv('SMTP_TIMEOUT') ?: ($this->serverSettings['smtp_timeout'] ?? 10);
 
-		if (isset($this->serverSettings['smtpAuth']) && $this->serverSettings['smtpAuth'] == 'yes') {
-			$this->SMTPAuth	= true;
-			$this->Username = isset($this->serverSettings['smtpUser']) ? $this->serverSettings['smtpUser'] : '';
-			$this->Password =  isset($this->serverSettings['smtpPassword']) ? $this->serverSettings['smtpPassword'] : '';
+		// SMTP Authentication - check environment variables first
+		$smtpAuth = getenv('SMTP_AUTH') ?: ($this->serverSettings['smtpAuth'] ?? 'no');
+		if ($smtpAuth === 'yes' || $smtpAuth === 'true' || $smtpAuth === '1') {
+			$this->SMTPAuth = true;
+			$this->Username = getenv('SMTP_USER') ?: ($this->serverSettings['smtpUser'] ?? '');
+			$this->Password = getenv('SMTP_PASSWORD') ?: ($this->serverSettings['smtpPassword'] ?? '');
 		}
 
 		/*
@@ -70,9 +74,12 @@ class MailerSmtp extends PHPMailer
 		 * @type int
 		 */
 
-		if (isset($this->serverSettings['SMTPDebug'])) {
-			$this->SMTPDebug = (int)$this->serverSettings['SMTPDebug'];
-		}
+		// SMTP Debug mode - environment variable override
+		$smtpDebug = getenv('SMTP_DEBUG') ?: ($this->serverSettings['SMTPDebug'] ?? '0');
+		$this->SMTPDebug = (int)$smtpDebug;
+
+		// Debug logging for SMTP configuration
+		error_log("SMTP CONFIG: Host={$this->Host}, Port={$this->Port}, Secure={$this->SMTPSecure}, Auth=" . ($this->SMTPAuth ? 'YES' : 'NO') . ", User={$this->Username}, Debug={$this->SMTPDebug}");
 
 		/**
 		 * The function/method to use for debugging output.

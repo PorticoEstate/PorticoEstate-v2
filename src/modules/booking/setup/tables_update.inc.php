@@ -7740,3 +7740,285 @@ function booking_upgrade0_2_111($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.112';
+function booking_upgrade0_2_112($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	// I want a field 'from_' in bb_application that is a copy of the field 'from_' with the earliest value in bb_application_date for the same application_id.
+	$oProc->AddColumn(
+		'bb_application',
+		'from_',
+		array('type' => 'datetime', 'nullable' => true),
+	);
+
+	// Populate existing rows with the earliest date
+	$oProc->m_odb->query("
+        UPDATE bb_application a
+        SET from_ = d.min_from
+        FROM (
+            SELECT application_id, MIN(from_) AS min_from
+            FROM bb_application_date
+            GROUP BY application_id
+        ) d
+        WHERE a.id = d.application_id
+    ");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.113';
+		return $currentver;
+	}
+}
+
+/**
+ * Update booking version from 0.2.113 to 0.2.114
+ *
+ */
+$test[] = '0.2.113';
+function booking_upgrade0_2_113($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	$location_obj = new Locations();
+	$location_id = $location_obj->get_id('booking', '.article');
+
+	if (!$location_id)
+	{
+		$location_obj->add('.article', 'article', 'booking');
+		$location_obj->add('.application', 'Application', 'booking');
+
+		$custom_config = CreateObject('admin.soconfig', $location_obj->get_id('booking', 'run'));
+
+		$receipt_section_common = $custom_config->add_section(
+			array(
+				'name'	=> 'payment',
+				'descr' => 'payment method config'
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_common['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'method',
+				'descr'		 => 'Payment method',
+				'choice'	 => array('Vipps'),
+			)
+		);
+
+		$receipt_section_vipps = $custom_config->add_section(
+			array(
+				'name'	=> 'Vipps',
+				'descr' => 'Vipps config'
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'base_url',
+				'descr'		 => 'base_url',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'client_id',
+				'descr'		 => 'client_id',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'password',
+				'name'		 => 'client_secret',
+				'descr'		 => 'client_secret',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'password',
+				'name'		 => 'subscription_key',
+				'descr'		 => 'subscription_key',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'text',
+				'name'		 => 'msn',
+				'descr'		 => 'Merchant Serial Number',
+				'value'		 => '',
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'debug',
+				'descr'		 => 'debug',
+				'choice'	 => array(1),
+			)
+		);
+
+		$receipt = $custom_config->add_attrib(
+			array(
+				'section_id' => $receipt_section_vipps['section_id'],
+				'input_type' => 'listbox',
+				'name'		 => 'active',
+				'descr'		 => 'Aktiv',
+				'choice'	 => array('active'),
+			)
+		);
+	}
+
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.114';
+		return $currentver;
+	}
+}
+
+$test[] = '0.2.114';
+function booking_upgrade0_2_114($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+ 	// Create webhook subscriptions table
+	$oProc->CreateTable(
+		'bb_webhook_subscriptions',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'subscription_id' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+				'entity_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+				'webhook_url' => array('type' => 'text', 'nullable' => false),
+				'change_types' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false, 'default' => 'created,updated,deleted'),
+				'client_state' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),
+				'secret_key' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),
+				'is_active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+				'expires_at' => array('type' => 'timestamp', 'nullable' => false),
+				'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'created_at' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+				'last_notification_at' => array('type' => 'timestamp', 'nullable' => true),
+				'notification_count' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+				'failure_count' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'phpgw_accounts' => array('created_by' => 'account_id')
+			),
+			'ix' => array(
+				array('entity_type', 'resource_id'),
+				array('is_active', 'expires_at')
+			),
+			'uc' => array('subscription_id')
+		)
+	);
+
+	// Create webhook delivery log table
+	$oProc->CreateTable(
+		'bb_webhook_delivery_log',
+		array(
+			'fd' => array(
+				'id' => array('type' => 'auto', 'nullable' => false),
+				'subscription_id' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+				'change_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+				'entity_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+				'entity_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+				'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+				'http_status_code' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+				'response_time_ms' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+				'error_message' => array('type' => 'text', 'nullable' => true),
+				'created_at' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+			),
+			'pk' => array('id'),
+			'fk' => array(
+				'bb_webhook_subscriptions' => array('subscription_id' => 'subscription_id')
+			),
+			'ix' => array(
+				array('subscription_id', 'created_at'),
+				array('entity_type', 'entity_id')
+			),
+			'uc' => array()
+		)
+	);
+ 
+	$location_obj = new Locations();
+
+	$custom_config = CreateObject('admin.soconfig', $location_obj->get_id('booking', 'run'));
+
+
+	$receipt_Outlook = $custom_config->add_section(
+		array(
+			'name' => 'Outlook',
+			'descr' => 'Outlook webhook configuration'
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_Outlook['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'baseurl',
+			'descr'			=> 'Base URL',
+			'value'			=> '',
+		)
+	);
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_Outlook['section_id'],
+			'input_type'	=> 'text',
+			'name'			=> 'tenant_id',
+			'descr'			=> 'Tenant ID',
+			'value'			=> '',
+		)
+	);
+
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_Outlook['section_id'],
+			'input_type'	=> 'password',
+			'name'			=> 'api_key',
+			'descr'			=> 'API Key',
+			'value'			=> '',
+		)
+	);
+
+
+	$receipt = $custom_config->add_attrib(
+		array(
+			'section_id'	=> $receipt_Outlook['section_id'],
+			'input_type'	=> 'checkbox',
+			'name'			=> 'webhook_enabled',
+			'descr'			=> 'Enable Webhooks',
+			'choice'		=> array('active'),
+			'value'			=> [],
+		)
+	);
+
+
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.115';
+		return $currentver;
+	}
+}

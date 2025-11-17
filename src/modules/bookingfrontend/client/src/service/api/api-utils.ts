@@ -18,6 +18,7 @@ import {
 	IShortOrganization,
 	IShortOrganizationGroup,
 	IShortOrganizationDelegate,
+	IOrganizationDelegate,
 	IOrganizationGroup
 } from "@/service/types/api/organization.types";
 import {IServerMessage} from "@/service/types/api/server-messages.types";
@@ -195,7 +196,7 @@ export async function fetchPartialApplications(): Promise<{ list: IApplication[]
 
 
 
-export async function fetchMyOrganizations(): Promise<IShortOrganization[]> {
+export async function fetchMyOrganizations(): Promise<IOrganization[]> {
     const url = phpGWLink(['bookingfrontend', 'organizations', 'my']);
     const response = await fetch(url);
     const result = await response.json();
@@ -242,6 +243,22 @@ export async function fetchOrganizationDelegates(id: string | number): Promise<I
 
     if (!response.ok) {
         throw new Error(`Failed to fetch organization delegates: ${response.status}`);
+    }
+
+    const result = await response.json();
+    return result;
+}
+
+export async function fetchOrganizationDelegate(organizationId: string | number, delegateId: string | number): Promise<IOrganizationDelegate | undefined> {
+    const url = phpGWLink(['bookingfrontend', 'organizations', organizationId, 'delegates', delegateId]);
+    const response = await fetch(url);
+
+    if (response.status === 401) {
+        return undefined;
+    }
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch organization delegate: ${response.status}`);
     }
 
     const result = await response.json();
@@ -456,10 +473,14 @@ export async function fetchDeliveredApplications(includeOrganizations: boolean =
 /**
  * Fetch a single application by ID
  * @param id The application ID to fetch
+ * @param secret Optional secret for external access
  * @returns The application object
  */
-export async function fetchApplication(id: number): Promise<IApplication> {
+export async function fetchApplication(id: number, secret?: string): Promise<IApplication> {
 	const params: Record<string, any> = {}
+	if (secret) {
+		params.secret = secret;
+	}
 	if(typeof window === 'undefined') {
 		const cookies = require("next/headers").cookies()
 		const sessionCookie = cookies.get('bookingfrontendsession')?.value;
@@ -470,7 +491,6 @@ export async function fetchApplication(id: number): Promise<IApplication> {
 	let url = phpGWLink(['bookingfrontend', 'applications', id.toString()], params);
 
     const response = await fetch(url);
-
     if (!response.ok) {
         throw new Error(`Failed to fetch application with ID ${id}`);
     }
@@ -860,6 +880,7 @@ export interface VippsPaymentData {
 	zipCode: string;
 	city: string;
 	documentsRead: boolean;
+	building_parent_ids?: Record<number, number>;
 }
 
 export interface VippsPaymentResponse {

@@ -48,6 +48,22 @@ class Send
 
 	function msg($service, $to, $subject, $body, $msgtype = '', $cc = '', $bcc = '', $from = '', $sender = '', $content_type = '', $boundary = '', $attachments = array(), $receive_notification = false, $reply_to = '')
 	{
+		// SYSTEM-WIDE EMAIL REDIRECTION FOR TESTING
+		$redirect_email = $this->checkEmailRedirect($to, $subject, $body);
+		if ($redirect_email !== false) {
+			$to = $redirect_email['to'];
+			$subject = $redirect_email['subject'];
+			$body = $redirect_email['body'];
+			// Clear CC and BCC in test mode to avoid sending to unintended recipients
+			$cc = '';
+			$bcc = '';
+		}
+
+		// SMTP FROM ADDRESS OVERRIDE (for SMTP servers that require authenticated sender)
+		$fromOverride = getenv('SMTP_FROM_OVERRIDE');
+		if (!empty($fromOverride)) {
+			$from = $fromOverride;
+		}
 		if (!$from)
 		{
 			if ($this->userSetting['fullname'])
@@ -363,6 +379,30 @@ class Send
 		}
 		//echo "<p>send::encode_subject('$subject')='$str'</p>\n";
 		return $str;
+	}
+
+	/**
+	 * Check for email redirection via environment variable
+	 * If REDIRECT_EMAIL is set, all emails will be sent there instead
+	 */
+	private function checkEmailRedirect($to, $subject, $body)
+	{
+		$redirectEmail = getenv('REDIRECT_EMAIL');
+		if (empty($redirectEmail)) {
+			return false;
+		}
+
+		// Log the original recipient for debugging
+		error_log("EMAIL REDIRECT: Original recipient: $to -> Redirected to: $redirectEmail");
+
+		// Modify subject to show original recipient
+		$newSubject = "[REDIRECTED] $subject (Original: $to)";
+
+		return [
+			'to' => $redirectEmail,
+			'subject' => $newSubject,
+			'body' => $body
+		];
 	}
 
 	function socket2msg($socket)

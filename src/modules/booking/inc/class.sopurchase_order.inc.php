@@ -396,6 +396,95 @@ class booking_sopurchase_order
 		return $order;
 	}
 
+	function get_purchase_order_combined($application_id)
+	{
+		if (!$application_id)
+		{
+			return array();
+		}
+
+		// Get related applications (parent + children) for combined display
+		$application_bo = createObject('booking.boapplication');
+		$related_info = $application_bo->so->get_related_applications($application_id);
+		$application_ids = $related_info['application_ids'];
+
+		if (empty($application_ids))
+		{
+			return array();
+		}
+
+		$tax_codes = array();
+		$sql = "SELECT id, percent_ FROM fm_ecomva";
+		$this->db->query($sql, __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$tax_codes[(int)$this->db->f('id')] = (int)$this->db->f('percent_');
+		}
+
+		$application_ids_string = implode(',', $application_ids);
+		$filtermethod = "WHERE bb_purchase_order.cancelled IS NULL";
+		$filtermethod .= " AND bb_purchase_order.application_id IN ({$application_ids_string})";
+		// Only include lines that have a cost > 0
+		$filtermethod .= " AND (bb_purchase_order_line.amount > 0 OR bb_purchase_order_line.tax > 0)";
+
+		$sql = "SELECT bb_purchase_order_line.* , bb_purchase_order.application_id,"
+			. " bb_article_mapping.article_code, bb_article_mapping.article_alternative_code,"
+			. " CASE WHEN
+					(
+						bb_resource.name IS NULL
+					)"
+			. " THEN bb_service.name ELSE bb_resource.name END AS name"
+			. " FROM bb_purchase_order JOIN bb_purchase_order_line ON bb_purchase_order.id = bb_purchase_order_line.order_id"
+			. " JOIN bb_article_mapping ON bb_purchase_order_line.article_mapping_id = bb_article_mapping.id"
+			. " LEFT JOIN bb_service ON (bb_article_mapping.article_id = bb_service.id AND bb_article_mapping.article_cat_id = 2)"
+			. " LEFT JOIN bb_resource ON (bb_article_mapping.article_id = bb_resource.id AND bb_article_mapping.article_cat_id = 1)"
+			. " {$filtermethod}"
+			. " ORDER BY bb_purchase_order_line.id";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		$order		 = array();
+		$sum		 = array();
+		$total_sum	 = 0;
+		while ($this->db->next_record())
+		{
+			$order_id		 = (int)$this->db->f('order_id');
+			if (!isset($sum[$order_id]))
+			{
+				$sum[$order_id] = 0;
+			}
+
+			$_sum			 = (float)$this->db->f('amount') + (float)$this->db->f('tax');
+			$sum[$order_id]	 = (float)$sum[$order_id] + $_sum;
+			$total_sum		 += $_sum;
+
+			$tax_code		 = (int)$this->db->f('tax_code');
+
+			$order['lines'][] = array(
+				'order_id'				 => $order_id,
+				'status'				 => (int)$this->db->f('status'),
+				'parent_mapping_id'		 => (int)$this->db->f('parent_mapping_id'),
+				'article_mapping_id'	 => (int)$this->db->f('article_mapping_id'),
+				'quantity'				 => (float)$this->db->f('quantity'),
+				'unit_price'			 => (float)$this->db->f('unit_price'),
+				'overridden_unit_price'	 => (float)$this->db->f('overridden_unit_price'),
+				'currency'				 => $this->db->f('currency'),
+				'amount'				 => (float)$this->db->f('amount'),
+				'tax_code'				 => (int)$this->db->f('tax_code'),
+				'article_code'			 => $this->db->f('article_code', true),
+				'article_alternative_code' => $this->db->f('article_alternative_code', true),
+				'tax'					 => (float)$this->db->f('tax'),
+				'name'					 => $this->db->f('name', true),
+				'tax_percent'			 => $tax_codes[$tax_code]
+			);
+
+			$order['order_id']	 = $order_id;
+			$order['sum']		 = $sum[$order_id];
+		}
+
+		return $order;
+	}
+
 	public function identify_purchase_order($application_id, $reservation_id, $reservation_type = 'event')
 	{
 		if (!$application_id || !$reservation_id)

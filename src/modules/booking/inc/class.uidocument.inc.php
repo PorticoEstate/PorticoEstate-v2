@@ -9,7 +9,11 @@ abstract class booking_uidocument extends booking_uicommon
 
 	protected
 		$documentOwnerType = null,
-		$module;
+		$module,
+		$filter_owner_id = null,
+		$phpgw_return_as = null,
+		$no_images = null,
+		$id = null;
 	public
 		$public_functions = array(
 			'index' => true,
@@ -23,11 +27,17 @@ abstract class booking_uidocument extends booking_uicommon
 
 	var $fields, $display_name;
 
-	public function __construct()
+	public function __construct($params = array())
 	{
 		parent::__construct();
 
 		//			Analizar esta linea de permiso self::process_booking_unauthorized_exceptions();
+
+		// Set parameters from constructor or fallback to GET params
+		$this->filter_owner_id = isset($params['filter_owner_id']) ? intval($params['filter_owner_id']) : Sanitizer::get_var('filter_owner_id', 'int');
+		$this->phpgw_return_as = isset($params['phpgw_return_as']) ? $params['phpgw_return_as'] : Sanitizer::get_var('phpgw_return_as');
+		$this->no_images = isset($params['no_images']) ? $params['no_images'] : Sanitizer::get_var('no_images');
+		$this->id = isset($params['id']) ? intval($params['id']) : Sanitizer::get_var('id', 'int');
 
 		$this->set_business_object();
 
@@ -112,7 +122,7 @@ abstract class booking_uidocument extends booking_uicommon
 	{
 		if ($this->is_inline())
 		{
-			$params['filter_owner_id'] = intval(Sanitizer::get_var('filter_owner_id'));
+			$params['filter_owner_id'] = $this->filter_owner_id;
 		}
 		return $params;
 	}
@@ -130,12 +140,12 @@ abstract class booking_uidocument extends booking_uicommon
 
 	public function get_inline_params()
 	{
-		return array('filter_owner_id' => Sanitizer::get_var('filter_owner_id', 'int'));
+		return array('filter_owner_id' => $this->filter_owner_id);
 	}
 
 	public function is_inline()
 	{
-		return false != Sanitizer::get_var('filter_owner_id', 'int', 'REQUEST', false);
+		return false != $this->filter_owner_id;
 	}
 
 	public static function generate_inline_link($documentOwnerType, $documentOwnerId, $action)
@@ -148,7 +158,7 @@ abstract class booking_uidocument extends booking_uicommon
 
 	public function index()
 	{
-		if (Sanitizer::get_var('phpgw_return_as') == 'json')
+		if ($this->phpgw_return_as == 'json')
 		{
 			return $this->query();
 		}
@@ -211,7 +221,7 @@ abstract class booking_uidocument extends booking_uicommon
 
 	public function query()
 	{
-		$documents = $this->bo->read();
+			$documents = $this->bo->read();
 		foreach ($documents['results'] as &$document)
 		{
 			$document['link'] = $this->get_owner_typed_link('download', array('id' => $document['id']));
@@ -248,7 +258,7 @@ abstract class booking_uidocument extends booking_uicommon
 			}
 		}
 
-		if (Sanitizer::get_var('no_images'))
+		if ($this->no_images)
 		{
 			$documents['results'] = array_filter($documents['results'], array($this, 'is_image'));
 			// the array_filter function preserves the array keys. The javascript that later iterates over the resultset don't like gaps in the array keys
@@ -304,7 +314,7 @@ abstract class booking_uidocument extends booking_uicommon
 
 	public function show()
 	{
-		$id = Sanitizer::get_var('id', 'int');
+		$id = $this->id;
 		if (!$id)
 		{
 			phpgw::no_access('booking', lang('missing id'));
@@ -372,7 +382,7 @@ abstract class booking_uidocument extends booking_uicommon
 
 	public function edit()
 	{
-		$id = Sanitizer::get_var('id', 'int');
+		$id = $this->id;
 		if (!$id)
 		{
 			phpgw::no_access('booking', lang('missing id'));
@@ -425,7 +435,7 @@ abstract class booking_uidocument extends booking_uicommon
 
 	public function download()
 	{
-		$id = Sanitizer::get_var('id', 'int');
+		$id = $this->id;
 
 		$document = $this->bo->read_single($id);
 		self::send_file($document['filename'], array('filename' => $document['name']));
@@ -433,7 +443,7 @@ abstract class booking_uidocument extends booking_uicommon
 
 	public function delete()
 	{
-		$id = Sanitizer::get_var('id', 'int');
+		$id = $this->id;
 		$this->bo->delete($id);
 
 		$this->redirect_to_parent_if_inline();

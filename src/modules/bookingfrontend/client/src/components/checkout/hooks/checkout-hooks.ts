@@ -37,8 +37,8 @@ export interface CheckoutFormData {
     zipCode: string;
     city: string;
 
-    // Optional parent application ID
-    parent_id?: number;
+    // Building-specific parent application IDs
+    building_parent_ids?: Record<number, number>;
     
     // Documents consent
     documentsRead: boolean;

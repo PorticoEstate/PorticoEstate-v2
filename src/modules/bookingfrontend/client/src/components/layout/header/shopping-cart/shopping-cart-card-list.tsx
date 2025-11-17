@@ -4,19 +4,23 @@ import { IApplication } from "@/service/types/api/application.types";
 import { deletePartialApplication } from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import { PencilIcon, TrashIcon, CalendarIcon } from "@navikt/aksel-icons";
+import { PencilIcon, TrashIcon, CalendarIcon, Buildings3Icon, LayersIcon, ArrowsCirclepathIcon } from "@navikt/aksel-icons";
 import styles from "./shopping-cart-card-list.module.scss";
 import { applicationTimeToLux } from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import { DateTime } from "luxon";
 import { useClientTranslation } from "@/app/i18n/ClientTranslationProvider";
 import Link from "next/link";
 import { calculateApplicationCost, formatCurrency, getApplicationCurrency } from "@/utils/cost-utils";
+import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
+import RecurringDescription from './recurring-description';
+import { useBuildingSeasons } from "@/service/hooks/api-hooks";
 
 interface ShoppingCartCardListProps {
     basketData: IApplication[];
     openEdit: (item: IApplication) => void;
     onLinkClick: () => void;
 }
+
 
 const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [string, string] => {
     const localizedFromDate = fromDate.setLocale(i18n.language);
@@ -57,6 +61,19 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
     const { t, i18n } = useClientTranslation();
     const [expandedId, setExpandedId] = useState<number | null>(null);
 
+    // Fetch seasons for all unique buildings in the cart
+    const buildingIds = [...new Set(basketData.map(item => item.building_id))];
+    const seasonsQueries = buildingIds.map(buildingId => {
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        return useBuildingSeasons(buildingId);
+    });
+
+    // Create a map of building_id to seasons for easy lookup
+    const seasonsMap = new Map();
+    buildingIds.forEach((buildingId, index) => {
+        seasonsMap.set(buildingId, seasonsQueries[index]?.data);
+    });
+
     return (
         <div className={styles.cartListContainer}>
             {basketData.map((item) => (
@@ -71,18 +88,9 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
 						</h3>
 					</div>
 
-					{calculateApplicationCost(item) > 0 && (
-						<div className={styles.cardCost}>
-							{/*<span className={styles.costLabel}>{t('bookingfrontend.cost')}:</span>*/}
-							<span className={styles.costAmount}>
-                                {formatCurrency(calculateApplicationCost(item), getApplicationCurrency(item))}
-                            </span>
-						</div>
-					)}
-
-					<div className={styles.cardInfo}>
+					<div className={styles.cardContent}>
 						<div className={styles.infoItem}>
-							{/*<BuildingIcon aria-hidden className={styles.infoIcon} />*/}
+							<Buildings3Icon aria-hidden className={styles.infoIcon} />
 							<DigdirLink asChild>
 								<Link href={`/building/${item.building_id}`} onClick={(e) => {
 									e.stopPropagation();
@@ -95,59 +103,151 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
 
 						<div className={styles.infoItem}>
 							<CalendarIcon aria-hidden className={styles.infoIcon}/>
-							{(item.dates?.length || 0) === 1 ? (
+							{RecurringInfoUtils.isRecurring(item) ? (
 								<span>
-                                    {formatDateRange(
+									{formatDateRange(
 										applicationTimeToLux(item.dates[0].from_),
 										applicationTimeToLux(item.dates[0].to_),
 										i18n
 									).join(' | ')}
-                                </span>
+								</span>
+							) : (item.dates?.length || 0) === 1 ? (
+								<span>
+									{formatDateRange(
+										applicationTimeToLux(item.dates[0].from_),
+										applicationTimeToLux(item.dates[0].to_),
+										i18n
+									).join(' | ')}
+								</span>
 							) : (
 								<span className={styles.multipleDates}>
-                                    <span className={styles.badge}>
-                                        {item.dates?.length || 0}
-                                    </span>
-                                    <span>{t('bookingfrontend.multiple_time_slots')}</span>
-                                </span>
+									<span className={styles.badge}>
+										{item.dates?.length || 0}
+									</span>
+									<span>{t('bookingfrontend.multiple_time_slots')}</span>
+								</span>
 							)}
 						</div>
-					</div>
 
-					<div className={styles.resourcesContainer}>
-						{(item.resources || []).length === 1 ? (
-							<div className={styles.singleResource}>
-								<DigdirLink asChild>
-									<Link href={`/resource/${item.resources[0].id}`} onClick={(e) => {
-										e.stopPropagation();
-										onLinkClick();
-									}}>
-										<span><ColourCircle resourceId={item.resources[0].id}/> {item.resources[0].name}</span>
-									</Link>
-								</DigdirLink>
+						{RecurringInfoUtils.isRecurring(item) && (
+							<div className={styles.infoItem}>
+								<ArrowsCirclepathIcon aria-hidden className={styles.infoIcon} />
+								<span className={styles.recurringPattern}>
+									<RecurringDescription application={item} />
+								</span>
 							</div>
-						) : expandedId === item.id ? (
-							<ul className={styles.expandedResourcesList}>
-								{(item.resources || []).map((resource) => (
-									<li key={resource.id} className={styles.resourceItem}>
+						)}
+
+						<div className={styles.infoItem}>
+							<LayersIcon aria-hidden className={styles.infoIcon} />
+							<div className={styles.resourcesContainer}>
+								{(item.resources || []).length === 1 ? (
+									<div className={styles.singleResource}>
 										<DigdirLink asChild>
-											<Link href={`/resource/${resource.id}`} onClick={(e) => {
+											<Link href={`/resource/${item.resources[0].id}`} onClick={(e) => {
 												e.stopPropagation();
 												onLinkClick();
 											}}>
-												<span><ColourCircle resourceId={resource.id}/> {resource.name}</span>
+												<span><ColourCircle resourceId={item.resources[0].id}/> {item.resources[0].name}</span>
 											</Link>
 										</DigdirLink>
-									</li>
-								))}
-							</ul>
-						) : (
-							<ResourceCircles
-								resources={item.resources || []}
-								maxCircles={6}
-								size={'small'}
-								isExpanded={false}
-							/>
+									</div>
+								) : expandedId === item.id ? (
+									<ul className={styles.expandedResourcesList}>
+										{(item.resources || []).map((resource) => (
+											<li key={resource.id} className={styles.resourceItem}>
+												<DigdirLink asChild>
+													<Link href={`/resource/${resource.id}`} onClick={(e) => {
+														e.stopPropagation();
+														onLinkClick();
+													}}>
+														<span><ColourCircle resourceId={resource.id}/> {resource.name}</span>
+													</Link>
+												</DigdirLink>
+											</li>
+										))}
+									</ul>
+								) : (
+									<ResourceCircles
+										resources={item.resources || []}
+										maxCircles={6}
+										size={'small'}
+										isExpanded={false}
+									/>
+								)}
+							</div>
+						</div>
+
+						{calculateApplicationCost(item) > 0 && (
+							<div className={styles.priceBreakdown}>
+								{/* Price breakdown */}
+								{item.orders && item.orders.length > 0 && (() => {
+									// Calculate resources and articles costs (including VAT)
+									let resourcesCost = 0;
+									let articlesCost = 0;
+
+									item.orders.forEach(order => {
+										order.lines.forEach(line => {
+											// Include VAT in the calculation: amount + tax
+											// Convert to numbers to avoid string concatenation
+											const lineTotal = Number(line.amount) + Number(line.tax || 0);
+
+											// Check if this is a resource (typically has unit 'hour' or similar resource-based pricing)
+											if (line.unit === 'hour' || line.unit === 'dag' || line.unit === 'day') {
+												resourcesCost += lineTotal;
+											} else {
+												articlesCost += lineTotal;
+											}
+										});
+									});
+
+									const isRecurring = RecurringInfoUtils.isRecurring(item);
+									const totalCost = calculateApplicationCost(item);
+									const currency = getApplicationCurrency(item);
+
+									// For recurring applications, calculate actual number of occurrences
+									let occurrenceCount = 1;
+									if (isRecurring) {
+										// Get seasons for this building
+										const seasons = seasonsMap.get(item.building_id);
+
+										// Calculate recurring instances using the same logic as the calendar
+										const recurringInstances = calculateRecurringInstances(item, seasons);
+										occurrenceCount = recurringInstances.length;
+									}
+
+									return (
+										<>
+											{resourcesCost > 0 && (
+												<div className={styles.priceItem}>
+													<span>{t('bookingfrontend.resources')}:</span>
+													<span>{formatCurrency(resourcesCost, currency)}</span>
+												</div>
+											)}
+											{articlesCost > 0 && (
+												<div className={styles.priceItem}>
+													<span>{t('bookingfrontend.articles')}:</span>
+													<span>{formatCurrency(articlesCost, currency)}</span>
+												</div>
+											)}
+											{isRecurring && (
+												<div className={styles.priceItem}>
+													<span>{t('bookingfrontend.per_occurrence')}:</span>
+													<span>{formatCurrency(totalCost, currency)}</span>
+												</div>
+											)}
+											<div className={`${styles.priceItem} ${styles.totalPrice}`}>
+												<span>
+													{isRecurring && occurrenceCount > 1
+														? t('bookingfrontend.sum_occurrences', { count: occurrenceCount })
+														: t('bookingfrontend.sum')}:
+												</span>
+												<span>{formatCurrency(isRecurring && occurrenceCount > 1 ? totalCost * occurrenceCount : totalCost, currency)}</span>
+											</div>
+										</>
+									);
+								})()}
+							</div>
 						)}
 					</div>
 					<div className={styles.cardActions}>

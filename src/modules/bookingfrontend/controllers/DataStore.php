@@ -10,6 +10,7 @@ use App\Database\Db;
 use App\modules\bookingfrontend\models\Activity;
 use App\modules\bookingfrontend\models\Building;
 use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Organization;
 
 /**
@@ -29,10 +30,12 @@ use App\modules\bookingfrontend\models\Organization;
 class DataStore
 {
     private $db;
+    private $resourceRepository;
 
     public function __construct(ContainerInterface $container)
 	{
 		$this->db = Db::getInstance();
+		$this->resourceRepository = new ResourceRepository();
 
 	}
 	/**
@@ -173,7 +176,7 @@ class DataStore
 			$resources = [];
 			$rows = $this->getRowsAsArray("SELECT id, name, activity_id, active, simple_booking, deactivate_calendar,
               deactivate_application, rescategory_id
-              FROM bb_resource WHERE active=1 AND hidden_in_frontend=0 AND deactivate_calendar=0");
+              FROM bb_resource WHERE active=1 AND hidden_in_frontend=0");
 			
 			// Get the latest participant limits for all resources
 			$currentDate = date('Y-m-d H:i:s');
@@ -187,18 +190,14 @@ class DataStore
               ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
 			[':currentDate' => $currentDate]);
 			
-			// Create a map of resource_id to participant limit quantity
-			$participantLimitMap = [];
-			foreach ($participantLimits as $pl) {
-				$participantLimitMap[$pl['resource_id']] = $pl['quantity'];
-			}
-			
-			foreach ($rows as $row) {
-				$resource = new Resource($row);
-				// Set participant_limit if available, otherwise leave as null
-				if (isset($participantLimitMap[$resource->id])) {
-					$resource->participant_limit = $participantLimitMap[$resource->id];
-				}
+			// Get resource IDs from the rows
+			$resourceIds = array_column($rows, 'id');
+
+			// Use ResourceRepository to get resources with participant limits
+			$resourceEntities = $this->resourceRepository->getWithParticipantLimits($resourceIds);
+
+			$resources = [];
+			foreach ($resourceEntities as $resource) {
 				$resources[] = $resource->serialize([], true);
 			}
 			$data['resources'] = $resources;

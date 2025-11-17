@@ -17,7 +17,7 @@ import {BillingFormData, createBillingFormSchema} from "@/components/checkout/bi
 import {IBookingUser} from "@/service/types/api.types";
 import {useMyOrganizations} from "@/service/hooks/organization";
 import {searchOrganizations, validateOrgNum} from "@/service/api/api-utils";
-import AsyncSelect from "react-select/async";
+import AsyncCreatableSelect from "react-select/async-creatable";
 import RegulationDocuments from './regulation-documents';
 import {ExternalPaymentEligibilityResponse} from "@/service/api/api-utils";
 import VippsCheckoutButton from './VippsCheckoutButton';
@@ -69,6 +69,60 @@ const BillingForm: FC<BillingFormProps> = ({
 	const {i18n} = useClientTranslation()
 	// Determine language for Vipps button (en or fallback to no)
 	const vippsLanguage = i18n.language === 'en' ? 'en' : 'no';
+
+	// State for validation loading
+	const [isValidatingOrg, setIsValidatingOrg] = useState(false);
+
+	// Validate Norwegian organization number format (9 digits)
+	const validateOrgNumberFormat = (orgNum: string): boolean => {
+		// Remove spaces and check if it's exactly 9 digits
+		const cleaned = orgNum.replace(/\s/g, '');
+		return /^\d{9}$/.test(cleaned);
+	};
+
+	// State to store the created organization for display
+	const [createdOrg, setCreatedOrg] = useState<OrganizationOption | null>(null);
+
+	// State to store resolved org name for preview
+	const [resolvedOrgName, setResolvedOrgName] = useState<string>('');
+
+	// Handle when user creates a new organization number
+	const handleCreateOrganization = async (inputValue: string) => {
+		const cleaned = inputValue.replace(/\s/g, '');
+
+		// First validate format
+		if (!validateOrgNumberFormat(cleaned)) {
+			alert(t('bookingfrontend.invalid_org_number_format'));
+			return;
+		}
+
+		setIsValidatingOrg(true);
+
+		try {
+			const data = await validateOrgNum(cleaned);
+
+			// Create the option object
+			const newOption: OrganizationOption = {
+				value: cleaned,
+				label: `${cleaned} [${data.navn}]`
+			};
+
+			// Set the form values with the validated org data
+			setValue('organizationNumber', cleaned);
+			setValue('organizationName', data.navn);
+			setValue('street', data.postadresse?.adresse?.[0] || '');
+			setValue('zipCode', data.postadresse?.postnummer || '');
+			setValue('city', data.postadresse?.poststed || '');
+
+			// Store the created org so it shows as selected
+			setCreatedOrg(newOption);
+		} catch (error) {
+			console.error('Failed to validate organization:', error);
+			alert(t('bookingfrontend.org_not_found'));
+		} finally {
+			setIsValidatingOrg(false);
+		}
+	};
 
 	// Separate applications by type and calculate totals
 	const {normalApplications, directApplications, normalTotal, directTotal} = useMemo(() => {
@@ -188,6 +242,20 @@ const BillingForm: FC<BillingFormProps> = ({
 		if (inputValue.length < 2) {
 			return [];
 		}
+
+		// If user typed a valid org number, try to resolve it from Brreg
+		const cleaned = inputValue.replace(/\s/g, '');
+		if (validateOrgNumberFormat(cleaned)) {
+			try {
+				const data = await validateOrgNum(cleaned);
+				setResolvedOrgName(data.navn);
+			} catch (error) {
+				setResolvedOrgName('');
+			}
+		} else {
+			setResolvedOrgName('');
+		}
+
 		try {
 			const organizations = await searchOrganizations(inputValue);
 			return organizations.map(org => ({
@@ -253,6 +321,11 @@ const BillingForm: FC<BillingFormProps> = ({
 	const submitForm = (data: BillingFormData) => {
 		// Only called if form validation passes
 		// Now handle document validation and proceed
+		if (process.env.NODE_ENV === 'development') {
+			console.log('🐛 BillingForm: submitForm called with data:', data);
+			console.log('🐛 BillingForm: documentsValidated:', documentsValidated);
+			console.log('🐛 BillingForm: about to call onSubmit()');
+		}
 		onSubmit();
 	};
 
@@ -273,8 +346,20 @@ const BillingForm: FC<BillingFormProps> = ({
 				onSubmit={(e) => {
 					// Prevent default form submission
 					e.preventDefault();
+					if (process.env.NODE_ENV === 'development') {
+						console.log('🐛 BillingForm: Form submit event triggered');
+						console.log('🐛 BillingForm: Current form errors:', errors);
+						console.log('🐛 BillingForm: Current form values:', getValues());
+					}
 					// Run form validation
-					handleSubmit(submitForm)(e);
+					handleSubmit(
+						submitForm,
+						(errors) => {
+							if (process.env.NODE_ENV === 'development') {
+								console.error('🐛 BillingForm: Form validation failed with errors:', errors);
+							}
+						}
+					)(e);
 				}}
 				className={styles.checkoutForm}>
 				<h2>{t('bookingfrontend.billing_information')}</h2>
@@ -323,51 +408,69 @@ const BillingForm: FC<BillingFormProps> = ({
 									<Label>
 										{t('bookingfrontend.organization')} <span className="required-asterisk">*</span>
 									</Label>
-									<AsyncSelect
+									<AsyncCreatableSelect
+										onCreateOption={handleCreateOrganization}
+										isDisabled={isValidatingOrg}
+										isValidNewOption={(inputValue) => validateOrgNumberFormat(inputValue)}
+										formatCreateLabel={(inputValue) => {
+											const displayText = resolvedOrgName || inputValue;
+											return `${t('bookingfrontend.add_organization')}: ${displayText}`;
+										}}
 										cacheOptions
-										defaultOptions={myOrganizations?.map(org => ({
-											value: org.organization_number,
-											label: `${org.organization_number} [${org.name}]`
-										}))}
-										loadOptions={loadOptions}
-										onChange={(newValue) => {
-											const value = (newValue as OrganizationOption)?.value || '';
-											field.onChange(value);
-											handleOrgChange(value);
-										}}
-										value={myOrganizations?.map(org => ({
-											value: org.organization_number,
-											label: `${org.organization_number} [${org.name}]`
-										})).find(option => option.value === field.value)}
-										isClearable
-										placeholder={t('bookingfrontend.select_organization')}
-										classNamePrefix="react-select"
-										styles={{
-											container: (base) => ({
-												...base,
-												width: '100%'
-											}),
-											control: (base) => ({
-												...base,
-												minHeight: '48px',
-												borderRadius: '4px',
-												borderColor: errors.organizationNumber ? '#c30000' : '#ccc',
-												width: '100%'
-											}),
-											menu: (base) => ({
-												...base,
-												zIndex: 2
-											})
-										}}
-									/>
-									{errors.organizationNumber && (
-										<ValidationMessage>
-											{errors.organizationNumber.message}
-										</ValidationMessage>
-									)}
-								</Field>
-							)}
-						/>
+											defaultOptions={myOrganizations?.map(org => ({
+												value: org.organization_number,
+												label: `${org.organization_number} [${org.name}]`
+											}))}
+											loadOptions={loadOptions}
+											onChange={(newValue) => {
+												const value = (newValue as OrganizationOption)?.value || '';
+												field.onChange(value);
+												void handleOrgChange(value);
+												// Clear created org when user selects a different option
+												if (createdOrg && value !== createdOrg.value) {
+													setCreatedOrg(null);
+												}
+											}}
+											value={
+												createdOrg && field.value === createdOrg.value
+													? createdOrg
+													: myOrganizations?.map(org => ({
+														value: org.organization_number,
+														label: `${org.organization_number} [${org.name}]`
+													})).find(option => option.value === field.value)
+											}
+											isClearable
+											placeholder={t('bookingfrontend.select_organization')}
+											classNamePrefix="react-select"
+											styles={{
+												container: (base) => ({
+													...base,
+													width: '100%'
+												}),
+												control: (base) => ({
+													...base,
+													minHeight: '48px',
+													borderRadius: '4px',
+													borderColor: errors.organizationNumber ? '#c30000' : '#ccc',
+													width: '100%'
+												}),
+												menu: (base) => ({
+													...base,
+													zIndex: 2
+												})
+											}}
+										/>
+										<Paragraph style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#666' }}>
+											{t('bookingfrontend.org_create_hint')}
+										</Paragraph>
+										{errors.organizationNumber && (
+											<ValidationMessage>
+												{errors.organizationNumber.message}
+											</ValidationMessage>
+										)}
+									</Field>
+								)}
+							/>
 					)}
 
 					<Controller
@@ -475,9 +578,9 @@ const BillingForm: FC<BillingFormProps> = ({
 							areAllChecked={areAllDocumentsChecked}
 							showError={showDocumentsError || !!errors.documentsRead}
 						/>
-						{(!areAllDocumentsChecked && showDocumentsError) && (
+						{(errors.documentsRead || (!areAllDocumentsChecked && showDocumentsError)) && (
 							<ValidationMessage>
-								{t('bookingfrontend.you_must_confirm_all_documents')}
+								{errors.documentsRead?.message || t('bookingfrontend.you_must_confirm_all_documents')}
 							</ValidationMessage>
 						)}
 					</div>

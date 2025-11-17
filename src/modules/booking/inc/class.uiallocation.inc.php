@@ -1104,7 +1104,10 @@
 					}
 					else
 					{
-						$err = $this->bo->so->delete_allocation($id);
+
+						//	$err = $this->bo->so->delete_allocation($id);
+						$err = $this->bo->delete($id);
+
 						self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $allocation['building_id']));
 					}
 				}
@@ -1157,7 +1160,8 @@
 							$valid_dates[$i]['to_'] = $todate;
 							if ($step == 3)
 							{
-								$stat = $this->bo->so->delete_allocation($id);
+						//		$stat = $this->bo->so->delete_allocation($id);
+								$stat = $this->bo->delete($id);
 							}
 						}
 						$i++;

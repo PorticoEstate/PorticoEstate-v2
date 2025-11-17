@@ -719,6 +719,57 @@ $receipt = $custom_config->add_attrib(
 
 
 
+$receipt_Outlook = $custom_config->add_section(
+	array(
+		'name' => 'Outlook',
+		'descr' => 'Outlook webhook configuration'
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_Outlook['section_id'],
+		'input_type'	=> 'text',
+		'name'			=> 'baseurl',
+		'descr'			=> 'Base URL',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_Outlook['section_id'],
+		'input_type'	=> 'text',
+		'name'			=> 'tenant_id',
+		'descr'			=> 'Tenant ID',
+		'value'			=> '',
+	)
+);
+
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_Outlook['section_id'],
+		'input_type'	=> 'password',
+		'name'			=> 'api_key',
+		'descr'			=> 'API Key',
+		'value'			=> '',
+	)
+);
+
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_Outlook['section_id'],
+		'input_type'	=> 'checkbox',
+		'name'			=> 'webhook_enabled',
+		'descr'			=> 'Enable Webhooks',
+		'choice'		=> array('active'),
+		'value'			=> [],
+	)
+);
+
+
 
 $asyncservice = CreateObject('phpgwapi.asyncservice');
 

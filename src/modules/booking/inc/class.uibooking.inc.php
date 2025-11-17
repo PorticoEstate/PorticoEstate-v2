@@ -954,7 +954,8 @@ class booking_uibooking extends booking_uicommon
 					}
 					else
 					{
-						$err = $this->allocation_bo->so->delete_allocation($allocation_id);
+//						$err = $this->allocation_bo->so->delete_allocation($allocation_id);
+						$err = $this->allocation_bo->delete($allocation_id);
 						self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $booking['building_id']));
 					}
 				}
@@ -1019,7 +1020,8 @@ class booking_uibooking extends booking_uicommon
 							$allocation_delete[$i]['to_'] = $todate;
 							if ($step == 3 && $aid)
 							{
-								$stat = $this->bo->so->delete_allocation($aid);
+								//$stat = $this->bo->so->delete_allocation($aid);
+								$stat = $this->allocation_bo->delete($aid);
 							}
 						}
 					}

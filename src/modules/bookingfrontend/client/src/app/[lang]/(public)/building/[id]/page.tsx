@@ -1,11 +1,12 @@
 import BuildingCalendar from "@/components/building-calendar";
-import {fetchBuilding} from "@/service/api/building";
+import {fetchBuilding, fetchBuildingDocuments} from "@/service/api/building";
 import {notFound} from "next/navigation";
 import BuildingHeader from "@/components/building-page/building-header";
 import DescriptionAccordion from "@/components/building-page/description-accordion";
 import BuildingResources from "@/components/building-page/resource-list/building-resources";
 import BuildingContact from "@/components/building-page/building-contact";
 import BuildingPhotos from "@/components/building-page/building-photos/building-photos";
+import DocumentsSection from "@/components/shared/documents-section/documents-section";
 import {fetchTowns} from "@/service/api/api-utils";
 
 interface BuildingShowParams {
@@ -38,6 +39,9 @@ const BuildingShow = async (props: BuildingShowProps) => {
     const towns = await fetchTowns();
     const town = towns.find(t => t.id === building.town_id);
 
+    // Fetch building documents (excluding only pictures)
+    const documents = await fetchBuildingDocuments(buildingId, ['drawing', 'price_list', 'other', 'regulation', 'HMS_document']);
+
     return (
         <main>
             <BuildingHeader building={building} town={town} />
@@ -48,6 +52,7 @@ const BuildingShow = async (props: BuildingShowProps) => {
 				{/* Photos moved above accordions */}
                 <BuildingResources building={building}/>
                 <DescriptionAccordion description_json={building.description_json}/>
+                <DocumentsSection documents={documents} type="building" />
             </section>
             {/*<hr className={`my-2`}/>*/}
             <BuildingCalendar building_id={props.params.id} initialDate={props.initialDate}/>

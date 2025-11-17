@@ -1073,13 +1073,17 @@ class booking_uievent extends booking_uicommon
 			$_POST['to_'] = date("Y-m-d H:i:s", phpgwapi_datetime::date_to_timestamp($_POST['to_']));
 		}
 
-		list($event, $errors) = $this->extract_and_validate($event);
+		if ($_SERVER['REQUEST_METHOD'] == 'POST')
+		{
+			list($event, $errors) = $this->extract_and_validate($event);
+		}
 
 		if ($event['description'])
 		{
 			$event['description'] =  html_entity_decode($event['description']);
 		}
-		if ($event['customer_organization_number'])
+
+		if ($event['customer_organization_number'] && empty($event['customer_organization_id']))
 		{
 			$orginfo = $this->bo->so->get_org($event['customer_organization_number']);
 			$event['customer_organization_id'] = $orginfo['id'];
@@ -1088,7 +1092,7 @@ class booking_uievent extends booking_uicommon
 
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 		{
-			if (!$_POST['organization_name'])
+			if (!$_POST['customer_organization_name'])
 			{
 				$event['customer_organization_name'] = Null;
 				$event['customer_organization_id'] = Null;
@@ -1100,16 +1104,25 @@ class booking_uievent extends booking_uicommon
 			 */
 			$event['dates'] = array_map(array($this, '_combine_dates'), array($_POST['from_']), array($_POST['to_']));
 
-			if ($_POST['organization_name'])
+			if ($_POST['customer_organization_name'])
 			{
-				$event['customer_organization_name'] = Sanitizer::get_var('organization_name', 'string', 'POST');
-				$event['customer_organization_id'] = Sanitizer::get_var('organization_id', 'int', 'POST');
-				$organization = $this->organization_bo->read_single(intval(Sanitizer::get_var('organization_id', 'int')));
+				$event['customer_organization_name'] = Sanitizer::get_var('customer_organization_name', 'string', 'POST');
+				$event['customer_organization_id'] = Sanitizer::get_var('customer_organization_id', 'int', 'POST');
+				$organization = $this->organization_bo->read_single(intval(Sanitizer::get_var('customer_organization_id', 'int')));
 
-				if ($organization['customer_internal'] == 0)
+				if ((int)$organization['customer_internal'] == 0 || ! Sanitizer::get_var('customer_internal', 'bool', 'POST'))
 				{
 					$event['customer_identifier_type'] = $organization['customer_identifier_type'];
-					$event['customer_internal'] = $organization['customer_internal'];
+
+					if (!Sanitizer::get_var('customer_internal', 'bool', 'POST'))
+					{
+						$event['customer_internal'] = 0;
+					}
+					else
+					{
+						$event['customer_internal'] = $organization['customer_internal'];
+					}
+					
 					if (strlen($organization['customer_organization_number']) == 9)
 					{
 						$event['customer_organization_number'] = $organization['customer_organization_number'];
@@ -1123,7 +1136,12 @@ class booking_uievent extends booking_uicommon
 				{
 					$event['customer_identifier_type'] = 'organization_number';
 					$event['customer_internal'] = $organization['customer_internal'];
-					if ((strlen($organization['customer_number']) == 6) || (strlen($organization['customer_number']) == 5))
+					$customer_organization_number = Sanitizer::get_var('customer_organization_number', 'string', 'POST');
+					if ((strlen($customer_organization_number) == 6) || (strlen($customer_organization_number) == 5))
+					{
+						$event['customer_organization_number'] = $customer_organization_number;
+					}
+					else if ((strlen($organization['customer_number']) == 6) || (strlen($organization['customer_number']) == 5))
 					{
 						$event['customer_organization_number'] = $organization['customer_number'];
 					}
@@ -1150,7 +1168,8 @@ class booking_uievent extends booking_uicommon
 			 * Maker sure: Check if organization is registered
 			 */
 
-			$orginfo = $this->bo->so->get_org($event['customer_organization_number']);
+	//		$orginfo = $this->bo->so->get_org($event['customer_organization_id']);
+			$orginfo = $this->organization_bo->read_single(intval($event['customer_organization_id']));
 
 			if (empty($orginfo['id']))
 			{

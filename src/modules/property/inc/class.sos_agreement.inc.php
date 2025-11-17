@@ -1004,7 +1004,9 @@
 
 		function update_budget( $data )
 		{
-			$sql = "SELECT * FROM fm_s_agreement_budget WHERE agreement_id = {$data['agreement_id']} AND year = {$data['year']}";
+			$agreement_id = (int)$data['agreement_id'];
+			$year 		 = (int)$data['year'];
+			$sql = "SELECT * FROM fm_s_agreement_budget WHERE agreement_id = {$agreement_id} AND year = {$year}";
 			$this->db->query($sql, __LINE__, __FILE__);
 
 			if ($this->db->next_record())
@@ -1019,13 +1021,13 @@
 					. " budget_account = '{$data['budget_account']}',"
 					. " budget = {$data['budget']},"
 					. ' modified_date=' . time()
-					. " WHERE agreement_id = {$data['agreement_id']} AND year = {$data['year']}";
+					. " WHERE agreement_id = {$agreement_id} AND year = {$year}";
 			}
 			else
 			{
 				$sql = "INSERT INTO fm_s_agreement_budget (agreement_id,year,category,ecodimb,budget_account,budget,user_id,entry_date) VALUES("
-					. "{$data['agreement_id']},"
-					. "{$data['year']},"
+					. "{$agreement_id},"
+					. "{$year},"
 					. "{$data['category']},"
 					. "{$data['ecodimb']},"
 					. "'{$data['budget_account']}',"
@@ -1319,6 +1321,7 @@
 		{
 			$values = array();
 
+			$agreement_id = (int)$agreement_id;
 			$sql = "SELECT * FROM fm_s_agreement_budget WHERE agreement_id = {$agreement_id} ORDER BY year ASC";
 			$this->db->query($sql, __LINE__, __FILE__);
 

@@ -7,10 +7,12 @@
 @import "../styles/bs-containers/container.global";
 @import "../styles/hr.module";
 @import "../styles/digdir-utility/digdir-utility.module";
+@import "../styles/date-picker";
 
 
 body {
 	margin: 0;
+	touch-action: manipulation;
 }
 
 /* Scroll lock managed by ScrollLockContext */

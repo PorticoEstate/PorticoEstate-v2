@@ -333,8 +333,8 @@ class ServerSettings
         $bookingfrontendData = $this->getConfig('bookingfrontend');
         $this->bookingfrontend_config = new BookingfrontendConfig($bookingfrontendData);
 
-        $bookingData = $this->getConfig('booking');
-        $this->booking_config = new BookingConfig($bookingData);
+		$bookingData = $this->getConfig('booking');
+		$this->booking_config = new BookingConfig($bookingData);
     }
     private function getConfig(string $module): array
     {

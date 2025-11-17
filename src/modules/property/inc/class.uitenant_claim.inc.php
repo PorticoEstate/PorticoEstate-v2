@@ -55,13 +55,15 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		'query2'					 => true,
 		'index'						 => true,
 		'check'						 => true,
+		'new'						 => true,
 		'view'						 => true,
 		'edit'						 => true,
 		'delete'					 => true,
 		'view_file'					 => true,
 		'close'						 => true,
 		'handle_multi_upload_file'	 => true,
-		'update_data'				 => true
+		'update_data'				 => true,
+		'get_reskontro'				 => true
 	);
 
 	function __construct()
@@ -269,10 +271,13 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 					'project_id'		 => $this->project_id,
 					'phpgw_return_as'	 => 'json'
 				)),
+				// 'new_item'		 => self::link(array(
+				// 	'menuaction' => 'property.uiproject.index',
+				// 	'lookup'	 => '1',
+				// 	'from'		 => 'tenant_claim'
+				// )),
 				'new_item'		 => self::link(array(
-					'menuaction' => 'property.uiproject.index',
-					'lookup'	 => '1',
-					'from'		 => 'tenant_claim'
+					'menuaction' => 'property.uitenant_claim.new',
 				)),
 				'allrows'		 => true,
 				'editor_action'	 => '',
@@ -310,12 +315,12 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 					array(
 						'key'		 => 'lang_type',
 						'label'		 => lang('type'),
-						'sortable'	 => TRUE
+						'sortable'	 => false
 					),
 					array(
 						'key'		 => 'type_id',
 						'label'		 => lang('id'),
-						'sortable'	 => TRUE
+						'sortable'	 => false
 					),
 					array(
 						'key'		 => 'name',
@@ -526,6 +531,12 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		$lang_types = array(
 			'project' => lang('project'),
 			'ticket' => lang('ticket'),
+			'rental' => lang('rental'),
+			'key_order' => lang('key order'),
+			'garbage' => lang('garbage'),
+			'fire_alarm' => lang('fire alarm'),
+			'refund' => lang('refund')
+
 		);
 		$unset = 0;
 		if (!isset($this->serverSettings['webserver_url']))
@@ -623,6 +634,262 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		}
 	}
 
+	public function get_reskontro()
+	{
+		$location_code = Sanitizer::get_var('location_code', 'string');
+
+		$reskontro = $this->bo->get_reskontro($location_code);
+
+		return $reskontro;
+	}
+
+	private function get_claim_types($selected = '')
+	{
+		$claim_types = array(
+			array(
+				'id'	 => 'project',
+				'name'	 => lang('project'),
+				'disabled' => true
+			),
+			array(
+				'id'	 => 'ticket',
+				'name'	 => lang('ticket'),
+				'disabled' => true
+			),
+			// array(
+			// 	'id'	 => 'rental',
+			// 	'name'	 => lang('rental')
+			// ),
+			array(
+				'id'	 => 'key_order',
+				'name'	 => lang('key order')
+			),
+			array(
+				'id'	 => 'garbage',
+				'name'	 => lang('garbage')
+			),
+			array(
+				'id'	 => 'fire_alarm',
+				'name'	 => lang('fire alarm')
+			),
+			array(
+				'id'	 => 'refund',
+				'name'	 => lang('refund')
+			)
+		);
+
+		if ($selected)
+		{
+			if (in_array($selected, array('project', 'ticket'), true))
+			{
+				$claim_types = array_values(array_filter($claim_types, static function ($type) use ($selected) {
+					return $type['id'] === $selected;
+				}));
+			}
+			foreach ($claim_types as &$type)
+			{
+				if ($type['id'] == $selected)
+				{
+					$type['selected'] = 1;
+					if (isset($type['disabled']) && $type['disabled'] === true)
+					{
+						unset($type['disabled']);
+					}
+					break;
+				}
+			}
+			unset($type);
+		}
+
+		return $claim_types;
+	}
+
+	function new()
+	{
+		if (!$this->acl_edit)
+		{
+			phpgw::no_access();
+		}
+
+		$errors = [];
+
+		if (!empty($_POST['save']))
+		{
+			if (phpgw::is_repost()) //stop double clicks
+			{
+				phpgw::redirect_link('/index.php', array('menuaction' => 'property.uitenant_claim.index'));
+			}
+
+			$values = Sanitizer::get_var('values', 'string', 'POST');
+			$values['b_account_id'] = Sanitizer::get_var('b_account_id', 'int', 'POST');
+
+			if (!$values['location_code'])
+			{
+				$errors[] = lang('Please select a location !');
+			}
+			if (!$values['reskontro'])
+			{
+				$errors[] = lang('Please select a tenant');
+			}
+			if (!$values['claim_type'])
+			{
+				$errors[] = lang('Please select a claim type !');
+			}
+
+			if (!$errors)
+			{
+				$receipt			 = $this->bo->save($values);
+				$claim_id			 = $receipt['claim_id'];
+			}
+			else
+			{
+
+				if (Sanitizer::get_var('phpgw_return_as') == 'json')
+				{
+					return array(
+						'status' => 'error',
+						'id' => 0,
+						'message' => isset($errors) && $errors ? implode(', ', $errors) : ''
+					);
+				}
+				else
+				{
+					foreach ($errors as $error)
+					{
+						Cache::message_set($error, 'error');
+					}
+					$claim_id = null;
+				}
+			}
+
+
+			if(!empty($_FILES['file']['name']) && $claim_id)
+			{
+//				$this->_handle_files($claim_id);
+			}
+
+			if ($claim_id)
+			{
+				if (Sanitizer::get_var('phpgw_return_as') == 'json')
+				{
+					return array(
+						'status' => 'saved',
+						'id' => $claim_id,
+						'message' => isset($receipt['error']) && $receipt['error'] ? implode(', ', $receipt['error']) : ''
+					);
+				}
+
+				Cache::message_set(lang('Tenant claim') . " " . $claim_id . " " . lang("has been created"), 'message');
+				phpgw::redirect_link('/index.php', array(
+					'menuaction' => 'property.uitenant_claim.edit',
+					'claim_id'	 => $claim_id
+				));
+			}
+		}
+
+		$claim_types = $this->get_claim_types( $values['claim_type'] ?? '');
+
+		$b_account_data	 = $this->bocommon->initiate_ui_budget_account_lookup(array(
+			'b_account_id'	 => $values['b_account_id'] ?? '',
+			'b_account_name' => $values['b_account_name'] ?? '',
+			'disabled'		 => false,
+			'required'		 => true
+		));
+
+
+		$data = array(
+			'claim_types'	 => array('options' => $claim_types),
+			'currency'		 => $this->userSettings['preferences']['common']['currency'],
+			'form_url'		 => self::link(array(
+				'menuaction' => 'property.uitenant_claim.new'
+			)),
+			'cancel_url'	 => self::link(array(
+				'menuaction' => 'property.uitenant_claim.index'
+			)),
+			'b_account_data' => $b_account_data,
+			'values'		 => isset($values) ? $values : array(),
+			'select_name'	 => 'values[cat_id]',
+			'cat_list'		 => $this->bocommon->select_category_list(array(
+				'format'	 => 'select',
+				'selected'	 => $values['b_account_id'] ?? null,
+				'type'		 => 'tenant_claim',
+				'order'		 => 'descr'
+			)),
+			'multi_upload_action'				 => phpgw::link('/index.php', array('menuaction' => 'property.uitenant_claim.handle_multi_upload_file')),
+			'multiple_uploader'					 => true,
+
+		);
+
+		$jqcal = createObject('phpgwapi.jqcal2');
+		$jqcal->add_listener('claim_date');
+
+		$appname		 = lang('tenant claim');
+		$function_msg	 = lang('new');
+		//		phpgwapi_jquery::load_widget('file-upload-minimum');
+
+		$this->flags['app_header']	 = lang('property') . ' - ' . $appname . ': ' . $function_msg;
+		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);
+
+		self::add_javascript('phpgwapi', 'autonumeric', 'autoNumeric.min.js');
+		self::add_javascript('property', 'base', 'tenant_claim.new.js');
+
+		phpgwapi_jquery::load_widget('core');
+		phpgwapi_jquery::load_widget('autocomplete');
+		phpgwapi_jquery::formvalidator_generate(array('date', 'security', 'file'));
+		phpgwapi_jquery::load_widget('file-upload-minimum');
+
+
+		self::render_template_xsl(array('tenant_claim', 'files', 'multi_upload_file_inline'), array(
+			'new' => $data
+		));
+	}
+
+
+	private function _handle_files($id)
+	{
+		$id = (int)$id;
+		if (!$id)
+		{
+			throw new Exception('uitenant_claim::_handle_files() - missing id');
+		}
+		$bofiles = CreateObject('property.bofiles');
+
+		$file_name = str_replace(array(' ', '..'), array('_', '.'), $_FILES['file']['name']);
+
+		if ($file_name)
+		{
+			if (!is_file($_FILES['file']['tmp_name']))
+			{
+				Cache::message_set(lang('Failed to upload file !'), 'error');
+				return;
+			}
+
+			$to_file = "{$bofiles->fakebase}/tenant_claim/{$id}/{$file_name}";
+			if ($bofiles->vfs->file_exists(array(
+				'string'	 => $to_file,
+				'relatives'	 => array(RELATIVE_NONE)
+			)))
+			{
+				Cache::message_set(lang('This file already exists !'), 'error');
+			}
+			else
+			{
+				$bofiles->create_document_dir("tenant_claim/{$id}");
+				$bofiles->vfs->override_acl = 1;
+
+				if (!$bofiles->vfs->cp(array(
+					'from'		 => $_FILES['file']['tmp_name'],
+					'to'		 => $to_file,
+					'relatives'	 => array(RELATIVE_NONE | VFS_REAL, RELATIVE_ALL)
+				)))
+				{
+					Cache::message_set(lang('Failed to upload file !'), 'error');
+				}
+				$bofiles->vfs->override_acl = 0;
+			}
+		}
+	}
+
 	function edit($data = array(), $mode = 'edit')
 	{
 
@@ -634,12 +901,6 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			{
 				phpgw::no_access();
 			}
-
-			//				if (!$claim_id)
-			//				{
-			//					Cache::message_set('ID is required for the function uiproject::view()', 'error');
-			//					phpgw::redirect_link('/index.php', array('menuaction' => 'property.uitenant_claim.index'));
-			//				}
 		}
 		else
 		{
@@ -685,10 +946,10 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 			if (!$values['b_account_id'])
 			{
-				$receipt['error'][] = array('msg' => lang('Please select a budget account !'));
+//				$receipt['error'][] = array('msg' => lang('Please select a budget account !'));
 			}
 
-			if (!$values['workorder'] && !$values['ticket'])
+			if (in_array($values['claim_type'], ['project', 'ticket']) && !$values['workorder'] && !$values['ticket'])
 			{
 				$receipt['error'][] = array('msg' => lang('Please select a workorder !'));
 			}
@@ -863,9 +1124,11 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		$bolocation = CreateObject('property.bolocation');
 
+		$values['location_data'] = execMethod('property.solocation.read_single', $values['location_code']);
+		
 		$location_data = $bolocation->initiate_ui_location(array(
-			'values'		 => $project_values['location_data'],
-			'type_id'		 => count(explode('-', $project_values['location_data']['location_code'])),
+			'values'		 => $project_values['location_data'] ?? $values['location_data'],
+			'type_id'		 => count(explode('-', $project_values['location_data']['location_code'] ?? $values['location_code'])),
 			'no_link'		 => false, // disable lookup links for location type less than type_id
 			'tenant'		 => $project_values['location_data']['tenant_id'],
 			'lookup_type'	 => 'view',
@@ -912,7 +1175,7 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 			'ticket_id' => $values['ticket_id']
 		);
 
-		$location_exceptions = $bolocation->get_location_exception($project_values['location_data']['location_code']);
+		$location_exceptions = $bolocation->get_location_exception($project_values['location_data']['location_code'] ?? $values['location_code']);
 
 		foreach ($location_exceptions as $location_exception)
 		{
@@ -922,11 +1185,11 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		if ($values['ticket_id'])
 		{
-			$cats				 = CreateObject('phpgwapi.categories', -1, 'property', '.ticket');
+			$cats	 = CreateObject('phpgwapi.categories', -1, 'property', '.ticket');
 		}
 		else
 		{
-			$cats				 = CreateObject('phpgwapi.categories', -1, 'property', '.project');
+			$cats	 = CreateObject('phpgwapi.categories', -1, 'property', '.project');
 		}
 		$cats->supress_info	 = true;
 
@@ -937,35 +1200,39 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		//_debug_array($project_values['workorder_budget']);
 		$sumaBudget = 0;
 		$sumactualcost = 0;
-		for ($d = 0; $d < count($project_values['workorder_budget']); $d++)
+
+		if (!empty($project_values['workorder_budget']))
 		{
-			if ($project_values['workorder_budget'][$d]['charge_tenant'] == 1)
+			for ($d = 0; $d < count($project_values['workorder_budget']); $d++)
 			{
-				$project_values['workorder_budget'][$d]['charge_tenant'] = 'x';
-			}
+				if ($project_values['workorder_budget'][$d]['charge_tenant'] == 1)
+				{
+					$project_values['workorder_budget'][$d]['charge_tenant'] = 'x';
+				}
 
-			if ($project_values['workorder_budget'][$d]['selected'] == 1)
-			{
+				if ($project_values['workorder_budget'][$d]['selected'] == 1)
+				{
 
-				$project_values['workorder_budget'][$d]['budget_hidden']		 = $project_values['workorder_budget'][$d]['budget'];
-				$project_values['workorder_budget'][$d]['calculation_hidden']	 = $project_values['workorder_budget'][$d]['calculation'];
-				$project_values['workorder_budget'][$d]['actual_cost_hidden']	 = $project_values['workorder_budget'][$d]['actual_cost'];
-				$project_values['workorder_budget'][$d]['selected']				 = "<input type=\"checkbox\" name=\"values[{$type}][]\" checked value=\"" . $project_values['workorder_budget'][$d]['workorder_id'] . '">';
-			}
-			else
-			{
-				$project_values['workorder_budget'][$d]['budget_hidden']		 = 0;
-				$project_values['workorder_budget'][$d]['calculation_hidden']	 = 0;
-				$project_values['workorder_budget'][$d]['actual_cost_hidden']	 = 0;
-				$project_values['workorder_budget'][$d]['selected']				 = "<input type=\"checkbox\" name=\"values[{$type}][]\" value=\"" . $project_values['workorder_budget'][$d]['workorder_id'] . '">';
-			}
-			//				$project_values['workorder_budget'][$d]['selected'].= $project_values['workorder_budget'][$d]['claim_issued'] ? 'ok' : '';
+					$project_values['workorder_budget'][$d]['budget_hidden']		 = $project_values['workorder_budget'][$d]['budget'];
+					$project_values['workorder_budget'][$d]['calculation_hidden']	 = $project_values['workorder_budget'][$d]['calculation'];
+					$project_values['workorder_budget'][$d]['actual_cost_hidden']	 = $project_values['workorder_budget'][$d]['actual_cost'];
+					$project_values['workorder_budget'][$d]['selected']				 = "<input type=\"checkbox\" name=\"values[{$type}][]\" checked value=\"" . $project_values['workorder_budget'][$d]['workorder_id'] . '">';
+				}
+				else
+				{
+					$project_values['workorder_budget'][$d]['budget_hidden']		 = 0;
+					$project_values['workorder_budget'][$d]['calculation_hidden']	 = 0;
+					$project_values['workorder_budget'][$d]['actual_cost_hidden']	 = 0;
+					$project_values['workorder_budget'][$d]['selected']				 = "<input type=\"checkbox\" name=\"values[{$type}][]\" value=\"" . $project_values['workorder_budget'][$d]['workorder_id'] . '">';
+				}
+				//				$project_values['workorder_budget'][$d]['selected'].= $project_values['workorder_budget'][$d]['claim_issued'] ? 'ok' : '';
 
-			if ($project_values['workorder_budget'][$d]['claim_issued'] == 1)
-			{
+				if ($project_values['workorder_budget'][$d]['claim_issued'] == 1)
+				{
 
-				$sumaBudget		 += $project_values['workorder_budget'][$d]['budget_hidden'];
-				$sumactualcost	 += $project_values['workorder_budget'][$d]['actual_cost'];
+					$sumaBudget		 += $project_values['workorder_budget'][$d]['budget_hidden'];
+					$sumactualcost	 += $project_values['workorder_budget'][$d]['actual_cost'];
+				}
 			}
 		}
 
@@ -1130,15 +1397,25 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 
 		self::add_javascript('phpgwapi', 'autonumeric', 'autoNumeric.min.js');
 
+		if($project_values['start_date'])
+		{
+			$start_date = $project_values['start_date'];
+		}
+		else
+		{
+			$start_date = $this->phpgwapi_common->show_date($values['claim_date'], $this->userSettings['preferences']['common']['dateformat']);
+		}
+		$claim_types = $this->get_claim_types($values['claim_type'] ?? '');
+
 		$data = array(
+			'claim_types'					 => array('options' => $claim_types),
 			'lang_parent'						=> $lang_parent,
 			'value_parent_id'					=> $value_parent_id,
 			'datatable_def'						 => $datatable_def,
 			'table_header_workorder'			 => $table_header_workorder,
 			'lang_no_workorders'				 => lang('No workorder budget'),
 			'workorder_link'					 => phpgw::link('/index.php', array('menuaction' => 'property.uiworkorder.view')),
-			'lang_start_date'					 => lang('Project start date'),
-			'value_start_date'					 => $project_values['start_date'],
+			'value_start_date'					 => $start_date,
 			'value_entry_date'					 => $values['entry_date'] ? $this->phpgwapi_common->show_date($values['entry_date'], $this->userSettings['preferences']['common']['dateformat']) : '',
 			'base_java_url'						 => json_encode(array('menuaction' => "property.uitenant_claim.update_data", 'id' => $claim_id)),
 			'lang_end_date'						 => lang('Project end date'),

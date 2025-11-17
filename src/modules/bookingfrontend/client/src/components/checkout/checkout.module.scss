@@ -90,6 +90,25 @@
     }
 }
 
+.sectionTotal {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 2rem;
+    padding: 1rem;
+    margin-top: 1rem;
+    background-color: var(--ds-color-neutral-surface-subtle);
+    border-top: 2px solid var(--ds-color-neutral-border-default);
+    font-size: 1.1rem;
+}
+
+.grandTotal {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    font-size: 1.25rem;
+}
+
 .formFields {
     display: flex;
     flex-direction: column;

@@ -99,6 +99,20 @@ class UserHelper
 		}
 	}
 
+	/**
+	 * Create a UserHelper instance with a specific SSN
+	 * Useful for getting organization data for a specific user without affecting session state
+	 * 
+	 * @param string $ssn The SSN to use for this UserHelper instance
+	 * @return UserHelper
+	 */
+	public static function fromSSN(string $ssn): UserHelper
+	{
+		$userHelper = new self();
+		$userHelper->ssn = $ssn;
+		return $userHelper;
+	}
+
 	function get_ids_from_array($org)
 	{
 		return $org['org_id'];

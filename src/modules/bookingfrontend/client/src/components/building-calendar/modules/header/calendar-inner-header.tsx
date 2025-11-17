@@ -60,6 +60,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			case 'timeGridWeek':
 				setCurrentDate(currentDate.minus({weeks: 1}));
 				break;
+			case 'dayGridMonth':
+				setCurrentDate(currentDate.minus({months: 1}));
+				break;
 			default:
 				setCurrentDate(currentDate.minus({days: 1}));
 		}
@@ -75,6 +78,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					break;
 				case 'timeGridWeek':
 					setCurrentDate(currentDate.plus({weeks: 1}));
+					break;
+				case 'dayGridMonth':
+					setCurrentDate(currentDate.plus({months: 1}));
 					break;
 				default:
 					setCurrentDate(currentDate.plus({days: 1}));
@@ -147,25 +153,26 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 							data-size={'sm'}
 							className={'captialize subtle'}
 							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
-					{/*        className={'captialize'}*/}
-					{/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
+					<Button variant={view === 'dayGridMonth' ? 'primary' : 'tertiary'} data-color={'accent'}
+							data-size={'sm'}
+							className={'captialize subtle'}
+							onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>
 					</ButtonGroup>
 				)}
 
 			{
 				calendarViewMode === 'calendar' &&
 				<ButtonGroup data-color='accent' className={styles.modeSelect}>
-					<Button variant={view !== 'listWeek' ? 'primary' : 'tertiary'}
+					<Button variant={view !== 'listWeek' && view !== 'listDay' ? 'primary' : 'tertiary'}
 							aria-current={'true'} data-size={'sm'}
 							className={'captialize subtle'} onClick={() => {
 						props.setLastCalendarView()
 					}}><CalendarIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
-					<Button variant={view === 'listWeek' ? 'primary' : 'tertiary'}
+					<Button variant={view === 'listWeek' || view === 'listDay' ? 'primary' : 'tertiary'}
 							data-size={'sm'}
 							className={'captialize subtle'} onClick={() => {
-						props.setView('listWeek')
+						props.setView(isMobile ? 'listDay' : 'listWeek')
 					}}><TableIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
 				</ButtonGroup>

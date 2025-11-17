@@ -4,6 +4,7 @@
 	<xsl:param name="class" />
 	<xsl:param name="mode" />
 	<xsl:param name="id" />
+	<xsl:param name="required" />
 	<xsl:variable name="lang_cat_statustext">
 		<xsl:value-of select="lang_cat_statustext"/>
 	</xsl:variable>
@@ -26,6 +27,14 @@
 		<xsl:attribute name="data-validation">
 			<xsl:text>required</xsl:text>
 		</xsl:attribute>
+		<xsl:if test="$required != ''">
+			<xsl:attribute name="data-validation-error-msg">
+				<xsl:value-of select="php:function('lang', 'Please - select category !')"/>
+			</xsl:attribute>
+			<xsl:attribute name="required">
+				<xsl:text>required</xsl:text>
+			</xsl:attribute>
+		</xsl:if>
 		<xsl:if test="$mode ='view'">
 			<xsl:attribute name="disabled">
 				<xsl:text>disabled</xsl:text>

@@ -6,6 +6,14 @@ interface ScrollLockContextType {
   unlockScroll: (lockId: string) => void;
 }
 
+const DEBUG_MODE: boolean = false;
+
+const debug = (...args: any[]) => {
+  if (DEBUG_MODE) {
+    console.log(...args);
+  }
+};
+
 const ScrollLockContext = createContext<ScrollLockContextType | undefined>(undefined);
 
 interface ScrollLockProviderProps {
@@ -18,34 +26,34 @@ export const ScrollLockProvider: React.FC<ScrollLockProviderProps> = ({ children
   const lockScroll = (lockId: string) => {
     const wasAlreadyLocked = lockCountRef.current.has(lockId);
     if (wasAlreadyLocked) {
-      console.log(`⚠️ Attempted duplicate lock for: ${lockId} (ignored)`);
+      debug(`⚠️ Attempted duplicate lock for: ${lockId} (ignored)`);
       return;
     }
-    console.log(`🔒 Locking scroll for: ${lockId}. Active locks:`, Array.from(lockCountRef.current));
+    debug(`🔒 Locking scroll for: ${lockId}. Active locks:`, Array.from(lockCountRef.current));
     lockCountRef.current.add(lockId);
     updateBodyClass();
-    console.log(`🔒 After lock - Active locks:`, Array.from(lockCountRef.current));
+    debug(`🔒 After lock - Active locks:`, Array.from(lockCountRef.current));
   };
 
   const unlockScroll = (lockId: string) => {
     const wasLocked = lockCountRef.current.has(lockId);
     if (!wasLocked) {
-      console.log(`⚠️ Attempted unlock for non-existent lock: ${lockId} (ignored)`);
+      debug(`⚠️ Attempted unlock for non-existent lock: ${lockId} (ignored)`);
       return;
     }
-    console.log(`🔓 Unlocking scroll for: ${lockId}. Active locks:`, Array.from(lockCountRef.current));
+    debug(`🔓 Unlocking scroll for: ${lockId}. Active locks:`, Array.from(lockCountRef.current));
     lockCountRef.current.delete(lockId);
     updateBodyClass();
-    console.log(`🔓 After unlock - Active locks:`, Array.from(lockCountRef.current));
+    debug(`🔓 After unlock - Active locks:`, Array.from(lockCountRef.current));
   };
 
   const updateBodyClass = () => {
     if (typeof document !== 'undefined') {
       if (lockCountRef.current.size > 0) {
-        console.log(`📱 Adding 'scroll-locked' class to body. Lock count: ${lockCountRef.current.size}`);
+        debug(`📱 Adding 'scroll-locked' class to body. Lock count: ${lockCountRef.current.size}`);
         document.body.classList.add('scroll-locked');
       } else {
-        console.log(`📱 Removing 'scroll-locked' class from body. Lock count: ${lockCountRef.current.size}`);
+        debug(`📱 Removing 'scroll-locked' class from body. Lock count: ${lockCountRef.current.size}`);
         document.body.classList.remove('scroll-locked');
       }
     }
@@ -76,7 +84,7 @@ export const useScrollLockEffect = (lockId: string, shouldLock: boolean) => {
   const { lockScroll, unlockScroll } = useScrollLock();
 
   useEffect(() => {
-    console.log(`🔄 useScrollLockEffect called for ${lockId} with shouldLock: ${shouldLock}`);
+    debug(`🔄 useScrollLockEffect called for ${lockId} with shouldLock: ${shouldLock}`);
     if (shouldLock) {
       lockScroll(lockId);
     } else {
@@ -85,7 +93,7 @@ export const useScrollLockEffect = (lockId: string, shouldLock: boolean) => {
 
     // Cleanup on unmount
     return () => {
-      console.log(`🧹 Cleanup running for ${lockId}`);
+      debug(`🧹 Cleanup running for ${lockId}`);
       unlockScroll(lockId);
     };
   }, [lockId, shouldLock, lockScroll, unlockScroll]);

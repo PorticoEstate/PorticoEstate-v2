@@ -7,7 +7,7 @@ import {IEvent, IFreeTimeSlot} from "@/service/pecalendar.types";
 import {DatesSetArg} from "@fullcalendar/core";
 import {IBuilding, Season} from "@/service/types/Building";
 import {useLoadingContext} from "@/components/loading-wrapper/LoadingContext";
-import {useBuildingSchedule, useOrganizationSchedule} from "@/service/hooks/api-hooks";
+import {useBuildingSchedule, useOrganizationSchedule, usePartialApplications} from "@/service/hooks/api-hooks";
 import CalendarProvider from "@/components/building-calendar/calendar-context";
 import {FCallTempEvent} from "@/components/building-calendar/building-calendar.types";
 import {useQueryClient} from "@tanstack/react-query";
@@ -75,6 +75,9 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
 
     // Use the appropriate query result based on mode
     const QCRES = buildingId ? buildingScheduleQuery : organizationScheduleQuery;
+    
+    // Fetch partial applications from shopping cart
+    const {data: partialApplications} = usePartialApplications();
 
     const prioritizeEvents = useCallback((events: IEvent[], enabledResources: Set<string>): IEvent[] => {
         // First get all events that affect enabled resources
@@ -168,6 +171,9 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
         });
     }, []);
 
+    // Partial applications are now handled in the temp events context
+    // This removes duplication between temp events and partial application events
+
     // Extract resources that actually exist in the schedule data
     const scheduleResources = useMemo(() => {
         if (!QCRES.data) return [];
@@ -183,15 +189,17 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
     }, [QCRES.data]);
 
     const prioritizedEvents = useMemo(() => {
-        if (!QCRES.data) return [];
-
+        const scheduleEvents = QCRES.data || [];
+        
         // In organization mode, show all events without resource filtering initially
         if (organizationId && !buildingId) {
-            return QCRES.data;
+            return scheduleEvents;
         }
 
-        // In building mode, apply priority filtering
-        return prioritizeEvents(QCRES.data, enabledResources);
+        // Apply priority filtering to schedule events
+        const prioritizedScheduleEvents = prioritizeEvents(scheduleEvents, enabledResources);
+        
+        return prioritizedScheduleEvents;
     }, [QCRES.data, enabledResources, prioritizeEvents, organizationId, buildingId]);
 
 
@@ -271,6 +279,7 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
             resourcesHidden={resourcesHidden}
             currentBuilding={buildingId}
 			currentOrganization={organizationId}
+			seasons={seasons}
         >
 
             <div className={`${styles.calendar} ${resourcesHidden ? styles.closed : ''} `}

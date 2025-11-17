@@ -605,6 +605,16 @@
 					'text'	 => lang('Config')
 				);
 
+				$admin_children_location['analyze_location'] = array(
+					'text'	=> lang('Analyze Location Hierarchy'),
+					'url'	=> phpgw::link('/index.php', array('menuaction' => 'property.uianalyze_location.index')),
+				);
+
+				$admin_children_location['analyze_location_documents'] = array(
+					'text'	=> lang('Analyze Location Hierarchy Documents'),
+					'url'	=> phpgw::link('/index.php', array('menuaction' => 'property.uianalyze_location.documents')),
+				);
+
 				$menus['admin'] = array(
 					'index'			 => array(
 						'text'		 => lang('Configuration'),

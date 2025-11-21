@@ -664,6 +664,8 @@ Overlaps with existing allocation %1. Remember to send a notification	booking	nn
 Overlaps with existing booking	booking	nn	Overlappar med eksisterande booking
 Overlaps with existing booking %1. Remember to send a notification	booking	nn	Overlapper en eksisterende interntildeling %1. Husk å sende varsel
 Overlaps with existing event	booking	nn	Overlappar med eksisterande arrangement
+override	booking	nn	Overstyring
+override dim	booking	nn	Overstyr Dimensjon
 overridden participant limit is set to %1	booking	nn	Overstyrt grense for deltakarar er sett til %1
 owner_id	booking	nn	Eigar
 parent activity	booking	nn	Overordna kategori

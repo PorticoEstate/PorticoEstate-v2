@@ -60,7 +60,15 @@ class booking_article_mapping extends phpgwapi_model
 		$building_name,
 		$article_group,
 		$group_id,
-		$article_alternative_code;
+		$article_alternative_code,
+		$override_dim_0,
+		$override_dim_1,
+		$override_dim_2,
+		$override_dim_3,
+		$override_dim_4,
+		$override_dim_5,
+		$override_dim_6,
+		$override_dim_7;
 
 	public function __construct(int|null $id = null)
 	{
@@ -225,6 +233,79 @@ class booking_article_mapping extends phpgwapi_model
 				'sortable'	 => true,
 				'public'	 => true
 			),
+			'override_dim_0'		 => array(
+				'action' =>  ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => false,
+				'label'	 => 'override dim 0',
+				'sortable'	 => true,
+				'public'	 => true,
+			),
+			'override_dim_1'		 => array(
+				'action' =>  ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => false,
+				'label'	 => 'override dim 1',
+				'sortable'	 => true,
+				'public'	 => true,
+			),
+			'override_dim_2'		 => array(
+				'action' =>  ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => false,
+				'label'	 => 'override dim 2',
+				'sortable'	 => true,
+				'public'	 => true,
+			),
+			'override_dim_3'		 => array(
+				'action' =>  ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => false,
+				'label'	 => 'override dim 3',
+				'sortable'	 => true,
+				'public'	 => true,
+			),
+			'override_dim_4'		 => array(
+				'action' =>  ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => false,
+				'label'	 => 'override dim 4',
+				'sortable'	 => true,
+				'public'	 => true,
+			),
+			'override_dim_5'		 => array(
+				'action' =>  ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => false,
+				'label'	 => 'override dim 5',
+				'sortable'	 => true,
+				'public'	 => true,
+			),
+			'override_dim_6'		 => array(
+				'action' =>  ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => false,
+				'label'	 => 'override dim 6',
+				'sortable'	 => true,
+				'public'	 => true,
+			),
+			'override_dim_7'		 => array(
+				'action' =>  ACL_ADD | ACL_EDIT,
+				'type'	 => 'string',
+				'required'	 => false,
+				'query'	 => false,
+				'label'	 => 'override dim 7',
+				'sortable'	 => true,
+				'public'	 => true,
+			),
+
 		);
 
 		if ($debug)

@@ -61,6 +61,12 @@ check_button_names = function ()
 	var tab = $("#active_tab").val();
 	var id = $("#id").val();
 
+	if (id > 0)
+	{
+		$("#submit_group_bottom").show();
+	}
+
+
 	if (tab === 'first_tab')
 	{
 		if (id > 0)
@@ -71,9 +77,12 @@ check_button_names = function ()
 		{
 			$("#save_button_bottom").val(lang['next']);
 		}
-		$("#submit_group_bottom").show();
 	}
 	else if (tab === 'prizing')
+	{
+		$("#save_button_bottom").val(lang['next']);
+	}
+	else if (tab === 'override')
 	{
 		$("#save_button_bottom").val(lang['save']);
 	}

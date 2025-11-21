@@ -380,7 +380,7 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		 */
 	public function edit($values = array(), $mode = 'edit')
 	{
-		$active_tab										 = !empty($values['active_tab']) ? $values['active_tab'] : Sanitizer::get_var('active_tab', 'string', 'REQUEST', 'first_tab');
+		$active_tab	 = !empty($values['active_tab']) ? $values['active_tab'] : Sanitizer::get_var('active_tab', 'string', 'REQUEST', 'first_tab');
 		if (empty($this->permissions[ACL_ADD]))
 		{
 			phpgw::no_access();
@@ -406,6 +406,11 @@ class booking_uiarticle_mapping extends phpgwapi_uicommon
 		$tabs['prizing']	 = array(
 			'label'		 => lang('prizing'),
 			'link'		 => '#prizing',
+			'disable'	 => empty($id) ? true : false
+		);
+		$tabs['override']	 = array(
+			'label'		 => lang('override'),
+			'link'		 => '#override',
 			'disable'	 => empty($id) ? true : false
 		);
 		$tabs['files']		 = array(

@@ -589,6 +589,8 @@ Overlaps with existing allocation %1. Remember to send a notification	booking	no
 Overlaps with existing booking	booking	en	Overlaps with existing booking
 Overlaps with existing booking %1. Remember to send a notification	booking	no	Overlaps with existing booking %1. Remember to send a notification
 Overlaps with existing event	booking	en	Overlaps with existing event
+override	booking	en	Override
+override dim	booking	en	Override Dimension
 overridden participant limit is set to %1	booking	en	Overridden participant limit is set to %1
 owner_id	booking	en	Owner_id
 parent activity	booking	en	Parent activity

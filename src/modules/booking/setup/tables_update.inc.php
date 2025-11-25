@@ -8022,3 +8022,23 @@ function booking_upgrade0_2_114($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.115';
+function booking_upgrade0_2_115($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+	//for 0 trough 7
+	for ($i = 0; $i <= 7; $i++)
+	{
+		$oProc->AddColumn(
+			'bb_article_mapping',
+			'override_dim_' . $i,
+			array('type' => 'varchar', 'precision' => '25', 'nullable' => true),
+		);
+	}
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.116';
+		return $currentver;
+	}
+}

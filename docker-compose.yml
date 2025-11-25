@@ -60,6 +60,9 @@ services:
         build:
             context: .
             dockerfile: Dockerfile.websocket
+            args:
+                http_proxy: ${http_proxy}
+                https_proxy: ${https_proxy}
         working_dir: /var/www/html
         environment:
             <<: *common-variables

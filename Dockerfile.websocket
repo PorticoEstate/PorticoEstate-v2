@@ -1,5 +1,18 @@
 FROM php:8.4-cli
 
+ARG http_proxy
+ARG https_proxy
+
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
+
+
+# Configure PEAR
+RUN if [ -n "${http_proxy}" ]; then pear config-set http_proxy ${http_proxy}; fi && \
+    pear config-set php_ini $PHP_INI_DIR/php.ini
+
+
+
 RUN apt-get update && \
     apt-get install -y \
     git \

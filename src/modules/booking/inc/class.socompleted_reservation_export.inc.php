@@ -2,6 +2,7 @@
 phpgw::import_class('booking.socommon');
 phpgw::import_class('booking.sopermission');
 phpgw::import_class('phpgwapi.datetime');
+phpgw::import_class('booking.soarticle_mapping');
 
 class booking_socompleted_reservation_export extends booking_socommon
 {
@@ -14,7 +15,8 @@ class booking_socompleted_reservation_export extends booking_socommon
 		$sequential_number_generator_so,
 		$config_data,
 		$sopurchase_order,
-		$event_so, $application_bo, $application_so, $allocation_bo, $booking_bo, $event_bo, $organization_bo;
+		$event_so, $application_bo, $application_so, $allocation_bo, $booking_bo, $event_bo, $organization_bo,
+		$article_data_array = array();
 
 	function __construct()
 	{
@@ -2544,6 +2546,51 @@ class booking_socompleted_reservation_export extends booking_socommon
 						if (empty($order_line['amount']))
 						{
 							continue;
+						}
+
+						$article_mapping_id = $order_line['article_mapping_id'];
+						if(!isset($this->article_data_array[$article_mapping_id]))
+						{
+							$article_data = booking_soarticle_mapping::get_instance()->read_single($article_mapping_id, false, true);
+							$this->article_data_array[$article_mapping_id] = $article_data;
+						}
+						else
+						{
+							$article_data = $this->article_data_array[$article_mapping_id];
+						}
+
+						if (!empty($article_data['override_dim_0']))
+						{
+							$_item['account'] = str_pad(strtoupper(substr($article_data['override_dim_0'], 0, 8)), 8, ' ');
+						}
+
+						if(!empty($article_data['override_dim_1']))
+						{
+							$_item['dim_1'] = str_pad(strtoupper(substr($article_data['override_dim_1'], 0, 8)), 8, ' ');
+						}
+						if(!empty($article_data['override_dim_2']))
+						{
+							$_item['dim_2'] = str_pad(strtoupper(substr($article_data['override_dim_2'], 0, 8)), 8, ' ');
+						}
+						if(!empty($article_data['override_dim_3']))
+						{
+							$_item['dim_3'] = str_pad(strtoupper(substr($article_data['override_dim_3'], 0, 8)), 8, ' ');
+						}
+						if(!empty($article_data['override_dim_4']))
+						{
+							$_item['dim_4'] = str_pad(substr($article_data['override_dim_4'], 0, 8), 8, ' ');
+						}
+						if(!empty($article_data['override_dim_5']))
+						{
+							$_item['dim_5'] = str_pad(strtoupper(substr($article_data['override_dim_5'], 0, 12)), 12, ' ');
+						}
+						if(!empty($article_data['override_dim_6']))
+						{
+							$_item['dim_6'] = str_pad(substr($article_data['override_dim_6'], 0, 4), 4, ' ');
+						}
+						if(!empty($article_data['override_dim_7']))
+						{
+							$_item['dim_7'] = str_pad(substr($article_data['override_dim_7'], 0, 4), 4, ' ');
 						}
 
 						$line_no += 1;

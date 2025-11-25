@@ -33,8 +33,17 @@ RUN \
 
 # Rebuild the source code only for production
 FROM base AS builder
+ARG http_proxy
+ARG https_proxy
 ARG NEXT_ENV=production
 ARG GIT_COMMIT_ID=unknown
+
+ENV http_proxy=${http_proxy}
+ENV https_proxy=${https_proxy}
+
+RUN if [ -n "${http_proxy}" ]; then \
+ sed -i 's/https/http/' /etc/apk/repositories; \
+fi
 WORKDIR /app
 RUN apk add --no-cache git
 COPY --from=deps /app/node_modules ./node_modules

@@ -103,7 +103,7 @@ class booking_uibooking extends booking_uicommon
 			),
 			'datatable' => array(
 				'source' => self::link(array('menuaction' => 'booking.uibooking.index', 'phpgw_return_as' => 'json')),
-				'sorted_by' => array('key' => 4, 'dir' => 'desc'), //id
+				'sorted_by' => array('key' => 0, 'dir' => 'desc'), //id
 				'field' => array(
 					array(
 						'key' => 'id',

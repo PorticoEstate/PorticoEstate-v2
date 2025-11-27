@@ -125,6 +125,7 @@ class booking_uievent extends booking_uicommon
 			),
 			'datatable' => array(
 				'source' => self::link(array('menuaction' => 'booking.uievent.index', 'phpgw_return_as' => 'json')),
+				'sorted_by' => array('key' => 0, 'dir' => 'desc'), //id
 				'field' => array(
 					array(
 						'key' => 'id',

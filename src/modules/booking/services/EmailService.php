@@ -295,6 +295,177 @@ class EmailService
     }
 
     /**
+     * Send notifications to case officers (preserves legacy BCC functionality)
+     * 
+     * @param array $application Application data
+     */
+    public function sendCaseOfficerNotifications(array $application): void
+    {
+        if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])) {
+            return;
+        }
+
+        try {
+            $building_info = $this->getBuildingInfo($application['id']);
+            if (!$building_info) {
+                return;
+            }
+            
+            $extra_mail_addresses = $this->getMailAddresses((int)$building_info['id'], (int)$application['case_officer_id']);
+
+            $mail_addresses = array();
+            foreach ($extra_mail_addresses as $user_id => $extra_mail_address) {
+                $prefs = CreateObject('phpgwapi.preferences', $user_id)->read();
+                if (isset($prefs['booking']['notify_on_new']) && ($prefs['booking']['notify_on_new'] & 1)) {
+                    if ($extra_mail_address) {
+                        $mail_addresses[] = $extra_mail_address;
+                    }
+                }
+            }
+
+            if (empty($mail_addresses)) {
+                return;
+            }
+
+            $config = $this->getBookingConfig();
+            if (!$config) {
+                return;
+            }
+
+			$from = isset($config['email_sender']) && $config['email_sender']
+				? $config['email_sender']
+				: "noreply<noreply@{$this->serverSettings['hostname']}>";
+
+			$subject = "KOPI::" . $config['application_mail_subject'];
+			$external_site_address = !empty($config['external_site_address'])
+				? $config['external_site_address']
+				: $this->serverSettings['webserver_url'];
+
+			// Create backend link
+			$enforce_ssl = $this->serverSettings['enforce_ssl'];
+			$this->serverSettings['enforce_ssl'] = true;
+			$link_backend = \phpgw::link('/index.php', array('menuaction' => 'booking.uiapplication.show', 'id' => $application['id']), false, true, true);
+			$this->serverSettings['enforce_ssl'] = $enforce_ssl;
+
+			$resourcename = $this->getResourceNames($application['resources']);
+
+			$body = "<h1>NB!! KOPI av epost til {$application['contact_email']}</h1>"
+				. "<p>Ny søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " på " . $application['building_name'] . "</p>"
+				. "<p>" . $config['application_mail_created'] . "</p>"
+				. "<p>Forresten...:<br/>"
+				. "<a href=\"{$link_backend}\">Link til søknad i backend</a></p>"
+				. "<p>" . $config['application_mail_signature'] . "</p>";
+
+			$send = CreateObject('phpgwapi.send');
+			$bcc = implode(';', $mail_addresses);
+			$send->msg('email', $bcc, $subject, $body, '', '', '', $from, 'AktivKommune', 'html', '', array(), false);
+		} catch (Exception $e) {
+            error_log("Failed to send case officer notifications: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Send SMS notifications (preserves legacy functionality)
+     * 
+     * @param array $application Application data
+     */
+    public function sendSmsNotifications(array $application): void
+    {
+        try {
+
+			$config = $this->getBookingConfig();
+			$sms_text = $config['application_sms_created'] ?? '';
+
+			$building_info = $this->getBuildingInfo($application['id']);
+            if (!$building_info) {
+                return;
+            }
+
+            $extra_mail_addresses = $this->getMailAddresses((int)$building_info['id'], (int)$application['case_officer_id']);
+
+            $cellphones = array();
+			foreach ($extra_mail_addresses as $user_id => $extra_mail_address)
+			{
+				$prefs = CreateObject('phpgwapi.preferences', $user_id)->read();
+				if (isset($prefs['booking']['notify_on_new']) && ($prefs['booking']['notify_on_new'] & 2))
+				{
+					$cellphones[] = $prefs['common']['cellphone'];
+				}
+			}
+
+
+			if (empty($cellphones)) {
+                return;
+            }
+
+ 
+            if ($sms_text) {
+                $sms = CreateObject('phpgwapi.sms');
+                foreach ($cellphones as $phone) {
+                    $sms->send($phone, $sms_text);
+                }
+            }
+
+        } catch (Exception $e) {
+            error_log("Failed to send SMS notifications: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get building info
+     */
+    protected function getBuildingInfo(int $application_id): ?array
+    {
+        try {
+            $so = CreateObject('booking.soapplication');
+            return $so->get_building_info($application_id);
+        } catch (Exception $e) {
+            error_log("Failed to get building info: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get mail addresses for building roles and case officer
+     */
+    protected function getMailAddresses(int $building_id, int $user_id = 0): array
+    {
+        try {
+			$roles_at_building = CreateObject('booking.sopermission_building')->get_roles_at_building($building_id);
+
+			$users = array();
+
+			foreach ($roles_at_building as $role)
+			{
+				$users[] = $role['user_id'];
+			}
+
+			if ($user_id && !in_array($user_id, $users))
+			{
+				$users[] = $user_id;
+			}
+
+			$mail_addresses = array();
+			foreach ($users as $user)
+			{
+
+				$prefs = CreateObject('phpgwapi.preferences', $user)->read();
+
+				if (!empty($prefs['common']['email']))
+				{
+					$mail_addresses[$user] =  $prefs['common']['email'];
+				}
+			}
+
+			return $mail_addresses;
+
+		} catch (Exception $e) {
+            error_log("Failed to get mail addresses: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Get booking module configuration
      */
     protected function getBookingConfig(): ?array

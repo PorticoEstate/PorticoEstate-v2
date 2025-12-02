@@ -9,6 +9,7 @@ use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use App\modules\booking\controllers\VippsController;
 use App\modules\booking\controllers\ResourceController;
 use App\modules\booking\controllers\EventController;
+use App\modules\booking\controllers\AllocationController;
 use App\controllers\GenericRegistryController;
 use App\modules\booking\models\BookingGenericRegistry;
 use App\modules\booking\controllers\WebhookController;
@@ -41,6 +42,16 @@ $app->group('/booking/events', function (RouteCollectorProxy $group)
 	$group->put('/{event_id}', EventController::class . ':updateEvent');
 	$group->get('/{event_id}', EventController::class . ':getEvent');
 	$group->patch('/{event_id}/toggle-active', EventController::class . ':toggleActiveStatus');
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/allocations', function (RouteCollectorProxy $group)
+{
+	$group->post('', AllocationController::class . ':createAllocation');
+	$group->get('/{id}', AllocationController::class . ':getAllocation');
+	$group->put('/{id}', AllocationController::class . ':updateAllocation');
+	$group->delete('/{id}', AllocationController::class . ':deleteAllocation');
 })
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));

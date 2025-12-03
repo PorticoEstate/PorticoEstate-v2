@@ -299,6 +299,38 @@ class EventService
 				}
 			}
 
+			// Send webhook notification to Outlook if resources are associated
+			if (!empty($application['resources']))
+			{
+
+				$resourceIds = [];
+				foreach ($application['resources'] as $resource)
+				{
+					$resourceIds[] = $resource['id'];
+				}
+				
+				// Send webhook notification (async, after response)
+				try
+				{
+					$webhookNotifier = new \App\modules\booking\services\WebhookNotifier();
+					$webhookNotifier->notifyChange('event', 'created', $eventId, $resourceIds);
+				}
+				catch (Exception $e)
+				{
+					// Log error but don't fail the main operation
+					$log = new \App\modules\phpgwapi\services\Log();
+
+					$log->error(array(
+						'text' => 'Webhook notification failed after event creation for event {p1} (reservation {p2})',
+						'p1' => $eventId,
+						'p2' => $resourceIds ? implode(',', $resourceIds) : "none",
+						'line' => __LINE__,
+						'file' => __FILE__
+					));
+				}
+			}
+
+
 			return $eventId;
 		} catch (Exception $e) {
 			throw new Exception("Failed to create event: " . $e->getMessage());

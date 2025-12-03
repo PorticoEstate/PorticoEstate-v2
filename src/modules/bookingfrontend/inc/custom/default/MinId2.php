@@ -303,20 +303,14 @@ class bookingfrontend_external_user extends UserHelper
 	}
 
 	private function log($what, $value = '')
-	{
-		$serverSettings = Settings::getInstance()->get('server');
-		if (!empty($serverSettings['log_levels']['module']['login']))
-		{
-			$bt = debug_backtrace();
-			$log = new Log();
-			$log->debug(array(
-				'text' => "what: %1, <br/>value: %2",
-				'p1' => $what,
-				'p2' => $value ? $value : ' ',
-				'line' => __LINE__,
-				'file' => __FILE__
-			));
-			unset($bt);
-		}
+	{	
+		$log = new Log();
+		$log->debug(array(
+			'text' => "what: %1, <br/>value: %2",
+			'p1' => $what,
+			'p2' => $value ? $value : ' ',
+			'line' => __LINE__,
+			'file' => __FILE__
+		));	
 	}
 }

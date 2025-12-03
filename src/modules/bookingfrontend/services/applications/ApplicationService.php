@@ -1082,6 +1082,18 @@ class ApplicationService
 
             // Use modern EmailService instead of legacy method
             $this->emailService->sendApplicationNotification($_application, $created);
+
+            // Handle additional notifications to case officers (BCC functionality)
+            if ($created)
+            {
+                $this->emailService->sendCaseOfficerNotifications($_application);
+            }
+
+            // Handle SMS notifications (legacy functionality preserved)
+            if ($created)
+            {
+                $this->emailService->sendSmsNotifications($_application);
+            }
         }
     }
 

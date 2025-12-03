@@ -37,7 +37,7 @@
 use App\Database\Db2;
 use App\modules\phpgwapi\services\Settings;
 
- include_class('property', 'cron_parent', 'inc/cron/');
+include_class('property', 'cron_parent', 'inc/cron/');
 
 class synkroniser_med_boei extends property_cron_parent
 {
@@ -85,7 +85,7 @@ class synkroniser_med_boei extends property_cron_parent
 
 		$this->db_boei2	 = clone ($this->db_boei);
 
-/*		echo "db\n";
+		/*		echo "db\n";
 		_debug_array($this->db->get_config());
 		echo "db2\n";
 		_debug_array($this->db2->get_config());
@@ -143,7 +143,8 @@ class synkroniser_med_boei extends property_cron_parent
 
 			$toarray = array(
 				'hc483@bergen.kommune.no',
-				'Kvale, Silje <Silje.Kvale@bergen.kommune.no>'
+				'Kvale, Silje <Silje.Kvale@bergen.kommune.no>',
+				'Yuliia.Tereshchenko@bergen.kommune.no'
 			);
 			$to		 = implode(';', $toarray);
 
@@ -339,7 +340,7 @@ SQL;
 	function update_table_Gateadresse()
 	{
 		$metadata_boei	 = $this->db_boei->metadata('Gateadresse');
-	//	_debug_array($metadata_boei);
+		//	_debug_array($metadata_boei);
 		$metadata		 = $this->db->metadata('boei_gateadresse');
 		//_debug_array($metadata);
 
@@ -757,7 +758,7 @@ SQL;
 	function update_table_leietaker()
 	{
 		$metadata_boei	 = $this->db_boei->metadata('Leietaker');
-//		_debug_array($metadata_boei);
+		//		_debug_array($metadata_boei);
 		$metadata		 = $this->db->metadata('boei_leietaker');
 		//_debug_array($metadata);
 		//die();
@@ -800,12 +801,12 @@ SQL;
 			$Personnr = $this->db_boei->f('Personnr');
 
 			$ssn = null;
-			if($Personnr && $Fodt_dato)
+			if ($Personnr && $Fodt_dato)
 			{
 				$dato_arr = explode('.', $Fodt_dato);
 				$ssn = $dato_arr[0] . $dato_arr[1] . substr($dato_arr[2], 2, 2) . $Personnr;
 			}
-	
+
 			$valueset[] = array(
 				1	 => array(
 					'value'	 => (int)$this->db_boei->f('Leietaker_ID'),
@@ -1082,28 +1083,36 @@ SQL;
 
 	function legg_til_objekt_phpgw()
 	{
-		$sql = "SELECT boei_objekt.objekt_id, boei_objekt.navn, boei_objekt.bydel_id, boei_objekt.eier_id,boei_objekt.tjenestested, boei_objekt.postnr_id"
+		$sql = "SELECT boei_objekt.objekt_id, boei_objekt.navn, boei_objekt.bydel_id, boei_objekt.eier_id, boei_objekt.tjenestested, boei_objekt.postnr_id, boei_eier.eiertype_id"
 			. " FROM fm_location1 RIGHT OUTER JOIN "
 			. " boei_objekt ON fm_location1.loc1 = boei_objekt.objekt_id"
+			. " JOIN boei_eier ON boei_objekt.eier_id = boei_eier.eier_id"
 			. " WHERE fm_location1.loc1 IS NULL";
 
 		$this->db->query($sql, __LINE__, __FILE__);
 		$objekt_latin = array();
 		while ($this->db->next_record())
 		{
+			$eiertype_id	 = (int)$this->db->f('eiertype_id') == 0 ? 5 : (int)$this->db->f('eiertype_id');
 			$tjenestested = (int)$this->db->f('tjenestested');
 			$loc1		  = $this->db->f('objekt_id');
+
 			/*
- * Alle kostraid’er skal ha mva/AV-kode 75
- * Bortsett fra
- * 26550 som jeg ønsker varsel på,
- * og 26555 som ikke finnes enda, men som kanskje blir opprettet på innleieboliger.
-*/
+			* Alle tjenestested skal ha mva/AV-kode 75
+			* 26550 som ikke er våre(owner_type_id = 5) skal ha 0.
+			* 26550 som er våre, skal ha 75.
+			* 26555 innleieboliger, skal ha 0.
+			*/
+
 
 			$mva = 75;
-			if (in_array($tjenestested, array(26550, 26555)))
+			if (in_array($tjenestested, array(26555)) || (!in_array($eiertype_id, array(5)) && $tjenestested == 26550))
 			{
 				$mva = 0;
+			}
+
+			if (in_array($tjenestested, array(26510, 26550, 26555, 26530, 26540, 26570, 26575)))
+			{
 				$this->alert_messages[] = "Opprettet objekt {$loc1} i Portico med tjeneste {$tjenestested}";
 			}
 
@@ -1409,8 +1418,8 @@ SQL;
 		}
 
 		$sql = "SELECT boei_leietaker.leietaker_id, boei_leietaker.ssn FROM boei_leietaker"
-		. " JOIN fm_tenant ON boei_leietaker.leietaker_id = fm_tenant.id"
-		. " WHERE boei_leietaker.ssn IS NOT NULL AND fm_tenant.ssn IS NULL";
+			. " JOIN fm_tenant ON boei_leietaker.leietaker_id = fm_tenant.id"
+			. " WHERE boei_leietaker.ssn IS NOT NULL AND fm_tenant.ssn IS NULL";
 		$this->db->query($sql, __LINE__, __FILE__);
 
 		while ($this->db->next_record())
@@ -1631,8 +1640,10 @@ SQL;
 		$metadata = $this->db->metadata('fm_location1');
 
 
-		$sql = " SELECT boei_objekt.objekt_id,bydel_id,tjenestested,navn,boei_objekt.eier_id, kostra_id"
-			. " FROM boei_objekt JOIN fm_location1 ON boei_objekt.objekt_id = fm_location1.loc1"
+		$sql = " SELECT boei_objekt.objekt_id,bydel_id,tjenestested,boei_objekt.navn,boei_objekt.eier_id, kostra_id, fm_owner_category.id as owner_type_id"
+			. " FROM boei_objekt 
+				JOIN fm_location1 ON boei_objekt.objekt_id = fm_location1.loc1
+				JOIN fm_owner_category ON fm_location1.owner_id = fm_owner_category.id"
 			. " WHERE boei_objekt.navn != fm_location1.loc1_name"
 			. " OR  boei_objekt.bydel_id != fm_location1.part_of_town_id"
 			. " OR  boei_objekt.eier_id != fm_location1.owner_id"
@@ -1644,9 +1655,21 @@ SQL;
 			$tjenestested = (int)$this->db->f('tjenestested');
 			$kostra_id = (int)$this->db->f('kostra_id');
 			$loc1		  = $this->db->f('objekt_id');
+			$owner_type_id 	  = (int)$this->db->f('owner_type_id');
+			$navn = $this->db->f('navn');
+
+
+			/*
+				* Alle tjenestested skal ha mva/AV-kode 75
+				* 26550 som ikke er våre(owner_type_id = 5) skal ha 0.
+				* 26550 som er våre, skal ha 75.
+				* 26555 innleieboliger, skal ha 0.
+				* eksempel: 5369 skal 75.
+				*/
+
 
 			$mva = 75;
-			if (in_array($tjenestested, array(26550, 26555)) && $kostra_id != $tjenestested)
+			if (in_array($tjenestested, array(26555)) || (!in_array($owner_type_id,array(5)) && $tjenestested == 26550))
 			{
 				$mva = 0;
 			}
@@ -1681,23 +1704,15 @@ SQL;
 				$cols	 = implode(",", $cols);
 				$vals	 = $this->db2->validate_insert($vals);
 				$this->db2->query("INSERT INTO fm_location1_history ($cols) VALUES ($vals)", __LINE__, __FILE__);
-
 			}
 
 			$sql2 = " UPDATE fm_location1 SET "
-				. " loc1_name = '" . $this->db->f('navn') . "',"
+				. " loc1_name = '" . $navn . "',"
 				. " part_of_town_id = " . (int)$this->db->f('bydel_id') . ","
 				. " owner_id = " . (int)$this->db->f('eier_id') . ","
 				. " mva = " . $mva . ","
 				. " kostra_id = " . $tjenestested
 				. " WHERE  loc1 = '" . $this->db->f('objekt_id') . "'";
-
-				/*
-				* Alle kostraid’er skal ha mva/AV-kode 75
-				* Bortsett fra
-				* 26550 som jeg ønsker varsel på,
-				* og 26555 som ikke finnes enda, men som kanskje blir opprettet på innleieboliger.
-				*/
 
 
 			$this->db2->query($sql2, __LINE__, __FILE__);

@@ -195,3 +195,32 @@ Your archive user id	preferences	no	Din bruker i arkivsystem
 Insert your archive user id	preferences	no	Angi din bruker i eksternt arkivsystem
 Your job title	preferences	no	Din jobbtittel
 Insert job title	preferences	no	Angi din jobbtittel
+Passkey Management	preferences	no	Passkeyadministrasjon
+Passkeys are a secure way to sign in without using passwords. They use biometrics like fingerprints or facial recognition from your device.	preferences	no	Passkeys er en sikker måte å logge inn uten å bruke passord. De bruker biometri som fingeravtrykk eller ansiktsgjenkjenning fra enheten din.
+Checking browser support for passkeys...	preferences	no	Sjekker nettleserens støtte for passkeys...
+Your browser or device does not support passkeys. Please use a modern browser like Chrome, Edge, or Safari.	preferences	no	Nettleseren eller enheten din støtter ikke passkeys. Vennligst bruk en moderne nettleser som Chrome, Edge eller Safari.
+Your Passkeys	preferences	no	Dine passkeys
+You have not registered any passkeys yet.	preferences	no	Du har ikke registrert noen passkeys ennå.
+Add New Passkey	preferences	no	Legg til ny passkey
+Passkey Name	preferences	no	Passkey-navn
+e.g., Work Laptop, Personal Phone	preferences	no	f.eks. Jobbmaskin, Personlig telefon
+Give your passkey a memorable name to identify which device it belongs to.	preferences	no	Gi passkey et beskrivende navn for å identifisere hvilken enhet den tilhører.
+You will be prompted to verify your identity using your device. This may require biometric authentication or a PIN.	preferences	no	Du vil bli bedt om å verifisere identiteten din ved hjelp av enheten din. Dette kan kreve biometrisk autentisering eller PIN-kode.
+Register Passkey	preferences	no	Registrer passkey
+Registering passkey, please follow your device prompts...	preferences	no	Registrerer passkey, følg instruksjonene på enheten din...
+Passkey registered successfully!	preferences	no	Passkey registrert!
+Passkey registration failed.	preferences	no	Registrering av passkey mislyktes.
+Error registering passkey	preferences	no	Feil ved registrering av passkey
+Please enter a name for your passkey.	preferences	no	Vennligst skriv inn et navn for passkey.
+Are you sure you want to delete this passkey?	preferences	no	Er du sikker på at du vil slette denne passkey?
+Failed to delete passkey.	preferences	no	Kunne ikke slette passkey.
+Error deleting passkey	preferences	no	Feil ved sletting av passkey
+Delete	preferences	no	Slett
+Last Used	preferences	no	Sist brukt
+Created On	preferences	no	Opprettet
+Never	preferences	no	Aldri
+Name	preferences	no	Navn
+Created	preferences	no	Opprettet
+Actions	preferences	no	Handlinger
+Unknown	preferences	no	Ukjent
+Unnamed Device	preferences	no	Navnløs enhet

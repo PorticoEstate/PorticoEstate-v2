@@ -6,6 +6,8 @@ import { ShoppingBasketIcon } from "@navikt/aksel-icons";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import styles from './shopping-cart-fab.module.scss';
 import ShoppingCartPopper from "@/components/layout/header/shopping-cart/shopping-cart-popper";
+import ShoppingCartDrawer from "@/components/layout/header/shopping-cart/shopping-cart-drawer";
+import {useIsMobile} from "@/service/hooks/is-mobile";
 
 interface ShoppingCartFabProps {
 }
@@ -14,6 +16,7 @@ const ShoppingCartFab: FC<ShoppingCartFabProps> = (props) => {
     const {data: cartItems} = usePartialApplications();
     const [open, setOpen] = useState<boolean>(false);
     const popperAnchorEl = useRef<HTMLButtonElement | null>(null);
+    const isMobile = useIsMobile();
     
     // Check if cart has items
     const hasItems = (cartItems?.list.length ?? 0) > 0;
@@ -45,12 +48,15 @@ const ShoppingCartFab: FC<ShoppingCartFabProps> = (props) => {
                     count={cartItems?.list.length ?? 0}
                 ></Badge>
             </Button>
-            <ShoppingCartPopper anchor={popperAnchorEl.current} open={open} setOpen={setOpen}/>
+            
+            {isMobile ? (
+                <ShoppingCartPopper anchor={popperAnchorEl.current} open={open} setOpen={setOpen}/>
+            ) : (
+                <ShoppingCartDrawer open={open} setOpen={setOpen} />
+            )}
         </div>
-
     );
 }
 
 export default ShoppingCartFab
-
 

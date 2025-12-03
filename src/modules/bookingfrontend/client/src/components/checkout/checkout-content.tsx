@@ -2,17 +2,18 @@
 import React, {FC, useState, useMemo, useEffect} from 'react';
 import CartSection from "./cart-section";
 import {useBookingUser, usePartialApplications, useUpdatePartialApplication, useResourceRegulationDocuments} from "@/service/hooks/api-hooks";
-import { CheckoutEventDetailsData } from './checkout-event-details-schema';
+import { CheckoutEventDetailsData, createCheckoutEventDetailsSchema } from './checkout-event-details-schema';
 import { BillingFormData } from './billing-form-schema';
 import CheckoutEventDetails from "@/components/checkout/checkout-event-details";
 import BillingForm from "@/components/checkout/billing-form";
 import styles from './checkout.module.scss';
 import {Spinner} from "@digdir/designsystemet-react";
 import ApplicationCrud from "@/components/building-calendar/modules/event/edit/application-crud";
-import {useCheckoutApplications} from "@/components/checkout/hooks/checkout-hooks";
+import {useCheckoutApplications, useVippsPayment, useExternalPaymentEligibility} from "@/components/checkout/hooks/checkout-hooks";
 import {useRouter} from "next/navigation";
 import { useTrans } from '@/app/i18n/ClientTranslationProvider';
 import RegulationDocuments from './regulation-documents';
+import {IShortResource} from "@/service/pecalendar.types";
 
 const CheckoutContent: FC = () => {
 	const t = useTrans();
@@ -21,7 +22,74 @@ const CheckoutContent: FC = () => {
     const updateMutation = useUpdatePartialApplication();
     const [eventDetails, setEventDetails] = useState<CheckoutEventDetailsData>();
     const checkoutMutation = useCheckoutApplications();
+    const vippsPaymentMutation = useVippsPayment();
+    const {data: paymentEligibility, isLoading: eligibilityLoading} = useExternalPaymentEligibility();
     const [billingDetails, setBillingDetails] = useState<BillingFormData>();
+    const [buildingParentIds, setBuildingParentIds] = useState<Record<number, number>>({});
+
+    // Separate applications into regular and recurring
+    const {regularApplications, recurringApplications} = useMemo(() => {
+        const regular: any[] = [];
+        const recurring: any[] = [];
+        
+        applications?.list?.forEach(app => {
+            if (app.recurring_info && app.recurring_info.trim() !== '') {
+                recurring.push(app);
+            } else {
+                regular.push(app);
+            }
+        });
+        
+        return { regularApplications: regular, recurringApplications: recurring };
+    }, [applications?.list]);
+
+    // Preselect the first regular application per building when applications load
+    useEffect(() => {
+        if (regularApplications.length > 0 && Object.keys(buildingParentIds).length === 0) {
+            const newBuildingParentIds: Record<number, number> = {};
+            
+            // Group applications by building and select first one as parent for each building
+            regularApplications.forEach(app => {
+                if (!newBuildingParentIds[app.building_id]) {
+                    newBuildingParentIds[app.building_id] = app.id;
+                }
+            });
+            
+            setBuildingParentIds(newBuildingParentIds);
+        }
+    }, [regularApplications, buildingParentIds]);
+
+    // Building parent ID change handler
+    const handleBuildingParentIdChange = (buildingId: number, parentId: number) => {
+        setBuildingParentIds(prev => ({
+            ...prev,
+            [buildingId]: parentId
+        }));
+    };
+
+    // Validate parent ID selection per building
+    const parentIdValidation = useMemo(() => {
+        if (regularApplications.length === 0) {
+            return { valid: true, message: null };
+        }
+
+        // Validate each building's parent selection
+        for (const [buildingId, parentId] of Object.entries(buildingParentIds)) {
+            const parentApp = regularApplications.find(app => app.id === parentId);
+            if (!parentApp) {
+                return { valid: false, message: `Parent application not found for building ID ${buildingId}` };
+            }
+
+            if (parentApp.building_id !== parseInt(buildingId)) {
+                return {
+                    valid: false,
+                    message: `Invalid parent selection: Parent application belongs to "${parentApp.building_name}" but was selected for a different building.`
+                };
+            }
+        }
+
+        return { valid: true, message: null };
+    }, [buildingParentIds, regularApplications]);
     const [currentApplication, setCurrentApplication] = useState<{
         application_id: number,
         date_id: number,
@@ -31,13 +99,14 @@ const CheckoutContent: FC = () => {
 
     // Extract all resources from applications with their building IDs
     const resources = useMemo(() => {
-        if (!applications?.list) return [];
+        const allApps = [...regularApplications, ...recurringApplications];
+        if (allApps.length === 0) return [];
 
         const resourceMap = new Map<number, { id: number, building_id?: number }>();
 
-        applications.list.forEach(app => {
+        allApps.forEach(app => {
             if (app.resources && Array.isArray(app.resources)) {
-                app.resources.forEach(resource => {
+                app.resources.forEach((resource: IShortResource) => {
                     if (resource.id) {
                         resourceMap.set(resource.id, {
                             id: resource.id,
@@ -49,19 +118,25 @@ const CheckoutContent: FC = () => {
         });
 
         return Array.from(resourceMap.values());
-    }, [applications]);
+    }, [regularApplications, recurringApplications]);
 
     // Fetch regulation documents for all resources
     const { data: regulationDocuments, isLoading: docsLoading } = useResourceRegulationDocuments(resources);
 
     // State to track individual document checkboxes
     const [checkedDocuments, setCheckedDocuments] = useState<Record<number, boolean>>({});
-    
+
     // State to track if we should show document error
     const [showDocumentsError, setShowDocumentsError] = useState(false);
-    
+
+    // State to track if we should show organizer validation error
+    const [showOrganizerError, setShowOrganizerError] = useState(false);
+
     // Reference for the documents section
     const documentsSectionRef = React.useRef<HTMLDivElement>(null);
+
+    // Reference for the organizer field section
+    const organizerSectionRef = React.useRef<HTMLDivElement>(null);
 
     // Custom handler for individual document consent changes
     const handleDocumentConsentChange = (documentId: number, checked: boolean) => {
@@ -69,7 +144,7 @@ const CheckoutContent: FC = () => {
             ...prev,
             [documentId]: checked
         }));
-        
+
         // If user is checking a document, clear the error state
         if (checked) {
             setShowDocumentsError(false);
@@ -82,6 +157,11 @@ const CheckoutContent: FC = () => {
 
         return regulationDocuments.every(doc => checkedDocuments[doc.id] === true);
     }, [regulationDocuments, checkedDocuments]);
+
+    // Check if external payment should be available based on backend eligibility
+    const shouldShowExternalPaymentOptions = useMemo(() => {
+        return paymentEligibility?.eligible === true;
+    }, [paymentEligibility]);
 
     // Update billing details when document consent status changes
     useEffect(() => {
@@ -97,50 +177,184 @@ const CheckoutContent: FC = () => {
     }, [areAllDocumentsChecked]);
 
     const handleFormSubmit = async () => {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('🐛 CheckoutContent: handleFormSubmit called');
+            console.log('🐛 CheckoutContent: eventDetails:', eventDetails);
+            console.log('🐛 CheckoutContent: applications:', applications);
+            console.log('🐛 CheckoutContent: billingDetails:', billingDetails);
+        }
+        
         if (!eventDetails || !applications || !billingDetails) {
             console.log('missing Data', eventDetails, billingDetails);
             return;
         }
-        
-        // Check if documents need to be confirmed
-        if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
+
+        // Validate organizer field using the schema
+        const organizerValidation = createCheckoutEventDetailsSchema(t).safeParse(eventDetails);
+        if (!organizerValidation.success) {
             // Show error state
-            setShowDocumentsError(true);
-            
-            // Scroll to documents section
-            if (documentsSectionRef.current) {
-                documentsSectionRef.current.scrollIntoView({ 
+            setShowOrganizerError(true);
+
+            // Scroll to organizer section
+            if (organizerSectionRef.current) {
+                organizerSectionRef.current.scrollIntoView({
                     behavior: 'smooth',
                     block: 'start'
                 });
             }
-            
+
+            // Don't submit the form
+            return;
+        }
+
+        // Clear organizer error if validation passes
+        setShowOrganizerError(false);
+
+        // Check if documents need to be confirmed
+        if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
+            // Show error state
+            setShowDocumentsError(true);
+
+            // Scroll to documents section
+            if (documentsSectionRef.current) {
+                documentsSectionRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
             // Don't submit the form
             return;
         }
 
         try {
+            if (process.env.NODE_ENV === 'development') {
+                console.log('🐛 CheckoutContent: About to call checkoutMutation.mutateAsync with data:', {
+                    organizerName: eventDetails.organizerName,
+                    customerType: billingDetails?.customerType || 'ssn',
+                    organizationNumber: billingDetails.organizationNumber,
+                    organizationName: billingDetails.organizationName,
+                    contactName: billingDetails.contactName,
+                    contactEmail: billingDetails.contactEmail,
+                    contactPhone: billingDetails.contactPhone,
+                    street: billingDetails.street,
+                    zipCode: billingDetails.zipCode,
+                    city: billingDetails.city,
+                    documentsRead: billingDetails.documentsRead,
+                    building_parent_ids: buildingParentIds
+                });
+            }
+            
             checkoutMutation.mutateAsync({
-                eventTitle: eventDetails.title,
                 organizerName: eventDetails.organizerName,
                 customerType: billingDetails?.customerType || 'ssn',
+                organizationNumber: billingDetails.organizationNumber,
+                organizationName: billingDetails.organizationName,
                 contactName: billingDetails.contactName,
                 contactEmail: billingDetails.contactEmail,
                 contactPhone: billingDetails.contactPhone,
                 street: billingDetails.street,
                 zipCode: billingDetails.zipCode,
                 city: billingDetails.city,
-                documentsRead: billingDetails.documentsRead
+                documentsRead: billingDetails.documentsRead,
+                building_parent_ids: buildingParentIds
             }).then(() => {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('🐛 CheckoutContent: checkoutMutation success, redirecting to /user/applications');
+                }
                 router.push('/user/applications');
-            })
+            }).catch((error) => {
+                if (process.env.NODE_ENV === 'development') {
+                    console.error('🐛 CheckoutContent: checkoutMutation error:', error);
+                }
+                console.error('Error updating applications:', error);
+                // TODO: Handle error (show error message to user)
+            });
         } catch (error) {
+            if (process.env.NODE_ENV === 'development') {
+                console.error('🐛 CheckoutContent: Outer try-catch error:', error);
+            }
             console.error('Error updating applications:', error);
             // TODO: Handle error (show error message to user)
         }
     };
 
-    if(userLoading || partialsLoading || checkoutMutation.isPending || docsLoading) {
+    const handleVippsPayment = async () => {
+        console.log('=== VIPPS PAYMENT CLICKED ===');
+        console.log('eventDetails:', eventDetails);
+        console.log('applications:', applications);
+        console.log('billingDetails:', billingDetails);
+
+        if (!eventDetails || !applications || !billingDetails) {
+            console.log('missing Data for Vipps payment', eventDetails, billingDetails);
+            return;
+        }
+
+        // Validate organizer field using the schema
+        const organizerValidation = createCheckoutEventDetailsSchema(t).safeParse(eventDetails);
+        if (!organizerValidation.success) {
+            // Show error state
+            setShowOrganizerError(true);
+
+            // Scroll to organizer section
+            if (organizerSectionRef.current) {
+                organizerSectionRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
+            // Don't proceed with payment
+            return;
+        }
+
+        // Clear organizer error if validation passes
+        setShowOrganizerError(false);
+
+        // Check if documents need to be confirmed
+        if (regulationDocuments && regulationDocuments.length > 0 && !areAllDocumentsChecked) {
+            // Show error state
+            setShowDocumentsError(true);
+
+            // Scroll to documents section
+            if (documentsSectionRef.current) {
+                documentsSectionRef.current.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+
+            // Don't proceed with payment
+            return;
+        }
+
+        try {
+            console.log('=== CALLING VIPPS API ===');
+            const paymentData = {
+                organizerName: eventDetails.organizerName,
+                customerType: billingDetails?.customerType || 'ssn',
+                organizationNumber: billingDetails.organizationNumber,
+                organizationName: billingDetails.organizationName,
+                contactName: billingDetails.contactName,
+                contactEmail: billingDetails.contactEmail,
+                contactPhone: billingDetails.contactPhone,
+                street: billingDetails.street,
+                zipCode: billingDetails.zipCode,
+                city: billingDetails.city,
+                documentsRead: billingDetails.documentsRead,
+                building_parent_ids: buildingParentIds
+            };
+            console.log('Payment data:', paymentData);
+
+            await vippsPaymentMutation.mutateAsync(paymentData);
+            console.log('=== VIPPS API CALL COMPLETED ===');
+        } catch (error) {
+            console.error('Error initiating Vipps payment:', error);
+            // TODO: Handle error (show error message to user)
+        }
+    };
+
+    if(userLoading || partialsLoading || checkoutMutation.isPending || docsLoading || eligibilityLoading) {
         return <Spinner aria-label={t('bookingfrontend.loading_user_info')} />
     }
 
@@ -151,13 +365,55 @@ const CheckoutContent: FC = () => {
 
     return (
         <div className={styles.content}>
-            <CheckoutEventDetails user={user} partials={applications.list} onDetailsChange={setEventDetails} />
-            <CartSection applications={applications.list} setCurrentApplication={setCurrentApplication} />
+            <div ref={organizerSectionRef}>
+                <CheckoutEventDetails 
+                    user={user} 
+                    partials={applications.list} 
+                    onDetailsChange={setEventDetails}
+                    showError={showOrganizerError}
+                    onErrorClear={() => setShowOrganizerError(false)}
+                />
+            </div>
+            <CartSection
+                applications={applications.list}
+                setCurrentApplication={setCurrentApplication}
+                buildingParentIds={buildingParentIds}
+                onBuildingParentIdChange={handleBuildingParentIdChange}
+            />
 
-            <BillingForm 
-                user={user} 
-                onBillingChange={setBillingDetails} 
-                onSubmit={handleFormSubmit} 
+            {process.env.NODE_ENV === 'development' && (
+                <div style={{ 
+                    background: '#f0f8ff', 
+                    border: '1px solid #007acc', 
+                    padding: '10px', 
+                    margin: '10px 0',
+                    borderRadius: '4px',
+                    fontSize: '12px',
+                    fontFamily: 'monospace'
+                }}>
+                    <strong>🐛 Debug: Form Validity Status</strong>
+                    <div>Event Details: {eventDetails ? '✅ Valid' : '❌ Missing'}</div>
+                    <div>Billing Details: {billingDetails ? '✅ Valid' : '❌ Missing'}</div>
+                    <div>Organizer Valid: {eventDetails ? (createCheckoutEventDetailsSchema(t).safeParse(eventDetails).success ? '✅ Yes' : '❌ No') : '❌ N/A'}</div>
+                    <div>Documents Required: {regulationDocuments?.length || 0}</div>
+                    <div>Documents Checked: {areAllDocumentsChecked ? '✅ All' : '❌ Incomplete'}</div>
+                    <div>Can Submit: {
+                        eventDetails && 
+                        billingDetails && 
+                        createCheckoutEventDetailsSchema(t).safeParse(eventDetails).success &&
+                        (!regulationDocuments?.length || areAllDocumentsChecked) 
+                        ? '✅ Yes' : '❌ No'
+                    }</div>
+                </div>
+            )}
+
+            <BillingForm
+                user={user}
+                onBillingChange={setBillingDetails}
+                onSubmit={handleFormSubmit}
+                onVippsPayment={shouldShowExternalPaymentOptions ? handleVippsPayment : undefined}
+                paymentEligibility={paymentEligibility}
+                vippsLoading={vippsPaymentMutation.isPending}
                 documentsValidated={!regulationDocuments?.length || areAllDocumentsChecked}
                 documentsSectionRef={documentsSectionRef}
                 showDocumentsSection={true}
@@ -166,6 +422,7 @@ const CheckoutContent: FC = () => {
                 onDocumentCheck={handleDocumentConsentChange}
                 areAllDocumentsChecked={areAllDocumentsChecked}
                 showDocumentsError={showDocumentsError}
+                applications={applications?.list || []}
             />
 
             {currentApplication && (

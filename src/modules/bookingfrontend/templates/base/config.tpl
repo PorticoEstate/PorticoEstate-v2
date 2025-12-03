@@ -183,7 +183,10 @@
 			<td>{lang_uustatus}:</td>
 			<td><input name="newsettings[url_uustatus]" value="{value_url_uustatus}" class="pure-u-1"/></td>
 		</tr>
-
+		<tr>
+			<td>{lang_system_feedback}:</td>
+			<td><input name="newsettings[url_system_feedback]" value="{value_url_system_feedback}" class="pure-u-1" /></td>
+		</tr>
 
 		<!-- END body -->
 		<!-- BEGIN footer -->

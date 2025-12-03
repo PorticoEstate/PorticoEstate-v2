@@ -255,6 +255,16 @@
 				}
 			}
 			$filter['active']	 = 1;
+
+			if (!empty($data['recently_used']))
+			{
+				$vendors_ids = $this->so->get_recently_used_vendors();
+				if (!empty($vendors_ids))
+				{
+					$filter['id'] = $vendors_ids;
+				}
+			}
+
 			$data['filter']		 = $filter;
 
 			$values = $sogeneric->read($data);

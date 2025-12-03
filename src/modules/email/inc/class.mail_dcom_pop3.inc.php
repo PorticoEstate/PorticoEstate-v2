@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/imap_config.php';
 	/**
 	* EMail - POP3 Mail Wrapper for Imap Enabled PHP
 	*
@@ -26,12 +27,12 @@
 
 		function base64($text)
 		{
-			return imap_base64($text);
+			return IMAPManager::imap_base64($text);
 		}
 
 		function close($stream,$flags=0)
 		{
-			return imap_close($stream,$flags);
+			return IMAPManager::imap_close($stream,$flags);
 		}
 
 		function createmailbox($stream,$mailbox)
@@ -54,9 +55,9 @@
 			{
 				$flags |= FT_UID;
 			}
-			$retval = imap_delete($stream,$msg_num,$flags);
+			$retval = IMAPManager::imap_delete($stream,$msg_num,$flags);
 			// some lame pop3 servers need this extra call to expunge, but RFC says not necessary
-			imap_expunge($stream);
+			IMAPManager::imap_expunge($stream);
 			return $retval;
 		}
      
@@ -74,7 +75,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_fetchbody($stream,$msgnr,$partnr,$flags);
+			return IMAPManager::imap_fetchbody($stream,$msgnr,$partnr,$flags);
 		}
 
 		function fetchheader($stream,$msg_num,$flags=0)
@@ -85,7 +86,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_fetchheader($stream,$msg_num,$flags);
+			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
 		}
 
 		function fetch_raw_mail($stream,$msg_num,$flags=0)
@@ -97,7 +98,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_fetchheader($stream,$msg_num,$flags);
+			return IMAPManager::imap_fetchheader($stream,$msg_num,$flags);
 		}
 
 		function fetchstructure($stream,$msg_num,$flags=0)
@@ -108,7 +109,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_fetchstructure($stream,$msg_num,$flags);
+			return IMAPManager::imap_fetchstructure($stream,$msg_num,$flags);
 		}
 
 		function get_body($stream,$msg_num,$flags=0)
@@ -119,7 +120,7 @@
 			{
 				$flags |= FT_UID;
 			}
-			return imap_body($stream,$msg_num,$flags);
+			return IMAPManager::imap_body($stream,$msg_num,$flags);
 		}
 
 		function get_header($stream,$msg_num,$flags)
@@ -134,13 +135,13 @@
 			if ($this->force_msg_uids == True)
 			{
 				// this function can nothandle UIDs, switch to sequence number
-				$new_msg_nr = imap_msgno($stream,$msg_nr);
+				$new_msg_nr = IMAPManager::imap_msgno($stream,$msg_nr);
 				if ($new_msg_nr)
 				{
 					$msg_nr = $new_msg_nr;
 				}
 			}
-			return imap_header($stream,$msg_nr,$fromlength,$tolength,$defaulthost);
+			return IMAPManager::imap_header($stream,$msg_nr,$fromlength,$tolength,$defaulthost);
 		}
 
 		function listmailbox($stream,$ref,$pattern)
@@ -151,7 +152,7 @@
 
 		function mailboxmsginfo($stream) 
 		{
-			return imap_mailboxmsginfo($stream);
+			return IMAPManager::imap_mailboxmsginfo($stream);
 		}
 
 		function mailcopy($stream,$msg_list,$mailbox,$flags)
@@ -168,17 +169,17 @@
 
 		function num_msg($stream) // returns number of messages in the mailbox
 		{ 
-			return imap_num_msg($stream);
+			return IMAPManager::imap_num_msg($stream);
 		}
 		
 		function noop_ping_test($stream)
 		{ 
-			return imap_ping($stream);
+			return IMAPManager::imap_ping($stream);
 		}
 
 		function open($mailbox,$username,$password,$flags=0)
 		{
-			return imap_open($mailbox,$username,$password,$flags);
+			return IMAPManager::imap_open($mailbox,$username,$password,$flags);
 		}
 
 		function qprint($message)
@@ -198,7 +199,7 @@
 		{
 			// supported in PHP >= 3.0.12
 			//UNKNOWN if POP3 server errors also get put here
-			return imap_last_error();
+			return IMAPManager::imap_last_error();
 		}
 
 		// does this work for pop3?
@@ -210,7 +211,7 @@
 			{
 				$flags |= SE_UID;
 			}
-			return imap_search($stream,$criteria,$flags);
+			return IMAPManager::imap_search($stream,$criteria,$flags);
 		}
 		
 		//function sort($stream,$criteria,$reverse='',$options='',$msg_info='')
@@ -222,13 +223,13 @@
 			{
 				$flags |= SE_UID;
 			}
-			return imap_sort($stream,$criteria,$reverse,$flags);
+			return IMAPManager::imap_sort($stream,$criteria,$reverse,$flags);
 		}
 
 		function status($stream,$mailbox,$options)
 		{
 			// don't forget pop3 has 1 "folder": INBOX, any other folder name will not work
-			return imap_status($stream,$mailbox,$options);
+			return IMAPManager::imap_status($stream,$mailbox,$options);
 		}
 
 		function construct_folder_str($folder)

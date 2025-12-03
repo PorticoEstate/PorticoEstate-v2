@@ -418,7 +418,8 @@ JS;
 				'sort'		 => $order[0]['dir'],
 				'dir'		 => $order[0]['dir'],
 				'allrows'	 => Sanitizer::get_var('length', 'int') == -1,
-				'filter'	 => array()
+				'filter'	 => array(),
+				'recently_used' => Sanitizer::get_var('recently_used', 'int', 'REQUEST', 0),
 			);
 
 			$values = $this->bo->read_vendor($params);
@@ -512,6 +513,17 @@ JS;
 		);
 
 		array_unshift($data['form']['toolbar']['item'], $filter);
+
+
+		$filter2 = array(
+			'type'	 => 'checkbox',
+			'name'	 => 'recently_used',
+			'text'	 => lang('recently used'),
+			'value'	 => 1,
+			'checked' => '',
+		);
+
+		array_unshift($data['form']['toolbar']['item'], $filter2);
 
 		$uicols = array(
 			'input_type' => array('text', 'text', 'text'),

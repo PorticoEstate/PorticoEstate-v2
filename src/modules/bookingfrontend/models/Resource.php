@@ -79,6 +79,7 @@ class Resource
     /**
      * @ORM\Column(type="integer", nullable=true)
      * @Expose
+	 * @Short
      * @OA\Property(description="Resource category ID", type="integer", nullable=true)
      */
     public $rescategory_id;
@@ -100,6 +101,7 @@ class Resource
     /**
      * @ORM\Column(type="bigint", nullable=true)
      * @Expose
+	 * @Short
      * @OA\Property(description="Direct booking information", type="integer", format="int64", nullable=true)
      */
     public $direct_booking;
@@ -150,6 +152,7 @@ class Resource
     /**
      * @ORM\Column(type="bigint", nullable=true)
      * @Expose
+	 * @Short
      * @OA\Property(description="Start date for simple booking", type="integer", format="int64", nullable=true)
      */
     public $simple_booking_start_date;
@@ -184,8 +187,18 @@ class Resource
     public $capacity;
 
     /**
+     * @ORM\Transient
+     * @Expose
+	 * @Short
+     * @OA\Property(description="Current participant limit of the resource", type="integer", nullable=true)
+     */
+    public $participant_limit;
+
+    /**
      * @ORM\Column(type="integer")
      * @Expose
+	 * @Short
+	 * @ParseBool
      * @OA\Property(description="Whether the calendar is deactivated", type="integer")
      */
     public $deactivate_calendar;
@@ -193,6 +206,8 @@ class Resource
     /**
      * @ORM\Column(type="integer")
      * @Expose
+	 * @ParseBool
+     * @Short
      * @OA\Property(description="Whether the application is deactivated", type="integer")
      */
     public $deactivate_application;
@@ -221,13 +236,15 @@ class Resource
     /**
      * @ORM\Column(type="smallint", nullable=true)
      * @Expose
-     * @OA\Property(description="Whether the resource is hidden in frontend", type="integer", nullable=true)
+	 * @ParseBool
+	 * @OA\Property(description="Whether the resource is hidden in frontend", type="integer", nullable=true)
      */
     public $hidden_in_frontend;
 
     /**
      * @ORM\Column(type="smallint", nullable=true)
      * @Expose
+     * @Short
      * @OA\Property(description="Whether prepayment is activated", type="integer", nullable=true)
      */
     public $activate_prepayment;
@@ -261,6 +278,20 @@ class Resource
      */
     public $building_id;
 
+    /**
+     * @ORM\Transient
+     * @Expose
+     * @OA\Property(description="Current participants registered for this resource", type="array", nullable=true)
+     */
+    public $participants;
+
+    /**
+     * @ORM\Transient
+     * @Expose
+     * @OA\Property(description="Total count of current participants for this resource", type="integer", nullable=true)
+     */
+    public $participant_count;
+
     public function __construct($data = [])
     {
         if (!empty($data))
@@ -278,6 +309,7 @@ class Resource
                 $this->$key = $value;
             }
         }
+		$this->deactivate_calendar = 0;
     }
 
     public function toArray()

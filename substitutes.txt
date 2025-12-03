@@ -127,3 +127,9 @@ $template = Template::getInstance(PHPGW_TEMPLATE_DIR);
 use App\modules\bookingfrontend\helpers\UserHelper;
 createObject('bookingfrontend.bouser')
 $bouser = new UserHelper();
+
+use App\modules\booking\services\WebhookManager;
+$webhookManager = new WebhookManager();
+
+use App\modules\booking\services\WebhookNotifier;
+$webhookNotifier = new WebhookNotifier();

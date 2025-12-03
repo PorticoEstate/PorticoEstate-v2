@@ -3,27 +3,32 @@ import React, {useEffect, useMemo} from 'react';
 import {Checkbox, Table, Textfield, Spinner, Button} from '@digdir/designsystemet-react';
 import {useResourceArticles} from '@/service/hooks/api-hooks';
 import {ArticleOrder, IArticle} from '@/service/types/api/order-articles.types';
+import {IOrder} from '@/service/types/api/application.types';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {DateTime} from 'luxon';
 import {MinusCircleIcon, PlusCircleIcon} from '@navikt/aksel-icons';
 import styles from './article-table.module.scss';
 
 interface ArticleTableProps {
-	resourceIds: number[];
-	selectedArticles: ArticleOrder[];
+	resourceIds?: number[];
+	selectedArticles?: ArticleOrder[];
+	orders?: IOrder[];
 	onArticlesChange?: (articles: ArticleOrder[]) => void;
 	readOnly?: boolean;
 	startTime?: Date;
 	endTime?: Date;
+	mode?: 'articles' | 'orders';
 }
 
 const ArticleTable: React.FC<ArticleTableProps> = ({
-													   resourceIds,
-													   selectedArticles,
+													   resourceIds = [],
+													   selectedArticles = [],
+													   orders = [],
 													   onArticlesChange,
 													   readOnly = false,
 													   startTime,
-													   endTime
+													   endTime,
+													   mode = 'articles'
 												   }) => {
 	const t = useTrans();
 
@@ -44,13 +49,34 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		return new Map(selectedArticles?.map(article => [article.id, article]));
 	}, [selectedArticles]);
 
-	// Fetch articles for selected resources
+	// Fetch articles for selected resources (only in articles mode)
 	const {data: articles, isLoading, error} = useResourceArticles({
-		resourceIds: resourceIds.filter(id => id > 0)
+		resourceIds: mode === 'articles' && resourceIds ? resourceIds.filter(id => id > 0) : []
 	});
 
-	// Group articles while deduplicating based on article_id
-	const articlesByGroup = useMemo(() => {
+	// Group articles or process orders data
+	const displayData = useMemo(() => {
+		if (mode === 'orders') {
+			// For orders mode, convert order lines to display format
+			const orderItems: any[] = [];
+			orders.forEach(order => {
+				order.lines.forEach(line => {
+					orderItems.push({
+						id: `${order.order_id}-${line.article_mapping_id}`,
+						name: line.name,
+						price: `${line.unit_price}`,
+						unit_price: line.unit_price.toString(),
+						quantity: line.quantity,
+						amount: line.amount,
+						currency: line.currency,
+						unit: line.unit
+					});
+				});
+			});
+			return { 'Orders': orderItems };
+		}
+
+		// Articles mode logic (existing)
 		if (!articles) return {};
 
 		// Create a map for tracking unique articles by article_id
@@ -125,7 +151,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		return Object.fromEntries(
 			Object.entries(groupedArticles).filter(([_, articles]) => articles.length > 0)
 		);
-	}, [articles]);
+	}, [articles, orders, mode]);
 
 	// Function to update mandatory hourly articles
 	const updateMandatoryHourlyArticles = () => {
@@ -306,34 +332,51 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 		onArticlesChange(newArticles);
 	};
 
-	if (isLoading) {
+	if (mode === 'articles' && isLoading) {
 		return <Spinner data-size="md" aria-label={t('common.loading')}/>;
 	}
 
-	if (error) {
+	if (mode === 'articles' && error) {
 		return <div className={styles.error}>{t('common.error_loading_data')}</div>;
 	}
 
-	if (!articles || articles.length === 0) {
+	if (mode === 'articles' && (!articles || articles.length === 0)) {
 		return <div className={styles.noArticles}>{t('bookingfrontend.no_articles_available')}</div>;
+	}
+
+	if (mode === 'orders' && (!orders || orders.length === 0)) {
+		return <div className={styles.noArticles}>{t('bookingfrontend.no information available')}</div>;
 	}
 
 	return (
 		<div className={styles.articleTableContainer}>
-			{Object.entries(articlesByGroup).map(([groupName, groupArticles]) => (
+			{Object.entries(displayData).map(([groupName, groupItems]) => (
 				<div key={groupName} className={styles.resourceArticleGroup}>
-					{/*<h4 className={styles.resourceTitle}>{groupName}</h4>*/}
 					<Table>
 						<Table.Head>
 							<Table.Row>
 								<Table.HeaderCell>{t('bookingfrontend.article')}</Table.HeaderCell>
 								<Table.HeaderCell>{t('bookingfrontend.price')}</Table.HeaderCell>
-								{!readOnly && <Table.HeaderCell>{t('booking.quantity')}</Table.HeaderCell>}
+								{!readOnly && mode === 'articles' && <Table.HeaderCell>{t('booking.quantity')}</Table.HeaderCell>}
+								{mode === 'orders' && <Table.HeaderCell>{t('booking.quantity')}</Table.HeaderCell>}
 								<Table.HeaderCell>{t('booking.sum')}</Table.HeaderCell>
 							</Table.Row>
 						</Table.Head>
 						<Table.Body>
-							{groupArticles.map(article => {
+							{groupItems.map((item: any) => {
+								if (mode === 'orders') {
+									return (
+										<Table.Row key={item.id}>
+											<Table.Cell>{item.name}</Table.Cell>
+											<Table.Cell>{item.unit_price} {item.currency}</Table.Cell>
+											<Table.Cell>{item.quantity}</Table.Cell>
+											<Table.Cell>{item.amount} {item.currency}</Table.Cell>
+										</Table.Row>
+									);
+								}
+
+								// Articles mode rendering (existing logic)
+								const article = item as IArticle;
 								const selectedArticle = selectedArticlesMap.get(article.id);
 								const quantity = selectedArticle?.quantity || 0;
 								const isSelected = quantity > 0;
@@ -355,11 +398,6 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 												<div className={styles.articleRemark}
 													 dangerouslySetInnerHTML={{__html: article.article_remark}}></div>
 											)}
-											{/*{isMandatoryHourly && (*/}
-											{/*	<div className={styles.hourlyLabel}>*/}
-											{/*		({t('bookingfrontend.calculated_by_duration')}: {durationHours} {t('common.hours')})*/}
-											{/*	</div>*/}
-											{/*)}*/}
 										</Table.Cell>
 										<Table.Cell>{article.price} kr</Table.Cell>
 										{!readOnly && (
@@ -382,16 +420,15 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 																{durationHours}
 															</span>
 															<span className={styles.hiddenButton}>
-
-															<Button
-																variant="tertiary"
-																data-size="sm"
-																icon={true}
-																disabled={true}
-																aria-label={t('common.increase')}
-															>
-																<PlusCircleIcon aria-hidden="true"/>
-															</Button>
+																<Button
+																	variant="tertiary"
+																	data-size="sm"
+																	icon={true}
+																	disabled={true}
+																	aria-label={t('common.increase')}
+																>
+																	<PlusCircleIcon aria-hidden="true"/>
+																</Button>
 															</span>
 														</>
 													) : (
@@ -433,10 +470,17 @@ const ArticleTable: React.FC<ArticleTableProps> = ({
 				</div>
 			))}
 
-			{parseFloat(totalPrice) > 0 && (
+			{mode === 'articles' && parseFloat(totalPrice) > 0 && (
 				<div className={styles.totalSection}>
 					<strong>{t('bookingfrontend.total')}:</strong>
 					<span>{totalPrice} kr</span>
+				</div>
+			)}
+			
+			{mode === 'orders' && orders.length > 0 && (
+				<div className={styles.totalSection}>
+					<strong>{t('bookingfrontend.total')}:</strong>
+					<span>{orders.reduce((sum, order) => sum + order.sum, 0)} {orders[0]?.lines[0]?.currency || 'kr'}</span>
 				</div>
 			)}
 		</div>

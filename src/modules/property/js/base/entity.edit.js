@@ -263,7 +263,7 @@ $(document).ready(function ()
 		{
 			$(_oTable).on("click", function (e)
 			{
-				var aTrs = _oTable.fnGetNodes();
+				var aTrs = _oTable.api().rows().nodes();
 				for (var i = 0; i < aTrs.length; i++)
 				{
 					if ($(aTrs[i]).hasClass('selected'))

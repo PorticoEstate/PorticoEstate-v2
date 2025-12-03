@@ -74,20 +74,29 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
             name = event.organization_name;
             break;
     }
+    // Check if this is a partial application event (from shopping cart)
+    const isPartialApplication = '_isPartialApplication' in event ? (event as any)._isPartialApplication : false;
+    const isRecurringInstance = '_isRecurringInstance' in event ? (event as any)._isRecurringInstance : false;
+
+
+
     const mainEvent: FCallEvent = {
         id: event.id,
-        title: (is_public === 1 ? name : 'Private Event') + ` \n`,
+        title: name + ` \n`,
         start: startDateTime.toJSDate(),
         // in all day, END is EXCLUSIVE
         end: allDay ? displayEndDateTime.plus({days: 1}).toJSDate() : displayEndDateTime.toJSDate(),
         allDay: allDay,
-        className: [`${styles[`event-${event.type}`]} ${styles.event} ${allDay ? styles.eventAllDay : ''} ${isAdmin ? styles.eventAdmin : ''} `],
+        className: [`${styles[`event-${event.type}`]} ${styles.event} ${allDay ? styles.eventAllDay : ''} ${isRecurringInstance ? styles.recurringInstance : ''} ${isAdmin ? styles.eventAdmin : ''} `],
         extendedProps: {
             actualStart: startDateTime.toJSDate(),
             actualEnd: endDateTime.toJSDate(),
             isExtended: durationMinutes < 30,
             source: event,
-            type: event.type
+            type: event.type,
+            // Pass through partial application flags
+            isPartialApplication,
+            isRecurringInstance
         },
     };
 
@@ -98,7 +107,8 @@ export function FCallEventConverter(event: IEvent, enabledResources: Set<string>
         display: 'background',
         classNames: `${styles.allDayEventBackground} ${styles.eventAllDay} ${styles[`event-${event.type}-background`]}`,
         extendedProps: {
-            type: 'background'
+            type: 'background',
+			source: 'EventConv'
         }
     } : null;
 

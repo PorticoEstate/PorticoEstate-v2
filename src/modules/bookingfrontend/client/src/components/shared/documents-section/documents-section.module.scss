@@ -1,0 +1,17 @@
+.documentsContainer {
+    padding: 0;
+}
+
+.documentsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    li {
+        //margin-bottom: 0.75rem;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
+}

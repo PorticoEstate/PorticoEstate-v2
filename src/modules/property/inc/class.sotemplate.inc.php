@@ -244,6 +244,7 @@
 
 		function read_single_hour( $hour_id )
 		{
+			$hour_id = (int)$hour_id;
 			$sql = "SELECT * from fm_template_hours where id='$hour_id'";
 
 			$this->db->query($sql, __LINE__, __FILE__);
@@ -272,25 +273,27 @@
 
 		function next_record( $template_id )
 		{
+			$template_id = (int)$template_id;
 
 			$this->db->query("SELECT  max(record) as record FROM fm_template_hours where template_id='$template_id'", __LINE__, __FILE__);
 			$this->db->next_record();
-			$record = $this->db->f('record') + 1;
+			$record = (int)$this->db->f('record') + 1;
 			return $record;
 		}
 
 		function add_custom_hour( $hour, $template_id )
 		{
+			$template_id = (int)$template_id;
 			$this->db->transaction_begin();
 
 			$hour['record'] = $this->next_record($template_id);
 
 			$this->db->query("UPDATE fm_template set
-				chapter_id	='" . $hour['chapter_id'] . "' WHERE id= '$template_id'", __LINE__, __FILE__);
+				chapter_id	='" . (int)$hour['chapter_id'] . "' WHERE id= '$template_id'", __LINE__, __FILE__);
 
 			if ($hour['grouping_id'])
 			{
-				$this->db->query("SELECT grouping_descr , max(record) as record FROM fm_template_hours where grouping_id='" . $hour['grouping_id'] . "' and template_id= '$template_id' GROUP by grouping_descr", __LINE__, __FILE__);
+				$this->db->query("SELECT grouping_descr , max(record) as record FROM fm_template_hours where grouping_id='" . (int)	$hour['grouping_id'] . "' and template_id= '$template_id' GROUP by grouping_descr", __LINE__, __FILE__);
 				$this->db->next_record();
 				$hour['grouping_descr'] = $this->db->f('grouping_descr');
 			}
@@ -307,7 +310,7 @@
 				{
 					$this->db->query("SELECT max(grouping_id) as grouping_id FROM fm_template_hours where template_id= '$template_id'", __LINE__, __FILE__);
 					$this->db->next_record();
-					$hour['grouping_id'] = $this->db->f('grouping_id') + 1;
+					$hour['grouping_id'] = (int)$this->db->f('grouping_id') + 1;
 				}
 
 				$hour['grouping_descr'] = $hour['new_grouping'];
@@ -350,14 +353,14 @@
 
 		function edit_hour( $hour, $template_id )
 		{
-
+			$template_id = (int)$template_id;
 			$this->db->transaction_begin();
 
 			$hour['descr']	 = $this->db->db_addslashes($hour['descr']);
 			$hour['remark']	 = $this->db->db_addslashes($hour['remark']);
 
 			$this->db->query("UPDATE fm_template set
-				chapter_id	='" . $hour['chapter_id'] . "' WHERE id= '$template_id'", __LINE__, __FILE__);
+				chapter_id	='" . (int)$hour['chapter_id'] . "' WHERE id= '$template_id'", __LINE__, __FILE__);
 
 			if ($hour['new_grouping'])
 			{
@@ -365,7 +368,7 @@
 				$this->db->next_record();
 				if ($this->db->f('grouping_id'))
 				{
-					$hour['grouping_id'] = $this->db->f('grouping_id');
+					$hour['grouping_id'] = (int)$this->db->f('grouping_id');
 				}
 				else
 				{
@@ -381,14 +384,14 @@
 					{
 						$this->db->query("SELECT max(grouping_id) as grouping_id FROM fm_template_hours where template_id= '$template_id'", __LINE__, __FILE__);
 						$this->db->next_record();
-						$hour['grouping_id'] = $this->db->f('grouping_id') + 1;
+						$hour['grouping_id'] = (int)$this->db->f('grouping_id') + 1;
 					}
 				}
 				$hour['grouping_descr'] = $hour['new_grouping'];
 			}
 			else
 			{
-				$this->db->query("SELECT grouping_id,grouping_descr FROM fm_template_hours where id ='" . $hour['hour_id'] . "'", __LINE__, __FILE__);
+				$this->db->query("SELECT grouping_id,grouping_descr FROM fm_template_hours where id ='" . (int)$hour['hour_id'] . "'", __LINE__, __FILE__);
 				$this->db->next_record();
 				$old_grouping_id = $this->db->f('grouping_id');
 
@@ -413,7 +416,7 @@
 				}
 			}
 
-			$this->db->query("SELECT record FROM fm_template_hours where id ='" . $hour['hour_id'] . "'", __LINE__, __FILE__);
+			$this->db->query("SELECT record FROM fm_template_hours where id ='" . (int)$hour['hour_id'] . "'", __LINE__, __FILE__);
 			$this->db->next_record();
 			$hour['record'] = $this->db->f('record');
 
@@ -424,7 +427,7 @@
 				'billperae'		 => $hour['billperae'],
 				'unit'			 => $hour['unit'],
 				'quantity'		 => $hour['quantity'],
-				'cost'			 => $hour['cost'],
+				'cost'			 => (float)$hour['cost'],
 				'ns3420_id'		 => $hour['ns3420_id'],
 				'tolerance'		 => $hour['tolerance_id'],
 				'building_part'	 => $hour['building_part_id'],
@@ -435,7 +438,7 @@
 
 			$value_set = $this->db->validate_update($value_set);
 
-			$this->db->query("UPDATE fm_template_hours set $value_set WHERE id= '" . $hour['hour_id'] . "'", __LINE__, __FILE__);
+			$this->db->query("UPDATE fm_template_hours set $value_set WHERE id= '" . (int)$hour['hour_id'] . "'", __LINE__, __FILE__);
 
 			$receipt['hour_id'] = $hour['hour_id'];
 
@@ -447,6 +450,7 @@
 
 		function get_grouping_list( $template_id = '' )
 		{
+			$template_id = (int)$template_id;
 			$this->db->query('SELECT grouping_id, grouping_descr FROM fm_template_hours where template_id=' . (int)$template_id . ' AND grouping_id > 0 group by grouping_id, grouping_descr');
 			$grouping_entries = array();
 			while ($this->db->next_record())
@@ -502,7 +506,7 @@
 
 			$value_set = $this->db->validate_update($value_set);
 
-			$this->db->query("UPDATE fm_template set $value_set WHERE id='" . $values['template_id'] . "'", __LINE__, __FILE__);
+			$this->db->query("UPDATE fm_template set $value_set WHERE id='" . (int)$values['template_id'] . "'", __LINE__, __FILE__);
 
 			$this->db->transaction_commit();
 			$receipt['message'][] = array('msg' => lang('template has been edited'), 'OK' => 'Is save Successfully');
@@ -511,6 +515,7 @@
 
 		function delete( $id )
 		{
+			$id = (int)$id;
 			$this->db->transaction_begin();
 			$this->db->query("DELETE FROM fm_template WHERE id='$id'", __LINE__, __FILE__);
 			$this->db->query("DELETE FROM fm_template_hours  WHERE template_id='$id'", __LINE__, __FILE__);
@@ -519,6 +524,8 @@
 
 		function delete_hour( $hour_id, $template_id )
 		{
+			$hour_id = (int)$hour_id;
+			$template_id = (int)$template_id;
 			$this->db->transaction_begin();
 			$this->db->query("SELECT record FROM fm_template_hours where id ='$hour_id'", __LINE__, __FILE__);
 			$this->db->next_record();

@@ -66,7 +66,7 @@ class phpgw
 	 *
 	 * @return string generated url
 	 */
-	public static function link($url, $extravars = array(), $redirect = false, $external = false, $force_backend = false)
+	public static function link($url, $extravars = array(), $redirect = false, $external = false, $force_backend = false, $skipHistory = false)
 	{
 
 		$url = preg_replace("/\/index.php/", "/", $url);
@@ -232,7 +232,9 @@ class phpgw
 			}
 
 			//used for repost prevention
-			$extravars['click_history'] = Sessions::getInstance()->generate_click_history();
+			if (!$skipHistory) {
+				$extravars['click_history'] = Sessions::getInstance()->generate_click_history();
+			}
 
 			/* enable easy use of xdebug */
 			if (isset($_REQUEST['XDEBUG_PROFILE']))
@@ -264,9 +266,9 @@ class phpgw
 	 * @param string $extravars	Extra params to be passed to the url
 	 * @return null
 	 */
-	public static function redirect_link($url = '', $extravars = array())
+	public static function redirect_link($url = '', $extravars = array(), $skipHistory = false)
 	{
-		self::redirect(self::link($url, $extravars, true));
+		self::redirect(self::link($url, $extravars, true, false, false, $skipHistory));
 	}
 
 	/**

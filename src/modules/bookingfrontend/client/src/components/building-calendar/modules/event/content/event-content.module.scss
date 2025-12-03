@@ -25,6 +25,7 @@
     }
 
     &.listEvent {
+		user-select: none;
         display: grid;
         grid-template-areas: "time title resources organizer to_time";
         grid-template-columns: 6.5rem 1fr 7rem 1fr 6.5rem;

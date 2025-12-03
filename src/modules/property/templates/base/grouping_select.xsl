@@ -1,13 +1,26 @@
 
 <!-- $Id$ -->
 <xsl:template name="grouping_select">
+	<xsl:param name="class" />
 		<xsl:variable name="lang_grouping_statustext">
 			<xsl:value-of select="lang_grouping_statustext"/>
 		</xsl:variable>
 		<xsl:variable name="select_name">
 			<xsl:value-of select="select_grouping"/>
 		</xsl:variable>
-		<select name="{$select_name}" class="forms" title="{$lang_grouping_statustext}" >
+		<select name="{$select_name}" title="{$lang_grouping_statustext}" >
+			<xsl:choose>
+				<xsl:when test="$class != ''">
+					<xsl:attribute name="class">
+						<xsl:value-of select="$class"/>
+					</xsl:attribute>
+				</xsl:when>
+				<xsl:otherwise>
+					<xsl:attribute name="class">
+						<xsl:text>pure-input-1-2</xsl:text>
+					</xsl:attribute>
+				</xsl:otherwise>
+			</xsl:choose>
 			<option value="">
 				<xsl:value-of select="lang_no_grouping"/>
 			</option>

@@ -37,6 +37,6 @@ $app->get('/controller/images/{filename}', function (Request $request, Response 
 	return serveImage($response, $args['filename']);
 });
 
-$app->get('/controller', RedirectHelper::class . ':process')
+$app->get('/controller[/{params:.*}]', RedirectHelper::class . ':process')
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

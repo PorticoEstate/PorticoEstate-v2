@@ -50,9 +50,9 @@ onActionsClick_notify = function (type, ids, requestUrl)
 onAddClick_Alarm = function (type)
 {
 
-	var day = $('#day_list').val();
-	var hour = $('#hour_list').val();
-	var minute = $('#minute_list').val();
+	var day = $('#day_list').val() || '7';
+	var hour = $('#hour_list').val() || '5';
+	var minute = $('#minute_list').val() || '30';
 	var user = $('#user_list').val();
 	var id = $('#agreementid').val();
 

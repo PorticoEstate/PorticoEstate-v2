@@ -4208,9 +4208,10 @@ HTML;
 
 		$html = trim($proc->transformToXML($xml));
 
-		$wkhtmltopdf_executable = '/usr/bin/wkhtmltopdf';
+		// Check if Chromium is available for PDF generation
+		$chromium_executable = '/usr/bin/chromium';
 		$pdf_enabled = false;
-		if (is_file($wkhtmltopdf_executable))
+		if (is_file($chromium_executable))
 		{
 			$pdf_enabled = true;
 		}
@@ -4247,6 +4248,7 @@ HTML;
 
 		include PHPGW_SERVER_ROOT . '/rental/inc/SnappyMedia.php';
 		include PHPGW_SERVER_ROOT . '/rental/inc/SnappyPdf.php';
+		include PHPGW_SERVER_ROOT . '/rental/inc/ChromiumPdf.php';
 		$tmp_dir = $this->serverSettings['temp_dir'];
 		$myFile = $tmp_dir . "/temp_report_{$check_list_id}_" . strtotime(date('Y-m-d')) . ".html";
 		$fh = fopen($myFile, 'w') or die("can't open file");
@@ -4255,13 +4257,9 @@ HTML;
 
 		$pdf_file_name = $tmp_dir . "/temp_checklist_{$check_list_id}_" . strtotime(date('Y-m-d')) . ".pdf";
 
-		$wkhtmltopdf_executable = !empty($config->config_data['path_to_wkhtmltopdf']) ? $config->config_data['path_to_wkhtmltopdf'] : '/usr/bin/wkhtmltopdf';
-		if (!is_file($wkhtmltopdf_executable))
-		{
-			throw new Exception('wkhtmltopdf not configured correctly');
-		}
-		$snappy = new SnappyPdf();
-		$snappy->setExecutable($wkhtmltopdf_executable); // or whatever else
+		// Use ChromiumPdf instead of wkhtmltopdf
+		$snappy = new ChromiumPdf();
+		// ChromiumPdf uses Chromium directly, no need to check executable path
 		$snappy->save($myFile, $pdf_file_name);
 		unlink($myFile);
 		if (!is_file($pdf_file_name))

@@ -19,6 +19,8 @@
         row-gap: 0.5rem;
         grid-template-columns:auto auto 1fr auto;
         grid-template-areas: "resource-button resource-button resource-button resource-button" "date date date date" "mode-select mode-select-time blank order";
+		grid-template-rows: min-content min-content min-content;
+
         //display: none;
     }
     @include tablet {

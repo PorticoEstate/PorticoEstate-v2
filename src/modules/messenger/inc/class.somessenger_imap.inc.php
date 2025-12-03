@@ -10,6 +10,8 @@
 	 *  option) any later version.                                              *
 	  \************************************************************************* */
 
+require_once __DIR__ . '/../../email/inc/imap_config.php';
+
 class messenger_somessenger extends somessenger_
 {
 
@@ -25,10 +27,10 @@ class messenger_somessenger extends somessenger_
 	{
 		$config = CreateObject('phpgwapi.config', 'messenger')->read();
 		$this->imap_host = $config['imap_message_host'];
-		$this->imap = @imap_open("\{{$this->imap_host}:143/imap/notls}INBOX", $this->userSettings['account_lid'], $this->userSettings['passwd']);
+		$this->imap = IMAPManager::imap_open("\{{$this->imap_host}:143/imap/notls}INBOX", $this->userSettings['account_lid'], $this->userSettings['passwd']);
 		if (is_resource($this->imap))
 		{
-			$this->stat = imap_status($this->imap, "\{{$this->imap_host}}INBOX", SA_MESSAGES);
+			$this->stat = IMAPManager::imap_status($this->imap, "\{{$this->imap_host}}INBOX", SA_MESSAGES);
 			$this->connected = true;
 		}
 		parent::__construct();
@@ -41,8 +43,8 @@ class messenger_somessenger extends somessenger_
 	 */
 	function delete_message($message_id)
 	{
-		imap_delete($this->imap, $message_id, FT_UID);
-		imap_expunge($this->imap);
+		IMAPManager::imap_delete($this->imap, $message_id, FT_UID);
+		IMAPManager::imap_expunge($this->imap);
 	}
 
 	function read_inbox($params)
@@ -51,20 +53,20 @@ class messenger_somessenger extends somessenger_
 		switch ($params['order'])
 		{
 			case 'message_date':
-				$idlist = imap_sort($this->imap, SORTARRIVAL, $sort, SE_UID);
+				$idlist = IMAPManager::imap_sort($this->imap, SORTARRIVAL, $sort, SE_UID);
 				break;
 			case 'message_from':
-				$idlist = imap_sort($this->imap, SORTFROM, $sort, SE_UID);
+				$idlist = IMAPManager::imap_sort($this->imap, SORTFROM, $sort, SE_UID);
 				break;
 			case 'message_subject':
-				$idlist = imap_sort($this->imap, SORTSUBJECT, $sort, SE_UID);
+				$idlist = IMAPManager::imap_sort($this->imap, SORTSUBJECT, $sort, SE_UID);
 				break;
 			default:
-				$idlist = imap_sort($this->imap, SORTARRIVAL, 1, SE_UID);
+				$idlist = IMAPManager::imap_sort($this->imap, SORTARRIVAL, 1, SE_UID);
 		}
 		foreach ($idlist as $uid)
 		{
-			$msg = imap_headerinfo($this->imap, imap_msgno($this->imap, $uid));
+			$msg = IMAPManager::imap_headerinfo($this->imap, IMAPManager::imap_msgno($this->imap, $uid));
 			$messages[] = array(
 				'id' => $uid,
 				'from' => $msg->from[0]->mailbox,
@@ -78,7 +80,7 @@ class messenger_somessenger extends somessenger_
 
 	function read_message($message_id)
 	{
-		$msg = imap_headerinfo($this->imap, imap_msgno($this->imap, $message_id));
+		$msg = IMAPManager::imap_headerinfo($this->imap, IMAPManager::imap_msgno($this->imap, $message_id));
 		$message = array(
 			'id' => $message_id,
 			'from' => $msg->from[0]->mailbox,
@@ -123,7 +125,7 @@ class messenger_somessenger extends somessenger_
 				$flags += " \\Answered";
 				break;
 		}
-		imap_setflag_full($this->imap, $message_id, $flags, ST_UID);
+		IMAPManager::imap_setflag_full($this->imap, $message_id, $flags, ST_UID);
 	}
 
 	/**
@@ -139,7 +141,7 @@ class messenger_somessenger extends somessenger_
 	{
 		if (!is_object($structure))
 		{
-			$structure = imap_fetchstructure($this->imap, $message_id, FT_UID);
+			$structure = IMAPManager::imap_fetchstructure($this->imap, $message_id, FT_UID);
 		}
 		if (!is_object($structure))
 		{
@@ -153,15 +155,15 @@ class messenger_somessenger extends somessenger_
 				$part = "1";
 			}
 
-			$text = imap_fetchbody($this->imap, $message_id, $partno);
+			$text = IMAPManager::imap_fetchbody($this->imap, $message_id, $partno);
 
 			if ($structure->encoding == 3)
 			{
-				$text = imap_base64($text);
+				$text = IMAPManager::imap_base64($text);
 			}
 			elseif ($structure->encoding == 4)
 			{
-				$text = imap_qprint($text);
+				$text = IMAPManager::imap_qprint($text);
 			}
 
 			if (isset($structure->parameters) && count($structure->parameters))

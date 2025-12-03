@@ -93,21 +93,22 @@ class pleskimap extends defaultimap
 		if ($forwards && !$this->allways_create_mailbox) return true;	// no mailbox created, only a forward
 
 		// create Sent & Trash mailboxes and subscribe them
-		if(($mbox = @imap_open ($this->getMailboxString(),$localEmail,$hookValues['account_passwd'])))
+		require_once __DIR__ . '/../../email/inc/imap_config.php';
+		if(($mbox = IMAPManager::imap_open ($this->getMailboxString(),$localEmail,$hookValues['account_passwd'])))
 		{
-			$list = imap_getmailboxes($mbox, $this->getMailboxString(),'INBOX');
+			$list = IMAPManager::imap_getmailboxes($mbox, $this->getMailboxString(),'INBOX');
 			$delimiter = isset($list[0]->delimiter) ? $list[0]->delimiter : '.';
-			imap_subscribe($mbox,$this->getMailboxString('INBOX'));
+			IMAPManager::imap_subscribe($mbox,$this->getMailboxString('INBOX'));
 
 			foreach($this->create_folders as $folder)
 			{
 				$mailBoxName = 'INBOX'.$delimiter.$folder;
-				if(imap_createmailbox($mbox,imap_utf7_encode('{'.$this->profileData['imapServer'].'}'.$mailBoxName)))
+				if(IMAPManager::imap_createmailbox($mbox,IMAPManager::imap_utf7_encode('{'.$this->profileData['imapServer'].'}'.$mailBoxName)))
 				{
-					imap_subscribe($mbox,$this->getMailboxString($mailBoxName));
+					IMAPManager::imap_subscribe($mbox,$this->getMailboxString($mailBoxName));
 				}
 			}
-			imap_close($mbox);
+			IMAPManager::imap_close($mbox);
 		}
 		return true;
 	}

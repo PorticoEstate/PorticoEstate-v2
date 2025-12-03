@@ -86,13 +86,15 @@ class property_sotenant_claim
 			$ordermethod = ' order by id DESC';
 		}
 
-		$filtermethod = '';
-		$filtermethod_ticket = '';
-		$where = 'WHERE';
+		$filtermethod = "WHERE claim_type IN ('project')";
+		$filtermethod_ticket = "WHERE claim_type IN ('ticket')";
+		$filtermethod_other = "WHERE claim_type NOT IN ('project', 'ticket')";
+		$where = 'AND';
 		if ($cat_id > 0)
 		{
 			$filtermethod	 .= " $where fm_tenant_claim.category='$cat_id' ";
 			$filtermethod_ticket	 .= " $where fm_tenant_claim.category='$cat_id' ";
+			$filtermethod_other	 .= " $where fm_tenant_claim.category='$cat_id' ";
 			$where			 = 'AND';
 		}
 
@@ -100,6 +102,7 @@ class property_sotenant_claim
 		{
 			$filtermethod	 .= " $where fm_project.id='$project_id' ";
 			$filtermethod_ticket	 .= " $where ticket_id=-1 ";
+			$filtermethod_other	 .= " $where claim_type='project'";
 			$where			 = 'AND';
 		}
 
@@ -107,6 +110,7 @@ class property_sotenant_claim
 		{
 			$filtermethod	 .= " $where fm_project.id=-1 ";
 			$filtermethod_ticket	 .= " $where ticket_id='{$ticket_id}' ";
+			$filtermethod_other	 .= " $where claim_type='ticket'";
 			$where			 = 'AND';
 		}
 
@@ -114,6 +118,7 @@ class property_sotenant_claim
 		{
 			$filtermethod	 .= " $where fm_tenant_claim.status='{$status}'";
 			$filtermethod_ticket	 .= " $where fm_tenant_claim.status='{$status}'";
+			$filtermethod_other	 .= " $where fm_tenant_claim.status='{$status}'";
 			$where			 = 'AND';
 		}
 
@@ -121,6 +126,7 @@ class property_sotenant_claim
 		{
 			$filtermethod	 .= " $where fm_tenant_claim.user_id={$user_id} ";
 			$filtermethod_ticket	 .= " $where fm_tenant_claim.user_id={$user_id} ";
+			$filtermethod_other	 .= " $where fm_tenant_claim.user_id={$user_id} ";
 			$where			 = 'AND';
 		}
 
@@ -128,10 +134,13 @@ class property_sotenant_claim
 		{
 			$filtermethod	 .= " $where  district_id=" . (int)$district_id;
 			$filtermethod_ticket	 .= " $where  district_id=" . (int)$district_id;
+			$filtermethod_other	 .= " $where  district_id=" . (int)$district_id;
 			$where			 = 'AND';
 		}
 
 		$querymethod = '';
+		$querymethod_ticket = '';
+		$querymethod_other = '';
 		if ($query)
 		{
 			$query = $this->db->db_addslashes($query);
@@ -150,6 +159,9 @@ class property_sotenant_claim
 				. " OR fm_tenant.last_name || ', ' || fm_tenant.first_name {$this->like} '%{$query}%'"
 				. " OR cast(fm_tenant_claim.id as text) {$this->like} '{$query}%'"
 				. " OR ticket_id=" . (int)$query . ')';
+			$querymethod_other = " $where (cast(fm_tenant_claim.id as text) {$this->like} '{$query}%')"
+			. " OR fm_tenant_claim.location_code {$this->like} '{$query}%'"
+			. " OR fm_tenant.last_name || ', ' || fm_tenant.first_name {$this->like} '%{$query}%'";
 		}
 
 		$sql = "SELECT type, id, project_id, tenant_id, amount, category, status,"
@@ -197,11 +209,26 @@ class property_sotenant_claim
 			. " $this->join fm_part_of_town ON fm_location1.part_of_town_id=fm_part_of_town.id"
 			. " $this->left_join fm_orders_actual_cost_view ON fm_orders_actual_cost_view.order_id = fm_tts_tickets.order_id"
 			. " $filtermethod_ticket $querymethod_ticket"
-			. ") as t"
+			. "
+			UNION SELECT claim_type as type, fm_tenant_claim.id, fm_tenant_claim.project_id,
+					fm_tenant_claim.tenant_id, fm_tenant_claim.amount, fm_tenant_claim.category, fm_tenant_claim.status,
+					fm_tenant_claim.remark,fm_tenant_claim.user_id,fm_tenant_claim.entry_date,
+					fm_tenant_claim.ticket_id,
+					fm_tenant_claim_category.descr as claim_category, fm_tenant.last_name, fm_tenant.first_name,district_id,
+					fm_tenant_claim.location_code as address, fm_tenant_claim.location_code, 0 as actual_cost
+					FROM fm_tenant_claim 
+					$this->join fm_tenant_claim_category on fm_tenant_claim.category=fm_tenant_claim_category.id
+					$this->join fm_tenant on fm_tenant_claim.tenant_id=fm_tenant.id
+					$this->join fm_location1 ON split_part(fm_tenant_claim.location_code,'-',1)=fm_location1.loc1
+			 		$this->join fm_part_of_town ON fm_location1.part_of_town_id=fm_part_of_town.id
+					$filtermethod_other $querymethod_other
+			) as t"
 			. " GROUP BY type, id, project_id, tenant_id, amount, category, status,	remark, user_id, entry_date,"
 			. " ticket_id, claim_category, last_name,	first_name, district_id,address, location_code";
 
-		$this->db->query($sql, __LINE__, __FILE__);
+//_debug_array($sql);
+//die();
+			$this->db->query($sql, __LINE__, __FILE__);
 		$this->total_records = $this->db->num_rows();
 
 		if (!$allrows)
@@ -287,7 +314,10 @@ class property_sotenant_claim
 				'b_account_id'	 => $this->db->f('b_account_id'),
 				'cat_id'		 => (int)$this->db->f('category'),
 				'user_id'		 => (int)$this->db->f('user_id'),
-				'status'		 => $this->db->f('status')
+				'status'		 => $this->db->f('status'),
+				'claim_type'	 => $this->db->f('claim_type'),
+				'location_code' => $this->db->f('location_code'),
+				'claim_date'	 => $this->db->f('claim_date')
 			);
 		}
 
@@ -320,6 +350,28 @@ class property_sotenant_claim
 		return $claim;
 	}
 
+	function get_tenant_by_reskontro($reskontro)
+	{
+		$reskontro = $this->db->db_addslashes($reskontro);
+		$reskontro_parts = explode('.', $reskontro);
+
+		if (count($reskontro_parts) != 3)
+		{
+			return 0;
+		}
+
+		$this->db->query("SELECT leietaker_id FROM boei_reskontro 
+		WHERE objekt_id = '{$reskontro_parts[0]}' 
+		AND leie_id = '{$reskontro_parts[1]}' 
+		AND flyttenr = '{$reskontro_parts[2]}'", __LINE__, __FILE__);
+
+		if ($this->db->next_record())
+		{
+			return (int)$this->db->f('leietaker_id');
+		}
+		return 0;
+	}
+	
 	function add($claim)
 	{
 		$this->db->transaction_begin();
@@ -327,23 +379,57 @@ class property_sotenant_claim
 		$claim['name']	 = $this->db->db_addslashes($claim['name']);
 		$claim['amount'] = str_replace(",", ".", $claim['amount']);
 
+		if ($claim['reskontro'] && !$claim['tenant_id'])
+		{
+			$tenant_id = $this->get_tenant_by_reskontro($claim['reskontro']);
+			if ($tenant_id)
+			{
+				$claim['tenant_id'] = $tenant_id;
+			}
+		}
+
+		if(!empty($claim['claim_date']))
+		{
+			$claim['claim_date'] = phpgwapi_datetime::date_to_timestamp($claim['claim_date']);
+		}
+		else
+		{
+			$claim['claim_date'] = time();
+		}
+
+		if(!empty($claim['project_id']))
+		{
+			$claim['claim_type'] = 'project';
+		}
+		elseif(!empty($claim['ticket_id']))
+		{
+			$claim['claim_type'] = 'ticket';
+		}
+		else	
+		{
+			// nothing set, use provided claim_type
+		}
+
 		$values_insert = array(
-			$claim['project_id'],
-			$claim['ticket_id'],
-			$claim['tenant_id'],
-			$claim['amount'],
-			$claim['b_account_id'],
-			$claim['cat_id'],
+			$claim['location_code']?? '',
+			$claim['claim_type'],
+			$claim['claim_date'],
+			$claim['project_id'] ?? 0,
+			$claim['ticket_id'] ?? 0,
+			$claim['tenant_id'] ?? 0,
+			$claim['amount'] ?? 0,
+			$claim['b_account_id'] ?? 0,
+			$claim['cat_id'] ?? 0,
 			$claim['remark'],
 			$this->account,
 			time(),
-			$claim['status']
+			$claim['status']?? 'ready'
 		);
 
 		$values_insert = $this->db->validate_insert($values_insert);
 
 
-		$this->db->query("INSERT INTO fm_tenant_claim (project_id,ticket_id,tenant_id,amount,b_account_id,category,remark,user_id,entry_date,status) "
+		$this->db->query("INSERT INTO fm_tenant_claim (location_code, claim_type, claim_date,project_id,ticket_id,tenant_id,amount,b_account_id,category,remark,user_id,entry_date,status) "
 			. "VALUES ($values_insert)", __LINE__, __FILE__);
 
 		$claim_id			 = $this->db->get_last_insert_id('fm_tenant_claim', 'id');
@@ -391,17 +477,19 @@ class property_sotenant_claim
 
 		$this->db->transaction_begin();
 
-		$this->db->query("SELECT status, amount, user_id FROM fm_tenant_claim WHERE id=" . (int)$claim['claim_id'], __LINE__, __FILE__);
+		$this->db->query("SELECT status, amount, user_id, claim_type FROM fm_tenant_claim WHERE id=" . (int)$claim['claim_id'], __LINE__, __FILE__);
 		$this->db->next_record();
 
 		$old_status = $this->db->f('status');
 		$old_amount = (float)$this->db->f('amount');
 		$old_user_id = (int)$this->db->f('user_id');
+		$old_claim_type = $this->db->f('claim_type');
 
 		$claim['name']	 = $this->db->db_addslashes($claim['name']);
 		$claim['amount'] = str_replace(",", ".", $claim['amount']);
 
 		$value_set = array(
+			'claim_type'	 => $claim['claim_type'],
 			'tenant_id'		 => $claim['tenant_id'],
 			'b_account_id'	 => $claim['b_account_id'],
 			'amount'		 => $claim['amount'],
@@ -434,6 +522,11 @@ class property_sotenant_claim
 		{
 
 			$historylog->add('A', $claim_id, (float)$claim['amount'], $old_amount);
+		}
+
+		if ($old_claim_type != $claim['claim_type'])
+		{
+			$historylog->add('RM', $claim_id, $claim['claim_type'], $old_claim_type);
 		}
 
 		$this->interlink->delete_from_target('property', '.tenant_claim', $claim_id, $this->db);
@@ -521,4 +614,44 @@ class property_sotenant_claim
 
 		return $this->db->transaction_commit();
 	}
+
+	public function get_reskontro($location_code)
+	{
+		$values = array();
+
+		if (!$location_code)
+		{
+			return $values;
+		}
+
+		$filtermethod = '';
+
+		$filtermethod = " WHERE location_code {$this->like} '$location_code%'";
+
+		$sql = "SELECT boei_reskontro.flyttenr, location_code, contact_phone, concat(last_name || ', ' || first_name) AS name,"
+			. " concat(boei_reskontro.objekt_id || '.' || boei_reskontro.leie_id || '.' || boei_reskontro.flyttenr) AS reskontro_code,"
+			. "boei_reskontro.innflyttetdato"
+			. " FROM fm_location4"
+			. " JOIN boei_reskontro ON (fm_location4.loc1 = boei_reskontro.objekt_id) AND (fm_location4.loc4 = boei_reskontro.leie_id)"
+			. " JOIN fm_tenant ON boei_reskontro.leietaker_id = fm_tenant.id"
+			. " {$filtermethod}"
+			. " ORDER BY boei_reskontro.flyttenr DESC";
+
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		while ($this->db->next_record())
+		{
+			$values[] = array(
+				'location_code'	 => $this->db->f('location_code', true),
+				'name'			 => $this->db->f('name', true),
+				'contact_phone'	 => $this->db->f('contact_phone', true),
+				'reskontro_code' => $this->db->f('reskontro_code', true),
+				'innflyttetdato' => $this->db->f('innflyttetdato')
+			);
+		}
+		
+
+		return $values;
+	}
+
 }

@@ -437,6 +437,70 @@ class Cache
 	}
 
 	/**
+	 * Atomically acquire a lock using Redis SETNX
+	 *
+	 * @param string $module the module name
+	 * @param string $id the lock identifier
+	 * @param string $value the lock value (usually session ID)
+	 * @param int $ttl time to live in seconds
+	 * @return bool true if lock was acquired, false if already locked
+	 */
+	public static function acquire_atomic_lock($module, $id, $value, $ttl = 30)
+	{
+		$redis_enabled = self::_redis_enabled();
+		
+		if ($redis_enabled)
+		{
+			$key = self::_gen_key($module, $id);
+			return self::$phpgwapi_redis->acquire_lock($key, $value, $ttl);
+		}
+		
+		// Fallback to regular cache if Redis not available
+		// This is not atomic but provides basic protection
+		$existing = self::system_get($module, $id);
+		if ($existing && $existing !== $value) {
+			return false;
+		}
+		return self::system_set($module, $id, $value);
+	}
+
+	/**
+	 * Release an atomic lock
+	 *
+	 * @param string $module the module name
+	 * @param string $id the lock identifier  
+	 * @param string $value the expected lock value
+	 * @return bool true if lock was released
+	 */
+	public static function release_atomic_lock($module, $id, $value)
+	{
+		if (self::_redis_enabled())
+		{
+			$key = self::_gen_key($module, $id);
+			return self::$phpgwapi_redis->release_lock($key, $value);
+		}
+		
+		// Fallback to regular cache clear
+		return self::system_clear($module, $id);
+	}
+
+	/**
+	 * Get keys matching a pattern (Redis only)
+	 *
+	 * @param string $pattern the pattern to match
+	 * @return array array of matching keys
+	 */
+	public static function get_keys_by_pattern($pattern)
+	{
+		if (self::_redis_enabled())
+		{
+			return self::$phpgwapi_redis->get_keys_by_pattern($pattern);
+		}
+		
+		return array();
+	}
+
+	/**
 	 * Clear the data from the user cache
 	 *
 	 * @param string $module the module name the data belongs to
@@ -783,6 +847,8 @@ class Cache
 			}
 		}
 
+		$new_messages = []; // Track new messages for WebSocket notifications
+
 		foreach ($_input as $key => $msg)
 		{
 			// Skip if this message already exists
@@ -820,14 +886,85 @@ class Cache
 			}
 
 			$receipt[$type][] = $message_data;
+			$new_messages[] = $message_data;
 
 			// Add to our tracking array for subsequent messages in this batch
 			$existing_messages[] = $msg;
 		}
 
-		return !!self::session_set('phpgwapi', 'phpgw_messages', $receipt);
+		// Store messages in session
+		$result = !!self::session_set('phpgwapi', 'phpgw_messages', $receipt);
+
+		// Send WebSocket notification if any new messages were added
+		if ($result && !empty($new_messages) && session_status() === PHP_SESSION_ACTIVE) {
+			self::send_websocket_notification($new_messages, $type);
+		}
+
+		return $result;
 	}
 
+	/**
+	 * Send system messages via WebSocket
+	 *
+	 * @param array $messages Array of message data
+	 * @param string $type Message type (error/message)
+	 * @return void
+	 */
+	protected static function send_websocket_notification($messages, $type)
+	{
+		// Only try to send WebSocket notification if we have valid session
+		if (session_status() !== PHP_SESSION_ACTIVE) {
+			return;
+		}
+
+		$sessionId = session_id();
+		if (empty($sessionId)) {
+			return;
+		}
+
+		// Check if WebSocketHelper class exists
+		if (!class_exists('\\App\\modules\\bookingfrontend\\helpers\\WebSocketHelper')) {
+			return;
+		}
+
+		try {
+			// Process each message into the correct format
+			$processed_messages = [];
+			require_once SRC_ROOT_PATH . '/helpers/LegacyObjectHandler.php';
+			$phpgwapi_common = new \phpgwapi_common();
+
+			// Convert internal message format to API response format for WebSocket
+			foreach ($messages as $message) {
+				// Determine message type
+				$client_type = ($type === 'error') ? 'error' : 'success';
+
+				// Create a simplified message structure
+				$processed_messages[] = [
+					'id' => $message['id'] ?? self::generate_secret(8),
+					'type' => $client_type,
+					'text' => $message['msg'],
+					'title' => $message['title'] ?? null
+				];
+			}
+
+			// Send directly as server_message type notification to the current session
+			// without nesting it in additional data structures
+			$helper = new \App\modules\bookingfrontend\helpers\WebSocketHelper();
+			$helper::sendToSession(
+				$sessionId,
+				'server_message',
+				[
+					'type' => 'server_message',
+					'action' => 'new', // Message action is required: 'new', 'changed', or 'deleted'
+					'messages' => $processed_messages
+				]
+			);
+
+			error_log("WebSocket server_message notification sent to session: " . substr($sessionId, 0, 8) . "...");
+		} catch (\Exception $e) {
+			error_log("Error sending WebSocket notification: " . $e->getMessage());
+		}
+	}
 	/**
 	 * Generate a random secret string
 	 *
@@ -847,11 +984,54 @@ class Cache
 	 */
 	public static function message_get($clear = false)
 	{
-		$messages =  self::session_get('phpgwapi', 'phpgw_messages');
-		if ($clear)
+		$messages = self::session_get('phpgwapi', 'phpgw_messages');
+
+		// If the clear flag is set, we need to collect message IDs before clearing
+		if ($clear && is_array($messages) && session_status() === PHP_SESSION_ACTIVE)
 		{
+			// Extract message IDs before clearing
+			$message_ids = [];
+			foreach (['error', 'message'] as $type) {
+				if (isset($messages[$type]) && is_array($messages[$type])) {
+					foreach ($messages[$type] as $message) {
+						if (isset($message['id'])) {
+							$message_ids[] = $message['id'];
+						}
+					}
+				}
+			}
+
+			// Now clear the messages
+			self::session_clear('phpgwapi', 'phpgw_messages');
+
+			// If we have message IDs and WebSocketHelper exists, send the deleted notification
+			if (!empty($message_ids) && class_exists('\\App\\modules\\bookingfrontend\\helpers\\WebSocketHelper')) {
+				try {
+					$sessionId = session_id();
+					if (!empty($sessionId)) {
+						$helper = new \App\modules\bookingfrontend\helpers\WebSocketHelper();
+						$helper::sendToSession(
+							$sessionId,
+							'server_message',
+							[
+								'type' => 'server_message',
+								'action' => 'deleted',
+								'message_ids' => $message_ids
+							]
+						);
+						error_log("WebSocket all messages deleted notification sent to session: " . substr($sessionId, 0, 8) . "...");
+					}
+				} catch (\Exception $e) {
+					error_log("Error sending WebSocket deletion notification: " . $e->getMessage());
+				}
+			}
+		}
+		else if ($clear)
+		{
+			// Standard clear without WebSocket notification
 			self::session_clear('phpgwapi', 'phpgw_messages');
 		}
+
 		return $messages;
 	}
 }

@@ -98,8 +98,9 @@ class phpgwapi_ofphpgwapi extends phpgwapi_object_factory
 				}
 				else
 				{
-					$acl->set_account_id($account_id);
-					return $acl;
+					$_acl = clone($acl);
+					$_acl->set_account_id($account_id);
+					return $_acl;
 				}
 
 			case 'asyncservice':
@@ -109,6 +110,10 @@ class phpgwapi_ofphpgwapi extends phpgwapi_object_factory
 			case 'config':
 				$app = ($p1 !== '_UNDEF_') ? $p1 : null;
 				return new \App\modules\phpgwapi\services\Config($app);
+
+			case 'custom_fields':
+				$appname = ($p1 !== '_UNDEF_') ? $p1 : null;
+				return new \App\modules\phpgwapi\services\CustomFields($appname);
 
 			case 'crypto':
 				$_key = ($p1 !== '_UNDEF_') ? $p1 : null;

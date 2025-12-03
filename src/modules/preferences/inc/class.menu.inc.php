@@ -103,7 +103,14 @@ class preferences_menu
 				'url'	=> phpgw::link('/preferences/changepassword')
 			)
 		);
-
+		//		if (isset($serverSettings['auth_type_passkey']) && $serverSettings['auth_type_passkey'] == 'true')
+		{
+			$menus['preferences'][] = [
+				'text' => $translation->translate('Passkey Management', array(), true),
+				'url' => phpgw::link('/passkey'),
+				'icon' => 'fas fa-fingerprint'
+			];
+		}
 		if ((isset($serverSettings['auth_type'])
 				&& in_array($serverSettings['auth_type'],  array('remoteuser', 'azure')))
 			|| (isset($serverSettings['half_remote_user'])

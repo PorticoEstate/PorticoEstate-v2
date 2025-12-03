@@ -252,4 +252,36 @@
 			}
 			return $contacts;
 		}
+
+		function get_recently_used_vendors()
+		{
+			$vendors_ids = array();
+
+			$sql = "SELECT vendor_id FROM ("
+				. " SELECT vendor_id,"
+				. " MAX(entry_date) AS last_used"
+				. " FROM fm_workorder"
+				. " WHERE user_id = {$this->account_id}"
+				. " AND vendor_id IS NOT NULL AND vendor_id > 0"
+				. " GROUP BY vendor_id"
+				. " UNION ALL"
+				. " SELECT vendor_id,"
+				. " MAX(COALESCE(modified_date, order_received, order_sent, entry_date, 0))::bigint AS last_used"
+				. " FROM fm_tts_tickets"
+				. " WHERE ordered_by = {$this->account_id}"
+				. " AND vendor_id IS NOT NULL AND vendor_id > 0"
+				. " GROUP BY vendor_id"
+				. " ) AS recent_vendors"
+				. " GROUP BY vendor_id"
+				. " ORDER BY MAX(last_used) DESC"
+				. " LIMIT 10";
+
+			$this->db->query($sql, __LINE__, __FILE__);
+			while ($this->db->next_record())
+			{
+				$vendors_ids[] = $this->db->f('vendor_id');
+			}
+
+			return $vendors_ids;
+		}
 	}

@@ -12,10 +12,12 @@ About the service	bookingfrontend	en	About the service
 accept application	bookingfrontend	en	Accept application
 accepted	bookingfrontend	en	Accepted
 Access denied	bookingfrontend	en	Access denied
+access_denied	bookingfrontend	en	Access Denied
 account	bookingfrontend	en	Account
 Account Codes	bookingfrontend	en	Account codes
 account status	bookingfrontend	en	Account status
 actions	bookingfrontend	en	Actions
+activate_group	bookingfrontend	en	Activate group
 active	bookingfrontend	en	Active
 active applications	bookingfrontend	en	Active applications
 Activities (2018)	bookingfrontend	en	Activities
@@ -30,6 +32,7 @@ add document	bookingfrontend	en	Add document
 Add group	bookingfrontend	en	Add group
 add new event	bookingfrontend	en	Add new event
 add permission	bookingfrontend	en	Add permission
+add_contact	bookingfrontend	en	Add contact
 add_date	bookingfrontend	en	Add date
 add_rent_object	bookingfrontend	en	Add rent object
 add_rental_period	bookingfrontend	en	Add rental period
@@ -39,6 +42,7 @@ address	bookingfrontend	en	Address
 admin 1	bookingfrontend	en	Admin 1
 admin 2	bookingfrontend	en	Admin 2
 admins	bookingfrontend	en	Admins
+after_submission_title	bookingfrontend	en	After submission
 again	booking	en	Again
 age group	bookingfrontend	en	Agegroup
 agegroup	bookingfrontend	en	Agegroup
@@ -58,10 +62,21 @@ application	bookingfrontend	en	Application
 application add	bookingfrontend	en	Application add
 Application basket	bookingfrontend	en	Application basket
 Application cart	bookingfrontend	en	Application cart
+application_documents	bookingfrontend	en	Application documents
+application_processed_single	bookingfrontend	en	Your application has now been processed and a confirmation email has been sent to you.
+application_registered_confirmation	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
+application_registered_single	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
+application_title	bookingfrontend	en	Application title
 applications	bookingfrontend	en	Applications
 applications.description	bookingfrontend	en	View and manage your applications
+applications_for_review_title	bookingfrontend	en	Applications for review
+applications_may_contain_paid_services	bookingfrontend	en	Applications may contain paid additional services
 applications_overview	bookingfrontend	en	Here is an overview of your applications that are ready for submission and approval.
+applications_processed_multiple	bookingfrontend	en	Your applications have now been processed and confirmation emails have been sent to you.
 applications_ready_for_submission	bookingfrontend	en	Applications ready for submission
+applications_registered_multiple	bookingfrontend	en	Your applications have now been registered and confirmation emails have been sent to you.
+applications_sent_and_will_receive_email	bookingfrontend	en	Applications have been sent and you will receive a response by email
+applications_sent_simultaneously	bookingfrontend	en	Applications are sent simultaneously
 Apply filter	bookingfrontend	en	Activate filter
 Apply for time	bookingfrontend	en	Apply for time
 apr	bookingfrontend	en	April
@@ -75,6 +90,8 @@ aug	bookingfrontend	en	August
 available	bookingfrontend	en	Available
 back	bookingfrontend	en	Back
 Back to user list	booking	en	Back to user list
+back_to_start	bookingfrontend	en	Back to start
+basic_information	bookingfrontend	en	Basic Information
 beta_version	bookingfrontend	en	Beta version
 billing	bookingfrontend	en	Billing
 billing_information	bookingfrontend	en	Billing information
@@ -94,12 +111,15 @@ booking name	bookingfrontend	en	Booking name
 booking show	bookingfrontend	en	Internal allocation
 booking_calendar	bookingfrontend	en	Bookingcalendar
 booking_categories	bookingfrontend	en	Booking categories
+booking_unavailable	bookingfrontend	en	Booking unavailable
 bookingfrontend host	bookingfrontend	en	Bookingfrontend host
 bookingfrontend settings	bookingfrontend	en	Bookingfrontend settings
 bookings	bookingfrontend	en	Bookings
 Bookings and allocations deleted on	bookingfrontend	en	Bookings and allocations deleted on
 Bookings deleted on	bookingfrontend	en	Bookings deleted on
 Bookings that can be created	bookingfrontend	en	Bookings that can be created
+bookings_are_completed	bookingfrontend	en	Your bookings are completed and confirmed
+both_buttons_submit_applications	bookingfrontend	en	Both buttons submit applications
 boundaries	bookingfrontend	en	Boundaries
 building	bookingfrontend	en	Building
 Building information	bookingfrontend	en	Building information
@@ -112,6 +132,7 @@ bygning	bookingfrontend	en	Bygning
 calendar view	bookingfrontend	en	Day/week view
 calendar_resources	bookingfrontend	en	Calendar resources
 calendar_view	bookingfrontend	en	Calendar
+calendar_view_disabled	bookingfrontend	en	Calendar view is disabled
 Can not create a booking in the past	bookingfrontend	en	Can not create a booking in the past
 Can not repeat from a date in the past	bookingfrontend	en	Can not repeat from a date in the past
 cancel	bookingfrontend	en	Cancel
@@ -134,10 +155,13 @@ Cannot change end time	bookingfrontend	en	Failed to change end time. End date ca
 Cannot change start time	bookingfrontend	en	Failed to change start time. Start date cannot be later than end date
 case officer	bookingfrontend	en	Case officer
 case_officer	bookingfrontend	en	Case Officer
+case_officer_review_multiple	bookingfrontend	en	A Case officer will review your applications as soon as possible.
+case_officer_review_single	bookingfrontend	en	A Case officer will review your application as soon as possible.
 category	bookingfrontend	en	Category
 Change organization	common	en	Change organization
 Change the allocation	bookingfrontend	en	Change the allocation
 Check calendar	bookingfrontend	en	Check calendar
+check_spam_filter	bookingfrontend	en	Please check your spam filter if you are missing mail.
 choose a date	bookingfrontend	en	Choose a date
 Choose another building	bookingfrontend	en	Choose another building
 Choose atleast one object	bookingfrontend	en	Choose at least one object
@@ -151,9 +175,11 @@ choose rent period	bookingfrontend	en	Choose rent period
 Choose resources	bookingfrontend	en	Choose resources
 choose target audience	bookingfrontend	en	Choose target audience
 choose_a	bookingfrontend	en	Choose a billing type
+choose_checkout_method	bookingfrontend	en	Choose checkout method
 chosen rent object	bookingfrontend	en	Chosen resources
 chosen rent period	bookingfrontend	en	Chosen rent period
 city	bookingfrontend	en	City
+clear	bookingfrontend	en	Clear
 click to sort ascending	bookingfrontend	en	Click to sort ascending
 click to sort descending	bookingfrontend	en	Click to sort descending
 clock_short	bookingfrontend	en	Time
@@ -162,11 +188,18 @@ close_dialog	bookingfrontend	en	Close dialog
 close_message	bookingfrontend	en	Close message
 collect users	booking	en	Collect users
 Collects users from all applications and events	booking	en	Collects users from all applications and events
+comment	bookingfrontend	en	Comment
+comments	bookingfrontend	en	Comments
 Complete applications	bookingfrontend	en	Complete applications
 complete applications	bookingfrontend	en	Complete applications
 complete_applications	bookingfrontend	en	Complete applications
 Confirm e-mail address	bookingfrontend	en	Confirm e-mail address
+confirm_activate_group	bookingfrontend	en	Are you sure you want to activate the group {{name}}?
+confirm_deactivate_group	bookingfrontend	en	Are you sure you want to deactivate the group {{name}}?
+confirm_delete_delegate	bookingfrontend	en	Are you sure you want to remove {{name}} as a delegate? This will revoke their access to this organization.
+confirm_delete_group	bookingfrontend	en	Are you sure you want to delete the group {name}?
 confirm_email	bookingfrontend	en	Confirm email
+confirm_restore_delegate	bookingfrontend	en	Are you sure you want to restore {{name}} as an active delegate?
 confirm_this_document	bookingfrontend	en	Confirm this document
 CONFIRMED	bookingfrontend	en	Confirmed
 contact	bookingfrontend	en	Contact
@@ -175,6 +208,7 @@ contact 2	bookingfrontend	en	Contact 2
 contact information	bookingfrontend	en	Contact information
 Contact information name is to long. max 50 characters	bookingfrontend	en	Contact information name is to long. max 50 characters
 contact person	bookingfrontend	en	Contact person
+contact_and_invoice	bookingfrontend	en	Contact & Invoice
 contact_email	bookingfrontend	en	Email
 contact_name	bookingfrontend	en	Contact name
 contact_phone	bookingfrontend	en	Phone
@@ -182,6 +216,7 @@ contacts[0][email] contains an invalid email	bookingfrontend	en	Contacts[0][emai
 contacts[1][email] contains an invalid email	bookingfrontend	en	Contacts[1][email] contains an invalid email
 continue	bookingfrontend	en	Continue
 cookie domain for sessions	bookingfrontend	en	Cookie domain for sessions
+copy_application	bookingfrontend	en	Copy application
 cost	bookingfrontend	en	Cost
 cost is set	booking	en	New price is set
 Could not delete allocation due to a booking still use it	bookingfrontend	en	Could not delete allocation due to a booking still use it
@@ -189,6 +224,7 @@ Could not find application id. Contact case officer with allocation id	bookingfr
 create	bookingfrontend	en	Create
 Create new booking	bookingfrontend	en	Create new booking
 created	bookingfrontend	en	Created
+currency	bookingfrontend	en	NOK
 current activities	bookingfrontend	en	Current activities
 custom login url	bookingfrontend	en	Custom login url
 custom login url parameter	bookingfrontend	en	Custom login url parameter
@@ -205,6 +241,7 @@ dates	bookingfrontend	en	Dates
 day	bookingfrontend	en	Day
 day of the week	bookingfrontend	en	Day of the week
 days	bookingfrontend	en	Days
+deactivate_group	bookingfrontend	en	Deactivate group
 dec	bookingfrontend	en	Dec
 Decrease of from time overlap with existing booking	bookingfrontend	en	Cannot change date. Start time overlaps with existing internal allocation
 Decrease of to time overlap with existing booking	bookingfrontend	en	Cannot change date. End time overlaps with an existing internal allocation
@@ -214,12 +251,16 @@ delete	bookingfrontend	en	Delete
 Delete Event	bookingfrontend	en	Delete event
 Delete information	bookingfrontend	en	Delete information
 Delete information2	bookingfrontend	en	Delete information2
+delete_group	bookingfrontend	en	Delete group
 delete_rentobject	bookingfrontend	en	Delete rent object
 delete_rentobject_body	bookingfrontend	en	Are you sure you want to delete this rent object from your basket?
 Deleted on	bookingfrontend	en	Deleted on
 description	bookingfrontend	en	Description
 description not available	bookingfrontend	en	Description not available
 deselect_all	bookingfrontend	en	Deselect All
+direct_booking	bookingfrontend	en	Direct booking
+direct_booking_title	bookingfrontend	en	Direct booking title
+direct_bookings_confirmation_title	bookingfrontend	en	Direct bookings
 district	bookingfrontend	en	District
 Do you really want to collect users	booking	en	Do you really want to collect users?
 do you really want to collect users again	booking	en	Do you really want to collect users again?
@@ -247,13 +288,18 @@ edit organization	bookingfrontend	en	Edit organization
 Edit System Message	bookingfrontend	en	Edit system message
 Edit until	bookingfrontend	en	Edit until
 edit_event	bookingfrontend	en	Edit Event
+edit_group	bookingfrontend	en	Edit group
+edit_organization	bookingfrontend	en	Edit Organization
 editer	bookingfrontend	en	Editer
 empty_cart	bookingfrontend	en	You have nothing in your shopping cart
+end_time	bookingfrontend	en	End time
 end_time_in_past	bookingfrontend	en	End time cannot be in the past
 end_time_must_be_after_start_time	bookingfrontend	en	End time must be after start time
 end_time_outside_business_hours	bookingfrontend	en	End time must be within business hours
+enter_description_markdown	bookingfrontend	en	Enter description in markdown format
 enter_team_organization_name	bookingfrontend	en	Enter team/organization name
 enter_title	bookingfrontend	en	Please enter a title
+enter_your_comment_here	bookingfrontend	en	Enter your comment here
 entity %1 has been saved	bookingfrontend	en	Entity %1 has been saved
 entity %1 has been updated	bookingfrontend	en	Entity %1 has been updated
 equipment	bookingfrontend	en	Equipment
@@ -269,18 +315,23 @@ Event/activity description	bookingfrontend	en	Event/activity description
 Event/activity homepage	bookingfrontend	en	Event/activity homepage
 event_building	bookingfrontend	en	Event / Building
 event_title	bookingfrontend	en	Event title
+event_type	bookingfrontend	en	Event type
 events	bookingfrontend	en	Events
+events_allocations	bookingfrontend	en	Events/Allocations
 every	bookingfrontend	en	every
 executiveofficer	bookingfrontend	en	Executiveofficer
 expired for edit	bookingfrontend	en	Expired
 Facilities	bookingfrontend	en	Facilities
 facilities	bookingfrontend	en	Facilities
+failed_to_add_comment	bookingfrontend	en	Failed to add comment
 feb	bookingfrontend	en	Feb
 female	bookingfrontend	en	Female
 fetching data	bookingfrontend	en	Fetching data
 Field %1 is required	bookingfrontend	en	Field %1 is required
 Field %1: Invalid format	bookingfrontend	en	Field %1: invalid format
+fill_from_delegate	bookingfrontend	en	Fill from delegate
 filnavn	bookingfrontend	en	Filename
+filter	bookingfrontend	en	Filter
 Find available	bookingfrontend	en	Find available
 Find available resources	bookingfrontend	en	Find available resources
 find_event_or_activity	bookingfrontend	en	Find event or activity
@@ -308,8 +359,12 @@ Go to allocation	bookingfrontend	en	Go to allocation
 google tracker id	bookingfrontend	en	Google tracker id
 group	bookingfrontend	en	Group
 Group shortname	bookingfrontend	en	Group shortname
+group_contacts	bookingfrontend	en	Group contacts
 group_id	bookingfrontend	en	Group id
+group_name	bookingfrontend	en	Group name
+group_shortname	bookingfrontend	en	Short name
 Happening in Bergen	bookingfrontend	en	Happening in Bergen
+history	bookingfrontend	en	History
 history and comments (%1)	bookingfrontend	en	History and comments (%1)
 hms document	bookingfrontend	en	Hse document
 home_page	bookingfrontend	en	To the homepage
@@ -334,7 +389,10 @@ invoice	bookingfrontend	en	Invoice
 invoice information	bookingfrontend	en	Invoice information
 Invoice Instruction	bookingfrontend	en	Invoice instruction
 invoice.description	bookingfrontend	en	View your invoices
+invoice_created_for_direct_bookings	bookingfrontend	en	Invoice is created for direct bookings
+invoice_will_come_if_approved	bookingfrontend	en	An invoice will be sent if the application is approved
 invoiced	bookingfrontend	en	Invoiced
+invoiced_only_if_approved	bookingfrontend	en	These are invoiced only if the application is approved
 It is currently not possible to rent anything here	bookingfrontend	en	It is currently not possible to rent anything here
 jan	bookingfrontend	en	January
 jul	bookingfrontend	en	July
@@ -379,6 +437,8 @@ male	bookingfrontend	en	Male
 manual	bookingfrontend	en	Manual
 manual	common	en	Manual
 mar	bookingfrontend	en	Mars
+markdown	bookingfrontend	en	Markdown
+markdown_help_professional	bookingfrontend	en	Use the toolbar above to format your text, or write in markdown syntax. Click preview to see the result.
 Mass update	bookingfrontend	en	Mass update
 max_participants	bookingfrontend	en	Max {{count}} participants
 may	bookingfrontend	en	May
@@ -394,6 +454,7 @@ modified	bookingfrontend	en	Modified
 month	bookingfrontend	en	Month
 more	bookingfrontend	en	More
 more info	bookingfrontend	en	More info
+more_filters	bookingfrontend	en	More filters
 multiple_time_slots	bookingfrontend	en	Multiple time slots
 my page	bookingfrontend	en	My page
 name	bookingfrontend	en	Name
@@ -421,6 +482,7 @@ new root permission	bookingfrontend	en	New root permission
 new season	bookingfrontend	en	New season
 new season permission	bookingfrontend	en	New season permission
 New system message	bookingfrontend	en	New system message
+new_group	bookingfrontend	en	New group
 Next step	bookingfrontend	en	Next step
 No available options	bookingfrontend	en	No available options
 no Data.	bookingfrontend	en	No data.
@@ -429,7 +491,12 @@ no parents	bookingfrontend	en	No parents
 no records found.	bookingfrontend	en	No records found.
 No rent object chosen	bookingfrontend	en	No rent object chosen
 No valid identification returned from login	common	en	No valid identification returned from login
+no_delegates	bookingfrontend	en	No delegates found
 no_documents_to_accept	bookingfrontend	en	There are no documents to accept for this application.
+no_groups	bookingfrontend	en	No groups found
+no_history_available	bookingfrontend	en	No history available
+no_overlap	bookingfrontend	en	{{res}} does not allow overlapping bookings.
+no_permission_edit_organization	bookingfrontend	en	You do not have permission to edit this organization.
 no_resources_found	bookingfrontend	en	No resources found for the given date
 nov	bookingfrontend	en	November
 number of participants	bookingfrontend	en	Number of participants
@@ -441,27 +508,39 @@ officer	bookingfrontend	en	Officer
 Official organization	bookingfrontend	en	Registered in Brønnøysund
 old	bookingfrontend	en	Old
 optional	booking	en	Optional
+orders_articles	bookingfrontend	en	Orders/Articles
 organization	bookingfrontend	en	Organization
 organization index	bookingfrontend	en	Organization index
 organization number	bookingfrontend	en	Organization number
 Organization shortname	bookingfrontend	en	Organization shortname
 organization type	bookingfrontend	en	Organization type
 organization_calendar	bookingfrontend	en	Organization Calendar
+organization_not_found	bookingfrontend	en	Organization not found
 organizations	bookingfrontend	en	Organizations
 organizer	bookingfrontend	en	Organizer
 organizer/responsible seeker	bookingfrontend	en	Organizer/responsible seeker
+organizer_required	bookingfrontend	en	Organizer name is required
 other	bookingfrontend	en	Other
 Out season	bookingfrontend	en	Out season
+outside_opening_hours	bookingfrontend	en	Outside opening hours
 Overlaps other organizations allocation	bookingfrontend	en	Overlaps other organizations allocation
 Overlaps with existing allocation	bookingfrontend	en	Overlaps with existing allocation
 Overlaps with existing booking	bookingfrontend	en	Overlaps with existing booking
 Overlaps with existing event	bookingfrontend	en	Overlaps with existing event
+ownership	bookingfrontend	en	Ownership
 parent activity	bookingfrontend	en	Parent activity
 parent id	bookingfrontend	en	Parent id
 part of town	common	en	Part of town
 Part of town (2018)	bookingfrontend	en	Part of town
+participants	bookingfrontend	en	Participants
+pay_later_with_invoice	bookingfrontend	en	Pay later with invoice
+pay_now_or_later	bookingfrontend	en	Pay now or with invoice
+pay_now_with_vipps	bookingfrontend	en	Pay now with Vipps
+payment_completed_and_confirmed	bookingfrontend	en	Payment has been completed and confirmed
+payment_if_approved	bookingfrontend	en	Paid if application is approved
 Pending	bookingfrontend	en	Pending
 permissions	bookingfrontend	en	Permissions
+personal	bookingfrontend	en	Personal
 personal group	bookingfrontend	en	Not registered in Brønnøysund
 phone	bookingfrontend	en	Phone
 Phone is already registered	bookingfrontend	en	Phone is already registered
@@ -539,6 +618,7 @@ resource	bookingfrontend	en	Resource
 resource name	bookingfrontend	en	Resource name
 resource schedule	bookingfrontend	en	Resource schedule
 resource type	bookingfrontend	en	Resource type
+resource_already_being_booked	bookingfrontend	en	Resource is already being booked by another user
 resource_already_booked	bookingfrontend	en	This timeslot is not available. The resource is already booked for this time.
 resource_overlap_detected	bookingfrontend	en	Resource overlap detected. Please select different time or resources.
 resources	bookingfrontend	en	Resources
@@ -557,7 +637,9 @@ Search available resources	bookingfrontend	en	Search for available facilities
 Search building, resource, organization	bookingfrontend	en	Search building, resource, organization
 search events	bookingfrontend	en	Search Events
 Search results	bookingfrontend	en	Search results
+search_activities	bookingfrontend	en	Search activities
 search_clear_filters	bookingfrontend	en	Clear filters
+search_facilities	bookingfrontend	en	Search facilities
 search_for_like_minded_people	bookingfrontend	en	Are you looking for someone interested in the same things as you? Search by the name of a team or organization, or filter by activity or area
 search_no_events_match	bookingfrontend	en	No events match your search
 search_no_organizations_match	bookingfrontend	en	No organizations match your search
@@ -579,6 +661,8 @@ select date	bookingfrontend	en	Select date
 select method	bookingfrontend	en	Select method
 select role...	bookingfrontend	en	Select role...
 select_all	bookingfrontend	en	Select All
+select_delegate	bookingfrontend	en	Select delegate...
+select_main_application_note	bookingfrontend	en	Select which application should be the main application. This will help the case officer get a better overview when processing your applications.
 select_organization	bookingfrontend	en	Select or search for organization
 selected	bookingfrontend	en	Selected
 selected_time_must_be_in_future	bookingfrontend	en	The selected time must be in the future
@@ -589,11 +673,15 @@ sep	bookingfrontend	en	September
 Service	bookingfrontend	en	Service
 settings	bookingfrontend	en	Settings
 Short description. For public events, activities and training under the direction of organizations and clubs, this information will be displayed on the internet	bookingfrontend	en	Short description. For public events, activities and training under the direction of organizations and clubs, this information will be displayed on the internet
+short_name	bookingfrontend	en	Short Name
 Show more results	bookingfrontend	en	Load more results
 show only active	bookingfrontend	en	Show only active
+show_in_portal	bookingfrontend	en	Show in portal
+show_inactive	bookingfrontend	en	Show inactive
 show_less	bookingfrontend	en	Show less
 show_more	bookingfrontend	en	Show more
 show_only_available	bookingfrontend	en	Show only available
+show_organizations	bookingfrontend	en	Show organizations
 showing items	bookingfrontend	en	Showing items
 showing items {startRecord} - {endRecord} of {totalRecords}	bookingfrontend	en	Showing items {startrecord} - {endrecord} of {totalrecords}
 site title	bookingfrontend	en	Site title
@@ -616,9 +704,11 @@ Successfully changed start time	bookingfrontend	en	Start time change was success
 successfully created (%1) allocations:	bookingfrontend	en	Successfully created (%1) allocations:
 summary	bookingfrontend	en	Summary
 surname	bookingfrontend	en	Surname
+system feedback	bookingfrontend	en	System feedback
 System message	bookingfrontend	en	System message
 System messages	bookingfrontend	en	System messages
 target audience	bookingfrontend	en	Target audience
+target_audience	bookingfrontend	en	Target audience
 team leader 1	bookingfrontend	en	Team leader 1
 team leader 2	bookingfrontend	en	Team leader 2
 team leaders	bookingfrontend	en	Team leaders
@@ -641,6 +731,7 @@ Tilsynsvakt telephone	bookingfrontend	en	Tilsynsvakt telephone
 Time is set wrong	bookingfrontend	en	Time is set wrong
 timeslot_resources	bookingfrontend	en	Timeslot resources
 timeslot_resources_description	bookingfrontend	en	Easily select a time
+timestamp	bookingfrontend	en	Timestamp
 title	bookingfrontend	en	Title
 to	bookingfrontend	en	To
 To application site	bookingfrontend	en	Order now
@@ -650,6 +741,7 @@ To cancel booking use this link	bookingfrontend	en	To cancel booking use this li
 To time	bookingfrontend	en	To time
 to_date	bookingfrontend	en	To date
 total	bookingfrontend	en	Total
+total_incl_vat	bookingfrontend	en	Total incl. VAT
 Town part	bookingfrontend	en	Area/District
 try_again	bookingfrontend	en	Try again
 tu	bookingfrontend	en	Tu
@@ -684,6 +776,26 @@ view allocation	bookingfrontend	en	View allocation
 view booking	bookingfrontend	en	View booking
 view event	bookingfrontend	en	View event
 view_all_images	bookingfrontend	en	View all images
+view_my_applications	bookingfrontend	en	View My Applications
+vipps_amount	bookingfrontend	en	Amount
+vipps_applications_approved	bookingfrontend	en	Your applications have been approved
+vipps_back_to_checkout	bookingfrontend	en	Back to checkout
+vipps_check_again	bookingfrontend	en	Check again
+vipps_checking_payment	bookingfrontend	en	Checking payment status
+vipps_immediate_payment	bookingfrontend	en	Full amount for direct bookings is paid now
+vipps_init_failed	bookingfrontend	en	Failed to initiate Vipps payment
+vipps_no_payment_id	bookingfrontend	en	No payment ID provided
+vipps_not_configured	bookingfrontend	en	Vipps payment is not properly configured
+vipps_payment_cancelled	bookingfrontend	en	Payment cancelled
+vipps_payment_confirmed	bookingfrontend	en	Your Vipps payment has been confirmed and your applications have been approved.
+vipps_payment_error	bookingfrontend	en	Payment error
+vipps_payment_id	bookingfrontend	en	Payment ID
+vipps_payment_pending	bookingfrontend	en	Payment pending
+vipps_payment_successful	bookingfrontend	en	Payment successful
+vipps_processing_payment	bookingfrontend	en	Processing your payment...
+vipps_redirecting_shortly	bookingfrontend	en	Redirecting you shortly...
+vipps_try_again	bookingfrontend	en	Try again
+visual	bookingfrontend	en	Visual
 we	bookingfrontend	en	We
 week	bookingfrontend	en	Week
 week template	bookingfrontend	en	Week template
@@ -711,4 +823,117 @@ Your application has now been registered and a confirmation email has been sent 
 Your applications have now been processed and confirmation emails have been sent to you.	bookingfrontend	en	Your applications have been approved, and a confirmation has been sent to you via email.
 your_applications	bookingfrontend	en	Your applications
 zip code	bookingfrontend	en	Zip code
-no_overlap	bookingfrontend	en	{{res}} does not allow overlapping bookings.
+make_recurring	bookingfrontend	en	Make this a recurring booking
+login_required_for_recurring	bookingfrontend	en	Login is required for recurring bookings
+repeat_until	bookingfrontend	en	Repeat until
+repeat_every_weeks	bookingfrontend	en	Repeat every (weeks)
+allow_outseason	bookingfrontend	en	Allow bookings beyond season end
+recurring_not_vipps_eligible	bookingfrontend	en	Recurring bookings are not eligible for external payment
+recurring_applications	bookingfrontend	en	Recurring Applications
+recurring_applications_note	bookingfrontend	en	These applications will be processed individually and require approval
+every_week	bookingfrontend	en	Every week
+every_2_weeks	bookingfrontend	en	Every 2 weeks
+every_3_weeks	bookingfrontend	en	Every 3 weeks
+every_4_weeks	bookingfrontend	en	Every 4 weeks
+repeat_until_options	bookingfrontend	en	Repeat Until Options
+repeat_until_end_of_season	bookingfrontend	en	Repeat until end of season
+repeat_until_date	bookingfrontend	en	Repeat until date
+current_season_ends	bookingfrontend	en	Current season ends
+application_registered_single	bookingfrontend	en	Your application has now been registered and a confirmation email has been sent to you.
+application_processed_single	bookingfrontend	en	Your application has now been processed and a confirmation email has been sent to you.
+applications_registered_multiple	bookingfrontend	en	Your applications have now been registered and confirmation emails have been sent to you.
+applications_processed_multiple	bookingfrontend	en	Your applications have now been processed and confirmation emails have been sent to you.
+case_officer_review_single	bookingfrontend	en	A Case officer will review your application as soon as possible.
+case_officer_review_multiple	bookingfrontend	en	A Case officer will review your applications as soon as possible.
+vipps_payment_confirmed	bookingfrontend	en	Your Vipps payment has been confirmed and your applications have been approved.
+choose_checkout_method	bookingfrontend	en	Choose checkout method
+both_buttons_submit_applications	bookingfrontend	en	Both buttons submit applications
+pay_now_with_vipps	bookingfrontend	en	Pay now with Vipps
+pay_later_with_invoice	bookingfrontend	en	Pay later with invoice
+vipps_immediate_payment	bookingfrontend	en	Full amount for direct bookings is paid now
+applications_sent_simultaneously	bookingfrontend	en	Applications are sent simultaneously
+invoice_created_for_direct_bookings	bookingfrontend	en	Invoice is created for direct bookings
+applications_may_contain_paid_services	bookingfrontend	en	Applications may contain paid additional services
+invoiced_only_if_approved	bookingfrontend	en	These are invoiced only if the application is approved
+after_submission_title	bookingfrontend	en	After submission
+direct_bookings_confirmation_title	bookingfrontend	en	Direct bookings
+payment_completed_and_confirmed	bookingfrontend	en	Payment has been completed and confirmed
+bookings_are_completed	bookingfrontend	en	Your bookings are completed and confirmed
+applications_for_review_title	bookingfrontend	en	Applications for review
+applications_sent_and_will_receive_email	bookingfrontend	en	Applications have been sent and you will receive a response by email
+invoice_will_come_if_approved	bookingfrontend	en	An invoice will be sent if the application is approved
+payment_if_approved	bookingfrontend	en	Paid if application is approved
+pay_now_or_later	bookingfrontend	en	Pay now or with invoice
+application_title	bookingfrontend	en	Application title
+direct_booking_title	bookingfrontend	en	Direct booking title
+direct_booking	bookingfrontend	en	Direct booking
+total_incl_vat	bookingfrontend	en	Total incl. VAT
+timestamp	bookingfrontend	en	Timestamp
+no_groups	bookingfrontend	en	No groups found
+no_delegates	bookingfrontend	en	No delegates found
+edit_organization	bookingfrontend	en	Edit Organization
+markdown	bookingfrontend	en	Markdown
+visual	bookingfrontend	en	Visual
+enter_description_markdown	bookingfrontend	en	Enter description in markdown format
+markdown_help_professional	bookingfrontend	en	Use the toolbar above to format your text, or write in markdown syntax. Click preview to see the result.
+basic_information	bookingfrontend	en	Basic Information
+short_name	bookingfrontend	en	Short Name
+organization_not_found	bookingfrontend	en	Organization not found
+access_denied	bookingfrontend	en	Access Denied
+no_permission_edit_organization	bookingfrontend	en	You do not have permission to edit this organization.
+confirm_restore_delegate	bookingfrontend	en	Are you sure you want to restore {{name}} as an active delegate?
+confirm_delete_delegate	bookingfrontend	en	Are you sure you want to remove {{name}} as a delegate? This will revoke their access to this organization.
+group_name	bookingfrontend	en	Group name
+group_shortname	bookingfrontend	en	Short name
+new_group	bookingfrontend	en	New group
+edit_group	bookingfrontend	en	Edit group
+delete_group	bookingfrontend	en	Delete group
+confirm_delete_group	bookingfrontend	en	Are you sure you want to delete the group {name}?
+group_contacts	bookingfrontend	en	Group contacts
+add_contact	bookingfrontend	en	Add contact
+show_in_portal	bookingfrontend	en	Show in portal
+deactivate_group	bookingfrontend	en	Deactivate group
+activate_group	bookingfrontend	en	Activate group
+confirm_deactivate_group	bookingfrontend	en	Are you sure you want to deactivate the group {{name}}?
+confirm_activate_group	bookingfrontend	en	Are you sure you want to activate the group {{name}}?
+fill_from_delegate	bookingfrontend	en	Fill from delegate
+select_delegate	bookingfrontend	en	Select delegate...
+show_inactive	bookingfrontend	en	Show inactive
+organizer_required	bookingfrontend	en	Organizer name is required
+emails_dont_match	bookingfrontend	en	Emails don't match
+documents_confirmation_required	bookingfrontend	en	You must confirm that you have read all regulation documents
+field_wild_required	bookingfrontend	en	{{field}} is required
+field_wild_invalid	bookingfrontend	en	{{field}} has invalid format
+create_user_account	bookingfrontend	en	Create User Account
+recurring_login_link_text	bookingfrontend	en	To make a recurring booking, please <linkTag>Login</linkTag>. This requires being a delegate of an organization.
+no_organizations_for_recurring	bookingfrontend	en	You have no organizations available for recurring bookings.
+you_must_confirm_all_documents	bookingfrontend	en	You must confirm that you have read all regulation documents
+new_repeating	bookingfrontend	en	New repeating
+edit_delegate	bookingfrontend	en	Edit delegate
+every_n_weeks	bookingfrontend	en	Every {{n}} weeks
+until_date	bookingfrontend	en	until {{date}}
+until_end_of_season	bookingfrontend	en	until end of season
+indefinitely	bookingfrontend	en	indefinitely
+validation_name_required	bookingfrontend	en	Name is required
+validation_phone_required	bookingfrontend	en	Phone number is required
+validation_phone_format	bookingfrontend	en	Invalid phone number format. For Norwegian numbers use format: +47 XXXXXXXX or 9XXXXXXX or 4XXXXXXX
+validation_email_required	bookingfrontend	en	Email is required
+validation_email_format	bookingfrontend	en	Invalid email address
+validation_zipcode_min_length	bookingfrontend	en	Zip code must be at least 4 characters
+validation_homepage_format	bookingfrontend	en	Invalid URL format
+vipps_payment_completed	bookingfrontend	en	Your booking has been completed via Vipps payment
+time_booking_conflicts	bookingfrontend	en	The selected time conflicts with existing bookings
+purchase_conditions	bookingfrontend	en	Purchase Conditions
+add_organization	bookingfrontend	en	Add organization
+invalid_org_number_format	bookingfrontend	en	Invalid organization number format. Must be 9 digits.
+org_not_found	bookingfrontend	en	Organization not found in the Brønnøysund registers.
+org_create_hint	bookingfrontend	en	You can create a new organization by typing its 9-digit organization number
+validation_phone_norwegian_format	bookingfrontend	en	Please enter a valid Norwegian phone number (8 digits, optionally with +47 prefix)
+files_will_be_lost_on_login	bookingfrontend	en	You have selected files ({{fileNames}}) that will be lost when you log in. Do you want to continue?
+per_occurrence	bookingfrontend	en	Per occurrence
+sum_occurrences	bookingfrontend	en	Sum ({{count}} occurrences)
+per_occurrence_short	bookingfrontend	en	per
+occurrences	bookingfrontend	en	occurrences
+grand_total	bookingfrontend	en	Total for all applications
+added_to_cart	bookingfrontend	en	Added to cart
+cart_reminder_message	bookingfrontend	en	Remember to complete the application in the cart for the order to be submitted.

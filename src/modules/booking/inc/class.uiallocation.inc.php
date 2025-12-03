@@ -93,6 +93,7 @@
 				),
 				'datatable' => array(
 					'source' => self::link(array('menuaction' => 'booking.uiallocation.index', 'phpgw_return_as' => 'json')),
+					'sorted_by' => array('key' => 0, 'dir' => 'desc'), //id
 					'field' => array(
 						array(
 							'key' => 'id',
@@ -326,6 +327,113 @@
 			$invalid_dates = array();
 			$valid_dates = array();
 
+			// Handle recurring application pre-fill early
+			$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+			$skip_conflicts = Sanitizer::get_var('skip_conflicts', 'int', 'GET', 0);
+			$allocation = array();
+			if ($recurring_app_id) {
+	
+				// Load the application data
+				$application_bo = createObject('booking.boapplication');
+				$recurring_app = $application_bo->read_single($recurring_app_id);
+
+	
+				if ($recurring_app && !empty($recurring_app['recurring_info'])) {
+					// Parse recurring info - handle both string and already parsed array
+					$recurring_data = is_string($recurring_app['recurring_info']) 
+						? json_decode($recurring_app['recurring_info'], true) 
+						: $recurring_app['recurring_info'];
+
+					if ($recurring_data && is_array($recurring_data)) {
+						// Pre-fill recurring form data
+						$_POST['field_interval'] = $recurring_data['field_interval'] ?? 1;
+						$_POST['repeat_until'] = $recurring_data['repeat_until'] ?? '';
+						// Handle outseason checkbox - convert 1 to 'on' for checkbox
+						$_POST['outseason'] = ($recurring_data['outseason'] ?? false) ? 'on' : false;
+					}
+
+					// Pre-fill application data
+					$allocation['application_id'] = $recurring_app['id'];
+					$allocation['building_id'] = $recurring_app['building_id'];
+					$allocation['building_name'] = $recurring_app['building_name'];
+					
+					// Set season based on application dates - find season that contains the first application date
+					if (!empty($recurring_app['dates']) && is_array($recurring_app['dates'])) {
+						$first_date = $recurring_app['dates'][0];
+						$app_date = date('Y-m-d', strtotime($first_date['from_']));
+						
+						// Find seasons for this building that are active and contain the application date
+						$matching_seasons = $this->season_bo->read(array(
+							'filters' => array(
+								'active' => 1, 
+								'building_id' => $recurring_app['building_id'],
+								'where' => array(
+									"%%table%%.from_ <= '{$app_date}'",
+									"%%table%%.to_ >= '{$app_date}'"
+								)
+							), 
+							'results' => 1
+						));
+						
+						if (!empty($matching_seasons['results'][0])) {
+							$allocation['season_id'] = $matching_seasons['results'][0]['id'];
+							$_POST['season_id'] = $matching_seasons['results'][0]['id'];
+						} else {
+							// Fallback to current active season if no matching season found
+							$current_seasons = $this->season_bo->read(array('filters' => array('active' => 1, 'building_id' => $recurring_app['building_id']), 'sort' => 'to_', 'dir' => 'desc', 'results' => 1));
+							if (!empty($current_seasons['results'][0])) {
+								$allocation['season_id'] = $current_seasons['results'][0]['id'];
+								$_POST['season_id'] = $current_seasons['results'][0]['id'];
+							}
+						}
+					}
+
+					// Pre-fill organization data if available
+					if (!empty($recurring_app['customer_organization_id'])) {
+						$allocation['organization_id'] = $recurring_app['customer_organization_id'];
+						$allocation['organization_name'] = $recurring_app['customer_organization_name'];
+						$_POST['organization_id'] = $recurring_app['customer_organization_id'];
+						$_POST['organization_name'] = $recurring_app['customer_organization_name'];
+					} elseif (!empty($recurring_app['customer_organization_number'])) {
+						// Handle organization by number
+						$organizations = createObject('booking.soorganization')->read(array('results' => -1, 'filters' => array('organization_number' => $recurring_app['customer_organization_number'], 'active' => 1)));
+						if (!empty($organizations['results'][0])) {
+							$allocation['organization_id'] = $organizations['results'][0]['id'];
+							$allocation['organization_name'] = $organizations['results'][0]['name'];
+							$_POST['organization_id'] = $organizations['results'][0]['id'];
+							$_POST['organization_name'] = $organizations['results'][0]['name'];
+						}
+					}
+
+					// Pre-fill resource data
+					if (!empty($recurring_app['resources']) && is_array($recurring_app['resources'])) {
+						$allocation['resources'] = $recurring_app['resources'];
+						$_POST['resources'] = $recurring_app['resources'];
+					}
+
+					// Pre-fill time data from first date
+					if (!empty($recurring_app['dates']) && is_array($recurring_app['dates'])) {
+						$first_date = $recurring_app['dates'][0];
+						$from_date = new DateTime($first_date['from_']);
+						$to_date = new DateTime($first_date['to_']);
+
+						// Set datetime values in user's preferred format for the allocation array
+						$dateformat = $this->userSettings['preferences']['common']['dateformat'];
+						$allocation['from_'] = $from_date->format("{$dateformat} H:i");
+						$allocation['to_'] = $to_date->format("{$dateformat} H:i");
+						
+						// Set timestamps for jqcal2 listeners (this is the key!)
+						$_timeFrom = $from_date->getTimestamp();
+						$_timeTo = $to_date->getTimestamp();
+
+						// Set the weekday for recurring logic
+						$weekday = strtolower($from_date->format('l'));
+						$_POST['weekday'] = $weekday;
+					}
+
+						}
+			}
+
 			if ($_SERVER['REQUEST_METHOD'] == 'POST')
 			{
 				$season = $this->season_bo->read_single(Sanitizer::get_var('season_id', 'int'));
@@ -355,7 +463,8 @@
 
 				}
 
-				$allocation = extract_values($_POST, $this->fields);
+				$post_allocation = extract_values($_POST, $this->fields);
+			$allocation = array_merge($allocation, $post_allocation);
 				$allocation['skip_bas'] = (int)Sanitizer::get_var('skip_bas', 'int');
 				if ($_POST['cost'])
 				{
@@ -424,6 +533,7 @@
 				{
 					$step++;
 				}
+				
 				if ($errors  && Sanitizer::get_var('repeat_until', 'bool'))
 				{
 					$_POST['repeat_until'] = date("Y-m-d", phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']));
@@ -465,7 +575,15 @@
 						}
 
 						$this->bo->so->update_id_string();
-						self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $receipt['id']));
+						
+						// Check if this came from recurring application and redirect back to application  
+						$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+						if ($recurring_app_id) {
+							// Redirect to application with flag to open approve modal
+							self::redirect(array('menuaction' => 'booking.uiapplication.show', 'id' => $recurring_app_id, 'open_approve_modal' => 1));
+						} else {
+							self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $receipt['id']));
+						}
 					}
 					catch (booking_unauthorized_exception $e)
 					{
@@ -477,9 +595,12 @@
 
 					if (Sanitizer::get_var('repeat_until', 'bool'))
 					{
-						$repeat_until = phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']) + 60 * 60 * 24;
+						// Use the parameter value if POST is empty
+						$repeat_until_date = !empty($_POST['repeat_until']) ? $_POST['repeat_until'] : Sanitizer::get_var('repeat_until', 'string');
+						
+						$repeat_until = phpgwapi_datetime::date_to_timestamp($repeat_until_date) + 60 * 60 * 24;
 						/*hack to preserve dateformat for next step*/
-						$_POST['repeat_until'] = date("Y-m-d", phpgwapi_datetime::date_to_timestamp($_POST['repeat_until']));
+						$_POST['repeat_until'] = date("Y-m-d", phpgwapi_datetime::date_to_timestamp($repeat_until_date));
 					}
 					else
 					{
@@ -502,6 +623,8 @@
 					$max_dato = strtotime($_POST['to_']); // highest date from input
 					$interval = $_POST['field_interval'] * 60 * 60 * 24 * 7; // weeks in seconds
 					$i = 0;
+					$last_successful_id = null;
+					
 					// calculating valid and invalid dates from the first booking's to-date to the repeat_until date is reached
 					// the form from step 1 should validate and if we encounter any errors they are caused by double bookings.
 					while (($max_dato + ($interval * $i)) <= $repeat_until)
@@ -510,22 +633,48 @@
 						$todate = date('Y-m-d H:i', strtotime($_POST['to_']) + ($interval * $i));
 						$allocation['from_'] = $fromdate;
 						$allocation['to_'] = $todate;
+						
 						$err = $this->bo->validate($allocation);
 						if ($err)
 						{
-							$invalid_dates[$i]['from_'] = $fromdate;
-							$invalid_dates[$i]['to_'] = $todate;
+							// If skip_conflicts is enabled, don't save invalid dates - just skip them
+							if (!$skip_conflicts) {
+								$invalid_dates[$i]['from_'] = $fromdate;
+								$invalid_dates[$i]['to_'] = $todate;
+								
+								// Get conflict details for display
+								$conflicts = $this->get_conflict_details($allocation['resources'], $fromdate, $todate);
+								$conflict_details = array();
+								$conflict_links = array();
+								
+								foreach ($conflicts as $conflict) {
+									$conflict_name = $conflict['name'];
+									$conflict_details[] = $conflict_name;
+									$conflict_links['item_' . count($conflict_links)] = array(
+										'name' => $conflict_name,
+										'link' => $conflict['link'],
+										'type' => $conflict['type']
+									);
+								}
+								
+								$invalid_dates[$i]['conflict_details'] = implode(', ', $conflict_details);
+								$invalid_dates[$i]['conflict_links'] = $conflict_links;
+								$invalid_dates[$i]['conflict_count'] = count($conflicts);
+							}
+							// Move to next iteration without creating allocation
 						}
 						else
 						{
 							$valid_dates[$i]['from_'] = $fromdate;
 							$valid_dates[$i]['to_'] = $todate;
+							
 							if ($step == 3)
 							{
 								try
 								{
 									$receipt = $this->bo->add($allocation);
 									$allocation['id'] = $receipt['id'];
+									$last_successful_id = $receipt['id'];
 
 									if(!empty($purchase_order['lines']) && empty($allocation['application_id']))
 									{
@@ -555,15 +704,27 @@
 						}
 						$i++;
 					}
+					
 					if ($step == 3)
 					{
 						$this->bo->so->update_id_string();
-						self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $receipt['id']));
+						
+						// Check if this came from recurring application and redirect back to application
+						$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+						if ($recurring_app_id && $last_successful_id) {
+							// Redirect to application with flag to open approve modal
+							self::redirect(array('menuaction' => 'booking.uiapplication.show', 'id' => $recurring_app_id, 'open_approve_modal' => 1));
+						} elseif ($last_successful_id) {
+							self::redirect(array('menuaction' => 'booking.uiallocation.show', 'id' => $last_successful_id));
+						} else {
+							self::redirect(array('menuaction' => 'booking.uiallocation.index'));
+						}
 					}
 				}
 			}
-			if (Sanitizer::get_var('building_name', 'string') == '')
+			if (Sanitizer::get_var('building_name', 'string') == '' && empty($allocation['building_name']))
 			{
+	
 				array_set_default($allocation, 'resources', array());
 				$weekday = 'monday';
 			}
@@ -572,6 +733,16 @@
 				$dateformat =  Sanitizer::get_var('dateformat', 'string');
 				$dateTimeFrom = Sanitizer::get_var('from_', 'string');
 				$dateTimeTo = Sanitizer::get_var('to_', 'string');
+				
+				// Handle pre-filled datetime from recurring application
+				if (empty($dateTimeFrom) && !empty($allocation['from_'])) {
+					$dateTimeFrom = $allocation['from_']; // Use as-is from recurring pre-fill
+					// Don't force dateformat since allocation['from_'] is already in ISO format
+				}
+				if (empty($dateTimeTo) && !empty($allocation['to_'])) {
+					$dateTimeTo = $allocation['to_']; // Use as-is from recurring pre-fill
+				}
+				
 				if(is_array($dateTimeFrom))
 				{
 					$dateTimeFrom = $dateTimeFrom[0];
@@ -596,6 +767,7 @@
 				array_set_default($allocation, 'from_', $timeFrom);
 				array_set_default($allocation, 'to_', $timeTo);
 				$weekday = Sanitizer::get_var('weekday', 'string');
+
 			}
 
 			$this->flash_form_errors($errors);
@@ -605,7 +777,15 @@
 			self::add_javascript('booking', 'base', 'allocation.js');
 
 			$allocation['resources_json'] = json_encode(array_map('intval', $allocation['resources']));
-			$allocation['cancel_link'] = self::link(array('menuaction' => 'booking.uiallocation.index'));
+
+			// Check if this came from a recurring application - if so, route back to application
+			$recurring_app_id = Sanitizer::get_var('recurring_application_id', 'int', 'GET');
+			if ($recurring_app_id) {
+				$allocation['cancel_link'] = self::link(array('menuaction' => 'booking.uiapplication.show', 'id' => $recurring_app_id));
+			} else {
+				$allocation['cancel_link'] = self::link(array('menuaction' => 'booking.uiallocation.index'));
+			}
+
 			array_set_default($allocation, 'cost', '0');
 
 //			$_timeFrom = $timeFrom ? $timeFrom : '';
@@ -925,7 +1105,10 @@
 					}
 					else
 					{
-						$err = $this->bo->so->delete_allocation($id);
+
+						//	$err = $this->bo->so->delete_allocation($id);
+						$err = $this->bo->delete($id);
+
 						self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $allocation['building_id']));
 					}
 				}
@@ -978,7 +1161,8 @@
 							$valid_dates[$i]['to_'] = $todate;
 							if ($step == 3)
 							{
-								$stat = $this->bo->so->delete_allocation($id);
+						//		$stat = $this->bo->so->delete_allocation($id);
+								$stat = $this->bo->delete($id);
 							}
 						}
 						$i++;
@@ -1181,5 +1365,56 @@
 			$allocation['when'] = pretty_timestamp($allocation['from_']) . ' - ' . pretty_timestamp($allocation['to_']);
 			self::render_template_xsl('allocation_info', array('allocation' => $allocation));
 			phpgwapi_xslttemplates::getInstance()->set_output('wml'); // Evil hack to disable page chrome
+		}
+
+		/**
+		 * Get detailed information about conflicting bookings/events/blocks for a time slot
+		 * Uses the new get_collision_details method for exact results
+		 */
+		private function get_conflict_details($resources, $from_, $to_)
+		{
+			$conflicts = array();
+
+			if (empty($resources) || !is_array($resources)) {
+				return $conflicts;
+			}
+
+			// Use the application so object which has the get_collision_details method
+			$application_so = createObject('booking.soapplication');
+			$collision_details = $application_so->get_collision_details($resources, $from_, $to_);
+
+			foreach ($collision_details as $detail) {
+				$conflict = array(
+					'name' => $detail['name'],
+					'type' => $detail['type'],
+					'link' => ''
+				);
+
+				// Generate appropriate links based on conflict type
+				switch ($detail['type']) {
+					case 'allocation':
+						$conflict['link'] = self::link(array(
+							'menuaction' => 'booking.uiallocation.edit',
+							'id' => $detail['id']
+						));
+						break;
+					case 'booking':
+						$conflict['link'] = self::link(array(
+							'menuaction' => 'booking.uibooking.edit',
+							'id' => $detail['id']
+						));
+						break;
+					case 'event':
+						$conflict['link'] = self::link(array(
+							'menuaction' => 'booking.uievent.edit',
+							'id' => $detail['id']
+						));
+						break;
+				}
+
+				$conflicts[] = $conflict;
+			}
+
+			return $conflicts;
 		}
 	}

@@ -8,6 +8,7 @@ import CalendarDatePicker from "@/components/date-time-picker/calendar-date-pick
 import {ISearchDataOptimized, ISearchDataTown} from '@/service/types/api/search.types';
 import EventResultItem from "@/components/search/event/event-result-item";
 import {IShortEvent} from "@/service/pecalendar.types";
+import {useSearchParams, useRouter, usePathname} from 'next/navigation';
 
 interface EventSearchProps {
     initialSearchData?: ISearchDataOptimized;
@@ -21,10 +22,33 @@ interface EventSearchProps {
 // Storage constants removed
 
 const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents, initialTowns }) => {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const pathname = usePathname();
+    
+    // Initialize date states from URL parameters or defaults
+    const initFromDate = () => {
+        const fromDateParam = searchParams.get('fromDate');
+        if (fromDateParam) {
+            const date = new Date(fromDateParam);
+            return !isNaN(date.getTime()) ? date : new Date();
+        }
+        return new Date();
+    };
+    
+    const initToDate = () => {
+        const toDateParam = searchParams.get('toDate');
+        if (toDateParam) {
+            const date = new Date(toDateParam);
+            return !isNaN(date.getTime()) ? date : new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000));
+        }
+        return new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 days later
+    };
+
     // Initialize state for search filters
     const [textSearchQuery, setTextSearchQuery] = useState<string>('');
-    const [fromDate, setFromDate] = useState<Date>(new Date());
-    const [toDate, setToDate] = useState<Date>(new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000))); // 7 days later
+    const [fromDate, setFromDate] = useState<Date>(initFromDate());
+    const [toDate, setToDate] = useState<Date>(initToDate());
     const [townId, setTownId] = useState<number | ''>('');
 
     // Fetch all search data, using initialSearchData as default
@@ -66,6 +90,14 @@ const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents, i
         toDate: toDateIso,
         initialEvents: initialEvents
     });
+
+    // Function to update URL with new search params
+    const updateURL = (newFromDate: Date, newToDate: Date) => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('fromDate', newFromDate.toISOString().split('T')[0]);
+        params.set('toDate', newToDate.toISOString().split('T')[0]);
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    };
 
     // Trigger refetch when date parameters change
     useEffect(() => {
@@ -113,16 +145,22 @@ const EventSearch: FC<EventSearchProps> = ({ initialSearchData, initialEvents, i
             setFromDate(newDate);
 
             // If toDate is before fromDate, adjust it
+            let newToDate = toDate;
             if (toDate < newDate) {
-                const newToDate = new Date(newDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+                newToDate = new Date(newDate.getTime() + (7 * 24 * 60 * 60 * 1000));
                 setToDate(newToDate);
             }
+            
+            // Update URL with new dates
+            updateURL(newDate, newToDate);
         }
     };
 
     const handleToDateChange = (newDate: Date | null) => {
         if (newDate) {
             setToDate(newDate);
+            // Update URL with new dates
+            updateURL(fromDate, newDate);
         }
     };
 

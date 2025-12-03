@@ -421,10 +421,27 @@ function set_mandatory(xTable)
 						unit_price_select.appendChild(option);
 					}
 
-					alertify.myAlert(unit_price_select)
+					// Open price selector with an optional extra number field
+					alertify.myAlert(unit_price_select, {
+						numberField: {
+							name: 'custom_amount',
+							label: (typeof lang !== 'undefined' && lang['unit cost']) ? lang['unit cost'] : 'Unit Cost',
+							value: $(unit_price_cell).html(),
+							min: 0,
+							step: 0.01
+							}
+						})
 						.set('onclose', function (closeEvent)
 						{
 							var unit_price_value = $('#unit_price_select').val();
+
+							// Optional: read the custom number field value if provided
+							var custom_amount = $("input[name='custom_amount']").val();
+
+							if (custom_amount) {
+								unit_price_value = parseFloat(custom_amount);
+							}
+
 							$(unit_price_cell).html(unit_price_value);
 
 							var tax_percent = unit_price_cell.parentNode.childNodes[6].innerHTML;
@@ -748,9 +765,77 @@ if (!alertify.myAlert)
 	alertify.dialog('myAlert', function factory()
 	{
 		return{
-			main: function (select_options)
+			main: function (select_options, opts)
 			{
-				this.setContent(select_options);
+				var wrap = document.createElement('div');
+				var selectEl = null;
+
+				// Append provided content (DOM element or HTML string)
+				if (select_options instanceof HTMLElement)
+				{
+					wrap.appendChild(select_options);
+					if (select_options.tagName && select_options.tagName.toLowerCase() === 'select') {
+						selectEl = select_options;
+					} else if (select_options.querySelector) {
+						selectEl = select_options.querySelector('select');
+					}
+				}
+				else if (typeof select_options === 'string')
+				{
+					var div = document.createElement('div');
+					div.innerHTML = select_options;
+					wrap.appendChild(div);
+					selectEl = div.querySelector('select');
+				}
+
+				// Optional custom number field
+				// if an option from the select_options is chosen, I want to clear the input field
+
+				if (opts && opts.numberField)
+				{
+					var nf = opts.numberField || {};
+					var fieldId = nf.id || ('custom_number_' + Date.now());
+
+					var label = document.createElement('label');
+					label.setAttribute('for', fieldId);
+					label.textContent = nf.label || nf.name || 'Value';
+					label.style.display = 'block';
+					label.style.marginTop = '0.5rem';
+
+					var input = document.createElement('input');
+					input.type = 'number';
+					if (nf.name) input.name = nf.name; // caller-chosen name
+					input.id = fieldId;
+					if (nf.value != null) input.value = nf.value;
+					if (nf.min != null) input.min = nf.min;
+					if (nf.max != null) input.max = nf.max;
+					if (nf.step != null) {
+						input.step = nf.step;
+					} else {
+						input.step = '0.01'; // default to two decimals
+					}
+					// Help mobile keyboards and browsers accept decimals
+					input.inputMode = 'decimal';
+					input.className = 'form-control';
+
+					wrap.appendChild(label);
+					wrap.appendChild(input);
+
+					// When the user selects an option, set the custom input to the selected value
+					if (selectEl) {
+						selectEl.addEventListener('change', function () {
+							var v = selectEl.value;
+							if (v !== undefined && v !== null && v !== '') {
+								var num = parseFloat(v);
+								input.value = isNaN(num) ? '' : num.toFixed(2);
+							} else {
+								input.value = '';
+							}
+						});
+					}
+				}
+
+				this.setContent(wrap);
 			},
 			setup: function ()
 			{

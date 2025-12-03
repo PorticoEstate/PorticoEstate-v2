@@ -67,7 +67,13 @@ class SessionsMiddleware implements MiddlewareInterface
 		$this->read_initial_settings($currentApp, $_currentApp);
 		$sessions = Sessions::getInstance();
 		$flags = Settings::getInstance()->get('flags');
-		$verified = $sessions->verify();
+		// If bookingfrontendsession is present, use it for verification
+		$sessionid = '';
+		// Check if bookingfrontendsession parameter is provided in GET
+		if (Sanitizer::get_var('bookingfrontendsession', 'string', 'GET')) {
+			$sessionid = Sanitizer::get_var('bookingfrontendsession', 'string', 'GET');
+		}
+		$verified = $sessions->verify($sessionid);
 		if(!$verified && !empty($_GET['api_mode']))
 		{
 			return $this->sendErrorResponse(['msg' => 'A valid session could not be found'], 401);
@@ -133,6 +139,7 @@ class SessionsMiddleware implements MiddlewareInterface
 						unset($_GET['click_history']);
 						unset($_GET['sessionid']);
 						unset($_GET[session_name()]);
+						unset($_GET['bookingfrontendsession']);
 						unset($_GET['kp3']);
 						$cookietime = time() + 60;
 						$sessions->phpgw_setcookie('redirect', json_encode($_GET), $cookietime);
@@ -170,6 +177,7 @@ class SessionsMiddleware implements MiddlewareInterface
 						unset($_GET['click_history']);
 						unset($_GET['sessionid']);
 						unset($_GET[session_name()]);
+						unset($_GET['bookingfrontendsession']);
 						unset($_GET['kp3']);
 						$cookietime = time() + 60;
 						$sessions->phpgw_setcookie('redirect', json_encode($_GET), $cookietime);

@@ -549,12 +549,12 @@
 
 		oTable = JqueryPortico.inlineTableHelper('datatable-container', source, JqueryPortico.columns, options );
 			
-<![CDATA[
+		<![CDATA[
 
 			function fnGetSelected( )
 			{
 				var aReturn = new Array();
-				 var aTrs = oTable.fnGetNodes();
+				 var aTrs = oTable.api().rows().nodes();
 				 for ( var i=0 ; i < aTrs.length ; i++ )
 				 {
 					 if ( $(aTrs[i]).hasClass('selected') )
@@ -564,7 +564,7 @@
 				 }
 				 return aReturn;
 			}
-
+			
 			function execute_ajax(requestUrl, callback, data,type, dataType)
 			{                                       
 				type = typeof type !== 'undefined' ? type : 'POST';

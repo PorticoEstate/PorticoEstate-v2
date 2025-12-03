@@ -48,6 +48,9 @@ $oProc->query("INSERT INTO bb_billing_sequential_number_generator ( name, value 
 $location_obj->add('.admin', 'Admin section', 'booking');
 $location_obj->add('.office', 'office', 'booking');
 $location_obj->add('.office.user', 'office/user relation', 'booking', false, 'bb_office_user');
+$location_obj->add('.application', 'Application', 'booking');
+$location_obj->add('.article', 'article', 'booking');
+
 $db2 = new Db2();
 
 $attrib = array(
@@ -616,6 +619,157 @@ $receipt = $custom_config->add_attrib(
 		'choice'		=> array(1),
 	)
 );
+
+
+//vipps default config
+$receipt_section_common = $custom_config->add_section(
+	array(
+		'name' => 'payment',
+		'descr' => 'payment method config'
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_common['section_id'],
+		'input_type'	=> 'listbox',
+		'name'			=> 'method',
+		'descr'			=> 'Payment method',
+		'choice'		=> array('Vipps'),
+	)
+);
+
+$receipt_section_vipps = $custom_config->add_section(
+	array(
+		'name' => 'Vipps',
+		'descr' => 'Vipps config'
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_vipps['section_id'],
+		'input_type'	=> 'text',
+		'name'			=> 'base_url',
+		'descr'			=> 'base_url',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_vipps['section_id'],
+		'input_type'	=> 'text',
+		'name'			=> 'client_id',
+		'descr'			=> 'client_id',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_vipps['section_id'],
+		'input_type'	=> 'password',
+		'name'			=> 'client_secret',
+		'descr'			=> 'client_secret',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_vipps['section_id'],
+		'input_type'	=> 'password',
+		'name'			=> 'subscription_key',
+		'descr'			=> 'subscription_key',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_vipps['section_id'],
+		'input_type'	=> 'text',
+		'name'			=> 'msn',
+		'descr'			=> 'Merchant Serial Number',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_vipps['section_id'],
+		'input_type'	=> 'listbox',
+		'name'			=> 'debug',
+		'descr'			=> 'debug',
+		'choice'		=> array(1),
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_section_vipps['section_id'],
+		'input_type'	=> 'listbox',
+		'name'			=> 'active',
+		'descr'			=> 'Aktiv',
+		'choice'		=> array('active'),
+	)
+);
+
+
+
+
+$receipt_Outlook = $custom_config->add_section(
+	array(
+		'name' => 'Outlook',
+		'descr' => 'Outlook webhook configuration'
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_Outlook['section_id'],
+		'input_type'	=> 'text',
+		'name'			=> 'baseurl',
+		'descr'			=> 'Base URL',
+		'value'			=> '',
+	)
+);
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_Outlook['section_id'],
+		'input_type'	=> 'text',
+		'name'			=> 'tenant_id',
+		'descr'			=> 'Tenant ID',
+		'value'			=> '',
+	)
+);
+
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_Outlook['section_id'],
+		'input_type'	=> 'password',
+		'name'			=> 'api_key',
+		'descr'			=> 'API Key',
+		'value'			=> '',
+	)
+);
+
+
+$receipt = $custom_config->add_attrib(
+	array(
+		'section_id'	=> $receipt_Outlook['section_id'],
+		'input_type'	=> 'checkbox',
+		'name'			=> 'webhook_enabled',
+		'descr'			=> 'Enable Webhooks',
+		'choice'		=> array('active'),
+		'value'			=> [],
+	)
+);
+
+
 
 $asyncservice = CreateObject('phpgwapi.asyncservice');
 

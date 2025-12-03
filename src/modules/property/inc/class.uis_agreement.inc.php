@@ -619,7 +619,7 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 			$values['b_account_name']	 = Sanitizer::get_var('b_account_name', 'string', 'POST');
 
 			$values_attribute			 = Sanitizer::get_var('values_attribute');
-			$insert_record_s_agreement = Cache::session_get('property', 'insert_record_values.s_agreement');
+			$insert_record_s_agreement = (array)Cache::session_get('property', 'insert_record_values.s_agreement');
 
 			for ($j = 0; $j < count($insert_record_s_agreement); $j++)
 			{
@@ -1412,10 +1412,10 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 
 		$this->cats->set_appname('property', '.project');
 
-		$indice = array('id' => '0');
-		array_unshift($alarm_data['add_alarm']['day_list'], $indice);
-		array_unshift($alarm_data['add_alarm']['hour_list'], $indice);
-		array_unshift($alarm_data['add_alarm']['minute_list'], $indice);
+	//	$indice = array('id' => '0');
+	//	array_unshift($alarm_data['add_alarm']['day_list'], $indice);
+	//	array_unshift($alarm_data['add_alarm']['hour_list'], $indice);
+	//	array_unshift($alarm_data['add_alarm']['minute_list'], $indice);
 
 		$data = array(
 			'datatable_def'						 => $datatable_def,
@@ -1613,7 +1613,7 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 		$result_data = array('results' => $content_values);
 
 		$result_data['total_records']	 = $total_records;
-		$result_data['draw']			 = $draw;
+		$result_data['draw']			 = Sanitizer::get_var('draw', 'int');
 
 		return $this->jquery_results($result_data);
 	}
@@ -1650,10 +1650,10 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 
 		if (is_array($values))
 		{
-			$insert_record	=	Cache::session_get('property',	'insert_record');
+			$insert_record	=	(array)Cache::session_get('property',	'insert_record');
 			$insert_record_entity = (array)Cache::session_get('property',	'insert_record_entity');
 
-			$insert_record_s_agreement1 = Cache::session_get('property', 'insert_record_values.s_agreement.detail');
+			$insert_record_s_agreement1 = (array)Cache::session_get('property', 'insert_record_values.s_agreement.detail');
 
 			for ($j = 0; $j < count($insert_record_entity); $j++)
 			{
@@ -1669,6 +1669,10 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 			//_debug_array($values);
 			if ($values['save'] || $values['apply'])
 			{
+				if (empty($values['location']))
+				{
+					$receipt['error'][] = array('msg' => lang('Please select a location !'));
+				}
 
 				if (!$receipt['error'])
 				{
@@ -1679,7 +1683,7 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 					$id							 = $receipt['id'];
 					$this->cat_id				 = ($values['cat_id'] ? $values['cat_id'] : $this->cat_id);
 
-					if ($values['save'])
+					if ($values['save'] && !$receipt['error'])
 					{
 						Cache::session_set('s_agreement_receipt', 'session_data', $receipt);
 						phpgw::redirect_link('/index.php', array(
@@ -1747,11 +1751,11 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 
 		$msgbox_data = $this->bocommon->msgbox_data($receipt);
 
-		$member_of_data = $this->cats->formatted_xslt_list(array(
+/*		$member_of_data = $this->cats->formatted_xslt_list(array(
 			'selected'	 => $this->member_id,
 			'globals'	 => true, link_data	 => array()
 		));
-
+*/
 		$table_add[] = array(
 			'lang_add'				 => lang('add detail'),
 			'lang_add_standardtext'	 => lang('add an item to the details'),
@@ -1764,14 +1768,19 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 		if ($id)
 		{
 			$list = $this->bo->read_prizing(array('s_agreement_id' => $s_agreement_id, 'item_id' => $id));
+			$uicols			 = $this->bo->uicols;
+			$list			 = $this->list_content($list, $uicols, $edit_item		 = true);
+			$content		 = $list['content'];
+			$table_header	 = $list['table_header'];
 			$jqcal = CreateObject('phpgwapi.jqcal');
 			$jqcal->add_listener('values_date');
 		}
+		else
+		{
+			$content		 = array();
+			$table_header	 = array();
+		}
 
-		$uicols			 = $this->bo->uicols;
-		$list			 = $this->list_content($list, $uicols, $edit_item		 = true);
-		$content		 = $list['content'];
-		$table_header	 = $list['table_header'];
 
 		//------JSON code-------------------
 		if (Sanitizer::get_var('phpgw_return_as') == 'json')
@@ -1807,10 +1816,15 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 		//--------------------JSON code-----
 
 
-		for ($i = 0; $i < count($list['content'][0]['row']); $i++)
+		$set_column = array();
+		if (isset($list['content'][0]['row']))
 		{
-			$set_column[] = true;
+			for ($i = 0; $i < count($list['content'][0]['row']); $i++)
+			{
+				$set_column[] = true;
+			}
 		}
+		
 		//_debug_array($list);
 
 		$table_update[] = array(
@@ -1927,15 +1941,6 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 			'parameters' => $parameters
 		);
 
-		$tabletools = array(
-			array(
-				'my_name'	 => 'view', 'text'		 => lang('View'),
-				'action'	 => phpgw::link('/index.php', array(
-					'menuaction'	 => 'property.uis_agreement.view_item',
-					's_agreement_id' => $s_agreement_id, 'from'			 => 'edit'
-				))
-			),
-		);
 
 		$myColumnDefs0 = array(
 			array('key' => 'item_id', 'label' => lang('ID'), 'sortable' => true, 'resizeable' => true),
@@ -1945,17 +1950,19 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 				'key'		 => 'index_count', 'label'		 => lang('index_count'), 'sortable'	 => true,
 				'resizeable' => true
 			),
-			array('key' => 'index_date', 'label' => lang('Date'), 'sortable' => true, 'resizeable' => true)
+			array('key' => 'index_date', 'label' => lang('Date'), 'sortable' => false, 'resizeable' => true)
 		);
 
 		$datatable_def[] = array(
 			'container'	 => 'datatable-container_0',
 			'requestUrl' => json_encode(self::link(array(
 				'menuaction'		 => 'property.uis_agreement.get_contentitem',
-				's_agreement_id'	 => $s_agreement_id, 'item_id'			 => $id, 'phpgw_return_as'	 => 'json'
+				's_agreement_id'	 => $s_agreement_id,
+				'item_id'			 => $id,
+				'phpgw_return_as'	 => 'json'
 			))),
 			'data'		 => json_encode(array()),
-			'tabletools' => $tabletools,
+			'tabletools' => array(),
 			'ColumnDefs' => $myColumnDefs0,
 			'config'	 => array(
 				array('disableFilter' => true),
@@ -1969,9 +1976,9 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 				'menuaction'	 => "property.uis_agreement.edit_item",
 				'id'			 => $id, 's_agreement_id' => $s_agreement_id
 			)),
-			'datatable'						 => $datavalues,
-			'myColumnDefs'					 => $myColumnDefs,
-			'myButtons'						 => $myButtons,
+		//	'datatable'						 => $datavalues,
+		//	'myColumnDefs'					 => $myColumnDefs,
+		//	'myButtons'						 => $myButtons,
 			'msgbox_data'					 => $this->phpgwapi_common->msgbox($msgbox_data),
 			'edit_url'						 => phpgw::link('/index.php', $link_data),
 			'lang_id'						 => lang('ID'),
@@ -2072,15 +2079,17 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 
 		$dateformat = (implode($sep, $dlarr));
 
+		$content = array();
+		$table_header = array();
 		if ($id)
 		{
 			$list = $this->bo->read_prizing(array('s_agreement_id' => $s_agreement_id, 'item_id' => $id));
+			$uicols			 = $this->bo->uicols;
+			$list			 = $this->list_content($list, $uicols, $edit_item		 = true);
+			$content		 = $list['content'];
+			$table_header	 = $list['table_header'];
 		}
 
-		$uicols			 = $this->bo->uicols;
-		$list			 = $this->list_content($list, $uicols, $edit_item		 = true);
-		$content		 = $list['content'];
-		$table_header	 = $list['table_header'];
 
 		//_debug_array($table_header[0]['header']); die;
 
@@ -2177,15 +2186,6 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 			)
 		);
 
-		$tabletools = array(
-			array(
-				'my_name'	 => 'view', 'text'		 => lang('View'),
-				'action'	 => phpgw::link('/index.php', array(
-					'menuaction'	 => 'property.uis_agreement.view_item',
-					's_agreement_id' => $s_agreement_id, 'from'			 => 'edit'
-				))
-			),
-		);
 
 		$myColumnDefs0 = array(
 			array(
@@ -2214,7 +2214,7 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 			'container'	 => 'datatable-container_0',
 			'requestUrl' => "''",
 			'data'		 => json_encode($content_values),
-			'tabletools' => $tabletools,
+			'tabletools' => array(),
 			'ColumnDefs' => $myColumnDefs0,
 			'config'	 => array(
 				array('disableFilter' => true),
@@ -2225,8 +2225,6 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 		$data = array(
 			'datatable_def'			 => $datatable_def,
 			'base_java_url'			 => json_encode(array('menuaction' => "property.uis_agreement.view_item")),
-			'datatable'				 => $datavalues,
-			'myColumnDefs'			 => $myColumnDefs,
 			'msgbox_data'			 => $this->phpgwapi_common->msgbox($msgbox_data),
 			'edit_url'				 => phpgw::link('/index.php', $link_data),
 			'lang_id'				 => lang('ID'),
@@ -2329,8 +2327,17 @@ class property_uis_agreement extends phpgwapi_uicommon_jquery
 		}
 
 		$s_agreement_id = Sanitizer::get_var('id'); // in case of bigint
+		if (!$s_agreement_id)
+		{
+			phpgw::redirect_link('/index.php', array(
+				'menuaction' => 'property.uis_agreement.index',
+				'role'		 => $this->role
+			));
+		}
 
 		$tabs			 = array();
+		$content 		 = array();
+		$table_header	 = array();
 		$tabs['general'] = array('label' => lang('general'), 'link' => '#general');
 		$active_tab		 = 'general';
 		$tabs['items']	 = array('label' => lang('items'), 'link' => "#items");

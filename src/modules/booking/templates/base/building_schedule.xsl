@@ -12,6 +12,20 @@
 		<div id="tab-content">
 			<xsl:value-of disable-output-escaping="yes" select="building/tabs"/>
 			<div id="building_schedule">
+
+				<label for="resource_id">
+					<xsl:value-of select="php:function('lang', 'resource')"/>
+				</label>
+				<select id="resource_id" name="resource_id[]" class="form-select">
+					<xsl:attribute name="multiple">
+						<xsl:text>true</xsl:text>
+					</xsl:attribute>
+					<xsl:attribute name="title">
+						<xsl:value-of select="php:function('lang', 'select resource')"/>
+					</xsl:attribute>
+					<xsl:apply-templates select="building/resource_list/options"/>
+				</select>
+
 				<ul id="week-selector">
 					<li>
 						<span class="pure-button pure-button-primary" onclick="schedule.prevWeek(); return false">
@@ -67,6 +81,75 @@
 		$('#cal_container #numberWeek').text(schedule.week);
 		$("#cal_container #datepicker").datepicker("setDate", parseISO8601(state));
 		}
+
+
+	$("#resource_id").multiselect({
+		buttonClass: 'form-select',
+		templates: {
+		button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
+		},
+		buttonWidth: 250,
+		includeSelectAllOption: true,
+		enableFiltering: true,
+		enableCaseInsensitiveFiltering: true,
+		onChange: function ($option)
+		{
+			// Check if the filter was used.
+			var query = $("#resource_id").find('li.multiselect-filter input').val();
+
+			if (query)
+			{
+				$("#resource_id").find('li.multiselect-filter input').val('').trigger('keydown');
+			}
+			// Get selected options.
+			var selectedOptions = $("#resource_id option:selected");
+			if (selectedOptions.length === 0)
+			{
+				// No selected options, select all.
+				$("#resource_id option").prop("selected", "selected");
+				selectedOptions = $("#resource_id option:selected");
+			}
+			var resource_ids = [];
+			$(selectedOptions).each(function ()
+			{
+				resource_ids.push($(this).val());
+			});
+			// Update the schedule.
+			schedule.filter_resource(resource_ids);
+			console.log(resource_ids);
+		},
+		onSelectAll: function ()
+		{
+			// Get selected options.
+			var selectedOptions = $("#resource_id option:selected");
+			var resource_ids = [];
+			$(selectedOptions).each(function ()
+			{
+				resource_ids.push($(this).val());
+			});
+			// Update the schedule.
+			schedule.filter_resource(resource_ids);
+		},
+		onDropdownHidden: function (event)
+		{
+//			console.log(event);
+//			$("#form").submit();
+		}
+	});
+
+
+
+
+
 		});
 	</script>
+</xsl:template>
+
+<xsl:template match="options">
+	<option value="{id}">
+		<xsl:if test="selected != 0">
+			<xsl:attribute name="selected" value="selected"/>
+		</xsl:if>
+		<xsl:value-of disable-output-escaping="yes" select="name"/>
+	</option>
 </xsl:template>

@@ -95,6 +95,7 @@ class RedisCache
 		if (!$host)
 		{
 			$msg = 'Redis host not configured';
+			error_log("REDIS CONFIG ERROR: {$msg}");
 			\App\modules\phpgwapi\services\Cache::message_set($msg, 'error');
 			self::$error_connect = true;
 			$this->log_this($msg, __LINE__);
@@ -112,15 +113,17 @@ class RedisCache
 
 		try
 		{
-			$this->redis->connect($host, $port);
+			$connectResult = $this->redis->connect($host, $port);
 			$ping = $this->redis->ping();
 			$this->redis->select($redis_database);
 			self::$error_connect = empty($ping);
 			self::$is_connected = !!$ping;
+			
 		}
 		catch (Exception $e)
 		{
 			$msg = 'Redis: ' . $e->getMessage();
+			error_log("REDIS CONFIG ERROR: {$msg}");
 			\App\modules\phpgwapi\services\Cache::message_set($msg, 'error');
 			self::$error_connect = true;
 
@@ -169,6 +172,66 @@ class RedisCache
 	function clear_cache()
 	{
 		return $this->redis->delete($this->redis->keys('*'));
+	}
+
+	/**
+	 * Atomically acquire a lock using Redis SETNX
+	 *
+	 * @param string $key The lock key
+	 * @param string $value The lock value (usually session ID)
+	 * @param int $ttl Time to live in seconds
+	 * @return bool True if lock was acquired, false if already locked
+	 */
+	function acquire_lock($key, $value, $ttl = 30)
+	{
+		if (!$this->redis) {
+			return false;
+		}
+		
+		// Use SETNX with expiration for atomic lock acquisition
+		// This will only set the key if it doesn't exist
+		$result = $this->redis->set($key, $value, array('nx', 'ex' => $ttl));
+		return $result === true;
+	}
+
+	/**
+	 * Release a lock if it belongs to the given value
+	 *
+	 * @param string $key The lock key
+	 * @param string $value The expected lock value (session ID)
+	 * @return bool True if lock was released, false otherwise
+	 */
+	function release_lock($key, $value)
+	{
+		if (!$this->redis) {
+			return false;
+		}
+		
+		// Use Lua script to atomically check value and delete
+		$lua_script = "
+			if redis.call('GET', KEYS[1]) == ARGV[1] then
+				return redis.call('DEL', KEYS[1])
+			else
+				return 0
+			end
+		";
+		
+		return $this->redis->eval($lua_script, array($key, $value), 1) > 0;
+	}
+
+	/**
+	 * Get keys matching a pattern (Redis KEYS command)
+	 *
+	 * @param string $pattern The pattern to match
+	 * @return array Array of matching keys
+	 */
+	function get_keys_by_pattern($pattern)
+	{
+		if (!$this->redis) {
+			return array();
+		}
+		
+		return $this->redis->keys($pattern);
 	}
 
 

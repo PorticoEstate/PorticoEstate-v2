@@ -283,3 +283,16 @@
     overflow: hidden;    // In case of dynamic content
     transition: all 0.2s ease;  // Smooth transitions for height changes
 }
+
+.loadingContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+    grid-column: 1 / -1; // Span all columns
+    
+    .loadingText {
+        color: var(--ds-color-neutral-text-moderate);
+        font-style: italic;
+    }
+}

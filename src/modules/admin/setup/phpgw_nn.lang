@@ -83,6 +83,7 @@ login screen	admin	nn	Innlogging
 main screen	admin	nn	Hovedside
 main screen message	admin	nn	Melding på hovedside
 module	admin	nn	Modul
+omitt error logging from IP addresses	admin	nn	Utelat feilmeldingslogging frå IP-adresser
 section	admin	nn	seksjon
 security	admin	nn	Sikkerhet
 severity	admin	nn	Alvorlighetsgrad

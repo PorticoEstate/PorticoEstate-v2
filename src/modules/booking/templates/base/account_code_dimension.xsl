@@ -17,10 +17,10 @@
 						</input>
 					</div>
 					<div class="pure-control-group">
-						<label>Client (pos 359 -360)</label>
+						<label>Client (pos 359 -360/362)</label>
 						<input id="field_voucher_client" name="voucher_client" type="text">
 							<xsl:if test="config_data/external_format='AGRESSO'">
-								<xsl:attribute name="maxlength">2</xsl:attribute>
+								<xsl:attribute name="maxlength">4</xsl:attribute>
 							</xsl:if>
 							<xsl:attribute name="value">
 								<xsl:value-of select="config_data/voucher_client"/>

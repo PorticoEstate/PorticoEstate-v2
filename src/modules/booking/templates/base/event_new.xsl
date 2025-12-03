@@ -340,11 +340,11 @@
 											<tr>
 												<th></th>
 												<th>
-													<xsl:value-of select="php:function('lang', 'Male')" />
+													<xsl:value-of select="php:function('lang', 'estimated number of participants')" />
 												</th>
-												<th>
+												<!--th>
 													<xsl:value-of select="php:function('lang', 'Female')" />
-												</th>
+												</th-->
 											</tr>
 										</thead>
 										<tbody id="agegroup_tbody">
@@ -364,14 +364,14 @@
 															</xsl:attribute>
 														</input>
 													</td>
-													<td>
+													<!--td>
 														<input type="text" class="input50">
 															<xsl:attribute name="name">female[<xsl:value-of select="id"/>]</xsl:attribute>
 															<xsl:attribute name="value">
 																<xsl:value-of select="../event/agegroups/female[../agegroup_id = $id]"/>
 															</xsl:attribute>
 														</input>
-													</td>
+													</td-->
 												</tr>
 											</xsl:for-each>
 										</tbody>

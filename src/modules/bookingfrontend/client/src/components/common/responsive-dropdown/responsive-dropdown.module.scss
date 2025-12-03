@@ -1,0 +1,55 @@
+@import '../../../styles/util.module';
+@import '../../../styles/colors';
+
+.responsiveDropdownMobile {
+	margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.responsiveDropdownMobileList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.responsiveDropdownMobileItem {
+    display: flex;
+	flex-direction: column;
+}
+
+.responsiveDropdownMobileButton {
+	display: flex;
+	justify-content: space-between;
+	flex-direction: row-reverse;
+    //display: flex;
+    //align-items: center;
+    //width: 100%;
+    //padding: 0.75rem 1rem;
+    //text-decoration: none;
+    //border: none;
+    //background: none;
+    //cursor: pointer;
+    //transition: background-color 0.2s ease;
+    //
+    //&:hover {
+    //    background-color: rgba(0, 0, 0, 0.05);
+    //}
+    //
+    //// Inherit text styles from parent link
+    //color: inherit;
+    //font-size: inherit;
+    //font-weight: inherit;
+
+}
+
+.responsiveDropdownMobileDivider {
+    border: none;
+    height: 1px;
+    background-color: var(--ds-color-neutral-border-subtle, #e0e0e0);
+    margin: 0.5rem 0;
+}

@@ -1,5 +1,7 @@
-import {FC} from 'react';
-import {Button} from "@digdir/designsystemet-react";
+'use client';
+
+import { FC } from 'react';
+import { Button } from "@digdir/designsystemet-react";
 
 interface PageProps {
 }
@@ -8,7 +10,7 @@ const Page: FC<PageProps> = (props) => {
     return (
         <div>
             <div>Placeholder page</div>
-            <div style={{display: 'flex', gap: '1.5rem'}}>
+            <div style={{display: 'flex', gap: '1.5rem', flexWrap: 'wrap', marginBottom: '2rem'}}>
                 <Button variant={"primary"} data-color={'accent'}>Accent</Button>
                 <Button variant={"primary"} data-color={'neutral'}>neutral</Button>
                 <Button variant={"primary"} data-color={'brand1'}>brand1</Button>
@@ -18,10 +20,11 @@ const Page: FC<PageProps> = (props) => {
                 {/*<Button variant={"primary"} data-color={'success'}>success</Button>*/}
                 {/*<Button variant={"primary"} data-color={'warning'}>warning</Button>*/}
             </div>
+
+
         </div>
     );
 }
 
 export default Page
-
 

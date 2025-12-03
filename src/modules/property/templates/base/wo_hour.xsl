@@ -157,12 +157,12 @@
 			<xsl:value-of select="entry_date"/>
 		</td>
 		<td class="small_text" style="text-align:center;">
-			<a href="{$link_edit}" onMouseover="window.status='{$lang_edit_statustext}';return true;" onMouseout="window.status='';return true;">
+			<a href="{$link_edit}" onMouseover="window.status='{$lang_edit_statustext}';return true;" >
 				<xsl:value-of select="text_edit"/>
 			</a>
 		</td>
 		<td class="small_text" style="text-align:center;">
-			<a href="{$link_delete}" onMouseover="window.status='{$lang_delete_statustext}';return true;" onMouseout="window.status='';return true;">
+			<a href="{$link_delete}" onMouseover="window.status='{$lang_delete_statustext}';return true;" >
 				<xsl:value-of select="text_delete"/>
 			</a>
 		</td>
@@ -192,7 +192,7 @@
 						<label>
 							<xsl:value-of select="lang_name"/>
 						</label>
-						<input type="text" name="values[name]" value="{value_name}" onMouseout="window.status='';return true;">
+						<input type="text" name="values[name]" value="{value_name}" >
 							<xsl:attribute name="onMouseover">
 								<xsl:text>window.status='</xsl:text>
 								<xsl:value-of select="lang_name_statustext"/>
@@ -210,7 +210,7 @@
 						<label>
 							<xsl:value-of select="lang_descr"/>
 						</label>
-						<textarea cols="60" rows="4" name="values[descr]" onMouseout="window.status='';return true;">
+						<textarea cols="60" rows="4" name="values[descr]" >
 							<xsl:attribute name="onMouseover">
 								<xsl:text>window.status='</xsl:text>
 								<xsl:value-of select="lang_descr_statustext"/>
@@ -1332,7 +1332,7 @@
 			<input type="text" size="6" name="values[quantity][{counter}]"/>
 		</td>
 		<td style="text-align:center;">
-			<input type="checkbox" name="values[select][{counter}]" value="{counter}" onMouseout="window.status='';return true;">
+			<input type="checkbox" name="values[select][{counter}]" value="{counter}" >
 				<xsl:attribute name="onMouseover">
 					<xsl:text>window.status='</xsl:text>
 					<xsl:value-of select="lang_select_statustext"/>
@@ -1971,7 +1971,7 @@
 				</td>
 				<td>
 					<xsl:value-of select="lang_show_cost"/>
-					<input type="checkbox" name="show_cost" value="True" onMouseout="window.status='';return true;">
+					<input type="checkbox" name="show_cost" value="True" >
 						<xsl:attribute name="onMouseover">
 							<xsl:text>window.status='</xsl:text>
 							<xsl:value-of select="lang_show_cost_statustext"/>
@@ -2103,11 +2103,9 @@
 										<label>
 											<xsl:value-of select="lang_copy_hour"/>
 										</label>
-										<input type="checkbox" name="values[copy_hour]" value="True" onMouseout="window.status='';return true;">
-											<xsl:attribute name="onMouseover">
-												<xsl:text>window.status='</xsl:text>
+										<input type="checkbox" name="values[copy_hour]" value="True">
+											<xsl:attribute name="title">
 												<xsl:value-of select="lang_copy_hour_statustext"/>
-												<xsl:text>'; return true;</xsl:text>
 											</xsl:attribute>
 										</input>
 									</div>
@@ -2161,17 +2159,17 @@
 								<label>
 									<xsl:value-of select="lang_grouping"/>
 								</label>
-								<xsl:call-template name="grouping_select"/>
+								<xsl:call-template name="grouping_select">
+									<xsl:with-param name="class" select="'pure-input-3-4'"/>
+								</xsl:call-template>
 							</div>
 							<div class="pure-control-group">
 								<label>
 									<xsl:value-of select="lang_new_grouping"/>
 								</label>
-								<input type="text" name="values[new_grouping]" value="{value_new_grouping}" onMouseout="window.status='';return true;">
-									<xsl:attribute name="onMouseover">
-										<xsl:text>window.status='</xsl:text>
+								<input type="text" name="values[new_grouping]" value="{value_new_grouping}" class="pure-input-3-4">
+									<xsl:attribute name="title">
 										<xsl:value-of select="lang_new_grouping_statustext"/>
-										<xsl:text>'; return true;</xsl:text>
 									</xsl:attribute>
 								</input>
 							</div>
@@ -2181,7 +2179,7 @@
 						<label>
 							<xsl:value-of select="php:function('lang', 'building part')"/>
 						</label>
-						<select name="values[building_part_id]">
+						<select name="values[building_part_id]" class="pure-input-3-4">
 							<xsl:attribute name="title">
 								<xsl:value-of select="php:function('lang', 'select building part')"/>
 							</xsl:attribute>
@@ -2204,11 +2202,9 @@
 								<label>
 									<xsl:value-of select="lang_descr"/>
 								</label>
-								<textarea cols="60" rows="4" name="values[descr]" onMouseout="window.status='';return true;">
-									<xsl:attribute name="onMouseover">
-										<xsl:text>window.status='</xsl:text>
+								<textarea cols="60" rows="4" name="values[descr]" class="pure-input-3-4">
+									<xsl:attribute name="title">
 										<xsl:value-of select="lang_descr_statustext"/>
-										<xsl:text>'; return true;</xsl:text>
 									</xsl:attribute>
 									<xsl:value-of select="value_descr"/>
 								</textarea>
@@ -2217,25 +2213,22 @@
 						<xsl:otherwise>
 							<div class="pure-control-group">
 								<label>
-									<a href="javascript:ns3420_lookup()" onMouseover="window.status='{lang_ns3420_statustext}';return true;" onMouseout="window.status='';return true;">
+									<a href="javascript:ns3420_lookup()" title="{lang_ns3420_statustext}" >
+									
 										<xsl:value-of select="lang_ns3420"/>
 									</a>
 								</label>
 								<input type="text" name="ns3420_id" value="{value_ns3420_id}" onClick="ns3420_lookup();" readonly="readonly">
-									<xsl:attribute name="onMouseover">
-										<xsl:text>window.status='</xsl:text>
+									<xsl:attribute name="title">
 										<xsl:value-of select="lang_ns3420_statustext"/>
-										<xsl:text>'; return true;</xsl:text>
 									</xsl:attribute>
 								</input>
 							</div>
 							<div class="pure-control-group">
 								<label></label>
-								<textarea cols="40" rows="4" name="ns3420_descr" onMouseout="window.status='';return true;">
-									<xsl:attribute name="onMouseover">
-										<xsl:text>window.status='</xsl:text>
+								<textarea cols="40" rows="4" name="ns3420_descr" class="pure-input-3-4">
+									<xsl:attribute name="title">
 										<xsl:value-of select="lang_descr_statustext"/>
-										<xsl:text>'; return true;</xsl:text>
 									</xsl:attribute>
 									<xsl:value-of select="value_descr"/>
 								</textarea>
@@ -2252,13 +2245,17 @@
 						<label>
 							<xsl:value-of select="lang_unit"/>
 						</label>
-						<xsl:call-template name="unit_select"/>
+						<xsl:call-template name="unit_select">
+							<xsl:with-param name="class" select="'pure-input-3-4'"/>
+						</xsl:call-template>
 					</div>
 					<div class="pure-control-group">
 						<label>
 							<xsl:value-of select="lang_dim_d"/>
 						</label>
-						<xsl:call-template name="dim_d_select"/>
+						<xsl:call-template name="dim_d_select">
+							<xsl:with-param name="class" select="'pure-input-3-4'"/>
+						</xsl:call-template>
 					</div>
 					<div class="pure-control-group">
 						<label>
@@ -2267,18 +2264,19 @@
 						<xsl:variable name="lang_wo_hour_cat_statustext">
 							<xsl:value-of select="lang_to_email_address_statustext"/>
 						</xsl:variable>
-						<select name="values[wo_hour_cat]" class="forms" onMouseover="window.status='{$lang_wo_hour_cat_statustext}'; return true;" onMouseout="window.status='';return true;">
+						<select name="values[wo_hour_cat]" class="pure-input-1-2">
+							<xsl:attribute name="title">
+								<xsl:value-of select="lang_wo_hour_cat_statustext"/>
+							</xsl:attribute>
 							<option value="">
 								<xsl:value-of select="lang_select_wo_hour_category"/>
 							</option>
 							<xsl:apply-templates select="wo_hour_cat_list"/>
 						</select>
 						<xsl:value-of select="lang_per_cent"/>
-						<input type="text" size="3" maxlength="3" name="values[cat_per_cent]" value="{value_cat_per_cent}" onMouseout="window.status='';return true;">
-							<xsl:attribute name="onMouseover">
-								<xsl:text>window.status='</xsl:text>
+						<input type="text" size="3" maxlength="3" name="values[cat_per_cent]" value="{value_cat_per_cent}" class="pure-input-1-8">
+							<xsl:attribute name="title">
 								<xsl:value-of select="lang_cat_per_cent_statustext"/>
-								<xsl:text>'; return true;</xsl:text>
 							</xsl:attribute>
 						</input>
 					</div>
@@ -2286,11 +2284,9 @@
 						<label>
 							<xsl:value-of select="lang_quantity"/>
 						</label>
-						<input type="text" name="values[quantity]" value="{value_quantity}" onMouseout="window.status='';return true;">
-							<xsl:attribute name="onMouseover">
-								<xsl:text>window.status='</xsl:text>
+						<input type="text" name="values[quantity]" value="{value_quantity}" class="pure-input-3-4">
+							<xsl:attribute name="title">
 								<xsl:value-of select="lang_quantity_statustext"/>
-								<xsl:text>'; return true;</xsl:text>
 							</xsl:attribute>
 						</input>
 					</div>
@@ -2298,11 +2294,9 @@
 						<label>
 							<xsl:value-of select="lang_billperae"/>
 						</label>
-						<input type="text" name="values[billperae]" value="{value_billperae}" onMouseout="window.status='';return true;">
-							<xsl:attribute name="onMouseover">
-								<xsl:text>window.status='</xsl:text>
+						<input type="text" name="values[billperae]" value="{value_billperae}" class="pure-input-3-4">
+							<xsl:attribute name="title">
 								<xsl:value-of select="lang_billperae_statustext"/>
-								<xsl:text>'; return true;</xsl:text>
 							</xsl:attribute>
 						</input>
 						<xsl:text> </xsl:text> [ <xsl:value-of select="currency"/> ]
@@ -2318,11 +2312,9 @@
 						<label>
 							<xsl:value-of select="lang_remark"/>
 						</label>
-						<textarea cols="60" rows="4" name="values[remark]" onMouseout="window.status='';return true;">
-							<xsl:attribute name="onMouseover">
-								<xsl:text>window.status='</xsl:text>
+						<textarea cols="60" rows="4" name="values[remark]" class="pure-input-3-4">
+							<xsl:attribute name="title">
 								<xsl:value-of select="lang_remark_statustext"/>
-								<xsl:text>'; return true;</xsl:text>
 							</xsl:attribute>
 							<xsl:value-of select="value_remark"/>
 						</textarea>
@@ -2411,7 +2403,7 @@
 						<label>
 							<xsl:value-of select="lang_amount"/>
 						</label>
-						<input type="text" name="values[amount]" value="{value_amount}" onMouseout="window.status='';return true;">
+						<input type="text" name="values[amount]" value="{value_amount}" >
 							<xsl:attribute name="onMouseover">
 								<xsl:text>window.status='</xsl:text>
 								<xsl:value-of select="lang_amount_standardtext"/>
@@ -2423,7 +2415,7 @@
 						<label>
 							<xsl:value-of select="lang_descr"/>
 						</label>
-						<textarea cols="60" rows="10" name="values[descr]" onMouseout="window.status='';return true;">
+						<textarea cols="60" rows="10" name="values[descr]" >
 							<xsl:attribute name="onMouseover">
 								<xsl:text>window.status='</xsl:text>
 								<xsl:value-of select="lang_descr_standardtext"/>

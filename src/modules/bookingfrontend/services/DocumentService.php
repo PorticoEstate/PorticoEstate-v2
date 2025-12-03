@@ -5,6 +5,7 @@ namespace App\modules\bookingfrontend\services;
 use App\modules\bookingfrontend\repositories\DocumentRepository;
 use App\modules\bookingfrontend\models\Document;
 use Psr\Http\Message\UploadedFileInterface;
+use Exception;
 
 class DocumentService
 {
@@ -102,6 +103,13 @@ class DocumentService
         }
 
         $targetPath = $document->generate_filename();
+        
+        // Ensure the directory exists
+        $directory = dirname($targetPath);
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+        
         $file->moveTo($targetPath);
     }
 

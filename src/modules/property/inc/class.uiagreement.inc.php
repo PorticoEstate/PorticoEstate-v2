@@ -1013,7 +1013,7 @@
 					}
 					return $requestUrl;
 				}
-				else if (($type_data == 'delete_alarm' || $type_data == 'delete_item' ) && count($ids_alarm))
+				else if (($type_data == 'delete_alarm' || $type_data == 'delete_item' ) && !empty($ids_alarm))
 				{
 					if ($type_data == 'delete_alarm')
 					{

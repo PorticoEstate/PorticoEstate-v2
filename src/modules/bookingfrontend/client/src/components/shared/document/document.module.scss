@@ -1,0 +1,40 @@
+.documentItem {
+    //padding: 0.75rem;
+    border-radius: 4px;
+    background-color: var(--fds-semantic-surface-neutral-subtle);
+    border-left: 3px solid var(--fds-semantic-border-action-primary-default);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    gap: 0.25rem 0.5rem;
+    align-items: start;
+}
+
+.documentLink {
+    text-decoration: none;
+    color: var(--fds-semantic-text-action-primary-default);
+    font-weight: 500;
+    grid-column: 2;
+    grid-row: 1;
+
+    &:hover {
+        text-decoration: underline;
+    }
+}
+
+.documentIcon {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: start;
+    margin-top: 0.125rem;
+}
+
+.documentDescription {
+    grid-column: 2;
+    grid-row: 2;
+    font-size: 0.875rem;
+    color: var(--fds-semantic-text-neutral-muted);
+    line-height: 1.4;
+    margin: 0;
+}
+

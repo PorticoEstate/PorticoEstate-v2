@@ -4,6 +4,7 @@ const nextConfig = {
     assetPrefix: process.env.NEXT_PUBLIC_BASE_PATH,
 	productionBrowserSourceMaps: true,
     output: "standalone",
+    distDir: process.env.NEXT_DIST_DIR || ".next",
     images: {
         remotePatterns: [
             {
@@ -11,6 +12,20 @@ const nextConfig = {
                 hostname: '*',
             },
         ],
+    },
+    async headers() {
+        return [
+            {
+                // This header applies to all routes, including service workers
+                source: '/:path*',
+                headers: [
+                    {
+                        key: 'Service-Worker-Allowed',
+                        value: '/',
+                    },
+                ],
+            },
+        ];
     },
 };
 

@@ -24,6 +24,7 @@ include_class('rental', 'contract_price_item', 'inc/model/');
 include_class('rental', 'notification', 'inc/model/');
 include 'SnappyMedia.php';
 include 'SnappyPdf.php';
+include 'ChromiumPdf.php';
 
 class rental_uimakepdf extends rental_uicommon
 {
@@ -197,15 +198,9 @@ class rental_uimakepdf extends rental_uicommon
 
 		$pdf_file_name = $tmp_dir . "/temp_contract_" . strtotime(date('Y-m-d')) . ".pdf";
 
-		//var_dump($config->config_data['path_to_wkhtmltopdf']);
-		$wkhtmltopdf_executable = $config->config_data['path_to_wkhtmltopdf'];
-		if (!is_file($wkhtmltopdf_executable))
-		{
-			throw new Exception('wkhtmltopdf not configured correctly');
-		}
-		$snappy = new SnappyPdf();
-		//$snappy->setExecutable('/opt/portico/pe/rental/wkhtmltopdf-i386'); // or whatever else
-		$snappy->setExecutable($wkhtmltopdf_executable); // or whatever else
+		// Use ChromiumPdf instead of wkhtmltopdf
+		$snappy = new ChromiumPdf();
+		// ChromiumPdf uses Chromium directly, no need to check executable path
 		$snappy->save($myFile, $pdf_file_name);
 
 		$contract_id = Sanitizer::get_var('id');

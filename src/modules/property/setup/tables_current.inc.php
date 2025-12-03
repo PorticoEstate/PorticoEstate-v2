@@ -2768,7 +2768,10 @@
 				'status' => array('type' => 'varchar', 'precision' => '8', 'nullable' => True),
 				'remark' => array('type' => 'text', 'nullable' => True),
 				'user_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
-				'entry_date' => array('type' => 'int', 'precision' => 8, 'nullable' => True)
+				'entry_date' => array('type' => 'int', 'precision' => 8, 'nullable' => True),
+			'claim_type' => array('type' => 'varchar', 'precision' => '15', 'nullable' => True),
+			'claim_date' => array('type' => 'int', 'precision' => 8, 'nullable' => True),
+			'location_code' => array('type' => 'varchar', 'precision' => '50', 'nullable' => True)
 			),
 			'pk' => array('id'),
 			'fk' => array(),

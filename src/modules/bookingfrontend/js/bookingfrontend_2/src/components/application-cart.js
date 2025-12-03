@@ -89,7 +89,6 @@ let ApplicationCart = new ApplicationsCartModel();
 onDocumentReady(() => {
     const elem = document.getElementById('application-cart-container') || document.getElementById("applications-cart-content");
     if (elem) {
-        console.log("INITIALISING CART")
         ko.applyBindings(ApplicationCart, elem);
     }
 })

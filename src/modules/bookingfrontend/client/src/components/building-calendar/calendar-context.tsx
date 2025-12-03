@@ -4,6 +4,8 @@ import {usePartialApplications} from "@/service/hooks/api-hooks";
 import {applicationTimeToLux} from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import {useBuildingResources} from "@/service/api/building";
 import {ResourceUsesTimeSlots} from "@/components/building-calendar/util/calender-helpers";
+import { calculateRecurringInstances, RecurringInfoUtils } from "@/utils/recurring-utils";
+import { Season } from "@/service/types/Building";
 
 
 interface CalendarContextType {
@@ -12,7 +14,8 @@ interface CalendarContextType {
 	enabledResources: Set<string>
 	setResourcesHidden: (value: boolean) => void
 	resourcesHidden: boolean
-	currentBuilding: number | string;
+	currentBuilding?: number | string;
+	currentOrganization?: number | string;
 	calendarViewMode: ICalendarViewMode;
 }
 
@@ -42,6 +45,16 @@ export const useCurrentBuilding = () => {
 	return ctx.currentBuilding;
 }
 
+export const useCurrentOrganization = () => {
+	const ctx = useCalendarContext();
+	return ctx.currentOrganization;
+}
+
+export const useIsOrganization = () => {
+	const ctx = useCalendarContext();
+	return !!ctx.currentOrganization && !ctx.currentBuilding;
+}
+
 
 export const useEnabledResources = () => {
 	const {setEnabledResources, enabledResources} = useCalendarContext();
@@ -56,7 +69,7 @@ export const useCalendarContext = () => {
 };
 
 interface CalendarContextProps extends Omit<CalendarContextType, 'tempEvents' | 'calendarViewMode'> {
-
+	seasons?: Season[];
 }
 
 const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) => {
@@ -65,8 +78,12 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 
 
 	const viewMode: ICalendarViewMode = useMemo(() => {
+		if(props.currentOrganization) {
+			return 'calendar'
+		}
 		if (!resources || !props.enabledResources) {
-			return 'none';
+			// Default to calendar view for organization mode when resources aren't loaded
+			return 'calendar';
 		}
 
 		if(props.enabledResources.size === 0) {
@@ -74,7 +91,8 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 
 		}
 		// If any slotted resource is selected, we're in slot view
-		const hasSlottedResourceEnable = props.enabledResources.values().some(id => ResourceUsesTimeSlots(resources.find(res => +res.id === +id)!));
+		const enabledResources = [...(props.enabledResources.values() || [])]
+		const hasSlottedResourceEnable = enabledResources.some(id => ResourceUsesTimeSlots(resources.find(res => +res.id === +id)!));
 
 		if (hasSlottedResourceEnable) {
 			return 'timeslots';
@@ -86,40 +104,77 @@ const CalendarProvider: FC<PropsWithChildren<CalendarContextProps>> = (props) =>
 
 
 	const tempEvents: Record<string, FCallTempEvent> = useMemo(() => {
+		if(props.currentOrganization !== undefined || !props.currentBuilding) {
+			return {}
+		}
 		return (cartItems?.list || []).reduce<Record<string, FCallTempEvent>>((all, curr) => {
-			if (!curr.resources?.some(res => res.building_id != null && +res.building_id === +props.currentBuilding)) {
+			if (!curr.resources?.some(res => res.building_id != null && +res.building_id === +props.currentBuilding!)) {
 				return all;
 			}
 
 			const temp = all;
-			const dates = curr.dates;
-			dates.forEach(date => {
-				temp[date.id] = {
-					allDay: false,
-					editable: true,
-					start: applicationTimeToLux(date.from_).toJSDate(),
-					end: applicationTimeToLux(date.to_).toJSDate(),
-					extendedProps: {
-						resources: curr.resources.map(a => a.id),
-						type: "temporary",
-						applicationId: curr.id,
-						building_id: curr.building_id
-					},
-					id: `${date.id}`,
-					title: curr.name
-				}
-			})
+			
+			// Check if this is a recurring application
+			if (RecurringInfoUtils.isRecurring(curr)) {
+				// Generate recurring instances
+				const recurringInstances = calculateRecurringInstances(curr, props.seasons);
+				
+				recurringInstances.forEach((instance, index) => {
+					const eventId = index === 0 ? curr.id : parseInt(`${curr.id}${index.toString().padStart(3, '0')}`);
+					
+					temp[eventId] = {
+						allDay: false,
+						editable: true,
+						start: instance.start.toJSDate(),
+						end: instance.end.toJSDate(),
+						extendedProps: {
+							resources: curr.resources.map(a => a.id),
+							type: "temporary",
+							applicationId: curr.id,
+							building_id: curr.building_id,
+							isPartialApplication: true,
+							isRecurringInstance: true,
+							_weekOffset: instance.weekOffset,
+							source: curr // Store the original application for manipulation logic
+						},
+						id: `${eventId}`,
+						title: curr.name
+					}
+				});
+			} else {
+				// Handle non-recurring applications (original logic)
+				const dates = curr.dates;
+				dates.forEach(date => {
+					temp[date.id] = {
+						allDay: false,
+						editable: true,
+						start: applicationTimeToLux(date.from_).toJSDate(),
+						end: applicationTimeToLux(date.to_).toJSDate(),
+						extendedProps: {
+							resources: curr.resources.map(a => a.id),
+							type: "temporary",
+							applicationId: curr.id,
+							building_id: curr.building_id,
+							isPartialApplication: true,
+							isRecurringInstance: false
+						},
+						id: `${date.id}`,
+						title: curr.name
+					}
+				});
+			}
 
 			return temp;
 
 		}, {})
 
-	}, [cartItems?.list, props.currentBuilding])
+	}, [cartItems?.list, props.currentBuilding, props.seasons])
 
 
 	return (
 		<CalendarContext.Provider value={{
 			currentBuilding: props.currentBuilding,
+			currentOrganization: props.currentOrganization,
 			setResourcesHidden: props.setResourcesHidden,
 			resourcesHidden: props.resourcesHidden,
 			tempEvents: tempEvents,

@@ -7,6 +7,7 @@ use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Event;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\repositories\EventRepository;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use DateTime;
 use Exception;
 use PDO;
@@ -16,12 +17,22 @@ class EventService
     private $db;
     private $bouser;
     public $repository;
+    private $resourceRepository;
+    private $userSettings;
+    private $userTimezone;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->bouser = new UserHelper();
         $this->repository = new EventRepository();
+        $this->resourceRepository = new ResourceRepository();
+
+        // Get user settings and timezone for proper date handling
+        $this->userSettings = \App\modules\phpgwapi\services\Settings::getInstance()->get('user');
+        $this->userTimezone = !empty($this->userSettings['preferences']['common']['timezone'])
+            ? $this->userSettings['preferences']['common']['timezone']
+            : 'Europe/Oslo';
     }
 
     private function patchEventMainData(array $data, array $existingEvent)
@@ -305,23 +316,39 @@ class EventService
 
 	/**
 	 * Normalize date format for database storage
+	 * Ensures all dates are stored in the user's configured timezone for consistency
 	 */
 	private function formatDateForDatabase($dateString): string
 	{
-		// Handle ISO format with timezone (e.g. "2004-09-21T08:00:00+02:00")
-		if (strpos($dateString, 'T') !== false) {
-			$dateTime = new DateTime($dateString);
-			// Convert to UTC if needed
-			return $dateTime->format('Y-m-d H:i:s');
-		}
+		try {
+			// Handle ISO format with timezone (e.g. "2004-09-21T08:00:00+02:00")
+			if (strpos($dateString, 'T') !== false) {
+				$dateTime = new \DateTime($dateString);
+				// Convert to user's timezone before storing
+				$userTz = new \DateTimeZone($this->userTimezone);
+				$dateTime->setTimezone($userTz);
+				$formatted = $dateTime->format('Y-m-d H:i:s');
+				error_log("EventService: formatDateForDatabase - Input: {$dateString}, User TZ: {$this->userTimezone}, Output: {$formatted}");
+				return $formatted;
+			}
 
-		// Handle timestamp in milliseconds (e.g. 1741777200000)
-		if (is_numeric($dateString) && strlen($dateString) > 10) {
-			return date('Y-m-d H:i:s', (int)$dateString / 1000);
-		}
+			// Handle timestamp in milliseconds (e.g. 1741777200000)
+			if (is_numeric($dateString) && strlen($dateString) > 10) {
+				$timestamp = (int)$dateString / 1000;
+				$dateTime = new \DateTime('@' . $timestamp); // Create from Unix timestamp
+				// Convert to user's timezone
+				$userTz = new \DateTimeZone($this->userTimezone);
+				$dateTime->setTimezone($userTz);
+				return $dateTime->format('Y-m-d H:i:s');
+			}
 
-		// If already in SQL format (e.g. "2000-03-14 08:00:00")
-		return $dateString;
+			// If already in SQL format (e.g. "2000-03-14 08:00:00"), assume it's already in user's timezone
+			return $dateString;
+		} catch (\Exception $e) {
+			error_log("Error formatting date for database: " . $e->getMessage() . " for input: " . $dateString);
+			// Fallback to original string
+			return $dateString;
+		}
 	}
 
 	/**
@@ -434,19 +461,12 @@ class EventService
 			// Process resources if available with complete data for proper serialization
 			$resources = [];
 			if (isset($eventData['resources']) && $eventData['resources']) {
-				$resourceData = json_decode($eventData['resources'], true);
-				if ($resourceData) {
-					foreach ($resourceData as $id => $name) {
-						$resourceEntity = new Resource([
-							'id' => $id,
-							'name' => $name,
-							'activity_id' => $eventData['activity_id'] ?? null,
-							'activity_name' => $eventData['activity_name'] ?? null,
-							'building_id' => $eventData['building_id'] ?? null
-						]);
-						$resources[] = $resourceEntity;
-					}
-				}
+				$additionalData = [
+					'activity_id' => $eventData['activity_id'] ?? null,
+					'activity_name' => $eventData['activity_name'] ?? null,
+					'building_id' => $eventData['building_id'] ?? null
+				];
+				$resources = $this->resourceRepository->createFromResourcesJson($eventData['resources'], $additionalData);
 			}
 
 			// Create Event model instance with data

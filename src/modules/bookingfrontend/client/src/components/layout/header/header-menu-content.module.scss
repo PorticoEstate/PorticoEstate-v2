@@ -2,71 +2,72 @@
 @import '../../../styles/colors';
 
 .sidenav {
-    @include tablet {
-        display: flex;
-        .closebtn {
-            display: none;
-        }
-    }
-    @include mobile {
-        height: 100%;
-        width: 0;
-        position: fixed;
-        z-index: 300;
-        top: 0;
-        left: 0;
-        background-color: $grey-light-24;
-        overflow-x: hidden;
-        transition: 0.5s;
-        padding-top: 60px;
-        border-top-radius: 25%;
+	@include tablet {
+		display: flex;
+		.closebtn {
+			display: none;
+		}
+		.sideNavHeader {
+			display: none;
+		}
+	}
+	@include mobile {
+		height: 100vh;
+		max-height: 100vh;
+		width: 100vw;
+		position: fixed;
+		z-index: 300;
+		top: 0;
+		left: 0;
+		background-color: $grey-light-24;
+		overflow-x: hidden;
+		overflow-y: auto;
+		transition: transform 0.5s ease;
+		display: flex;
+		flex-direction: column;
+		//padding-top: 60px;
+		border-top-radius: 25%;
+		transform: translateX(-100%);
+		.sideNavHeader {
+			display: flex;
+			justify-content: flex-end;
+		}
 
-        a {
-            padding: 8px 8px 8px 32px;
-            text-decoration: none;
-            font-size: 25px;
-            color: #818181;
-            display: block;
-            transition: 0.3s;
 
-            &:hover {
-                color: #f1f1f1;
-            }
-        }
 
-        .closebtn {
-            position: absolute;
-            top: 0;
-            right: 25px;
-            font-size: 36px;
-            margin-left: 50px;
-            aspect-ratio: 1;
-            max-width: 2rem;
-        }
-        &.open {
-            width: 30vw;
-            @include mobile {
-                width: 90vw;
-            }
-        }
-    }
+		.closebtn {
+			min-width: 67px;
+			height: 67px;
+			//position: absolute;
+			//top: 0;
+			//right: 25px;
+			//font-size: 36px;
+			//margin-left: 50px;
+			aspect-ratio: 1;
+			max-width: 2rem;
+		}
+		&.open {
+			transform: translateX(0);
+		}
+	}
 
 }
 
 .overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 250;
-    display: none;
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: rgba(0, 0, 0, 0.5);
+	z-index: 250;
+	display: none;
 
-    &.active {
-        display: block;
-    }
+	&.active {
+		display: block;
+	}
 }
+
 //
 //@media screen and (max-height: 450px) {
 //    .sidenav {
@@ -78,37 +79,37 @@
 //}
 
 .toggleMenuBtn {
-    background: white;
-    border: 0;
-    padding: 0.25rem 0.5rem;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 2.75rem;
-    height: 1.6875rem;
+	background: white;
+	border: 0;
+	padding: 0.25rem 0.5rem;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	width: 2.75rem;
+	height: 1.6875rem;
 
-    span {
-        height: 2px;
-        background: $purple;
-        margin-bottom: 0.4rem;
-        width: 100%;
+	span {
+		height: 2px;
+		background: $purple;
+		margin-bottom: 0.4rem;
+		width: 100%;
 
-        &:first-child {
-            width: 70%;
-        }
+		&:first-child {
+			width: 70%;
+		}
 
-        &:last-child {
-            width: 60%;
-            margin-bottom: 0;
-        }
-    }
+		&:last-child {
+			width: 60%;
+			margin-bottom: 0;
+		}
+	}
 
-    &:hover span {
-        background: $black;
-    }
+	&:hover span {
+		background: $black;
+	}
 
-    @include tablet {
-        display: none;
-    }
+	@include tablet {
+		display: none;
+	}
 }
 

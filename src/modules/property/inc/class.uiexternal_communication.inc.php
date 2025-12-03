@@ -1309,12 +1309,13 @@ JS;
 		}
 
 		self::set_active_menu("property::helpdesk::send_sms");
+		$incoming_extra_sms_recipients	 = Sanitizer::get_var('sms_recipients', 'string', 'GET');
 
 		if (Sanitizer::get_var('send', 'bool'))
 		{
-			$sms_content			 = Sanitizer::get_var('sms_content', 'string');
-			$sms_recipients			 = (array)Sanitizer::get_var('sms_recipients', 'string');
-			$extra_sms_recipients	 = Sanitizer::get_var('extra_sms_recipients', 'string');
+			$sms_content			 = Sanitizer::get_var('sms_content', 'string', 'POST');
+			$sms_recipients			 = (array)Sanitizer::get_var('sms_recipients', 'string', 'POST');
+			$extra_sms_recipients	 = Sanitizer::get_var('extra_sms_recipients', 'string', 'POST');
 
 			$extra_sms_recipients_array = explode(',', $extra_sms_recipients);
 
@@ -1378,7 +1379,8 @@ JS;
 			'cancel_url'		 => self::link(array('menuaction' => "{$this->currentapp}.uitts.index")),
 			'tabs'				 => phpgwapi_jquery::tabview_generate($tabs, 0),
 			'value_active_tab'	 => 0,
-			'default_message'	 => $default_message
+			'default_message'	 => $default_message,
+			'value_extra_sms_address' => $incoming_extra_sms_recipients
 		);
 		$this->flags['app_header']	 .= '::' . lang('sms');
 		Settings::getInstance()->update('flags', ['app_header' => $this->flags['app_header']]);

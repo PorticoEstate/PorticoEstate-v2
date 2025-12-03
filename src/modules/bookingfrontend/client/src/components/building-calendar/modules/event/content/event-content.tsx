@@ -50,12 +50,14 @@ interface LayoutState {
 	remainingHeight: Record<string, number>;
 }
 
-const EventContent: FC<EventContentProps> = memo(function EventContent(props) {
+const EventContentComponent: FC<EventContentProps> = function EventContent(props) {
 		const {eventInfo} = props;
 		const {data: user} = useBookingUser();
 		const t = useTrans();
 		const eventRef = useRef<HTMLDivElement>(null);
 		const eventData = eventInfo.event.extendedProps.source;
+		
+		
 		const [layout, setLayout] = useState<LayoutState>({
 			visibleResources: 0,
 			visibleCircles: 0,
@@ -125,8 +127,12 @@ const EventContent: FC<EventContentProps> = memo(function EventContent(props) {
 
 		useEffect(() => {
 			if (!['booking', 'allocation', 'event'].includes(eventInfo.event.extendedProps.type)) {
+				if (eventInfo.event.extendedProps.isPartialApplication) {
+					console.log(`EventContent layout calculation skipped for partial app ${eventInfo.event.id} - invalid type:`, eventInfo.event.extendedProps.type);
+				}
 				return;
 			}
+			
 
 			const calculateLayout = () => {
 				if (!eventRef.current) return;
@@ -134,8 +140,15 @@ const EventContent: FC<EventContentProps> = memo(function EventContent(props) {
 				const containerElement = eventRef.current.closest(".fc-timegrid-event-harness") as HTMLElement;
 				if (!containerElement) return;
 
-				const eventHeight = containerElement.offsetHeight;
-				const eventWidth = containerElement.offsetWidth;
+				let eventHeight = containerElement.offsetHeight;
+				let eventWidth = containerElement.offsetWidth;
+				
+				// For partial applications, ensure minimum dimensions if height is too small
+				const isPartialApp = eventInfo.event.extendedProps.isPartialApplication;
+				if (isPartialApp && eventHeight < 80) {
+					eventHeight = 80;
+				}
+				
 				const virtualDurationMinutes = Math.round(eventHeight * PX_TO_MINUTES_RATIO);
 
 				// Calculate how many circles can fit based on width
@@ -201,7 +214,7 @@ const EventContent: FC<EventContentProps> = memo(function EventContent(props) {
 				}
 
 
-				setLayout({
+				const newLayout = {
 					visibleResources: Math.max(0, maxVisibleResources),
 					visibleCircles: Math.max(0, maxVisibleCircles),
 					showTitle,
@@ -210,7 +223,10 @@ const EventContent: FC<EventContentProps> = memo(function EventContent(props) {
 					showParticipantLimit,
 					virtualDurationMinutes,
 					remainingHeight: rm
-				});
+				};
+				
+				
+				setLayout(newLayout);
 			};
 
 			const containerElement = eventRef.current?.closest(".fc-timegrid-event-harness");
@@ -314,7 +330,8 @@ const EventContent: FC<EventContentProps> = memo(function EventContent(props) {
 
 		return <div ref={eventRef} style={{maxWidth: '100%'}}>{content}</div>;
 	}
-);
+
+const EventContent = memo(EventContentComponent);
 
 
 export default EventContent;

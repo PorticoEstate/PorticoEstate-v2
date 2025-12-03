@@ -35,6 +35,8 @@ class BookingfrontendConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
+	 * @ParseBool
      */
     public $develope_mode;
 
@@ -67,6 +69,18 @@ class BookingfrontendConfig
      * @OA\Property(type="string")
      */
     public $usecookies;
+
+    /**
+     * @OA\Property(type="string")
+	 * @Expose
+     */
+    public $url_uustatus;
+
+    /**
+     * @OA\Property(type="string")
+	 * @Expose
+     */
+    public $url_system_feedback;
 
     public function __construct(?array $data)
     {

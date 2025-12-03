@@ -67,6 +67,29 @@
 	margin-bottom: 0;
 }
 
+.availabilityIndicator {
+	margin-left: auto;
+	font-size: 1.2em;
+	font-weight: bold;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0.5em;
+	height: 0.5em;
+	border-radius: 50%;
+
+	&.available {
+		background-color: var(--ds-color-success-background-tinted);
+		//background-color: rgba(16, 185, 129, 0.1);
+		border: 1px solid var(--ds-color-success-border-strong);
+	}
+
+	&.unavailable {
+		background-color: var(--ds-color-danger-background-tinted);
+		border: 1px solid var(--ds-color-danger-border-strong);
+	}
+}
+
 .resourceTags {
 	display: flex;
 	flex-wrap: wrap;

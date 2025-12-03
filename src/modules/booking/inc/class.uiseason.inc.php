@@ -24,6 +24,7 @@ class booking_uiseason extends booking_uicommon
 		'copy_season' => true,
 		'boundaries' => true,
 		'delete_boundary' => true,
+		'edit_boundary' => true,
 		'delete_wtemplate_alloc' => true,
 		'wtemplate' => true,
 		'wtemplate_json' => true,
@@ -153,7 +154,8 @@ class booking_uiseason extends booking_uicommon
 
 	public function query()
 	{
-		$seasons = $this->bo->read();
+		$params = $this->bo->build_default_read_params();
+		$seasons = $this->bo->read($params);
 		array_walk($seasons["results"], array($this, "_add_links"), "booking.uiseason.show");
 
 		$lang_week_template = lang('week template');
@@ -429,6 +431,7 @@ class booking_uiseason extends booking_uicommon
 	public function boundaries()
 	{
 		$season_id = Sanitizer::get_var('id', 'int');
+		$edit_id = Sanitizer::get_var('edit_id', 'int');
 		$season = $this->bo->read_single($season_id);
 
 		$boundaries = $this->bo->get_boundaries($season_id);
@@ -450,26 +453,75 @@ class booking_uiseason extends booking_uicommon
 			'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday',
 			'Saturday', 'Sunday'
 		);
-		foreach ($boundaries as &$boundary)
+		
+		$boundary = array('wday' => array());
+		$is_editing = false;
+		
+		// If editing, load the existing boundary
+		if ($edit_id) {
+			$boundary = $this->bo->read_boundary($edit_id);
+			// Ensure the boundary belongs to this season
+			if ($boundary && $boundary['season_id'] != $season_id) {
+				phpgw::no_access('booking', lang('Boundary does not belong to this season'));
+			}
+			$is_editing = true;
+		}
+		
+		foreach ($boundaries as &$b)
 		{
-			$boundary['wday_name'] = lang($weekdays[$boundary['wday'] - 1]);
-			$boundary['delete_link'] = self::link(array(
+			$b['wday_name'] = lang($weekdays[$b['wday'] - 1]);
+			$b['delete_link'] = self::link(array(
 				'menuaction' => 'booking.uiseason.delete_boundary',
-				'id' => $boundary['id']
+				'id' => $b['id']
+			));
+			$b['edit_link'] = self::link(array(
+				'menuaction' => 'booking.uiseason.boundaries',
+				'id' => $season_id,
+				'edit_id' => $b['id']
 			));
 		}
+		
 		$errors = array();
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 		{
-			$boundary = extract_values($_POST, $this->boundary_fields);
-			$boundary['season_id'] = $season_id;
-			$errors = $this->bo->validate_boundary($boundary);
-			if (!$errors)
-			{
-				$receipt = $this->bo->add_boundary($boundary);
+			$form_data = extract_values($_POST, $this->boundary_fields);
+			$selected_wdays = Sanitizer::get_var('wday', 'int', 'POST');
+			if (!is_array($selected_wdays)) {
+				$selected_wdays = array($selected_wdays);
+			}
+			
+			// Delete existing boundaries for selected days, then add new ones
+			$all_success = true;
+			foreach ($selected_wdays as $wday) {
+				// First, delete any existing boundary for this day
+				$existing_boundaries = $this->bo->get_boundaries($season_id);
+				foreach ($existing_boundaries['results'] as $existing) {
+					if ($existing['wday'] == $wday) {
+						$this->bo->delete_boundary($existing);
+					}
+				}
+				
+				// Then add the new boundary for this day
+				$new_boundary = array(
+					'season_id' => $season_id,
+					'wday' => $wday,
+					'from_' => $form_data['from_'],
+					'to_' => $form_data['to_']
+				);
+				$day_errors = $this->bo->validate_boundary($new_boundary);
+				if ($day_errors) {
+					$errors = array_merge($errors, $day_errors);
+					$all_success = false;
+				} else {
+					$this->bo->add_boundary($new_boundary);
+				}
+			}
+			
+			if ($all_success && !$errors) {
 				self::redirect(array('menuaction' => 'booking.uiseason.boundaries', 'id' => $season_id));
 			}
 		}
+		
 		$this->flash_form_errors($errors);
 		$season['cancel_link'] = self::link(array(
 			'menuaction' => 'booking.uiseason.show',
@@ -494,9 +546,11 @@ class booking_uiseason extends booking_uicommon
 		$jqcal2->add_listener('field_from', 'time', $boundary['from_']);
 		$jqcal2->add_listener('field_to', 'time', $boundary['to_']);
 
+		$season['is_editing'] = $is_editing;
+		
 		self::render_template_xsl('season_boundaries', array(
 			'boundary' => $boundary, 'boundaries' => $boundaries,
-			'season' => $season
+			'season' => $season, 'weekdays' => $weekdays
 		));
 	}
 

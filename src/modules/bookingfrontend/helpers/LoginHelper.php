@@ -113,7 +113,10 @@ class LoginHelper
 
 		$sessions = Sessions::getInstance();
 
-		if (!Sanitizer::get_var(session_name(), 'string', 'COOKIE') || !$sessions->verify())
+		// Get bookingfrontendsession from GET if available
+		$sessionid = Sanitizer::get_var('bookingfrontendsession', 'string', 'GET');
+
+		if ((!Sanitizer::get_var(session_name(), 'string', 'COOKIE') && !$sessionid) || !$sessions->verify($sessionid))
 		{
 			$config = (new Config('bookingfrontend'))->read();
 

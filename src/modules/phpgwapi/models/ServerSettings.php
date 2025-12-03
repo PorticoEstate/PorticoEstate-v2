@@ -143,6 +143,12 @@ class ServerSettings
     public $install_id;
 
     /**
+     * @OA\Property(type="boolean")
+     * @Expose
+     */
+    public $is_test_server;
+
+    /**
      * @OA\Property(type="object")
      */
     public $lang_ctimes;
@@ -315,6 +321,7 @@ class ServerSettings
     {
         $this->populate($data); // Populate first to set the initial values
         $this->setDefaults();   // Then set defaults for properties that were not set in populate
+        $this->setTestServerFlag(); // Determine if this is a test server based on hostname
         if ($includeConfigs) {
             $this->loadConfigs();
         }
@@ -326,8 +333,8 @@ class ServerSettings
         $bookingfrontendData = $this->getConfig('bookingfrontend');
         $this->bookingfrontend_config = new BookingfrontendConfig($bookingfrontendData);
 
-        $bookingData = $this->getConfig('booking');
-        $this->booking_config = new BookingConfig($bookingData);
+		$bookingData = $this->getConfig('booking');
+		$this->booking_config = new BookingConfig($bookingData);
     }
     private function getConfig(string $module): array
     {
@@ -359,6 +366,11 @@ class ServerSettings
                 }
             }
         }
+    }
+
+    private function setTestServerFlag()
+    {
+        $this->is_test_server = in_array($this->hostname, ['test.aktiv-kommune.no', 'pe-api.test']);
     }
 
 

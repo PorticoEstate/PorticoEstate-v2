@@ -38,6 +38,7 @@
 
 		var number_of_toolbar_items = 0;
 		var filter_selects = {};
+		var customFilters = {}; // Store custom filter values for modern DataTables compatibility
 		var lang = <xsl:value-of select="php:function('js_lang', 'Search')"/>;
 	</script>
 	<xsl:call-template name="jquery_phpgw_i18n"/>
@@ -308,6 +309,35 @@
 					</xsl:attribute>
 				</label>
 			</xsl:when>
+			<xsl:when test="type = 'checkbox'">
+				<input id="innertoolbar_{name}" class="pure-u-24-24">
+					<xsl:attribute name="type">
+						<xsl:value-of select="phpgw:conditional(not(type), '', type)"/>
+					</xsl:attribute>
+					<xsl:attribute name="name">
+						<xsl:value-of select="phpgw:conditional(not(name), '', name)"/>
+					</xsl:attribute>
+					<xsl:attribute name="onclick">
+						<xsl:value-of select="phpgw:conditional(not(onClick), '', onClick)"/>
+					</xsl:attribute>
+					<xsl:attribute name="value">
+						<xsl:value-of select="phpgw:conditional(not(value), '', value)"/>
+					</xsl:attribute>
+					<xsl:attribute name="class">
+						<xsl:value-of select="phpgw:conditional(not(class), '', class)"/>
+					</xsl:attribute>
+					<xsl:if test="checked and string-length(normalize-space(checked)) &gt; 0">
+						<xsl:attribute name="checked">
+							<xsl:choose>
+								<xsl:when test="normalize-space(checked) = '1'">checked</xsl:when>
+								<xsl:otherwise>
+									<xsl:value-of select="normalize-space(checked)"/>
+								</xsl:otherwise>
+							</xsl:choose>
+						</xsl:attribute>
+					</xsl:if>
+				</input>
+			</xsl:when>
 			<xsl:otherwise>
 				<input id="innertoolbar_{name}" class="pure-u-24-24">
 					<xsl:attribute name="type">
@@ -327,9 +357,6 @@
 					</xsl:attribute>
 					<xsl:attribute name="class">
 						<xsl:value-of select="phpgw:conditional(not(class), '', class)"/>
-					</xsl:attribute>
-					<xsl:attribute name="checked">
-						<xsl:value-of select="phpgw:conditional(not(checked), '', checked)"/>
 					</xsl:attribute>
 				</input>
 			</xsl:otherwise>
@@ -1261,11 +1288,21 @@ console.log(app_method_referrer);
 						oControls.each(function()
 						{
 							oControl = $(this);
+							if($(this).is(':checkbox'))
+							{
+								var checkboxValue = $(this).is(':checked') ? 1 : 0;
+								aoData[$(this).attr('name')] = checkboxValue;
+								if(checkboxValue === 1)
+								{
+									active_filters_html.push($(this).attr('title'));
+								}
+								return;
+							}
 							var test = $(this).val();
 						//	console.log(test.constructor);
 							if ( $(this).attr('name') && test != null && test.constructor !== Array)
 							{
-								value = $(this).val().replace('"', '"');
+								var value = $(this).val().replace('"', '"');
 								aoData[ $(this).attr('name') ] = value;
 								if(value && value !=0 )
 								{
@@ -1301,6 +1338,15 @@ console.log(app_method_referrer);
 							$('#reset_filter').hide();
 						}
 
+						// Add custom filters for modern DataTables compatibility
+						if (customFilters) {
+							for (var param in customFilters) {
+								if (customFilters.hasOwnProperty(param)) {
+									aoData[param] = customFilters[param];
+								}
+							}
+						}
+
 					},
 					dataSrc: function ( json ) {
 						if (typeof(json.sessionExpired) != 'undefined' && json.sessionExpired == true)
@@ -1321,6 +1367,13 @@ console.log(app_method_referrer);
 					var temp = {};
 					temp[menuaction] = {}
 					oControls.each(function() {
+						if($(this).is(':checkbox'))
+						{
+							var checkboxState = $(this).is(':checked') ? 1 : 0;
+							sValue[$(this).attr('name')] = checkboxState;
+							temp[$(this).attr('name')] = checkboxState;
+							return;
+						}
 						if ( $(this).attr('name') && $(this).val() != null && $(this).val().constructor != Array)
 						{
 							sValue[ $(this).attr('name') ] = $(this).val().replace('"', '"');
@@ -1377,6 +1430,13 @@ console.log(app_method_referrer);
 								{
 									if (clear_state !== true)
 									{
+										if(oControl.is(':checkbox'))
+										{
+											var shouldCheck = value === 1 || value === '1';
+											oControl.prop('checked', shouldCheck);
+											customFilters[oControl.attr('name')] = shouldCheck ? 1 : 0;
+											return;
+										}
 										if(value.constructor == Array)
 										{
 											$(oControl).find("option").removeAttr('selected');
@@ -1842,6 +1902,9 @@ console.log(app_method_referrer);
 
 		reset_filter = function()
 		{
+			// Clear custom filters for modern DataTables compatibility
+			customFilters = {};
+			
 			var api = oTable.api();
 			for (var i in filter_selects)
 			{
@@ -1866,10 +1929,17 @@ console.log(app_method_referrer);
 
 			oControls.each(function()
 			{
+				if($(this).is(':checkbox'))
+				{
+					$(this).prop('checked', false);
+					$(this).trigger('change');
+					return;
+				}
+
 				var test = $(this).val();
 				if ( !$(this).is('select') && $(this).attr('name') && test != null && test.constructor !== Array)
 				{
-//					value = $(this).val('');
+					$(this).val('');
 				}
 			});
 
@@ -1901,13 +1971,33 @@ console.log(app_method_referrer);
 
 		function filterData(param, value)
 		{
-			oTable.dataTableSettings[0]['ajax']['data'][param] = value;
-			oTable.api().draw();
+			// Store the filter value in the custom filters object for modern DataTables compatibility
+			customFilters[param] = value;
+			
+			// Also update the legacy way for backward compatibility
+			try {
+				oTable.dataTableSettings[0]['ajax']['data'][param] = value;
+			} catch(e) {
+				// Legacy method failed, modern approach will handle it
+			}
+			
+			// Reload the table data
+			oTable.api().ajax.reload();
 		}
 
 		function clearFilterParam(param)
 		{
-			oTable.dataTableSettings[0]['ajax']['data'][param] = '';
+			// Clear from custom filters
+			if (customFilters && customFilters.hasOwnProperty(param)) {
+				delete customFilters[param];
+			}
+			
+			// Also clear from legacy way for backward compatibility
+			try {
+				oTable.dataTableSettings[0]['ajax']['data'][param] = '';
+			} catch(e) {
+				// Legacy method failed, modern approach will handle it
+			}
 		}
 
 		function reloadData()

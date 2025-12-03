@@ -15,34 +15,6 @@ CreateUrlParams(window.location.search);
 
 ko.validation.locale('nb-NO');
 
-function initiate_payment(method) {
-    if (payment_initated) {
-        alert('payment_initated');
-        return;
-    }
-
-    var parameter = {
-        menuaction: "bookingfrontend." + method + "_helper.initiate"
-    };
-
-    var getJsonURL = phpGWLink('bookingfrontend/', parameter, true);
-
-    $(".application_id").each(function (index) {
-        getJsonURL += '&application_id[]=' + $(this).val();
-    });
-
-    $.getJSON(getJsonURL, function (result) {
-        console.log(result);
-        if (typeof (result.url) !== 'undefined') {
-            var url = result.url;
-            window.location.replace(url);
-        } else {
-            alert('Funkar inte');
-        }
-    });
-    payment_initated = true;
-}
-
 function check_payment_status() {
 
     if (!payment_order_id) {
@@ -99,8 +71,12 @@ class ApplicationModel {
         const defaultTypeApplication = document.getElementById('customer_identifier_type_hidden_field').value;
         this.typeApplicationRadio = ko.observable(defaultTypeApplication || 'ssn');
         this.applicationCartItems = ko.computed(() => {
-            console.log(ApplicationCart.applicationCartItems())
+            // console.log('items', ApplicationCart.applicationCartItems())
             return ApplicationCart.applicationCartItems()
+        });
+        this.applicationCartTotalSum = ko.computed(() => {
+			return this.applicationCartItems()?.flatMap(item => item.orders?.map(order => order.sum))?.reduce((a, b) => a + b, 0) || 0
+            // return ApplicationCart.applicationCartItems()
         });
         this.applicationCartItemsEmpty = ko.computed(() => {
             if (ApplicationCart.applicationCartItemsEmpty()) {
@@ -122,6 +98,61 @@ class ApplicationModel {
     deleteItem(e) {
         ApplicationCart.deleteItem(e);
     }
+
+	async initiate_payment(method) {
+		console.log("Payment initiated: " + method + "")
+		if (payment_initated) {
+			alert('payment_initated');
+			return;
+		}
+
+		// Validate form first
+		console.log("Starting form validation...");
+		var form = document.getElementById("application_form");
+		var validationResult = validate_form({ preventDefault: () => {}, stopPropagation: () => {} });
+		console.log("Validation result:", validationResult);
+		
+		if (!validationResult) {
+			console.log("Form validation failed, stopping payment initiation");
+			return; // Stop if validation fails
+		}
+
+		// Update contact information first
+		console.log("Starting contact information update...");
+		try {
+			await update_contact_informtation();
+			console.log("Contact information updated successfully");
+		} catch (error) {
+			console.error('Error updating contact information:', error);
+			alert('Error updating contact information');
+			return;
+		}
+
+		console.log("Proceeding with Vipps payment...");
+		var parameter = {
+			menuaction: "bookingfrontend." + method + "_helper.initiate"
+		};
+
+		var getJsonURL = phpGWLink('bookingfrontend/', parameter, true);
+
+		$(".application_id").each(function (index) {
+			getJsonURL += '&application_id[]=' + $(this).val();
+		});
+
+		console.log("Calling Vipps API with URL:", getJsonURL);
+		$.getJSON(getJsonURL, function (result) {
+			console.log("Vipps API response:", result);
+			if (typeof (result.url) !== 'undefined') {
+				var url = result.url;
+				console.log("Redirecting to Vipps URL:", url);
+				window.location.replace(url);
+			} else {
+				alert('Funkar inte');
+			}
+		});
+		payment_initated = true;
+	}
+
     addNewOrganization() {
         this.customerOrganizationNumberFallback('');
         this.customerOrganizationName('');
@@ -143,6 +174,81 @@ class ApplicationModel {
 
 }
 
+async function update_contact_informtation() {
+    // Selecting the form
+    var thisForm = document.getElementById("application_form");
+
+    // Creating the spinner and adding it after the form
+    var spinner = document.createElement('div');
+    spinner.id = "spinner";
+    spinner.className = "text-center mt-2 ml-2";
+    var spinnerBorder = document.createElement('div');
+    spinnerBorder.className = "spinner-border";
+    spinnerBorder.setAttribute('role', 'status');
+    var span = document.createElement('span');
+    span.className = "sr-only";
+    span.textContent = "Processing...";
+    spinnerBorder.appendChild(span);
+    spinner.appendChild(spinnerBorder);
+    thisForm.parentNode.insertBefore(spinner, thisForm.nextSibling);
+
+    // Preparing request parameters
+    var oArgs = {menuaction: 'bookingfrontend.uiapplication.update_contact_informtation'};
+    var requestUrl = phpGWLink('bookingfrontend/', oArgs, true);
+
+    // Serializing form data
+    var formData = new FormData(thisForm);
+
+    // Asynchronous fetch request with POST method
+    try {
+        let response = await fetch(requestUrl, {
+            method: 'POST',
+            body: formData,
+        });
+        let data = await response.json();
+
+        // Process the response data
+        if (data) {
+            if (data.status !== "saved") {
+                alert(data.message);
+                window.location.reload();
+            } else {
+                var totalSum = document.getElementById("total_sum").textContent;
+                if (totalSum === "" || data.direct_booking === false) {
+                    var externalPaymentMethod = document.getElementById("external_payment_method");
+                    if (externalPaymentMethod) {
+                        externalPaymentMethod.style.display = 'none';
+                    }
+                    document.getElementById("btnSubmit").textContent = 'Send';
+                }
+
+                if (data.contact_info.responsible_street) {
+                    document.getElementById("field_responsible_street").value = data.contact_info.responsible_street;
+                }
+                if (data.contact_info.responsible_zip_code) {
+                    document.getElementById("field_responsible_zip_code").value = data.contact_info.responsible_zip_code;
+                }
+                if (data.contact_info.responsible_city) {
+                    document.getElementById("field_responsible_city").value = data.contact_info.responsible_city;
+                }
+            }
+
+            // Remove spinner after processing
+            var spinnerElement = document.getElementById('spinner');
+            if (spinnerElement) {
+                spinnerElement.parentNode.removeChild(spinnerElement);
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        // Remove spinner on error
+        var spinnerElement = document.getElementById('spinner');
+        if (spinnerElement) {
+            spinnerElement.parentNode.removeChild(spinnerElement);
+        }
+        throw error; // Re-throw to handle in calling function
+    }
+}
 
 $(document).ready(function () {
     var am = new ApplicationModel();
@@ -202,74 +308,6 @@ $(document).ready(function () {
     });
 
     check_payment_status();
-
-    async function update_contact_informtation() {
-        // Selecting the form
-        var thisForm = document.getElementById("application_form");
-
-// Creating the spinner and adding it after the form
-        var spinner = document.createElement('div');
-        spinner.id = "spinner";
-        spinner.className = "text-center mt-2 ml-2";
-        var spinnerBorder = document.createElement('div');
-        spinnerBorder.className = "spinner-border";
-        spinnerBorder.setAttribute('role', 'status');
-        var span = document.createElement('span');
-        span.className = "sr-only";
-        span.textContent = "Processing...";
-        spinnerBorder.appendChild(span);
-        spinner.appendChild(spinnerBorder);
-        thisForm.parentNode.insertBefore(spinner, thisForm.nextSibling);
-
-// Preparing request parameters
-        var oArgs = {menuaction: 'bookingfrontend.uiapplication.update_contact_informtation'};
-        var requestUrl = phpGWLink('bookingfrontend/', oArgs, true);
-
-// Serializing form data
-        var formData = new FormData(thisForm);
-
-// Asynchronous fetch request with POST method
-        try {
-            let response = await fetch(requestUrl, {
-                method: 'POST',
-                body: formData,
-            });
-            let data = await response.json();
-
-            // Process the response data
-            if (data) {
-                if (data.status !== "saved") {
-                    alert(data.message);
-                    window.location.reload();
-                } else {
-                    var totalSum = document.getElementById("total_sum").textContent;
-                    if (totalSum === "" || data.direct_booking === false) {
-                        document.getElementById("external_payment_method").style.display = 'none';
-                        document.getElementById("btnSubmit").textContent = 'Send';
-                    }
-
-                    if (data.contact_info.responsible_street) {
-                        document.getElementById("field_responsible_street").value = data.contact_info.responsible_street;
-                    }
-                    if (data.contact_info.responsible_zip_code) {
-                        document.getElementById("field_responsible_zip_code").value = data.contact_info.responsible_zip_code;
-                    }
-                    if (data.contact_info.responsible_city) {
-                        document.getElementById("field_responsible_city").value = data.contact_info.responsible_city;
-                    }
-                }
-
-                // Remove spinner after processing
-                var spinnerElement = document.getElementById('spinner');
-                if (spinnerElement) {
-                    spinnerElement.parentNode.removeChild(spinnerElement);
-                }
-            }
-        } catch (error) {
-            console.error('Error:', error);
-        }
-
-    }
 
     $(function () {
         $("#btnValidate").on("click", function (e) {

@@ -44,9 +44,6 @@ class VippsController
 			'dir' => isset($params['sort']) ? $params['sort'] : 'desc',
 		];
 
-		// Create vipps helper instance
-		$vipps_helper = \CreateObject('bookingfrontend.vipps_helper');
-
 		// Create soapplication instance
 		$soapplication = \CreateObject('booking.soapplication');
 

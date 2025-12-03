@@ -489,6 +489,8 @@ $phpgw_baseline = array(
 			'session_id' => array('type' => 'varchar', 'precision' => '64', 'nullable' => True),
 			'agreement_requirements' => array('type' => 'text', 'nullable' => True),
 			'external_archive_key' => array('type' => 'varchar', 'precision' => '64', 'nullable' => True),
+			'recurring_info' => array('type' => 'jsonb', 'nullable' => true),
+			'from_' => array('type' => 'datetime', 'nullable' => False),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -1474,6 +1476,15 @@ $phpgw_baseline = array(
 			'deactivate_in_frontend' => array('type' => 'int', 'precision' => 2, 'nullable' => True),
 			'owner_id' => array('type' => 'int', 'precision' => 4, 'nullable' => True),
 			'group_id' => array('type' => 'int', 'precision' => 4, 'nullable' => True, 'default' => 1),
+			// Override dimensions according to LG04 v55
+			'override_dim_0' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_1' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_2' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_3' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_4' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_5' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_6' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_7' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -1635,6 +1646,57 @@ $phpgw_baseline = array(
 		'fk' => array(),
 		'ix' => array(),
 		'uc' => array(),
+	),
+	'bb_webhook_subscriptions' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'subscription_id' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+			'entity_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+			'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'webhook_url' => array('type' => 'text', 'nullable' => false),
+			'change_types' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false, 'default' => 'created,updated,deleted'),
+			'client_state' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),
+			'secret_key' => array('type' => 'varchar', 'precision' => '255', 'nullable' => true),
+			'is_active' => array('type' => 'int', 'precision' => '2', 'nullable' => false, 'default' => 1),
+			'expires_at' => array('type' => 'timestamp', 'nullable' => false),
+			'created_by' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'created_at' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+			'last_notification_at' => array('type' => 'timestamp', 'nullable' => true),
+			'notification_count' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+			'failure_count' => array('type' => 'int', 'precision' => '4', 'nullable' => false, 'default' => 0),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'phpgw_accounts' => array('created_by' => 'account_id')
+		),
+		'ix' => array(
+			array('entity_type', 'resource_id'),
+			array('is_active', 'expires_at')
+		),
+		'uc' => array('subscription_id')
+	),
+	'bb_webhook_delivery_log' => array(
+		'fd' => array(
+			'id' => array('type' => 'auto', 'nullable' => false),
+			'subscription_id' => array('type' => 'varchar', 'precision' => '255', 'nullable' => false),
+			'change_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+			'entity_type' => array('type' => 'varchar', 'precision' => '50', 'nullable' => false),
+			'entity_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
+			'resource_id' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'http_status_code' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'response_time_ms' => array('type' => 'int', 'precision' => '4', 'nullable' => true),
+			'error_message' => array('type' => 'text', 'nullable' => true),
+			'created_at' => array('type' => 'timestamp', 'nullable' => false, 'default' => 'current_timestamp'),
+		),
+		'pk' => array('id'),
+		'fk' => array(
+			'bb_webhook_subscriptions' => array('subscription_id' => 'subscription_id')
+		),
+		'ix' => array(
+			array('subscription_id', 'created_at'),
+			array('entity_type', 'entity_id')
+		),
+		'uc' => array()
 	),
 
 );

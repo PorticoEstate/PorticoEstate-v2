@@ -113,7 +113,7 @@
 		{
 			if (is_array($data))
 			{
-				$workorder_id = (isset($data['workorder_id']) ? $data['workorder_id'] : 0);
+				$workorder_id = (isset($data['workorder_id']) ? (int) $data['workorder_id'] : 0);
 			}
 
 			$ordermethod = ' ORDER BY grouping_id, record , id ASC';
@@ -144,8 +144,8 @@
 					'unit'				 => $this->db->f('unit'),
 					'unit_name'			 => $this->db->f('unit_name'),
 					'record'			 => $this->db->f('record'),
-					'cost'				 => $this->db->f('cost'),
-					'billperae'			 => $this->db->f('billperae'),
+					'cost'				 => (float) $this->db->f('cost'),
+					'billperae'			 => (float) $this->db->f('billperae'),
 					'remark'			 => $this->db->f('remark'),
 					'building_part'		 => $this->db->f('building_part'),
 					'dim_d'				 => $this->db->f('dim_d'),
@@ -159,8 +159,8 @@
 				$sql								 = "SELECT sum(amount) as deviation, count(amount) as count_deviation FROM fm_wo_h_deviation WHERE workorder_id=$workorder_id and hour_id=" . $hour_list[$i]['hour_id'];
 				$this->db->query($sql, __LINE__, __FILE__);
 				$this->db->next_record();
-				$hour_list[$i]['deviation']			 = $this->db->f('deviation');
-				$hour_list[$i]['count_deviation']	 = $this->db->f('count_deviation');
+				$hour_list[$i]['deviation']			 = (float) $this->db->f('deviation');
+				$hour_list[$i]['count_deviation']	 = (int) $this->db->f('count_deviation');
 			}
 
 			return $hour_list;
@@ -224,10 +224,10 @@
 
 		function add_deviation( $values )
 		{
-			$sql = "SELECT max(id) as current_id FROM fm_wo_h_deviation WHERE  workorder_id=" . $values['workorder_id'] . " AND hour_id=" . $values['hour_id'];
+			$sql = "SELECT max(id) as current_id FROM fm_wo_h_deviation WHERE  workorder_id=" . (int)$values['workorder_id'] . " AND hour_id=" . (int)$values['hour_id'];
 			$this->db->query($sql, __LINE__, __FILE__);
 			$this->db->next_record();
-			$id	 = $this->db->f('current_id') + 1;
+			$id	 = (int)$this->db->f('current_id') + 1;
 
 			$values['descr'] = $this->db->db_addslashes($values['descr']);
 
@@ -288,6 +288,7 @@
 		function next_record( $workorder_id, $grouping_id = 0 )
 		{
 			$grouping_id = (int)$grouping_id;
+			$workorder_id = (int)$workorder_id;
 			if ($grouping_id)
 			{
 				$gouping_filter = "AND  grouping_id = {$grouping_id}";
@@ -297,9 +298,9 @@
 				$gouping_filter = "AND  grouping_id IS NULL";
 			}
 
-			$this->db->query("SELECT  max(record) as record FROM fm_wo_hours where workorder_id='{$workorder_id}' {$gouping_filter}", __LINE__, __FILE__);
+			$this->db->query("SELECT  max(record) as record FROM fm_wo_hours where workorder_id={$workorder_id} {$gouping_filter}", __LINE__, __FILE__);
 			$this->db->next_record();
-			$record = $this->db->f('record') + 1;
+			$record = (int)$this->db->f('record') + 1;
 			return $record;
 		}
 
@@ -484,17 +485,19 @@
 		function add_custom_hour( $hour, $workorder_id )
 		{
 
+			$workorder_id = (int)$workorder_id;
+
 			if ($hour['chapter_id'])
 			{
 				$this->db->query("UPDATE fm_workorder set
-					chapter_id	='" . $hour['chapter_id'] . "' WHERE id= '$workorder_id'", __LINE__, __FILE__);
+					chapter_id	='" . (int)$hour['chapter_id'] . "' WHERE id= '$workorder_id'", __LINE__, __FILE__);
 			}
 
 			if ($hour['grouping_id'])
 			{
-				$this->db->query("SELECT grouping_descr FROM fm_wo_hours where grouping_id='" . $hour['grouping_id'] . "' and workorder_id= '$workorder_id' GROUP by grouping_descr", __LINE__, __FILE__);
+				$this->db->query("SELECT grouping_descr FROM fm_wo_hours where grouping_id='" . (int)$hour['grouping_id'] . "' and workorder_id= '$workorder_id' GROUP by grouping_descr", __LINE__, __FILE__);
 				$this->db->next_record();
-				$hour['grouping_descr'] = $this->db->f('grouping_descr');
+				$hour['grouping_descr'] = $this->db->f('grouping_descr', true);
 			}
 
 			if ($hour['new_grouping'])
@@ -503,19 +506,19 @@
 				$this->db->next_record();
 				if ($this->db->f('grouping_id'))
 				{
-					$hour['grouping_id'] = $this->db->f('grouping_id');
+					$hour['grouping_id'] = (int)$this->db->f('grouping_id');
 				}
 				else
 				{
 					$this->db->query("SELECT max(grouping_id) as grouping_id FROM fm_wo_hours where workorder_id= '$workorder_id'", __LINE__, __FILE__);
 					$this->db->next_record();
-					$hour['grouping_id'] = $this->db->f('grouping_id') + 1;
+					$hour['grouping_id'] = (int)$this->db->f('grouping_id') + 1;
 				}
 
 				$hour['grouping_descr'] = $hour['new_grouping'];
 			}
 
-			$hour['record'] = $this->next_record($workorder_id, $hour['grouping_id']);
+			$hour['record'] = $this->next_record($workorder_id, (int)$hour['grouping_id']);
 
 			if (!$hour['cat_per_cent'])
 			{
@@ -550,7 +553,7 @@
 				. " grouping_id,grouping_descr,record,building_part,tolerance,remark,entry_date,workorder_id,category,cat_per_cent) "
 				. "VALUES ( $values )", __LINE__, __FILE__);
 
-			$receipt['hour_id'] = $this->db->get_last_insert_id('fm_wo_hours', 'id');
+			$receipt['hour_id'] = (int)$this->db->get_last_insert_id('fm_wo_hours', 'id');
 
 			$receipt['message'][] = array('msg' => lang('hour %1 is added!', $receipt['hour_id']));
 
@@ -559,6 +562,7 @@
 
 		function read_single_hour( $hour_id )
 		{
+			$hour_id = (int)$hour_id;
 			$sql = "SELECT * from fm_wo_hours where id='$hour_id'";
 
 			$this->db->query($sql, __LINE__, __FILE__);
@@ -578,7 +582,7 @@
 				$hour['tolerance_id']		 = (int)$this->db->f('tolerance');
 				$hour['building_part_id']	 = (int)$this->db->f('building_part');
 				$hour['quantity']			 = $this->db->f('quantity');
-				$hour['cost']				 = $this->db->f('cost');
+				$hour['cost']				 = (float)$this->db->f('cost');
 				$hour['dim_d']				 = $this->db->f('dim_d');
 				$hour['wo_hour_cat']		 = $this->db->f('category');
 				$hour['cat_per_cent']		 = $this->db->f('cat_per_cent');
@@ -589,7 +593,7 @@
 
 		function edit( $hour, $workorder_id )
 		{
-
+			$workorder_id = (int)$workorder_id;
 			$hour['descr']	 = $this->db->db_addslashes($hour['descr']);
 			$hour['remark']	 = $this->db->db_addslashes($hour['remark']);
 			if (!$hour['cat_per_cent'])
@@ -602,7 +606,7 @@
 			if ($hour['chapter_id'])
 			{
 				$this->db->query("UPDATE fm_workorder set
-					chapter_id	='" . $hour['chapter_id'] . "' WHERE id= '$workorder_id'", __LINE__, __FILE__);
+					chapter_id	='" . (int)$hour['chapter_id'] . "' WHERE id= '$workorder_id'", __LINE__, __FILE__);
 			}
 
 			if ($hour['new_grouping'])
@@ -611,15 +615,15 @@
 				$this->db->next_record();
 				if ($this->db->f('grouping_id'))
 				{
-					$hour['grouping_id'] = $this->db->f('grouping_id');
+					$hour['grouping_id'] = (int)$this->db->f('grouping_id');
 				}
 				else
 				{
 
-					$this->db->query("UPDATE fm_wo_hours set grouping_id = NULL WHERE id ='" . $hour['hour_id'] . "'", __LINE__, __FILE__);
+					$this->db->query("UPDATE fm_wo_hours set grouping_id = NULL WHERE id ='" . (int)$hour['hour_id'] . "'", __LINE__, __FILE__);
 					$this->db->query("SELECT count(grouping_id) as num_grouping FROM fm_wo_hours where workorder_id= '$workorder_id' and grouping_id >0 ", __LINE__, __FILE__);
 					$this->db->next_record();
-					if ($this->db->f('num_grouping') == 1)
+					if ((int)$this->db->f('num_grouping') == 1)
 					{
 						$hour['grouping_id'] = 1;
 					}
@@ -627,25 +631,25 @@
 					{
 						$this->db->query("SELECT max(grouping_id) as grouping_id FROM fm_wo_hours where workorder_id= '$workorder_id'", __LINE__, __FILE__);
 						$this->db->next_record();
-						$hour['grouping_id'] = $this->db->f('grouping_id') + 1;
+						$hour['grouping_id'] = (int)$this->db->f('grouping_id') + 1;
 					}
 				}
 				$hour['grouping_descr'] = $hour['new_grouping'];
 			}
 			else
 			{
-				$this->db->query("SELECT grouping_id,grouping_descr FROM fm_wo_hours where id ='" . $hour['hour_id'] . "'", __LINE__, __FILE__);
+				$this->db->query("SELECT grouping_id,grouping_descr FROM fm_wo_hours where id ='" . (int)$hour['hour_id'] . "'", __LINE__, __FILE__);
 				$this->db->next_record();
-				$old_grouping_id = $this->db->f('grouping_id');
+				$old_grouping_id = (int)$this->db->f('grouping_id');
 
-				if ($old_grouping_id == $hour['grouping_id'])
+				if ($old_grouping_id == (int)$hour['grouping_id'])
 				{
 
 					$hour['grouping_descr'] = $this->db->f('grouping_descr');
 				}
 				else
 				{
-					$this->db->query("SELECT grouping_descr , max(record) as record FROM fm_wo_hours where grouping_id='" . $hour['grouping_id'] . "' and workorder_id= '$workorder_id' GROUP by grouping_descr", __LINE__, __FILE__);
+					$this->db->query("SELECT grouping_descr , max(record) as record FROM fm_wo_hours where grouping_id='" . (int)$hour['grouping_id'] . "' and workorder_id= '$workorder_id' GROUP by grouping_descr", __LINE__, __FILE__);
 					$this->db->next_record();
 					if ($this->db->f('grouping_descr'))
 					{
@@ -687,7 +691,7 @@
 
 			$value_set = $this->db->validate_update($value_set);
 
-			$this->db->query("UPDATE fm_wo_hours set $value_set WHERE id= '" . $hour['hour_id'] . "'", __LINE__, __FILE__);
+			$this->db->query("UPDATE fm_wo_hours set $value_set WHERE id= '" . (int)$hour['hour_id'] . "'", __LINE__, __FILE__);
 
 			$receipt['hour_id']		 = $hour['hour_id'];
 			$receipt['message'][]	 = array('msg' => lang('hour %1 has been edited', $hour['hour_id']));
@@ -696,6 +700,7 @@
 
 		function update_email( $to_email, $workorder_id )
 		{
+			$workorder_id = (int)$workorder_id;
 			$this->db->query("SELECT vendor_id FROM fm_workorder where id ='$workorder_id'", __LINE__, __FILE__);
 			$this->db->next_record();
 			$vendor_id = $this->db->f('vendor_id');
@@ -730,6 +735,8 @@
 
 		function delete( $hour_id, $workorder_id )
 		{
+			$hour_id = (int)$hour_id;
+			$workorder_id = (int)$workorder_id;
 			$this->db->query("SELECT record FROM fm_wo_hours where id ='$hour_id'", __LINE__, __FILE__);
 			$this->db->next_record();
 			$old_record = $this->db->f('record');
@@ -751,6 +758,9 @@
 
 		function delete_deviation( $workorder_id, $hour_id, $id )
 		{
+			$workorder_id = (int)$workorder_id;
+			$hour_id = (int)$hour_id;
+			$id = (int)$id;
 			$this->db->query("DELETE FROM fm_wo_h_deviation WHERE workorder_id=$workorder_id AND hour_id=$hour_id AND id=$id", __LINE__, __FILE__);
 			$receipt['message'][] = array('msg' => lang('deviation %1 has been deleted', $id));
 			return $receipt;
@@ -760,7 +770,7 @@
 		{
 			if (is_array($data))
 			{
-				$id			 = (isset($data['workorder_id']) ? $data['workorder_id'] : 0);
+				$id			 = (isset($data['workorder_id']) ? (int)$data['workorder_id'] : 0);
 				$calculation = (isset($data['calculation']) ? (float)$data['calculation'] : 0);
 			}
 
@@ -772,7 +782,7 @@
 				$soworkorder = CreateObject('property.soworkorder');
 				$config		 = CreateObject('phpgwapi.config', 'property');
 				$config->read();
-				$tax		 = 1 + (($config->config_data['fm_tax']) / 100);
+				$tax		 = 1 + ((float)$config->config_data['fm_tax'] / 100);
 				$calculation = $calculation * $tax;
 
 				$this->db->query("UPDATE fm_workorder SET combined_cost = '{$calculation}' WHERE id = '{$id}'", __LINE__, __FILE__);

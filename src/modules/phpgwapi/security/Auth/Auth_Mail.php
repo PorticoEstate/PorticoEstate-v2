@@ -26,6 +26,8 @@
 
 	namespace App\modules\phpgwapi\security\Auth;
 
+	require_once __DIR__ . '/../../../../email/inc/imap_config.php';
+
 	/**
 	* Authentication based on Mail server
 	*
@@ -72,7 +74,7 @@
 				case 'imaps':
 					$port = 993;
 					$extra = "/ssl{$this->ssl_args}";
-	 				$mailauth = imap_open("\{{$this->serverSettings['mail_server']}:{$port}\}INBOX", $username , $passwd);
+	 				$mailauth = IMAPManager::imap_open("\{{$this->serverSettings['mail_server']}:{$port}\}INBOX", $username , $passwd);
 					break;
 				case 'imap':
 				default:
@@ -80,7 +82,7 @@
 					$this->serverSettings['mail_port'] = '143';
 			}
 
-	 		return !! @imap_open("\{{$server}{$extra}:{$port}\}INBOX", $username , $passwd);
+	 		return !! IMAPManager::imap_open("\{{$server}{$extra}:{$port}\}INBOX", $username , $passwd);
 		}
 
 		function change_password($old_passwd, $new_passwd, $account_id = 0)

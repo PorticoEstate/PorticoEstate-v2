@@ -396,7 +396,7 @@ abstract class phpgwapi_model
 				}
 			}
 			$error_key = empty($params['label']) ? $field : $params['label'];
-			if ($params['required'] && (($value !== '0' && empty($value)) || empty($value)) && !$alternatives_ok)
+			if ($params['required'] && (empty($value) && $value !== 0 && $value !== '0') && empty($alternatives_ok))
 			{
 
 				$errors[$error_key] = lang("Field %1 is required", lang($error_key));

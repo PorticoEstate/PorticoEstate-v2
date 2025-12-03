@@ -268,6 +268,7 @@ Code	property	en	Code
 column %1 could not be moved	property	en	column %1 could not be moved
 column %1 has been moved	property	en	column %1 has been moved
 column could not be added	property	en	column could not be added
+collapse all	common	en	Collapse all
 Column description	property	en	Column description
 column name	property	en	Column name
 column name not entered!	property	en	Column name not entered!
@@ -1665,3 +1666,4 @@ Your message could not be sent!	property	en	Your message could not be sent!
 .project.request	property	en	Request
 .tenant_claim	property	en	Tenant claim
 .ticket	property	en	Ticket
+recently used	property	en	Recently used

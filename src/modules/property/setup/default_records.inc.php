@@ -854,7 +854,7 @@ $db->query("INSERT INTO fm_action_pending_category (num, name, descr) VALUES ('r
 $db->query("INSERT INTO fm_action_pending_category (num, name, descr) VALUES ('accept_delivery', 'Accept delivery', 'Please accept delivery on this item')");
 
 // Admin get full access
-$aclobj =createObject('phpgwapi.acl');;
+$aclobj =createObject('phpgwapi.acl');
 $aclobj->enable_inheritance = true;
 $admin_group = $accounts->name2id('admin');
 if ($admin_group) // check if admin has been defined yet

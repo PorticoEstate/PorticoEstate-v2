@@ -45,7 +45,7 @@ $app = AppFactory::create();
 // Register service providers
 $datbaseProvider = new DatabaseServiceProvider();
 
-$datbaseProvider->register($app);
+$datbaseProvider->register($container);
 
 $displayErrorDetails = true; // Set to false in production
 $logErrors = true;

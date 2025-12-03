@@ -4177,7 +4177,7 @@ JS;
 			'value_paid_date'			 => isset($values['paid_date']) ? $values['paid_date'] : '',
 			'vendor_data'				 => $vendor_data,
 			'ecodimb_data'				 => $ecodimb_data,
-			'value_external_project_id'			 => $values['external_project_id'],
+			'value_external_project_id'			 => $values['external_project_id'] ? $values['external_project_id'] : $project['external_project_id'],
 			'value_external_project_name'		 => $this->bocommon->get_external_project_name($values['external_project_id'] ? $values['external_project_id'] : $project['external_project_id']),
 			'value_service_id'			 => $values['service_id'],
 			'value_service_name'		 => $this->_get_eco_service_name($values['service_id']),
@@ -4187,7 +4187,7 @@ JS;
 				'order'		 => 'id',
 				'id_in_name' => 'num'
 			))),
-			'contract_list'				 => array('options' => $this->get_vendor_contract($values['vendor_id'], $values['contract_id'])),
+			'contract_list'				 => array('options' => $this->get_vendor_contract($workorder['vendor_id'], $workorder['contract_id'])),
 			'value_unspsc_code'			 => $values['unspsc_code'],
 			'value_unspsc_code_name'	 => $this->_get_unspsc_code_name($values['unspsc_code']),
 			'value_kidnr'				 => isset($values['kidnr']) ? $values['kidnr'] : '',

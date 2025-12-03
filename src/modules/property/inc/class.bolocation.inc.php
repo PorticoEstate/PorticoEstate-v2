@@ -1156,8 +1156,9 @@ JS;
 	{
 		$location_code = Sanitizer::get_var('query');
 		$level = Sanitizer::get_var('level', 'int');
+		$get_tenant_name = Sanitizer::get_var('get_tenant_name', 'bool');
 
-		$values = $this->so->get_locations($location_code, $level);
+		$values = $this->so->get_locations($location_code, $level, $get_tenant_name);
 		if ($values && !$level)
 		{
 			$part			 = explode('-', $values[0]['id']);

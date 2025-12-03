@@ -931,8 +931,8 @@
 		<xsl:otherwise>
 			<xsl:choose>
 				<xsl:when test="history=1 and $supress_history_date !=1">
-					<input type="text" id="{$dataset}_{id}_date" name="{$dataset}[{id}][date]" value="" size="12" maxlength="10" readonly="readonly">
-					</input>
+				<div class="pure-control-group">
+
 					<xsl:variable name="link_history">
 						<xsl:value-of select="link_history"/>
 					</xsl:variable>
@@ -942,9 +942,13 @@
 					<xsl:variable name="lang_history">
 						<xsl:value-of select="php:function('lang', 'history')" />
 					</xsl:variable>
+					<label>
 					<a href="javascript:JqueryPortico.showlightbox_history('{$link_history}')" title="{$lang_history}">
 						<xsl:value-of select="$lang_history"/>
 					</a>
+					</label>
+					<input type="text" id="{$dataset}_{id}_date" name="{$dataset}[{id}][date]" value="" size="12" maxlength="10" readonly="readonly"></input>
+				</div>
 				</xsl:when>
 			</xsl:choose>
 		</xsl:otherwise>

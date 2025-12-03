@@ -3,7 +3,7 @@
 
 .shoppingBasket {
     h2 {
-        margin:0;
+        margin: 0;
     }
     .shoppingBasketTable{
         --dsc-table-background: $grey-light-64;
@@ -15,12 +15,125 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-
+    height: 100%;
+    min-height: 400px; // Ensure there's enough content to make footer sticky
 }
+
+.totalCost {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--ds-color-neutral-surface-subtle);
+    border-bottom: 1px solid var(--ds-color-neutral-surface-subtle);
+    background-color: var(--ds-color-neutral-surface-light);
+    border-radius: var(--ds-radius-medium);
+}
+
+.totalLabel {
+    color: var(--ds-text-default);
+    font-size: var(--ds-font-size-md);
+    font-weight: var(--ds-font-weight-semibold);
+}
+
+.totalAmount {
+    color: var(--ds-color-neutral-dark);
+    font-size: var(--ds-font-size-lg);
+    font-weight: var(--ds-font-weight-bold);
+}
+
 .eventPopperFooter {
     display: flex;
     justify-content: flex-end;
     align-items: center;
     gap: 1rem;
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ds-color-neutral-light);
+    position: sticky;
+    bottom: 0;
+    background-color: $grey-24;
+    padding-bottom: 1rem;
+    width: 100%;
+    left: 0;
+    right: 0;
+    z-index: 10;
+}
 
+.mobileTableContainer {
+    display: flex;
+    flex-direction: column;
+}
+
+.mobileTableCard {
+    padding: 0.5rem 0.5rem;
+
+    &:nth-child(even) {
+        background-color: var(--ds-color-accent-base-contrast-subtle);
+    }
+
+    &:nth-child(odd) {
+        background-color: white;
+    }
+}
+
+.mobileCardRadio {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.mobileCardTitle {
+    font-weight: var(--ds-font-weight-semibold);
+    font-size: var(--ds-font-size-md);
+    color: var(--ds-color-text-default);
+    margin-bottom: 0.75rem;
+}
+
+.mobileCardRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0.5rem 0;
+    font-size: var(--ds-font-size-sm);
+    gap: 1rem;
+
+    span:first-child {
+        color: var(--ds-color-text-subtle);
+        flex-shrink: 0;
+    }
+
+    span:last-child {
+        font-weight: var(--ds-font-weight-medium);
+        text-align: right;
+    }
+}
+
+.mobileCardPrice {
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 2px solid var(--ds-color-neutral-border-default);
+}
+
+.mobilePriceBreakdown {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.25rem;
+    font-size: var(--ds-font-size-sm);
+}
+
+.mobileCardActions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--ds-color-neutral-border-subtle);
+
+    button {
+        flex: 1;
+        justify-content: center;
+    }
 }

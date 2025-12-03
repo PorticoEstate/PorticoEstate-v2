@@ -1,5 +1,6 @@
 import {IShortResource} from "@/service/pecalendar.types";
 import {IDocument} from "@/service/types/api.types";
+import {IResource} from "@/service/types/resource.types";
 import {ArticleOrder} from "@/service/types/api/order-articles.types";
 
 export interface IApplication {
@@ -23,9 +24,9 @@ export interface IApplication {
     name: string;
     secret?: string | null;
     organizer: string;
-    homepage: string | null;
-    description: string | null;
-    equipment: string | null;
+    homepage?: string | null;
+    description?: string | null;
+    equipment?: string | null;
     contact_name: string;
     contact_email: string;
     contact_phone: string;
@@ -43,11 +44,40 @@ export interface IApplication {
     customer_organization_name: string | null;
     customer_organization_id: number | null;
     agegroups: IApplicationAgeGroup[];
-	articles?: ArticleOrder[];
+    articles?: ArticleOrder[];
+    application_type?: 'personal' | 'organization';
+    recurring_info?: string | null; // JSON string of RecurringInfo
 }
 
+// Interface for the parsed recurring_info JSON
+export interface RecurringInfo {
+    repeat_until?: string; // ISO date string (YYYY-MM-DD)
+    field_interval?: number; // Week intervals between repetitions (default: 1)
+    outseason?: boolean; // Repeat until end of season, xor repeat_until / outseason
+}
 
-interface IApplicationDate {
+// Utility functions for handling recurring_info
+export const RecurringInfoUtils = {
+    parse: (recurring_info: string | null | undefined): RecurringInfo | null => {
+        if (!recurring_info) return null;
+        try {
+            return JSON.parse(recurring_info);
+        } catch {
+            return null;
+        }
+    },
+
+    stringify: (recurringInfo: RecurringInfo | null | undefined): string | null => {
+        if (!recurringInfo) return null;
+        return JSON.stringify(recurringInfo);
+    },
+
+    isRecurring: (application: IApplication): boolean => {
+        return !!RecurringInfoUtils.parse(application.recurring_info);
+    }
+};
+
+export interface IApplicationDate {
     from_: string;
     to_: string;
     id: number;
@@ -86,7 +116,7 @@ interface IApplicationAgeGroup {
 }
 
 
-export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'building_id' | 'activity_id' | 'organizer'>{
+export interface NewPartialApplication extends Pick<IApplication, 'name' | 'building_name' | 'building_id' | 'activity_id' | 'organizer' | 'homepage' | 'description' | 'equipment'>{
     dates: Array<{
         from_: string;    // ISO date string
         to_: string;      // ISO date string
@@ -95,9 +125,9 @@ export interface NewPartialApplication extends Pick<IApplication, 'name' | 'buil
     agegroups?: IApplicationAgeGroup[];
     audience?: number[];
 	articles?: ArticleOrder[];
-
+    recurring_info?: RecurringInfo; // For convenience, will be JSON.stringify'd
 }
-export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'dates' | 'resources'>>{
+export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'dates' | 'resources' | 'recurring_info'>>{
     id: number;
     dates?: Array<{
         id?: number;
@@ -107,4 +137,49 @@ export interface IUpdatePartialApplication extends Partial<Omit<IApplication, 'd
     resources?: Array<IShortResource | IResource>;
     agegroups?: IApplicationAgeGroup[];
 	articles?: ArticleOrder[];
+    recurring_info?: RecurringInfo | null; // For convenience, will be JSON.stringify'd. Allow null to clear
+}
+
+export interface ApplicationComment {
+    id: number;
+    application_id: number;
+    time: string; // ISO datetime string
+    author: string;
+    comment: string;
+    type: "comment" | "ownership" | "status";
+}
+
+export interface CommentStats {
+    total: number;
+    by_type: {
+        comment: number;
+        ownership: number;
+        status: number;
+    };
+}
+
+export interface GetCommentsResponse {
+    comments: ApplicationComment[];
+    stats: CommentStats;
+}
+
+export interface AddCommentRequest {
+    comment: string; // Required, max 10000 characters
+    type?: "comment" | "ownership"; // Optional, defaults to "comment"
+}
+
+export interface AddCommentResponse {
+    comment: ApplicationComment;
+    message: string; // "Comment added successfully"
+}
+
+export interface UpdateStatusRequest {
+    status: "NEW" | "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELLED";
+    comment?: string; // Optional additional comment, max 10000 characters
+}
+
+export interface UpdateStatusResponse {
+    comments: ApplicationComment[]; // Status change comment(s) created
+    status: string; // The new status
+    message: string; // "Application status updated successfully"
 }

@@ -136,6 +136,34 @@ use App\modules\phpgwapi\controllers\Locations;
 					}
 				}
 			}
+
+			if(!empty($filter[$this->location_info['id']['name']]) && is_array($filter[$this->location_info['id']['name']]))
+			{
+				$ids = array();
+				foreach($filter[$this->location_info['id']['name']] as $id)
+				{
+					if ($this->location_info['id']['type'] == 'auto' || $this->location_info['id']['type'] == 'int')
+					{
+						$ids[] = (int)$id;
+					}
+					else
+					{
+						$ids[] = "'" . $this->_db->db_addslashes($id) . "'";
+					}
+				}
+				$_filter_array[] = "{$this->location_info['id']['name']} IN (" . implode(',', $ids) . ')';
+			}
+			else if (!empty($filter[$this->location_info['id']['name']]))
+			{
+				if ($this->location_info['id']['type'] == 'auto' || $this->location_info['id']['type'] == 'int')
+				{
+					$_filter_array[] = "{$this->location_info['id']['name']} = " . (int)$filter[$this->location_info['id']['name']];
+				}
+				else
+				{
+					$_filter_array[] = "{$this->location_info['id']['name']} = '" . $this->_db->db_addslashes($filter[$this->location_info['id']['name']]) . "'";
+				}
+			}
 			unset($field);
 
 

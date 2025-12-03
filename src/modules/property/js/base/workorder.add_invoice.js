@@ -109,8 +109,6 @@ JqueryPortico.autocompleteHelper(strURL, 'external_project_name', 'external_proj
 $(document).ready(function ()
 {
 
-	fetch_vendor_contract();
-
 	$.formUtils.addValidator({
 		name: 'category',
 		validatorFunction: function (value, $el, config, languaje, $form)

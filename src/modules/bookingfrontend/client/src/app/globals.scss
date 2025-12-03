@@ -7,10 +7,43 @@
 @import "../styles/bs-containers/container.global";
 @import "../styles/hr.module";
 @import "../styles/digdir-utility/digdir-utility.module";
+@import "../styles/date-picker";
 
 
 body {
 	margin: 0;
+	touch-action: manipulation;
+}
+
+/* Scroll lock managed by ScrollLockContext */
+body.scroll-locked {
+	overflow: hidden;
+}
+
+/* Prevent mobile browsers from zooming on input focus */
+input,
+select,
+textarea {
+	font-size: 16px; /* Minimum font size to prevent iOS zoom */
+}
+
+/* Disable zoom on viewport for mobile devices */
+@media screen and (max-width: 768px) {
+	meta[name="viewport"] {
+		content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover";
+	}
+}
+
+/* Simplified mobile support */
+:root {
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Fix for iOS 100vh issue */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    height: -webkit-fill-available;
+  }
 }
 
 
@@ -88,6 +121,26 @@ select option:disabled {
 
 .captialize {
 	text-transform: capitalize;
+}
+
+// Automatically add asterisk to required field labels
+.ds-field:has(input[required]) .ds-label::after,
+.ds-field:has(textarea[required]) .ds-label::after,
+.ds-field:has(select[required]) .ds-label::after {
+    content: " *";
+    color: var(--fds-semantic-text-danger-default, #d73027);
+}
+
+// Style asterisks as red
+.required-asterisk {
+    color: var(--fds-semantic-text-danger-default, #d73027);
+}
+
+// Style asterisks in headings as red using a more reliable method
+h1, h2, h3, h4, h5, h6 {
+    & > span.required-asterisk {
+        color: var(--fds-semantic-text-danger-default, #d73027);
+    }
 }
 
 .pswp img {

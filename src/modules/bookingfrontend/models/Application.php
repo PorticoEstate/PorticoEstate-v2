@@ -297,6 +297,19 @@ class Application
      */
     public $customer_organization_id;
 
+    /**
+     * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/ApplicationComment"))
+     * @Expose
+     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\ApplicationComment")
+     */
+    public array $comments = [];
+
+    /**
+     * @OA\Property(type="object", description="Recurring booking information stored as JSON")
+     * @Expose
+     */
+    public $recurring_info;
+
     public function __construct(array $data = [])
     {
         if (!empty($data)) {
@@ -304,7 +317,7 @@ class Application
         }
     }
 
-    public function populate(array $data)
+    public function populate(array $data): void
     {
         foreach ($data as $key => $value) {
             if (property_exists($this, $key)) {

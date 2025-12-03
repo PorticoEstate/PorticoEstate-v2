@@ -9,13 +9,17 @@ interface EventSearchProps {
     params: {
         lang: string;
     };
+    searchParams: {
+        fromDate?: string;
+        toDate?: string;
+    };
 }
 
-const EventSearch: FC<EventSearchProps> = async () => {
+const EventSearch: FC<EventSearchProps> = async ({ searchParams }) => {
     // Fetch search data and initial events server-side
     const [initialSearchData, initialEvents] = await Promise.all([
         fetchSearchData(),
-        fetchUpcomingEventsStatic()
+        fetchUpcomingEventsStatic(searchParams.fromDate, searchParams.toDate)
     ]);
 
     return (

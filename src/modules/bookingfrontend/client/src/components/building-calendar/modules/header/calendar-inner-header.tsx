@@ -8,22 +8,23 @@ import CalendarDatePicker from "@/components/date-time-picker/calendar-date-pick
 import FullCalendar from "@fullcalendar/react";
 import ButtonGroup from "@/components/button-group/button-group";
 import {
-	useCalenderViewMode,
-	useEnabledResources,
+	useCalenderViewMode, useCurrentOrganization,
+	useEnabledResources, useIsOrganization,
 	useResourcesHidden,
 } from "@/components/building-calendar/calendar-context";
 import {DateTime} from "luxon";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
+import {useOrganization} from "@/service/hooks/organization";
 
 interface CalendarInnerHeaderProps {
 
 	setView: Dispatch<string>;
 	setLastCalendarView: Dispatch<void>;
 	view: string;
-	building: IBuilding;
+	building?: IBuilding;
 	calendarRef: MutableRefObject<FullCalendar | null>;
-	createNew: () => void;
+	createNew?: () => void;
 	currentDate: DateTime;
 	setCurrentDate: (date: DateTime) => void;
 }
@@ -35,7 +36,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 	const {resourcesHidden, setResourcesHidden} = useResourcesHidden();
 	const calendarViewMode = useCalenderViewMode();
 	const isMobile = useIsMobile();
-
+	const isOrg = useIsOrganization();
+	const currentOrganization = useCurrentOrganization();
+	const {data: org} = useOrganization(currentOrganization);
 	const partials = usePartialApplications();
 
 	const c = calendarRef.current;
@@ -57,6 +60,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			case 'timeGridWeek':
 				setCurrentDate(currentDate.minus({weeks: 1}));
 				break;
+			case 'dayGridMonth':
+				setCurrentDate(currentDate.minus({months: 1}));
+				break;
 			default:
 				setCurrentDate(currentDate.minus({days: 1}));
 		}
@@ -72,6 +78,9 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					break;
 				case 'timeGridWeek':
 					setCurrentDate(currentDate.plus({weeks: 1}));
+					break;
+				case 'dayGridMonth':
+					setCurrentDate(currentDate.plus({months: 1}));
 					break;
 				default:
 					setCurrentDate(currentDate.plus({days: 1}));
@@ -93,7 +102,8 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					onClick={() => setResourcesHidden(!resourcesHidden)}>
 
 
-				{props.building.name}
+				{!isOrg && props.building && props.building.name}
+				{isOrg && org && org.name}
 				<ChevronLeftIcon
 					className={`${styles.expandCollapseIcon} ${resourcesHidden ? styles.closed : styles.open}`}
 					fontSize='2.25rem'/>
@@ -143,33 +153,40 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 							data-size={'sm'}
 							className={'captialize subtle'}
 							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'secondary'}  data-color={'brand1'} data-size={'sm'}*/}
-					{/*        className={'captialize'}*/}
-					{/*        onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
+					<Button variant={view === 'dayGridMonth' ? 'primary' : 'tertiary'} data-color={'accent'}
+							data-size={'sm'}
+							className={'captialize subtle'}
+							onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>
 					</ButtonGroup>
 				)}
 
 			{
 				calendarViewMode === 'calendar' &&
 				<ButtonGroup data-color='accent' className={styles.modeSelect}>
-					<Button variant={view !== 'listWeek' ? 'primary' : 'tertiary'}
-							aria-active={'true'}
+					<Button variant={view !== 'listWeek' && view !== 'listDay' ? 'primary' : 'tertiary'}
 							aria-current={'true'} data-size={'sm'}
 							className={'captialize subtle'} onClick={() => {
 						props.setLastCalendarView()
 					}}><CalendarIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.calendar_view')}</span></Button>
-					<Button variant={view === 'listWeek' ? 'primary' : 'tertiary'}
+					<Button variant={view === 'listWeek' || view === 'listDay' ? 'primary' : 'tertiary'}
 							data-size={'sm'}
 							className={'captialize subtle'} onClick={() => {
-						props.setView('listWeek')
+						props.setView(isMobile ? 'listDay' : 'listWeek')
 					}}><TableIcon fontSize="1.25rem" /> <span
 						className={styles.modeTitle}>{t('bookingfrontend.list_view')}</span></Button>
 				</ButtonGroup>
 			}
 			{
-				calendarViewMode === 'calendar' &&
-				<Button variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'} data-color={'accent'} onClick={props.createNew} data-size={'sm'} className={styles.orderButton}>
+				!isOrg && calendarViewMode === 'calendar' &&
+				<Button
+					variant={(partials?.data?.list?.length || 0) === 0 ? 'primary' : 'secondary'}
+					data-color={'accent'}
+					onClick={props.createNew}
+					data-size={'sm'}
+					className={styles.orderButton}
+					disabled={!props.building || props.building.deactivate_application}
+				>
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}
 

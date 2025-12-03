@@ -496,7 +496,7 @@ class bookingfrontend_uievent extends booking_uievent
 						{
 						}
 
-						$comment = lang('event') . " #: " . $event['id'] . " " . lang("User has made a request to cancel event") . ' ' . $odate['from_'] . ' - ' . $odate['to_'];
+						$comment = lang('event') . " #: " . $event['id'] . " " . lang("User has made a request to cancel event") . ' ' . pretty_timestamp($odate['from_']) . ' - ' . pretty_timestamp($odate['to_']);
 						$this->application_ui->add_comment_to_application($event['application_id'], $comment, $changeStatus, $this->customer_name);
 					}
 

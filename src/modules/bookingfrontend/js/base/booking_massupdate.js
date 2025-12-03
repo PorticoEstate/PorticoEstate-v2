@@ -26,9 +26,9 @@ $(window).on('load', function()
 						html_agegroups += "<td>";
 						html_agegroups += "<input class=\"input50\" type=\"text\" name='male[" + agegroups[i]['id'] + "]' value='0'></input>";
 						html_agegroups += "</td>";
-						html_agegroups += "<td>";
-						html_agegroups += "<input class=\"input50\" type=\"text\" name='female[" + agegroups[i]['id'] + "]' value='0'></input>";
-						html_agegroups += "</td>";
+			//			html_agegroups += "<td>";
+			//			html_agegroups += "<input class=\"input50\" type=\"text\" name='female[" + agegroups[i]['id'] + "]' value='0'></input>";
+			//			html_agegroups += "</td>";
 						html_agegroups += "</tr>";
 					}
 					$("#agegroup_tbody").html(html_agegroups);

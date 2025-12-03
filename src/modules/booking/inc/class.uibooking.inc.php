@@ -103,7 +103,7 @@ class booking_uibooking extends booking_uicommon
 			),
 			'datatable' => array(
 				'source' => self::link(array('menuaction' => 'booking.uibooking.index', 'phpgw_return_as' => 'json')),
-				'sorted_by' => array('key' => 4, 'dir' => 'desc'), //id
+				'sorted_by' => array('key' => 0, 'dir' => 'desc'), //id
 				'field' => array(
 					array(
 						'key' => 'id',
@@ -333,7 +333,8 @@ class booking_uibooking extends booking_uicommon
 	public function building_schedule()
 	{
 		$date = new DateTime(Sanitizer::get_var('date'));
-		$bookings = $this->bo->building_schedule(Sanitizer::get_var('building_id', 'int'), $date);
+		$resource_filter = Sanitizer::get_var('resource_filter', 'int');
+		$bookings = $this->bo->building_schedule(Sanitizer::get_var('building_id', 'int'), $date, $resource_filter);
 		foreach ($bookings['results'] as &$booking)
 		{
 			$booking['resource_link'] = $this->link(array(
@@ -953,7 +954,8 @@ class booking_uibooking extends booking_uicommon
 					}
 					else
 					{
-						$err = $this->allocation_bo->so->delete_allocation($allocation_id);
+//						$err = $this->allocation_bo->so->delete_allocation($allocation_id);
+						$err = $this->allocation_bo->delete($allocation_id);
 						self::redirect(array('menuaction' => 'booking.uimassbooking.schedule', 'id' => $booking['building_id']));
 					}
 				}
@@ -1018,7 +1020,8 @@ class booking_uibooking extends booking_uicommon
 							$allocation_delete[$i]['to_'] = $todate;
 							if ($step == 3 && $aid)
 							{
-								$stat = $this->bo->so->delete_allocation($aid);
+								//$stat = $this->bo->so->delete_allocation($aid);
+								$stat = $this->allocation_bo->delete($aid);
 							}
 						}
 					}

@@ -10,7 +10,11 @@ export interface ToastMessage {
   text: string | React.ReactNode;
   title?: string | React.ReactNode;
   autoHide?: boolean;
+  duration?: number; // Custom duration in milliseconds (default: 10000)
   messageId?: string; // Optional custom ID for deduplication
+  timeoutId?: NodeJS.Timeout; // Track timeout for pause/resume
+  remainingTime?: number; // Track remaining time when paused
+  startTime?: number; // Track when timer started
 }
 
 // Define context type
@@ -18,6 +22,8 @@ interface ToastContextType {
   addToast: (message: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
   toasts: ToastMessage[];
+  pauseToast: (id: string) => void;
+  resumeToast: (id: string) => void;
   // New FAB related methods
   setFabButtonRef: (ref: React.RefObject<HTMLButtonElement>) => void;
   getFabButtonRef: () => React.RefObject<HTMLButtonElement> | null;
@@ -52,21 +58,73 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         return; // Skip adding duplicate toast
       }
     }
-    
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const newToast = { ...message, id };
-    setToasts(prev => [...prev, newToast]);
 
-    // Auto-hide toast after 5 seconds if autoHide is true
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const startTime = Date.now();
+    const duration = message.duration || 10000; // Use custom duration or default to 10 seconds
+
+    // Auto-hide toast after specified duration if autoHide is true
     if (message.autoHide !== false) {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         removeToast(id);
-      }, 5000);
+      }, duration);
+
+      const newToast = {
+        ...message,
+        id,
+        timeoutId,
+        remainingTime: duration,
+        startTime,
+        duration
+      };
+      setToasts(prev => [...prev, newToast]);
+    } else {
+      const newToast = { ...message, id, duration };
+      setToasts(prev => [...prev, newToast]);
     }
   };
 
   const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts(prev => {
+      const toastToRemove = prev.find(toast => toast.id === id);
+      if (toastToRemove && toastToRemove.timeoutId) {
+        clearTimeout(toastToRemove.timeoutId);
+      }
+      return prev.filter(toast => toast.id !== id);
+    });
+  };
+
+  const pauseToast = (id: string) => {
+    setToasts(prev => prev.map(toast => {
+      if (toast.id === id && toast.timeoutId) {
+        clearTimeout(toast.timeoutId);
+        const elapsed = Date.now() - (toast.startTime || Date.now());
+        const remainingTime = Math.max(0, (toast.remainingTime || 10000) - elapsed);
+        return {
+          ...toast,
+          timeoutId: undefined,
+          remainingTime,
+          startTime: undefined
+        };
+      }
+      return toast;
+    }));
+  };
+
+  const resumeToast = (id: string) => {
+    setToasts(prev => prev.map(toast => {
+      if (toast.id === id && !toast.timeoutId && toast.remainingTime !== undefined) {
+        const timeoutId = setTimeout(() => {
+          removeToast(id);
+        }, toast.remainingTime);
+        return {
+          ...toast,
+          timeoutId,
+          startTime: Date.now()
+        };
+      }
+      return toast;
+    }));
   };
 
   const setFabButtonRef = (ref: React.RefObject<HTMLButtonElement>) => {
@@ -85,7 +143,9 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     <ToastContext.Provider value={{ 
       addToast, 
       removeToast, 
-      toasts, 
+      toasts,
+      pauseToast,
+      resumeToast,
       setFabButtonRef, 
       getFabButtonRef, 
       setFabOpen, 

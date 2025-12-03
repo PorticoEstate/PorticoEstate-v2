@@ -1,0 +1,17 @@
+@import "../../styles/util.module";
+@import "../../styles/typography-vars.module";
+
+
+
+.contentSection {
+	margin-top: 0.5rem;
+	margin-bottom: 0.5rem;
+	.sectionTitle {
+		margin-bottom: 1rem;
+		margin-top: 0;
+	}
+
+	.sectionContent {
+		// Content styling will be handled by child components
+	}
+}

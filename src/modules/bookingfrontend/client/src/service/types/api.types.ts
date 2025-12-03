@@ -74,6 +74,7 @@ export interface IBookingUser {
     city: string | null;
     delegates?: IDelegate[];
     customer_number?: string;
+    needs_profile_creation?: boolean;
 }
 export interface IDelegate {
     name: string;
@@ -100,6 +101,8 @@ export interface IBookingfrontendConfig {
     soap_password?: string;
     test_ssn?: string;
     usecookies?: boolean;
+	url_uustatus?: string;
+	url_system_feedback?: string;
 }
 
 
@@ -179,6 +182,7 @@ export interface IBookingConfig {
     output_files?: string;
     participant_limit_sms?: boolean;
     participanttext?: string;
+	purchase_conditions?: string;
     proxy?: string;
     split_pool?: string;
     split_pool4_ids?: string;
@@ -190,6 +194,7 @@ export interface IBookingConfig {
     voucher_client?: string;
     voucher_responsible?: string;
     voucher_type?: string;
+	participant_limit?: number;
 }
 
 
@@ -202,6 +207,34 @@ export interface IDocument {
     category: 'picture' | 'regulation' | 'HMS_document' | 'picture_main' | 'drawing' | 'price_list' | 'other';
     owner_id: number;
     url: string;
-    owner_type?: 'resource' | 'building';
+    owner_type?: 'resource' | 'building' | 'organization';
 }
 export type IDocumentCategoryQuery = IDocument['category'] | 'images';
+
+/**
+ * Response interface for multi domain list endpoint
+ */
+export interface IMultiDomainListResponse {
+    /** Array of multi domain objects */
+    results: IMultiDomain[];
+    /** Total number of records */
+    total_records: number;
+}
+
+/**
+ * Multi Domain model interface
+ */
+export interface IMultiDomain {
+    /** Unique identifier for the multi domain */
+    id: number;
+    /** Name of the domain */
+    name: string;
+    /** Web service host URL */
+    webservicehost: string;
+    /** User ID who created this domain */
+    user_id?: number | null;
+    /** Entry date as timestamp */
+    entry_date?: number | null;
+    /** Modified date as timestamp */
+    modified_date?: number | null;
+}

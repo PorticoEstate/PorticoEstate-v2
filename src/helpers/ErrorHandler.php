@@ -73,6 +73,7 @@ class ErrorHandler
 	private $userSettings;
 	private $Log;
 	private $db;
+	private $omitt_error_logging_from_ips = [];
 	
 	private $path;
 
@@ -87,6 +88,8 @@ class ErrorHandler
 		$this->userSettings  = Settings::getInstance()->get('user');
 		$this->Log = new Log();
 		$this->db = Db::getInstance();
+		$this->omitt_error_logging_from_ips = isset($this->serverSettings['omitt_error_logging_from_ips']) ?
+			array_map('trim', explode(',', $this->serverSettings['omitt_error_logging_from_ips'])) : [];
 
 		set_error_handler([$this, 'phpgw_handle_error']);
 	}
@@ -148,6 +151,13 @@ class ErrorHandler
 			return true;
 		}
 
+		$IP_address = Sanitizer::get_ip_address(true);
+
+		if (in_array($IP_address, $this->omitt_error_logging_from_ips))
+		{
+			return true;
+		}
+
 		$path = $this->path;
 		if (isset($this->serverSettings['log_levels']['global_level']))
 		{
@@ -195,13 +205,17 @@ class ErrorHandler
 
 		$bt = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT | DEBUG_BACKTRACE_IGNORE_ARGS);
 
-		$IP_address = Sanitizer::get_ip_address(true);
 
 		$referer = isset($_SERVER['HTTP_REFERER']) ? $_SERVER['HTTP_REFERER'] : '';
 		$referer = str_replace('?', "\n?", $referer);
 		$referer = str_replace('&', "\n&", $referer);
-		$parametres = $_GET;
-		$parametres = print_r($parametres, true);
+		$parametres = Sanitizer::clean_value($_GET);
+		$clean_params = [];
+		foreach ($parametres as $key => $value)
+		{
+			$clean_params[Sanitizer::sanitize($key)] = $value;
+		}
+		$parametres = print_r($clean_params, true);
 		$trace = "IP_address: {$IP_address}</b>\n Referer: {$referer} </b>\nParameters: {$parametres}</b>\nPath: {$path}</b>\n" . $this->phpgw_parse_backtrace($bt);
 
 		$log_args = array(
@@ -380,8 +394,19 @@ class ErrorHandler
 		$referer = str_replace('&', "\n&", $referer);
 		$path = $this->path;
 		$IP_address = Sanitizer::get_ip_address(true);
-		$parametres = $_GET;
-		$parametres = print_r($parametres, true);
+
+		if (in_array($IP_address, $this->omitt_error_logging_from_ips))
+		{
+			return;
+		}
+
+		$parametres = Sanitizer::clean_value($_GET);
+		$clean_params = [];
+		foreach ($parametres as $key => $value)
+		{
+			$clean_params[Sanitizer::sanitize($key)] = $value;
+		}
+		$parametres = print_r($clean_params, true);
 		$trace = "IP_address: {$IP_address}</b>\nReferer: {$referer} </b>\nPath: {$path}</b>\nParameters: {$parametres}</b>\n" . $e->getTraceAsString();
 		
 		$tables = $this->db->table_names();

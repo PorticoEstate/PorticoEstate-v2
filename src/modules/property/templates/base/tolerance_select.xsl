@@ -7,7 +7,7 @@
 		<xsl:variable name="select_name">
 			<xsl:value-of select="select_tolerance"/>
 		</xsl:variable>
-		<select name="{$select_name}" class="forms" onMouseover="window.status='{$lang_tolerance_statustext}'; return true;" onMouseout="window.status='';return true;">
+		<select name="{$select_name}" class="pure-input-3-4" title="{$lang_tolerance_statustext}">
 			<option value="">
 				<xsl:value-of select="lang_no_tolerance"/>
 			</option>

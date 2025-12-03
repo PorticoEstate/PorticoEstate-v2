@@ -665,10 +665,12 @@ JS;
 
 
 		$( document ).ready( function() {
-			$( 'textarea#{$target}').summernote({
+			var textarea = $('textarea#{$target}');
+			var placeholder = textarea.attr('placeholder') || '{$lang_placeholder}';
+			textarea.summernote({
 			  lang: '{$lang}', // default: 'en-US'
 			  {$disableDragAndDrop}
-			  placeholder: '{$lang_placeholder}',
+			  placeholder: placeholder,
 			  height: 250,
 			  toolbar: toolbarOptions
 			});

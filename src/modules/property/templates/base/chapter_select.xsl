@@ -7,7 +7,7 @@
 		<xsl:variable name="select_name">
 			<xsl:value-of select="select_chapter"/>
 		</xsl:variable>
-		<select name="{$select_name}" class="forms" title="{$lang_chapter_statustext}">
+		<select name="{$select_name}" class="pure-input-3-4" title="{$lang_chapter_statustext}">
 			<option value="">
 				<xsl:value-of select="lang_no_chapter"/>
 			</option>

@@ -40,6 +40,8 @@ $compare_mode = in_array('--compare', $argv);
 $sort_mode = in_array('--sort', $argv);
 $search_mode = false;
 $search_key = '';
+$search_value_mode = false;
+$search_value = '';
 $add_translation_mode = in_array('--add-translation', $argv);
 $translation_key = '';
 $translation_module = '';
@@ -89,6 +91,11 @@ foreach ($argv as $arg)
 		$search_key = substr($arg, 9); // Remove '--search='
 		$search_mode = true;
 	}
+	elseif (strpos($arg, '--search-value=') === 0)
+	{
+		$search_value = substr($arg, 15); // Remove '--search-value='
+		$search_value_mode = true;
+	}
 	elseif (strpos($arg, '--key=') === 0)
 	{
 		$translation_key = substr($arg, 6); // Remove '--key='
@@ -127,6 +134,8 @@ if ($help_requested)
 	echo "  --sort               Sort language files alphabetically by key and deduplicate entries\n";
 	echo "  --search=module.key  Search for a specific translation key in format module.key\n";
 	echo "                       Example: --search=booking.save\n";
+	echo "  --search-value=text  Search for translation values containing the specified text\n";
+	echo "                       Example: --search-value=\"booking has been registered\"\n";
 	echo "  --add-translation    Add new translations to language files\n";
 	echo "  --key=key            The key to add (used with --add-translation)\n";
 	echo "  --module=module      The module for the translation (used with --add-translation)\n";
@@ -148,6 +157,7 @@ if ($help_requested)
 	echo "  php " . basename(__FILE__) . " --compare --baseline=no    # Use Norwegian as baseline for comparison\n";
 	echo "  php " . basename(__FILE__) . " --sort --lang=en,no,nn --module=booking  # Sort and deduplicate booking module language files\n";
 	echo "  php " . basename(__FILE__) . " --search=booking.save --langs=no,en,nn  # Search for 'booking.save' key in specified languages\n";
+	echo "  php " . basename(__FILE__) . " --search-value=\"booking has been registered\" --langs=no,en,nn  # Search for translation values\n";
 	echo "  php " . basename(__FILE__) . " --add-translation --key=save --module=booking --langs=no:Lagre,en:Save,nn:Lagra  # Add translations\n";
 	echo "  php " . basename(__FILE__) . " --add-translation --key=confirm --module=booking --langs=\"no:Er du sikker?,en:Are you sure?\"  # With special characters\n";
 	exit(0);
@@ -511,6 +521,82 @@ function search_for_key($lang_files, $search_key)
 		'total_matches' => $total_matches,
 		'search_module' => $search_module,
 		'search_key' => $search_phrase
+	];
+}
+
+// Function to search for translation values containing specific text
+function search_for_value($lang_files, $search_value)
+{
+	global $verbose, $base_dir, $langs;
+	
+	if ($verbose) {
+		echo "Searching for values containing: '{$search_value}'\n";
+	}
+	
+	$results = [];
+	$total_matches = 0;
+	
+	foreach ($lang_files as $file_path) {
+		// Extract language from file path
+		if (preg_match('/phpgw_(.*)\.lang$/', basename($file_path), $matches)) {
+			$lang_code = $matches[1];
+		} else {
+			$lang_code = 'unknown';
+		}
+		
+		// Extract module from the file path
+		$module = get_module_from_path($file_path);
+		
+		$content = file_get_contents($file_path);
+		$lines = explode("\n", $content);
+		$matches = [];
+		
+		foreach ($lines as $line_number => $line) {
+			$line = trim($line);
+			
+			// Skip empty lines and comments
+			if (empty($line) || strpos($line, '#') === 0) {
+				continue;
+			}
+			
+			$parts = explode("\t", $line);
+			if (count($parts) === 4) {
+				$key = $parts[0];
+				$module_in_file = $parts[1];
+				$lang = $parts[2];
+				$value = $parts[3];
+				
+				// Check if value contains the search text (case-insensitive)
+				if (stripos($value, $search_value) !== false) {
+					$matches[] = [
+						'line_number' => $line_number + 1, // 1-based line numbers
+						'key' => $key,
+						'module' => $module_in_file,
+						'lang' => $lang,
+						'value' => $value,
+						'full_line' => $line
+					];
+				}
+			}
+		}
+		
+		if (!empty($matches)) {
+			$relative_path = str_replace($base_dir, '', $file_path);
+			$results[$file_path] = [
+				'file' => $relative_path,
+				'language' => $lang_code,
+				'module' => $module,
+				'matches' => $matches,
+				'match_count' => count($matches)
+			];
+			$total_matches += count($matches);
+		}
+	}
+	
+	return [
+		'results' => $results,
+		'total_matches' => $total_matches,
+		'search_value' => $search_value
 	];
 }
 
@@ -1025,6 +1111,101 @@ if ($search_mode) {
 				'module' => $search_module,
 				'key' => $search_phrase,
 				'full_query' => $search_key
+			],
+			'summary' => [
+				'total_matches' => $total_matches,
+				'files_with_matches' => count($results),
+				'languages_with_matches' => count($results_by_lang)
+			],
+			'results' => $results,
+			'results_by_language' => $results_by_lang
+		];
+		
+		echo json_encode($output, JSON_PRETTY_PRINT);
+	}
+	
+	exit(0);
+}
+
+// SEARCH VALUE MODE
+if ($search_value_mode) {
+	if (empty($search_value)) {
+		echo "Error: You must provide a search value with --search-value=\"text\"\n";
+		exit(1);
+	}
+	
+	echo "Mode: Searching for values containing '{$search_value}'\n";
+	
+	// If no languages specified, search in all languages
+	if (empty($langs)) {
+		echo "No languages specified, will search in all available language files.\n";
+	} else {
+		echo "Searching in languages: " . implode(', ', $langs) . "\n";
+	}
+	
+	$search_results = search_for_value($lang_files, $search_value);
+	$total_matches = $search_results['total_matches'];
+	$search_text = $search_results['search_value'];
+	$results = $search_results['results'];
+	
+	// Output search results
+	echo "\nSearch Results:\n";
+	echo "==============\n\n";
+	
+	echo "Searching for values containing '{$search_text}'\n\n";
+	
+	if ($total_matches === 0) {
+		echo "No matches found for values containing '{$search_value}'.\n";
+		
+		// Provide suggestions or help
+		echo "\nSuggestions:\n";
+		echo "  - Check if the search text is correct\n";
+		echo "  - Try searching for a shorter phrase or single words\n";
+		echo "  - Ensure you're searching in the correct languages with --langs=xx,yy\n";
+		echo "  - Try searching with different case (search is case-insensitive)\n";
+		exit(0);
+	}
+	
+	echo "Found {$total_matches} matches in " . count($results) . " files.\n\n";
+	
+	// Group results by language for easier reading
+	$results_by_lang = [];
+	foreach ($results as $file_path => $result) {
+		$lang = $result['language'];
+		if (!isset($results_by_lang[$lang])) {
+			$results_by_lang[$lang] = [];
+		}
+		$results_by_lang[$lang][$file_path] = $result;
+	}
+	
+	// Sort languages alphabetically
+	ksort($results_by_lang);
+	
+	// Display results grouped by language
+	foreach ($results_by_lang as $lang => $lang_results) {
+		$lang_match_count = 0;
+		foreach ($lang_results as $result) {
+			$lang_match_count += $result['match_count'];
+		}
+		
+		echo "LANGUAGE: {$lang} ({$lang_match_count} matches)\n";
+		echo "=======================\n\n";
+		
+		foreach ($lang_results as $file_path => $result) {
+			echo "File: {$result['file']} (Module: {$result['module']})\n";
+			
+			foreach ($result['matches'] as $match) {
+				echo "  Line {$match['line_number']}: {$match['key']}\t{$match['module']}\t{$match['lang']}\t{$match['value']}\n";
+			}
+			echo "\n";
+		}
+	}
+	
+	// If JSON output is requested
+	if ($json_output) {
+		$output = [
+			'search_query' => [
+				'search_value' => $search_text
 			],
 			'summary' => [
 				'total_matches' => $total_matches,

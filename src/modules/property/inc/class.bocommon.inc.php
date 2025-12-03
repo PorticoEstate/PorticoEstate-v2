@@ -989,6 +989,10 @@ class property_bocommon
 			for ($i = 1; $i <= 31; $i++)
 			{
 				$alarm['add_alarm']['day_list'][($i - 1)]['id'] = $i;
+				if($i == 14)
+				{
+					$alarm['add_alarm']['day_list'][($i - 1)]['selected'] = 'selected';
+				}
 			}
 			$alarm['add_alarm']['lang_day']				 = lang('Day');
 			$alarm['add_alarm']['lang_day_statustext']	 = lang('Day');
@@ -2559,6 +2563,7 @@ class property_bocommon
 		}
 
 		$preselect = Sanitizer::get_var('preselect', 'bool');
+		$preselect_one = Sanitizer::get_var('preselect_one', 'bool');
 
 		$vendor_email = execMethod('property.sowo_hour.get_email', $vendor_id);
 
@@ -2575,6 +2580,12 @@ class property_bocommon
 		$title			 = lang('The address to which this order will be sendt');
 
 		$checked = $preselect ? 'checked="checked"' : '';
+
+		$count_email = count($vendor_email);
+		if ($count_email == 1 && $preselect_one)
+		{
+			$checked = 'checked="checked"';
+		}
 
 		foreach ($vendor_email as $_entry)
 		{

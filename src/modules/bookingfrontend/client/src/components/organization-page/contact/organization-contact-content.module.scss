@@ -1,0 +1,37 @@
+@import "../../../styles/util.module";
+@import "../../../styles/typography-vars.module";
+
+.contactContent {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .contactItem {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        @include applyFontProperties('body');
+
+        .contactIcon {
+            flex-shrink: 0;
+            width: 1rem;
+            height: 1rem;
+            color: var(--ds-color-text-subtle);
+        }
+
+        .contactLabel {
+            font-weight: $text-medium;
+            color: var(--ds-color-text-default);
+            min-width: 4rem;
+        }
+
+        .contactValue {
+            color: var(--ds-color-accent-text-default);
+            text-decoration: none;
+
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+    }
+}

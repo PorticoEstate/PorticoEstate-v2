@@ -11,7 +11,8 @@ class booking_soorganization extends booking_socommon
 
 	function __construct($get_ssn = null)
 	{
-		$currentapp = $this->flags['currentapp'];
+		$flags = Settings::getInstance()->get('flags');
+		$currentapp = $flags['currentapp'];
 
 		$fields = array(
 			'id' => array('type' => 'int'),

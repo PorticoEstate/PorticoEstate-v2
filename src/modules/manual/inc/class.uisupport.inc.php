@@ -52,17 +52,14 @@ class manual_uisupport
 		$values		 = Sanitizer::get_var('values');
 		$form_type	 = Sanitizer::get_var('form_type', 'string', 'GET', 'aligned');
 
+		$support_address = isset($config->config_data['support_address']) && $config->config_data['support_address'] ? $config->config_data['support_address'] : $this->serverSettings['support_address'];
+
 		$receipt = array();
 		if (isset($values['save']))
 		{
 			if (phpgw::is_repost())
 			{
 				$receipt['error'][] = array('msg' => lang('repost'));
-			}
-
-			if (!isset($values['address']) || !$values['address'])
-			{
-				$receipt['error'][] = array('msg' => lang('Missing address'));
 			}
 
 			if (!isset($values['details']) || !$values['details'])
@@ -93,9 +90,13 @@ class manual_uisupport
 					$send = CreateObject('phpgwapi.send');
 
 					$from = "{$this->userSettings['fullname']}<{$values['from_address']}>";
+					$toarray = explode(',', trim(str_replace(';', ',', $support_address)));
+					//trim each email address
+					$toarray = array_map('trim', $toarray);
+					$to		 = implode(';', $toarray);
 
 					$receive_notification = true;
-					$rcpt = $send->msg('email', $values['address'], 'Support', stripslashes(nl2br($values['details'])), '', '', '', $from, $this->userSettings['fullname'], 'html', '', $attachments, $receive_notification);
+					$rcpt = $send->msg('email', $to, 'Support', stripslashes(nl2br($values['details'])), '', '', '', $from, $this->userSettings['fullname'], 'html', '', $attachments, $receive_notification);
 
 					if ($rcpt)
 					{
@@ -113,7 +114,6 @@ class manual_uisupport
 		$app = Sanitizer::get_var('app');
 		$config = CreateObject('phpgwapi.config', $app);
 		$config->read();
-		$support_address = isset($config->config_data['support_address']) && $config->config_data['support_address'] ? $config->config_data['support_address'] : $this->serverSettings['support_address'];
 
 		$phpgwapi_common = new \phpgwapi_common();
 		$data = array(

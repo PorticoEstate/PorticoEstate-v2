@@ -96,6 +96,11 @@
 								<xsl:for-each select="result/invalid[from_]">
 									<li>
 										<xsl:value-of select="from_"/> - <xsl:value-of select="to_"/>: <xsl:value-of select="organization_name"/>
+										<xsl:if test="conflict">
+											<xsl:text> (</xsl:text>
+											<xsl:value-of select="conflict"/>
+											<xsl:text>)</xsl:text>
+										</xsl:if>
 									</li>
 								</xsl:for-each>
 							</div>

@@ -3,6 +3,7 @@
 /config/header.inc.php
 /vendor/*
 /logs/*
+/src/cache/*
 /nbproject/*
 /nbproject/private/
 /composer.lock
@@ -16,5 +17,21 @@ Dockerfile.local
 .idea
 *.local
 structure.txt
+docker-compose.override.yml
 
 .env
+/portico/tmp/
+
+**/.claude/settings.local.json
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Test scripts
+test_scripts/

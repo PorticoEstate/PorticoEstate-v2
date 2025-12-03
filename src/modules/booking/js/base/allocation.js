@@ -103,7 +103,7 @@ $(window).on('load', function ()
 
 function populateSelectSeason(building_id, selection)
 {
-	var url = phpGWLink('index.php', {menuaction: 'booking.uiseason.index', sort: 'name', filter_building_id: building_id, length: -1}, true);
+	var url = phpGWLink('index.php', {menuaction: 'booking.uiseason.index', sort: 'name', filter_building_id: building_id, filter_now: 1, length: -1}, true);
 	var container = $('#season_container');
 	var attr = [
 		{name: 'name', value: 'season_id'},

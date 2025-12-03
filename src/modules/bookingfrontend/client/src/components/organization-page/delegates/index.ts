@@ -1,0 +1,1 @@
+export { default as OrganizationDelegatesContent } from './organization-delegates-content'

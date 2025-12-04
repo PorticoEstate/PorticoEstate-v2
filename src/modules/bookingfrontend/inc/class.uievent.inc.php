@@ -333,6 +333,13 @@ class bookingfrontend_uievent extends booking_uievent
 		$date = substr($event['from_'], 0, 10);
 		self::add_javascript('bookingfrontend', 'base', 'event.js');
 		$event['resources_json'] = json_encode(array_map('intval', $event['resources']));
+
+		// Ensure resource_ids is set, fallback to resources if not provided in URL
+		if (!isset($event['resource_ids']) || !is_array($event['resource_ids']))
+		{
+			$event['resource_ids'] = isset($event['resources']) ? $event['resources'] : [];
+		}
+
 		$event['resource_ids_json'] = json_encode(array_map('intval', $event['resource_ids']));
 		$event['audiences_json'] = json_encode(array_map('intval', $event['audience']));
 		$event['agegroups_json'] = json_encode($event['agegroups']);

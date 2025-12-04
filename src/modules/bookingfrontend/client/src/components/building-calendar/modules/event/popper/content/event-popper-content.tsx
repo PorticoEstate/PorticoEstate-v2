@@ -15,6 +15,8 @@ import {useBookingUser, useServerSettings} from "@/service/hooks/api-hooks";
 import {IEventIsAPIAllocation, IEventIsAPIEvent} from "@/service/pecalendar.types";
 import AllocationPopperActions
 	from "@/components/building-calendar/modules/event/popper/content/allocation-popper-actions";
+import EventPopperActions
+	from "@/components/building-calendar/modules/event/popper/content/event-popper-actions";
 import {boolean} from "zod";
 import {isOrgAdmin} from "@/components/building-calendar/util/event-converter";
 import {PlusIcon} from "@navikt/aksel-icons";
@@ -128,25 +130,21 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 			</div>
 			<div className={styles.eventPopperActions}>
 				{showLink && (
-					<Link href={phpGWLink('bookingfrontend/', {
-						menuaction: showLink,
-						id: eventData.id,
-					}, false)} target="_blank"
-						  className={styles.actionButton}>
-						{t('booking.register participants')}
-					</Link>
+					<Button asChild variant={'tertiary'} data-color={'accent'}>
+						<Link href={phpGWLink('bookingfrontend/', {
+							menuaction: showLink,
+							id: eventData.id,
+						}, false)} target="_blank"
+							  className={styles.actionButton}>
+							{t('booking.register participants')}
+						</Link>
+					</Button>
 				)}
 				{IEventIsAPIAllocation(eventData) && userHasAccess && user && (
 					<AllocationPopperActions allocation={eventData} user={user}/>
 				)}
 				{IEventIsAPIEvent(eventData) && userHasAccess && (
-					<Button asChild variant={'tertiary'} data-color={'accent'}>
-						<Link href={'/event/' + eventData.id} target="_blank"
-							  className={styles.actionButton}>
-							{t(`bookingfrontend.edit ${event.extendedProps.type}`)}
-						</Link>
-					</Button>
-
+					<EventPopperActions event={eventData} eventType={event.extendedProps.type}/>
 				)}
 			</div>
 

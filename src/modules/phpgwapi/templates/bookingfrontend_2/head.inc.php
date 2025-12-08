@@ -147,8 +147,7 @@ if (!empty($config_frontend['url_uustatus']))
 phpgwapi_jquery::load_widget('core');
 
 $javascripts	 = array();
-$javascripts[]	 = "/phpgwapi/js/popper/popper.min.js";
-$javascripts[]	 = "/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/js/bootstrap.min.js";
+$javascripts[]	 = "/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/js/bootstrap.bundle.min.js";
 $javascripts[]	 = "/phpgwapi/js/select2/js/select2.min.js";
 $javascripts[]	 = "/phpgwapi/templates/bookingfrontend_2/js/knockout-min.js";
 $javascripts[]	 = "/phpgwapi/templates/bookingfrontend_2/js/knockout.validation.js";

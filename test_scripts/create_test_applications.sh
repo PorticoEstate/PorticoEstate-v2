@@ -10,9 +10,9 @@ BUILDING_NAME="Fana kulturhus"
 ACTIVITY_ID=1
 AVAILABLE_RESOURCES=(92 106 123 125 482 576 590 779 780 781 782)
 
-# Default session data - override with parameter
-DEFAULT_SESSION_ID="8bb81dc9a812fc277f60f3a61bc725c6"
-DEFAULT_BOOKING_SESSION="5ebb8e900c0931f1025c438320966726"
+# Default session data - override with parameter or leave empty to force new session
+DEFAULT_SESSION_ID=""
+DEFAULT_BOOKING_SESSION=""
 
 SESSION_ID="${1:-$DEFAULT_SESSION_ID}"
 BOOKING_SESSION="${2:-$DEFAULT_BOOKING_SESSION}"

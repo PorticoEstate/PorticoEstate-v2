@@ -1405,6 +1405,16 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 		{
 			$start_date = $this->phpgwapi_common->show_date($values['claim_date'], $this->userSettings['preferences']['common']['dateformat']);
 		}
+
+		if($values['project_id'])
+		{
+			$values['claim_type'] = 'project';
+		}
+		else if($values['ticket_id'])
+		{
+			$values['claim_type'] = 'ticket';
+		}
+
 		$claim_types = $this->get_claim_types($values['claim_type'] ?? '');
 
 		$data = array(

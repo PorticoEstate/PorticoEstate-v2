@@ -299,7 +299,9 @@
 							<label>
 								<xsl:value-of select="lang_descr"/>
 							</label>
-							<xsl:value-of select="value_descr"/>
+							<div class="pure-custom">
+							<xsl:value-of disable-output-escaping="yes" select="value_descr"/>
+							</div>
 						</div>
 						<div class="pure-control-group">
 							<label>

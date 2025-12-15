@@ -253,11 +253,11 @@ class booking_async_task_send_access_request extends booking_async_task
 								$_from = date($this->dateTimeFormat, strtotime($reservation['from_']));
 								$_to = date($this->dateTimeFormat, strtotime($reservation['to_']));
 								$sms_text = "Hei {$reservation['contact_name']}\n "
-									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$_from} - {$_to}.\n ";							
-							// Collect all access codes from all e_locks before sending
+									. "Du har fått tilgang til {$resource['name']} i tidsrommet {$_from} - {$_to}.\n ";
+								// Collect all access codes from all e_locks before sending
 								$access_codes = array();
 								$failed_locks = array();
-															/**
+								/**
 								 * Get status
 								 */
 								foreach ($resource['e_locks'] as $e_lock)
@@ -354,7 +354,7 @@ class booking_async_task_send_access_request extends booking_async_task
 									}
 								}
 								unset($e_lock);
-								
+
 								// Now send all access codes in a single message if reservation is not already sent
 								if (!isset($this->email_sent[$reservation['id']]))
 								{
@@ -367,7 +367,7 @@ class booking_async_task_send_access_request extends booking_async_task
 											$sms_text .= "\n{$code_info['instruction']}\n";
 										}
 									}
-									
+
 									// Send combined message if we have at least one access code
 									if (!empty($access_codes))
 									{

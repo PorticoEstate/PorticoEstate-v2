@@ -1213,9 +1213,9 @@ class property_uitenant_claim extends phpgwapi_uicommon_jquery
 				if ($project_values['workorder_budget'][$d]['selected'] == 1)
 				{
 
-					$project_values['workorder_budget'][$d]['budget_hidden']		 = $project_values['workorder_budget'][$d]['budget'];
-					$project_values['workorder_budget'][$d]['calculation_hidden']	 = $project_values['workorder_budget'][$d]['calculation'];
-					$project_values['workorder_budget'][$d]['actual_cost_hidden']	 = $project_values['workorder_budget'][$d]['actual_cost'];
+					$project_values['workorder_budget'][$d]['budget_hidden']		 = (int)$project_values['workorder_budget'][$d]['budget'];
+					$project_values['workorder_budget'][$d]['calculation_hidden']	 = (int)$project_values['workorder_budget'][$d]['calculation'];
+					$project_values['workorder_budget'][$d]['actual_cost_hidden']	 = (int)$project_values['workorder_budget'][$d]['actual_cost'];
 					$project_values['workorder_budget'][$d]['selected']				 = "<input type=\"checkbox\" name=\"values[{$type}][]\" checked value=\"" . $project_values['workorder_budget'][$d]['workorder_id'] . '">';
 				}
 				else

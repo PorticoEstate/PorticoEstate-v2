@@ -30,22 +30,22 @@ jobs:
                     "testing")
                       STATUS_ID="f3d19880"  # I test
                       STATUS_NAME="I test"
-                      STATUS_LEVEL=2
-                      ;;
-                    "master")
-                      STATUS_ID="900083f9"  # Klar for produksjon
-                      STATUS_NAME="Klar for produksjon"
                       STATUS_LEVEL=3
                       ;;
+                    "master")
+                      STATUS_ID="6b5dc418"  # Klar for produksjonssetting
+                      STATUS_NAME="Klar for produksjonssetting"
+                      STATUS_LEVEL=7
+                      ;;
                     "Version-3_0-branch")
-                      STATUS_ID="98236657"  # Ferdig!
-                      STATUS_NAME="Ferdig!"
-                      STATUS_LEVEL=4
+                      STATUS_ID="c4f99614"  # I releasekø
+                      STATUS_NAME="I releasekø"
+                      STATUS_LEVEL=8
                       ;;
                     *)
                       STATUS_ID="47fc9ee4"  # Pågår
                       STATUS_NAME="Pågår"
-                      STATUS_LEVEL=1
+                      STATUS_LEVEL=2
                       ;;
                   esac
 
@@ -152,23 +152,32 @@ jobs:
                         CURRENT_LEVEL=0
                         case "$CURRENT_STATUS" in
                           "Ikke startet"|"null")
-                            CURRENT_LEVEL=0
-                            ;;
-                          "Pågår")
                             CURRENT_LEVEL=1
                             ;;
-                          "I test")
+                          "Pågår")
                             CURRENT_LEVEL=2
                             ;;
-                          "Klar for produksjon")
+                          "I test")
                             CURRENT_LEVEL=3
                             ;;
-                          "Ferdig!")
+                          "Feilet i test")
+                            # Special case handled above
                             CURRENT_LEVEL=4
                             ;;
-                          "Feilet i test")
-                            # Don't update if failed in test (unless caught by special case above)
-                            CURRENT_LEVEL=999
+                          "Klar for produksjon")
+                            CURRENT_LEVEL=5
+                            ;;
+                          "Godkjent i test")
+                            CURRENT_LEVEL=6
+                            ;;
+                          "Klar for produksjonssetting")
+                            CURRENT_LEVEL=7
+                            ;;
+                          "I releasekø")
+                            CURRENT_LEVEL=8
+                            ;;
+                          "Ferdig!")
+                            CURRENT_LEVEL=9
                             ;;
                         esac
 

@@ -72,21 +72,39 @@ jobs:
                     for ISSUE in $ISSUES; do
                       echo "Found issue #$ISSUE"
 
-                      # Get issue's project item using GraphQL
+                      # Try to get as issue first, if that fails try as PR
                       QUERY_RESULT=$(gh api graphql -f query='
-                        query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                        query($owner: String!, $repo: String!, $number: Int!) {
                           repository(owner: $owner, name: $repo) {
-                            issue(number: $issueNumber) {
-                              projectItems(first: 10) {
-                                nodes {
-                                  id
-                                  project {
+                            issue: issueOrPullRequest(number: $number) {
+                              ... on Issue {
+                                projectItems(first: 10) {
+                                  nodes {
                                     id
-                                    number
+                                    project {
+                                      id
+                                      number
+                                    }
+                                    fieldValueByName(name: "Status") {
+                                      ... on ProjectV2ItemFieldSingleSelectValue {
+                                        name
+                                      }
+                                    }
                                   }
-                                  fieldValueByName(name: "Status") {
-                                    ... on ProjectV2ItemFieldSingleSelectValue {
-                                      name
+                                }
+                              }
+                              ... on PullRequest {
+                                projectItems(first: 10) {
+                                  nodes {
+                                    id
+                                    project {
+                                      id
+                                      number
+                                    }
+                                    fieldValueByName(name: "Status") {
+                                      ... on ProjectV2ItemFieldSingleSelectValue {
+                                        name
+                                      }
                                     }
                                   }
                                 }
@@ -96,17 +114,23 @@ jobs:
                         }' \
                         -f owner="PorticoEstate" \
                         -f repo="PorticoEstate-v2" \
-                        -F issueNumber=$ISSUE)
+                        -F number=$ISSUE 2>&1)
+
+                      # Check if query failed
+                      if echo "$QUERY_RESULT" | grep -q "errors"; then
+                        echo "Could not find #$ISSUE (may not exist or not in project)"
+                        continue
+                      fi
 
                       # Find the project item in our project
                       ITEM_DATA=$(echo "$QUERY_RESULT" | jq -r --arg projectId "$PROJECT_ID" '
-                        .data.repository.issue.projectItems.nodes[] |
+                        .data.repository.issue.projectItems.nodes[]? |
                         select(.project.id == $projectId) |
                         {id: .id, status: .fieldValueByName.name}
                       ')
 
                       if [ -z "$ITEM_DATA" ] || [ "$ITEM_DATA" == "null" ]; then
-                        echo "Issue #$ISSUE not found in project $PROJECT_ID"
+                        echo "Issue/PR #$ISSUE not found in project $PROJECT_ID"
                         continue
                       fi
 
@@ -173,6 +197,6 @@ jobs:
                         -f fieldId="$STATUS_FIELD_ID" \
                         -f valueId="$STATUS_ID"
 
-                      echo "✅ Updated issue #$ISSUE from '$CURRENT_STATUS' to '$STATUS_NAME'"
+                      echo "✅ Updated issue/PR #$ISSUE from '$CURRENT_STATUS' to '$STATUS_NAME'"
                     done
                   done

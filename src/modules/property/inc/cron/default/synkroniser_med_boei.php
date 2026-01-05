@@ -83,7 +83,7 @@ class synkroniser_med_boei extends property_cron_parent
 			$status = lang('unable_to_connect_to_database');
 		}
 
-		$this->db_boei2	 = clone ($this->db_boei);
+		$this->db_boei2	 = clone($this->db_boei);
 
 		/*		echo "db\n";
 		_debug_array($this->db->get_config());
@@ -127,6 +127,7 @@ class synkroniser_med_boei extends property_cron_parent
 		$this->update_obskode();
 		$this->update_hemmelig_adresse();
 		$this->oppdater_namssakstatus_pr_leietaker();
+		$this->oppdater_navn();
 		$this->alert();
 
 		$msg						 = 'Tidsbruk: ' . (time() - $start) . ' sekunder';
@@ -1635,6 +1636,44 @@ SQL;
 		$this->cron_log($msg);
 	}
 
+	
+	function oppdater_navn()
+	{
+		//oppdater lo1_name i fm_location1 fra boei_objekt.navn som en oppdateringsspørring med join
+		$sql = " UPDATE fm_location1 SET loc1_name = boei_objekt.navn"
+			. " FROM boei_objekt"
+			. " WHERE fm_location1.loc1 = boei_objekt.objekt_id"
+			. " AND fm_location1.loc1_name != boei_objekt.navn";
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		$msg						 = $this->db->affected_rows() . ' Objekt navn er oppdatert fra boei_objekt.navn';
+		$this->receipt['message'][]	 = array('msg' => $msg);
+		$this->cron_log($msg);
+
+		//opdater loc2_name i fm_location2 fra boei_bygg.byggnavn som en oppdateringsspørring med join
+		$sql = " UPDATE fm_location2 SET loc2_name = boei_bygg.byggnavn"
+			. " FROM boei_bygg"
+			. " WHERE fm_location2.loc1 = boei_bygg.objekt_id"
+			. " AND fm_location2.loc2 = boei_bygg.bygg_id"
+			. " AND fm_location2.loc2_name != boei_bygg.byggnavn";
+		$this->db->query($sql, __LINE__, __FILE__);
+		$msg						 = $this->db->affected_rows() . ' Bygg navn er oppdatert fra boei_bygg.byggnavn';
+		$this->receipt['message'][]	 = array('msg' => $msg);
+		$this->cron_log($msg);
+		//oppdater loc3_name i fm_location3 fra boei_seksjon.beskrivelse som en oppdateringsspørring med join
+		$sql = " UPDATE fm_location3 SET loc3_name = boei_seksjon.beskrivelse"
+			. " FROM boei_seksjon"
+			. " WHERE fm_location3.loc1 = boei_seksjon.objekt_id"
+			. " AND fm_location3.loc2 = boei_seksjon.bygg_id"
+			. " AND fm_location3.loc3 = boei_seksjon.seksjons_id"
+			. " AND fm_location3.loc3_name != boei_seksjon.beskrivelse";
+		$this->db->query($sql, __LINE__, __FILE__);
+		$msg						 = $this->db->affected_rows() . ' Seksjon navn er oppdatert fra boei_seksjon.beskrivelse';
+		$this->receipt['message'][]	 = array('msg' => $msg);
+		$this->cron_log($msg);
+
+	}
+	
 	function oppdater_boa_objekt()
 	{
 		$metadata = $this->db->metadata('fm_location1');
@@ -1669,7 +1708,7 @@ SQL;
 
 
 			$mva = 75;
-			if (in_array($tjenestested, array(26555)) || (!in_array($owner_type_id,array(5)) && $tjenestested == 26550))
+			if (in_array($tjenestested, array(26555)) || (!in_array($owner_type_id, array(5)) && $tjenestested == 26550))
 			{
 				$mva = 0;
 			}
@@ -1791,7 +1830,8 @@ SQL;
 	function oppdater_boa_del()
 	{
 		$sql = " SELECT sum(boei_leieobjekt.boareal) as sum_boa, count(leie_id) as ant_leieobjekt,"
-			. " boei_seksjon.objekt_id,boei_seksjon.bygg_id,boei_seksjon.seksjons_id , beskrivelse   FROM  boei_seksjon $this->join boei_leieobjekt "
+			. " boei_seksjon.objekt_id,boei_seksjon.bygg_id,boei_seksjon.seksjons_id , beskrivelse"
+			. " FROM  boei_seksjon {$this->join} boei_leieobjekt "
 			. " ON boei_seksjon.objekt_id = boei_leieobjekt.objekt_id"
 			. " AND boei_seksjon.bygg_id = boei_leieobjekt.bygg_id"
 			. " AND boei_seksjon.seksjons_id = boei_leieobjekt.seksjons_id"

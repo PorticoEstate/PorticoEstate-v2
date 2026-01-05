@@ -120,6 +120,11 @@ class ApplicationRepository
             $tempUserModel = new User($tempUserHelper);
             $organizations = $tempUserModel->delegates ?? [];
 
+            // Filter to only include active delegates
+            $organizations = array_filter($organizations, function($org) {
+                return !empty($org['active']);
+            });
+
             if (!empty($organizations)) {
                 $orgIds = [];
                 $orgNumbers = [];

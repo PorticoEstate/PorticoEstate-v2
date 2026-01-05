@@ -364,7 +364,7 @@ class controller_uisettings extends phpgwapi_uicommon
 
 		if ($control_id > 0 && $control_area_id > 0 && $part_of_town_id > 0)
 		{
-			$users = $$this->acl->get_user_list_right(ACL_EDIT, '.checklist');
+			$users = $this->acl->get_user_list_right(ACL_EDIT, '.checklist');
 		}
 		else
 		{

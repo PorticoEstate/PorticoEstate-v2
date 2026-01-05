@@ -72,17 +72,46 @@ jobs:
                     for ISSUE in $ISSUES; do
                       echo "Found issue #$ISSUE"
 
-                      # Get project item data
-                      ITEM_JSON=$(gh project item-list 14 --owner PorticoEstate --format json | \
-                        jq -r ".items[] | select(.content.number == $ISSUE)")
+                      # Get issue's project item using GraphQL
+                      QUERY_RESULT=$(gh api graphql -f query='
+                        query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                          repository(owner: $owner, name: $repo) {
+                            issue(number: $issueNumber) {
+                              projectItems(first: 10) {
+                                nodes {
+                                  id
+                                  project {
+                                    id
+                                    number
+                                  }
+                                  fieldValueByName(name: "Status") {
+                                    ... on ProjectV2ItemFieldSingleSelectValue {
+                                      name
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }' \
+                        -f owner="PorticoEstate" \
+                        -f repo="PorticoEstate-v2" \
+                        -F issueNumber=$ISSUE)
 
-                      if [ -z "$ITEM_JSON" ]; then
-                        echo "Issue #$ISSUE not found in project"
+                      # Find the project item in our project
+                      ITEM_DATA=$(echo "$QUERY_RESULT" | jq -r --arg projectId "$PROJECT_ID" '
+                        .data.repository.issue.projectItems.nodes[] |
+                        select(.project.id == $projectId) |
+                        {id: .id, status: .fieldValueByName.name}
+                      ')
+
+                      if [ -z "$ITEM_DATA" ] || [ "$ITEM_DATA" == "null" ]; then
+                        echo "Issue #$ISSUE not found in project $PROJECT_ID"
                         continue
                       fi
 
-                      ITEM_ID=$(echo "$ITEM_JSON" | jq -r '.id')
-                      CURRENT_STATUS=$(echo "$ITEM_JSON" | jq -r '.status // "null"')
+                      ITEM_ID=$(echo "$ITEM_DATA" | jq -r '.id')
+                      CURRENT_STATUS=$(echo "$ITEM_DATA" | jq -r '.status // "null"')
 
                       echo "Project item ID: $ITEM_ID"
                       echo "Current status: $CURRENT_STATUS"

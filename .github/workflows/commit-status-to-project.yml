@@ -1,0 +1,140 @@
+name: Update Project Status Based on Branch
+
+on:
+    push:
+        branches:
+            - '**'  # Trigger on all branches
+
+jobs:
+    update-project:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Extract issue numbers and update project
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  PROJECT_ID: "PVT_kwDOAhowTc4BKcsn"
+                  STATUS_FIELD_ID: "PVTSSF_lADOAhowTc4BKcsnzg6UDyM"
+              run: |
+                  BRANCH="${GITHUB_REF#refs/heads/}"
+
+                  # Map branch to status with priority levels
+                  case "$BRANCH" in
+                    "testing")
+                      STATUS_ID="f3d19880"  # I test
+                      STATUS_NAME="I test"
+                      STATUS_LEVEL=2
+                      ;;
+                    "master")
+                      STATUS_ID="900083f9"  # Klar for produksjon
+                      STATUS_NAME="Klar for produksjon"
+                      STATUS_LEVEL=3
+                      ;;
+                    "Version-3_0-branch")
+                      STATUS_ID="98236657"  # Ferdig!
+                      STATUS_NAME="Ferdig!"
+                      STATUS_LEVEL=4
+                      ;;
+                    *)
+                      STATUS_ID="47fc9ee4"  # Pågår
+                      STATUS_NAME="Pågår"
+                      STATUS_LEVEL=1
+                      ;;
+                  esac
+
+                  echo "Branch: $BRANCH"
+                  echo "Will update to status: $STATUS_NAME (level $STATUS_LEVEL)"
+
+                  # Get all commits in this push
+                  COMMITS=$(git log --format=%H ${{ github.event.before }}..${{ github.event.after }})
+
+                  # Extract issue numbers from commit messages
+                  for COMMIT in $COMMITS; do
+                    MESSAGE=$(git log --format=%B -n 1 $COMMIT)
+                    echo "Checking commit: $MESSAGE"
+
+                    # Extract issue numbers (matches #123, ref #123, closes #123, etc.)
+                    ISSUES=$(echo "$MESSAGE" | grep -oP '(?<=#)\d+' | sort -u)
+
+                    for ISSUE in $ISSUES; do
+                      echo "Found issue #$ISSUE"
+
+                      # Get project item data
+                      ITEM_JSON=$(gh project item-list 14 --owner PorticoEstate --format json | \
+                        jq -r ".items[] | select(.content.number == $ISSUE)")
+
+                      if [ -z "$ITEM_JSON" ]; then
+                        echo "Issue #$ISSUE not found in project"
+                        continue
+                      fi
+
+                      ITEM_ID=$(echo "$ITEM_JSON" | jq -r '.id')
+                      CURRENT_STATUS=$(echo "$ITEM_JSON" | jq -r '.status // "null"')
+
+                      echo "Project item ID: $ITEM_ID"
+                      echo "Current status: $CURRENT_STATUS"
+
+                      # Special case: "Feilet i test" can be updated to "I test" when pushed to testing
+                      if [[ "$CURRENT_STATUS" == "Feilet i test" && "$BRANCH" == "testing" ]]; then
+                        echo "🔄 Retesting: Moving from 'Feilet i test' to 'I test'"
+                        # Continue to update
+                      else
+                        # Determine current status level
+                        CURRENT_LEVEL=0
+                        case "$CURRENT_STATUS" in
+                          "Ikke startet"|"null")
+                            CURRENT_LEVEL=0
+                            ;;
+                          "Pågår")
+                            CURRENT_LEVEL=1
+                            ;;
+                          "I test")
+                            CURRENT_LEVEL=2
+                            ;;
+                          "Klar for produksjon")
+                            CURRENT_LEVEL=3
+                            ;;
+                          "Ferdig!")
+                            CURRENT_LEVEL=4
+                            ;;
+                          "Feilet i test")
+                            # Don't update if failed in test (unless caught by special case above)
+                            CURRENT_LEVEL=999
+                            ;;
+                        esac
+
+                        # Only update if moving forward
+                        if [ $STATUS_LEVEL -le $CURRENT_LEVEL ]; then
+                          echo "⏭️  Skipping - would move backwards or sideways (current: level $CURRENT_LEVEL, target: level $STATUS_LEVEL)"
+                          continue
+                        fi
+                      fi
+
+                      # Update project status using GraphQL
+                      gh api graphql -f query='
+                        mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $valueId: String!) {
+                          updateProjectV2ItemFieldValue(
+                            input: {
+                              projectId: $projectId
+                              itemId: $itemId
+                              fieldId: $fieldId
+                              value: { singleSelectOptionId: $valueId }
+                            }
+                          ) {
+                            projectV2Item {
+                              id
+                            }
+                          }
+                        }' \
+                        -f projectId="$PROJECT_ID" \
+                        -f itemId="$ITEM_ID" \
+                        -f fieldId="$STATUS_FIELD_ID" \
+                        -f valueId="$STATUS_ID"
+
+                      echo "✅ Updated issue #$ISSUE from '$CURRENT_STATUS' to '$STATUS_NAME'"
+                    done
+                  done

@@ -49,8 +49,17 @@ jobs:
                   echo "Branch: $BRANCH"
                   echo "Will update to status: $STATUS_NAME (level $STATUS_LEVEL)"
 
-                  # Get all commits in this push
-                  COMMITS=$(git log --format=%H ${{ github.event.before }}..${{ github.event.after }})
+                  # Handle first push to a branch (before is all zeros)
+                  BEFORE="${{ github.event.before }}"
+                  AFTER="${{ github.event.after }}"
+
+                  if [[ "$BEFORE" == "0000000000000000000000000000000000000000" ]]; then
+                    echo "First push to branch, checking only the latest commit"
+                    COMMITS="$AFTER"
+                  else
+                    # Get all commits in this push
+                    COMMITS=$(git log --format=%H $BEFORE..$AFTER)
+                  fi
 
                   # Extract issue numbers from commit messages
                   for COMMIT in $COMMITS; do

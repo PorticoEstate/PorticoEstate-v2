@@ -5,6 +5,9 @@ on:
         branches:
             - '**'  # Trigger on all branches
 
+permissions:
+    contents: read
+
 jobs:
     update-project:
         runs-on: ubuntu-latest
@@ -16,7 +19,7 @@ jobs:
 
             - name: Extract issue numbers and update project
               env:
-                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
                   PROJECT_ID: "PVT_kwDOAhowTc4BKcsn"
                   STATUS_FIELD_ID: "PVTSSF_lADOAhowTc4BKcsnzg6UDyM"
               run: |

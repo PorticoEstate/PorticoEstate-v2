@@ -21,6 +21,7 @@ export interface ToastMessage {
 interface ToastContextType {
   addToast: (message: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
+  dismissAllToasts: () => void;
   toasts: ToastMessage[];
   pauseToast: (id: string) => void;
   resumeToast: (id: string) => void;
@@ -94,6 +95,17 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     });
   };
 
+  const dismissAllToasts = () => {
+    setToasts(prev => {
+      prev.forEach(toast => {
+        if (toast.timeoutId) {
+          clearTimeout(toast.timeoutId);
+        }
+      });
+      return [];
+    });
+  };
+
   const pauseToast = (id: string) => {
     setToasts(prev => prev.map(toast => {
       if (toast.id === id && toast.timeoutId) {
@@ -140,16 +152,17 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   return (
-    <ToastContext.Provider value={{ 
-      addToast, 
-      removeToast, 
+    <ToastContext.Provider value={{
+      addToast,
+      removeToast,
+      dismissAllToasts,
       toasts,
       pauseToast,
       resumeToast,
-      setFabButtonRef, 
-      getFabButtonRef, 
-      setFabOpen, 
-      isFabOpen 
+      setFabButtonRef,
+      getFabButtonRef,
+      setFabOpen,
+      isFabOpen
     }}>
       {children}
     </ToastContext.Provider>

@@ -5,6 +5,14 @@ on:
         branches:
             - '**'  # Trigger on all branches
 
+
+permissions:
+    contents: read
+    issues: write
+    pull-requests: write
+    repository-projects: write
+    organization-projects: write
+
 jobs:
     update-project:
         runs-on: ubuntu-latest

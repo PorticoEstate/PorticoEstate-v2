@@ -4505,6 +4505,7 @@ JS;
 			$has_conflicts = false;
 			$conflicts_count = 0;
 			$non_conflict_count = 0;
+			$existing_allocations_count = 0;
 
 			if (!empty($recurring_preview)) {
 				foreach ($recurring_preview as $item) {
@@ -4514,6 +4515,11 @@ JS;
 					} else if (!isset($item['exists']) || !$item['exists']) {
 						$non_conflict_count++;
 					}
+
+				// Count existing allocations
+				if (isset($item['exists']) && $item['exists']) {
+					$existing_allocations_count++;
+				}
 				}
 			}
 
@@ -4534,8 +4540,13 @@ JS;
 			$create_button_text = $has_conflicts ? 'create_non_conflicting_allocations' : 'create_all_allocations';
 			$create_button_count = $has_conflicts ? $non_conflict_count : count($recurring_preview);
 
-			// Disable button if there are no allocations to create
-			$can_create_allocations = $create_button_count > 0;
+			// Disable button if there are no allocations to create OR if any allocations already exist
+			// This prevents users from using "Create allocations" to edit existing allocations,
+			// which would create inconsistent "shadow times" between admin and applicant views
+			$can_create_allocations = $create_button_count > 0 && $existing_allocations_count == 0;
+
+			// Determine if we have a mixed scenario (allocations exist but conflicts remain)
+			$has_partial_allocations_with_conflicts = $existing_allocations_count > 0 && $conflicts_count > 0;
 		}
 
 
@@ -4639,6 +4650,7 @@ JS;
 				'create_button_count' => $create_button_count,
 				'has_conflicts' => $has_conflicts,
 				'can_create_allocations' => $can_create_allocations,
+				'has_partial_allocations_with_conflicts' => $has_partial_allocations_with_conflicts,
 				'open_approve_modal' => $open_approve_modal,
 				'show_recurring_summary' => $show_recurring_summary
 			)

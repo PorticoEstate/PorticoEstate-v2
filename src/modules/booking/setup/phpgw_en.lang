@@ -885,3 +885,5 @@ invoicing_changes_apply_to_all	booking	en	Changes to invoicing will be applied t
 combined_view	booking	en	Combined view
 all_allocations_created	booking	en	All allocations created
 no_allocations_to_create	booking	en	No allocations to create
+Leave empty to use password authentication	booking	en	Leave empty to use password authentication
+SSH Private Key	booking	en	SSH Private Key

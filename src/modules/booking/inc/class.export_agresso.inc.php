@@ -184,13 +184,26 @@ class export_agresso
 		//			$host = $this->config->config_data['invoice_ftp_host'];
 		$user = $this->config->config_data['invoice_ftp_user'];
 		$pass = $this->config->config_data['invoice_ftp_password'];
+		$privateKey = $this->config->config_data['invoice_ssh_private_key'];
+
+		// Use private key if available, otherwise use password
+		if (!empty($privateKey))
+		{
+			$password = null;
+			$privateKeyToUse = $privateKey;
+		}
+		else
+		{
+			$password = $pass;
+			$privateKeyToUse = null;
+		}
 
 		$filesystem = new Filesystem(new SftpAdapter(
 			new SftpConnectionProvider(
 				$host, // host (required)
 				$user, // username (required)
-				$pass, // password (optional, default: null) set to null if privateKey is used
-				null, // private key (optional, default: null) can be used instead of password, set to null if password is set
+				$password, // password (optional, default: null) set to null if privateKey is used
+				$privateKeyToUse, // private key (optional, default: null) can be used instead of password, set to null if password is set
 				null, // passphrase (optional, default: null), set to null if privateKey is not used or has no passphrase
 				$port, // port (optional, default: 22)
 				false, // use agent (optional, default: false)

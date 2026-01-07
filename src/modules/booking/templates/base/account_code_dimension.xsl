@@ -538,6 +538,17 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
+						<xsl:value-of select="php:function('lang', 'SSH Private Key')"/>
+						<span style="display:block;font-size:10px;font-weight:normal;margin-top:-8px;">
+							<xsl:value-of select="php:function('lang', 'Leave empty to use password authentication')"/>
+						</span>
+					</label>
+					<textarea id="field_invoice_ssh_private_key" name="invoice_ssh_private_key" rows="10" cols="70" style="font-family: monospace; font-size: 11px; width: 100%; max-width: 600px;">
+						<xsl:value-of select="config_data/invoice_ssh_private_key"/>
+					</textarea>
+				</div>
+				<div class="pure-control-group">
+					<label>
 						<xsl:value-of select="php:function('lang', 'last id')"/>
 						<span style="display:block;font-size:10px;font-weight:normal;margin-top:-8px;">
 							<xsl:value-of select="php:function('lang', 'Do not edit!')"/>

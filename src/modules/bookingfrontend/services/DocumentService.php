@@ -83,6 +83,28 @@ class DocumentService
         return $this->ownerType;
     }
 
+    /**
+     * Validate focal point coordinates
+     * @throws Exception if validation fails
+     */
+    public function validateFocalPoint(?float $x, ?float $y): void
+    {
+        if ($x === null && $y === null) {
+            return;
+        }
+
+        if ($x === null || $y === null) {
+            throw new Exception('Both focal_point_x and focal_point_y must be provided together');
+        }
+
+        if ($x < 0 || $x > 100) {
+            throw new Exception('focal_point_x must be between 0 and 100');
+        }
+
+        if ($y < 0 || $y > 100) {
+            throw new Exception('focal_point_y must be between 0 and 100');
+        }
+    }
 
 
     /**
@@ -90,6 +112,21 @@ class DocumentService
      */
     public function createDocument(array $data): int
     {
+        // Validate focal point if provided
+        $focalX = $data['focal_point_x'] ?? null;
+        $focalY = $data['focal_point_y'] ?? null;
+
+        if ($focalX !== null || $focalY !== null) {
+            $this->validateFocalPoint($focalX, $focalY);
+
+            $metadata = $data['metadata'] ?? [];
+            $metadata['focal_point'] = [
+                'x' => (float)$focalX,
+                'y' => (float)$focalY
+            ];
+            $data['metadata'] = $metadata;
+        }
+
         return $this->documentRepository->createDocument($data);
     }
 
@@ -116,6 +153,42 @@ class DocumentService
     public function deleteDocument(int $documentId): void
     {
         $this->documentRepository->deleteDocument($documentId);
+    }
+
+    /**
+     * Update document metadata (description, focal point, etc.)
+     */
+    public function updateDocument(int $documentId, array $data): bool
+    {
+        // Handle focal point update
+        if (isset($data['focal_point_x']) || isset($data['focal_point_y'])) {
+            $focalX = $data['focal_point_x'] ?? null;
+            $focalY = $data['focal_point_y'] ?? null;
+
+            $this->validateFocalPoint($focalX, $focalY);
+
+            // Get existing document to preserve other metadata
+            $document = $this->getDocumentById($documentId);
+            if (!$document) {
+                throw new Exception('Document not found');
+            }
+
+            $metadata = $document->metadata ?? [];
+
+            if ($focalX !== null && $focalY !== null) {
+                $metadata['focal_point'] = [
+                    'x' => (float)$focalX,
+                    'y' => (float)$focalY
+                ];
+            } else {
+                unset($metadata['focal_point']);
+            }
+
+            $data['metadata'] = $metadata;
+            unset($data['focal_point_x'], $data['focal_point_y']);
+        }
+
+        return $this->documentRepository->updateDocument($documentId, $data);
     }
 
 }

@@ -149,6 +149,9 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	});
 
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');
+
+	// Generic document update endpoint (works for all owner types)
+//	$group->put('/documents/{id}', DocumentController::class . ':updateDocument');
 })->add(new SessionsMiddleware($app->getContainer()));
 
 

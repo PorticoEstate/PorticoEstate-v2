@@ -8042,3 +8042,38 @@ function booking_upgrade0_2_115($oProc)
 		return $currentver;
 	}
 }
+/**
+ * Update booking from v 0.2.116 to 0.2.117
+ * Add metadata JSONB column to all document tables for focal points and future metadata
+ */
+$test[] = '0.2.116';
+function booking_upgrade0_2_116($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn('bb_document_building', 'metadata', array(
+		'type' => 'jsonb',
+		'nullable' => true
+	));
+
+	$oProc->AddColumn('bb_document_resource', 'metadata', array(
+		'type' => 'jsonb',
+		'nullable' => true
+	));
+
+	$oProc->AddColumn('bb_document_application', 'metadata', array(
+		'type' => 'jsonb',
+		'nullable' => true
+	));
+
+	$oProc->AddColumn('bb_document_organization', 'metadata', array(
+		'type' => 'jsonb',
+		'nullable' => true
+	));
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.117';
+		return $currentver;
+	}
+}

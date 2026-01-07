@@ -4,6 +4,8 @@ namespace App\modules\bookingfrontend\controllers;
 
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\services\DocumentService;
+use App\modules\bookingfrontend\repositories\DocumentRepository;
+use App\helpers\ResponseHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Stream;
@@ -179,5 +181,80 @@ class DocumentController
             );
         }
     }
+
+//    /** TODO: update documents, requires validation of ownership, and probably not needed at the moment
+//     * @OA\Put(
+//     *     path="/bookingfrontend/documents/{id}",
+//     *     summary="Update document metadata",
+//     *     tags={"Documents"},
+//     *     security={{ "oidc": {} }},
+//     *     @OA\Parameter(
+//     *         name="id",
+//     *         in="path",
+//     *         required=true,
+//     *         @OA\Schema(type="integer")
+//     *     ),
+//     *     @OA\RequestBody(
+//     *         @OA\JsonContent(
+//     *             @OA\Property(property="description", type="string"),
+//     *             @OA\Property(property="focal_point_x", type="number", minimum=0, maximum=100),
+//     *             @OA\Property(property="focal_point_y", type="number", minimum=0, maximum=100)
+//     *         )
+//     *     ),
+//     *     @OA\Response(response=200, description="Document updated"),
+//     *     @OA\Response(response=404, description="Document not found"),
+//     *     @OA\Response(response=400, description="Invalid values")
+//     * )
+//     */
+//    public function updateDocument(Request $request, Response $response, array $args): Response
+//    {
+//        try {
+//            $documentId = (int)$args['id'];
+//            $parsedBody = $request->getParsedBody();
+//
+//            // Find document across all owner types
+//            $document = DocumentRepository::getDocumentByIdAnyOwner($documentId);
+//
+//            if (!$document) {
+//                return ResponseHelper::sendErrorResponse(
+//                    ['error' => 'Document not found'],
+//                    404
+//                );
+//            }
+//
+//            // TODO: Add authorization checks based on owner_type
+//            // For applications: verify user owns application
+//            // For buildings/resources: verify user is admin
+//            // For organizations: verify user is delegate
+//
+//            // Create service with correct owner type
+//            $documentService = new DocumentService($document->owner_type);
+//
+//            // Update document
+//            $updateData = [];
+//
+//            if (isset($parsedBody['description'])) {
+//                $updateData['description'] = $parsedBody['description'];
+//            }
+//
+//            if (isset($parsedBody['focal_point_x']) || isset($parsedBody['focal_point_y'])) {
+//                $updateData['focal_point_x'] = $parsedBody['focal_point_x'] ?? null;
+//                $updateData['focal_point_y'] = $parsedBody['focal_point_y'] ?? null;
+//            }
+//
+//            $documentService->updateDocument($documentId, $updateData);
+//
+//            // Return updated document
+//            $updatedDocument = $documentService->getDocumentById($documentId);
+//            $response->getBody()->write(json_encode($updatedDocument->serialize()));
+//            return $response->withHeader('Content-Type', 'application/json');
+//
+//        } catch (Exception $e) {
+//            return ResponseHelper::sendErrorResponse(
+//                ['error' => $e->getMessage()],
+//                400
+//            );
+//        }
+//    }
 
 }

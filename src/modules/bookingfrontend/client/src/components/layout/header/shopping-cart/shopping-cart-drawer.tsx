@@ -57,15 +57,15 @@ const ShoppingCartDrawer: FC<ShoppingCartDrawerProps> = (props) => {
             if (pendingData) {
                 try {
                     const storedData = JSON.parse(pendingData);
-                    
+
                     // Check if data is expired (10 minutes = 600000 ms)
                     const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
-                    
+
                     if (isExpired) {
                         localStorage.removeItem('pendingRecurringApplication');
                         return;
                     }
-                    
+
                     // Check if this is for an EXISTING application (must have applicationId, building_id, and date_id)
                     if (storedData.applicationId && storedData.building_id && storedData.date_id) {
                         // Open the existing application for editing
@@ -90,28 +90,28 @@ const ShoppingCartDrawer: FC<ShoppingCartDrawerProps> = (props) => {
     if (!props.open || !mounted) {
         return null;
     }
-    
+
     // Get portal container or fallback to body
     const drawerContent = (
         <div id="shopping-cart-drawer-root">
             <div className={styles.drawerOverlay} onClick={() => props.setOpen(false)} />
-            <div 
+            <div
                 ref={drawerRef}
                 className={styles.drawer}
             >
                 <ShoppingCartContent setOpen={props.setOpen} setCurrentApplication={setCurrentApplication}/>
             </div>
             {currentApplication && (
-                <ApplicationCrud 
-                    onClose={() => setCurrentApplication(undefined)} 
-                    applicationId={currentApplication.application_id} 
+                <ApplicationCrud
+                    onClose={() => setCurrentApplication(undefined)}
+                    applicationId={currentApplication.application_id}
                     date_id={currentApplication.date_id}
-                    building_id={currentApplication.building_id} 
+                    building_id={currentApplication.building_id}
                 />
             )}
         </div>
     );
-    
+
     // Create portal to document.body
     return createPortal(drawerContent, document.body);
 };

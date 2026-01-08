@@ -50,6 +50,7 @@ RUN apt-get update && apt-get install -y \
     apg \
     sudo \
     gnupg \
+    unzip \
     libaio1t64 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \

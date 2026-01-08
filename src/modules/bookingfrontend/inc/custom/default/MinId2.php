@@ -266,7 +266,7 @@ class bookingfrontend_external_user extends UserHelper
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		curl_close($ch);
 
-/*		
+		/*		
 		$result = '{
 			"count": 3,
 			"fodselsnr": "<FNR>",
@@ -303,7 +303,7 @@ class bookingfrontend_external_user extends UserHelper
 	}
 
 	private function log($what, $value = '')
-	{	
+	{
 		$log = new Log();
 		$log->debug(array(
 			'text' => "what: %1, <br/>value: %2",
@@ -311,6 +311,6 @@ class bookingfrontend_external_user extends UserHelper
 			'p2' => $value ? $value : ' ',
 			'line' => __LINE__,
 			'file' => __FILE__
-		));	
+		));
 	}
 }

@@ -147,31 +147,20 @@ class bookingfrontend_external_user extends UserHelper
 			));
 		}
 
-		if ($orgs && is_array($orgs))
+		if (isset($orgs['organizations']) && is_array($orgs['organizations']))
 		{
-			foreach ($orgs as $org)
+			$Validator = new sfValidatorNorwegianOrganizationNumber();
+			foreach ($orgs['organizations'] as $org)
 			{
-				if (empty($org['orgnr']))
+				try
 				{
-					continue;
+					$orgnr = $Validator->clean($org['organization_number']);
+					$orgs_validate[] = $orgnr;
 				}
-				/*
-					$this->db->query("SELECT id as org_id, organization_number"
-						. " FROM bb_organization"
-						. " WHERE active = 1 AND organization_number = '{$org['orgnr']}'", __LINE__, __FILE__);
-
-					if (!$this->db->next_record())
-					{
-						continue;
-					}
-
-					$results[] = array
-					(
-						'orgnr' => $org['orgnr'],
-						'customer_ssn'	 => null
-					);
-*/
-				$orgs_validate[] = $org['orgnr'];
+				catch (sfValidatorError $e)
+				{
+					// Handle validation error if needed
+				}
 			}
 		}
 
@@ -256,50 +245,61 @@ class bookingfrontend_external_user extends UserHelper
 
 	private function get_orgs_from_external_service($fodselsnr)
 	{
-		$apikey = !empty($this->config->config_data['apikey']) ? $this->config->config_data['apikey'] : '';
 		$webservicehost = !empty($this->config->config_data['webservicehost']) ? $this->config->config_data['webservicehost'] : '';
 
-		if (!$webservicehost || !$apikey)
+		if (!$webservicehost)
 		{
 			throw new Exception('Missing parametres for webservice');
 		}
 
-		$post_data = array(
-			'apikey'	=> $apikey,
-			'id'		=> $fodselsnr
-		);
+		$url = "{$webservicehost}/{$fodselsnr}";
 
-		$post_string = http_build_query($post_data);
-
-		$this->log('webservicehost', print_r($webservicehost, true));
-		$this->log('POST data', print_r($post_data, true));
+		$this->log('url', $url);
 
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
-		curl_setopt($ch, CURLOPT_URL, $webservicehost);
-		//			curl_setopt($ch, CURLOPT_HTTPHEADER, array( 'Content-Type: application/json'));
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/x-www-form-urlencoded'));
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, ['Accept: application/json']);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_string);
 		$result = curl_exec($ch);
 
 		$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
 		curl_close($ch);
 
-		$ret = json_decode($result, true);
-
-		$this->log('webservice httpCode', print_r($httpCode, true));
-		$this->log('webservice returdata as json', $result);
-		$this->log('webservice returdata as array', print_r($ret, true));
-
-		if (isset($ret['orgnr']))
+/*		
+		$result = '{
+			"count": 3,
+			"fodselsnr": "<FNR>",
+			"found": true,
+			"organizations": [
+				{
+				"name": "AS DEN NATIONALE SCENE [ikke validert]",
+				"organization_number": "811167452"
+				},
+				{
+				"name": "TEST ORGANISASJON1 AS",
+				"organization_number": "974236149"
+				},
+				{
+				"name": "TEST ORGANISASJON2 AS",
+				"organization_number": "123456789"
+				}
+			]
+		}';
+*/
+		if ($httpCode == 200)
 		{
-			return array($ret);
+			$ret = json_decode($result, true);
 		}
 		else
 		{
-			return $ret;
+			$ret = array();
 		}
+
+		$this->log('webservice httpCode', print_r($httpCode, true));
+		$this->log('webservice returdata as json', $result);
+
+		return $ret;
 	}
 
 	private function log($what, $value = '')

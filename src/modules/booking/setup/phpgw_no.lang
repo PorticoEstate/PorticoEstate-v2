@@ -982,3 +982,14 @@ invoicing_changes_apply_to_all	booking	no	Endringer i fakturering vil gjelde for
 combined_view	booking	no	Kombinert visning
 all_allocations_created	booking	no	Alle tildelinger opprettet
 no_allocations_to_create	booking	no	Ingen tildelinger å opprette
+focal_point	booking	no	Fokuspunkt
+edit_focal_point	booking	no	Rediger fokuspunkt
+set_focal_point	booking	no	Sett fokuspunkt
+previews	booking	no	Forhåndsvisninger
+focal_point_instructions	booking	no	Klikk eller dra for å sette fokuspunktet. Bruk piltastene for fininnstillinger.
+reset_to_center	booking	no	Tilbakestill til senter
+remove_focal_point	booking	no	Fjern fokuspunkt
+card_preview	booking	no	Kort
+square_preview	booking	no	200x200 (kvadrat)
+portrait_preview	booking	no	200x411 (portrett)
+apply_focal_point	booking	no	Bruk

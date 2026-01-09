@@ -41,6 +41,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}', BuildingController::class . ':show');
 		$group->get('/{id}/resources', ResourceController::class . ':getResourcesByBuilding');
 		$group->get('/{id}/documents', BuildingController::class . ':getDocuments');
+		$group->get('/{id}/main-picture', BuildingController::class . ':getMainPicture');
 		$group->get('/document/{id}/download', BuildingController::class . ':downloadDocument');
 		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getBuildingSchedule');
 		$group->get('/{id}/agegroups', BuildingController::class . ':getAgeGroups');
@@ -51,8 +52,10 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 	$group->group('/resources', function (RouteCollectorProxy $group)
 	{
 		$group->get('', ResourceController::class . ':index');
+		$group->get('/missing-main-pictures', DataStore::class . ':getMissingResourceMainPictures');
 		$group->get('/{id}', ResourceController::class . ':getResource');
 		$group->get('/{id}/documents', ResourceController::class . ':getDocuments');
+		$group->get('/{id}/main-picture', ResourceController::class . ':getMainPicture');
 		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getResourceSchedule');
 		$group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
@@ -74,6 +77,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->put('/{id}/groups/{group_id}', OrganizationController::class . ':updateGroup');
 		$group->get('/{id}/buildings', OrganizationController::class . ':getBuildings');
 		$group->get('/{id}/documents', OrganizationController::class . ':getDocuments');
+		$group->get('/{id}/main-picture', OrganizationController::class . ':getMainPicture');
 		$group->get('/document/{id}/download', OrganizationController::class . ':downloadDocument');
 		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getOrganizationSchedule');
 		$group->get('/{id}/events', EventController::class . ':getOrganizationEvents');
@@ -150,6 +154,8 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 
 	$group->get('/invoices', CompletedReservationController::class . ':getReservations');
 
+	// Document verification endpoint
+	$group->get('/documents/pictures/verify', DataStore::class . ':verifyAllPictures');
 	// Generic document update endpoint (works for all owner types)
 //	$group->put('/documents/{id}', DocumentController::class . ':updateDocument');
 })->add(new SessionsMiddleware($app->getContainer()));

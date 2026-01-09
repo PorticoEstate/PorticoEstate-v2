@@ -42,7 +42,7 @@ abstract class booking_uidocument extends booking_uicommon
 		$this->set_business_object();
 
 		//'name' is not in fields as it will always be generated from the uploaded filename
-		$this->fields = array('category', 'description', 'owner_id', 'owner_name', 'metadata');
+		$this->fields = array('category', 'description', 'owner_id', 'owner_name', 'metadata', 'focal_point_x', 'focal_point_y');
 
 		$this->module = 'booking';
 
@@ -310,6 +310,21 @@ abstract class booking_uidocument extends booking_uicommon
 		$document_data['document_types'] = $this->get_document_categories();
 		$document_data['documents_link'] = $this->get_owner_typed_link('index');
 		$document_data['cancel_link'] = $this->get_owner_typed_link('index');
+
+		// Add download link and is_image flag if document has ID
+		if (isset($document_data['id']))
+		{
+			$document_data['download_link'] = $this->link(array(
+				'menuaction' => sprintf('booking.uidocument_%s.download', $this->get_document_owner_type()),
+				'id' => $document_data['id']
+			));
+
+			// Set is_image flag if not already set
+			if (!isset($document_data['is_image']))
+			{
+				$document_data['is_image'] = $this->bo->so->is_image($document_data);
+			}
+		}
 	}
 
 	public function show()
@@ -354,6 +369,7 @@ abstract class booking_uidocument extends booking_uicommon
 			}
 		}
 
+		self::add_javascript('booking', 'base', 'focal-point-picker.js');
 		self::add_javascript('booking', 'base', 'document.js');
 		phpgwapi_jquery::load_widget('autocomplete');
 
@@ -397,6 +413,8 @@ abstract class booking_uidocument extends booking_uicommon
 		if ($_SERVER['REQUEST_METHOD'] == 'POST')
 		{
 			$document = array_merge($document, extract_values($_POST, $this->fields));
+
+
 			$errors = $this->bo->validate($document);
 			if (!$errors)
 			{
@@ -413,6 +431,7 @@ abstract class booking_uidocument extends booking_uicommon
 			}
 		}
 
+		self::add_javascript('booking', 'base', 'focal-point-picker.js');
 		self::add_javascript('booking', 'base', 'document.js');
 		phpgwapi_jquery::load_widget('autocomplete');
 

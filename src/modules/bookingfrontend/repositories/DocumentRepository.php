@@ -54,6 +54,28 @@ class DocumentRepository
         }, $results);
     }
 
+    public function getMainPicture(int $ownerId): ?Document
+    {
+        $table = $this->getDBTable();
+        $sql = "SELECT * FROM {$table}
+                WHERE owner_id = :ownerId
+                AND category IN ('picture_main', 'picture')
+                AND (name ~* '\.(jpg|jpeg|png|gif|bmp|webp)$')
+                ORDER BY CASE WHEN category = 'picture_main' THEN 0 ELSE 1 END, id ASC
+                LIMIT 1";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([':ownerId' => $ownerId]);
+
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$result) {
+            return null;
+        }
+
+        return new Document($result, $this->owner_type);
+    }
+
     public function getDocumentById(int $documentId): ?Document
     {
         $table = $this->getDBTable();

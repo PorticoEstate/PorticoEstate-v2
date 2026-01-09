@@ -60,6 +60,15 @@ class DocumentService
     }
 
     /**
+     * Get main picture for a specific owner
+     * Returns picture_main if exists, otherwise first picture, otherwise null
+     */
+    public function getMainPicture(int $ownerId): ?Document
+    {
+        return $this->documentRepository->getMainPicture($ownerId);
+    }
+
+    /**
      * Get documents by category for a specific owner
      */
     public function getDocumentsByCategory(int $ownerId, string $category): array

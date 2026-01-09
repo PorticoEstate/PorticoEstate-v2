@@ -83,6 +83,57 @@ class DocumentController
 
     /**
      * @OA\Get(
+     *     path="/bookingfrontend/{ownertype}/{id}/main-picture",
+     *     summary="Get main picture for an owner",
+     *     tags={"Buildings", "Resources", "Documents"},
+     *     @OA\Parameter(
+     *         name="ownertype",
+     *         in="path",
+     *         description="Type of the owner (buildings, resources, organizations)",
+     *         required=true,
+     *         @OA\Schema(type="string", enum={"buildings", "resources", "organizations"})
+     *     ),
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         description="ID of the owner",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Main picture document",
+     *         @OA\JsonContent(ref="#/components/schemas/Document")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="No picture found"
+     *     )
+     * )
+     */
+    public function getMainPicture(Request $request, Response $response, array $args): Response
+    {
+        $ownerId = (int)$args['id'];
+
+        try {
+            $document = $this->documentService->getMainPicture($ownerId);
+
+            if (!$document) {
+                $response->getBody()->write(json_encode(['error' => 'No main picture found']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            }
+
+            $response->getBody()->write(json_encode($document->serialize()));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            $error = "Error fetching main picture: " . $e->getMessage();
+            $response->getBody()->write(json_encode(['error' => $error]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
+
+    /**
+     * @OA\Get(
      *     path="/bookingfrontend/documents/{id}/download",
      *     summary="Download a specific document",
      *     tags={"Buildings"},

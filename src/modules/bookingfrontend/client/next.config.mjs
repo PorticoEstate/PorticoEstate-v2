@@ -11,7 +11,25 @@ const nextConfig = {
                 protocol: 'https',
                 hostname: '*',
             },
+            {
+                protocol: 'http',
+                hostname: 'pe-api.test',
+            },
+            {
+                protocol: 'https',
+                hostname: 'pe-api.test',
+            },
         ],
+        minimumCacheTTL: 60 * 60 * 24 * 7, // Cache images for 7 days
+        formats: ['image/webp'], // Use WebP for better compression
+    },
+    async rewrites() {
+        return [
+            {
+                source: '/fetch-server-image-proxy/:documentId',
+                destination: `${process.env.NEXT_INTERNAL_API_URL || 'http://slim'}/bookingfrontend/resources/document/:documentId/download`,
+            },
+        ];
     },
     async headers() {
         return [

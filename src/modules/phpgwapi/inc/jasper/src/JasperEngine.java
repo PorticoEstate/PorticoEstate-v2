@@ -27,7 +27,7 @@ class JasperEngine {
 
 		JasperMacros jm = new JasperMacros();
 
-		int output_type = 0; // 0 - PDF (default), 1 = CSV, 2 - XLS
+		int output_type = 0; // 0 - PDF (default), 1 = CSV, 2 - XLS, 5 - XLSX
 		String report_name = null;
 		String connection_string = null;
 		String db_username = null;
@@ -47,6 +47,8 @@ class JasperEngine {
 					output_type = 1;
 				} else if (args[i + 1].equals("XLS")) {
 					output_type = 2;
+				} else if (args[i + 1].equals("XLSX")) {
+					output_type = 5;
 				} else if (args[i + 1].equals("XHTML")) {
 					output_type = 3;
 				} else if (args[i + 1].equals("DOCX")) {
@@ -128,8 +130,12 @@ class JasperEngine {
 				break;
 
 			case 2:
-				report.generateJRXls();
-				// report.generateJExcel();
+				// Legacy XLS requested: fallback to XLSX
+				report.generateJExcel();
+				break;
+
+			case 5:
+				report.generateJExcel();
 				break;
 
 			case 3:
@@ -153,7 +159,7 @@ class JasperEngine {
 				.println(
 						"USAGE: JasperEngine [-p <parameter1|value1;parameter2|value2;..parameterX|valueX] [-t <type>] [-h] <-n <report name>> < -d <connection_string>> < -u <db_username> > < -P <db_password> > < <config>\n");
 		System.out
-				.println("-t <type>  - The type of output, where type may be: PDF, CSV, XLS");
+			.println("-t <type>  - The type of output, where type may be: PDF, CSV, XLS, XLSX, XHTML, DOCX");
 	}
 
 }

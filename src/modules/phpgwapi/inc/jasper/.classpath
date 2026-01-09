@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib7/jasperreports-7.0.3.jar"/>
+	<classpathentry kind="lib" path="lib7/jasperreports-fonts-7.0.3.jar"/>
+	<classpathentry kind="lib" path="lib7/poi-5.2.5.jar"/>
+	<classpathentry kind="lib" path="lib7/poi-ooxml-5.2.5.jar"/>
+	<classpathentry kind="lib" path="lib7/pdfbox-2.0.31.jar"/>
+	<classpathentry kind="lib" path="lib7/fontbox-2.0.31.jar"/>
+	<classpathentry kind="lib" path="lib7/commons-collections4-4.4.jar"/>
+	<classpathentry kind="lib" path="lib7/commons-codec-1.16.0.jar"/>
+	<classpathentry kind="lib" path="lib7/commons-compress-1.26.0.jar"/>
+	<classpathentry kind="lib" path="lib7/slf4j-api-1.7.36.jar"/>
+	<classpathentry kind="lib" path="lib7/xmlbeans-5.1.1.jar"/>
+	<classpathentry kind="lib" path="lib7/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="lib7/commons-io-2.15.1.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

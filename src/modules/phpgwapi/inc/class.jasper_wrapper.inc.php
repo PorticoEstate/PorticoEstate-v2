@@ -33,9 +33,12 @@ class phpgwapi_jasper_wrapper
 		}
 
 		$java_classpath = "{$sep}.{$sep}";
-		foreach (glob(JASPER_LIBS . "*.jar") as $filename)
+		// Prefer jars from optional lib7 (JR 7.x) if present, then fall back to lib
+		$lib7 = dirname(JASPER_LIBS) . '/lib7/';
+		$classpath_source = is_dir($lib7) ? $lib7 : JASPER_LIBS;
+		foreach (glob($classpath_source . "*.jar") as $filename)
 		{
-			$java_classpath .=  $filename . $sep;
+			$java_classpath .= $filename . $sep;
 		}
 		$this->java_classpath = $java_classpath;
 
@@ -267,6 +270,11 @@ class phpgwapi_jasper_wrapper
 				{
 					$mime = 'application/vnd.ms-excel';
 					$filename = "{$report_name}.xls";
+				}
+				else if ($output_type == 'XLSX')
+				{
+					$mime = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+					$filename = "{$report_name}.xlsx";
 				}
 				else if ($output_type == 'XHTML')
 				{

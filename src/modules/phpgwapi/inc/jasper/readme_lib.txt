@@ -1,35 +1,26 @@
 
-jasperreports-X.Y.Z-project.tar.gz from
-http://sourceforge.net/projects/jasperreports/files/jasperreports
 
+JasperReports libraries are already vendored here; no build-from-source is required for normal use.
 
-Compile the source files, generate the JavaDoc API documentation, or build the distribution JAR files.
-Execute the Ant tasks declared in the build.xml file found in the root directory of the project tree (type ant –p at the jasperreports-{ver} root directory).
+What is bundled
+- lib/: JasperReports 6.19.1 runtime and dependencies (Java 8 compatible).
+- lib7/: JasperReports 7.0.3 runtime plus fonts/functions/pdf modules and updated deps (Java 11+).
+- bin/: compiled helpers used by the app.
 
-Install ant: 
-$ sudo apt install ant ivy
+Typical use
+- Point the PHP integration to the shipped jars under lib/ (or lib7/ if you target JR 7.x).
+- Ensure file modes stay readable: chmod 644 phpgwapi/jasper/lib/*.jar phpgwapi/jasper/lib7/*.jar phpgwapi/jasper/bin/*.class
 
-download apache-ivy-2.5.0-bin.zip from http://ant.apache.org/ivy/, unzipped it, and copy ivy-2.5.0.jar to <ANT_HOME>\lib.
+Updating libraries (preferred)
+- Download the official binary distribution zip from Jaspersoft for the target version.
+- Replace jasperreports-*.jar and jasperreports-javaflow-*.jar from that zip.
+- Refresh companion jars from the distribution lib folder (Jackson, POI, SLF4J, etc.) to match the same version set.
+- Keep JDBC drivers current (mysql-connector-java, postgresql). Place them alongside the other jars.
+- Verify the app still targets a compatible Java runtime for the chosen JasperReports line (6.x for Java 8, 7.x for Java 11+).
 
-Compile:
-$ ant alljars -autoproxy
-Retrieve libs:
-$ ant retrievelibs -autoproxy
-
-
-jasperreports-X.Y.Z.jar and jasperreports-javaflow-X.Y.Z.jar from /dist/
-+ all jar-files from  /lib/
-
-
+Building from source (rare)
+- Only if you must patch JasperReports itself: install Ant and Ivy, run ant alljars and ant retrievelibs in the JasperReports source tree, then copy the resulting dist and lib jars here. Prefer the official binaries above.
 database connectors from db-system sites
+
 https://dev.mysql.com/downloads/connector/j/
-https://jdbc.postgresql.org/
-
-
-Probably not necesarry:
-	poi-X.0-final-YYYYYYYY.jar from http://poi.apache.org/
-	iText-X.X.X.jar from http://itextpdf.com/
-	
-chmod 644  on .jar and .class in phpgwapi/jasper/lib/ and phpgwapi/jasper/bin/
-
 

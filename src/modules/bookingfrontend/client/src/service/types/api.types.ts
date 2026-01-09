@@ -208,6 +208,12 @@ export interface IDocument {
     owner_id: number;
     url: string;
     owner_type?: 'resource' | 'building' | 'organization';
+    metadata?: {
+        focal_point?: {
+            x: number;
+            y: number;
+        };
+    };
 }
 export type IDocumentCategoryQuery = IDocument['category'] | 'images';
 

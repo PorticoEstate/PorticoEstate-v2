@@ -851,6 +851,7 @@ $phpgw_baseline = array(
 			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
 			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -866,6 +867,7 @@ $phpgw_baseline = array(
 			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
 			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -881,6 +883,7 @@ $phpgw_baseline = array(
 			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
 			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -896,6 +899,7 @@ $phpgw_baseline = array(
 			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
 			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(

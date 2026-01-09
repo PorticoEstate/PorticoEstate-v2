@@ -982,6 +982,8 @@ invoicing_changes_apply_to_all	booking	no	Endringer i fakturering vil gjelde for
 combined_view	booking	no	Kombinert visning
 all_allocations_created	booking	no	Alle tildelinger opprettet
 no_allocations_to_create	booking	no	Ingen tildelinger å opprette
+Leave empty to use password authentication	booking	no	La stå tomt for å bruke passordautentisering
+SSH Private Key	booking	no	SSH privat nøkkel
 focal_point	booking	no	Fokuspunkt
 edit_focal_point	booking	no	Rediger fokuspunkt
 set_focal_point	booking	no	Sett fokuspunkt

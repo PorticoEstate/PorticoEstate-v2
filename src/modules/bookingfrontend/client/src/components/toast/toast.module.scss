@@ -40,7 +40,7 @@
 	justify-content: flex-end;
 	animation: slideIn 0.3s ease-out forwards;
 	transition: visibility 0.3s, opacity 0.5s linear;
-	
+
 	&.hidden {
 		visibility: hidden;
 		opacity: 0;
@@ -55,7 +55,7 @@
 }
 
 .badge {
-	--dsc-badge-background: var(--ds-color-neutral-surface-default);
+	//--dsc-badge-background: var(--ds-color-neutral-surface-default);
 }
 
 .toastAnimation {

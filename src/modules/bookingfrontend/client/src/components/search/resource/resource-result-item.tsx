@@ -46,9 +46,14 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 			};
 		}
 
-		// Use Next.js rewrite path for server-side image fetching
+		// In production, use full public URL with domain; in development, use proxy
+		const isProduction = process.env.NODE_ENV === 'production';
+		const imageUrl = isProduction
+			? `${typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_API_URL || '')}/bookingfrontend/resources/document/${picture.id}/download`
+			: `${basePath}/fetch-server-image-proxy/${picture.id}`;
+
 		return {
-			url: `${basePath}/fetch-server-image-proxy/${picture.id}`,
+			url: imageUrl,
 			focalPoint: picture.metadata?.focal_point
 		};
 	}, [searchData, resource.id]);

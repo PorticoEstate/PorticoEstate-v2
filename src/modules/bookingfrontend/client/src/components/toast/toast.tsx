@@ -68,7 +68,8 @@ const ToastContainer: React.FC = () => {
 						<ShoppingBasketIcon fontSize="1.25rem"/>
 						Handlekurv
 						<Badge
-							data-color="neutral"
+							data-color="accent"
+							variant={'tinted'}
 							data-size={'sm'}
 							className={styles.badge}
 							style={{

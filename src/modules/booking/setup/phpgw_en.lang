@@ -887,6 +887,8 @@ all_allocations_created	booking	en	All allocations created
 no_allocations_to_create	booking	en	No allocations to create
 Leave empty to use password authentication	booking	en	Leave empty to use password authentication
 SSH Private Key	booking	en	SSH Private Key
+allocations_created_with_conflicts	booking	en	Allocations created (some with conflicts)
+use_edit_to_modify_allocations	booking	en	Use Edit to modify existing allocations
 focal_point	booking	en	Focal Point
 edit_focal_point	booking	en	Edit Focal Point
 set_focal_point	booking	en	Set Focal Point

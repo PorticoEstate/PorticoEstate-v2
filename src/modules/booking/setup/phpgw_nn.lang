@@ -994,6 +994,8 @@ invoicing_changes_apply_to_all	booking	nn	Endringar i fakturering vil gjelde for
 combined_view	booking	nn	Kombinert visning
 all_allocations_created	booking	nn	Alle tildelingar oppretta
 no_allocations_to_create	booking	nn	Ingen tildelingar å oppretta
+allocations_created_with_conflicts	booking	nn	Tildelingar oppretta (nokre med konflikt)
+use_edit_to_modify_allocations	booking	nn	Bruk Endre for å gjere endringar på eksisterande tildelingar
 Leave empty to use password authentication	booking	nn	La stå tomt for å bruke passordautentisering
 SSH Private Key	booking	nn	SSH privat nøkkel
 focal_point	booking	nn	Fokuspunkt

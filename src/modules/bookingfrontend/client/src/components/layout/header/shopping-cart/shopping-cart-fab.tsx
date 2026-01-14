@@ -17,14 +17,14 @@ const ShoppingCartFab: FC<ShoppingCartFabProps> = (props) => {
     const [open, setOpen] = useState<boolean>(false);
     const popperAnchorEl = useRef<HTMLButtonElement | null>(null);
     const isMobile = useIsMobile();
-    
+
     // Check if cart has items
     const hasItems = (cartItems?.list.length ?? 0) > 0;
-    
+
     return (
-        <div style={{ 
-            position: 'fixed', 
-            bottom: '20px', 
+        <div style={{
+            position: 'fixed',
+            bottom: '20px',
             right: '20px',
             opacity: hasItems ? 1 : 0,
             visibility: hasItems ? 'visible' : 'hidden',
@@ -38,7 +38,7 @@ const ShoppingCartFab: FC<ShoppingCartFabProps> = (props) => {
                 <ShoppingBasketIcon fontSize="1.25rem" />
                 Handlekurv
                 <Badge
-                    data-color="brand3"
+                    data-color="accent"
                     data-size={'sm'}
 					className={styles.badge}
                     style={{
@@ -48,7 +48,7 @@ const ShoppingCartFab: FC<ShoppingCartFabProps> = (props) => {
                     count={cartItems?.list.length ?? 0}
                 ></Badge>
             </Button>
-            
+
             {isMobile ? (
                 <ShoppingCartPopper anchor={popperAnchorEl.current} open={open} setOpen={setOpen}/>
             ) : (

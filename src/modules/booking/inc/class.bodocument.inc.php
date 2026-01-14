@@ -131,4 +131,33 @@
 		{
 			return $this->so->read_images($this->build_default_read_params());
 		}
+
+		function update($entity)
+		{
+
+			if (isset($entity['focal_point_x']) && isset($entity['focal_point_y']) && $entity['focal_point_x'] !== '' && $entity['focal_point_y'] !== '')
+			{
+				$metadata = isset($entity['metadata']) && is_array($entity['metadata'])
+					? $entity['metadata']
+					: (isset($entity['metadata']) && is_string($entity['metadata'])
+						? json_decode($entity['metadata'], true)
+						: array());
+
+				if (!is_array($metadata))
+				{
+					$metadata = array();
+				}
+
+				$metadata['focal_point'] = array(
+					'x' => (float)$entity['focal_point_x'],
+					'y' => (float)$entity['focal_point_y']
+				);
+
+				$entity['metadata'] = $metadata;
+
+			}
+
+
+			return parent::update($entity);
+		}
 	}

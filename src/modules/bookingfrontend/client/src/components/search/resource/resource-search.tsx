@@ -178,7 +178,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         const resourceActivities = searchData?.resource_activities?.filter(
             ra => ra.resource_id === resource.id
         ) || [];
-        
+
         const additionalActivityNames = resourceActivities
             .map(ra => searchData?.activities.find(a => a.id === ra.activity_id))
             .filter(Boolean)
@@ -237,7 +237,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         // Only apply text search if something has been entered
         if (textSearchQuery && textSearchQuery.trim() !== '') {
             const query = textSearchQuery.toLowerCase();
-            
+
             filtered = filtered.filter(resource => {
                 const resourceNameMatch = resource.name.toLowerCase().includes(query);
                 const buildingNameMatch = resource.building?.name?.toLowerCase().includes(query);
@@ -249,14 +249,14 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                         activity.name.toLowerCase().includes(query)
                     ) : null;
 
-                const resourceActivity = resource.activity_id ? 
+                const resourceActivity = resource.activity_id ?
                     searchData?.activities.find(a => a.id === resource.activity_id) : null;
 
                 // Also check resource_activities for additional activity connections
                 const resourceActivities = searchData?.resource_activities?.filter(
                     ra => ra.resource_id === resource.id
                 ) || [];
-                
+
                 const additionalActivityMatches = resourceActivities
                     .map(ra => searchData?.activities.find(a => a.id === ra.activity_id))
                     .filter(Boolean)
@@ -589,7 +589,7 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                         // Determine availability for this resource based on its domain
                         const resourceDomain = resource.domain_name || 'local';
                         const resourceIdToCheck = resource.original_id || resource.id;
-                        console.log(resourceDomain, resourceIdToCheck, availableResourcesByDomain?.[resourceDomain]);
+                        // console.log(resourceDomain, resourceIdToCheck, availableResourcesByDomain?.[resourceDomain]);
 						const isAvailable = availableResourcesByDomain?.[resourceDomain]
                             ? availableResourcesByDomain[resourceDomain].includes(resourceIdToCheck)
                             : undefined;

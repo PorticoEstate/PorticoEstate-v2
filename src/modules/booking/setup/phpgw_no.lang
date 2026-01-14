@@ -986,3 +986,14 @@ allocations_created_with_conflicts	booking	no	Tildelinger opprettet (noen med ko
 use_edit_to_modify_allocations	booking	no	Bruk Endre for å gjøre endringer på eksisterende tildelinger
 Leave empty to use password authentication	booking	no	La stå tomt for å bruke passordautentisering
 SSH Private Key	booking	no	SSH privat nøkkel
+focal_point	booking	no	Fokuspunkt
+edit_focal_point	booking	no	Rediger fokuspunkt
+set_focal_point	booking	no	Sett fokuspunkt
+previews	booking	no	Forhåndsvisninger
+focal_point_instructions	booking	no	Klikk eller dra for å sette fokuspunktet. Bruk piltastene for fininnstillinger.
+reset_to_center	booking	no	Tilbakestill til senter
+remove_focal_point	booking	no	Fjern fokuspunkt
+card_preview	booking	no	Kort
+square_preview	booking	no	200x200 (kvadrat)
+portrait_preview	booking	no	200x411 (portrett)
+apply_focal_point	booking	no	Bruk

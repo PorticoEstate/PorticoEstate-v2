@@ -2053,6 +2053,10 @@ function frontendScheduleDateColumn(data, col, date)
 	if (data[k])
 	{
 		var name = (data[k]['shortname']) ? formatScheduleShorten(data[k]['shortname'], 9) : formatScheduleShorten(data[k]['name'], 9);
+		if (!name)
+		{
+			name = formatScheduleShorten(data[k]['activity_name'], 9);
+		}
 		var type = data[k]['type'];
 		var colorCell = formatScheduleCellDateColumn(name, type);
 

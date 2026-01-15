@@ -765,7 +765,8 @@ phpgw::import_class('booking.bocommon_authorized');
 					'is_public'			 => $event['is_public'],
 					'activity_name'		 => $event['activity_name'],
 					'resources'			 => $event['resources'],
-					'dates'				 => $event['dates']
+					'dates'				 => $event['dates'],
+					'contact_name'		 => $this->current_app() == 'booking' ? $event['contact_name'] : '',
 				);
 			}
 

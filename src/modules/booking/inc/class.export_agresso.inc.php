@@ -232,6 +232,7 @@ class export_agresso
 		}
 		catch (FilesystemException $exception)
 		{
+			throw $exception;
 			$transfer_ok = false;
 		}
 		return $transfer_ok;

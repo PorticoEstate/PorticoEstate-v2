@@ -2056,17 +2056,18 @@ function frontendScheduleDateColumn(data, col, date)
 		var name = (data[k]['shortname']) ? formatScheduleShorten(data[k]['shortname'], 9) : formatScheduleShorten(data[k]['name'], 9);
 
 		//name alternative 2
-		if (!name)
+		if ((!name || name == 'dummy') && typeof data[k]['contact_name'] !== 'undefined' && data[k]['contact_name'] !== null && data[k]['contact_name'] !== '')
+		{
+			name = formatScheduleShorten(data[k]['contact_name'], 9);
+		}
+
+		//name alternative 3
+		if (!name || name == 'dummy')
 		{
 			name = formatScheduleShorten(data[k]['activity_name'], 9);
 		}
 		var type = data[k]['type'];
 
-		//name alternative 3
-		if (typeof data[k]['contact_name'] !== 'undefined' && data[k]['contact_name'] !== null && data[k]['contact_name'] !== '')
-		{
-			name = formatScheduleShorten(data[k]['contact_name'], 9);
-		}
 		var colorCell = formatScheduleCellDateColumn(name, type);
 
 		//name alternative 4

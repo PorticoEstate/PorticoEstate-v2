@@ -738,6 +738,8 @@ phpgw::import_class('booking.bocommon_authorized');
 
 			$events = array();
 
+			$current_app = $this->current_app();
+
 			/**
 			 * Whitelisting
 			 */
@@ -751,9 +753,9 @@ phpgw::import_class('booking.bocommon_authorized');
 					'active'			 => $event['active'],
 					'activity_id'		 => $event['activity_id'],
 					'application_id'	 => $event['application_id'],
-					'name'				 => $event['is_public'] ? $event['name'] : '',
+					'name'				 => $current_app == 'booking' ? $event['name'] : '',
 					'homepage'			 => $event['homepage'],
-					'description'		 => $event['is_public'] ? $event['description'] : '',
+					'description'		 => $current_app == 'booking' ? $event['description'] : '',
 					'equipment'			 => $event['equipment'],
 					'building_id'		 => $event['building_id'],
 					'building_name'		 => $event['building_name'],
@@ -766,7 +768,7 @@ phpgw::import_class('booking.bocommon_authorized');
 					'activity_name'		 => $event['activity_name'],
 					'resources'			 => $event['resources'],
 					'dates'				 => $event['dates'],
-					'contact_name'		 => $this->current_app() == 'booking' ? $event['contact_name'] : '',
+					'contact_name'		 => $current_app == 'booking' ? $event['contact_name'] : '',
 				);
 			}
 

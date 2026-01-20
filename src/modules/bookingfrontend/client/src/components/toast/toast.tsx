@@ -38,9 +38,9 @@ const ToastContainer: React.FC = () => {
 			{/* Toast notifications */}
 			<div className={styles.toastContainer}>
 				{toasts.map((toast) => (
-					<Toast 
-						key={toast.id} 
-						toast={toast} 
+					<Toast
+						key={toast.id}
+						toast={toast}
 						onClose={() => removeToast(toast.id)}
 						onPause={() => pauseToast(toast.id)}
 						onResume={() => resumeToast(toast.id)}
@@ -68,7 +68,8 @@ const ToastContainer: React.FC = () => {
 						<ShoppingBasketIcon fontSize="1.25rem"/>
 						Handlekurv
 						<Badge
-							data-color="brand3"
+							data-color="accent"
+							variant={'tinted'}
 							data-size={'sm'}
 							className={styles.badge}
 							style={{

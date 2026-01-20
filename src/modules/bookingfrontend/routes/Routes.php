@@ -10,6 +10,7 @@ use App\modules\bookingfrontend\controllers\DataStore;
 use App\modules\bookingfrontend\controllers\BookingUserController;
 use App\modules\bookingfrontend\controllers\DebugController;
 use App\modules\bookingfrontend\controllers\EventController;
+use App\modules\bookingfrontend\controllers\FreetimeController;
 use App\modules\bookingfrontend\controllers\LoginController;
 use App\modules\bookingfrontend\controllers\MultiDomainController;
 use App\modules\bookingfrontend\controllers\OrganizationController;
@@ -43,10 +44,12 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}/documents', BuildingController::class . ':getDocuments');
 		$group->get('/document/{id}/download', BuildingController::class . ':downloadDocument');
 		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getBuildingSchedule');
+		$group->get('/{id}/freetime', FreetimeController::class . ':buildingFreetime');
 		$group->get('/{id}/agegroups', BuildingController::class . ':getAgeGroups');
 		$group->get('/{id}/audience', BuildingController::class . ':getAudience');
 		$group->get('/{id}/seasons', BuildingController::class . ':getSeasons');
 	});
+
 
 	$group->group('/resources', function (RouteCollectorProxy $group)
 	{
@@ -54,6 +57,7 @@ $app->group('/bookingfrontend', function (RouteCollectorProxy $group)
 		$group->get('/{id}', ResourceController::class . ':getResource');
 		$group->get('/{id}/documents', ResourceController::class . ':getDocuments');
 		$group->get('/{id}/schedule', ScheduleEntityController::class . ':getResourceSchedule');
+		$group->get('/{id}/freetime', FreetimeController::class . ':resourceFreetime');
 		$group->get('/document/{id}/download', ResourceController::class . ':downloadDocument');
 
 	});

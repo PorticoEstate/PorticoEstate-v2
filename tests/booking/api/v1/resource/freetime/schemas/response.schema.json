@@ -1,0 +1,163 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://aktivkommune.no/schemas/bookingfrontend/freetime-response.json",
+  "title": "Freetime Response Schema",
+  "description": "Schema for bookingfrontend.uibooking.get_freetime endpoint response",
+  "type": "object",
+  "patternProperties": {
+    "^[0-9]+$": {
+      "type": "array",
+      "description": "Array of time slots for a specific resource ID",
+      "items": {
+        "$ref": "#/definitions/timeSlot"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "timeSlot": {
+      "type": "object",
+      "required": ["when", "start", "end", "overlap"],
+      "properties": {
+        "when": {
+          "type": "string",
+          "description": "Human-readable time range",
+          "pattern": "^[0-9]{2}/[0-9]{2}-[0-9]{4} [0-9]{2}:[0-9]{2} - [0-9]{2}/[0-9]{2}-[0-9]{4} [0-9]{2}:[0-9]{2}$",
+          "examples": ["20/01-2026 08:00 - 20/01-2026 10:00"]
+        },
+        "start": {
+          "type": "string",
+          "description": "Start timestamp in milliseconds (as string)",
+          "pattern": "^[0-9]{13}$"
+        },
+        "end": {
+          "type": "string",
+          "description": "End timestamp in milliseconds (as string)",
+          "pattern": "^[0-9]{13}$"
+        },
+        "overlap": {
+          "description": "Overlap status: false/0 (available), 1 (complete overlap), 2 (partial/block), 3 (disabled/past)",
+          "oneOf": [
+            { "type": "boolean", "const": false },
+            { "type": "integer", "enum": [0, 1, 2, 3] }
+          ]
+        },
+        "start_iso": {
+          "type": "string",
+          "description": "Start time in ISO 8601 format with timezone",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{2}:[0-9]{2}$",
+          "examples": ["2026-01-20T08:00:00+01:00"]
+        },
+        "end_iso": {
+          "type": "string",
+          "description": "End time in ISO 8601 format with timezone",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[+-][0-9]{2}:[0-9]{2}$",
+          "examples": ["2026-01-20T10:00:00+01:00"]
+        },
+        "resource_id": {
+          "type": "integer",
+          "description": "Resource ID (only present when detailed_overlap=true)",
+          "minimum": 1
+        },
+        "overlap_reason": {
+          "type": "string",
+          "description": "Reason for overlap (only present when overlap is not false/0)",
+          "enum": [
+            "time_in_past",
+            "complete_overlap",
+            "complete_containment",
+            "start_overlap",
+            "end_overlap"
+          ]
+        },
+        "overlap_type": {
+          "type": "string",
+          "description": "Type of overlap (only present when overlap is not false/0)",
+          "enum": [
+            "disabled",
+            "complete",
+            "partial"
+          ]
+        },
+        "overlap_event": {
+          "type": "object",
+          "description": "Details about the overlapping event (only present when overlap=1 or overlap=2)",
+          "required": ["id", "type", "from", "to"],
+          "properties": {
+            "id": {
+              "type": "integer",
+              "description": "ID of the overlapping event/booking/allocation",
+              "minimum": 1
+            },
+            "type": {
+              "type": "string",
+              "description": "Type of the overlapping item (MUST NOT be null)",
+              "enum": ["event", "booking", "allocation", "block", "application"],
+              "minLength": 1
+            },
+            "status": {
+              "type": ["string", "null"],
+              "description": "Status of the overlapping item (can be null)"
+            },
+            "from": {
+              "type": "string",
+              "description": "Start datetime of the overlapping item",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$",
+              "examples": ["2026-01-20 14:00:00"]
+            },
+            "to": {
+              "type": "string",
+              "description": "End datetime of the overlapping item",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$",
+              "examples": ["2026-01-20 16:00:00"]
+            }
+          },
+          "additionalProperties": false
+        },
+        "applicationLink": {
+          "type": "string",
+          "description": "Application link (only present when detailed_overlap=false)",
+          "pattern": "^/bookingfrontend/"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "description": "If overlap is not false/0, overlap_reason and overlap_type are required",
+          "if": {
+            "properties": {
+              "overlap": {
+                "not": {
+                  "oneOf": [
+                    { "const": false },
+                    { "const": 0 }
+                  ]
+                }
+              }
+            }
+          },
+          "then": {
+            "required": ["overlap_reason", "overlap_type"]
+          }
+        },
+        {
+          "description": "If overlap is 1 or 2, overlap_event should be present",
+          "if": {
+            "properties": {
+              "overlap": {
+                "enum": [1, 2]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "overlap_event": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

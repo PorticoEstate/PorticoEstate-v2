@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
+         bootstrap="../../vendor/autoload.php"
+         colors="true"
+         verbose="true">
+    <testsuites>
+        <testsuite name="Legacy API Tests">
+            <directory>legacy/endpoints</directory>
+        </testsuite>
+    </testsuites>
+
+    <php>
+        <!-- Default configuration for local testing -->
+        <env name="FREETIME_TEST_BASE_URL" value="https://pe-api.test"/>
+        <env name="FREETIME_TEST_RESOURCE_ID" value="106"/>
+        <env name="FREETIME_TEST_BUILDING_ID" value="10"/>
+        <env name="FREETIME_TEST_TIMEZONE" value="Europe/Oslo"/>
+    </php>
+</phpunit>

@@ -1268,4 +1268,148 @@ class ScheduleEntityService
         }
     }
 
+    /**
+     * Get all scheduled items for freetime calculation
+     * Includes events, allocations, bookings, blocks, and partial applications
+     * Adds 'type' field and formats resources as simple ID arrays
+     *
+     * @param array $resourceIds Array of resource IDs
+     * @param DateTime $from Start date
+     * @param DateTime $to End date
+     * @return array Array of scheduled items with type field
+     * @throws Exception
+     */
+    public function getScheduledItemsForFreetime(array $resourceIds, DateTime $from, DateTime $to): array
+    {
+        $results = [];
+
+        foreach ($resourceIds as $resourceId) {
+            // Get existing scheduled items using existing methods
+            $events = $this->getEventsForResource($resourceId, $from, $to);
+            $allocations = $this->getAllocationsForResource($resourceId, $from, $to);
+            $bookings = $this->getBookingsForResource($resourceId, $from, $to);
+
+            // Add type field and convert resources to simple IDs
+            foreach ($events as &$event) {
+                $event['type'] = 'event';
+                $event['resources'] = [(int)$event['resource_id']];
+            }
+            foreach ($allocations as &$allocation) {
+                $allocation['type'] = 'allocation';
+                $allocation['resources'] = [(int)$allocation['resource_id']];
+            }
+            foreach ($bookings as &$booking) {
+                $booking['type'] = 'booking';
+                $booking['resources'] = [(int)$booking['resource_id']];
+            }
+
+            $results = array_merge($results, $events, $allocations, $bookings);
+        }
+
+        // Add blocks
+        $blocks = $this->getBlocksForResources($resourceIds);
+        foreach ($blocks as &$block) {
+            $block['type'] = 'block';
+            $block['resources'] = [(int)$block['resource_id']];
+        }
+        $results = array_merge($results, $blocks);
+
+        // Add partial applications
+        $sessionId = session_id();
+        if ($sessionId) {
+            $partials = $this->getPartialApplicationsForResources($resourceIds, $sessionId);
+            foreach ($partials as &$partial) {
+                $partial['type'] = 'application';
+                $partial['resources'] = [(int)$partial['resource_id']];
+            }
+            $results = array_merge($results, $partials);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Query blocks for resources
+     * Excludes blocks from current session
+     *
+     * @param array $resourceIds Array of resource IDs
+     * @return array Array of blocks
+     * @throws Exception
+     */
+    private function getBlocksForResources(array $resourceIds): array
+    {
+        if (empty($resourceIds)) {
+            return [];
+        }
+
+        try {
+            $placeholders = implode(',', array_map('intval', $resourceIds));
+            $sql = "SELECT id, from_, to_, resource_id, session_id, active
+                    FROM bb_block
+                    WHERE resource_id IN ($placeholders)
+                    AND active = 1";
+
+            // Exclude blocks from current session
+            $sessionId = session_id();
+            if ($sessionId) {
+                $sql .= " AND (session_id IS NULL OR session_id != :session_id)";
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute([':session_id' => $sessionId]);
+            } else {
+                $stmt = $this->db->prepare($sql);
+                $stmt->execute();
+            }
+
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            throw new Exception("Error fetching blocks for resources: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Query partial applications for resources
+     * Only returns applications in NEWPARTIAL1 status for the current session
+     *
+     * @param array $resourceIds Array of resource IDs
+     * @param string $sessionId Current session ID
+     * @return array Array of partial applications
+     * @throws Exception
+     */
+    private function getPartialApplicationsForResources(array $resourceIds, string $sessionId): array
+    {
+        if (empty($resourceIds)) {
+            return [];
+        }
+
+        try {
+            $placeholders = implode(',', array_map('intval', $resourceIds));
+            $sql = "SELECT a.id, a.from_, a.status, ar.resource_id
+                    FROM bb_application a
+                    INNER JOIN bb_application_resource ar ON a.id = ar.application_id
+                    WHERE ar.resource_id IN ($placeholders)
+                    AND a.status = 'NEWPARTIAL1'
+                    AND a.session_id = :session_id";
+
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([':session_id' => $sessionId]);
+
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get dates from bb_application_date
+            foreach ($rows as &$row) {
+                $datesSQL = "SELECT from_, to_ FROM bb_application_date WHERE application_id = ? ORDER BY from_ LIMIT 1";
+                $datesStmt = $this->db->prepare($datesSQL);
+                $datesStmt->execute([$row['id']]);
+                $date = $datesStmt->fetch(PDO::FETCH_ASSOC);
+
+                $row['from_'] = $date['from_'] ?? null;
+                $row['to_'] = $date['to_'] ?? null;
+            }
+
+            return $rows;
+        } catch (Exception $e) {
+            throw new Exception("Error fetching partial applications for resources: " . $e->getMessage());
+        }
+    }
+
 }

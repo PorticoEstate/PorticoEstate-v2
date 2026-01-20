@@ -1501,8 +1501,8 @@ phpgw::import_class('booking.bocommon_authorized');
 				if ($resource['simple_booking'] && empty($resource['skip_timeslot']))
 				{
 					$event_ids = array_merge($event_ids, $this->so->event_ids_for_resource($resource['id'], $_from, $to));
-					$allocation_ids	 = array_merge($allocation_ids, $this->so->allocation_ids_for_resource($resource_id, $from, $to));
-					$booking_ids	 = array_merge($booking_ids, $this->so->booking_ids_for_resource($resource_id, $from, $to));
+					$allocation_ids	 = array_merge($allocation_ids, $this->so->allocation_ids_for_resource($resource['id'], $from, $to));
+					$booking_ids	 = array_merge($booking_ids, $this->so->booking_ids_for_resource($resource['id'], $from, $to));
 				}
 
 				$resource['from'] = $from;
@@ -1526,6 +1526,23 @@ phpgw::import_class('booking.bocommon_authorized');
 					foreach ($events['results'] as &$event)
 					{
 						$event['type'] = 'event';
+						// Convert resources from objects to simple ID array for overlap detection
+						if (isset($event['resources']) && is_array($event['resources']))
+						{
+							$resource_ids = array();
+							foreach ($event['resources'] as $res)
+							{
+								if (is_array($res) && isset($res['id']))
+								{
+									$resource_ids[] = $res['id'];
+								}
+								elseif (is_int($res))
+								{
+									$resource_ids[] = $res;
+								}
+							}
+							$event['resources'] = $resource_ids;
+						}
 					}
 					unset($event);
 				}
@@ -1540,6 +1557,23 @@ phpgw::import_class('booking.bocommon_authorized');
 					foreach ($allocations['results'] as &$allocation)
 					{
 						$allocation['type'] = 'allocation';
+						// Convert resources from objects to simple ID array for overlap detection
+						if (isset($allocation['resources']) && is_array($allocation['resources']))
+						{
+							$resource_ids = array();
+							foreach ($allocation['resources'] as $res)
+							{
+								if (is_array($res) && isset($res['id']))
+								{
+									$resource_ids[] = $res['id'];
+								}
+								elseif (is_int($res))
+								{
+									$resource_ids[] = $res;
+								}
+							}
+							$allocation['resources'] = $resource_ids;
+						}
 					}
 					unset($allocation);
 				}
@@ -1554,6 +1588,23 @@ phpgw::import_class('booking.bocommon_authorized');
 					foreach ($bookings['results'] as &$booking)
 					{
 						$booking['type'] = 'booking';
+						// Convert resources from objects to simple ID array for overlap detection
+						if (isset($booking['resources']) && is_array($booking['resources']))
+						{
+							$resource_ids = array();
+							foreach ($booking['resources'] as $res)
+							{
+								if (is_array($res) && isset($res['id']))
+								{
+									$resource_ids[] = $res['id'];
+								}
+								elseif (is_int($res))
+								{
+									$resource_ids[] = $res;
+								}
+							}
+							$booking['resources'] = $resource_ids;
+						}
 					}
 					unset($booking);
 				}
@@ -1751,13 +1802,13 @@ phpgw::import_class('booking.bocommon_authorized');
 						if($within_season)
 						{
 							$overlap_result = $this->check_if_resurce_is_taken($resource, $StartTime, $endTime, $events);
-							
+
 							// Handle both old and new format return values
 							$overlap_status = is_array($overlap_result) ? $overlap_result['status'] : $overlap_result;
 							$overlap_reason = is_array($overlap_result) ? $overlap_result['reason'] : null;
 							$overlap_type = is_array($overlap_result) ? $overlap_result['type'] : null;
 							$overlap_event = is_array($overlap_result) ? $overlap_result['event'] : null;
-							
+
 							// Create the base timeslot structure
 							$timeslot = [
 								'when'				 => $StartTime->format($datetimeformat) . ' - ' . $endTime->format($datetimeformat),
@@ -1767,12 +1818,12 @@ phpgw::import_class('booking.bocommon_authorized');
                                 'start_iso'          => $StartTime->format('c'),
                                 'end_iso'            => $endTime->format('c')
 							];
-							
+
 							// Add detailed overlap information or applicationLink based on detailed_overlap parameter
 							if ($detailed_overlap) {
 								// Add the resource_id when using detailed_overlap
 								$timeslot['resource_id'] = $resource['id'];
-								
+
 								// Add the detailed overlap information if it's available
 								if ($overlap_reason) {
 									$timeslot['overlap_reason'] = $overlap_reason;
@@ -1794,7 +1845,7 @@ phpgw::import_class('booking.bocommon_authorized');
 									'simple'		 => true
 								];
 							}
-							
+
 							$availlableTimeSlots[$resource['id']][] = $timeslot;
 						}
 
@@ -1890,10 +1941,10 @@ phpgw::import_class('booking.bocommon_authorized');
 				{
 					$event_start = new DateTime($event['from_'], $DateTimeZone);
 					$event_end	 = new DateTime($event['to_'], $DateTimeZone);
-					
+
 					// Check for exact match or full coverage (event has identical time boundaries or completely covers the requested slot)
 					if (($event_start <= $StartTime AND $event_end >= $endTime) ||
-						($event_start->format('Y-m-d H:i:s') === $StartTime->format('Y-m-d H:i:s') AND 
+						($event_start->format('Y-m-d H:i:s') === $StartTime->format('Y-m-d H:i:s') AND
 						 $event_end->format('Y-m-d H:i:s') === $endTime->format('Y-m-d H:i:s')))
 					{
 						$overlap_reason = 'complete_overlap';
@@ -1909,7 +1960,7 @@ phpgw::import_class('booking.bocommon_authorized');
 						break;
 					}
 					// Check for complete containment (existing event is inside the requested time)
-					else if ($event_start > $StartTime AND $event_end < $endTime) 
+					else if ($event_start > $StartTime AND $event_end < $endTime)
 					{
 						$overlap_reason = 'complete_containment';
 						$overlap_type = 'complete';
@@ -1924,7 +1975,7 @@ phpgw::import_class('booking.bocommon_authorized');
 						break;
 					}
 					// Check for start overlap (existing event starts before/at and ends after start time but before end time)
-					else if ($event_start <= $StartTime AND $event_end > $StartTime AND $event_end < $endTime) 
+					else if ($event_start <= $StartTime AND $event_end > $StartTime AND $event_end < $endTime)
 					{
 						$overlap_reason = 'start_overlap';
 						$overlap_type = 'partial';
@@ -1939,7 +1990,7 @@ phpgw::import_class('booking.bocommon_authorized');
 						break;
 					}
 					// Check for end overlap (existing event starts after start time but before end time and ends at/after end time)
-					else if ($event_start > $StartTime AND $event_start < $endTime AND $event_end >= $endTime) 
+					else if ($event_start > $StartTime AND $event_start < $endTime AND $event_end >= $endTime)
 					{
 						$overlap_reason = 'end_overlap';
 						$overlap_type = 'partial';
@@ -1955,16 +2006,16 @@ phpgw::import_class('booking.bocommon_authorized');
 					}
 				}
 			}
-			
+
 			if ($overlap) {
 				return [
-					'status' => $overlap, 
-					'reason' => $overlap_reason, 
+					'status' => $overlap,
+					'reason' => $overlap_reason,
 					'type' => $overlap_type,
 					'event' => $overlap_event
 				];
 			}
-			
+
 			return $overlap;
 		}
 
@@ -2597,7 +2648,7 @@ phpgw::import_class('booking.bocommon_authorized');
 		{
 			// Call parent update method
 			$result = parent::update($entity);
-/* 
+/*
 			// Get booking ID
 			$booking_id = $entity['id'];
 
@@ -2636,7 +2687,7 @@ phpgw::import_class('booking.bocommon_authorized');
 		 */
 		function delete($id)
 		{
-/* 
+/*
 			// Get booking data before deletion (to get resource IDs)
 			$booking = $this->read_single($id);
 			$resource_ids = array();

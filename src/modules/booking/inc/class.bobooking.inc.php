@@ -1520,16 +1520,43 @@ phpgw::import_class('booking.bocommon_authorized');
 			{
 				$events = $this->event_so->read(array('filters' => array('id' => $event_ids),
 					'results' => -1));
+				// Add type field to identify these as events
+				if (isset($events['results']) && is_array($events['results']))
+				{
+					foreach ($events['results'] as &$event)
+					{
+						$event['type'] = 'event';
+					}
+					unset($event);
+				}
 			}
 			if ($allocation_ids)
 			{
 				$allocations = $this->allocation_so->read(array('filters' => array('id' => $allocation_ids),
 					'results' => -1));
+				// Add type field to identify these as allocations
+				if (isset($allocations['results']) && is_array($allocations['results']))
+				{
+					foreach ($allocations['results'] as &$allocation)
+					{
+						$allocation['type'] = 'allocation';
+					}
+					unset($allocation);
+				}
 			}
 			if ($booking_ids)
 			{
 				$bookings = $this->so->read(array('filters' => array('id' => $booking_ids),
 					'results' => -1));
+				// Add type field to identify these as bookings
+				if (isset($bookings['results']) && is_array($bookings['results']))
+				{
+					foreach ($bookings['results'] as &$booking)
+					{
+						$booking['type'] = 'booking';
+					}
+					unset($booking);
+				}
 			}
 
 			/**
@@ -1805,6 +1832,7 @@ phpgw::import_class('booking.bocommon_authorized');
 					{
 						$application['from_'] = $application['dates'][0]['from_'];
 						$application['to_'] = $application['dates'][0]['to_'];
+					$application['type'] = 'application';
 					}
 
 					$events['results'] = array_merge((array)$events['results'],$applications['results']);

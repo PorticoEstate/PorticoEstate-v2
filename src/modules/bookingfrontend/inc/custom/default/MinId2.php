@@ -218,7 +218,7 @@ class bookingfrontend_external_user extends UserHelper
 		}
 
 		$test_organizations = (array)explode(',', (string)$this->config->config_data['test_organization']);
-		if ($this->debug && $test_organizations[0])
+		if ($test_organizations[0])
 		{
 			foreach ($test_organizations as $test_organization)
 			{

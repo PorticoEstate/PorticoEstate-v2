@@ -106,7 +106,11 @@ schedule.updateSchedule = function (date)
 	classTable = (schedule.classTable) ? schedule.classTable : 'pure-table';
 
 	var url = self.location.href;
-	url = url.substr(0, (url.indexOf("#date")));
+	var hashIndex = url.indexOf("#date");
+	if (hashIndex !== -1)
+	{
+		url = url.slice(0, hashIndex);
+	}
 	url += '#date=' + date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
 
 	// Update the URL with the schedule.params.filter_id as resource_id[]=1&resource_id[]=2&resource_id[]=3

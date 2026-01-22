@@ -14,7 +14,7 @@ import {useShoppingCartDrawer} from "@/components/layout/header/shopping-cart/sh
 import {usePathname} from "next/navigation";
 
 const ToastContainer: React.FC = () => {
-	const {toasts, removeToast, pauseToast, resumeToast, setFabButtonRef, setFabOpen, isFabOpen} = useToast();
+	const {toasts, removeToast,dismissAllToasts, pauseToast, resumeToast, setFabButtonRef, setFabOpen, isFabOpen} = useToast();
 	const {data: cartItems} = usePartialApplications();
 	const fabButtonRef = useRef<HTMLButtonElement>(null);
 	const t = useTrans();
@@ -56,6 +56,7 @@ const ToastContainer: React.FC = () => {
 						className={styles.fab}
 						ref={fabButtonRef}
 						onClick={() => {
+							dismissAllToasts();
 							if (isMobile) {
 								setFabOpen(true);
 							} else {

@@ -211,6 +211,7 @@ class UserHelper
 	public function get_all_delegates($ssn)
 	{
 		// Handle both plain and encoded SSNs for backward compatibility
+/*
 		$encodedSSN = $this->encodeSSN($ssn);
 
 		$sql = "SELECT o.id as org_id, o.name as name, o.organization_number as organization_number, d.active as active
@@ -222,7 +223,24 @@ class UserHelper
 			':ssn' => $ssn,
 			':encoded_ssn' => $encodedSSN
 		]);
-		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+		$result =  $stmt->fetchAll(\PDO::FETCH_ASSOC) ?? array();
+*/
+		$result = array();
+
+		$orgs = $this->organizations ?? array();
+
+		foreach ($orgs as $org)
+		{
+			$result[] = array(
+				'org_id' => $org['org_id'],
+				'name' => $org['orgname'],
+				'organization_number' => $org['orgnr'],
+				'active' => 1
+			);
+		}
+		
+		return array_reverse($result);
 	}
 
 	/**

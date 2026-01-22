@@ -33,7 +33,17 @@ export interface ISearchDataOptimized {
 	resource_facilities: ISearchDataResourceFacility[];
 	resource_categories: ISearchDataResourceCategory[];
 	resource_category_activity: ISearchDataResourceCategoryActivity[];
+	resource_pictures: IResourceMainPicture[];
 }
+
+export interface IResourceMainPicture {
+	id: number;
+	owner_id: number;
+	metadata?: {
+		focal_point?: {x: number, y: number}
+	};
+}
+
 
 /**
  * Optimized resource interface with only the fields actually used in search component
@@ -47,6 +57,7 @@ export interface ISearchResource {
 	deactivate_calendar: boolean;
 	deactivate_application: boolean;
 	rescategory_id: number | null; // Link to resource category
+	capacity: number | null;
 	domain_name?: string; // Multi-domain name for cross-domain search results
 	domain_url?: string; // Multi-domain base URL for redirects
 	original_id?: number; // Original ID before domain transformation

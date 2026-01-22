@@ -57,26 +57,20 @@ const formatDateRange = (fromDate: DateTime, toDate?: DateTime, i18n?: any): [st
     }
 };
 
-const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openEdit, onLinkClick }) => {
-    const { t, i18n } = useClientTranslation();
-    const [expandedId, setExpandedId] = useState<number | null>(null);
-
-    // Fetch seasons for all unique buildings in the cart
-    const buildingIds = [...new Set(basketData.map(item => item.building_id))];
-    const seasonsQueries = buildingIds.map(buildingId => {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useBuildingSeasons(buildingId);
-    });
-
-    // Create a map of building_id to seasons for easy lookup
-    const seasonsMap = new Map();
-    buildingIds.forEach((buildingId, index) => {
-        seasonsMap.set(buildingId, seasonsQueries[index]?.data);
-    });
+// Wrapper component to handle seasons query for each card
+const CartCardWithSeasons: FC<{
+    item: IApplication;
+    expandedId: number | null;
+    setExpandedId: (id: number | null) => void;
+    openEdit: (item: IApplication) => void;
+    onLinkClick: () => void;
+    t: any;
+    i18n: any;
+}> = ({ item, expandedId, setExpandedId, openEdit, onLinkClick, t, i18n }) => {
+    // Call the hook at the top level for this specific item
+    const { data: seasons } = useBuildingSeasons(item.building_id);
 
     return (
-        <div className={styles.cartListContainer}>
-            {basketData.map((item) => (
 				<div
 					key={item.id}
 					className={styles.cartCard}
@@ -208,9 +202,6 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
 									// For recurring applications, calculate actual number of occurrences
 									let occurrenceCount = 1;
 									if (isRecurring) {
-										// Get seasons for this building
-										const seasons = seasonsMap.get(item.building_id);
-
 										// Calculate recurring instances using the same logic as the calendar
 										const recurringInstances = calculateRecurringInstances(item, seasons);
 										occurrenceCount = recurringInstances.length;
@@ -297,6 +288,26 @@ const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openE
 						</div>
 					)}
 				</div>
+	);
+};
+
+const ShoppingCartCardList: FC<ShoppingCartCardListProps> = ({ basketData, openEdit, onLinkClick }) => {
+    const { t, i18n } = useClientTranslation();
+    const [expandedId, setExpandedId] = useState<number | null>(null);
+
+    return (
+        <div className={styles.cartListContainer}>
+            {basketData.map((item) => (
+				<CartCardWithSeasons
+					key={item.id}
+					item={item}
+					expandedId={expandedId}
+					setExpandedId={setExpandedId}
+					openEdit={openEdit}
+					onLinkClick={onLinkClick}
+					t={t}
+					i18n={i18n}
+				/>
 			))}
 		</div>
 	);

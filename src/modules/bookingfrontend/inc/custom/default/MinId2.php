@@ -66,27 +66,28 @@ class bookingfrontend_external_user extends UserHelper
 		{
 			$external_user = (object)'ciao';
 			$external_user->login = '000000000';
+			Cache::session_set($this->get_module(), self::ORGARRAY_SESSION_KEY, NULL);
 		}
 		else
 		{
+			$orgs = array();
+			foreach ($bregorgs as $org)
+			{
+				$orgs[] = array(
+					'org_id' => $org['org_id'],
+					'orgnr' => $org['orgnr'],
+					'orgname' => $this->get_orgname_from_db($org['orgnr'], $org['customer_ssn'], $org['org_id'])
+				);
+			}
+			Cache::session_set($this->get_module(), self::ORGARRAY_SESSION_KEY, $orgs);
+
 			if (count($bregorgs) > 1)
 			{
 				$external_user = (object)'ciao';
 				$external_user->login = $bregorgs[0]['orgnr'];
-				$orgs = array();
-				foreach ($bregorgs as $org)
-				{
-					$orgs[] = array(
-						'org_id' => $org['org_id'],
-						'orgnr' => $org['orgnr'],
-						'orgname' => $this->get_orgname_from_db($org['orgnr'], $org['customer_ssn'], $org['org_id'])
-					);
-				}
-				Cache::session_set($this->get_module(), self::ORGARRAY_SESSION_KEY, $orgs);
 			}
 			elseif (count($bregorgs) == 1)
 			{
-				Cache::session_set($this->get_module(), self::ORGARRAY_SESSION_KEY, NULL);
 				$external_user = (object)'ciao';
 				$external_user->login = $bregorgs[0]['orgnr'];
 			}

@@ -10,6 +10,7 @@ use App\Database\Db;
 use App\modules\bookingfrontend\models\Activity;
 use App\modules\bookingfrontend\models\Building;
 use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Organization;
 
@@ -77,7 +78,7 @@ class DataStore
 		try {
 			// Get all resources
 			$resourceRows = $this->getRowsAsArray("SELECT * from bb_resource where active=1 and hidden_in_frontend=0 and deactivate_calendar=0");
-			
+
 			// Get the latest participant limits for all resources
 			$currentDate = date('Y-m-d H:i:s');
 			$participantLimits = $this->getRowsAsArray("SELECT pl.resource_id, pl.quantity
@@ -89,13 +90,13 @@ class DataStore
               GROUP BY resource_id
           ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
 			[':currentDate' => $currentDate]);
-			
+
 			// Create a map of resource_id to participant limit quantity
 			$participantLimitMap = [];
 			foreach ($participantLimits as $pl) {
 				$participantLimitMap[$pl['resource_id']] = $pl['quantity'];
 			}
-			
+
 			// Add participant limit to resources
 			$resources = [];
 			foreach ($resourceRows as $row) {
@@ -104,7 +105,7 @@ class DataStore
 				}
 				$resources[] = $row;
 			}
-			
+
 			$data = [
 				'activities' => $this->getRowsAsArray("SELECT * from bb_activity where active=1"),
 				'buildings' => $this->getRowsAsArray("SELECT id, activity_id, deactivate_calendar, deactivate_application,"
@@ -177,7 +178,7 @@ class DataStore
 			$rows = $this->getRowsAsArray("SELECT id, name, activity_id, active, simple_booking, deactivate_calendar,
               deactivate_application, rescategory_id
               FROM bb_resource WHERE active=1 AND hidden_in_frontend=0");
-			
+
 			// Get the latest participant limits for all resources
 			$currentDate = date('Y-m-d H:i:s');
 			$participantLimits = $this->getRowsAsArray("SELECT pl.resource_id, pl.quantity
@@ -189,7 +190,7 @@ class DataStore
                   GROUP BY resource_id
               ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
 			[':currentDate' => $currentDate]);
-			
+
 			// Get resource IDs from the rows
 			$resourceIds = array_column($rows, 'id');
 
@@ -220,11 +221,181 @@ class DataStore
 			// Towns - simplified structure with just id and name
 			$data['towns'] = $this->getRowsAsArray("SELECT id, name FROM fm_part_of_town");
 
+			// Main pictures for resources - only id, owner_id, and metadata for quick lookup
+			// Only actual image files, not PDFs
+			$resourcePictures = $this->getRowsAsArray("
+				SELECT DISTINCT ON (owner_id)
+					id,
+					owner_id,
+					metadata
+				FROM bb_document_resource
+				WHERE category IN ('picture_main', 'picture')
+				AND (name ~* '\.(jpg|jpeg|png|gif|bmp|webp)$')
+				ORDER BY owner_id,
+					CASE WHEN category = 'picture_main' THEN 0 ELSE 1 END,
+					id ASC
+			");
+			$data['resource_pictures'] = array_map(function($pic) {
+				$result = [
+					'id' => $pic['id'],
+					'owner_id' => $pic['owner_id'],
+					'metadata' => $pic['metadata'] ? json_decode($pic['metadata'], true) : null
+				];
+//				if (isset($result['metadata']['focal_point'])) {
+//					$result['focal_point_x'] = $result['metadata']['focal_point']['x'] ?? null;
+//					$result['focal_point_y'] = $result['metadata']['focal_point']['y'] ?? null;
+//				}
+				return $result;
+			}, $resourcePictures);
+
 			$response->getBody()->write(json_encode($data));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {
 			// Handle database error (e.g., log the error, return an error response)
 			$error = "Error fetching data: " . $e->getMessage();
+			$response->getBody()->write(json_encode(['error' => $error]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/documents/pictures/verify",
+	 *     summary="Get all pictures and verify file existence",
+	 *     tags={"Documents"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="Picture verification report"
+	 *     )
+	 * )
+	 */
+	public function verifyAllPictures(Request $request, Response $response): Response
+	{
+		try {
+			$db = Db::getInstance();
+			$ownerTypes = [
+				'building' => 'bb_document_building',
+				'resource' => 'bb_document_resource',
+				'application' => 'bb_document_application',
+				'organization' => 'bb_document_organization'
+			];
+
+			$allPictures = [];
+			$totalCount = 0;
+			$existCount = 0;
+			$missingCount = 0;
+
+			foreach ($ownerTypes as $ownerType => $table) {
+				$sql = "SELECT * FROM {$table} WHERE category IN ('picture_main', 'picture')";
+				$stmt = $db->prepare($sql);
+				$stmt->execute();
+				$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+				foreach ($results as $row) {
+					$document = new Document($row, $ownerType);
+					$filepath = $document->generate_filename();
+					$exists = file_exists($filepath);
+
+					$totalCount++;
+					if ($exists) {
+						$existCount++;
+					} else {
+						$missingCount++;
+					}
+
+					$allPictures[] = [
+						'id' => $document->id,
+						'name' => $document->name,
+						'category' => $document->category,
+						'owner_type' => $ownerType,
+						'owner_id' => $document->owner_id,
+						'file_exists' => $exists,
+						'filepath' => $filepath,
+						'metadata' => $document->metadata,
+						'focal_point_x' => $document->focal_point_x,
+						'focal_point_y' => $document->focal_point_y
+					];
+				}
+			}
+
+			$report = [
+				'summary' => [
+					'total' => $totalCount,
+					'exists' => $existCount,
+					'missing' => $missingCount
+				],
+				'pictures' => $allPictures
+			];
+
+			$response->getBody()->write(json_encode($report));
+			return $response->withHeader('Content-Type', 'application/json');
+		} catch (Exception $e) {
+			$error = "Error verifying pictures: " . $e->getMessage();
+			$response->getBody()->write(json_encode(['error' => $error]));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+		}
+	}
+
+	/**
+	 * @OA\Get(
+	 *     path="/bookingfrontend/resources/missing-main-pictures",
+	 *     summary="Get resources with missing main picture files",
+	 *     tags={"Resources", "Documents"},
+	 *     @OA\Response(
+	 *         response=200,
+	 *         description="List of resources with missing main pictures"
+	 *     )
+	 * )
+	 */
+	public function getMissingResourceMainPictures(Request $request, Response $response): Response
+	{
+		try {
+			$db = Db::getInstance();
+
+			// Get main picture for each resource (picture_main preferred, then picture)
+			// Only actual image files, not PDFs or other documents
+			$sql = "
+				SELECT DISTINCT ON (owner_id)
+					id,
+					owner_id,
+					name
+				FROM bb_document_resource
+				WHERE category IN ('picture_main', 'picture')
+				AND (name ~* '\.(jpg|jpeg|png|gif|bmp|webp)$')
+				ORDER BY owner_id,
+					CASE WHEN category = 'picture_main' THEN 0 ELSE 1 END,
+					id ASC
+			";
+
+			$stmt = $db->prepare($sql);
+			$stmt->execute();
+			$results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+			$missingPictures = [];
+
+			foreach ($results as $row) {
+				$document = new Document($row, 'resource');
+				$filepath = $document->generate_filename();
+
+				if (!file_exists($filepath)) {
+					$missingPictures[] = [
+						'resource_id' => $row['owner_id'],
+						'document_id' => $row['id'],
+						'filepath' => $filepath
+					];
+				}
+			}
+
+			$report = [
+				'total_resources_with_pictures' => count($results),
+				'missing_count' => count($missingPictures),
+				'missing_pictures' => $missingPictures
+			];
+
+			$response->getBody()->write(json_encode($report));
+			return $response->withHeader('Content-Type', 'application/json');
+		} catch (Exception $e) {
+			$error = "Error fetching missing pictures: " . $e->getMessage();
 			$response->getBody()->write(json_encode(['error' => $error]));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
 		}

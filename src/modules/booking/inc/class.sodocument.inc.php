@@ -48,7 +48,7 @@ phpgw::import_class('booking.socommon');
 				'owner_id' => array('type' => 'int', 'required' => true),
 				'category' => array('type' => 'string', 'required' => true),
 				'description' => array('type' => 'string', 'required' => false),
-			);
+				'metadata' => array('type' => 'json', 'required' => false),			);
 
 			if ($this->get_owner_type() != 'application')
 			{
@@ -137,6 +137,19 @@ phpgw::import_class('booking.socommon');
 			if (is_array($document))
 			{
 				$document['filename'] = $this->generate_filename($document['id'], $document['name']);
+			}
+
+			// Decode metadata if present
+			if (isset($document['metadata']) && is_string($document['metadata']))
+			{
+				$document['metadata'] = json_decode($document['metadata'], true);
+			}
+
+			// Extract focal point for convenience
+			if (isset($document['metadata']['focal_point']))
+			{
+				$document['focal_point_x'] = $document['metadata']['focal_point']['x'] ?? null;
+				$document['focal_point_y'] = $document['metadata']['focal_point']['y'] ?? null;
 			}
 			return $document;
 		}
@@ -335,6 +348,19 @@ phpgw::import_class('booking.socommon');
 				foreach ($result['results'] as &$record)
 				{
 					$record['is_image'] = $this->is_image($record);
+				}
+
+				// Decode metadata if present
+				if (isset($record['metadata']) && is_string($record['metadata']))
+				{
+					$record['metadata'] = json_decode($record['metadata'], true);
+				}
+
+				// Extract focal point for convenience
+				if (isset($record['metadata']['focal_point']))
+				{
+					$record['focal_point_x'] = $record['metadata']['focal_point']['x'] ?? null;
+					$record['focal_point_y'] = $record['metadata']['focal_point']['y'] ?? null;
 				}
 			}
 

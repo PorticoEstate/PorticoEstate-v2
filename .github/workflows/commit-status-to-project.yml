@@ -186,7 +186,7 @@ jobs:
                       fi
 
                       # Update project status using GraphQL
-                      gh api graphql -f query='
+                      UPDATE_RESULT=$(gh api graphql -f query='
                         mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $valueId: String!) {
                           updateProjectV2ItemFieldValue(
                             input: {
@@ -204,7 +204,13 @@ jobs:
                         -f projectId="$PROJECT_ID" \
                         -f itemId="$ITEM_ID" \
                         -f fieldId="$STATUS_FIELD_ID" \
-                        -f valueId="$STATUS_ID"
+                        -f valueId="$STATUS_ID" 2>&1 || echo '{"errors": "mutation failed"}')
+
+                      # Check if mutation succeeded
+                      if echo "$UPDATE_RESULT" | grep -q "errors"; then
+                        echo "⚠️  Failed to update issue/PR #$ISSUE: $(echo "$UPDATE_RESULT" | jq -r '.errors[0].message // "Unknown error"')"
+                        continue
+                      fi
 
                       echo "✅ Updated issue/PR #$ISSUE from '$CURRENT_STATUS' to '$STATUS_NAME'"
                     done

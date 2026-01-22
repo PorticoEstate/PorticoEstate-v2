@@ -44,6 +44,15 @@
 			</xsl:if>
 		</div>
 
+		<xsl:if test="event/is_public=1 and event/name!='dummy'">
+			<div class="pure-control-group">
+				<label>
+					<xsl:value-of select="php:function('lang', 'what')" />
+				</label>
+				<xsl:value-of select="event/name"/>
+			</div>
+		</xsl:if>
+
 		<xsl:if test="event/participant_limit">
 			<div class="pure-control-group">
 				<label for="field_participant_limit">

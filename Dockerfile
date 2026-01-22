@@ -50,6 +50,7 @@ RUN apt-get update && apt-get install -y \
     apg \
     sudo \
     gnupg \
+    unzip \
     libaio1t64 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \
@@ -182,6 +183,8 @@ RUN sed -i 's|^listen = .*|;listen = 9000|' /usr/local/etc/php-fpm.d/zz-docker.c
 
 # Copy PHP-FPM configuration
 COPY php-fpm.conf /etc/apache2/conf-available/php-fpm.conf
+# Override PHP-FPM pool to use Unix socket and owned by www-data
+COPY php-fpm.d/zz-portico.conf /usr/local/etc/php-fpm.d/zz-portico.conf
 
 # Apache2 configuration
 ENV APACHE_RUN_USER=www-data

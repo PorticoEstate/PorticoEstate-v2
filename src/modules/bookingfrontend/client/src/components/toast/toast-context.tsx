@@ -1,5 +1,5 @@
 'use client';
-import React, { createContext, useContext, useState, ReactNode, useRef } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useRef, useCallback } from 'react';
 
 // Define types for toast messages
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -21,6 +21,7 @@ export interface ToastMessage {
 interface ToastContextType {
   addToast: (message: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
+  dismissAllToasts: () => void;
   toasts: ToastMessage[];
   pauseToast: (id: string) => void;
   resumeToast: (id: string) => void;
@@ -49,42 +50,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [fabButtonRef, setFabButtonRefState] = useState<React.RefObject<HTMLButtonElement> | null>(null);
   const [isFabOpen, setIsFabOpen] = useState(false);
 
-  const addToast = (message: Omit<ToastMessage, 'id'>) => {
-    // Check for duplicate messages if messageId is provided
-    if (message.messageId) {
-      // If a toast with the same messageId exists, don't add another one
-      const hasDuplicate = toasts.some(toast => toast.messageId === message.messageId);
-      if (hasDuplicate) {
-        return; // Skip adding duplicate toast
-      }
-    }
-
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    const startTime = Date.now();
-    const duration = message.duration || 10000; // Use custom duration or default to 10 seconds
-
-    // Auto-hide toast after specified duration if autoHide is true
-    if (message.autoHide !== false) {
-      const timeoutId = setTimeout(() => {
-        removeToast(id);
-      }, duration);
-
-      const newToast = {
-        ...message,
-        id,
-        timeoutId,
-        remainingTime: duration,
-        startTime,
-        duration
-      };
-      setToasts(prev => [...prev, newToast]);
-    } else {
-      const newToast = { ...message, id, duration };
-      setToasts(prev => [...prev, newToast]);
-    }
-  };
-
-  const removeToast = (id: string) => {
+  const removeToast = useCallback((id: string) => {
     setToasts(prev => {
       const toastToRemove = prev.find(toast => toast.id === id);
       if (toastToRemove && toastToRemove.timeoutId) {
@@ -92,9 +58,57 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       return prev.filter(toast => toast.id !== id);
     });
-  };
+  }, []);
 
-  const pauseToast = (id: string) => {
+  const addToast = useCallback((message: Omit<ToastMessage, 'id'>) => {
+    setToasts(prev => {
+      // Check for duplicate messages if messageId is provided
+      if (message.messageId) {
+        // If a toast with the same messageId exists, don't add another one
+        const hasDuplicate = prev.some(toast => toast.messageId === message.messageId);
+        if (hasDuplicate) {
+          return prev; // Skip adding duplicate toast
+        }
+      }
+
+      const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      const startTime = Date.now();
+      const duration = message.duration || 10000; // Use custom duration or default to 10 seconds
+
+      // Auto-hide toast after specified duration if autoHide is true
+      if (message.autoHide !== false) {
+        const timeoutId = setTimeout(() => {
+          removeToast(id);
+        }, duration);
+
+        const newToast = {
+          ...message,
+          id,
+          timeoutId,
+          remainingTime: duration,
+          startTime,
+          duration
+        };
+        return [...prev, newToast];
+      } else {
+        const newToast = { ...message, id, duration };
+        return [...prev, newToast];
+      }
+    });
+  }, [removeToast]);
+
+  const dismissAllToasts = useCallback(() => {
+    setToasts(prev => {
+      prev.forEach(toast => {
+        if (toast.timeoutId) {
+          clearTimeout(toast.timeoutId);
+        }
+      });
+      return [];
+    });
+  }, []);
+
+  const pauseToast = useCallback((id: string) => {
     setToasts(prev => prev.map(toast => {
       if (toast.id === id && toast.timeoutId) {
         clearTimeout(toast.timeoutId);
@@ -109,9 +123,9 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       return toast;
     }));
-  };
+  }, []);
 
-  const resumeToast = (id: string) => {
+  const resumeToast = useCallback((id: string) => {
     setToasts(prev => prev.map(toast => {
       if (toast.id === id && !toast.timeoutId && toast.remainingTime !== undefined) {
         const timeoutId = setTimeout(() => {
@@ -125,31 +139,32 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       return toast;
     }));
-  };
+  }, [removeToast]);
 
-  const setFabButtonRef = (ref: React.RefObject<HTMLButtonElement>) => {
+  const setFabButtonRef = useCallback((ref: React.RefObject<HTMLButtonElement>) => {
     setFabButtonRefState(ref);
-  };
+  }, []);
 
-  const getFabButtonRef = () => {
+  const getFabButtonRef = useCallback(() => {
     return fabButtonRef;
-  };
+  }, [fabButtonRef]);
 
-  const setFabOpen = (isOpen: boolean) => {
+  const setFabOpen = useCallback((isOpen: boolean) => {
     setIsFabOpen(isOpen);
-  };
+  }, []);
 
   return (
-    <ToastContext.Provider value={{ 
-      addToast, 
-      removeToast, 
+    <ToastContext.Provider value={{
+      addToast,
+      removeToast,
+      dismissAllToasts,
       toasts,
       pauseToast,
       resumeToast,
-      setFabButtonRef, 
-      getFabButtonRef, 
-      setFabOpen, 
-      isFabOpen 
+      setFabButtonRef,
+      getFabButtonRef,
+      setFabOpen,
+      isFabOpen
     }}>
       {children}
     </ToastContext.Provider>

@@ -1,10 +1,10 @@
 import {FC, PropsWithChildren} from 'react';
 import styles from './button-group.module.scss'
-import type {Color, SeverityDanger} from "@digdir/designsystemet-react/colors";
+import type {Color} from "@digdir/designsystemet-types";
 
 interface ButtonGroupProps extends PropsWithChildren {
 	className?: string | undefined;
-	'data-color'?: Color | SeverityDanger;
+	'data-color'?: Color;
 
 }
 

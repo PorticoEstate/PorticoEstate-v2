@@ -5,6 +5,7 @@
 	flex-direction: column;
 	width: 100%;
 	max-width: 400px;
+	aspect-ratio: 40 / 43;
 	overflow: hidden;
 
 	@include tablet {

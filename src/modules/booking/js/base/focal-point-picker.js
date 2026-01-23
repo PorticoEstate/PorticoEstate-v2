@@ -19,6 +19,7 @@ class FocalPointPicker {
         this.isDragging = false;
         this.originalNextSibling = imageElement.nextSibling;
         this.stepSize = 0.01;
+        this.rotation = 0;
 
         this.boundHandleDragStart = this.handleDragStart.bind(this);
         this.boundHandleDragMove = this.handleDragMove.bind(this);

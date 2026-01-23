@@ -136,9 +136,16 @@
 							<xsl:value-of select="document/focal_point_y"/>
 						</xsl:attribute>
 					</input>
+					<input type="hidden" id="field_rotation" name="rotation">
+						<xsl:attribute name="value">
+							<xsl:value-of select="document/rotation"/>
+						</xsl:attribute>
+					</input>
 					<input type="hidden" id="focal-point-download-link">
 						<xsl:attribute name="value">
-							<xsl:value-of select="document/download_link"/>
+							<xsl:text>/bookingfrontend/resources/document/</xsl:text>
+							<xsl:value-of select="document/id"/>
+							<xsl:text>/download</xsl:text>
 						</xsl:attribute>
 					</input>
 
@@ -156,7 +163,13 @@
 										<xsl:value-of select="document/focal_point_x"/>
 										<xsl:text>%, </xsl:text>
 										<xsl:value-of select="document/focal_point_y"/>
-										<xsl:text>%)</xsl:text>
+										<xsl:text>%</xsl:text>
+										<xsl:if test="document/rotation">
+											<xsl:text>, </xsl:text>
+											<xsl:value-of select="document/rotation"/>
+											<xsl:text>°</xsl:text>
+										</xsl:if>
+										<xsl:text>)</xsl:text>
 									</xsl:when>
 									<xsl:otherwise>
 										<xsl:value-of select="php:function('lang', 'set_focal_point')" />
@@ -176,22 +189,25 @@
 								<!-- 411x200 card preview with focal point -->
 								<div style="text-align: center;">
 									<div style="border: 1px solid #ccc; padding: 5px; background: #f5f5f5;">
-										<img class="preview-image" style="width: 411px; height: 200px; object-fit: cover; display: block;">
+										<img class="preview-image">
 											<xsl:attribute name="src">
-												<xsl:value-of select="document/download_link"/>
+												<xsl:text>/bookingfrontend/resources/document/</xsl:text>
+												<xsl:value-of select="document/id"/>
+												<xsl:text>/download</xsl:text>
 											</xsl:attribute>
 											<xsl:attribute name="alt">
 												<xsl:value-of select="document/name"/>
 											</xsl:attribute>
-											<xsl:if test="document/focal_point_x">
-												<xsl:attribute name="style">
-													<xsl:text>width: 411px; height: 200px; object-fit: cover; display: block; object-position: </xsl:text>
+											<xsl:attribute name="style">
+												<xsl:text>width: 411px; height: 200px; object-fit: cover; display: block;</xsl:text>
+												<xsl:if test="document/focal_point_x">
+													<xsl:text> object-position: </xsl:text>
 													<xsl:value-of select="document/focal_point_x"/>
 													<xsl:text>% </xsl:text>
 													<xsl:value-of select="document/focal_point_y"/>
 													<xsl:text>%;</xsl:text>
-												</xsl:attribute>
-											</xsl:if>
+												</xsl:if>
+											</xsl:attribute>
 										</img>
 									</div>
 									<small style="color: #666;">
@@ -202,7 +218,13 @@
 												<xsl:value-of select="document/focal_point_x"/>
 												<xsl:text>%, </xsl:text>
 												<xsl:value-of select="document/focal_point_y"/>
-												<xsl:text>%)</xsl:text>
+												<xsl:text>%</xsl:text>
+												<xsl:if test="document/rotation">
+													<xsl:text>, rotation: </xsl:text>
+													<xsl:value-of select="document/rotation"/>
+													<xsl:text>°</xsl:text>
+												</xsl:if>
+												<xsl:text>)</xsl:text>
 											</xsl:if>
 										</span>
 									</small>
@@ -211,22 +233,25 @@
 								<!-- 200x200 square preview with focal point -->
 								<div style="text-align: center;">
 									<div style="border: 1px solid #ccc; padding: 5px; background: #f5f5f5;">
-										<img class="preview-image" style="width: 200px; height: 200px; object-fit: cover; display: block;">
+										<img class="preview-image">
 											<xsl:attribute name="src">
-												<xsl:value-of select="document/download_link"/>
+												<xsl:text>/bookingfrontend/resources/document/</xsl:text>
+												<xsl:value-of select="document/id"/>
+												<xsl:text>/download</xsl:text>
 											</xsl:attribute>
 											<xsl:attribute name="alt">
 												<xsl:value-of select="document/name"/>
 											</xsl:attribute>
-											<xsl:if test="document/focal_point_x">
-												<xsl:attribute name="style">
-													<xsl:text>width: 200px; height: 200px; object-fit: cover; display: block; object-position: </xsl:text>
+											<xsl:attribute name="style">
+												<xsl:text>width: 200px; height: 200px; object-fit: cover; display: block;</xsl:text>
+												<xsl:if test="document/focal_point_x">
+													<xsl:text> object-position: </xsl:text>
 													<xsl:value-of select="document/focal_point_x"/>
 													<xsl:text>% </xsl:text>
 													<xsl:value-of select="document/focal_point_y"/>
 													<xsl:text>%;</xsl:text>
-												</xsl:attribute>
-											</xsl:if>
+												</xsl:if>
+											</xsl:attribute>
 										</img>
 									</div>
 									<small style="color: #666;">
@@ -237,22 +262,25 @@
 								<!-- 200x411 portrait preview with focal point -->
 								<div style="text-align: center;">
 									<div style="border: 1px solid #ccc; padding: 5px; background: #f5f5f5;">
-										<img class="preview-image" style="width: 200px; height: 411px; object-fit: cover; display: block;">
+										<img class="preview-image">
 											<xsl:attribute name="src">
-												<xsl:value-of select="document/download_link"/>
+												<xsl:text>/bookingfrontend/resources/document/</xsl:text>
+												<xsl:value-of select="document/id"/>
+												<xsl:text>/download</xsl:text>
 											</xsl:attribute>
 											<xsl:attribute name="alt">
 												<xsl:value-of select="document/name"/>
 											</xsl:attribute>
-											<xsl:if test="document/focal_point_x">
-												<xsl:attribute name="style">
-													<xsl:text>width: 200px; height: 411px; object-fit: cover; display: block; object-position: </xsl:text>
+											<xsl:attribute name="style">
+												<xsl:text>width: 200px; height: 411px; object-fit: cover; display: block;</xsl:text>
+												<xsl:if test="document/focal_point_x">
+													<xsl:text> object-position: </xsl:text>
 													<xsl:value-of select="document/focal_point_x"/>
 													<xsl:text>% </xsl:text>
 													<xsl:value-of select="document/focal_point_y"/>
 													<xsl:text>%;</xsl:text>
-												</xsl:attribute>
-											</xsl:if>
+												</xsl:if>
+											</xsl:attribute>
 										</img>
 									</div>
 									<small style="color: #666;">
@@ -280,7 +308,22 @@
 											<xsl:value-of select="php:function('lang', 'focal_point_instructions')" />
 										</p>
 										<div style="text-align: center; margin-bottom: 15px;">
-											<strong id="focal-point-display">X: 50%, Y: 50%</strong>
+											<div style="margin-bottom: 10px;">
+												<button type="button" class="btn btn-sm btn-outline-secondary" id="rotate-left-btn" title="Rotate 90° counter-clockwise">
+													<i class="fa fa-rotate-left"></i> Rotate Left
+												</button>
+												<button type="button" class="btn btn-sm btn-outline-secondary" id="rotate-right-btn" title="Rotate 90° clockwise">
+													<i class="fa fa-rotate-right"></i> Rotate Right
+												</button>
+												<button type="button" class="btn btn-sm btn-outline-secondary" id="reset-rotation-btn" title="Reset rotation">
+													<i class="fa fa-undo"></i> Reset Rotation
+												</button>
+											</div>
+											<div>
+												<strong id="rotation-display">Rotation: 0°</strong>
+												<span style="margin: 0 10px;">|</span>
+												<strong id="focal-point-display">X: 50%, Y: 50%</strong>
+											</div>
 										</div>
 										<div style="text-align: center; background: #f5f5f5; padding: 20px; max-height: calc(80vh - 200px); overflow: auto;">
 											<img id="focal-point-image" style="max-width: 100%; max-height: 70vh; height: auto; width: auto; display: inline-block;" />

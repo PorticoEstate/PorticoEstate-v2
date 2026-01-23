@@ -151,6 +151,13 @@ phpgw::import_class('booking.socommon');
 				$document['focal_point_x'] = $document['metadata']['focal_point']['x'] ?? null;
 				$document['focal_point_y'] = $document['metadata']['focal_point']['y'] ?? null;
 			}
+
+			// Extract rotation for convenience
+			if (isset($document['metadata']['rotation']))
+			{
+				$document['rotation'] = $document['metadata']['rotation'];
+			}
+
 			return $document;
 		}
 

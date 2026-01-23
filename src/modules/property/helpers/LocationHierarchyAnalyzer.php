@@ -19,6 +19,8 @@ class LocationHierarchyAnalyzer
 	private $entryToBygningsnrMap = [];
 	private $processedLocationCodes = [];
 	private $currentFilterLoc1 = null;
+	private $bygningsnrToLoc2Map = []; // loc1 => bygningsnr => loc2
+	private $streetToLoc3Map = []; // loc1 => loc2 => streetkey => loc3
 
 	public function __construct()
 	{
@@ -36,8 +38,12 @@ class LocationHierarchyAnalyzer
 
 		// 1. Assign synthetic bygningsnr where missing
 		$this->assignSyntheticBygningsnr();
+		
+		// 2. Build reverse maps from actual database data (more reliable than parsing names)
+		$this->buildBygningsnrToLoc2MapFromDatabase($filterLoc1);
+		$this->buildStreetToLoc3MapFromLocation4();
 
-		// 2. Build required loc2/loc3 sets
+		// 3. Build required loc2/loc3 sets
 		$requiredLoc2 = []; // loc1 => bygningsnr => loc2
 		$requiredLoc3 = []; // loc1 => loc2 => streetkey => loc3
 
@@ -51,10 +57,22 @@ class LocationHierarchyAnalyzer
 		}
 		foreach ($bygningsnrIndex as $loc1 => $bygningsnrs)
 		{
-	//		sort($bygningsnrs, SORT_STRING);
-			foreach ($bygningsnrs as $idx => $bygningsnr)
+			$nextLoc2Num = 1;
+			foreach ($bygningsnrs as $bygningsnr)
 			{
-				$loc2 = str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
+				// Check if existing loc2 matches this bygningsnr (rule: reuse before creating new)
+				if (isset($this->bygningsnrToLoc2Map[$loc1][$bygningsnr]))
+				{
+					$loc2 = $this->bygningsnrToLoc2Map[$loc1][$bygningsnr];
+				}
+				else
+				{
+					// Find next available loc2 number
+					do {
+						$loc2 = str_pad($nextLoc2Num, 2, '0', STR_PAD_LEFT);
+						$nextLoc2Num++;
+					} while (isset($this->loc2Refs[$loc1][$loc2]));
+				}
 				$requiredLoc2[$loc1][$bygningsnr] = $loc2;
 			}
 		}
@@ -81,15 +99,28 @@ class LocationHierarchyAnalyzer
 		{
 			foreach ($loc2s as $loc2 => $streetkeys)
 			{
-			//	sort($streetkeys, SORT_STRING);
-				foreach ($streetkeys as $idx => $streetkey)
+				$nextLoc3Num = 1;
+				foreach ($streetkeys as $streetkey)
 				{
-					$requiredLoc3[$loc1][$loc2][$streetkey] = str_pad($idx + 1, 2, '0', STR_PAD_LEFT);
+					// Check if existing loc3 matches this street combination (rule: reuse before creating new)
+					if (isset($this->streetToLoc3Map[$loc1][$loc2][$streetkey]))
+					{
+						$loc3 = $this->streetToLoc3Map[$loc1][$loc2][$streetkey];
+					}
+					else
+					{
+						// Find next available loc3 number
+						do {
+							$loc3 = str_pad($nextLoc3Num, 2, '0', STR_PAD_LEFT);
+							$nextLoc3Num++;
+						} while (isset($this->loc3Refs[$loc1][$loc2][$loc3]));
+					}
+					$requiredLoc3[$loc1][$loc2][$streetkey] = $loc3;
 				}
 			}
 		}
 
-		// 3. Check and create missing loc2/loc3
+		// 4. Check and create missing loc2/loc3
 		$this->sqlStatements['missing_loc2'] = [];
 		foreach ($requiredLoc2 as $loc1 => $bygningsnrs)
 		{
@@ -135,7 +166,7 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
-		// 4. Check if loc4 entries are misplaced and simulate moves
+		// 5. Check if loc4 entries are misplaced and simulate moves
 		$this->sqlStatements['location4_updates'] = [];
 		$this->sqlStatements['corrections'] = [];
 		foreach ($this->locationData as $i => $row)
@@ -171,7 +202,7 @@ class LocationHierarchyAnalyzer
 		 // Add update statements for all tables with location_code and loc1, loc2, loc3, loc4 columns
 		$this->createUpdateStatements();
 
-		// 5. Statistics
+		// 6. Statistics
 		$statistics = [
 			'level1_count' => count(array_unique(array_column($this->locationData, 'loc1'))),
 			'level2_count' => count(array_unique(array_map(fn($e) => "{$e['loc1']}-{$e['loc2']}", $this->locationData))),
@@ -255,12 +286,7 @@ class LocationHierarchyAnalyzer
 	 */
 	private function createUpdateStatements()
 	{
-		static $sqlStatements = [];
-		if (!empty($sqlStatements))
-		{
-			$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
-			return $sqlStatements;
-		}
+		$sqlStatements = []; // Removed static to fix caching bug
 		$tables = $this->findLocationCodeTables();
 		foreach ($tables as $table => $columns)
 		{
@@ -285,6 +311,7 @@ class LocationHierarchyAnalyzer
 			$sqlStatements[] = $sql;
 		}
 		$this->sqlStatements['update_location_from_mapping'] = $sqlStatements;
+		return $sqlStatements; // Add explicit return
 	}
 
 	/**
@@ -399,6 +426,79 @@ class LocationHierarchyAnalyzer
 	}
 
 	/**
+	 * Build bygningsnr to loc2 map by querying which bygningsnr values exist under each loc2.
+	 * This is more reliable than parsing loc2_name which may have inconsistent formats.
+	 */
+	private function buildBygningsnrToLoc2MapFromDatabase($filterLoc1 = null)
+	{
+		$this->bygningsnrToLoc2Map = [];
+		// Query to find which bygningsnr values are currently used under each loc2
+		$sql = "SELECT DISTINCT loc1, loc2, bygningsnr FROM fm_location4";
+		if ($filterLoc1)
+		{
+			$sql .= " WHERE loc1 = '{$filterLoc1}'";
+		}
+		$sql .= " ORDER BY loc1, loc2, bygningsnr";
+		$this->db->query($sql, __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$loc1 = $this->db->f('loc1');
+			$loc2 = $this->db->f('loc2');
+			$bygningsnr = $this->db->f('bygningsnr');
+			if (!empty($bygningsnr))
+			{
+				// Map each bygningsnr to the loc2 it currently uses
+				$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = $loc2;
+			}
+		}
+	}
+
+	/**
+	 * Build street to loc3 map from actual fm_location4 data.
+	 * This is more reliable than parsing loc3_name.
+	 */
+	private function buildStreetToLoc3MapFromLocation4()
+	{
+		// First pass: collect all loc3 values for each street combination
+		$streetToLoc3Candidates = []; // loc1 => loc2 => streetkey => [loc3 values]
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$loc2 = $row['loc2'];
+			$loc3 = $row['loc3'];
+			$streetkey = "{$row['street_id']}_{$row['street_number']}";
+			
+			// Only consider loc3 values that actually exist in fm_location3
+			if (isset($this->loc3Refs[$loc1][$loc2][$loc3]))
+			{
+				if (!isset($streetToLoc3Candidates[$loc1][$loc2][$streetkey]))
+				{
+					$streetToLoc3Candidates[$loc1][$loc2][$streetkey] = [];
+				}
+				if (!in_array($loc3, $streetToLoc3Candidates[$loc1][$loc2][$streetkey]))
+				{
+					$streetToLoc3Candidates[$loc1][$loc2][$streetkey][] = $loc3;
+				}
+			}
+		}
+		
+		// Second pass: select minimum loc3 for each street combination
+		foreach ($streetToLoc3Candidates as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $streetkeys)
+			{
+				foreach ($streetkeys as $streetkey => $loc3Values)
+				{
+					// Sort to get the minimum (first) loc3
+					sort($loc3Values, SORT_STRING);
+					// Use the first (lowest numbered) loc3 as the canonical location
+					$this->streetToLoc3Map[$loc1][$loc2][$streetkey] = $loc3Values[0];
+				}
+			}
+		}
+	}
+
+	/**
 	 * Get street name from street_id.
 	 */
 	private function get_street_name($street_id)
@@ -469,6 +569,8 @@ class LocationHierarchyAnalyzer
 		$this->entryToBygningsnrMap = [];
 		$this->processedLocationCodes = [];
 		$this->currentFilterLoc1 = null;
+		$this->bygningsnrToLoc2Map = [];
+		$this->streetToLoc3Map = [];
 	}
 
 	/**

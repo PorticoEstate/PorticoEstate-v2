@@ -86,9 +86,9 @@ class property_sotenant_claim
 			$ordermethod = ' order by id DESC';
 		}
 
-		$filtermethod = "WHERE claim_type IN ('project')";
-		$filtermethod_ticket = "WHERE claim_type IN ('ticket')";
-		$filtermethod_other = "WHERE claim_type NOT IN ('project', 'ticket')";
+		$filtermethod = "WHERE fm_tenant_claim.project_id > 0";
+		$filtermethod_ticket = "WHERE fm_tenant_claim.ticket_id > 0";
+		$filtermethod_other = "WHERE ((fm_tenant_claim.project_id IS NULL OR fm_tenant_claim.project_id = 0) OR (fm_tenant_claim.ticket_id IS NULL OR fm_tenant_claim.ticket_id = 0))";
 		$where = 'AND';
 		if ($cat_id > 0)
 		{

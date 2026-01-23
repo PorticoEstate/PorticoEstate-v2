@@ -103,7 +103,7 @@ class booking_uibooking extends booking_uicommon
 			),
 			'datatable' => array(
 				'source' => self::link(array('menuaction' => 'booking.uibooking.index', 'phpgw_return_as' => 'json')),
-				'sorted_by' => array('key' => 4, 'dir' => 'desc'), //id
+				'sorted_by' => array('key' => 0, 'dir' => 'desc'), //id
 				'field' => array(
 					array(
 						'key' => 'id',
@@ -330,6 +330,14 @@ class booking_uibooking extends booking_uicommon
 		}
 	}
 
+	private function set_public_booking(&$item, $key)
+	{
+		if (isset($item['type']) && in_array($item['type'], array('allocation', 'booking', 'event')))
+		{
+			$item['is_public'] = 1;
+		}
+	}
+	
 	public function building_schedule()
 	{
 		$date = new DateTime(Sanitizer::get_var('date'));
@@ -346,6 +354,11 @@ class booking_uibooking extends booking_uicommon
 				'id' => $booking['id']
 			));
 			array_walk($booking, array($this, 'item_link'));
+
+			if($this->flags['currentapp'] == 'booking')
+			{
+				array_walk($booking, array($this, 'set_public_booking'));
+			}
 		}
 		$data = array(
 			'ResultSet' => array(

@@ -653,6 +653,8 @@ Overlaps with existing allocation %1. Remember to send a notification	booking	no
 Overlaps with existing booking	booking	no	Overlapper med eksisterende booking
 Overlaps with existing booking %1. Remember to send a notification	booking	no	Overlapper en eksisterende interntildeling %1. Husk å sende varsel
 Overlaps with existing event	booking	no	Overlapper med eksisterende arrangement
+override	booking	no	Overstyring
+override dim	booking	no	Overstyr Dimensjon
 overridden participant limit is set to %1	booking	no	Overstyrt grense for deltakere er satt til %1
 owner_id	booking	no	Eier
 parent activity	booking	no	Overordnet kategori
@@ -980,3 +982,18 @@ invoicing_changes_apply_to_all	booking	no	Endringer i fakturering vil gjelde for
 combined_view	booking	no	Kombinert visning
 all_allocations_created	booking	no	Alle tildelinger opprettet
 no_allocations_to_create	booking	no	Ingen tildelinger å opprette
+allocations_created_with_conflicts	booking	no	Tildelinger opprettet (noen med konflikt)
+use_edit_to_modify_allocations	booking	no	Bruk Endre for å gjøre endringer på eksisterende tildelinger
+Leave empty to use password authentication	booking	no	La stå tomt for å bruke passordautentisering
+SSH Private Key	booking	no	SSH privat nøkkel
+focal_point	booking	no	Fokuspunkt
+edit_focal_point	booking	no	Rediger fokuspunkt
+set_focal_point	booking	no	Sett fokuspunkt
+previews	booking	no	Forhåndsvisninger
+focal_point_instructions	booking	no	Klikk eller dra for å sette fokuspunktet. Bruk piltastene for fininnstillinger.
+reset_to_center	booking	no	Tilbakestill til senter
+remove_focal_point	booking	no	Fjern fokuspunkt
+card_preview	booking	no	Kort
+square_preview	booking	no	200x200 (kvadrat)
+portrait_preview	booking	no	200x411 (portrett)
+apply_focal_point	booking	no	Bruk

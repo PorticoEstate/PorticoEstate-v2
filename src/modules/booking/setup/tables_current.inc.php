@@ -851,6 +851,7 @@ $phpgw_baseline = array(
 			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
 			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -866,6 +867,7 @@ $phpgw_baseline = array(
 			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
 			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -881,6 +883,7 @@ $phpgw_baseline = array(
 			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
 			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -896,6 +899,7 @@ $phpgw_baseline = array(
 			'owner_id' => array('type' => 'int', 'precision' => '4', 'nullable' => false),
 			'category' => array('type' => 'varchar', 'precision' => '150', 'nullable' => false),
 			'description' => array('type' => 'text', 'nullable' => true),
+			'metadata' => array('type' => 'jsonb', 'nullable' => true),
 		),
 		'pk' => array('id'),
 		'fk' => array(
@@ -1476,6 +1480,15 @@ $phpgw_baseline = array(
 			'deactivate_in_frontend' => array('type' => 'int', 'precision' => 2, 'nullable' => True),
 			'owner_id' => array('type' => 'int', 'precision' => 4, 'nullable' => True),
 			'group_id' => array('type' => 'int', 'precision' => 4, 'nullable' => True, 'default' => 1),
+			// Override dimensions according to LG04 v55
+			'override_dim_0' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_1' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_2' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_3' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_4' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_5' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_6' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
+			'override_dim_7' => array('type' => 'varchar', 'precision' => '25', 'nullable' => True),
 		),
 		'pk' => array('id'),
 		'fk' => array(

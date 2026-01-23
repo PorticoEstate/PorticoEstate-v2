@@ -88,6 +88,7 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
         // Get events by type
         const masterEvents = relevantEvents.filter(event => event.type === 'event');
         const bookings = relevantEvents.filter(event => event.type === 'booking');
+        const allocations = relevantEvents.filter(event => event.type === 'allocation');
 
         // Create maps of blocked time periods per resource
         const blockedPeriodsByEvents = new Map<string, Array<{start: DateTime, end: DateTime, eventId: number}>>();
@@ -125,50 +126,126 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
             });
         });
 
-        return relevantEvents.filter(event => {
-            // Keep all events (highest priority)
-            if (event.type === 'event') return true;
+        // Helper function to split a time period based on blocked periods
+        const splitTimePeriod = (
+            start: DateTime,
+            end: DateTime,
+            blockedPeriods: Array<{start: DateTime, end: DateTime}>
+        ): Array<{start: DateTime, end: DateTime}> => {
+            // Sort blocked periods by start time
+            const sortedBlocked = [...blockedPeriods].sort((a, b) =>
+                a.start.toMillis() - b.start.toMillis()
+            );
 
-            const eventStart = DateTime.fromISO(event.from_);
-            const eventEnd = DateTime.fromISO(event.to_);
+            const freeSegments: Array<{start: DateTime, end: DateTime}> = [];
+            let currentStart = start;
 
-            // For bookings, only check overlap with events
-            if (event.type === 'booking') {
-                return !event.resources.some(resource => {
-                    const resourceId = resource.id.toString();
-                    if (!enabledResources.has(resourceId)) return false;
+            for (const blocked of sortedBlocked) {
+                // If blocked period doesn't overlap with our current range, skip it
+                if (blocked.end <= currentStart || blocked.start >= end) {
+                    continue;
+                }
 
-                    // Check overlap with events only
-                    const eventBlockedPeriods = blockedPeriodsByEvents.get(resourceId) || [];
-                    return eventBlockedPeriods.some(period =>
-                        !(eventEnd <= period.start || eventStart >= period.end)
-                    );
-                });
+                // If there's a gap before this blocked period, add it as a free segment
+                if (currentStart < blocked.start) {
+                    freeSegments.push({
+                        start: currentStart,
+                        end: DateTime.min(blocked.start, end)
+                    });
+                }
+
+                // Move current start to after the blocked period
+                currentStart = DateTime.max(currentStart, blocked.end);
+
+                // If we've reached or passed the end, we're done
+                if (currentStart >= end) {
+                    break;
+                }
             }
 
-            // For allocations, check overlap with both events and bookings
-            if (event.type === 'allocation') {
-                return !event.resources.some(resource => {
-                    const resourceId = resource.id.toString();
-                    if (!enabledResources.has(resourceId)) return false;
-
-                    // Check overlap with events
-                    const eventBlockedPeriods = blockedPeriodsByEvents.get(resourceId) || [];
-                    const hasEventOverlap = eventBlockedPeriods.some(period =>
-                        !(eventEnd <= period.start || eventStart >= period.end)
-                    );
-                    if (hasEventOverlap) return true;
-
-                    // Check overlap with bookings
-                    const bookingBlockedPeriods = blockedPeriodsByBookings.get(resourceId) || [];
-                    return bookingBlockedPeriods.some(period =>
-                        !(eventEnd <= period.start || eventStart >= period.end)
-                    );
-                });
+            // Add any remaining time after all blocked periods
+            if (currentStart < end) {
+                freeSegments.push({ start: currentStart, end });
             }
 
-            return true;
+            return freeSegments;
+        };
+
+        // Process bookings - trim based on events
+        const processedBookings: IEvent[] = [];
+        bookings.forEach(booking => {
+            const bookingStart = DateTime.fromISO(booking.from_);
+            const bookingEnd = DateTime.fromISO(booking.to_);
+
+            // Get all blocking periods for this booking's resources
+            const allBlockingPeriods: Array<{start: DateTime, end: DateTime}> = [];
+            booking.resources.forEach(resource => {
+                const resourceId = resource.id.toString();
+                if (enabledResources.has(resourceId)) {
+                    const eventPeriods = blockedPeriodsByEvents.get(resourceId) || [];
+                    allBlockingPeriods.push(...eventPeriods);
+                }
+            });
+
+            // If no overlaps, keep the booking as-is
+            if (allBlockingPeriods.length === 0) {
+                processedBookings.push(booking);
+                return;
+            }
+
+            // Split the booking into non-overlapping segments
+            const freeSegments = splitTimePeriod(bookingStart, bookingEnd, allBlockingPeriods);
+
+            // Create a booking for each free segment (only if segments exist)
+            freeSegments.forEach((segment, index) => {
+                processedBookings.push({
+                    ...booking,
+                    id: index === 0 ? booking.id : booking.id * 10000 + index, // Ensure unique IDs
+                    from_: segment.start.toISO()!,
+                    to_: segment.end.toISO()!
+                });
+            });
         });
+
+        // Process allocations - trim based on events and bookings
+        const processedAllocations: IEvent[] = [];
+        allocations.forEach(allocation => {
+            const allocationStart = DateTime.fromISO(allocation.from_);
+            const allocationEnd = DateTime.fromISO(allocation.to_);
+
+            // Get all blocking periods for this allocation's resources
+            const allBlockingPeriods: Array<{start: DateTime, end: DateTime}> = [];
+            allocation.resources.forEach(resource => {
+                const resourceId = resource.id.toString();
+                if (enabledResources.has(resourceId)) {
+                    const eventPeriods = blockedPeriodsByEvents.get(resourceId) || [];
+                    const bookingPeriods = blockedPeriodsByBookings.get(resourceId) || [];
+                    allBlockingPeriods.push(...eventPeriods, ...bookingPeriods);
+                }
+            });
+
+            // If no overlaps, keep the allocation as-is
+            if (allBlockingPeriods.length === 0) {
+                processedAllocations.push(allocation);
+                return;
+            }
+
+            // Split the allocation into non-overlapping segments
+            const freeSegments = splitTimePeriod(allocationStart, allocationEnd, allBlockingPeriods);
+
+            // Create an allocation for each free segment (only if segments exist)
+            freeSegments.forEach((segment, index) => {
+                processedAllocations.push({
+                    ...allocation,
+                    id: index === 0 ? allocation.id : allocation.id * 10000 + index, // Ensure unique IDs
+                    from_: segment.start.toISO()!,
+                    to_: segment.end.toISO()!
+                });
+            });
+        });
+
+        // Return all events: master events (unchanged) + processed bookings + processed allocations
+        return [...masterEvents, ...processedBookings, ...processedAllocations];
     }, []);
 
     // Partial applications are now handled in the temp events context

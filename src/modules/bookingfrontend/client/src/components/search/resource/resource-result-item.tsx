@@ -1,14 +1,15 @@
 import React, {FC, useMemo, useCallback} from 'react';
 import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
-import {ISearchDataActivity, ISearchDataBuilding, ISearchDataTown, ISearchResource} from "@/service/types/api/search.types";
+import {ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import {LayersIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
+import Image from "next/image";
 import DividerCircle from "@/components/util/DividerCircle";
-import {useTowns, useMultiDomains} from "@/service/hooks/api-hooks";
+import {useTowns, useMultiDomains, useSearchData} from "@/service/hooks/api-hooks";
 import {useIsMobile} from "@/service/hooks/is-mobile";
-import {createDomainResourceUrl, createDomainBuildingUrl, redirectToDomain} from "@/service/multi-domain-utils";
+import {createDomainResourceUrl, createDomainBuildingUrl} from "@/service/multi-domain-utils";
 
 interface ResourceResultItemProps {
 	resource: ISearchResource & { building?: ISearchDataBuilding };
@@ -18,10 +19,54 @@ interface ResourceResultItemProps {
 
 const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate, isAvailable}) => {
 	const t = useTrans();
-	// const {data: searchData} = useSearchData(); // Commented out since activity lookup is not currently used
+	const {data: searchData} = useSearchData();
 	const {data: towns} = useTowns();
 	const {data: multiDomains} = useMultiDomains();
 	const isMobile = useIsMobile();
+
+	// Get resource image data (URL and focal point)
+	const resourceImage = useMemo(() => {
+		const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+		const placeholderUrl = `${basePath}/resource_placeholder_bilde.png`;
+
+		if (!searchData?.resource_pictures) {
+			return {
+				url: placeholderUrl,
+				focalPoint: undefined
+			};
+		}
+
+		// Find picture for this resource
+		const picture = searchData.resource_pictures.find(p => p.owner_id === resource.id);
+
+		if (!picture) {
+			return {
+				url: placeholderUrl,
+				focalPoint: undefined
+			};
+		}
+
+		// In production, use full public URL with domain; in development, use proxy
+		const isProduction = process.env.NODE_ENV === 'production';
+		const imageUrl = isProduction
+			? `${typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_API_URL || '')}/bookingfrontend/resources/document/${picture.id}/download`
+			: `${basePath}/fetch-server-image-proxy/${picture.id}`;
+
+		return {
+			url: imageUrl,
+			focalPoint: picture.metadata?.focal_point
+		};
+	}, [searchData, resource.id]);
+
+	// Calculate CSS object-position from focal point (x and y are percentages)
+	const imageStyle = useMemo(() => {
+		if (!resourceImage.focalPoint) {
+			return undefined;
+		}
+		return {
+			objectPosition: `${resourceImage.focalPoint.x}% ${resourceImage.focalPoint.y}%`
+		};
+	}, [resourceImage.focalPoint]);
 
 	// Find activity associated with this resource (currently unused but kept for potential future use)
 	// const activity = useMemo(() =>
@@ -120,12 +165,25 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 			data-color="neutral"
 			className={styles.resourceCard}
 		>
-			<div className={styles.cardContent}>
+			<Card.Block className={styles.imageBlock}>
+				<div className={styles.imageWrapper}>
+					<Image
+						src={resourceImage.url}
+						alt=""
+						fill
+						sizes="(max-width: 850px) 100vw, (max-width: 1200px) 50vw, 33vw"
+						className={styles.cardImage}
+						style={imageStyle}
+						priority={false}
+					/>
+				</div>
+			</Card.Block>
+
+			<Card.Block className={styles.contentBlock}>
 				<DigdirLink asChild data-color='accent'>
 					<Link
 						href={createResourceUrl()}
 						className={styles.titleLink}
-						// onClick={handleResourceClick}
 						{...(isExternalDomain ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
 					>
 						<div className={styles.resourceHeadingContainer}>
@@ -148,7 +206,6 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 					</Link>
 				</DigdirLink>
 
-
 				<Paragraph data-size={isMobile ? 'xs' : "sm"} className={styles.resourceTags}>
 					{tags.map((tag, index) => {
 						if (index === 0) {
@@ -158,16 +215,15 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 							<DividerCircle/>{tag}</React.Fragment>
 					})}
 				</Paragraph>
-			</div>
 
-			{/*<div className={styles.cardAction}>*/}
-			{/*	<DigdirLink asChild data-color='accent'>*/}
+				{/* TODO: Add facilities/amenities icons here when data is available */}
 
-			{/*		<Link href={'/resource/' + resource.id} className={styles.viewLink}>*/}
-			{/*			{t('search.view_details') || 'View details'}*/}
-			{/*		</Link>*/}
-			{/*	</DigdirLink>*/}
-			{/*</div>*/}
+				{resource.capacity && (
+					<Paragraph data-size="sm" className={styles.capacity}>
+						<strong>{t('search.capacity') || 'Maks antall personer'}:</strong> {resource.capacity} {t('search.persons') || 'personer'}
+					</Paragraph>
+				)}
+			</Card.Block>
 		</Card>
 		// <div className={styles.resourceCard}>
 		// 	<div className={styles.resourceHeader}>

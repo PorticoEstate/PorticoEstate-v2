@@ -64,15 +64,15 @@ const ShoppingCartPopper: FC<ShoppingCartPopperProps> = (props) => {
             if (pendingData) {
                 try {
                     const storedData = JSON.parse(pendingData);
-                    
+
                     // Check if data is expired (10 minutes = 600000 ms)
                     const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
-                    
+
                     if (isExpired) {
                         localStorage.removeItem('pendingRecurringApplication');
                         return;
                     }
-                    
+
                     // Check if this is for an EXISTING application (must have applicationId, building_id, and date_id)
                     if (storedData.applicationId && storedData.building_id && storedData.date_id) {
                         // Open the existing application for editing

@@ -1038,6 +1038,8 @@ class ApplicationController extends DocumentController
             $documents = [];
             $parseBody = $request->getParsedBody();
             $description = $parseBody['description'] ?? null;
+            $focalPointX = $parseBody['focal_point_x'] ?? null;
+            $focalPointY = $parseBody['focal_point_y'] ?? null;
 
             foreach ($files as $file) {
                 // Basic validation
@@ -1058,6 +1060,12 @@ class ApplicationController extends DocumentController
                     'name' => $filename,
                     'description' => $description ?? $filename
                 ];
+
+                // Add focal point if provided
+                if ($focalPointX !== null && $focalPointY !== null) {
+                    $document['focal_point_x'] = $focalPointX;
+                    $document['focal_point_y'] = $focalPointY;
+                }
 
                 $docId = $this->documentService->createDocument($document);
 

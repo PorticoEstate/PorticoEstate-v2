@@ -80,15 +80,17 @@
 									</xsl:attribute>
 								</input>
 							</div>
-							<!--article_alternative_code-->
+							<!--article_alternative_code / internal-->
 							<div class="pure-control-group">
 								<label>
 									<xsl:value-of select="php:function('lang', 'alternative article code')"/>
+									<xsl:text> (internal)</xsl:text>
 								</label>
 								<input type="text" id="article_alternative_code" name="article_alternative_code" value="{article/article_alternative_code}" class="pure-input-1-2">
 									<xsl:attribute name="placeholder">
 										<xsl:value-of select="php:function('lang', 'alternative article code')"/>
 									</xsl:attribute>
+
 								</input>
 							</div>
                             <div class="pure-control-group">
@@ -269,7 +271,77 @@
 
 						</fieldset>
 					</div>
-
+					<div id="override">
+						<fieldset>
+							<legend>
+								<xsl:value-of select="php:function('lang', 'override')"/>
+							</legend>
+							<div class="pure-control-group">
+								<label for="field_override_dim_0" style="white-space: nowrap;">
+									<xsl:value-of select="php:function('lang', 'override dim')"/>
+									<xsl:text> 0</xsl:text>
+								</label>
+								<input name="override_dim_0" type="text" value="{article/override_dim_0}" id="field_override_dim_0" >
+								</input>
+							</div>
+							<div class="pure-control-group">
+								<label for="field_override_dim_1" style="white-space: nowrap;">
+									<xsl:value-of select="php:function('lang', 'override dim')"/>
+									<xsl:text> 1</xsl:text>
+								</label>
+								<input name="override_dim_1" type="text" value="{article/override_dim_1}" id="field_override_dim_1" >
+								</input>
+							</div>
+							<div class="pure-control-group">
+								<label for="field_override_dim_2" style="white-space: nowrap;">
+									<xsl:value-of select="php:function('lang', 'override dim')"/>
+									<xsl:text> 2</xsl:text>
+								</label>
+								<input name="override_dim_2" type="text" value="{article/override_dim_2}" id="field_override_dim_2" >
+								</input>
+							</div>
+							<div class="pure-control-group">
+								<label for="field_override_dim_3" style="white-space: nowrap;">
+									<xsl:value-of select="php:function('lang', 'override dim')"/>
+									<xsl:text> 3</xsl:text>
+								</label>
+								<input name="override_dim_3" type="text" value="{article/override_dim_3}" id="field_override_dim_3" >
+								</input>
+							</div>
+							<div class="pure-control-group">
+								<label for="field_override_dim_4" style="white-space: nowrap;">
+									<xsl:value-of select="php:function('lang', 'override dim')"/>
+									<xsl:text> 4</xsl:text>
+								</label>
+								<input name="override_dim_4" type="text" value="{article/override_dim_4}" id="field_override_dim_4" >
+								</input>
+							</div>
+							<div class="pure-control-group">
+								<label for="field_override_dim_5" style="white-space: nowrap;">
+									<xsl:value-of select="php:function('lang', 'override dim')"/>
+									<xsl:text> 5</xsl:text>
+								</label>
+								<input name="override_dim_5" type="text" value="{article/override_dim_5}" id="field_override_dim_5" >
+								</input>
+							</div>
+							<div class="pure-control-group">
+								<label for="field_override_dim_6" style="white-space: nowrap;">
+									<xsl:value-of select="php:function('lang', 'override dim')"/>
+									<xsl:text> 6</xsl:text>
+								</label>
+								<input name="override_dim_6" type="text" value="{article/override_dim_6}" id="field_override_dim_6" >
+								</input>
+							</div>
+							<div class="pure-control-group">
+								<label for="field_override_dim_7" style="white-space: nowrap;">
+									<xsl:value-of select="php:function('lang', 'override dim')"/>
+									<xsl:text> 7</xsl:text>
+								</label>
+								<input name="override_dim_7" type="text" value="{article/override_dim_7}" id="field_override_dim_7" >
+								</input>
+							</div>
+						</fieldset>
+					</div>
 					<div id='files'>
 						<fieldset>
 							<legend>
@@ -315,15 +387,8 @@
 									</xsl:for-each>
 								</div>
 							</div>
-
 						</fieldset>
-
-
-
 					</div>
-
-
-
 				</div>
 				<div id="submit_group_bottom" class="proplist-col">
 					<xsl:variable name="lang_save">

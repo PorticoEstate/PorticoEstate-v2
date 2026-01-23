@@ -124,15 +124,16 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 		}));
 	}, [props.seasons, viewStart, viewEnd, enabledResources]);
 
-	const generateEventConstraint = useCallback(() => {
-		return {
-			businessHours: generateBusinessHours(),
-			startTime: slotMinTime,
-			// Use the calculated slotMaxTime which respects boundaries
-			// but also extends to midnight when appropriate
-			endTime: slotMaxTime
-		};
-	}, [generateBusinessHours, slotMinTime, slotMaxTime]);
+	// Memoize the results to prevent FullCalendar from receiving new object references on every render
+	const businessHours = useMemo(() => generateBusinessHours(), [generateBusinessHours]);
+
+	const eventConstraint = useMemo(() => ({
+		businessHours: businessHours,
+		startTime: slotMinTime,
+		// Use the calculated slotMaxTime which respects boundaries
+		// but also extends to midnight when appropriate
+		endTime: slotMaxTime
+	}), [businessHours, slotMinTime, slotMaxTime]);
 
 
 	const calculateAbsoluteMinMaxTimes = useCallback(() => {
@@ -927,9 +928,9 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			eventDrop={handleEventResize}
 			initialDate={currentDate.toJSDate()}
 
-			businessHours={generateBusinessHours()}
-			eventConstraint={generateEventConstraint()}
-			selectConstraint={generateEventConstraint()}
+			businessHours={businessHours}
+			eventConstraint={eventConstraint}
+			selectConstraint={eventConstraint}
 
 			// selectConstraint={{
 			//     startTime: slotMinTime,

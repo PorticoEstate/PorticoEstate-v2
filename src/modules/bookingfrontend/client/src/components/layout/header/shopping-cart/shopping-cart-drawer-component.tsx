@@ -7,6 +7,7 @@ import styles from "./shopping-cart-drawer.module.scss";
 import { useShoppingCartDrawer } from './shopping-cart-drawer-context';
 import {useScrollLockEffect} from '@/contexts/ScrollLockContext';
 import {useBookingUser} from "@/service/hooks/api-hooks";
+import {useToast} from "@/components/toast/toast-context";
 
 const ShoppingCartDrawerComponent: React.FC = () => {
     const { isOpen, setIsOpen, anchorRef } = useShoppingCartDrawer();
@@ -18,6 +19,7 @@ const ShoppingCartDrawerComponent: React.FC = () => {
     }>();
     const drawerRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = React.useState(false);
+	// const {dismissAllToasts} = useToast()
 
     // Use scroll lock context to manage body overflow
     useScrollLockEffect('shopping-cart-drawer-component', isOpen);
@@ -26,6 +28,12 @@ const ShoppingCartDrawerComponent: React.FC = () => {
     useEffect(() => {
         setMounted(true);
     }, []);
+
+	// useEffect(() => {
+	// 	if(isOpen) {
+	// 		dismissAllToasts();
+	// 	}
+	// }, [isOpen, dismissAllToasts]);
 
     // Handle click outside to close the drawer
     useEffect(() => {
@@ -53,15 +61,15 @@ const ShoppingCartDrawerComponent: React.FC = () => {
             if (pendingData) {
                 try {
                     const storedData = JSON.parse(pendingData);
-                    
+
                     // Check if data is expired (10 minutes = 600000 ms)
                     const isExpired = storedData.timestamp && (Date.now() - storedData.timestamp > 600000);
-                    
+
                     if (isExpired) {
                         localStorage.removeItem('pendingRecurringApplication');
                         return;
                     }
-                    
+
                     // Check if this is for an EXISTING application (must have applicationId, building_id, and date_id)
                     if (storedData.applicationId && storedData.building_id && storedData.date_id) {
                         // Open the existing application for editing

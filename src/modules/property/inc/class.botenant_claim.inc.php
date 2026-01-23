@@ -155,22 +155,23 @@
 
 			phpgwapi_xslttemplates::getInstance()->add_file(array('status_' . $format));
 
-			$status[0]['id']	 = 'ready';
-			$status[0]['name']	 = lang('ready for processing claim');
-			$status[1]['id']	 = 'closed';
-			$status[1]['name']	 = lang('Closed');
+			$status = array();
+			$status[] = array('id' => 'ready', 'name' => lang('ready for processing claim'));
+			$status[] = array('id' => 'closed', 'name' => lang('Closed'));
 			if ($format == "filter")
 			{
-				$status[2]['id']	 = 'all';
-				$status[2]['name']	 = lang('All');
+				$status[] = array('id' => 'all', 'name' => lang('All'));
 			}
 			else
 			{
-				$status[2]['id']	 = 'open';
-				$status[2]['name']	 = lang('Open');
+				$status[] = array('id' => 'open', 'name' => lang('Open'));
 			}
 
-			return $this->bocommon->select_list($selected, $status);
+			$status[] = array('id' => 'closed2', 'name' => 'Avsluttet, ikke fakturert');
+			$status[] = array('id' => 'error', 'name' => 'Feil / mangler');
+
+
+		return $this->bocommon->select_list($selected, $status);
 		}
 
 		function read_category_name( $cat_id = '' )
@@ -191,6 +192,8 @@
 				'open' => lang('open'),
 				'closed' => lang('closed'),
 				'ready' => lang('ready for processing claim')
+				,'error' => 'Feil / mangler',
+				'closed2' => 'Avsluttet, ikke fakturert'
 			];
 
 
@@ -286,6 +289,8 @@
 			$status_text['ready']	 = lang('ready for processing claim');
 			$status_text['open']	 = lang('open');
 			$status_text['closed']	 = lang('closed');
+			$status_text['error']	 = 'Feil / mangler';
+			$status_text['closed2'] = 'Avsluttet, ikke fakturert';
 
 			$i = 0;
 			foreach ($history_array as $value)

@@ -210,7 +210,12 @@ class ErrorHandler
 		$referer = str_replace('?', "\n?", $referer);
 		$referer = str_replace('&', "\n&", $referer);
 		$parametres = Sanitizer::clean_value($_GET);
-		$parametres = print_r($parametres, true);
+		$clean_params = [];
+		foreach ($parametres as $key => $value)
+		{
+			$clean_params[Sanitizer::sanitize($key)] = $value;
+		}
+		$parametres = print_r($clean_params, true);
 		$trace = "IP_address: {$IP_address}</b>\n Referer: {$referer} </b>\nParameters: {$parametres}</b>\nPath: {$path}</b>\n" . $this->phpgw_parse_backtrace($bt);
 
 		$log_args = array(
@@ -396,7 +401,12 @@ class ErrorHandler
 		}
 
 		$parametres = Sanitizer::clean_value($_GET);
-		$parametres = print_r($parametres, true);
+		$clean_params = [];
+		foreach ($parametres as $key => $value)
+		{
+			$clean_params[Sanitizer::sanitize($key)] = $value;
+		}
+		$parametres = print_r($clean_params, true);
 		$trace = "IP_address: {$IP_address}</b>\nReferer: {$referer} </b>\nPath: {$path}</b>\nParameters: {$parametres}</b>\n" . $e->getTraceAsString();
 		
 		$tables = $this->db->table_names();

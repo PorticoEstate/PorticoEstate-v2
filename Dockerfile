@@ -17,8 +17,9 @@ ENV https_proxy=${https_proxy}
 
 # Download and install the install-php-extensions script
 # https://github.com/mlocati/docker-php-extension-installer
-RUN curl -sSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions \
-    && chmod +x /usr/local/bin/install-php-extensions
+#RUN curl -sSL https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions -o /usr/local/bin/install-php-extensions \
+#    && chmod +x /usr/local/bin/install-php-extensions
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
 
 # Configure PEAR
 RUN if [ -n "${http_proxy}" ]; then pear config-set http_proxy ${http_proxy}; fi && \
@@ -49,6 +50,7 @@ RUN apt-get update && apt-get install -y \
     apg \
     sudo \
     gnupg \
+    unzip \
     libaio1t64 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \
@@ -181,6 +183,8 @@ RUN sed -i 's|^listen = .*|;listen = 9000|' /usr/local/etc/php-fpm.d/zz-docker.c
 
 # Copy PHP-FPM configuration
 COPY php-fpm.conf /etc/apache2/conf-available/php-fpm.conf
+# Override PHP-FPM pool to use Unix socket and owned by www-data
+COPY php-fpm.d/zz-portico.conf /usr/local/etc/php-fpm.d/zz-portico.conf
 
 # Apache2 configuration
 ENV APACHE_RUN_USER=www-data

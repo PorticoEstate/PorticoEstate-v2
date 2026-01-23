@@ -821,6 +821,10 @@ class booking_uiapplication extends booking_uicommon
 			$case_officer = true;
 		}
 
+		// Get sort parameters from request
+		$sort = Sanitizer::get_var('sort', 'string');
+		$dir = Sanitizer::get_var('dir', 'string');
+
 		// Get associations from all related applications for combined display only if combining is enabled
 		if ($this->combine_applications)
 		{
@@ -840,14 +844,29 @@ class booking_uiapplication extends booking_uicommon
 					$all_associations = array_merge($all_associations, $app_associations['results']);
 				}
 			}
+
+			// Sort the combined associations if sort parameter is provided
+			if ($sort && !empty($all_associations))
+			{
+				$sort_order = (strtolower($dir) === 'desc') ? SORT_DESC : SORT_ASC;
+
+				// Extract the column to sort by
+				$sort_column = array_column($all_associations, $sort);
+
+				// Sort the associations
+				array_multisort($sort_column, $sort_order, SORT_REGULAR, $all_associations);
+			}
+
 			$associations = array('results' => $all_associations);
 		}
 		else
 		{
-			// Single application - use existing logic
+			// Single application - pass sort parameters to read method
 			$associations = $this->assoc_bo->so->read(array(
 				'filters' => array('application_id' => $application_id),
-				'results' => 'all'
+				'results' => 'all',
+				'sort' => $sort,
+				'dir' => $dir
 			));
 		}
 		foreach ($associations['results'] as &$association)
@@ -4486,6 +4505,7 @@ JS;
 			$has_conflicts = false;
 			$conflicts_count = 0;
 			$non_conflict_count = 0;
+			$existing_allocations_count = 0;
 
 			if (!empty($recurring_preview)) {
 				foreach ($recurring_preview as $item) {
@@ -4495,6 +4515,11 @@ JS;
 					} else if (!isset($item['exists']) || !$item['exists']) {
 						$non_conflict_count++;
 					}
+
+				// Count existing allocations
+				if (isset($item['exists']) && $item['exists']) {
+					$existing_allocations_count++;
+				}
 				}
 			}
 
@@ -4515,8 +4540,13 @@ JS;
 			$create_button_text = $has_conflicts ? 'create_non_conflicting_allocations' : 'create_all_allocations';
 			$create_button_count = $has_conflicts ? $non_conflict_count : count($recurring_preview);
 
-			// Disable button if there are no allocations to create
-			$can_create_allocations = $create_button_count > 0;
+			// Disable button if there are no allocations to create OR if any allocations already exist
+			// This prevents users from using "Create allocations" to edit existing allocations,
+			// which would create inconsistent "shadow times" between admin and applicant views
+			$can_create_allocations = $create_button_count > 0 && $existing_allocations_count == 0;
+
+			// Determine if we have a mixed scenario (allocations exist but conflicts remain)
+			$has_partial_allocations_with_conflicts = $existing_allocations_count > 0 && $conflicts_count > 0;
 		}
 
 
@@ -4620,6 +4650,7 @@ JS;
 				'create_button_count' => $create_button_count,
 				'has_conflicts' => $has_conflicts,
 				'can_create_allocations' => $can_create_allocations,
+				'has_partial_allocations_with_conflicts' => $has_partial_allocations_with_conflicts,
 				'open_approve_modal' => $open_approve_modal,
 				'show_recurring_summary' => $show_recurring_summary
 			)

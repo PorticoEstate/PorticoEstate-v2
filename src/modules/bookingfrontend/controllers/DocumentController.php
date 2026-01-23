@@ -167,6 +167,7 @@ class DocumentController
     public function downloadDocument(Request $request, Response $response, array $args): Response
     {
         $documentId = (int)$args['id'];
+        $rotation = (int)($request->getQueryParams()['rotation'] ?? 0);
 
         try {
             $document = $this->documentService->getDocumentById($documentId);
@@ -181,6 +182,20 @@ class DocumentController
             if (!file_exists($filePath)) {
                 $response->getBody()->write(json_encode(['error' => 'Document file not found']));
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            }
+
+            // If rotation parameter is provided and it's an image, rotate it temporarily
+            $isRotated = false;
+            if ($rotation && $rotation !== 0) {
+                $fileType = $document->getFileTypeFromExtension();
+                $isImage = str_starts_with($fileType, 'image/');
+                if ($isImage) {
+                    $rotatedPath = $this->rotateImageTemp($filePath, $rotation);
+                    if ($rotatedPath !== $filePath) {
+                        $filePath = $rotatedPath;
+                        $isRotated = true;
+                    }
+                }
             }
 
             $fileType = $document->getFileTypeFromExtension();
@@ -198,13 +213,85 @@ class DocumentController
                 ->withHeader('Pragma', 'cache');
 
             $stream = fopen($filePath, 'r');
-            return $response->withBody(new Stream($stream));
+            $response = $response->withBody(new Stream($stream));
+
+            // Clean up temporary file if we created one
+            if ($isRotated && file_exists($filePath)) {
+                @unlink($filePath);
+            }
+
+            return $response;
 
         } catch (Exception $e) {
             $error = "Error downloading document: " . $e->getMessage();
             $response->getBody()->write(json_encode(['error' => $error]));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
+    }
+
+    private function rotateImageTemp(string $sourceFile, int $degrees): string
+    {
+        // Supported rotations: 90, 180, 270
+        if (!in_array($degrees, [90, 180, 270])) {
+            return $sourceFile;
+        }
+
+        // Check if GD is available
+        if (!extension_loaded('gd')) {
+            return $sourceFile;
+        }
+
+        // Get image info
+        $imageInfo = getimagesize($sourceFile);
+        if (!$imageInfo) {
+            return $sourceFile;
+        }
+
+        // Create image resource based on type
+        $mime = $imageInfo['mime'];
+        $source = match($mime) {
+            'image/jpeg' => imagecreatefromjpeg($sourceFile),
+            'image/png' => imagecreatefrompng($sourceFile),
+            'image/gif' => imagecreatefromgif($sourceFile),
+            'image/webp' => imagecreatefromwebp($sourceFile),
+            default => null
+        };
+
+        if (!$source) {
+            return $sourceFile;
+        }
+
+        // Rotate image
+        $rotated = imagerotate($source, -$degrees, 0);
+        imagedestroy($source);
+
+        if (!$rotated) {
+            return $sourceFile;
+        }
+
+        // Save to temporary file
+        $tempFile = tempnam(sys_get_temp_dir(), 'rotated_');
+        $success = false;
+
+        switch ($mime) {
+            case 'image/jpeg':
+                $success = imagejpeg($rotated, $tempFile, 90);
+                break;
+            case 'image/png':
+                imagesavealpha($rotated, true);
+                $success = imagepng($rotated, $tempFile);
+                break;
+            case 'image/gif':
+                $success = imagegif($rotated, $tempFile);
+                break;
+            case 'image/webp':
+                $success = imagewebp($rotated, $tempFile, 90);
+                break;
+        }
+
+        imagedestroy($rotated);
+
+        return $success ? $tempFile : $sourceFile;
     }
 
     public function deleteDocument(Request $request, Response $response, array $args): Response

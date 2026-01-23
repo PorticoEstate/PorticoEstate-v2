@@ -42,7 +42,7 @@ abstract class booking_uidocument extends booking_uicommon
 		$this->set_business_object();
 
 		//'name' is not in fields as it will always be generated from the uploaded filename
-		$this->fields = array('category', 'description', 'owner_id', 'owner_name', 'metadata', 'focal_point_x', 'focal_point_y');
+		$this->fields = array('category', 'description', 'owner_id', 'owner_name', 'metadata', 'focal_point_x', 'focal_point_y', 'rotation');
 
 		$this->module = 'booking';
 

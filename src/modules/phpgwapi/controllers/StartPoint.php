@@ -437,7 +437,8 @@ class StartPoint
 		if ($app == 'bookingfrontend' && $_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
 			$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
 
-			if ($template_set == 'bookingfrontend_2') {
+			// Only skip redirect if user has explicitly selected original template
+			if ($template_set != 'bookingfrontend') {
 				$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();
 				$develop_mode = isset($config_frontend['develope_mode']) && $config_frontend['develope_mode'] === 'True';
 

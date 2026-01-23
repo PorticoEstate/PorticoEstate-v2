@@ -1670,6 +1670,12 @@ class booking_uievent extends booking_uicommon
 	public function info()
 	{
 		$event = $this->bo->read_single(Sanitizer::get_var('id', 'int'));
+
+		if ($this->flags['currentapp'] == 'booking')
+		{
+			$event['is_public'] = 1;
+		}
+
 		$resources = $this->resource_bo->so->read(array(
 			'filters' => array('id' => $event['resources']),
 			'sort' => 'name'

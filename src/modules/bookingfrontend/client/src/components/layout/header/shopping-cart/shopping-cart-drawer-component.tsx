@@ -19,7 +19,7 @@ const ShoppingCartDrawerComponent: React.FC = () => {
     }>();
     const drawerRef = useRef<HTMLDivElement>(null);
     const [mounted, setMounted] = React.useState(false);
-	const {dismissAllToasts} = useToast()
+	// const {dismissAllToasts} = useToast()
 
     // Use scroll lock context to manage body overflow
     useScrollLockEffect('shopping-cart-drawer-component', isOpen);
@@ -29,11 +29,11 @@ const ShoppingCartDrawerComponent: React.FC = () => {
         setMounted(true);
     }, []);
 
-	useEffect(() => {
-		if(isOpen) {
-			dismissAllToasts();
-		}
-	}, [isOpen, dismissAllToasts]);
+	// useEffect(() => {
+	// 	if(isOpen) {
+	// 		dismissAllToasts();
+	// 	}
+	// }, [isOpen, dismissAllToasts]);
 
     // Handle click outside to close the drawer
     useEffect(() => {

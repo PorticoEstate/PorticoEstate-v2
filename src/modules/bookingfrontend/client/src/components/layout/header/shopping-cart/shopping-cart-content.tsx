@@ -28,33 +28,14 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
     const isMobile = useIsMobile();
     const {data: basketData, isLoading} = usePartialApplications();
 
-    // Fetch seasons for all unique buildings in the cart
-    const buildingIds = [...new Set((basketData?.list || []).map(item => item.building_id))];
-    const seasonsQueries = buildingIds.map(buildingId => {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        return useBuildingSeasons(buildingId);
-    });
-
-    // Create a map of building_id to seasons for easy lookup
-    const seasonsMap = new Map();
-    buildingIds.forEach((buildingId, index) => {
-        seasonsMap.set(buildingId, seasonsQueries[index]?.data);
-    });
-
     // Calculate total cost including recurring applications
+    // Note: This is a simplified calculation that doesn't account for recurring instances
+    // The child components will handle the detailed recurring calculations
     const calculateTotalCost = (): number => {
         if (!basketData?.list) return 0;
 
         return basketData.list.reduce((total, app) => {
             const appCost = calculateApplicationCost(app);
-
-            // Check if recurring
-            if (RecurringInfoUtils.isRecurring(app)) {
-                const seasons = seasonsMap.get(app.building_id);
-                const recurringInstances = calculateRecurringInstances(app, seasons);
-                return total + (appCost * recurringInstances.length);
-            }
-
             return total + appCost;
         }, 0);
     };

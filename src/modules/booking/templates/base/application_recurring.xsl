@@ -1135,10 +1135,17 @@
 			<xsl:when test="application/case_officer/is_current_user and can_create_allocations = 0">
 				<button class="btn btn-secondary btn-sm shadow-sm" disabled="disabled">
 					<xsl:attribute name="title">
-						<xsl:value-of select="php:function('lang', 'no_allocations_to_create')" />
+						<xsl:value-of select="php:function('lang', 'use_edit_to_modify_allocations')" />
 					</xsl:attribute>
 					<i class="fas fa-check-circle me-2"></i>
-					<xsl:value-of select="php:function('lang', 'all_allocations_created')" />
+					<xsl:choose>
+						<xsl:when test="has_partial_allocations_with_conflicts = 1">
+							<xsl:value-of select="php:function('lang', 'allocations_created_with_conflicts')" />
+						</xsl:when>
+						<xsl:otherwise>
+							<xsl:value-of select="php:function('lang', 'all_allocations_created')" />
+						</xsl:otherwise>
+					</xsl:choose>
 				</button>
 			</xsl:when>
 			<xsl:otherwise>

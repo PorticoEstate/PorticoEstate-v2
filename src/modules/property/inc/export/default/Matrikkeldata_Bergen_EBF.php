@@ -18,8 +18,8 @@ class export_conv
 	{
 		$buildings = $this->get_buildings();
 
-		$name	 = array_keys($buildings[0]);
-		$descr	 = array_keys($buildings[0]);
+		$name	 = array_keys($buildings[1]);
+		$descr	 = array_keys($buildings[1]);
 
 		CreateObject('property.bocommon')->download($buildings, $name, $descr);
 
@@ -236,6 +236,7 @@ class export_conv
 				MATRIKKELENHET.CLASS as MATRIKKELENHET_CLASS,
 				MATRIKKELENHET.ETABLERINGSDATO,
 				MATRIKKELENHET.OPPGITTAREAL,
+				BYGG.ID as BYGG_ID,
 				BYGG.BYGNINGSNR,
 				BYGG.CLASS as BYGG_CLASS,
 				BYGG.BEBYGDAREAL,
@@ -287,6 +288,7 @@ class export_conv
 			$value['bruksnr']			 = $this->db->f('BRUKSNR');
 			$value['Bygningstypekode']	 = $this->db->f('BYGNINGSTYPEKODE');
 			$value['BygningstypeTekst']	 = $buildingTypes[$value['Bygningstypekode']];
+			$value['Bygg_ID'] 			 = $this->db->f('BYGG_ID');
 		}
 	}
 
@@ -313,6 +315,7 @@ class export_conv
 		}
 
 		$this->get_matrikkel_info($buildings);
+		$this->get_bygnings_historikk($buildings);
 
 		foreach ($buildings as &$building)
 		{
@@ -380,4 +383,34 @@ class export_conv
 
 		return $buildings;
 	}
+
+
+	function get_bygnings_historikk(&$buildings)
+	{
+
+		foreach ($buildings as &$building)
+		{
+			$Bygg_ID = (int)$building['Bygg_ID'];
+
+			if(!$Bygg_ID)
+			{
+				continue;
+			}
+
+			$sql = "SELECT * FROM BYGNINGSTATUSHISTORIKK WHERE BYGGID = {$Bygg_ID} ORDER BY REGISTRERTDATO DESC";
+
+			$this->db->query($sql, __LINE__, __FILE__);
+			$historikk = array();
+			while ($this->db->next_record())
+			{
+				$historikk = $this->db->Record;
+				if(	$historikk['BYGNINGSTATUSKODE'] =="TB")
+				{
+					$building['tatt_i_bruk'] = $historikk['DATO'];
+					break;
+				}
+			}
+		}
+	}
+
 }

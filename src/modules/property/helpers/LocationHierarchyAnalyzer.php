@@ -47,33 +47,103 @@ class LocationHierarchyAnalyzer
 		$requiredLoc2 = []; // loc1 => bygningsnr => loc2
 		$requiredLoc3 = []; // loc1 => loc2 => streetkey => loc3
 
-		$bygningsnrIndex = [];
+		// Build maps for counting
+		$bygningsnrIndex = []; // loc1 => [bygningsnr values]
+		$bygningsnrCount = []; // loc1 => bygningsnr => count
 		foreach ($this->locationData as $i => $row)
 		{
 			$loc1 = $row['loc1'];
 			$bygningsnr = $row['bygningsnr'];
 			if (!isset($bygningsnrIndex[$loc1])) $bygningsnrIndex[$loc1] = [];
 			if (!in_array($bygningsnr, $bygningsnrIndex[$loc1])) $bygningsnrIndex[$loc1][] = $bygningsnr;
+			
+			// Count occurrences of each bygningsnr
+			if (!isset($bygningsnrCount[$loc1][$bygningsnr])) $bygningsnrCount[$loc1][$bygningsnr] = 0;
+			if (!empty($bygningsnr)) $bygningsnrCount[$loc1][$bygningsnr]++;
 		}
+
+		// Identify dominant bygningsnr in mixed loc2 values
+		$dominantBygningsnrInLoc2 = []; // loc1 => loc2 => bygningsnr (the dominant one in mixed loc2)
+		foreach ($this->loc2Refs as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $exists)
+			{
+				if (!$exists) continue;
+				// Find which bygningsnr appears most in this loc2
+				$maxCount = 0;
+				$dominantBygningsnr = null;
+				
+				foreach ($this->locationData as $row)
+				{
+					if ($row['loc1'] === $loc1 && $row['loc2'] === $loc2 && !empty($row['bygningsnr']))
+					{
+						if (isset($bygningsnrCount[$loc1][$row['bygningsnr']]))
+						{
+							if ($bygningsnrCount[$loc1][$row['bygningsnr']] > $maxCount)
+							{
+								$maxCount = $bygningsnrCount[$loc1][$row['bygningsnr']];
+								$dominantBygningsnr = $row['bygningsnr'];
+							}
+						}
+					}
+				}
+				
+				if ($dominantBygningsnr)
+				{
+					$dominantBygningsnrInLoc2[$loc1][$loc2] = $dominantBygningsnr;
+				}
+			}
+		}
+
+		// Assign loc2 for each bygningsnr
 		foreach ($bygningsnrIndex as $loc1 => $bygningsnrs)
 		{
+			// Sort bygningsnr to ensure consistent ordering
+			sort($bygningsnrs, SORT_NUMERIC);
+			
 			$nextLoc2Num = 1;
+			$assignedLoc2s = []; // Track which loc2 we've assigned to avoid duplicates
+			
 			foreach ($bygningsnrs as $bygningsnr)
 			{
-				// Check if existing loc2 matches this bygningsnr (rule: reuse before creating new)
+				$loc2 = null;
+				
+				// First: check if this bygningsnr maps to an existing loc2 via street matching
 				if (isset($this->bygningsnrToLoc2Map[$loc1][$bygningsnr]))
 				{
 					$loc2 = $this->bygningsnrToLoc2Map[$loc1][$bygningsnr];
 				}
+				// Second: if no street match, reuse existing unused loc2 values before creating new ones
 				else
 				{
-					// Find next available loc2 number
-					do {
-						$loc2 = str_pad($nextLoc2Num, 2, '0', STR_PAD_LEFT);
+					// Find the next existing loc2 that hasn't been assigned yet
+					while ($nextLoc2Num <= 99)
+					{
+						$candidate_loc2 = str_pad($nextLoc2Num, 2, '0', STR_PAD_LEFT);
 						$nextLoc2Num++;
-					} while (isset($this->loc2Refs[$loc1][$loc2]));
+						
+					// Use this loc2 if it exists in database AND hasn't been assigned yet
+					if (isset($this->loc2Refs[$loc1][$candidate_loc2]) && 
+						!in_array($candidate_loc2, $assignedLoc2s))
+					{
+						$loc2 = $candidate_loc2;
+						break;
+					}
+					}
+					
+					// Only create new loc2 if we've exhausted all existing ones
+					if (!$loc2)
+					{
+						// Find next available loc2 number
+						do {
+							$loc2 = str_pad($nextLoc2Num, 2, '0', STR_PAD_LEFT);
+							$nextLoc2Num++;
+						} while (isset($this->loc2Refs[$loc1][$loc2]) || in_array($loc2, $assignedLoc2s));
+					}
 				}
+				
 				$requiredLoc2[$loc1][$bygningsnr] = $loc2;
+				$assignedLoc2s[] = $loc2;
 			}
 		}
 
@@ -100,22 +170,60 @@ class LocationHierarchyAnalyzer
 		{
 			foreach ($loc2s as $loc2 => $streetkeys)
 			{
-				$nextLoc3Num = 1;
+				// Track which loc3 values have been assigned within this loc2
+				// to ensure each street gets a distinct loc3
+				$assignedLoc3InLoc2 = [];
+				
 				foreach ($streetkeys as $streetkey)
 				{
-					// Check if existing loc3 matches this street combination (rule: reuse before creating new)
+					$loc3 = null;
+					
+					// First priority: check if this street already has a loc3 in the database
 					if (isset($this->streetToLoc3Map[$loc1][$loc2][$streetkey]))
 					{
 						$loc3 = $this->streetToLoc3Map[$loc1][$loc2][$streetkey];
 					}
 					else
 					{
-						// Find next available loc3 number
-						do {
-							$loc3 = str_pad($nextLoc3Num, 2, '0', STR_PAD_LEFT);
-							$nextLoc3Num++;
-						} while (isset($this->loc3Refs[$loc1][$loc2][$loc3]));
+						// Second priority: find the next available existing loc3 under this loc2
+						// that hasn't been assigned yet in this iteration
+						for ($tryLoc3 = 1; $tryLoc3 <= 99; $tryLoc3++)
+						{
+							$try_loc3_str = str_pad($tryLoc3, 2, '0', STR_PAD_LEFT);
+							
+							// If this loc3 exists in the database and hasn't been assigned yet, use it
+							if (isset($this->loc3Refs[$loc1][$loc2][$try_loc3_str]) && 
+								!in_array($try_loc3_str, $assignedLoc3InLoc2))
+							{
+								$loc3 = $try_loc3_str;
+								break;
+							}
+						}
+						
+						// If no available existing loc3, create a new one at the first available number
+						if (!$loc3)
+						{
+							for ($newLoc3 = 1; $newLoc3 <= 99; $newLoc3++)
+							{
+								$new_loc3_str = str_pad($newLoc3, 2, '0', STR_PAD_LEFT);
+								
+								// Use the first loc3 that doesn't exist and hasn't been assigned yet
+								if (!isset($this->loc3Refs[$loc1][$loc2][$new_loc3_str]) && 
+									!in_array($new_loc3_str, $assignedLoc3InLoc2))
+								{
+									$loc3 = $new_loc3_str;
+									break;
+								}
+							}
+						}
 					}
+					
+					// Track that we've assigned this loc3 for this loc2
+					if ($loc3 && !in_array($loc3, $assignedLoc3InLoc2))
+					{
+						$assignedLoc3InLoc2[] = $loc3;
+					}
+					
 					$requiredLoc3[$loc1][$loc2][$streetkey] = $loc3;
 				}
 			}
@@ -429,99 +537,168 @@ class LocationHierarchyAnalyzer
 	}
 
 	/**
-	 * Build bygningsnr to loc2 map by querying which bygningsnr values exist under each loc2.
-	 * IMPORTANT: Only reuse loc2 if it's "clean" - i.e., it contains ONLY this bygningsnr.
-	 * If a loc2 contains multiple different bygningsnr values, don't include it in the map.
-	 * This ensures we don't reuse mixed/corrupted loc2 assignments.
+	 * Build bygningsnr to loc2 map by analyzing which loc2/loc3 combinations already exist in the database
+	 * and matching them to bygningsnr based on street_id and street_number combinations.
+	 * 
+	 * Logic:
+	 * 1. For each bygningsnr, determine which (street_id, street_number) combinations it has from fm_location4
+	 * 2. Find which loc3 entries contain those same street combinations
+	 * 3. Get the loc2 that contains those loc3 entries
+	 * 4. Use that loc2 for the bygningsnr
 	 */
 	private function buildBygningsnrToLoc2MapFromDatabase($filterLoc1 = null)
 	{
 		$this->bygningsnrToLoc2Map = [];
 		
-		// First, find which bygningsnr values appear in each loc2
-		$loc2ToBygningsnr = []; // loc1 => loc2 => [array of bygningsnr values]
-		$sql = "SELECT DISTINCT loc1, loc2, bygningsnr FROM fm_location4";
-		if ($filterLoc1)
-		{
-			$sql .= " WHERE loc1 = '{$filterLoc1}'";
-		}
-		$sql .= " ORDER BY loc1, loc2, bygningsnr";
-		$this->db->query($sql, __LINE__, __FILE__);
-		while ($this->db->next_record())
-		{
-			$loc1 = $this->db->f('loc1');
-			$loc2 = $this->db->f('loc2');
-			$bygningsnr = $this->db->f('bygningsnr');
-			
-			if (!empty($bygningsnr))
-			{
-				if (!isset($loc2ToBygningsnr[$loc1][$loc2]))
-				{
-					$loc2ToBygningsnr[$loc1][$loc2] = [];
-				}
-				if (!in_array($bygningsnr, $loc2ToBygningsnr[$loc1][$loc2]))
-				{
-					$loc2ToBygningsnr[$loc1][$loc2][] = $bygningsnr;
-				}
-			}
-		}
-		
-		// Second, build the map ONLY for loc2 values that are "clean" (contain only one bygningsnr)
-		foreach ($loc2ToBygningsnr as $loc1 => $loc2s)
-		{
-			foreach ($loc2s as $loc2 => $bygningsnrs)
-			{
-				// Only map if this loc2 contains exactly one bygningsnr (clean)
-				if (count($bygningsnrs) === 1)
-				{
-					$this->bygningsnrToLoc2Map[$loc1][$bygningsnrs[0]] = $loc2;
-				}
-				// If a loc2 contains multiple bygningsnr, DON'T include it in the map
-				// This forces new loc2 assignments for those buildings
-			}
-		}
-	}
-
-	/**
-	 * Build street to loc3 map from actual fm_location4 data.
-	 * This is more reliable than parsing loc3_name.
-	 */
-	private function buildStreetToLoc3MapFromLocation4()
-	{
-		// First pass: collect all loc3 values for each street combination
-		$streetToLoc3Candidates = []; // loc1 => loc2 => streetkey => [loc3 values]
+		// Build map of which streets exist under each loc3 in fm_location4
+		// This tells us which (street_id, street_number) are registered under which loc3
+		$loc3ToStreets = []; // loc1 => loc2 => loc3 => [streetkeys]
 		foreach ($this->locationData as $row)
 		{
 			$loc1 = $row['loc1'];
 			$loc2 = $row['loc2'];
 			$loc3 = $row['loc3'];
-			// Normalize street_number by trimming whitespace
 			$streetkey = "{$row['street_id']}_" . trim($row['street_number']);
 			
-			// Only consider loc3 values that actually exist in fm_location3
-			if (isset($this->loc3Refs[$loc1][$loc2][$loc3]))
+			if (!isset($loc3ToStreets[$loc1][$loc2][$loc3]))
 			{
-				if (!isset($streetToLoc3Candidates[$loc1][$loc2][$streetkey]))
+				$loc3ToStreets[$loc1][$loc2][$loc3] = [];
+			}
+			if (!in_array($streetkey, $loc3ToStreets[$loc1][$loc2][$loc3]))
+			{
+				$loc3ToStreets[$loc1][$loc2][$loc3][] = $streetkey;
+			}
+		}
+		
+		// Build map of which streets each bygningsnr has
+		$bygningsnrToStreets = []; // bygningsnr => [streetkeys]
+		foreach ($this->locationData as $row)
+		{
+			$bygningsnr = $row['bygningsnr'];
+			if (!empty($bygningsnr))
+			{
+				if (!isset($bygningsnrToStreets[$bygningsnr]))
 				{
-					$streetToLoc3Candidates[$loc1][$loc2][$streetkey] = [];
+					$bygningsnrToStreets[$bygningsnr] = [];
 				}
-				if (!in_array($loc3, $streetToLoc3Candidates[$loc1][$loc2][$streetkey]))
+				$streetkey = "{$row['street_id']}_" . trim($row['street_number']);
+				if (!in_array($streetkey, $bygningsnrToStreets[$bygningsnr]))
 				{
-					$streetToLoc3Candidates[$loc1][$loc2][$streetkey][] = $loc3;
+					$bygningsnrToStreets[$bygningsnr][] = $streetkey;
 				}
 			}
 		}
 		
-		// Second pass: select minimum loc3 for each street combination
-		foreach ($streetToLoc3Candidates as $loc1 => $loc2s)
+		// For each bygningsnr, find which existing loc2 should contain it
+		// by matching its streets to existing loc3 street combinations
+		foreach ($bygningsnrToStreets as $bygningsnr => $streets)
 		{
-			foreach ($loc2s as $loc2 => $streetkeys)
+			sort($streets);
+			
+			// Search for a loc3 that has exactly these streets
+			foreach ($loc3ToStreets as $loc1 => $loc2s)
 			{
-				foreach ($streetkeys as $streetkey => $loc3Values)
+				foreach ($loc2s as $loc2 => $loc3s)
 				{
-					// Sort to get the minimum (first) loc3
+					foreach ($loc3s as $loc3 => $loc3Streets)
+					{
+						sort($loc3Streets);
+						
+						// If this loc3's streets match this bygningsnr's streets, use this loc2
+						if ($streets === $loc3Streets)
+						{
+							// Only map if not already mapped (first match wins)
+							if (!isset($this->bygningsnrToLoc2Map[$loc1][$bygningsnr]))
+							{
+								$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = $loc2;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Build street to loc3 map by analyzing fm_location4 directly.
+	 * This identifies which streets are currently assigned to each loc3,
+	 * regardless of whether the data is misplaced or not.
+	 */
+	private function buildStreetToLoc3MapFromLocation4()
+	{
+		$this->streetToLoc3Map = [];
+		
+		// Query fm_location4 directly to find which streets are in each (loc1, loc2, loc3)
+		$sql = "SELECT DISTINCT loc1, loc2, loc3, street_id, street_number FROM fm_location4";
+		if ($this->currentFilterLoc1)
+		{
+			$sql .= " WHERE loc1 = '{$this->currentFilterLoc1}'";
+		}
+		$sql .= " ORDER BY loc1, loc2, loc3, street_id, street_number";
+		
+		$this->db->query($sql, __LINE__, __FILE__);
+		
+		// Build map of (loc1, loc2, loc3) -> [streets]
+		$loc3StreetMap = []; // loc1 => loc2 => loc3 => [streetkeys]
+		while ($this->db->next_record())
+		{
+			$loc1 = $this->db->f('loc1');
+			$loc2 = $this->db->f('loc2');
+			$loc3 = $this->db->f('loc3');
+			$street_id = $this->db->f('street_id');
+			$street_number = $this->db->f('street_number');
+			
+			if ($street_id && $street_number)
+			{
+				$streetkey = "{$street_id}_" . trim($street_number);
+				
+				if (!isset($loc3StreetMap[$loc1][$loc2][$loc3]))
+				{
+					$loc3StreetMap[$loc1][$loc2][$loc3] = [];
+				}
+				if (!in_array($streetkey, $loc3StreetMap[$loc1][$loc2][$loc3]))
+				{
+					$loc3StreetMap[$loc1][$loc2][$loc3][] = $streetkey;
+				}
+			}
+		}
+		
+		// Build reverse map: street -> loc3 for each loc2
+		// For each street, map it to the minimum (first) loc3 where it appears
+		foreach ($loc3StreetMap as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $loc3s)
+			{
+				if (!isset($this->streetToLoc3Map[$loc1]))
+				{
+					$this->streetToLoc3Map[$loc1] = [];
+				}
+				if (!isset($this->streetToLoc3Map[$loc1][$loc2]))
+				{
+					$this->streetToLoc3Map[$loc1][$loc2] = [];
+				}
+				
+				// Collect all loc3 values for each street in this loc2
+				$streetToLoc3s = []; // streetkey => [loc3 values]
+				foreach ($loc3s as $loc3 => $streetkeys)
+				{
+					foreach ($streetkeys as $streetkey)
+					{
+						if (!isset($streetToLoc3s[$streetkey]))
+						{
+							$streetToLoc3s[$streetkey] = [];
+						}
+						if (!in_array($loc3, $streetToLoc3s[$streetkey]))
+						{
+							$streetToLoc3s[$streetkey][] = $loc3;
+						}
+					}
+				}
+				
+				// For each street, select the minimum loc3
+				foreach ($streetToLoc3s as $streetkey => $loc3Values)
+				{
 					sort($loc3Values, SORT_STRING);
-					// Use the first (lowest numbered) loc3 as the canonical location
 					$this->streetToLoc3Map[$loc1][$loc2][$streetkey] = $loc3Values[0];
 				}
 			}

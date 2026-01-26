@@ -430,12 +430,16 @@ class LocationHierarchyAnalyzer
 
 	/**
 	 * Build bygningsnr to loc2 map by querying which bygningsnr values exist under each loc2.
-	 * This is more reliable than parsing loc2_name which may have inconsistent formats.
+	 * IMPORTANT: Only reuse loc2 if it's "clean" - i.e., it contains ONLY this bygningsnr.
+	 * If a loc2 contains multiple different bygningsnr values, don't include it in the map.
+	 * This ensures we don't reuse mixed/corrupted loc2 assignments.
 	 */
 	private function buildBygningsnrToLoc2MapFromDatabase($filterLoc1 = null)
 	{
 		$this->bygningsnrToLoc2Map = [];
-		// Query to find which bygningsnr values are currently used under each loc2
+		
+		// First, find which bygningsnr values appear in each loc2
+		$loc2ToBygningsnr = []; // loc1 => loc2 => [array of bygningsnr values]
 		$sql = "SELECT DISTINCT loc1, loc2, bygningsnr FROM fm_location4";
 		if ($filterLoc1)
 		{
@@ -448,10 +452,32 @@ class LocationHierarchyAnalyzer
 			$loc1 = $this->db->f('loc1');
 			$loc2 = $this->db->f('loc2');
 			$bygningsnr = $this->db->f('bygningsnr');
+			
 			if (!empty($bygningsnr))
 			{
-				// Map each bygningsnr to the loc2 it currently uses
-				$this->bygningsnrToLoc2Map[$loc1][$bygningsnr] = $loc2;
+				if (!isset($loc2ToBygningsnr[$loc1][$loc2]))
+				{
+					$loc2ToBygningsnr[$loc1][$loc2] = [];
+				}
+				if (!in_array($bygningsnr, $loc2ToBygningsnr[$loc1][$loc2]))
+				{
+					$loc2ToBygningsnr[$loc1][$loc2][] = $bygningsnr;
+				}
+			}
+		}
+		
+		// Second, build the map ONLY for loc2 values that are "clean" (contain only one bygningsnr)
+		foreach ($loc2ToBygningsnr as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $bygningsnrs)
+			{
+				// Only map if this loc2 contains exactly one bygningsnr (clean)
+				if (count($bygningsnrs) === 1)
+				{
+					$this->bygningsnrToLoc2Map[$loc1][$bygningsnrs[0]] = $loc2;
+				}
+				// If a loc2 contains multiple bygningsnr, DON'T include it in the map
+				// This forces new loc2 assignments for those buildings
 			}
 		}
 	}

@@ -84,7 +84,8 @@ class LocationHierarchyAnalyzer
 			$loc1 = $row['loc1'];
 			$bygningsnr = $row['bygningsnr'];
 			$loc2 = $requiredLoc2[$loc1][$bygningsnr];
-			$streetkey = "{$row['street_id']}_{$row['street_number']}";
+			// Normalize street_number by trimming whitespace
+			$streetkey = "{$row['street_id']}_" . trim($row['street_number']);
 			if (!isset($loc2StreetCombos[$loc1][$loc2]))
 			{
 				$loc2StreetCombos[$loc1][$loc2] = [];
@@ -174,7 +175,8 @@ class LocationHierarchyAnalyzer
 			$loc1 = $row['loc1'];
 			$bygningsnr = $row['bygningsnr'];
 			$loc2_expected = $requiredLoc2[$loc1][$bygningsnr];
-			$streetkey = "{$row['street_id']}_{$row['street_number']}";
+			// Normalize street_number by trimming whitespace
+			$streetkey = "{$row['street_id']}_" . trim($row['street_number']);
 			$loc3_expected = $requiredLoc3[$loc1][$loc2_expected][$streetkey];
 			$loc2_actual = $row['loc2'];
 			$loc3_actual = $row['loc3'];
@@ -209,7 +211,8 @@ class LocationHierarchyAnalyzer
 			'level3_count' => count(array_unique(array_map(fn($e) => "{$e['loc1']}-{$e['loc2']}-{$e['loc3']}", $this->locationData))),
 			'level4_count' => count($this->locationData),
 			'unique_buildings' => count(array_unique(array_column($this->locationData, 'bygningsnr'))),
-			'unique_addresses' => count(array_unique(array_map(fn($e) => "{$e['street_id']}-{$e['street_number']}", $this->locationData))),
+			// Normalize street_number by trimming when calculating unique addresses
+			'unique_addresses' => count(array_unique(array_map(fn($e) => "{$e['street_id']}-" . trim($e['street_number']), $this->locationData))),
 			'total_issues' => count($this->issues),
 			'issues_by_type' => array_count_values(array_column($this->issues, 'type')),
 		];
@@ -466,7 +469,8 @@ class LocationHierarchyAnalyzer
 			$loc1 = $row['loc1'];
 			$loc2 = $row['loc2'];
 			$loc3 = $row['loc3'];
-			$streetkey = "{$row['street_id']}_{$row['street_number']}";
+			// Normalize street_number by trimming whitespace
+			$streetkey = "{$row['street_id']}_" . trim($row['street_number']);
 			
 			// Only consider loc3 values that actually exist in fm_location3
 			if (isset($this->loc3Refs[$loc1][$loc2][$loc3]))

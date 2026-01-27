@@ -179,22 +179,10 @@ class DataStore
               deactivate_application, rescategory_id
               FROM bb_resource WHERE active=1 AND hidden_in_frontend=0");
 
-			// Get the latest participant limits for all resources
-			$currentDate = date('Y-m-d H:i:s');
-			$participantLimits = $this->getRowsAsArray("SELECT pl.resource_id, pl.quantity
-              FROM bb_participant_limit pl
-              INNER JOIN (
-                  SELECT resource_id, MAX(from_) as latest_from
-                  FROM bb_participant_limit
-                  WHERE from_ <= :currentDate
-                  GROUP BY resource_id
-              ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
-			[':currentDate' => $currentDate]);
-
 			// Get resource IDs from the rows
 			$resourceIds = array_column($rows, 'id');
 
-			// Use ResourceRepository to get resources with participant limits
+			// Use ResourceRepository to get resources with participant limits (latest limit only to avoid duplicates)
 			$resourceEntities = $this->resourceRepository->getWithParticipantLimits($resourceIds);
 
 			$resources = [];

@@ -361,8 +361,9 @@ class LocationHierarchyAnalyzer
 		$this->createUpdateStatements();
 
 		// 6. Statistics
+		$level1Values = array_values(array_unique(array_filter(array_map(fn($e) => trim((string)$e['loc1']), $this->locationData), fn($v) => $v !== '')));
 		$statistics = [
-			'level1_count' => count(array_unique(array_column($this->locationData, 'loc1'))),
+			'level1_count' => count($level1Values),
 			'level2_count' => count(array_unique(array_map(fn($e) => "{$e['loc1']}-{$e['loc2']}", $this->locationData))),
 			'level3_count' => count(array_unique(array_map(fn($e) => "{$e['loc1']}-{$e['loc2']}-{$e['loc3']}", $this->locationData))),
 			'level4_count' => count($this->locationData),
@@ -418,6 +419,11 @@ class LocationHierarchyAnalyzer
 						}
 						$all['statistics']['issues_by_type'][$type] += $cnt;
 					}
+				}
+				elseif ($k === 'level1_count')
+				{
+					// already counted once as count($loc1s); per-loc1 analyze always returns 1, so skip summing
+					continue;
 				}
 				else
 				{
@@ -574,9 +580,16 @@ class LocationHierarchyAnalyzer
 	public function getAllLoc1Values()
 	{
 		$loc1s = [];
-		$sql = "SELECT DISTINCT loc1 FROM fm_location4 ORDER BY loc1";
+		$sql = "SELECT DISTINCT loc1 FROM fm_location4 WHERE loc1 IS NOT NULL AND trim(loc1) <> '' ORDER BY loc1";
 		$this->db->query($sql, __LINE__, __FILE__);
-		while ($this->db->next_record()) $loc1s[] = $this->db->f('loc1');
+		while ($this->db->next_record())
+		{
+			$loc1_value = trim($this->db->f('loc1'));
+			if ($loc1_value !== '')
+			{
+				$loc1s[] = $loc1_value;
+			}
+		}
 		return $loc1s;
 	}
 

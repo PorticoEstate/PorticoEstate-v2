@@ -200,7 +200,8 @@ class LocationHierarchyAnalyzer
 			$loc1 = $row['loc1'];
 			$bygningsnr = $row['bygningsnr'];
 			$loc2 = $requiredLoc2[$loc1][$bygningsnr];
-			$streetkey = "{$row['street_id']}" . '_' . trim($row['street_number']);
+			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
 			if (!isset($loc2StreetCombos[$loc1][$loc2]))
 			{
 				$loc2StreetCombos[$loc1][$loc2] = [];
@@ -219,7 +220,9 @@ class LocationHierarchyAnalyzer
 			$loc1 = $row['loc1'];
 			$loc2 = $row['loc2'];
 			$loc3 = $row['loc3'];
-			$streetkey = "{$row['street_id']}" . '_' . trim($row['street_number']);
+			// Normalize street_number: trim and collapse multiple spaces to single space
+			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
 			
 			if (!isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey]))
 			{
@@ -822,7 +825,8 @@ class LocationHierarchyAnalyzer
 					if ($row['loc1'] == $loc1 && $row['bygningsnr'] == $bygningsnr)  // Use == for both to handle type differences
 					{
 						$rowsFound++;
-						$sk = $row['street_id'] . '_' . trim($row['street_number']);
+						$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+						$sk = $row['street_id'] . '_' . $normalized_street_number;
 						$this->debug("  row matched: street_id={$row['street_id']}, street_number={$row['street_number']}, streetkey={$sk}");
 						if (!empty($row['street_id']) && !empty($row['street_number']))
 						{

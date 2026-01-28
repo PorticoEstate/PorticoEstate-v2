@@ -90,8 +90,35 @@ class EmailService
             return false;
         }
 
-        // Use the first application for common data (contact info, etc.)
-        $primaryApplication = reset($applications);
+        // Use an ACCEPTED application as primary for template selection (prefer true parent if accepted)
+        $primaryApplication = null;
+        $trueParent = null;
+
+        // First, try to find the true parent (self-referencing parent_id)
+        foreach ($applications as $app) {
+            if (isset($app['parent_id']) && $app['parent_id'] == $app['id']) {
+                $trueParent = $app;
+                break;
+            }
+        }
+
+        // If true parent is ACCEPTED, use it as primary
+        if ($trueParent && $trueParent['status'] == 'ACCEPTED') {
+            $primaryApplication = $trueParent;
+        } else {
+            // Otherwise, find first ACCEPTED application for template selection
+            foreach ($applications as $app) {
+                if ($app['status'] == 'ACCEPTED') {
+                    $primaryApplication = $app;
+                    break;
+                }
+            }
+        }
+
+        // Fallback to first application if none are accepted (e.g., all rejected)
+        if (!$primaryApplication) {
+            $primaryApplication = reset($applications);
+        }
 
         // Skip if SMTP is not configured
         if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])) {
@@ -622,8 +649,24 @@ class EmailService
         elseif ($primaryApplication['status'] == 'ACCEPTED') {
             $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
 
-            // Add combined application details
-            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner godkjent:</h3>";
+            // Count approved vs rejected applications
+            $approvedCount = 0;
+            $rejectedCount = 0;
+            foreach ($applications as $app) {
+                if ($app['status'] == 'ACCEPTED') {
+                    $approvedCount++;
+                } elseif ($app['status'] == 'REJECTED') {
+                    $rejectedCount++;
+                }
+            }
+
+            // Add combined application details with accurate count
+            if ($rejectedCount > 0) {
+                $body .= "<h3>Kombinert søknad - " . $approvedCount . " delapplikasjoner godkjent, " . $rejectedCount . " avslått:</h3>";
+            } else {
+                $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner godkjent:</h3>";
+            }
+
             if (!empty($primaryApplication['name'])) {
                 $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
             }
@@ -1162,24 +1205,7 @@ class EmailService
         $section = "";
 
         foreach ($applications as $application) {
-            $section .= "<div style='border-left: 3px solid #28a745; padding-left: 10px; margin: 10px 0;'>";
-
-            // Use the application name (part name) as the header for accepted applications
-            $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
-            $section .= "<h4>✅ {$applicationName} - Godkjent (ID: {$application['id']}):</h4>";
-
-            // Resource information
-            if (!empty($application['resources'])) {
-                $resourceNames = $this->getResourceNames($application['resources']);
-                $section .= "<p><strong>Ressurs:</strong> {$resourceNames}</p>";
-            }
-
-            // Building information
-            if (!empty($application['building_name'])) {
-                $section .= "<p><strong>Lokasjon:</strong> {$application['building_name']}</p>";
-            }
-
-            // Approved dates and costs for this specific application
+            // First, get associations to check if there are any approved times
             $associations = $this->getApplicationAssociations($application['id']);
             $adates = [];
             $applicationCost = 0;
@@ -1200,6 +1226,31 @@ class EmailService
                         'to' => $to
                     ];
                 }
+            }
+
+            // Determine if this application was approved or rejected based on approved times
+            $isApproved = !empty($adates);
+
+            // Use different styling and labels for approved vs rejected applications
+            if ($isApproved) {
+                $section .= "<div style='border-left: 3px solid #28a745; padding-left: 10px; margin: 10px 0;'>";
+                $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
+                $section .= "<h4>✅ {$applicationName} - Godkjent (ID: {$application['id']}):</h4>";
+            } else {
+                $section .= "<div style='border-left: 3px solid #dc3545; padding-left: 10px; margin: 10px 0;'>";
+                $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
+                $section .= "<h4>❌ {$applicationName} - Avslått (ID: {$application['id']}):</h4>";
+            }
+
+            // Resource information
+            if (!empty($application['resources'])) {
+                $resourceNames = $this->getResourceNames($application['resources']);
+                $section .= "<p><strong>Ressurs:</strong> {$resourceNames}</p>";
+            }
+
+            // Building information
+            if (!empty($application['building_name'])) {
+                $section .= "<p><strong>Lokasjon:</strong> {$application['building_name']}</p>";
             }
 
             // Calculate rejected/not approved dates

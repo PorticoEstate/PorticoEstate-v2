@@ -658,6 +658,8 @@ register participants	booking	en	Register participants
 registration has ended	booking	en	Registration has ended
 regulation	booking	en	Regulation
 reject application	booking	en	Reject application
+reject_this_part	booking	en	Reject this part
+reject	booking	en	Reject
 rejected	booking	en	Rejected
 Reminder sent. Not responded to	booking	en	Reminder sent. Not responded to
 Repeat until	booking	en	Repeat until

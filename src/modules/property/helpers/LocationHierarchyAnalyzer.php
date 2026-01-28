@@ -211,6 +211,41 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
+		// Build map of dominant loc3 placement for each streetkey in each loc2
+		// (majority placement = most records currently in that loc3)
+		$dominantLoc3PerStreet = []; // loc1 => loc2 => streetkey => dominant_loc3
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$loc2 = $row['loc2'];
+			$loc3 = $row['loc3'];
+			$streetkey = "{$row['street_id']}" . '_' . trim($row['street_number']);
+			
+			if (!isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey]))
+			{
+				$dominantLoc3PerStreet[$loc1][$loc2][$streetkey] = [];
+			}
+			if (!isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey][$loc3]))
+			{
+				$dominantLoc3PerStreet[$loc1][$loc2][$streetkey][$loc3] = 0;
+			}
+			$dominantLoc3PerStreet[$loc1][$loc2][$streetkey][$loc3]++;
+		}
+
+		// Find the most common loc3 for each street in each loc2
+		foreach ($dominantLoc3PerStreet as $loc1 => $loc2s)
+		{
+			foreach ($loc2s as $loc2 => $streets)
+			{
+				foreach ($streets as $streetkey => $loc3Counts)
+				{
+					arsort($loc3Counts); // Sort by count descending
+					$dominantLoc3 = key($loc3Counts); // Get the loc3 with the highest count
+					$dominantLoc3PerStreet[$loc1][$loc2][$streetkey] = $dominantLoc3;
+				}
+			}
+		}
+
 		$requiredLoc3 = []; // loc1 => loc2 => streetkey => loc3
 		foreach ($loc2StreetCombos as $loc1 => $loc2s)
 		{
@@ -229,12 +264,17 @@ class LocationHierarchyAnalyzer
 				{
 					$loc3 = null;
 
-					// PRIORITY 1: Check streetToLoc3Map (from fm_location3)
-					if (isset($this->streetToLoc3Map[$loc1][$loc2][$streetkey]))
+					// PRIORITY 1: Use the dominant (majority) current placement for this street in this loc2
+					if (isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey]))
+					{
+						$loc3 = $dominantLoc3PerStreet[$loc1][$loc2][$streetkey];
+					}
+					// PRIORITY 2: Check streetToLoc3Map (from fm_location3)
+					elseif (isset($this->streetToLoc3Map[$loc1][$loc2][$streetkey]))
 					{
 						$loc3 = $this->streetToLoc3Map[$loc1][$loc2][$streetkey];
 					}
-					// PRIORITY 2: Reuse existing loc3 that hasn't been assigned yet
+					// PRIORITY 3: Reuse existing loc3 that hasn't been assigned yet
 					elseif (count($existingLoc3List) > 0)
 					{
 						foreach ($existingLoc3List as $existingLoc3)

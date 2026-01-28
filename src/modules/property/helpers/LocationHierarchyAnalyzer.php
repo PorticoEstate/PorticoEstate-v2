@@ -36,6 +36,20 @@ class LocationHierarchyAnalyzer
 		}
 	}
 
+	private function normalizeLoc2($loc2)
+	{
+		$loc2 = trim((string)$loc2);
+		if ($loc2 === '')
+		{
+			return $loc2;
+		}
+		if (ctype_digit($loc2) && strlen($loc2) < 2)
+		{
+			$loc2 = str_pad($loc2, 2, '0', STR_PAD_LEFT);
+		}
+		return $loc2;
+	}
+
 	/**
 	 * Main entry: analyze a single loc1 or all loc1s.
 	 */
@@ -170,6 +184,21 @@ class LocationHierarchyAnalyzer
 					}
 				}
 
+				// 2b) Otherwise, prefer an existing unused loc2 from fm_location2 (if any)
+				if (!$loc2 && isset($this->loc2Refs[$loc1]) && is_array($this->loc2Refs[$loc1]))
+				{
+					$existingLoc2List = array_keys($this->loc2Refs[$loc1]);
+					sort($existingLoc2List, SORT_STRING);
+					foreach ($existingLoc2List as $existingLoc2)
+					{
+						if (!in_array($existingLoc2, $assignedLoc2PerLoc1[$loc1]))
+						{
+							$loc2 = $existingLoc2;
+							break;
+						}
+					}
+				}
+
 				// 3) Otherwise, allocate the first available loc2 number (each bygningsnr gets its own loc2)
 				if (!$loc2)
 				{
@@ -185,6 +214,7 @@ class LocationHierarchyAnalyzer
 					}
 				}
 
+				$loc2 = $this->normalizeLoc2($loc2);
 				$requiredLoc2[$loc1][$bygningsnr] = $loc2;
 				if (!in_array($loc2, $assignedLoc2PerLoc1[$loc1]))
 				{
@@ -263,28 +293,53 @@ class LocationHierarchyAnalyzer
 					sort($existingLoc3List, SORT_STRING);
 				}
 
+				$this->debug("Processing loc1=$loc1, loc2=$loc2 with " . count($streetkeys) . " streetkeys");
+				$this->debug("existingLoc3List: " . json_encode($existingLoc3List));
+
 				foreach ($streetkeys as $streetkey)
 				{
 					$loc3 = null;
 
 					// PRIORITY 1: Use the dominant (majority) current placement for this street in this loc2
+					// BUT ONLY if this loc3 hasn't already been assigned to another streetkey
 					if (isset($dominantLoc3PerStreet[$loc1][$loc2][$streetkey]))
 					{
-						$loc3 = $dominantLoc3PerStreet[$loc1][$loc2][$streetkey];
+						$candidate_loc3 = $dominantLoc3PerStreet[$loc1][$loc2][$streetkey];
+						// Only use dominant placement if this loc3 is not already taken
+						if (!in_array($candidate_loc3, $assignedLoc3InLoc2))
+						{
+							$loc3 = $candidate_loc3;
+							$this->debug("  streetkey=$streetkey: using dominant loc3=$loc3");
+						}
+						else
+						{
+							$this->debug("  streetkey=$streetkey: dominant loc3=$candidate_loc3 already assigned, skipping");
+						}
 					}
 					// PRIORITY 2: Check streetToLoc3Map (from fm_location3)
-					elseif (isset($this->streetToLoc3Map[$loc1][$loc2][$streetkey]))
+					// BUT ONLY if this loc3 hasn't already been assigned to another streetkey
+					if (!$loc3 && isset($this->streetToLoc3Map[$loc1][$loc2][$streetkey]))
 					{
-						$loc3 = $this->streetToLoc3Map[$loc1][$loc2][$streetkey];
+						$candidate_loc3_from_map = $this->streetToLoc3Map[$loc1][$loc2][$streetkey];
+						if (!in_array($candidate_loc3_from_map, $assignedLoc3InLoc2))
+						{
+							$loc3 = $candidate_loc3_from_map;
+							$this->debug("  streetkey=$streetkey: using streetToLoc3Map loc3=$loc3");
+						}
+						else
+						{
+							$this->debug("  streetkey=$streetkey: streetToLoc3Map loc3=$candidate_loc3_from_map already assigned, skipping");
+						}
 					}
 					// PRIORITY 3: Reuse existing loc3 that hasn't been assigned yet
-					elseif (count($existingLoc3List) > 0)
+					if (!$loc3 && count($existingLoc3List) > 0)
 					{
 						foreach ($existingLoc3List as $existingLoc3)
 						{
 							if (!in_array($existingLoc3, $assignedLoc3InLoc2))
 							{
 								$loc3 = $existingLoc3;
+								$this->debug("  streetkey=$streetkey: reusing existing loc3=$loc3");
 								break;
 							}
 						}
@@ -299,6 +354,7 @@ class LocationHierarchyAnalyzer
 								!in_array($new_loc3_str, $assignedLoc3InLoc2))
 							{
 								$loc3 = $new_loc3_str;
+								$this->debug("  streetkey=$streetkey: creating new loc3=$loc3");
 								break;
 							}
 						}
@@ -317,13 +373,18 @@ class LocationHierarchyAnalyzer
 		// 4. Check and create missing loc2/loc3
 		$this->debug("requiredLoc2: " . json_encode($requiredLoc2));
 		$this->debug("requiredLoc3: " . json_encode($requiredLoc3));
+		if (isset($this->loc2Refs) && !empty($this->loc2Refs))
+		{
+			$this->debug("loc2Refs sample: " . json_encode(array_slice($this->loc2Refs, 0, 3, true)));
+		}
 
 		$this->sqlStatements['missing_loc2'] = [];
 		foreach ($requiredLoc2 as $loc1 => $bygningsnrs)
 		{
 			foreach ($bygningsnrs as $bygningsnr => $loc2)
 			{
-				if (empty($this->loc2Refs[$loc1][$loc2]))
+				$loc2 = $this->normalizeLoc2($loc2);
+				if (empty($this->loc2Refs[trim((string)$loc1)][$loc2]))
 				{
 					$this->debug("CREATING missing_loc2: loc1=$loc1, loc2=$loc2, bygningsnr=$bygningsnr (not found in loc2Refs)");
 					$this->sqlStatements['missing_loc2'][] =
@@ -374,7 +435,8 @@ class LocationHierarchyAnalyzer
 			$loc1 = $row['loc1'];
 			$bygningsnr = $row['bygningsnr'];
 			$loc2_expected = $requiredLoc2[$loc1][$bygningsnr];
-			$streetkey = "{$row['street_id']}" . '_' . trim($row['street_number']);
+			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
 			$loc3_expected = $requiredLoc3[$loc1][$loc2_expected][$streetkey];
 
 			$loc2_actual = $row['loc2'];
@@ -578,7 +640,9 @@ class LocationHierarchyAnalyzer
 		$this->db->query($sql, __LINE__, __FILE__);
 		while ($this->db->next_record())
 		{
-			$this->loc2Refs[$this->db->f('loc1')][$this->db->f('loc2')] = true;
+			$loc1_value = trim((string)$this->db->f('loc1'));
+			$loc2_value = $this->normalizeLoc2($this->db->f('loc2'));
+			$this->loc2Refs[$loc1_value][$loc2_value] = true;
 		}
 		$sql = "SELECT loc1, loc2, loc3 FROM fm_location3";
 		if ($filterLoc1)

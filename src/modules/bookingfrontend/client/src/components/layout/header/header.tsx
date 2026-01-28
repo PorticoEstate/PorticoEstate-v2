@@ -38,7 +38,7 @@ const Header = async (props: HeaderProps) => {
             </Link>
             {/*${baseUrl}*/}
             <HeaderMenuContent>
-				<VersionSwitcher/>
+				{/*<VersionSwitcher/>*/}
                 <LanguageSwitcher/>
                 <ShoppingCartButton/>
                 <UserMenu/>

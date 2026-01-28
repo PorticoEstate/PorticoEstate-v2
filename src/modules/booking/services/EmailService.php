@@ -90,8 +90,35 @@ class EmailService
             return false;
         }
 
-        // Use the first application for common data (contact info, etc.)
-        $primaryApplication = reset($applications);
+        // Use an ACCEPTED application as primary for template selection (prefer true parent if accepted)
+        $primaryApplication = null;
+        $trueParent = null;
+
+        // First, try to find the true parent (self-referencing parent_id)
+        foreach ($applications as $app) {
+            if (isset($app['parent_id']) && $app['parent_id'] == $app['id']) {
+                $trueParent = $app;
+                break;
+            }
+        }
+
+        // If true parent is ACCEPTED, use it as primary
+        if ($trueParent && $trueParent['status'] == 'ACCEPTED') {
+            $primaryApplication = $trueParent;
+        } else {
+            // Otherwise, find first ACCEPTED application for template selection
+            foreach ($applications as $app) {
+                if ($app['status'] == 'ACCEPTED') {
+                    $primaryApplication = $app;
+                    break;
+                }
+            }
+        }
+
+        // Fallback to first application if none are accepted (e.g., all rejected)
+        if (!$primaryApplication) {
+            $primaryApplication = reset($applications);
+        }
 
         // Skip if SMTP is not configured
         if (!(isset($this->serverSettings['smtp_server']) && $this->serverSettings['smtp_server'])) {
@@ -622,8 +649,24 @@ class EmailService
         elseif ($primaryApplication['status'] == 'ACCEPTED') {
             $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
 
-            // Add combined application details
-            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner godkjent:</h3>";
+            // Count approved vs rejected applications
+            $approvedCount = 0;
+            $rejectedCount = 0;
+            foreach ($applications as $app) {
+                if ($app['status'] == 'ACCEPTED') {
+                    $approvedCount++;
+                } elseif ($app['status'] == 'REJECTED') {
+                    $rejectedCount++;
+                }
+            }
+
+            // Add combined application details with accurate count
+            if ($rejectedCount > 0) {
+                $body .= "<h3>Kombinert søknad - " . $approvedCount . " delapplikasjoner godkjent, " . $rejectedCount . " avslått:</h3>";
+            } else {
+                $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner godkjent:</h3>";
+            }
+
             if (!empty($primaryApplication['name'])) {
                 $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
             }
@@ -810,23 +853,21 @@ class EmailService
 
                     // Compare attempted dates with approved dates
                     foreach ($attemptedDates as $attemptedDate) {
+                        // attemptedDate now contains formatted strings directly
+                        $attemptedFrom = $attemptedDate['from'];
+                        $attemptedTo = $attemptedDate['to'];
+
+                        // Check if this attempted time matches any approved time
                         $isApproved = false;
                         foreach ($approvedTimestamps as $approved) {
-                            if ($attemptedDate['from'] == $approved['from'] && $attemptedDate['to'] == $approved['to']) {
+                            if ($attemptedFrom === $approved['from'] && $attemptedTo === $approved['to']) {
                                 $isApproved = true;
                                 break;
                             }
                         }
 
                         if (!$isApproved) {
-                            // attemptedDate contains Unix timestamps, convert to datetime string first
-                            $fromDatetime = new \DateTime('@' . $attemptedDate['from']);
-                            $fromDatetime->setTimezone(new \DateTimeZone($this->userTimezone));
-                            $toDatetime = new \DateTime('@' . $attemptedDate['to']);
-                            $toDatetime->setTimezone(new \DateTimeZone($this->userTimezone));
-                            $from = $fromDatetime->format($this->datetimeformat);
-                            $to = $toDatetime->format($this->datetimeformat);
-                            $notApprovedDates[] = "\t{$from} - {$to}";
+                            $notApprovedDates[] = "\t{$attemptedFrom} - {$attemptedTo}";
                         }
                     }
                 }
@@ -1164,11 +1205,42 @@ class EmailService
         $section = "";
 
         foreach ($applications as $application) {
-            $section .= "<div style='border-left: 3px solid #28a745; padding-left: 10px; margin: 10px 0;'>";
+            // First, get associations to check if there are any approved times
+            $associations = $this->getApplicationAssociations($application['id']);
+            $adates = [];
+            $applicationCost = 0;
+            $approvedTimestamps = [];
 
-            // Use the application name (part name) as the header for accepted applications
-            $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
-            $section .= "<h4>✅ {$applicationName} - Godkjent (ID: {$application['id']}):</h4>";
+            foreach ($associations as $assoc) {
+                if ($assoc['active']) {
+                    $from = $this->formatDateTime($assoc['from_']);
+                    $to = $this->formatDateTime($assoc['to_']);
+                    $cost = (float)$assoc['cost'];
+                    $costText = $cost > 0 ? " (kr " . number_format($cost, 2, ",", '.') . ")" : "";
+                    $adates[] = "\t{$from} - {$to}{$costText}";
+                    $applicationCost += $cost;
+
+                    // Store approved datetime strings for comparison
+                    $approvedTimestamps[] = [
+                        'from' => $from,
+                        'to' => $to
+                    ];
+                }
+            }
+
+            // Determine if this application was approved or rejected based on approved times
+            $isApproved = !empty($adates);
+
+            // Use different styling and labels for approved vs rejected applications
+            if ($isApproved) {
+                $section .= "<div style='border-left: 3px solid #28a745; padding-left: 10px; margin: 10px 0;'>";
+                $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
+                $section .= "<h4>✅ {$applicationName} - Godkjent (ID: {$application['id']}):</h4>";
+            } else {
+                $section .= "<div style='border-left: 3px solid #dc3545; padding-left: 10px; margin: 10px 0;'>";
+                $applicationName = !empty($application['name']) ? $application['name'] : "Søknadsdel";
+                $section .= "<h4>❌ {$applicationName} - Avslått (ID: {$application['id']}):</h4>";
+            }
 
             // Resource information
             if (!empty($application['resources'])) {
@@ -1181,22 +1253,71 @@ class EmailService
                 $section .= "<p><strong>Lokasjon:</strong> {$application['building_name']}</p>";
             }
 
-            // Approved dates and costs for this specific application
-            $associations = $this->getApplicationAssociations($application['id']);
-            $adates = [];
-            $applicationCost = 0;
+            // Calculate rejected/not approved dates
+            $notApprovedDates = [];
 
-            foreach ($associations as $assoc) {
-                if ($assoc['active']) {
-                    $from = $this->formatDateTime($assoc['from_']);
-                    $to = $this->formatDateTime($assoc['to_']);
-                    $cost = (float)$assoc['cost'];
-                    $costText = $cost > 0 ? " (kr " . number_format($cost, 2, ",", '.') . ")" : "";
-                    $adates[] = "\t{$from} - {$to}{$costText}";
-                    $applicationCost += $cost;
+            // For recurring applications, we need to generate all attempted dates
+            if (!empty($application['recurring_info']) && !empty($application['dates'])) {
+                // Parse recurring info
+                $recurringData = is_string($application['recurring_info'])
+                    ? json_decode($application['recurring_info'], true)
+                    : $application['recurring_info'];
+
+                if ($recurringData) {
+                    // Generate all recurring dates that were attempted
+                    $attemptedDates = $this->generateRecurringDates($application, $recurringData);
+
+                    // Compare attempted dates with approved dates
+                    foreach ($attemptedDates as $attemptedDate) {
+                        // attemptedDate now contains formatted strings directly
+                        $attemptedFrom = $attemptedDate['from'];
+                        $attemptedTo = $attemptedDate['to'];
+
+                        // Check if this attempted time matches any approved time
+                        $isApproved = false;
+                        foreach ($approvedTimestamps as $approved) {
+                            if ($attemptedFrom === $approved['from'] && $attemptedTo === $approved['to']) {
+                                $isApproved = true;
+                                break;
+                            }
+                        }
+
+                        if (!$isApproved) {
+                            $notApprovedDates[] = "\t{$attemptedFrom} - {$attemptedTo}";
+                        }
+                    }
+                }
+            } else {
+                // For non-recurring applications, compare requested dates with approved dates
+                if (!empty($application['dates'])) {
+                    foreach ($application['dates'] as $requestedDate) {
+                        // Format requested dates to Oslo time strings (same format as approved dates)
+                        $requestedFrom = $this->formatDateTime($requestedDate['from_']);
+                        $requestedTo = $this->formatDateTime($requestedDate['to_']);
+
+                        // Check if this requested time matches any approved time
+                        $isApproved = false;
+                        foreach ($approvedTimestamps as $approved) {
+                            if ($requestedFrom === $approved['from'] && $requestedTo === $approved['to']) {
+                                $isApproved = true;
+                                break;
+                            }
+                        }
+
+                        // If not approved, add to the not approved list
+                        if (!$isApproved) {
+                            $notApprovedDates[] = "\t{$requestedFrom} - {$requestedTo}";
+                        }
+                    }
                 }
             }
 
+            // Display not approved times first (if any)
+            if (!empty($notApprovedDates)) {
+                $section .= "<pre style='color: #dc3545;'><strong>Tider du ikke fikk:</strong>\n" . implode("\n", $notApprovedDates) . "</pre>";
+            }
+
+            // Display approved times
             if (!empty($adates)) {
                 $section .= "<p><strong>Godkjente tider:</strong></p>";
                 $section .= "<pre>" . implode("\n", $adates) . "</pre>";
@@ -1245,39 +1366,52 @@ class EmailService
 
         // Get first date from application
         $first_date = $application['dates'][0];
-        $from_time = new \DateTime($first_date['from_']);
-        $to_time = new \DateTime($first_date['to_']);
 
-        // Parse recurring settings - match allocation wizard logic
+        // Use formatDateTime to parse the date correctly (handles timezone properly)
+        $from_str = $first_date['from_'];
+        $to_str = $first_date['to_'];
+
+        // Create DateTime objects in user timezone
+        if (strpos($from_str, 'T') !== false || strpos($from_str, '+') !== false || strpos($from_str, 'Z') !== false) {
+            $from_time = new \DateTime($from_str);
+            $from_time->setTimezone(new \DateTimeZone($this->userTimezone));
+            $to_time = new \DateTime($to_str);
+            $to_time->setTimezone(new \DateTimeZone($this->userTimezone));
+        } else {
+            $from_time = new \DateTime($from_str, new \DateTimeZone($this->userTimezone));
+            $to_time = new \DateTime($to_str, new \DateTimeZone($this->userTimezone));
+        }
+
+        // Parse recurring settings
         $interval = isset($recurringData['field_interval']) ? (int)$recurringData['field_interval'] : 1;
         $repeat_until = null;
 
         if (!empty($recurringData['repeat_until'])) {
-            $repeat_until = new \DateTime($recurringData['repeat_until']);
+            $repeat_until = new \DateTime($recurringData['repeat_until'], new \DateTimeZone($this->userTimezone));
+            $repeat_until->setTime(23, 59, 59); // End of day
         } else {
             // Fallback to 3 months from first date
             $repeat_until = clone $from_time;
             $repeat_until->add(new \DateInterval('P3M'));
         }
 
-        // Generate preview dates using allocation wizard logic
-        $max_dato = $to_time->getTimestamp(); // highest date from input
-        $interval_seconds = $interval * 60 * 60 * 24 * 7; // weeks in seconds
-        $repeat_until_timestamp = $repeat_until->getTimestamp();
+        // Generate recurring dates by adding intervals (handles DST correctly)
+        $current_from = clone $from_time;
+        $current_to = clone $to_time;
+        $interval_obj = new \DateInterval('P' . $interval . 'W'); // interval in weeks
         $i = 0;
         $max_iterations = 100; // Safety limit
 
-        // Use allocation wizard's exact loop condition and date calculation
-        while (($max_dato + ($interval_seconds * $i)) <= $repeat_until_timestamp && $i < $max_iterations) {
-            // Calculate dates using allocation wizard method
-            $fromdate = $from_time->getTimestamp() + ($interval_seconds * $i);
-            $todate = $to_time->getTimestamp() + ($interval_seconds * $i);
-
+        while ($current_to <= $repeat_until && $i < $max_iterations) {
+            // Store formatted strings directly for easier comparison
             $dates[] = [
-                'from' => $fromdate,
-                'to' => $todate
+                'from' => $current_from->format($this->datetimeformat),
+                'to' => $current_to->format($this->datetimeformat)
             ];
 
+            // Add interval for next occurrence
+            $current_from->add($interval_obj);
+            $current_to->add($interval_obj);
             $i++;
         }
 

@@ -4284,12 +4284,23 @@ class booking_uiapplication extends booking_uicommon
 
 				$update = true;
 				// For rejected or accepted status, only notify if checkbox is checked
-				if ($application['status'] == 'REJECTED') {
-					$notify = Sanitizer::get_var('send_rejection_email', 'bool', 'POST') ? true : false;
-				} else if ($application['status'] == 'ACCEPTED') {
-					$notify = Sanitizer::get_var('send_acceptance_email', 'bool', 'POST') ? true : false;
+				// For combined applications with mixed results, send email if either checkbox is checked
+				$send_acceptance_checked = Sanitizer::get_var('send_acceptance_email', 'bool', 'POST');
+				$send_rejection_checked = Sanitizer::get_var('send_rejection_email', 'bool', 'POST');
+
+				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1) {
+					// Combined application: send email if either checkbox is checked
+					// (email will show mixed results - some accepted, some rejected)
+					$notify = $send_acceptance_checked || $send_rejection_checked;
 				} else {
-					$notify = true;
+					// Single application: match checkbox to status
+					if ($application['status'] == 'REJECTED') {
+						$notify = $send_rejection_checked;
+					} else if ($application['status'] == 'ACCEPTED') {
+						$notify = $send_acceptance_checked;
+					} else {
+						$notify = true;
+					}
 				}
 				$return_after_action = true;
 			}

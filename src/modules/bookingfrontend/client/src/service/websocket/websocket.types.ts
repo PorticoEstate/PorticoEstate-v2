@@ -160,6 +160,13 @@ export interface IWSRefreshBookingUserMessage extends IWebSocketMessageBase {
   action: 'refresh';
 }
 
+// Interface for cache invalidation message
+export interface IWSCacheInvalidationMessage extends IWebSocketMessageBase {
+  type: 'cache_invalidation';
+  queryKeys: string[][];  // Array of React Query key arrays to invalidate
+  timestamp: string;
+}
+
 // Union type for all possible WebSocket messages
 export type WebSocketMessage =
   | IWSNotificationMessage
@@ -179,7 +186,8 @@ export type WebSocketMessage =
   | IWSSessionIdRequiredMessage
   | IWSConnectionSuccessMessage
   | IWSPartialApplicationsResponse
-  | IWSRefreshBookingUserMessage;
+  | IWSRefreshBookingUserMessage
+  | IWSCacheInvalidationMessage;
   // | (IWebSocketMessageBase & { [key: string]: any }); // Catch-all for other message types
 
 export type WebSocketStatus = 'CONNECTING' | 'OPEN' | 'CLOSING' | 'CLOSED' | 'RECONNECTING' | 'ERROR' | 'FALLBACK_REQUIRED';

@@ -32,7 +32,7 @@ const Resource = async (props: ResourceProps) => {
         return notFound();
     }
 
-    // Fetch the building
+    // Fetch the resource
     const resource = await fetchResource(resourceId);
 
 	// console.log(resourceId);

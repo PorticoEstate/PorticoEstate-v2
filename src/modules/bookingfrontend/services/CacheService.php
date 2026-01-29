@@ -2,9 +2,12 @@
 
 namespace App\modules\bookingfrontend\services;
 
+use App\modules\bookingfrontend\helpers\WebSocketHelper;
+
 /**
  * Service for managing Next.js cache invalidation
  * Handles communication with the Next.js frontend to clear various cache types
+ * Supports both HTTP-based server cache invalidation and WebSocket-based client cache invalidation
  */
 class CacheService
 {
@@ -30,23 +33,55 @@ class CacheService
 	 * Call this after uploading, updating, or deleting resource/building/organization images
 	 * Also invalidates search data cache since it contains resource_pictures metadata
 	 *
-	 * @return bool True if request was sent (doesn't guarantee success), false if Next.js not configured
+	 * Uses dual invalidation:
+	 * 1. HTTP: Clears Next.js server-side image cache
+	 * 2. WebSocket: Broadcasts to all clients to invalidate React Query caches
+	 *
+	 * @return bool True if at least one method succeeded
 	 */
 	public function invalidateImages(): bool
 	{
-		// Clear image optimization cache AND revalidate search-data/images tags in single request
-		return $this->sendCacheReset('images=true&tag=search-data&tag=images');
+		// HTTP: Clear Next.js server-side image cache + search data tags
+		$httpResult = $this->sendCacheReset('images=true&tag=search-data&tag=images');
+
+		// WebSocket: Broadcast to all clients to invalidate React Query caches
+		// Invalidate searchData because it contains resource_pictures metadata
+		$wsResult = $this->sendWebSocketInvalidation([
+			['searchData'],
+			['organizations'],
+			['towns']
+		]);
+
+		return $httpResult || $wsResult;
 	}
 
 	/**
 	 * Invalidate all Next.js caches (images, pages, data)
 	 * Use sparingly - prefer specific cache invalidation
 	 *
-	 * @return bool True if request was sent, false if Next.js not configured
+	 * Uses dual invalidation:
+	 * 1. HTTP: Clears all Next.js server-side caches
+	 * 2. WebSocket: Broadcasts to all clients to invalidate all major React Query caches
+	 *
+	 * @return bool True if at least one method succeeded
 	 */
 	public function invalidateAll(): bool
 	{
-		return $this->sendCacheReset('all=true');
+		// HTTP: Clear all Next.js server-side caches
+		$httpResult = $this->sendCacheReset('all=true');
+
+		// WebSocket: Invalidate all major React Query caches
+		$wsResult = $this->sendWebSocketInvalidation([
+			['searchData'],
+			['organizations'],
+			['towns'],
+			['multiDomains'],
+			['upcomingEvents'],
+			['partialApplications'],
+			['deliveredApplications']
+		]);
+
+		return $httpResult || $wsResult;
 	}
 
 	/**
@@ -134,5 +169,45 @@ class CacheService
 	public function getServerUrl(): ?string
 	{
 		return $this->nextjsServer;
+	}
+
+	/**
+	 * Send cache invalidation message via WebSocket to all connected clients
+	 * This triggers React Query cache invalidation in all client browsers
+	 *
+	 * @param array $queryKeys Array of React Query key arrays to invalidate
+	 *                         Example: [['searchData'], ['organizations'], ['resourceArticles', 123]]
+	 * @return bool True if message was sent successfully
+	 */
+	private function sendWebSocketInvalidation(array $queryKeys): bool
+	{
+		// Check if WebSocketHelper is available
+		if (!class_exists('\App\modules\bookingfrontend\helpers\WebSocketHelper'))
+		{
+			return false;
+		}
+
+		try
+		{
+			return WebSocketHelper::sendCacheInvalidation($queryKeys);
+		}
+		catch (\Exception $e)
+		{
+			error_log("CacheService: Failed to send WebSocket cache invalidation: " . $e->getMessage());
+			return false;
+		}
+	}
+
+	/**
+	 * Invalidate specific React Query cache keys
+	 * Useful for targeted cache invalidation when you know the exact keys
+	 *
+	 * @param array $queryKeys Array of query key arrays
+	 *                         Example: [['searchData'], ['resourceArticles', 123]]
+	 * @return bool True if message sent successfully
+	 */
+	public function invalidateQueryKeys(array $queryKeys): bool
+	{
+		return $this->sendWebSocketInvalidation($queryKeys);
 	}
 }

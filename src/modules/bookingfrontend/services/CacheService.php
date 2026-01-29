@@ -319,4 +319,33 @@ class CacheService
 
 		return $this->sendWebSocketInvalidation($queryKeys);
 	}
+
+	/**
+	 * Invalidate caches when a season is added, edited, or boundaries changed
+	 * Call this after season operations
+	 *
+	 * @param int|null $buildingId The ID of the building the season belongs to (optional)
+	 * @return bool True if at least one invalidation succeeded
+	 */
+	public function invalidateSeason(?int $buildingId = null): bool
+	{
+		// HTTP: Revalidate server-side Next.js caches
+		$httpResult = $this->sendCacheReset('tag=search-data');
+
+		// WebSocket: Invalidate client-side React Query caches
+		$queryKeys = [
+			['searchData'],           // Search index may contain season info
+			['building_seasons']      // All seasons cache (no building_id param)
+		];
+
+		// Add building-specific seasons cache if building ID provided
+		if ($buildingId !== null)
+		{
+			$queryKeys[] = ['building_seasons', (string)$buildingId];  // Seasons for this building
+		}
+
+		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
+
+		return $httpResult || $wsResult;
+	}
 }

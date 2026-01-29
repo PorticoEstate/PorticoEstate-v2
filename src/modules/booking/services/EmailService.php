@@ -646,10 +646,8 @@ class EmailService
             $body .= "<p>" . $config['application_mail_pending'] . "</p>";
             $body .= '<p><a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
         }
-        elseif ($primaryApplication['status'] == 'ACCEPTED') {
-            $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
-
-            // Count approved vs rejected applications
+        elseif ($primaryApplication['status'] == 'ACCEPTED' || $primaryApplication['status'] == 'REJECTED') {
+            // Count approved vs rejected applications first to determine if mixed
             $approvedCount = 0;
             $rejectedCount = 0;
             foreach ($applications as $app) {
@@ -660,11 +658,25 @@ class EmailService
                 }
             }
 
-            // Add combined application details with accurate count
-            if ($rejectedCount > 0) {
-                $body .= "<h3>Kombinert søknad - " . $approvedCount . " delapplikasjoner godkjent, " . $rejectedCount . " avslått:</h3>";
+            // For combined applications with mixed results, use "behandlet" (processed) instead of approved/rejected
+            $hasMixedResults = ($approvedCount > 0 && $rejectedCount > 0);
+
+            if ($hasMixedResults) {
+                $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er behandlet</p>";
             } else {
+                $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
+            }
+
+            // Add combined application details with accurate count
+            if ($rejectedCount > 0 && $approvedCount > 0) {
+                // Mixed results
+                $body .= "<h3>Kombinert søknad - " . $approvedCount . " delapplikasjoner godkjent, " . $rejectedCount . " avslått:</h3>";
+            } elseif ($approvedCount > 0) {
+                // All approved
                 $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner godkjent:</h3>";
+            } else {
+                // All rejected
+                $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner avslått:</h3>";
             }
 
             if (!empty($primaryApplication['name'])) {
@@ -692,33 +704,23 @@ class EmailService
                 $body .= "<p>Kommentar fra saksbehandler:<br />" . $primaryApplication['comment'] . "</p>";
             }
 
-            $body .= "<p>{$config['application_mail_accepted']}</p>";
+            // Footer message based on results
+            if ($hasMixedResults) {
+                // Mixed results - use neutral message or omit the standard message
+                $body .= "<p>Se detaljer for hver del av søknaden ovenfor.</p>";
+            } elseif ($approvedCount > 0) {
+                // All approved
+                $body .= "<p>{$config['application_mail_accepted']}</p>";
+            } else {
+                // All rejected
+                $body .= "<p>{$config['application_mail_rejected']}</p>";
+            }
+
             $body .= "<br /><a href=\"{$link}\">Link til {$config['application_mail_systemname']}: søknad #{$primaryApplication['id']}</a>";
 
             if (!empty($e_lock_instructions)) {
                 $body .= "\n" . implode("\n", $e_lock_instructions);
             }
-        }
-        elseif ($primaryApplication['status'] == 'REJECTED') {
-            $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
-
-            // Add combined application details
-            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner avslått:</h3>";
-            if (!empty($primaryApplication['name'])) {
-                $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
-            }
-            if (!empty($primaryApplication['organizer'])) {
-                $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
-            }
-
-            // Show details for each application separately
-            $body .= $this->buildApplicationDetailsSection($applications);
-
-            if (!empty($primaryApplication['comment'])) {
-                $body .= '<p><strong>Kommentar fra saksbehandler:</strong><br />' . $primaryApplication['comment'] . '</p>';
-            }
-
-            $body .= '<p>' . $config['application_mail_rejected'] . ' <a href="' . $link . '">Link til ' . $config['application_mail_systemname'] . ': søknad #' . $primaryApplication['id'] . '</a></p>';
         }
         else {
             // Comment added or other status update

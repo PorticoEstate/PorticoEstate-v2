@@ -132,6 +132,20 @@
 			return $this->so->read_images($this->build_default_read_params());
 		}
 
+		function add($entity)
+		{
+			$result = parent::add($entity);
+
+			// Invalidate Next.js image cache after successful add
+			if ($result)
+			{
+				$cacheService = new \App\modules\bookingfrontend\services\CacheService();
+			$cacheService->invalidateImages();
+			}
+
+			return $result;
+		}
+
 		function update($entity)
 		{
 			// Get current document to check previous rotation
@@ -186,7 +200,16 @@
 				$entity['metadata'] = $metadata;
 			}
 
-			return parent::update($entity);
+			$result = parent::update($entity);
+
+			// Invalidate Next.js image cache after successful update
+			if ($result)
+			{
+				$cacheService = new \App\modules\bookingfrontend\services\CacheService();
+			$cacheService->invalidateImages();
+			}
+
+			return $result;
 		}
 
 		private function physically_rotate_image($filePath, $degrees)
@@ -267,4 +290,5 @@
 
 			return $success;
 		}
+
 	}

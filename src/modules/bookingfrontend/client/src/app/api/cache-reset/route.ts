@@ -7,8 +7,36 @@ export async function GET(request: NextRequest) {
 	try {
 		const { searchParams } = new URL(request.url);
 		const path = searchParams.get('path');
-		const tag = searchParams.get('tag');
+		const tags = searchParams.getAll('tag'); // Support multiple tags
 		const all = searchParams.get('all');
+		const images = searchParams.get('images');
+
+		// Clear only image cache (and optionally tags)
+		if (images === 'true') {
+			const imageCachePath = join(process.cwd(), '.next', 'cache', 'images');
+			try {
+				await fs.rm(imageCachePath, { recursive: true, force: true });
+			} catch (error) {
+				console.error('Failed to clear image cache:', error);
+				return NextResponse.json(
+					{ error: 'Failed to clear image cache' },
+					{ status: 500 }
+				);
+			}
+
+			// Also revalidate tags if provided
+			if (tags.length > 0) {
+				tags.forEach(tag => revalidateTag(tag));
+			}
+
+			return NextResponse.json({
+				message: tags.length > 0
+					? `Image cache cleared successfully and tags revalidated: ${tags.join(', ')}`
+					: 'Image cache cleared successfully',
+				cleared: 'images',
+				tags: tags.length > 0 ? tags : undefined
+			});
+		}
 
 		if (all === 'true') {
 			// Force revalidation of all cached data
@@ -37,12 +65,12 @@ export async function GET(request: NextRequest) {
 			});
 		}
 
-		if (tag) {
-			revalidateTag(tag);
+		if (tags.length > 0) {
+			tags.forEach(tag => revalidateTag(tag));
 			return NextResponse.json({
-				message: `Cache cleared for tag: ${tag}`,
-				cleared: 'tag',
-				tag
+				message: `Cache cleared for tags: ${tags.join(', ')}`,
+				cleared: 'tags',
+				tags
 			});
 		}
 

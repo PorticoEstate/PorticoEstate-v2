@@ -294,6 +294,14 @@ class booking_uibuilding extends booking_uicommon
 			if (!$errors)
 			{
 				$receipt = $this->bo->add($building);
+
+				// Invalidate Next.js caches (server-side + client-side via WebSocket)
+				if (class_exists('\App\modules\bookingfrontend\services\CacheService'))
+				{
+					$cache = new \App\modules\bookingfrontend\services\CacheService();
+					$cache->invalidateBuilding((int)$receipt['id']);
+				}
+
 				self::redirect(array('menuaction' => 'booking.uibuilding.show', 'id' => $receipt['id']));
 			}
 		}
@@ -385,6 +393,14 @@ class booking_uibuilding extends booking_uicommon
 			if (!$errors)
 			{
 				$receipt = $this->bo->update($building);
+
+				// Invalidate Next.js caches (server-side + client-side via WebSocket)
+				if (class_exists('\App\modules\bookingfrontend\services\CacheService'))
+				{
+					$cache = new \App\modules\bookingfrontend\services\CacheService();
+					$cache->invalidateBuilding((int)$receipt['id']);
+				}
+
 				self::redirect(array('menuaction' => 'booking.uibuilding.show', 'id' => $receipt['id']));
 			}
 		}

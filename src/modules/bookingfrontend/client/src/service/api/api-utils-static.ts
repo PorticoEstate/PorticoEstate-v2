@@ -25,7 +25,10 @@ export const fetchSearchData = unstable_cache(
 		return result;
 	},
 	['search-data'], // A unique cache key
-	{revalidate: 3600}
+	{
+		revalidate: 3600,
+		tags: ['search-data', 'resources', 'buildings', 'images']
+	}
 );
 
 /**
@@ -78,7 +81,10 @@ export const fetchOrganizationsStatic = unstable_cache(
 		return result;
 	},
 	['organizations-data'], // A unique cache key
-	{revalidate: 3600}
+	{
+		revalidate: 3600,
+		tags: ['organizations', 'search-data']
+	}
 );
 
 /**
@@ -101,7 +107,10 @@ export const fetchMultiDomainsStatic = unstable_cache(
 		return result.results || [];
 	},
 	['multi-domains-data'], // A unique cache key
-	{revalidate: 3600}
+	{
+		revalidate: 3600,
+		tags: ['multi-domains']
+	}
 );
 
 /**
@@ -334,5 +343,8 @@ export const fetchSearchDataWithMultiDomains = unstable_cache(
 		return mergedData;
 	},
 	['search-data-with-multi-domains'], // A unique cache key
-	{revalidate: 3600}
+	{
+		revalidate: 3600,
+		tags: ['search-data', 'resources', 'buildings', 'images']
+	}
 );

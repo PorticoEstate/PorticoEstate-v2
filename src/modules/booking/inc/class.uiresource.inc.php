@@ -242,6 +242,16 @@ class booking_uiresource extends booking_uicommon
 					$receipt = $this->bo->add($resource);
 					$hooks = new Hooks();
 					$hooks->single('resource_add', 'booking');
+
+					// Invalidate Next.js caches (server-side + client-side via WebSocket)
+					if (class_exists('\App\modules\bookingfrontend\services\CacheService'))
+					{
+						$cache = new \App\modules\bookingfrontend\services\CacheService();
+						// Pass buildings array if available, otherwise single building_id
+						$buildingIds = isset($resource['buildings']) ? $resource['buildings'] : $building_id;
+						$cache->invalidateResource((int)$receipt['id'], $buildingIds);
+					}
+
 					self::redirect(array('menuaction' => 'booking.uiresource.show', 'id' => $receipt['id']));
 				}
 				catch (booking_unauthorized_exception $e)
@@ -351,6 +361,17 @@ class booking_uiresource extends booking_uicommon
 			if (!$errors)
 			{
 				$receipt = $this->bo->update($resource);
+
+				// Invalidate Next.js caches (server-side + client-side via WebSocket)
+				if (class_exists('\App\modules\bookingfrontend\services\CacheService'))
+				{
+					$cache = new \App\modules\bookingfrontend\services\CacheService();
+					// Pass buildings array if available, fallback to building_id, or null
+					$buildingIds = isset($resource['buildings']) ? $resource['buildings'] :
+								   (isset($resource['building_id']) ? (int)$resource['building_id'] : null);
+					$cache->invalidateResource((int)$resource['id'], $buildingIds);
+				}
+
 				self::redirect(array('menuaction' => 'booking.uiresource.show', 'id' => $resource['id']));
 			}
 		}

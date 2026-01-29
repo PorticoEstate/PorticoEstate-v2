@@ -274,7 +274,7 @@ class CacheService
 		// WebSocket: Invalidate client-side React Query caches
 		$queryKeys = [
 			['searchData'],                        // Search index contains building data and building_resources junction table
-			['buildingResources', (string)$buildingId]  // Resources for this building
+			['building', (string)$buildingId]  // Resources for this building
 		];
 
 		$wsResult = $this->sendWebSocketInvalidation($queryKeys);

@@ -210,4 +210,48 @@ class CacheService
 	{
 		return $this->sendWebSocketInvalidation($queryKeys);
 	}
+
+	/**
+	 * Invalidate caches when a resource is added or edited
+	 * Call this after resource create/update operations
+	 *
+	 * Uses dual invalidation:
+	 * 1. HTTP: Revalidates server-side search-data and resources tags
+	 * 2. WebSocket: Invalidates client-side React Query caches
+	 *
+	 * @param int $resourceId The ID of the resource that was modified
+	 * @param int|array|null $buildingIds Single building ID, array of building IDs, or null
+	 * @return bool True if at least one invalidation succeeded
+	 */
+	public function invalidateResource(int $resourceId, $buildingIds = null): bool
+	{
+		// HTTP: Revalidate server-side Next.js caches by tag
+		$httpResult = $this->sendCacheReset('tag=search-data&tag=resources');
+
+		// WebSocket: Invalidate client-side React Query caches
+		$queryKeys = [
+			['searchData'],              // Search index contains resource names and building_resources junction table
+			['resource', (string)$resourceId]  // Individual resource cache
+		];
+
+		// Handle building IDs - could be single int, array, or null
+		if ($buildingIds !== null)
+		{
+			// Convert to array if single ID
+			$buildingIdsArray = is_array($buildingIds) ? $buildingIds : [$buildingIds];
+
+			// Add buildingResources cache for each building
+			foreach ($buildingIdsArray as $buildingId)
+			{
+				if ($buildingId)
+				{
+					$queryKeys[] = ['buildingResources', (string)$buildingId];
+				}
+			}
+		}
+
+		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
+
+		return $httpResult || $wsResult;
+	}
 }

@@ -254,4 +254,69 @@ class CacheService
 
 		return $httpResult || $wsResult;
 	}
+
+	/**
+	 * Invalidate caches when a building is added or edited
+	 * Call this after building create/update operations
+	 *
+	 * Uses dual invalidation:
+	 * 1. HTTP: Revalidates server-side search-data and buildings tags
+	 * 2. WebSocket: Invalidates client-side React Query caches
+	 *
+	 * @param int $buildingId The ID of the building that was modified
+	 * @return bool True if at least one invalidation succeeded
+	 */
+	public function invalidateBuilding(int $buildingId): bool
+	{
+		// HTTP: Revalidate server-side Next.js caches by tag
+		$httpResult = $this->sendCacheReset('tag=search-data&tag=buildings');
+
+		// WebSocket: Invalidate client-side React Query caches
+		$queryKeys = [
+			['searchData'],                        // Search index contains building data and building_resources junction table
+			['buildingResources', (string)$buildingId]  // Resources for this building
+		];
+
+		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
+
+		return $httpResult || $wsResult;
+	}
+
+	/**
+	 * Invalidate caches when building documents are added, edited, or deleted
+	 * Call this after document operations for a building
+	 *
+	 * @param int $buildingId The ID of the building whose documents changed
+	 * @return bool True if at least one invalidation succeeded
+	 */
+	public function invalidateBuildingDocuments(int $buildingId): bool
+	{
+		// WebSocket: Invalidate document caches
+		// Note: No HTTP cache for documents (they're not server-cached)
+		$queryKeys = [
+			['buildingDocuments', (string)$buildingId],  // Documents for this building
+			['allRegulationDocuments']                   // Combined regulation documents cache
+		];
+
+		return $this->sendWebSocketInvalidation($queryKeys);
+	}
+
+	/**
+	 * Invalidate caches when resource documents are added, edited, or deleted
+	 * Call this after document operations for a resource
+	 *
+	 * @param int $resourceId The ID of the resource whose documents changed
+	 * @return bool True if at least one invalidation succeeded
+	 */
+	public function invalidateResourceDocuments(int $resourceId): bool
+	{
+		// WebSocket: Invalidate document caches
+		// Note: No HTTP cache for documents (they're not server-cached)
+		$queryKeys = [
+			['resourceDocuments', (string)$resourceId, 'regulation'],  // Documents for this resource
+			['allRegulationDocuments']                                 // Combined regulation documents cache
+		];
+
+		return $this->sendWebSocketInvalidation($queryKeys);
+	}
 }

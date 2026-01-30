@@ -154,40 +154,8 @@ class LocationHierarchyAnalyzer
 			{
 				$loc2 = null;
 
-				// 1) If database maps this bygningsnr to one or more loc2 values, try to reuse one (if not already claimed)
-				if (isset($this->bygningsnrToLoc2Map[$loc1][$bygningsnr]))
-				{
-					$candidate_loc2s = $this->bygningsnrToLoc2Map[$loc1][$bygningsnr];
-					// bygningsnrToLoc2Map now stores an array of loc2 values
-					if (is_array($candidate_loc2s))
-					{
-						// Try each loc2 in order until we find one that's not claimed
-						foreach ($candidate_loc2s as $candidate_loc2)
-						{
-							if (!in_array($candidate_loc2, $assignedLoc2PerLoc1[$loc1]))
-							{
-								$loc2 = $candidate_loc2;
-								break;
-							}
-						}
-					}
-				}
-
-				// 2) If this bygningsnr is dominant for an existing loc2, try to reuse that loc2 (if not already claimed)
-				if (!$loc2 && isset($dominantBygningsnrInLoc2[$loc1]))
-				{
-					foreach ($dominantBygningsnrInLoc2[$loc1] as $loc2Candidate => $dominantBygningsnr)
-					{
-						if ($dominantBygningsnr === $bygningsnr && !in_array($loc2Candidate, $assignedLoc2PerLoc1[$loc1]))
-						{
-							$loc2 = $loc2Candidate;
-							break;
-						}
-					}
-				}
-
-				// 2b) Otherwise, prefer an existing unused loc2 from fm_location2 (if any)
-				if (!$loc2 && isset($this->loc2Refs[$loc1]) && is_array($this->loc2Refs[$loc1]))
+				// 1) First, prefer an existing unused loc2 from fm_location2 (lowest number first)
+				if (isset($this->loc2Refs[$loc1]) && is_array($this->loc2Refs[$loc1]))
 				{
 					$existingLoc2List = array_keys($this->loc2Refs[$loc1]);
 					sort($existingLoc2List, SORT_STRING);
@@ -201,7 +169,41 @@ class LocationHierarchyAnalyzer
 					}
 				}
 
-				// 3) Otherwise, allocate the first available loc2 number (each bygningsnr gets its own loc2)
+				// 2) If database maps this bygningsnr to one or more loc2 values, try to reuse one (if not already claimed)
+				if (!$loc2 && isset($this->bygningsnrToLoc2Map[$loc1][$bygningsnr]))
+				{
+					$candidate_loc2s = $this->bygningsnrToLoc2Map[$loc1][$bygningsnr];
+					// bygningsnrToLoc2Map now stores an array of loc2 values
+					if (is_array($candidate_loc2s))
+					{
+						// Sort candidates numerically to prefer lower numbers (01, 02, 03 over 08)
+						sort($candidate_loc2s, SORT_STRING);
+						// Try each loc2 in order until we find one that's not claimed
+						foreach ($candidate_loc2s as $candidate_loc2)
+						{
+							if (!in_array($candidate_loc2, $assignedLoc2PerLoc1[$loc1]))
+							{
+								$loc2 = $candidate_loc2;
+								break;
+							}
+						}
+					}
+				}
+
+				// 3) If this bygningsnr is dominant for an existing loc2, try to reuse that loc2 (if not already claimed)
+				if (!$loc2 && isset($dominantBygningsnrInLoc2[$loc1]))
+				{
+					foreach ($dominantBygningsnrInLoc2[$loc1] as $loc2Candidate => $dominantBygningsnr)
+					{
+						if ($dominantBygningsnr === $bygningsnr && !in_array($loc2Candidate, $assignedLoc2PerLoc1[$loc1]))
+						{
+							$loc2 = $loc2Candidate;
+							break;
+						}
+					}
+				}
+
+				// 4) Otherwise, allocate the first available loc2 number (each bygningsnr gets its own loc2)
 				if (!$loc2)
 				{
 					for ($newLoc2 = 1; $newLoc2 <= 99; $newLoc2++)

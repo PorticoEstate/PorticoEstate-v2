@@ -542,7 +542,14 @@ class LocationHierarchyAnalyzer
 			$loc4 = $row['loc4'];
 			$old_code = "{$loc1}-{$loc2_actual}-{$loc3_actual}-{$loc4}";
 			$new_code = "{$loc1}-{$loc2_expected}-{$loc3_expected}-{$loc4}";
-			if ($loc2_actual !== $loc2_expected || $loc3_actual !== $loc3_expected)
+			
+			// Normalize for comparison to avoid type mismatches
+			$loc2_actual_normalized = $this->normalizeLoc2($loc2_actual);
+			$loc2_expected_normalized = $this->normalizeLoc2($loc2_expected);
+			$loc3_actual_normalized = $this->normalizeLoc2($loc3_actual);
+			$loc3_expected_normalized = $this->normalizeLoc2($loc3_expected);
+			
+			if ($loc2_actual_normalized != $loc2_expected_normalized || $loc3_actual_normalized != $loc3_expected_normalized)
 			{
 				$this->sqlStatements['location4_updates'][] =
 					"-- Move {$old_code} to {$new_code}\nUPDATE fm_location4 SET location_code='{$new_code}', loc2='{$loc2_expected}', loc3='{$loc3_expected}' WHERE location_code='{$old_code}';";

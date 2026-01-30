@@ -1146,7 +1146,7 @@ class LocationHierarchyAnalyzer
 			$name_parts[] = $address_str;
 		}
 		
-		$loc2_name = implode(", ", $name_parts);
+		$loc2_name = trim(implode(", ", $name_parts));
 		
 		// Truncate to 256 characters
 		if (strlen($loc2_name) > 256)

@@ -67,7 +67,7 @@ class property_uianalyze_location extends phpgwapi_uicommon_jquery
 		phpgwapi_xslttemplates::getInstance()->add_file(array('analyze_location'));
 
 		$data = array();
-		$selected_loc1 = isset($_REQUEST['loc1']) ? $_REQUEST['loc1'] : '';
+		$selected_loc1 = isset($_REQUEST['loc1']) ? trim($_REQUEST['loc1']) : '';
 		$data['selected_loc1'] = $selected_loc1;
 
 		if (isset($_POST['run_analysis']) && $_POST['run_analysis'] == 'yes')

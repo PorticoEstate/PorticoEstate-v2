@@ -13,7 +13,10 @@ import {useIsOrganization} from "@/components/building-calendar/calendar-context
 import {useBuilding} from "@/service/api/building";
 
 
-const ResourceLabel: FC<{ resource: CalendarResourceFilterOption; onInfo: () => void }> = ({resource, onInfo}) => {
+
+type ResourceLabelType = Pick<Partial<CalendarResourceFilterOption>, 'buildingId' | 'value' | "deactivated"> & Pick<CalendarResourceFilterOption, 'label'>
+
+const ResourceLabel: FC<{ resource: ResourceLabelType; onInfo?: () => void }> = ({resource, onInfo}) => {
 	const isMobile = useIsMobile();
 	const t = useTrans();
 	const isOrg = useIsOrganization();
@@ -23,7 +26,7 @@ const ResourceLabel: FC<{ resource: CalendarResourceFilterOption; onInfo: () => 
 	return (
 		<div className={`${styles.resourceLabel} text-normal`}>
 			<div className={styles.resourceLabelWrapper}>
-				<ColourCircle resourceId={+resource.value} size={'medium'}/>
+				{resource.value !== undefined && <ColourCircle resourceId={+resource.value} size={'medium'}/>}
 				<div className={styles.resourceTitle}>
 					<span>{resource.label}</span>
 					{resource.deactivated && (
@@ -39,7 +42,7 @@ const ResourceLabel: FC<{ resource: CalendarResourceFilterOption; onInfo: () => 
 				</div>
 
 			</div>
-			{!isMobile && (
+			{!isMobile && onInfo !== undefined && (
 				<Button variant={'tertiary'} data-size={'sm'} onClick={onInfo}>
 					<InformationSquareIcon fontSize={'1.5rem'}/>
 				</Button>

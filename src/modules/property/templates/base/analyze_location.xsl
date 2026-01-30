@@ -211,6 +211,10 @@
 										<input type="checkbox" id="update_loc3_name" name="sql_types[]" value="loc3_name_updates" />
 										Update loc3 name entries
 									</label>
+									<label for="update_loc2_name" class="pure-checkbox">
+										<input type="checkbox" id="update_loc2_name" name="sql_types[]" value="loc2_name_updates" />
+										Update loc2 name entries (building summary)
+									</label>
 									<label for="update_location_from_mapping" class="pure-checkbox">
 										<input type="checkbox" id="update_location_from_mapping" name="sql_types[]" value="update_location_from_mapping" />
 										Update all tables from mapping
@@ -277,6 +281,13 @@
 					<h5>Update loc3 name</h5>
 					<pre>
 						<xsl:for-each select="sql_statements/loc3_name_updates">
+							<xsl:value-of select="." />
+							<xsl:text>&#10;</xsl:text>
+						</xsl:for-each>
+					</pre>
+					<h5>Update loc2 name (building summary)</h5>
+					<pre>
+						<xsl:for-each select="sql_statements/loc2_name_updates">
 							<xsl:value-of select="." />
 							<xsl:text>&#10;</xsl:text>
 						</xsl:for-each>

@@ -17,6 +17,7 @@ class LocationHierarchyAnalyzer
 	private $suggestions = [];
 	private $sqlStatements = [];
 	private $loc3Names = []; // loc1 => loc2 => loc3 => loc3_name
+	private $loc2Names = []; // loc1 => loc2 => loc2_name
 	private $entryToBygningsnrMap = [];
 	private $processedLocationCodes = [];
 	private $currentFilterLoc1 = null;
@@ -461,6 +462,67 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
+		// 4c. Prepare loc2_name update statements (summarize addresses for each building)
+		$this->sqlStatements['loc2_name_updates'] = [];
+		foreach ($requiredLoc2 as $loc1 => $bygningsnrs)
+		{
+			foreach ($bygningsnrs as $bygningsnr => $loc2)
+			{
+				$loc2 = $this->normalizeLoc2($loc2);
+				
+				// Collect all addresses for this loc2
+				$addresses = []; // street_name => [street_numbers]
+				foreach ($requiredLoc3 as $l1 => $loc2s)
+				{
+					if ($l1 !== $loc1)
+					{
+						continue;
+					}
+					foreach ($loc2s as $l2 => $streetkeys)
+					{
+						if ($l2 !== $loc2)
+						{
+							continue;
+						}
+						foreach ($streetkeys as $streetkey => $loc3)
+						{
+							list($street_id, $street_number) = explode('_', $streetkey, 2);
+							$street_name = $this->get_street_name($street_id);
+							if (!isset($addresses[$street_name]))
+							{
+								$addresses[$street_name] = [];
+							}
+							if (!in_array($street_number, $addresses[$street_name]))
+							{
+								$addresses[$street_name][] = $street_number;
+							}
+						}
+					}
+				}
+				
+				// Generate loc2_name from collected addresses
+				if (!empty($addresses))
+				{
+					$generated_loc2_name = $this->generateLoc2Name($addresses);
+					$current_loc2_name = $this->loc2Names[$loc1][$loc2] ?? null;
+					
+					if ($current_loc2_name === null || trim((string)$current_loc2_name) !== $generated_loc2_name)
+					{
+						$this->sqlStatements['loc2_name_updates'][] =
+							"UPDATE fm_location2 SET loc2_name = '" . addslashes($generated_loc2_name) . "' WHERE loc1 = '{$loc1}' AND loc2 = '{$loc2}' AND loc2_name IS DISTINCT FROM '" . addslashes($generated_loc2_name) . "';";
+						$this->issues[] = [
+							'type' => 'loc2_name_mismatch',
+							'loc1' => $loc1,
+							'loc2' => $loc2,
+							'bygningsnr' => $bygningsnr,
+							'expected_loc2_name' => $generated_loc2_name,
+							'current_loc2_name' => $current_loc2_name
+						];
+					}
+				}
+			}
+		}
+
 		// 5. Prepare location4 move statements
 		$this->sqlStatements['location4_updates'] = [];
 		$this->sqlStatements['corrections'] = [];
@@ -666,7 +728,7 @@ class LocationHierarchyAnalyzer
 				'street_number' => $this->db->f('street_number'),
 			];
 		}
-		$sql = "SELECT loc1, loc2 FROM fm_location2";
+		$sql = "SELECT loc1, loc2, loc2_name FROM fm_location2";
 		if ($filterLoc1)
 		{
 			$sql .= " WHERE loc1 = '{$filterLoc1}'";
@@ -678,6 +740,7 @@ class LocationHierarchyAnalyzer
 			$loc1_value = trim((string)$this->db->f('loc1'));
 			$loc2_value = $this->normalizeLoc2($this->db->f('loc2'));
 			$this->loc2Refs[$loc1_value][$loc2_value] = true;
+			$this->loc2Names[$loc1_value][$loc2_value] = $this->db->f('loc2_name');
 		}
 		$sql = "SELECT loc1, loc2, loc3, loc3_name FROM fm_location3";
 		if ($filterLoc1)
@@ -1055,6 +1118,35 @@ class LocationHierarchyAnalyzer
 	}
 
 	/**
+	 * Generate loc2_name from addresses summary.
+	 * If single street: "Street Name 15A, 15B"
+	 * If multiple streets: "Street1 15A, 15B, Street2 20, 22"
+	 * Maximum 256 characters.
+	 */
+	private function generateLoc2Name($addresses)
+	{
+		$name_parts = [];
+		
+		foreach ($addresses as $street_name => $street_numbers)
+		{
+			// Sort street numbers naturally (15, 15A, 15B, 16, etc.)
+			usort($street_numbers, 'strnatcmp');
+			$address_str = "{$street_name} " . implode(", ", $street_numbers);
+			$name_parts[] = $address_str;
+		}
+		
+		$loc2_name = implode(", ", $name_parts);
+		
+		// Truncate to 256 characters
+		if (strlen($loc2_name) > 256)
+		{
+			$loc2_name = substr($loc2_name, 0, 253) . "...";
+		}
+		
+		return $loc2_name;
+	}
+
+	/**
 	 * Get street name from street_id.
 	 */
 	private function get_street_name($street_id)
@@ -1128,6 +1220,7 @@ class LocationHierarchyAnalyzer
 		$this->bygningsnrToLoc2Map = [];
 		$this->streetToLoc3Map = [];
 		$this->loc3Names = [];
+		$this->loc2Names = [];
 	}
 
 	/**

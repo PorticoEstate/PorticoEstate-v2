@@ -238,7 +238,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 								onChange={() => onToggle(resource.value, true)}
 								label={
 									<div className={`${styles.resourceLabel} text-normal`}>
-										<div>
+										<div className={styles.resourceLabelWrapper}>
 											<ColourCircle resourceId={+resource.value} size={'medium'}/>
 											<span>{resource.label}</span>
 											{resource.deactivated && (
@@ -267,14 +267,13 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 			{groupedResources.normal.length > 0 && (
 				<Fieldset>
 					<Fieldset.Legend style={{marginLeft: '0.5rem'}}>{t('bookingfrontend.calendar_resources')}</Fieldset.Legend>
-					<div className={styles.toggleAllContainer}>
+					<div className={`${styles.resourceItem} ${groupedResources.normal.every(r => enabledResources.has(r.value)) ? styles.active : ''} `}>
 						<Checkbox
-							data-size={'sm'}
 							value={'choose_all'}
 							id={`resource-all`}
 							checked={groupedResources.normal.every(r => enabledResources.has(r.value))}
 							onChange={() => onToggleAll(groupedResources.normal)}
-							label={t('bookingfrontend.select_all')}
+							label={<ResourceLabel resource={{label: t('bookingfrontend.select_all')}}/>}
 							className={styles.resourceCheckbox}
 						/>
 					</div>

@@ -1152,10 +1152,10 @@ class LocationHierarchyAnalyzer
 			$count = 0;
 			foreach ($sqlStatements[$sqlType] as $sql)
 			{
-				if (strpos($sql, '--') === 0) 
-				{
-					continue;
-				}
+				// if (strpos($sql, '--') === 0) 
+				// {
+				// 	continue;
+				// }
 				try
 				{
 					$this->db->query($sql, __LINE__, __FILE__);

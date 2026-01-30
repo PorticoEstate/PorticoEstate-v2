@@ -610,6 +610,8 @@ class LocationHierarchyAnalyzer
 			'sql_statements' => [
 				'missing_loc2' => [],
 				'missing_loc3' => [],
+				'loc3_name_updates' => [],
+				'loc2_name_updates' => [],
 				'location4_updates' => [],
 				'corrections' => [],
 				],

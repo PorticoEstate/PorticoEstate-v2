@@ -607,17 +607,12 @@ HTML;
 	}
 
 	// Use Twig to render the template
-	if (file_exists($twigDir . '/navbar.twig')) {
-		$twig = new \Twig\Environment(new \Twig\Loader\FilesystemLoader([$twigDir]), [
-			'debug' => true,
-			'cache' => $serverSettings['temp_dir'] . '/twig_cache',
-			'auto_reload' => true,
-		]);
-		
+	try {
+		$twig = \App\modules\phpgwapi\services\Twig::getInstance();
 		echo $twig->render('navbar.twig', $var);
-	} else {
-			// Fallback message if the Twig template doesn't exist
-			echo "Error: Twig template not found at {$twigDir}/navbar.twig";
+	} catch (\Twig\Error\Error $e) {
+		error_log("Failed to render navbar.twig: " . $e->getMessage());
+		echo "<div class='alert alert-danger'>Error loading navbar template. Please check logs.</div>";
 	}
 
 	if (Sanitizer::get_var('phpgw_return_as') != 'json' && $global_message = Cache::system_get('phpgwapi', 'phpgw_global_message'))
@@ -1246,17 +1241,12 @@ function parse_footer_end()
 	);
 
 	// Use Twig to render the template
-	if (file_exists($twigDir . '/footer.twig')) {
-		$twig = new \Twig\Environment(new \Twig\Loader\FilesystemLoader([$twigDir]), [
-			'debug' => true,
-			'cache' => $serverSettings['temp_dir'] . '/twig_cache',
-			'auto_reload' => true,
-		]);
-		
+	try {
+		$twig = \App\modules\phpgwapi\services\Twig::getInstance();
 		echo $twig->render('footer.twig', $var);
-	} else {
-		// Fallback message if the Twig template doesn't exist
-		echo "Error: Twig template not found at {$twigDir}/footer.twig";
+	} catch (\Twig\Error\Error $e) {
+		error_log("Failed to render footer.twig: " . $e->getMessage());
+		echo "<!-- Error loading footer template. Please check logs. -->";
 	}
 
 	$footer_included = true;

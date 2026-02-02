@@ -45,44 +45,74 @@ class Twig
         $this->serverSettings = Settings::getInstance()->get('server');
 
         // Initialize the Twig loader
-
-
-        // Create loader with a base path
         $this->loader = new FilesystemLoader();
 
         // Initialize Twig environment
         $cacheDir = SRC_ROOT_PATH . '/cache/twig';
-        if (!is_dir($cacheDir))
-        {
+        if (!is_dir($cacheDir)) {
             mkdir($cacheDir, 0755, true);
         }
 
         $this->twig = new Environment($this->loader, [
             'cache' => $cacheDir,
-            'debug' => true,
-            'auto_reload' => true
+            'debug' => !empty($this->serverSettings['debug_mode']),
+            'auto_reload' => !empty($this->serverSettings['debug_mode']),
+            'strict_variables' => !empty($this->serverSettings['debug_mode']),
         ]);
 
-        // Add debug extension
-        $this->twig->addExtension(new DebugExtension());
+        if (!empty($this->serverSettings['debug_mode'])) {
+            $this->twig->addExtension(new DebugExtension());
+        }
 
-        // Register the lang function for translations
-        $this->twig->addFunction(new TwigFunction('lang', function ($text)
-        {
-            // Replace underscores with spaces before calling lang()
+        $this->registerFunctions();
+        $this->registerFilters();
+        $this->registerPaths();
+    }
+
+    /**
+     * Register all Twig functions
+     */
+    private function registerFunctions()
+    {
+        // lang() function for translations
+        $this->twig->addFunction(new TwigFunction('lang', function ($text, ...$args) {
             $text = str_replace('_', ' ', $text);
-            return lang($text);
+            return lang($text, ...$args);
         }));
-        $this->twig->addFunction(new TwigFunction('hook', [$this, 'renderHook']));
 
-        // Add a filter to replace underscores with spaces
-        $this->twig->addFilter(new TwigFilter('replace_underscores', function ($text)
-        {
+        // phpGWLink function
+        $this->twig->addFunction(new TwigFunction('phpgw_link', function ($path, $params = [], ...$args) {
+            return \phpgw::link($path, $params, ...$args);
+        }));
+
+        // Image finder function
+        $this->twig->addFunction(new TwigFunction('find_image', function ($module, $image) {
+            return (new \phpgwapi_common())->find_image($module, $image);
+        }));
+
+        // Hook rendering function
+        $this->twig->addFunction(new TwigFunction('hook', [$this, 'renderHook'], ['is_safe' => ['html']]));
+
+        // Date formatting function
+        $this->twig->addFunction(new TwigFunction('format_date', function ($timestamp, $format = null) {
+            $common = new \phpgwapi_common();
+            return $common->show_date($timestamp, $format);
+        }));
+    }
+
+    /**
+     * Register all Twig filters
+     */
+    private function registerFilters()
+    {
+        $this->twig->addFilter(new TwigFilter('replace_underscores', function ($text) {
             return str_replace('_', ' ', $text);
         }));
 
-        // Register paths for all modules
-        $this->registerModulePaths();
+        // Add safe HTML filter
+        $this->twig->addFilter(new TwigFilter('safe_html', function ($text) {
+            return $text;
+        }, ['is_safe' => ['html']]));
     }
 
     /**
@@ -95,28 +125,17 @@ class Twig
     public function renderHook(string $hookName, array $args = []): string
     {
         $currentApp = $this->flags['currentapp'];
-
-        static $config = [];
-        if (empty($config))
-        {
-            $c = new \App\modules\phpgwapi\services\Config($currentApp);
-            $c->read();
-
-            if ($c->config_data)
-            {
-                $config = $c->config_data;
+        
+        try {
+            $config = new \App\modules\phpgwapi\services\Config($currentApp);
+            $config->read();
+            
+            if (is_callable($hookName)) {
+                return call_user_func($hookName, $config->config_data ?? []);
             }
-        }
-
-        // Check if the hook exists and is callable
-        if (is_callable($hookName))
-        {
-            return call_user_func($hookName, $config);
-        }
-        else
-        {
-            // Log an error if the hook is not callable
-            error_log("Hook '{$hookName}' is not callable.");
+            return '';
+        } catch (\Exception $e) {
+            error_log("Hook rendering error: " . $e->getMessage());
             return '';
         }
     }
@@ -124,85 +143,54 @@ class Twig
     /**
      * Register template paths for all modules
      */
-    private function registerModulePaths()
+    private function registerPaths()
     {
-        // Register module template directories with their module name as namespace
-        $modulesDir = PHPGW_SERVER_ROOT;
+        // Register base phpgwapi paths
+        $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
+        $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $this->serverSettings['template_set']);
 
+        // Register current app paths
+        $appDir = PHPGW_SERVER_ROOT . '/' . $this->flags['currentapp'];
+        $baseAppTpl = $appDir . '/templates/base';
+        $appTpl = $appDir . '/templates/' . $this->serverSettings['template_set'];
 
-        if (is_dir($modulesDir))
-        {
-            $modules = [$this->flags['currentapp']];
-
-            foreach ($modules as $module)
-            {
-
-                $modulePath = $modulesDir . '/' . $module;
-
-                // Only process directories
-                if (!is_dir($modulePath))
-                {
-                    continue;
-                }
-
-                $moduleTemplateDir = $modulePath . '/templates/' . $this->serverSettings['template_set'];
-                if (is_dir($moduleTemplateDir))
-                {
-                    $this->loader->addPath($moduleTemplateDir, $module);
-                    // Also add as a general path (without namespace)
-                    $this->loader->addPath($moduleTemplateDir);
-                }
-
-                // Also check for templates in the 'base' directory
-                $moduleBaseTemplateDir = $modulePath . '/templates/base';
-                if (is_dir($moduleBaseTemplateDir))
-                {
-                    // Add base directory as a fallback path for this namespace
-                    $this->loader->addPath($moduleBaseTemplateDir, $module);
-                    // Also add as a general path (without namespace)
-                    $this->loader->addPath($moduleBaseTemplateDir);
-                }
-            }
+        if (is_dir($baseAppTpl)) {
+            $this->loader->addPath($baseAppTpl, $this->flags['currentapp']);
         }
-        // Register the base template directory without a namespace
-        $basePath = PHPGW_SERVER_ROOT . '/phpgwapi/templates';
-        if (is_dir($basePath . '/' . $this->serverSettings['template_set']))
-        {
-            $this->loader->addPath($basePath . '/' . $this->serverSettings['template_set']);
-        }
-        if (is_dir($basePath . '/base'))
-        {
-            $this->loader->addPath($basePath . '/base');
+        if (is_dir($appTpl)) {
+            $this->loader->addPath($appTpl, $this->flags['currentapp']);
         }
     }
 
     /**
      * Render a template with given variables
      * 
-     * @param string $template Template name (with or without namespace)
+     * @param string $template Template name
      * @param array $vars Variables to pass to the template
      * @return string Rendered template
      */
     public function render(string $template, array $vars = []): string
     {
-        // Add some globals that are commonly used
-        $globals = [
-            'current_time' => time(),
-            'user' => isset($this->userSettings['fullname']) ? $this->userSettings['fullname'] : [],
-            'app' => isset($this->flags['currentapp']) ? $this->flags['currentapp'] : '',
-        ];
+        try {
+            $globals = [
+                'current_time' => time(),
+                'user' => $this->userSettings['fullname'] ?? '',
+                'app' => $this->flags['currentapp'] ?? '',
+                'webserver_url' => $this->serverSettings['webserver_url'] ?? '/',
+            ];
 
-        // Merge globals with the provided variables
-        $vars = array_merge($globals, $vars);
-
-        // Render and return the template
-        return $this->twig->render($template, $vars);
+            $vars = array_merge($globals, $vars);
+            return $this->twig->render($template, $vars);
+        } catch (\Twig\Error\Error $e) {
+            error_log("Twig render error: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**
      * Render a specific block from a template
      * 
-     * @param string $template Template name (with or without namespace)
+     * @param string $template Template name
      * @param string $blockName Name of the block to render
      * @param array $vars Variables to pass to the template
      * @param string|null $namespace Optional namespace for the template
@@ -210,55 +198,12 @@ class Twig
      */
     public function renderBlock(string $template, string $blockName, array $vars = [], string|null $namespace = null): string
     {
-        // Add some globals that are commonly used
-        $globals = [
-            'current_time' => time(),
-            'user' => isset($this->userSettings['fullname']) ? $this->userSettings['fullname'] : [],
-            'app' => isset($this->flags['currentapp']) ? $this->flags['currentapp'] : '',
-        ];
-
-        // Merge globals with the provided variables
-        $vars = array_merge($globals, $vars);
-
-        try
-        {
-            // First try loading with the namespace prefix if provided
-            if ($namespace !== null && !str_starts_with($template, '@'))
-            {
-                try
-                {
-                    $templatePath = "@{$namespace}/{$template}";
-                    $templateObj = $this->twig->load($templatePath);
-                    return $templateObj->renderBlock($blockName, $vars);
-                }
-                catch (\Twig\Error\LoaderError $e)
-                {
-                    // If namespace doesn't work, try without namespace
-                    error_log("Failed to load template with namespace: " . $e->getMessage());
-                }
-            }
-
-            // Try loading without namespace
+        try {
             $templateObj = $this->twig->load($template);
             return $templateObj->renderBlock($blockName, $vars);
-        }
-        catch (\Exception $e)
-        {
-            // Log the error and return an error message
-            error_log("Twig renderBlock error: " . $e->getMessage());
-
-            // Fallback to direct HTML generation if Twig rendering fails
-            if ($blockName === 'row_2')
-            {
-                return '<tr><td colspan="2" class="center">' . $vars['value'] . '</td></tr>';
-            }
-            else if ($blockName === 'row')
-            {
-                return '<tr class="' . $vars['tr_class'] . '"><td class="center">' . $vars['label'] .
-                    '</td><td class="center">' . $vars['value'] . '</td></tr>';
-            }
-
-            return "<!-- Error rendering block '{$blockName}': " . htmlspecialchars($e->getMessage()) . " -->";
+        } catch (\Twig\Error\Error $e) {
+            error_log("Twig renderBlock error for '{$blockName}': " . $e->getMessage());
+            throw $e;
         }
     }
 

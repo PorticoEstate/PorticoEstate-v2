@@ -254,17 +254,15 @@ $tpl_vars = array(
 );
 
 // Use Twig to render the template
-if (file_exists($twigDir . '/head.twig')) {
-	$twig = new \Twig\Environment(new \Twig\Loader\FilesystemLoader([$twigDir]), [
-		'debug' => true,
-		'cache' => $serverSettings['temp_dir'] . '/twig_cache',
-		'auto_reload' => true,
-	]);
-	
+try {
+	$twig = \App\modules\phpgwapi\services\Twig::getInstance();
 	echo $twig->render('head.twig', $tpl_vars);
-} else {
-	// Fallback message if the Twig template doesn't exist
-	echo "Error: Twig template not found at {$twigDir}/head.twig";
+} catch (\Twig\Error\Error $e) {
+	error_log("Failed to render head.twig: " . $e->getMessage());
+	// Output minimal fallback
+	echo "<!DOCTYPE html><html><head><title>Error</title></head><body>";
+	echo "Template rendering error. Please check logs.";
+	die();
 }
 
 unset($tpl_vars);

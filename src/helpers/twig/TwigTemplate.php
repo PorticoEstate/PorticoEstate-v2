@@ -726,4 +726,41 @@ class TwigTemplate
     {
         echo $this->finish($this->parse($target, $handle, $append));
     }
+
+    /**
+     * Static convenience method to render a Twig template
+     * 
+     * @param string $template Template name
+     * @param array $vars Variables to pass to the template
+     * @return string Rendered HTML
+     * @throws \Twig\Error\Error
+     */
+    public static function renderStatic(string $template, array $vars = []): string
+    {
+        return \App\modules\phpgwapi\services\Twig::getInstance()->render($template, $vars);
+    }
+
+    /**
+     * Static convenience method to render a block from a Twig template
+     * 
+     * @param string $template Template name
+     * @param string $block Block name to render
+     * @param array $vars Variables to pass to the template
+     * @return string Rendered HTML
+     * @throws \Twig\Error\Error
+     */
+    public static function renderBlockStatic(string $template, string $block, array $vars = []): string
+    {
+        return \App\modules\phpgwapi\services\Twig::getInstance()->renderBlock($template, $block, $vars);
+    }
+
+    /**
+     * Static convenience method to get the Twig environment instance
+     * 
+     * @return \Twig\Environment
+     */
+    public static function getTwigEnvironment(): \Twig\Environment
+    {
+        return \App\modules\phpgwapi\services\Twig::getInstance()->getEnvironment();
+    }
 }

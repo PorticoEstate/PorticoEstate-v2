@@ -18,6 +18,21 @@ $app->get('/favicon.ico', function (Request $request, Response $response)
 	return $response->withStatus(204);
 });
 
+// Serve Designsystemet CSS bundle
+$app->get('/assets/designsystemet/index.css', function (Request $request, Response $response)
+{
+	$cssPath = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/@digdir/designsystemet-css/dist/src/index.css';
+	if (!is_readable($cssPath))
+	{
+		return $response->withStatus(404);
+	}
+
+	$response->getBody()->write(file_get_contents($cssPath));
+	return $response
+		->withHeader('Content-Type', 'text/css')
+		->withHeader('Cache-Control', 'public, max-age=3600');
+});
+
 $app->get('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->post('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/index.php', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));

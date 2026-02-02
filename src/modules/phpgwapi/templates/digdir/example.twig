@@ -1,0 +1,150 @@
+{# Example template demonstrating Digdir Designsystemet usage #}
+<!DOCTYPE html>
+<html lang="{{ userlang }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ 'designsystemet_demo'|lang }} - {{ site_title }}</title>
+    
+    {# Load stylesheets #}
+    {% for stylesheet in stylesheets %}
+        <link href="{{ stylesheet }}" rel="stylesheet">
+    {% endfor %}
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">{{ 'digdir_designsystemet'|lang }}</h1>
+        
+        {# Status indicator #}
+        {% include '@components/alert.twig' with {
+            content: is_designsystemet ? 'Designsystemet is <strong>active</strong>' : 'Using Bootstrap fallback',
+            variant: is_designsystemet ? 'success' : 'info',
+            dismissible: false
+        } %}
+        
+        <div class="row mt-4">
+            <div class="col-md-6">
+                {# Button examples #}
+                <h3>{{ 'buttons'|lang }}</h3>
+                
+                {% include '@components/button.twig' with {
+                    content: lang('primary_button'),
+                    variant: 'primary',
+                    class: 'me-2'
+                } %}
+                
+                {% include '@components/button.twig' with {
+                    content: lang('secondary_button'),
+                    variant: 'secondary',
+                    class: 'me-2'
+                } %}
+                
+                {% include '@components/button.twig' with {
+                    content: lang('success_button'),
+                    variant: 'success'
+                } %}
+            </div>
+            
+            <div class="col-md-6">
+                {# Alert examples #}
+                <h3>{{ 'alerts'|lang }}</h3>
+                
+                {% include '@components/alert.twig' with {
+                    content: 'This is a success message!',
+                    variant: 'success',
+                    dismissible: true
+                } %}
+                
+                {% include '@components/alert.twig' with {
+                    content: 'This is a warning message!',
+                    variant: 'warning'
+                } %}
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-4">
+                {# Card example #}
+                {% include '@components/card.twig' with {
+                    title: lang('user_info'),
+                    content: '<p>User details go here</p><p>More information...</p>',
+                    footer: '<small class="text-muted">Last updated 3 mins ago</small>'
+                } %}
+            </div>
+            
+            <div class="col-md-4">
+                {% include '@components/card.twig' with {
+                    title: lang('statistics'),
+                    content: '<h4>1,234</h4><p>Total users</p>'
+                } %}
+            </div>
+            
+            <div class="col-md-4">
+                {% include '@components/card.twig' with {
+                    title: lang('quick_actions'),
+                    content: '
+                        ' ~ ds_component('button', {content: lang('action_1'), variant: 'primary', size: 'sm', class: 'd-block mb-2'}) ~ '
+                        ' ~ ds_component('button', {content: lang('action_2'), variant: 'secondary', size: 'sm', class: 'd-block'}) ~ '
+                    '
+                } %}
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>{{ 'design_tokens'|lang }}</h3>
+                
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>{{ 'token'|lang }}</th>
+                            <th>{{ 'value'|lang }}</th>
+                            <th>{{ 'example'|lang }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>--ds-spacing-4</code></td>
+                            <td>1rem</td>
+                            <td><div style="width: var(--ds-spacing-4, 1rem); height: var(--ds-spacing-4, 1rem); background-color: var(--ds-color-primary, #0062ba);"></div></td>
+                        </tr>
+                        <tr>
+                            <td><code>--ds-color-primary</code></td>
+                            <td>#0062ba</td>
+                            <td><div style="width: 50px; height: 30px; background-color: var(--ds-color-primary, #0062ba);"></div></td>
+                        </tr>
+                        <tr>
+                            <td><code>--ds-font-size-lg</code></td>
+                            <td>1.25rem</td>
+                            <td><span style="font-size: var(--ds-font-size-lg, 1.25rem);">Large text</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        {# Modal trigger button #}
+        <div class="mt-4">
+            {% include '@components/button.twig' with {
+                content: lang('open_modal'),
+                variant: 'primary',
+                id: 'openModalBtn',
+                onclick: "document.getElementById('demoModal').style.display='block'"
+            } %}
+        </div>
+    </div>
+    
+    {# Modal example #}
+    {% include '@components/modal.twig' with {
+        id: 'demoModal',
+        title: lang('modal_title'),
+        content: '<p>This is an example modal dialog.</p><p>It demonstrates the modal component.</p>',
+        footer: ds_component('button', {content: lang('close'), variant: 'secondary', onclick: "document.getElementById('demoModal').style.display='none'"})
+    } %}
+    
+    {# Load JavaScript #}
+    {% for javascript in javascripts %}
+        <script src="{{ javascript }}"></script>
+    {% endfor %}
+</body>
+</html>

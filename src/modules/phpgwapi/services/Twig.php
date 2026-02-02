@@ -20,6 +20,7 @@ class Twig
     private $flags;
     private $userSettings;
     private $serverSettings;
+    private $designSystem;
 
     /**
      * Get singleton instance
@@ -43,21 +44,23 @@ class Twig
         $this->flags = Settings::getInstance()->get('flags');
         $this->userSettings = Settings::getInstance()->get('user');
         $this->serverSettings = Settings::getInstance()->get('server');
+        $this->designSystem = DesignSystem::getInstance();
 
         // Initialize the Twig loader
         $this->loader = new FilesystemLoader();
 
         // Initialize Twig environment
+        $debugMode = true;//!empty($this->serverSettings['debug_mode']);
         $cacheDir = SRC_ROOT_PATH . '/cache/twig';
-        if (!is_dir($cacheDir)) {
+        if (!$debugMode && !is_dir($cacheDir)) {
             mkdir($cacheDir, 0755, true);
         }
 
         $this->twig = new Environment($this->loader, [
-            'cache' => $cacheDir,
-            'debug' => !empty($this->serverSettings['debug_mode']),
-            'auto_reload' => !empty($this->serverSettings['debug_mode']),
-            'strict_variables' => !empty($this->serverSettings['debug_mode']),
+            'cache' => $debugMode ? false : $cacheDir,
+            'debug' => $debugMode,
+            'auto_reload' => $debugMode,
+            'strict_variables' => $debugMode,
         ]);
 
         if (!empty($this->serverSettings['debug_mode'])) {
@@ -67,6 +70,7 @@ class Twig
         $this->registerFunctions();
         $this->registerFilters();
         $this->registerPaths();
+        $this->registerGlobals();
     }
 
     /**
@@ -97,6 +101,16 @@ class Twig
         $this->twig->addFunction(new TwigFunction('format_date', function ($timestamp, $format = null) {
             $common = new \phpgwapi_common();
             return $common->show_date($timestamp, $format);
+        }));
+
+        // Design system component function
+        $this->twig->addFunction(new TwigFunction('ds_component', function ($component, $props = []) {
+            return $this->designSystem->component($component, $props);
+        }, ['is_safe' => ['html']]));
+
+        // Design system check function
+        $this->twig->addFunction(new TwigFunction('is_designsystemet', function () {
+            return $this->designSystem->isEnabled();
         }));
     }
 
@@ -149,6 +163,14 @@ class Twig
         $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/base');
         $this->loader->addPath(PHPGW_SERVER_ROOT . '/phpgwapi/templates/' . $this->serverSettings['template_set']);
 
+        // Register Designsystemet component templates if using digdir template
+        if ($this->designSystem->isEnabled()) {
+            $componentPath = PHPGW_SERVER_ROOT . '/phpgwapi/templates/digdir/components';
+            if (is_dir($componentPath)) {
+                $this->loader->addPath($componentPath, 'components');
+            }
+        }
+
         // Register current app paths
         $appDir = PHPGW_SERVER_ROOT . '/' . $this->flags['currentapp'];
         $baseAppTpl = $appDir . '/templates/base';
@@ -160,6 +182,15 @@ class Twig
         if (is_dir($appTpl)) {
             $this->loader->addPath($appTpl, $this->flags['currentapp']);
         }
+    }
+
+    /**
+     * Register global Twig variables
+     */
+    private function registerGlobals()
+    {
+        $this->twig->addGlobal('is_designsystemet', $this->designSystem->isEnabled());
+        $this->twig->addGlobal('template_set', $this->serverSettings['template_set']);
     }
 
     /**

@@ -567,10 +567,68 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
-		// Add update statements for all tables with location_code and loc1, loc2, loc3, loc4 columns
+		// 5b. Prepare fm_location3 loc2 updates (ensure parent records match fm_location4 loc2 changes)
+		$this->sqlStatements['location3_loc2_updates'] = [];
+		$affected_loc3_entries = []; // Track which loc3 entries need loc2 updates: loc1 => loc2 => loc3 => {old_loc2, new_loc2}
+		
+		foreach ($this->locationData as $row)
+		{
+			$loc1 = $row['loc1'];
+			$bygningsnr = $row['bygningsnr'];
+			$loc2_expected = $requiredLoc2[$loc1][$bygningsnr];
+			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
+			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
+			$loc3_expected = $requiredLoc3[$loc1][$loc2_expected][$streetkey];
+
+			$loc2_actual = $row['loc2'];
+			$loc3_actual = $row['loc3'];
+			
+			// Normalize for comparison
+			$loc2_actual_normalized = $this->normalizeLoc2($loc2_actual);
+			$loc2_expected_normalized = $this->normalizeLoc2($loc2_expected);
+			$loc3_actual_normalized = $this->normalizeLoc2($loc3_actual);
+			$loc3_expected_normalized = $this->normalizeLoc2($loc3_expected);
+			
+			// Only update fm_location3 loc2 if the loc3 already exists (not being created as missing_loc3)
+			if ($loc2_actual_normalized != $loc2_expected_normalized && !empty($this->loc3Refs[$loc1][$loc2_expected][$loc3_expected]))
+			{
+				$key = "{$loc1}_{$loc3_expected}";
+				if (!isset($affected_loc3_entries[$key]))
+				{
+					$affected_loc3_entries[$key] = [
+						'loc1' => $loc1,
+						'old_loc2' => $loc2_actual_normalized,
+						'new_loc2' => $loc2_expected_normalized,
+						'loc3' => $loc3_expected_normalized
+					];
+				}
+			}
+		}
+		
+		// Generate UPDATE statements for fm_location3 entries that need loc2 updates
+		foreach ($affected_loc3_entries as $entry)
+		{
+			$loc1 = $entry['loc1'];
+			$old_loc2 = $entry['old_loc2'];
+			$new_loc2 = $entry['new_loc2'];
+			$loc3 = $entry['loc3'];
+			
+			$old_code = "{$loc1}-{$old_loc2}-{$loc3}";
+			$new_code = "{$loc1}-{$new_loc2}-{$loc3}";
+			
+			// Update fm_location3 location_code and loc2 value
+			$this->sqlStatements['location3_loc2_updates'][] =
+				"UPDATE fm_location3 SET location_code = '{$new_code}', loc2 = '{$new_loc2}' WHERE location_code = '{$old_code}';";
+			
+			// Add mapping entry for reference
+			$this->sqlStatements['corrections'][] =
+				"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, change_type) VALUES ('{$old_code}', '{$new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', '{$loc3}', '{$loc3}', 'location3_loc2_update');";
+		}
+
+		// 6. Add update statements for all tables with location_code and loc1, loc2, loc3, loc4 columns
 		$this->createUpdateStatements();
 
-		// 6. Statistics
+		// 7. Statistics
 		$level1Values = array_values(array_unique(array_filter(array_map(fn($e) => trim((string)$e['loc1']), $this->locationData), fn($v) => $v !== '')));
 		$statistics = [
 			'level1_count' => count($level1Values),
@@ -612,6 +670,7 @@ class LocationHierarchyAnalyzer
 				'missing_loc3' => [],
 				'loc3_name_updates' => [],
 				'loc2_name_updates' => [],
+				'location3_loc2_updates' => [],
 				'location4_updates' => [],
 				'corrections' => [],
 				],

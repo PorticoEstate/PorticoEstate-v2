@@ -83,7 +83,7 @@ class synkroniser_med_boei extends property_cron_parent
 			$status = lang('unable_to_connect_to_database');
 		}
 
-		$this->db_boei2	 = clone ($this->db_boei);
+		$this->db_boei2	 = clone($this->db_boei);
 
 		/*		echo "db\n";
 		_debug_array($this->db->get_config());
@@ -127,6 +127,7 @@ class synkroniser_med_boei extends property_cron_parent
 		$this->update_obskode();
 		$this->update_hemmelig_adresse();
 		$this->oppdater_namssakstatus_pr_leietaker();
+		$this->oppdater_navn();
 		$this->alert();
 
 		$msg						 = 'Tidsbruk: ' . (time() - $start) . ' sekunder';
@@ -143,7 +144,8 @@ class synkroniser_med_boei extends property_cron_parent
 
 			$toarray = array(
 				'hc483@bergen.kommune.no',
-				'Kvale, Silje <Silje.Kvale@bergen.kommune.no>'
+				'Kvale, Silje <Silje.Kvale@bergen.kommune.no>',
+				'Yuliia.Tereshchenko@bergen.kommune.no'
 			);
 			$to		 = implode(';', $toarray);
 
@@ -1082,26 +1084,30 @@ SQL;
 
 	function legg_til_objekt_phpgw()
 	{
-		$sql = "SELECT boei_objekt.objekt_id, boei_objekt.navn, boei_objekt.bydel_id, boei_objekt.eier_id,boei_objekt.tjenestested, boei_objekt.postnr_id"
+		$sql = "SELECT boei_objekt.objekt_id, boei_objekt.navn, boei_objekt.bydel_id, boei_objekt.eier_id, boei_objekt.tjenestested, boei_objekt.postnr_id, boei_eier.eiertype_id"
 			. " FROM fm_location1 RIGHT OUTER JOIN "
 			. " boei_objekt ON fm_location1.loc1 = boei_objekt.objekt_id"
+			. " JOIN boei_eier ON boei_objekt.eier_id = boei_eier.eier_id"
 			. " WHERE fm_location1.loc1 IS NULL";
 
 		$this->db->query($sql, __LINE__, __FILE__);
 		$objekt_latin = array();
 		while ($this->db->next_record())
 		{
+			$eiertype_id	 = (int)$this->db->f('eiertype_id') == 0 ? 5 : (int)$this->db->f('eiertype_id');
 			$tjenestested = (int)$this->db->f('tjenestested');
 			$loc1		  = $this->db->f('objekt_id');
+
 			/*
- * Alle kostraid’er skal ha mva/AV-kode 75
- * Bortsett fra
- * 26550 som jeg ønsker varsel på,
- * og 26555 som ikke finnes enda, men som kanskje blir opprettet på innleieboliger.
-*/
+			* Alle tjenestested skal ha mva/AV-kode 75
+			* 26550 som ikke er våre(owner_type_id = 5) skal ha 0.
+			* 26550 som er våre, skal ha 75.
+			* 26555 innleieboliger, skal ha 0.
+			*/
+
 
 			$mva = 75;
-			if (in_array($tjenestested, array(26550, 26555)))
+			if (in_array($tjenestested, array(26555)) || (!in_array($eiertype_id, array(5)) && $tjenestested == 26550))
 			{
 				$mva = 0;
 			}
@@ -1630,6 +1636,44 @@ SQL;
 		$this->cron_log($msg);
 	}
 
+	
+	function oppdater_navn()
+	{
+		//oppdater lo1_name i fm_location1 fra boei_objekt.navn som en oppdateringsspørring med join
+		$sql = " UPDATE fm_location1 SET loc1_name = boei_objekt.navn"
+			. " FROM boei_objekt"
+			. " WHERE fm_location1.loc1 = boei_objekt.objekt_id"
+			. " AND fm_location1.loc1_name != boei_objekt.navn";
+		$this->db->query($sql, __LINE__, __FILE__);
+
+		$msg						 = $this->db->affected_rows() . ' Objekt navn er oppdatert fra boei_objekt.navn';
+		$this->receipt['message'][]	 = array('msg' => $msg);
+		$this->cron_log($msg);
+
+		//opdater loc2_name i fm_location2 fra boei_bygg.byggnavn som en oppdateringsspørring med join
+		$sql = " UPDATE fm_location2 SET loc2_name = boei_bygg.byggnavn"
+			. " FROM boei_bygg"
+			. " WHERE fm_location2.loc1 = boei_bygg.objekt_id"
+			. " AND fm_location2.loc2 = boei_bygg.bygg_id"
+			. " AND fm_location2.loc2_name != boei_bygg.byggnavn";
+		$this->db->query($sql, __LINE__, __FILE__);
+		$msg						 = $this->db->affected_rows() . ' Bygg navn er oppdatert fra boei_bygg.byggnavn';
+		$this->receipt['message'][]	 = array('msg' => $msg);
+		$this->cron_log($msg);
+		//oppdater loc3_name i fm_location3 fra boei_seksjon.beskrivelse som en oppdateringsspørring med join
+		$sql = " UPDATE fm_location3 SET loc3_name = boei_seksjon.beskrivelse"
+			. " FROM boei_seksjon"
+			. " WHERE fm_location3.loc1 = boei_seksjon.objekt_id"
+			. " AND fm_location3.loc2 = boei_seksjon.bygg_id"
+			. " AND fm_location3.loc3 = boei_seksjon.seksjons_id"
+			. " AND fm_location3.loc3_name != boei_seksjon.beskrivelse";
+		$this->db->query($sql, __LINE__, __FILE__);
+		$msg						 = $this->db->affected_rows() . ' Seksjon navn er oppdatert fra boei_seksjon.beskrivelse';
+		$this->receipt['message'][]	 = array('msg' => $msg);
+		$this->cron_log($msg);
+
+	}
+	
 	function oppdater_boa_objekt()
 	{
 		$metadata = $this->db->metadata('fm_location1');
@@ -1653,8 +1697,18 @@ SQL;
 			$owner_type_id 	  = (int)$this->db->f('owner_type_id');
 			$navn = $this->db->f('navn');
 
+
+			/*
+				* Alle tjenestested skal ha mva/AV-kode 75
+				* 26550 som ikke er våre(owner_type_id = 5) skal ha 0.
+				* 26550 som er våre, skal ha 75.
+				* 26555 innleieboliger, skal ha 0.
+				* eksempel: 5369 skal 75.
+				*/
+
+
 			$mva = 75;
-			if (in_array($tjenestested, array(26555)) || (in_array($owner_type_id,array(1, 2)) && $tjenestested == 26550))
+			if (in_array($tjenestested, array(26555)) || (!in_array($owner_type_id, array(5)) && $tjenestested == 26550))
 			{
 				$mva = 0;
 			}
@@ -1698,13 +1752,6 @@ SQL;
 				. " mva = " . $mva . ","
 				. " kostra_id = " . $tjenestested
 				. " WHERE  loc1 = '" . $this->db->f('objekt_id') . "'";
-
-			/*
-				* Alle kostraid’er skal ha mva/AV-kode 75
-				* Bortsett fra
-				* 26550 som jeg ønsker varsel på,
-				* og 26555 som ikke finnes enda, men som kanskje blir opprettet på innleieboliger.
-				*/
 
 
 			$this->db2->query($sql2, __LINE__, __FILE__);
@@ -1783,7 +1830,8 @@ SQL;
 	function oppdater_boa_del()
 	{
 		$sql = " SELECT sum(boei_leieobjekt.boareal) as sum_boa, count(leie_id) as ant_leieobjekt,"
-			. " boei_seksjon.objekt_id,boei_seksjon.bygg_id,boei_seksjon.seksjons_id , beskrivelse   FROM  boei_seksjon $this->join boei_leieobjekt "
+			. " boei_seksjon.objekt_id,boei_seksjon.bygg_id,boei_seksjon.seksjons_id , beskrivelse"
+			. " FROM  boei_seksjon {$this->join} boei_leieobjekt "
 			. " ON boei_seksjon.objekt_id = boei_leieobjekt.objekt_id"
 			. " AND boei_seksjon.bygg_id = boei_leieobjekt.bygg_id"
 			. " AND boei_seksjon.seksjons_id = boei_leieobjekt.seksjons_id"

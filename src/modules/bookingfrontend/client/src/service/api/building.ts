@@ -119,18 +119,17 @@ export async function fetchBuildingDocuments(buildingId: number | string, type_f
 
         type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
     const response = await fetch(url);
-    const result = await response.json();
+    const result: IDocument[] = await response.json();
 
-    return result;
+	return result.map(a => ({...a, owner_type: 'building'}));
 }
 export async function fetchOrganizationDocuments(buildingId: number | string, type_filter?: IDocumentCategoryQuery | IDocumentCategoryQuery[]): Promise<IDocument[]> {
     const url = phpGWLink(["bookingfrontend", 'organizations', buildingId, 'documents'],
         type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
-	console.log(url);
     const response = await fetch(url);
-    const result = await response.json();
+    const result: IDocument[] = await response.json();
 
-    return result;
+	return result.map(a => ({...a, owner_type: 'organization'}));
 }
 
 
@@ -139,8 +138,8 @@ export async function fetchResourceDocuments(buildingId: number | string, type_f
         type_filter && {type: Array.isArray(type_filter) ? type_filter.join(',') : type_filter});
 
     const response = await fetch(url);
-    const result = await response.json();
-    return result;
+    const result: IDocument[] = await response.json();
+    return result.map(a => ({...a, owner_type: 'resource'}));
 }
 
 export function getDocumentLink(doc: IDocument, type: 'building' | 'resource' | 'application' | 'organization'): string {

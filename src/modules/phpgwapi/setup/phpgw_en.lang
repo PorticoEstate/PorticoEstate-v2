@@ -41,6 +41,8 @@ author	common	en	Author
 autosave default category	common	en	Autosave Default Category
 azerbaijan	common	en	AZERBAIJAN
 back	common	en	Back
+back_to_organization	common	en	Back to organization
+back_to_start	common	en	Back to start
 bad login or password	common	en	Bad login or password
 bahamas	common	en	BAHAMAS
 bahrain	common	en	BAHRAIN
@@ -419,6 +421,7 @@ register_globals_off	common	en	This application has been tested to work with reg
 register_globals_on	common	en	This application has not been tested to work with register_globals = off in your php.ini.  This application requires register_globals = on to be set in your php.ini.  For more information regarding the potential problem of using register_globals = on, see <a href="http://www.php.net/manual/en/security.registerglobals.php" target="_blank">php.net</a>.  If you experience any problems, please report them on our bug tracker at <a href="https://github.com/PorticoEstate/PorticoEstate/issues" target="_blank">savannah.gnu.org</a>.
 reject	common	en	Reject
 rename	common	en	Rename
+restore	common	en	Restore
 returns a full list of accounts on the system.  warning: this is return can be quite large	common	en	Returns a full list of accounts on the system.  Warning: This is return can be quite large
 returns an array of todo items	common	en	Returns an array of todo items
 returns struct of users application access	common	en	Returns struct of users application access
@@ -554,6 +557,7 @@ view	common	en	View
 virgin islands, british	common	en	VIRGIN ISLANDS, BRITISH
 virgin islands, u.s.	common	en	VIRGIN ISLANDS, U.S.
 wallis and futuna	common	en	WALLIS AND FUTUNA
+website	common	en	Website
 wednesday	common	en	Wednesday
 welcome	common	en	Welcome
 western sahara	common	en	WESTERN SAHARA
@@ -588,3 +592,12 @@ website	common	en	Website
 back_to_start	common	en	Back to start
 back_to_organization	common	en	Back to organization
 restore	common	en	Restore
+create_account	common	en	Create Account
+creating	common	en	Creating...
+loading_external_data	common	en	Loading external data...
+invalid_phone_format_norwegian	common	en	Invalid phone number format. For Norwegian numbers, use format: +47 XXXXXXXX or 9XXXXXXX or 4XXXXXXX
+invalid_email_address	common	en	Invalid email address
+zip_code_min_length	common	en	Zip code must be at least 4 characters
+invalid_url_format	common	en	Invalid URL format
+phone_number_required	common	en	Phone number is required
+email_required	common	en	Email is required

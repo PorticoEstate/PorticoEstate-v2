@@ -2,6 +2,7 @@
 phpgw::import_class('booking.socommon');
 phpgw::import_class('booking.sopermission');
 phpgw::import_class('phpgwapi.datetime');
+phpgw::import_class('booking.soarticle_mapping');
 
 class booking_socompleted_reservation_export extends booking_socommon
 {
@@ -14,7 +15,8 @@ class booking_socompleted_reservation_export extends booking_socommon
 		$sequential_number_generator_so,
 		$config_data,
 		$sopurchase_order,
-		$event_so, $application_bo, $application_so, $allocation_bo, $booking_bo, $event_bo, $organization_bo;
+		$event_so, $application_bo, $application_so, $allocation_bo, $booking_bo, $event_bo, $organization_bo,
+		$article_data_array = array();
 
 	function __construct()
 	{
@@ -908,7 +910,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 		$date = str_pad(date('Ymd'), 17, ' ', STR_PAD_LEFT);
 
-
+		$souser = CreateObject('booking.souser');
 		static $stored_header = array();
 		$line_no = 0;
 		$header_count = 0;
@@ -981,7 +983,8 @@ class booking_socompleted_reservation_export extends booking_socommon
 						$org = $this->organization_bo->read_single($reservation['organization_id']);
 						if (!empty($org['contacts'][0]['name']))
 						{
-							$contact_name = iconv("utf-8", "ISO-8859-1//TRANSLIT", $org['contacts'][0]['name']);
+//							$contact_name = iconv("utf-8", "ISO-8859-1//TRANSLIT", $org['contacts'][0]['name']);
+							$contact_name = $org['contacts'][0]['name'];
 						}
 					}
 					break;
@@ -991,35 +994,21 @@ class booking_socompleted_reservation_export extends booking_socommon
 						$group = CreateObject('booking.sogroup')->read_single($test['group_id']);
 						if (!empty($group['contacts'][0]['name']))
 						{
-							$contact_name = iconv("utf-8", "ISO-8859-1//TRANSLIT", $group['contacts'][0]['name']);
+//							$contact_name = iconv("utf-8", "ISO-8859-1//TRANSLIT", $group['contacts'][0]['name']);
+							$contact_name = $group['contacts'][0]['name'];
 						}
 					}
 					break;
 				case 'event':
-					$contact_name = iconv("utf-8", "ISO-8859-1//TRANSLIT", $test['contact_name']);
+//					$contact_name = iconv("utf-8", "ISO-8859-1//TRANSLIT", $test['contact_name']);
+					$contact_name = $test['contact_name'];
 					break;
 				default:
 					break;
 			}
 
 
-			$application_id = null;
-
-			if ($reservation['reservation_type'] == 'event')
-			{
-				$data = $this->event_bo->read_single($reservation['reservation_id']);
-				$application_id = $data['application_id'];
-			}
-			else if ($reservation['reservation_type'] == 'booking')
-			{
-				$data = $this->booking_bo->read_single($reservation['reservation_id']);
-				$application_id = $data['application_id'];
-			}
-			else
-			{
-				$data = $this->allocation_bo->read_single($reservation['reservation_id']);
-				$application_id = $data['application_id'];
-			}
+			$application_id = $test['application_id'];
 
 			if ($application_id)
 			{
@@ -1066,18 +1055,40 @@ class booking_socompleted_reservation_export extends booking_socommon
 				{
 					if ($reservation['reservation_type'] == 'event')
 					{
-						$data = $this->event_bo->read_single($reservation['reservation_id']);
-						$reservation['organization_name'] = $data['contact_name'];
-						#						} elseif ($reservation['reservation_type'] == 'booking') {
-						#							$data = $this->booking_bo->read_single($reservation['reservation_id']);
-						#							error_log('b'.$data['id']." ".$data['group_id']);
-						#						} else {
-						#							$data = $this->allocation_bo->read_single($reservation['reservation_id']);
-						#							error_log('a'.$data['id']." ".$data['organization_id']);
+						$reservation['organization_name'] = $test['contact_name'];
 					}
 				}
 			}
 
+
+			//fallback to person;
+			if (empty($street) && $test['customer_identifier_type'] == "ssn" && !empty($test['customer_ssn']))
+			{
+				//get person
+				$person_id = $souser->get_user_id($test['customer_ssn']);
+				$person = $souser->read_single($person_id);
+//				$contact_name = iconv("utf-8", "ISO-8859-1//TRANSLIT", $person['name']);
+				$contact_name = $person['name'];
+				$street = $person['street'];
+				$zip_code = $person['zip_code'];
+				$city = $person['city'];
+			}
+			elseif (empty($street) && $test['customer_identifier_type'] == "organization_number" && !empty($test['customer_organization_number']))
+			{
+				//get person
+				$org = $this->organization_bo->read_single($reservation['organization_id']);
+				if (!empty($org['contacts'][0]['name']))
+				{
+//					$contact_name = iconv("utf-8", "ISO-8859-1//TRANSLIT", $org['contacts'][0]['name']);
+					$contact_name = $org['contacts'][0]['name'];
+				}
+				if (!empty($org['id']))
+				{
+					$street = $org['street'];
+					$zip_code = $org['zip_code'];
+					$city = $org['city'];
+				}
+			}
 
 			$type = $reservation['customer_type'];
 
@@ -1334,33 +1345,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 			$log_order_id = $order_id;
 
-			if (!empty($reservation['organization_id']))
-			{
-				$org = $this->organization_bo->read_single($reservation['organization_id']);
-				$log_customer_name = $org['name'];
-			}
-			else
-			{
-				$data = $this->event_so->get_org($reservation['customer_organization_number']);
-				if (!empty($data['id']))
-				{
-					$log_customer_name = $data['name'];
-				}
-				else
-				{
-					if ($reservation['reservation_type'] == 'event')
-					{
-						$data = $this->event_bo->read_single($reservation['reservation_id']);
-						$log_customer_name = $data['contact_name'];
-						#						} elseif ($reservation['reservation_type'] == 'booking') {
-						#							$data = $this->booking_bo->read_single($reservation['reservation_id']);
-						#							error_log('b'.$data['id']." ".$data['group_id']);
-						#						} else {
-						#							$data = $this->allocation_bo->read_single($reservation['reservation_id']);
-						#							error_log('a'.$data['id']." ".$data['organization_id']);
-					}
-				}
-			}
+			$log_customer_name = $contact_name;
 
 			$log_customer_nr = $this->get_customer_identifier_value_for($reservation);
 			$log_buidling = $reservation['building_name'];
@@ -1635,11 +1620,12 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 		if (!empty($this->config_data['voucher_client']))
 		{
-			$client_id = strtoupper($this->config_data['voucher_client']);
+			//If the client ID is less than 4 characters, it should be padded with spaces on the right side to make it 4 characters long.
+			$client_id = str_pad(strtoupper($this->config_data['voucher_client']), 4, ' ', STR_PAD_RIGHT); //4 chars long
 		}
 		else
 		{
-			$client_id = 'BY';
+			$client_id = 'BY  ';//4 chars long
 		}
 
 		$status = 'N';
@@ -2157,11 +2143,11 @@ class booking_socompleted_reservation_export extends booking_socommon
 
 		if (!empty($this->config_data['voucher_client']))
 		{
-			$client_id = str_pad(substr(strtoupper($this->config_data['voucher_client']), 0, 2), 2, ' ');
+			$client_id = str_pad(substr(strtoupper($this->config_data['voucher_client']), 0, 4), 4, ' ', STR_PAD_RIGHT); //4 chars long
 		}
 		else
 		{
-			$client_id = str_pad(substr(strtoupper('BY'), 0, 2), 2, ' ');
+			$client_id = 'BY  '; //4 chars long
 		}
 
 		$currency = str_pad(substr(strtoupper('NOK'), 0, 3), 3, ' ');
@@ -2562,6 +2548,51 @@ class booking_socompleted_reservation_export extends booking_socommon
 							continue;
 						}
 
+						$article_mapping_id = $order_line['article_mapping_id'];
+						if(!isset($this->article_data_array[$article_mapping_id]))
+						{
+							$article_data = booking_soarticle_mapping::get_instance()->read_single($article_mapping_id, false, true);
+							$this->article_data_array[$article_mapping_id] = $article_data;
+						}
+						else
+						{
+							$article_data = $this->article_data_array[$article_mapping_id];
+						}
+
+						if (!empty($article_data['override_dim_0']))
+						{
+							$_item['account'] = str_pad(strtoupper(substr($article_data['override_dim_0'], 0, 8)), 8, ' ');
+						}
+
+						if(!empty($article_data['override_dim_1']))
+						{
+							$_item['dim_1'] = str_pad(strtoupper(substr($article_data['override_dim_1'], 0, 8)), 8, ' ');
+						}
+						if(!empty($article_data['override_dim_2']))
+						{
+							$_item['dim_2'] = str_pad(strtoupper(substr($article_data['override_dim_2'], 0, 8)), 8, ' ');
+						}
+						if(!empty($article_data['override_dim_3']))
+						{
+							$_item['dim_3'] = str_pad(strtoupper(substr($article_data['override_dim_3'], 0, 8)), 8, ' ');
+						}
+						if(!empty($article_data['override_dim_4']))
+						{
+							$_item['dim_4'] = str_pad(substr($article_data['override_dim_4'], 0, 8), 8, ' ');
+						}
+						if(!empty($article_data['override_dim_5']))
+						{
+							$_item['dim_5'] = str_pad(strtoupper(substr($article_data['override_dim_5'], 0, 12)), 12, ' ');
+						}
+						if(!empty($article_data['override_dim_6']))
+						{
+							$_item['dim_6'] = str_pad(substr($article_data['override_dim_6'], 0, 4), 4, ' ');
+						}
+						if(!empty($article_data['override_dim_7']))
+						{
+							$_item['dim_7'] = str_pad(substr($article_data['override_dim_7'], 0, 4), 4, ' ');
+						}
+
 						$line_no += 1;
 
 						if ($order_line['parent_mapping_id'] == 0)
@@ -2866,8 +2897,8 @@ class booking_socompleted_reservation_export extends booking_socommon
 			'att_7_id' => str_repeat(' ', 2),
 			'bank_account' => str_repeat(' ', 35),
 			'batch_id' => str_repeat(' ', 12),
-			'client' => str_repeat(' ', 2),
-			'client_ref' => str_repeat(' ', 2),
+			'client' => str_repeat(' ', 4),
+//			'client_ref' => str_repeat(' ', 2), // slått sammen med client for å få 4 posisjoner i 'client'
 			'confirm_date' => str_repeat(' ', 17),
 			'control' => str_repeat(' ', 1),
 			'cur_amount' => str_repeat(' ', 17),

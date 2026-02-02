@@ -930,6 +930,80 @@ class OrganizationController extends DocumentController
     }
 
     /**
+     * @OA\Get(
+     *     path="/bookingfrontend/organizations/{id}/delegates/{delegate_id}",
+     *     summary="Get a specific delegate by ID",
+     *     tags={"Organizations"},
+     *     security={{ "oidc": {} }},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="Organization ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="delegate_id",
+     *         in="path",
+     *         required=true,
+     *         description="Delegate ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Delegate details",
+     *         @OA\JsonContent(ref="#/components/schemas/OrganizationDelegate")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Not authenticated"
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Organization or delegate not found"
+     *     )
+     * )
+     */
+    public function getDelegate(Request $request, Response $response, array $args): Response
+    {
+        try {
+            $organizationId = (int)$args['id'];
+            $delegateId = (int)$args['delegate_id'];
+
+            if (!$this->organizationService->hasAccess($organizationId)) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Authentication required to view delegate'],
+                    401
+                );
+            }
+
+            $organization = $this->organizationService->getOrganization($organizationId);
+            if (!$organization) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Organization not found'],
+                    404
+                );
+            }
+
+            $delegate = $this->organizationService->getOrganizationDelegate($organizationId, $delegateId);
+            if (!$delegate) {
+                return ResponseHelper::sendErrorResponse(
+                    ['error' => 'Delegate not found'],
+                    404
+                );
+            }
+
+            return ResponseHelper::sendJSONResponse($delegate);
+
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
      * @OA\Put(
      *     path="/bookingfrontend/organizations/{id}/delegates/{delegate_id}",
      *     summary="Update a delegate for an organization",

@@ -304,8 +304,29 @@
 												<i class="fas fa-flag me-1 text-secondary"></i>
 											</xsl:when>
 											<xsl:otherwise>
-												<xsl:attribute name="onclick">window.location.href='<xsl:value-of select="application/edit_link"/>'</xsl:attribute>
-												<i class="fas fa-flag me-1 text-primary"></i>
+												<xsl:choose>
+													<xsl:when test="show_edit_selection = 1">
+														<xsl:attribute name="onclick">
+															<xsl:text>window.location.href='</xsl:text>
+															<xsl:value-of select="application/edit_link"/>
+															<xsl:text>&amp;selected_app_id=</xsl:text>
+															<xsl:choose>
+																<xsl:when test="application/parent_id and application/parent_id != ''">
+																	<xsl:value-of select="application/parent_id"/>
+																</xsl:when>
+																<xsl:otherwise>
+																	<xsl:value-of select="application/id"/>
+																</xsl:otherwise>
+															</xsl:choose>
+															<xsl:text>&amp;only_invoicing=true'</xsl:text>
+														</xsl:attribute>
+														<i class="fas fa-edit me-1 text-primary"></i>
+													</xsl:when>
+													<xsl:otherwise>
+														<xsl:attribute name="onclick">window.location.href='<xsl:value-of select="application/edit_link"/>'</xsl:attribute>
+														<i class="fas fa-edit me-1 text-primary"></i>
+													</xsl:otherwise>
+												</xsl:choose>
 											</xsl:otherwise>
 										</xsl:choose>
 										<xsl:value-of select="php:function('lang', 'Edit')" />
@@ -324,6 +345,22 @@
 							</div>
 						</div>
 					</li>
+
+					<!-- Modern recurring allocation button for applications with recurring data -->
+					<xsl:if test="show_recurring_button = 1">
+						<li class="list-inline-item mb-2">
+							<a class="btn btn-success btn-sm shadow-sm" role="button">
+								<xsl:attribute name="href">
+									<xsl:value-of select="recurring_allocation_url"/>
+								</xsl:attribute>
+								<xsl:attribute name="title">
+									Opprett gjentakende tildeling basert på denne søknaden
+								</xsl:attribute>
+								<i class="fas fa-calendar-plus me-2"></i>
+								<span class="fw-medium">Opprett gjentakende tildeling</span>
+							</a>
+						</li>
+					</xsl:if>
 				</ul>
 			</div>
 			<div class="col-6">
@@ -392,11 +429,12 @@
 
 				<div class="row mt-3">
 					<div class="d-flex w-100 justify-content-between">
-						<p class="mb-1">
+						<h5 class="mb-1">
 							<xsl:value-of select="php:function('lang', 'case officer')" />
-						</p>
+						</h5>
+						<small></small>
 					</div>
-					<div class="d-flex w-100">
+					<p class="mb-1 font-weight-bold">
 						<xsl:choose>
 							<xsl:when test="application/case_officer_full_name !=''">
 								<xsl:value-of select="application/case_officer_full_name"/>
@@ -405,7 +443,7 @@
 								<xsl:value-of select="php:function('lang', 'none')" />
 							</xsl:otherwise>
 						</xsl:choose>
-					</div>
+					</p>
 					<div class="d-flex w-100">
 						<xsl:choose>
 							<xsl:when test="not(application/case_officer)">
@@ -484,46 +522,71 @@
 								<!-- Show related applications summary if multiple applications -->
 								<xsl:if test="application/related_application_count > 1">
 									<div class="alert alert-info mb-4">
-										<h5 class="alert-heading">
+										<h5 class="alert-heading pb-2">
 											<i class="fas fa-info-circle me-2"></i>
-											<xsl:value-of select="php:function('lang', 'Combined Applications Summary')" />
+											<xsl:value-of select="php:function('lang', 'combined_application')" />
+											<span class="badge bg-primary text-white ms-2">
+												<xsl:value-of select="application/related_application_count"/>
+											</span>
 										</h5>
-										<p class="mb-3">
-											<xsl:value-of select="php:function('lang', 'This view combines information from')" />
-											<xsl:text> </xsl:text>
-											<strong><xsl:value-of select="application/related_application_count"/></strong>
-											<xsl:text> </xsl:text>
-											<xsl:value-of select="php:function('lang', 'related applications')" />:
-										</p>
+
 										<div class="row">
 											<xsl:for-each select="application/related_applications_info">
 												<div class="col-md-6 mb-3">
 													<div class="card border-light">
 														<div class="card-body p-3">
-															<h6 class="card-title">
-																<strong>
-																	<xsl:value-of select="php:function('lang', 'Application')" />
-																	<xsl:text> #</xsl:text>
-																	<xsl:value-of select="id"/>
-																</strong>
-															</h6>
-															<p class="card-text mb-2">
-																<strong><xsl:value-of select="name"/></strong>
+															<div class="d-flex justify-content-between align-items-start mb-2">
+																<div>
+																	<h6 class="card-title mb-1">
+																		<strong><xsl:value-of select="name"/></strong>
+																	</h6>
+																	<p class="card-text mb-0">
+																		<strong>
+																			<xsl:value-of select="php:function('lang', 'Application')" />
+																			<xsl:text> #</xsl:text>
+																			<xsl:value-of select="id"/>
+																		</strong>
+																	</p>
+																</div>
+																<a class="btn btn-sm btn-primary">
+																	<xsl:attribute name="href">
+																		<xsl:value-of select="../edit_link"/>
+																		<xsl:text>&amp;selected_app_id=</xsl:text>
+																		<xsl:value-of select="id"/>
+																		<xsl:text>&amp;hide_invoicing=1</xsl:text>
+																	</xsl:attribute>
+																	<i class="fas fa-edit me-1"></i>
+																	<xsl:value-of select="php:function('lang', 'Edit')" />
+																</a>
+															</div>
+															<p class="card-text mb-1">
+																<small><strong><xsl:value-of select="php:function('lang', 'Status')" />:</strong></small>
 															</p>
 															<p class="card-text mb-2">
-																<small class="text-muted">
-																	<xsl:value-of select="php:function('lang', 'Status')" />:
-																	<span class="badge bg-primary text-white"><xsl:value-of select="php:function('lang', string(status))"/></span>
-																</small>
+																<small><span class="badge bg-primary text-white"><xsl:value-of select="php:function('lang', string(status))"/></span></small>
+															</p>
+															<p class="card-text mb-1">
+																<small><strong><xsl:value-of select="php:function('lang', 'Created')" />:</strong></small>
 															</p>
 															<p class="card-text mb-2">
-																<small class="text-muted">
-																	<xsl:value-of select="php:function('lang', 'Created')" />: <xsl:value-of select="created"/>
-																</small>
+																<small><xsl:value-of select="created"/></small>
 															</p>
+															<xsl:if test="agegroups">
+																<xsl:variable name="total_male" select="sum(agegroups/male)"/>
+																<xsl:variable name="total_female" select="sum(agegroups/female)"/>
+																<xsl:variable name="total_participants" select="$total_male + $total_female"/>
+																<xsl:if test="$total_participants > 0">
+																	<p class="card-text mb-1">
+																		<small><strong><xsl:value-of select="php:function('lang', 'participants')" />:</strong></small>
+																	</p>
+																	<p class="card-text mb-2">
+																		<small><xsl:value-of select="$total_participants"/></small>
+																	</p>
+																</xsl:if>
+															</xsl:if>
 															<xsl:if test="date_ranges">
 																<p class="card-text mb-1">
-																	<small><strong><xsl:value-of select="php:function('lang', 'Dates')" />:</strong></small>
+																	<small><strong><xsl:value-of select="php:function('lang', 'timeslots')" />:</strong></small>
 																</p>
 																<ul class="list-unstyled mb-2">
 																	<xsl:for-each select="date_ranges">
@@ -542,6 +605,22 @@
 																			<xsl:if test="position() != last()">, </xsl:if>
 																		</xsl:for-each>
 																	</small>
+																</p>
+															</xsl:if>
+															<xsl:if test="equipment and normalize-space(equipment)">
+																<p class="card-text mb-1">
+																	<small><strong><xsl:value-of select="php:function('lang', 'Equipment (2018)')" />:</strong></small>
+																</p>
+																<p class="card-text">
+																	<small><xsl:value-of select="equipment" disable-output-escaping="yes"/></small>
+																</p>
+															</xsl:if>
+															<xsl:if test="description and normalize-space(description)">
+																<p class="card-text mb-1">
+																	<small><strong><xsl:value-of select="php:function('lang', 'Description')" />:</strong></small>
+																</p>
+																<p class="card-text">
+																	<small><xsl:value-of select="description" disable-output-escaping="yes"/></small>
 																</p>
 															</xsl:if>
 														</div>
@@ -786,52 +865,80 @@
 															<small></small>
 														</div>
 														<div class="list-group-item flex-column align-items-start">
-															<div class="d-flex w-100 justify-content-between">
-																<h5 class="mb-1">
-																	<xsl:value-of select="php:function('lang', 'Number of participants')" />
-																</h5>
-																<small></small>
-															</div>
-															<p class="mb-1 font-weight-bold">
-																<div class="pure-form-contentTable">
-																	<table id="agegroup" class="pure-table pure-table-striped">
-																		<thead>
-																			<tr>
-																				<th>
-																					<xsl:value-of select="php:function('lang', 'Name')" />
-																				</th>
-																				<th>
-																					<xsl:value-of select="php:function('lang', 'Male')" />
-																				</th>
-																				<th>
-																					<xsl:value-of select="php:function('lang', 'Female')" />
-																				</th>
-																			</tr>
-																		</thead>
-																		<tbody>
-																			<xsl:for-each select="agegroups">
-																				<xsl:variable name="id">
-																					<xsl:value-of select="id"/>
-																				</xsl:variable>
 
-																				<xsl:if test="(../application/agegroups/male[../agegroup_id = $id]) > 0 or (../application/agegroups/female[../agegroup_id = $id]) > 0">
-																					<tr>
-																						<td>
+															<xsl:choose>
+																<!-- Show individual application participants if multiple applications -->
+																<xsl:when test="application/related_application_count > 1">
+																	<xsl:for-each select="application/related_applications_info">
+																		<xsl:if test="agegroups">
+																				<div class="card-body">
+																					<h6 class="card-title">
+																						<strong>
 																							<xsl:value-of select="name"/>
-																						</td>
-																						<td>
-																							<xsl:value-of select="../application/agegroups/male[../agegroup_id = $id]"/>
-																						</td>
-																						<td>
-																							<xsl:value-of select="../application/agegroups/female[../agegroup_id = $id]"/>
-																						</td>
+																							<xsl:text> (#</xsl:text>
+																							<xsl:value-of select="id"/>
+																							<xsl:text>)</xsl:text>
+																						</strong>
+																					</h6>
+																					<div class="pure-form-contentTable">
+																						<table class="pure-table pure-table-striped">
+																							<thead>
+																								<tr>
+																									<th><xsl:value-of select="php:function('lang', 'Name')" /></th>
+																									<th><xsl:value-of select="php:function('lang', 'participants')" /></th>
+																								</tr>
+																							</thead>
+																							<tbody>
+																								<xsl:for-each select="agegroups">
+																									<xsl:variable name="total" select="male + female"/>
+																									<xsl:variable name="current_agegroup_id" select="agegroup_id"/>
+																									<xsl:if test="$total > 0">
+																										<tr>
+																											<td>
+																												<xsl:value-of select="//agegroups[id = $current_agegroup_id]/name"/>
+																											</td>
+																											<td><xsl:value-of select="$total"/></td>
+																										</tr>
+																									</xsl:if>
+																								</xsl:for-each>
+																							</tbody>
+																						</table>
+																					</div>
+																			</div>
+																		</xsl:if>
+																	</xsl:for-each>
+																</xsl:when>
+																<!-- Show combined participants for single application -->
+																<xsl:otherwise>
+																	<p class="mb-1 font-weight-bold">
+																		<div class="pure-form-contentTable">
+																			<table id="agegroup" class="pure-table pure-table-striped">
+																				<thead>
+																					<tr>
+																						<th><xsl:value-of select="php:function('lang', 'Name')" /></th>
+																						<th><xsl:value-of select="php:function('lang', 'Male')" /></th>
+																						<th><xsl:value-of select="php:function('lang', 'Female')" /></th>
 																					</tr>
-																				</xsl:if>
-																			</xsl:for-each>
-																		</tbody>
-																	</table>
-																</div>
-															</p>
+																				</thead>
+																				<tbody>
+																					<xsl:for-each select="agegroups">
+																						<xsl:variable name="id">
+																							<xsl:value-of select="id"/>
+																						</xsl:variable>
+																						<xsl:if test="(../application/agegroups/male[../agegroup_id = $id]) > 0 or (../application/agegroups/female[../agegroup_id = $id]) > 0">
+																							<tr>
+																								<td><xsl:value-of select="name"/></td>
+																								<td><xsl:value-of select="../application/agegroups/male[../agegroup_id = $id]"/></td>
+																								<td><xsl:value-of select="../application/agegroups/female[../agegroup_id = $id]"/></td>
+																							</tr>
+																						</xsl:if>
+																					</xsl:for-each>
+																				</tbody>
+																			</table>
+																		</div>
+																	</p>
+																</xsl:otherwise>
+															</xsl:choose>
 															<small></small>
 														</div>
 													</div>
@@ -1052,12 +1159,15 @@
 																				<xsl:value-of select="php:function('lang', 'Application')" />:</label>
 																			<span style="font-weight: bold;">
 																				<xsl:value-of select="application_name"/>
+																				<xsl:text> (#</xsl:text>
+																				<xsl:value-of select="application_id"/>
+																				<xsl:text>)</xsl:text>
 																			</span>
 																		</div>
 																	</xsl:if>
 																	<div class="pure-control-group">
 																		<label style="font-weight: bold;">
-																			<xsl:value-of select="php:function('lang', 'time_period')" />:</label>
+																			<xsl:value-of select="php:function('lang', 'timeslot')" />:</label>
 																		<span>
 																			<xsl:value-of select="php:function('pretty_timestamp', from_)"/>
 																			<xsl:text> - </xsl:text>
@@ -1088,6 +1198,15 @@
 																			</xsl:choose>
 																		</span>
 																	</div>
+																	<xsl:if test="equipment and normalize-space(equipment)">
+																		<div class="pure-control-group">
+																			<label>
+																				<xsl:value-of select="php:function('lang', 'Equipment (2018)')" />:</label>
+																			<span>
+																				<xsl:value-of select="equipment" disable-output-escaping="yes"/>
+																			</span>
+																		</div>
+																	</xsl:if>
 																</div>
 															</div>
 															<xsl:if test="../edit_link">
@@ -1123,6 +1242,13 @@
 																			</option>
 																		</xsl:if>
 																	</select>
+<!--																	<xsl:if test="not(contains($assocdata, from_)) and ../case_officer/is_current_user">-->
+<!--																		<button type="button" class="btn btn-sm btn-danger ms-2">-->
+<!--																			<xsl:attribute name="onclick">rejectApplicationPart(<xsl:value-of select="application_id"/>);</xsl:attribute>-->
+<!--																			<xsl:attribute name="title"><xsl:value-of select="php:function('lang', 'Reject this part')" /></xsl:attribute>-->
+<!--																			<i class="fas fa-times me-1"></i><xsl:value-of select="php:function('lang', 'Reject')" />-->
+<!--																		</button>-->
+<!--																	</xsl:if>-->
 																</div>
 															</xsl:if>
 														</xsl:for-each>
@@ -1366,6 +1492,36 @@
 				documentsURL += '&owner[]=resource::' + initialSelection[i];
 			}
 		]]>
+
+		// Function to reject a specific application part
+		function rejectApplicationPart(appId) {
+			if (confirm('Er du sikker på at du vil avslå denne søknaden?')) {
+				var form = document.createElement('form');
+				form.method = 'POST';
+				form.action = 'index.php?menuaction=booking.uiapplication.show&amp;id=' + appId;
+
+				var statusInput = document.createElement('input');
+				statusInput.type = 'hidden';
+				statusInput.name = 'status';
+				statusInput.value = 'REJECTED';
+				form.appendChild(statusInput);
+
+				var reasonInput = document.createElement('input');
+				reasonInput.type = 'hidden';
+				reasonInput.name = 'rejection_reason';
+				reasonInput.value = 'Avslått av saksbehandler: Ingen tildeling opprettet.';
+				form.appendChild(reasonInput);
+
+				var emailCheckbox = document.createElement('input');
+				emailCheckbox.type = 'hidden';
+				emailCheckbox.name = 'send_rejection_email';
+				emailCheckbox.value = '0';
+				form.appendChild(emailCheckbox);
+
+				document.body.appendChild(form);
+				form.submit();
+			}
+		}
 
 		var colDefsResources = [{key: 'name', label: lang['Resources'], formatter: genericLink}, {key: 'rescategory_name', label: lang['Resource Type']}];
 
@@ -1622,7 +1778,7 @@
 		<div class="modal-content">
 		  <div class="modal-header">
 			<h5 class="modal-title" id="acceptApplicationModalLabel">
-			  <xsl:value-of select="php:function('lang', 'Accept Application')" />
+			  <xsl:value-of select="php:function('lang', 'confirm_application_approval')" />
 			</h5>
 			<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
 			  <span aria-hidden="true">x</span>
@@ -1630,12 +1786,18 @@
 		  </div>
 		  <form method="POST">
 			<div class="modal-body">
-			  <p><xsl:value-of select="php:function('lang', 'Are you sure you want to approve?')" /></p>
+			  <p><xsl:value-of select="php:function('lang', 'approval_description')" /></p>
 			  <div class="form-group">
-				<label for="acceptance_message">
-				  <xsl:value-of select="php:function('lang', 'Message to send with approval')" />
+				<h5>
+				  <xsl:value-of select="php:function('lang', 'comment_to_organizer')" />
+				</h5>
+				<textarea name="acceptance_message" id="acceptance_message" class="form-control" rows="4" placeholder="{php:function('lang', 'comment_placeholder')}"></textarea>
+			  </div>
+			  <div class="form-group form-check">
+				<input type="checkbox" class="form-check-input" id="send_acceptance_email" name="send_acceptance_email" value="1" checked="checked"/>
+				<label class="form-check-label" for="send_acceptance_email">
+				  <xsl:value-of select="php:function('lang', 'send_email_organizer_summary')" />
 				</label>
-				<textarea name="acceptance_message" id="acceptance_message" class="form-control" rows="4"></textarea>
 			  </div>
 			  <input type="hidden" name="status" value="ACCEPTED"/>
 			</div>
@@ -1671,6 +1833,12 @@
 				  <xsl:value-of select="php:function('lang', 'Reason for rejection')" />
 				</label>
 				<textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="4"></textarea>
+			  </div>
+			  <div class="form-group form-check">
+				<input type="checkbox" class="form-check-input" id="send_rejection_email" name="send_rejection_email" value="1" checked="checked"/>
+				<label class="form-check-label" for="send_rejection_email">
+				  <xsl:value-of select="php:function('lang', 'send_email_to_applicant')" />
+				</label>
 			  </div>
 			  <input type="hidden" name="status" value="REJECTED"/>
 			</div>
@@ -1708,6 +1876,104 @@
 		});
 	</script>
 
+	<!-- Edit Selection Modal for Combined Applications -->
+	<xsl:if test="show_edit_selection = 1">
+		<div class="modal fade" id="editSelectionModal" tabindex="-1" role="dialog" aria-labelledby="editSelectionModalLabel" aria-hidden="true">
+			<div class="modal-dialog modal-lg" role="document">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="editSelectionModalLabel">
+							<i class="fas fa-edit me-2"></i>Select Application to Edit
+						</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+							<span aria-hidden="true">×</span>
+						</button>
+					</div>
+					<div class="modal-body">
+						<p class="text-muted mb-4">
+							This combined application contains <xsl:value-of select="count(related_applications)"/> related applications.
+							Choose which one you want to edit:
+						</p>
+
+						<div class="row">
+							<xsl:for-each select="related_applications">
+								<div class="col-md-6 mb-3">
+									<div class="card application-selection-card">
+										<xsl:attribute name="class">
+											<xsl:text>card application-selection-card</xsl:text>
+											<xsl:if test="is_main = 1">
+												<xsl:text> border-danger</xsl:text>
+											</xsl:if>
+										</xsl:attribute>
+
+										<div class="card-body">
+											<div class="d-flex justify-content-between align-items-start mb-2">
+												<h6 class="card-title mb-0">
+													<xsl:value-of select="name"/>
+													<xsl:if test="is_main = 1">
+														<span class="badge badge-danger ml-2">MAIN</span>
+													</xsl:if>
+												</h6>
+												<span class="badge">
+													<xsl:attribute name="class">
+														<xsl:text>badge badge-</xsl:text>
+														<xsl:choose>
+															<xsl:when test="status = 'NEW'">primary</xsl:when>
+															<xsl:when test="status = 'PENDING'">warning</xsl:when>
+															<xsl:when test="status = 'ACCEPTED'">success</xsl:when>
+															<xsl:when test="status = 'REJECTED'">danger</xsl:when>
+															<xsl:otherwise>secondary</xsl:otherwise>
+														</xsl:choose>
+													</xsl:attribute>
+													<xsl:value-of select="status"/>
+												</span>
+											</div>
+
+											<small class="text-muted">
+												<strong>ID:</strong> <xsl:value-of select="id"/><br/>
+												<strong>Created:</strong> <xsl:value-of select="created"/><br/>
+												<xsl:if test="dates != ''">
+													<strong>Dates:</strong> <xsl:value-of select="dates"/><br/>
+												</xsl:if>
+												<xsl:if test="resources != ''">
+													<strong>Resources:</strong> <xsl:value-of select="resources"/>
+												</xsl:if>
+											</small>
+
+											<a class="btn btn-primary btn-sm mt-2">
+												<xsl:attribute name="href">
+													<xsl:value-of select="../application/edit_link"/>
+													<xsl:text>&amp;selected_app_id=</xsl:text>
+													<xsl:value-of select="id"/>
+												</xsl:attribute>
+												<i class="fas fa-edit me-1"></i>Edit This Application
+											</a>
+										</div>
+									</div>
+								</div>
+							</xsl:for-each>
+						</div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-dismiss="modal">
+							<i class="fas fa-times me-1"></i>Cancel
+						</button>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<style>
+			.application-selection-card {
+				transition: transform 0.2s, box-shadow 0.2s;
+				cursor: pointer;
+			}
+			.application-selection-card:hover {
+				transform: translateY(-2px);
+				box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+			}
+		</style>
+	</xsl:if>
 
 </xsl:template>
 <!-- New template-->

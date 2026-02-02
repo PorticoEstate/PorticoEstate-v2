@@ -28,6 +28,11 @@ class booking_uiaccount_code_dimension extends booking_uicommon
 		{
 			foreach ($_POST as $dim => $value)
 			{
+				if($dim == 'invoice_ssh_private_key' && $value == '*** PRIVATE KEY SET ***')				
+				{
+					continue;
+				}
+			
 				if (strlen(trim($value)) > 0)
 				{
 					$config->value($dim, trim($value));
@@ -41,6 +46,11 @@ class booking_uiaccount_code_dimension extends booking_uicommon
 			$config->config_data['differentiate_org_payer'] = Sanitizer::get_var('differentiate_org_payer', 'int', 'POST');
 
 			$config->save_repository();
+		}
+
+		if(!empty($config->config_data['invoice_ssh_private_key']))
+		{
+			$config->config_data['invoice_ssh_private_key'] = '*** PRIVATE KEY SET ***';
 		}
 
 		$tabs = array();

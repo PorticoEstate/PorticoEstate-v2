@@ -45,6 +45,8 @@ aug	common	nn	august
 august	common	nn	August
 autocreate user	common	nn	Autogenerer bruker frå SSO-info
 back	common	nn	Attende
+back_to_organization	common	nn	Tilbake til organisasjon
+back_to_start	common	nn	Tilbake til start
 bad login or password	common	nn	Ugyldig login eller passord
 bim	common	nn	Bim
 blocked, too many attempts	common	nn	Blokkert, for mange forsøk
@@ -370,6 +372,7 @@ rename	common	nn	Endre navn
 rental	common	nn	Leie
 required group	common	nn	Må være medlem av gruppe
 reset filter	common	nn	Nullstill filter
+restore	common	nn	Gjenopprett
 result	common	nn	Resultat
 right	common	nn	Rettighet
 rows selected	common	nn	rader er valgt
@@ -454,6 +457,7 @@ view	common	nn	Vis
 View Access Log	common	nn	Vis tilgangsloggar
 View Sessions	common	nn	Vis sesjonar
 view the attrib	common	nn	Vis egenskap
+website	common	nn	Nettstad
 wednesday	common	nn	Onsdag
 week	common	nn	Veke
 week day	common	nn	Vekedag
@@ -475,3 +479,12 @@ website	common	nn	Nettstad
 back_to_start	common	nn	Tilbake til start
 back_to_organization	common	nn	Tilbake til organisasjon
 restore	common	nn	Gjenopprett
+create_account	common	nn	Opprett konto
+creating	common	nn	Opprettar...
+loading_external_data	common	nn	Lastar eksterne data...
+invalid_phone_format_norwegian	common	nn	Ugyldig telefonnummerformat. For norske nummer bruk format: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
+invalid_email_address	common	nn	Ugyldig e-postadresse
+zip_code_min_length	common	nn	Postnummer må vere minst 4 teikn
+invalid_url_format	common	nn	Ugyldig URL-format
+phone_number_required	common	nn	Telefonnummer er påkrevd
+email_required	common	nn	E-post er påkrevd

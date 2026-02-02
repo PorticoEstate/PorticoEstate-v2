@@ -25,7 +25,25 @@
 			$this->so_wtemplate_alloc = new booking_sowtemplate_alloc();
 		}
 
-		
+		function build_default_read_params()
+		{
+			$filters = array();
+
+			$filter_now = Sanitizer::get_var('filter_now', 'bool');
+
+			if ($filter_now)
+			{
+				$now = date('Y-m-d');
+				$filters['where'] = "(bb_season.to_ > '{$now}')";
+			}
+
+			$params = parent::build_default_read_params();
+			$params['filters'] = $params['filters'] ?? [];
+			$params['filters'] = array_merge($params['filters'], $filters);
+
+			return $params;
+		}		
+
 		function copy_permissions($from_id, $to_id)
 		{
 			$so_permission = CreateObject('booking.sopermission_season');
@@ -159,6 +177,19 @@
 					}
 					elseif (count($this->bo_allocation->filter_conflict_errors($errors)) === 0)
 					{
+						if(isset($errors['allocation']))
+						{
+							$allocation['conflict'] = implode(', ', $errors['allocation']);
+						}
+						if (isset($errors['booking']))
+						{
+							$allocation['conflict'] = implode(', ', $errors['booking']);
+						}
+						if (isset($errors['event']))
+						{
+							$allocation['conflict'] = implode(', ', $errors['event']);
+						}
+
 						$invalid[] = $allocation;
 					}
 					else
@@ -290,6 +321,12 @@
 		{
 			$this->authorize_write($boundary['season_id']);
 			return $this->so_boundary->add($boundary);
+		}
+
+		function update_boundary( $boundary )
+		{
+			$this->authorize_write($boundary['season_id']);
+			return $this->so_boundary->update($boundary);
 		}
 
 		function get_boundaries( $season_id )

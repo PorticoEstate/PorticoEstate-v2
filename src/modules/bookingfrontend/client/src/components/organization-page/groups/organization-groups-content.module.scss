@@ -83,10 +83,20 @@
     color: var(--ds-color-danger-text-default);
 }
 
+.groupNameCell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
 .groupTitle {
     @include applyFontProperties('label');
     font-weight: $text-medium;
     color: var(--ds-color-text-default);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
 }
 
 .groupShortname {
@@ -146,6 +156,10 @@
             @include applyFontProperties('label');
             font-weight: $text-medium;
             color: var(--ds-color-text-default);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 200px;
         }
 
         .groupShortname {

@@ -99,6 +99,20 @@ class UserHelper
 		}
 	}
 
+	/**
+	 * Create a UserHelper instance with a specific SSN
+	 * Useful for getting organization data for a specific user without affecting session state
+	 * 
+	 * @param string $ssn The SSN to use for this UserHelper instance
+	 * @return UserHelper
+	 */
+	public static function fromSSN(string $ssn): UserHelper
+	{
+		$userHelper = new self();
+		$userHelper->ssn = $ssn;
+		return $userHelper;
+	}
+
 	function get_ids_from_array($org)
 	{
 		return $org['org_id'];
@@ -197,6 +211,7 @@ class UserHelper
 	public function get_all_delegates($ssn)
 	{
 		// Handle both plain and encoded SSNs for backward compatibility
+/*
 		$encodedSSN = $this->encodeSSN($ssn);
 
 		$sql = "SELECT o.id as org_id, o.name as name, o.organization_number as organization_number, d.active as active
@@ -208,7 +223,24 @@ class UserHelper
 			':ssn' => $ssn,
 			':encoded_ssn' => $encodedSSN
 		]);
-		return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+		$result =  $stmt->fetchAll(\PDO::FETCH_ASSOC) ?? array();
+*/
+		$result = array();
+
+		$orgs = $this->organizations ?? array();
+
+		foreach ($orgs as $org)
+		{
+			$result[] = array(
+				'org_id' => $org['org_id'],
+				'name' => $org['orgname'],
+				'organization_number' => $org['orgnr'],
+				'active' => 1
+			);
+		}
+		
+		return array_reverse($result);
 	}
 
 	/**

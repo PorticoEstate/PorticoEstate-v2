@@ -241,10 +241,11 @@ export function useBuildingFreeTimeSlots({
 
 	const fetchFreeTimeSlots = async (): Promise<FreeTimeSlotsResponse> => {
 		// Always fetch from API for just the current week
+		// Add 1 day buffer on both ends to ensure we get overlapping timeslots
 		return await fetchFreeTimeSlotsForRange(
 			building_id,
-			currentWeek,
-			weekEnd,
+			currentWeek.minus({days: 1}),
+			weekEnd.plus({days: 1}),
 			instance
 		);
 	};
@@ -290,13 +291,16 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
 
 	// Fetch function that gets all uncached weeks
 	const fetchUncachedWeeks = async () => {
-		// Filter out weeks that are already in cache
+		// Filter out weeks that are stale or not in cache
+		const staleTime = 60 * 1000; // 60 seconds
 		const uncachedWeeks = keys.filter(weekStart => {
 			const cacheKey = getWeekCacheKey(weekStart);
-			const d = queryClient.getQueryData(cacheKey);
+			const state = queryClient.getQueryState(cacheKey);
 
-			// console.log("Query state", cacheKey, queryClient.getQueryState(cacheKey), d);
-			return !d;
+			// Refetch if: doesn't exist, is invalidated, or is stale (older than 60s)
+			if (!state?.data) return true;
+			const isStale = Date.now() - state.dataUpdatedAt > staleTime;
+			return isStale || state.isInvalidated;
 		});
 		// console.log('weeks', uncachedWeeks);
 		if (uncachedWeeks.length === 0) {
@@ -363,7 +367,7 @@ export const useOrganizationSchedule = ({organization_id, weeks, instance, initi
 	const getWeekCacheKey = useCallback((key: string) => {
 		return ['organizationSchedule', organization_id, key];
 	}, [organization_id]);
-	
+
 	// Initialize cache with provided initial schedule data
 	useEffect(() => {
 		if (initialWeekSchedule) {
@@ -378,11 +382,16 @@ export const useOrganizationSchedule = ({organization_id, weeks, instance, initi
 
 	// Fetch function that gets all uncached weeks
 	const fetchUncachedWeeks = async () => {
-		// Filter out weeks that are already in cache
+		// Filter out weeks that are stale or not in cache
+		const staleTime = 60 * 1000; // 60 seconds
 		const uncachedWeeks = keys.filter(weekStart => {
 			const cacheKey = getWeekCacheKey(weekStart);
-			const d = queryClient.getQueryData(cacheKey);
-			return !d;
+			const state = queryClient.getQueryState(cacheKey);
+
+			// Refetch if: doesn't exist, is invalidated, or is stale (older than 60s)
+			if (!state?.data) return true;
+			const isStale = Date.now() - state.dataUpdatedAt > staleTime;
+			return isStale || state.isInvalidated;
 		});
 
 		if (uncachedWeeks.length === 0) {
@@ -598,7 +607,7 @@ export function useUpdateBookingUser() {
  */
 export function useCreateBookingUser() {
 	const queryClient = useQueryClient();
-	
+
 	const createBookingUser = async (userData: Partial<IBookingUser>): Promise<IBookingUser> => {
 		const response = await fetch('/bookingfrontend/user/create', {
 			method: 'POST',
@@ -614,10 +623,10 @@ export function useCreateBookingUser() {
 		}
 
 		const result = await response.json();
-		
+
 		// Invalidate and refetch user data after creation
 		await queryClient.invalidateQueries({queryKey: ['bookingUser']});
-		
+
 		return result.user;
 	};
 
@@ -632,7 +641,7 @@ export function useExternalUserData() {
 		queryKey: ['externalUserData'],
 		queryFn: async (): Promise<Partial<IBookingUser> | null> => {
 			const response = await fetch('/bookingfrontend/user/external-data');
-			
+
 			if (!response.ok) {
 				if (response.status === 404) {
 					return null; // No external data available
@@ -711,12 +720,12 @@ export function useApplications(
 
 export function useApplication(
     id: number,
-    options?: { initialData?: IApplication }
+    options?: { initialData?: IApplication; secret?: string }
 ): UseQueryResult<IApplication> {
     return useQuery(
         {
-            queryKey: ['application', id],
-            queryFn: () => fetchApplication(id),
+            queryKey: ['application', id, options?.secret],
+            queryFn: () => fetchApplication(id, options?.secret),
             retry: 2,
             refetchOnWindowFocus: false,
             initialData: options?.initialData,
@@ -1444,7 +1453,7 @@ export function useResourceRegulationDocuments(resources: { id: number, building
 
 					try {
 						// Fetch regulation documents for this resource
-						const docs = await fetchResourceDocuments(resourceId, 'regulation');
+						const docs = await fetchResourceDocuments(resourceId, ['regulation', 'HMS_document', 'price_list']);
 
 						// Add owner type to identify the document source
 						const docsWithType = docs.map(doc => ({
@@ -1473,7 +1482,7 @@ export function useResourceRegulationDocuments(resources: { id: number, building
 
 					try {
 						// Fetch regulation documents for this building
-						const docs = await fetchBuildingDocuments(buildingId, 'regulation');
+						const docs = await fetchBuildingDocuments(buildingId, ['regulation', 'HMS_document', 'price_list']);
 
 						// Add owner type to identify the document source
 						const docsWithType = docs.map(doc => ({
@@ -1504,6 +1513,31 @@ export function useResourceRegulationDocuments(resources: { id: number, building
 			return uniqueDocs;
 		},
 		enabled: resourceIds.length > 0 || buildingIds.length > 0,
+		staleTime: 5 * 60 * 1000 // Consider data fresh for 5 minutes
+	});
+}
+
+export function useBuildingDocuments(buildingId: string) {
+	return useQuery({
+		queryKey: ['buildingDocuments', buildingId],
+		queryFn: async () => {
+			try {
+				// Fetch building documents (excluding only pictures)
+				const buildingDocs = await fetchBuildingDocuments(buildingId, ['drawing', 'price_list', 'other', 'regulation', 'HMS_document']);
+
+				// Add owner type to identify the document source
+				const docsWithType = buildingDocs.map((doc: IDocument) => ({
+					...doc,
+					owner_type: 'building' as const
+				}));
+
+				return docsWithType;
+			} catch (error) {
+				console.error(`Error fetching documents for building ${buildingId}:`, error);
+				return [];
+			}
+		},
+		enabled: Boolean(buildingId),
 		staleTime: 5 * 60 * 1000 // Consider data fresh for 5 minutes
 	});
 }

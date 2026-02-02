@@ -63,10 +63,15 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 
 	// Use filtered resources if provided, otherwise fall back to all building resources
 	const resources = useMemo(() => {
-		if(isOrgMode) {
-			return filteredResources;
-		}
-		return allResources;
+		const resourceList = isOrgMode ? filteredResources : allResources;
+
+		// Sort by sort field (ascending), with null values at the end
+		return resourceList?.sort((a, b) => {
+			if (a.sort === null && b.sort === null) return 0;
+			if (a.sort === null) return 1;
+			if (b.sort === null) return -1;
+			return a.sort - b.sort;
+		});
 
 	}, [filteredResources, allResources, isOrgMode])
 
@@ -233,7 +238,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 								onChange={() => onToggle(resource.value, true)}
 								label={
 									<div className={`${styles.resourceLabel} text-normal`}>
-										<div>
+										<div className={styles.resourceLabelWrapper}>
 											<ColourCircle resourceId={+resource.value} size={'medium'}/>
 											<span>{resource.label}</span>
 											{resource.deactivated && (
@@ -262,14 +267,13 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 			{groupedResources.normal.length > 0 && (
 				<Fieldset>
 					<Fieldset.Legend style={{marginLeft: '0.5rem'}}>{t('bookingfrontend.calendar_resources')}</Fieldset.Legend>
-					<div className={styles.toggleAllContainer}>
+					<div className={`${styles.resourceItem} ${groupedResources.normal.every(r => enabledResources.has(r.value)) ? styles.active : ''} `}>
 						<Checkbox
-							data-size={'sm'}
 							value={'choose_all'}
 							id={`resource-all`}
 							checked={groupedResources.normal.every(r => enabledResources.has(r.value))}
 							onChange={() => onToggleAll(groupedResources.normal)}
-							label={t('bookingfrontend.select_all')}
+							label={<ResourceLabel resource={{label: t('bookingfrontend.select_all')}}/>}
 							className={styles.resourceCheckbox}
 						/>
 					</div>
@@ -303,7 +307,23 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	if (isMobile) {
 		return (
 			<div className={styles.resourceToggleContainer}>
-				<MobileDialog open={open} onClose={() => setOpen(false)} dialogId={'calendar-resource-toggle'}>{content}</MobileDialog>
+				<MobileDialog
+					open={open}
+					onClose={() => setOpen(false)}
+					dialogId={'calendar-resource-toggle'}
+					footer={(attemptClose) => (
+						<Button
+							variant="primary"
+							data-size="md"
+							onClick={attemptClose}
+							style={{ width: '100%' }}
+						>
+							{t('common.save')}
+						</Button>
+					)}
+				>
+					{content}
+				</MobileDialog>
 			</div>
 		)
 	}

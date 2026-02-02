@@ -71,7 +71,7 @@ class Event extends BaseModel
 	/**
 	 * @Expose
 	 */
-	public string $homepage = '';
+	public ?string $homepage = null;
 
 	/**
 	 * @Expose

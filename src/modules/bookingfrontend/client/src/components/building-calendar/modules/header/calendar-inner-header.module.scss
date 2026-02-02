@@ -12,13 +12,15 @@
     @include mobile {
         row-gap: 0.5rem;
         grid-template-columns:auto auto 1fr auto;
-        grid-template-areas: "resource-button resource-button date date" "mode-select mode-select-time blank order";
+        grid-template-areas: "resource-button resource-button date date" "mode-select mode-select-time today order";
         //display: none;
     }
     @include small-mobile {
         row-gap: 0.5rem;
         grid-template-columns:auto auto 1fr auto;
-        grid-template-areas: "resource-button resource-button resource-button resource-button" "date date date date" "mode-select mode-select-time blank order";
+        grid-template-areas: "resource-button resource-button resource-button resource-button" "date date date date" "mode-select mode-select-time today order";
+		grid-template-rows: min-content min-content min-content;
+
         //display: none;
     }
     @include tablet {
@@ -26,7 +28,7 @@
         //grid-template-columns:auto 1fr;
         //grid-template-rows: auto auto;
 		grid-template-columns:auto 1fr auto auto auto;
-		grid-template-areas:  "date date date date date" "resource-button blank mode-select mode-select-time order";
+		grid-template-areas:  "date date date date date" "resource-button today mode-select mode-select-time order";
         //grid-template-areas: "mode-select resource-button" "resource-button date";
 
         //display: none;
@@ -35,12 +37,16 @@
         row-gap: 0rem;
         grid-template-columns:auto auto 1fr auto auto;
         grid-template-rows: auto;
-        grid-template-areas: "resource-button date mode-select-time mode-select order";
+        grid-template-areas: "resource-button date today mode-select-time mode-select order";
         //display: none;
     }
     .orderButton {
         grid-area: order;
     }
+	.todayButton {
+		grid-area: today;
+		max-width: fit-content;
+	}
     .datePicker {
         grid-area: date;
         //width: min-content;
@@ -132,10 +138,10 @@
     .modeSelect {
         grid-area: mode-select;
         .modeTitle {
-            @include mobile {
+            //@include mobile {
                 //flex-direction: column;
                 display: none;
-            }
+            //}
         }
 
     }

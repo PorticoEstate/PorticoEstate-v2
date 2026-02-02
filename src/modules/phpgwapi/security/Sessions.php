@@ -618,7 +618,7 @@ class Sessions
 		// verify the user agent in an attempt to stop session hijacking
 		if ($_SESSION['phpgw_session']['user_agent'] != md5(\Sanitizer::get_var('HTTP_USER_AGENT', 'string', 'SERVER')))
 		{
-			if (is_object($this->Log))
+			if ($this->_session_flags == 'N' && is_object($this->Log))
 			{
 				// This needs some better wording
 				$this->Log->message(array(

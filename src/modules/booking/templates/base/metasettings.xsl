@@ -68,6 +68,16 @@
 							</textarea>
 						</div>
 					</div>
+					<div class="pure-control-group">
+						<label for="field_purchase_conditions">
+							<xsl:value-of select="php:function('lang', 'purchase conditions')"/>
+						</label>
+						<div class="pure-custom">
+							<textarea id="field_purchase_conditions" class="full-width" name="purchase_conditions">
+								<xsl:value-of disable-output-escaping="yes" select="config_data/purchase_conditions"/>
+							</textarea>
+						</div>
+					</div>
 				</div>
 			</div>
 			<div class="form-buttons">

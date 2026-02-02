@@ -101,6 +101,7 @@ class Log
 	{
 		$user = Settings::getInstance()->get('user');
 		$serverSettings = Settings::getInstance()->get('server');
+		$currentapp = Settings::getInstance()->get('flags')['currentapp'] ?? '';
 
 		$this->checkprefs();
 		if (isset($serverSettings['log_levels']) && $this->log_level_table[$serverSettings['log_levels']['global_level']] >= $this->log_level_table[$level])
@@ -109,9 +110,9 @@ class Log
 		}
 
 		if (
-			isset($serverSettings['log_levels']) && isset(Settings::getInstance()->get('flags')['currentapp'])
-			&& array_key_exists(Settings::getInstance()->get('flags')['currentapp'], (array)$serverSettings['log_levels']['module'])
-			&& $this->log_level_table[$serverSettings['log_levels']['module'][Settings::getInstance()->get('flags')['currentapp']]] >= $this->log_level_table[$level]
+			isset($serverSettings['log_levels']) && $currentapp
+			&& array_key_exists($currentapp, (array)$serverSettings['log_levels']['module'])
+			&& $this->log_level_table[$serverSettings['log_levels']['module'][$currentapp]] >= $this->log_level_table[$level]
 		)
 		{
 			return true;

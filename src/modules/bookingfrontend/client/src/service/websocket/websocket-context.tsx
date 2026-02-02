@@ -8,6 +8,7 @@ import { getWebSocketUrl, wsLog as wslogbase } from './util';
 import { useQueryClient } from '@tanstack/react-query';
 import { SubscriptionManager } from './subscription-manager';
 import { useWebSocketSession } from '../hooks/use-websocket-session';
+import {useCacheInvalidation} from "@/service/hooks/use-cache-invalidation";
 
 interface WebSocketContextValue {
   status: WebSocketStatus;
@@ -53,7 +54,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({
 
   // Initialize session management
   useWebSocketSession();
-
+	useCacheInvalidation();
 
   // Keep track of initialization state with a ref to handle StrictMode double-invocation
   const isInitializedRef = useRef(false);

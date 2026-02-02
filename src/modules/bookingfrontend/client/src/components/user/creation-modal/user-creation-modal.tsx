@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useMemo} from 'react';
 import {useForm, Controller} from 'react-hook-form';
 import {z} from 'zod';
 import {zodResolver} from "@hookform/resolvers/zod";
@@ -19,37 +19,38 @@ const validatePhone = (phone: string) => {
 
     const norwegianPattern = /^(0047|\+47|\d{8})/;
     if (norwegianPattern.test(phone)) {
-        const trimmedNumber = phone.replace(/^(0047|\+47)/, '');
+        // Remove prefix and any whitespace/separators to get clean number
+        const trimmedNumber = phone.replace(/^(0047|\+47)/, '').replace(/[- _]/g, '');
         return trimmedNumber.length === 8 && (trimmedNumber[0] === '9' || trimmedNumber[0] === '4');
     }
 
     return true;
 };
 
-// Form schema for user creation
-const userCreationSchema = z.object({
-    name: z.string().min(1, 'Name is required'),
+// Form schema for user creation - create outside component to allow translations
+const createUserCreationSchema = (t: (key: string) => string) => z.object({
+    name: z.string().min(1, t('bookingfrontend.validation_name_required')),
     phone: z.string()
-        .min(1, 'Phone number is required')
+        .min(1, t('bookingfrontend.validation_phone_required'))
         .refine((val) => validatePhone(val), {
-            message: 'Invalid phone number format. For Norwegian numbers, use format: +47 XXXXXXXX or 9XXXXXXX or 4XXXXXXX'
+            message: t('bookingfrontend.validation_phone_format')
         }),
-    email: z.string().email('Invalid email address').min(1, 'Email is required'),
+    email: z.string().email(t('bookingfrontend.validation_email_format')).min(1, t('bookingfrontend.validation_email_required')),
     street: z.string().optional(),
     zip_code: z.string()
         .optional()
         .refine((val) => !val || val.trim() === '' || val.trim().length >= 4, {
-            message: 'Zip code must be at least 4 characters'
+            message: t('bookingfrontend.validation_zipcode_min_length')
         }),
     city: z.string().optional(),
     homepage: z.string()
         .optional()
         .refine((val) => !val || val.trim() === '' || z.string().url().safeParse(val).success, {
-            message: 'Invalid URL format'
+            message: t('bookingfrontend.validation_homepage_format')
         }),
 });
 
-type UserCreationFormData = z.infer<typeof userCreationSchema>;
+type UserCreationFormData = z.infer<ReturnType<typeof createUserCreationSchema>>;
 
 interface UserCreationModalProps {
     open: boolean;
@@ -57,15 +58,20 @@ interface UserCreationModalProps {
     onUserCreated?: () => void;
 }
 
+const DEBUG_USER_MODAL = false;
+
 const UserCreationModal: React.FC<UserCreationModalProps> = ({
     open,
     onClose,
     onUserCreated
 }) => {
+    if (DEBUG_USER_MODAL) console.log('UserCreationModal render - open:', open);
     const t = useTrans();
     const { data: externalData, isLoading: isLoadingExternal } = useExternalUserData();
     const { mutateAsync: createUser } = useCreateBookingUser();
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+    const userCreationSchema = useMemo(() => createUserCreationSchema(t), [t]);
 
     const {
         control,
@@ -129,6 +135,7 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
     };
 
     const handleCancel = () => {
+        if (DEBUG_USER_MODAL) console.log('UserCreationModal handleCancel called');
         reset();
         onClose();
     };
@@ -157,7 +164,7 @@ const UserCreationModal: React.FC<UserCreationModalProps> = ({
             <Button
                 type="submit"
                 form="user-creation-form"
-                disabled={!isDirty || !isValid || isSubmitting}
+                disabled={isSubmitting}
             >
                 {isSubmitting ? t('common.creating') : t('common.create_account')}
             </Button>

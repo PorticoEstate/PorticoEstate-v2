@@ -278,6 +278,20 @@ class Resource
      */
     public $building_id;
 
+    /**
+     * @ORM\Transient
+     * @Expose
+     * @OA\Property(description="Current participants registered for this resource", type="array", nullable=true)
+     */
+    public $participants;
+
+    /**
+     * @ORM\Transient
+     * @Expose
+     * @OA\Property(description="Total count of current participants for this resource", type="integer", nullable=true)
+     */
+    public $participant_count;
+
     public function __construct($data = [])
     {
         if (!empty($data))
@@ -295,6 +309,7 @@ class Resource
                 $this->$key = $value;
             }
         }
+		$this->deactivate_calendar = 0;
     }
 
     public function toArray()

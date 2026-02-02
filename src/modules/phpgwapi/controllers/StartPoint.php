@@ -437,7 +437,8 @@ class StartPoint
 		if ($app == 'bookingfrontend' && $_SERVER['REQUEST_METHOD'] === 'GET' && Sanitizer::get_var('phpgw_return_as', 'string', 'GET') !== 'json') {
 			$template_set = Sanitizer::get_var('template_set', 'string', 'COOKIE');
 
-			if ($template_set == 'bookingfrontend_2') {
+			// Only skip redirect if user has explicitly selected original template
+			if ($template_set != 'bookingfrontend') {
 				$config_frontend = CreateObject('phpgwapi.config', 'bookingfrontend')->read();
 				$develop_mode = isset($config_frontend['develope_mode']) && $config_frontend['develope_mode'] === 'True';
 
@@ -463,7 +464,7 @@ class StartPoint
 					'bookingfrontend.uiorganization.show' => '/bookingfrontend/client/organization/%id%',
 					'bookingfrontend.uiorganization.edit' => '/bookingfrontend/client/organization/%id%/edit',
 					'bookingfrontend.uieventsearch.show' => '/bookingfrontend/client/search/event',
-					'bookingfrontend.uiapplication.show' => '/bookingfrontend/client/user/applications/%id%',
+//					'bookingfrontend.uiapplication.show' => '/bookingfrontend/client/user/applications/%id%',
 
 						// Add more mappings as needed
 					];
@@ -478,11 +479,27 @@ class StartPoint
 						if (strpos($redirectUrl, '%id%') !== false) {
 							if (isset($_GET['id'])) {
 								$redirectUrl = str_replace('%id%', $_GET['id'], $redirectUrl);
-								\phpgw::redirect_link($redirectUrl);
+
+								// Forward all additional parameters except click_history
+								$additionalParams = [];
+								foreach ($_GET as $key => $value) {
+									if ($key !== 'menuaction' && $key !== 'id' && $key !== 'click_history') {
+										$additionalParams[$key] = $value;
+									}
+								}
+
+								\phpgw::redirect_link($redirectUrl, $additionalParams, true);
 							}
 						} else {
-							// No placeholder, redirect directly
-							\phpgw::redirect_link($redirectUrl);
+							// Forward all additional parameters except click_history for non-id redirects too
+							$additionalParams = [];
+							foreach ($_GET as $key => $value) {
+								if ($key !== 'menuaction' && $key !== 'click_history') {
+									$additionalParams[$key] = $value;
+								}
+							}
+
+							\phpgw::redirect_link($redirectUrl, $additionalParams, true);
 						}
 						}
 					}

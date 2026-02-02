@@ -35,6 +35,8 @@ aug	common	no	august
 august	common	no	August
 autocreate user	common	no	Autogenerer bruker fra SSO-info
 back	common	no	Tilbake
+back_to_organization	common	no	Tilbake til organisasjon
+back_to_start	common	no	Tilbake til start
 bad login or password	common	no	Ugyldig login eller passord
 bim	common	no	Bim
 booking	common	no	Booking
@@ -55,7 +57,7 @@ charset	common	no	utf-8
 choose "Log out" if you want to end the session	common	no	Velg "Logg ut" om du vil avslutte sesjonen.
 choose language	common	no	Velg språk
 city	common	no	Poststed
-clear	common	no	Clear
+clear	common	no	Tøm
 clear cache	common	no	Slett cache (minne)
 clear form	common	no	Tøm skjema
 close_dialog	common	no	Lukk
@@ -287,6 +289,7 @@ rename	common	no	Endre navn
 rental	common	no	Leie
 required group	common	no	Må være medlem av gruppe
 reset filter	common	no	Nullstill filter
+restore	common	no	Gjenopprett
 result	common	no	Resultat
 right	common	no	Rettighet
 rows selected	common	no	rader er valgt
@@ -372,6 +375,7 @@ view	common	no	Vis
 View Access Log	common	no	Vis tilgangslogger
 View Sessions	common	no	Vis sesjoner
 view the attrib	common	no	Vis egenskap
+website	common	no	Nettside
 wednesday	common	no	Onsdag
 week	common	no	Uke
 week day	common	no	Ukedag
@@ -394,3 +398,12 @@ website	common	no	Nettside
 back_to_start	common	no	Tilbake til start
 back_to_organization	common	no	Tilbake til organisasjon
 restore	common	no	Gjenopprett
+create_account	common	no	Opprett konto
+creating	common	no	Oppretter...
+loading_external_data	common	no	Laster eksterne data...
+invalid_phone_format_norwegian	common	no	Ugyldig telefonnummerformat. For norske nummer bruk format: +47 XXXXXXXX eller 9XXXXXXX eller 4XXXXXXX
+invalid_email_address	common	no	Ugyldig e-postadresse
+zip_code_min_length	common	no	Postnummer må være minst 4 tegn
+invalid_url_format	common	no	Ugyldig URL-format
+phone_number_required	common	no	Telefonnummer er påkrevd
+email_required	common	no	E-post er påkrevd

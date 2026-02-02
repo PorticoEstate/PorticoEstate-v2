@@ -19,16 +19,20 @@ export async function generateMetadata(props: ApplicationDetailLayoutProps) {
 		return notFound();
 	}
 
-	// Fetch the application
-	const application = await fetchApplication(applicationId);
-
-	// If application does not exist, throw the notFound error
-	if (!application) {
-		return notFound();
+	try {
+		// Try to fetch the application (this will work for authenticated users)
+		const application = await fetchApplication(applicationId);
+		
+		return {
+			title: application.name,
+		};
+	} catch (error) {
+		// If fetch fails (e.g., for external secret access), return generic metadata
+		// The client-side component will handle setting the correct title
+		return {
+			title: `Application ${applicationId}`,
+		};
 	}
-	return {
-		title: application.name,
-	};
 }
 
 

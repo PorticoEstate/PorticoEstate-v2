@@ -345,6 +345,12 @@ class BookingConfig
     /**
      * @OA\Property(type="string")
      */
+
+    public $invoice_ssh_private_key;
+
+    /**
+     * @OA\Property(type="string")
+     */
     public $invoice_ftp_user;
 
     /**
@@ -400,6 +406,12 @@ class BookingConfig
 
     /**
      * @OA\Property(type="string")
+	 * @Expose
+     */
+    public $purchase_conditions;
+
+    /**
+     * @OA\Property(type="string")
      */
     public $proxy;
 
@@ -423,6 +435,13 @@ class BookingConfig
      * @OA\Property(type="string")
      */
     public $user_can_delete;
+
+    /**
+     * @OA\Property(type="string")
+	 * @Expose
+	 * @ParseInt
+     */
+    public $participant_limit;
 
     /**
      * @OA\Property(type="string")

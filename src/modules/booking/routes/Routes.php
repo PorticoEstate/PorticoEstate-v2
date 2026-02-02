@@ -9,8 +9,10 @@ use App\modules\phpgwapi\middleware\SessionsMiddleware;
 use App\modules\booking\controllers\VippsController;
 use App\modules\booking\controllers\ResourceController;
 use App\modules\booking\controllers\EventController;
+use App\modules\booking\controllers\AllocationController;
 use App\controllers\GenericRegistryController;
 use App\modules\booking\models\BookingGenericRegistry;
+use App\modules\booking\controllers\WebhookController;
 
 
 $app->group('/booking/users', function (RouteCollectorProxy $group) {
@@ -44,9 +46,35 @@ $app->group('/booking/events', function (RouteCollectorProxy $group)
 ->addMiddleware(new AccessVerifier($container))
 ->addMiddleware(new SessionsMiddleware($container));
 
+$app->group('/booking/allocations', function (RouteCollectorProxy $group)
+{
+	$group->post('', AllocationController::class . ':createAllocation');
+	$group->get('/{id}', AllocationController::class . ':getAllocation');
+	$group->put('/{id}', AllocationController::class . ':updateAllocation');
+	$group->delete('/{id}', AllocationController::class . ':deleteAllocation');
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
 $app->get('/booking/getpendingtransactions/vipps', VippsController::class . ':getPendingTransactions')
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));
+
+// Webhook subscription management API
+$app->group('/booking/webhooks', function (RouteCollectorProxy $group)
+{
+	// Validation endpoint (no auth required)
+	$group->get('/validate', WebhookController::class . ':validate');
+	
+	// Subscription management
+	$group->post('/subscriptions', WebhookController::class . ':create');
+	$group->get('/subscriptions', WebhookController::class . ':list');
+	$group->get('/subscriptions/{id}', WebhookController::class . ':read');
+	$group->patch('/subscriptions/{id}', WebhookController::class . ':renew');
+	$group->delete('/subscriptions/{id}', WebhookController::class . ':delete');
+	$group->get('/subscriptions/{id}/log', WebhookController::class . ':deliveryLog');
+})
+->addMiddleware(new SessionsMiddleware($container));
 
 
 

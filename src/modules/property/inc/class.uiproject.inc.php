@@ -951,7 +951,8 @@ class property_uiproject extends phpgwapi_uicommon_jquery
 				. "origin_id:'" . Sanitizer::get_var('origin_id') . "',"
 				. "project_id: aData['project_id']}";
 
-			$data['left_click_action'] = "window.open(phpGWLink('index.php', {$oArg}),'_self');";
+			$confirm_msg = addslashes(lang('new') . ' ' . lang(str_replace('_', ' ', $from)) . '?');
+			$data['left_click_action'] = "if(confirm('{$confirm_msg}')){window.open(phpGWLink('index.php', {$oArg}),'_self');}";
 		}
 
 		if ($make_relation)

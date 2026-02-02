@@ -16,15 +16,11 @@
 				<xsl:value-of select="php:function('lang', 'support')" />
 			</legend>
 
-			<div class="pure-control-group" style="display:none;">
+			<div class="pure-control-group" >
 				<label>
-					<xsl:value-of select="php:function('lang', 'address')" />
+					<xsl:value-of select="php:function('ucfirst', php:function('lang', 'to'))" />
 				</label>
-				<input type="text" name="values[address]" value="{support_address}" class="pure-input-3-4">
-					<xsl:attribute name="title">
-						<xsl:value-of select="php:function('lang', 'address')" />
-					</xsl:attribute>
-				</input>
+				<xsl:value-of select="support_address"/>
 			</div>
 			<div class="pure-control-group">
 				<label>
@@ -49,7 +45,7 @@
 				<label>
 					<xsl:value-of select="php:function('lang', 'description')" />
 				</label>
-				<textarea name="values[details]" wrap="virtual" class="pure-input-3-4">
+				<textarea name="values[details]" wrap="virtual" rows="8" class="pure-input-3-4">
 					<xsl:attribute name="title">
 						<xsl:value-of select="php:function('lang', 'details')" />
 					</xsl:attribute>

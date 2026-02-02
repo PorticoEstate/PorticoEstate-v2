@@ -245,6 +245,11 @@ class booking_uiuser extends booking_uicommon
 				)),
 				'field' => array(
 					array(
+						'key' => 'id',
+						'label' => lang('ID'),
+						'sortable' => true
+					),
+					array(
 						'key' => 'name',
 						'label' => lang('user'),
 						'formatter' => 'JqueryPortico.formatLink'
@@ -269,6 +274,10 @@ class booking_uiuser extends booking_uicommon
 						'key' => 'link',
 						'hidden' => true
 					)
+				),
+				'config' => array(
+					'base_java_url' => '{"menuaction":"booking.uiuser.index"}',
+					'order' => json_encode(array(array(0, 'desc')))
 				)
 			)
 		);

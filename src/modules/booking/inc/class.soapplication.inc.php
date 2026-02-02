@@ -136,6 +136,7 @@ class booking_soapplication extends booking_socommon
 				'session_id'					 => array('type' => 'string', 'required' => false),
 				'agreement_requirements'		 => array('type' => 'string', 'required' => false),
 				'external_archive_key'			 => array('type' => 'string', 'required' => false),
+				'recurring_info'				 => array('type' => 'json', 'required' => false),
 				'customer_organization_name'	 => array(
 					'type'		 => 'string',
 					'required'	 => False,
@@ -163,12 +164,12 @@ class booking_soapplication extends booking_socommon
 		$node_id = $entity['parent_id'];
 		while ($entity['id'] && $node_id)
 		{
-			if ($node_id == $entity['id'])
+			$next = $this->read_single($node_id);
+			if ($next['id'] == $entity['parent_id'])
 			{
-				$errors['parent_id'] = lang('Invalid parent activity');
+//				$errors['parent_id'] = lang('Invalid parent application');
 				break;
 			}
-			$next = $this->read_single($node_id);
 			$node_id = $next['parent_id'];
 		}
 		return $errors;
@@ -489,6 +490,63 @@ class booking_soapplication extends booking_socommon
 		$db->query($sql, __LINE__, __FILE__);
 	}
 
+	public function update_from_field(int|null $application_id)
+	{
+		$db = $this->db;
+
+		// Build WHERE clauses for filtering
+		$filter = $application_id ? " AND id = {$application_id}" : '';
+		$parent_filter = $application_id ? " AND parent_app.id = {$application_id}" : '';
+
+		// Update applications that are not parents (no children referencing them AND not self-referencing)
+		$sql = "UPDATE bb_application 
+            SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = bb_application.id)
+            WHERE id NOT IN (
+                -- Applications referenced by children
+                SELECT DISTINCT parent_id FROM bb_application 
+                WHERE parent_id IS NOT NULL AND parent_id != id
+                UNION
+                -- Self-referencing applications (parent_id = id)
+                SELECT DISTINCT id FROM bb_application 
+                WHERE parent_id = id
+            )
+            $filter";
+		$db->query($sql, __LINE__, __FILE__);
+
+		// Update parent applications (traditional parent_id = NULL pattern)
+		$sql = "UPDATE bb_application parent_app
+            SET from_ = (
+                SELECT MIN(all_dates.from_)
+                FROM (
+                    -- Parent's own dates
+                    SELECT from_ FROM bb_application_date 
+                    WHERE application_id = parent_app.id
+                    UNION ALL
+                    -- Children's dates
+                    SELECT child_dates.from_
+                    FROM bb_application child_app
+                    JOIN bb_application_date child_dates ON child_app.id = child_dates.application_id
+                    WHERE child_app.parent_id = parent_app.id
+                    AND child_app.active = 1
+                    AND child_app.parent_id != child_app.id  -- Exclude self-referencing records
+                ) as all_dates
+            )
+            WHERE parent_app.id IN (
+                SELECT DISTINCT parent_id 
+                FROM bb_application 
+                WHERE parent_id IS NOT NULL AND parent_id != id
+            )
+            $parent_filter";
+		$db->query($sql, __LINE__, __FILE__);
+
+		// Update self-referencing parent applications (parent_id = id pattern)
+		$sql = "UPDATE bb_application parent_app
+            SET from_ = (SELECT min(from_) FROM bb_application_date WHERE application_id = parent_app.id)
+            WHERE parent_app.parent_id = parent_app.id
+            $parent_filter";
+		$db->query($sql, __LINE__, __FILE__);
+	}
+
 	public function delete_application($id)
 	{
 		if ($this->db->get_transaction())
@@ -566,6 +624,71 @@ class booking_soapplication extends booking_socommon
 	}
 
 	/**
+	 * Get detailed collision information - returns actual conflicting records
+	 * Same logic as check_collision but returns the records instead of just true/false
+	 */
+	function get_collision_details($resources, $from_, $to_, $session_id = null)
+	{
+		$filter_block = '';
+		if ($session_id)
+		{
+			$filter_block = " AND session_id != '{$session_id}'";
+		}
+
+		$rids = join(',', array_map("intval", $resources));
+		// Get translated labels for conflict types
+		$block_label = lang('conflict_block');
+		$allocation_label = lang('conflict_allocation'); 
+		$unknown_org_label = lang('conflict_unknown_org');
+		$event_label = lang('conflict_event');
+
+		$sql = "SELECT bb_block.id, bb_block.from_, bb_block.to_, 'block' as type, '{$block_label}' as name
+                  FROM bb_block
+                  WHERE bb_block.resource_id in ($rids)
+                  AND ((bb_block.from_ <= '$from_' AND bb_block.to_ > '$from_')
+                  OR (bb_block.from_ >= '$from_' AND bb_block.to_ <= '$to_')
+                  OR (bb_block.from_ < '$to_' AND bb_block.to_ >= '$to_')) AND active = 1 {$filter_block}
+                  UNION
+                  SELECT ba.id, ba.from_, ba.to_, 'allocation' as type, 
+                         CONCAT('{$allocation_label} (', COALESCE(bo.name, '{$unknown_org_label}'), ')') as name
+                  FROM bb_allocation ba
+                  INNER JOIN bb_allocation_resource bar ON ba.id = bar.allocation_id
+                  LEFT JOIN bb_organization bo ON ba.organization_id = bo.id
+                  WHERE ba.active = 1
+                  AND bar.resource_id in ($rids)
+                  AND ((ba.from_ <= '$from_' AND ba.to_ > '$from_')
+                  OR (ba.from_ >= '$from_' AND ba.to_ <= '$to_')
+                  OR (ba.from_ < '$to_' AND ba.to_ >= '$to_'))
+                  UNION
+                  SELECT be.id, be.from_, be.to_, 'event' as type, COALESCE(be.name, '{$event_label}') as name
+                  FROM bb_event be
+                  INNER JOIN bb_event_resource ber ON be.id = ber.event_id
+                  WHERE be.active = 1
+                  AND ber.resource_id in ($rids)
+                  AND ((be.from_ <= '$from_' AND be.to_ > '$from_')
+                  OR (be.from_ >= '$from_' AND be.to_ <= '$to_')
+                  OR (be.from_ < '$to_' AND be.to_ >= '$to_'))
+                  ORDER BY from_
+                  LIMIT 10";
+
+		$conflicts = array();
+		$this->db->query($sql, __LINE__, __FILE__);
+		
+		while ($this->db->next_record())
+		{
+			$conflicts[] = array(
+				'id' => $this->db->f('id'),
+				'type' => $this->db->f('type'),
+				'name' => $this->db->f('name'),
+				'from_' => $this->db->f('from_'),
+				'to_' => $this->db->f('to_')
+			);
+		}
+		
+		return $conflicts;
+	}
+
+	/**
 	 * Check if a given timespan is available for bookings or allocations
 	 *
 	 * @param resources
@@ -618,8 +741,8 @@ class booking_soapplication extends booking_socommon
 			. " ON bb_application.id = bb_application_resource.application_id AND bb_application_resource.resource_id = " . (int)$resource_id
 			. " WHERE "
 			. "( customer_ssn = '{$ssn}' AND status != 'REJECTED' "
-			. " AND ((EXTRACT(EPOCH from (to_- current_date))) > -$booking_horizont_seconds"
-			. " OR (EXTRACT(EPOCH from (current_date - from_))) < $booking_horizont_seconds)"
+			. " AND ((EXTRACT(EPOCH from (bb_application_date.to_- current_date))) > -$booking_horizont_seconds"
+			. " OR (EXTRACT(EPOCH from (current_date - bb_application_date.from_))) < $booking_horizont_seconds)"
 			. ")"
 			. " OR (status = 'NEWPARTIAL1' AND session_id = '$session_id')"
 			. " ) as t";
@@ -700,9 +823,9 @@ class booking_soapplication extends booking_socommon
 
 		$application_ids_string = implode(',', $application_ids);
 
-		// Get all purchase order lines for these applications, aggregated by article_mapping_id
+		// Get purchase order lines for these applications that have a cost > 0, aggregated by article_mapping_id
 		$sql = "SELECT bb_purchase_order_line.article_mapping_id,
-			SUM(bb_purchase_order_line.quantity) as total_quantity, 
+			SUM(bb_purchase_order_line.quantity) as total_quantity,
 			SUM(bb_purchase_order_line.amount) as total_amount,
 			bb_purchase_order_line.currency, bb_article_mapping.unit,
 			CASE WHEN (bb_resource.name IS NULL)
@@ -716,8 +839,9 @@ class booking_soapplication extends booking_socommon
 			LEFT JOIN bb_resource ON (bb_article_mapping.article_id = bb_resource.id AND bb_article_mapping.article_cat_id = 1)
 			WHERE bb_purchase_order.cancelled IS NULL
 			AND bb_purchase_order.application_id IN (" . $application_ids_string . ")
-			GROUP BY bb_purchase_order_line.article_mapping_id, bb_purchase_order_line.currency, 
+			GROUP BY bb_purchase_order_line.article_mapping_id, bb_purchase_order_line.currency,
 				bb_article_mapping.unit, article_name
+			HAVING SUM(bb_purchase_order_line.amount) > 0
 			ORDER BY article_name";
 
 		$this->db->query($sql, __LINE__, __FILE__);
@@ -788,6 +912,7 @@ class booking_soapplication extends booking_socommon
 			. " LEFT JOIN bb_service ON (bb_article_mapping.article_id = bb_service.id AND bb_article_mapping.article_cat_id = 2)"
 			. " LEFT JOIN bb_resource ON (bb_article_mapping.article_id = bb_resource.id AND bb_article_mapping.article_cat_id = 1)"
 			. " WHERE bb_purchase_order.cancelled IS NULL AND bb_purchase_order.application_id IN (" . implode(',', $application_ids) . ")"
+			. " AND (bb_purchase_order_line.amount > 0 OR bb_purchase_order_line.tax > 0)"
 			. " ORDER BY bb_purchase_order_line.id";
 
 		$this->db->query($sql, __LINE__, __FILE__);

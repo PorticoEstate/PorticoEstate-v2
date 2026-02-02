@@ -182,6 +182,7 @@ export interface IBookingConfig {
     output_files?: string;
     participant_limit_sms?: boolean;
     participanttext?: string;
+	purchase_conditions?: string;
     proxy?: string;
     split_pool?: string;
     split_pool4_ids?: string;
@@ -193,6 +194,7 @@ export interface IBookingConfig {
     voucher_client?: string;
     voucher_responsible?: string;
     voucher_type?: string;
+	participant_limit?: number;
 }
 
 
@@ -205,7 +207,13 @@ export interface IDocument {
     category: 'picture' | 'regulation' | 'HMS_document' | 'picture_main' | 'drawing' | 'price_list' | 'other';
     owner_id: number;
     url: string;
-    owner_type?: 'resource' | 'building';
+    owner_type?: 'resource' | 'building' | 'organization';
+    metadata?: {
+        focal_point?: {
+            x: number;
+            y: number;
+        };
+    };
 }
 export type IDocumentCategoryQuery = IDocument['category'] | 'images';
 

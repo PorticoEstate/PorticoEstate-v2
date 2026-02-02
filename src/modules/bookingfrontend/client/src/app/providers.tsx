@@ -16,6 +16,8 @@ import ServiceWorkerProvider from "@/service/websocket/service-worker-provider";
 import ShoppingCartProvider from "@/components/layout/header/shopping-cart/shopping-cart-provider";
 import {ScrollLockProvider} from "@/contexts/ScrollLockContext";
 
+
+
 const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, lang}) => {
 	// NOTE: Avoid useState when initializing the query client if you don't
 	//       have a suspense boundary between this and the code that may
@@ -34,9 +36,8 @@ const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, la
 					<ServiceWorkerProvider disableServiceWorker>
 						<WebSocketProvider disableServiceWorker>
 							<ScrollLockProvider>
-								<ShoppingCartProvider>
-									<ToastProvider>
-
+								<ToastProvider>
+									<ShoppingCartProvider>
 										<PrefetchWrapper>
 											<LoadingIndicationWrapper loadingString={t('common.loading')}>
 												{children}
@@ -44,8 +45,8 @@ const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, la
 											</LoadingIndicationWrapper>
 											<ReactQueryDevtools initialIsOpen={false} buttonPosition={'bottom-left'}/>
 										</PrefetchWrapper>
-									</ToastProvider>
-								</ShoppingCartProvider>
+									</ShoppingCartProvider>
+								</ToastProvider>
 							</ScrollLockProvider>
 						</WebSocketProvider>
 					</ServiceWorkerProvider>

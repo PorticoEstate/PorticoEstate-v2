@@ -11,10 +11,12 @@ import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import PopperContentSharedWrapper
 	from "@/components/building-calendar/modules/event/popper/content/popper-content-shared-wrapper";
 import Link from "next/link";
-import {useBookingUser} from "@/service/hooks/api-hooks";
+import {useBookingUser, useServerSettings} from "@/service/hooks/api-hooks";
 import {IEventIsAPIAllocation, IEventIsAPIEvent} from "@/service/pecalendar.types";
 import AllocationPopperActions
 	from "@/components/building-calendar/modules/event/popper/content/allocation-popper-actions";
+import EventPopperActions
+	from "@/components/building-calendar/modules/event/popper/content/event-popper-actions";
 import {boolean} from "zod";
 import {isOrgAdmin} from "@/components/building-calendar/util/event-converter";
 import {PlusIcon} from "@navikt/aksel-icons";
@@ -28,6 +30,7 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 	const {event, onClose} = props
 	const t = useTrans();
 	const eventData = event.extendedProps.source;
+	const serverSettings = useServerSettings();
 	const {data: user} = useBookingUser();
 	// if (!popperInfo) {
 	//     return null;
@@ -47,6 +50,24 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 		}
 		return isOrgAdmin(user, eventData)
 	}, [user, eventData]);
+
+	const showLink = useMemo(() => {
+		let participant_limit = 0;
+		if(IEventIsAPIEvent(eventData)) {
+			participant_limit = eventData.participant_limit || 0;
+		}
+
+		const resWithParticipants = eventData.resources.find(a => (a.participant_limit || 0) > 0)
+		if(!participant_limit && resWithParticipants) {
+			participant_limit = (resWithParticipants?.participant_limit || 0);
+		}
+		if(!participant_limit) {
+			participant_limit = (serverSettings.data?.booking_config?.participant_limit || 0);
+		}
+		if(participant_limit > 0) {
+			return `bookingfrontend.ui${eventData.type}.show`
+		}
+	}, [eventData, serverSettings])
 
 	// console.log("userHasAccess", userHasAccess, event.title);
 	return (
@@ -108,23 +129,22 @@ const EventPopperContent: FC<EventPopperContentProps> = (props) => {
 				)}
 			</div>
 			<div className={styles.eventPopperActions}>
-				{/*{event.extendedProps?.show_link && (popperInfo?.info_participant_limit || 0) > 0 && (*/}
-				{/*    <a href={event.extendedProps?.show_link} target="_blank" rel="noopener noreferrer"*/}
-				{/*       className={styles.actionButton}>*/}
-				{/*        Register Participants*/}
-				{/*    </a>*/}
-				{/*)}*/}
+				{showLink && (
+					<Button asChild variant={'tertiary'} data-color={'accent'}>
+						<Link href={phpGWLink('bookingfrontend/', {
+							menuaction: showLink,
+							id: eventData.id,
+						}, false)} target="_blank"
+							  className={styles.actionButton}>
+							{t('booking.register participants')}
+						</Link>
+					</Button>
+				)}
 				{IEventIsAPIAllocation(eventData) && userHasAccess && user && (
 					<AllocationPopperActions allocation={eventData} user={user}/>
 				)}
 				{IEventIsAPIEvent(eventData) && userHasAccess && (
-					<Button asChild variant={'tertiary'} data-color={'accent'}>
-						<Link href={'/event/' + eventData.id} target="_blank"
-							  className={styles.actionButton}>
-							{t(`bookingfrontend.edit ${event.extendedProps.type}`)}
-						</Link>
-					</Button>
-
+					<EventPopperActions event={eventData} eventType={event.extendedProps.type}/>
 				)}
 			</div>
 

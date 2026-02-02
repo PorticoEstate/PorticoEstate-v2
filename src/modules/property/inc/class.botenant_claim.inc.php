@@ -155,22 +155,23 @@
 
 			phpgwapi_xslttemplates::getInstance()->add_file(array('status_' . $format));
 
-			$status[0]['id']	 = 'ready';
-			$status[0]['name']	 = lang('ready for processing claim');
-			$status[1]['id']	 = 'closed';
-			$status[1]['name']	 = lang('Closed');
+			$status = array();
+			$status[] = array('id' => 'ready', 'name' => lang('ready for processing claim'));
+			$status[] = array('id' => 'closed', 'name' => lang('Closed'));
 			if ($format == "filter")
 			{
-				$status[2]['id']	 = 'all';
-				$status[2]['name']	 = lang('All');
+				$status[] = array('id' => 'all', 'name' => lang('All'));
 			}
 			else
 			{
-				$status[2]['id']	 = 'open';
-				$status[2]['name']	 = lang('Open');
+				$status[] = array('id' => 'open', 'name' => lang('Open'));
 			}
 
-			return $this->bocommon->select_list($selected, $status);
+			$status[] = array('id' => 'closed2', 'name' => 'Avsluttet, ikke fakturert');
+			$status[] = array('id' => 'error', 'name' => 'Feil / mangler');
+
+
+		return $this->bocommon->select_list($selected, $status);
 		}
 
 		function read_category_name( $cat_id = '' )
@@ -187,11 +188,19 @@
 
 			$claims				 = $this->so->read($data);
 			$this->total_records = $this->so->total_records;
+			$status_text = [
+				'open' => lang('open'),
+				'closed' => lang('closed'),
+				'ready' => lang('ready for processing claim')
+				,'error' => 'Feil / mangler',
+				'closed2' => 'Avsluttet, ikke fakturert'
+			];
 
-			foreach ($claims as &$entry)
+
+		foreach ($claims as &$entry)
 			{
 				$entry['entry_date']	 = $this->phpgwapi_common->show_date($entry['entry_date'], $this->userSettings['preferences']['common']['dateformat']);
-				$entry['status']		 = lang($entry['status']);
+				$entry['status']		 = $status_text[$entry['status']];
 				$entry['user']			 = $this->accounts_obj->get($entry['user_id'])->__toString();
 				$location_info			 = execMethod('property.solocation.read_single', $entry['location_code']);
 				$entry['loc1_name']		 = $location_info['loc1_name'];
@@ -280,6 +289,8 @@
 			$status_text['ready']	 = lang('ready for processing claim');
 			$status_text['open']	 = lang('open');
 			$status_text['closed']	 = lang('closed');
+			$status_text['error']	 = 'Feil / mangler';
+			$status_text['closed2'] = 'Avsluttet, ikke fakturert';
 
 			$i = 0;
 			foreach ($history_array as $value)
@@ -355,5 +366,10 @@
 		public function close( $id )
 		{
 			return $this->so->close($id);
+		}
+
+		public function get_reskontro( $location_code )
+		{
+			return $this->so->get_reskontro($location_code);
 		}
 	}

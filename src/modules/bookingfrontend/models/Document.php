@@ -67,6 +67,24 @@ class Document
      */
     public $owner_type;
 
+    /**
+     * @OA\Property(type="object", nullable=true)
+     * @Expose
+     */
+    public $metadata;
+
+    /**
+     * @OA\Property(type="number", nullable=true, minimum=0, maximum=100)
+     * @Expose
+     */
+    public $focal_point_x;
+
+    /**
+     * @OA\Property(type="number", nullable=true, minimum=0, maximum=100)
+     * @Expose
+     */
+    public $focal_point_y;
+
 
     public function __construct(array $data, string|null $owner_type = null)
     {
@@ -76,6 +94,18 @@ class Document
         $this->category = $data['category'] ?? '';
         $this->owner_id = $data['owner_id'] ?? null;
         $this->owner_type = $owner_type ?? Document::OWNER_BUILDING;
+
+        // Handle metadata
+        $this->metadata = $data['metadata'] ?? null;
+        if (is_string($this->metadata)) {
+            $this->metadata = json_decode($this->metadata, true);
+        }
+
+        // Extract focal point for easy access
+        if (isset($this->metadata['focal_point'])) {
+            $this->focal_point_x = $this->metadata['focal_point']['x'] ?? null;
+            $this->focal_point_y = $this->metadata['focal_point']['y'] ?? null;
+        }
     }
 
     public static function getCategories(): array
@@ -488,5 +518,36 @@ class Document
         ];
 
         return in_array($fileType, $displayableTypes);
+    }
+
+    public function getFocalPoint(): ?array
+    {
+        if (isset($this->metadata['focal_point'])) {
+            return $this->metadata['focal_point'];
+        }
+        return null;
+    }
+
+    public function setFocalPoint(?float $x, ?float $y): void
+    {
+        if ($x === null || $y === null) {
+            if (isset($this->metadata['focal_point'])) {
+                unset($this->metadata['focal_point']);
+            }
+            $this->focal_point_x = null;
+            $this->focal_point_y = null;
+            return;
+        }
+
+        if (!is_array($this->metadata)) {
+            $this->metadata = [];
+        }
+
+        $this->metadata['focal_point'] = [
+            'x' => $x,
+            'y' => $y
+        ];
+        $this->focal_point_x = $x;
+        $this->focal_point_y = $y;
     }
 }

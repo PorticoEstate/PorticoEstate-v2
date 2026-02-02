@@ -3,11 +3,13 @@ namespace App\modules\bookingfrontend\repositories;
 
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\models\Article;
+use App\modules\bookingfrontend\models\User;
 use PDO;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
 use App\modules\bookingfrontend\models\Document;
 use App\modules\bookingfrontend\models\Resource;
+use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
@@ -18,12 +20,16 @@ class ApplicationRepository
     private $db;
     private $articleRepository;
     private $userHelper;
+    private $userModel = null;
+    private $resourceRepository;
 
     public function __construct()
     {
         $this->db = Db::getInstance();
         $this->articleRepository = new ArticleRepository();
         $this->userHelper = new UserHelper();
+        // Don't initialize User model here - wait until we need it and have valid SSN
+        $this->resourceRepository = new ResourceRepository();
     }
 
     /**
@@ -109,8 +115,16 @@ class ApplicationRepository
         $params = [':ssn' => $ssn];
 
         if ($includeOrganizations) {
-            // Get user's organization memberships using UserHelper
-            $organizations = $this->userHelper->organizations;
+            // Create User model with the provided SSN to get delegates (same as /user endpoint)
+            $tempUserHelper = UserHelper::fromSSN($ssn);
+            $tempUserModel = new User($tempUserHelper);
+            $organizations = $tempUserModel->delegates ?? [];
+
+            // Filter to only include active delegates
+            $organizations = array_filter($organizations, function($org) {
+                return !empty($org['active']);
+            });
+
             if (!empty($organizations)) {
                 $orgIds = [];
                 $orgNumbers = [];
@@ -119,8 +133,8 @@ class ApplicationRepository
                     if (!empty($org['org_id'])) {
                         $orgIds[] = $org['org_id'];
                     }
-                    if (!empty($org['orgnr'])) {
-                        $orgNumbers[] = $org['orgnr'];
+                    if (!empty($org['organization_number'])) {
+                        $orgNumbers[] = $org['organization_number'];
                     }
                 }
 
@@ -441,13 +455,15 @@ class ApplicationRepository
         activity_id, contact_name, contact_email, contact_phone,
         responsible_street, responsible_zip_code, responsible_city,
         customer_identifier_type, customer_organization_number,
-        created, modified, secret, owner_id, name, organizer
+        created, modified, secret, owner_id, name, organizer, recurring_info,
+        homepage, description, equipment
     ) VALUES (
         :status, :session_id, :building_name, :building_id,
         :activity_id, :contact_name, :contact_email, :contact_phone,
         :responsible_street, :responsible_zip_code, :responsible_city,
         :customer_identifier_type, :customer_organization_number,
-        NOW(), NOW(), :secret, :owner_id, :name, :organizer
+        NOW(), NOW(), :secret, :owner_id, :name, :organizer, :recurring_info,
+        :homepage, :description, :equipment
     )";
 
         $params = [
@@ -467,7 +483,11 @@ class ApplicationRepository
             ':secret' => $this->generateSecret(),
             ':owner_id' => $data['owner_id'],
             ':name' => $data['name'] ?? '',
-            ':organizer' => $data['organizer'] ?? ''
+            ':organizer' => $data['organizer'] ?? '',
+            ':recurring_info' => $data['recurring_info'] ?? null,
+            ':homepage' => $data['homepage'] ?? null,
+            ':description' => $data['description'] ?? null,
+            ':equipment' => $data['equipment'] ?? null
         ];
 
         $stmt = $this->db->prepare($sql);
@@ -495,6 +515,10 @@ class ApplicationRepository
         customer_organization_number = :customer_organization_number,
         name = :name,
         organizer = :organizer,
+        recurring_info = :recurring_info,
+        homepage = :homepage,
+        description = :description,
+        equipment = :equipment,
         modified = NOW()
         WHERE id = :id AND session_id = :session_id";
 
@@ -513,7 +537,11 @@ class ApplicationRepository
             ':customer_identifier_type' => $data['customer_identifier_type'],
             ':customer_organization_number' => $data['customer_organization_number'],
             ':organizer' => $data['organizer'] ?? '',
-            ':name' => $data['name'] ?? ''
+            ':name' => $data['name'] ?? '',
+            ':recurring_info' => $data['recurring_info'] ?? null,
+            ':homepage' => $data['homepage'] ?? null,
+            ':description' => $data['description'] ?? null,
+            ':equipment' => $data['equipment'] ?? null
         ];
 
         $stmt = $this->db->prepare($sql);
@@ -545,7 +573,7 @@ class ApplicationRepository
             'responsible_street', 'responsible_zip_code', 'responsible_city',
             'customer_identifier_type', 'customer_organization_number',
             'customer_organization_name', 'customer_organization_id', 'description', 'equipment', 'organizer', 'parent_id', 'customer_ssn',
-            'session_id'
+            'session_id', 'recurring_info'
         ];
 
         foreach ($data as $field => $value)
@@ -831,10 +859,7 @@ class ApplicationRepository
         $stmt->execute([':application_id' => $application_id]);
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        return array_map(function ($resourceData)
-        {
-            return (new Resource($resourceData))->serialize();
-        }, $results);
+        return $this->resourceRepository->createAndSerialize($results);
     }
 
     /**
@@ -977,8 +1002,11 @@ class ApplicationRepository
             $utcDate->setTimezone($osloTz);
 
             // Format for MySQL
-            return $utcDate->format('Y-m-d H:i:s');
+            $formatted = $utcDate->format('Y-m-d H:i:s');
+            error_log("ApplicationRepository: formatDateForDatabase - Input: {$dateString}, Output: {$formatted}");
+            return $formatted;
         }
+        error_log("ApplicationRepository: formatDateForDatabase - Input (no conversion): {$dateString}");
         return $dateString; // Already in correct format
     }
 

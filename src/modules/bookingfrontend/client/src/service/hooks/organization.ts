@@ -6,6 +6,7 @@ import {
     fetchOrganizationGroup,
     fetchOrganizationBuildings,
     fetchOrganizationDelegates,
+    fetchOrganizationDelegate,
     createOrganizationGroup,
     updateOrganizationGroup,
     toggleOrganizationGroupActive,
@@ -17,13 +18,15 @@ import {
 	IOrganization,
 	IShortOrganizationGroup,
 	IShortOrganizationDelegate,
+	IOrganizationDelegate,
 	IOrganizationGroup
 } from "@/service/types/api/organization.types";
 import {useBookingUser} from "./api-hooks";
 import {IBuilding} from "@/service/types/Building";
 
 export function useMyOrganizations(): UseQueryResult<IOrganization[]> {
-    return useQuery(
+    // @ts-ignore
+	return useQuery(
         {
             queryKey: ['myOrganizations'],
             queryFn: () => fetchMyOrganizations(), // Fetch function
@@ -99,6 +102,20 @@ export function useOrganizationDelegates(id: string | number): UseQueryResult<IS
             retry: 2,
             refetchOnWindowFocus: false,
             enabled: !!id && !!user, // Only run query if id exists and user is logged in
+        }
+    );
+}
+
+export function useOrganizationDelegate(organizationId: string | number, delegateId: string | number): UseQueryResult<IOrganizationDelegate | undefined> {
+    const { data: user } = useBookingUser();
+
+    return useQuery(
+        {
+            queryKey: ['organizationDelegate', organizationId, delegateId, user?.id],
+            queryFn: () => fetchOrganizationDelegate(organizationId, delegateId),
+            retry: 2,
+            refetchOnWindowFocus: false,
+            enabled: !!(organizationId && delegateId && user), // Only run query if both IDs exist and user is logged in
         }
     );
 }

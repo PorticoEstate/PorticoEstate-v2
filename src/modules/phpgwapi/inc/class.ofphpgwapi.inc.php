@@ -98,8 +98,9 @@ class phpgwapi_ofphpgwapi extends phpgwapi_object_factory
 				}
 				else
 				{
-					$acl->set_account_id($account_id);
-					return $acl;
+					$_acl = clone($acl);
+					$_acl->set_account_id($account_id);
+					return $_acl;
 				}
 
 			case 'asyncservice':

@@ -7,10 +7,12 @@
 @import "../styles/bs-containers/container.global";
 @import "../styles/hr.module";
 @import "../styles/digdir-utility/digdir-utility.module";
+@import "../styles/date-picker";
 
 
 body {
 	margin: 0;
+	touch-action: manipulation;
 }
 
 /* Scroll lock managed by ScrollLockContext */
@@ -119,6 +121,26 @@ select option:disabled {
 
 .captialize {
 	text-transform: capitalize;
+}
+
+// Automatically add asterisk to required field labels
+.ds-field:has(input[required]) .ds-label::after,
+.ds-field:has(textarea[required]) .ds-label::after,
+.ds-field:has(select[required]) .ds-label::after {
+    content: " *";
+    color: var(--fds-semantic-text-danger-default, #d73027);
+}
+
+// Style asterisks as red
+.required-asterisk {
+    color: var(--fds-semantic-text-danger-default, #d73027);
+}
+
+// Style asterisks in headings as red using a more reliable method
+h1, h2, h3, h4, h5, h6 {
+    & > span.required-asterisk {
+        color: var(--fds-semantic-text-danger-default, #d73027);
+    }
 }
 
 .pswp img {
@@ -654,21 +676,6 @@ select option:disabled {
     --ds-color-brand2-13: #f0e08b;
     --ds-color-brand2-contrast-1: #ffffff;
     --ds-color-brand2-contrast-2: #a0a09d;
-    --ds-color-brand3-1: #1b1b1b;
-    --ds-color-brand3-2: #242424;
-    --ds-color-brand3-3: #303030;
-    --ds-color-brand3-4: #3e3e3e;
-    --ds-color-brand3-5: #4b4b4b;
-    --ds-color-brand3-6: #525252;
-    --ds-color-brand3-7: #6f6f6f;
-    --ds-color-brand3-8: #bebebe;
-    --ds-color-brand3-9: #0b0b0b;
-    --ds-color-brand3-10: #1d1d1d;
-    --ds-color-brand3-11: #2e2e2e;
-    --ds-color-brand3-12: #9e9e9e;
-    --ds-color-brand3-13: #dfdfdf;
-    --ds-color-brand3-contrast-1: #ffffff;
-    --ds-color-brand3-contrast-2: #989898;
 }
 [data-ds-theme="contrast"] {
     --ds-color-accent-1: #060306;
@@ -731,20 +738,5 @@ select option:disabled {
     --ds-color-brand2-13: #fff2af;
     --ds-color-brand2-contrast-1: #ffffff;
     --ds-color-brand2-contrast-2: #a0a09d;
-    --ds-color-brand3-1: #040404;
-    --ds-color-brand3-2: #131313;
-    --ds-color-brand3-3: #242424;
-    --ds-color-brand3-4: #303030;
-    --ds-color-brand3-5: #3e3e3e;
-    --ds-color-brand3-6: #8b8b8b;
-    --ds-color-brand3-7: #ababab;
-    --ds-color-brand3-8: #cbcbcb;
-    --ds-color-brand3-9: #0b0b0b;
-    --ds-color-brand3-10: #1d1d1d;
-    --ds-color-brand3-11: #2e2e2e;
-    --ds-color-brand3-12: #c6c6c6;
-    --ds-color-brand3-13: #f1f1f1;
-    --ds-color-brand3-contrast-1: #ffffff;
-    --ds-color-brand3-contrast-2: #989898;
 }
 */

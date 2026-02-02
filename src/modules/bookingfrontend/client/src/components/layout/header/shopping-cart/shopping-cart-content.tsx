@@ -11,7 +11,9 @@ import Link from "next/link";
 import {IApplication} from "@/service/types/api/application.types";
 import {DateTime} from "luxon";
 import ShoppingCartCardList from "@/components/layout/header/shopping-cart/shopping-cart-card-list";
-import { calculateTotalCartCost, formatCurrency } from "@/utils/cost-utils";
+import { calculateApplicationCost, formatCurrency } from "@/utils/cost-utils";
+import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
+import { useBuildingSeasons } from "@/service/hooks/api-hooks";
 
 interface ShoppingCartContentProps {
     setOpen: Dispatch<boolean>;
@@ -25,6 +27,18 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
     const {t, i18n} = useClientTranslation();
     const isMobile = useIsMobile();
     const {data: basketData, isLoading} = usePartialApplications();
+
+    // Calculate total cost including recurring applications
+    // Note: This is a simplified calculation that doesn't account for recurring instances
+    // The child components will handle the detailed recurring calculations
+    const calculateTotalCost = (): number => {
+        if (!basketData?.list) return 0;
+
+        return basketData.list.reduce((total, app) => {
+            const appCost = calculateApplicationCost(app);
+            return total + appCost;
+        }, 0);
+    };
 
     const openEdit = (item: IApplication) =>  {
         props.setCurrentApplication({
@@ -61,11 +75,11 @@ const ShoppingCartContent: FC<ShoppingCartContentProps> = (props) => {
                     />
                 )}
 
-                {!isLoading && (basketData?.list.length || 0) > 0 && calculateTotalCartCost(basketData!.list) > 0 && (
+                {!isLoading && (basketData?.list.length || 0) > 0 && calculateTotalCost() > 0 && (
                     <div className={styles.totalCost}>
                         <span className={styles.totalLabel}>{t('bookingfrontend.total')}:</span>
                         <span className={styles.totalAmount}>
-                            {formatCurrency(calculateTotalCartCost(basketData!.list))}
+                            {formatCurrency(calculateTotalCost())}
                         </span>
                     </div>
                 )}

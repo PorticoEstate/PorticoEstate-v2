@@ -13,11 +13,11 @@ import {
 } from "@digdir/designsystemet-react";
 import {useClientTranslation, useTrans} from "@/app/i18n/ClientTranslationProvider";
 import styles from './checkout.module.scss';
-import {BillingFormData, billingFormSchema} from "@/components/checkout/billing-form-schema";
+import {BillingFormData, createBillingFormSchema} from "@/components/checkout/billing-form-schema";
 import {IBookingUser} from "@/service/types/api.types";
 import {useMyOrganizations} from "@/service/hooks/organization";
 import {searchOrganizations, validateOrgNum} from "@/service/api/api-utils";
-import AsyncSelect from "react-select/async";
+import AsyncCreatableSelect from "react-select/async-creatable";
 import RegulationDocuments from './regulation-documents';
 import {ExternalPaymentEligibilityResponse} from "@/service/api/api-utils";
 import VippsCheckoutButton from './VippsCheckoutButton';
@@ -70,6 +70,60 @@ const BillingForm: FC<BillingFormProps> = ({
 	// Determine language for Vipps button (en or fallback to no)
 	const vippsLanguage = i18n.language === 'en' ? 'en' : 'no';
 
+	// State for validation loading
+	const [isValidatingOrg, setIsValidatingOrg] = useState(false);
+
+	// Validate Norwegian organization number format (9 digits)
+	const validateOrgNumberFormat = (orgNum: string): boolean => {
+		// Remove spaces and check if it's exactly 9 digits
+		const cleaned = orgNum.replace(/\s/g, '');
+		return /^\d{9}$/.test(cleaned);
+	};
+
+	// State to store the created organization for display
+	const [createdOrg, setCreatedOrg] = useState<OrganizationOption | null>(null);
+
+	// State to store resolved org name for preview
+	const [resolvedOrgName, setResolvedOrgName] = useState<string>('');
+
+	// Handle when user creates a new organization number
+	const handleCreateOrganization = async (inputValue: string) => {
+		const cleaned = inputValue.replace(/\s/g, '');
+
+		// First validate format
+		if (!validateOrgNumberFormat(cleaned)) {
+			alert(t('bookingfrontend.invalid_org_number_format'));
+			return;
+		}
+
+		setIsValidatingOrg(true);
+
+		try {
+			const data = await validateOrgNum(cleaned);
+
+			// Create the option object
+			const newOption: OrganizationOption = {
+				value: cleaned,
+				label: `${cleaned} [${data.navn}]`
+			};
+
+			// Set the form values with the validated org data
+			setValue('organizationNumber', cleaned);
+			setValue('organizationName', data.navn);
+			setValue('street', data.postadresse?.adresse?.[0] || '');
+			setValue('zipCode', data.postadresse?.postnummer || '');
+			setValue('city', data.postadresse?.poststed || '');
+
+			// Store the created org so it shows as selected
+			setCreatedOrg(newOption);
+		} catch (error) {
+			console.error('Failed to validate organization:', error);
+			alert(t('bookingfrontend.org_not_found'));
+		} finally {
+			setIsValidatingOrg(false);
+		}
+	};
+
 	// Separate applications by type and calculate totals
 	const {normalApplications, directApplications, normalTotal, directTotal} = useMemo(() => {
 		const normal: any[] = [];
@@ -118,9 +172,10 @@ const BillingForm: FC<BillingFormProps> = ({
 		handleSubmit,
 		formState: {errors},
 		watch,
-		setValue
+		setValue,
+		getValues
 	} = useForm<BillingFormData>({
-		resolver: zodResolver(billingFormSchema),
+		resolver: zodResolver(createBillingFormSchema(t)),
 		defaultValues: {
 			customerType: 'ssn',
 			contactName: user?.name || '',
@@ -148,6 +203,36 @@ const BillingForm: FC<BillingFormProps> = ({
 		onBillingChange(defaultValues);
 	}, [user, onBillingChange]);
 
+	// Effect to refill blank fields when user data refreshes
+	useEffect(() => {
+		const currentValues = getValues();
+		const customerType = currentValues.customerType;
+		
+		// Only refill fields if they are currently blank and user has the data
+		// Also only refill personal fields when customerType is 'ssn' (private)
+		if (customerType === 'ssn') {
+			if (!currentValues.contactName && user?.name) {
+				setValue('contactName', user.name);
+			}
+			if (!currentValues.contactEmail && user?.email) {
+				setValue('contactEmail', user.email);
+				setValue('contactEmailConfirm', user.email);
+			}
+			if (!currentValues.contactPhone && user?.phone) {
+				setValue('contactPhone', user.phone);
+			}
+			if (!currentValues.street && user?.street) {
+				setValue('street', user.street);
+			}
+			if (!currentValues.zipCode && user?.zip_code) {
+				setValue('zipCode', user.zip_code);
+			}
+			if (!currentValues.city && user?.city) {
+				setValue('city', user.city);
+			}
+		}
+	}, [user, setValue, getValues]);
+
 
 	const customerType = watch('customerType');
 	const selectedOrg = watch('organizationNumber');
@@ -157,6 +242,20 @@ const BillingForm: FC<BillingFormProps> = ({
 		if (inputValue.length < 2) {
 			return [];
 		}
+
+		// If user typed a valid org number, try to resolve it from Brreg
+		const cleaned = inputValue.replace(/\s/g, '');
+		if (validateOrgNumberFormat(cleaned)) {
+			try {
+				const data = await validateOrgNum(cleaned);
+				setResolvedOrgName(data.navn);
+			} catch (error) {
+				setResolvedOrgName('');
+			}
+		} else {
+			setResolvedOrgName('');
+		}
+
 		try {
 			const organizations = await searchOrganizations(inputValue);
 			return organizations.map(org => ({
@@ -188,6 +287,14 @@ const BillingForm: FC<BillingFormProps> = ({
 		return () => subscription.unsubscribe();
 	}, [watch, onBillingChange]);
 
+	// Sync documentsRead field with parent's areAllDocumentsChecked state
+	useEffect(() => {
+		const currentDocumentsRead = getValues('documentsRead');
+		if (currentDocumentsRead !== areAllDocumentsChecked) {
+			setValue('documentsRead', areAllDocumentsChecked, { shouldValidate: true });
+		}
+	}, [areAllDocumentsChecked, getValues, setValue]);
+
 
 	const handleOrgChange = async (orgNumber: string) => {
 		if (!orgNumber) return;
@@ -210,11 +317,27 @@ const BillingForm: FC<BillingFormProps> = ({
 	};
 
 
-	// Custom submit handler that checks document validation
+	// Custom submit handler that runs after form validation passes
 	const submitForm = (data: BillingFormData) => {
-		// Always call onSubmit - it will handle document validation internally
-		// and show errors if needed
+		// Only called if form validation passes
+		// Now handle document validation and proceed
+		if (process.env.NODE_ENV === 'development') {
+			console.log('🐛 BillingForm: submitForm called with data:', data);
+			console.log('🐛 BillingForm: documentsValidated:', documentsValidated);
+			console.log('🐛 BillingForm: about to call onSubmit()');
+		}
 		onSubmit();
+	};
+
+	// Handler for Vipps payment that validates form first
+	const handleVippsPaymentClick = () => {
+		// Trigger form validation and call Vipps payment if valid
+		handleSubmit((data) => {
+			// Only called if form validation passes
+			if (onVippsPayment && !vippsLoading) {
+				onVippsPayment();
+			}
+		})();
 	};
 
 	return (
@@ -223,8 +346,20 @@ const BillingForm: FC<BillingFormProps> = ({
 				onSubmit={(e) => {
 					// Prevent default form submission
 					e.preventDefault();
+					if (process.env.NODE_ENV === 'development') {
+						console.log('🐛 BillingForm: Form submit event triggered');
+						console.log('🐛 BillingForm: Current form errors:', errors);
+						console.log('🐛 BillingForm: Current form values:', getValues());
+					}
 					// Run form validation
-					handleSubmit(submitForm)(e);
+					handleSubmit(
+						submitForm,
+						(errors) => {
+							if (process.env.NODE_ENV === 'development') {
+								console.error('🐛 BillingForm: Form validation failed with errors:', errors);
+							}
+						}
+					)(e);
 				}}
 				className={styles.checkoutForm}>
 				<h2>{t('bookingfrontend.billing_information')}</h2>
@@ -271,53 +406,71 @@ const BillingForm: FC<BillingFormProps> = ({
 							render={({field}) => (
 								<Field>
 									<Label>
-										{t('bookingfrontend.organization')}
+										{t('bookingfrontend.organization')} <span className="required-asterisk">*</span>
 									</Label>
-									<AsyncSelect
+									<AsyncCreatableSelect
+										onCreateOption={handleCreateOrganization}
+										isDisabled={isValidatingOrg}
+										isValidNewOption={(inputValue) => validateOrgNumberFormat(inputValue)}
+										formatCreateLabel={(inputValue) => {
+											const displayText = resolvedOrgName || inputValue;
+											return `${t('bookingfrontend.add_organization')}: ${displayText}`;
+										}}
 										cacheOptions
-										defaultOptions={myOrganizations?.map(org => ({
-											value: org.organization_number,
-											label: `${org.organization_number} [${org.name}]`
-										}))}
-										loadOptions={loadOptions}
-										onChange={(newValue) => {
-											const value = (newValue as OrganizationOption)?.value || '';
-											field.onChange(value);
-											handleOrgChange(value);
-										}}
-										value={myOrganizations?.map(org => ({
-											value: org.organization_number,
-											label: `${org.organization_number} [${org.name}]`
-										})).find(option => option.value === field.value)}
-										isClearable
-										placeholder={t('bookingfrontend.select_organization')}
-										classNamePrefix="react-select"
-										styles={{
-											container: (base) => ({
-												...base,
-												width: '100%'
-											}),
-											control: (base) => ({
-												...base,
-												minHeight: '48px',
-												borderRadius: '4px',
-												borderColor: errors.organizationNumber ? '#c30000' : '#ccc',
-												width: '100%'
-											}),
-											menu: (base) => ({
-												...base,
-												zIndex: 2
-											})
-										}}
-									/>
-									{errors.organizationNumber && (
-										<ValidationMessage>
-											{errors.organizationNumber.message}
-										</ValidationMessage>
-									)}
-								</Field>
-							)}
-						/>
+											defaultOptions={myOrganizations?.map(org => ({
+												value: org.organization_number,
+												label: `${org.organization_number} [${org.name}]`
+											}))}
+											loadOptions={loadOptions}
+											onChange={(newValue) => {
+												const value = (newValue as OrganizationOption)?.value || '';
+												field.onChange(value);
+												void handleOrgChange(value);
+												// Clear created org when user selects a different option
+												if (createdOrg && value !== createdOrg.value) {
+													setCreatedOrg(null);
+												}
+											}}
+											value={
+												createdOrg && field.value === createdOrg.value
+													? createdOrg
+													: myOrganizations?.map(org => ({
+														value: org.organization_number,
+														label: `${org.organization_number} [${org.name}]`
+													})).find(option => option.value === field.value)
+											}
+											isClearable
+											placeholder={t('bookingfrontend.select_organization')}
+											classNamePrefix="react-select"
+											styles={{
+												container: (base) => ({
+													...base,
+													width: '100%'
+												}),
+												control: (base) => ({
+													...base,
+													minHeight: '48px',
+													borderRadius: '4px',
+													borderColor: errors.organizationNumber ? '#c30000' : '#ccc',
+													width: '100%'
+												}),
+												menu: (base) => ({
+													...base,
+													zIndex: 2
+												})
+											}}
+										/>
+										<Paragraph style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#666' }}>
+											{t('bookingfrontend.org_create_hint')}
+										</Paragraph>
+										{errors.organizationNumber && (
+											<ValidationMessage>
+												{errors.organizationNumber.message}
+											</ValidationMessage>
+										)}
+									</Field>
+								)}
+							/>
 					)}
 
 					<Controller
@@ -328,6 +481,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.contact_name')}
 								{...field}
 								error={errors.contactName?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -341,6 +495,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								type="email"
 								{...field}
 								error={errors.contactEmail?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -354,6 +509,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								type="email"
 								{...field}
 								error={errors.contactEmailConfirm?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -367,6 +523,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								type="tel"
 								{...field}
 								error={errors.contactPhone?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -379,6 +536,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.responsible_street')}
 								{...field}
 								error={errors.street?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -391,6 +549,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.responsible_zip_code')}
 								{...field}
 								error={errors.zipCode?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -403,6 +562,7 @@ const BillingForm: FC<BillingFormProps> = ({
 								label={t('bookingfrontend.responsible_city')}
 								{...field}
 								error={errors.city?.message as string}
+								required
 							/>
 						)}
 					/>
@@ -416,8 +576,13 @@ const BillingForm: FC<BillingFormProps> = ({
 							checkedDocuments={checkedDocuments}
 							onDocumentCheck={onDocumentCheck}
 							areAllChecked={areAllDocumentsChecked}
-							showError={showDocumentsError}
+							showError={showDocumentsError || !!errors.documentsRead}
 						/>
+						{(errors.documentsRead || (!areAllDocumentsChecked && showDocumentsError)) && (
+							<ValidationMessage>
+								{errors.documentsRead?.message || t('bookingfrontend.you_must_confirm_all_documents')}
+							</ValidationMessage>
+						)}
 					</div>
 				)}
 
@@ -503,12 +668,7 @@ const BillingForm: FC<BillingFormProps> = ({
 											<VippsCheckoutButton
 												key={method.method}
 												type="button"
-												onClick={() => {
-													console.log("Vipps button clicked!");
-													if (onVippsPayment && !vippsLoading) {
-														onVippsPayment();
-													}
-												}}
+												onClick={handleVippsPaymentClick}
 												brand="vipps"
 												language={vippsLanguage}
 												variant="primary"
@@ -526,10 +686,7 @@ const BillingForm: FC<BillingFormProps> = ({
 
 								{/* Invoice Payment Button */}
 								<Button
-									onClick={(e) => {
-										e.preventDefault();
-										onSubmit();
-									}}
+									type="submit"
 									disabled={vippsLoading}
 									className={styles.invoiceButton}
 								>
@@ -541,10 +698,7 @@ const BillingForm: FC<BillingFormProps> = ({
 						/* Show single submit button when no Vipps eligibility */
 						<Button
 							variant="primary"
-							onClick={(e) => {
-								e.preventDefault();
-								onSubmit();
-							}}
+							type="submit"
 						>
 							{t('bookingfrontend.submit_application')}
 						</Button>

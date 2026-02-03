@@ -56,15 +56,15 @@
 		</div>
 	</div>
 	<div class="mt-2 mb-2 ms-1">
-		<button class="btn btn-info" type="button" data-bs-toggle="collapse" data-bs-target="#democollapseBtn" aria-expanded="false" aria-controls="democollapseBtn">
+		<button class="app-button app-button--secondary" type="button" onclick="document.getElementById('democollapseBtn').classList.toggle('app-collapse--show');" aria-expanded="false" aria-controls="democollapseBtn">
 			<xsl:value-of select="php:function('lang', 'filter')"/>
 		</button>
-		<button id="reset_filter" class="ms-2 btn btn-secondary" type="button" onclick="reset_filter();" style="display: none;">
+		<button id="reset_filter" class="ms-2 app-button app-button--tertiary" type="button" onclick="reset_filter();" style="display: none;">
 			<xsl:value-of select="php:function('lang', 'reset filter')"/>
 		</button>
 	</div>
 
-	<div class="row mt-2 collapse" id="democollapseBtn">
+	<div class="row mt-2 app-collapse" id="democollapseBtn">
 		<xsl:if test="item">
 			<xsl:variable name="count_items" select="count(item)"/>
 			<div id="toolbar" class='dtable_custom_controls'>
@@ -98,7 +98,7 @@
 									<xsl:variable name="filter_key_name" select="concat(concat('filter_', name), '_name')"/>
 									<xsl:variable name="filter_key_id" select="concat(concat('filter_', name), '_id')"/>
 									<xsl:if test="name">
-										<label class="form-label">
+										<label class="app-label">
 											<xsl:attribute name="for">
 												<xsl:value-of select="phpgw:conditional(not(name), '', name)"/>
 											</xsl:attribute>
@@ -107,14 +107,14 @@
 									</xsl:if>
 									<xsl:choose>
 										<xsl:when test="type = 'date-picker'">
-											<input class="form-control" id="filter_{name}" name="filter_{name}" value="{value}" type="text">
+											<input class="app-input" id="filter_{name}" name="filter_{name}" value="{value}" type="text">
 												<xsl:attribute name="title">
 													<xsl:value-of select="phpgw:conditional(not(text), '', text)"/>
 												</xsl:attribute>
 											</input>
 										</xsl:when>
 										<xsl:when test="type = 'autocomplete'">
-											<input id="filter_{name}_name" name="{name}_name" type="text" class="form-control">
+											<input id="filter_{name}_name" name="{name}_name" type="text" class="app-input">
 												<xsl:attribute name="value">
 													<xsl:value-of select="../../../filters/*[local-name() = $filter_key_name]"/>
 												</xsl:attribute>
@@ -207,7 +207,7 @@
 											<script>
 												filter_selects['<xsl:value-of select="text"/>'] = '<xsl:value-of select="$name"/>';
 											</script>
-											<select id="{$name}" name="{$name}" class="form-select">
+											<select id="{$name}" name="{$name}" class="app-select">
 												<xsl:if test="multiple">
 													<xsl:attribute name="multiple">
 														<xsl:text>true</xsl:text>
@@ -249,7 +249,7 @@
 													<xsl:value-of select="value"/>
 												</label>
 												<br/>
-												<input type="button" class= "btn btn btn-primary ms-2">
+												<input type="button" class="app-button app-button--primary ms-2">
 													<xsl:choose>
 														<xsl:when test="onclick">
 															<xsl:attribute name="onclick">
@@ -290,7 +290,7 @@
 											</label>
 										</xsl:when>
 										<xsl:when test="type = 'checkbox'">
-											<div class="form-check ps-0">
+											<div class="app-checkbox-wrapper ps-0">
 												<input id="innertoolbar_{name}">
 													<xsl:attribute name="type">
 														<xsl:value-of select="phpgw:conditional(not(type), '', type)"/>
@@ -305,7 +305,7 @@
 														<xsl:value-of select="phpgw:conditional(not(value), '', value)"/>
 													</xsl:attribute>
 													<xsl:attribute name="class">
-														<xsl:text>form-check-input ms-0</xsl:text>
+														<xsl:text>app-checkbox ms-0</xsl:text>
 														<xsl:if test="class">
 															<xsl:text></xsl:text>
 															<xsl:value-of select="class"/>
@@ -325,7 +325,7 @@
 											</div>
 										</xsl:when>
 										<xsl:otherwise>
-											<input id="innertoolbar_{name}" class="form-control">
+											<input id="innertoolbar_{name}" class="app-input">
 												<xsl:attribute name="type">
 													<xsl:value-of select="phpgw:conditional(not(type), '', type)"/>
 												</xsl:attribute>
@@ -425,15 +425,15 @@
 	<div class="toolbar-container">
 		<div class="toolbar" >
 			<form>
-				<div class="form-row">
-					<div class="form-group col-md-2">
+				<div class="row">
+					<div class="col-md-2">
 						<xsl:apply-templates select="//datatable/workorder_data" />
 					</div>
-					<div class="form-group col-md-4">
+					<div class="col-md-4">
 						<xsl:for-each select="//top-toolbar/fields/field">
 							<xsl:choose>
 								<xsl:when test="type='button'">
-									<button id="{id}" type="{type}" class="btn btn btn-primary">
+									<button id="{id}" type="{type}" class="app-button app-button--primary">
 										<xsl:value-of select="value"/>
 									</button>
 								</xsl:when>
@@ -450,19 +450,19 @@
 	<div class="toolbar-container">
 		<div class="toolbar">
 			<form>
-				<div class="form-row">
+				<div class="row">
 					<xsl:for-each select="//end-toolbar/fields/field">
-						<div class="form-group col-md-2">
+						<div class="col-md-2">
 							<xsl:choose>
 								<xsl:when test="type = 'date-picker'">
-									<input class="form-control" id="filter_{name}" name="filter_{name}" value="{value}" type="text">
+									<input class="app-input" id="filter_{name}" name="filter_{name}" value="{value}" type="text">
 										<xsl:attribute name="title">
 											<xsl:value-of select="phpgw:conditional(not(text), '', text)"/>
 										</xsl:attribute>
 									</input>
 								</xsl:when>
 								<xsl:when test="type='button'">
-									<button id="{id}" type="{type}" class="btn btn btn-primary" onclick="{action}">
+									<button id="{id}" type="{type}" class="app-button app-button--primary" onclick="{action}">
 										<xsl:value-of select="value"/>
 									</button>
 								</xsl:when>
@@ -470,7 +470,7 @@
 									<xsl:value-of select="value"/>
 								</xsl:when>
 								<xsl:otherwise>
-									<input id="{id}" type="{type}" name="{name}" value="{value}" class="form-control">
+									<input id="{id}" type="{type}" name="{name}" value="{value}" class="app-input">
 										<xsl:if test="type = 'checkbox' and checked = '1'">
 											<xsl:attribute name="checked">checked</xsl:attribute>
 										</xsl:if>
@@ -1065,9 +1065,9 @@
 				try
 				{
 					oControl.multiselect({
-						buttonClass: 'form-select',
+						buttonClass: 'app-select',
 						templates: {
-						button: '<button type="button" class="multiselect dropdown-toggle" data-bs-toggle="dropdown"><span class="multiselect-selected-text"></span></button>',
+						button: '<button type="button" class="multiselect dropdown-toggle"><span class="multiselect-selected-text"></span></button>',
 						},
 						buttonWidth: 250,
 						includeSelectAllOption: true,
@@ -1530,7 +1530,7 @@ console.log(app_method_referrer);
 				{
 					$(".btn-group").addClass('w-100');
 					$(".dropdown-menu").addClass('w-100');
-					$(".multiselect ").addClass('form-control');
+					$(".multiselect ").addClass('app-input');
 					$(".multiselect").removeClass('btn');
 					$(".multiselect").removeClass('btn-default');
 

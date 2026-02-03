@@ -594,6 +594,269 @@ body {
 }
 
 /* ============================================
+   FORM CONTROLS
+   ============================================ */
+
+/* Labels */
+.app-label {
+    display: inline-block;
+    margin-bottom: var(--ds-spacing-2, 0.5rem);
+    font-size: var(--ds-font-size-sm, 0.875rem);
+    font-weight: var(--ds-font-weight-medium, 500);
+    color: var(--ds-color-text-default, #1e2b3c);
+}
+
+/* Text inputs */
+.app-input {
+    display: block;
+    width: 100%;
+    padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem);
+    font-size: var(--ds-font-size-md, 1rem);
+    font-weight: var(--ds-font-weight-regular, 400);
+    line-height: var(--ds-line-height-md, 1.5);
+    color: var(--ds-color-text-default, #1e2b3c);
+    background-color: var(--ds-color-background-default, #fff);
+    border: 1px solid var(--ds-color-border-default, #dee2e6);
+    border-radius: var(--ds-border-radius-sm, 0.25rem);
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.app-input:focus {
+    color: var(--ds-color-text-default, #1e2b3c);
+    background-color: var(--ds-color-background-default, #fff);
+    border-color: var(--ds-color-border-focus, #0062ba);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 98, 186, 0.25);
+}
+
+.app-input::placeholder {
+    color: var(--ds-color-text-subtle, #6c757d);
+    opacity: 1;
+}
+
+.app-input:disabled,
+.app-input[readonly] {
+    background-color: var(--ds-color-background-subtle, #e9ecef);
+    opacity: 1;
+}
+
+/* Select dropdowns */
+.app-select {
+    display: block;
+    width: 100%;
+    padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem);
+    padding-right: 2.5rem;
+    font-size: var(--ds-font-size-md, 1rem);
+    font-weight: var(--ds-font-weight-regular, 400);
+    line-height: var(--ds-line-height-md, 1.5);
+    color: var(--ds-color-text-default, #1e2b3c);
+    background-color: var(--ds-color-background-default, #fff);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+    border: 1px solid var(--ds-color-border-default, #dee2e6);
+    border-radius: var(--ds-border-radius-sm, 0.25rem);
+    appearance: none;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.app-select:focus {
+    border-color: var(--ds-color-border-focus, #0062ba);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 98, 186, 0.25);
+}
+
+.app-select:disabled {
+    background-color: var(--ds-color-background-subtle, #e9ecef);
+    opacity: 1;
+}
+
+/* Multiple select */
+.app-select[multiple] {
+    padding-right: var(--ds-spacing-4, 1rem);
+    background-image: none;
+}
+
+/* Checkboxes */
+.app-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--ds-spacing-2, 0.5rem);
+    margin-bottom: var(--ds-spacing-2, 0.5rem);
+}
+
+.app-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0;
+    vertical-align: top;
+    background-color: var(--ds-color-background-default, #fff);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    border: 1px solid var(--ds-color-border-default, #dee2e6);
+    border-radius: var(--ds-border-radius-sm, 0.25rem);
+    appearance: none;
+    cursor: pointer;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.app-checkbox:checked {
+    background-color: var(--ds-color-accent-background-default, #0062ba);
+    border-color: var(--ds-color-accent-background-default, #0062ba);
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e");
+}
+
+.app-checkbox:focus {
+    border-color: var(--ds-color-border-focus, #0062ba);
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 98, 186, 0.25);
+}
+
+.app-checkbox:disabled {
+    pointer-events: none;
+    filter: none;
+    opacity: 0.5;
+}
+
+/* Collapse component */
+.app-collapse {
+    display: none;
+}
+
+.app-collapse--show {
+    display: block;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+/* ============================================
+   ALERTS
+   ============================================ */
+
+.app-alert {
+    position: relative;
+    padding: var(--ds-spacing-4, 1rem) var(--ds-spacing-5, 1.25rem);
+    margin-bottom: var(--ds-spacing-4, 1rem);
+    border: 1px solid transparent;
+    border-radius: var(--ds-border-radius-md, 0.5rem);
+    font-size: var(--ds-font-size-md, 1rem);
+}
+
+.app-alert--info {
+    color: #055160;
+    background-color: #cff4fc;
+    border-color: #b6effb;
+}
+
+.app-alert--success {
+    color: #0f5132;
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+}
+
+.app-alert--warning {
+    color: #664d03;
+    background-color: #fff3cd;
+    border-color: #ffecb5;
+}
+
+.app-alert--danger {
+    color: #842029;
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+}
+
+.app-alert__heading {
+    margin-top: 0;
+    margin-bottom: var(--ds-spacing-2, 0.5rem);
+    font-weight: var(--ds-font-weight-bold, 700);
+}
+
+/* ============================================
+   BUTTON VARIANTS
+   ============================================ */
+
+/* Circle buttons */
+.app-button--circle {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Small buttons */
+.app-button--sm {
+    padding: var(--ds-spacing-2, 0.5rem) var(--ds-spacing-3, 0.75rem);
+    font-size: var(--ds-font-size-sm, 0.875rem);
+}
+
+/* Success button variant */
+.app-button--success {
+    background-color: var(--ds-color-success-background-default, #198754);
+    color: var(--ds-color-success-text-default, #fff);
+    border: 1px solid var(--ds-color-success-background-default, #198754);
+}
+
+.app-button--success:hover {
+    background-color: var(--ds-color-success-background-hover, #157347);
+    border-color: var(--ds-color-success-background-hover, #157347);
+}
+
+/* Warning button variant */
+.app-button--warning {
+    background-color: var(--ds-color-warning-background-default, #ffc107);
+    color: var(--ds-color-warning-text-default, #000);
+    border: 1px solid var(--ds-color-warning-background-default, #ffc107);
+}
+
+.app-button--warning:hover {
+    background-color: var(--ds-color-warning-background-hover, #ffca2c);
+    border-color: var(--ds-color-warning-background-hover, #ffca2c);
+}
+
+/* Danger button variant */
+.app-button--danger {
+    background-color: var(--ds-color-danger-background-default, #dc3545);
+    color: var(--ds-color-danger-text-default, #fff);
+    border: 1px solid var(--ds-color-danger-background-default, #dc3545);
+}
+
+.app-button--danger:hover {
+    background-color: var(--ds-color-danger-background-hover, #bb2d3b);
+    border-color: var(--ds-color-danger-background-hover, #bb2d3b);
+}
+
+/* ============================================
+   MODAL CLOSE BUTTON
+   ============================================ */
+
+.app-modal__close {
+    position: absolute;
+    top: var(--ds-spacing-3, 0.75rem);
+    right: var(--ds-spacing-3, 0.75rem);
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 011.414 0L8 6.586 14.293.293a1 1 0 111.414 1.414L9.414 8l6.293 6.293a1 1 0 01-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 01-1.414-1.414L6.586 8 .293 1.707a1 1 0 010-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+    border: 0;
+    border-radius: var(--ds-border-radius-sm, 0.25rem);
+    opacity: 0.5;
+    cursor: pointer;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.app-modal__close:hover {
+    opacity: 1;
+}
+
+/* ============================================
    PRINT STYLES
    ============================================ */
 

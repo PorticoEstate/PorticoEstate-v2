@@ -232,12 +232,90 @@
 		}
 	}
 
+	// Bootstrap compatibility: Handle data-bs-toggle for modals, tabs, collapse
+	function initBootstrapCompatibility() {
+		// Modal triggers
+		document.addEventListener('click', function(e) {
+			const trigger = e.target.closest('[data-bs-toggle="modal"]');
+			if (trigger) {
+				e.preventDefault();
+				const targetSelector = trigger.getAttribute('data-bs-target');
+				if (targetSelector) {
+					const modal = document.querySelector(targetSelector);
+					if (modal && modal.tagName === 'DIALOG') {
+						modal.showModal();
+					}
+				}
+			}
+		});
+
+		// Modal dismiss
+		document.addEventListener('click', function(e) {
+			const dismissBtn = e.target.closest('[data-bs-dismiss="modal"]');
+			if (dismissBtn) {
+				const dialog = dismissBtn.closest('dialog');
+				if (dialog) {
+					dialog.close();
+				}
+			}
+		});
+
+		// Tab toggle
+		document.addEventListener('click', function(e) {
+			const tabTrigger = e.target.closest('[data-bs-toggle="tab"]');
+			if (tabTrigger) {
+				e.preventDefault();
+				const targetSelector = tabTrigger.getAttribute('data-bs-target') || tabTrigger.getAttribute('href');
+				if (targetSelector) {
+					// Remove active from all tabs
+					const tabContainer = tabTrigger.closest('[role="tablist"]') || tabTrigger.parentElement;
+					if (tabContainer) {
+						tabContainer.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
+							tab.classList.remove('active');
+						});
+					}
+					tabTrigger.classList.add('active');
+
+					// Show target pane, hide others
+					const targetPane = document.querySelector(targetSelector);
+					if (targetPane) {
+						const tabContent = targetPane.parentElement;
+						tabContent.querySelectorAll('[role="tabpanel"]').forEach(pane => {
+							pane.classList.remove('show', 'active');
+						});
+						targetPane.classList.add('show', 'active');
+					}
+				}
+			}
+		});
+
+		// Collapse toggle
+		document.addEventListener('click', function(e) {
+			const collapseTrigger = e.target.closest('[data-bs-toggle="collapse"]');
+			if (collapseTrigger) {
+				e.preventDefault();
+				const targetSelector = collapseTrigger.getAttribute('data-bs-target') || collapseTrigger.getAttribute('href');
+				if (targetSelector) {
+					const targetElement = document.querySelector(targetSelector);
+					if (targetElement) {
+						targetElement.classList.toggle('show');
+						const isExpanded = targetElement.classList.contains('show');
+						collapseTrigger.setAttribute('aria-expanded', isExpanded);
+					}
+				}
+			}
+		});
+	}
+
 	// Wait for DOM to be ready
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', init);
 	} else {
 		init();
 	}
+
+	// Initialize Bootstrap compatibility
+	initBootstrapCompatibility();
 
 	// Export for use in other scripts if needed
 	window.DigdirUI = {

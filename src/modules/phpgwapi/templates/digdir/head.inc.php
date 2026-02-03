@@ -2,8 +2,6 @@
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
-use App\modules\phpgwapi\services\DesignSystem;
-use App\helpers\twig\TwigTemplate;
 
 phpgw::import_class('phpgwapi.template_portico');
 phpgw::import_class('phpgwapi.common');
@@ -33,8 +31,6 @@ $twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 $serverSettings['no_jscombine'] = false;
 Settings::getInstance()->set('server', $serverSettings);
 
-// Initialize Design System service
-$designSystem = DesignSystem::getInstance();
 
 phpgw::import_class('phpgwapi.jquery');
 phpgwapi_jquery::load_widget('core');
@@ -43,14 +39,7 @@ phpgwapi_jquery::load_widget('jqtree');
 $javascripts = array();
 $javascripts[]	 = "/phpgwapi/js/popper/popper2.min.js";
 
-// Add design system scripts if enabled
-if ($designSystem->isEnabled()) {
-	// Add native Designsystemet UI JavaScript (replaces Bootstrap JS)
-	$javascripts[] = "/phpgwapi/templates/digdir/js/digdir-native.js";
-} else {
-	// Fallback to Bootstrap for other templates
-	$javascripts[]	 = "/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/js/bootstrap.min.js";
-}
+$javascripts[] = "/phpgwapi/templates/digdir/js/digdir-native.js";
 
 $userSettings['preferences']['common']['sidecontent'] = 'ajax_menu'; //ajax_menu|jsmenu
 if (empty($flags['noframework']) && empty($flags['nonavbar']))
@@ -99,17 +88,8 @@ else
 $stylesheets = array();
 
 // Load Designsystemet natively
-if ($designSystem->isEnabled()) {
-	// Load native Designsystemet CSS (includes Pure CSS compatibility)
-	$stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
-} else {
-	// Fallback to Pure CSS + Bootstrap for other templates
-	$stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
-	$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
-	$stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
-	$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
-	$stylesheets[] = "/phpgwapi/js/bootstrap5/vendor/twbs/bootstrap/dist/css/bootstrap.min.css";
-}
+// Load native Designsystemet CSS (includes Pure CSS compatibility)
+$stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
 
 // Icon fonts
 $stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
@@ -270,7 +250,7 @@ $tpl_vars = array(
 	// Variables for Twig templates
 	'javascripts'       => $jsUris,
 	'stylesheets'       => $cssUris,
-	'is_designsystemet' => $designSystem->isEnabled()
+	'is_designsystemet' => true
 );
 
 // Use Twig to render the template

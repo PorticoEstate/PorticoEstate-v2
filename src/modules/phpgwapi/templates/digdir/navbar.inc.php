@@ -3,6 +3,7 @@
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\Cache;
 use App\helpers\Template;
+use App\helpers\twig\TwigTemplate;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Hooks;
 use App\modules\phpgwapi\services\Translation;
@@ -51,7 +52,6 @@ function parse_navbar($force = False)
 	$home_icon		= 'icon icon-home';
 	$about_url	= phpgw::link('/about.php', array('app' => $flags['currentapp']));
 	$about_text	= lang('about');
-	//		$var['logout_url']	= phpgw::link('/logout_ui');
 	$var['logout_text']	= lang('logout');
 	$var['user_fullname'] = $user_fullname;
 	$preferences_url = phpgw::link('/preferences/index.php');
@@ -84,16 +84,15 @@ function parse_navbar($force = False)
 
 	$template_selector = <<<HTML
 
-	   <select id = "template_selector" class="btn btn-link btn-sm nav-item dropdown no-arrow nav-link text-white dropdown-toggle" style="height:2rem">
-		<option class="nav-link text-white" value="portico"{$selecte_portico}>Portico</option>
-		<option class="nav-link text-white" value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
-		<option class="nav-link text-white" value="digdir"{$selecte_digdir}>Digdir</option>
+	   <select id="template_selector" class="app-template-selector">
+		<option value="portico"{$selecte_portico}>Portico</option>
+		<option value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
+		<option value="digdir"{$selecte_digdir}>Digdir</option>
 	   </select>
 HTML;
 
-	$template = new Template(PHPGW_TEMPLATE_DIR);
-
-	$template->set_file('navbar', 'navbar.tpl');
+	$templateDir = PHPGW_TEMPLATE_DIR;
+	$twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 
 	$var['current_app_title'] = isset($flags['app_header']) ? $flags['app_header'] : lang($flags['currentapp']);
 	$flags['menu_selection'] = isset($flags['menu_selection']) ? $flags['menu_selection'] : '';
@@ -163,8 +162,8 @@ HTML;
 		if (Acl::getInstance()->check('run', ACL_READ, 'preferences'))
 		{
 			$preferences_option .= <<<HTML
-				<a class="dropdown-item" href="{$preferences_url}">
-					<i class="fas fa-cogs fa-sm fa-fw me-2"></i>
+				<a class="app-dropdown__item" href="{$preferences_url}">
+					<i class="fas fa-cogs fa-sm fa-fw u-mr-2"></i>
 					{$preferences_text}
 				</a>
 HTML;
@@ -179,9 +178,8 @@ HTML;
 	if ((Sanitizer::get_var('phpgw_return_as') != 'json'  && $breadcrumbs && is_array($breadcrumbs)) && !$nonavbar) // && isset($userSettings['preferences']['common']['show_breadcrumbs']) && $userSettings['preferences']['common']['show_breadcrumbs'])
 	{
 		$breadcrumb_html = <<<HTML
-			<div class="clearfix">
 			<nav aria-label="breadcrumb">
-				  <ol class="breadcrumb shadow ps-2 pt-2 pb-3 rounded">
+				<ol class="app-breadcrumb">
 HTML;
 		$history_url = array();
 		$script_path = Sanitizer::get_var('REDIRECT_URL', 'string', 'SERVER');
@@ -198,18 +196,17 @@ HTML;
 			}
 
 			$breadcrumb_html .= <<<HTML
-					<li class="breadcrumb-item"><a href="{$history_url}">{$breadcrumbs[$i]['name']}</a></li>
+					<li class="app-breadcrumb__item"><a class="app-breadcrumb__link" href="{$history_url}">{$breadcrumbs[$i]['name']}</a></li>
 HTML;
 		}
 
 		$breadcrumb_html .= <<<HTML
-				    <li class="breadcrumb-item" aria-current="page">{$breadcrumbs[$i]['name']}</li>
+				    <li class="app-breadcrumb__item"><span class="app-breadcrumb__current">{$breadcrumbs[$i]['name']}</span></li>
 HTML;
 
 		$breadcrumb_html .= <<<HTML
 				</ol>
-			  </nav>
-		</div>
+			</nav>
 HTML;
 	}
 
@@ -232,9 +229,7 @@ HTML;
 
 			$help_text = lang('help');
 			$manual_option .= <<<HTML
-				<li class="nav-item">
-					<a href="{$help_url}" class="nav-link text-white">{$help_text}</a>
-				</li>
+				<a href="{$help_url}" class="app-topbar__link">{$help_text}</a>
 HTML;
 		}
 	}
@@ -251,9 +246,7 @@ HTML;
 			'height' => 540
 		));
 		$support_option = <<<HTML
-			<li class="nav-item">
-				<a href="$support_link" class="nav-link text-white" data-bs-toggle="modal" data-bs-target="#popupModal">{$support_text}</a>
-			</li>
+			<a href="$support_link" class="app-topbar__link" data-bs-toggle="modal" data-bs-target="#popupModal">{$support_text}</a>
 HTML;
 	}
 
@@ -268,9 +261,7 @@ HTML;
 
 		$debug_text = lang('debug');
 		$debug_option = <<<HTML
-			<li class="nav-item">
-				<a href="{$debug_url}" class="nav-link text-white">{$debug_text}</a>
-			</li>
+			<a href="{$debug_url}" class="app-topbar__link">{$debug_text}</a>
 HTML;
 	}
 	/**
@@ -302,14 +293,11 @@ HTML;
 	{
 		$bookmark_option .= <<<HTML
 
-			<li class="nav-item dropdown no-arrow">
-				<a class="nav-link dropdown-toggle text-white" href="#" id="bookmarkDropdown" role="button"
-					data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-					<span class="me-2 d-none d-lg-inline">{$lang_bookmarks}</span>
-				</a>
-				<!-- Dropdown - bookmarks -->
-				<ul id="_bookmark" class="dropdown-menu"
-				aria-labelledby="bookmarkDropdown">
+			<div class="app-dropdown">
+				<button class="app-dropdown__trigger" data-toggle="dropdown">
+					<span>{$lang_bookmarks}</span>
+				</button>
+				<ul class="app-dropdown__menu">
 HTML;
 
 		foreach ($collected_bm as $bookmark_id => $entry)
@@ -318,8 +306,8 @@ HTML;
 			{
 				continue;
 			}
-			$seleced_bm = 'dropdown-item';
-			$icon = !empty($entry['icon']) ? "<i class='{$entry['icon']} me-2'></i>" : '<i class="fas fa-cogs fa-sm fa-fw me-2"></i>';
+			$selected_class = '';
+			$icon = !empty($entry['icon']) ? "<i class='{$entry['icon']} u-mr-2'></i>" : '<i class="fas fa-cogs fa-sm fa-fw u-mr-2"></i>';
 
 
 			if (
@@ -327,27 +315,25 @@ HTML;
 				|| (!empty($entry['nav_location']) && $entry['nav_location'] == $flags['menu_selection'])
 			)
 			{
-				$seleced_bm .= ' text-secondary';
+				$selected_class = ' app-dropdown__item--active';
 			}
 
 			$bookmark_option .= <<<HTML
 					<li>
-						<a class="{$seleced_bm}" href="{$entry['href']}" id="bookmark_{$bookmark_id}">
+						<a class="app-dropdown__item{$selected_class}" href="{$entry['href']}" id="bookmark_{$bookmark_id}">
 							{$icon}
 							{$entry['text']}
 						</a>
 					</li>
 HTML;
 		}
-		$bookmark_option .= '</ul></li>';
+		$bookmark_option .= '</ul></div>';
 	}
 	else
 	{
 		$bookmark_option .= <<<HTML
 
-			<li class="nav-item disabled">
-				<a href="#" class="nav-link text-white">{$lang_bookmarks}</a>
-			</li>
+			<span class="app-topbar__link" style="opacity: 0.5; cursor: not-allowed;">{$lang_bookmarks}</span>
 HTML;
 	}
 
@@ -419,9 +405,9 @@ HTML;
 
 		$_selected_lang = $selected_lang == $key ? 'checked' : '';
 		$lang_selector .= <<<HTML
-			<label class="choice mb-3 d-flex align-items-center">
-				<input type="radio" name="select_language" value="{$key}" {$_selected_lang} class="me-2" />
-				<i class="fi {$flag_class} me-2" title="{$key}"></i> {$trans}
+			<label class="app-dropdown__item u-flex u-align-center" style="cursor: pointer;">
+				<input type="radio" name="select_language" value="{$key}" {$_selected_lang} class="u-mr-2" />
+				<i class="fi {$flag_class} u-mr-2" title="{$key}"></i> {$trans}
 			</label>
 HTML;
 	}
@@ -445,57 +431,44 @@ HTML;
 	$choose_lang_trans2 = lang('Which language do you want?');
 
 	$language_option = <<<HTML
-		<li class="nav-item dropdown no-arrow">
-			<a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#" id="languageDropdown" role="button"
-			   data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="{$choose_lang_trans}">
-				<i class="fi {$selected_flag_class} me-2" style="font-size: 1.2em;"></i>
-				<span class="d-none d-lg-inline me-1">{$installed_langs[$selected_lang]}</span>
-			</a>
-			<!-- Dropdown - Language Selection -->
-			<div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
-				 aria-labelledby="languageDropdown" style="min-width: 250px;">
-				<div class="dropdown-header">
-					<h6 class="mb-1">{$choose_lang_trans}</h6>
-					<p class="mb-0 text-muted small">{$choose_lang_trans2}</p>
+		<div class="app-dropdown">
+			<button class="app-dropdown__trigger" data-toggle="dropdown" title="{$choose_lang_trans}">
+				<i class="fi {$selected_flag_class}" style="font-size: 1.2em;"></i>
+				<span class="u-hidden-mobile">{$installed_langs[$selected_lang]}</span>
+			</button>
+			<div class="app-dropdown__menu">
+				<div class="app-dropdown__header">
+					<strong>{$choose_lang_trans}</strong>
+					<p class="u-text-muted" style="font-size: 0.8rem; margin: 0.25rem 0 0;">{$choose_lang_trans2}</p>
 				</div>
-				<div class="dropdown-divider"></div>
-				<div class="px-3 py-2" onclick="event.stopPropagation();">
-					<form id="languageForm">
-						{$lang_selector}
-					</form>
-				</div>
+				<div class="app-dropdown__divider"></div>
+				<form id="languageForm" style="padding: var(--ds-spacing-2);">
+					{$lang_selector}
+				</form>
 			</div>
-		</li>
+		</div>
 HTML;
 
 	$topmenu = <<<HTML
 
-                    <!-- Topbar Navbar -->
-                    <ul class="navbar-nav ms-auto align-items-center">
-					<li class="nav-item ">
-						<a href="{$home_url}" class="nav-link text-white">{$home_text}</a>
-					</li>
+					<!-- Topbar Navigation -->
+					<nav class="app-topbar__nav">
+						<a href="{$home_url}" class="app-topbar__link">{$home_text}</a>
 						{$template_selector}
  						{$manual_option}
 						{$debug_option}
 						{$support_option}
 						{$language_option}
 						{$bookmark_option}
-                        <!-- Nav Item - Alerts -->
-                         <!-- Nav Item - Messages -->
 						{$messenger_option}
 
-                        <!-- Nav Item - User Information -->
-                        <li class="nav-item dropdown no-arrow">
-                            <a class="nav-link dropdown-toggle text-white d-flex align-items-center" href="#" id="userDropdown" role="button"
-                                data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <span class="me-2 d-none d-lg-inline">$user_fullname</span>
-                                <img class="img-profile rounded-circle" style="height:2rem; width: 2rem;"
-                                    src="{$undraw_profile}">
-                            </a>
-                            <!-- Dropdown - User Information -->
-                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
-                                aria-labelledby="userDropdown">
+						<!-- User Dropdown -->
+						<div class="app-dropdown">
+							<button class="app-dropdown__trigger" data-toggle="dropdown">
+								<span class="u-hidden-mobile">$user_fullname</span>
+								<img class="app-avatar" src="{$undraw_profile}" alt="{$user_fullname}">
+							</button>
+							<div class="app-dropdown__menu">
                                 <!--a class="dropdown-item" href="#">
                                     <i class="fas fa-user fa-sm fa-fw me-2"></i>
                                     Profile
@@ -505,15 +478,15 @@ HTML;
                                     <i class="fas fa-list fa-sm fa-fw me-2"></i>
                                     Activity Log
                                 </a-->
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
-                                    <i class="fas fa-sign-out-alt fa-sm fa-fw me-2"></i>
+								<div class="app-dropdown__divider"></div>
+								<a class="app-dropdown__item" href="#" id="logout_trigger" onclick="event.preventDefault(); document.getElementById('logoutModal').showModal();">
+									<i class="fas fa-sign-out-alt fa-sm fa-fw u-mr-2"></i>
                                     {$var['logout_text']}
                                 </a>
-                            </div>
-                        </li>
+							</div>
+						</div>
 
-                    </ul>
+					</nav>
 
 
 HTML;
@@ -578,14 +551,13 @@ HTML;
 		}
 
 		$var['top_panel'] = <<<HTML
-	        <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
-	            <!-- Sidebar Toggle-->
-		        <button class="btn btn-link btn-sm order-1 order-lg-0 me-4 me-lg-0" id="sidebarToggle" ><i class="fas fa-bars"></i></button>
-		        <!--  Brand-->
-				<a class="navbar-brand ps-3" href="#">{$serverSettings['site_title']}</a>
-		        <!-- Navbar-->
+	        <header class="app-topbar">
+	            <button class="app-topbar__toggle" id="sidebarToggle" aria-label="Toggle sidebar">
+					<i class="fas fa-bars"></i>
+				</button>
+				<a class="app-topbar__brand" href="#">{$serverSettings['site_title']}</a>
 				{$topmenu}
-			</nav>
+			</header>
 
 			<!-- Command Palette Modal -->
 			<div class="modal fade" id="commandPalette" tabindex="-1" aria-labelledby="commandPaletteLabel" aria-hidden="true">
@@ -620,8 +592,14 @@ HTML;
 HTML;
 	}
 
-	$template->set_var($var);
-	$template->pfp('out', 'navbar');
+	// Use Twig to render the template
+	try {
+		$twig = \App\modules\phpgwapi\services\Twig::getInstance();
+		echo $twig->render('navbar.twig', $var);
+	} catch (\Twig\Error\Error $e) {
+		error_log("Failed to render navbar.twig: " . $e->getMessage());
+		echo "<div class='alert alert-danger'>Error loading navbar template. Please check logs.</div>";
+	}
 
 	if (Sanitizer::get_var('phpgw_return_as') != 'json' && $global_message = Cache::system_get('phpgwapi', 'phpgw_global_message'))
 	{
@@ -1218,8 +1196,8 @@ function parse_footer_end()
 		return true;
 	}
 
-	$template = new Template(PHPGW_TEMPLATE_DIR);
-	$template->set_file('footer', 'footer.tpl');
+	$templateDir = PHPGW_TEMPLATE_DIR;
+	$twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 
 	$version = isset($serverSettings['versions']['system']) ? $serverSettings['versions']['system'] : $serverSettings['versions']['phpgwapi'];
 
@@ -1248,9 +1226,14 @@ function parse_footer_end()
 		'javascript_end' => $phpgwapi_common->get_javascript_end($cache_refresh_token)
 	);
 
-	$template->set_var($var);
-
-	$template->pfp('out', 'footer');
+	// Use Twig to render the template
+	try {
+		$twig = \App\modules\phpgwapi\services\Twig::getInstance();
+		echo $twig->render('footer.twig', $var);
+	} catch (\Twig\Error\Error $e) {
+		error_log("Failed to render footer.twig: " . $e->getMessage());
+		echo "<!-- Error loading footer template. Please check logs. -->";
+	}
 
 	$footer_included = true;
 }

@@ -77,6 +77,7 @@ class ResourceRepository
      */
     public function getWithParticipantLimits(array $resourceIds = []): array
     {
+        $currentDate = date('Y-m-d H:i:s');
         $whereClause = '';
         $params = [];
 
@@ -86,12 +87,25 @@ class ResourceRepository
             $params = $resourceIds;
         }
 
+        // Join only the latest participant limit for each resource to avoid duplicates
         $sql = "SELECT r.*,
                        COALESCE(pl.quantity, 0) as participant_limit
                 FROM bb_resource r
-                LEFT JOIN bb_participant_limit pl ON r.id = pl.resource_id
+                LEFT JOIN (
+                    SELECT pl.resource_id, pl.quantity
+                    FROM bb_participant_limit pl
+                    INNER JOIN (
+                        SELECT resource_id, MAX(from_) as latest_from
+                        FROM bb_participant_limit
+                        WHERE from_ <= ?
+                        GROUP BY resource_id
+                    ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from
+                ) pl ON r.id = pl.resource_id
                 $whereClause
                 ORDER BY r.sort, r.name";
+
+        // Prepend currentDate to params array
+        array_unshift($params, $currentDate);
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);

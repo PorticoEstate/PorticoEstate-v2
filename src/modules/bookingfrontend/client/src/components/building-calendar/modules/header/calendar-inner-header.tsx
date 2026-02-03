@@ -94,6 +94,10 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 
 	};
 
+	const handleTodayClick = () => {
+		setCurrentDate(DateTime.now());
+	};
+
 	return (
 		<div className={styles.innerHeader}>
 			<Button data-size={'sm'} icon={true} variant='tertiary'
@@ -140,8 +144,15 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 						width: '100%'
 					}}/>
 				</Button>
-			</div>
 
+			</div>
+			<Button data-size={'sm'} variant='secondary'
+					onClick={handleTodayClick}
+					className={styles.todayButton}
+			>
+				{t('common.today')}
+				{/*I Dag*/}
+			</Button>
 			{/* Hide day/week buttons when in calendar mode on mobile */}
 			{!(isMobile && calendarViewMode === 'calendar') && (
 				<ButtonGroup data-color='accent' className={styles.modeSelectTime}>
@@ -153,10 +164,10 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 							data-size={'sm'}
 							className={'captialize subtle'}
 							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-					<Button variant={view === 'dayGridMonth' ? 'primary' : 'tertiary'} data-color={'accent'}
-							data-size={'sm'}
-							className={'captialize subtle'}
-							onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>
+					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'tertiary'} data-color={'accent'}*/}
+					{/*		data-size={'sm'}*/}
+					{/*		className={'captialize subtle'}*/}
+					{/*		onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
 					</ButtonGroup>
 				)}
 

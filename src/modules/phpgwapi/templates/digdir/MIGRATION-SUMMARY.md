@@ -44,6 +44,34 @@ The Digdir template has been successfully converted to use **native Designsystem
 ### Files Preserved (Legacy)
 - ⚠️ `designsystemet-compat.css` - Kept for reference, but no longer loaded in digdir mode
 
+## 🧩 Setup: Import and Prepare Designsystemet
+
+Follow these steps to import and prepare the Digdir Designsystemet:
+
+1. **Install packages**
+  - Run: `npm install @digdir/designsystemet-css @digdir/designsystemet-web --save`
+
+2. **Enable the CSS route**
+  - Ensure the route exists in [src/modules/phpgwapi/routes/Routes.php](src/modules/phpgwapi/routes/Routes.php):
+    - URL: `/assets/designsystemet/index.css`
+    - Filesystem path: `/var/www/html/node_modules/@digdir/designsystemet-css/dist/src/index.css`
+
+3. **Import the CSS in digdir-native.css**
+  - Confirm [src/modules/phpgwapi/templates/digdir/css/digdir-native.css](src/modules/phpgwapi/templates/digdir/css/digdir-native.css) contains:
+    - `@import url('/assets/designsystemet/index.css');`
+
+4. **Load digdir-native.css for the digdir template**
+  - Verify [src/modules/phpgwapi/templates/digdir/head.inc.php](src/modules/phpgwapi/templates/digdir/head.inc.php) loads:
+    - `/phpgwapi/templates/digdir/css/digdir-native.css`
+  - This replaces the old compatibility layer for digdir.
+
+5. **Enable the digdir template**
+  - Select **Digdir** in the template selector, or set `template_set = digdir` in preferences.
+
+6. **Clear caches and refresh**
+  - Hard refresh browser (Ctrl+F5 / Cmd+Shift+R)
+  - Clear Twig cache if needed
+
 ## 🎨 Technical Changes
 
 ### CSS Architecture

@@ -323,7 +323,7 @@ class EmailService
 
     /**
      * Send notifications to case officers (preserves legacy BCC functionality)
-     * 
+     *
      * @param array $application Application data
      */
     public function sendCaseOfficerNotifications(array $application): void
@@ -337,7 +337,7 @@ class EmailService
             if (!$building_info) {
                 return;
             }
-            
+
             $extra_mail_addresses = $this->getMailAddresses((int)$building_info['id'], (int)$application['case_officer_id']);
 
             $mail_addresses = array();
@@ -393,7 +393,7 @@ class EmailService
 
     /**
      * Send SMS notifications (preserves legacy functionality)
-     * 
+     *
      * @param array $application Application data
      */
     public function sendSmsNotifications(array $application): void
@@ -425,7 +425,7 @@ class EmailService
                 return;
             }
 
- 
+
             if ($sms_text) {
                 $sms = CreateObject('phpgwapi.sms');
                 foreach ($cellphones as $phone) {
@@ -612,9 +612,6 @@ class EmailService
 
             // Add combined application header
             $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner:</h3>";
-            if (!empty($primaryApplication['name'])) {
-                $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
-            }
             if (!empty($primaryApplication['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
@@ -629,9 +626,6 @@ class EmailService
 
             // Add combined application details
             $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner:</h3>";
-            if (!empty($primaryApplication['name'])) {
-                $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
-            }
             if (!empty($primaryApplication['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
@@ -662,9 +656,9 @@ class EmailService
             $hasMixedResults = ($approvedCount > 0 && $rejectedCount > 0);
 
             if ($hasMixedResults) {
-                $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er behandlet</p>";
+                $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån er behandlet</p>";
             } else {
-                $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
+                $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån er " . lang($primaryApplication['status']) . '</p>';
             }
 
             // Add combined application details with accurate count
@@ -679,9 +673,6 @@ class EmailService
                 $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner avslått:</h3>";
             }
 
-            if (!empty($primaryApplication['name'])) {
-                $body .= "<p><strong>Arrangement:</strong> " . $primaryApplication['name'] . "</p>";
-            }
             if (!empty($primaryApplication['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }

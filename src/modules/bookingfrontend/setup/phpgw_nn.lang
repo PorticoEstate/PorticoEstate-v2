@@ -936,3 +936,6 @@ add_organization	bookingfrontend	nn	Legg til organisasjon
 invalid_org_number_format	bookingfrontend	nn	Ugyldig organisasjonsnummer format. Må vere 9 siffer.
 org_not_found	bookingfrontend	nn	Organisasjon ikkje funne i Brønnøysundregistera.
 org_create_hint	bookingfrontend	nn	Du kan opprette ei ny organisasjon ved å skrive inn 9-sifra organisasjonsnummer
+
+buildings_and_facilities	bookingfrontend	nn	Bygg og anlegg
+rooms_and_premises	bookingfrontend	nn	Rom og lokalar

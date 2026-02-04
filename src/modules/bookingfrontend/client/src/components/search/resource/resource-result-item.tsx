@@ -3,13 +3,13 @@ import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystem
 import {ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import {LayersIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 import Image from "next/image";
 import DividerCircle from "@/components/util/DividerCircle";
 import {useTowns, useMultiDomains, useSearchData} from "@/service/hooks/api-hooks";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {createDomainResourceUrl, createDomainBuildingUrl} from "@/service/multi-domain-utils";
+import ResourceIcon from "@/icons/ResourceIcon";
 
 interface ResourceResultItemProps {
 	resource: ISearchResource & { building?: ISearchDataBuilding };
@@ -188,7 +188,7 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 					>
 						<div className={styles.resourceHeadingContainer}>
 							<Heading level={3} data-size="xs" className={styles.resourceIcon}>
-								<LayersIcon fontSize="1em"/>
+								<ResourceIcon fontSize="1em"/>
 							</Heading>
 							<Heading level={3} data-size="xs" className={styles.resourceTitle}>
 								{resource.name}

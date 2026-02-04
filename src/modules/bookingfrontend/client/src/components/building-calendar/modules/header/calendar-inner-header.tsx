@@ -1,6 +1,6 @@
 import React, {Dispatch, FC, MutableRefObject} from 'react';
 import {Badge, Button} from "@digdir/designsystemet-react";
-import {ChevronLeftIcon, ChevronRightIcon, LayersIcon, PlusIcon, TableIcon, CalendarIcon} from "@navikt/aksel-icons";
+import {ChevronLeftIcon, ChevronRightIcon, PlusIcon, TableIcon, CalendarIcon} from "@navikt/aksel-icons";
 import styles from './calendar-inner-header.module.scss';
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
@@ -16,6 +16,7 @@ import {DateTime} from "luxon";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import {useOrganization} from "@/service/hooks/organization";
+import ResourceIcon from "@/icons/ResourceIcon";
 
 interface CalendarInnerHeaderProps {
 
@@ -116,7 +117,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					className={styles.mobileResourcesButton}
 				// className={'captialize'}
 					onClick={() => setResourcesHidden(!resourcesHidden)}>
-					<LayersIcon fontSize="1.25rem" />{t('booking.select')} {t('bookingfrontend.resources')}
+					<ResourceIcon fontSize="1.25rem" />{t('booking.select')} {t('bookingfrontend.resources')}
 				<Badge count={enabledResources.size} data-size={"md"} color={"danger"}></Badge>
 			</Button>
 

@@ -1,14 +1,15 @@
 import React, {FC} from 'react';
-import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
+import {Card, Heading, Link as DigdirLink} from '@digdir/designsystemet-react';
 import styles from './event-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import {CalendarIcon, Buildings3Icon, LocationPinIcon, TenancyIcon, PersonFillIcon} from "@navikt/aksel-icons";
+import {CalendarIcon, LocationPinIcon, TenancyIcon, PersonFillIcon} from "@navikt/aksel-icons";
 import {format} from 'date-fns';
 import {nb, enUS} from 'date-fns/locale';
 import Link from 'next/link';
 
 import {IShortEvent} from "@/service/pecalendar.types";
 import {useSearchData} from "@/service/hooks/api-hooks";
+import BuildingIcon from "@/icons/BuildingIcon";
 
 interface EventResultItemProps {
     event: IShortEvent;
@@ -74,7 +75,7 @@ const EventResultItem: FC<EventResultItemProps> = ({event}) => {
 
                 {/* Building */}
                 <div className={styles.eventDetail}>
-                    <Buildings3Icon className={styles.detailIcon} />
+                    <BuildingIcon className={styles.detailIcon} />
                     <DigdirLink asChild data-color="brand1">
                         <Link href={`/building/${event.building_id}`}>
                             <span className={styles.detailText}>{event.building_name}</span>

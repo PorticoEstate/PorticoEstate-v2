@@ -1,0 +1,150 @@
+import React, {FC, useMemo, useCallback} from 'react';
+import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
+import {ISearchDataBuilding} from "@/service/types/api/search.types";
+import styles from './resource-result-item.module.scss';
+import {useTrans} from '@/app/i18n/ClientTranslationProvider';
+import {TenancyIcon} from "@navikt/aksel-icons";
+import Link from "next/link";
+import Image from "next/image";
+import DividerCircle from "@/components/util/DividerCircle";
+import {useTowns, useMultiDomains, useSearchData} from "@/service/hooks/api-hooks";
+import {useIsMobile} from "@/service/hooks/is-mobile";
+import {createDomainBuildingUrl} from "@/service/multi-domain-utils";
+import BuildingIcon from "@/icons/BuildingIcon";
+
+interface BuildingResultItemProps {
+	building: ISearchDataBuilding;
+	selectedDate: Date | null;
+	resourceCount?: number;
+}
+
+const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate, resourceCount}) => {
+	const t = useTrans();
+	const {data: searchData} = useSearchData();
+	const {data: towns} = useTowns();
+	const {data: multiDomains} = useMultiDomains();
+	const isMobile = useIsMobile();
+
+	// Get building image (placeholder for now)
+	const buildingImage = useMemo(() => {
+		const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
+		return `${basePath}/resource_placeholder_bilde.png`;
+	}, []);
+
+	// Find the town for this building by town_id
+	const town = useMemo(() => {
+		if (!towns || !building.town_id) return null;
+		return towns.find(t => t.id === building.town_id);
+	}, [towns, building.town_id]);
+
+	// Find the domain for this building if it's from another domain
+	const domain = useMemo(() => {
+		if (!multiDomains || !building.domain_name) return null;
+		return multiDomains.find(d => d.name === building.domain_name);
+	}, [multiDomains, building.domain_name]);
+
+	// Determine if this building is from another domain
+	const isExternalDomain = !!building.domain_name && !!domain;
+
+	// Helper function to check if selected date is today
+	const isToday = (date: Date): boolean => {
+		const today = new Date();
+		return date.toDateString() === today.toDateString();
+	};
+
+	// Helper function to format date for URL (YYYY-MM-DD)
+	const formatDateForUrl = (date: Date): string => {
+		return date.toISOString().split('T')[0];
+	};
+
+	// Create building URL with date parameter if selected date is not today
+	const createBuildingUrl = useCallback((): string => {
+		if (isExternalDomain && domain) {
+			return createDomainBuildingUrl(domain, building.id, building.original_id);
+		}
+
+		if (!selectedDate || isToday(selectedDate)) {
+			return `/building/${building.id}`;
+		}
+
+		return `/building/${building.id}/${formatDateForUrl(selectedDate)}`;
+	}, [isExternalDomain, domain, building.id, building.original_id, selectedDate]);
+
+	const tags = useMemo(() => {
+		const capitalizeFirstLetter = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+
+		const tagElements = [
+			town?.name ? capitalizeFirstLetter(town.name) : undefined,
+			isExternalDomain && building.domain_name ? capitalizeFirstLetter(building.domain_name) : undefined
+		];
+
+		return tagElements.filter(a => !!a);
+	}, [building, town, isExternalDomain]);
+
+	// Build address string
+	const address = useMemo(() => {
+		const parts = [building.street, building.city].filter(Boolean);
+		return parts.length > 0 ? parts.join(', ') : null;
+	}, [building.street, building.city]);
+
+	return (
+		<Card
+			data-color="neutral"
+			className={styles.resourceCard}
+		>
+			<Card.Block className={styles.imageBlock}>
+				<div className={styles.imageWrapper}>
+					<Image
+						src={buildingImage}
+						alt=""
+						fill
+						sizes="(max-width: 850px) 100vw, (max-width: 1200px) 50vw, 33vw"
+						className={styles.cardImage}
+						priority={false}
+					/>
+				</div>
+			</Card.Block>
+
+			<Card.Block className={styles.contentBlock}>
+				<DigdirLink asChild data-color='brand1'>
+					<Link
+						href={createBuildingUrl()}
+						className={styles.titleLink}
+						{...(isExternalDomain ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+					>
+						<div className={styles.resourceHeadingContainer}>
+							<Heading level={3} data-size="xs" className={styles.resourceIcon} data-color='brand1'>
+								<BuildingIcon fontSize="1em"/>
+							</Heading>
+							<Heading level={3} data-size="xs" className={styles.resourceTitle} data-color='brand1'>
+								{building.name}
+							</Heading>
+						</div>
+					</Link>
+				</DigdirLink>
+
+				{(tags.length > 0 || address) && (
+					<Paragraph data-size={isMobile ? 'xs' : "sm"} className={styles.resourceTags}>
+						{address && <span>{address}</span>}
+						{address && tags.length > 0 && <DividerCircle />}
+						{tags.map((tag, index) => {
+							if (index === 0) {
+								return <span key={'tag' + index}>{tag}</span>
+							}
+							return <React.Fragment key={'tag' + index}>
+								<DividerCircle/>{tag}</React.Fragment>
+						})}
+					</Paragraph>
+				)}
+
+				{resourceCount !== undefined && resourceCount > 0 && (
+					<Paragraph data-size="sm" className={styles.capacity}>
+						<strong>{t('bookingfrontend.resources') || 'Ressurser'}:</strong> {resourceCount}
+					</Paragraph>
+				)}
+			</Card.Block>
+		</Card>
+	);
+};
+
+export default BuildingResultItem;

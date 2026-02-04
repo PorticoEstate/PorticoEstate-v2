@@ -625,7 +625,7 @@ class EmailService
             $body = "<p>Din kombinerte søknad i " . $config['application_mail_systemname'] . " om leie/lån av " . $resourcename . " er " . lang($primaryApplication['status']) . '</p>';
 
             // Add combined application details
-            $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner:</h3>";
+            $body .= "<h3>Kombinert søknad - " . count($applications) . " deler:</h3>";
             if (!empty($primaryApplication['organizer'])) {
                 $body .= "<p><strong>Arrangør:</strong> " . $primaryApplication['organizer'] . "</p>";
             }
@@ -664,13 +664,13 @@ class EmailService
             // Add combined application details with accurate count
             if ($rejectedCount > 0 && $approvedCount > 0) {
                 // Mixed results
-                $body .= "<h3>Kombinert søknad - " . $approvedCount . " delapplikasjoner godkjent, " . $rejectedCount . " avslått:</h3>";
+                $body .= "<h3>Kombinert søknad - " . $approvedCount . " deler godkjent, " . $rejectedCount . " avslått:</h3>";
             } elseif ($approvedCount > 0) {
                 // All approved
-                $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner godkjent:</h3>";
+                $body .= "<h3>Kombinert søknad - " . count($applications) . " deler godkjent:</h3>";
             } else {
                 // All rejected
-                $body .= "<h3>Kombinert søknad - " . count($applications) . " delapplikasjoner avslått:</h3>";
+                $body .= "<h3>Kombinert søknad - " . count($applications) . " deler avslått:</h3>";
             }
 
             if (!empty($primaryApplication['organizer'])) {

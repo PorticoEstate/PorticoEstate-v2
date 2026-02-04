@@ -137,10 +137,10 @@
 								<i class="fas fa-reply" aria-hidden="true" title="Send svar eller opprett notat i saken"></i>
 							</button>
 							<div class="app-dropdown-menu animated--fade-in" aria-labelledby="dropdownMenuButton">
-								<button class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#commentModal">
+								<a class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#commentModal">
 									<xsl:choose>
 										<xsl:when test="not(application/case_officer/is_current_user)">
-											<xsl:attribute name="disabled">disabled</xsl:attribute>
+											<xsl:attribute name="style">opacity: 0.5; pointer-events: none;</xsl:attribute>
 											<i class="fas fa-reply me-1 text-secondary"></i>
 										</xsl:when>
 										<xsl:otherwise>
@@ -148,11 +148,11 @@
 										</xsl:otherwise>
 									</xsl:choose>
 									Send svar til innsender
-								</button>
-								<button class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#messengerModal">
+								</a>
+								<a class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#messengerModal">
 									<xsl:choose>
 										<xsl:when test="$messenger_enabled !='true' or application/case_officer/is_current_user or application/case_officer_id ='' ">
-											<xsl:attribute name="disabled">disabled</xsl:attribute>
+											<xsl:attribute name="style">opacity: 0.5; pointer-events: none;</xsl:attribute>
 											<i class="fas fa-reply me-1 text-secondary"></i>
 										</xsl:when>
 										<xsl:otherwise>
@@ -160,11 +160,11 @@
 										</xsl:otherwise>
 									</xsl:choose>
 									Send melding til saksbehandler
-								</button>
-								<button class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#internal_noteModal">
+								</a>
+								<a class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#internal_noteModal">
 									<xsl:choose>
 										<xsl:when test="not(application/case_officer/is_current_user)">
-											<xsl:attribute name="disabled">disabled</xsl:attribute>
+											<xsl:attribute name="style">opacity: 0.5; pointer-events: none;</xsl:attribute>
 											<i class="far fa-sticky-note me-1 text-secondary"></i>
 										</xsl:when>
 										<xsl:otherwise>
@@ -172,7 +172,7 @@
 										</xsl:otherwise>
 									</xsl:choose>
 									Opprett internt notat
-								</button>
+								</a>
 							</div>
 						</div>
 					</li>

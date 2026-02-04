@@ -513,59 +513,7 @@ body {
     }
 }
 
-/* Modal Dialog */
-.app-modal {
-    border: none;
-    border-radius: var(--ds-border-radius-medium, 4px);
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.16);
-    max-width: 400px;
-    width: 90%;
-    padding: 0;
-}
-
-.app-modal::backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-.app-modal__content {
-    display: flex;
-    flex-direction: column;
-}
-
-.app-modal__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.5rem;
-    border-bottom: 1px solid var(--ds-color-border-subtle, #e5e5e5);
-}
-
-.app-modal__header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-}
-
-.app-modal__close {
-    background: none;
-    border: none;
-    font-size: 1.5rem;
-    cursor: pointer;
-    color: var(--ds-color-text-default, #1e2b3c);
-}
-
-.app-modal__body {
-    padding: 1.5rem;
-    color: var(--ds-color-text-default, #1e2b3c);
-}
-
-.app-modal__footer {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-end;
-    padding: 1.5rem;
-    border-top: 1px solid var(--ds-color-border-subtle, #e5e5e5);
-}
+/* Modal Dialog - See line 1383+ for actual modal styles */
 
 .app-button {
     padding: 0.5rem 1rem;
@@ -1014,83 +962,8 @@ body {
 
 
 /* ============================================
-   MODALS
+   MODALS - See line 1458+ for actual modal styles
    ============================================ */
-
-.app-modal {
-    display: none;
-    position: fixed;
-    z-index: 1050;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.5);
-    animation: fadeIn 0.2s ease;
-}
-
-.app-modal.show {
-    display: block;
-}
-
-.app-modal-dialog {
-    position: relative;
-    width: auto;
-    margin: var(--ds-spacing-4, 1rem) auto;
-    max-width: 500px;
-}
-
-.app-modal-lg {
-    max-width: 800px;
-}
-
-.app-modal-dialog-centered {
-    display: flex;
-    align-items: center;
-    min-height: 100%;
-}
-
-.app-modal-content {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    pointer-events: auto;
-    background-color: var(--ds-color-background-default, #fff);
-    border: 1px solid var(--ds-color-border-default, #e0e0e0);
-    border-radius: var(--ds-border-radius-md, 0.5rem);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.app-modal-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: var(--ds-spacing-4, 1rem);
-    border-bottom: 1px solid var(--ds-color-border-default, #e0e0e0);
-}
-
-.app-modal-title {
-    margin: 0;
-    font-size: var(--ds-font-size-lg, 1.125rem);
-    font-weight: var(--ds-font-weight-bold, 700);
-}
-
-.app-modal-body {
-    flex: 1 1 auto;
-    padding: var(--ds-spacing-4, 1rem);
-}
-
-.app-modal-footer {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    padding: var(--ds-spacing-3, 0.75rem);
-    border-top: 1px solid var(--ds-color-border-default, #e0e0e0);
-    gap: var(--ds-spacing-2, 0.5rem);
-}
 
 /* ============================================
    PANELS / ACCORDIONS
@@ -1335,6 +1208,12 @@ body {
     display: block;
     cursor: pointer;
     transition: background-color 0.2s ease;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    font-size: inherit;
+    font-family: inherit;
 }
 
 .app-dropdown-item:hover {
@@ -1455,15 +1334,35 @@ input[type="file"]::-webkit-file-upload-button:hover {
 }
 
 /* Modal utilities */
-.app-modal { position: relative; z-index: 1050; display: none; width: 100%; height: 100%; overflow: hidden; outline: 0; position: fixed; top: 0; left: 0; background-color: rgba(0,0,0,0.5); }
-.app-modal.show { display: block; }
-.app-modal-dialog { position: relative; width: auto; margin: 1.75rem auto; pointer-events: none; }
+.app-modal { 
+    position: fixed !important; 
+    top: 0 !important; 
+    left: 0 !important; 
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 1050; 
+    display: none; 
+    width: 100vw !important; 
+    height: 100vh !important; 
+    background-color: rgba(0,0,0,0.5); 
+    overflow-x: hidden; 
+    overflow-y: auto;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+.app-modal.show { display: flex !important; align-items: center; justify-content: center; }
+.app-modal-dialog { position: relative; width: 90%; max-width: 500px; margin: 1.75rem auto; pointer-events: none; }
 .app-modal-dialog.app-modal-lg { max-width: 800px; }
-.app-modal-dialog-centered { display: flex; align-items: center; justify-content: center; min-height: calc(100% - 3.5rem); }
+.app-modal-dialog-centered { display: flex; align-items: center; justify-content: center; min-height: calc(100% - 3.5rem); margin: auto; }
 .app-modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background-color: var(--ds-color-background-default, #ffffff); background-clip: padding-box; border: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); border-radius: var(--ds-border-radius-lg, 0.375rem); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.5); }
 .app-modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--ds-spacing-4, 1rem); border-bottom: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); }
-.app-modal-body { position: relative; flex: 1 1 auto; padding: var(--ds-spacing-4, 1rem); }
-.app-modal-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem); border-top: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); }
+.app-modal-header .app-btn-close { position: absolute; top: var(--ds-spacing-3, 0.75rem); right: var(--ds-spacing-3, 0.75rem); padding: 0; background: transparent; border: 0; font-size: 1.5rem; cursor: pointer; color: var(--ds-color-text-default, #212529); }
+.app-modal-header .app-btn-close:hover { color: var(--ds-color-primary-text, #005a94); }
+.app-modal-body { position: relative; flex: 1 1 auto; padding: var(--ds-spacing-4, 1rem); overflow-y: auto; max-height: calc(100vh - 300px); }
+.app-modal-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--ds-spacing-2, 0.5rem); padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem); border-top: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); }
+
+
+
 
 
 /* Additional utility classes */

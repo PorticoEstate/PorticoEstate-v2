@@ -357,8 +357,80 @@
 	initBootstrapCompatibility();
 
 	// Export for use in other scripts if needed
+	// Modal trigger functionality (replaces Bootstrap modal data attributes)
+	function initModalTriggers() {
+		document.addEventListener('click', function(e) {
+			const trigger = e.target.closest('[data-bs-toggle="modal"], [data-toggle="modal"]');
+			if (!trigger) return;
+
+			const targetId = trigger.getAttribute('data-bs-target') || trigger.getAttribute('data-target');
+			if (!targetId) return;
+
+			const modal = document.querySelector(targetId);
+			if (!modal) return;
+
+			e.preventDefault();
+			openModal(targetId);
+		});
+
+		// Handle close buttons and backdrop clicks
+		document.addEventListener('click', function(e) {
+			// Close button click (data-bs-dismiss="modal")
+			if (e.target.closest('[data-bs-dismiss="modal"], [data-dismiss="modal"]')) {
+				const modal = e.target.closest('.app-modal');
+				if (modal) {
+					closeModal('#' + modal.id);
+				}
+			}
+
+			// Backdrop click to close
+			if (e.target.classList.contains('app-modal') && e.target.classList.contains('show')) {
+				closeModal('#' + e.target.id);
+			}
+		});
+
+		// Handle Escape key to close modals
+		document.addEventListener('keydown', function(e) {
+			if (e.key === 'Escape') {
+				const openModals = document.querySelectorAll('.app-modal.show');
+				openModals.forEach(modal => {
+					closeModal('#' + modal.id);
+				});
+			}
+		});
+	}
+
+	// Open modal by ID
+	function openModal(modalId) {
+		const modal = document.querySelector(modalId);
+		if (!modal) return;
+
+		modal.style.display = 'block';
+		modal.classList.add('show');
+		document.body.style.overflow = 'hidden';
+		modal.dispatchEvent(new Event('shown.bs.modal'));
+	}
+
+	// Close modal by ID
+	function closeModal(modalId) {
+		const modal = document.querySelector(modalId);
+		if (!modal) return;
+
+		modal.style.display = 'none';
+		modal.classList.remove('show');
+		document.body.style.overflow = '';
+		modal.dispatchEvent(new Event('hidden.bs.modal'));
+	}
+
+	// Initialize on DOM ready
+	document.addEventListener('DOMContentLoaded', function() {
+		initModalTriggers();
+	});
+
 	window.DigdirUI = {
 		Dropdown: Dropdown,
-		initSidebarToggle: initSidebarToggle
+		initSidebarToggle: initSidebarToggle,
+		openModal: openModal,
+		closeModal: closeModal
 	};
 })();

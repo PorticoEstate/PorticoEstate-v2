@@ -294,7 +294,7 @@ HTML;
 		$bookmark_option .= <<<HTML
 
 			<div class="app-dropdown">
-				<button class="app-dropdown__trigger" data-toggle="dropdown">
+				<button class="app-dropdown__trigger" data-bs-toggle="dropdown">
 					<span>{$lang_bookmarks}</span>
 				</button>
 				<ul class="app-dropdown__menu">
@@ -345,7 +345,7 @@ HTML;
 		if ($total_messages > 0)
 		{
 			$new_messages		 = $total_messages;
-			$new_messages_alert	 = "<span class='badge bg-danger rounded-pill'>{$new_messages}</span>";
+			$new_messages_alert	 = "<span class='app-badge app-badge-danger app-rounded-pill'>{$new_messages}</span>";
 		}
 		else
 		{
@@ -359,15 +359,15 @@ HTML;
 		$lang_read_messages = Translation::getInstance()->translate('read messages', array(), false, 'messenger');
 
 		$messenger_option = <<<HTML
-                        <li class="nav-item dropdown no-arrow" onClick="get_messages();">
-                            <a class="nav-link dropdown-toggle text-white" href="#" id="messagesDropdown" role="button"
+                        <li class="app-nav-item app-dropdown app-no-arrow" onClick="get_messages();">
+                            <a class="app-nav-link app-dropdown-trigger app-text-white" href="#" id="messagesDropdown" role="button"
                                 data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <i class="fas fa-envelope fa-fw"></i>
                                 <!-- Counter - Messages -->
 								{$new_messages_alert}
                             </a>
                             <!-- Dropdown - Messages -->
-                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="messagesDropdown">
+                            <div class="app-dropdown-list app-dropdown-menu app-dropdown-menu-right app-shadow app-animated-grow-in" aria-labelledby="messagesDropdown">
                                 <h6 class="dropdown-header">
 									{$lang_messenger}
                                 </h6>
@@ -432,7 +432,7 @@ HTML;
 
 	$language_option = <<<HTML
 		<div class="app-dropdown">
-			<button class="app-dropdown__trigger" data-toggle="dropdown" title="{$choose_lang_trans}">
+			<button class="app-dropdown__trigger" data-bs-toggle="dropdown" title="{$choose_lang_trans}">
 				<i class="fi {$selected_flag_class}" style="font-size: 1.2em;"></i>
 				<span class="u-hidden-mobile">{$installed_langs[$selected_lang]}</span>
 			</button>
@@ -464,7 +464,7 @@ HTML;
 
 						<!-- User Dropdown -->
 						<div class="app-dropdown">
-							<button class="app-dropdown__trigger" data-toggle="dropdown">
+							<button class="app-dropdown__trigger" data-bs-toggle="dropdown">
 								<span class="u-hidden-mobile">$user_fullname</span>
 								<img class="app-avatar" src="{$undraw_profile}" alt="{$user_fullname}">
 							</button>
@@ -512,10 +512,10 @@ HTML;
 						<div class="sidebar-header">
 							<h1>{$user_fullname}</h1>
 						</div>
-						<div class="input-group">
-							<input class="form-control border-end-0 border" type="search" value="" id="navbar_search">
-							<span class="input-group-append">
-				                <button class="btn btn-outline-secondary bg-white border-start-0 border ms-n3">
+<div class="app-input-group">
+						<input class="app-form-control app-border-end-0 app-border" type="search" value="" id="navbar_search">
+						<span class="app-input-group-append">
+			                <button class="app-button app-button-outline-secondary app-bg-white app-border-start-0 app-border ms-n3">
                 				    <i class="fa fa-search"></i>
                					</button>
         					</span>
@@ -560,12 +560,12 @@ HTML;
 			</header>
 
 			<!-- Command Palette Modal -->
-			<div class="modal fade" id="commandPalette" tabindex="-1" aria-labelledby="commandPaletteLabel" aria-hidden="true">
-				<div class="modal-dialog modal-lg modal-dialog-centered">
-					<div class="modal-content" style="background: #2d3748; border: 1px solid #4a5568;">
-						<div class="modal-header border-0 pb-2">
+			<div class="app-modal fade" id="commandPalette" tabindex="-1" aria-labelledby="commandPaletteLabel" aria-hidden="true">
+				<div class="app-modal-dialog app-modal-lg app-modal-dialog-centered">
+					<div class="app-modal-content" style="background: #2d3748; border: 1px solid #4a5568;">
+						<div class="app-modal-header app-border-0 pb-2">
 							<div class="w-100">
-								<input type="text" class="form-control bg-transparent text-white border-0 fs-4"
+								<input type="text" class="app-form-control app-bg-transparent app-text-white app-border-0 fs-4"
 									   id="commandSearch" placeholder="Type a command..."
 									   style="outline: none; box-shadow: none; color: #fff;" autofocus>
 								<style>
@@ -576,10 +576,10 @@ HTML;
 								</style>
 							</div>
 						</div>
-						<div class="modal-body pt-0 pb-2" style="max-height: 400px; overflow-y: auto;">
-							<div id="commandResults" class="list-group list-group-flush"></div>
+						<div class="app-modal-body pt-0 pb-2" style="max-height: 400px; overflow-y: auto;">
+							<div id="commandResults" class="app-list-group app-list-group-flush"></div>
 						</div>
-						<div class="modal-footer border-0 pt-0 pb-3">
+						<div class="app-modal-footer app-border-0 pt-0 pb-3">
 							<small style="color: #a0aec0;">
 								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">↑↓</kbd> Navigate
 								<kbd style="background: #4a5568; color: #e2e8f0; border: 1px solid #718096;">Enter</kbd> Select
@@ -598,12 +598,12 @@ HTML;
 		echo $twig->render('navbar.twig', $var);
 	} catch (\Twig\Error\Error $e) {
 		error_log("Failed to render navbar.twig: " . $e->getMessage());
-		echo "<div class='alert alert-danger'>Error loading navbar template. Please check logs.</div>";
+		echo "<div class='app-alert app-alert-danger'>Error loading navbar template. Please check logs.</div>";
 	}
 
 	if (Sanitizer::get_var('phpgw_return_as') != 'json' && $global_message = Cache::system_get('phpgwapi', 'phpgw_global_message'))
 	{
-		echo "<div class='text-center alert alert-success' role='alert'>";
+		echo "<div class='app-text-center app-alert app-alert-success' role='alert'>";
 		echo nl2br($global_message);
 		echo '</div>';
 	}
@@ -616,7 +616,7 @@ HTML;
 		$msgbox_data = $phpgwapi_common->msgbox($msgbox_data);
 		foreach ($msgbox_data as &$message)
 		{
-			echo "<div class='text-center {$message['msgbox_class']}' role='alert'>";
+			echo "<div class='app-text-center {$message['msgbox_class']}' role='alert'>";
 			echo $message['msgbox_text'];
 			echo '</div>';
 		}
@@ -723,7 +723,25 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    let commandPalette = new bootstrap.Modal(document.getElementById('commandPalette'));
+    // Native modal implementation (replacing bootstrap.Modal)
+    const commandPaletteElement = document.getElementById('commandPalette');
+    const commandPalette = {
+        show: function() {
+            commandPaletteElement.style.display = 'block';
+            commandPaletteElement.classList.add('show');
+            document.body.style.overflow = 'hidden';
+            // Dispatch event for compatibility
+            commandPaletteElement.dispatchEvent(new Event('shown.bs.modal'));
+        },
+        hide: function() {
+            commandPaletteElement.style.display = 'none';
+            commandPaletteElement.classList.remove('show');
+            document.body.style.overflow = '';
+            // Dispatch event for compatibility
+            commandPaletteElement.dispatchEvent(new Event('hidden.bs.modal'));
+        }
+    };
+    
     let searchInput = document.getElementById('commandSearch');
     let resultsContainer = document.getElementById('commandResults');
     let selectedIndex = -1;
@@ -775,7 +793,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Also get items from top menu
         const topNavItems = document.querySelectorAll('.navbar-nav a');
         topNavItems.forEach(item => {
-            if (item.textContent.trim() && item.href && !item.classList.contains('dropdown-toggle')) {
+            if (item.textContent.trim() && item.href && !item.classList.contains('app-dropdown-trigger')) {
                 menuItems.push({
                     text: item.textContent.trim(),
                     url: item.href,
@@ -823,7 +841,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             while (current && current !== document.body) {
                 // Look for collapse toggles (parent menu items)
-                const parentToggle = current.querySelector('a.dropdown-toggle');
+                const parentToggle = current.querySelector('a.app-dropdown-trigger');
                 if (parentToggle && !pathParts.includes(parentToggle.textContent.trim())) {
                     pathParts.unshift(parentToggle.textContent.trim());
                 }
@@ -897,13 +915,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         items.forEach((item, index) => {
             const div = document.createElement('div');
-            div.className = 'list-group-item list-group-item-action bg-transparent text-white border-0 py-2';
+            div.className = 'app-list-group-item app-list-group-item-action app-bg-transparent app-text-white app-border-0 py-2';
 
             div.innerHTML = `
-                <div class="d-flex align-items-center">
+                <div class="d-flex app-align-items-center">
                     <i class="fas fa-sitemap me-3" style="color: #a0aec0;"></i>
-                    <div class="flex-grow-1">
-                        <div class="fw-medium">${highlightMatch(item.text, searchInput.value)}</div>
+                    <div class="app-flex-grow-1">
+                        <div class="app-fw-medium">${highlightMatch(item.text, searchInput.value)}</div>
                         <div style="color: #63b3ed; font-weight: 500; font-size: 0.875rem;">${item.path || 'Menu'}</div>
                     </div>
                 </div>
@@ -937,7 +955,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function selectItem(index) {
-        const items = resultsContainer.querySelectorAll('.list-group-item');
+        const items = resultsContainer.querySelectorAll('.app-list-group-item');
         items.forEach((item, i) => {
             if (i === index) {
                 item.style.setProperty('background-color', '#2b6cb0', 'important'); // Info blue background
@@ -957,7 +975,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Keyboard navigation
     searchInput.addEventListener('keydown', function(e) {
-        const items = resultsContainer.querySelectorAll('.list-group-item');
+        const items = resultsContainer.querySelectorAll('.app-list-group-item');
 
         // Handle navigation keys
         switch(e.key) {
@@ -1175,7 +1193,7 @@ function render_submenu($parent, $menu, $bookmarks = array(), $parent_name = '')
 	{
 		$id++;
 		$out = <<<HTML
-	          <a href="#_$id" data-bs-toggle="collapse text-white" aria-expanded="{$aria_expanded}" class="dropdown-toggle">{$parent_name}</a>
+	          <a href="#_$id" data-bs-toggle="collapse text-white" aria-expanded="{$aria_expanded}" class="app-dropdown-trigger">{$parent_name}</a>
 				<ul class="{$ul_class}list-unstyled collapse" id = "_$id">
 					{$out}
 				</ul>

@@ -125,19 +125,19 @@
 
 	<xsl:call-template name="msgbox"/>
 	<!-- Begin Page Content -->
-	<div class="container-fluid">
-		<div class="row pl-3 pr-3 mt-4">
+	<div class="app-container-fluid">
+		<div class="app-row mt-4">
 
-			<div class="col-6">
+			<div class="app-col-6">
 				<!-- BUTTONS -->
 				<ul class="list-inline">
 					<li class="list-inline-item mb-2">
-						<div class="dropdown">
-							<button class="btn btn-outline-success btn-circle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<div class="app-dropdown">
+							<button class="app-button app-button-success app-button-circle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 								<i class="fas fa-reply" aria-hidden="true" title="Send svar eller opprett notat i saken"></i>
 							</button>
-							<div class="dropdown-menu animated--fade-in" aria-labelledby="dropdownMenuButton">
-								<button class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#commentModal">
+							<div class="app-dropdown-menu animated--fade-in" aria-labelledby="dropdownMenuButton">
+								<button class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#commentModal">
 									<xsl:choose>
 										<xsl:when test="not(application/case_officer/is_current_user)">
 											<xsl:attribute name="disabled">disabled</xsl:attribute>
@@ -149,7 +149,7 @@
 									</xsl:choose>
 									Send svar til innsender
 								</button>
-								<button class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#messengerModal">
+								<button class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#messengerModal">
 									<xsl:choose>
 										<xsl:when test="$messenger_enabled !='true' or application/case_officer/is_current_user or application/case_officer_id ='' ">
 											<xsl:attribute name="disabled">disabled</xsl:attribute>
@@ -161,7 +161,7 @@
 									</xsl:choose>
 									Send melding til saksbehandler
 								</button>
-								<button class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#internal_noteModal">
+								<button class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#internal_noteModal">
 									<xsl:choose>
 										<xsl:when test="not(application/case_officer/is_current_user)">
 											<xsl:attribute name="disabled">disabled</xsl:attribute>
@@ -177,34 +177,34 @@
 						</div>
 					</li>
 					<li class="list-inline-item mb-2">
-						<div class="dropdown">
-							<button class="btn btn-outline-warning btn-circle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<div class="app-dropdown">
+							<button class="app-button app-button-warning app-button-circle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 								<i class="fas fa-arrow-right" aria-hidden="true" title="Videresend sak"></i>
 							</button>
-							<div class="dropdown-menu animated--fade-in" aria-labelledby="dropdownMenuButton">
-								<a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#change_userModal">
+							<div class="app-dropdown-menu animated--fade-in" aria-labelledby="dropdownMenuButton">
+								<a class="app-dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#change_userModal">
 									<i class="fas fa-arrow-right me-1 text-warning"></i>Sett sak til en annen saksbehandler
 								</a>
 							</div>
 						</div>
 					</li>
 					<li class="list-inline-item mb-2">
-						<div class="dropdown" id="action_dropdown">
-							<button class="btn btn-outline-primary btn-circle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<div class="app-dropdown" id="action_dropdown">
+							<button class="app-button app-button-primary app-button-circle" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 								<i class="fas fa-flag" aria-hidden="true" title="Flere handlinger"></i>
 							</button>
-							<div id="return_after_action" class="dropdown-menu animated--fade-in" aria-labelledby="dropdownMenuButton">
+							<div id="return_after_action" class="app-dropdown-menu animated--fade-in" aria-labelledby="dropdownMenuButton">
 								<xsl:if test="application/case_officer/is_current_user">
 									<form method="POST" style="display:inline">
 										<input type="hidden" name="unassign_user"/>
-										<button type="submit"  class="dropdown-item" >
+										<button type="submit"  class="app-dropdown-item" >
 											<i class="fas fa-flag me-1 text-primary"></i>
 											<xsl:value-of select="php:function('lang', 'Unassign me')"/>
 										</button>
 									</form>
 									<form method="POST" style="display:inline">
 										<input type="hidden" name="display_in_dashboard" value="{phpgw:conditional(application/display_in_dashboard='1', '0', '1')}"/>
-										<button type="submit" class="dropdown-item">
+										<button type="submit" class="app-dropdown-item">
 											<i class="fas fa-flag me-1 text-primary"></i>
 											<xsl:value-of select="php:function('lang', phpgw:conditional(application/display_in_dashboard='1', 'Hide from my Dashboard until new activity occurs', 'Display in my Dashboard'))"/>
 										</button>
@@ -214,7 +214,7 @@
 									<form method="POST">
 										<input type="hidden" name="assign_to_user"/>
 										<input type="hidden" name="status" value="PENDING"/>
-										<button type="submit" class="dropdown-item" >
+										<button type="submit" class="app-dropdown-item" >
 											<i class="fas fa-flag me-1 text-primary"></i>
 											<xsl:value-of select="php:function('lang', phpgw:conditional(application/case_officer, 'Re-assign to me', 'Assign to me'))"/>
 										</button>
@@ -224,7 +224,7 @@
 								<xsl:if test="application/status!='REJECTED'">
 									<form method="POST">
 										<input type="hidden" name="status" value="REJECTED"/>
-										<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#rejectApplicationModal">
+										<button type="button" class="app-dropdown-item" data-bs-toggle="modal" data-bs-target="#rejectApplicationModal">
 											<xsl:choose>
 												<xsl:when test="not(application/case_officer/is_current_user)">
 												  <xsl:attribute name="disabled">disabled</xsl:attribute>
@@ -241,14 +241,14 @@
 								<xsl:if test="application/status='PENDING' or application/status='REJECTED' or application/status='NEWPARTIAL1'">
 									<xsl:choose>
 										<xsl:when test="num_associations='0'">
-											<button type="submit" disabled="" value="{php:function('lang', 'Accept application')}" class="dropdown-item" >
+											<button type="submit" disabled="" value="{php:function('lang', 'Accept application')}" class="app-dropdown-item" >
 												<i class="fas fa-flag me-1 text-secondary"></i>
 												<xsl:value-of select="php:function('lang', 'One or more bookings, allocations or events needs to be created before an application can be Accepted')"/>
 											</button>
 										</xsl:when>
 										<xsl:when test="num_associations!='0'">
 											<div>
-												<button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#acceptApplicationModal">
+												<button type="button" class="app-dropdown-item" data-bs-toggle="modal" data-bs-target="#acceptApplicationModal">
 													<xsl:choose>
 														<!--xsl:when test="not(application/case_officer)"-->
 														<xsl:when test="not(application/case_officer/is_current_user)">
@@ -270,7 +270,7 @@
 										<xsl:when test="external_archive != '' and application/external_archive_key =''">
 											<form method="POST" action ="{export_pdf_action}" >
 												<input type="hidden" name="export" value="pdf"/>
-												<button onclick="return confirm('{php:function('lang', 'transfer case to external system?')}')" type="submit" class="dropdown-item" >
+												<button onclick="return confirm('{php:function('lang', 'transfer case to external system?')}')" type="submit" class="app-dropdown-item" >
 													<xsl:if test="not(application/case_officer/is_current_user)">
 														<xsl:attribute name="disabled">disabled</xsl:attribute>
 													</xsl:if>
@@ -281,7 +281,7 @@
 											<form method="POST" action ="{export_pdf_action}" >
 												<input type="hidden" name="export" value="pdf"/>
 												<input type="hidden" name="preview" value="1"/>
-												<button onclick="return confirm('{php:function('lang', 'transfer case to external system?')}')" type="submit" class="dropdown-item" >
+												<button onclick="return confirm('{php:function('lang', 'transfer case to external system?')}')" type="submit" class="app-dropdown-item" >
 													<xsl:if test="not(application/case_officer/is_current_user)">
 														<xsl:attribute name="disabled">disabled</xsl:attribute>
 													</xsl:if>
@@ -297,7 +297,7 @@
 								</div>
 
 								<xsl:if test="application/edit_link">
-									<button class="dropdown-item">
+									<button class="app-dropdown-item">
 										<xsl:choose>
 											<xsl:when test="not(application/case_officer/is_current_user)">
 												<xsl:attribute name="disabled">disabled</xsl:attribute>
@@ -332,11 +332,11 @@
 										<xsl:value-of select="php:function('lang', 'Edit')" />
 									</button>
 								</xsl:if>
-								<a class="dropdown-item" href="{application/dashboard_link}">
+								<a class="app-dropdown-item" href="{application/dashboard_link}">
 									<i class="fas fa-flag me-1 text-primary"></i>
 									<xsl:value-of select="php:function('lang', 'Back to Dashboard')" />
 								</a>
-								<a class="dropdown-item">
+								<a class="app-dropdown-item">
 									<xsl:attribute name="href">
 										<xsl:value-of select="php:function('get_phpgw_link', '/index.php', 'menuaction:booking.uiapplication.index')" />
 									</xsl:attribute>
@@ -349,7 +349,7 @@
 					<!-- Modern recurring allocation button for applications with recurring data -->
 					<xsl:if test="show_recurring_button = 1">
 						<li class="list-inline-item mb-2">
-							<a class="btn btn-success btn-sm shadow-sm" role="button">
+							<a class="app-button app-button-success app-button-sm shadow-sm" role="button">
 								<xsl:attribute name="href">
 									<xsl:value-of select="recurring_allocation_url"/>
 								</xsl:attribute>
@@ -363,16 +363,16 @@
 					</xsl:if>
 				</ul>
 			</div>
-			<div class="col-6">
+			<div class="app-col-6">
 				<ul class="list-inline float-end" role="tablist">
 					<li class="nav-item list-inline-item me-2">
-						<button class="btn btn-outline-primary active border" data-bs-toggle="tab" data-bs-target="#booking">
+						<button class="app-button app-button-primary active border" data-bs-toggle="tab" data-bs-target="#booking">
 							<i class="fas fa-calendar-alt fa-2x" aria-hidden="true" title="Søknad"></i>
 						</button>
 
 					</li>
 					<li class="nav-item list-inline-item me-2">
-						<button class="btn btn-outline-warning border" data-bs-toggle="tab" data-bs-target="#internal_notes">
+						<button class="app-button app-button-warning border" data-bs-toggle="tab" data-bs-target="#internal_notes">
 							<i class="far fa-sticky-note fa-2x text-warning" aria-hidden="true" title="Interne notat"></i>
 						</button>
 
@@ -383,7 +383,7 @@
 						</button>
 					</li>-->
 					<li class="nav-item list-inline-item me-2">
-						<button class="btn btn-outline-primary border" data-bs-toggle="tab" data-bs-target="#history">
+						<button class="app-button app-button-primary border" data-bs-toggle="tab" data-bs-target="#history">
 							<i class="fas fa-history fa-2x" aria-hidden="true" title="Historikk"></i>
 						</button>
 					</li>
@@ -395,7 +395,7 @@
 
 		<!-- TABS LINE START -->
 
-		<div class="row">
+		<div class="app-row">
 
 		</div>
 		<!-- TABS LINE END -->
@@ -408,14 +408,14 @@
 					<div class="container-fluid">
 
 
-						<a href="#" class="btn btn-success btn-icon-split me-2">
+						<a href="#" class="app-button app-button-success me-2">
 							<span class="icon text-white-50">
 								<i class="fas fa-check"></i>
 							</span>
 							<span class="text">Godkjenn</span>
 						</a>
 
-						<a href="#" class="btn btn-danger btn-icon-split">
+						<a href="#" class="app-button app-button-danger">
 							<span class="icon text-white-50">
 								<i class="fas fa-trash"></i>
 							</span>
@@ -427,14 +427,14 @@
 				<div class="clearfix"></div>
 
 
-				<div class="row mt-3">
+				<div class="d-flex flex-column mt-3">
 					<div class="d-flex w-100 justify-content-between">
-						<h5 class="mb-1">
+						<h5 class="mb-0">
 							<xsl:value-of select="php:function('lang', 'case officer')" />
 						</h5>
 						<small></small>
 					</div>
-					<p class="mb-1 font-weight-bold">
+					<p class="mb-0 font-weight-bold">
 						<xsl:choose>
 							<xsl:when test="application/case_officer_full_name !=''">
 								<xsl:value-of select="application/case_officer_full_name"/>
@@ -448,7 +448,7 @@
 						<xsl:choose>
 							<xsl:when test="not(application/case_officer)">
 
-								<div class="alert alert-primary" role="alert">
+								<div class="app-alert app-alert-info" role="alert">
 									<xsl:value-of select="php:function('lang', 'In order to work with this application, you must first')"/>
 									<xsl:text> </xsl:text>
 									<xsl:value-of select="php:function('lang', 'assign yourself')"/>
@@ -457,7 +457,7 @@
 								</div>
 							</xsl:when>
 							<xsl:when test="application/case_officer and not(application/case_officer/is_current_user)">
-								<div class="alert alert-primary" role="alert">
+								<div class="app-alert app-alert-info" role="alert">
 									<xsl:value-of select="php:function('lang', 'The user currently assigned as the responsible case officer for this application is')"/>
 									<xsl:text> </xsl:text>'<xsl:value-of select="application/case_officer_full_name"/>'.
 									<br/>
@@ -477,70 +477,70 @@
 					<!-- Only show status and dates for single applications (detailed info is in summary above for multiple) -->
 					<xsl:if test="application/related_application_count &lt;= 1">
 						<div class="d-flex w-100 justify-content-between">
-							<p class="mb-1 mt-3">
+							<p class="mb-0 mt-3">
 								<xsl:value-of select="php:function('lang', 'Status')" />
 							</p>
 						</div>
-						<p>
+						<p class="mb-0">
 							<xsl:value-of select="php:function('lang', string(application/status))"/>
 						</p>
 						<div class="d-flex w-100 justify-content-between">
-							<p class="mb-1">
+							<p class="mb-0 mt-3">
 								<xsl:value-of select="php:function('lang', 'Created')" />
 							</p>
 						</div>
-						<p>
+						<p class="mb-0">
 							<xsl:value-of select="php:function('pretty_timestamp', application/created)"/>
 						</p>
 						<div class="d-flex w-100 justify-content-between">
-							<p class="mb-1">
+							<p class="mb-0 mt-3">
 								<xsl:value-of select="php:function('lang', 'Modified')" />
 							</p>
 						</div>
-						<p>
+						<p class="mb-0">
 							<xsl:value-of select="php:function('pretty_timestamp', application/modified)"/>
 						</p>
 					</xsl:if>
 					<xsl:if test="application/external_archive_key !=''">
 						<div class="d-flex w-100 justify-content-between">
-							<p class="mb-1">
+							<p class="mb-0 mt-3">
 								<xsl:value-of select="php:function('lang', 'external archive key')"/>
 							</p>
 						</div>
-						<p>
+						<p class="mb-0">
 							<xsl:value-of select="application/external_archive_key"/>
 						</p>
 					</xsl:if>
 				</div>
 
 				<!-- Accordian -->
-				<div class="row mt-3">
+				<div class="app-row mt-3">
 
-					<div class="container-fluid">
-						<div class="row">
-							<div class="col-md-12">
+					<div class="app-container-fluid">
+						<div class="app-row">
+							<div class="app-col">
 								<!-- Show related applications summary if multiple applications -->
 								<xsl:if test="application/related_application_count > 1">
-									<div class="alert alert-info mb-4">
-										<h5 class="alert-heading pb-2">
+									<div class="app-alert app-alert-info mb-4">
+										<h5 class="app-alert-heading pb-2">
 											<i class="fas fa-info-circle me-2"></i>
 											<xsl:value-of select="php:function('lang', 'combined_application')" />
-											<span class="badge bg-primary text-white ms-2">
+											<span class="app-badge app-badge-primary ms-2">
 												<xsl:value-of select="application/related_application_count"/>
 											</span>
 										</h5>
 
-										<div class="row">
+										<div class="app-row">
 											<xsl:for-each select="application/related_applications_info">
-												<div class="col-md-6 mb-3">
-													<div class="card border-light">
-														<div class="card-body p-3">
+												<div class="app-col-6 mb-3">
+													<div class="app-card app-card-bordered">
+														<div class="app-card-body p-3">
 															<div class="d-flex justify-content-between align-items-start mb-2">
 																<div>
-																	<h6 class="card-title mb-1">
+																	<h6 class="app-card-title mb-1">
 																		<strong><xsl:value-of select="name"/></strong>
 																	</h6>
-																	<p class="card-text mb-0">
+																	<p class="app-card-text mb-0">
 																		<strong>
 																			<xsl:value-of select="php:function('lang', 'Application')" />
 																			<xsl:text> #</xsl:text>
@@ -548,7 +548,7 @@
 																		</strong>
 																	</p>
 																</div>
-																<a class="btn btn-sm btn-primary">
+																<a class="app-button app-button-sm app-button-primary">
 																	<xsl:attribute name="href">
 																		<xsl:value-of select="../edit_link"/>
 																		<xsl:text>&amp;selected_app_id=</xsl:text>
@@ -559,16 +559,16 @@
 																	<xsl:value-of select="php:function('lang', 'Edit')" />
 																</a>
 															</div>
-															<p class="card-text mb-1">
+															<p class="app-card-text mb-1">
 																<small><strong><xsl:value-of select="php:function('lang', 'Status')" />:</strong></small>
 															</p>
-															<p class="card-text mb-2">
-																<small><span class="badge bg-primary text-white"><xsl:value-of select="php:function('lang', string(status))"/></span></small>
+															<p class="app-card-text mb-2">
+																<small><span class="app-badge app-badge-primary"><xsl:value-of select="php:function('lang', string(status))"/></span></small>
 															</p>
-															<p class="card-text mb-1">
+															<p class="app-card-text mb-1">
 																<small><strong><xsl:value-of select="php:function('lang', 'Created')" />:</strong></small>
 															</p>
-															<p class="card-text mb-2">
+															<p class="app-card-text mb-2">
 																<small><xsl:value-of select="created"/></small>
 															</p>
 															<xsl:if test="agegroups">
@@ -576,16 +576,16 @@
 																<xsl:variable name="total_female" select="sum(agegroups/female)"/>
 																<xsl:variable name="total_participants" select="$total_male + $total_female"/>
 																<xsl:if test="$total_participants > 0">
-																	<p class="card-text mb-1">
+																	<p class="app-card-text mb-1">
 																		<small><strong><xsl:value-of select="php:function('lang', 'participants')" />:</strong></small>
 																	</p>
-																	<p class="card-text mb-2">
+																	<p class="app-card-text mb-2">
 																		<small><xsl:value-of select="$total_participants"/></small>
 																	</p>
 																</xsl:if>
 															</xsl:if>
 															<xsl:if test="date_ranges">
-																<p class="card-text mb-1">
+																<p class="app-card-text mb-1">
 																	<small><strong><xsl:value-of select="php:function('lang', 'timeslots')" />:</strong></small>
 																</p>
 																<ul class="list-unstyled mb-2">
@@ -595,10 +595,10 @@
 																</ul>
 															</xsl:if>
 															<xsl:if test="resource_names">
-																<p class="card-text mb-1">
+																<p class="app-card-text mb-1">
 																	<small><strong><xsl:value-of select="php:function('lang', 'Resources')" />:</strong></small>
 																</p>
-																<p class="card-text">
+																<p class="app-card-text">
 																	<small>
 																		<xsl:for-each select="resource_names">
 																			<xsl:value-of select="."/>
@@ -608,18 +608,18 @@
 																</p>
 															</xsl:if>
 															<xsl:if test="equipment and normalize-space(equipment)">
-																<p class="card-text mb-1">
+																<p class="app-card-text mb-1">
 																	<small><strong><xsl:value-of select="php:function('lang', 'Equipment (2018)')" />:</strong></small>
 																</p>
-																<p class="card-text">
+																<p class="app-card-text">
 																	<small><xsl:value-of select="equipment" disable-output-escaping="yes"/></small>
 																</p>
 															</xsl:if>
 															<xsl:if test="description and normalize-space(description)">
-																<p class="card-text mb-1">
+																<p class="app-card-text mb-1">
 																	<small><strong><xsl:value-of select="php:function('lang', 'Description')" />:</strong></small>
 																</p>
-																<p class="card-text">
+																<p class="app-card-text">
 																	<small><xsl:value-of select="description" disable-output-escaping="yes"/></small>
 																</p>
 															</xsl:if>
@@ -631,19 +631,19 @@
 									</div>
 								</xsl:if>
 
-								<div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingOne">
-											<h4 class="panel-title">
+								<div class="app-panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingOne">
+											<h4 class="app-panel-title">
 												<a role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne" class="">
 													Søker: <xsl:value-of select="application/contact_name"/>
 												</a>
 											</h4>
 										</div>
-										<div id="collapseOne" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingOne" style="">
-											<div class="panel-body">
-												<div class="list-group">
-													<div class="list-group-item flex-column align-items-start">
+										<div id="collapseOne" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingOne" style="">
+											<div class="app-panel-body">
+												<div class="app-list-group">
+													<div class="app-list-group-item flex-column align-items-start">
 														<div class="d-flex w-100 justify-content-between">
 															<h5 class="mb-1">
 																<xsl:value-of select="php:function('lang', 'Name')" />
@@ -655,7 +655,7 @@
 														</p>
 														<!--<small>Dette er søkers første søknad i Aktiv kommune.</small>-->
 													</div>
-													<div href="#" class="list-group-item flex-column align-items-start">
+													<div href="#" class="app-list-group-item flex-column align-items-start">
 														<div class="d-flex w-100 justify-content-between">
 															<h5 class="mb-1">
 																<xsl:value-of select="php:function('lang', 'Email')" />
@@ -667,7 +667,7 @@
 														</p>
 														<small class="text-body-secondary"></small>
 													</div>
-													<div href="#" class="list-group-item flex-column align-items-start">
+													<div href="#" class="app-list-group-item flex-column align-items-start">
 														<div class="d-flex w-100 justify-content-between">
 															<h5 class="mb-1">
 																<xsl:value-of select="php:function('lang', 'Phone')" />
@@ -685,19 +685,19 @@
 									</div>
 
 									<xsl:if test="application/customer_organization_name != ''">
-										<div class="panel panel-default">
-											<div class="panel-heading" role="tab" id="headingTwo">
-												<h4 class="panel-title">
+										<div class="app-panel app-panel-default">
+											<div class="app-panel-heading" role="tab" id="headingTwo">
+												<h4 class="app-panel-title">
 													<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseTwo" aria-expanded="true" aria-controls="collapseTwo">
 														<xsl:value-of select="php:function('lang', 'Organization')" />: <xsl:value-of select="application/customer_organization_name"/>
 													</a>
 												</h4>
 											</div>
-											<div id="collapseTwo" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingTwo">
-												<div class="panel-body">
+											<div id="collapseTwo" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingTwo">
+												<div class="app-panel-body">
 
-													<div class="list-group">
-														<div class="list-group-item flex-column align-items-start">
+													<div class="app-list-group">
+														<div class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Organization')" />
@@ -710,7 +710,7 @@
 															<!--<small>Dette er organisasjonens første søknad i Aktiv kommune.</small>-->
 														</div>
 														<xsl:if test="application/customer_identifier_type = 'organization_number'">
-															<div href="#" class="list-group-item flex-column align-items-start">
+															<div href="#" class="app-list-group-item flex-column align-items-start">
 																<div class="d-flex w-100 justify-content-between">
 																	<h5 class="mb-1">
 																		<xsl:value-of select="php:function('lang', 'organization number')" />
@@ -723,7 +723,7 @@
 																<small class="text-body-secondary"></small>
 															</div>
 														</xsl:if>
-														<div href="#" class="list-group-item flex-column align-items-start">
+														<div href="#" class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'in tax register')"/>
@@ -748,20 +748,20 @@
 										</div>
 									</xsl:if>
 
-									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingTwelve">
-											<h4 class="panel-title">
-												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="collapseTwelve" aria-expanded="true" aria-controls="collapseTwelve">
+									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingTwelve">
+											<h4 class="app-panel-title">
+												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseTwelve" aria-expanded="true" aria-controls="collapseTwelve">
 													<xsl:value-of select="php:function('lang', 'invoice information')" />
 												</a>
 											</h4>
 										</div>
-										<div id="collapseTwelve" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingTwelve">
-											<div class="panel-body">
+										<div id="collapseTwelve" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingTwelve">
+											<div class="app-panel-body">
 
-												<div class="list-group">
+												<div class="app-list-group">
 													<xsl:if test="application/customer_identifier_type = 'organization_number'">
-														<div href="#" class="list-group-item flex-column align-items-start">
+														<div href="#" class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'organization number')" />
@@ -776,7 +776,7 @@
 													</xsl:if>
 													<xsl:if test="application/customer_identifier_type = 'ssn'">
 
-														<div href="#" class="list-group-item flex-column align-items-start">
+														<div href="#" class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Date of birth or SSN')" />
@@ -790,7 +790,7 @@
 															<small class="text-body-secondary"></small>
 														</div>
 													</xsl:if>
-													<div href="#" class="list-group-item flex-column align-items-start">
+													<div href="#" class="app-list-group-item flex-column align-items-start">
 														<div class="d-flex w-100 justify-content-between">
 															<h5 class="mb-1">
 																<xsl:value-of select="php:function('lang', 'Street')"/>
@@ -802,7 +802,7 @@
 														</p>
 														<small class="text-body-secondary"></small>
 													</div>
-													<div href="#" class="list-group-item flex-column align-items-start">
+													<div href="#" class="app-list-group-item flex-column align-items-start">
 														<div class="d-flex w-100 justify-content-between">
 															<h5 class="mb-1">
 																<xsl:value-of select="php:function('lang', 'Zip code')"/>
@@ -814,7 +814,7 @@
 														</p>
 														<small class="text-body-secondary"></small>
 													</div>
-													<div href="#" class="list-group-item flex-column align-items-start">
+													<div href="#" class="app-list-group-item flex-column align-items-start">
 														<div class="d-flex w-100 justify-content-between">
 															<h5 class="mb-1">
 																<xsl:value-of select="php:function('lang', 'Postal City')"/>
@@ -832,19 +832,19 @@
 									</div>
 									<xsl:if test="simple != 1">
 
-										<div class="panel panel-default">
-											<div class="panel-heading" role="tab" id="headingThree">
-												<h4 class="panel-title">
+										<div class="app-panel app-panel-default">
+											<div class="app-panel-heading" role="tab" id="headingThree">
+												<h4 class="app-panel-title">
 													<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseThree" aria-expanded="true" aria-controls="collapseThree">
 														<xsl:value-of select="php:function('lang', 'Who?')" />
 													</a>
 												</h4>
 											</div>
-											<div id="collapseThree" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingThree">
-												<div class="panel-body">
+											<div id="collapseThree" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingThree">
+												<div class="app-panel-body">
 
-													<div class="list-group">
-														<div class="list-group-item flex-column align-items-start">
+													<div class="app-list-group">
+														<div class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Target audience')" />
@@ -864,15 +864,15 @@
 															</p>
 															<small></small>
 														</div>
-														<div class="list-group-item flex-column align-items-start">
+														<div class="app-list-group-item flex-column align-items-start">
 
 															<xsl:choose>
 																<!-- Show individual application participants if multiple applications -->
 																<xsl:when test="application/related_application_count > 1">
 																	<xsl:for-each select="application/related_applications_info">
 																		<xsl:if test="agegroups">
-																				<div class="card-body">
-																					<h6 class="card-title">
+																				<div class="app-card-body">
+																					<h6 class="app-card-title">
 																						<strong>
 																							<xsl:value-of select="name"/>
 																							<xsl:text> (#</xsl:text>
@@ -947,18 +947,18 @@
 										</div>
 									</xsl:if>
 									<xsl:if test="simple != 1">
-										<div class="panel panel-default">
-											<div class="panel-heading" role="tab" id="headingFour">
-												<h4 class="panel-title">
+										<div class="app-panel app-panel-default">
+											<div class="app-panel-heading" role="tab" id="headingFour">
+												<h4 class="app-panel-title">
 													<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseFour" aria-expanded="true" aria-controls="collapseFour">
 														<xsl:value-of select="php:function('lang', 'Why?')" />
 													</a>
 												</h4>
 											</div>
-											<div id="collapseFour" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingFour">
-												<div class="panel-body">
-													<div class="list-group">
-														<div class="list-group-item flex-column align-items-start">
+											<div id="collapseFour" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingFour">
+												<div class="app-panel-body">
+													<div class="app-list-group">
+														<div class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Activity')" />
@@ -968,7 +968,7 @@
 																<xsl:value-of select="application/activity_name"/>
 															</p>
 														</div>
-														<div class="list-group-item flex-column align-items-start">
+														<div class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Event name')" />
@@ -978,7 +978,7 @@
 																<xsl:value-of select="application/name" disable-output-escaping="yes"/>
 															</p>
 														</div>
-														<div class="list-group-item flex-column align-items-start">
+														<div class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Description')" />
@@ -988,7 +988,7 @@
 																<xsl:value-of select="application/description" disable-output-escaping="yes"/>
 															</p>
 														</div>
-														<div class="list-group-item flex-column align-items-start">
+														<div class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Extra info')" />
@@ -1000,7 +1000,7 @@
 														</div>
 
 
-														<div class="list-group-item flex-column align-items-start">
+														<div class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Organizer')" />
@@ -1010,7 +1010,7 @@
 																<xsl:value-of select="application/organizer" disable-output-escaping="yes"/>
 															</p>
 														</div>
-														<div class="list-group-item flex-column align-items-start">
+														<div class="app-list-group-item flex-column align-items-start">
 															<div class="d-flex w-100 justify-content-between">
 																<h5 class="mb-1">
 																	<xsl:value-of select="php:function('lang', 'Homepage')" />
@@ -1032,19 +1032,19 @@
 											</div>
 										</div>
 									</xsl:if>
-									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingFive">
-											<h4 class="panel-title">
+									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingFive">
+											<h4 class="app-panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseFive" aria-expanded="true" aria-controls="collapseFive">
 													Ønsker ressurs: <i class="fas fa-redo-alt text-primary"></i>
 												</a>
 											</h4>
 										</div>
 
-										<div id="collapseFive" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingFive">
-											<div class="panel-body">
-												<div class="list-group">
-													<div class="list-group-item flex-column align-items-start">
+										<div id="collapseFive" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingFive">
+											<div class="app-panel-body">
+												<div class="app-list-group">
+													<div class="app-list-group-item flex-column align-items-start">
 														<div class="d-flex w-100 justify-content-between">
 															<h5 class="mb-1">
 																<xsl:value-of select="php:function('lang', 'Building')" />
@@ -1067,8 +1067,8 @@
 												</div>
 
 												<!-- Resources now shown with dates below -->
-												<div class="list-group">
-													<div class="list-group-item flex-column align-items-start">
+												<div class="app-list-group">
+													<div class="app-list-group-item flex-column align-items-start">
 														<!-- Show combined orders for multiple applications -->
 <!--														<xsl:if test="application/related_application_count > 1 and application/combined_orders">-->
 <!--															<div class="d-flex w-100 justify-content-between">-->
@@ -1118,23 +1118,23 @@
 										</div>
 									</div>
 
-									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingSix">
-											<h4 class="panel-title">
+									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingSix">
+											<h4 class="app-panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseSix" aria-expanded="true" aria-controls="collapseSix">
 													<xsl:value-of select="php:function('lang', 'when_and_where')" />
 												</a>
 											</h4>
 										</div>
 
-										<div id="collapseSix" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingSix">
-											<div class="panel-body">
+										<div id="collapseSix" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingSix">
+											<div class="app-panel-body">
 												<p>
 													<xsl:value-of select="php:function('lang', 'date format')" />:
 													<xsl:value-of select="php:function('get_phpgw_info', 'user|preferences|common|dateformat')" />
 												</p>
-												<div class="list-group">
-													<div class="list-group-item flex-column align-items-start">
+												<div class="app-list-group">
+													<div class="app-list-group-item flex-column align-items-start">
 														<script type="text/javascript">
 															var allocationParams = {};
 															var bookingParams = {};
@@ -1151,8 +1151,8 @@
 															building_id = <xsl:value-of select="application/building_id"/>;
 														</script>
 														<xsl:for-each select="application/combined_dates">
-															<div class="card mb-3" style="border: 1px solid #ddd;">
-																<div class="card-body">
+															<div class="app-card mb-3" style="border: 1px solid #ddd;">
+																<div class="app-card-body">
 																	<xsl:if test="application_name">
 																		<div class="pure-control-group">
 																			<label style="font-weight: bold; color: #2c5aa0;">
@@ -1252,20 +1252,20 @@
 										</div>
 									</div>
 
-									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingSeven">
-											<h4 class="panel-title">
+									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingSeven">
+											<h4 class="app-panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseSeven" aria-expanded="true" aria-controls="collapseSeven">
 													<xsl:value-of select="php:function('lang', 'payments')" />
 												</a>
 											</h4>
 										</div>
-										<div id="collapseSeven" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingSeven">
-											<div class="panel-body">
-												<div class="list-group-item flex-column align-items-start">
+										<div id="collapseSeven" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingSeven">
+											<div class="app-panel-body">
+												<div class="app-list-group-item flex-column align-items-start">
 													<div id="payments_container"/>
 												</div>
-												<div class="list-group-item flex-column align-items-start" id="order_details"> <!-- style="display:none;"-->
+												<div class="app-list-group-item flex-column align-items-start" id="order_details"> <!-- style="display:none;"-->
 													<div class="d-flex w-100 justify-content-between">
 														<h5 class="mb-1">
 															<xsl:value-of select="php:function('lang', 'details')" />
@@ -1276,43 +1276,43 @@
 											</div>
 										</div>
 									</div>
-									<!--									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingEight">
-											<h4 class="panel-title">
+									<!--									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingEight">
+											<h4 class="app-panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseEight" aria-expanded="true" aria-controls="collapseEight">
 													Booking-konflikter på ressurs: Ingen
 												</a>
 											</h4>
 										</div>
-										<div id="collapseEight" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingEight">
-											<div class="panel-body">
+										<div id="collapseEight" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingEight">
+											<div class="app-panel-body">
 											</div>
 										</div>
 									</div>-->
-									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingNine">
-											<h4 class="panel-title">
+									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingNine">
+											<h4 class="app-panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseNine" aria-expanded="true" aria-controls="collapseNine">
 													<xsl:value-of select="php:function('lang', 'Associated items')" />
 												</a>
 											</h4>
 										</div>
-										<div id="collapseNine" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingNine">
-											<div class="panel-body">
+										<div id="collapseNine" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingNine">
+											<div class="app-panel-body">
 												<div id="associated_container"/>
 											</div>
 										</div>
 									</div>
-									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingTen">
-											<h4 class="panel-title">
+									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingTen">
+											<h4 class="app-panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseTen" aria-expanded="true" aria-controls="collapseTen">
 													<xsl:value-of select="php:function('lang', 'attachments')" />
 												</a>
 											</h4>
 										</div>
-										<div id="collapseTen" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingTen">
-											<div class="panel-body">
+										<div id="collapseTen" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingTen">
+											<div class="app-panel-body">
 												<div id="attachments_container"/>
 												<br/>
 												<form method="POST" enctype='multipart/form-data' id='file_form'>
@@ -1335,21 +1335,21 @@
 													</input>
 													<br/>
 													<br/>
-													<input type="submit" value="{php:function('lang', 'Add attachment')}" class="pure-button pure-button-primary"/>
+													<input type="submit" value="{php:function('lang', 'Add attachment')}" class="app-button app-button-primary"/>
 												</form>
 											</div>
 										</div>
 									</div>
-									<div class="panel panel-default">
-										<div class="panel-heading" role="tab" id="headingEleven">
-											<h4 class="panel-title">
+									<div class="app-panel app-panel-default">
+										<div class="app-panel-heading" role="tab" id="headingEleven">
+											<h4 class="app-panel-title">
 												<a class="" role="button" data-bs-toggle="collapse" data-parent="#accordion" href="#collapseEleven" aria-expanded="true" aria-controls="collapseEleven">
 													<xsl:value-of select="php:function('lang', 'Terms and conditions')" />
 												</a>
 											</h4>
 										</div>
-										<div id="collapseEleven" class="panel-collapse collapse show" role="tabpanel" aria-labelledby="headingEleven">
-											<div class="panel-body">
+										<div id="collapseEleven" class="app-panel-collapse collapse show" role="tabpanel" aria-labelledby="headingEleven">
+											<div class="app-panel-body">
 												<div class="pure-control-group">
 													<xsl:if test="config/application_terms">
 														<p>
@@ -1365,7 +1365,7 @@
 												</div>
 
 											</div>
-											<div class="panel-body">
+											<div class="app-panel-body">
 												<!--<legend>-->
 												<h4>
 													<xsl:value-of select="php:function('lang', 'additional requirements')" />
@@ -1398,9 +1398,9 @@
 				</h3>
 
 				<xsl:for-each select="internal_notes">
-					<div class="panel-body">
-						<div class="list-group">
-							<div href="#" class="list-group-item flex-column align-items-start">
+					<div class="app-panel-body">
+						<div class="app-list-group">
+							<div href="#" class="app-list-group-item flex-column align-items-start">
 								<div class="d-flex w-100 justify-content-between">
 									<h5 class="mb-1">
 										<xsl:value-of select="php:function('date', $date_format, number(datetime))"/>
@@ -1426,9 +1426,9 @@
 				</h3>
 
 				<xsl:for-each select="application/comments[author]">
-					<div class="panel-body">
-						<div class="list-group">
-							<div href="#" class="list-group-item flex-column align-items-start">
+					<div class="app-panel-body">
+						<div class="app-list-group">
+							<div href="#" class="app-list-group-item flex-column align-items-start">
 								<div class="d-flex w-100 justify-content-between">
 									<h5 class="mb-1">
 										<xsl:value-of select="php:function('pretty_timestamp', time)"/>
@@ -1564,18 +1564,18 @@
 
 	</script>
 
-	<div class="modal fade" id="commentModal" tabindex="-1" role="dialog" aria-labelledby="commentModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="commentModalLabel">
+	<div class="app-modal" id="commentModal" tabindex="-1" role="dialog" aria-labelledby="commentModalLabel" aria-hidden="true">
+		<div class="app-modal-dialog app-modal-lg app-modal-dialog-centered" role="document">
+			<div class="app-modal-content">
+				<div class="app-modal-header">
+					<h5 class="app-modal-title" id="commentModalLabel">
 						<xsl:value-of select="php:function('lang', 'Add a comment')" />
 					</h5>
-					<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+					<button class="app-button-close" type="button" data-bs-dismiss="modal" aria-label="Close">
 						<span aria-hidden="true">x</span>
 					</button>
 				</div>
-				<div class="modal-body">
+				<div class="app-modal-body">
 					<xsl:if test="application/edit_link">
 						<div class="pure-u-1">
 							<form method="POST">
@@ -1602,30 +1602,30 @@
 		<!-- /.modal-dialog -->
 	</div>
 
-	<div class="modal fade" id="messengerModal" tabindex="-1" role="dialog" aria-labelledby="messengerModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="messengerModalLabel">
+	<div class="app-modal" id="messengerModal" tabindex="-1" role="dialog" aria-labelledby="messengerModalLabel" aria-hidden="true">
+		<div class="app-modal-dialog app-modal-lg app-modal-dialog-centered" role="document">
+			<div class="app-modal-content">
+				<div class="app-modal-header">
+					<h5 class="app-modal-title" id="messengerModalLabel">
 						<xsl:value-of select="php:function('lang', 'Add message')" />
 						<xsl:text> (</xsl:text>
 						<xsl:value-of select="application/case_officer_full_name"/>
 						<xsl:text>)</xsl:text>
 					</h5>
 
-					<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+					<button class="app-button-close" type="button" data-bs-dismiss="modal" aria-label="Close">
 						<span aria-hidden="true">x</span>
 					</button>
 				</div>
 				<form method="POST">
-					<div class="modal-body">
+					<div class="app-modal-body">
 						<xsl:if test="application/edit_link">
 							<div class="form-group">
 								<label for="message_subject">
 									<xsl:value-of select="php:function('lang', 'Subject')" />
 								</label>
 								<input type="hidden" name="message_recipient" value="{application/case_officer_id}"/>
-								<input type="text" name="message_subject" id="message_subject" required="required" class="form-control">
+								<input type="text" name="message_subject" id="message_subject" required="required" class="app-input">
 									<xsl:attribute name='value'>
 										<xsl:value-of select="php:function('lang', 'application')" />
 										<xsl:text> #</xsl:text>
@@ -1637,16 +1637,16 @@
 								<label for="message_content">
 									<xsl:value-of select="php:function('lang', 'content')" />
 								</label>
-								<textarea name="message_content" id="message_content" required="required" class="form-control">
+								<textarea name="message_content" id="message_content" required="required" class="app-input">
 								</textarea>
 							</div>
 						</xsl:if>
 					</div>
-					<div class="modal-footer">
-						<button type="submit" class="btn btn-primary">
+					<div class="app-modal-footer">
+						<button type="submit" class="app-button app-button--primary">
 							<xsl:value-of select="php:function('lang', 'save')" />
 						</button>
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+						<button type="button" class="app-button app-button--secondary" data-bs-dismiss="modal">
 							<xsl:value-of select="php:function('lang', 'cancel')" />
 						</button>
 					</div>
@@ -1657,22 +1657,22 @@
 		<!-- /.modal-dialog -->
 	</div>
 
-	<div class="modal fade" id="change_userModal" tabindex="-1" role="dialog" aria-labelledby="change_userModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="change_userModalLabel">
+	<div class="app-modal" id="change_userModal" tabindex="-1" role="dialog" aria-labelledby="change_userModalLabel" aria-hidden="true">
+		<div class="app-modal-dialog app-modal-lg app-modal-dialog-centered" role="document">
+			<div class="app-modal-content">
+				<div class="app-modal-header">
+					<h5 class="app-modal-title" id="change_userModalLabel">
 						<xsl:value-of select="php:function('lang', 'case officer')" />
 					</h5>
-					<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+					<button class="app-button-close" type="button" data-bs-dismiss="modal" aria-label="Close">
 						<span aria-hidden="true">x</span>
 					</button>
 				</div>
 				<form method="POST">
-					<div class="modal-body">
+					<div class="app-modal-body">
 						<xsl:if test="application/edit_link">
 							<div class="form-group">
-								<select name="assign_to_new_user" id="new_case_officer" required="required" class="form-control" aria-describedby="case_officer_help">
+								<select name="assign_to_new_user" id="new_case_officer" required="required" class="app-input" aria-describedby="case_officer_help">
 									<option value="0">
 										<xsl:value-of select="php:function('lang', 'select')" />
 									</option>
@@ -1682,11 +1682,11 @@
 							</div>
 						</xsl:if>
 					</div>
-					<div class="modal-footer">
-						<button type="submit" class="btn btn-primary">
+					<div class="app-modal-footer">
+						<button type="submit" class="app-button app-button--primary">
 							<xsl:value-of select="php:function('lang', 'save')" />
 						</button>
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+						<button type="button" class="app-button app-button--secondary" data-bs-dismiss="modal">
 							<xsl:value-of select="php:function('lang', 'cancel')" />
 						</button>
 					</div>
@@ -1698,34 +1698,34 @@
 		<!-- /.modal-dialog -->
 	</div>
 
-	<div class="modal fade" id="internal_noteModal" tabindex="-1" role="dialog" aria-labelledby="internal_noteModalLabel" aria-hidden="true">
-		<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-			<div class="modal-content">
-				<div class="modal-header">
-					<h5 class="modal-title" id="internal_noteModalLabel">
+	<div class="app-modal" id="internal_noteModal" tabindex="-1" role="dialog" aria-labelledby="internal_noteModalLabel" aria-hidden="true">
+		<div class="app-modal-dialog app-modal-lg app-modal-dialog-centered" role="document">
+			<div class="app-modal-content">
+				<div class="app-modal-header">
+					<h5 class="app-modal-title" id="internal_noteModalLabel">
 						<xsl:value-of select="php:function('lang', 'internal notes')" />
 					</h5>
-					<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+					<button class="app-button-close" type="button" data-bs-dismiss="modal" aria-label="Close">
 						<span aria-hidden="true">x</span>
 					</button>
 				</div>
 				<form method="POST">
-					<div class="modal-body">
+					<div class="app-modal-body">
 						<xsl:if test="application/edit_link">
 							<div class="form-group">
 								<label for="internal_note_content">
 									<xsl:value-of select="php:function('lang', 'content')" />
 								</label>
-								<textarea name="internal_note_content" id="internal_note_content" required="required" class="form-control">
+								<textarea name="internal_note_content" id="internal_note_content" required="required" class="app-input">
 								</textarea>
 							</div>
 						</xsl:if>
 					</div>
-					<div class="modal-footer">
-						<button type="submit" class="btn btn-primary">
+					<div class="app-modal-footer">
+						<button type="submit" class="app-button app-button--primary">
 							<xsl:value-of select="php:function('lang', 'save')" />
 						</button>
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+						<button type="button" class="app-button app-button--secondary" data-bs-dismiss="modal">
 							<xsl:value-of select="php:function('lang', 'cancel')" />
 						</button>
 					</div>
@@ -1736,39 +1736,39 @@
 		<!-- /.modal-dialog -->
 	</div>
 
-	<div class="modal fade" id="acceptApplicationModal" tabindex="-1" role="dialog" aria-labelledby="acceptApplicationModalLabel" aria-hidden="true">
-	  <div class="modal-dialog modal-dialog-centered" role="document">
-		<div class="modal-content">
-		  <div class="modal-header">
-			<h5 class="modal-title" id="acceptApplicationModalLabel">
+	<div class="app-modal" id="acceptApplicationModal" tabindex="-1" role="dialog" aria-labelledby="acceptApplicationModalLabel" aria-hidden="true">
+	  <div class="app-modal-dialog app-modal-dialog-centered" role="document">
+		<div class="app-modal-content">
+		  <div class="app-modal-header">
+			<h5 class="app-modal-title" id="acceptApplicationModalLabel">
 			  <xsl:value-of select="php:function('lang', 'confirm_application_approval')" />
 			</h5>
-			<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+			<button class="app-button-close" type="button" data-bs-dismiss="modal" aria-label="Close">
 			  <span aria-hidden="true">x</span>
 			</button>
 		  </div>
 		  <form method="POST">
-			<div class="modal-body">
+			<div class="app-modal-body">
 			  <p><xsl:value-of select="php:function('lang', 'approval_description')" /></p>
 			  <div class="form-group">
 				<h5>
 				  <xsl:value-of select="php:function('lang', 'comment_to_organizer')" />
 				</h5>
-				<textarea name="acceptance_message" id="acceptance_message" class="form-control" rows="4" placeholder="{php:function('lang', 'comment_placeholder')}"></textarea>
+				<textarea name="acceptance_message" id="acceptance_message" class="app-input" rows="4" placeholder="{php:function('lang', 'comment_placeholder')}"></textarea>
 			  </div>
 			  <div class="form-group form-check">
-				<input type="checkbox" class="form-check-input" id="send_acceptance_email" name="send_acceptance_email" value="1" checked="checked"/>
-				<label class="form-check-label" for="send_acceptance_email">
+				<input type="checkbox" class="app-checkbox" id="send_acceptance_email" name="send_acceptance_email" value="1" checked="checked"/>
+				<label class="app-label" for="send_acceptance_email">
 				  <xsl:value-of select="php:function('lang', 'send_email_organizer_summary')" />
 				</label>
 			  </div>
 			  <input type="hidden" name="status" value="ACCEPTED"/>
 			</div>
-			<div class="modal-footer">
-			  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+			<div class="app-modal-footer">
+			  <button type="button" class="app-button app-button--secondary" data-bs-dismiss="modal">
 				<xsl:value-of select="php:function('lang', 'Cancel')" />
 			  </button>
-			  <button type="submit" class="btn btn-success">
+			  <button type="submit" class="app-button app-button--success">
 				<xsl:value-of select="php:function('lang', 'Approve')" />
 			  </button>
 			</div>
@@ -1777,39 +1777,39 @@
 	  </div>
 	</div>
 
-	<div class="modal fade" id="rejectApplicationModal" tabindex="-1" role="dialog" aria-labelledby="rejectApplicationModalLabel" aria-hidden="true">
-	  <div class="modal-dialog modal-dialog-centered" role="document">
-		<div class="modal-content">
-		  <div class="modal-header">
-			<h5 class="modal-title" id="rejectApplicationModalLabel">
+	<div class="app-modal" id="rejectApplicationModal" tabindex="-1" role="dialog" aria-labelledby="rejectApplicationModalLabel" aria-hidden="true">
+	  <div class="app-modal-dialog app-modal-dialog-centered" role="document">
+		<div class="app-modal-content">
+		  <div class="app-modal-header">
+			<h5 class="app-modal-title" id="rejectApplicationModalLabel">
 			  <xsl:value-of select="php:function('lang', 'Reject Application')" />
 			</h5>
-			<button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close">
+			<button class="app-button-close" type="button" data-bs-dismiss="modal" aria-label="Close">
 			  <span aria-hidden="true">x</span>
 			</button>
 		  </div>
 		  <form method="POST">
-			<div class="modal-body">
+			<div class="app-modal-body">
 			  <p><xsl:value-of select="php:function('lang', 'Are you sure you want to delete?')" /></p>
 			  <div class="form-group">
 				<label for="rejection_reason">
 				  <xsl:value-of select="php:function('lang', 'Reason for rejection')" />
 				</label>
-				<textarea name="rejection_reason" id="rejection_reason" class="form-control" rows="4"></textarea>
+				<textarea name="rejection_reason" id="rejection_reason" class="app-input" rows="4"></textarea>
 			  </div>
 			  <div class="form-group form-check">
-				<input type="checkbox" class="form-check-input" id="send_rejection_email" name="send_rejection_email" value="1" checked="checked"/>
-				<label class="form-check-label" for="send_rejection_email">
+				<input type="checkbox" class="app-checkbox" id="send_rejection_email" name="send_rejection_email" value="1" checked="checked"/>
+				<label class="app-label" for="send_rejection_email">
 				  <xsl:value-of select="php:function('lang', 'send_email_to_applicant')" />
 				</label>
 			  </div>
 			  <input type="hidden" name="status" value="REJECTED"/>
 			</div>
-			<div class="modal-footer">
-			  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+			<div class="app-modal-footer">
+			  <button type="button" class="app-button app-button--secondary" data-bs-dismiss="modal">
 				<xsl:value-of select="php:function('lang', 'Cancel')" />
 			  </button>
-			  <button type="submit" class="btn btn-danger">
+			  <button type="submit" class="app-button app-button--danger">
 				<xsl:value-of select="php:function('lang', 'reject application')" />
 			  </button>
 			</div>
@@ -1841,27 +1841,27 @@
 
 	<!-- Edit Selection Modal for Combined Applications -->
 	<xsl:if test="show_edit_selection = 1">
-		<div class="modal fade" id="editSelectionModal" tabindex="-1" role="dialog" aria-labelledby="editSelectionModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-lg" role="document">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="editSelectionModalLabel">
+		<div class="app-modal" id="editSelectionModal" tabindex="-1" role="dialog" aria-labelledby="editSelectionModalLabel" aria-hidden="true">
+			<div class="app-modal-dialog app-modal-lg" role="document">
+				<div class="app-modal-content">
+					<div class="app-modal-header">
+						<h5 class="app-modal-title" id="editSelectionModalLabel">
 							<i class="fas fa-edit me-2"></i>Select Application to Edit
 						</h5>
 						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 							<span aria-hidden="true">×</span>
 						</button>
 					</div>
-					<div class="modal-body">
+					<div class="app-modal-body">
 						<p class="text-muted mb-4">
 							This combined application contains <xsl:value-of select="count(related_applications)"/> related applications.
 							Choose which one you want to edit:
 						</p>
 
-						<div class="row">
+						<div class="app-row">
 							<xsl:for-each select="related_applications">
-								<div class="col-md-6 mb-3">
-									<div class="card application-selection-card">
+								<div class="app-col-6 mb-3">
+									<div class="app-card application-selection-card">
 										<xsl:attribute name="class">
 											<xsl:text>card application-selection-card</xsl:text>
 											<xsl:if test="is_main = 1">
@@ -1869,15 +1869,15 @@
 											</xsl:if>
 										</xsl:attribute>
 
-										<div class="card-body">
+										<div class="app-card-body">
 											<div class="d-flex justify-content-between align-items-start mb-2">
-												<h6 class="card-title mb-0">
+												<h6 class="app-card-title mb-0">
 													<xsl:value-of select="name"/>
 													<xsl:if test="is_main = 1">
-														<span class="badge badge-danger ml-2">MAIN</span>
+														<span class="app-badge app-badge-danger ml-2">MAIN</span>
 													</xsl:if>
 												</h6>
-												<span class="badge">
+												<span class="app-badge">
 													<xsl:attribute name="class">
 														<xsl:text>badge badge-</xsl:text>
 														<xsl:choose>
@@ -1903,7 +1903,7 @@
 												</xsl:if>
 											</small>
 
-											<a class="btn btn-primary btn-sm mt-2">
+											<a class="app-button app-button-primary app-button-sm mt-2">
 												<xsl:attribute name="href">
 													<xsl:value-of select="../application/edit_link"/>
 													<xsl:text>&amp;selected_app_id=</xsl:text>
@@ -1917,8 +1917,8 @@
 							</xsl:for-each>
 						</div>
 					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-dismiss="modal">
+					<div class="app-modal-footer">
+						<button type="button" class="app-button app-button--secondary" data-dismiss="modal">
 							<i class="fas fa-times me-1"></i>Cancel
 						</button>
 					</div>

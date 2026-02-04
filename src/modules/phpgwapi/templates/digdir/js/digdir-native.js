@@ -10,8 +10,8 @@
 	class Dropdown {
 		constructor(element) {
 			this.element = element;
-			this.trigger = element.querySelector('[data-toggle="dropdown"]');
-			this.menu = element.querySelector('.app-dropdown__menu');
+			this.trigger = element.querySelector('[data-toggle="dropdown"], [data-bs-toggle="dropdown"]');
+			this.menu = element.querySelector('.app-dropdown-menu');
 			
 			if (!this.trigger || !this.menu) return;
 			
@@ -268,7 +268,7 @@
 				const targetSelector = tabTrigger.getAttribute('data-bs-target') || tabTrigger.getAttribute('href');
 				if (targetSelector) {
 					// Remove active from all tabs
-					const tabContainer = tabTrigger.closest('[role="tablist"]') || tabTrigger.parentElement;
+					const tabContainer = tabTrigger.closest('[role="tablist"]') || tabTrigger.closest('ul') || tabTrigger.parentElement;
 					if (tabContainer) {
 						tabContainer.querySelectorAll('[data-bs-toggle="tab"]').forEach(tab => {
 							tab.classList.remove('active');
@@ -280,12 +280,51 @@
 					const targetPane = document.querySelector(targetSelector);
 					if (targetPane) {
 						const tabContent = targetPane.parentElement;
-						tabContent.querySelectorAll('[role="tabpanel"]').forEach(pane => {
+						// Find all tab panes - look for role="tabpanel" or .tab-pane class
+						tabContent.querySelectorAll('[role="tabpanel"], .tab-pane').forEach(pane => {
 							pane.classList.remove('show', 'active');
 						});
 						targetPane.classList.add('show', 'active');
 					}
 				}
+			}
+		});
+
+		// Dropdown toggle (Bootstrap compatibility)
+		document.addEventListener('click', function(e) {
+			const dropdownTrigger = e.target.closest('[data-bs-toggle="dropdown"]');
+			if (dropdownTrigger) {
+				e.preventDefault();
+				e.stopPropagation();
+				const dropdown = dropdownTrigger.closest('.app-dropdown');
+				if (dropdown) {
+					const menu = dropdown.querySelector('.app-dropdown-menu');
+					if (menu) {
+						// Close all other dropdowns
+						document.querySelectorAll('.app-dropdown.show').forEach(d => {
+							if (d !== dropdown) {
+								d.classList.remove('show');
+							}
+						});
+						// Toggle current dropdown
+						dropdown.classList.toggle('show');
+						const isOpen = dropdown.classList.contains('show');
+						dropdownTrigger.setAttribute('aria-expanded', isOpen);
+					}
+				}
+			}
+		});
+
+		// Close dropdowns when clicking outside
+		document.addEventListener('click', function(e) {
+			if (!e.target.closest('.app-dropdown')) {
+				document.querySelectorAll('.app-dropdown.show').forEach(dropdown => {
+					dropdown.classList.remove('show');
+					const trigger = dropdown.querySelector('[data-bs-toggle="dropdown"]');
+					if (trigger) {
+						trigger.setAttribute('aria-expanded', 'false');
+					}
+				});
 			}
 		});
 

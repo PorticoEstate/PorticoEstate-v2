@@ -34,9 +34,17 @@ export interface ISearchDataOptimized {
 	resource_categories: ISearchDataResourceCategory[];
 	resource_category_activity: ISearchDataResourceCategoryActivity[];
 	resource_pictures: IResourceMainPicture[];
+	building_pictures: IBuildingMainPicture[];
 }
 
 export interface IResourceMainPicture {
+	id: number;
+	owner_id: number;
+	metadata?: {
+		focal_point?: {x: number, y: number}
+	};
+}
+export interface IBuildingMainPicture {
 	id: number;
 	owner_id: number;
 	metadata?: {

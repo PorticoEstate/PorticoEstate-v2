@@ -236,6 +236,29 @@ class DataStore
 				return $result;
 			}, $resourcePictures);
 
+			// Main pictures for buildings - only id, owner_id, and metadata for quick lookup
+			// Only actual image files, not PDFs
+			$buildingPictures = $this->getRowsAsArray("
+				SELECT DISTINCT ON (owner_id)
+					id,
+					owner_id,
+					metadata
+				FROM bb_document_building
+				WHERE category IN ('picture_main', 'picture')
+				AND (name ~* '\.(jpg|jpeg|png|gif|bmp|webp)$')
+				ORDER BY owner_id,
+					CASE WHEN category = 'picture_main' THEN 0 ELSE 1 END,
+					id ASC
+			");
+			$data['building_pictures'] = array_map(function($pic) {
+				$result = [
+					'id' => $pic['id'],
+					'owner_id' => $pic['owner_id'],
+					'metadata' => $pic['metadata'] ? json_decode($pic['metadata'], true) : null
+				];
+				return $result;
+			}, $buildingPictures);
+
 			$response->getBody()->write(json_encode($data));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {

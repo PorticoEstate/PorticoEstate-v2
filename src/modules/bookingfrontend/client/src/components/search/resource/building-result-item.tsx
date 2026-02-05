@@ -25,11 +25,49 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 	const {data: multiDomains} = useMultiDomains();
 	const isMobile = useIsMobile();
 
-	// Get building image (placeholder for now)
+	// Get building image data (URL and focal point)
 	const buildingImage = useMemo(() => {
 		const basePath = process.env.NEXT_PUBLIC_BASE_PATH || '';
-		return `${basePath}/resource_placeholder_bilde.png`;
-	}, []);
+		const placeholderUrl = `${basePath}/resource_placeholder_bilde.png`;
+
+		if (!searchData?.building_pictures) {
+			return {
+				url: placeholderUrl,
+				focalPoint: undefined
+			};
+		}
+
+		// Find picture for this building
+		const picture = searchData.building_pictures.find(p => p.owner_id === building.id);
+
+		if (!picture) {
+			return {
+				url: placeholderUrl,
+				focalPoint: undefined
+			};
+		}
+
+		// In production, use full public URL with domain; in development, use proxy
+		const isProduction = process.env.NODE_ENV === 'production';
+		const imageUrl = isProduction
+			? `${typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_API_URL || '')}/bookingfrontend/buildings/document/${picture.id}/download`
+			: `${basePath}/fetch-building-image-proxy/${picture.id}`;
+
+		return {
+			url: imageUrl,
+			focalPoint: picture.metadata?.focal_point
+		};
+	}, [searchData, building.id]);
+
+	// Calculate CSS object-position from focal point (x and y are percentages)
+	const imageStyle = useMemo(() => {
+		if (!buildingImage.focalPoint) {
+			return undefined;
+		}
+		return {
+			objectPosition: `${buildingImage.focalPoint.x}% ${buildingImage.focalPoint.y}%`
+		};
+	}, [buildingImage.focalPoint]);
 
 	// Find the town for this building by town_id
 	const town = useMemo(() => {
@@ -95,11 +133,12 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 			<Card.Block className={styles.imageBlock}>
 				<div className={styles.imageWrapper}>
 					<Image
-						src={buildingImage}
+						src={buildingImage.url}
 						alt=""
 						fill
 						sizes="(max-width: 850px) 100vw, (max-width: 1200px) 50vw, 33vw"
 						className={styles.cardImage}
+						style={imageStyle}
 						priority={false}
 					/>
 				</div>

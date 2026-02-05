@@ -36,11 +36,22 @@
 }
 
 .toggleAllContainer {
-    padding: 5px 4px;
-    //position: sticky;
-    top: 0;
-    background-color: white;
-    z-index: 1;
+	margin: 0;
+	user-select: none;
+	display: flex;
+	align-items: center;
+	padding: 5px 4px;
+	border-bottom: 1px solid #eee;
+
+	:global(.ds-field) {
+		flex-grow: 1;
+		overflow-x: hidden;
+		align-items: center;
+	}
+	&.active {
+		background-color: $purple-8;
+	}
+
 }
 
 .toggleAllButton {
@@ -80,16 +91,17 @@
 
 .resourceCheckbox {
     //margin-right: 10px;
-    display: flex;
+    //display: flex;
     overflow-x: hidden;
     flex-direction: row;
     align-items: center;
     > input {
-        translate: unset;
-
+        //translate: unset;
+		border-width: round(up,var(--dsc-input-border-width),1px);
         min-width: var(--dsc-checkbox-size);
         margin-left: 5px;
         margin-right: 5px;
+		margin-bottom: 4px;
     }
     > label {
         flex-grow: 1;

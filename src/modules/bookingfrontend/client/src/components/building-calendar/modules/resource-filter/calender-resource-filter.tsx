@@ -143,16 +143,14 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	useEffect(() => {
 		// Only run this once when component mounts
 		setEnabledResources(prevEnabled => {
-			// If nothing is enabled yet, default to enabling all normal resources
+			// If nothing is enabled yet, check if we should auto-enable
 			if (prevEnabled.size === 0) {
-				if (groupedResources) {
-					if (groupedResources.normal.length < groupedResources.slotted.length) {
-						return new Set([groupedResources.slotted?.[0]?.value.toString()].filter(Boolean));
-					}
-					return new Set(groupedResources.normal.map(r => r.value.toString()));
+				// Special case: If building has exactly 1 resource and it's a timeslot resource, auto-select it
+				if (resources && resources.length === 1 && ResourceUsesTimeSlots(resources[0])) {
+					return new Set([resources[0].id.toString()]);
 				}
-				const normalResources = (resources || []).filter((res, index) => !ResourceUsesTimeSlots(res));
-				return new Set(normalResources.map(r => r.id.toString()));
+				// Otherwise, leave empty (no resources enabled)
+				// This will show all resources in the calendar but none selected
 			}
 			return prevEnabled;
 		});

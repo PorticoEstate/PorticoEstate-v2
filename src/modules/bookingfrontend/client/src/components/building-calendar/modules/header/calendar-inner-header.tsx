@@ -197,7 +197,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					onClick={props.createNew}
 					data-size={'sm'}
 					className={styles.orderButton}
-					disabled={!props.building || props.building.deactivate_application}
+					disabled={!props.building || props.building.deactivate_application || enabledResources.size === 0}
 				>
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}

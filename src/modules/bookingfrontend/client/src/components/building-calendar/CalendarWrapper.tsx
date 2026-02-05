@@ -267,15 +267,20 @@ const CalendarWrapper: React.FC<CalendarWrapperProps> = ({
 
     const prioritizedEvents = useMemo(() => {
         const scheduleEvents = QCRES.data || [];
-        
+
         // In organization mode, show all events without resource filtering initially
         if (organizationId && !buildingId) {
             return scheduleEvents;
         }
 
+        // If no resources are enabled, show all events (no filtering)
+        if (enabledResources.size === 0) {
+            return scheduleEvents;
+        }
+
         // Apply priority filtering to schedule events
         const prioritizedScheduleEvents = prioritizeEvents(scheduleEvents, enabledResources);
-        
+
         return prioritizedScheduleEvents;
     }, [QCRES.data, enabledResources, prioritizeEvents, organizationId, buildingId]);
 

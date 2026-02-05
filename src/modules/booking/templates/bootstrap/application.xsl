@@ -548,16 +548,29 @@
 																		</strong>
 																	</p>
 																</div>
-																<a class="btn btn-sm btn-primary">
-																	<xsl:attribute name="href">
-																		<xsl:value-of select="../edit_link"/>
-																		<xsl:text>&amp;selected_app_id=</xsl:text>
-																		<xsl:value-of select="id"/>
-																		<xsl:text>&amp;hide_invoicing=1</xsl:text>
-																	</xsl:attribute>
-																	<i class="fas fa-edit me-1"></i>
-																	<xsl:value-of select="php:function('lang', 'Edit')" />
-																</a>
+																<xsl:choose>
+																	<xsl:when test="../is_case_officer = '1' or ../is_case_officer = 1">
+																		<a class="btn btn-sm btn-primary">
+																			<xsl:attribute name="href">
+																				<xsl:value-of select="../edit_link"/>
+																				<xsl:text>&amp;selected_app_id=</xsl:text>
+																				<xsl:value-of select="id"/>
+																				<xsl:text>&amp;hide_invoicing=1</xsl:text>
+																			</xsl:attribute>
+																			<i class="fas fa-edit me-1"></i>
+																			<xsl:value-of select="php:function('lang', 'Edit')" />
+																		</a>
+																	</xsl:when>
+																	<xsl:otherwise>
+																		<button class="btn btn-sm btn-secondary" disabled="disabled">
+																			<xsl:attribute name="title">
+																				<xsl:value-of select="php:function('lang', 'Only the case officer can edit this application')" />
+																			</xsl:attribute>
+																			<i class="fas fa-edit me-1"></i>
+																			<xsl:value-of select="php:function('lang', 'Edit')" />
+																		</button>
+																	</xsl:otherwise>
+																</xsl:choose>
 															</div>
 															<p class="card-text mb-1">
 																<small><strong><xsl:value-of select="php:function('lang', 'Status')" />:</strong></small>

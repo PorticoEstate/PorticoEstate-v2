@@ -3857,6 +3857,15 @@ class booking_uiapplication extends booking_uicommon
 		$application['related_applications_info'] = array();
 		if ($this->combine_applications && $application_count > 1)
 		{
+			// Check if current user is the case officer (same for all combined applications)
+			$current_account_id = $this->current_account_id();
+			$is_case_officer = false;
+			if (!empty($application['case_officer_id']) && !empty($current_account_id))
+			{
+				$is_case_officer = ($application['case_officer_id'] == $current_account_id);
+			}
+			$application['is_case_officer'] = $is_case_officer;
+
 			foreach ($combined_applications as $app_id => $app)
 			{
 				$date_ranges = array();

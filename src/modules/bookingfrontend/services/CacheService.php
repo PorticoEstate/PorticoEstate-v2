@@ -255,7 +255,24 @@ class CacheService
 	public function invalidateResource(int $resourceId, $buildingIds = null): bool
 	{
 		// HTTP: Revalidate server-side Next.js caches by tag
-		$httpResult = $this->sendCacheReset('tag=search-data&tag=resources');
+		$tags = ['search-data', 'resources', "resource-{$resourceId}", "resource-documents-{$resourceId}"];
+
+		// Add building-specific tags
+		if ($buildingIds !== null)
+		{
+			$buildingIdsArray = is_array($buildingIds) ? $buildingIds : [$buildingIds];
+			foreach ($buildingIdsArray as $buildingId)
+			{
+				if ($buildingId)
+				{
+					$tags[] = "building-resources-{$buildingId}";
+				}
+			}
+		}
+
+		$httpResult = $this->sendCacheReset(implode('&', array_map(function($tag) {
+			return 'tag=' . urlencode($tag);
+		}, $tags)));
 
 		// WebSocket: Invalidate client-side React Query caches
 		$queryKeys = [
@@ -306,12 +323,14 @@ class CacheService
 	public function invalidateBuilding(int $buildingId): bool
 	{
 		// HTTP: Revalidate server-side Next.js caches by tag
-		$httpResult = $this->sendCacheReset('tag=search-data&tag=buildings');
+		$httpResult = $this->sendCacheReset(
+			"tag=search-data&tag=buildings&tag=building-{$buildingId}&tag=building-documents-{$buildingId}&tag=building-resources-{$buildingId}"
+		);
 
 		// WebSocket: Invalidate client-side React Query caches
 		$queryKeys = [
 			['searchData'],                        // Search index contains building data and building_resources junction table
-			['building', (string)$buildingId]  // Resources for this building
+			['building', (string)$buildingId]  // Individual building cache
 		];
 
 		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
@@ -328,14 +347,18 @@ class CacheService
 	 */
 	public function invalidateBuildingDocuments(int $buildingId): bool
 	{
+		// HTTP: Revalidate server-side Next.js caches by tag
+		$httpResult = $this->sendCacheReset("tag=building-documents-{$buildingId}");
+
 		// WebSocket: Invalidate document caches
-		// Note: No HTTP cache for documents (they're not server-cached)
 		$queryKeys = [
 			['buildingDocuments', (string)$buildingId],  // Documents for this building
 			['allRegulationDocuments']                   // Combined regulation documents cache
 		];
 
-		return $this->sendWebSocketInvalidation($queryKeys);
+		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
+
+		return $httpResult['success'] || $wsResult;
 	}
 
 	/**
@@ -347,14 +370,18 @@ class CacheService
 	 */
 	public function invalidateResourceDocuments(int $resourceId): bool
 	{
+		// HTTP: Revalidate server-side Next.js caches by tag
+		$httpResult = $this->sendCacheReset("tag=resource-documents-{$resourceId}");
+
 		// WebSocket: Invalidate document caches
-		// Note: No HTTP cache for documents (they're not server-cached)
 		$queryKeys = [
 			['resourceDocuments', (string)$resourceId, 'regulation'],  // Documents for this resource
 			['allRegulationDocuments']                                 // Combined regulation documents cache
 		];
 
-		return $this->sendWebSocketInvalidation($queryKeys);
+		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
+
+		return $httpResult['success'] || $wsResult;
 	}
 
 	/**

@@ -725,7 +725,8 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
                     <div className={styles.resourceSection}>
                         <Heading level={2} data-size="sm" className={styles.sectionHeading}>
 							<ResourceIcon />
-							{t('bookingfrontend.rooms_and_premises')} ({filteredResources.length})
+							{t('bookingfrontend.rooms_and_premises')}
+							{/*({filteredResources.length})*/}
                         </Heading>
                         <div className={styles.resourceGrid}>
                             {filteredResources.map(resource => {

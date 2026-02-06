@@ -320,6 +320,18 @@ class Building
      */
     public $description_json;
 
+    /**
+     * @ORM\Column(type="json", nullable=true)
+     * @Expose
+     * @Short
+     * @OA\Property(
+     *      description="Short description in JSON format, keyed by language code",
+     *      type="object",
+     *      nullable=true
+     * )
+     */
+    public $short_description;
+
 
     public function __construct($data = [])
     {
@@ -357,6 +369,7 @@ class Building
         $this->activity_id = $data['activity_id'] ?? null;
         $this->opening_hours = $data['opening_hours'] ?? null;
         $this->description_json = $data['description_json'] ?? null;
+        $this->short_description = $data['short_description'] ?? null;
     }
 
     public function toArray()
@@ -388,6 +401,7 @@ class Building
             'activity_id' => $this->activity_id,
             'opening_hours' => $this->opening_hours,
             'description_json' => $this->description_json,
+            'short_description' => $this->short_description,
         ];
     }
 }

@@ -159,7 +159,7 @@ class DataStore
 			$rows = $this->getRowsAsArray("SELECT bb_building.id, bb_building.activity_id, bb_building.deactivate_calendar,
                 bb_building.deactivate_application, bb_building.deactivate_sendmessage, bb_building.extra_kalendar,
                 bb_building.name, bb_building.location_code, bb_building.street, bb_building.zip_code,
-                bb_building.district, bb_building.city, fm_part_of_town.id as town_id FROM"
+                bb_building.district, bb_building.city, bb_building.short_description, fm_part_of_town.id as town_id FROM"
 				. " bb_building LEFT JOIN fm_locations ON bb_building.location_code = fm_locations.location_code"
 				. " LEFT JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1"
 				. " LEFT JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id"

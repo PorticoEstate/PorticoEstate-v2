@@ -1,8 +1,9 @@
 import React, {FC, useMemo, useCallback} from 'react';
-import {Card, Heading, Paragraph, Link as DigdirLink, Tag} from '@digdir/designsystemet-react';
+import {Card, Heading, Paragraph, Link as DigdirLink, Tag, Button} from '@digdir/designsystemet-react';
 import {ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
-import {useTrans} from '@/app/i18n/ClientTranslationProvider';
+import {useTrans, useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
+import {fallbackLng} from '@/app/i18n/settings';
 import Link from "next/link";
 import Image from "next/image";
 import DividerCircle from "@/components/util/DividerCircle";
@@ -10,6 +11,7 @@ import {useTowns, useMultiDomains, useSearchData} from "@/service/hooks/api-hook
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {createDomainResourceUrl, createDomainBuildingUrl} from "@/service/multi-domain-utils";
 import ResourceIcon from "@/icons/ResourceIcon";
+import {ArrowRightIcon} from "@navikt/aksel-icons";
 
 interface ResourceResultItemProps {
 	resource: ISearchResource & { building?: ISearchDataBuilding };
@@ -19,6 +21,7 @@ interface ResourceResultItemProps {
 
 const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate, isAvailable}) => {
 	const t = useTrans();
+	const {i18n} = useClientTranslation();
 	const {data: searchData} = useSearchData();
 	const {data: towns} = useTowns();
 	const {data: multiDomains} = useMultiDomains();
@@ -160,6 +163,21 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 	// 	}
 	// };
 
+	// Extract short description for current language
+	const shortDescription = useMemo(() => {
+		if (!resource.short_description) return null;
+		try {
+			const descriptionJson = JSON.parse(resource.short_description);
+			let description = descriptionJson[i18n.language];
+			if (!description) {
+				description = descriptionJson[fallbackLng.key];
+			}
+			return description || null;
+		} catch {
+			return null;
+		}
+	}, [resource.short_description, i18n.language]);
+
 	return (
 		<Card
 			data-color="neutral"
@@ -227,11 +245,26 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 
 				{/* TODO: Add facilities/amenities icons here when data is available */}
 
-				{resource.capacity && (
-					<Paragraph data-size="sm" className={styles.capacity}>
-						<strong>{t('search.capacity') || 'Maks antall personer'}:</strong> {resource.capacity} {t('search.persons') || 'personer'}
-					</Paragraph>
-				)}
+				{shortDescription && (
+				<Paragraph data-size="sm" className={styles.shortDescription}>
+					{shortDescription}
+				</Paragraph>
+			)}
+
+			<Button asChild variant="tertiary" data-color="accent" data-size="sm" className={styles.actionButton}>
+				<Link
+					href={createResourceUrl()}
+					{...(isExternalDomain ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
+				>
+					{t('bookingfrontend.order_now')} <ArrowRightIcon />
+				</Link>
+			</Button>
+
+			{/*{resource.capacity && (*/}
+			{/*		<Paragraph data-size="sm" className={styles.capacity}>*/}
+			{/*			<strong>{t('search.capacity') || 'Maks antall personer'}:</strong> {resource.capacity} {t('search.persons') || 'personer'}*/}
+			{/*		</Paragraph>*/}
+			{/*	)}*/}
 			</Card.Block>
 		</Card>
 		// <div className={styles.resourceCard}>

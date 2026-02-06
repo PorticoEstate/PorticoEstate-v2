@@ -5,7 +5,7 @@
 	flex-direction: column;
 	width: 100%;
 	max-width: 400px;
-	aspect-ratio: 40 / 43;
+	aspect-ratio: 40 / 46;
 	overflow: hidden;
 
 	@include tablet {
@@ -109,6 +109,22 @@
 	font-size: 0.875rem;
 	color: var(--ds-color-text-subtle);
 	margin-top: 0;
+}
+
+.shortDescription {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	flex-grow: 1;
+	//margin-bottom: 0;
+	//margin-top: 0;
+}
+
+.actionButton {
+	margin-top: auto;
+	align-self: flex-start;
 }
 .resourceTags {
 	display: flex;

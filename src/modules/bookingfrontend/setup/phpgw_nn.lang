@@ -734,6 +734,7 @@ timestamp	bookingfrontend	nn	Tidspunkt
 title	bookingfrontend	nn	Tittel
 to	bookingfrontend	nn	Til
 To application site	bookingfrontend	nn	Til bestilling
+order_now	bookingfrontend	nn	Gå til bestilling
 To borrow premises you must verify that you have read terms and conditions	bookingfrontend	nn	For å kunne låne lokale må du først stadfeste at du har lese dei juridiske vilkåra
 To cancel allocation use this link	bookingfrontend	nn	For å slette tildelingen: bruk lenka
 To cancel booking use this link	bookingfrontend	nn	For å slette interntildelinga: bruk lenka
@@ -941,3 +942,4 @@ buildings_and_facilities	bookingfrontend	nn	Bygg og anlegg
 rooms_and_premises	bookingfrontend	nn	Rom og lokalar
 building_title	bookingfrontend	nn	Bygg
 resource_title	bookingfrontend	nn	Rom
+show_all_resources	bookingfrontend	nn	Sjå alle rom

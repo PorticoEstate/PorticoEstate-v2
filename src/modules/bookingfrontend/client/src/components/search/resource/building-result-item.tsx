@@ -1,9 +1,10 @@
 import React, {FC, useMemo, useCallback} from 'react';
-import {Card, Heading, Paragraph, Link as DigdirLink, Tag} from '@digdir/designsystemet-react';
+import {Card, Heading, Paragraph, Link as DigdirLink, Tag, Button} from '@digdir/designsystemet-react';
 import {ISearchDataBuilding} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
-import {useTrans} from '@/app/i18n/ClientTranslationProvider';
-import {TenancyIcon} from "@navikt/aksel-icons";
+import {useTrans, useClientTranslation} from '@/app/i18n/ClientTranslationProvider';
+import {fallbackLng} from '@/app/i18n/settings';
+import {ArrowRightIcon, TenancyIcon} from "@navikt/aksel-icons";
 import Link from "next/link";
 import Image from "next/image";
 import DividerCircle from "@/components/util/DividerCircle";
@@ -20,6 +21,7 @@ interface BuildingResultItemProps {
 
 const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate, resourceCount}) => {
 	const t = useTrans();
+	const {i18n} = useClientTranslation();
 	const {data: searchData} = useSearchData();
 	const {data: towns} = useTowns();
 	const {data: multiDomains} = useMultiDomains();
@@ -125,6 +127,21 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 		return parts.length > 0 ? parts.join(', ') : null;
 	}, [building.street, building.city]);
 
+	// Extract short description for current language
+	const shortDescription = useMemo(() => {
+		if (!building.short_description) return null;
+		try {
+			const descriptionJson = JSON.parse(building.short_description);
+			let description = descriptionJson[i18n.language];
+			if (!description) {
+				description = descriptionJson[fallbackLng.key];
+			}
+			return description || null;
+		} catch {
+			return null;
+		}
+	}, [building.short_description, i18n.language]);
+
 	return (
 		<Card
 			data-color="neutral"
@@ -171,17 +188,32 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 					</Link>
 				</DigdirLink>
 
-				{( address) && (
+				{address && (
 					<Paragraph data-size="xs" className={styles.resourceAddress}>
 						<span>{address}</span>
 					</Paragraph>
 				)}
 
-				{resourceCount !== undefined && resourceCount > 0 && (
-					<Paragraph data-size="sm" className={styles.capacity}>
-						<strong>{t('bookingfrontend.resources') || 'Ressurser'}:</strong> {resourceCount}
-					</Paragraph>
-				)}
+				{shortDescription && (
+				<Paragraph data-size="sm" className={styles.shortDescription}>
+					{shortDescription}
+				</Paragraph>
+			)}
+
+			<Button asChild variant="tertiary" data-color="accent" data-size="sm" className={styles.actionButton}>
+				<Link
+					href={createBuildingUrl()}
+					{...(isExternalDomain ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
+				>
+					{t('bookingfrontend.show_all_resources')}  <ArrowRightIcon />
+				</Link>
+			</Button>
+
+			{/*{resourceCount !== undefined && resourceCount > 0 && (*/}
+			{/*		<Paragraph data-size="sm" className={styles.capacity}>*/}
+			{/*			<strong>{t('bookingfrontend.resources') || 'Ressurser'}:</strong> {resourceCount}*/}
+			{/*		</Paragraph>*/}
+			{/*	)}*/}
 			</Card.Block>
 		</Card>
 	);

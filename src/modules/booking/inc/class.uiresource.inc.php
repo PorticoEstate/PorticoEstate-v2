@@ -56,6 +56,7 @@ class booking_uiresource extends booking_uicommon
 		$this->fields = array(
 			'name'							 => 'string',
 			'description_json'				 => 'html',
+			'short_description'				 => 'string',
 			'opening_hours'					 => 'html',
 			'contact_info'					 => 'html',
 			'activity_id'					 => 'int',
@@ -276,7 +277,8 @@ class booking_uiresource extends booking_uicommon
 			$langs[] = array(
 				'lang' => $key,
 				'name' => $trans != "!$name" ? $trans : $name,
-				'description' => !empty($resource['description_json'][$key]) ? $resource['description_json'][$key] : ''
+				'description' => !empty($resource['description_json'][$key]) ? $resource['description_json'][$key] : '',
+				'short_description' => !empty($resource['short_description'][$key]) ? $resource['short_description'][$key] : ''
 			);
 
 			self::rich_text_editor(array("field_description_json_{$key}"));
@@ -387,7 +389,8 @@ class booking_uiresource extends booking_uicommon
 			$langs[] = array(
 				'lang' => $key,
 				'name' => $trans != "!$name" ? $trans : $name,
-				'description' => !empty($resource['description_json'][$key]) ? $resource['description_json'][$key] : ''
+				'description' => !empty($resource['description_json'][$key]) ? $resource['description_json'][$key] : '',
+				'short_description' => !empty($resource['short_description'][$key]) ? $resource['short_description'][$key] : ''
 			);
 
 			self::rich_text_editor(array("field_description_json_{$key}"));
@@ -1053,6 +1056,7 @@ class booking_uiresource extends booking_uicommon
 		$resource['facilities_names'] = implode(', ', $facilitynames);
 		$userlang = $this->userSettings['preferences']['common']['lang'];
 		$resource['description']		 = isset($resource['description_json'][$userlang]) ? $resource['description_json'][$userlang] : '';
+		$resource['short_description_text'] = isset($resource['short_description'][$userlang]) ? $resource['short_description'][$userlang] : '';
 
 		$resource['edit_link'] = self::link(array(
 			'menuaction' => 'booking.uiresource.edit',

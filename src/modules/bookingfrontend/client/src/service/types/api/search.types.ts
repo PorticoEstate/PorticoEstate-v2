@@ -34,9 +34,17 @@ export interface ISearchDataOptimized {
 	resource_categories: ISearchDataResourceCategory[];
 	resource_category_activity: ISearchDataResourceCategoryActivity[];
 	resource_pictures: IResourceMainPicture[];
+	building_pictures: IBuildingMainPicture[];
 }
 
 export interface IResourceMainPicture {
+	id: number;
+	owner_id: number;
+	metadata?: {
+		focal_point?: {x: number, y: number}
+	};
+}
+export interface IBuildingMainPicture {
 	id: number;
 	owner_id: number;
 	metadata?: {
@@ -58,6 +66,7 @@ export interface ISearchResource {
 	deactivate_application: boolean;
 	rescategory_id: number | null; // Link to resource category
 	capacity: number | null;
+	short_description: string | null; // JSON string containing localized descriptions
 	domain_name?: string; // Multi-domain name for cross-domain search results
 	domain_url?: string; // Multi-domain base URL for redirects
 	original_id?: number; // Original ID before domain transformation
@@ -87,6 +96,7 @@ export interface ISearchDataActivity {
 
 export interface ISearchDataBuilding extends Pick<IBuilding,'id' | 'town_id' | 'activity_id' | 'deactivate_calendar' | 'deactivate_application' | 'deactivate_sendmessage' | 'extra_kalendar' | 'name' | 'location_code' | 'street' | 'zip_code' | 'district' | 'city'
 > {
+	short_description: string | null; // JSON string containing localized descriptions
 	original_id?: number; // Original ID before domain transformation
 	domain_name?: string; // Multi-domain name for cross-domain search results
 }

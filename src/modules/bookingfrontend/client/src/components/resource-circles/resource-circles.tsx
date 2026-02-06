@@ -1,9 +1,9 @@
 import React, {FC, useState} from 'react';
-import { LayersIcon } from "@navikt/aksel-icons";
 import styles from "./resource-circles.module.scss";
 import {IShortResource} from "@/service/pecalendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {Button, List} from "@digdir/designsystemet-react";
+import ResourceIcon from "@/icons/ResourceIcon";
 
 interface ResourceCirclesProps {
     resources: IShortResource[];
@@ -37,7 +37,7 @@ const ResourceCircles: FC<ResourceCirclesProps> = (props) => {
         {resources.map((res) => <List.Item key={res.id} className={"text-body"}><ColourCircle resourceId={res.id}/> {res.name}</List.Item>)}
     </List.Unordered>) : (
         <div className={styles.colorCircles}>
-            <LayersIcon fontSize="1.25rem" />
+            <ResourceIcon fontSize="1.25rem" />
             {circlesToShow.map((res, index) => (
                 <ColourCircle resourceId={res.id} key={index} className={styles.colorCircle} size={size}/>
             ))}

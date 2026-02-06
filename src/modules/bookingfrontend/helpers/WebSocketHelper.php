@@ -493,9 +493,10 @@ class WebSocketHelper
      *
      * @param array $queryKeys Array of React Query key arrays to invalidate
      *                         Example: [['searchData'], ['organizations'], ['resourceArticles', 123]]
+     * @param array|null $debug Optional debug data from cache reset operations
      * @return bool Success status
      */
-    public static function sendCacheInvalidation(array $queryKeys): bool
+    public static function sendCacheInvalidation(array $queryKeys, ?array $debug = null): bool
     {
         if (empty($queryKeys)) {
             error_log("WebSocketHelper: Cache invalidation called with empty queryKeys");
@@ -510,6 +511,12 @@ class WebSocketHelper
             'queryKeys' => $queryKeys,
             'timestamp' => date('c')
         ];
+
+        // Include debug info if provided
+        if ($debug !== null) {
+            $payload['debug'] = $debug;
+            error_log("WebSocketHelper: Cache invalidation debug info: " . json_encode($debug));
+        }
 
         // Broadcast to all connected clients via Redis notifications channel
         return self::sendRedisNotification($payload, self::$redisChannel);

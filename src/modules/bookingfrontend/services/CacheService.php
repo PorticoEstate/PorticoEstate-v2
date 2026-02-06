@@ -52,7 +52,7 @@ class CacheService
 			['towns']
 		]);
 
-		return $httpResult || $wsResult;
+		return $httpResult['success'] || $wsResult;
 	}
 
 	/**
@@ -81,7 +81,7 @@ class CacheService
 			['deliveredApplications']
 		]);
 
-		return $httpResult || $wsResult;
+		return $httpResult['success'] || $wsResult;
 	}
 
 	/**
@@ -93,7 +93,8 @@ class CacheService
 	 */
 	public function invalidatePath(string $path): bool
 	{
-		return $this->sendCacheReset('path=' . urlencode($path));
+		$result = $this->sendCacheReset('path=' . urlencode($path));
+		return $result['success'];
 	}
 
 	/**
@@ -111,10 +112,12 @@ class CacheService
 			$queryParts = array_map(function($tag) {
 				return 'tag=' . urlencode($tag);
 			}, $tags);
-			return $this->sendCacheReset(implode('&', $queryParts));
+			$result = $this->sendCacheReset(implode('&', $queryParts));
+			return $result['success'];
 		}
 
-		return $this->sendCacheReset('tag=' . urlencode($tags));
+		$result = $this->sendCacheReset('tag=' . urlencode($tags));
+		return $result['success'];
 	}
 
 	/**
@@ -122,33 +125,58 @@ class CacheService
 	 * Makes a non-blocking HTTP GET request to the Next.js cache-reset endpoint
 	 *
 	 * @param string $queryString The query string parameters (e.g., 'images=true')
-	 * @return bool True if request was sent, false if Next.js not configured
+	 * @return array{success: bool, debug: array} Result with debug info
 	 */
-	private function sendCacheReset(string $queryString): bool
+	private function sendCacheReset(string $queryString): array
 	{
+		$debug = [
+			'timestamp' => date('c'),
+			'queryString' => $queryString,
+			'url' => null,
+			'server' => $this->nextjsServer,
+			'responseCode' => null,
+			'error' => null,
+		];
+
 		// Skip if Next.js server is not configured
 		if (!$this->nextjsServer)
 		{
-			return false;
+			$debug['error'] = 'Next.js server not configured';
+			return ['success' => false, 'debug' => $debug];
 		}
 
 		$url = "http://{$this->nextjsServer}{$this->basePath}?{$queryString}";
+		$debug['url'] = $url;
 
-		// Make async HTTP request to clear cache
-		// Use stream context to make it non-blocking so we don't wait for response
+		// Make HTTP request to clear cache
 		$context = stream_context_create([
 			'http' => [
 				'method' => 'GET',
-				'timeout' => 1, // 1 second timeout
+				'timeout' => 2, // 2 second timeout for debugging
 				'ignore_errors' => true, // Don't throw errors if request fails
 			]
 		]);
 
-		// Suppress warnings and make the request
-		// We don't care about the response - fire and forget
-		@file_get_contents($url, false, $context);
+		// Make the request and capture response
+		$response = @file_get_contents($url, false, $context);
 
-		return true;
+		// Extract response code from headers
+		if (isset($http_response_header) && is_array($http_response_header) && count($http_response_header) > 0)
+		{
+			// First header contains status line like "HTTP/1.1 200 OK"
+			if (preg_match('/HTTP\/\d+\.?\d*\s+(\d+)/', $http_response_header[0], $matches))
+			{
+				$debug['responseCode'] = (int)$matches[1];
+			}
+		}
+
+		if ($response === false)
+		{
+			$debug['error'] = 'Request failed';
+			return ['success' => false, 'debug' => $debug];
+		}
+
+		return ['success' => true, 'debug' => $debug];
 	}
 
 	/**
@@ -177,9 +205,10 @@ class CacheService
 	 *
 	 * @param array $queryKeys Array of React Query key arrays to invalidate
 	 *                         Example: [['searchData'], ['organizations'], ['resourceArticles', 123]]
+	 * @param array|null $debug Optional debug data to include in the message
 	 * @return bool True if message was sent successfully
 	 */
-	private function sendWebSocketInvalidation(array $queryKeys): bool
+	private function sendWebSocketInvalidation(array $queryKeys, ?array $debug = null): bool
 	{
 		// Check if WebSocketHelper is available
 		if (!class_exists('\App\modules\bookingfrontend\helpers\WebSocketHelper'))
@@ -189,7 +218,7 @@ class CacheService
 
 		try
 		{
-			return WebSocketHelper::sendCacheInvalidation($queryKeys);
+			return WebSocketHelper::sendCacheInvalidation($queryKeys, $debug);
 		}
 		catch (\Exception $e)
 		{
@@ -250,9 +279,17 @@ class CacheService
 			}
 		}
 
-		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
+		// Include HTTP debug info in WebSocket message
+		$debug = [
+			'source' => 'invalidateResource',
+			'resourceId' => $resourceId,
+			'buildingIds' => $buildingIds,
+			'httpRequest' => $httpResult['debug'],
+		];
 
-		return $httpResult || $wsResult;
+		$wsResult = $this->sendWebSocketInvalidation($queryKeys, $debug);
+
+		return $httpResult['success'] || $wsResult;
 	}
 
 	/**
@@ -279,7 +316,7 @@ class CacheService
 
 		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
 
-		return $httpResult || $wsResult;
+		return $httpResult['success'] || $wsResult;
 	}
 
 	/**
@@ -346,6 +383,6 @@ class CacheService
 
 		$wsResult = $this->sendWebSocketInvalidation($queryKeys);
 
-		return $httpResult || $wsResult;
+		return $httpResult['success'] || $wsResult;
 	}
 }

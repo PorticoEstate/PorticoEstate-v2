@@ -5,7 +5,7 @@
 	flex-direction: column;
 	width: 100%;
 	max-width: 400px;
-	aspect-ratio: 40 / 46;
+	aspect-ratio: 40 / 47;
 	overflow: hidden;
 
 	@include tablet {
@@ -117,7 +117,7 @@
 	-webkit-box-orient: vertical;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	flex-grow: 1;
+	//flex-grow: 1;
 	//margin-bottom: 0;
 	//margin-top: 0;
 }
@@ -125,6 +125,7 @@
 .actionButton {
 	margin-top: auto;
 	align-self: flex-start;
+	justify-self: flex-end;
 }
 .resourceTags {
 	display: flex;

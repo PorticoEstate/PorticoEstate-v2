@@ -1,5 +1,5 @@
 import React, {FC, useMemo, useCallback} from 'react';
-import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
+import {Card, Heading, Paragraph, Link as DigdirLink, Tag} from '@digdir/designsystemet-react';
 import {ISearchDataBuilding, ISearchResource} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
@@ -131,14 +131,14 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 		const capitalizeFirstLetter = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
 
 		const tagElements = [
-			<DigdirLink key='building-link' asChild className={styles.buildingLink} data-color='brand1'>
-				<Link
-					href={createBuildingUrl()}
-					{...(isExternalDomain ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-				>
-					{resource.building?.name}
-				</Link>
-			</DigdirLink>,
+			// <DigdirLink key='building-link' asChild className={styles.buildingLink} data-color='brand1'>
+			// 	<Link
+			// 		href={createBuildingUrl()}
+			// 		{...(isExternalDomain ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+			// 	>
+			// 		{resource.building?.name}
+			// 	</Link>
+			// </DigdirLink>,
 			town?.name ? capitalizeFirstLetter(town.name) : undefined, // Display town name instead of district
 			isExternalDomain && resource.domain_name ? capitalizeFirstLetter(resource.domain_name) : undefined // Add domain name if from another domain
 		];
@@ -180,7 +180,15 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 			</Card.Block>
 
 			<Card.Block className={styles.contentBlock}>
-				<DigdirLink asChild data-color='accent'>
+				<div className={styles.resourceTags}>
+					<Tag data-color="accent" data-size="sm">
+						{t('bookingfrontend.resource_title')}
+					</Tag>
+					{tags.map((tag, index) => {
+						return <Tag data-color="accent" data-size="sm" key={index}>{tag}</Tag>;
+					})}
+				</div>
+			<DigdirLink asChild data-color='accent'>
 					<Link
 						href={createResourceUrl()}
 						className={styles.titleLink}
@@ -206,14 +214,15 @@ const ResourceResultItem: FC<ResourceResultItemProps> = ({resource, selectedDate
 					</Link>
 				</DigdirLink>
 
-				<Paragraph data-size={isMobile ? 'xs' : "sm"} className={styles.resourceTags}>
-					{tags.map((tag, index) => {
-						if (index === 0) {
-							return <span key={'tag' + index}>{tag}</span>
-						}
-						return <React.Fragment key={'tag' + index}>
-							<DividerCircle/>{tag}</React.Fragment>
-					})}
+				<Paragraph data-size={'xs'} className={styles.resourceAddress}>
+					{/*{tags.map((tag, index) => {*/}
+					{/*	if (index === 0) {*/}
+					{/*		return <span key={'tag' + index}>{tag}</span>*/}
+					{/*	}*/}
+					{/*	return <React.Fragment key={'tag' + index}>*/}
+					{/*		<DividerCircle/>{tag}</React.Fragment>*/}
+					{/*})}*/}
+					{resource.building?.name}
 				</Paragraph>
 
 				{/* TODO: Add facilities/amenities icons here when data is available */}

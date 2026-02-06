@@ -1,5 +1,5 @@
 import React, {FC, useMemo, useCallback} from 'react';
-import {Card, Heading, Paragraph, Link as DigdirLink} from '@digdir/designsystemet-react';
+import {Card, Heading, Paragraph, Link as DigdirLink, Tag} from '@digdir/designsystemet-react';
 import {ISearchDataBuilding} from "@/service/types/api/search.types";
 import styles from './resource-result-item.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
@@ -145,34 +145,35 @@ const BuildingResultItem: FC<BuildingResultItemProps> = ({building, selectedDate
 			</Card.Block>
 
 			<Card.Block className={styles.contentBlock}>
+				<div className={styles.resourceTags}>
+					<Tag data-color="brand1" data-size="sm">
+						{t('bookingfrontend.building_title')}
+					</Tag>
+					{tags.map((tag, index) => {
+						return <Tag data-color="brand1" data-size="sm" key={index}>{tag}</Tag>;
+					})}
+				</div>
+
 				<DigdirLink asChild data-color='brand1'>
 					<Link
 						href={createBuildingUrl()}
 						className={styles.titleLink}
-						{...(isExternalDomain ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+						{...(isExternalDomain ? {target: '_blank', rel: 'noopener noreferrer'} : {})}
 					>
 						<div className={styles.resourceHeadingContainer}>
-							<Heading level={3} data-size="xs" className={styles.resourceIcon} data-color='brand1'>
-								<BuildingIcon fontSize="1em"/>
+							<Heading level={3} data-size="xs" className={styles.resourceIcon}>
+								<BuildingIcon/>
 							</Heading>
-							<Heading level={3} data-size="xs" className={styles.resourceTitle} data-color='brand1'>
+							<Heading level={3} data-size="xs" className={styles.resourceTitle}>
 								{building.name}
 							</Heading>
 						</div>
 					</Link>
 				</DigdirLink>
 
-				{(tags.length > 0 || address) && (
-					<Paragraph data-size={isMobile ? 'xs' : "sm"} className={styles.resourceTags}>
-						{address && <span>{address}</span>}
-						{address && tags.length > 0 && <DividerCircle />}
-						{tags.map((tag, index) => {
-							if (index === 0) {
-								return <span key={'tag' + index}>{tag}</span>
-							}
-							return <React.Fragment key={'tag' + index}>
-								<DividerCircle/>{tag}</React.Fragment>
-						})}
+				{( address) && (
+					<Paragraph data-size="xs" className={styles.resourceAddress}>
+						<span>{address}</span>
 					</Paragraph>
 				)}
 

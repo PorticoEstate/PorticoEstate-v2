@@ -939,3 +939,5 @@ org_create_hint	bookingfrontend	nn	Du kan opprette ei ny organisasjon ved å skr
 
 buildings_and_facilities	bookingfrontend	nn	Bygg og anlegg
 rooms_and_premises	bookingfrontend	nn	Rom og lokalar
+building_title	bookingfrontend	nn	Bygg
+resource_title	bookingfrontend	nn	Rom

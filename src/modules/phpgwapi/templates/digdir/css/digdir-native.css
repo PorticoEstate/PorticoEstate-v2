@@ -1418,6 +1418,12 @@ dialog.app-modal {
 .app-alert { position: relative; padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem); margin-bottom: var(--ds-spacing-3, 0.75rem); border: var(--ds-border-width-1, 1px) solid transparent; border-radius: var(--ds-border-radius-lg, 0.375rem); }
 .app-alert-success { background-color: var(--ds-color-success-background, #f0f8f0); border-color: var(--ds-color-success-background-subtle, #d4edda); color: var(--ds-color-success-text, #155724); }
 .app-alert-danger { background-color: var(--ds-color-error-background, #fee); border-color: var(--ds-color-error-background-subtle, #f5c6cb); color: var(--ds-color-error-text, #721c24); }
+/* Bootstrap alert compatibility */
+.alert { position: relative; padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem); margin-bottom: var(--ds-spacing-3, 0.75rem); border: var(--ds-border-width-1, 1px) solid transparent; border-radius: var(--ds-border-radius-lg, 0.375rem); }
+.alert-info { background-color: var(--ds-color-info-background-default, #d1e7f0); border-color: var(--ds-color-info-border-default, #90caf9); color: var(--ds-color-info-text-default, #004085); }
+.alert-success { background-color: var(--ds-color-success-background, #f0f8f0); border-color: var(--ds-color-success-background-subtle, #d4edda); color: var(--ds-color-success-text, #155724); }
+.alert-warning { background-color: var(--ds-color-warning-background-default, #fff3cd); border-color: var(--ds-color-warning-border-default, #ffeaa7); color: var(--ds-color-warning-text-default, #856404); }
+.alert-danger { background-color: var(--ds-color-error-background, #fee); border-color: var(--ds-color-error-background-subtle, #f5c6cb); color: var(--ds-color-error-text, #721c24); }
 
 /* Input group utilities */
 .app-input-group { position: relative; display: flex; flex-wrap: wrap; align-items: stretch; width: 100%; }

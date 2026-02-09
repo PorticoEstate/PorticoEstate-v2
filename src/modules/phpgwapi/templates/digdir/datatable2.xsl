@@ -70,7 +70,7 @@
 			<div id="toolbar" class='dtable_custom_controls'>
 				<form>
 					<fieldset>
-						<div class="row mb-2">
+						<div class="app-row mb-2">
 							<xsl:for-each select="item">
 								<script>
 									number_of_toolbar_items += 1;
@@ -83,11 +83,14 @@
 											</xsl:when>
 											<xsl:otherwise>
 												<xsl:choose>
+													<xsl:when test="$count_items > 6">
+														<xsl:text>app-col-4</xsl:text>
+													</xsl:when>
 													<xsl:when test="$count_items > 4 or $count_items = 3">
-														<xsl:text>col-4</xsl:text>
+														<xsl:text>app-col-6</xsl:text>
 													</xsl:when>
 													<xsl:otherwise>
-														<xsl:text>col-2</xsl:text>
+														<xsl:text>app-col</xsl:text>
 													</xsl:otherwise>
 												</xsl:choose>
 											</xsl:otherwise>

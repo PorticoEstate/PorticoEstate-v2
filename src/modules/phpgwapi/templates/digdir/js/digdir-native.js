@@ -170,29 +170,6 @@
 		});
 	}
 
-	// Language selector functionality
-	function initLanguageSelector() {
-		const languageForm = document.getElementById('languageForm');
-		
-		if (!languageForm) return;
-
-		const radioButtons = languageForm.querySelectorAll('input[name="select_language"]');
-		
-		radioButtons.forEach(radio => {
-			radio.addEventListener('change', function() {
-				if (this.checked) {
-					// Set cookie for selected language
-					document.cookie = `selected_lang=${this.value}; path=/; max-age=31536000`;
-					
-					// Reload page to apply language
-					setTimeout(() => {
-						window.location.reload();
-					}, 100);
-				}
-			});
-		});
-	}
-
 	// Initialize all components when DOM is ready
 	function init() {
 		// Initialize all dropdowns
@@ -205,9 +182,6 @@
 
 		// Initialize template selector
 		initTemplateSelector();
-
-		// Initialize language selector
-		initLanguageSelector();
 
 		// Handle responsive behavior
 		handleResponsive();

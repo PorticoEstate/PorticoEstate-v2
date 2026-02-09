@@ -377,77 +377,9 @@ HTML;
                         </li>
 HTML;
 	}
-	// Language selector setup (cookie handling is now done in head.inc.php)
-	$installed_langs = $translation->get_installed_langs();
-	$userlang = $userSettings['preferences']['common']['lang'];
-
-	// Get the selected language from cookie or fallback to user preferences
-	$selected_lang = Sanitizer::get_var('selected_lang', 'string', 'COOKIE', $userlang);
-
-	$lang_selector = '';
-	foreach ($installed_langs as $key => $name)
-	{
-		$trans = lang($name);
-
-		switch ($key)
-		{
-			case 'no':
-			case 'nn':
-				$flag_class = 'fi-no';
-				break;
-			case 'en':
-				$flag_class = 'fi-gb';
-				break;
-			default:
-				$flag_class = "fi-{$key}";
-				break;
-		}
-
-		$_selected_lang = $selected_lang == $key ? 'checked' : '';
-		$lang_selector .= <<<HTML
-			<label class="app-dropdown__item u-flex u-align-center" style="cursor: pointer;">
-				<input type="radio" name="select_language" value="{$key}" {$_selected_lang} class="u-mr-2" />
-				<i class="fi {$flag_class} u-mr-2" title="{$key}"></i> {$trans}
-			</label>
-HTML;
-	}
-
-	// Determine selected flag class
-	switch ($selected_lang)
-	{
-		case 'no':
-		case 'nn':
-			$selected_flag_class = 'fi-no';
-			break;
-		case 'en':
-			$selected_flag_class = 'fi-gb';
-			break;
-		default:
-			$selected_flag_class = "fi-{$selected_lang}";
-			break;
-	}
-
-	$choose_lang_trans = lang('choose language');
-	$choose_lang_trans2 = lang('Which language do you want?');
-
-	$language_option = <<<HTML
-		<div class="app-dropdown">
-			<button class="app-dropdown__trigger" data-bs-toggle="dropdown" title="{$choose_lang_trans}">
-				<i class="fi {$selected_flag_class}" style="font-size: 1.2em;"></i>
-				<span class="u-hidden-mobile">{$installed_langs[$selected_lang]}</span>
-			</button>
-			<div class="app-dropdown__menu">
-				<div class="app-dropdown__header">
-					<strong>{$choose_lang_trans}</strong>
-					<p class="u-text-muted" style="font-size: 0.8rem; margin: 0.25rem 0 0;">{$choose_lang_trans2}</p>
-				</div>
-				<div class="app-dropdown__divider"></div>
-				<form id="languageForm" style="padding: var(--ds-spacing-2);">
-					{$lang_selector}
-				</form>
-			</div>
-		</div>
-HTML;
+	// Language selector — rendered as self-contained JS component via Twig shell
+	$twigService = \App\modules\phpgwapi\services\Twig::getInstance();
+	$language_option = $twigService->render('@components/language-selector/language-selector.twig', []);
 
 	$topmenu = <<<HTML
 
@@ -622,107 +554,11 @@ HTML;
 		}
 	}
 
-	// Language selector styles and JavaScript
+	// Command palette and modal scripts
 	if (Sanitizer::get_var('phpgw_return_as') != 'json') {
 		echo <<<'SCRIPT'
-<style>
-#languageForm .choice {
-    cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 4px;
-    transition: background-color 0.2s;
-}
-#languageForm .choice:hover {
-    background-color: #f8f9fa;
-}
-#languageForm .choice input[type="radio"] {
-    cursor: pointer;
-}
-#languageForm .fi {
-    font-size: 1.1em;
-        width: 1.5rem !important;
-    height: 1.5rem !important;
-}
-#languageDropdown .fi {
-    font-size: 1.2em;
-    border: none;
-    border-radius: 3px;
-    padding: 2px 4px;
-    width: 1.5rem !important;
-    height: 1.5rem !important;
-}
-</style>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Language selector functionality
-    const languageForm = document.getElementById('languageForm');
-    if (languageForm) {
-        languageForm.addEventListener('change', function(e) {
-            if (e.target.name === 'select_language') {
-                e.target.changeFired = true;
-                const selectedLang = e.target.value;
-
-                // Update flag immediately for visual feedback
-                const flagElement = document.querySelector('#languageDropdown .fi');
-                if (flagElement) {
-                    // Remove existing flag classes
-                    flagElement.className = flagElement.className.replace(/fi-\w+/g, '');
-
-                    // Add new flag class
-                    let newFlagClass = 'fi-' + selectedLang;
-                    if (selectedLang === 'no' || selectedLang === 'nn') {
-                        newFlagClass = 'fi-no';
-                    } else if (selectedLang === 'en') {
-                        newFlagClass = 'fi-gb';
-                    }
-                    flagElement.classList.add(newFlagClass);
-                }
-
-                // Call API endpoint to set language
-                fetch('/api/set-language/' + selectedLang, {
-                    credentials: 'same-origin'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Clear jqtree menu cache to force refresh with new language
-                        if (typeof sessionid !== 'undefined') {
-                            localStorage.removeItem('menu_tree_' + sessionid);
-                        }
-
-                        // Also clear any other language-related cache
-                        Object.keys(localStorage).forEach(key => {
-                            if (key.startsWith('menu_tree_') || key.includes('lang_')) {
-                                localStorage.removeItem(key);
-                            }
-                        });
-
-                        // Reload the page to apply the new language
-                        window.location.reload();
-                    } else {
-                        console.error('Failed to set language:', data.error);
-                        // Optionally show user feedback
-                        alert('Failed to change language. Please try again.');
-                    }
-                })
-            }
-        });
-
-        // Add click event listeners to radio buttons to ensure change events fire
-        const radioButtons = languageForm.querySelectorAll('input[name="select_language"]');
-        radioButtons.forEach(radio => {
-            radio.addEventListener('click', function(e) {
-                // Only trigger change event if it wasn't already triggered by the click
-                setTimeout(() => {
-                    if (!e.target.changeFired) {
-                        const changeEvent = new Event('change', { bubbles: true });
-                        e.target.dispatchEvent(changeEvent);
-                    }
-                    e.target.changeFired = false;
-                }, 0);
-            });
-        });
-    }
     // Native modal implementation (replacing bootstrap.Modal)
     const commandPaletteElement = document.getElementById('commandPalette');
     const commandPalette = {

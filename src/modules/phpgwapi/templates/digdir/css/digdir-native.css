@@ -6,6 +6,7 @@
 
 /* Import Designsystemet foundation */
 @import url('/assets/designsystemet/index.css');
+@import url('/assets/design-tokens/admin.css');
 
 /* Root configuration */
 :root {

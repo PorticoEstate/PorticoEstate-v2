@@ -40,6 +40,7 @@ $javascripts = array();
 $javascripts[]	 = "/phpgwapi/js/popper/popper2.min.js";
 
 $javascripts[] = "/phpgwapi/templates/digdir/js/digdir-native.js";
+$javascripts[] = "/phpgwapi/templates/digdir/components/language-selector/language-selector.js";
 
 $userSettings['preferences']['common']['sidecontent'] = 'ajax_menu'; //ajax_menu|jsmenu
 if (empty($flags['noframework']) && empty($flags['nonavbar']))
@@ -94,6 +95,7 @@ $stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
 // Icon fonts
 $stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
 $stylesheets[] = "/phpgwapi/templates/base/css/flag-icons.min.css";
+$stylesheets[] = "/phpgwapi/templates/digdir/components/language-selector/language-selector.css";
 
 if ($app != 'frontend')
 {
@@ -250,7 +252,22 @@ $tpl_vars = array(
 	// Variables for Twig templates
 	'javascripts'       => $jsUris,
 	'stylesheets'       => $cssUris,
-	'is_designsystemet' => true
+	'is_designsystemet' => true,
+
+	// ESM import map for Designsystemet Web components
+	'importmap'         => json_encode([
+		'imports' => [
+			'@digdir/designsystemet-web' => '/assets/npm/@digdir/designsystemet-web/dist/esm/index.js',
+			'@floating-ui/dom'           => '/assets/npm/@floating-ui/dom/dist/floating-ui.dom.mjs',
+			'@floating-ui/core'          => '/assets/npm/@floating-ui/core/dist/floating-ui.core.mjs',
+			'@floating-ui/utils'         => '/assets/npm/@floating-ui/utils/dist/floating-ui.utils.mjs',
+			'@floating-ui/utils/dom'     => '/assets/npm/@floating-ui/utils/dist/floating-ui.utils.dom.mjs',
+			'@u-elements/u-combobox'     => '/assets/npm/@u-elements/u-combobox/dist/u-combobox.js',
+			'@u-elements/u-datalist'     => '/assets/npm/@u-elements/u-datalist/dist/u-datalist.js',
+			'@u-elements/u-tabs'         => '/assets/npm/@u-elements/u-tabs/dist/u-tabs.js',
+			'invokers-polyfill'          => '/assets/npm/invokers-polyfill/index.js',
+		]
+	])
 );
 
 // Use Twig to render the template

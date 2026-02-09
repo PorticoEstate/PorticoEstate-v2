@@ -18,9 +18,11 @@
 				<span aria-hidden="true">&times;</span>
 			</button>
 		</div>
-		<div class="app-modal__body">{{ lang_logout_header }}</div>
+		<div class="app-modal__body">
+			<p class="app-fw-medium">{{ lang_logout_header }}</p>
+		</div>
 		<div class="app-modal__footer">
-			<button class="app-button app-button--secondary" onclick="document.getElementById('logoutModal').close();">Cancel</button>
+			<button class="app-button app-button--secondary" onclick="document.getElementById('logoutModal').close();">{{ lang('Cancel') }}</button>
 			<a class="app-button app-button--primary" href="{{ logout_url }}">{{ logout_text }}</a>
 		</div>
 	</div>

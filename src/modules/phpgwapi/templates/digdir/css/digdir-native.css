@@ -1382,10 +1382,13 @@ dialog.app-modal {
 .app-modal-content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background-color: var(--ds-color-background-default, #ffffff); background-clip: padding-box; border: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); border-radius: var(--ds-border-radius-lg, 0.375rem); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.5); }
 .app-modal__content { position: relative; display: flex; flex-direction: column; width: 100%; pointer-events: auto; background-color: var(--ds-color-background-default, #ffffff); background-clip: padding-box; border: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); border-radius: var(--ds-border-radius-lg, 0.375rem); box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.5); }
 .app-modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--ds-spacing-4, 1rem); border-bottom: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); }
+.app-modal__header { display: flex; align-items: center; justify-content: space-between; padding: var(--ds-spacing-4, 1rem); border-bottom: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); }
 .app-modal-header .app-btn-close { position: absolute; top: var(--ds-spacing-3, 0.75rem); right: var(--ds-spacing-3, 0.75rem); padding: 0; background: transparent; border: 0; font-size: 1.5rem; cursor: pointer; color: var(--ds-color-text-default, #212529); }
 .app-modal-header .app-btn-close:hover { color: var(--ds-color-primary-text, #005a94); }
 .app-modal-body { position: relative; flex: 1 1 auto; padding: var(--ds-spacing-4, 1rem); overflow-y: auto; max-height: calc(100vh - 300px); }
+.app-modal__body { position: relative; flex: 1 1 auto; padding: var(--ds-spacing-4, 1rem); }
 .app-modal-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--ds-spacing-2, 0.5rem); padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem); border-top: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); }
+.app-modal__footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--ds-spacing-2, 0.5rem); padding: var(--ds-spacing-3, 0.75rem) var(--ds-spacing-4, 1rem); border-top: var(--ds-border-width-1, 1px) solid var(--ds-color-border-default, #dee2e6); }
 
 
 

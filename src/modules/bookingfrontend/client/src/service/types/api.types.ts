@@ -103,6 +103,7 @@ export interface IBookingfrontendConfig {
     usecookies?: boolean;
 	url_uustatus?: string;
 	url_system_feedback?: string;
+	highlighted_buildings: number[]; // Up to 6 highlighted buildings, could be none
 }
 
 

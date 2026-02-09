@@ -456,6 +456,18 @@
 	}
 }
 
+.landingContainer {
+	display: flex;
+	flex-direction: column;
+	gap: 2rem;
+}
+
+.landingSection {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
 .resultsContainer {
 	display: flex;
 	flex-direction: column;

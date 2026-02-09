@@ -1,6 +1,6 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
-import {useSearchData, useTowns, useMultiDomains, useAvailableResourcesMultiDomain} from "@/service/hooks/api-hooks";
+import {useSearchData, useTowns, useMultiDomains, useAvailableResourcesMultiDomain, useServerSettings} from "@/service/hooks/api-hooks";
 import {Textfield, Select, Button, Chip, Spinner, Field, Label, Heading} from '@digdir/designsystemet-react';
 import styles from './resource-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
@@ -14,6 +14,7 @@ import {FilterIcon} from '@navikt/aksel-icons';
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import BuildingIcon from "@/icons/BuildingIcon";
 import ResourceIcon from "@/icons/ResourceIcon";
+import HistoryIcon from "@/icons/HistoryIcon";
 
 interface ResourceSearchProps {
     initialSearchData?: ISearchDataOptimized;
@@ -72,6 +73,9 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
     const {data: multiDomainsData, isLoading: isLoadingMultiDomains, error: multiDomainsError} = useMultiDomains({
         initialData: initialMultiDomains
     });
+
+    // Fetch server settings for highlighted buildings config
+    const {data: serverSettings} = useServerSettings();
 
     // Format date for API call (YYYY-MM-DD)
     const formattedDate = date ? date.toISOString().split('T')[0] : undefined;
@@ -281,6 +285,34 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 
         return filtered;
     }, [searchData, textSearchQuery, where, selectedActivities, selectedFacilities, availableResourcesByDomain, date]);
+
+    // Get last ordered resources from localStorage for the landing view
+    const lastOrderedResources = useMemo(() => {
+        if (typeof window === 'undefined' || !resourcesWithBuildings.length) return [];
+        try {
+            const stored = localStorage.getItem('last_ordered');
+            if (!stored) return [];
+            const ids: number[] = JSON.parse(stored);
+            return ids
+                .map(id => resourcesWithBuildings.find(r => r.id === id))
+                .filter((r): r is (ISearchResource & { building?: ISearchDataBuilding }) => !!r)
+                .slice(0, 3);
+        } catch {
+            return [];
+        }
+    }, [resourcesWithBuildings]);
+
+    // Get highlighted buildings from config for the landing view
+    const highlightedBuildings = useMemo(() => {
+        const highlightedIds = serverSettings?.bookingfrontend_config?.highlighted_buildings;
+        if (!highlightedIds?.length || !searchData?.buildings) return [];
+
+        // Preserve the order from the config
+        return highlightedIds
+            .map(id => searchData.buildings.find(b => b.id === id))
+            .filter((b): b is ISearchDataBuilding => !!b)
+            .slice(0, 6);
+    }, [serverSettings, searchData]);
 
     // Calculate similarity score for sorting
     const calculateSimilarity = (
@@ -664,15 +696,55 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         );
     };
 
+    // Render the landing view shown before any search
+    const renderLandingView = () => {
+        return (
+            <div className={styles.landingContainer}>
+                {/* Last ordered resources */}
+                {lastOrderedResources.length > 0 && (
+                    <div className={styles.landingSection}>
+                        <Heading level={2} data-size="sm" className={styles.sectionHeading}>
+                            <HistoryIcon />
+                            {t('bookingfrontend.last_ordered_resources')}
+                        </Heading>
+                        <div className={styles.resourceGrid}>
+                            {lastOrderedResources.map(resource => (
+                                <ResourceResultItem
+                                    key={`last-ordered-${resource.domain_name || 'local'}-${resource.id}`}
+                                    resource={resource}
+                                    selectedDate={null}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Highlighted buildings */}
+                {highlightedBuildings.length > 0 && (
+                    <div className={styles.landingSection}>
+                        <Heading level={2} data-size="sm" className={styles.sectionHeading}>
+                            <BuildingIcon fontSize="1em"/>
+                            {t('bookingfrontend.buildings_and_facilities')}
+                        </Heading>
+                        <div className={styles.resourceGrid}>
+                            {highlightedBuildings.map(building => (
+                                <BuildingResultItem
+                                    key={`highlighted-${building.domain_name || 'local'}-${building.id}`}
+                                    building={building}
+                                    selectedDate={null}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     // Render search results section
     const renderSearchResults = () => {
         if (!textSearchQuery.trim() && !where && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
-            return (
-                <div className={styles.noResults}>
-                    <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
-                    {/*{renderSearchInfo()}*/}
-                </div>
-            );
+            return renderLandingView();
         }
 
         if (filteredBuildings.length === 0 && filteredResources.length === 0) {

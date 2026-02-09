@@ -11,7 +11,7 @@
 		constructor(element) {
 			this.element = element;
 			this.trigger = element.querySelector('[data-toggle="dropdown"], [data-bs-toggle="dropdown"]');
-			this.menu = element.querySelector('.app-dropdown-menu');
+			this.menu = element.querySelector('.app-dropdown-menu, .app-dropdown__menu');
 			
 			if (!this.trigger || !this.menu) return;
 			

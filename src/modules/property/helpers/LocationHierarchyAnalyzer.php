@@ -567,6 +567,7 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
+/*
 		// 5b. Prepare fm_location3 loc2 updates (ensure parent records match fm_location4 loc2 changes)
 		$this->sqlStatements['location3_loc2_updates'] = [];
 		$affected_loc3_entries = []; // Track which loc3 entries need loc2 updates: loc1 => loc2 => loc3 => {old_loc2, new_loc2}
@@ -616,15 +617,15 @@ class LocationHierarchyAnalyzer
 			$old_code = "{$loc1}-{$old_loc2}-{$loc3}";
 			$new_code = "{$loc1}-{$new_loc2}-{$loc3}";
 			
-			// Update fm_location3 location_code and loc2 value
+			// Update fm_location3 location_code and loc2 value only when target does not already exist
 			$this->sqlStatements['location3_loc2_updates'][] =
-				"UPDATE fm_location3 SET location_code = '{$new_code}', loc2 = '{$new_loc2}' WHERE location_code = '{$old_code}';";
+				"UPDATE fm_location3 SET location_code = '{$new_code}', loc2 = '{$new_loc2}' WHERE location_code = '{$old_code}' AND NOT EXISTS (SELECT 1 FROM fm_location3 WHERE loc1 = '{$loc1}' AND loc2 = '{$new_loc2}' AND loc3 = '{$loc3}');";
 			
 			// Add mapping entry for reference
 			$this->sqlStatements['corrections'][] =
 				"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, change_type) VALUES ('{$old_code}', '{$new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', '{$loc3}', '{$loc3}', 'location3_loc2_update');";
 		}
-
+*/
 		// 6. Add update statements for all tables with location_code and loc1, loc2, loc3, loc4 columns
 		$this->createUpdateStatements();
 
@@ -1239,6 +1240,8 @@ class LocationHierarchyAnalyzer
 	{
 		$results = [];
 
+		$this->db->transaction_begin();
+
 		// Only create location_mapping table if requested
 		if (in_array('schema', $sqlTypes)) {
 			$this->createLocationMappingTableIfNotExists();
@@ -1266,10 +1269,18 @@ class LocationHierarchyAnalyzer
 				catch (\Exception $e)
 				{
 					error_log("Error executing SQL: " . $e->getMessage());
+					$this->db->transaction_abort();
+					break 2; // exit both loops on error
 				}
 			}
 			$results[$sqlType] = $count;
 		}
+		
+		if ($this->db->get_transaction())
+		{
+			$this->db->transaction_commit();
+		}
+		
 		return $results;
 	}
 

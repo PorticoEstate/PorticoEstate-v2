@@ -939,6 +939,8 @@ org_not_found	bookingfrontend	nn	Organisasjon ikkje funne i Brønnøysundregiste
 org_create_hint	bookingfrontend	nn	Du kan opprette ei ny organisasjon ved å skrive inn 9-sifra organisasjonsnummer
 
 buildings_and_facilities	bookingfrontend	nn	Bygg og anlegg
+highlighted_buildings	bookingfrontend	nn	Utvalde bygg
+last_ordered_resources	bookingfrontend	nn	Dine siste bestillinger
 rooms_and_premises	bookingfrontend	nn	Rom og lokalar
 building_title	bookingfrontend	nn	Bygg
 resource_title	bookingfrontend	nn	Rom

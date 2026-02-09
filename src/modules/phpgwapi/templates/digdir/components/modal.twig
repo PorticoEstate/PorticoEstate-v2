@@ -1,0 +1,49 @@
+{# Modal component with Designsystemet support #}
+{% if is_designsystemet %}
+    {# Use Designsystemet web component #}
+    <ds-modal
+        {% if id %}id="{{ id }}"{% endif %}
+        {% if class %}class="{{ class }}"{% endif %}
+        {% if size %}size="{{ size }}"{% endif %}
+    >
+        {% if title %}
+            <ds-modal-header>
+                {{ title|raw }}
+            </ds-modal-header>
+        {% endif %}
+        <ds-modal-body>
+            {{ content|raw }}
+        </ds-modal-body>
+        {% if footer %}
+            <ds-modal-footer>
+                {{ footer|raw }}
+            </ds-modal-footer>
+        {% endif %}
+    </ds-modal>
+{% else %}
+    {# Fallback to Bootstrap #}
+    <div class="modal fade{% if class %} {{ class }}{% endif %}"
+         {% if id %}id="{{ id }}"{% endif %}
+         tabindex="-1"
+         role="dialog"
+         aria-hidden="true">
+        <div class="modal-dialog{% if size %} modal-{{ size }}{% endif %}" role="document">
+            <div class="modal-content">
+                {% if title %}
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ title|raw }}</h5>
+                        <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                {% endif %}
+                <div class="modal-body">
+                    {{ content|raw }}
+                </div>
+                {% if footer %}
+                    <div class="modal-footer">
+                        {{ footer|raw }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}

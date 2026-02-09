@@ -63,18 +63,31 @@ function parse_navbar($force = False)
 		case 'portico':
 			$selecte_portico = ' selected = "selected"';
 			$selecte_bootstrap = '';
+			$selecte_digdir = '';
 			break;
 		case 'bootstrap':
 			$selecte_portico = '';
 			$selecte_bootstrap = ' selected = "selected"';
+			$selecte_digdir = '';
+			break;
+		case 'digdir':
+			$selecte_portico = '';
+			$selecte_bootstrap = '';
+			$selecte_digdir = ' selected = "selected"';
+			break;
+		default:
+			$selecte_portico = '';
+			$selecte_bootstrap = ' selected = "selected"';
+			$selecte_digdir = '';
 			break;
 	}
 
 	$template_selector = <<<HTML
 
 	   <select id = "template_selector" class="btn btn-link btn-sm nav-item dropdown no-arrow nav-link text-white dropdown-toggle" style="height:2rem">
-		<option class="nav-link text-white" value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
 		<option class="nav-link text-white" value="portico"{$selecte_portico}>Portico</option>
+		<option class="nav-link text-white" value="bootstrap"{$selecte_bootstrap}>Bootstrap</option>
+		<option class="nav-link text-white" value="digdir"{$selecte_digdir}>Digdir</option>
 	   </select>
 HTML;
 

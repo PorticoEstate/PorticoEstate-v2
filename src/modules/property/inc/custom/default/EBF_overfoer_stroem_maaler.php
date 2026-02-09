@@ -181,7 +181,7 @@ class overfoer_stroem extends property_boentity
 
 		$subject = "Måleroverføring: {$address}";
 
-		$toarray = array('storkunde.etablering@fjordkraft.no');
+		$toarray = array('Postmottak.Innkjop@bergen.kommune.no');
 		//			$toarray = array('hc483@bergen.kommune.no' );
 		$to		 = implode(';', $toarray);
 

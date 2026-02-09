@@ -14,12 +14,20 @@
 			trigger.setAttribute('aria-expanded', e.newState === 'open');
 		});
 
-		const logoutBtn = el.querySelector('#userMenuLogout');
+		const logoutBtn = el.querySelector('[data-action="logout"]');
 		if (logoutBtn) {
 			logoutBtn.addEventListener('click', (e) => {
 				e.preventDefault();
-				popover.hidePopover();
-				document.getElementById('logoutModal').showModal();
+				if (typeof popover.hidePopover === 'function') {
+					popover.hidePopover();
+				}
+				const logoutModal = document.getElementById('logoutModal');
+				if (logoutModal && typeof logoutModal.showModal === 'function') {
+					logoutModal.showModal();
+				} else if (logoutModal) {
+					logoutModal.classList.add('show');
+					logoutModal.style.display = 'block';
+				}
 			});
 		}
 	}

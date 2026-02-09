@@ -158,16 +158,7 @@ HTML;
 
 			<ul id="menutree" class="list-unstyled components">
 HTML;
-		$preferences_option = '';
-		if (Acl::getInstance()->check('run', ACL_READ, 'preferences'))
-		{
-			$preferences_option .= <<<HTML
-				<a class="app-dropdown__item" href="{$preferences_url}">
-					<i class="fas fa-cogs fa-sm fa-fw u-mr-2"></i>
-					{$preferences_text}
-				</a>
-HTML;
-		}
+		$user_preferences_url = Acl::getInstance()->check('run', ACL_READ, 'preferences') ? $preferences_url : '';
 		$treemenu .= <<<HTML
 			{$_treemenu}
 			</ul>
@@ -380,6 +371,17 @@ HTML;
 	// Language selector — rendered as self-contained JS component via Twig shell
 	$twigService = \App\modules\phpgwapi\services\Twig::getInstance();
 	$language_option = $twigService->render('@components/language-selector/language-selector.twig', []);
+	$name_parts = preg_split('/\s+/', trim($user_fullname));
+	$user_initials = count($name_parts) > 1
+		? mb_strtoupper(mb_substr($name_parts[0], 0, 1) . mb_substr(end($name_parts), 0, 1))
+		: mb_strtoupper(mb_substr($name_parts[0], 0, 1));
+	$user_menu = $twigService->render('@components/user-menu/user-menu.twig', [
+		'fullname' => $user_fullname,
+		'initials' => $user_initials,
+		'preferences_url' => $user_preferences_url,
+		'preferences_text' => $preferences_text,
+		'logout_text' => $var['logout_text'],
+	]);
 
 	$topmenu = <<<HTML
 
@@ -394,29 +396,7 @@ HTML;
 						{$bookmark_option}
 						{$messenger_option}
 
-						<!-- User Dropdown -->
-						<div class="app-dropdown">
-							<button class="app-dropdown__trigger" data-bs-toggle="dropdown">
-								<span class="u-hidden-mobile">$user_fullname</span>
-								<img class="app-avatar" src="{$undraw_profile}" alt="{$user_fullname}">
-							</button>
-							<div class="app-dropdown__menu">
-                                <!--a class="dropdown-item" href="#">
-                                    <i class="fas fa-user fa-sm fa-fw me-2"></i>
-                                    Profile
-                                </a-->
-								{$preferences_option}
-                                <!--a class="dropdown-item" href="#">
-                                    <i class="fas fa-list fa-sm fa-fw me-2"></i>
-                                    Activity Log
-                                </a-->
-								<div class="app-dropdown__divider"></div>
-								<a class="app-dropdown__item" href="#" id="logout_trigger" onclick="event.preventDefault(); document.getElementById('logoutModal').showModal();">
-									<i class="fas fa-sign-out-alt fa-sm fa-fw u-mr-2"></i>
-                                    {$var['logout_text']}
-                                </a>
-							</div>
-						</div>
+						{$user_menu}
 
 					</nav>
 

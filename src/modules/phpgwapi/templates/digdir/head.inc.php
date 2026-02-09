@@ -41,6 +41,7 @@ $javascripts[]	 = "/phpgwapi/js/popper/popper2.min.js";
 
 $javascripts[] = "/phpgwapi/templates/digdir/js/digdir-native.js";
 $javascripts[] = "/phpgwapi/templates/digdir/components/language-selector/language-selector.js";
+$javascripts[] = "/phpgwapi/templates/digdir/components/user-menu/user-menu.js";
 
 $userSettings['preferences']['common']['sidecontent'] = 'ajax_menu'; //ajax_menu|jsmenu
 if (empty($flags['noframework']) && empty($flags['nonavbar']))
@@ -96,6 +97,7 @@ $stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
 $stylesheets[] = "/phpgwapi/templates/base/css/fontawesome/css/all.min.css";
 $stylesheets[] = "/phpgwapi/templates/base/css/flag-icons.min.css";
 $stylesheets[] = "/phpgwapi/templates/digdir/components/language-selector/language-selector.css";
+$stylesheets[] = "/phpgwapi/templates/digdir/components/user-menu/user-menu.css";
 
 if ($app != 'frontend')
 {

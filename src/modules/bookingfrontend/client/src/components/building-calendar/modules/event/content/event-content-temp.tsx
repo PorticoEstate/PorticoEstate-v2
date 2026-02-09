@@ -2,13 +2,13 @@ import React, {FC, useEffect, useMemo, useRef, useState} from 'react';
 import styles from './event-content.module.scss';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faClock} from "@fortawesome/free-regular-svg-icons";
-import { LayersIcon } from "@navikt/aksel-icons";
 import {formatEventTime} from "@/service/util";
 import {FCallTempEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import popperStyles from '../popper/event-popper.module.scss'
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useResource} from "@/service/api/building";
+import ResourceIcon from "@/icons/ResourceIcon";
 
 interface EventContentTempProps {
     eventInfo: FCEventContentArg<FCallTempEvent>;
@@ -185,7 +185,7 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
             {layout.showTitle && (
                 <div className={styles.titleContainer}>
                     <div className={styles.title}>
-                        {eventInfo.event.extendedProps?.isRecurringInstance 
+                        {eventInfo.event.extendedProps?.isRecurringInstance
                             ? t('bookingfrontend.new_repeating')
                             : t('bookingfrontend.new application')
                         }
@@ -198,7 +198,7 @@ const EventContentTemp: FC<EventContentTempProps> = (props) => {
 
             {!layout.showResourceList ? (
                 <div className={`${styles.resourceIcons} text-label`}>
-                    <LayersIcon fontSize="1.25rem" />
+                    <ResourceIcon fontSize="1.25rem" />
                     {renderColorCircles('medium')}
                 </div>
             ) : (

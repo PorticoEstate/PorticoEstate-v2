@@ -187,6 +187,10 @@
 			<td>{lang_system_feedback}:</td>
 			<td><input name="newsettings[url_system_feedback]" value="{value_url_system_feedback}" class="pure-u-1" /></td>
 		</tr>
+		<tr>
+			<td>{lang_highlighted_buildings}:<br/><small>{lang_comma_separated_building_ids}</small></td>
+			<td><input name="newsettings[highlighted_buildings]" value="{value_highlighted_buildings}" class="pure-u-1"/></td>
+		</tr>
 
 		<!-- END body -->
 		<!-- BEGIN footer -->

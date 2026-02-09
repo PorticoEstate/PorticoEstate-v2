@@ -1,0 +1,34 @@
+{# User menu component - native Popover API with Digdir classes #}
+<div id="userMenu" class="app-user-menu" data-size="sm" data-component="user-menu">
+    <button class="ds-button" data-variant="tertiary" type="button"
+    data-color="accent"
+        popovertarget="userMenuPopover"
+        aria-expanded="false">
+        <span class="ds-avatar" data-variant="circle" role="img" aria-hidden="true" data-size="sm">
+            <span>{{ initials }}</span>
+        </span>
+        <span class="u-hidden-mobile">{{ fullname }}</span>
+    </button>
+    <div class="ds-popover ds-dropdown app-user-menu__dropdown"
+        id="userMenuPopover"
+        popover="auto"
+        data-variant="default"
+        data-size="sm">
+        <ul>
+            {% if preferences_url %}
+            <li>
+                <a class="ds-button" data-variant="tertiary" href="{{ preferences_url }}">
+                    <i class="fas fa-cogs fa-sm fa-fw"></i>
+                    {{ preferences_text }}
+                </a>
+            </li>
+            {% endif %}
+            <li>
+                <button class="ds-button" data-variant="tertiary" type="button" id="userMenuLogout">
+                    <i class="fas fa-sign-out-alt fa-sm fa-fw"></i>
+                    {{ logout_text }}
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>

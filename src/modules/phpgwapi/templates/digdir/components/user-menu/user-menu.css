@@ -1,0 +1,4 @@
+/* User Menu Component */
+.app-user-menu__dropdown.ds-dropdown {
+	--_ds-floating: bottom;
+}

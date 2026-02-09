@@ -40,10 +40,13 @@ export const isOrgAdmin = (user: IBookingUser | undefined, eventData: IEvent) =>
 
 export function FCallEventConverter(event: IEvent, enabledResources: Set<string>, user: IBookingUser | undefined): { mainEvent: FCallEvent | null, backgroundEvent: FCallBackgroundEvent | null } {
     const is_public = 'is_public' in event ? event.is_public : 1;
-    const resourceColours = event.resources
-        .filter(resource => enabledResources.has(resource.id.toString()));
+
+    // When no resources are enabled, show all events
+    const resourceColours = enabledResources.size === 0
+        ? event.resources
+        : event.resources.filter(resource => enabledResources.has(resource.id.toString()));
 	const isAdmin = isOrgAdmin(user, event)
-    // If no enabled resources for this event, return null
+    // If no enabled resources for this event, return null (only when resources ARE enabled but don't match)
     if (resourceColours.length === 0) return { mainEvent: null, backgroundEvent: null };
 
     let startDateTime: DateTime;

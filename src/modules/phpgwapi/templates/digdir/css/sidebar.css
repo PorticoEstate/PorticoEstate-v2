@@ -34,7 +34,7 @@
   flex-basis: 250px;
   flex-shrink: 0;
   transition: transform 0.15s ease-in-out;
-  z-index: 1038;
+  z-index: 90;
   transform: translateX(-250px);
 }
 #layoutSidenav #layoutSidenav_content {
@@ -60,9 +60,9 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 1037;
+  z-index: 89;
   background: #000;
-  z-index: 1037;
+  z-index: 89;
   opacity: 0.5;
   transition: opacity 0.3s ease-in-out;
 }
@@ -92,7 +92,7 @@
 .sb-nav-fixed #layoutSidenav #layoutSidenav_nav {
   width: 250px;
   height: 100vh;
-  z-index: 1038;
+  z-index: 90;
 }
 .sb-nav-fixed #layoutSidenav #layoutSidenav_nav .sb-sidenav {
   padding-top: 56px;

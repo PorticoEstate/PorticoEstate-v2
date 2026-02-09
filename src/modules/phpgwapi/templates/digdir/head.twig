@@ -46,6 +46,11 @@ var sessionid = '{{ sessionid }}';
 			{% endfor %}
 		{% endblock %}
 
+		{% if importmap is defined and importmap %}
+			<script type="importmap">{{ importmap|raw }}</script>
+			<script type="module">import "@digdir/designsystemet-web";</script>
+		{% endif %}
+
 		{{ concent_script|raw }}
 
 	</head>

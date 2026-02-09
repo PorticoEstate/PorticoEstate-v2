@@ -107,9 +107,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const seasonEnd = DateTime.fromISO(season.to_);
 
 			// Check if season has any resources that match enabled resources (from V2)
-			const hasMatchingResources = season.resources.some(seasonResource =>
-				enabledResources.has(seasonResource.id.toString())
-			);
+			// When no resources are enabled, show all seasons
+			const hasMatchingResources = enabledResources.size === 0
+				? true
+				: season.resources.some(seasonResource =>
+					enabledResources.has(seasonResource.id.toString())
+				);
 
 			return viewMiddle >= seasonStart && viewMiddle <= seasonEnd && hasMatchingResources;
 		});
@@ -161,9 +164,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			}
 
 			// Check if season has any resources that match enabled resources (from V2)
-			const hasMatchingResources = season.resources.some(seasonResource =>
-				enabledResources.has(seasonResource.id.toString())
-			);
+			// When no resources are enabled, show all seasons
+			const hasMatchingResources = enabledResources.size === 0
+				? true
+				: season.resources.some(seasonResource =>
+					enabledResources.has(seasonResource.id.toString())
+				);
 
 			if (!hasMatchingResources) return;
 
@@ -264,9 +270,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					const seasonEnd = DateTime.fromISO(season.to_);
 
 					// Check if season has any resources that match enabled resources (from V2)
-					const hasMatchingResources = season.resources.some(seasonResource =>
-						enabledResources.has(seasonResource.id.toString())
-					);
+					// When no resources are enabled, show all seasons
+					const hasMatchingResources = enabledResources.size === 0
+						? true
+						: season.resources.some(seasonResource =>
+							enabledResources.has(seasonResource.id.toString())
+						);
 
 					// Check if this day falls within the season's date range
 					return date >= seasonStart.startOf('day') && date <= seasonEnd.endOf('day') && hasMatchingResources;
@@ -276,9 +285,11 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 				const isDateInSeasonWithNoBoundary = applicableSeasons?.some(season => {
 					const seasonStart = DateTime.fromISO(season.from_);
 					const seasonEnd = DateTime.fromISO(season.to_);
-					const hasMatchingResources = season.resources.some(seasonResource =>
-						enabledResources.has(seasonResource.id.toString())
-					);
+					const hasMatchingResources = enabledResources.size === 0
+						? true
+						: season.resources.some(seasonResource =>
+							enabledResources.has(seasonResource.id.toString())
+						);
 
 					// Date is within season range and has matching resources
 					const dateInRange = date >= seasonStart && date <= seasonEnd && hasMatchingResources;
@@ -324,9 +335,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 					const seasonEnd = DateTime.fromISO(season.to_);
 
 					// Check resources (from V2)
-					const hasMatchingResources = season.resources.some(seasonResource =>
-						enabledResources.has(seasonResource.id.toString())
-					);
+					// When no resources are enabled, show all seasons
+					const hasMatchingResources = enabledResources.size === 0
+						? true
+						: season.resources.some(seasonResource =>
+							enabledResources.has(seasonResource.id.toString())
+						);
 
 					return viewMiddle >= seasonStart && viewMiddle <= seasonEnd && hasMatchingResources;
 				});
@@ -522,9 +536,12 @@ const FullCalendarView: FC<FullCalendarViewProps> = (props) => {
 			const seasonEnd = DateTime.fromISO(season.to_).startOf('day');
 
 			// Check if season has any resources that match enabled resources
-			const hasMatchingResources = season.resources.some(seasonResource =>
-				enabledResources.has(seasonResource.id.toString())
-			);
+			// When no resources are enabled, show all seasons
+			const hasMatchingResources = enabledResources.size === 0
+				? true
+				: season.resources.some(seasonResource =>
+					enabledResources.has(seasonResource.id.toString())
+				);
 
 			// Selection date is within season range and has matching resources
 			const dateInRange = season.active &&

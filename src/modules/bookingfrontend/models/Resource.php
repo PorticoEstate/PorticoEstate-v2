@@ -264,6 +264,14 @@ class Resource
     public $description_json;
 
     /**
+     * @ORM\Column(type="json", nullable=true)
+     * @Expose
+     * @Short
+     * @OA\Property(description="Short description in JSON format, keyed by language code", type="object", nullable=true)
+     */
+    public $short_description;
+
+    /**
      * @ORM\Column(type="smallint", nullable=true)
      * @Expose
      * @OA\Property(description="Whether to deny application if resource is already booked", type="integer", nullable=true)

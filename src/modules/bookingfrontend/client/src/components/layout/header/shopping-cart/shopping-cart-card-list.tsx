@@ -4,7 +4,7 @@ import { IApplication } from "@/service/types/api/application.types";
 import { deletePartialApplication } from "@/service/api/api-utils";
 import ResourceCircles from "@/components/resource-circles/resource-circles";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
-import { PencilIcon, TrashIcon, CalendarIcon, Buildings3Icon, LayersIcon, ArrowsCirclepathIcon } from "@navikt/aksel-icons";
+import { PencilIcon, TrashIcon, CalendarIcon, ArrowsCirclepathIcon } from "@navikt/aksel-icons";
 import styles from "./shopping-cart-card-list.module.scss";
 import { applicationTimeToLux } from "@/components/layout/header/shopping-cart/shopping-cart-content";
 import { DateTime } from "luxon";
@@ -14,6 +14,8 @@ import { calculateApplicationCost, formatCurrency, getApplicationCurrency } from
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
 import RecurringDescription from './recurring-description';
 import { useBuildingSeasons } from "@/service/hooks/api-hooks";
+import ResourceIcon from "@/icons/ResourceIcon";
+import BuildingIcon from "@/icons/BuildingIcon";
 
 interface ShoppingCartCardListProps {
     basketData: IApplication[];
@@ -84,7 +86,7 @@ const CartCardWithSeasons: FC<{
 
 					<div className={styles.cardContent}>
 						<div className={styles.infoItem}>
-							<Buildings3Icon aria-hidden className={styles.infoIcon} />
+							<BuildingIcon aria-hidden className={styles.infoIcon} />
 							<DigdirLink asChild>
 								<Link href={`/building/${item.building_id}`} onClick={(e) => {
 									e.stopPropagation();
@@ -133,7 +135,7 @@ const CartCardWithSeasons: FC<{
 						)}
 
 						<div className={styles.infoItem}>
-							<LayersIcon aria-hidden className={styles.infoIcon} />
+							<ResourceIcon aria-hidden className={styles.infoIcon} />
 							<div className={styles.resourcesContainer}>
 								{(item.resources || []).length === 1 ? (
 									<div className={styles.singleResource}>

@@ -6,9 +6,11 @@
 
 /* Import Designsystemet foundation */
 @import url('/assets/designsystemet/index.css');
+@import url('/assets/design-tokens/admin.css');
 
 /* Root configuration */
 :root {
+	--ds-color-background-inverse: var(--ds-color-accent-base-active);
     --app-max-width: 1400px;
     --app-sidebar-width: 280px;
     --app-topbar-height: 60px;
@@ -400,7 +402,7 @@ body {
     .u-hidden-mobile {
         display: block !important;
     }
-    
+
     .u-inline-lg {
         display: inline !important;
     }
@@ -495,19 +497,19 @@ body {
     :root {
         --app-sidebar-width: 0px;
     }
-    
+
     .app-sidebar {
         transform: translateX(-100%);
     }
-    
+
     .app-sidebar.show {
         transform: translateX(0);
     }
-    
+
     .app-main {
         margin-left: 0;
     }
-    
+
     .app-topbar__link span {
         display: none;
     }
@@ -813,7 +815,7 @@ body {
     .app-sidebar {
         display: none;
     }
-    
+
     .app-main {
         margin-left: 0;
     }
@@ -1342,18 +1344,18 @@ input[type="file"]::-webkit-file-upload-button:hover {
 }
 
 /* Modal utilities */
-.app-modal { 
-    position: fixed !important; 
-    top: 0 !important; 
-    left: 0 !important; 
+.app-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
     right: 0 !important;
     bottom: 0 !important;
-    z-index: 1050; 
-    display: none; 
-    width: 100vw !important; 
-    height: 100vh !important; 
-    background-color: rgba(0,0,0,0.5); 
-    overflow-x: hidden; 
+    z-index: 1050;
+    display: none;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(0,0,0,0.5);
+    overflow-x: hidden;
     overflow-y: auto;
     margin: 0 !important;
     padding: 0 !important;

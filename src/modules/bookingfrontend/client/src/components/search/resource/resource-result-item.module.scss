@@ -5,7 +5,7 @@
 	flex-direction: column;
 	width: 100%;
 	max-width: 400px;
-	aspect-ratio: 40 / 43;
+	aspect-ratio: 40 / 47;
 	overflow: hidden;
 
 	@include tablet {
@@ -36,12 +36,15 @@
 .contentBlock {
 	display: flex;
 	flex-direction: column;
-	gap: 0.75rem;
+	//gap: 0.75rem;
 	flex-grow: 1;
 }
 
 .titleLink, .buildingLink {
 	//text-decoration: none;
+	margin-top: 0.25rem;
+	margin-bottom: 0;
+	--dsc-link-color--visited: var(--ds-color-text-subtle);
 
 	&:hover {
 		text-decoration: underline;
@@ -102,18 +105,32 @@
 	}
 }
 
-.resourceTags {
-	display: flex;
-	flex-wrap: wrap;
-	align-items: center;
-	gap: 0.5rem;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	line-height: 1.5em; // for 2 line
-	max-height: 3.5em; // for 2 line
-	margin-bottom: 0;
+.resourceAddress {
+	font-size: 0.875rem;
+	color: var(--ds-color-text-subtle);
+	margin-top: 0;
 }
 
+.shortDescription {
+	display: -webkit-box;
+	-webkit-line-clamp: 3;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	//flex-grow: 1;
+	//margin-bottom: 0;
+	//margin-top: 0;
+}
+
+.actionButton {
+	margin-top: auto;
+	align-self: flex-start;
+	justify-self: flex-end;
+}
+.resourceTags {
+	display: flex;
+	gap: 0.5rem;
+}
 .capacity {
 	margin-top: auto;
 	margin-bottom: 0;

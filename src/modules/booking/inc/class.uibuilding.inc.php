@@ -42,6 +42,7 @@ class booking_uibuilding extends booking_uicommon
 			'name'					 => 'string',
 			'homepage'				 => 'url',
 			'description_json'		 => 'html',
+			'short_description'		 => 'string',
 			'opening_hours'			 => 'html',
 			'email'					 => 'email',
 			'tilsyn_name'			 => 'string',
@@ -313,7 +314,8 @@ class booking_uibuilding extends booking_uicommon
 			$langs[] = array(
 				'lang' => $key,
 				'name' => $trans != "!$name" ? $trans : $name,
-				'description' => !empty($building['description_json'][$key]) ? $building['description_json'][$key] : ''
+				'description' => !empty($building['description_json'][$key]) ? $building['description_json'][$key] : '',
+				'short_description' => !empty($building['short_description'][$key]) ? $building['short_description'][$key] : ''
 			);
 
 			self::rich_text_editor(array("field_description_json_{$key}"));
@@ -406,7 +408,8 @@ class booking_uibuilding extends booking_uicommon
 			$langs[] = array(
 				'lang' => $key,
 				'name' => $trans != "!$name" ? $trans : $name,
-				'description' => !empty($building['description_json'][$key]) ? $building['description_json'][$key] : ''
+				'description' => !empty($building['description_json'][$key]) ? $building['description_json'][$key] : '',
+				'short_description' => !empty($building['short_description'][$key]) ? $building['short_description'][$key] : ''
 			);
 
 			self::rich_text_editor(array("field_description_json_{$key}"));
@@ -447,6 +450,7 @@ class booking_uibuilding extends booking_uicommon
 		}
 		$userlang = $this->userSettings['preferences']['common']['lang'];
 		$building['description']		 = isset($building['description_json'][$userlang]) ? $building['description_json'][$userlang] : '';
+		$building['short_description_text'] = isset($building['short_description'][$userlang]) ? $building['short_description'][$userlang] : '';
 		$building['buildings_link']		 = self::link(array('menuaction' => 'booking.uibuilding.index'));
 		$building['edit_link']			 = self::link(array(
 			'menuaction' => 'booking.uibuilding.edit',

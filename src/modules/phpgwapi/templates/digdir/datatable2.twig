@@ -1,0 +1,1689 @@
+{% set data_root = data|default({}) %}
+{% set datatable_config = datatable|default(data_root.datatable|default({})) %}
+{% set form_config = form|default(data_root.form|default({})) %}
+{% set toolbar_config = attribute(form_config, 'toolbar')|default({}) %}
+{% set toolbar_items = attribute(toolbar_config, 'item')|default([]) %}
+{% set list_actions = attribute(form_config, 'list_actions')|default({}) %}
+{% set list_actions_items = attribute(list_actions, 'item')|default([]) %}
+{% set filters = data_root.filters|default({}) %}
+{% set top_toolbar = attribute(data_root, 'top-toolbar')|default({}) %}
+{% set end_toolbar = attribute(data_root, 'end-toolbar')|default({}) %}
+{% set datatable_fields = attribute(datatable_config, 'field')|default([]) %}
+{% set top_toolbar_fields = attribute(attribute(top_toolbar, 'fields')|default({}), 'field')|default([]) %}
+{% set end_toolbar_fields = attribute(attribute(end_toolbar, 'fields')|default({}), 'field')|default([]) %}
+{% set left_click_action = attribute(datatable_config, 'left_click_action')|default(attribute(data_root, 'left_click_action')|default('')) %}
+{% set dbl_click_action = attribute(datatable_config, 'dbl_click_action')|default(attribute(data_root, 'dbl_click_action')|default('')) %}
+
+<script>
+	var show_filter_group = false;
+	{% if toolbar_config.show_filter_group is defined and toolbar_config.show_filter_group == '1' %}
+		show_filter_group = true;
+	{% endif %}
+
+	var number_of_toolbar_items = 0;
+	var filter_selects = {};
+	var customFilters = {}; // Store custom filter values for modern DataTables compatibility
+	var lang = {{ js_lang('Search')|raw }};
+</script>
+{% include 'jquery_phpgw_i18n.twig' %}
+
+<div id="queryForm">
+	{% if toolbar_items|length > 0 %}
+		<div class="row ms-1">
+			<div id="active_filters"></div>
+		</div>
+		<div class="mt-2 mb-2 ms-1">
+			<button class="app-button app-button--secondary" type="button" onclick="document.getElementById('democollapseBtn').classList.toggle('app-collapse--show');" aria-expanded="false" aria-controls="democollapseBtn">
+				{{ lang('filter') }}
+			</button>
+			<button id="reset_filter" class="ms-2 app-button app-button--tertiary" type="button" onclick="reset_filter();" style="display: none;">
+				{{ lang('reset filter') }}
+			</button>
+		</div>
+
+		<div class="row mt-2 app-collapse" id="democollapseBtn">
+			<div id="toolbar" class="dtable_custom_controls">
+				<form>
+					<fieldset>
+						<div class="app-row mb-2">
+							{% set count_items = toolbar_items|length %}
+							{% for item in toolbar_items %}
+								<script>
+									number_of_toolbar_items += 1;
+								</script>
+								<div class="{% if browser_support is defined and browser_support == 'legacy' %}pure-u-1 pure-u-md-1-3{% else %}{% if count_items > 6 %}app-col-4{% elseif count_items > 4 or count_items == 3 %}app-col-6{% else %}app-col{% endif %}{% endif %}">
+									{% set filter_key = 'filter_' ~ item.name %}
+									{% set filter_key_name = 'filter_' ~ item.name ~ '_name' %}
+									{% set filter_key_id = 'filter_' ~ item.name ~ '_id' %}
+									{% if item.name is defined and item.name %}
+										<label class="app-label" for="{{ item.name|default('') }}">
+											{{ item.text|default('') }}
+										</label>
+									{% endif %}
+									{% if item.type == 'date-picker' %}
+										<input class="app-input" id="filter_{{ item.name }}" name="filter_{{ item.name }}" value="{{ item.value|default('') }}" type="text" title="{{ item.text|default('') }}" />
+									{% elseif item.type == 'autocomplete' %}
+										<input id="filter_{{ item.name }}_name" name="{{ item.name }}_name" type="text" class="app-input" value="{{ attribute(filters, filter_key_name)|default('') }}" title="{{ item.text|default('') }}" />
+										<input id="filter_{{ item.name }}_id" name="filter_{{ item.name }}_id" type="hidden" value="{{ attribute(filters, filter_key_id)|default('') }}" />
+										<div id="filter_{{ item.name }}_container"></div>
+										<script>
+											$(document).ready(function() {
+												var app = "{{ item.app|default('booking')|e('js') }}";
+												var FunctionName = "{{ attribute(item, 'function')|default('index')|e('js') }}";
+												var label_attr = "{{ item.label_attr|default('name')|e('js') }}";
+												var show_id = false;
+												{% if item.show_id is defined and item.show_id == 1 %}
+													show_id = true;
+												{% endif %}
+
+												var name = "{{ item.name|default('')|e('js') }}";
+												var ui = "{{ item.ui|default('')|e('js') }}";
+												var requestGenerator = false;
+												{% if item.requestGenerator is defined and item.requestGenerator %}
+													requestGenerator = '{{ item.requestGenerator|e('js') }}';
+												{% endif %}
+												var depends = false;
+												var filter_depends = "";
+												var filter_selected = "";
+												{% if item.depends is defined and item.depends %}
+													depends = "{{ item.depends|e('js') }}";
+													//filter_depends = $('#filer_'+depends+'_id').val();
+													$("#filter_" + depends + "_name").on("autocompleteselect", function(event, i){
+														var filter_select = i.item.value;
+														filter_depends = i.item.value;
+														if (filter_select != filter_selected){
+															if (filter_depends) {
+																JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction:app + '.ui' + ui + '.' + FunctionName}) + '&filter_' + depends + '_id=' + filter_depends + '&',
+																	'filter_' + name + '_name', 'filter_' + name + '_id', 'filter_' + name + '_container', label_attr, show_id, requestGenerator);
+															}
+															oTable.dataTableSettings[0]['ajax']['data']['filter_' + name + '_id'] = "";
+															$('#filter_' + name + '_name').val('');
+															$('#filter_' + name + '_id').val('');
+															filter_selected = filter_select;
+														}
+													});
+													$("#filter_" + depends + "_name").on("keyup", function(){
+														if ($(this).val() == ''){
+															filter_depends = false;
+															if (!filter_depends) {
+																JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction:app + '.ui' + ui + '.' + FunctionName}) + '&',
+																	'filter_' + name + '_name', 'filter_' + name + '_id', 'filter_' + name + '_container', label_attr, show_id, requestGenerator);
+															}
+															filter_selected = "";
+															oTable.dataTableSettings[0]['ajax']['data']['filter_' + name + '_id'] = "";
+															$('#filter_' + name + '_name').val('');
+															$('#filter_' + name + '_id').val('');
+														}
+													});
+												{% endif %}
+												if (filter_depends) {
+													JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction:app + '.ui' + ui + '.' + FunctionName}) + '&filter_' + depends + '_id=' + filter_depends + '&',
+														'filter_' + name + '_name', 'filter_' + name + '_id', 'filter_' + name + '_container', label_attr, show_id, requestGenerator);
+												} else {
+													JqueryPortico.autocompleteHelper(phpGWLink('index.php', {menuaction:app + '.ui' + ui + '.' + FunctionName}) + '&',
+														'filter_' + name + '_name', 'filter_' + name + '_id', 'filter_' + name + '_container', label_attr, show_id, requestGenerator);
+												}
+											});
+										</script>
+									{% elseif item.type == 'filter' %}
+										<script>
+											filter_selects['{{ item.text|default('')|e('js') }}'] = '{{ item.name|default('')|e('js') }}';
+										</script>
+										<select id="{{ item.name|default('') }}" name="{{ item.name|default('') }}" class="app-select"{% if item.multiple is defined and item.multiple %} multiple="true"{% endif %} title="{{ item.text|default('') }}">
+											{% for option in item.list|default([]) %}
+												{% if option.selected is defined and (option.selected == 'selected' or option.selected == '1') %}
+													<option value="{{ option.id|default('') }}" selected="selected">{{ option.name|default('') }}</option>
+												{% else %}
+													<option value="{{ option.id|default('') }}">{{ option.name|default('') }}</option>
+												{% endif %}
+											{% endfor %}
+										</select>
+									{% elseif item.type == 'link' %}
+										<label class="invisible">{{ item.value|default('') }}</label>
+										<br />
+										<input type="button" class="app-button app-button--primary ms-2" value="{{ item.value|default('') }}"{% if item.onclick is defined and item.onclick %} onclick="{{ item.onclick|raw }}"{% else %} onclick="javascript:window.open('{{ item.href|default('')|e('js') }}', '_self');"{% endif %} />
+									{% elseif item.type == 'hidden' %}
+										<input type="{{ item.type|default('') }}" id="{{ item.id|default('') }}" name="{{ item.name|default('') }}" value="{{ item.value|default('') }}" />
+									{% elseif item.type == 'label' %}
+										<label id="{{ item.id|default('') }}"></label>
+									{% elseif item.type == 'checkbox' %}
+										<div class="app-checkbox-wrapper ps-0">
+											<input id="innertoolbar_{{ item.name }}" type="{{ item.type|default('') }}" name="{{ item.name|default('') }}" onclick="{{ item.onClick|default('')|raw }}" value="{{ item.value|default('') }}" class="app-checkbox ms-0{% if item.class is defined and item.class %} {{ item.class }}{% endif %}"{% if item.checked is defined and item.checked|trim != '' %}{% if item.checked|trim == '1' %} checked="checked"{% else %} checked="{{ item.checked|e('html_attr') }}"{% endif %}{% endif %} />
+										</div>
+									{% else %}
+										<input id="innertoolbar_{{ item.name }}" type="{{ item.type|default('') }}" name="{{ item.name|default('') }}" onclick="{{ item.onClick|default('')|raw }}" value="{{ item.value|default('') }}" href="{{ item.href|default('') }}" class="{{ item.class|default('') }}" checked="{{ item.checked|default('') }}" />
+									{% endif %}
+								</div>
+							{% endfor %}
+						</div>
+					</fieldset>
+				</form>
+			</div>
+		</div>
+	{% endif %}
+</div>
+
+<div id="list_flash">
+	{% if msgbox_data is defined and msgbox_data %}
+		{% if msgbox_data is iterable and (msgbox_data|first is iterable) %}
+			{% for message in msgbox_data %}
+				<div class="{{ message.msgbox_class|default('error') }}">
+					{% if message.msgbox_img %}
+						<img src="{{ message.msgbox_img }}" alt="{{ message.msgbox_img_alt }}" title="{{ message.msgbox_img_alt }}" />
+					{% endif %}
+					{{ message.msgbox_text|raw }}
+				</div>
+			{% endfor %}
+		{% else %}
+			<div class="{{ msgbox_data.msgbox_class|default('error') }}">
+				{% if msgbox_data.msgbox_img %}
+					<img src="{{ msgbox_data.msgbox_img }}" alt="{{ msgbox_data.msgbox_img_alt }}" title="{{ msgbox_data.msgbox_img_alt }}" />
+				{% endif %}
+				{{ msgbox_data.msgbox_text|raw }}
+			</div>
+		{% endif %}
+	{% endif %}
+</div>
+<div id="message" class="message"></div>
+
+{% if top_toolbar_fields|length > 0 %}
+	<div class="toolbar-container">
+		<div class="toolbar">
+			<form>
+				<div class="row">
+					<div class="col-md-2">
+						{{ datatable_config.workorder_data|default('')|raw }}
+					</div>
+					<div class="col-md-4">
+						{% for field in top_toolbar_fields %}
+							{% if field.type == 'button' %}
+								<button id="{{ field.id|default('') }}" type="{{ field.type|default('') }}" class="app-button app-button--primary">{{ field.value|default('') }}</button>
+							{% endif %}
+						{% endfor %}
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+{% endif %}
+
+<table id="datatable-container" class="cell-border compact stripe" style="width:100%">
+	<thead>
+		<tr>
+			{% for field in datatable_fields %}
+				{% if field.hidden is defined %}
+					{% if field.hidden == 0 or field.hidden == '0' %}
+						<th>{{ field.label|default('') }}</th>
+					{% endif %}
+				{% else %}
+					<th>{{ field.label|default('') }}</th>
+				{% endif %}
+			{% endfor %}
+		</tr>
+	</thead>
+	<tfoot>
+		<tr>
+			{% for field in datatable_fields %}
+				{% if field.hidden is defined %}
+					{% if field.hidden == 0 or field.hidden == '0' %}
+						<th>{{ field.value_footer|default('') }}</th>
+					{% endif %}
+				{% else %}
+					<th>{{ field.value_footer|default('') }}</th>
+				{% endif %}
+			{% endfor %}
+		</tr>
+	</tfoot>
+</table>
+<form id="custom_values_form" name="custom_values_form"></form>
+
+{% if end_toolbar_fields|length > 0 %}
+	<div class="toolbar-container">
+		<div class="toolbar">
+			<form>
+				<div class="row">
+					{% for field in end_toolbar_fields %}
+						<div class="col-md-2">
+							{% if field.type == 'date-picker' %}
+								<input class="app-input" id="filter_{{ field.name }}" name="filter_{{ field.name }}" value="{{ field.value|default('') }}" type="text" title="{{ field.text|default('') }}" />
+							{% elseif field.type == 'button' %}
+								<button id="{{ field.id|default('') }}" type="{{ field.type|default('') }}" class="app-button app-button--primary" onclick="{{ field.action|default('')|raw }}">{{ field.value|default('') }}</button>
+							{% elseif field.type == 'label' %}
+								{{ field.value|default('') }}
+							{% else %}
+								<input id="{{ field.id|default('') }}" type="{{ field.type|default('') }}" name="{{ field.name|default('') }}" value="{{ field.value|default('') }}" class="app-input"{% if field.type == 'checkbox' and field.checked == '1' %} checked="checked"{% endif %} />
+							{% endif %}
+						</div>
+					{% endfor %}
+				</div>
+			</form>
+		</div>
+	</div>
+{% endif %}
+
+<script>
+	var columns = [
+		{% for field in datatable_fields %}
+			{
+				data: "{{ field.key|default('')|e('js') }}",
+				{% if field.className is defined and field.className %}
+					{% if field.className == 'right' or field.className == 'center' %}
+						{% if field.className == 'right' %}
+							class: 'dt-right',
+						{% endif %}
+						{% if field.className == 'center' %}
+							class: 'dt-center',
+						{% endif %}
+					{% else %}
+						class: "{{ field.className|e('js') }}",
+					{% endif %}
+				{% endif %}
+				orderable: {% if field.sortable is defined and field.sortable == 0 %}false{% else %}true{% endif %},
+				{% if field.searchable is defined %}
+					{% if field.searchable == 0 %}
+						searchable: false,
+					{% elseif field.searchable == 1 %}
+						searchable: true,
+					{% endif %}
+				{% else %}
+					searchable: false,
+				{% endif %}
+				{% if field.hidden is defined %}
+					{% if field.hidden == 0 %}
+						visible: true,
+					{% elseif field.hidden == 1 %}
+						class: 'none', //FIXME - virker ikke...'responsive' plukker den fram igjen
+						visible: false,
+					{% endif %}
+				{% else %}
+					visible: true,
+				{% endif %}
+				{% if field.formatter is defined and field.formatter %}
+					render: function (dummy1, dummy2, oData) {
+						try {
+							var ret = {{ field.formatter|raw }}("{{ field.key|default('')|e('js') }}", oData);
+						}
+						catch(err) {
+							return err.message;
+						}
+						return ret;
+					},
+				{% endif %}
+				{% if field.dir is defined and field.dir != '' %}
+					dir: "{{ field.dir|e('js') }}",
+				{% endif %}
+				{% if field.editor is defined %}
+					{% if field.editor == 0 %}
+						editor: false,
+					{% elseif field.editor == 1 %}
+						editor: true,
+					{% endif %}
+				{% else %}
+					editor: false,
+				{% endif %}
+				defaultContent: "{{ field.defaultContent|default('')|e('js') }}"
+			}{% if not loop.last %},{% endif %}
+		{% endfor %}
+	];
+	JqueryPortico.columns = [];
+	for(i=0;i < columns.length;i++)
+	{
+		if ( columns[i]['visible'] == true )
+		{
+			JqueryPortico.columns.push(columns[i]);
+		}
+	}
+	// console.log(JqueryPortico.columns);
+</script>
+
+<script class="init">
+	var lang_ButtonText_columns = "{{ lang('columns')|e('js') }}";
+
+	var oTable = null;
+	$(document).ready(function() {
+		var ajax_url = '{{ datatable_config.source|default('')|replace({'&amp;':'&'})|e('js') }}';
+		var order_def = [];
+		{% if datatable_config.sorted_by is defined and datatable_config.sorted_by.key is defined %}
+			order_def.push([{{ datatable_config.sorted_by.key }}, '{{ datatable_config.sorted_by.dir|default('')|e('js') }}']);
+		{% endif %}
+		var responsive = true;
+		{% if datatable_config.responsive_show_details is defined and datatable_config.responsive_show_details == 1 %}
+			responsive = {
+				details: {
+					display: $.fn.dataTable.Responsive.display.childRowImmediate,
+					type: ''
+				}
+			};
+		{% endif %}
+
+		var download_url = '{{ datatable_config.download|default('')|replace({'&amp;':'&'})|e('js') }}';
+		var editor_cols = [];
+		var editor_action = '{{ datatable_config.editor_action|default('')|replace({'&amp;':'&'})|e('js') }}';
+		var disablePagination = '{{ datatable_config.disablePagination|default('')|e('js') }}';
+		var select_all = '{{ datatable_config.select_all|default('')|e('js') }}';
+		var initial_search = {"search": "{{ datatable_config.query|default('')|e('js') }}" };
+		var action_def = [];
+		var contextMenuItems = {};
+		var InitContextMenu = false;
+		var button_def = [];
+		var group_buttons = false;
+
+		{% if datatable_config.new_item is defined and datatable_config.new_item is not empty %}
+			{% if datatable_config.new_item.onclick is defined and datatable_config.new_item.onclick %}
+				button_def.push({
+					text: "{{ lang('new')|e('js') }}",
+					action: function (e, dt, node, config) {
+						{{ datatable_config.new_item.onclick|raw }};
+					}
+				});
+			{% else %}
+				button_def.push({
+					text: "{{ lang('new')|e('js') }}",
+					{% if datatable_config.bigmenubutton is defined and datatable_config.bigmenubutton %}
+						className: 'bigmenubutton',
+					{% endif %}
+					sUrl: '{{ datatable_config.new_item|default('')|replace({'&amp;':'&'})|e('js') }}',
+
+					action: function (e, dt, node, config) {
+						var sUrl = config.sUrl;
+						window.open(sUrl, '_self');
+					}
+				});
+			{% endif %}
+		{% endif %}
+		{% if datatable_config.select_all is defined and datatable_config.select_all == '1' %}
+			button_def.push({
+				text: "{{ lang('select all')|e('js') }}",
+				action: function () {
+					var api = oTable.api();
+					api.rows().select();
+					$(".mychecks").each(function()
+					{
+						$(this).prop("checked", true);
+					});
+					var selectedRows = api.rows( { selected: true } ).count();
+					api.buttons( '.record' ).enable( selectedRows > 0 );
+
+				}
+			});
+
+			button_def.push({
+				text: "{{ lang('select none')|e('js') }}",
+				action: function () {
+					var api = oTable.api();
+					api.rows().deselect();
+					$(".mychecks").each(function()
+					{
+						$(this).prop("checked", false);
+					});
+					api.buttons( '.record' ).enable( false );
+				}
+			});
+		{% endif %}
+		var csv_download = JqueryPortico.i18n.csv_download();
+		if(csv_download.show_button == 1)
+		{
+			button_def.push({
+				extend: 'csvHtml5',
+				titleAttr: csv_download.title,
+				fieldSeparator: ';',
+				bom: true
+			});
+		}
+		{% if datatable_config.download is defined and datatable_config.download %}
+			button_def.push({
+				text: "{{ lang('download')|e('js') }}",
+				titleAttr: "{{ lang('download data')|e('js') }}",
+				className: 'download',
+				sUrl: '{{ datatable_config.download|default('')|replace({'&amp;':'&'})|e('js') }}',
+				action: function (e, dt, node, config) {
+					var sUrl = config.sUrl;
+
+					var oParams = {};
+					oParams.length = -1;
+					oParams.columns = null;
+					oParams.start = null;
+					oParams.draw = null;
+					var addtional_filterdata = oTable.dataTableSettings[0]['oAjaxData'];
+
+					for (var attrname in addtional_filterdata)
+					{
+						oParams[attrname] = addtional_filterdata[attrname];
+					}
+					var iframe = document.createElement('iframe');
+					iframe.style.height = "0px";
+					iframe.style.width = "0px";
+
+					if(typeof(oParams.order[0]) != 'undefined')
+					{
+						var column = oParams.order[0].column;
+						var dir = oParams.order[0].dir;
+						var column_to_keep = oParams.columns[column];
+						delete oParams.columns;
+						oParams.columns = {};
+						if(JqueryPortico.columns[column]['orderable'] == true)
+						{
+							oParams.columns[column] = column_to_keep;
+						}
+					}
+					else
+					{
+							delete oParams.columns;
+					}
+
+					iframe.src = sUrl + "&" + $.param(oParams) + "&export=1" + "&query=" + $('.dt-search input[aria-controls="datatable-container"]').val();
+
+					if(confirm("This will take some time..."))
+					{
+						document.body.appendChild( iframe );
+					}
+				}
+
+			});
+		{% endif %}
+		{% if datatable_config.columns is defined and datatable_config.columns %}
+			button_def.push({
+				{% if datatable_config.columns.name is defined and datatable_config.columns.name %}
+					text: "{{ datatable_config.columns.name|e('js') }}",
+					titleAttr: "{{ datatable_config.columns.name|e('js') }}",
+				{% else %}
+					text: "{{ lang('columns')|e('js') }}",
+					titleAttr: "{{ lang('columns')|e('js') }}",
+				{% endif %}
+				className: 'download',
+				action: function (e, dt, node, config) {
+					{{ datatable_config.columns.onclick|default('')|raw }};
+				}
+			});
+		{% endif %}
+		{% if datatable_config.column_search is defined and datatable_config.column_search %}
+			button_def.push({
+				{% if datatable_config.column_search.name is defined and datatable_config.column_search.name %}
+					text: "{{ datatable_config.column_search.name|e('js') }}",
+					titleAttr: "{{ datatable_config.column_search.name|e('js') }}",
+				{% else %}
+					text: "{{ lang('column search')|e('js') }}",
+					titleAttr: "{{ lang('column search')|e('js') }}",
+				{% endif %}
+				className: 'download',
+				action: function (e, dt, node, config) {
+					{{ datatable_config.column_search.onclick|default('')|raw }};
+				}
+			});
+		{% endif %}
+		{% if datatable_config.actions is defined and datatable_config.actions is not empty %}
+			{% for action in datatable_config.actions %}
+				{% if action.type is defined and action.type == 'custom' %}
+					action_def.push({
+						text: "{{ action.text|default('')|e('js') }}",
+						{% if action.className is defined and action.className %}
+							className: "{{ action.className|e('js') }}",
+						{% else %}
+							enabled: false,
+							className: 'record',
+						{% endif %}
+						action: function (e, dt, node, config)
+						{
+							{% if action.confirm_msg is defined and action.confirm_msg %}
+								var confirm_msg = "{{ action.confirm_msg|e('js') }}";
+								var r = confirm(confirm_msg);
+								if (r != true) {
+									return false;
+								}
+							{% endif %}
+							fnSetSelected(this, dt);
+							{{ action.custom_code|default('')|raw }}
+						}
+					});
+				{% else %}
+					action_def.push({
+						text: "{{ action.text|default('')|e('js') }}",
+						{% if action.className is defined and action.className %}
+							className: "{{ action.className|e('js') }}",
+						{% else %}
+							enabled: false,
+							className: 'record',
+						{% endif %}
+						action: function (e, dt, node, config) {
+							var receiptmsg = [];
+							fnSetSelected(this, dt);
+
+							var selected = fnGetSelected();
+							var numSelected = selected.length;
+
+							if (numSelected == 0){
+								alert('None selected');
+								return false;
+							}
+
+							{% if action.confirm_msg is defined and action.confirm_msg %}
+								var confirm_msg = "{{ action.confirm_msg|e('js') }}";
+								var r = confirm(confirm_msg);
+								if (r != true) {
+									return false;
+								}
+							{% endif %}
+
+							var target = "{{ action.target|default('')|e('js') }}";
+							if(!target)
+							{
+								target = '_self';
+							}
+
+							if (numSelected > 1){
+								target = '_blank';
+							}
+
+							var n = 0;
+							for (; n < numSelected; ) {
+								var aData = oTable.api().rows(selected[n]).data()[0]; //complete dataset from json returned from server
+
+								var action = "{{ action.action|default('')|replace({'&amp;':'&'})|e('js') }}";
+								var my_name = "{{ action.my_name|default('')|replace({'&amp;':'&'})|e('js') }}";
+
+								{% if action.parameters is defined and action.parameters %}
+									var parameters = {{ action.parameters|raw }};
+									var i = 0;
+									len = parameters.parameter.length;
+									for (; i < len; ) {
+										action += '&' + parameters.parameter[i]['name'] + '=' + aData[parameters.parameter[i]['source']];
+										i++;
+									}
+								{% endif %}
+
+								// look for the word "DELETE" in URL and my_name
+								if(substr_count(action,'delete')>0 || substr_count(my_name,'delete')>0)
+								{
+									action += "&confirm=yes&phpgw_return_as=json";
+									execute_ajax(action, function(result){
+										document.getElementById("message").innerHTML += '<br/>' + result;
+
+										oTable.api().draw('page');
+
+									});
+								}
+								else if (target == 'ajax')
+								{
+									action += "&phpgw_return_as=json";
+									execute_ajax(action, function(result){
+										document.getElementById("message").innerHTML += '<br/>' + result;
+										oTable.api().draw('page');
+									});
+								}
+								else
+								{
+									window.open(action,target);
+								}
+								n++;
+							}
+						}
+					});
+				{% endif %}
+			{% endfor %}
+			{% if datatable_config.group_buttons is defined and datatable_config.group_buttons == '1' %}
+				group_buttons = true;
+			{% else %}
+				group_buttons = false;
+			{% endif %}
+
+			var item_name = '';
+			var contextMenuItem = {};
+			for(i=0;i < action_def.length;i++)
+			{
+				button_def.push(action_def[i]);
+				if( typeof(action_def[i]['className']) != 'undefined' && action_def[i]['className'] == 'record')
+				{
+					contextMenuItems[i] = {name:action_def[i]['text'], callback:action_def[i]['action']};
+					InitContextMenu = true;
+				}
+			}
+
+			if(button_def.length > 10)
+			{
+				group_buttons = true;
+			}
+
+			var isChrome = /Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor);
+			if($(document).width() < 1000)
+			{
+				group_buttons = true;
+			}
+
+			if(isChrome == true)
+			{
+				group_buttons = false;
+			}
+			//disable grouping for now
+			group_buttons = false;
+		{% endif %}
+		if(button_def.length > 0)
+		{
+			if(group_buttons === true)
+			{
+				JqueryPortico.buttons = [
+					{
+						extend: 'collection',
+						autoClose: true,
+						text: "{{ lang('toolbar')|e('js') }}",
+						collectionLayout: 'three-column',
+						buttons: button_def
+					}
+				];
+			}
+			else
+			{
+				JqueryPortico.buttons = button_def;
+			}
+		}
+		else
+		{
+			JqueryPortico.buttons = null;
+		}
+
+		for(i=0;i < JqueryPortico.columns.length;i++)
+		{
+			if (JqueryPortico.columns[i]['editor'] === true)
+			{
+				editor_cols.push({sUpdateURL:editor_action + '&field_name=' + JqueryPortico.columns[i]['data']});
+			}
+			else
+			{
+				editor_cols.push(null);
+			}
+		}
+
+		if(order_def.length == 0)
+		{
+			for(i=0;i < JqueryPortico.columns.length;i++)
+			{
+				if (JqueryPortico.columns[i]['orderable'] === true && typeof(JqueryPortico.columns[i]['dir']) != 'undefined')
+				{
+					var dir = JqueryPortico.columns[i]['dir'] || "desc";
+					order_def.push([i, dir]);
+					break;
+				}
+			}
+		}
+
+		// Build columnDefs to only enable columnControl for orderable columns
+		var columnDefs = [];
+		for(i=0;i < JqueryPortico.columns.length;i++)
+		{
+			if (JqueryPortico.columns[i]['orderable'] == true)
+			{
+				columnDefs.push({
+					target: i,
+					columnControl: ['order']
+				});
+			}
+		}
+
+		init_multiselect = function(oControl)
+		{
+			try
+			{
+				oControl.multiselect({
+					buttonClass: 'app-select',
+					templates: {
+					button: '<button type="button" class="multiselect dropdown-toggle"><span class="multiselect-selected-text"></span></button>',
+					},
+					buttonWidth: 250,
+					includeSelectAllOption: true,
+					enableFiltering: true,
+					enableCaseInsensitiveFiltering: true,
+
+					onDropdownShown : function(event) {
+						setTimeout(function(){
+							oControl.parent().find("button.multiselect-clear-filter").click();
+							oControl.parent().find("input[type='search'].multiselect-search").focus();
+						}, 100);
+					}
+				});
+
+			}
+			catch(err)
+			{
+			}
+		}
+
+		/*
+		 * Find and assign actions to filters
+		 */
+		var oControls = $('.dtable_custom_controls:first').find(':input[name]');
+
+		$(document).ready(function() {
+
+			/*
+			* For namespacing the state
+			*/
+			var table_url = JqueryPortico.parseURL(window.location.href);
+			var menuaction = 'dummy';
+			var app_method = 'dummy';
+			var app_method_referrer = 'dummy';
+
+			var column_search_is_initated = false;
+
+			try
+			{
+				menuaction = table_url.searchObject.menuaction.replace(/\./g, '_');
+				app_method = menuaction.split('_')[0] + '_' + menuaction.split('_')[1];
+				let refferer = new URL(document.referrer).searchParams.get('menuaction').replace(/\./g, '_');
+				app_method_referrer = refferer.split('_')[0] + '_' + refferer.split('_')[1];
+			}
+			catch (e)
+			{
+			}
+			//clear state
+			var clear_state = false;
+			if(typeof(table_url.searchObject.clear_state) != 'undefined' && table_url.searchObject.clear_state == 1)
+			{
+				clear_state = true;
+			}
+			//uiocation
+			if(typeof(table_url.searchObject.type_id) != 'undefined')
+			{
+				menuaction += '_type_id' + table_url.searchObject.type_id;
+
+				if(typeof(table_url.searchObject.location_code) != 'undefined')
+				{
+					let location_code = table_url.searchObject.location_code.split('-');
+					app_method += '_type_id' + location_code.length;
+				}
+				else
+				{
+					app_method += '_type_id' + table_url.searchObject.type_id;
+				}
+
+				try
+				{
+					if(new URL(document.referrer).searchParams.get('location_code'))
+					{
+						let location_code = new URL(document.referrer).searchParams.get('location_code').split('-');
+						app_method_referrer += '_type_id' + location_code.length;
+					}
+					else
+					{
+						app_method_referrer += '_type_id' + new URL(document.referrer).searchParams.get('type_id');
+					}
+				}
+				catch(e)
+				{
+				}
+			}
+
+			//uientity
+			if(typeof(table_url.searchObject.entity_id) != 'undefined' && typeof(table_url.searchObject.cat_id) != 'undefined')
+			{
+				menuaction += '_entity_id' + table_url.searchObject.entity_id + '_cat_id' + table_url.searchObject.cat_id;
+				app_method += '_entity_id' + table_url.searchObject.entity_id + '_cat_id' + table_url.searchObject.cat_id;
+			}
+
+			//uientity for document.referrer
+			try
+			{
+				if(new URL(document.referrer).searchParams.get('entity_id') && new URL(document.referrer).searchParams.get('cat_id'))
+				{
+					app_method_referrer += '_entity_id' + new URL(document.referrer).searchParams.get('entity_id') + '_cat_id' + new URL(document.referrer).searchParams.get('cat_id');
+				}
+			}
+			catch(e)
+			{
+			}
+
+			//uigeneric
+			if(typeof(table_url.searchObject.type) != 'undefined' && menuaction.includes("uigeneric"))
+			{
+				menuaction += '_type_' + table_url.searchObject.type;
+				app_method += '_type_' + table_url.searchObject.type;
+			}
+
+			//uigeneric for document.referrer
+			try
+			{
+				if(new URL(document.referrer).searchParams.get('type') && menuaction_referer.includes("uigeneric"))
+				{
+					app_method_referrer += '_type_' + new URL(document.referrer).searchParams.get('type');
+				}
+			}
+			catch(e)
+			{
+			}
+
+			var select = false;
+
+			if(select_all)
+			{
+				select = {style: 'multi'};
+			}
+			else
+			{
+				select = true;
+			}
+
+			if(button_def.length > 8)
+			{
+				var layout = {
+							top2Start: 'buttons',
+							topStart: null,
+							topEnd: 'search',
+							bottomStart: ['pageLength'],
+							bottomEnd: ['inputPaging'],
+							bottom2Start: 'info'
+					}
+			}
+			else
+			{
+				var layout = {
+							topStart: 'buttons',
+							topEnd: 'search',
+							bottomStart: ['pageLength'],
+							bottomEnd: ['inputPaging'],
+							bottom2Start: 'info'
+					}
+			}
+
+			init_table = function()
+			{
+				var stateSave = true;
+				var pageReload = false;
+				// Detect page refresh
+				if (performance.getEntriesByType("navigation")[0].type === "reload")
+				{
+					pageReload = true;
+				}
+
+				console.log(app_method);
+				console.log(app_method_referrer);
+				//check referer and if it is the same as the current page, then clear state
+				if(!pageReload && app_method !== app_method_referrer)
+				{
+					stateSave = false;
+				}
+
+				oTable = $('#datatable-container').dataTable({
+					paginate: disablePagination ? false : true,
+					searchDelay: 1200,
+					processing: true,
+					serverSide: true,
+					responsive: responsive,
+					select: select,
+					deferRender: true,
+					layout: layout,
+					ajax: {
+						url: ajax_url,
+						data: function ( aoData ) {
+							var _columns = aoData.columns;
+							delete aoData.columns;
+							aoData.columns = {};
+
+							if(typeof(aoData.order[0]) != 'undefined')
+							{
+								var column = aoData.order[0].column;
+								var dir = aoData.order[0].dir;
+								var column_to_keep = _columns[column];
+
+								if(JqueryPortico.columns[column]['orderable'] == true)
+								{
+									aoData.columns[column] = column_to_keep;
+								}
+							}
+
+							for ( var i=0 ; i< _columns.length ; i++ )
+							{
+								if(_columns[i].searchable && _columns[i].search.value !=="")
+								{
+									aoData.columns[i] = _columns[i];
+								}
+							}
+
+							active_filters_html = [];
+							var select = null;
+							for (var i in filter_selects)
+							{
+								select = $("#" + filter_selects[i]);
+								var select_name = select.prop("name");
+								var select_value = select.val();
+								aoData[select_name] = select_value;
+							}
+
+							oControls.each(function()
+							{
+								oControl = $(this);
+								if($(this).is(':checkbox'))
+								{
+									var checkboxValue = $(this).is(':checked') ? 1 : 0;
+									aoData[$(this).attr('name')] = checkboxValue;
+									if(checkboxValue === 1)
+									{
+										active_filters_html.push($(this).attr('title'));
+									}
+									return;
+								}
+								var test = $(this).val();
+								//	console.log(test.constructor);
+								if ( $(this).attr('name') && test != null && test.constructor !== Array)
+								{
+									value = $(this).val().replace('"', '"');
+									aoData[ $(this).attr('name') ] = value;
+									if(value && value != 0 )
+									{
+										active_filters_html.push($(this).attr('title'));
+									}
+								}
+								if ( $(this).attr('name') && test != null && test.constructor === Array)
+								{
+									value = $(this).val();
+									aoData[ $(this).attr('name') ] = value;
+
+									if(value.length > 0 )
+									{
+										active_filters_html.push($(this).attr('title'));
+									}
+									init_multiselect(oControl);
+								}
+
+							});
+
+							if(active_filters_html.length > 0 )
+							{
+								$('#active_filters').html("Aktive filter: " + active_filters_html.join(', '));
+							}
+							var search_value = $('.dt-search input[aria-controls="datatable-container"]').val();
+
+							if(active_filters_html.length > 0 || search_value || column_search_is_initated)
+							{
+								$('#reset_filter').show();
+							}
+							else
+							{
+								$('#reset_filter').hide();
+							}
+
+							// Add custom filters for modern DataTables compatibility
+							if (customFilters) {
+								for (var param in customFilters) {
+									if (customFilters.hasOwnProperty(param)) {
+										aoData[param] = customFilters[param];
+									}
+								}
+							}
+
+						},
+						dataSrc: function ( json ) {
+							if (typeof(json.sessionExpired) != 'undefined' && json.sessionExpired == true)
+							{
+								window.alert('sessionExpired - please log in');
+								JqueryPortico.lightboxlogin();//defined in common.js
+								//	oTable.api().ajax.reload( null, false ); // user paging is not reset on reload
+							}
+							else
+							{
+								return json.data;
+							}
+						},
+						type: 'POST'
+					},
+					fnStateSaveParams: function ( oSettings, sValue ) {
+						//Save custom filters
+						var temp = {};
+						temp[menuaction] = {}
+						oControls.each(function() {
+							if($(this).is(':checkbox'))
+							{
+								var checkboxState = $(this).is(':checked') ? 1 : 0;
+								sValue[$(this).attr('name')] = checkboxState;
+								temp[$(this).attr('name')] = checkboxState;
+								return;
+							}
+							if ( $(this).attr('name') && $(this).val() != null && $(this).val().constructor != Array)
+							{
+								sValue[ $(this).attr('name') ] = $(this).val().replace('"', '"');
+								temp[ $(this).attr('name') ] = $(this).val().replace('"', '"');
+							}
+							if ( $(this).attr('name') && $(this).val() != null && $(this).val().constructor == Array)
+							{
+								sValue[ $(this).attr('name') ] = $(this).val();
+								temp[ $(this).attr('name') ] = $(this).val();
+							}
+
+						});
+						for (var attrname in sValue)
+						{
+							temp[attrname] = sValue[attrname];
+						}
+						localStorage.setItem('state_' + menuaction, JSON.stringify(temp));
+						return sValue;
+					},
+					fnStateLoadParams: function ( oSettings, oData ) {
+						//Load custom filters
+						var retrievedObject = localStorage.getItem('state_' + menuaction);
+						if(typeof(retrievedObject) != 'undefined')
+						{
+							var params = {};
+
+							try
+							{
+								params = JSON.parse(retrievedObject);
+							}
+							catch(err)
+							{
+							}
+						}
+						//	console.log(oData);
+						//traverse oData.columns and remove search value
+						//	if (clear_state == true)
+						{
+							for (var attrname in oData.columns)
+							{
+								if(typeof(oData.columns[attrname].search) != 'undefined')
+								{
+									delete oData.columns[attrname].search;
+								}
+							}
+						}
+						//	console.log(params);
+						if(params !== null)
+						{
+							oControls.each(function() {
+								var oControl = $(this);
+								$.each(params, function(index, value) {
+									if ( index == oControl.attr('name') )
+									{
+										if (clear_state !== true)
+										{
+											if(oControl.is(':checkbox'))
+											{
+												var shouldCheck = value === 1 || value === '1';
+												oControl.prop('checked', shouldCheck);
+												customFilters[oControl.attr('name')] = shouldCheck ? 1 : 0;
+												return;
+											}
+											if(value.constructor == Array)
+											{
+												$(oControl).find("option").removeAttr('selected');
+
+												$.each(value, function(i,e){
+													oControl.find("option[value="+e+"]").prop("selected", "selected");
+												});
+
+												//	init_multiselect(oControl);
+											}
+											else
+											{
+												oControl.val( value );
+												try
+												{
+													$(oControl).removeAttr('selected').find("option[value='"+value+"']").attr('selected', 'selected');
+
+													if($(oControl).find("option").length > 0)
+													{
+														//		$(oControl).formSelect();
+													}
+												}
+												catch(err)
+												{
+												}
+
+											}
+										}
+									}
+								});
+							});
+						}
+						return true;
+					},
+					fnCreatedRow: function( nRow, aData, iDataIndex ){
+					},
+					fnRowCallback: function(nRow, aData, iDisplayIndex, iDisplayIndexFull) {
+						if(typeof(aData['priority']) != undefined && aData['priority'] > 0)
+						{
+							$(nRow).addClass('priority' + aData['priority']);
+						}
+						//In case the row is folded as result of responsive behaviour
+						$('td', nRow).parents('tr').addClass('context-menu');
+					},
+					fnDrawCallback: function () {
+						oTable.makeEditable({
+							sUpdateURL: editor_action,
+							fnOnEditing: function(input){
+								cell = input.parents("td");
+
+								//it is a hack...but it works
+								var rowIndex = cell.parents("tr")[0]._DT_RowIndex;
+
+								//	console.log(rowIndex);
+								//	console.log(oTable);
+								var aData = oTable.api().rows( rowIndex ).data()[0];
+								//	console.log(aData);
+								id = aData.id;
+								//	console.log(id);
+								return true;
+							},
+							fnOnEdited: function(status, sOldValue, sNewCellDisplayValue, aPos0, aPos1, aPos2)
+							{
+								document.getElementById("message").innerHTML += '<br/>' + status;
+								setTimeout(function(){
+									document.getElementById("message").innerHTML = '';
+								}, 1000);
+							},
+							oUpdateParameters: {
+								"id": function(){ return id; }
+							},
+							aoColumns: editor_cols,
+							sSuccessResponse: "IGNORE",
+							fnShowError: function(){ return; }
+						});
+						if(typeof(addFooterDatatable) == 'function')
+						{
+							addFooterDatatable(oTable);
+						}
+					},
+					fnFooterCallback: function ( nRow, aaData, iStart, iEnd, aiDisplay ) {
+						if(typeof(addFooterDatatable2) == 'function')
+						{
+							addFooterDatatable2(nRow, aaData, iStart, iEnd, aiDisplay, oTable);
+						}
+					},//alternative
+					fnInitComplete: function (oSettings, json)
+					{
+						$(".btn-group").addClass('w-100');
+						$(".dropdown-menu").addClass('w-100');
+						$(".multiselect ").addClass('app-input');
+						$(".multiselect").removeClass('btn');
+						$(".multiselect").removeClass('btn-default');
+
+						if(typeof(initCompleteDatatable) == 'function')
+						{
+							initCompleteDatatable(oSettings, json, oTable);
+						}
+
+					},
+					lengthMenu: JqueryPortico.i18n.lengthmenu(),
+					language: JqueryPortico.i18n.datatable(),
+					columns: JqueryPortico.columns,
+					stateSave: stateSave,
+					stateDuration: -1, //sessionstorage
+					tabIndex: 1,
+					"search": initial_search,
+					"order": order_def,
+					autoWidth: true,
+					buttons: JqueryPortico.buttons,
+					ordering: {indicators: false, handler: false},
+					columnDefs: columnDefs
+				});
+			};
+
+			init_table();
+
+			restore_temporary_hidden_columns = function()
+			{
+				$('#datatable-container thead th').each(function(colIdx)
+				{
+					oTable.api().column(colIdx).visible(true);
+				});
+			};
+
+			restore_temporary_hidden_columns();
+
+
+			$('#datatable-container tbody').on( 'click', 'tr', function () {
+				if($(this).hasClass('child'))
+				{
+					return;
+				}
+				$(this).toggleClass('selected');
+				var api = oTable.api();
+				//	alert( api.rows('.selected').data().length +' row(s) selected' );
+				//	var selectedRows = api.rows( { selected: true } ).count();
+				var selectedRows = api.rows('.selected').data().length;
+				api.buttons( '.record' ).enable( selectedRows > 0 );
+				var row = $(this);
+				var checkbox = row.find('input[type="checkbox"]');
+
+				if(checkbox && checkbox.hasClass('mychecks'))
+				{
+					if($(this).hasClass('selected'))
+					{
+						checkbox.prop("checked", true);
+					}
+					else
+					{
+						checkbox.prop("checked", false);
+					}
+				}
+			} );
+
+
+			var colunm_search = false;
+			var hidden_columns = [];
+
+			remove_column_search = function()
+			{
+				//show hidden columns
+				for (var i = 0; i < hidden_columns.length; i++)
+				{
+					oTable.api().column(hidden_columns[i]).visible(true);
+				}
+				hidden_columns = [];
+
+				//remove search input from header
+				$('#datatable-container thead th').each(function(colIdx)
+				{
+					if(oTable.api().settings()[0].aoColumns[colIdx].bSearchable)
+					{
+						if($(this).find('input.column_search').length > 0)
+						{
+							var placeholder = $(this).find('input.column_search').attr('placeholder');
+							$(this).html(placeholder.split(lang['Search'] + ' ')[1]);
+							//remove text input from header by classname
+							$(this).find('input.column_search').remove();
+						}
+					}
+
+				});
+
+				colunm_search = false;
+				oTable.api().responsive.recalc();
+			};
+
+			//---- START column search ----
+			init_column_search = function()
+			{
+				if(colunm_search == true)
+				{
+					remove_column_search();
+					return false;
+				}
+
+				colunm_search = true;
+				let reset_filter_is_visible = false;
+				if ($('#reset_filter').is(':visible'))
+				{
+					// The #reset_filter button is visible
+					reset_filter_is_visible = true;
+				}
+
+				oTable.api().responsive.recalc();
+				if(reset_filter_is_visible == true)
+				{
+					$('#reset_filter').show();
+				}
+
+				// Setup - add a text input to each header cell
+				$('#datatable-container thead th').each(function(colIdx)
+				{
+					if(oTable.api().settings()[0].aoColumns[colIdx].bSearchable)
+					{
+						var title = $(this).text();
+						var search_value = oTable.api().column(colIdx).search();
+						$(this).html('<input class="column_search" type="text" placeholder="' + lang['Search'] + ' ' + title + '" value="' + search_value + '" title="' + title + '"/>');
+					}
+					else //hide the column from table
+					{
+						oTable.api().column(colIdx).visible(false);
+						hidden_columns.push(colIdx);
+					}
+
+				});
+
+				// Apply the search
+				oTable.api().columns().eq(0).each(function(colIdx)
+				{
+					var lastSearcCallback = 0;
+					var delay = 200;
+					$('input', oTable.api().column(colIdx).header()).on('keyup change', function()
+					{
+						column_search_is_initated = true;
+
+						if (lastSearcCallback >= (Date.now() - delay))
+						{
+							return;
+						}
+						lastSearcCallback = Date.now();
+
+						oTable.api()
+							.column(colIdx)
+							.search(this.value)
+							.draw();
+
+						$('#reset_filter').show();
+
+					});
+
+					$('input', oTable.api().column(colIdx).header()).on('click', function(e) {
+						e.stopPropagation();
+					});
+				});
+				//---- END column search ----
+			};
+
+			if(InitContextMenu === true)
+			{
+				$('#datatable-container').contextMenu({
+					selector: '.context-menu',
+					items: contextMenuItems,
+				});
+			}
+
+			if(number_of_toolbar_items < 5 || show_filter_group == true)
+			{
+				$('#democollapseBtn').addClass("show");
+			}
+
+			$('.dt-search input[aria-controls="datatable-container"]').focus();
+		});
+
+		/**
+		* Add left click action..
+		*/
+		{% if left_click_action %}
+			$("#datatable-container").on("click", "tbody tr", function() {
+				//	var iPos = oTable.fnGetPosition( this );
+				var iPos = oTable.api().row(this).index();
+				//	var aData = oTable.fnGetData( iPos ); //complete dataset from json returned from server
+				var aData = oTable.api().rows( iPos ).data()[0];
+				try {
+					{{ left_click_action|raw }}
+				}
+				catch(err) {
+					document.getElementById("message").innerHTML = err.message;
+				}
+			});
+		{% endif %}
+
+		/**
+		* Add dbl click action..
+		*/
+		{% if dbl_click_action %}
+			$("#datatable-container").on("dblclick", "tr", function() {
+				//	var iPos = oTable.fnGetPosition( this );
+				var iPos = oTable.api().row(this).index();
+				//	var aData = oTable.fnGetData( iPos ); //complete dataset from json returned from server
+				var aData = oTable.api().rows( iPos ).data()[0];
+				try {
+					{{ dbl_click_action|raw }}(aData);
+				}
+				catch(err) {
+					document.getElementById("message").innerHTML = err.message;
+				}
+			});
+		{% endif %}
+
+		{% for item in toolbar_items %}
+			{% if item.type == 'filter' %}
+				{% if item.multiple is defined and item.multiple %}
+					$('select#{{ item.name|default('')|e('js') }}').change( function()
+					{
+						var search = [];
+						$.each($('select#{{ item.name|default('')|e('js') }} option:selected'), function(){
+							search.push($(this).val());
+						});
+						{{ item.extra|default('')|raw }}
+						filterData('{{ item.name|default('')|e('js') }}', search);
+					});
+				{% else %}
+					$('select#{{ item.name|default('')|e('js') }}').change( function()
+					{
+						{{ item.extra|default('')|raw }}
+						filterData('{{ item.name|default('')|e('js') }}', $(this).val());
+					});
+				{% endif %}
+			{% endif %}
+			{% if item.type == 'date-picker' %}
+				var previous_{{ item.id|default('')|e('js') }};
+				$("#filter_{{ item.id|default('')|e('js') }}").on('keyup change', function ()
+				{
+					if ( $.trim($(this).val()) != $.trim(previous_{{ item.id|default('')|e('js') }}) )
+					{
+						filterData('{{ item.id|default('')|e('js') }}', $(this).val());
+						previous_{{ item.id|default('')|e('js') }} = $(this).val();
+					}
+				});
+			{% endif %}
+			{% if item.type == 'checkbox' %}
+				$("#innertoolbar_{{ item.name|default('')|e('js') }}").change( function()
+				{
+					if($(this).prop("checked"))
+					{
+						filterData('{{ item.name|default('')|e('js') }}', 1);
+					}
+					else
+					{
+						filterData('{{ item.name|default('')|e('js') }}', 0);
+					}
+				});
+			{% endif %}
+			{% if item.type == 'autocomplete' %}
+				$(document).ready(function() {
+					$('input.ui-autocomplete-input#filter_{{ item.name|default('')|e('js') }}_name').on('autocompleteselect', function(event, ui){
+						filterData('filter_{{ item.name|default('')|e('js') }}_id', ui.item.value);
+					});
+					$('input.ui-autocomplete-input#filter_{{ item.name|default('')|e('js') }}_name').on('keyup', function(){
+						if ($(this).val() == '')
+						{
+							$('#filter_{{ item.name|default('')|e('js') }}_id').val('');
+							filterData('filter_{{ item.name|default('')|e('js') }}_id', $(this).val());
+						}
+					});
+				});
+			{% endif %}
+		{% endfor %}
+
+		function fnGetSelected()
+		{
+			var aReturn = new Array();
+			var aTrs = oTable.api().rows().nodes();
+			for ( var i=0 ; i < aTrs.length ; i++ )
+			{
+				if ( $(aTrs[i]).hasClass('context-menu-active'))
+				{
+					aReturn.push( i );
+					return aReturn;
+				}
+				if ( $(aTrs[i]).hasClass('selected') )
+				{
+					aReturn.push( i );
+				}
+			}
+			return aReturn;
+		}
+
+		function fnSetSelected( row , dt)
+		{
+			var table = oTable.DataTable();
+			if(typeof(dt.trigger) != 'undefined' && dt.trigger == 'right')
+			{
+				var aTrs = oTable.api().rows().nodes();
+
+				for ( var i=0 ; i < aTrs.length ; i++ )
+				{
+					if ( $(aTrs[i]).hasClass('selected') )
+					{
+						table.row( i ).deselect();
+					}
+				}
+			}
+
+			if(typeof(row[0]) == 'undefined')
+			{
+				return false;
+			}
+
+			var sectionRowIndex = row[0].sectionRowIndex;
+			if(typeof(sectionRowIndex) != 'undefined')
+			{
+				var selected = table.row( sectionRowIndex ).select();
+			}
+		}
+
+		function execute_ajax(requestUrl, callback, data, type, dataType)
+		{
+			type = typeof type !== 'undefined' ? type : 'POST';
+			dataType = typeof dataType !== 'undefined' ? dataType : 'html';
+			data = typeof data !== 'undefined' ? data : {};
+
+			$.ajax({
+				type: type,
+				dataType: dataType,
+				data: data,
+				url: requestUrl,
+				success: function(result) {
+					callback(result);
+				}
+			});
+		}
+
+		function substr_count( haystack, needle, offset, length )
+		{
+			var pos = 0, cnt = 0;
+
+			haystack += '';
+			needle += '';
+			if(isNaN(offset)) offset = 0;
+			if(isNaN(length)) length = 0;
+			offset--;
+
+			while( (offset = haystack.indexOf(needle, offset+1)) != -1 )
+			{
+				if(length > 0 && (offset+needle.length) > length)
+				{
+					return false;
+				}
+				else
+				{
+					cnt++;
+				}
+			}
+			return cnt;
+		}
+	});
+
+	reset_filter = function()
+	{
+		// Clear custom filters for modern DataTables compatibility
+		customFilters = {};
+
+		var api = oTable.api();
+		for (var i in filter_selects)
+		{
+			select = $("#" + filter_selects[i]);
+			select.prop('selectedIndex', 0);
+			try
+			{
+				if($("#" + filter_selects[i]).attr('multiple'))
+				{
+					$("#" + filter_selects[i]).multiselect('deselectAll', false);
+					//			$("#" + filter_selects[i]).multiselect({ buttonContainer: '' });
+					$("#" + filter_selects[i]).multiselect('refresh');
+				}
+
+				column_search_is_initated = false;
+			}
+			catch(e)
+			{}
+		}
+
+		var oControls = $('.dtable_custom_controls:first').find(':input[name]');
+
+		oControls.each(function()
+		{
+			if($(this).is(':checkbox'))
+			{
+				$(this).prop('checked', false);
+				$(this).trigger('change');
+				return;
+			}
+
+			var test = $(this).val();
+			if ( !$(this).is('select') && $(this).attr('name') && test != null && test.constructor !== Array)
+			{
+				value = $(this).val('');
+			}
+		});
+
+		api.state.clear();
+		api.destroy();
+		clear_state = true;
+		init_table();
+		restore_temporary_hidden_columns();
+		remove_column_search();
+		$('#reset_filter').hide();
+		$('#active_filters').html("");
+		// Deselect all selected options in Select2 and select the first option
+		$('.select2').each(function() {
+			var $select = $(this);
+			$select.val('0');
+			$select.trigger('change');
+			// Update the displayed text in Select2
+			var $selection = $select.find('.select2-selection__rendered');
+			$selection.text('');
+		});
+	}
+
+
+	function searchData(query)
+	{
+		var api = oTable.api();
+		api.search( query ).draw();
+	}
+
+	function filterData(param, value)
+	{
+		// Store the filter value in the custom filters object for modern DataTables compatibility
+		customFilters[param] = value;
+
+		// Also update the legacy way for backward compatibility
+		try {
+			oTable.dataTableSettings[0]['ajax']['data'][param] = value;
+		} catch(e) {
+			// Legacy method failed, modern approach will handle it
+		}
+
+		// Reload the table data
+		oTable.api().ajax.reload();
+	}
+
+	function clearFilterParam(param)
+	{
+		// Clear from custom filters
+		if (customFilters && customFilters.hasOwnProperty(param)) {
+			delete customFilters[param];
+		}
+
+		// Also clear from legacy way for backward compatibility
+		try {
+			oTable.dataTableSettings[0]['ajax']['data'][param] = '';
+		} catch(e) {
+			// Legacy method failed, modern approach will handle it
+		}
+	}
+
+	function reloadData()
+	{
+		var api = oTable.api();
+		api.ajax.reload();
+	}
+</script>
+
+<script>
+	{% if js_lang is defined and js_lang != '' %}
+		var lang = {{ js_lang|raw }};
+	{% endif %}
+</script>
+
+{% if list_actions_items|length > 0 %}
+	<form id="list_actions_form" method="POST">
+		<!-- Form action is set by javascript listener -->
+		<div id="list_actions">
+			<table cellpadding="0" cellspacing="0">
+				<tr>
+					{% for item in list_actions_items %}
+						<td valign="top">
+							<input id="innertoolbar" type="{{ item.type|default('') }}" name="{{ item.name|default('') }}" onclick="{{ item.onClick|default('')|raw }}" value="{{ item.value|default('') }}" href="{{ item.href|default('') }}" />
+						</td>
+					{% endfor %}
+				</tr>
+			</table>
+		</div>
+	</form>
+{% endif %}

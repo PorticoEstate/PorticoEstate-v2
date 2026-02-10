@@ -89,6 +89,11 @@ else
 // Prepare stylesheets
 $stylesheets = array();
 
+$stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
+
 // Load Designsystemet natively
 // Load native Designsystemet CSS (includes Pure CSS compatibility)
 $stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
@@ -124,11 +129,6 @@ if (isset($userSettings['preferences']['common']['theme']))
 {
 	$stylesheets[] = "/{$app}/templates/digdir/css/{$userSettings['preferences']['common']['theme']}.css";
 }
-
-$stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
 
 
 $cssUris = [];
@@ -296,7 +296,7 @@ flush();
 
 if (isset($flags['noframework']))
 {
-	echo '<body class="container-fluid">';
+	echo '<body class="app-container-fluid">';
 	register_shutdown_function('parse_footer_end_noframe');
 }
 
@@ -314,22 +314,19 @@ function parse_footer_end_noframe()
 
 	$footer = <<<HTML
 
-			<div class="modal fade" id="popupModal" tabindex="-1" role="dialog" aria-hidden="true">
-				<div class="modal-dialog modal-lg modal-dialog-centered" role="document">
-					<div class="modal-content">
-						<div class="modal-header bg-dark">
-							<button class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+			<div class="app-modal fade" id="popupModal" aria-hidden="true">
+				<div class="app-modal-dialog app-modal-lg app-modal-dialog-centered">
+					<div class="app-modal-content">
+						<div class="app-modal-header app-border-0">
+							<button class="app-btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 						</div>
-						<div class="modal-body">
+						<div class="app-modal-body">
 							<iframe id="iframepopupModal" src="about:blank" width="100%" height="380" frameborder="0" sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
 									allowtransparency="true"></iframe>
 						</div>
 					</div>
-					<!-- /.modal-content -->
 				</div>
-				<!-- /.modal-dialog -->
 			</div>
-			<!-- /.modal -->
 		</body>
 		{$javascript_end}
 	</html>

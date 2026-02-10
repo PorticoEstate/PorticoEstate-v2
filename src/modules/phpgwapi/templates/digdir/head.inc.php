@@ -89,6 +89,11 @@ else
 // Prepare stylesheets
 $stylesheets = array();
 
+$stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
+$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
+
 // Load Designsystemet natively
 // Load native Designsystemet CSS (includes Pure CSS compatibility)
 $stylesheets[] = "/phpgwapi/templates/digdir/css/digdir-native.css";
@@ -124,11 +129,6 @@ if (isset($userSettings['preferences']['common']['theme']))
 {
 	$stylesheets[] = "/{$app}/templates/digdir/css/{$userSettings['preferences']['common']['theme']}.css";
 }
-
-$stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
 
 
 $cssUris = [];

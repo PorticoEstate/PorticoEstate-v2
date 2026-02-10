@@ -554,6 +554,63 @@ abstract class phpgwapi_uicommon_jquery
 		phpgwapi_xslttemplates::getInstance()->set_var('phpgw', array($base => $data));
 	}
 
+	public static function render_template_twig($template, $data, $twig_rootdir = '', $base = 'data')
+	{
+		$flags = Settings::getInstance()->get('flags');
+		$flags['xslt_app'] = false;
+		$flags['twig_app'] = true;
+		Settings::getInstance()->update('flags', ['xslt_app' => false, 'twig_app' => true]);
+		$phpgwapi_common = new \phpgwapi_common();
+
+		if ($twig_rootdir)
+		{
+			\App\modules\phpgwapi\services\Twig::getInstance()->addPath($twig_rootdir);
+		}
+
+		if (self::$flash_msgs)
+		{
+			$data['msgbox_data'] = $phpgwapi_common->msgbox(self::$flash_msgs);
+		}
+
+		self::reset_flash_msgs();
+
+		self::add_jquery_translation($data);
+		$data['webserver_url'] = Settings::getInstance()->get('server')['webserver_url'] . PHPGW_MODULES_PATH;
+
+		if (preg_match("/(Trident\/(\d{2,}|7|8|9)(.*)rv:(\d{2,}))|(MSIE\ (\d{2,}|8|9)(.*)Tablet\ PC)|(Trident\/(\d{2,}|7|8|9))/", $_SERVER["HTTP_USER_AGENT"]))
+		{
+			$data['browser_support'] = 'legacy';
+		}
+		else
+		{
+			$data['browser_support'] = 'modern';
+		}
+
+		if (\Sanitizer::get_var('phpgw_return_as', 'string', 'GET') == 'json')
+		{
+			$phpgwapi_common->phpgw_exit();
+		}
+
+		$template_name = $template;
+		if (is_array($template_name))
+		{
+			$template_name = reset($template_name);
+		}
+
+		if ($template_name && substr($template_name, -5) !== '.twig')
+		{
+			$template_name .= '.twig';
+		}
+
+		$vars = array_merge($data, array(
+			'phpgw' => array($base => $data),
+			$base => $data
+		));
+
+		$output = \App\modules\phpgwapi\services\Twig::getInstance()->render($template_name, $vars);
+		\App\modules\phpgwapi\services\Twig::getInstance()->setRenderedOutput($output);
+	}
+
 	// Add link key to a result array
 	// Add link key to a result array
 	public function _add_links(&$value, $key, $data)

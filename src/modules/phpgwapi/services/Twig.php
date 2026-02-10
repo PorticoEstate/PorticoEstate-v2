@@ -21,6 +21,7 @@ class Twig
     private $userSettings;
     private $serverSettings;
     private $designSystem;
+    private $renderedOutput = '';
 
     /**
      * Get singleton instance
@@ -111,6 +112,21 @@ class Twig
         // Design system check function
         $this->twig->addFunction(new TwigFunction('is_designsystemet', function () {
             return $this->designSystem->isEnabled();
+        }));
+
+        // get_phpgw_info() helper
+        $this->twig->addFunction(new TwigFunction('get_phpgw_info', function ($path) {
+            return get_phpgw_info($path);
+        }));
+
+        // js_lang() helper
+        $this->twig->addFunction(new TwigFunction('js_lang', function (...$args) {
+            return js_lang(...$args);
+        }));
+
+        // pretty_timestamp() helper
+        $this->twig->addFunction(new TwigFunction('pretty_timestamp', function ($timestamp) {
+            return pretty_timestamp($timestamp);
         }));
     }
 
@@ -216,6 +232,44 @@ class Twig
             error_log("Twig render error: " . $e->getMessage());
             throw $e;
         }
+    }
+
+    /**
+     * Add a template search path at runtime.
+     *
+     * @param string $path
+     * @param string|null $namespace
+     * @return void
+     */
+    public function addPath(string $path, string $namespace = null): void
+    {
+        if (!is_dir($path)) {
+            return;
+        }
+
+        $paths = $this->loader->getPaths($namespace ?? FilesystemLoader::MAIN_NAMESPACE);
+        if (!in_array($path, $paths, true)) {
+            if ($namespace !== null) {
+                $this->loader->addPath($path, $namespace);
+            } else {
+                $this->loader->addPath($path);
+            }
+        }
+    }
+
+    public function setRenderedOutput(string $output): void
+    {
+        $this->renderedOutput = $output;
+    }
+
+    public function getRenderedOutput(): string
+    {
+        return $this->renderedOutput;
+    }
+
+    public function clearRenderedOutput(): void
+    {
+        $this->renderedOutput = '';
     }
 
     /**

@@ -132,17 +132,27 @@ class HomeHelper
 		{
 			$grid_envelope = 'row mt-4';
 			$grid_element = 'col-4 mb-3';
+			$card_class = 'card shadow h-100 mb-2';
+			$card_body_class = 'card-block text-center';
+			$card_footer_class = 'card-footer text-center';
+			$link_class = 'text-secondary';
+			$icon_class = 'text-secondary';
 		}
 		else
 		{
-			$grid_envelope = 'pure-g';
-			$grid_element = 'pure-u-1-8 pure-button pure-button-active';
+			$grid_envelope = 'app-row mt-4';
+			$grid_element = 'app-col-4 mb-3';
+			$card_class = 'app-card app-card-bordered h-100 mb-2';
+			$card_body_class = 'app-card-body app-text-center';
+			$card_footer_class = 'app-text-center u-text-muted';
+			$link_class = 'app-text-dark';
+			$icon_class = 'app-text-dark';
 		}
 
 		if ($bookmarks && is_array($bookmarks))
 		{
 			$bookmark_section = <<<HTML
-	<div class="container">
+	<div class="app-container">
 		<div id="container_bookmark" class="{$grid_envelope}">
 HTML;
 			foreach ($bookmarks as $bm_key => $bookmark_data)
@@ -153,14 +163,14 @@ HTML;
 					$icon = $bookmark_data['icon'] ? $bookmark_data['icon'] : 'fas fa-2x fa-file-alt';
 					$bookmark_section .= <<<HTML
 				<div class="{$grid_element}">
-					<a href="{$bookmark_data['href']}" class="text-secondary">
-						<div class="card shadow h-100 mb-2">
-							<div class="card-block text-center">
+					<a href="{$bookmark_data['href']}" class="{$link_class}">
+						<div class="{$card_class}">
+							<div class="{$card_body_class}">
 								<h1 class="p-3">
-									<i class="{$icon} text-secondary"></i>
+									<i class="{$icon} {$icon_class}"></i>
 								</h1>
 							</div>
-							<div class="card-footer text-center">{$bookmark_data['text']}</div>
+							<div class="{$card_footer_class}">{$bookmark_data['text']}</div>
 						</div>
 					</a>
 				</div>

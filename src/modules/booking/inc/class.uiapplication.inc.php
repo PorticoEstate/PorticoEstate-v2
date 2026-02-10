@@ -4655,11 +4655,10 @@ JS;
 
 		$template_set = $this->userSettings['preferences']['common']['template_set'] ?? '';
 		$use_twig = false;
-		if ($template_set === 'digdir')
-		{
-			$twig_template_path = PHPGW_SERVER_ROOT . "/booking/templates/{$template_set}/{$template_name}.twig";
-			$use_twig = is_file($twig_template_path);
-		}
+
+		$twig_template_path = PHPGW_SERVER_ROOT . "/booking/templates/{$template_set}/{$template_name}.twig";
+		$use_twig = is_file($twig_template_path);
+
 
 		if ($use_twig)
 		{

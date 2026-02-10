@@ -128,7 +128,7 @@
 	<div class="app-container-fluid">
 		<div class="app-row mt-4">
 
-			<div class="app-col-6">
+			<div class="app-col-4">
 				<!-- BUTTONS -->
 				<ul class="list-inline">
 					<li class="list-inline-item mb-2">

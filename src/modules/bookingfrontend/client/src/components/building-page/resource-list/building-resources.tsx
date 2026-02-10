@@ -1,4 +1,4 @@
-import {fetchBuildingResources} from "@/service/api/building";
+import {fetchSSRBuildingResources} from "@/service/api/building-ssr";
 import {IBuilding} from "@/service/types/Building";
 import {Button} from "@digdir/designsystemet-react";
 import {getTranslation} from "@/app/i18n";
@@ -13,7 +13,7 @@ interface BuildingResourcesProps {
 }
 
 const BuildingResources = async (props: BuildingResourcesProps) => {
-    const resources = await fetchBuildingResources(props.building.id, true)
+    const resources = await fetchSSRBuildingResources(props.building.id, true)
     const {t} = await getTranslation()
     return (
 		<GSAccordion data-color={'neutral'}>

@@ -291,13 +291,16 @@ export const useBuildingSchedule = ({building_id, weeks, instance, initialWeekSc
 
 	// Fetch function that gets all uncached weeks
 	const fetchUncachedWeeks = async () => {
-		// Filter out weeks that are already in cache
+		// Filter out weeks that are stale or not in cache
+		const staleTime = 60 * 1000; // 60 seconds
 		const uncachedWeeks = keys.filter(weekStart => {
 			const cacheKey = getWeekCacheKey(weekStart);
-			const d = queryClient.getQueryData(cacheKey);
+			const state = queryClient.getQueryState(cacheKey);
 
-			// console.log("Query state", cacheKey, queryClient.getQueryState(cacheKey), d);
-			return !d;
+			// Refetch if: doesn't exist, is invalidated, or is stale (older than 60s)
+			if (!state?.data) return true;
+			const isStale = Date.now() - state.dataUpdatedAt > staleTime;
+			return isStale || state.isInvalidated;
 		});
 		// console.log('weeks', uncachedWeeks);
 		if (uncachedWeeks.length === 0) {
@@ -379,11 +382,16 @@ export const useOrganizationSchedule = ({organization_id, weeks, instance, initi
 
 	// Fetch function that gets all uncached weeks
 	const fetchUncachedWeeks = async () => {
-		// Filter out weeks that are already in cache
+		// Filter out weeks that are stale or not in cache
+		const staleTime = 60 * 1000; // 60 seconds
 		const uncachedWeeks = keys.filter(weekStart => {
 			const cacheKey = getWeekCacheKey(weekStart);
-			const d = queryClient.getQueryData(cacheKey);
-			return !d;
+			const state = queryClient.getQueryState(cacheKey);
+
+			// Refetch if: doesn't exist, is invalidated, or is stale (older than 60s)
+			if (!state?.data) return true;
+			const isStale = Date.now() - state.dataUpdatedAt > staleTime;
+			return isStale || state.isInvalidated;
 		});
 
 		if (uncachedWeeks.length === 0) {

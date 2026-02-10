@@ -1,5 +1,5 @@
 import {notFound} from "next/navigation";
-import {fetchBuilding, fetchResource, fetchBuildingDocuments, fetchResourceDocuments} from "@/service/api/building";
+import {fetchSSRBuilding, fetchSSRResource, fetchSSRBuildingDocuments, fetchSSRResourceDocuments} from "@/service/api/building-ssr";
 import DescriptionAccordion from "@/components/building-page/description-accordion";
 import ResourceHeader from "@/components/resource-page/resource-header";
 import TextAccordion from "@/components/building-page/text-accordion";
@@ -32,15 +32,15 @@ const Resource = async (props: ResourceProps) => {
         return notFound();
     }
 
-    // Fetch the building
-    const resource = await fetchResource(resourceId);
+    // Fetch the resource
+    const resource = await fetchSSRResource(resourceId);
 
 	// console.log(resourceId);
     // If building does not exist, throw the notFound error
     if (!resource || resource.building_id === null || resource.building_id === undefined) {
         return notFound();
     }
-    const building = await fetchBuilding(resource.building_id);
+    const building = await fetchSSRBuilding(resource.building_id);
 
     // Fetch towns data to get the town for this building
     const towns = await fetchTowns();
@@ -49,8 +49,8 @@ const Resource = async (props: ResourceProps) => {
     // Fetch documents from both resource and building (excluding only pictures)
     const documentTypes:  IDocumentCategoryQuery[] = ['drawing', 'price_list', 'other', 'regulation', 'HMS_document'];
     const [resourceDocs, buildingDocs] = await Promise.all([
-        fetchResourceDocuments(resourceId, documentTypes),
-        fetchBuildingDocuments(resource.building_id, documentTypes)
+        fetchSSRResourceDocuments(resourceId, documentTypes),
+        fetchSSRBuildingDocuments(resource.building_id, documentTypes)
     ]);
 
     // Combine and deduplicate documents by ID

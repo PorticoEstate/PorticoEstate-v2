@@ -1,9 +1,9 @@
 <?php
 
-namespace App\modules\bookingfrontend\services;
+namespace App\modules\booking\services;
 
-use App\modules\bookingfrontend\repositories\DocumentRepository;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\repositories\DocumentRepository;
+use App\modules\booking\models\Document;
 use Psr\Http\Message\UploadedFileInterface;
 use Exception;
 
@@ -149,13 +149,13 @@ class DocumentService
         }
 
         $targetPath = $document->generate_filename();
-        
+
         // Ensure the directory exists
         $directory = dirname($targetPath);
         if (!is_dir($directory)) {
             mkdir($directory, 0755, true);
         }
-        
+
         $file->moveTo($targetPath);
     }
 
@@ -165,24 +165,24 @@ class DocumentService
     }
 
     /**
-     * Update document metadata (description, focal point, etc.)
+     * Update document metadata (description, focal point, rotation, etc.)
      */
     public function updateDocument(int $documentId, array $data): bool
     {
+        $document = $this->getDocumentById($documentId);
+        if (!$document) {
+            throw new Exception('Document not found');
+        }
+
+        $metadata = $document->metadata ?? [];
+        $metadataUpdated = false;
+
         // Handle focal point update
         if (isset($data['focal_point_x']) || isset($data['focal_point_y'])) {
             $focalX = $data['focal_point_x'] ?? null;
             $focalY = $data['focal_point_y'] ?? null;
 
             $this->validateFocalPoint($focalX, $focalY);
-
-            // Get existing document to preserve other metadata
-            $document = $this->getDocumentById($documentId);
-            if (!$document) {
-                throw new Exception('Document not found');
-            }
-
-            $metadata = $document->metadata ?? [];
 
             if ($focalX !== null && $focalY !== null) {
                 $metadata['focal_point'] = [
@@ -193,11 +193,144 @@ class DocumentService
                 unset($metadata['focal_point']);
             }
 
-            $data['metadata'] = $metadata;
+            $metadataUpdated = true;
             unset($data['focal_point_x'], $data['focal_point_y']);
         }
 
+        // Handle persistent rotation
+        if (isset($data['rotation']) && $data['rotation'] !== '') {
+            $newRotation = (int)$data['rotation'];
+            $previousRotation = (int)($metadata['rotation'] ?? 0);
+            $rotationToApply = ($newRotation - $previousRotation + 360) % 360;
+
+            if ($rotationToApply !== 0) {
+                $filePath = $document->generate_filename();
+                if (file_exists($filePath)) {
+                    $this->physicallyRotateImage($filePath, $rotationToApply);
+                }
+            }
+
+            $metadata['rotation'] = $newRotation;
+            $metadataUpdated = true;
+            unset($data['rotation']);
+        }
+
+        if ($metadataUpdated) {
+            $data['metadata'] = $metadata;
+        }
+
         return $this->documentRepository->updateDocument($documentId, $data);
+    }
+
+    /**
+     * Physically rotate an image file on disk using GD.
+     */
+    private function physicallyRotateImage(string $filePath, int $degrees): bool
+    {
+        if (!in_array($degrees, [90, 180, 270])) {
+            return false;
+        }
+
+        if (!extension_loaded('gd')) {
+            return false;
+        }
+
+        $imageInfo = getimagesize($filePath);
+        if (!$imageInfo) {
+            return false;
+        }
+
+        $mime = $imageInfo['mime'];
+        $source = match ($mime) {
+            'image/jpeg' => imagecreatefromjpeg($filePath),
+            'image/png' => imagecreatefrompng($filePath),
+            'image/gif' => imagecreatefromgif($filePath),
+            'image/webp' => imagecreatefromwebp($filePath),
+            default => null,
+        };
+
+        if (!$source) {
+            return false;
+        }
+
+        $rotated = imagerotate($source, -$degrees, 0);
+        imagedestroy($source);
+
+        if (!$rotated) {
+            return false;
+        }
+
+        $success = match ($mime) {
+            'image/jpeg' => imagejpeg($rotated, $filePath, 90),
+            'image/png' => (function () use ($rotated, $filePath) {
+                imagesavealpha($rotated, true);
+                return imagepng($rotated, $filePath);
+            })(),
+            'image/gif' => imagegif($rotated, $filePath),
+            'image/webp' => imagewebp($rotated, $filePath, 90),
+            default => false,
+        };
+
+        imagedestroy($rotated);
+
+        return $success;
+    }
+
+    /**
+     * Create a temporary rotated copy of an image for preview/download.
+     * Returns the temp file path, or the original path if rotation failed.
+     */
+    public function rotateImageTemp(string $sourceFile, int $degrees): string
+    {
+        if (!in_array($degrees, [90, 180, 270])) {
+            return $sourceFile;
+        }
+
+        if (!extension_loaded('gd')) {
+            return $sourceFile;
+        }
+
+        $imageInfo = getimagesize($sourceFile);
+        if (!$imageInfo) {
+            return $sourceFile;
+        }
+
+        $mime = $imageInfo['mime'];
+        $source = match ($mime) {
+            'image/jpeg' => imagecreatefromjpeg($sourceFile),
+            'image/png' => imagecreatefrompng($sourceFile),
+            'image/gif' => imagecreatefromgif($sourceFile),
+            'image/webp' => imagecreatefromwebp($sourceFile),
+            default => null,
+        };
+
+        if (!$source) {
+            return $sourceFile;
+        }
+
+        $rotated = imagerotate($source, -$degrees, 0);
+        imagedestroy($source);
+
+        if (!$rotated) {
+            return $sourceFile;
+        }
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'rotated_');
+
+        $success = match ($mime) {
+            'image/jpeg' => imagejpeg($rotated, $tempFile, 90),
+            'image/png' => (function () use ($rotated, $tempFile) {
+                imagesavealpha($rotated, true);
+                return imagepng($rotated, $tempFile);
+            })(),
+            'image/gif' => imagegif($rotated, $tempFile),
+            'image/webp' => imagewebp($rotated, $tempFile, 90),
+            default => false,
+        };
+
+        imagedestroy($rotated);
+
+        return $success ? $tempFile : $sourceFile;
     }
 
 }

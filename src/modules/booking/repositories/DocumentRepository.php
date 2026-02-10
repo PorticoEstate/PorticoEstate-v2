@@ -1,8 +1,8 @@
 <?php
-namespace App\modules\bookingfrontend\repositories;
+namespace App\modules\booking\repositories;
 
 use App\Database\Db;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use PDO;
 use Exception;
 

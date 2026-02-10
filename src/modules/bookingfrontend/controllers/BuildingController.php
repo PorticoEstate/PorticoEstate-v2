@@ -6,7 +6,7 @@ use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\models\AgeGroup;
 use App\modules\bookingfrontend\models\Audience;
 use App\modules\bookingfrontend\models\Building;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\models\Season;
 use DateTime;
 use DateTimeZone;

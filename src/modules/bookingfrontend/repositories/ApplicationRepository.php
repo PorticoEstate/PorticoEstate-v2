@@ -7,13 +7,13 @@ use App\modules\bookingfrontend\models\User;
 use PDO;
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Application;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Order;
 use App\modules\bookingfrontend\models\OrderLine;
 use App\modules\bookingfrontend\models\helper\Date;
-use App\modules\bookingfrontend\services\DocumentService;
+use App\modules\booking\services\DocumentService;
 
 class ApplicationRepository
 {

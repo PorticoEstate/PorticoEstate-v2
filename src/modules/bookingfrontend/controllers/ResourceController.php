@@ -2,7 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\bookingfrontend\repositories\ResourceRepository;
 use Psr\Container\ContainerInterface;

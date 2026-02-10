@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\bookingfrontend\models;
+namespace App\modules\booking\models;
 
 use App\modules\phpgwapi\models\ServerSettings;
 use App\traits\SerializableTrait;

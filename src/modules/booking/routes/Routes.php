@@ -13,7 +13,49 @@ use App\modules\booking\controllers\AllocationController;
 use App\controllers\GenericRegistryController;
 use App\modules\booking\models\BookingGenericRegistry;
 use App\modules\booking\controllers\WebhookController;
+use App\modules\booking\controllers\DocumentController;
+use App\modules\booking\controllers\ResourceDocumentController;
+use App\modules\booking\controllers\OrganizationDocumentController;
 
+
+$app->group('/booking/buildings/{ownerId}/documents', function (RouteCollectorProxy $group) {
+	$group->get('', DocumentController::class . ':index');
+	$group->get('/{id}', DocumentController::class . ':show');
+	$group->patch('/{id}', DocumentController::class . ':update');
+	$group->delete('/{id}', DocumentController::class . ':destroy');
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+$app->get('/booking/buildings/documents/{id}/download', DocumentController::class . ':downloadDocument')
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/resources/{ownerId}/documents', function (RouteCollectorProxy $group) {
+	$group->get('', ResourceDocumentController::class . ':index');
+	$group->get('/{id}', ResourceDocumentController::class . ':show');
+	$group->patch('/{id}', ResourceDocumentController::class . ':update');
+	$group->delete('/{id}', ResourceDocumentController::class . ':destroy');
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+$app->get('/booking/resources/documents/{id}/download', ResourceDocumentController::class . ':downloadDocument')
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/organizations/{ownerId}/documents', function (RouteCollectorProxy $group) {
+	$group->get('', OrganizationDocumentController::class . ':index');
+	$group->get('/{id}', OrganizationDocumentController::class . ':show');
+	$group->patch('/{id}', OrganizationDocumentController::class . ':update');
+	$group->delete('/{id}', OrganizationDocumentController::class . ':destroy');
+})
+->addMiddleware(new AccessVerifier($container))
+->addMiddleware(new SessionsMiddleware($container));
+
+$app->get('/booking/organizations/documents/{id}/download', OrganizationDocumentController::class . ':downloadDocument')
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
 
 $app->group('/booking/users', function (RouteCollectorProxy $group) {
 	$group->get('', UserController::class . ':index');

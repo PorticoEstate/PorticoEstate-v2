@@ -10,7 +10,7 @@ use App\Database\Db;
 use App\modules\bookingfrontend\models\Activity;
 use App\modules\bookingfrontend\models\Building;
 use App\modules\bookingfrontend\models\Resource;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\repositories\ResourceRepository;
 use App\modules\bookingfrontend\models\Organization;
 

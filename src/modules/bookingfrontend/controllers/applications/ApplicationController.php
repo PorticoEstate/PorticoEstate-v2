@@ -7,7 +7,7 @@ use App\modules\bookingfrontend\helpers\ApplicationHelper;
 use App\modules\bookingfrontend\helpers\ResponseHelper;
 use App\modules\bookingfrontend\helpers\UserHelper;
 use App\modules\bookingfrontend\helpers\WebSocketHelper;
-use App\modules\bookingfrontend\models\Document;
+use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\repositories\ApplicationRepository;
 use App\modules\bookingfrontend\repositories\ArticleRepository;
 use App\modules\bookingfrontend\services\applications\ApplicationService;

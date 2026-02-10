@@ -231,7 +231,7 @@ class Application
     /**
      * @OA\Property(type="array", @OA\Items(ref="#/components/schemas/Document"))
      * @Expose
-     * @SerializeAs(type="array", of="App\modules\bookingfrontend\models\Document")
+     * @SerializeAs(type="array", of="App\modules\booking\models\Document")
      */
     public array $documents;
 

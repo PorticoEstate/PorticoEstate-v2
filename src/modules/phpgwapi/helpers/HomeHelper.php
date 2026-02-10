@@ -137,16 +137,18 @@ class HomeHelper
 			$card_footer_class = 'card-footer text-center';
 			$link_class = 'text-secondary';
 			$icon_class = 'text-secondary';
+			$icon_wrap_class = 'p-3';
 		}
 		else
 		{
 			$grid_envelope = 'app-row mt-4';
-			$grid_element = 'app-col-4 mb-3';
-			$card_class = 'app-card app-card-bordered h-100 mb-2';
+			$grid_element = 'app-col-4 u-mb-4';
+			$card_class = 'app-card app-card-bordered app-tile';
 			$card_body_class = 'app-card-body app-text-center';
-			$card_footer_class = 'app-text-center u-text-muted';
-			$link_class = 'app-text-dark';
-			$icon_class = 'app-text-dark';
+			$card_footer_class = 'app-tile-footer';
+			$link_class = 'app-tile-link';
+			$icon_class = 'app-tile-icon';
+			$icon_wrap_class = 'app-tile-icon-wrap';
 		}
 
 		if ($bookmarks && is_array($bookmarks))
@@ -166,7 +168,7 @@ HTML;
 					<a href="{$bookmark_data['href']}" class="{$link_class}">
 						<div class="{$card_class}">
 							<div class="{$card_body_class}">
-								<h1 class="p-3">
+								<h1 class="{$icon_wrap_class}">
 									<i class="{$icon} {$icon_class}"></i>
 								</h1>
 							</div>

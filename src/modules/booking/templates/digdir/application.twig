@@ -98,6 +98,13 @@
 		letter-spacing: 1px;
 	}
 
+	.app-dropdown-item.disabled,
+	.app-dropdown-item[disabled] {
+		opacity: 0.5;
+		pointer-events: none;
+		cursor: not-allowed;
+	}
+
 	.pure-form-contentTable {display: inline-block;}
 </style>
 
@@ -207,7 +214,7 @@
 							{% if application.status != 'REJECTED' %}
 								<form method="POST">
 									<input type="hidden" name="status" value="REJECTED" />
-									<button type="button" class="app-dropdown-item" data-bs-toggle="modal" data-bs-target="#rejectApplicationModal" {% if not case_officer_is_current_user %}disabled="disabled"{% endif %}>
+									<button type="button" class="app-dropdown-item{% if not case_officer_is_current_user %} disabled{% endif %}" data-bs-toggle="modal" data-bs-target="#rejectApplicationModal" {% if not case_officer_is_current_user %}disabled="disabled" aria-disabled="true"{% endif %}>
 										<i class="fas fa-flag me-1 {{ case_officer_is_current_user ? 'text-primary' : 'text-secondary' }}"></i>
 										{{ lang('Reject application') }}
 									</button>
@@ -221,7 +228,7 @@
 									</button>
 								{% else %}
 									<div>
-										<button type="button" class="app-dropdown-item" data-bs-toggle="modal" data-bs-target="#acceptApplicationModal" {% if not case_officer_is_current_user %}disabled="disabled"{% endif %}>
+										<button type="button" class="app-dropdown-item{% if not case_officer_is_current_user %} disabled{% endif %}" data-bs-toggle="modal" data-bs-target="#acceptApplicationModal" {% if not case_officer_is_current_user %}disabled="disabled" aria-disabled="true"{% endif %}>
 											<i class="fas fa-flag me-1 {{ case_officer_is_current_user ? 'text-primary' : 'text-secondary' }}"></i>
 											{{ lang('Accept application') }}
 										</button>
@@ -249,7 +256,7 @@
 							</div>
 
 							{% if application.edit_link %}
-								<button class="app-dropdown-item" {% if not case_officer_is_current_user %}disabled="disabled"{% else %}onclick="window.location.href='{{ application.edit_link }}{% if show_edit_selection == 1 %}&selected_app_id={{ application.parent_id ? application.parent_id : application.id }}&only_invoicing=true{% endif %}'"{% endif %}>
+								<button class="app-dropdown-item{% if not case_officer_is_current_user %} disabled{% endif %}" {% if not case_officer_is_current_user %}disabled="disabled" aria-disabled="true"{% else %}onclick="window.location.href='{{ application.edit_link }}{% if show_edit_selection == 1 %}&selected_app_id={{ application.parent_id ? application.parent_id : application.id }}&only_invoicing=true{% endif %}'"{% endif %}>
 									<i class="fas fa-edit me-1 {{ case_officer_is_current_user ? 'text-primary' : 'text-secondary' }}"></i>
 									{{ lang('Edit') }}
 								</button>

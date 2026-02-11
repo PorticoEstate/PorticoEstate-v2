@@ -259,6 +259,30 @@ class DataStore
 				return $result;
 			}, $buildingPictures);
 
+			// Featured buildings: 6 active buildings that have a main picture,
+			// pseudo-randomly selected with a date seed so the selection is
+			// deterministic for all users within the same 24-hour period.
+			$buildingIdsWithPictures = array_map(function($pic) {
+				return (int)$pic['owner_id'];
+			}, $buildingPictures);
+
+			// Only keep buildings that are in the active buildings list
+			$activeBuildingIds = array_map(function($b) {
+				return (int)$b['id'];
+			}, $data['buildings']);
+			$eligibleBuildingIds = array_values(array_intersect($buildingIdsWithPictures, $activeBuildingIds));
+
+			// Fisher-Yates shuffle with mt_rand for deterministic seeded results
+			$dateSeed = crc32(date('Y-m-d'));
+			mt_srand($dateSeed);
+			for ($i = count($eligibleBuildingIds) - 1; $i > 0; $i--) {
+				$j = mt_rand(0, $i);
+				[$eligibleBuildingIds[$i], $eligibleBuildingIds[$j]] = [$eligibleBuildingIds[$j], $eligibleBuildingIds[$i]];
+			}
+			mt_srand();
+
+			$data['featured_buildings'] = array_slice($eligibleBuildingIds, 0, 6);
+
 			$response->getBody()->write(json_encode($data));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 		} catch (Exception $e) {

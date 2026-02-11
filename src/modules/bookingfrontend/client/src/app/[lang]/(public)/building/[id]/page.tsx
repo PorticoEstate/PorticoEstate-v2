@@ -8,6 +8,7 @@ import BuildingContact from "@/components/building-page/building-contact";
 import BuildingPhotos from "@/components/building-page/building-photos/building-photos";
 import DocumentsSection from "@/components/shared/documents-section/documents-section";
 import {fetchTowns} from "@/service/api/api-utils";
+import ShortDectionAccordion from "@/components/building-page/short-description-section";
 
 interface BuildingShowParams {
     id: string;
@@ -46,7 +47,7 @@ const BuildingShow = async (props: BuildingShowProps) => {
         <main>
             <BuildingHeader building={building} town={town} />
             {/*<hr className={`my-2 mx-standard`}/>*/}
-
+			<ShortDectionAccordion short_description={building.short_description} />
 			<BuildingPhotos object={building} type={'building'} />
 			<section className={'my-2'}>
 				{/* Photos moved above accordions */}

@@ -35,6 +35,7 @@ export interface ISearchDataOptimized {
 	resource_category_activity: ISearchDataResourceCategoryActivity[];
 	resource_pictures: IResourceMainPicture[];
 	building_pictures: IBuildingMainPicture[];
+	featured_buildings: number[];
 }
 
 export interface IResourceMainPicture {

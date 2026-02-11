@@ -10,6 +10,10 @@ import DocumentsSection from "@/components/shared/documents-section/documents-se
 import {fetchTowns} from "@/service/api/api-utils";
 import ResourceSubscriptionTest from "@/components/resource-page/resource-subscription-test";
 import {IDocumentCategoryQuery} from "@/service/types/api.types";
+import ShortDectionAccordion from "@/components/building-page/short-description-section";
+import {Button} from "@digdir/designsystemet-react";
+import Link from "next/link";
+import BuildingIcon from "@/icons/BuildingIcon";
 
 interface ResourceParams {
     id: string;
@@ -63,6 +67,14 @@ const Resource = async (props: ResourceProps) => {
     return (
         <main>
             <ResourceHeader building={building} resource={resource} town={town} />
+			<ShortDectionAccordion short_description={resource.short_description} />
+			<div style={{display: 'flex', marginTop: '1rem'}}>
+				<Button asChild variant={'secondary'} color={'neutral'}
+						className={'default'}>
+					<Link href={'/building/' + building.id}><BuildingIcon fontSize="20px"/>{building.name}</Link>
+
+				</Button>
+			</div>
 			<BuildingPhotos object={resource} type={'resource'} />
 
             <section className={'my-2'}>

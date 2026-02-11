@@ -33,13 +33,7 @@ const ResourceHeader = async (props: ResourceHeaderProps) => {
 				<span><DividerCircle/> <MapModal city={building.city} street={building.street}
 												 zip={building.zip_code}/></span>
 			</div>
-			<div style={{display: 'flex', marginTop: '1rem'}}>
-				<Button asChild variant={'secondary'} color={'neutral'}
-						className={'default'}>
-					<Link href={'/building/' + building.id}><BuildingIcon fontSize="20px"/>{building.name}</Link>
 
-				</Button>
-			</div>
 
 		</section>
 	);

@@ -159,7 +159,7 @@ class DataStore
 			$rows = $this->getRowsAsArray("SELECT bb_building.id, bb_building.activity_id, bb_building.deactivate_calendar,
                 bb_building.deactivate_application, bb_building.deactivate_sendmessage, bb_building.extra_kalendar,
                 bb_building.name, bb_building.location_code, bb_building.street, bb_building.zip_code,
-                bb_building.district, bb_building.city, fm_part_of_town.id as town_id FROM"
+                bb_building.district, bb_building.city, bb_building.short_description, fm_part_of_town.id as town_id FROM"
 				. " bb_building LEFT JOIN fm_locations ON bb_building.location_code = fm_locations.location_code"
 				. " LEFT JOIN fm_location1 ON fm_locations.loc1 = fm_location1.loc1"
 				. " LEFT JOIN fm_part_of_town ON fm_location1.part_of_town_id = fm_part_of_town.id"
@@ -179,22 +179,10 @@ class DataStore
               deactivate_application, rescategory_id
               FROM bb_resource WHERE active=1 AND hidden_in_frontend=0");
 
-			// Get the latest participant limits for all resources
-			$currentDate = date('Y-m-d H:i:s');
-			$participantLimits = $this->getRowsAsArray("SELECT pl.resource_id, pl.quantity
-              FROM bb_participant_limit pl
-              INNER JOIN (
-                  SELECT resource_id, MAX(from_) as latest_from
-                  FROM bb_participant_limit
-                  WHERE from_ <= :currentDate
-                  GROUP BY resource_id
-              ) latest ON pl.resource_id = latest.resource_id AND pl.from_ = latest.latest_from",
-			[':currentDate' => $currentDate]);
-
 			// Get resource IDs from the rows
 			$resourceIds = array_column($rows, 'id');
 
-			// Use ResourceRepository to get resources with participant limits
+			// Use ResourceRepository to get resources with participant limits (latest limit only to avoid duplicates)
 			$resourceEntities = $this->resourceRepository->getWithParticipantLimits($resourceIds);
 
 			$resources = [];
@@ -247,6 +235,29 @@ class DataStore
 //				}
 				return $result;
 			}, $resourcePictures);
+
+			// Main pictures for buildings - only id, owner_id, and metadata for quick lookup
+			// Only actual image files, not PDFs
+			$buildingPictures = $this->getRowsAsArray("
+				SELECT DISTINCT ON (owner_id)
+					id,
+					owner_id,
+					metadata
+				FROM bb_document_building
+				WHERE category IN ('picture_main', 'picture')
+				AND (name ~* '\.(jpg|jpeg|png|gif|bmp|webp)$')
+				ORDER BY owner_id,
+					CASE WHEN category = 'picture_main' THEN 0 ELSE 1 END,
+					id ASC
+			");
+			$data['building_pictures'] = array_map(function($pic) {
+				$result = [
+					'id' => $pic['id'],
+					'owner_id' => $pic['owner_id'],
+					'metadata' => $pic['metadata'] ? json_decode($pic['metadata'], true) : null
+				];
+				return $result;
+			}, $buildingPictures);
 
 			$response->getBody()->write(json_encode($data));
 			return $response->withHeader('Content-Type', 'application/json')->withStatus(200);

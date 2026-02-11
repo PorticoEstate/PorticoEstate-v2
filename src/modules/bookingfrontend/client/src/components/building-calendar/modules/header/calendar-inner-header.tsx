@@ -1,6 +1,6 @@
 import React, {Dispatch, FC, MutableRefObject} from 'react';
 import {Badge, Button} from "@digdir/designsystemet-react";
-import {ChevronLeftIcon, ChevronRightIcon, LayersIcon, PlusIcon, TableIcon, CalendarIcon} from "@navikt/aksel-icons";
+import {ChevronLeftIcon, ChevronRightIcon, PlusIcon, TableIcon, CalendarIcon} from "@navikt/aksel-icons";
 import styles from './calendar-inner-header.module.scss';
 import {IBuilding} from "@/service/types/Building";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
@@ -16,6 +16,7 @@ import {DateTime} from "luxon";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {usePartialApplications} from "@/service/hooks/api-hooks";
 import {useOrganization} from "@/service/hooks/organization";
+import ResourceIcon from "@/icons/ResourceIcon";
 
 interface CalendarInnerHeaderProps {
 
@@ -94,6 +95,10 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 
 	};
 
+	const handleTodayClick = () => {
+		setCurrentDate(DateTime.now());
+	};
+
 	return (
 		<div className={styles.innerHeader}>
 			<Button data-size={'sm'} icon={true} variant='tertiary'
@@ -112,7 +117,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					className={styles.mobileResourcesButton}
 				// className={'captialize'}
 					onClick={() => setResourcesHidden(!resourcesHidden)}>
-					<LayersIcon fontSize="1.25rem" />{t('booking.select')} {t('bookingfrontend.resources')}
+					<ResourceIcon fontSize="1.25rem" />{t('booking.select')} {t('bookingfrontend.resources')}
 				<Badge count={enabledResources.size} data-size={"md"} color={"danger"}></Badge>
 			</Button>
 
@@ -140,8 +145,15 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 						width: '100%'
 					}}/>
 				</Button>
-			</div>
 
+			</div>
+			<Button data-size={'sm'} variant='secondary'
+					onClick={handleTodayClick}
+					className={styles.todayButton}
+			>
+				{t('common.today')}
+				{/*I Dag*/}
+			</Button>
 			{/* Hide day/week buttons when in calendar mode on mobile */}
 			{!(isMobile && calendarViewMode === 'calendar') && (
 				<ButtonGroup data-color='accent' className={styles.modeSelectTime}>
@@ -153,10 +165,10 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 							data-size={'sm'}
 							className={'captialize subtle'}
 							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
-					<Button variant={view === 'dayGridMonth' ? 'primary' : 'tertiary'} data-color={'accent'}
-							data-size={'sm'}
-							className={'captialize subtle'}
-							onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>
+					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'tertiary'} data-color={'accent'}*/}
+					{/*		data-size={'sm'}*/}
+					{/*		className={'captialize subtle'}*/}
+					{/*		onClick={() => setView('dayGridMonth')}>{t('bookingfrontend.month')}</Button>*/}
 					</ButtonGroup>
 				)}
 
@@ -185,7 +197,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 					onClick={props.createNew}
 					data-size={'sm'}
 					className={styles.orderButton}
-					disabled={!props.building || props.building.deactivate_application}
+					disabled={!props.building || props.building.deactivate_application || enabledResources.size === 0}
 				>
 					{/*<Link href={applicationURL}>*/}
 					{t('bookingfrontend.new application')}

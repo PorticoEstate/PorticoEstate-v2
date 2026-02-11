@@ -143,16 +143,14 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	useEffect(() => {
 		// Only run this once when component mounts
 		setEnabledResources(prevEnabled => {
-			// If nothing is enabled yet, default to enabling all normal resources
+			// If nothing is enabled yet, check if we should auto-enable
 			if (prevEnabled.size === 0) {
-				if (groupedResources) {
-					if (groupedResources.normal.length < groupedResources.slotted.length) {
-						return new Set([groupedResources.slotted?.[0]?.value.toString()].filter(Boolean));
-					}
-					return new Set(groupedResources.normal.map(r => r.value.toString()));
+				// Special case: If building has exactly 1 resource and it's a timeslot resource, auto-select it
+				if (resources && resources.length === 1 && ResourceUsesTimeSlots(resources[0])) {
+					return new Set([resources[0].id.toString()]);
 				}
-				const normalResources = (resources || []).filter((res, index) => !ResourceUsesTimeSlots(res));
-				return new Set(normalResources.map(r => r.id.toString()));
+				// Otherwise, leave empty (no resources enabled)
+				// This will show all resources in the calendar but none selected
 			}
 			return prevEnabled;
 		});
@@ -233,7 +231,7 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 								onChange={() => onToggle(resource.value, true)}
 								label={
 									<div className={`${styles.resourceLabel} text-normal`}>
-										<div>
+										<div className={styles.resourceLabelWrapper}>
 											<ColourCircle resourceId={+resource.value} size={'medium'}/>
 											<span>{resource.label}</span>
 											{resource.deactivated && (
@@ -262,14 +260,13 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 			{groupedResources.normal.length > 0 && (
 				<Fieldset>
 					<Fieldset.Legend style={{marginLeft: '0.5rem'}}>{t('bookingfrontend.calendar_resources')}</Fieldset.Legend>
-					<div className={styles.toggleAllContainer}>
+					<div className={`${styles.resourceItem} ${groupedResources.normal.every(r => enabledResources.has(r.value)) ? styles.active : ''} `}>
 						<Checkbox
-							data-size={'sm'}
 							value={'choose_all'}
 							id={`resource-all`}
 							checked={groupedResources.normal.every(r => enabledResources.has(r.value))}
 							onChange={() => onToggleAll(groupedResources.normal)}
-							label={t('bookingfrontend.select_all')}
+							label={<ResourceLabel resource={{label: t('bookingfrontend.select_all')}}/>}
 							className={styles.resourceCheckbox}
 						/>
 					</div>

@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "description": "Frontend dependencies for PorticoEstate digdir template",
+  "dependencies": {
+    "@digdir/designsystemet-css": "^1.11.0",
+    "@digdir/designsystemet-web": "^0.0.1",
+    "@porticoestate/design-tokens": "https://github.com/PorticoEstate/digdir-design-tokens.git"
+  }
+}

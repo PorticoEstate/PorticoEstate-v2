@@ -18,6 +18,81 @@ $app->get('/favicon.ico', function (Request $request, Response $response)
 	return $response->withStatus(204);
 });
 
+// Serve Designsystemet CSS bundle
+$app->get('/assets/designsystemet/index.css', function (Request $request, Response $response)
+{
+	$cssPath = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/@digdir/designsystemet-css/dist/src/index.css';
+	if (!is_readable($cssPath))
+	{
+		return $response->withStatus(404);
+	}
+
+	$response->getBody()->write(file_get_contents($cssPath));
+	return $response
+		->withHeader('Content-Type', 'text/css')
+		->withHeader('Cache-Control', 'public, max-age=3600');
+});
+
+// Serve PorticoEstate design tokens CSS
+$app->get('/assets/design-tokens/{file:.*\\.css}', function (Request $request, Response $response, array $args)
+{
+	$file = $args['file'] ?? '';
+	$filePath = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/@porticoestate/design-tokens/dist/' . $file;
+	$realPath = realpath($filePath);
+	$distRoot = realpath(dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/@porticoestate/design-tokens/dist');
+
+	if (!$realPath || !$distRoot || !str_starts_with($realPath, $distRoot) || !is_readable($realPath))
+	{
+		return $response->withStatus(404);
+	}
+
+	$response->getBody()->write(file_get_contents($realPath));
+	return $response
+		->withHeader('Content-Type', 'text/css')
+		->withHeader('Cache-Control', 'public, max-age=3600');
+});
+
+// Serve whitelisted node_modules JS files for ESM import maps
+$app->get('/assets/npm/{path:.*}', function (Request $request, Response $response, array $args)
+{
+	$allowedPrefixes = [
+		'@digdir/designsystemet-web/',
+		'@floating-ui/',
+		'@u-elements/',
+		'invokers-polyfill/',
+	];
+
+	$path = $args['path'] ?? '';
+	$allowed = false;
+	foreach ($allowedPrefixes as $prefix)
+	{
+		if (str_starts_with($path, $prefix))
+		{
+			$allowed = true;
+			break;
+		}
+	}
+
+	if (!$allowed)
+	{
+		return $response->withStatus(403);
+	}
+
+	$filePath = dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules/' . $path;
+	$realPath = realpath($filePath);
+	$nodeModulesRoot = realpath(dirname(dirname(PHPGW_SERVER_ROOT)) . '/node_modules');
+
+	if (!$realPath || !str_starts_with($realPath, $nodeModulesRoot) || !is_readable($realPath))
+	{
+		return $response->withStatus(404);
+	}
+
+	$response->getBody()->write(file_get_contents($realPath));
+	return $response
+		->withHeader('Content-Type', 'application/javascript')
+		->withHeader('Cache-Control', 'public, max-age=3600');
+});
+
 $app->get('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->post('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/index.php', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
@@ -77,6 +152,9 @@ $app->group('/api', function (RouteCollectorProxy $group)
 {
 	$group->get('/server-settings', ServerSettingsController::class . ':index');
 });
+
+$app->get('/api/languages', LanguageController::class . ':getLanguages')
+	->add(new SessionsMiddleware($app->getContainer()));
 
 $app->get('/api/set-language/{lng}', LanguageController::class . ':setLanguage')
 	->add(new SessionsMiddleware($app->getContainer()));

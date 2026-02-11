@@ -66,7 +66,7 @@ class booking_boresource extends booking_bocommon_authorized
 				),
 				booking_sopermission::ROLE_CASE_OFFICER => array(
 					'write' => array_fill_keys(array(
-						'name', 'description', 'opening_hours', 'contact_info',
+						'name', 'description', 'short_description', 'opening_hours', 'contact_info',
 						'activity_id', 'type', 'rescategory_id', 'deactivate_application'
 					), true),
 				),

@@ -7,7 +7,7 @@ import ShoppingCartTable from "@/components/layout/header/shopping-cart/shopping
 import { calculateApplicationCost, formatCurrency } from "@/utils/cost-utils";
 import { RecurringInfoUtils, calculateRecurringInstances } from '@/utils/recurring-utils';
 import { useBuildingSeasons } from "@/service/hooks/api-hooks";
-import {Buildings3Icon} from "@navikt/aksel-icons";
+import BuildingIcon from "@/icons/BuildingIcon";
 
 interface CartSectionProps {
     applications: IApplication[];
@@ -97,7 +97,7 @@ const CartSection: FC<CartSectionProps> = ({applications, setCurrentApplication,
                 const sectionTotal = calculateTotal(buildingGroup.applications);
                 return (
                     <section key={buildingGroup.buildingId} className={styles.cartSection} style={{marginTop: index > 0 ? '2rem' : '0'}}>
-                        <h2><Buildings3Icon fontSize="24px"/> {buildingGroup.buildingName}</h2>
+                        <h2><BuildingIcon fontSize="24px"/> {buildingGroup.buildingName}</h2>
                         <p style={{marginBottom: '1rem', fontSize: '0.9rem', color: '#666'}}>
                             {t('bookingfrontend.select_main_application_note')} {t('bookingfrontend.building_parent_constraint_note')}
                         </p>

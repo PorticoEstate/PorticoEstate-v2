@@ -33,5 +33,6 @@ export interface IResource {
     deny_application_if_booked: 0 | 1 | null;
     building_id: number | null;
 	description_json?: string;
+	short_description: string | null; // JSON string containing localized descriptions
 }
 

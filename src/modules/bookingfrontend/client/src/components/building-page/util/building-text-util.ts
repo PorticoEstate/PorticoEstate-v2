@@ -28,26 +28,29 @@ const htmlEntities: { [key: string]: string } = {
  * @returns The unescaped string with HTML entities replaced by their respective characters.
  */
 export function unescapeHTML(str: string): string {
-    return str.replace(/&([^;]+);/g, (entity: string, entityCode: string): string => {
-        let match: RegExpMatchArray | null;
+    let result = str;
+    let prev;
+    // Iteratively decode until stable to handle multiply-encoded entities
+    do {
+        prev = result;
+        result = result.replace(/&([^;]+);/g, (entity: string, entityCode: string): string => {
+            let match: RegExpMatchArray | null;
 
-        // Check if the entity code matches a named entity
-        if (entityCode in htmlEntities) {
-            return htmlEntities[entityCode];
-        }
-        // Check for hexadecimal numeric entities (e.g., &#x26;)
-        else if ((match = entityCode.match(/^#x([\da-fA-F]+)$/))) {
-            return String.fromCharCode(parseInt(match[1], 16));
-        }
-        // Check for decimal numeric entities (e.g., &#38;)
-        else if ((match = entityCode.match(/^#(\d+)$/))) {
-            return String.fromCharCode(parseInt(match[1], 10));
-        }
-        // If no match, return the entity as-is
-        else {
-            return entity;
-        }
-    });
+            if (entityCode in htmlEntities) {
+                return htmlEntities[entityCode];
+            }
+            else if ((match = entityCode.match(/^#x([\da-fA-F]+)$/))) {
+                return String.fromCharCode(parseInt(match[1], 16));
+            }
+            else if ((match = entityCode.match(/^#(\d+)$/))) {
+                return String.fromCharCode(parseInt(match[1], 10));
+            }
+            else {
+                return entity;
+            }
+        });
+    } while (result !== prev);
+    return result;
 }
 
 

@@ -151,6 +151,11 @@ class DocumentRepository
             $params[':description'] = $data['description'];
         }
 
+        if (isset($data['owner_id'])) {
+            $updates[] = 'owner_id = :owner_id';
+            $params[':owner_id'] = (int)$data['owner_id'];
+        }
+
         if (isset($data['metadata'])) {
             $metadata = is_string($data['metadata'])
                 ? $data['metadata']

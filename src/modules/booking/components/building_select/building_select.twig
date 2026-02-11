@@ -1,0 +1,33 @@
+{#
+ # Reusable Building Selector Component
+ #
+ # Required variables:
+ #   building_api_url  - API endpoint for fetching buildings (e.g. '/booking/buildings')
+ #   building_id       - Current building ID (int or null)
+ #   building_name     - Current building name (string or null)
+ #
+ # Optional variables:
+ #   field_id          - ID prefix for the input elements (default: 'building-select')
+ #}
+{% set fid = field_id|default('building-select') %}
+
+<div class="building-select"
+     id="{{ fid }}"
+     data-api-url="{{ building_api_url }}"
+     data-value="{{ building_id }}"
+     data-display="{{ building_name|default('') }}">
+	<input type="text"
+	       class="building-select__input app-input"
+	       id="{{ fid }}-input"
+	       autocomplete="off"
+	       placeholder="{{ lang('Search for building') }}..."
+	       aria-expanded="false"
+	       aria-autocomplete="list"
+	       aria-controls="{{ fid }}-dropdown"
+	       role="combobox">
+	<input type="hidden" id="{{ fid }}-value" name="owner_id" value="{{ building_id }}">
+	<ul class="building-select__dropdown"
+	    id="{{ fid }}-dropdown"
+	    role="listbox"
+	    aria-label="{{ lang('Buildings') }}"></ul>
+</div>

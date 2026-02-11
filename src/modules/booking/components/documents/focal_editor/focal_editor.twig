@@ -1,0 +1,33 @@
+<div class="app-modal" id="focal-modal">
+	<div class="app-modal-dialog app-modal-lg app-modal-dialog-centered">
+		<div class="app-modal-content">
+			<div class="app-modal-header">
+				<h5 class="app-modal-title">{{ lang('edit focal point') }}</h5>
+				<button class="app-button-close" type="button" id="focal-cancel-x" aria-label="Close">
+					<span aria-hidden="true">x</span>
+				</button>
+			</div>
+			<div class="app-modal-body">
+				<div class="focal-editor__controls">
+					<button type="button" class="app-button app-button-secondary" id="rotate-left">&#x21BA; {{ lang('Rotate Left') }}</button>
+					<button type="button" class="app-button app-button-secondary" id="rotate-right">&#x21BB; {{ lang('Rotate Right') }}</button>
+					<button type="button" class="app-button app-button-secondary" id="reset-rotation">{{ lang('Reset Rotation') }}</button>
+				</div>
+				<div class="focal-editor__display">
+					<span id="rotation-display">Rotation: 0°</span>
+					&nbsp;|&nbsp;
+					<span id="focal-display">X: 50%, Y: 50%</span>
+				</div>
+				<div class="focal-editor__canvas">
+					<img id="focal-point-image" alt="Focal point editor">
+				</div>
+			</div>
+			<div class="app-modal-footer">
+				<button type="button" class="app-button app-button-secondary" id="focal-reset">{{ lang('reset to center') }}</button>
+				<button type="button" class="app-button app-button-danger" id="focal-remove">{{ lang('remove focal point') }}</button>
+				<button type="button" class="app-button app-button-secondary" id="focal-cancel">{{ lang('Cancel') }}</button>
+				<button type="button" class="app-button app-button-primary" id="focal-apply">{{ lang('apply focal point') }}</button>
+			</div>
+		</div>
+	</div>
+</div>

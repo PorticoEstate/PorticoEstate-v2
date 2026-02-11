@@ -1,0 +1,99 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('Edit document') }} — {{ document.name }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/building_select/building_select.css') }}</style>
+<style>{{ source('@views/documents/edit/document_edit.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div class="document-edit">
+	<h1>{{ lang('Edit document') }}</h1>
+
+	<div id="alert-success" class="app-alert app-alert--success is-hidden"></div>
+	<div id="alert-error" class="app-alert app-alert--danger is-hidden"></div>
+
+	<form id="document-form">
+		<div class="form-group">
+			<label class="app-label" for="building-select-input">{{ lang('Building') }}</label>
+			{% include '@views/building_select/building_select.twig' with {
+				building_api_url: '/booking/buildings',
+				building_id: owner_id,
+				building_name: building_name,
+				field_id: 'building-select'
+			} only %}
+		</div>
+		<div class="form-group">
+			<label class="app-label" for="field-name">{{ lang('Document') }}</label>
+			<input type="text" id="field-name" class="app-input" disabled>
+		</div>
+		<div class="form-group">
+			<label class="app-label" for="field-description">{{ lang('Description') }}</label>
+			<textarea id="field-description" class="app-input" rows="3"></textarea>
+		</div>
+		<div class="form-group">
+			<label class="app-label" for="field-category">{{ lang('Category') }}</label>
+			<select id="field-category" class="app-select">
+				<option value="">{{ lang('Select Category...') }}</option>
+			</select>
+		</div>
+
+		<div id="focal-section" style="display:none;">
+			<div class="form-group form-group--focal">
+				<label class="app-label">{{ lang('focal point') }}</label>
+				<div>
+					<button type="button" class="app-button app-button-secondary app-button-sm" id="btn-edit-focal">
+						{{ lang('edit focal point') }}
+					</button>
+					<span class="document-edit__focal-info" id="focal-info-text"></span>
+				</div>
+			</div>
+
+			<div class="document-edit__previews">
+				<div class="document-edit__preview-box">
+					<img id="preview-card" width="411" height="200" alt="Card preview">
+					<small>{{ lang('card preview') }}</small>
+				</div>
+				<div class="document-edit__preview-box">
+					<img id="preview-square" width="200" height="200" alt="Square preview">
+					<small>{{ lang('square preview') }}</small>
+				</div>
+				<div class="document-edit__preview-box">
+					<img id="preview-portrait" width="200" height="411" alt="Portrait preview">
+					<small>{{ lang('portrait preview') }}</small>
+				</div>
+			</div>
+		</div>
+
+		<div class="document-edit__btn-row">
+			<button type="submit" class="app-button app-button-primary" id="btn-save">{{ lang('Update') }}</button>
+			<button type="button" class="app-button app-button-secondary" id="btn-cancel" onclick="history.back()">{{ lang('Cancel') }}</button>
+			<span class="document-edit__spacer"></span>
+			<button type="button" class="app-button app-button-danger" id="btn-delete">{{ lang('Delete') }}</button>
+		</div>
+	</form>
+</div>
+
+{% include '@views/documents/focal_editor/focal_editor.twig' %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__documentEdit = {
+		ownerId: {{ owner_id }},
+		documentId: {{ document.id }},
+		buildingName: '{{ building_name|e('js') }}',
+		lang: {
+			updated: '{{ lang("Document updated") }}',
+			saving: '{{ lang("Saving") }}...',
+			update: '{{ lang("Update") }}',
+			confirmDelete: '{{ lang("Are you sure you want to delete?") }}',
+			selectCategory: '{{ lang("Select Category...") }}'
+		}
+	};
+</script>
+<script src="{{ modules_url }}/booking/js/base/focal-point-picker.js"></script>
+<script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
+<script>{{ source('@views/documents/edit/document_edit.js') }}</script>
+{% endblock %}

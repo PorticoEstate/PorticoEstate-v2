@@ -2,9 +2,11 @@
 
 namespace App\modules\booking\services;
 
+use App\Database\Db;
 use App\modules\booking\repositories\DocumentRepository;
 use App\modules\booking\models\Document;
 use Psr\Http\Message\UploadedFileInterface;
+use PDO;
 use Exception;
 
 class DocumentService
@@ -174,6 +176,14 @@ class DocumentService
             throw new Exception('Document not found');
         }
 
+        // Validate owner_id change if requested (only for building documents)
+        if (isset($data['owner_id']) && $this->ownerType === Document::OWNER_BUILDING) {
+            $newOwnerId = (int)$data['owner_id'];
+            if ($newOwnerId !== $document->owner_id) {
+                $this->validateBuildingExists($newOwnerId);
+            }
+        }
+
         $metadata = $document->metadata ?? [];
         $metadataUpdated = false;
 
@@ -220,6 +230,16 @@ class DocumentService
         }
 
         return $this->documentRepository->updateDocument($documentId, $data);
+    }
+
+    private function validateBuildingExists(int $buildingId): void
+    {
+        $db = Db::getInstance();
+        $stmt = $db->prepare("SELECT id FROM bb_building WHERE id = :id AND active = 1");
+        $stmt->execute([':id' => $buildingId]);
+        if (!$stmt->fetch(PDO::FETCH_ASSOC)) {
+            throw new Exception('Building not found or inactive');
+        }
     }
 
     /**

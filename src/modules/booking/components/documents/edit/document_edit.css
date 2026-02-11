@@ -1,0 +1,140 @@
+.document-edit {
+	padding: var(--ds-spacing-4, 1rem) 0;
+}
+
+.document-edit h1 {
+	margin-bottom: var(--ds-spacing-4, 1rem);
+}
+
+.document-edit .form-group {
+	display: flex;
+	align-items: baseline;
+	gap: var(--ds-spacing-4, 1rem);
+	margin-bottom: var(--ds-spacing-4, 1rem);
+}
+
+.document-edit .form-group .app-label {
+	flex: 0 0 140px;
+	text-align: right;
+	font-weight: var(--ds-font-weight-medium, 500);
+}
+
+.document-edit .form-group .app-input,
+.document-edit .form-group .app-select {
+	flex: 1;
+	min-width: 0;
+}
+
+.document-edit .form-group--focal {
+	align-items: center;
+}
+
+.document-edit__btn-row {
+	display: flex;
+	gap: var(--ds-spacing-3, 0.75rem);
+	align-items: center;
+	flex-wrap: wrap;
+	margin-top: var(--ds-spacing-6, 1.5rem);
+	padding-top: var(--ds-spacing-4, 1rem);
+	border-top: 1px solid var(--ds-color-border-default, #e0e0e0);
+}
+
+.document-edit__spacer {
+	flex: 1;
+}
+
+.document-edit__previews {
+	display: flex;
+	gap: var(--ds-spacing-5, 1.25rem);
+	flex-wrap: wrap;
+	margin-top: var(--ds-spacing-4, 1rem);
+	padding-left: calc(140px + var(--ds-spacing-4, 1rem));
+}
+
+.document-edit__preview-box {
+	text-align: center;
+}
+
+.document-edit__preview-box img {
+	display: block;
+	object-fit: cover;
+	border: 1px solid var(--ds-color-border-default, #ccc);
+	background: var(--ds-color-background-subtle, #f5f5f5);
+	padding: 4px;
+}
+
+.document-edit__preview-box small {
+	display: block;
+	margin-top: var(--ds-spacing-1, 0.25rem);
+	color: var(--ds-color-text-subtle, #666);
+}
+
+.document-edit__focal-info {
+	font-size: var(--ds-font-size-sm, 0.85rem);
+	color: var(--ds-color-text-subtle, #555);
+	margin-left: var(--ds-spacing-2, 0.5rem);
+}
+
+/* Save button loading state */
+.document-edit__btn-row .app-button[disabled] {
+	opacity: 0.7;
+	cursor: not-allowed;
+}
+
+/* Alert transitions */
+.document-edit .app-alert {
+	margin-bottom: var(--ds-spacing-4, 1rem);
+	transition: opacity 0.3s ease;
+}
+
+.document-edit .app-alert.is-fading {
+	opacity: 0;
+}
+
+/* Focal editor modal */
+.focal-editor__controls {
+	display: flex;
+	gap: var(--ds-spacing-2, 0.5rem);
+	justify-content: center;
+	margin-bottom: var(--ds-spacing-3, 0.75rem);
+	flex-wrap: wrap;
+}
+
+.focal-editor__display {
+	text-align: center;
+	font-weight: var(--ds-font-weight-semibold, 600);
+	margin-bottom: var(--ds-spacing-3, 0.75rem);
+}
+
+.focal-editor__canvas {
+	text-align: center;
+	background: var(--ds-color-background-subtle, #f5f5f5);
+	padding: var(--ds-spacing-4, 1rem);
+}
+
+.focal-editor__canvas img {
+	max-width: 100%;
+	max-height: 65vh;
+	cursor: crosshair;
+}
+
+/* Utility */
+.is-hidden {
+	display: none;
+}
+
+@media (max-width: 640px) {
+	.document-edit .form-group {
+		flex-direction: column;
+		gap: var(--ds-spacing-1, 0.25rem);
+	}
+
+	.document-edit .form-group .app-label {
+		flex: none;
+		text-align: left;
+	}
+
+	.document-edit__previews {
+		padding-left: 0;
+	}
+}

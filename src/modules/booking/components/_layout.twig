@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>{% block title %}{% endblock %}</title>
+	{% for href in stylesheets %}
+		<link href="{{ href }}" type="text/css" rel="stylesheet">
+	{% endfor %}
+	{% block styles %}{% endblock %}
+</head>
+<body>
+	{% block content %}{% endblock %}
+	{% block scripts %}{% endblock %}
+</body>
+</html>

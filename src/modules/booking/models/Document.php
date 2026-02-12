@@ -84,6 +84,11 @@ class Document
      * @Expose
      */
     public $focal_point_y;
+    /**
+     * @OA\Property(type="string")
+     * @Expose
+     */
+    public $owner_name;
 
 
     public function __construct(array $data, string|null $owner_type = null)
@@ -94,6 +99,7 @@ class Document
         $this->category = $data['category'] ?? '';
         $this->owner_id = $data['owner_id'] ?? null;
         $this->owner_type = $owner_type ?? Document::OWNER_BUILDING;
+        $this->owner_name = $data['owner_name'] ?? null;
 
         // Handle metadata
         $this->metadata = $data['metadata'] ?? null;

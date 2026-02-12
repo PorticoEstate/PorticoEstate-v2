@@ -33,6 +33,24 @@ class DocumentController
         };
     }
 
+    /**
+     * @OA\Get(
+     *     path="/booking/buildings/documents/categories",
+     *     summary="Get available document categories",
+     *     tags={"Building Documents"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of document categories",
+     *         @OA\JsonContent(
+     *             type="array",
+     *             @OA\Items(
+     *                 @OA\Property(property="value", type="string", description="Category identifier"),
+     *                 @OA\Property(property="label", type="string", description="Translated category label")
+     *             )
+     *         )
+     *     )
+     * )
+     */
     public function categories(Request $request, Response $response): Response
     {
         $categories = array_map(function (string $cat) {
@@ -46,6 +64,92 @@ class DocumentController
         return $response->withHeader('Content-Type', 'application/json');
     }
 
+    /**
+     * @OA\Get(
+     *     path="/booking/buildings/documents",
+     *     summary="List all building documents",
+     *     tags={"Building Documents"},
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         description="Sort column (id, name, owner_id, category, description, owner_name)",
+     *         @OA\Schema(type="string", default="name")
+     *     ),
+     *     @OA\Parameter(
+     *         name="dir",
+     *         in="query",
+     *         description="Sort direction",
+     *         @OA\Schema(type="string", enum={"ASC", "DESC"}, default="ASC")
+     *     ),
+     *     @OA\Parameter(
+     *         name="length",
+     *         in="query",
+     *         description="Maximum number of results to return. Omit or use -1 for all.",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of documents",
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Document"))
+     *     ),
+     *     @OA\Response(response=403, description="Permission denied")
+     * )
+     */
+    public function listAll(Request $request, Response $response): Response
+    {
+        if ($this->authService->authorize($this->authConfig, 'read') === false) {
+            return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
+        }
+
+        $params = $request->getQueryParams();
+        $sort = $params['sort'] ?? 'name';
+        $dir = $params['dir'] ?? 'ASC';
+        $length = isset($params['length']) ? (int)$params['length'] : null;
+
+        if ($length === -1) {
+            $length = null;
+        }
+
+        try {
+            $documents = $this->documentService->getAllDocuments($sort, $dir, $length);
+            $serialized = array_map(fn($doc) => $doc->serialize(), $documents);
+
+            $response->getBody()->write(json_encode($serialized));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (Exception $e) {
+            return ResponseHelper::sendErrorResponse(
+                ['error' => 'Error fetching documents: ' . $e->getMessage()],
+                500
+            );
+        }
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/booking/buildings/{ownerId}/documents",
+     *     summary="List documents for a specific building",
+     *     tags={"Building Documents"},
+     *     @OA\Parameter(
+     *         name="ownerId",
+     *         in="path",
+     *         required=true,
+     *         description="Building ID",
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="type",
+     *         in="query",
+     *         description="Filter by category type (comma-separated). Use 'images' for picture + picture_main.",
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of documents for the building",
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Document"))
+     *     ),
+     *     @OA\Response(response=403, description="Permission denied")
+     * )
+     */
     public function index(Request $request, Response $response, array $args): Response
     {
         if ($this->authService->authorize($this->authConfig, 'read') === false) {
@@ -71,6 +175,22 @@ class DocumentController
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/booking/buildings/{ownerId}/documents/{id}",
+     *     summary="Get a single document",
+     *     tags={"Building Documents"},
+     *     @OA\Parameter(name="ownerId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Document details",
+     *         @OA\JsonContent(ref="#/components/schemas/Document")
+     *     ),
+     *     @OA\Response(response=403, description="Permission denied"),
+     *     @OA\Response(response=404, description="Document not found")
+     * )
+     */
     public function show(Request $request, Response $response, array $args): Response
     {
         if ($this->authService->authorize($this->authConfig, 'read') === false) {
@@ -97,6 +217,32 @@ class DocumentController
         }
     }
 
+    /**
+     * @OA\Patch(
+     *     path="/booking/buildings/{ownerId}/documents/{id}",
+     *     summary="Update a document",
+     *     tags={"Building Documents"},
+     *     @OA\Parameter(name="ownerId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(
+     *         @OA\JsonContent(
+     *             @OA\Property(property="description", type="string"),
+     *             @OA\Property(property="category", type="string"),
+     *             @OA\Property(property="focal_point_x", type="number"),
+     *             @OA\Property(property="focal_point_y", type="number"),
+     *             @OA\Property(property="rotation", type="integer", enum={0, 90, 180, 270})
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Updated document",
+     *         @OA\JsonContent(ref="#/components/schemas/Document")
+     *     ),
+     *     @OA\Response(response=400, description="Validation error"),
+     *     @OA\Response(response=403, description="Permission denied"),
+     *     @OA\Response(response=404, description="Document not found")
+     * )
+     */
     public function update(Request $request, Response $response, array $args): Response
     {
         $ownerId = (int)$args['ownerId'];
@@ -148,6 +294,18 @@ class DocumentController
         }
     }
 
+    /**
+     * @OA\Delete(
+     *     path="/booking/buildings/{ownerId}/documents/{id}",
+     *     summary="Delete a document",
+     *     tags={"Building Documents"},
+     *     @OA\Parameter(name="ownerId", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=204, description="Document deleted"),
+     *     @OA\Response(response=403, description="Permission denied"),
+     *     @OA\Response(response=404, description="Document not found")
+     * )
+     */
     public function destroy(Request $request, Response $response, array $args): Response
     {
         $ownerId = (int)$args['ownerId'];
@@ -178,6 +336,23 @@ class DocumentController
         }
     }
 
+    /**
+     * @OA\Get(
+     *     path="/booking/buildings/documents/{id}/download",
+     *     summary="Download a document file",
+     *     tags={"Building Documents"},
+     *     @OA\Parameter(name="id", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Parameter(
+     *         name="rotation",
+     *         in="query",
+     *         description="Rotation to apply for image preview (0, 90, 180, 270)",
+     *         @OA\Schema(type="integer", enum={0, 90, 180, 270})
+     *     ),
+     *     @OA\Response(response=200, description="File content"),
+     *     @OA\Response(response=403, description="Permission denied"),
+     *     @OA\Response(response=404, description="Document or file not found")
+     * )
+     */
     public function downloadDocument(Request $request, Response $response, array $args): Response
     {
         if ($this->authService->authorize($this->authConfig, 'read') === false) {

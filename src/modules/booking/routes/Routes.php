@@ -21,73 +21,69 @@ use App\modules\booking\viewcontrollers\DocumentViewController;
 
 $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 {
+	$group->group('/buildings', function (RouteCollectorProxy $buildingGroup) use ($container)
+	{
+		$buildingGroup->get('', BuildingController::class . ':index');
 
-	$group->get('/buildings', BuildingController::class . ':index')
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
+		$buildingGroup->get('/documents/categories', DocumentController::class . ':categories');
 
-	$group->get('/buildings/documents/categories', DocumentController::class . ':categories')
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
+		$buildingGroup->get('/documents', DocumentController::class . ':listAll');
 
-	$group->group('/buildings/{ownerId}/documents', function (RouteCollectorProxy $group) use ($container) {
-		$group->get('', DocumentController::class . ':index');
-		$group->get('/{id}', DocumentController::class . ':show');
-		$group->patch('/{id}', DocumentController::class . ':update');
-		$group->delete('/{id}', DocumentController::class . ':destroy');
-	})
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
+		$buildingGroup->group('/{ownerId}/documents', function (RouteCollectorProxy $group) use ($container)
+		{
+			$group->get('', DocumentController::class . ':index');
+			$group->get('/{id}', DocumentController::class . ':show');
+			$group->patch('/{id}', DocumentController::class . ':update');
+			$group->delete('/{id}', DocumentController::class . ':destroy');
+		});
+		$buildingGroup->get('/documents/{id}/download', DocumentController::class . ':downloadDocument');
+	});
 
-	$group->get('/buildings/documents/{id}/edit', DocumentViewController::class . ':edit')
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
-
-	$group->get('/buildings/documents/{id}/download', DocumentController::class . ':downloadDocument')
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
-
-	$group->group('/resources/{ownerId}/documents', function (RouteCollectorProxy $group) {
-		$group->get('', ResourceDocumentController::class . ':index');
-		$group->get('/{id}', ResourceDocumentController::class . ':show');
-		$group->patch('/{id}', ResourceDocumentController::class . ':update');
-		$group->delete('/{id}', ResourceDocumentController::class . ':destroy');
-	})
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
-
-	$group->get('/resources/documents/{id}/download', ResourceDocumentController::class . ':downloadDocument')
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
-
-	$group->group('/organizations/{ownerId}/documents', function (RouteCollectorProxy $group) {
+	$group->group('/organizations/{ownerId}/documents', function (RouteCollectorProxy $group)
+	{
 		$group->get('', OrganizationDocumentController::class . ':index');
 		$group->get('/{id}', OrganizationDocumentController::class . ':show');
 		$group->patch('/{id}', OrganizationDocumentController::class . ':update');
 		$group->delete('/{id}', OrganizationDocumentController::class . ':destroy');
-	})
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
+	});
 
-	$group->get('/organizations/documents/{id}/download', OrganizationDocumentController::class . ':downloadDocument')
-		->addMiddleware(new AccessVerifier($container))
-		->addMiddleware(new SessionsMiddleware($container));
+	$group->get('/organizations/documents/{id}/download', OrganizationDocumentController::class . ':downloadDocument');
+	$group->get('/resources/documents/{id}/download', ResourceDocumentController::class . ':downloadDocument');
+
+	$group->group('/resources/{ownerId}/documents', function (RouteCollectorProxy $group)
+	{
+		$group->get('', ResourceDocumentController::class . ':index');
+		$group->get('/{id}', ResourceDocumentController::class . ':show');
+		$group->patch('/{id}', ResourceDocumentController::class . ':update');
+		$group->delete('/{id}', ResourceDocumentController::class . ':destroy');
+	});
+
+	// TODO: TEMPORARY VIEW GROUP, UNTIL SOMETHING BETTER COMES ALONG
+	$group->group('/view', function (RouteCollectorProxy $viewGroup) use ($container)
+	{
+		$viewGroup->group('/buildings', function (RouteCollectorProxy $buildingGroup) use ($container)
+		{
+			$buildingGroup->get('/documents/{id}/edit', DocumentViewController::class . ':edit');
+
+		});
+	});
 
 
-});
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
 
 
-
-
-$app->group('/booking/users', function (RouteCollectorProxy $group) {
+$app->group('/booking/users', function (RouteCollectorProxy $group)
+{
 	$group->get('', UserController::class . ':index');
 	$group->post('', UserController::class . ':store');
 	$group->get('/{id}', UserController::class . ':show');
 	$group->put('/{id}', UserController::class . ':update');
 	$group->delete('/{id}', UserController::class . ':destroy');
 })
-->addMiddleware(new AccessVerifier($container))
-->addMiddleware(new SessionsMiddleware($container));
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
 
 
 $app->group('/booking/resources', function (RouteCollectorProxy $group)
@@ -96,8 +92,8 @@ $app->group('/booking/resources', function (RouteCollectorProxy $group)
 	$group->get('/{id}/schedule', ResourceController::class . ':getResourceSchedule');
 	$group->post('/{resource_id}/events', EventController::class . ':createForResource');// Create an event for a specific resource
 })
-->addMiddleware(new AccessVerifier($container))
-->addMiddleware(new SessionsMiddleware($container));
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
 
 $app->group('/booking/events', function (RouteCollectorProxy $group)
 {
@@ -107,8 +103,8 @@ $app->group('/booking/events', function (RouteCollectorProxy $group)
 	$group->get('/{event_id}', EventController::class . ':getEvent');
 	$group->patch('/{event_id}/toggle-active', EventController::class . ':toggleActiveStatus');
 })
-->addMiddleware(new AccessVerifier($container))
-->addMiddleware(new SessionsMiddleware($container));
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
 
 $app->group('/booking/allocations', function (RouteCollectorProxy $group)
 {
@@ -117,8 +113,8 @@ $app->group('/booking/allocations', function (RouteCollectorProxy $group)
 	$group->put('/{id}', AllocationController::class . ':updateAllocation');
 	$group->delete('/{id}', AllocationController::class . ':deleteAllocation');
 })
-->addMiddleware(new AccessVerifier($container))
-->addMiddleware(new SessionsMiddleware($container));
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
 
 $app->get('/booking/getpendingtransactions/vipps', VippsController::class . ':getPendingTransactions')
 	->addMiddleware(new AccessVerifier($container))
@@ -138,8 +134,7 @@ $app->group('/booking/webhooks', function (RouteCollectorProxy $group)
 	$group->delete('/subscriptions/{id}', WebhookController::class . ':delete');
 	$group->get('/subscriptions/{id}/log', WebhookController::class . ':deliveryLog');
 })
-->addMiddleware(new SessionsMiddleware($container));
-
+	->addMiddleware(new SessionsMiddleware($container));
 
 
 $app->group('/booking/registry', function (RouteCollectorProxy $group) use ($container)
@@ -167,8 +162,8 @@ $app->group('/booking/registry', function (RouteCollectorProxy $group) use ($con
 		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
 	});
 })
-->addMiddleware(new AccessVerifier($container))
-->addMiddleware(new SessionsMiddleware($container));
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
 
 $app->get('/booking[/{params:.*}]', RedirectHelper::class . ':process')
 	->addMiddleware(new AccessVerifier($container))

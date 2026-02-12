@@ -176,6 +176,48 @@ class DocumentRepository
         return $stmt->execute($params);
     }
 
+    /**
+     * Get all documents with optional sorting and limit.
+     * Joins to the owner table to include owner_name.
+     */
+    public function getAllDocuments(string $sort = 'name', string $dir = 'ASC', ?int $limit = null): array
+    {
+        $table = $this->getDBTable();
+        $ownerTable = 'bb_' . $this->owner_type;
+
+        $allowedSortColumns = ['id', 'name', 'owner_id', 'category', 'description', 'owner_name'];
+        if (!in_array($sort, $allowedSortColumns, true)) {
+            $sort = 'name';
+        }
+        $dir = strtoupper($dir) === 'DESC' ? 'DESC' : 'ASC';
+
+        $sortColumn = $sort === 'owner_name'
+            ? "o.name"
+            : "d.{$sort}";
+
+        $sql = "SELECT d.*, o.name AS owner_name
+                FROM {$table} d
+                LEFT JOIN {$ownerTable} o ON d.owner_id = o.id
+                ORDER BY {$sortColumn} {$dir}";
+
+        if ($limit !== null && $limit > 0) {
+            $sql .= " LIMIT :limit";
+        }
+
+        $stmt = $this->db->prepare($sql);
+
+        if ($limit !== null && $limit > 0) {
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        }
+
+        $stmt->execute();
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return array_map(function ($row) {
+            return new Document($row, $this->owner_type);
+        }, $results);
+    }
+
     public static function getDocumentByIdAnyOwner(int $documentId): ?Document
     {
         $db = Db::getInstance();

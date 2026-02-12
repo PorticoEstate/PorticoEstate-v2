@@ -79,6 +79,14 @@ class DocumentService
     }
 
     /**
+     * Get all documents with optional sorting and limit
+     */
+    public function getAllDocuments(string $sort = 'name', string $dir = 'ASC', ?int $limit = null): array
+    {
+        return $this->documentRepository->getAllDocuments($sort, $dir, $limit);
+    }
+
+    /**
      * Get a specific document by ID
      */
     public function getDocumentById(int $documentId): ?Document

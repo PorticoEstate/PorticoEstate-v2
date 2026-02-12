@@ -89,7 +89,7 @@ class TwigHelper
 		$this->addPathIfExists($appTpl);
 
 		// App component views (co-located twig/css/js)
-		$this->addPathIfExists($appDir . '/components', 'views');
+		$this->addPathIfExists($appDir . '/html', 'views');
 	}
 
 	private function addPathIfExists(string $path, ?string $namespace = null): void

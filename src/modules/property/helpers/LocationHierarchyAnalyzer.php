@@ -531,6 +531,8 @@ class LocationHierarchyAnalyzer
 		$inserted_mappings = []; // Track all inserted mappings to avoid duplicates: "old_code->new_code->type" => true
 		$loc3MappingCounts = []; // old loc3 code => new loc3 code => count
 		$loc4CountByLoc3 = []; // loc1-loc2-loc3 => loc4 count
+		$loc2MappingCounts = []; // old loc2 code => new loc2 code => count
+		$loc4CountByLoc2 = []; // loc1-loc2 => loc4 count
 		foreach ($this->locationData as $row)
 		{
 			$loc1 = $row['loc1'];
@@ -557,6 +559,13 @@ class LocationHierarchyAnalyzer
 				$loc4CountByLoc3[$actual_loc3_code] = 0;
 			}
 			$loc4CountByLoc3[$actual_loc3_code]++;
+
+			$actual_loc2_code = "{$loc1}-{$loc2_actual_normalized}";
+			if (!isset($loc4CountByLoc2[$actual_loc2_code]))
+			{
+				$loc4CountByLoc2[$actual_loc2_code] = 0;
+			}
+			$loc4CountByLoc2[$actual_loc2_code]++;
 			
 			if ($loc2_actual_normalized != $loc2_expected_normalized || $loc3_actual_normalized != $loc3_expected_normalized)
 			{
@@ -584,6 +593,21 @@ class LocationHierarchyAnalyzer
 						$loc3MappingCounts[$old_loc3_code][$new_loc3_code] = 0;
 					}
 					$loc3MappingCounts[$old_loc3_code][$new_loc3_code]++;
+				}
+
+				if ($loc2_actual_normalized != $loc2_expected_normalized)
+				{
+					$old_loc2_code = "{$loc1}-{$loc2_actual_normalized}";
+					$new_loc2_code = "{$loc1}-{$loc2_expected_normalized}";
+					if (!isset($loc2MappingCounts[$old_loc2_code]))
+					{
+						$loc2MappingCounts[$old_loc2_code] = [];
+					}
+					if (!isset($loc2MappingCounts[$old_loc2_code][$new_loc2_code]))
+					{
+						$loc2MappingCounts[$old_loc2_code][$new_loc2_code] = 0;
+					}
+					$loc2MappingCounts[$old_loc2_code][$new_loc2_code]++;
 				}
 				$this->issues[] = [
 					'type' => 'misplaced_loc4',
@@ -635,6 +659,45 @@ class LocationHierarchyAnalyzer
 			
 			$inserted_mappings[$mapping_key] = true;
 			$processed_loc3_codes[$old_loc3_code] = true;
+		}
+
+		$processed_loc2_codes = []; // Ensure each old_loc2_code is only processed once
+		foreach ($loc2MappingCounts as $old_loc2_code => $newTargets)
+		{
+			if (isset($processed_loc2_codes[$old_loc2_code]))
+			{
+				continue;
+			}
+
+			arsort($newTargets); // Highest count first
+			$best_new_code = array_key_first($newTargets);
+			if ($best_new_code === null)
+			{
+				continue;
+			}
+
+			$old_loc4_count = $loc4CountByLoc2[$old_loc2_code] ?? 0;
+			$total_moved_from_old = array_sum($newTargets);
+			if ($total_moved_from_old !== $old_loc4_count)
+			{
+				// Only move loc2 when all loc4 entries move away from the source.
+				continue;
+			}
+
+			$mapping_key = "{$old_loc2_code}->{$best_new_code}->location2_loc2_update";
+			if (isset($inserted_mappings[$mapping_key]))
+			{
+				continue; // Skip duplicate mapping
+			}
+
+			list($loc1, $old_loc2) = explode('-', $old_loc2_code);
+			list($_loc1_unused, $new_loc2) = explode('-', $best_new_code);
+
+			$this->sqlStatements['corrections'][] =
+				"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, change_type) VALUES ('{$old_loc2_code}', '{$best_new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', 'location2_loc2_update');";
+
+			$inserted_mappings[$mapping_key] = true;
+			$processed_loc2_codes[$old_loc2_code] = true;
 		}
 
 

@@ -528,17 +528,19 @@ class LocationHierarchyAnalyzer
 		// 5. Prepare location4 move statements
 		$this->sqlStatements['location4_updates'] = [];
 		$this->sqlStatements['corrections'] = [];
+		$inserted_mappings = []; // Track all inserted mappings to avoid duplicates: "old_code->new_code->type" => true
+		$loc3MappingCounts = []; // old loc3 code => new loc3 code => count
+		$loc4CountByLoc3 = []; // loc1-loc2-loc3 => loc4 count
 		foreach ($this->locationData as $row)
 		{
 			$loc1 = $row['loc1'];
+			$loc2_actual = $row['loc2'];
+			$loc3_actual = $row['loc3'];
 			$bygningsnr = $row['bygningsnr'];
 			$loc2_expected = $requiredLoc2[$loc1][$bygningsnr];
 			$normalized_street_number = trim(preg_replace('/\s+/', ' ', $row['street_number']));
 			$streetkey = "{$row['street_id']}" . '_' . $normalized_street_number;
 			$loc3_expected = $requiredLoc3[$loc1][$loc2_expected][$streetkey];
-
-			$loc2_actual = $row['loc2'];
-			$loc3_actual = $row['loc3'];
 			$loc4 = $row['loc4'];
 			$old_code = "{$loc1}-{$loc2_actual}-{$loc3_actual}-{$loc4}";
 			$new_code = "{$loc1}-{$loc2_expected}-{$loc3_expected}-{$loc4}";
@@ -548,13 +550,41 @@ class LocationHierarchyAnalyzer
 			$loc2_expected_normalized = $this->normalizeLoc2($loc2_expected);
 			$loc3_actual_normalized = $this->normalizeLoc2($loc3_actual);
 			$loc3_expected_normalized = $this->normalizeLoc2($loc3_expected);
+
+			$actual_loc3_code = "{$loc1}-{$loc2_actual_normalized}-{$loc3_actual_normalized}";
+			if (!isset($loc4CountByLoc3[$actual_loc3_code]))
+			{
+				$loc4CountByLoc3[$actual_loc3_code] = 0;
+			}
+			$loc4CountByLoc3[$actual_loc3_code]++;
 			
 			if ($loc2_actual_normalized != $loc2_expected_normalized || $loc3_actual_normalized != $loc3_expected_normalized)
 			{
 				$this->sqlStatements['location4_updates'][] =
 					"-- Move {$old_code} to {$new_code}\nUPDATE fm_location4 SET location_code='{$new_code}', loc2='{$loc2_expected}', loc3='{$loc3_expected}' WHERE location_code='{$old_code}';";
-				$this->sqlStatements['corrections'][] =
-					"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, loc4, bygningsnr, street_id, street_number, change_type) VALUES ('{$old_code}', '{$new_code}', '{$loc1}', '{$loc2_actual}', '{$loc2_expected}', '{$loc3_actual}', '{$loc3_expected}', '{$loc4}', '{$bygningsnr}', '{$row['street_id']}', '{$row['street_number']}', 'location_hierarchy_update');";
+				
+				$mapping_key = "{$old_code}->{$new_code}->location_hierarchy_update";
+				if (!isset($inserted_mappings[$mapping_key]))
+				{
+					$this->sqlStatements['corrections'][] =
+						"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, loc4, bygningsnr, street_id, street_number, change_type) VALUES ('{$old_code}', '{$new_code}', '{$loc1}', '{$loc2_actual}', '{$loc2_expected}', '{$loc3_actual}', '{$loc3_expected}', '{$loc4}', '{$bygningsnr}', '{$row['street_id']}', '{$row['street_number']}', 'location_hierarchy_update');";
+					$inserted_mappings[$mapping_key] = true;
+				}
+
+				$old_loc3_code = "{$loc1}-{$loc2_actual_normalized}-{$loc3_actual_normalized}";
+				$new_loc3_code = "{$loc1}-{$loc2_expected_normalized}-{$loc3_expected_normalized}";
+				if ($old_loc3_code !== $new_loc3_code)
+				{
+					if (!isset($loc3MappingCounts[$old_loc3_code]))
+					{
+						$loc3MappingCounts[$old_loc3_code] = [];
+					}
+					if (!isset($loc3MappingCounts[$old_loc3_code][$new_loc3_code]))
+					{
+						$loc3MappingCounts[$old_loc3_code][$new_loc3_code] = 0;
+					}
+					$loc3MappingCounts[$old_loc3_code][$new_loc3_code]++;
+				}
 				$this->issues[] = [
 					'type' => 'misplaced_loc4',
 					'loc1' => $loc1,
@@ -567,10 +597,50 @@ class LocationHierarchyAnalyzer
 			}
 		}
 
-/*
+		$processed_loc3_codes = []; // Additional safeguard to ensure each old_loc3_code is only processed once
+		foreach ($loc3MappingCounts as $old_loc3_code => $newTargets)
+		{
+			// Skip if we've already processed this old_loc3_code
+			if (isset($processed_loc3_codes[$old_loc3_code]))
+			{
+				continue;
+			}
+			
+			arsort($newTargets); // Highest count first
+			$best_new_code = array_key_first($newTargets);
+			if ($best_new_code === null)
+			{
+				continue;
+			}
+
+			$old_loc4_count = $loc4CountByLoc3[$old_loc3_code] ?? 0;
+			$total_moved_from_old = array_sum($newTargets);
+			if ($total_moved_from_old !== $old_loc4_count)
+			{
+				// Only move loc3 when all loc4 entries move away from the source.
+				continue;
+			}
+
+			$mapping_key = "{$old_loc3_code}->{$best_new_code}->location3_loc3_update";
+			if (isset($inserted_mappings[$mapping_key]))
+			{
+				continue; // Skip duplicate mapping
+			}
+
+			list($loc1, $old_loc2, $old_loc3) = explode('-', $old_loc3_code);
+			list($_loc1_unused, $new_loc2, $new_loc3) = explode('-', $best_new_code);
+
+			$this->sqlStatements['corrections'][] =
+				"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, change_type) VALUES ('{$old_loc3_code}', '{$best_new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', '{$old_loc3}', '{$new_loc3}', 'location3_loc3_update');";
+			
+			$inserted_mappings[$mapping_key] = true;
+			$processed_loc3_codes[$old_loc3_code] = true;
+		}
+
+
 		// 5b. Prepare fm_location3 loc2 updates (ensure parent records match fm_location4 loc2 changes)
 		$this->sqlStatements['location3_loc2_updates'] = [];
-		$affected_loc3_entries = []; // Track which loc3 entries need loc2 updates: loc1 => loc2 => loc3 => {old_loc2, new_loc2}
+		$loc3Loc2UpdateCounts = []; // old loc3 code => new loc3 code => count
 		
 		foreach ($this->locationData as $row)
 		{
@@ -590,42 +660,67 @@ class LocationHierarchyAnalyzer
 			$loc3_actual_normalized = $this->normalizeLoc2($loc3_actual);
 			$loc3_expected_normalized = $this->normalizeLoc2($loc3_expected);
 			
-			// Only update fm_location3 loc2 if the loc3 already exists (not being created as missing_loc3)
-			if ($loc2_actual_normalized != $loc2_expected_normalized && !empty($this->loc3Refs[$loc1][$loc2_expected][$loc3_expected]))
+			// Only update fm_location3 when the current loc3 exists in the database
+			if (($loc2_actual_normalized != $loc2_expected_normalized || $loc3_actual_normalized != $loc3_expected_normalized)
+				&& !empty($this->loc3Refs[$loc1][$loc2_actual_normalized][$loc3_actual_normalized]))
 			{
-				$key = "{$loc1}_{$loc3_expected}";
-				if (!isset($affected_loc3_entries[$key]))
+				$old_loc3_code = "{$loc1}-{$loc2_actual_normalized}-{$loc3_actual_normalized}";
+				$new_loc3_code = "{$loc1}-{$loc2_expected_normalized}-{$loc3_expected_normalized}";
+				if (!isset($loc3Loc2UpdateCounts[$old_loc3_code]))
 				{
-					$affected_loc3_entries[$key] = [
-						'loc1' => $loc1,
-						'old_loc2' => $loc2_actual_normalized,
-						'new_loc2' => $loc2_expected_normalized,
-						'loc3' => $loc3_expected_normalized
-					];
+					$loc3Loc2UpdateCounts[$old_loc3_code] = [];
 				}
+				if (!isset($loc3Loc2UpdateCounts[$old_loc3_code][$new_loc3_code]))
+				{
+					$loc3Loc2UpdateCounts[$old_loc3_code][$new_loc3_code] = 0;
+				}
+				$loc3Loc2UpdateCounts[$old_loc3_code][$new_loc3_code]++;
 			}
 		}
 		
 		// Generate UPDATE statements for fm_location3 entries that need loc2 updates
-		foreach ($affected_loc3_entries as $entry)
+		foreach ($loc3Loc2UpdateCounts as $old_loc3_code => $newTargets)
 		{
-			$loc1 = $entry['loc1'];
-			$old_loc2 = $entry['old_loc2'];
-			$new_loc2 = $entry['new_loc2'];
-			$loc3 = $entry['loc3'];
+			arsort($newTargets); // Highest count first
+			$best_new_code = array_key_first($newTargets);
+			if ($best_new_code === null)
+			{
+				continue;
+			}
+
+			$old_loc4_count = $loc4CountByLoc3[$old_loc3_code] ?? 0;
+			$moved_to_best_count = $newTargets[$best_new_code] ?? 0;
+			if ($moved_to_best_count !== $old_loc4_count)
+			{
+				// Only move loc3 when all loc4 entries move to the target.
+				continue;
+			}
+
+			list($loc1, $old_loc2, $old_loc3) = explode('-', $old_loc3_code);
+			list($_loc1_unused, $new_loc2, $new_loc3) = explode('-', $best_new_code);
+			$old_code = $old_loc3_code;
+			$new_code = $best_new_code;
 			
-			$old_code = "{$loc1}-{$old_loc2}-{$loc3}";
-			$new_code = "{$loc1}-{$new_loc2}-{$loc3}";
-			
-			// Update fm_location3 location_code and loc2 value only when target does not already exist
+			// Update fm_location3 location_code, loc2, and loc3 only when target does not already exist
 			$this->sqlStatements['location3_loc2_updates'][] =
-				"UPDATE fm_location3 SET location_code = '{$new_code}', loc2 = '{$new_loc2}' WHERE location_code = '{$old_code}' AND NOT EXISTS (SELECT 1 FROM fm_location3 WHERE loc1 = '{$loc1}' AND loc2 = '{$new_loc2}' AND loc3 = '{$loc3}');";
+				"UPDATE fm_location3 SET location_code = '{$new_code}', loc2 = '{$new_loc2}', loc3 = '{$new_loc3}' WHERE location_code = '{$old_code}' AND NOT EXISTS (SELECT 1 FROM fm_location3 WHERE loc1 = '{$loc1}' AND loc2 = '{$new_loc2}' AND loc3 = '{$new_loc3}');";
 			
 			// Add mapping entry for reference
-			$this->sqlStatements['corrections'][] =
-				"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, change_type) VALUES ('{$old_code}', '{$new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', '{$loc3}', '{$loc3}', 'location3_loc2_update');";
+			$mapping_key = "{$old_code}->{$new_code}->location3_loc2_update";
+			$loc3_mapping_key = "{$old_code}->{$new_code}->location3_loc3_update";
+			if (isset($inserted_mappings[$loc3_mapping_key]))
+			{
+				// Prefer the loc3-level mapping when both would be identical old/new codes.
+				continue;
+			}
+			if (!isset($inserted_mappings[$mapping_key]))
+			{
+				$this->sqlStatements['corrections'][] =
+					"INSERT INTO location_mapping (old_location_code, new_location_code, loc1, old_loc2, new_loc2, old_loc3, new_loc3, change_type) VALUES ('{$old_code}', '{$new_code}', '{$loc1}', '{$old_loc2}', '{$new_loc2}', '{$old_loc3}', '{$new_loc3}', 'location3_loc2_update');";
+				$inserted_mappings[$mapping_key] = true;
+			}
 		}
-*/
+
 		// 6. Add update statements for all tables with location_code and loc1, loc2, loc3, loc4 columns
 		$this->createUpdateStatements();
 
@@ -641,6 +736,12 @@ class LocationHierarchyAnalyzer
 			'total_issues' => count($this->issues),
 			'issues_by_type' => array_count_values(array_column($this->issues, 'type')),
 		];
+
+		if (!empty($this->sqlStatements['corrections']))
+		{
+			// Ensure we never output duplicate mapping inserts.
+			$this->sqlStatements['corrections'] = array_values(array_unique($this->sqlStatements['corrections']));
+		}
 
 		return [
 			'statistics' => $statistics,
@@ -708,6 +809,11 @@ class LocationHierarchyAnalyzer
 			{
 				$all['sql_statements'][$k] = array_merge($all['sql_statements'][$k], $res['sql_statements'][$k] ?? []);
 			}
+		}
+		if (!empty($all['sql_statements']['corrections']))
+		{
+			// Ensure we never output duplicate mapping inserts when merging per-loc1 results.
+			$all['sql_statements']['corrections'] = array_values(array_unique($all['sql_statements']['corrections']));
 		}
 		$all['sql_statements']['update_location_from_mapping'] = $this->createUpdateStatements();
 		return $all;

@@ -1,0 +1,231 @@
+.app-datatable {
+	padding: var(--ds-size-4, 1rem) 0;
+}
+
+/* Alert containers */
+.app-datatable__alert {
+	margin-bottom: var(--ds-size-4, 1rem);
+	padding: var(--ds-size-3, 0.75rem) var(--ds-size-4, 1rem);
+	border-radius: var(--ds-border-radius-md, 4px);
+	font-size: var(--ds-size-mode-font-size--md, 1rem);
+	transition: opacity 0.3s ease;
+}
+
+.app-datatable__alert--success {
+	background: var(--ds-color-success-surface-default, #e6f4ea);
+	color: var(--ds-color-success-text-default, #1e7e34);
+	border: 1px solid var(--ds-color-success-border-default, #b7dfbf);
+}
+
+.app-datatable__alert--danger {
+	background: var(--ds-color-danger-surface-default, #fbe9e7);
+	color: var(--ds-color-danger-text-default, #c62828);
+	border: 1px solid var(--ds-color-danger-border-default, #f5c6cb);
+}
+
+.app-datatable__alert.is-fading {
+	opacity: 0;
+}
+
+/* Message area (like datatable2 #message) */
+.app-datatable__message:empty {
+	display: none;
+}
+
+.app-datatable__message {
+	margin-bottom: var(--ds-size-3, 0.75rem);
+	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
+	color: var(--ds-color-text-subtle, #555);
+}
+
+/* Active filters display */
+.app-datatable__active-filters:empty {
+	display: none;
+}
+
+.app-datatable__active-filters {
+	margin-bottom: var(--ds-size-2, 0.5rem);
+	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
+	color: var(--ds-color-accent-text-default, #0062ba);
+	font-weight: 500;
+}
+
+/* Filter toolbar (toggle + reset buttons) */
+.app-datatable__filter-toolbar {
+	display: flex;
+	align-items: center;
+	gap: var(--ds-size-2, 0.5rem);
+	margin-bottom: var(--ds-size-2, 0.5rem);
+}
+
+/* Filter panel */
+.app-datatable__filters {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+	gap: var(--ds-size-3, 0.75rem);
+	margin-bottom: var(--ds-size-4, 1rem);
+	padding: var(--ds-size-4, 1rem);
+	background: var(--ds-color-neutral-surface-default, #f5f6f7);
+	border-radius: var(--ds-border-radius-md, 4px);
+	border: 1px solid var(--ds-color-border-subtle, #e0e0e0);
+}
+
+.app-datatable__filters--collapsed {
+	display: none;
+}
+
+.app-datatable__filter-group {
+	display: flex;
+	flex-direction: column;
+	gap: var(--ds-size-1, 0.25rem);
+}
+
+.app-datatable__filter-group label {
+	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
+	font-weight: 500;
+	color: var(--ds-color-text-default, #1e2b3c);
+}
+
+.app-datatable__filter-group input,
+.app-datatable__filter-group select {
+	padding: var(--ds-size-2, 0.5rem) var(--ds-size-3, 0.75rem);
+	border: 1px solid var(--ds-color-border-default, #c9c9c9);
+	border-radius: var(--ds-border-radius-md, 4px);
+	font-size: var(--ds-size-mode-font-size--md, 1rem);
+	background: var(--ds-color-background-default, #fff);
+}
+
+.app-datatable__filter-group input:focus,
+.app-datatable__filter-group select:focus {
+	outline: 2px solid var(--ds-color-focus-outer, #00315d);
+	outline-offset: 2px;
+}
+
+/* DataTables overrides for Designsystemet */
+.app-datatable .dt-search input {
+	padding: var(--ds-size-2, 0.5rem) var(--ds-size-3, 0.75rem);
+	border: 1px solid var(--ds-color-border-default, #c9c9c9);
+	border-radius: var(--ds-border-radius-md, 4px);
+	font-size: var(--ds-size-mode-font-size--md, 1rem);
+}
+
+.app-datatable .dt-search input:focus {
+	outline: 2px solid var(--ds-color-focus-outer, #00315d);
+	outline-offset: 2px;
+}
+
+.app-datatable .dt-info,
+.app-datatable .dt-length label,
+.app-datatable .dt-search label {
+	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
+	color: var(--ds-color-text-subtle, #555);
+}
+
+.app-datatable .dt-paging .dt-paging-button {
+	padding: var(--ds-size-1, 0.25rem) var(--ds-size-3, 0.75rem);
+	border: 1px solid var(--ds-color-border-default, #c9c9c9);
+	border-radius: var(--ds-border-radius-md, 4px);
+	background: var(--ds-color-background-default, #fff);
+	color: var(--ds-color-text-default, #1e2b3c);
+	cursor: pointer;
+}
+
+.app-datatable .dt-paging .dt-paging-button.current {
+	background: var(--ds-color-accent-base-default, #0062ba);
+	color: #fff;
+	border-color: var(--ds-color-accent-base-default, #0062ba);
+}
+
+.app-datatable .dt-paging .dt-paging-button.disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Input paging */
+.app-datatable .dt-paging input[type="text"] {
+	width: 4em;
+	padding: var(--ds-size-1, 0.25rem) var(--ds-size-2, 0.5rem);
+	border: 1px solid var(--ds-color-border-default, #c9c9c9);
+	border-radius: var(--ds-border-radius-md, 4px);
+	text-align: center;
+}
+
+/* Toolbar buttons */
+.app-datatable .dt-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--ds-size-2, 0.5rem);
+	margin-bottom: var(--ds-size-2, 0.5rem);
+}
+
+.app-datatable .dt-buttons .dt-button {
+	padding: var(--ds-size-2, 0.5rem) var(--ds-size-3, 0.75rem);
+	border: 1px solid var(--ds-color-border-default, #c9c9c9);
+	border-radius: var(--ds-border-radius-md, 4px);
+	background: var(--ds-color-background-default, #fff);
+	color: var(--ds-color-text-default, #1e2b3c);
+	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
+	cursor: pointer;
+}
+
+.app-datatable .dt-buttons .dt-button:hover {
+	background: var(--ds-color-neutral-surface-hover, #e8e9eb);
+}
+
+.app-datatable .dt-buttons .dt-button:disabled,
+.app-datatable .dt-buttons .dt-button.disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Processing indicator */
+.app-datatable .dt-processing {
+	background: rgba(255, 255, 255, 0.8);
+	color: var(--ds-color-text-subtle, #555);
+	font-size: var(--ds-size-mode-font-size--md, 1rem);
+}
+
+/* Row actions */
+.app-datatable__actions {
+	display: flex;
+	gap: var(--ds-size-2, 0.5rem);
+	flex-wrap: nowrap;
+}
+
+/* Column search inputs in header */
+.app-datatable__col-search {
+	width: 100%;
+	padding: var(--ds-size-1, 0.25rem) var(--ds-size-2, 0.5rem);
+	border: 1px solid var(--ds-color-border-default, #c9c9c9);
+	border-radius: var(--ds-border-radius-md, 4px);
+	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
+	box-sizing: border-box;
+}
+
+.app-datatable__col-search:focus {
+	outline: 2px solid var(--ds-color-focus-outer, #00315d);
+	outline-offset: 2px;
+}
+
+/* Selected row */
+.app-datatable table tbody tr.selected {
+	background-color: var(--ds-color-accent-surface-default, #e6f0fa);
+}
+
+/* Priority row classes (matches datatable2.twig) */
+.app-datatable table tbody tr.priority1 {
+	background-color: #fff3cd;
+}
+
+.app-datatable table tbody tr.priority2 {
+	background-color: #fce4ec;
+}
+
+.app-datatable table tbody tr.priority3 {
+	background-color: #ffccbc;
+}
+
+/* Utility */
+.app-datatable .is-hidden {
+	display: none;
+}

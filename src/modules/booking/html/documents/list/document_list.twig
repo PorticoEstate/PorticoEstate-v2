@@ -2,44 +2,19 @@
 
 {% block title %}{{ lang('Documents') }}{% endblock %}
 
-{% block styles %}
-<link href="{{ modules_url }}/phpgwapi/js/DataTables2/datatables.min.css" rel="stylesheet">
-<style>{{ source('@views/documents/list/document_list.css') }}</style>
-{% endblock %}
-
 {% block content %}
-<div class="document-list">
-	{% if can_create %}
-	<div class="document-list__toolbar">
-		<a href="{{ phpgw_link('/index.php', {menuaction: 'booking.uidocument_building.add'}) }}" class="ds-button">
-			{{ lang('add document') }}
-		</a>
-	</div>
-	{% endif %}
-
-	<div id="alert-success" class="app-alert app-alert--success is-hidden"></div>
-	<div id="alert-error" class="app-alert app-alert--danger is-hidden"></div>
-
-	<table id="document-table" class="ds-table" data-zebra data-hover data-border>
-		<thead>
-			<tr>
-				<th>{{ lang('Document') }}</th>
-				<th>{{ lang('Building') }}</th>
-				<th>{{ lang('Description') }}</th>
-				<th>{{ lang('Category') }}</th>
-				<th></th>
-			</tr>
-		</thead>
-	</table>
-</div>
+{% include '@views/datatable/datatable.twig' %}
 {% endblock %}
 
 {% block scripts %}
 <script>
 	window.__documentList = {
+		canCreate: {{ can_create ? 'true' : 'false' }},
 		canWrite: {{ can_write ? 'true' : 'false' }},
 		canDelete: {{ can_delete ? 'true' : 'false' }},
+		addDocumentUrl: '{{ phpgw_link('/index.php', {menuaction: 'booking.uidocument_building.add'})|e('js') }}',
 		lang: {
+			addDocument: '{{ lang("add document")|e('js') }}',
 			document: '{{ lang("Document")|e('js') }}',
 			building: '{{ lang("Building")|e('js') }}',
 			description: '{{ lang("Description")|e('js') }}',
@@ -60,6 +35,5 @@
 		}
 	};
 </script>
-<script src="{{ modules_url }}/phpgwapi/js/DataTables2/datatables.min.js"></script>
 <script>{{ source('@views/documents/list/document_list.js') }}</script>
 {% endblock %}

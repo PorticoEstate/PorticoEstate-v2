@@ -901,3 +901,8 @@ square_preview	booking	en	200x200 (square)
 portrait_preview	booking	en	200x411 (portrait)
 apply_focal_point	booking	en	Use
 short_description	booking	en	Short description
+document deleted	booking	en	Document deleted
+no documents found	booking	en	No documents found
+showing _start_ to _end_ of _total_ entries	booking	en	Showing _START_ to _END_ of _TOTAL_ entries
+no entries to show	booking	en	No entries to show
+show _menu_ entries	booking	en	Show _MENU_ entries

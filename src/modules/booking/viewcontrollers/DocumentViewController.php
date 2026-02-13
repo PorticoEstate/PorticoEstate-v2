@@ -34,6 +34,36 @@ class DocumentViewController
 		$this->twig = new TwigHelper('booking');
 	}
 
+	public function list(Request $request, Response $response): Response
+	{
+		try {
+			if ($this->authService->authorize($this->authConfig, 'read') === false) {
+				return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
+			}
+
+			$canCreate = $this->authService->authorize($this->authConfig, 'create') !== false;
+			$canWrite = $this->authService->authorize($this->authConfig, 'write') !== false;
+			$canDelete = $this->authService->authorize($this->authConfig, 'delete') !== false;
+
+			$componentHtml = $this->twig->render('@views/documents/list/document_list.twig', [
+				'layout' => '@views/_bare.twig',
+				'can_create' => $canCreate,
+				'can_write' => $canWrite,
+				'can_delete' => $canDelete,
+			]);
+
+			$html = $this->legacyView->render($componentHtml, ['booking', 'buildings', 'documents']);
+
+			$response->getBody()->write($html);
+			return $response->withHeader('Content-Type', 'text/html');
+		} catch (Exception $e) {
+			return ResponseHelper::sendErrorResponse(
+				['error' => 'Error loading document list: ' . $e->getMessage()],
+				500
+			);
+		}
+	}
+
 	public function edit(Request $request, Response $response, array $args): Response
 	{
 		$documentId = (int)$args['id'];
@@ -61,7 +91,7 @@ class DocumentViewController
 				'layout' => '@views/_bare.twig',
 			]);
 
-			$html = $this->legacyView->render($componentHtml, 'booking', 'booking::buildings::documents');
+			$html = $this->legacyView->render($componentHtml, ['booking', 'buildings', 'documents']);
 
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');

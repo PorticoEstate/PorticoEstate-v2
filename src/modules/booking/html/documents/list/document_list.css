@@ -1,0 +1,69 @@
+.document-list {
+	padding: var(--ds-size-4, 1rem) 0;
+}
+
+.document-list__toolbar {
+	margin-bottom: var(--ds-size-4, 1rem);
+}
+
+/* Alert transitions */
+.document-list .app-alert {
+	margin-bottom: var(--ds-size-4, 1rem);
+	transition: opacity 0.3s ease;
+}
+
+.document-list .app-alert.is-fading {
+	opacity: 0;
+}
+
+/* DataTables overrides for Designsystemet look */
+.document-list .dt-search input {
+	padding: var(--ds-size-2, 0.5rem) var(--ds-size-3, 0.75rem);
+	border: 1px solid var(--ds-color-border-default, #c9c9c9);
+	border-radius: var(--ds-border-radius-md, 4px);
+	font-size: var(--ds-size-mode-font-size--md, 1rem);
+}
+
+.document-list .dt-search input:focus {
+	outline: 2px solid var(--ds-color-focus-outer, #00315d);
+	outline-offset: 2px;
+}
+
+.document-list .dt-info,
+.document-list .dt-length label,
+.document-list .dt-search label {
+	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
+	color: var(--ds-color-text-subtle, #555);
+}
+
+.document-list .dt-paging .dt-paging-button {
+	padding: var(--ds-size-1, 0.25rem) var(--ds-size-3, 0.75rem);
+	border: 1px solid var(--ds-color-border-default, #c9c9c9);
+	border-radius: var(--ds-border-radius-md, 4px);
+	background: var(--ds-color-background-default, #fff);
+	color: var(--ds-color-text-default, #1e2b3c);
+	cursor: pointer;
+}
+
+.document-list .dt-paging .dt-paging-button.current {
+	background: var(--ds-color-accent-base-default, #0062ba);
+	color: #fff;
+	border-color: var(--ds-color-accent-base-default, #0062ba);
+}
+
+.document-list .dt-paging .dt-paging-button.disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+/* Action buttons in table rows */
+.document-list__actions {
+	display: flex;
+	gap: var(--ds-size-2, 0.5rem);
+	flex-wrap: nowrap;
+}
+
+/* Utility */
+.is-hidden {
+	display: none;
+}

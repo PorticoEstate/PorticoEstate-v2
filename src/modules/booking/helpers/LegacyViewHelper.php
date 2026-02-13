@@ -50,15 +50,27 @@ class LegacyViewHelper
 	 * Wrap component HTML in the full legacy portico frame.
 	 *
 	 * @param string $componentHtml  The rendered component HTML (from TwigHelper)
-	 * @param string $appName        The application name for flags (default: 'booking')
-	 * @param string $menuSelection  Sidebar menu path to expand (e.g. 'booking::buildings::documents')
+	 * @param string|array $appNameOrPath  Application name string, OR an array of menu path
+	 *                                     segments (e.g. ['booking', 'buildings', 'documents']).
+	 *                                     When an array is given, the first element is the app name,
+	 *                                     menu_selection is derived as 'a::b::c', and app_header
+	 *                                     is built by translating each segment via lang().
+	 * @param string $menuSelection  Sidebar menu path (ignored when $appNameOrPath is an array)
 	 * @return string Complete HTML page including legacy header, navbar, sidebar, and footer
 	 */
-	public function render(string $componentHtml, string $appName = 'booking', string $menuSelection = ''): string
+	public function render(string $componentHtml, string|array $appNameOrPath = 'booking', string $menuSelection = ''): string
 	{
 		$this->loadLegacyClasses();
-		// setFlags AFTER loadLegacyClasses because LegacyObjectHandler.php sets noheader=true
-		$this->setFlags($appName, $menuSelection);
+
+		if (is_array($appNameOrPath)) {
+			$appName = $appNameOrPath[0];
+			$menuSelection = implode('::', $appNameOrPath);
+			$appHeader = implode('::', array_map(fn($s) => lang($s), $appNameOrPath));
+			$this->setFlags($appName, $menuSelection, $appHeader);
+		} else {
+			// setFlags AFTER loadLegacyClasses because LegacyObjectHandler.php sets noheader=true
+			$this->setFlags($appNameOrPath, $menuSelection);
+		}
 
 		$common = new \phpgwapi_common();
 
@@ -97,7 +109,7 @@ class LegacyViewHelper
 		}
 	}
 
-	private function setFlags(string $appName, string $menuSelection): void
+	private function setFlags(string $appName, string $menuSelection, string $appHeader = ''): void
 	{
 		$flags = Settings::getInstance()->get('flags');
 		$flags['currentapp'] = $appName;
@@ -106,6 +118,9 @@ class LegacyViewHelper
 		$flags['nofooter'] = false;
 		if ($menuSelection !== '') {
 			$flags['menu_selection'] = $menuSelection;
+		}
+		if ($appHeader !== '') {
+			$flags['app_header'] = $appHeader;
 		}
 		// head.inc.php uses isset() not empty(), so we must unset rather than set false
 		unset($flags['noframework']);

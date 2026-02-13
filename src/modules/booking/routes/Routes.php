@@ -63,8 +63,8 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 	{
 		$viewGroup->group('/buildings', function (RouteCollectorProxy $buildingGroup) use ($container)
 		{
+			$buildingGroup->get('/documents', DocumentViewController::class . ':list');
 			$buildingGroup->get('/documents/{id}/edit', DocumentViewController::class . ':edit');
-
 		});
 	});
 

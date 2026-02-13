@@ -601,3 +601,7 @@ zip_code_min_length	common	en	Zip code must be at least 4 characters
 invalid_url_format	common	en	Invalid URL format
 phone_number_required	common	en	Phone number is required
 email_required	common	en	Email is required
+
+first	common	en	First
+last	common	en	Last
+previous	common	en	Previous

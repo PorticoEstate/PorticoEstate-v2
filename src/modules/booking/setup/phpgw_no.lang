@@ -999,3 +999,8 @@ portrait_preview	booking	no	200x411 (portrett)
 apply_focal_point	booking	no	Bruk
 
 short_description	booking	no	Kort beskrivelse
+document deleted	booking	no	Dokument slettet
+no documents found	booking	no	Ingen dokumenter funnet
+showing _start_ to _end_ of _total_ entries	booking	no	Viser _START_ til _END_ av _TOTAL_ oppføringer
+no entries to show	booking	no	Ingen oppføringer å vise
+show _menu_ entries	booking	no	Vis _MENU_ oppføringer

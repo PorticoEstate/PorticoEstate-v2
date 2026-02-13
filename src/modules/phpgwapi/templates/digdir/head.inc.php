@@ -67,10 +67,10 @@ if (!$serverSettings['no_jscombine'])
 
 	$cachedir	 = urlencode("{$serverSettings['temp_dir']}/combine_cache");
 	$jsfiles	 = implode(',', $_jsfiles);
-	
+
 	// For Twig
 	$jsUris[] = "{$webserver_url}/phpgwapi/inc/combine.php?cachedir={$cachedir}&type=javascript&files={$jsfiles}";
-	
+
 	unset($jsfiles);
 	unset($_jsfiles);
 }
@@ -89,10 +89,10 @@ else
 // Prepare stylesheets
 $stylesheets = array();
 
-$stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
-$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
+//$stylesheets[] = "/phpgwapi/templates/pure/css/global.css";
+//$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/pure-min.css";
+//$stylesheets[] = "/phpgwapi/templates/pure/css/pure-extension.css";
+//$stylesheets[] = "/phpgwapi/templates/pure/css/version_3/grids-responsive-min.css";
 
 // Load Designsystemet natively
 // Load native Designsystemet CSS (includes Pure CSS compatibility)
@@ -256,7 +256,7 @@ $tpl_vars = array(
 	'lang_expand_all'	 => lang('expand all'),
 	'concent_script'	 => $concent_script,
 	'sessionid'			 => $userSettings['sessionid'],
-	
+
 	// Variables for Twig templates
 	'javascripts'       => $jsUris,
 	'stylesheets'       => $cssUris,

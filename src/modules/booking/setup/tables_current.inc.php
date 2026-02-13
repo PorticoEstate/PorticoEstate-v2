@@ -60,6 +60,7 @@ $phpgw_baseline = array(
 			'district' => array('type' => 'varchar', 'precision' => '255', 'nullable' => True),
 			'city' => array('type' => 'varchar', 'precision' => '255', 'nullable' => True),
 			'description_json' => array('type' => 'jsonb', 'nullable' => True), //array of translations
+			'short_description' => array('type' => 'jsonb', 'nullable' => True), //array of translations
 			'calendar_text' => array('type' => 'text', 'nullable' => True),
 			'opening_hours' => array('type' => 'text', 'nullable' => True),
 		),
@@ -236,6 +237,7 @@ $phpgw_baseline = array(
 			'active' => array('type' => 'int', 'nullable' => False, 'precision' => '4', 'default' => 1),
 			'name' => array('type' => 'varchar', 'precision' => '150', 'nullable' => False),
 			'description_json' => array('type' => 'jsonb', 'nullable' => True), //array of translations
+			'short_description' => array('type' => 'jsonb', 'nullable' => True), //array of translations
 			'activity_id' => array('type' => 'int', 'precision' => '4', 'nullable' => False),
 			'sort' => array('type' => 'int', 'precision' => '4', 'nullable' => False, 'default' => 0),
 			'organizations_ids' => array('type' => 'varchar', 'precision' => '50', 'nullable' => True),

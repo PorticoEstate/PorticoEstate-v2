@@ -21,7 +21,7 @@
 				),
 				booking_sopermission::ROLE_CASE_OFFICER => array
 					(
-					'write' => array_fill_keys(array('name', 'homepage', 'description', 'opening_hours',
+					'write' => array_fill_keys(array('name', 'homepage', 'description', 'short_description', 'opening_hours',
 						'email', 'phone', 'street', 'zip_code', 'city', 'district', 'deactivate_application',
 						'deactivate_calendar', 'deactivate_sendmessage'), true),
 				),

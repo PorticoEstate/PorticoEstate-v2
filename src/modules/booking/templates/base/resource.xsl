@@ -32,6 +32,14 @@
 				</div>
 				<div class="pure-control-group">
 					<label>
+						<xsl:value-of select="php:function('lang', 'short_description')" />
+					</label>
+					<div class="custom-container">
+						<xsl:value-of select="resource/short_description_text"/>
+					</div>
+				</div>
+				<div class="pure-control-group">
+					<label>
 						<xsl:value-of select="php:function('lang', 'Opening hours')" />
 					</label>
 					<div class="custom-container">

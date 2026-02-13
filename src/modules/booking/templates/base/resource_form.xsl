@@ -705,6 +705,24 @@
 					</div>
 				</xsl:for-each>
 
+				<xsl:for-each select="langs">
+					<xsl:variable name="lang">
+						<xsl:value-of select="lang"/>
+					</xsl:variable>
+					<div class="pure-control-group">
+						<label for="field_short_description_{$lang}">
+							<xsl:value-of select="php:function('lang', 'short_description')" />
+							<xsl:text> </xsl:text>
+							<xsl:value-of select="name"/>
+						</label>
+						<input id="field_short_description_{$lang}" name="short_description[{$lang}]" type="text" maxlength="255" class="pure-input-3-4">
+							<xsl:attribute name="value">
+								<xsl:value-of select="short_description"/>
+							</xsl:attribute>
+						</input>
+					</div>
+				</xsl:for-each>
+
 				<div class="pure-control-group">
 					<label>
 						<xsl:value-of select="php:function('lang', 'Opening hours')" />

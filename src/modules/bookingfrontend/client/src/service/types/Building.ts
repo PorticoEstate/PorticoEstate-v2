@@ -78,6 +78,9 @@ export interface IBuilding {
 
     /** Description in JSON format */
 	description_json?: string; // JSON object, can use a more specific type if needed
+
+
+	short_description: string | null; // JSON string containing localized descriptions
 }
 
 

@@ -82,6 +82,12 @@ class BookingfrontendConfig
      */
     public $url_system_feedback;
 
+    /**
+     * @OA\Property(type="array", @OA\Items(type="integer"))
+	 * @Expose
+     */
+    public $highlighted_buildings = [];
+
     public function __construct(?array $data)
     {
         if (is_array($data))
@@ -93,6 +99,13 @@ class BookingfrontendConfig
                     $this->$key = $value;
                 }
             }
+        }
+
+        if (is_string($this->highlighted_buildings))
+        {
+            $this->highlighted_buildings = array_values(array_filter(
+                array_map('intval', explode(',', $this->highlighted_buildings))
+            ));
         }
     }
 }

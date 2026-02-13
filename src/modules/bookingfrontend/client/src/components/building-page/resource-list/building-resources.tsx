@@ -2,11 +2,11 @@ import {fetchSSRBuildingResources} from "@/service/api/building-ssr";
 import {IBuilding} from "@/service/types/Building";
 import {Button} from "@digdir/designsystemet-react";
 import {getTranslation} from "@/app/i18n";
-import { LayersIcon } from "@navikt/aksel-icons";
 import Link from "next/link";
 import styles from "@/components/building-page/resource-list/building-resources.module.scss";
 import React from "react";
 import GSAccordion from "@/components/gs-accordion/g-s-accordion";
+import ResourceIcon from "@/icons/ResourceIcon";
 
 interface BuildingResourcesProps {
     building: IBuilding;
@@ -27,7 +27,7 @@ const BuildingResources = async (props: BuildingResourcesProps) => {
                     <Button asChild key={res.id} variant={'secondary'} data-color={'accent'}
                             className={'default'}>
                         <Link href={'/resource/' + res.id}>
-                            <LayersIcon fontSize="1.25rem" />{res.name}
+                            <ResourceIcon fontSize="1.25rem" />{res.name}
                         </Link>
                     </Button>)}
 				</div>

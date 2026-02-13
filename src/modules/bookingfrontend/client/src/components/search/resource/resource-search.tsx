@@ -1,16 +1,20 @@
 'use client'
 import React, {FC, useMemo, useState, useEffect} from 'react';
-import {useSearchData, useTowns, useMultiDomains, useAvailableResourcesMultiDomain} from "@/service/hooks/api-hooks";
-import {Textfield, Select, Button, Chip, Spinner, Field, Label} from '@digdir/designsystemet-react';
+import {useSearchData, useTowns, useMultiDomains, useAvailableResourcesMultiDomain, useServerSettings} from "@/service/hooks/api-hooks";
+import {Textfield, Select, Button, Chip, Spinner, Field, Label, Heading} from '@digdir/designsystemet-react';
 import styles from './resource-search.module.scss';
 import {useTrans} from '@/app/i18n/ClientTranslationProvider';
 import CalendarDatePicker from "@/components/date-time-picker/calendar-date-picker";
 import {ISearchDataBuilding, ISearchDataOptimized, ISearchDataTown, ISearchResource} from '@/service/types/api/search.types';
 import {IMultiDomain} from '@/service/types/api.types';
 import ResourceResultItem from "@/components/search/resource/resource-result-item";
+import BuildingResultItem from "@/components/search/resource/building-result-item";
 import FilterModal from './filter-modal';
 import {FilterIcon} from '@navikt/aksel-icons';
 import {useIsMobile} from "@/service/hooks/is-mobile";
+import BuildingIcon from "@/icons/BuildingIcon";
+import ResourceIcon from "@/icons/ResourceIcon";
+import HistoryIcon from "@/icons/HistoryIcon";
 
 interface ResourceSearchProps {
     initialSearchData?: ISearchDataOptimized;
@@ -69,6 +73,9 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
     const {data: multiDomainsData, isLoading: isLoadingMultiDomains, error: multiDomainsError} = useMultiDomains({
         initialData: initialMultiDomains
     });
+
+    // Fetch server settings for highlighted buildings config
+    const {data: serverSettings} = useServerSettings();
 
     // Format date for API call (YYYY-MM-DD)
     const formattedDate = date ? date.toISOString().split('T')[0] : undefined;
@@ -159,6 +166,162 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
 
         return result;
     }, [searchData]);
+
+    // Filter and sort buildings based on search criteria
+    const filteredBuildings = useMemo(() => {
+        if (!searchData?.buildings) return [];
+
+        // If no filters are applied, return empty array (don't show results by default)
+        if (!textSearchQuery.trim() && !where && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
+            return [];
+        }
+
+        let filtered = [...searchData.buildings];
+
+        // Text search - match building name
+        if (textSearchQuery && textSearchQuery.trim() !== '') {
+            const query = textSearchQuery.toLowerCase();
+            filtered = filtered.filter(building =>
+                building.name.toLowerCase().includes(query) ||
+                building.street?.toLowerCase().includes(query) ||
+                building.city?.toLowerCase().includes(query)
+            );
+        }
+
+        // Town filter - using building's town_id
+        if (where) {
+            const townId = Number(where);
+            filtered = filtered.filter(building => building.town_id === townId);
+        }
+
+        // Activity/Facility filters - show buildings that have resources with these filters
+        if (selectedActivities.length > 0 || selectedFacilities.length > 0) {
+            filtered = filtered.filter(building => {
+                // Get all resources for this building
+                const buildingResourceIds = searchData.building_resources
+                    .filter(br => br.building_id === building.id)
+                    .map(br => br.resource_id);
+
+                // Check if any of the building's resources match the activity/facility filters
+                return buildingResourceIds.some(resourceId => {
+                    const resource = searchData.resources.find(r => r.id === resourceId);
+                    if (!resource) return false;
+
+                    // Activity filter
+                    if (selectedActivities.length > 0) {
+                        const matchingActivities = new Set<number>();
+
+                        if (resource.activity_id && selectedActivities.includes(resource.activity_id)) {
+                            matchingActivities.add(resource.activity_id);
+                        }
+
+                        const resourceActivities = searchData.resource_activities?.filter(
+                            ra => ra.resource_id === resource.id
+                        );
+                        resourceActivities?.forEach(ra => {
+                            if (selectedActivities.includes(ra.activity_id)) {
+                                matchingActivities.add(ra.activity_id);
+                            }
+                        });
+
+                        if (resource.rescategory_id) {
+                            const categoryActivities = searchData.resource_category_activity.filter(
+                                rca => rca.rescategory_id === resource.rescategory_id
+                            );
+                            categoryActivities?.forEach(ca => {
+                                if (selectedActivities.includes(ca.activity_id)) {
+                                    matchingActivities.add(ca.activity_id);
+                                }
+                            });
+                        }
+
+                        const hasAllActivities = selectedActivities.every(activityId =>
+                            matchingActivities.has(activityId)
+                        );
+
+                        if (!hasAllActivities) return false;
+                    }
+
+                    // Facility filter
+                    if (selectedFacilities.length > 0) {
+                        const resourceFacilities = searchData.resource_facilities.filter(
+                            rf => rf.resource_id === resource.id
+                        );
+
+                        const hasAllFacilities = selectedFacilities.every(facilityId =>
+                            resourceFacilities?.some(rf => rf.facility_id === facilityId)
+                        );
+
+                        if (!hasAllFacilities) return false;
+                    }
+
+                    return true;
+                });
+            });
+        }
+
+        // Date filter - show buildings that have available resources on the selected date
+        if (availableResourcesByDomain && date) {
+            filtered = filtered.filter(building => {
+                // Get all resources for this building
+                const buildingResourceIds = searchData.building_resources
+                    .filter(br => br.building_id === building.id)
+                    .map(br => br.resource_id);
+
+                // Check if any resource is available
+                return buildingResourceIds.some(resourceId => {
+                    const resource = searchData.resources.find(r => r.id === resourceId);
+                    if (!resource) return false;
+
+                    const resourceDomain = resource.domain_name || 'local';
+                    const resourceIdToCheck = resource.original_id || resource.id;
+                    return availableResourcesByDomain[resourceDomain]?.includes(resourceIdToCheck) || false;
+                });
+            });
+        }
+
+        // Sort by name
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+
+        return filtered;
+    }, [searchData, textSearchQuery, where, selectedActivities, selectedFacilities, availableResourcesByDomain, date]);
+
+    // Get last ordered resources from localStorage for the landing view
+    const lastOrderedResources = useMemo(() => {
+        if (typeof window === 'undefined' || !resourcesWithBuildings.length) return [];
+        try {
+            const stored = localStorage.getItem('last_ordered');
+            if (!stored) return [];
+            const ids: number[] = JSON.parse(stored);
+            return ids
+                .map(id => resourcesWithBuildings.find(r => r.id === id))
+                .filter((r): r is (ISearchResource & { building?: ISearchDataBuilding }) => !!r)
+                .slice(0, 3);
+        } catch {
+            return [];
+        }
+    }, [resourcesWithBuildings]);
+
+    // Get highlighted buildings for the landing view
+    // Configured highlighted buildings come first, then fill remaining
+    // slots with featured buildings (date-seeded pseudo-random from API)
+    const highlightedBuildings = useMemo(() => {
+        if (!searchData?.buildings) return [];
+
+        const configIds = serverSettings?.bookingfrontend_config?.highlighted_buildings ?? [];
+        const featuredIds = searchData.featured_buildings ?? [];
+
+        const configSet = new Set(configIds);
+        const combined = [
+            ...configIds,
+            ...featuredIds.filter(id => !configSet.has(id)),
+        ];
+
+        return combined
+            .map(id => searchData.buildings.find(b => b.id === id))
+            .filter((b): b is ISearchDataBuilding => !!b)
+            .slice(0, 6);
+    }, [serverSettings, searchData]);
 
     // Calculate similarity score for sorting
     const calculateSimilarity = (
@@ -542,18 +705,58 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         );
     };
 
+    // Render the landing view shown before any search
+    const renderLandingView = () => {
+        return (
+            <div className={styles.landingContainer}>
+                {/* Last ordered resources */}
+                {lastOrderedResources.length > 0 && (
+                    <div className={styles.landingSection}>
+                        <Heading level={2} data-size="sm" className={styles.sectionHeading}>
+                            <HistoryIcon />
+                            {t('bookingfrontend.last_ordered_resources')}
+                        </Heading>
+                        <div className={styles.resourceGrid}>
+                            {lastOrderedResources.map(resource => (
+                                <ResourceResultItem
+                                    key={`last-ordered-${resource.domain_name || 'local'}-${resource.id}`}
+                                    resource={resource}
+                                    selectedDate={null}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Highlighted buildings */}
+                {highlightedBuildings.length > 0 && (
+                    <div className={styles.landingSection}>
+                        <Heading level={2} data-size="sm" className={styles.sectionHeading}>
+                            <BuildingIcon fontSize="1em"/>
+                            {t('bookingfrontend.buildings_and_facilities')}
+                        </Heading>
+                        <div className={styles.resourceGrid}>
+                            {highlightedBuildings.map(building => (
+                                <BuildingResultItem
+                                    key={`highlighted-${building.domain_name || 'local'}-${building.id}`}
+                                    building={building}
+                                    selectedDate={null}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     // Render search results section
     const renderSearchResults = () => {
         if (!textSearchQuery.trim() && !where && !date && selectedActivities.length === 0 && selectedFacilities.length === 0) {
-            return (
-                <div className={styles.noResults}>
-                    <p>{t('bookingfrontend.search_use_filters_to_search')}</p>
-                    {/*{renderSearchInfo()}*/}
-                </div>
-            );
+            return renderLandingView();
         }
 
-        if (filteredResources.length === 0) {
+        if (filteredBuildings.length === 0 && filteredResources.length === 0) {
             return (
                 <div className={styles.noResults}>
                     <p>{t('bookingfrontend.search_no_resources_match')}</p>
@@ -568,42 +771,65 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
             );
         }
 
-        // Calculate result statistics
-        const localResults = filteredResources.filter(r => !r.domain_name);
-        const externalResults = filteredResources.filter(r => r.domain_name);
-
         return (
             <div className={styles.resultsContainer}>
-                {/*{(localResults.length > 0 && externalResults.length > 0) && (*/}
-                {/*    <div className={styles.resultsStats}>*/}
-                {/*        <p>{t('bookingfrontend.mixed_results_info', { */}
-                {/*            local: localResults.length, */}
-                {/*            external: externalResults.length, */}
-                {/*            total: filteredResources.length */}
-                {/*        }) || `Showing ${filteredResources.length} results (${localResults.length} local, ${externalResults.length} from other domains)`}</p>*/}
-                {/*    </div>*/}
-                {/*)}*/}
+                {/* Buildings Section */}
+                {filteredBuildings.length > 0 && (
+                    <div className={styles.buildingSection}>
+                        <Heading level={2} data-size="sm" className={styles.sectionHeading}>
+							<BuildingIcon  fontSize="1em"/>
+							{t('bookingfrontend.buildings_and_facilities')}
+							{/*({filteredBuildings.length})*/}
+                        </Heading>
+                        <div className={styles.resourceGrid}>
+                            {filteredBuildings.map(building => {
+                                // Calculate number of resources in this building that match current filters
+                                const buildingResourceCount = filteredResources.filter(
+                                    r => r.building?.id === building.id
+                                ).length;
 
-                <div className={styles.resourceGrid}>
-                    {filteredResources.map(resource => {
-                        // Determine availability for this resource based on its domain
-                        const resourceDomain = resource.domain_name || 'local';
-                        const resourceIdToCheck = resource.original_id || resource.id;
-                        // console.log(resourceDomain, resourceIdToCheck, availableResourcesByDomain?.[resourceDomain]);
-						const isAvailable = availableResourcesByDomain?.[resourceDomain]
-                            ? availableResourcesByDomain[resourceDomain].includes(resourceIdToCheck)
-                            : undefined;
+                                return (
+                                    <BuildingResultItem
+                                        key={`${building.domain_name || 'local'}-${building.id}`}
+                                        building={building}
+                                        selectedDate={date}
+                                        resourceCount={buildingResourceCount}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
-                        return (
-                            <ResourceResultItem
-                                key={`${resource.domain_name || 'local'}-${resource.id}`}
-                                resource={resource}
-                                selectedDate={date}
-                                isAvailable={isAvailable}
-                            />
-                        );
-                    })}
-                </div>
+                {/* Resources Section */}
+                {filteredResources.length > 0 && (
+                    <div className={styles.resourceSection}>
+                        <Heading level={2} data-size="sm" className={styles.sectionHeading}>
+							<ResourceIcon />
+							{t('bookingfrontend.rooms_and_premises')}
+							{/*({filteredResources.length})*/}
+                        </Heading>
+                        <div className={styles.resourceGrid}>
+                            {filteredResources.map(resource => {
+                                // Determine availability for this resource based on its domain
+                                const resourceDomain = resource.domain_name || 'local';
+                                const resourceIdToCheck = resource.original_id || resource.id;
+                                const isAvailable = availableResourcesByDomain?.[resourceDomain]
+                                    ? availableResourcesByDomain[resourceDomain].includes(resourceIdToCheck)
+                                    : undefined;
+
+                                return (
+                                    <ResourceResultItem
+                                        key={`${resource.domain_name || 'local'}-${resource.id}`}
+                                        resource={resource}
+                                        selectedDate={date}
+                                        isAvailable={isAvailable}
+                                    />
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
         );
     };

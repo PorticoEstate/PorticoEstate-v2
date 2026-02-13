@@ -17,7 +17,7 @@ const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ''; // Default to empty st
 export function middleware(req: NextRequest): NextResponse | undefined {
     // console.log(config.matcher, req.url, basePath)
     const acutalPath = req.nextUrl.pathname.split(basePath);
-	const re = new RegExp("\/(((api|_next\/static|_next\/image|img\/|fetch-server-image-proxy\/).*)|favicon.*\.(?:ico|png)|resource_placeholder_bilde\.png|(websocket-sw|test-sw|webpack-hmr)\.js$)")
+	const re = new RegExp("\/(((api|_next\/static|_next\/image|img\/|fetch-(server|building)-image-proxy\/).*)|favicon.*\.(?:ico|png)|resource_placeholder_bilde\.png|(websocket-sw|test-sw|webpack-hmr)\.js$)")
 	if (acutalPath?.length > 0 && re.test(acutalPath[0])) {
         // console.log("YOHO diiddly ho", req.nextUrl.pathname.split(basePath))
         return;

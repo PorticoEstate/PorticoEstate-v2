@@ -16,6 +16,7 @@ class booking_soresource extends booking_socommon
 				//				'building_id'		 => array('type' => 'int', 'required' => true),
 				'name' => array('type' => 'string', 'query' => true, 'required' => true),
 				'description_json' => array('type' => 'json', 'required' => false),
+				'short_description' => array('type' => 'json', 'required' => false),
 				'deactivate_application' => array('type' => 'int'),
 				'opening_hours' => array('type' => 'string'),
 				'contact_info' => array('type' => 'string'),

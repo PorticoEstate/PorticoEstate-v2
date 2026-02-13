@@ -736,6 +736,7 @@ timestamp	bookingfrontend	en	Timestamp
 title	bookingfrontend	en	Title
 to	bookingfrontend	en	To
 To application site	bookingfrontend	en	Order now
+order_now	bookingfrontend	en	Order_now
 To borrow premises you must verify that you have read terms and conditions	bookingfrontend	en	To borrow premises you must verify that you have read terms and conditions
 To cancel allocation use this link	bookingfrontend	en	To cancel allocation use this link
 To cancel booking use this link	bookingfrontend	en	To cancel booking use this link
@@ -938,3 +939,10 @@ occurrences	bookingfrontend	en	occurrences
 grand_total	bookingfrontend	en	Total for all applications
 added_to_cart	bookingfrontend	en	Added to cart
 cart_reminder_message	bookingfrontend	en	Remember to complete the application in the cart for the order to be submitted.
+buildings_and_facilities	bookingfrontend	en	Buildings and facilities
+highlighted_buildings	bookingfrontend	en	Highlighted buildings
+last_ordered_resources	bookingfrontend	en	Your last ordered
+rooms_and_premises	bookingfrontend	en	Rooms and premises
+building_title	bookingfrontend	en	Building
+resource_title	bookingfrontend	en	Room
+show_all_resources	bookingfrontend	en	Show all rooms

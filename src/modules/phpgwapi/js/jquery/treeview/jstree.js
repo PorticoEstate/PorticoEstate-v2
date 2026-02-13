@@ -1298,7 +1298,7 @@
 				obj.state.loaded = false;
 				for(i = 0, j = obj.parents.length; i < j; i++) {
 					this._model.data[obj.parents[i]].children_d = $.vakata.array_filter(this._model.data[obj.parents[i]].children_d, function (v) {
-						return $.inArray(v, obj.children_d) === -1;
+						return obj.children_d.indexOf(v) === -1;
 					});
 				}
 				for(k = 0, l = obj.children_d.length; k < l; k++) {
@@ -1309,7 +1309,7 @@
 				}
 				if (c) {
 					this._data.core.selected = $.vakata.array_filter(this._data.core.selected, function (v) {
-						return $.inArray(v, obj.children_d) === -1;
+						return obj.children_d.indexOf(v) === -1;
 					});
 				}
 				obj.children = [];
@@ -1549,7 +1549,7 @@
 		 */
 		_node_changed : function (obj) {
 			obj = this.get_node(obj);
-      if (obj && $.inArray(obj.id, this._model.changed) === -1) {
+      if (obj && this._model.changed.indexOf(obj.id) === -1) {
 				this._model.changed.push(obj.id);
 			}
 		},
@@ -1942,13 +1942,13 @@
 						if(r.length !== s.length || $.vakata.array_unique(r.concat(s)).length !== r.length) {
 							// deselect nodes that are no longer selected
 							for(i = 0, j = r.length; i < j; i++) {
-								if($.inArray(r[i], a) === -1 && $.inArray(r[i], s) === -1) {
+								if(a.indexOf(r[i]) === -1 && s.indexOf(r[i]) === -1) {
 									m[r[i]].state.selected = false;
 								}
 							}
 							// select nodes that were selected in the mean time
 							for(i = 0, j = s.length; i < j; i++) {
-								if($.inArray(s[i], r) === -1) {
+								if(r.indexOf(s[i]) === -1) {
 									m[s[i]].state.selected = true;
 								}
 							}
@@ -2487,7 +2487,7 @@
 					if(par !== null && (!par || !m[obj.parent].state.opened)) {
 						return false;
 					}
-					ind = $.inArray(obj.id, par === null ? m[$.jstree.root].children : m[obj.parent].children);
+					ind = (par === null ? m[$.jstree.root].children : m[obj.parent].children).indexOf(obj.id);
 				}
 			}
 			else {
@@ -2546,7 +2546,7 @@
 				}
 			}
 			if(obj.parent !== null && m[obj.parent] && !obj.state.hidden) {
-				i = $.inArray(obj.id, m[obj.parent].children);
+				i = m[obj.parent].children.indexOf(obj.id);
 				last_sibling = obj.id;
 				if(i !== -1) {
 					i++;
@@ -3603,17 +3603,17 @@
 						return false;
 					}
 					for(i in state) {
-						if(state.hasOwnProperty(i) && i !== "core" && $.inArray(i, this.settings.plugins) === -1) {
+						if(state.hasOwnProperty(i) && i !== "core" && this.settings.plugins.indexOf(i) === -1) {
 							delete state[i];
 						}
 					}
-					if($.isEmptyObject(state.core)) {
+					if(Object.keys(state.core).length === 0) {
 						delete state.core;
 						this.set_state(state, callback);
 						return false;
 					}
 				}
-				if($.isEmptyObject(state)) {
+				if(Object.keys(state).length === 0) {
 					state = null;
 					if(callback) { callback.call(this); }
 					/**
@@ -3715,18 +3715,18 @@
 			var i, j, m = this._model.data, old = obj.id;
 			id = id.toString();
 			// update parents (replace current ID with new one in children and children_d)
-			m[obj.parent].children[$.inArray(obj.id, m[obj.parent].children)] = id;
+			m[obj.parent].children[m[obj.parent].children.indexOf(obj.id)] = id;
 			for(i = 0, j = obj.parents.length; i < j; i++) {
-				m[obj.parents[i]].children_d[$.inArray(obj.id, m[obj.parents[i]].children_d)] = id;
+				m[obj.parents[i]].children_d[m[obj.parents[i]].children_d.indexOf(obj.id)] = id;
 			}
 			// update children (replace current ID with new one in parent and parents)
 			for(i = 0, j = obj.children.length; i < j; i++) {
 				m[obj.children[i]].parent = id;
 			}
 			for(i = 0, j = obj.children_d.length; i < j; i++) {
-				m[obj.children_d[i]].parents[$.inArray(obj.id, m[obj.children_d[i]].parents)] = id;
+				m[obj.children_d[i]].parents[m[obj.children_d[i]].parents.indexOf(obj.id)] = id;
 			}
-			i = $.inArray(obj.id, this._data.core.selected);
+			i = this._data.core.selected.indexOf(obj.id);
 			if(i !== -1) { this._data.core.selected[i] = id; }
 			// update model and obj itself (obj.id, this._model.data[KEY])
 			i = this.get_node(obj.id, true);
@@ -3902,12 +3902,12 @@
 			switch(pos) {
 				case "before":
 					tmp = this.get_node(par.parent);
-					pos = $.inArray(par.id, tmp.children);
+					pos = tmp.children.indexOf(par.id);
 					par = tmp;
 					break;
 				case "after" :
 					tmp = this.get_node(par.parent);
-					pos = $.inArray(par.id, tmp.children) + 1;
+					pos = tmp.children.indexOf(par.id) + 1;
 					par = tmp;
 					break;
 				case "inside":
@@ -4016,7 +4016,7 @@
 			obj = this.get_node(obj);
 			if(!obj || obj.id === $.jstree.root) { return false; }
 			par = this.get_node(obj.parent);
-			pos = $.inArray(obj.id, par.children);
+			pos = par.children.indexOf(obj.id);
 			c = false;
 			if(!this.check("delete_node", obj, par, pos)) {
 				this.settings.core.error.call(this, this._data.core.last_error);
@@ -4029,7 +4029,7 @@
 			tmp.push(obj.id);
 			for(i = 0, j = obj.parents.length; i < j; i++) {
 				this._model.data[obj.parents[i]].children_d = $.vakata.array_filter(this._model.data[obj.parents[i]].children_d, function (v) {
-					return $.inArray(v, tmp) === -1;
+					return tmp.indexOf(v) === -1;
 				});
 			}
 			for(k = 0, l = tmp.length; k < l; k++) {
@@ -4040,7 +4040,7 @@
 			}
 			if (c) {
 				this._data.core.selected = $.vakata.array_filter(this._data.core.selected, function (v) {
-					return $.inArray(v, tmp) === -1;
+					return tmp.indexOf(v) === -1;
 				});
 			}
 			/**
@@ -4057,7 +4057,7 @@
 			for(k = 0, l = tmp.length; k < l; k++) {
 				delete this._model.data[tmp[k]];
 			}
-			if($.inArray(this._data.core.focused, tmp) !== -1) {
+			if(tmp.indexOf(this._data.core.focused) !== -1) {
 				this._data.core.focused = null;
 				top = this.element[0].scrollTop;
 				lft = this.element[0].scrollLeft;
@@ -4092,11 +4092,11 @@
 			var tmp = chk.match(/^(move_node|copy_node|create_node)$/i) ? par : obj,
 				chc = this.settings.core.check_callback;
 			if(chk === "move_node" || chk === "copy_node") {
-				if((!more || !more.is_multi) && (chk === "move_node" && $.inArray(obj.id, par.children) === pos)) {
+				if((!more || !more.is_multi) && (chk === "move_node" && par.children.indexOf(obj.id) === pos)) {
 					this._data.core.last_error = { 'error' : 'check', 'plugin' : 'core', 'id' : 'core_08', 'reason' : 'Moving node to its current position', 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
 					return false;
 				}
-				if((!more || !more.is_multi) && (obj.id === par.id || (chk === "move_node" && $.inArray(obj.id, par.children) === pos) || $.inArray(par.id, obj.children_d) !== -1)) {
+				if((!more || !more.is_multi) && (obj.id === par.id || (chk === "move_node" && par.children.indexOf(obj.id) === pos) || obj.children_d.indexOf(par.id) !== -1)) {
 					this._data.core.last_error = { 'error' : 'check', 'plugin' : 'core', 'id' : 'core_01', 'reason' : 'Moving parent inside child', 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && obj.id ? obj.id : false, 'par' : par && par.id ? par.id : false }) };
 					return false;
 				}
@@ -4168,7 +4168,7 @@
 			new_par = (!pos.toString().match(/^(before|after)$/) || par.id === $.jstree.root) ? par : this.get_node(par.parent);
 			old_ins = origin ? origin : (this._model.data[obj.id] ? this : $.jstree.reference(obj.id));
 			is_multi = !old_ins || !old_ins._id || (this._id !== old_ins._id);
-			old_pos = old_ins && old_ins._id && old_par && old_ins._model.data[old_par] && old_ins._model.data[old_par].children ? $.inArray(obj.id, old_ins._model.data[old_par].children) : -1;
+				old_pos = old_ins && old_ins._id && old_par && old_ins._model.data[old_par] && old_ins._model.data[old_par].children ? old_ins._model.data[old_par].children.indexOf(obj.id) : -1;
 			if(old_ins && old_ins._id) {
 				obj = old_ins._model.data[obj.id];
 			}
@@ -4187,10 +4187,10 @@
 			}
 			switch(pos) {
 				case "before":
-					pos = $.inArray(par.id, new_par.children);
+					pos = new_par.children.indexOf(par.id);
 					break;
 				case "after" :
-					pos = $.inArray(par.id, new_par.children) + 1;
+					pos = new_par.children.indexOf(par.id) + 1;
 					break;
 				case "inside":
 				case "first":
@@ -4210,7 +4210,7 @@
 			}
 			if(obj.parent === new_par.id) {
 				dpc = new_par.children.concat();
-				tmp = $.inArray(obj.id, dpc);
+				tmp = dpc.indexOf(obj.id);
 				if(tmp !== -1) {
 					dpc = $.vakata.array_remove(dpc, tmp);
 					if(pos > tmp) { pos--; }
@@ -4232,7 +4232,7 @@
 					dpc = [];
 					p = old_ins._model.data[obj.parents[i]].children_d;
 					for(k = 0, l = p.length; k < l; k++) {
-						if($.inArray(p[k], tmp) === -1) {
+						if(tmp.indexOf(p[k]) === -1) {
 							dpc.push(p[k]);
 						}
 					}
@@ -4351,10 +4351,10 @@
 			}
 			switch(pos) {
 				case "before":
-					pos = $.inArray(par.id, new_par.children);
+					pos = new_par.children.indexOf(par.id);
 					break;
 				case "after" :
-					pos = $.inArray(par.id, new_par.children) + 1;
+					pos = new_par.children.indexOf(par.id) + 1;
 					break;
 				case "inside":
 				case "first":
@@ -4421,7 +4421,7 @@
 			 * @param {jsTree} old_instance the instance the node came from
 			 * @param {jsTree} new_instance the instance of the new parent
 			 */
-			this.trigger('copy_node', { "node" : tmp, "original" : obj, "parent" : new_par.id, "position" : pos, "old_parent" : old_par, "old_position" : old_ins && old_ins._id && old_par && old_ins._model.data[old_par] && old_ins._model.data[old_par].children ? $.inArray(obj.id, old_ins._model.data[old_par].children) : -1,'is_multi' : (old_ins && old_ins._id && old_ins._id !== this._id), 'is_foreign' : (!old_ins || !old_ins._id), 'old_instance' : old_ins, 'new_instance' : this });
+			this.trigger('copy_node', { "node" : tmp, "original" : obj, "parent" : new_par.id, "position" : pos, "old_parent" : old_par, "old_position" : old_ins && old_ins._id && old_par && old_ins._model.data[old_par] && old_ins._model.data[old_par].children ? old_ins._model.data[old_par].children.indexOf(obj.id) : -1,'is_multi' : (old_ins && old_ins._id && old_ins._id !== this._id), 'is_foreign' : (!old_ins || !old_ins._id), 'old_instance' : old_ins, 'new_instance' : this });
 			return tmp.id;
 		},
 		/**
@@ -4674,7 +4674,7 @@
 				if(!dir) { dir = $.jstree.path + '/themes'; }
 				theme_url = dir + '/' + theme_name + '/style.css';
 			}
-			if(theme_url && $.inArray(theme_url, themes_loaded) === -1) {
+			if(theme_url && themes_loaded.indexOf(theme_url) === -1) {
 				$('head').append('<'+'link rel="stylesheet" href="' + theme_url + '" type="text/css" />');
 				themes_loaded.push(theme_url);
 			}
@@ -4952,7 +4952,7 @@
 		var attr = with_values ? {} : [];
 		if(node && node.attributes) {
 			$.each(node.attributes, function (i, v) {
-				if($.inArray(v.name.toLowerCase(),['style','contenteditable','hasfocus','tabindex']) !== -1) { return; }
+				if(['style','contenteditable','hasfocus','tabindex'].indexOf(v.name.toLowerCase()) !== -1) { return; }
 				if(v.value !== null && $.vakata.trim(v.value) !== '') {
 					if(with_values) { attr[v.name] = v.value; }
 					else { attr.push(v.name); }
@@ -4982,7 +4982,7 @@
 	};
 	// remove item from array
 	$.vakata.array_remove_item = function(array, item) {
-		var tmp = $.inArray(item, array);
+		var tmp = array.indexOf(item);
 		return tmp !== -1 ? $.vakata.array_remove(array, tmp) : array;
 	};
 	$.vakata.array_filter = function(c,a,b,d,e) {
@@ -5600,7 +5600,7 @@
 				return true;
 			}
 			for(i = 0, j = obj.children_d.length; i < j; i++) {
-				if($.inArray(obj.children_d[i], d) !== -1 || (!m[obj.children_d[i]].state.loaded && m[obj.children_d[i]].original.state.undetermined)) {
+				if(d.indexOf(obj.children_d[i]) !== -1 || (!m[obj.children_d[i]].state.loaded && m[obj.children_d[i]].original.state.undetermined)) {
 					return true;
 				}
 			}
@@ -5717,7 +5717,7 @@
 			}
 			if (c) {
 				this._data.checkbox.selected = $.vakata.array_filter(this._data.checkbox.selected, function (v) {
-					return $.inArray(v, tmp) === -1;
+					return tmp.indexOf(v) === -1;
 				});
 			}
 			return parent.delete_node.call(this, obj);
@@ -7019,7 +7019,7 @@
 									ps = i;
 									if(op === "move_node" && v === 'a' && (data.data.origin && data.data.origin === ins) && p === ins.get_parent(data.data.nodes[t1])) {
 										pr = ins.get_node(p);
-										if(ps > $.inArray(data.data.nodes[t1], pr.children)) {
+										if(ps > pr.children.indexOf(data.data.nodes[t1])) {
 											ps -= 1;
 										}
 									}
@@ -7776,7 +7776,7 @@
 		this.redraw_node = function(obj, deep, callback, force_render) {
 			obj = parent.redraw_node.apply(this, arguments);
 			if(obj) {
-				if($.inArray(obj.id, this._data.search.res) !== -1) {
+				if(this._data.search.res.indexOf(obj.id) !== -1) {
 					var i, j, tmp = null;
 					for(i = 0, j = obj.childNodes.length; i < j; i++) {
 						if(obj.childNodes[i] && obj.childNodes[i].className && obj.childNodes[i].className.indexOf("jstree-anchor") !== -1) {
@@ -8270,13 +8270,13 @@
 				case "create_node":
 				case "move_node":
 				case "copy_node":
-					if(chk !== 'move_node' || $.inArray(obj.id, par.children) === -1) {
+					if(chk !== 'move_node' || par.children.indexOf(obj.id) === -1) {
 						tmp = this.get_rules(par);
 						if(tmp.max_children !== undefined && tmp.max_children !== -1 && tmp.max_children === par.children.length) {
 							this._data.core.last_error = { 'error' : 'check', 'plugin' : 'types', 'id' : 'types_01', 'reason' : 'max_children prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && (obj.id || obj.id === 0) ? obj.id : false, 'par' : par && (par.id || par.id === 0) ? par.id : false }) };
 							return false;
 						}
-						if(tmp.valid_children !== undefined && tmp.valid_children !== -1 && $.inArray((obj.type || 'default'), tmp.valid_children) === -1) {
+						if(tmp.valid_children !== undefined && tmp.valid_children !== -1 && tmp.valid_children.indexOf((obj.type || 'default')) === -1) {
 							this._data.core.last_error = { 'error' : 'check', 'plugin' : 'types', 'id' : 'types_02', 'reason' : 'valid_children prevents function: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && (obj.id || obj.id === 0) ? obj.id : false, 'par' : par && (par.id || par.id === 0) ? par.id : false }) };
 							return false;
 						}
@@ -8531,25 +8531,25 @@
 					if (w) {
 						t = t.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
 					}
-					i = ($.inArray(n, c) === -1 || (obj.text && t === n));
+					i = (c.indexOf(n) === -1 || (obj.text && t === n));
 					if(!i) {
 						this._data.core.last_error = { 'error' : 'check', 'plugin' : 'unique', 'id' : 'unique_01', 'reason' : 'Child with name ' + n + ' already exists. Preventing: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && (obj.id || obj.id === 0) ? obj.id : false, 'par' : par && (par.id || par.id === 0) ? par.id : false }) };
 					}
 					return i;
 				case "create_node":
-					i = ($.inArray(n, c) === -1);
+					i = (c.indexOf(n) === -1);
 					if(!i) {
 						this._data.core.last_error = { 'error' : 'check', 'plugin' : 'unique', 'id' : 'unique_04', 'reason' : 'Child with name ' + n + ' already exists. Preventing: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && (obj.id || obj.id === 0) ? obj.id : false, 'par' : par && (par.id || par.id === 0) ? par.id : false }) };
 					}
 					return i;
 				case "copy_node":
-					i = ($.inArray(n, c) === -1);
+					i = (c.indexOf(n) === -1);
 					if(!i) {
 						this._data.core.last_error = { 'error' : 'check', 'plugin' : 'unique', 'id' : 'unique_02', 'reason' : 'Child with name ' + n + ' already exists. Preventing: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && (obj.id || obj.id === 0) ? obj.id : false, 'par' : par && (par.id || par.id === 0) ? par.id : false }) };
 					}
 					return i;
 				case "move_node":
-					i = ( (obj.parent === par.id && (!more || !more.is_multi)) || $.inArray(n, c) === -1);
+					i = ( (obj.parent === par.id && (!more || !more.is_multi)) || c.indexOf(n) === -1);
 					if(!i) {
 						this._data.core.last_error = { 'error' : 'check', 'plugin' : 'unique', 'id' : 'unique_03', 'reason' : 'Child with name ' + n + ' already exists. Preventing: ' + chk, 'data' : JSON.stringify({ 'chk' : chk, 'pos' : pos, 'obj' : obj && (obj.id || obj.id === 0) ? obj.id : false, 'par' : par && (par.id || par.id === 0) ? par.id : false }) };
 					}
@@ -8592,7 +8592,7 @@
 				if (w) {
 					t = t.replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, '');
 				}
-				while($.inArray(t, dpc) !== -1) {
+				while(dpc.indexOf(t) !== -1) {
 					n = cb.call(this, tmp, (++i)).toString();
 					t = n;
 					if (!s) {
@@ -8708,7 +8708,7 @@
 			if(obj) {
 				var tmp = div.cloneNode(true);
 				//tmp.style.height = this._data.core.li_height + 'px';
-				if($.inArray(obj.id, this._data.core.selected) !== -1) { tmp.className += ' jstree-wholerow-clicked'; }
+				if(this._data.core.selected.indexOf(obj.id) !== -1) { tmp.className += ' jstree-wholerow-clicked'; }
 				if(this._data.core.focused && this._data.core.focused === obj.id) { tmp.className += ' jstree-wholerow-hovered'; }
 				obj.insertBefore(tmp, obj.childNodes[0]);
 			}

@@ -14,6 +14,10 @@
 
 	"use strict";
 
+	var isFunction = function(value) {
+		return typeof value === 'function';
+	};
+
 	/**
 	 * Method for selecting a range of characters in an input/textarea.
 	 *
@@ -602,8 +606,8 @@
 		// Preserve the original valhook function
 		// we'll call this for values we're not
 		// explicitly handling.
-		if( $.isFunction( $.valHooks.text.get ) ) origHookGet = $.valHooks.text.get;
-		if( $.isFunction( $.valHooks.text.set ) ) origHookSet = $.valHooks.text.set;
+		if( isFunction( $.valHooks.text.get ) ) origHookGet = $.valHooks.text.get;
+		if( isFunction( $.valHooks.text.set ) ) origHookSet = $.valHooks.text.set;
 	}
 	else
 	{
@@ -630,7 +634,7 @@
 		if( !data )
 		{
 			// Check if the valhook function already existed
-			if( $.isFunction( origHookGet ) )
+			if( isFunction( origHookGet ) )
 			{
 				// There was, so go ahead and call it
 				return origHookGet(el);
@@ -682,7 +686,7 @@
 		{
 
 			// Check if the valhook function already exists
-			if( $.isFunction( origHookSet ) )
+			if( isFunction( origHookSet ) )
 			{
 				// There was, so go ahead and call it
 				return origHookSet(el,val);

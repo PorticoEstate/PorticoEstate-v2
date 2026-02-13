@@ -60,21 +60,13 @@ class phpgwapi_jquery
 	public static function load_widget($widget)
 	{
 		$userSettings = Settings::getInstance()->get('user');
+		//		$migration_test = true;
 		$migration_test = false;
 
-		if (preg_match("/(Trident\/(\d{2,}|7|8|9)(.*)rv:(\d{2,}))|(MSIE\ (\d{2,}|8|9)(.*)Tablet\ PC)|(Trident\/(\d{2,}|7|8|9))/", $_SERVER["HTTP_USER_AGENT"]))
-		{
-			$message = lang('outdated browser: %1', $_SERVER['HTTP_USER_AGENT']);
-			Cache::message_set($message, 'error');
+		$_jquery_core = 'jquery-4.0.0';
+		$_jquery_migrate = 'jquery-migrate-4.0.2.min';
 
-			$_jquery_core = 'jquery-1.11.3'; // In case we need IE 6–8 support.
-		}
-		else
-		{
-			$_jquery_core = 'jquery-3.7.1';
-		}
-
-		$_jquery_ui	 = 'jquery-ui-1.14.1';
+		$_jquery_ui	 = 'jquery-ui-1.14.2';
 		$_type		 = '.min'; // save some download
 
 		if (Settings::getInstance()->get('flags')['currentapp'] == 'bookingfrontend')

@@ -915,7 +915,7 @@
     // Run validation callback
     if (typeof conf.onValidate === 'function') {
       var errors = conf.onValidate($form);
-      if ($.isArray(errors)) {
+      if (Array.isArray(errors)) {
         $.each(errors, function (i, err) {
           addErrorMessage(err.message, err.element);
         });
@@ -1006,7 +1006,7 @@
      * @param {String} name
      */
     registerLoadedModule: function (name) {
-      this.loadedModules[$.trim(name).toLowerCase()] = true;
+      this.loadedModules[name.trim().toLowerCase()] = true;
     },
 
     /**
@@ -1014,7 +1014,7 @@
      * @return {Boolean}
      */
     hasLoadedModule: function (name) {
-      return $.trim(name).toLowerCase() in this.loadedModules;
+      return name.trim().toLowerCase() in this.loadedModules;
     },
 
     /**
@@ -1064,7 +1064,7 @@
             appendToElement = document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0];
 
           $.each(moduleList, function (i, modName) {
-            modName = $.trim(modName);
+            modName = modName.trim();
             if (modName.length === 0 || $.formUtils.hasLoadedModule(modName)) {
               moduleLoadedCallback();
             } else {
@@ -1167,7 +1167,7 @@
       var values = [];
       $.each(val.split(callback ? callback : regex),
         function (i, str) {
-          str = $.trim(str);
+          str = str.trim();
           if (str.length) {
             values.push(str);
           }
@@ -1178,7 +1178,7 @@
       // exec callback func on each
       $.each(val.split(regex),
         function (i, str) {
-          str = $.trim(str);
+          str = str.trim();
           if (str.length) {
             return callback(str, i);
           }
@@ -1807,7 +1807,7 @@
         .bind('keyup.suggest', function () {
           var $input = $(this),
             foundSuggestions = [],
-            val = $.trim($input.val()).toLocaleLowerCase();
+            val = $input.val().trim().toLocaleLowerCase();
 
           if (val === $.formUtils._previousTypedVal) {
             return;
@@ -2095,7 +2095,7 @@
         case 'radio':
           return $form.find('input[name="' + $el.attr('name') + '"]').filter(':checked').length > 0;
         default:
-          return $.trim(val) !== '';
+          return val.trim() !== '';
       }
     },
     errorMessage: '',

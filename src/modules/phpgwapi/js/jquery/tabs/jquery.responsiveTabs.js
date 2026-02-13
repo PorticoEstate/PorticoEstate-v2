@@ -188,7 +188,7 @@
                 var oTab = {
                     _ignoreHashChange: false,
                     id: id,
-                    disabled: ($.inArray(id, _this.options.disabled) !== -1),
+                    disabled: (_this.options.disabled.indexOf(id) !== -1),
                     tab: $(this),
                     anchor: $('a', $tab),
                     panel: $panel,
@@ -656,7 +656,7 @@
             this.rotateInterval = setInterval(function(){
                 var e = jQuery.Event('rotate');
                 _this._openTab(e, _this._getTab(_this._getNextTabRef()), true);
-            }, speed || (($.isNumeric(_this.options.rotate)) ? _this.options.rotate : 4000) );
+            }, speed || ((typeof _this.options.rotate === 'number' && !isNaN(_this.options.rotate)) ? _this.options.rotate : 4000) );
         } else {
             throw new Error("Rotation is not possible if all tabs are disabled");
         }

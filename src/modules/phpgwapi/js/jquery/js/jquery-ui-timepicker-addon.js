@@ -187,14 +187,14 @@
 
 			overrides = {
 				beforeShow: function (input, dp_inst) {
-					if ($.isFunction(tp_inst._defaults.evnts.beforeShow)) {
+					if (typeof tp_inst._defaults.evnts.beforeShow === 'function') {
 						return tp_inst._defaults.evnts.beforeShow.call($input[0], input, dp_inst, tp_inst);
 					}
 				},
 				onChangeMonthYear: function (year, month, dp_inst) {
 					// Update the time as well : this prevents the time from disappearing from the $input field.
 					// tp_inst._updateDateTime(dp_inst);
-					if ($.isFunction(tp_inst._defaults.evnts.onChangeMonthYear)) {
+					if (typeof tp_inst._defaults.evnts.onChangeMonthYear === 'function') {
 						tp_inst._defaults.evnts.onChangeMonthYear.call($input[0], year, month, dp_inst, tp_inst);
 					}
 				},
@@ -202,7 +202,7 @@
 					if (tp_inst.timeDefined === true && $input.val() !== '') {
 						tp_inst._updateDateTime(dp_inst);
 					}
-					if ($.isFunction(tp_inst._defaults.evnts.onClose)) {
+					if (typeof tp_inst._defaults.evnts.onClose === 'function') {
 						tp_inst._defaults.evnts.onClose.call($input[0], dateText, dp_inst, tp_inst);
 					}
 				}
@@ -315,7 +315,7 @@
 		* add our sliders to the calendar
 		*/
 		_addTimePicker: function (dp_inst) {
-			var currDT = $.trim((this.$altInput && this._defaults.altFieldTimeOnly) ? this.$input.val() + ' ' + this.$altInput.val() : this.$input.val());
+			var currDT = ((this.$altInput && this._defaults.altFieldTimeOnly) ? this.$input.val() + ' ' + this.$altInput.val() : this.$input.val()).trim();
 
 			this.timeDefined = this._parseTime(currDT);
 			this._limitMinMaxDateTime(dp_inst, false);
@@ -362,7 +362,7 @@
 		*/
 		_afterInject: function() {
 			var o = this.inst.settings;
-			if ($.isFunction(o.afterInject)) {
+			if (typeof o.afterInject === 'function') {
 				o.afterInject.call(this);
 			}
 		},
@@ -838,7 +838,7 @@
 						second !== parseInt(this.second,10) ||
 						millisec !== parseInt(this.millisec,10) ||
 						microsec !== parseInt(this.microsec,10) ||
-						(this.ampm.length > 0 && (hour < 12) !== ($.inArray(this.ampm.toUpperCase(), this.amNames) !== -1)) ||
+						(this.ampm.length > 0 && (hour < 12) !== (this.amNames.indexOf(this.ampm.toUpperCase()) !== -1)) ||
 						(this.timezone !== null && timezone !== this.timezone.toString()) // could be numeric or "EST" format, so use toString()
 					);
 
@@ -1077,7 +1077,7 @@
 					for (var i = min; i <= max; i += step) {
 						sel += '<option value="' + i + '"' + (i === val ? ' selected' : '') + '>';
 						if (unit === 'hour') {
-							sel += $.datepicker.formatTime($.trim(format.replace(/[^ht ]/ig, '')), {hour: i}, tp_inst._defaults);
+							sel += $.datepicker.formatTime(format.replace(/[^ht ]/ig, '').trim(), {hour: i}, tp_inst._defaults);
 						}
 						else if (unit === 'millisec' || unit === 'microsec' || i >= 10) { sel += i; }
 						else {sel += '0' + i.toString(); }
@@ -1269,7 +1269,7 @@
 						ampm = '';
 						resTime.ampm = '';
 					} else {
-						ampm = $.inArray(treg[order.t].toUpperCase(), $.map(o.amNames, function (x,i) { return x.toUpperCase(); })) !== -1 ? 'AM' : 'PM';
+							ampm = $.map(o.amNames, function (x,i) { return x.toUpperCase(); }).indexOf(treg[order.t].toUpperCase()) !== -1 ? 'AM' : 'PM';
 						resTime.ampm = o[ampm === 'AM' ? 'amNames' : 'pmNames'][0];
 					}
 				}

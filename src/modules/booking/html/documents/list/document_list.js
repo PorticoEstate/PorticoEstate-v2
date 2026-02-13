@@ -51,17 +51,7 @@
 		order: [[0, 'asc']],
 		pageLength: 25,
 		lang: {
-			search: L.search + ':',
-			emptyTable: L.emptyTable,
-			info: L.info,
-			infoEmpty: L.infoEmpty,
-			lengthMenu: L.lengthMenu,
-			paginate: {
-				first: L.first,
-				last: L.last,
-				next: L.next,
-				previous: L.previous
-			}
+			emptyTable: L.emptyTable
 		}
 	});
 })();

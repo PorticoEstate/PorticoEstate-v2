@@ -27,7 +27,7 @@
 	opacity: 0;
 }
 
-/* Message area (like datatable2 #message) */
+/* Message area */
 .app-datatable__message:empty {
 	display: none;
 }
@@ -86,34 +86,7 @@
 	color: var(--ds-color-text-default, #1e2b3c);
 }
 
-.app-datatable__filter-group input,
-.app-datatable__filter-group select {
-	padding: var(--ds-size-2, 0.5rem) var(--ds-size-3, 0.75rem);
-	border: 1px solid var(--ds-color-border-default, #c9c9c9);
-	border-radius: var(--ds-border-radius-md, 4px);
-	font-size: var(--ds-size-mode-font-size--md, 1rem);
-	background: var(--ds-color-background-default, #fff);
-}
-
-.app-datatable__filter-group input:focus,
-.app-datatable__filter-group select:focus {
-	outline: 2px solid var(--ds-color-focus-outer, #00315d);
-	outline-offset: 2px;
-}
-
-/* DataTables overrides for Designsystemet */
-.app-datatable .dt-search input {
-	padding: var(--ds-size-2, 0.5rem) var(--ds-size-3, 0.75rem);
-	border: 1px solid var(--ds-color-border-default, #c9c9c9);
-	border-radius: var(--ds-border-radius-md, 4px);
-	font-size: var(--ds-size-mode-font-size--md, 1rem);
-}
-
-.app-datatable .dt-search input:focus {
-	outline: 2px solid var(--ds-color-focus-outer, #00315d);
-	outline-offset: 2px;
-}
-
+/* DataTables layout overrides */
 .app-datatable .dt-info,
 .app-datatable .dt-length label,
 .app-datatable .dt-search label {
@@ -121,36 +94,9 @@
 	color: var(--ds-color-text-subtle, #555);
 }
 
-.app-datatable .dt-paging .dt-paging-button {
-	padding: var(--ds-size-1, 0.25rem) var(--ds-size-3, 0.75rem);
-	border: 1px solid var(--ds-color-border-default, #c9c9c9);
-	border-radius: var(--ds-border-radius-md, 4px);
-	background: var(--ds-color-background-default, #fff);
-	color: var(--ds-color-text-default, #1e2b3c);
-	cursor: pointer;
-}
-
-.app-datatable .dt-paging .dt-paging-button.current {
-	background: var(--ds-color-accent-base-default, #0062ba);
-	color: #fff;
-	border-color: var(--ds-color-accent-base-default, #0062ba);
-}
-
-.app-datatable .dt-paging .dt-paging-button.disabled {
-	opacity: 0.5;
-	cursor: default;
-}
-
-/* Input paging */
-.app-datatable .dt-paging input[type="text"] {
-	width: 4em;
-	padding: var(--ds-size-1, 0.25rem) var(--ds-size-2, 0.5rem);
-	border: 1px solid var(--ds-color-border-default, #c9c9c9);
-	border-radius: var(--ds-border-radius-md, 4px);
-	text-align: center;
-}
-
-/* Toolbar buttons */
+/* ---------------------------------------------------------------
+   Toolbar buttons layout
+   --------------------------------------------------------------- */
 .app-datatable .dt-buttons {
 	display: flex;
 	flex-wrap: wrap;
@@ -158,31 +104,31 @@
 	margin-bottom: var(--ds-size-2, 0.5rem);
 }
 
-.app-datatable .dt-buttons .dt-button {
-	padding: var(--ds-size-2, 0.5rem) var(--ds-size-3, 0.75rem);
-	border: 1px solid var(--ds-color-border-default, #c9c9c9);
-	border-radius: var(--ds-border-radius-md, 4px);
-	background: var(--ds-color-background-default, #fff);
-	color: var(--ds-color-text-default, #1e2b3c);
-	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
-	cursor: pointer;
+/* ---------------------------------------------------------------
+   Pagination — DS buttons inside DT paging container.
+   Classes are set via DT classes config (ds-button replaces
+   dt-paging-button) and renderer override (data-variant/size).
+   --------------------------------------------------------------- */
+.app-datatable .dt-paging nav {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--ds-size-1, 0.25rem);
 }
 
-.app-datatable .dt-buttons .dt-button:hover {
-	background: var(--ds-color-neutral-surface-hover, #e8e9eb);
+.app-datatable .dt-paging .ds-button.current {
+	--dsc-button-background: var(--ds-color-accent-base-default, #0062ba);
+	--dsc-button-color: var(--ds-color-accent-base-contrast-default, #fff);
+	--dsc-button-background--hover: var(--ds-color-accent-base-hover, #004f96);
+	--dsc-button-border-color: var(--ds-color-accent-base-default, #0062ba);
 }
 
-.app-datatable .dt-buttons .dt-button:disabled,
-.app-datatable .dt-buttons .dt-button.disabled {
-	opacity: 0.5;
-	cursor: default;
-}
-
-/* Processing indicator */
+/* Processing indicator overlay */
 .app-datatable .dt-processing {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	background: rgba(255, 255, 255, 0.8);
-	color: var(--ds-color-text-subtle, #555);
-	font-size: var(--ds-size-mode-font-size--md, 1rem);
 }
 
 /* Row actions */
@@ -192,19 +138,10 @@
 	flex-wrap: nowrap;
 }
 
-/* Column search inputs in header */
+/* Column search inputs: width override (ds-input handles the rest) */
 .app-datatable__col-search {
 	width: 100%;
-	padding: var(--ds-size-1, 0.25rem) var(--ds-size-2, 0.5rem);
-	border: 1px solid var(--ds-color-border-default, #c9c9c9);
-	border-radius: var(--ds-border-radius-md, 4px);
-	font-size: var(--ds-size-mode-font-size--sm, 0.875rem);
 	box-sizing: border-box;
-}
-
-.app-datatable__col-search:focus {
-	outline: 2px solid var(--ds-color-focus-outer, #00315d);
-	outline-offset: 2px;
 }
 
 /* Selected row */

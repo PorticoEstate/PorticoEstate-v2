@@ -216,6 +216,7 @@
 
 			if (f.type === 'select') {
 				input = document.createElement('select');
+				input.className = 'ds-select';
 				input.id = 'filter-' + f.name;
 				if (f.multiple) input.multiple = true;
 				(f.options || []).forEach(function (opt) {
@@ -229,16 +230,19 @@
 				});
 			} else if (f.type === 'checkbox') {
 				input = document.createElement('input');
+				input.className = 'ds-input';
 				input.type = 'checkbox';
 				input.id = 'filter-' + f.name;
 				input.checked = savedVal != null ? !!savedVal : !!f.checked;
 			} else if (f.type === 'date') {
 				input = document.createElement('input');
+				input.className = 'ds-input';
 				input.type = 'date';
 				input.id = 'filter-' + f.name;
 				input.value = savedVal || f.value || '';
 			} else {
 				input = document.createElement('input');
+				input.className = 'ds-input';
 				input.type = 'text';
 				input.id = 'filter-' + f.name;
 				input.placeholder = f.placeholder || '';
@@ -407,6 +411,8 @@
 	// ------------------------------------------------------------------
 	// Toolbar buttons builder
 	// ------------------------------------------------------------------
+	var DS_BUTTON_ATTR = {'data-variant': 'secondary', 'data-size': 'sm'};
+
 	function buildButtonDefs(config) {
 		var buttons = [];
 
@@ -416,6 +422,7 @@
 			buttons.push({
 				text: ni.label || ni.text || 'New',
 				className: ni.className || '',
+				attr: ni.attr || DS_BUTTON_ATTR,
 				action: ni.action || function () {
 					if (ni.url) window.open(ni.url, ni.target || '_self');
 				}
@@ -428,6 +435,7 @@
 			buttons.push({
 				extend: 'csvHtml5',
 				titleAttr: csvOpts.title || 'CSV',
+				attr: DS_BUTTON_ATTR,
 				fieldSeparator: csvOpts.separator || ';',
 				bom: csvOpts.bom !== false
 			});
@@ -439,7 +447,7 @@
 			buttons.push({
 				text: dlLang.label || 'Download',
 				titleAttr: dlLang.title || 'Download data',
-				className: 'download',
+				attr: DS_BUTTON_ATTR,
 				action: function (e, dt) {
 					var params = {};
 					params.length = -1;
@@ -458,7 +466,8 @@
 		if (config.columnVisibility) {
 			buttons.push({
 				extend: 'colvis',
-				text: config.columnVisibilityLabel || 'Columns'
+				text: config.columnVisibilityLabel || 'Columns',
+				attr: DS_BUTTON_ATTR
 			});
 		}
 
@@ -466,11 +475,13 @@
 		if (config.buttons && config.buttons.length) {
 			config.buttons.forEach(function (btn) {
 				if (btn.extend) {
+					if (!btn.attr) btn.attr = DS_BUTTON_ATTR;
 					buttons.push(btn);
 				} else {
 					buttons.push({
 						text: btn.label || btn.text || '',
 						className: btn.className || '',
+						attr: btn.attr || DS_BUTTON_ATTR,
 						enabled: btn.enabled !== false,
 						action: btn.action || function () {
 							if (btn.url) window.open(btn.url, btn.target || '_self');
@@ -508,7 +519,7 @@
 					th.innerHTML = '';
 					var input = document.createElement('input');
 					input.type = 'text';
-					input.className = 'app-datatable__col-search';
+					input.className = 'ds-input app-datatable__col-search';
 					input.placeholder = searchLang + ' ' + title;
 					input.value = currentSearch;
 					input.title = title;
@@ -570,6 +581,32 @@
 		} catch (e) { /* ignore */ }
 		return null;
 	}
+
+	// ------------------------------------------------------------------
+	// Override the default pagingButton renderer to add DS data attributes
+	// directly when buttons are created (avoids timing issues with post-processing).
+	var _origPagingButton = DataTable.ext.renderer.pagingButton._;
+	DataTable.ext.renderer.pagingButton._ = function (settings, buttonType, content, active, disabled) {
+		var result = _origPagingButton.call(this, settings, buttonType, content, active, disabled);
+		if (buttonType !== 'ellipsis') {
+			var el = result.clicker;
+			// jQuery or DOM element
+			if (el.jquery) el = el[0];
+			if (el) {
+				el.setAttribute('data-variant', 'tertiary');
+				el.setAttribute('data-size', 'sm');
+			}
+		}
+		return result;
+	};
+
+	// ------------------------------------------------------------------
+	// DS spinner SVG for processing indicator
+	// ------------------------------------------------------------------
+	var DS_SPINNER_HTML = '<svg class="ds-spinner" role="img" viewBox="0 0 50 50" data-size="md" aria-label="Loading...">'
+		+ '<circle class="ds-spinner__background" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
+		+ '<circle class="ds-spinner__circle" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>'
+		+ '</svg>';
 
 	// ------------------------------------------------------------------
 	// Main init
@@ -645,8 +682,24 @@
 			}
 		});
 
-		// DataTables language
-		var dtLang = config.lang || {};
+		// DataTables language — Norwegian defaults, overridable via config.lang
+		var dtLang = Object.assign({
+			search: 'Søk:',
+			emptyTable: 'Ingen oppføringer funnet',
+			info: 'Viser _START_ til _END_ av _TOTAL_ oppføringer',
+			infoEmpty: 'Ingen oppføringer å vise',
+			infoFiltered: '(filtrert fra _MAX_ totalt)',
+			lengthMenu: 'Vis _MENU_ oppføringer',
+			zeroRecords: 'Ingen samsvarende oppføringer funnet',
+			loadingRecords: DS_SPINNER_HTML,
+			processing: DS_SPINNER_HTML,
+			paginate: {
+				first: 'Første',
+				last: 'Siste',
+				next: 'Neste',
+				previous: 'Forrige'
+			}
+		}, config.lang || {});
 
 		// Buttons
 		var buttonDefs = buildButtonDefs(config);
@@ -686,7 +739,24 @@
 			pageLength: config.pageLength || 25,
 			language: dtLang,
 			layout: layout,
-			autoWidth: config.autoWidth !== false
+			autoWidth: config.autoWidth !== false,
+			classes: {
+				search: {
+					container: 'dt-search',
+					input: 'dt-input ds-input'
+				},
+				length: {
+					container: 'dt-length',
+					select: 'dt-input ds-select'
+				},
+				paging: {
+					button: 'ds-button',
+					active: 'current',
+					disabled: 'disabled',
+					container: 'dt-paging',
+					nav: ''
+				}
+			}
 		};
 
 		// Length menu
@@ -715,7 +785,14 @@
 
 		// Buttons
 		if (buttonDefs) {
-			dtConfig.buttons = buttonDefs;
+			dtConfig.buttons = {
+				dom: {
+					button: {
+						className: 'ds-button'
+					}
+				},
+				buttons: buttonDefs
+			};
 		}
 
 		// State save

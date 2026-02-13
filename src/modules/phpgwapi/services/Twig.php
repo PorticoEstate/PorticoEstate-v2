@@ -3,6 +3,7 @@
 namespace App\modules\phpgwapi\services;
 
 use App\modules\phpgwapi\services\Settings;
+use App\modules\phpgwapi\services\AssetService;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 use Twig\Extension\DebugExtension;
@@ -128,6 +129,15 @@ class Twig
         $this->twig->addFunction(new TwigFunction('pretty_timestamp', function ($timestamp) {
             return pretty_timestamp($timestamp);
         }));
+
+        // Asset management for included partials (cannot use Twig blocks)
+        $assets = AssetService::getInstance();
+        $this->twig->addFunction(new TwigFunction('add_style', [$assets, 'addStyle']));
+        $this->twig->addFunction(new TwigFunction('add_inline_style', [$assets, 'addInlineStyle']));
+        $this->twig->addFunction(new TwigFunction('add_script', [$assets, 'addScript']));
+        $this->twig->addFunction(new TwigFunction('add_inline_script', [$assets, 'addInlineScript']));
+        $this->twig->addFunction(new TwigFunction('render_styles', [$assets, 'renderStyles'], ['is_safe' => ['html']]));
+        $this->twig->addFunction(new TwigFunction('render_scripts', [$assets, 'renderScripts'], ['is_safe' => ['html']]));
     }
 
     /**
@@ -227,7 +237,8 @@ class Twig
             ];
 
             $vars = array_merge($globals, $vars);
-            return $this->twig->render($template, $vars);
+            $html = $this->twig->render($template, $vars);
+            return AssetService::getInstance()->resolvePlaceholders($html);
         } catch (\Twig\Error\Error $e) {
             error_log("Twig render error: " . $e->getMessage());
             throw $e;

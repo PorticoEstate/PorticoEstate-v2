@@ -1,5 +1,5 @@
-<link href="{{ modules_url }}/phpgwapi/js/DataTables2/datatables.min.css" rel="stylesheet">
-<style>{{ source('@views/datatable/datatable.css') }}</style>
-<div id="app-datatable"></div>
-<script src="{{ modules_url }}/phpgwapi/js/DataTables2/datatables.min.js"></script>
-<script>{{ source('@views/datatable/datatable.js') }}</script>
+{{ add_style(modules_url ~ '/phpgwapi/js/DataTables2/datatables.min.css') }}
+{{ add_inline_style(source('@views/datatable/datatable.css')) }}
+{{ add_script(modules_url ~ '/phpgwapi/js/DataTables2/datatables.min.js') }}
+{{ add_inline_script(source('@views/datatable/datatable.js')) }}
+<div id="{{ id | default('app-datatable') }}"></div>

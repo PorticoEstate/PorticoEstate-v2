@@ -8,9 +8,11 @@
 		<link href="{{ href }}" type="text/css" rel="stylesheet">
 	{% endfor %}
 	{% block styles %}{% endblock %}
+	{{ render_styles() }}
 </head>
 <body>
 	{% block content %}{% endblock %}
+	{{ render_scripts() }}
 	{% block scripts %}{% endblock %}
 </body>
 </html>

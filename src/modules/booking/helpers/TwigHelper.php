@@ -4,6 +4,7 @@ namespace App\modules\booking\helpers;
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\DesignSystem;
+use App\modules\phpgwapi\services\AssetService;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
 use Twig\Extension\DebugExtension;
@@ -156,6 +157,15 @@ class TwigHelper
 		$this->twig->addFunction(new TwigFunction('pretty_timestamp', function ($date) {
 			return $this->prettyTimestamp($date);
 		}));
+
+		// Asset management for included partials (cannot use Twig blocks)
+		$assets = AssetService::getInstance();
+		$this->twig->addFunction(new TwigFunction('add_style', [$assets, 'addStyle']));
+		$this->twig->addFunction(new TwigFunction('add_inline_style', [$assets, 'addInlineStyle']));
+		$this->twig->addFunction(new TwigFunction('add_script', [$assets, 'addScript']));
+		$this->twig->addFunction(new TwigFunction('add_inline_script', [$assets, 'addInlineScript']));
+		$this->twig->addFunction(new TwigFunction('render_styles', [$assets, 'renderStyles'], ['is_safe' => ['html']]));
+		$this->twig->addFunction(new TwigFunction('render_scripts', [$assets, 'renderScripts'], ['is_safe' => ['html']]));
 	}
 
 	private function registerFilters(): void
@@ -261,7 +271,8 @@ class TwigHelper
 
 		$vars = array_merge($globals, $data);
 
-		return $this->twig->render($template, $vars);
+		$html = $this->twig->render($template, $vars);
+		return AssetService::getInstance()->resolvePlaceholders($html);
 	}
 
 	/**

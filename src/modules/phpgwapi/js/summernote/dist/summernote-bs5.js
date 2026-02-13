@@ -277,7 +277,7 @@ var summernote_en_US = __webpack_require__(7000);
  */
 var genericFontFamilies = ['sans-serif', 'serif', 'monospace', 'cursive', 'fantasy'];
 function validFontName(fontName) {
-  return external_root_jQuery_commonjs_jquery_commonjs2_jquery_amd_jquery_default().inArray(fontName.toLowerCase(), genericFontFamilies) === -1 ? "'".concat(fontName, "'") : fontName;
+  return genericFontFamilies.indexOf(fontName.toLowerCase()) === -1 ? "'".concat(fontName, "'") : fontName;
 }
 function createIsFontInstalledFunc() {
   var testText = "mw";
@@ -1963,7 +1963,7 @@ var Context = /*#__PURE__*/function () {
     value: function _initialize() {
       var _this = this;
       // set own id
-      this.options.id = func.uniqueId(external_root_jQuery_commonjs_jquery_commonjs2_jquery_amd_jquery_default().now());
+      this.options.id = func.uniqueId(Date.now());
       // set default container for tooltips, popovers, and dialogs
       this.options.container = this.options.container || this.layoutInfo.editor;
 
@@ -5478,7 +5478,7 @@ var Editor = /*#__PURE__*/function () {
           rng.select();
         }
       } else {
-        var noteStatusOutput = external_root_jQuery_commonjs_jquery_commonjs2_jquery_amd_jquery_default().now();
+        var noteStatusOutput = Date.now();
         this.$editor.find('.note-status-output').html('<div id="note-status-output-' + noteStatusOutput + '" class="alert alert-info">' + this.lang.output.noSelection + '</div>');
         setTimeout(function () {
           external_root_jQuery_commonjs_jquery_commonjs2_jquery_amd_jquery_default()('#note-status-output-' + noteStatusOutput).remove();

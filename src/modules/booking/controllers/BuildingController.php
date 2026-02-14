@@ -5,8 +5,8 @@ namespace App\modules\booking\controllers;
 use App\Database\Db;
 use App\modules\booking\authorization\DocumentBuildingAuthConfig;
 use App\modules\booking\repositories\PermissionRepository;
-use App\modules\booking\services\AuthorizationService;
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\modules\phpgwapi\services\AuthorizationService;
+use App\helpers\ResponseHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use PDO;
@@ -52,8 +52,7 @@ class BuildingController
                 return $b;
             }, $buildings);
 
-            $response->getBody()->write(json_encode($buildings));
-            return $response->withHeader('Content-Type', 'application/json');
+            return ResponseHelper::sendJSONResponse($buildings, 200, $response);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error fetching buildings: ' . $e->getMessage()],

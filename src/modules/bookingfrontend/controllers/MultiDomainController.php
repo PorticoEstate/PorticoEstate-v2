@@ -3,7 +3,7 @@
 namespace App\modules\bookingfrontend\controllers;
 
 use App\Database\Db;
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\models\MultiDomain;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;

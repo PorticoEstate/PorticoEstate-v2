@@ -9,7 +9,7 @@ use App\modules\booking\authorization\DocumentBuildingAuthConfig;
 use App\modules\booking\authorization\DocumentOrganizationAuthConfig;
 use App\modules\booking\authorization\DocumentResourceAuthConfig;
 use App\modules\booking\repositories\PermissionRepository;
-use App\modules\booking\services\AuthorizationService;
+use App\modules\phpgwapi\services\AuthorizationService;
 use App\modules\phpgwapi\security\Acl;
 
 class AuthorizationServiceTest extends TestCase

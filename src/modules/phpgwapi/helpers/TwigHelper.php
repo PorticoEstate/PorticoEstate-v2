@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\booking\helpers;
+namespace App\modules\phpgwapi\helpers;
 
 use App\modules\phpgwapi\services\Settings;
 use App\modules\phpgwapi\services\DesignSystem;

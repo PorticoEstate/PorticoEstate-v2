@@ -4,13 +4,13 @@ namespace App\modules\booking\viewcontrollers;
 
 use App\modules\booking\authorization\DocumentBuildingAuthConfig;
 use App\modules\booking\authorization\EntityAuthConfig;
-use App\modules\booking\helpers\LegacyViewHelper;
-use App\modules\booking\helpers\TwigHelper;
+use App\modules\phpgwapi\helpers\LegacyViewHelper;
+use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\booking\models\Document;
 use App\modules\booking\repositories\PermissionRepository;
-use App\modules\booking\services\AuthorizationService;
+use App\modules\phpgwapi\services\AuthorizationService;
 use App\modules\booking\services\DocumentService;
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception;

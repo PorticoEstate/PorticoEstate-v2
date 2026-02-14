@@ -8,9 +8,9 @@ use App\modules\booking\authorization\DocumentResourceAuthConfig;
 use App\modules\booking\authorization\EntityAuthConfig;
 use App\modules\booking\models\Document;
 use App\modules\booking\repositories\PermissionRepository;
-use App\modules\booking\services\AuthorizationService;
+use App\modules\phpgwapi\services\AuthorizationService;
 use App\modules\booking\services\DocumentService;
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Psr7\Stream;
@@ -60,8 +60,7 @@ class DocumentController
             ];
         }, Document::getCategories());
 
-        $response->getBody()->write(json_encode($categories));
-        return $response->withHeader('Content-Type', 'application/json');
+        return ResponseHelper::sendJSONResponse($categories, 200, $response);
     }
 
     /**
@@ -114,8 +113,7 @@ class DocumentController
             $documents = $this->documentService->getAllDocuments($sort, $dir, $length);
             $serialized = array_map(fn($doc) => $doc->serialize(), $documents);
 
-            $response->getBody()->write(json_encode($serialized));
-            return $response->withHeader('Content-Type', 'application/json');
+            return ResponseHelper::sendJSONResponse($serialized, 200, $response);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error fetching documents: ' . $e->getMessage()],
@@ -165,8 +163,7 @@ class DocumentController
 
             $serializedDocuments = array_map(fn($doc) => $doc->serialize(), $documents);
 
-            $response->getBody()->write(json_encode($serializedDocuments));
-            return $response->withHeader('Content-Type', 'application/json');
+            return ResponseHelper::sendJSONResponse($serializedDocuments, 200, $response);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error fetching documents: ' . $e->getMessage()],
@@ -207,8 +204,7 @@ class DocumentController
                 return ResponseHelper::sendErrorResponse(['error' => 'Document not found'], 404);
             }
 
-            $response->getBody()->write(json_encode($document->serialize()));
-            return $response->withHeader('Content-Type', 'application/json');
+            return ResponseHelper::sendJSONResponse($document->serialize(), 200, $response);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => 'Error fetching document: ' . $e->getMessage()],
@@ -284,8 +280,7 @@ class DocumentController
             $this->documentService->updateDocument($documentId, $updateData);
 
             $updatedDocument = $this->documentService->getDocumentById($documentId);
-            $response->getBody()->write(json_encode($updatedDocument->serialize()));
-            return $response->withHeader('Content-Type', 'application/json');
+            return ResponseHelper::sendJSONResponse($updatedDocument->serialize(), 200, $response);
         } catch (Exception $e) {
             return ResponseHelper::sendErrorResponse(
                 ['error' => $e->getMessage()],

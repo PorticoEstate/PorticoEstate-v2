@@ -2,7 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use App\modules\phpgwapi\security\Sessions;
 use App\modules\phpgwapi\services\Settings;
 use Psr\Container\ContainerInterface;

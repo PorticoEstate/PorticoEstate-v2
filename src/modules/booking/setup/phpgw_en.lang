@@ -906,3 +906,13 @@ no documents found	booking	en	No documents found
 showing _start_ to _end_ of _total_ entries	booking	en	Showing _START_ to _END_ of _TOTAL_ entries
 no entries to show	booking	en	No entries to show
 show _menu_ entries	booking	en	Show _MENU_ entries
+highlighted_buildings	booking	en	Highlighted buildings
+search_buildings	booking	en	Search buildings
+max_buildings_reached	booking	en	Maximum %1 buildings
+no_buildings_found	booking	en	No buildings found
+changes_saved	booking	en	Changes saved
+move_up	booking	en	Move up
+move_down	booking	en	Move down
+save	booking	en	Save
+remove	booking	en	Remove
+save_error	booking	en	Error saving

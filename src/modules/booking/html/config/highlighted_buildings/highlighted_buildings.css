@@ -1,0 +1,30 @@
+.highlighted-buildings {
+	max-width: 640px;
+}
+
+.highlighted-buildings__warning {
+	margin-top: var(--ds-spacing-2, 0.5rem);
+	color: var(--ds-color-warning-text-default, #856404);
+	font-size: var(--ds-font-size-sm, 0.875rem);
+}
+
+.highlighted-buildings__item {
+	display: flex;
+	align-items: center;
+	gap: var(--ds-spacing-2, 0.5rem);
+	padding: var(--ds-spacing-2, 0.5rem) var(--ds-spacing-3, 0.75rem);
+	border: 1px solid var(--ds-color-border-default, #dee2e6);
+	border-radius: var(--ds-border-radius-sm, 0.25rem);
+	background: var(--ds-color-background-default, #fff);
+	margin-bottom: var(--ds-spacing-1, 0.25rem);
+}
+
+.highlighted-buildings__item-number {
+	min-width: 1.5em;
+	font-weight: var(--ds-font-weight-medium, 500);
+	color: var(--ds-color-text-subtle, #6c757d);
+}
+
+.highlighted-buildings__item-name {
+	flex: 1;
+}

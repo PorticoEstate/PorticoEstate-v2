@@ -1,5 +1,5 @@
 {{ add_style(modules_url ~ '/phpgwapi/js/DataTables2/datatables.min.css') }}
-{{ add_inline_style(source('@views/datatable/datatable.css')) }}
+{{ add_inline_style(source('@views/components/datatable/datatable.css')) }}
 {{ add_script(modules_url ~ '/phpgwapi/js/DataTables2/datatables.min.js') }}
-{{ add_inline_script(source('@views/datatable/datatable.js')) }}
+{{ add_inline_script(source('@views/components/datatable/datatable.js')) }}
 <div id="{{ id | default('app-datatable') }}"></div>

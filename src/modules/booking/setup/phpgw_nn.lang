@@ -1016,3 +1016,13 @@ no documents found	booking	nn	Ingen dokument funne
 showing _start_ to _end_ of _total_ entries	booking	nn	Viser _START_ til _END_ av _TOTAL_ oppføringar
 no entries to show	booking	nn	Ingen oppføringar å vise
 show _menu_ entries	booking	nn	Vis _MENU_ oppføringar
+highlighted_buildings	booking	nn	Utvalde bygg
+search_buildings	booking	nn	Søk etter bygg
+max_buildings_reached	booking	nn	Maksimalt %1 bygg
+no_buildings_found	booking	nn	Ingen bygg funne
+changes_saved	booking	nn	Endringar lagra
+move_up	booking	nn	Flytt opp
+move_down	booking	nn	Flytt ned
+save	booking	nn	Lagre
+remove	booking	nn	Fjern
+save_error	booking	nn	Feil ved lagring

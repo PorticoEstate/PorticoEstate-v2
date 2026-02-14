@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\booking\services;
+namespace App\modules\phpgwapi\services;
 
 use App\modules\booking\authorization\EntityAuthConfig;
 use App\modules\booking\repositories\PermissionRepository;
@@ -113,11 +113,19 @@ class AuthorizationService
         return false;
     }
 
-    private function isAdmin(): bool
+    /**
+     * Check if the current user is an admin for the given app.
+     */
+    public function isAdminForApp(string $appname): bool
     {
         $acl = $this->getAcl();
         return $acl->check('run', Acl::READ, 'admin')
-            || $acl->check('admin', Acl::ADD, 'booking');
+            || $acl->check('admin', Acl::ADD, $appname);
+    }
+
+    private function isAdmin(): bool
+    {
+        return $this->isAdminForApp('booking');
     }
 
     /**

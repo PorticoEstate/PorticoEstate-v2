@@ -18,6 +18,8 @@ use App\modules\booking\controllers\DocumentController;
 use App\modules\booking\controllers\ResourceDocumentController;
 use App\modules\booking\controllers\OrganizationDocumentController;
 use App\modules\booking\viewcontrollers\DocumentViewController;
+use App\modules\booking\viewcontrollers\ConfigViewController;
+use App\modules\phpgwapi\controllers\ConfigController;
 
 $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 {
@@ -66,6 +68,8 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 			$buildingGroup->get('/documents', DocumentViewController::class . ':list');
 			$buildingGroup->get('/documents/{id}/edit', DocumentViewController::class . ':edit');
 		});
+
+		$viewGroup->get('/config/highlighted-buildings', ConfigViewController::class . ':highlightedBuildings');
 	});
 
 
@@ -161,6 +165,13 @@ $app->group('/booking/registry', function (RouteCollectorProxy $group) use ($con
 		$typeGroup->put('/{id:[0-9]+}', [$controller, 'update']); // Update item
 		$typeGroup->delete('/{id:[0-9]+}', [$controller, 'delete']); // Delete item
 	});
+})
+	->addMiddleware(new AccessVerifier($container))
+	->addMiddleware(new SessionsMiddleware($container));
+
+$app->group('/booking/config', function (RouteCollectorProxy $group) {
+	$group->get('/{appname}', ConfigController::class . ':getConfig');
+	$group->put('/{appname}', ConfigController::class . ':updateConfig');
 })
 	->addMiddleware(new AccessVerifier($container))
 	->addMiddleware(new SessionsMiddleware($container));

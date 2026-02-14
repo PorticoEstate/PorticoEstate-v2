@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\bookingfrontend\helpers;
+namespace App\helpers;
 
 use Psr\Http\Message\ResponseInterface as Response;
 

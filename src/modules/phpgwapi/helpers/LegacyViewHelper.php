@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\booking\helpers;
+namespace App\modules\phpgwapi\helpers;
 
 use App\modules\phpgwapi\services\Settings;
 
@@ -11,10 +11,10 @@ use App\modules\phpgwapi\services\Settings;
  * pipeline, then returns the full HTML page as a string for the Slim4 PSR-7 response.
  *
  * The legacy pipeline normally relies on direct echo + shutdown functions:
- *   1. phpgw_header(true)  → echoes <html><head> + navbar/sidebar (opens content wrappers)
- *   2. App content echoed  → goes into the content area
- *   3. phpgw_footer()      → includes footer.inc.php (app-specific footer, debug timer)
- *   4. parse_footer_end()  → shutdown function that renders footer.twig (closes wrappers)
+ *   1. phpgw_header(true)  -> echoes <html><head> + navbar/sidebar (opens content wrappers)
+ *   2. App content echoed  -> goes into the content area
+ *   3. phpgw_footer()      -> includes footer.inc.php (app-specific footer, debug timer)
+ *   4. parse_footer_end()  -> shutdown function that renders footer.twig (closes wrappers)
  *
  * We call parse_footer_end() manually inside the output buffer so its shutdown-function
  * invocation becomes a no-op (static guard: $footer_included).

@@ -1,0 +1,56 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ lang('highlighted_buildings') }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/components/building_select/building_select.css') }}</style>
+<style>{{ source('@views/config/highlighted_buildings/highlighted_buildings.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div class="highlighted-buildings">
+	<h2>{{ lang('highlighted_buildings') }}</h2>
+
+	<div class="mb-4">
+		<label class="app-label" for="building-search-input">{{ lang('search_buildings') }}</label>
+		{% include '@views/components/building_select/building_select.twig' with {
+			building_api_url: '/booking/buildings',
+			building_id: null,
+			building_name: '',
+			field_id: 'building-search'
+		} only %}
+		<p id="max-warning" class="highlighted-buildings__warning" hidden></p>
+	</div>
+
+	<div id="building-list" class="mb-4"></div>
+
+	<div class="mb-4">
+		<button id="save-btn" class="app-button app-button-primary">
+			{{ lang('save') }}
+		</button>
+	</div>
+
+	<div id="alert-container"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__highlightedBuildings = {
+		maxBuildings: 6,
+		lang: {
+			highlighted_buildings: '{{ lang("highlighted_buildings")|e('js') }}',
+			search_buildings: '{{ lang("search_buildings")|e('js') }}',
+			max_buildings_reached: '{{ lang("max_buildings_reached", "6")|e('js') }}',
+			no_buildings_found: '{{ lang("no_buildings_found")|e('js') }}',
+			changes_saved: '{{ lang("changes_saved")|e('js') }}',
+			save_error: '{{ lang("save_error")|e('js') }}',
+			remove: '{{ lang("remove")|e('js') }}',
+			move_up: '{{ lang("move_up")|e('js') }}',
+			move_down: '{{ lang("move_down")|e('js') }}'
+		}
+	};
+</script>
+<script src="{{ modules_url }}/booking/js/base/building-select.js"></script>
+<script>{{ source('@views/config/highlighted_buildings/highlighted_buildings.js') }}</script>
+{% endblock %}

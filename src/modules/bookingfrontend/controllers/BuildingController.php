@@ -2,7 +2,7 @@
 
 namespace App\modules\bookingfrontend\controllers;
 
-use App\modules\bookingfrontend\helpers\ResponseHelper;
+use App\helpers\ResponseHelper;
 use App\modules\bookingfrontend\models\AgeGroup;
 use App\modules\bookingfrontend\models\Audience;
 use App\modules\bookingfrontend\models\Building;

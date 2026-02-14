@@ -3,7 +3,7 @@
 {% block title %}{{ lang('Edit document') }} — {{ document.name }}{% endblock %}
 
 {% block styles %}
-<style>{{ source('@views/building_select/building_select.css') }}</style>
+<style>{{ source('@views/components/building_select/building_select.css') }}</style>
 <style>{{ source('@views/documents/edit/document_edit.css') }}</style>
 {% endblock %}
 
@@ -17,7 +17,7 @@
 	<form id="document-form">
 		<div class="form-group">
 			<label class="app-label" for="building-select-input">{{ lang('Building') }}</label>
-			{% include '@views/building_select/building_select.twig' with {
+			{% include '@views/components/building_select/building_select.twig' with {
 				building_api_url: '/booking/buildings',
 				building_id: owner_id,
 				building_name: building_name,

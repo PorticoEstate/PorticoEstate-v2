@@ -1,5 +1,9 @@
 .highlighted-buildings {
-	max-width: 640px;
+	max-width: 1280px;
+}
+
+#building-preview-root {
+	margin-bottom: var(--ds-spacing-4, 1rem);
 }
 
 .highlighted-buildings__warning {

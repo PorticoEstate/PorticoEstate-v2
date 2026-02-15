@@ -2984,13 +2984,17 @@ class PropertyGenericRegistry extends GenericRegistry
 	}
 
 	/**
-	 * Helper function to replace legacy lang() calls
-	 * For now, just returns the key - can be enhanced later for proper translations
+	 * Stub translation — does NOT look up translations from the database.
+	 *
+	 * Uses sprintf-style substitution (%s, %d) rather than the %1/%2 placeholders
+	 * used by the global lang() function and Translation service.
+	 *
+	 * @param string $key  String (or translation key) to return
+	 * @param mixed  ...$args sprintf substitution values
+	 * @return string The key with sprintf substitutions applied, or the key as-is
 	 */
 	private function lang(string $key, ...$args): string
 	{
-		// Simple implementation - just return the key
-		// This can be enhanced later to use proper translation system
 		if (!empty($args)) {
 			return sprintf($key, ...$args);
 		}

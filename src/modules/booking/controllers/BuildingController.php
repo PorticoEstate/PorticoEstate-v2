@@ -4,6 +4,7 @@ namespace App\modules\booking\controllers;
 
 use App\Database\Db;
 use App\modules\booking\authorization\DocumentBuildingAuthConfig;
+use App\modules\booking\models\Building;
 use App\modules\booking\repositories\PermissionRepository;
 use App\modules\phpgwapi\services\AuthorizationService;
 use App\helpers\ResponseHelper;
@@ -32,25 +33,24 @@ class BuildingController
             $db = Db::getInstance();
             $search = $request->getQueryParams()['search'] ?? null;
 
-            $sql = "SELECT id, name FROM bb_building WHERE active = 1";
+            $sql = "SELECT b.* FROM bb_building b WHERE b.active = 1";
             $params = [];
 
             if ($search !== null && trim($search) !== '') {
-                $sql .= " AND name ILIKE :search";
+                $sql .= " AND b.name ILIKE :search";
                 $params[':search'] = '%' . trim($search) . '%';
             }
 
-            $sql .= " ORDER BY name";
+            $sql .= " ORDER BY b.name";
 
             $stmt = $db->prepare($sql);
             $stmt->execute($params);
-            $buildings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Cast id to int
-            $buildings = array_map(function ($b) {
-                $b['id'] = (int)$b['id'];
-                return $b;
-            }, $buildings);
+            $buildings = array_map(function ($row) {
+                $building = new Building($row);
+                return $building->serialize([], true);
+            }, $results);
 
             return ResponseHelper::sendJSONResponse($buildings, 200, $response);
         } catch (Exception $e) {

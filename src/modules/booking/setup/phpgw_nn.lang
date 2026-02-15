@@ -1026,3 +1026,6 @@ move_down	booking	nn	Flytt ned
 save	booking	nn	Lagre
 remove	booking	nn	Fjern
 save_error	booking	nn	Feil ved lagring
+building_title	booking	nn	Bygning
+show_all_resources	booking	nn	Vis alle rom
+building_preview	booking	nn	Førehandsvisning

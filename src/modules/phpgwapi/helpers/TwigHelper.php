@@ -109,7 +109,6 @@ class TwigHelper
 	{
 		// TODO: [MIGRATION] Replace with i18n service
 		$this->twig->addFunction(new TwigFunction('lang', function (string $text, ...$args) {
-			$text = str_replace('_', ' ', $text);
 			return lang($text, ...$args);
 		}));
 

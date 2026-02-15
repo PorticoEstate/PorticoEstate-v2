@@ -37,7 +37,7 @@ class ConfigViewController
 				'layout' => '@views/_bare.twig',
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['booking', 'config', 'highlighted_buildings']);
+			$html = $this->legacyView->render($componentHtml, ['admin', 'booking', 'bookingfrontend.highlighted_buildings']);
 
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');

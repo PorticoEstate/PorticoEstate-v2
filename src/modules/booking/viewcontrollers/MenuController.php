@@ -2,6 +2,7 @@
 
 namespace App\modules\booking\viewcontrollers;
 
+use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
 
 /**
@@ -58,7 +59,19 @@ class MenuController
 	 */
 	private static function getAppends(): array
 	{
-		return [];
+		$appends = [];
+
+		$acl = Acl::getInstance();
+		if ($acl->check('run', Acl::READ, 'admin') || $acl->check('admin', Acl::ADD, 'booking')) {
+//			$appends['admin'] = [
+//				'highlighted_buildings' => [
+//					'text' => lang('booking.highlighted_buildings'),
+//					'url' => \phpgw::link('/booking/view/config/highlighted-buildings'),
+//				],
+//			];
+		}
+
+		return $appends;
 	}
 
 	/**

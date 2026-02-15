@@ -793,7 +793,7 @@ class OrganizationService
             // Convert to Building models and return in short format
             $buildings = [];
             foreach ($results as $result) {
-                $building = new \App\modules\bookingfrontend\models\Building($result);
+                $building = new \App\modules\booking\models\Building($result);
                 $buildings[] = $building->serialize(['short' => true]);
             }
 

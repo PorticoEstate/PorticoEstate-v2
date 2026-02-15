@@ -1014,3 +1014,6 @@ move_down	booking	no	Flytt ned
 save	booking	no	Lagre
 remove	booking	no	Fjern
 save_error	booking	no	Feil ved lagring
+building_title	booking	no	Bygning
+show_all_resources	booking	no	Vis alle rom
+building_preview	booking	no	Forhåndsvisning

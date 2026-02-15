@@ -196,7 +196,7 @@ class BuildingSelect {
         this.input.value = building.name;
         this.hiddenInput.value = building.id;
         this._close();
-        this.onChange(building.id, building.name);
+        this.onChange(building.id, building.name, building);
     }
 
     _open() {

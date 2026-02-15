@@ -5,20 +5,28 @@
 	var L = CFG.lang;
 	var MAX = CFG.maxBuildings;
 
-	var buildings = []; // [{id, name}, ...]
+	var buildings = []; // [{id, name, street, city, district}, ...]
+	var pictureCache = {}; // {buildingId: documentId}
 
 	var selectorContainer = document.getElementById('building-search');
 	var listEl = document.getElementById('building-list');
 	var saveBtn = document.getElementById('save-btn');
 	var maxWarning = document.getElementById('max-warning');
 	var alertContainer = document.getElementById('alert-container');
+	var previewRoot = document.getElementById('building-preview-root');
 
 	// --- Init BuildingSelect component ---
 
 	var selector = new BuildingSelect(selectorContainer, {
 		apiUrl: '/booking/buildings',
-		onChange: function (id, name) {
-			addBuilding({ id: id, name: name });
+		onChange: function (id, name, building) {
+			addBuilding({
+				id: id,
+				name: name,
+				street: building ? building.street || '' : '',
+				city: building ? building.city || '' : '',
+				district: building ? building.district || '' : ''
+			});
 			// Clear the selector after adding
 			selector.setValue(null, '');
 		}
@@ -55,15 +63,22 @@
 			.then(function (r) { return r.json(); })
 			.then(function (allBuildings) {
 				var map = {};
-				allBuildings.forEach(function (b) { map[b.id] = b.name; });
+				allBuildings.forEach(function (b) { map[b.id] = b; });
 				buildings = [];
 				ids.forEach(function (id) {
 					var numId = parseInt(id, 10);
 					if (map[numId]) {
-						buildings.push({ id: numId, name: map[numId] });
+						buildings.push({
+							id: numId,
+							name: map[numId].name,
+							street: map[numId].street || '',
+							city: map[numId].city || '',
+							district: map[numId].district || ''
+						});
 					}
 				});
 				renderList();
+				renderPreview();
 			})
 			.catch(function () {
 				renderList();
@@ -80,14 +95,16 @@
 		if (buildings.some(function (x) { return x.id === b.id; })) {
 			return;
 		}
-		buildings.push({ id: b.id, name: b.name });
+		buildings.push({ id: b.id, name: b.name, street: b.street || '', city: b.city || '', district: b.district || '' });
 		renderList();
+		renderPreview();
 	}
 
 	function removeBuilding(index) {
 		buildings.splice(index, 1);
 		hideMaxWarning();
 		renderList();
+		renderPreview();
 	}
 
 	function moveBuilding(index, direction) {
@@ -97,6 +114,7 @@
 		buildings[index] = buildings[newIndex];
 		buildings[newIndex] = temp;
 		renderList();
+		renderPreview();
 	}
 
 	function renderList() {
@@ -152,6 +170,63 @@
 			row.appendChild(removeBtn);
 
 			listEl.appendChild(row);
+		});
+	}
+
+	// --- Picture fetching ---
+
+	function fetchMainPicture(buildingId) {
+		if (pictureCache[buildingId] !== undefined) {
+			return Promise.resolve(pictureCache[buildingId]);
+		}
+		return fetch('/bookingfrontend/buildings/' + buildingId + '/main-picture', {
+			credentials: 'same-origin'
+		})
+			.then(function (r) {
+				if (!r.ok) return null;
+				return r.json();
+			})
+			.then(function (doc) {
+				var documentId = doc && doc.id ? doc.id : null;
+				pictureCache[buildingId] = documentId;
+				return documentId;
+			})
+			.catch(function () {
+				pictureCache[buildingId] = null;
+				return null;
+			});
+	}
+
+	// --- Widget preview ---
+
+	function renderPreview() {
+		if (!previewRoot || !window.HighlightedBuildingsWidget) return;
+
+		var promises = buildings.map(function (b) {
+			return fetchMainPicture(b.id);
+		});
+
+		Promise.all(promises).then(function (documentIds) {
+			var previewData = buildings.map(function (b, i) {
+				var data = {
+					id: b.id,
+					name: b.name,
+					street: b.street,
+					city: b.city,
+					district: b.district
+				};
+				if (documentIds[i]) {
+					data.imageUrl = window.location.origin + '/bookingfrontend/buildings/document/' + documentIds[i] + '/download';
+				}
+				return data;
+			});
+
+			window.HighlightedBuildingsWidget.render(
+				previewRoot,
+				previewData,
+				'no',
+				{ buildingTitle: L.building_title, showAllResources: L.show_all_resources }
+			);
 		});
 	}
 

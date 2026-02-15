@@ -8,7 +8,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Exception; // For handling potential errors
 use App\Database\Db;
 use App\modules\bookingfrontend\models\Activity;
-use App\modules\bookingfrontend\models\Building;
+use App\modules\booking\models\Building;
 use App\modules\bookingfrontend\models\Resource;
 use App\modules\booking\models\Document;
 use App\modules\bookingfrontend\repositories\ResourceRepository;

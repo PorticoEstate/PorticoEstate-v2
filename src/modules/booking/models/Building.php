@@ -1,6 +1,6 @@
 <?php
 
-namespace App\modules\bookingfrontend\models;
+namespace App\modules\booking\models;
 
 use App\traits\SerializableTrait;
 use OpenApi\Annotations as OA;

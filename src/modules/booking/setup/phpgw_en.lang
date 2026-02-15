@@ -916,3 +916,6 @@ move_down	booking	en	Move down
 save	booking	en	Save
 remove	booking	en	Remove
 save_error	booking	en	Error saving
+building_title	booking	en	Building
+show_all_resources	booking	en	Show all rooms
+building_preview	booking	en	Preview

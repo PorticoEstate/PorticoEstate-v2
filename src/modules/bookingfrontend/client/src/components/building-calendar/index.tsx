@@ -1,6 +1,6 @@
 import {DateTime} from "luxon";
 import {fetchBuildingScheduleOLD, fetchBuildingSeasons, fetchFreeTimeSlotsForRange, fetchOrganizationSchedule} from "@/service/api/api-utils";
-import {fetchBuilding, fetchBuildingResources} from "@/service/api/building";
+import {fetchSSRBuilding, fetchSSRBuildingResources} from "@/service/api/building-ssr";
 import CalendarWrapper from "@/components/building-calendar/CalendarWrapper";
 import NotFound from "next/dist/client/components/not-found-error";
 import {IBuilding} from "@/service/types/Building";
@@ -33,8 +33,8 @@ const BuildingCalendar = async (props: BuildingCalendarProps) => {
             const buildingId = parseInt(building_id, 10);
             const [initialFreeTime, building, buildingResources, seasons] = await Promise.all([
                 fetchFreeTimeSlotsForRange(buildingId, startDate, endDate),
-                fetchBuilding(buildingId),
-                fetchBuildingResources(buildingId),
+                fetchSSRBuilding(buildingId),
+                fetchSSRBuildingResources(buildingId),
                 fetchBuildingSeasons(buildingId)
             ]);
             return (

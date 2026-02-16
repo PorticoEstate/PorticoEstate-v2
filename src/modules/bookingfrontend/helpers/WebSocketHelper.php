@@ -486,4 +486,52 @@ class WebSocketHelper
             self::triggerBookingUserUpdate($sessionId);
         });
     }
+
+    /**
+     * Send cache invalidation message to all connected clients via WebSocket
+     * This triggers React Query cache invalidation in all client browsers
+     *
+     * @param array $queryKeys Array of React Query key arrays to invalidate
+     *                         Example: [['searchData'], ['organizations'], ['resourceArticles', 123]]
+     * @param array|null $debug Optional debug data from cache reset operations
+     * @return bool Success status
+     */
+    public static function sendCacheInvalidation(array $queryKeys, ?array $debug = null): bool
+    {
+        if (empty($queryKeys)) {
+            error_log("WebSocketHelper: Cache invalidation called with empty queryKeys");
+            return false;
+        }
+
+        error_log("WebSocketHelper: Sending cache invalidation for " . count($queryKeys) . " query key(s)");
+
+        // Create the cache invalidation message
+        $payload = [
+            'type' => 'cache_invalidation',
+            'queryKeys' => $queryKeys,
+            'timestamp' => date('c')
+        ];
+
+        // Include debug info if provided
+        if ($debug !== null) {
+            $payload['debug'] = $debug;
+            error_log("WebSocketHelper: Cache invalidation debug info: " . json_encode($debug));
+        }
+
+        // Broadcast to all connected clients via Redis notifications channel
+        return self::sendRedisNotification($payload, self::$redisChannel);
+    }
+
+    /**
+     * Send cache invalidation message asynchronously
+     *
+     * @param array $queryKeys Array of React Query key arrays to invalidate
+     * @return bool Success status of forking (not the notification itself)
+     */
+    public static function sendCacheInvalidationAsync(array $queryKeys): bool
+    {
+        return self::forkNotification(function() use ($queryKeys) {
+            self::sendCacheInvalidation($queryKeys);
+        });
+    }
 }

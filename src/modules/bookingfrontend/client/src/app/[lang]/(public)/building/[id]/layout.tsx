@@ -1,4 +1,4 @@
-import {fetchBuilding} from "@/service/api/building";
+import {fetchSSRBuilding} from "@/service/api/building-ssr";
 import {notFound} from "next/navigation";
 
 interface BuildingLayoutParams {
@@ -21,7 +21,7 @@ export async function generateMetadata(props: BuildingLayoutProps) {
     }
 
     // Fetch the building
-    const building = await fetchBuilding(buildingId);
+    const building = await fetchSSRBuilding(buildingId);
 
     // If building does not exist, throw the notFound error
     if (!building) {

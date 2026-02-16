@@ -1,4 +1,4 @@
-import {fetchBuilding, fetchResource} from "@/service/api/building";
+import {fetchSSRBuilding, fetchSSRResource} from "@/service/api/building-ssr";
 import {notFound} from "next/navigation";
 
 interface ResourceLayoutParams {
@@ -21,14 +21,14 @@ export async function generateMetadata(props: ResourceLayoutProps) {
     }
 
     // Fetch the resource
-    const resource = await fetchResource(resourceId);
+    const resource = await fetchSSRResource(resourceId);
 
     // If resource does not exist or has no building, throw the notFound error
     if (!resource || resource.building_id === null || resource.building_id === undefined) {
         return notFound();
     }
     
-    const building = await fetchBuilding(resource.building_id);
+    const building = await fetchSSRBuilding(resource.building_id);
 
     return {
         title: `${resource.name} - ${building.name}`,

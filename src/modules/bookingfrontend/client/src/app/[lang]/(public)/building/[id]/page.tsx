@@ -1,5 +1,5 @@
 import BuildingCalendar from "@/components/building-calendar";
-import {fetchBuilding, fetchBuildingDocuments} from "@/service/api/building";
+import {fetchSSRBuilding, fetchSSRBuildingDocuments} from "@/service/api/building-ssr";
 import {notFound} from "next/navigation";
 import BuildingHeader from "@/components/building-page/building-header";
 import DescriptionAccordion from "@/components/building-page/description-accordion";
@@ -29,7 +29,7 @@ const BuildingShow = async (props: BuildingShowProps) => {
     }
 
     // Fetch the building
-    const building = await fetchBuilding(buildingId);
+    const building = await fetchSSRBuilding(buildingId);
 
     // If building does not exist, throw the notFound error
     if (!building) {
@@ -41,7 +41,7 @@ const BuildingShow = async (props: BuildingShowProps) => {
     const town = towns.find(t => t.id === building.town_id);
 
     // Fetch building documents (excluding only pictures)
-    const documents = await fetchBuildingDocuments(buildingId, ['drawing', 'price_list', 'other', 'regulation', 'HMS_document']);
+    const documents = await fetchSSRBuildingDocuments(buildingId, ['drawing', 'price_list', 'other', 'regulation', 'HMS_document']);
 
     return (
         <main>

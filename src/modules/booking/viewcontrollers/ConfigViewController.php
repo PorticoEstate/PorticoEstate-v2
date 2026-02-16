@@ -37,8 +37,8 @@ class ConfigViewController
 				'layout' => '@views/_bare.twig',
 			]);
 
-			$html = $this->legacyView->render($componentHtml, ['admin', 'booking', 'bookingfrontend.highlighted_buildings']);
-
+			$html = $this->legacyView->render($componentHtml, ['admin', 'bookingfrontend', 'bookingfrontend.highlighted_buildings']);
+//			admin::bookingfrontend::multi_domain
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
 		} catch (Exception $e) {

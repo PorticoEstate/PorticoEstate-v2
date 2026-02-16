@@ -146,7 +146,13 @@ class DocumentService
             $data['metadata'] = $metadata;
         }
 
-        return $this->documentRepository->createDocument($data);
+        $id = $this->documentRepository->createDocument($data);
+
+        if (isset($data['owner_id'])) {
+            $this->invalidateDocumentCache((int)$data['owner_id']);
+        }
+
+        return $id;
     }
 
 
@@ -171,7 +177,14 @@ class DocumentService
 
     public function deleteDocument(int $documentId): void
     {
+        $document = $this->getDocumentById($documentId);
+        $ownerId = $document?->owner_id;
+
         $this->documentRepository->deleteDocument($documentId);
+
+        if ($ownerId) {
+            $this->invalidateDocumentCache($ownerId);
+        }
     }
 
     /**
@@ -237,7 +250,34 @@ class DocumentService
             $data['metadata'] = $metadata;
         }
 
-        return $this->documentRepository->updateDocument($documentId, $data);
+        $result = $this->documentRepository->updateDocument($documentId, $data);
+
+        $this->invalidateDocumentCache($document->owner_id);
+
+        // If owner changed, also invalidate the new owner's cache
+        if (isset($data['owner_id']) && (int)$data['owner_id'] !== $document->owner_id) {
+            $this->invalidateDocumentCache((int)$data['owner_id']);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Invalidate Next.js caches for document changes based on owner type.
+     */
+    private function invalidateDocumentCache(int $ownerId): void
+    {
+        if (!class_exists('\App\modules\bookingfrontend\services\CacheService')) {
+            return;
+        }
+
+        $cache = new \App\modules\bookingfrontend\services\CacheService();
+
+        match ($this->ownerType) {
+            Document::OWNER_BUILDING => $cache->invalidateBuildingDocuments($ownerId),
+            Document::OWNER_RESOURCE => $cache->invalidateResourceDocuments($ownerId),
+            default => null,
+        };
     }
 
     private function validateBuildingExists(int $buildingId): void

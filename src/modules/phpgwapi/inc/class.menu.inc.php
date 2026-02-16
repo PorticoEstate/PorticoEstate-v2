@@ -70,11 +70,12 @@ use App\modules\phpgwapi\services\Translation;
 		{
 		$userSettings = Settings::getInstance()->get('user');
 
+			$disable_menu_cache = !empty($_ENV['DISABLE_MENU_CACHE']);
 			static $menu = null;
 
 			$account_id = $userSettings['account_id'];
 
-			if(!$menu)
+			if(!$menu && !$disable_menu_cache)
 			{
 	//			$menu = Cache::user_get('phpgwapi', 'menu', $account_id, true, true);
 			}
@@ -82,7 +83,10 @@ use App\modules\phpgwapi\services\Translation;
 			if(!$menu)
 			{
 				$menu = self::load();
-				Cache::user_set('phpgwapi', 'menu', $menu, $account_id, true, true);
+				if(!$disable_menu_cache)
+				{
+					Cache::user_set('phpgwapi', 'menu', $menu, $account_id, true, true);
+				}
 			}
 
 			if(!is_null($mtype) && isset($menu[$mtype]))
@@ -395,13 +399,17 @@ HTML;
 			}
 
 			
-			if(!$menu = Cache::session_get( "menu_{$app}", $flags['menu_selection']))
+			$disable_menu_cache = !empty($_ENV['DISABLE_MENU_CACHE']);
+			if($disable_menu_cache || !$menu = Cache::session_get( "menu_{$app}", $flags['menu_selection']))
 			{
 				$menu_gross = execMethod("{$app}.menu.get_menu", 'horisontal');
 				$selection = explode('::', $flags['menu_selection']);
 				$level = 0;
 				$menu = self::_get_sub_menu($menu_gross['navigation'], $selection, $level);
-				Cache::session_set("menu_{$app}", isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'menu_missing_selection', $menu);
+				if(!$disable_menu_cache)
+				{
+					Cache::session_set("menu_{$app}", isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'menu_missing_selection', $menu);
+				}
 				unset($menu_gross);
 			}
 			return $menu;
@@ -504,10 +512,14 @@ HTML;
 			}
 
 
-			if(!$menu_gross = Cache::session_get('phpgwapi', "menu_{$app}"))
+			$disable_menu_cache = !empty($_ENV['DISABLE_MENU_CACHE']);
+			if($disable_menu_cache || !$menu_gross = Cache::session_get('phpgwapi', "menu_{$app}"))
 			{
 				$menu_gross = execMethod("{$app}.menu.get_menu");
-				Cache::session_set('phpgwapi', "menu_{$app}", $menu_gross);
+				if(!$disable_menu_cache)
+				{
+					Cache::session_set('phpgwapi', "menu_{$app}", $menu_gross);
+				}
 			}
 
 			$menu_gross = $menu_gross[$_section];

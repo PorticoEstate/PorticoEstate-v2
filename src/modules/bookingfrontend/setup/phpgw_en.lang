@@ -940,6 +940,8 @@ grand_total	bookingfrontend	en	Total for all applications
 added_to_cart	bookingfrontend	en	Added to cart
 cart_reminder_message	bookingfrontend	en	Remember to complete the application in the cart for the order to be submitted.
 buildings_and_facilities	bookingfrontend	en	Buildings and facilities
+highlighted_buildings	bookingfrontend	en	Highlighted buildings
+last_ordered_resources	bookingfrontend	en	Your last ordered
 rooms_and_premises	bookingfrontend	en	Rooms and premises
 building_title	bookingfrontend	en	Building
 resource_title	bookingfrontend	en	Room

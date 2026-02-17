@@ -941,6 +941,8 @@ added_to_cart	bookingfrontend	no	Lagt i handlekurven
 cart_reminder_message	bookingfrontend	no	Husk å fullføre søknaden i handlekurven for at bestillingen skal bli sendt inn.
 
 buildings_and_facilities	bookingfrontend	no	Bygg og anlegg
+highlighted_buildings	bookingfrontend	no	Utvalgte bygg
+last_ordered_resources	bookingfrontend	no	Dine siste bestillinger
 rooms_and_premises	bookingfrontend	no	Rom og lokaler
 building_title	bookingfrontend	no	Bygg
 resource_title	bookingfrontend	no	Rom

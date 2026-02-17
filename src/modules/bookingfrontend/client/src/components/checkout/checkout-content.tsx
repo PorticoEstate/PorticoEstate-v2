@@ -120,6 +120,21 @@ const CheckoutContent: FC = () => {
         return Array.from(resourceMap.values());
     }, [regularApplications, recurringApplications]);
 
+    // Save ordered resource IDs to localStorage for "last ordered" display
+    const saveLastOrderedResources = () => {
+        if (typeof window === 'undefined' || resources.length === 0) return;
+        try {
+            const stored = localStorage.getItem('last_ordered');
+            const existing: number[] = stored ? JSON.parse(stored) : [];
+            const newIds = resources.map(r => r.id);
+            // Prepend new IDs, remove duplicates, limit to 10
+            const merged = [...newIds, ...existing.filter(id => !newIds.includes(id))].slice(0, 10);
+            localStorage.setItem('last_ordered', JSON.stringify(merged));
+        } catch (e) {
+            console.error('Error saving last ordered resources:', e);
+        }
+    };
+
     // Fetch regulation documents for all resources
     const { data: regulationDocuments, isLoading: docsLoading } = useResourceRegulationDocuments(resources);
 
@@ -262,6 +277,7 @@ const CheckoutContent: FC = () => {
                 if (process.env.NODE_ENV === 'development') {
                     console.log('🐛 CheckoutContent: checkoutMutation success, redirecting to /user/applications');
                 }
+                saveLastOrderedResources();
                 router.push('/user/applications');
             }).catch((error) => {
                 if (process.env.NODE_ENV === 'development') {
@@ -347,6 +363,7 @@ const CheckoutContent: FC = () => {
             console.log('Payment data:', paymentData);
 
             await vippsPaymentMutation.mutateAsync(paymentData);
+            saveLastOrderedResources();
             console.log('=== VIPPS API CALL COMPLETED ===');
         } catch (error) {
             console.error('Error initiating Vipps payment:', error);

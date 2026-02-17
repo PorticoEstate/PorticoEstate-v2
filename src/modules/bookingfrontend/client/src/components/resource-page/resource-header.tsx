@@ -1,6 +1,5 @@
 import {IBuilding} from "@/service/types/Building";
 import {ISearchDataTown} from "@/service/types/api/search.types";
-import {Buildings3Icon, LayersIcon} from "@navikt/aksel-icons";
 import styles from '../building-page/building-header.module.scss';
 import MapModal from "@/components/map-modal/map-modal";
 import {IShortResource} from "@/service/pecalendar.types";
@@ -8,6 +7,8 @@ import {Button, Heading} from "@digdir/designsystemet-react";
 import Link from "next/link";
 import DividerCircle from "@/components/util/DividerCircle";
 import { IResource } from "@/service/types/resource.types";
+import ResourceIcon from "@/icons/ResourceIcon";
+import BuildingIcon from "@/icons/BuildingIcon";
 
 interface ResourceHeaderProps {
 	resource: IShortResource | IResource;
@@ -22,7 +23,7 @@ const ResourceHeader = async (props: ResourceHeaderProps) => {
 			<div className={styles.buildingName}>
 
 				<Heading level={2} data-size="md" className={styles.heading}>
-					<LayersIcon fontSize="24px"/>
+					<ResourceIcon fontSize="24px"/>
 					{resource.name}
 				</Heading>
 			</div>
@@ -35,7 +36,7 @@ const ResourceHeader = async (props: ResourceHeaderProps) => {
 			<div style={{display: 'flex', marginTop: '1rem'}}>
 				<Button asChild variant={'secondary'} color={'neutral'}
 						className={'default'}>
-					<Link href={'/building/' + building.id}><Buildings3Icon fontSize="20px"/>{building.name}</Link>
+					<Link href={'/building/' + building.id}><BuildingIcon fontSize="20px"/>{building.name}</Link>
 
 				</Button>
 			</div>

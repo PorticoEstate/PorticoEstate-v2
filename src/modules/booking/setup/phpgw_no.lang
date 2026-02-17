@@ -999,3 +999,5 @@ card_preview	booking	no	Kort
 square_preview	booking	no	200x200 (kvadrat)
 portrait_preview	booking	no	200x411 (portrett)
 apply_focal_point	booking	no	Bruk
+
+short_description	booking	no	Kort beskrivelse

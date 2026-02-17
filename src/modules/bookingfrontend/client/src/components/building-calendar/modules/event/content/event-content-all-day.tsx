@@ -2,13 +2,13 @@ import React, {FC} from 'react';
 import styles from './event-content.module.scss';
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faUser} from "@fortawesome/free-solid-svg-icons";
-import { LayersIcon } from "@navikt/aksel-icons";
 import {formatDateRange} from "@/service/util";
 import {FCallEvent, FCEventContentArg} from "@/components/building-calendar/building-calendar.types";
 import ColourCircle from "@/components/building-calendar/modules/colour-circle/colour-circle";
 import {useTrans} from "@/app/i18n/ClientTranslationProvider";
 import {useIsMobile} from "@/service/hooks/is-mobile";
 import {IEventIsAPIEvent} from "@/service/pecalendar.types";
+import ResourceIcon from "@/icons/ResourceIcon";
 
 interface EventContentAllDayProps {
     eventInfo: FCEventContentArg<FCallEvent>;
@@ -59,7 +59,7 @@ const EventContentAllDay: FC<EventContentAllDayProps> = ({eventInfo}) => {
 
                 <div className={`${styles.resourceIcons} text-label`}>
 
-                    <LayersIcon fontSize="1.25rem" />
+                    <ResourceIcon fontSize="1.25rem" />
                     {renderColorCircles(isMobile ? 1 : 3)}
                 </div>
                 {IEventIsAPIEvent(eventData) && eventData.organizer && (

@@ -5248,6 +5248,15 @@ JS;
 	private function sendGroupNotification($application_ids, $primary_application)
 	{
 		try {
+			// The case officer's comment is a runtime property (not a DB column).
+			// Prefer the explicit acceptance/rejection message from POST over whatever
+			// ended up on the primary application, because auto-rejection can overwrite
+			// the user's comment before we get here.
+			$comment = Sanitizer::get_var('acceptance_message', 'html', 'POST')
+				?: Sanitizer::get_var('rejection_reason', 'html', 'POST')
+				?: Sanitizer::get_var('comment', 'html', 'POST')
+				?: ($primary_application['comment'] ?? null);
+
 			// Load all related applications
 			$applications = [];
 			foreach ($application_ids as $app_id) {
@@ -5255,6 +5264,9 @@ JS;
 				if ($app) {
 				// Keep the actual status from database (don't override)
 				// Each application may have different status (ACCEPTED, REJECTED, etc.)
+					if ($comment) {
+						$app['comment'] = $comment;
+					}
 					$applications[] = $app;
 				}
 			}

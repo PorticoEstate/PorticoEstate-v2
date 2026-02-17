@@ -45,6 +45,7 @@
 			switch ($format)
 			{
 				case 'AGRESSO':
+				case 'AGRESSO_55':
 				case 'KOMMFAKT':
 				case 'VISMA':
 					$file_type =  'txt';

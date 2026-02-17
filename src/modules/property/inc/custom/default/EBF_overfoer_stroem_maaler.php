@@ -250,6 +250,10 @@ class overfoer_stroem extends property_boentity
 							<td>Etter</td>
 							<td>{$tidligere_person}</td>
 						</tr>
+						<tr>
+							<td>Prekontering</td>
+							<td>Nei</td>
+						</tr>
 					</table>
 					<br/><br/>
 

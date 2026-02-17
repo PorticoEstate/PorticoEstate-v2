@@ -42,6 +42,7 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 	const {data: org} = useOrganization(currentOrganization);
 	const partials = usePartialApplications();
 
+	const isListView = view === 'listWeek' || view === 'listDay';
 	const c = calendarRef.current;
 
 	const calendarApi = c?.getApi();
@@ -56,9 +57,11 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 		// Handle different view types
 		switch (view) {
 			case 'timeGridDay':
+			case 'listDay':
 				setCurrentDate(currentDate.minus({days: 1}));
 				break;
 			case 'timeGridWeek':
+			case 'listWeek':
 				setCurrentDate(currentDate.minus({weeks: 1}));
 				break;
 			case 'dayGridMonth':
@@ -75,9 +78,11 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			// Handle different view types
 			switch (view) {
 				case 'timeGridDay':
+				case 'listDay':
 					setCurrentDate(currentDate.plus({days: 1}));
 					break;
 				case 'timeGridWeek':
+				case 'listWeek':
 					setCurrentDate(currentDate.plus({weeks: 1}));
 					break;
 				case 'dayGridMonth':
@@ -157,14 +162,14 @@ const CalendarInnerHeader: FC<CalendarInnerHeaderProps> = (props) => {
 			{/* Hide day/week buttons when in calendar mode on mobile */}
 			{!(isMobile && calendarViewMode === 'calendar') && (
 				<ButtonGroup data-color='accent' className={styles.modeSelectTime}>
-					<Button variant={view === 'timeGridDay' ? 'primary' : 'tertiary'} data-color={'accent'}
+					<Button variant={view === 'timeGridDay' || view === 'listDay' ? 'primary' : 'tertiary'} data-color={'accent'}
 							data-size={'sm'}
 							className={'captialize subtle'}
-							onClick={() => setView('timeGridDay')}>{t('bookingfrontend.day')}</Button>
-					<Button variant={view === 'timeGridWeek' ? 'primary' : 'tertiary'} data-color={'accent'}
+							onClick={() => setView(isListView ? 'listDay' : 'timeGridDay')}>{t('bookingfrontend.day')}</Button>
+					<Button variant={view === 'timeGridWeek' || view === 'listWeek' ? 'primary' : 'tertiary'} data-color={'accent'}
 							data-size={'sm'}
 							className={'captialize subtle'}
-							onClick={() => setView('timeGridWeek')}>{t('bookingfrontend.week')}</Button>
+							onClick={() => setView(isListView ? 'listWeek' : 'timeGridWeek')}>{t('bookingfrontend.week')}</Button>
 					{/*<Button variant={view === 'dayGridMonth' ? 'primary' : 'tertiary'} data-color={'accent'}*/}
 					{/*		data-size={'sm'}*/}
 					{/*		className={'captialize subtle'}*/}

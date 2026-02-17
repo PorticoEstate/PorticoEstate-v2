@@ -314,24 +314,23 @@ class GenericRegistryController
 		$conditions = [];
 		if ($query)
 		{
-			// Search in 'name' field if it exists in the registry config, otherwise search in first text field
-			$searchField = 'name'; // Default fallback
+			// Multi-field search: OR across all varchar/text fields
+			$searchFields = [];
 			if (!empty($config['fields']))
 			{
 				foreach ($config['fields'] as $field)
 				{
-					if ($field['name'] === 'name')
+					if (in_array($field['type'], ['varchar', 'text', 'html']))
 					{
-						$searchField = 'name';
-						break;
-					}
-					elseif (in_array($field['type'], ['varchar', 'text']) && !isset($searchField))
-					{
-						$searchField = $field['name'];
+						$searchFields[] = $field['name'];
 					}
 				}
 			}
-			$conditions[] = [$searchField, 'LIKE', "%{$query}%"];
+			if (empty($searchFields))
+			{
+				$searchFields = ['name'];
+			}
+			$conditions[] = ['_multi_search', 'LIKE', $query, 'fields' => $searchFields];
 		}
 
 		// Add filters from query params - only for fields that exist in the registry configuration
@@ -390,10 +389,8 @@ class GenericRegistryController
 			'offset' => $start
 		]);
 
-		// Get total count for pagination
-		// For now, we'll count the results (BaseModel doesn't have count method yet)
-		$allResults = $registryClass::findWhereByType($type, $conditions);
-		$totalCount = count($allResults);
+		// Get total count for pagination using efficient COUNT query
+		$totalCount = $registryClass::countWhereByType($type, $conditions);
 
 		// Convert model objects to arrays for clean JSON response
 		$data = [];
@@ -408,6 +405,10 @@ class GenericRegistryController
 				$data[] = $result;
 			}
 		}
+
+		// Resolve user-type fields (account_id → display name)
+		$registry = $registryClass::forType($type);
+		$this->resolveUserFields($data, $registry->getInstanceFieldMap());
 
 		$responseData = [
 			'success' => true,
@@ -635,9 +636,11 @@ class GenericRegistryController
 		{
 			// Sanitize incoming data based on registry field definitions
 			$data = $this->sanitizeData($data, $registryClass, $type);
-			
+
+			// Apply default values for 'add' mode
+			$data = $this->applyDefaults($data, $config, 'add');
+
 			// Get the registry configuration to check ID field requirements
-			$config = $registryClass::getRegistryConfig($type);
 			$idConfig = $config['id'] ?? ['name' => 'id', 'type' => 'int'];
 			$idFieldName = $idConfig['name'] ?? 'id';
 			$idFieldType = $idConfig['type'] ?? 'int';
@@ -862,7 +865,10 @@ class GenericRegistryController
 		{
 			// Sanitize incoming data based on registry field definitions
 			$data = $this->sanitizeData($data, $registryClass, $type);
-			
+
+			// Apply default values for 'edit' mode
+			$data = $this->applyDefaults($data, $config, 'edit');
+
 			// Update the item with new data
 			$item->populate($data);
 
@@ -1063,11 +1069,29 @@ class GenericRegistryController
 	public function types(Request $request, Response $response): Response
 	{
 		$registryClass = $this->getRegistryClass($request);
+		$acl = $this->getAcl();
 		$types = [];
 
 		foreach ($registryClass::getAvailableTypes() as $type)
 		{
 			$config = $registryClass::getRegistryConfig($type);
+
+			$aclLocation = $config['acl_location'] ?? '.admin';
+			$aclApp = $config['acl_app'] ?? 'booking';
+
+			// Skip types the user can't read
+			if (!$acl->check($aclLocation, Acl::READ, $aclApp))
+			{
+				continue;
+			}
+
+			// Build permissions
+			$permissions = [
+				'read' => true, // Already checked above
+				'create' => $acl->check($aclLocation, Acl::ADD, $aclApp),
+				'write' => $acl->check($aclLocation, Acl::EDIT, $aclApp),
+				'delete' => $acl->check($aclLocation, Acl::DELETE, $aclApp),
+			];
 
 			// Include the id field definition in the fields array
 			$fields = $config['fields'] ?? [];
@@ -1102,9 +1126,10 @@ class GenericRegistryController
 				'type' => $type,
 				'name' => $config['name'] ?? ucfirst(str_replace('_', ' ', $type)),
 				'table' => $config['table'] ?? '',
-				'acl_location' => $config['acl_location'] ?? '',
+				'acl_location' => $aclLocation,
 				'id_field' => $config['id'] ?? ['name' => 'id', 'type' => 'int'],
-				'fields' => $fields
+				'fields' => $fields,
+				'permissions' => $permissions
 			];
 		}
 
@@ -1187,10 +1212,55 @@ class GenericRegistryController
 		}
 
 		$config = $registryClass::getRegistryConfig($type);
-		// Get field map using static method
-		$fieldMap = $registryClass::getCompleteFieldMap();
-		// Create instance to get ACL info
+		// Create instance to get ACL info and field map
 		$registry = $registryClass::forType($type);
+		$fieldMap = $registry->getInstanceFieldMap();
+
+		// Add lookup_url to select fields
+		$fields = $config['fields'] ?? [];
+		$definedFieldNames = array_map(fn($f) => $f['name'], $fields);
+
+		foreach ($fields as &$field)
+		{
+			if ($field['type'] === 'select' && isset($field['values_def']['method_input']['type']))
+			{
+				$lookupType = $field['values_def']['method_input']['type'];
+				// Detect module from request path for the lookup URL
+				$module = $this->detectModuleFromRequest($request) ?? 'booking';
+				$field['lookup_url'] = "/{$module}/registry/{$lookupType}/list";
+			}
+		}
+		unset($field);
+
+		// Append custom attributes (where list=1) not already in the fields array
+		foreach ($fieldMap as $fieldName => $meta)
+		{
+			if (
+				!empty($meta['custom_field']) &&
+				!in_array($fieldName, $definedFieldNames) &&
+				!empty($meta['custom_field_meta']['list'])
+			)
+			{
+				$cfMeta = $meta['custom_field_meta'];
+				$fields[] = [
+					'name' => $fieldName,
+					'descr' => $cfMeta['input_text'] ?? $fieldName,
+					'type' => $cfMeta['datatype'] ?? 'varchar',
+					'custom_field' => true,
+				];
+			}
+		}
+
+		// Build permissions
+		$acl = $this->getAcl();
+		$aclLocation = $config['acl_location'] ?? '.admin';
+		$aclApp = $config['acl_app'] ?? 'booking';
+		$permissions = [
+			'read' => $acl->check($aclLocation, Acl::READ, $aclApp),
+			'create' => $acl->check($aclLocation, Acl::ADD, $aclApp),
+			'write' => $acl->check($aclLocation, Acl::EDIT, $aclApp),
+			'delete' => $acl->check($aclLocation, Acl::DELETE, $aclApp),
+		];
 
 		$responseData = [
 			'success' => true,
@@ -1199,9 +1269,10 @@ class GenericRegistryController
 				'name' => $config['name'] ?? '',
 				'table' => $config['table'] ?? '',
 				'id_field' => $config['id'] ?? [],
-				'fields' => $config['fields'] ?? [],
+				'fields' => $fields,
 				'field_map' => $fieldMap,
-				'acl_info' => $registry->getAclInfo()
+				'acl_info' => $registry->getAclInfo(),
+				'permissions' => $permissions
 			]
 		];
 
@@ -1412,6 +1483,113 @@ class GenericRegistryController
 
 		$response->getBody()->write(json_encode($responseData));
 		return $response->withHeader('Content-Type', 'application/json');
+	}
+
+	/**
+	 * Resolve user-type fields (account_id → display name) in a dataset
+	 */
+	private function resolveUserFields(array &$data, array $fieldMap): void
+	{
+		// Find fields with datatype 'user'
+		$userFields = [];
+		foreach ($fieldMap as $fieldName => $meta)
+		{
+			if (!empty($meta['custom_field_meta']['datatype']) && $meta['custom_field_meta']['datatype'] === 'user')
+			{
+				$userFields[] = $fieldName;
+			}
+		}
+
+		if (empty($userFields))
+		{
+			return;
+		}
+
+		// Collect all unique account IDs
+		$accountIds = [];
+		foreach ($data as $row)
+		{
+			foreach ($userFields as $field)
+			{
+				$val = $row[$field] ?? null;
+				if ($val && is_numeric($val))
+				{
+					$accountIds[(int)$val] = true;
+				}
+			}
+		}
+
+		if (empty($accountIds))
+		{
+			return;
+		}
+
+		// Batch-fetch account names
+		$accounts = new \App\modules\phpgwapi\controllers\Accounts\Accounts();
+		$nameMap = [];
+		foreach (array_keys($accountIds) as $accountId)
+		{
+			try
+			{
+				$account = $accounts->get($accountId);
+				$nameMap[$accountId] = $account ? (string)$account : '';
+			}
+			catch (\Exception $e)
+			{
+				$nameMap[$accountId] = '';
+			}
+		}
+
+		// Replace IDs with names in the dataset
+		foreach ($data as &$row)
+		{
+			foreach ($userFields as $field)
+			{
+				$val = $row[$field] ?? null;
+				if ($val && isset($nameMap[(int)$val]))
+				{
+					$row[$field] = $nameMap[(int)$val];
+				}
+			}
+		}
+	}
+
+	/**
+	 * Apply default values based on registry configuration
+	 */
+	private function applyDefaults(array $data, array $config, string $mode): array
+	{
+		if (empty($config['defaults']))
+		{
+			return $data;
+		}
+
+		$accountId = \App\modules\phpgwapi\services\Settings::getInstance()->get('user')['account_id'] ?? 0;
+
+		foreach ($config['defaults'] as $field => $modes)
+		{
+			if (!isset($modes[$mode]))
+			{
+				continue;
+			}
+
+			$defaultValue = $modes[$mode];
+
+			switch ($defaultValue)
+			{
+				case 'current_user':
+					$data[$field] = $accountId;
+					break;
+				case 'now':
+					$data[$field] = time();
+					break;
+				default:
+					$data[$field] = $defaultValue;
+					break;
+			}
+		}
+
+		return $data;
 	}
 
 	/**

@@ -1,0 +1,38 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ registry_name }}{% endblock %}
+
+{% block content %}
+{% include '@views/components/datatable/datatable.twig' %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__registryList = {
+		type: '{{ registry_type|e('js') }}',
+		name: '{{ registry_name|e('js') }}',
+		schemaUrl: '/booking/registry/{{ registry_type|e('js') }}/schema',
+		dataUrl: '/booking/registry/{{ registry_type|e('js') }}',
+		editBaseUrl: '/booking/view/registry/{{ registry_type|e('js') }}/',
+		addUrl: '/booking/view/registry/{{ registry_type|e('js') }}/add',
+		permissions: {
+			read: {{ permissions.read ? 'true' : 'false' }},
+			create: {{ permissions.create ? 'true' : 'false' }},
+			write: {{ permissions.write ? 'true' : 'false' }},
+			delete: {{ permissions.delete ? 'true' : 'false' }}
+		},
+		lang: {
+			add: '{{ lang("add")|e('js') }}',
+			edit: '{{ lang("Edit")|e('js') }}',
+			delete: '{{ lang("Delete")|e('js') }}',
+			confirmDelete: '{{ lang("Are you sure you want to delete?")|e('js') }}',
+			deleted: '{{ lang("Deleted")|e('js') }}',
+			emptyTable: '{{ lang("No entries found")|e('js') }}',
+			yes: '{{ lang("common.yes")|e('js') }}',
+			no: '{{ lang("common.no")|e('js') }}',
+			all: '{{ lang("All")|e('js') }}'
+		}
+	};
+</script>
+<script>{{ source('@views/registry/list/registry_list.js') }}</script>
+{% endblock %}

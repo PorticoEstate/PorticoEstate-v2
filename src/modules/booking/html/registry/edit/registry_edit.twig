@@ -1,0 +1,48 @@
+{% extends layout|default('@views/_layout.twig') %}
+
+{% block title %}{{ is_new ? lang('add') : lang('Edit') }} — {{ registry_name }}{% endblock %}
+
+{% block styles %}
+<style>{{ source('@views/registry/edit/registry_edit.css') }}</style>
+{% endblock %}
+
+{% block content %}
+<div class="registry-edit">
+	<h1>{{ is_new ? lang('add') : lang('Edit') }} {{ registry_name }}</h1>
+
+	<div id="alert-success" class="app-alert app-alert--success is-hidden"></div>
+	<div id="alert-error" class="app-alert app-alert--danger is-hidden"></div>
+
+	<form id="registry-form">
+		<div id="form-fields"></div>
+
+		<div class="registry-edit__btn-row">
+			<button type="submit" class="app-button app-button-primary" id="btn-save">{{ lang('Save') }}</button>
+			<button type="button" class="app-button app-button-secondary" id="btn-cancel" onclick="history.back()">{{ lang('Cancel') }}</button>
+		</div>
+	</form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+	window.__registryEdit = {
+		type: '{{ registry_type|e('js') }}',
+		name: '{{ registry_name|e('js') }}',
+		itemId: {{ item_id ?? 'null' }},
+		isNew: {{ is_new ? 'true' : 'false' }},
+		schemaUrl: '/booking/registry/{{ registry_type|e('js') }}/schema',
+		dataUrl: '/booking/registry/{{ registry_type|e('js') }}',
+		listUrl: '/booking/view/registry/{{ registry_type|e('js') }}',
+		lang: {
+			save: '{{ lang("Save")|e('js') }}',
+			saving: '{{ lang("Saving")|e('js') }}...',
+			saved: '{{ lang("Saved")|e('js') }}',
+			cancel: '{{ lang("Cancel")|e('js') }}',
+			required: '{{ lang("Required field")|e('js') }}',
+			saveFailed: '{{ lang("Save failed")|e('js') }}'
+		}
+	};
+</script>
+<script>{{ source('@views/registry/edit/registry_edit.js') }}</script>
+{% endblock %}

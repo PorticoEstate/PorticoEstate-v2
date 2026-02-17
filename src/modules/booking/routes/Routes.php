@@ -19,6 +19,7 @@ use App\modules\booking\controllers\ResourceDocumentController;
 use App\modules\booking\controllers\OrganizationDocumentController;
 use App\modules\booking\viewcontrollers\DocumentViewController;
 use App\modules\booking\viewcontrollers\ConfigViewController;
+use App\modules\booking\viewcontrollers\RegistryViewController;
 use App\modules\phpgwapi\controllers\ConfigController;
 
 $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
@@ -70,6 +71,13 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 		});
 
 		$viewGroup->get('/config/highlighted-buildings', ConfigViewController::class . ':highlightedBuildings');
+
+		$viewGroup->group('/registry', function (RouteCollectorProxy $registryGroup)
+		{
+			$registryGroup->get('/{type}', RegistryViewController::class . ':index');
+			$registryGroup->get('/{type}/add', RegistryViewController::class . ':edit');
+			$registryGroup->get('/{type}/{id:[0-9]+}', RegistryViewController::class . ':edit');
+		});
 	});
 
 

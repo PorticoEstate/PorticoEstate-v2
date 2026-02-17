@@ -8077,3 +8077,25 @@ function booking_upgrade0_2_116($oProc)
 		return $currentver;
 	}
 }
+
+$test[] = '0.2.117';
+function booking_upgrade0_2_117($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	$oProc->AddColumn('bb_building', 'short_description', array(
+		'type' => 'jsonb',
+		'nullable' => true
+	));
+
+	$oProc->AddColumn('bb_resource', 'short_description', array(
+		'type' => 'jsonb',
+		'nullable' => true
+	));
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.118';
+		return $currentver;
+	}
+}

@@ -143,14 +143,16 @@
 					</input>
 					<input type="hidden" id="focal-point-download-link">
 						<xsl:attribute name="value">
-							<xsl:text>/bookingfrontend/resources/document/</xsl:text>
+							<xsl:text>/bookingfrontend/</xsl:text>
+							<xsl:value-of select="document/owner_type"/>
+							<xsl:text>s/document/</xsl:text>
 							<xsl:value-of select="document/id"/>
 							<xsl:text>/download</xsl:text>
 						</xsl:attribute>
 					</input>
 
-					<!-- Focal point editor button - only show for images -->
-					<xsl:if test="document/id and document/is_image = 1">
+					<!-- Focal point editor button - only show for images (except applications) -->
+					<xsl:if test="document/id and document/is_image = 1 and document/owner_type != 'application'">
 						<div class="pure-control-group">
 							<label>
 								<xsl:value-of select="php:function('lang', 'focal_point')" />
@@ -179,8 +181,8 @@
 						</div>
 					</xsl:if>
 
-					<!-- Image previews - only show for picture types and existing documents -->
-					<xsl:if test="document/id and document/is_image = 1">
+					<!-- Image previews - only show for picture types and existing documents (except applications) -->
+					<xsl:if test="document/id and document/is_image = 1 and document/owner_type != 'application'">
 						<div class="pure-control-group">
 							<label>
 								<xsl:value-of select="php:function('lang', 'previews')" />
@@ -191,7 +193,9 @@
 									<div style="border: 1px solid #ccc; padding: 5px; background: #f5f5f5;">
 										<img class="preview-image">
 											<xsl:attribute name="src">
-												<xsl:text>/bookingfrontend/resources/document/</xsl:text>
+												<xsl:text>/bookingfrontend/</xsl:text>
+												<xsl:value-of select="document/owner_type"/>
+												<xsl:text>s/document/</xsl:text>
 												<xsl:value-of select="document/id"/>
 												<xsl:text>/download</xsl:text>
 											</xsl:attribute>
@@ -235,7 +239,9 @@
 									<div style="border: 1px solid #ccc; padding: 5px; background: #f5f5f5;">
 										<img class="preview-image">
 											<xsl:attribute name="src">
-												<xsl:text>/bookingfrontend/resources/document/</xsl:text>
+												<xsl:text>/bookingfrontend/</xsl:text>
+												<xsl:value-of select="document/owner_type"/>
+												<xsl:text>s/document/</xsl:text>
 												<xsl:value-of select="document/id"/>
 												<xsl:text>/download</xsl:text>
 											</xsl:attribute>
@@ -264,7 +270,9 @@
 									<div style="border: 1px solid #ccc; padding: 5px; background: #f5f5f5;">
 										<img class="preview-image">
 											<xsl:attribute name="src">
-												<xsl:text>/bookingfrontend/resources/document/</xsl:text>
+												<xsl:text>/bookingfrontend/</xsl:text>
+												<xsl:value-of select="document/owner_type"/>
+												<xsl:text>s/document/</xsl:text>
 												<xsl:value-of select="document/id"/>
 												<xsl:text>/download</xsl:text>
 											</xsl:attribute>
@@ -291,8 +299,8 @@
 						</div>
 					</xsl:if>
 
-					<!-- Focal Point Editor Modal -->
-					<xsl:if test="document/id and document/is_image = 1">
+					<!-- Focal Point Editor Modal (except applications) -->
+					<xsl:if test="document/id and document/is_image = 1 and document/owner_type != 'application'">
 						<div class="modal fade" id="focal-point-modal" tabindex="-1" role="dialog">
 							<div class="modal-dialog modal-lg" style="max-width: 90vw;" role="document">
 								<div class="modal-content">

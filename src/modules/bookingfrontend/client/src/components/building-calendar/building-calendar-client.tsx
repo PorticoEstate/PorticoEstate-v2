@@ -191,6 +191,11 @@ const BuildingCalendarClient = React.forwardRef<FullCalendar, BuildingCalendarPr
 			return;
 		}
 
+		// Prevent date selection if no resources are enabled
+		if (enabledResources.size === 0) {
+			return;
+		}
+
 		if (selectInfo?.view?.type === 'dayGridMonth') {
 			return;
 		}

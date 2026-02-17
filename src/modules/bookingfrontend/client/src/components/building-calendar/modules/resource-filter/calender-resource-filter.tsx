@@ -63,10 +63,15 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 
 	// Use filtered resources if provided, otherwise fall back to all building resources
 	const resources = useMemo(() => {
-		if(isOrgMode) {
-			return filteredResources;
-		}
-		return allResources;
+		const resourceList = isOrgMode ? filteredResources : allResources;
+
+		// Sort by sort field (ascending), with null values at the end
+		return resourceList?.sort((a, b) => {
+			if (a.sort === null && b.sort === null) return 0;
+			if (a.sort === null) return 1;
+			if (b.sort === null) return -1;
+			return a.sort - b.sort;
+		});
 
 	}, [filteredResources, allResources, isOrgMode])
 
@@ -143,16 +148,14 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 	useEffect(() => {
 		// Only run this once when component mounts
 		setEnabledResources(prevEnabled => {
-			// If nothing is enabled yet, default to enabling all normal resources
+			// If nothing is enabled yet, check if we should auto-enable
 			if (prevEnabled.size === 0) {
-				if (groupedResources) {
-					if (groupedResources.normal.length < groupedResources.slotted.length) {
-						return new Set([groupedResources.slotted?.[0]?.value.toString()].filter(Boolean));
-					}
-					return new Set(groupedResources.normal.map(r => r.value.toString()));
+				// Special case: If building has exactly 1 resource and it's a timeslot resource, auto-select it
+				if (resources && resources.length === 1 && ResourceUsesTimeSlots(resources[0])) {
+					return new Set([resources[0].id.toString()]);
 				}
-				const normalResources = (resources || []).filter((res, index) => !ResourceUsesTimeSlots(res));
-				return new Set(normalResources.map(r => r.id.toString()));
+				// Otherwise, leave empty (no resources enabled)
+				// This will show all resources in the calendar but none selected
 			}
 			return prevEnabled;
 		});

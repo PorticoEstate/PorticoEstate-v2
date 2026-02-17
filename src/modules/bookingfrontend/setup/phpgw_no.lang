@@ -736,6 +736,7 @@ timestamp	bookingfrontend	no	Tidspunkt
 title	bookingfrontend	no	Tittel
 to	bookingfrontend	no	Til
 To application site	bookingfrontend	no	Til bestilling
+order_now	bookingfrontend	no	Gå til bestilling
 To borrow premises you must verify that you have read terms and conditions	bookingfrontend	no	For å kunne låne lokaler må du først bekrefte at du har lest de juridiske betingelser
 To cancel allocation use this link	bookingfrontend	no	For å slette tildelingen: bruk lenken
 To cancel booking use this link	bookingfrontend	no	For å slette interntildelingen: bruk lenken
@@ -938,3 +939,9 @@ org_not_found	bookingfrontend	no	Organisasjon ikke funnet i Brønnøysundregistr
 org_create_hint	bookingfrontend	no	Du kan opprette en ny organisasjon ved å skrive inn 9-sifret organisasjonsnummer
 added_to_cart	bookingfrontend	no	Lagt i handlekurven
 cart_reminder_message	bookingfrontend	no	Husk å fullføre søknaden i handlekurven for at bestillingen skal bli sendt inn.
+
+buildings_and_facilities	bookingfrontend	no	Bygg og anlegg
+rooms_and_premises	bookingfrontend	no	Rom og lokaler
+building_title	bookingfrontend	no	Bygg
+resource_title	bookingfrontend	no	Rom
+show_all_resources	bookingfrontend	no	Se alle rom

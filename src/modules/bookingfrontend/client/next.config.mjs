@@ -29,6 +29,10 @@ const nextConfig = {
                 source: '/fetch-server-image-proxy/:documentId',
                 destination: `${process.env.NEXT_INTERNAL_API_URL || 'http://slim'}/bookingfrontend/resources/document/:documentId/download`,
             },
+            {
+                source: '/fetch-building-image-proxy/:documentId',
+                destination: `${process.env.NEXT_INTERNAL_API_URL || 'http://slim'}/bookingfrontend/buildings/document/:documentId/download`,
+            },
         ];
     },
     async headers() {

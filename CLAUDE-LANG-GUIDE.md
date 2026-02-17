@@ -18,7 +18,37 @@ php test_lang_files.php --compare --lang=en,no,nn --module=booking
 
 ## Installing Language Changes
 
-After making changes to language files (adding new translations, fixing missing translations, etc.), you need to install the language changes to make them available in the application:
+After making changes to language files (adding new translations, fixing missing translations, etc.), you need to install the language changes to make them available in the application.
+
+### Recommended Method: Using the Update Script
+
+Use the automated script which handles authentication and installation:
+
+```bash
+bash test_scripts/update_language_files.sh
+```
+
+The script will:
+- Automatically read the password from `config/header.inc.php`
+- Log in to the setup interface
+- Install the language files for en, no, and nn
+- Verify the installation was successful
+
+**Optional parameters:**
+```bash
+# Specify a custom password
+bash test_scripts/update_language_files.sh your_password
+
+# Specify custom languages (default: en,no,nn)
+bash test_scripts/update_language_files.sh your_password "en,no,nn,sv"
+
+# Use environment variables for custom base URL
+BASE_URL=https://pe-api.test bash test_scripts/update_language_files.sh
+```
+
+### Alternative Method: Manual curl Command
+
+For reference, you can also install language changes manually using curl:
 
 ```bash
 curl 'http://pe-api.test/setup/lang' \
@@ -37,7 +67,7 @@ curl 'http://pe-api.test/setup/lang' \
   --data-raw 'lang_selected%5B%5D=en&lang_selected%5B%5D=no&lang_selected%5B%5D=nn&upgrademethod=dumpold&submit=Install'
 ```
 
-**Important:** This command installs language changes for the selected languages (en, no, nn) and should be run after any translation modifications to ensure the changes are active in the application.
+**Note:** The update script is recommended as it handles authentication automatically and is more maintainable.
 
 ## Available Commands
 

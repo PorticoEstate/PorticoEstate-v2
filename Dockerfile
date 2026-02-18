@@ -1,5 +1,5 @@
 # Use an official PHP-FPM base image
-FROM php:8.4-fpm
+FROM php:8.4-fpm-bookworm
 
 LABEL maintainer="Sigurd Nes <sigurdne@gmail.com>"
 
@@ -36,9 +36,9 @@ else \
 fi
 
 # Add contrib and non-free repositories
-RUN echo "deb http://deb.debian.org/debian trixie main contrib non-free" > /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian-security trixie-security main contrib non-free" >> /etc/apt/sources.list \
-    && echo "deb http://deb.debian.org/debian trixie-updates main contrib non-free" >> /etc/apt/sources.list
+RUN echo "deb http://deb.debian.org/debian bookworm main contrib non-free" > /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian-security bookworm-security main contrib non-free" >> /etc/apt/sources.list \
+    && echo "deb http://deb.debian.org/debian bookworm-updates main contrib non-free" >> /etc/apt/sources.list
 
 # Install necessary packages
 RUN apt-get update && apt-get install -y \
@@ -51,7 +51,7 @@ RUN apt-get update && apt-get install -y \
     sudo \
     gnupg \
     unzip \
-    libaio1t64 locales wget \
+    libaio1 locales wget \
     libmagickwand-dev --no-install-recommends \
     apache2 libapache2-mod-fcgid ssl-cert \
     cron \
@@ -153,7 +153,7 @@ RUN echo 'post_max_size = 55M' >> /usr/local/etc/php/php.ini
 RUN echo 'upload_max_filesize = 50M' >> /usr/local/etc/php/php.ini
 
 # Install Java
-RUN apt-get update && apt-get install -y openjdk-21-jdk
+RUN apt-get update && apt-get install -y openjdk-17-jdk
 
 ## Verify Java installation
 RUN java -version

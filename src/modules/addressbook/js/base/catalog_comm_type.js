@@ -81,7 +81,7 @@ function addType()
     var nTable = 0;
     var data = {};
 
-    if ($.trim($('#comm_type_description').val()) == '')
+    if (($('#comm_type_description').val() || '').trim() == '')
     {
         alert(lang_name);
         return;

@@ -106,7 +106,7 @@ function addOthersData()
     var nTable = 0;
     var data = {};
 
-    if ($.trim($('#description').val()) == '')
+    if (($('#description').val() || '').trim() == '')
     {
         alert(lang_descr);
         return;

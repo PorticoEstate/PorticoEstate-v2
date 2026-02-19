@@ -38,20 +38,20 @@ var	min		= Math.min
 ,	max		= Math.max
 ,	round	= Math.floor
 
-,	isStr	=  function (v) { return $.type(v) === "string"; }
+,	isStr	=  function (v) { return typeof v === "string"; }
 
 	/**
 	 * @param {!Object}			Instance
 	 * @param {Array.<string>}	a_fn
 	 */
 ,	runPluginCallbacks = function (Instance, a_fn) {
-		if ($.isArray(a_fn))
+		if (Array.isArray(a_fn))
 			for (var i=0, c=a_fn.length; i<c; i++) {
 				var fn = a_fn[i];
 				try {
 					if (isStr(fn)) // 'name' of a function
 						fn = eval(fn);
-					if ($.isFunction(fn))
+					if (typeof fn === 'function')
 						g(fn)( Instance );
 				} catch (ex) {}
 			}
@@ -1051,7 +1051,7 @@ $.fn.layout = function (opts) {
  */
 ,	state = {
 		// generate unique ID to use for event.namespace so can unbind only events added by 'this layout'
-		id:				"layout"+ $.now()	// code uses alias: sID
+		id:				"layout"+ Date.now()	// code uses alias: sID
 	,	initialized:	false
 	,	paneResizing:	false
 	,	panesSliding:	{}
@@ -1133,7 +1133,7 @@ $.fn.layout = function (opts) {
 		;
 		if (hasPane && !$P) // a pane is specified, but does not exist!
 			return retVal;
-		if ( !hasPane && $.type(pane) === "boolean" ) {
+		if ( !hasPane && typeof pane === "boolean" ) {
 			skipBoundEvents = pane; // allow pane param to be skipped for Layout callback
 			pane = "";
 		}
@@ -1153,7 +1153,7 @@ $.fn.layout = function (opts) {
 						fn = eval(fn);
 				}
 				// execute the callback, if exists
-				if ($.isFunction( fn )) {
+				if (typeof fn === 'function') {
 					if (args.length)
 						retVal = g(fn)(args[1]); // pass the argument parsed from 'list'
 					else if ( hasPane )
@@ -1164,8 +1164,8 @@ $.fn.layout = function (opts) {
 				}
 			}
 			catch (ex) {
-				_log( options.errors.callbackError.replace(/EVENT/, $.trim((pane || "") +" "+ lng)), false );
-				if ($.type(ex) === "string" && string.length)
+				_log( options.errors.callbackError.replace(/EVENT/, ((pane || "") +" "+ lng).trim()), false );
+				if (typeof ex === "string" && string.length)
 					_log("Exception:  "+ ex, false );
 			}
 		}
@@ -1472,7 +1472,7 @@ $.fn.layout = function (opts) {
 		if (type=="resizer" && $El.hasClass(root+_slide))
 			classes += (root+_slide+_hover) + (root+_pane+_slide+_hover);
 
-		return $.trim(classes);
+		return classes.trim();
 	}
 ,	addHover	= function (evt, el) {
 		var $E = $(el || this);
@@ -1654,7 +1654,7 @@ $.fn.layout = function (opts) {
 		;
 		if ( $.isPlainObject( cos ) )
 			cos = [ cos ]; // convert a hash to a 1-elem array
-		else if (!cos || !$.isArray( cos ))
+		else if (!cos || !Array.isArray( cos ))
 			return;
 
 		$.each( cos, function (idx, co) {
@@ -1735,7 +1735,7 @@ $.fn.layout = function (opts) {
 				if (child.destroyed) delete pC[key]
 			});
 			// if no more children, remove the children hash
-			if ($.isEmptyObject( pC ))
+			if (Object.keys( pC ).length === 0)
 				pC = children[pane] = null; // clear children hash
 		}
 
@@ -2018,7 +2018,7 @@ $.fn.layout = function (opts) {
 		opts = $.layout.backwardCompatibility.renameAllOptions( opts );
 
 		// if user-options has 'panes' key (pane-defaults), clean it...
-		if (!$.isEmptyObject(opts.panes)) {
+		if (Object.keys(opts.panes).length > 0) {
 			// REMOVE any pane-defaults that MUST be set per-pane
 			data = $.layout.optionsMap.noDefault;
 			for (i=0, c=data.length; i<c; i++) {
@@ -2038,7 +2038,7 @@ $.fn.layout = function (opts) {
 		var rootKeys = $.layout.config.optionRootKeys;
 		for (key in opts) {
 			val = opts[key];
-			if ($.inArray(key, rootKeys) < 0 && $.inArray(key, data) < 0) {
+			if (rootKeys.indexOf(key) < 0 && data.indexOf(key) < 0) {
 				if (!opts.panes[key])
 					opts.panes[key] = $.isPlainObject(val) ? $.extend(true, {}, val) : val;
 				delete opts[key]
@@ -2867,7 +2867,7 @@ $.fn.layout = function (opts) {
 			$Ms.hide(); // hide ALL masks
 		}
 		// if ANY pane is sliding, then DO NOT remove masks from panes with maskObjects enabled
-		else if (!force && !$.isEmptyObject( state.panesSliding )) {
+		else if (!force && Object.keys( state.panesSliding ).length > 0) {
 			var	i = $Ms.length - 1
 			,	p, $M;
 			for (; i >= 0; i--) {
@@ -3050,10 +3050,10 @@ $.fn.layout = function (opts) {
 		;
 		// NOTE: elements can still exist even after remove()
 		//		so check for missing data(), which is cleared by removed()
-		if ($P && $.isEmptyObject( $P.data() )) $P = false;
-		if ($C && $.isEmptyObject( $C.data() )) $C = false;
-		if ($R && $.isEmptyObject( $R.data() )) $R = false;
-		if ($T && $.isEmptyObject( $T.data() )) $T = false;
+		if ($P && Object.keys( $P.data() ).length === 0) $P = false;
+		if ($C && Object.keys( $C.data() ).length === 0) $C = false;
+		if ($R && Object.keys( $R.data() ).length === 0) $R = false;
+		if ($T && Object.keys( $T.data() ).length === 0) $T = false;
 
 		if ($P) $P.stop(true, true);
 
@@ -3062,7 +3062,7 @@ $.fn.layout = function (opts) {
 		,	d	= "layout"
 		,	css	= "layoutCSS"
 		,	pC	= children[pane]
-		,	hasChildren	= $.isPlainObject( pC ) && !$.isEmptyObject( pC )
+		,	hasChildren	= $.isPlainObject( pC ) && Object.keys( pC ).length > 0
 		,	destroy		= destroyChild !== undefined ? destroyChild : o.destroyChildren
 		;
 		// FIRST destroy the child-layout(s)
@@ -3074,7 +3074,7 @@ $.fn.layout = function (opts) {
 					delete pC[key];
 			});
 			// if no more children, remove the children hash
-			if ($.isEmptyObject( pC )) {
+			if (Object.keys( pC ).length === 0) {
 				pC = children[pane] = null; // clear children hash
 				hasChildren = false;
 			}
@@ -5175,7 +5175,7 @@ $.ui.cookie = {
 		,	pair, data, i
 		;
 		for (i=0; pair=cs[i]; i++) {
-			data = $.trim(pair).split('='); // name=value => [ name, value ]
+			data = pair.trim().split('='); // name=value => [ name, value ]
 			if (data[0] == name) // found the layout cookie
 				return decodeURIComponent(data[1]);
 		}
@@ -5188,7 +5188,7 @@ $.ui.cookie = {
 		,	clear	= false
 		,	o		= cookieOpts || {}
 		,	x		= o.expires  || null
-		,	t		= $.type(x)
+		,	t		= typeof x
 		;
 		if (t === "date")
 			date = x;
@@ -5341,7 +5341,7 @@ $.layout.state = {
 	 */
 ,	loadCookie: function (inst) {
 		var c = $.layout.state.readCookie(inst); // READ the cookie
-		if (c && !$.isEmptyObject( c )) {
+		if (c && Object.keys( c ).length > 0) {
 			inst.state.stateData = $.extend(true, {}, c); // SET state.stateData
 			inst.loadState(c); // LOAD the retrieved state
 		}
@@ -5356,7 +5356,7 @@ $.layout.state = {
 	 * @param {boolean=}	animate
 	 */
 ,	loadState: function (inst, data, opts) {
-		if (!$.isPlainObject( data ) || $.isEmptyObject( data )) return;
+		if (!$.isPlainObject( data ) || Object.keys( data ).length === 0) return;
 
 		// normalize data & cache in the state object
 		data = inst.state.stateData = $.layout.transformData( data ); // panes = default subkey
@@ -5443,7 +5443,7 @@ $.layout.state = {
 	 */
 ,	readState: function (inst, opts) {
 		// backward compatility
-		if ($.type(opts) === 'string') opts = { keys: opts };
+		if (typeof opts === 'string') opts = { keys: opts };
 		if (!opts) opts = {};
 		var	sm		= inst.options.stateManagement
 		,	ic		= opts.includeChildren
@@ -5456,7 +5456,7 @@ $.layout.state = {
 		,	pair, pane, key, val
 		,	ps, pC, child, array, count, branch
 		;
-		if ($.isArray(keys)) keys = keys.join(",");
+		if (Array.isArray(keys)) keys = keys.join(",");
 		// convert keys to an array and change delimiters from '__' to '.'
 		keys = keys.replace(/__/g, ".").split(',');
 		// loop keys and create a data hash
@@ -5464,7 +5464,7 @@ $.layout.state = {
 			pair = keys[i].split(".");
 			pane = pair[0];
 			key  = pair[1];
-			if ($.inArray(pane, panes) < 0) continue; // bad pane!
+			if (panes.indexOf(pane) < 0) continue; // bad pane!
 			val = state[ pane ][ key ];
 			if (val == undefined) continue;
 			if (key=="isClosed" && state[pane]["isSliding"])
@@ -5477,7 +5477,7 @@ $.layout.state = {
 			$.each(panes, function (idx, pane) {
 				pC = inst.children[pane];
 				ps = state.stateData[pane];
-				if ($.isPlainObject( pC ) && !$.isEmptyObject( pC )) {
+				if ($.isPlainObject( pC ) && Object.keys( pC ).length > 0) {
 					// ensure a key exists for this 'pane', eg: branch = data.center
 					branch = data[pane] || (data[pane] = {});
 					if (!branch.children) branch.children = {};
@@ -5506,7 +5506,7 @@ $.layout.state = {
 
 		function stringify (h) {
 			var D=[], i=0, k, v, t // k = key, v = value
-			,	a = $.isArray(h)
+			,	a = Array.isArray(h)
 			;
 			for (k in h) {
 				v = h[k];
@@ -5526,7 +5526,7 @@ $.layout.state = {
 	 *	@see		$.parseJSON(), adding in jQuery 1.4.1
 	 */
 ,	decodeJSON: function (str) {
-		try { return $.parseJSON ? $.parseJSON(str) : window["eval"]("("+ str +")") || {}; }
+		try { return JSON.parse(str); }
 		catch (e) { return {}; }
 	}
 
@@ -5564,19 +5564,19 @@ $.layout.state = {
 		//	When state-data exists in the autoLoad key USE IT,
 		//	even if stateManagement.enabled == false
 		if ($.isPlainObject( sm.autoLoad )) {
-			if (!$.isEmptyObject( sm.autoLoad )) {
+			if (Object.keys( sm.autoLoad ).length > 0) {
 				inst.loadState( sm.autoLoad );
 			}
 		}
 		else if ( sm.enabled ) {
 			// update the options from cookie or callback
 			// if options is a function, call it to get stateData
-			if ($.isFunction( sm.autoLoad )) {
+			if (typeof sm.autoLoad === 'function') {
 				var d = {};
 				try {
 					d = sm.autoLoad( inst, inst.state, inst.options, inst.options.name || '' ); // try to get data from fn
 				} catch (e) {}
-				if (d && $.isPlainObject( d ) && !$.isEmptyObject( d ))
+				if (d && $.isPlainObject( d ) && Object.keys( d ).length > 0)
 					inst.loadState(d);
 			}
 			else // any other truthy value will trigger loadCookie
@@ -5588,7 +5588,7 @@ $.layout.state = {
 		var sm = inst.options.stateManagement;
 		if (sm.enabled && sm.autoSave) {
 			// if options is a function, call it to save the stateData
-			if ($.isFunction( sm.autoSave )) {
+			if (typeof sm.autoSave === 'function') {
 				try {
 					sm.autoSave( inst, inst.state, inst.options, inst.options.name || '' ); // try to get data from fn
 				} catch (e) {}

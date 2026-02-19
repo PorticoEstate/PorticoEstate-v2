@@ -595,7 +595,7 @@ $(document).ready(function ()
 		language: "no",
 		createTag: function (params)
 		{
-			var term = $.trim(params.term);
+			var term = (params.term || '').trim();
 
 			if (term === '')
 			{

@@ -81,7 +81,7 @@ function addDescr()
     var nTable = 0;
     var data = {};
 
-    if ($.trim($('#comm_descr').val()) == '')
+    if (($('#comm_descr').val() || '').trim() == '')
     {
         alert(lang_descr);
         return;

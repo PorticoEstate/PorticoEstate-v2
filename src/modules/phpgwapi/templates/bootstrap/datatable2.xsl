@@ -1780,7 +1780,7 @@ console.log(app_method_referrer);
 				var previous_<xsl:value-of select="id"/>;
 				$("#filter_<xsl:value-of select="id"/>").on('keyup change', function ()
 				{
-				if ( $.trim($(this).val()) != $.trim(previous_<xsl:value-of select="id"/>) )
+				if ( $(this).val().trim() != (previous_<xsl:value-of select="id"/> || '').trim() )
 				{
 				filterData('<xsl:value-of select="id"/>', $(this).val());
 				previous_<xsl:value-of select="id"/> = $(this).val();

@@ -189,7 +189,7 @@ class overfoer_stroem extends property_boentity
 		$from_email	 = "{$from_name}<{$this->userSettings['preferences']['common']['email']}>";
 
 		$ccarray = array(
-			'tom.wilhelmsen@fjordkraft.no',
+	//		'tom.wilhelmsen@fjordkraft.no',
 			'Muhammed.Ibrahim@bergen.kommune.no',
 			'Kenneth.Tertnaes@bergen.kommune.no',
 			$from_email
@@ -250,6 +250,10 @@ class overfoer_stroem extends property_boentity
 							<td>Etter</td>
 							<td>{$tidligere_person}</td>
 						</tr>
+						<tr>
+							<td>Prekontering</td>
+							<td>Nei</td>
+						</tr>
 					</table>
 					<br/><br/>
 
@@ -279,7 +283,7 @@ HTML;
 		if ($rc)
 		{
 
-			Cache::message_set("Epost er sendt til storkunde.etablering@fjordkraft.no	 om overføring av måler", 'message');
+			Cache::message_set("Epost er sendt til Postmottak.Innkjop@bergen.kommune.no	om overføring av måler", 'message');
 
 			$now = date($this->db::date_format());
 

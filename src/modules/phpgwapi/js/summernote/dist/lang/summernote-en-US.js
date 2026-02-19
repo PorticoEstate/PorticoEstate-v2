@@ -1,13 +1,12 @@
 /*!
  * 
- * Super simple WYSIWYG editor v0.8.19
+ * Super simple WYSIWYG editor v0.9.1
  * https://summernote.org
  *
- *
- * Copyright 2013- Alan Hong and contributors
+ * Copyright 2013~ Hackerwins and contributors
  * Summernote may be freely distributed under the MIT license.
  *
- * Date: 2024-05-23T13:38Z
+ * Date: 2024-10-09T10:22Z
  *
  */
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -19,15 +18,15 @@
 		var a = typeof exports === 'object' ? factory(require("jquery")) : factory(root["jQuery"]);
 		for(var i in a) (typeof exports === 'object' ? exports : root)[i] = a[i];
 	}
-})(self, (__WEBPACK_EXTERNAL_MODULE__5549__) => {
+})(self, (__WEBPACK_EXTERNAL_MODULE__8938__) => {
 return /******/ (() => { // webpackBootstrap
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 5549:
+/***/ 8938:
 /***/ ((module) => {
 
-module.exports = __WEBPACK_EXTERNAL_MODULE__5549__;
+module.exports = __WEBPACK_EXTERNAL_MODULE__8938__;
 
 /***/ })
 
@@ -100,16 +99,14 @@ module.exports = __WEBPACK_EXTERNAL_MODULE__5549__;
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
-(() => {
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5549);
+/* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8938);
 /* harmony import */ var jquery__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(jquery__WEBPACK_IMPORTED_MODULE_0__);
 
 (jquery__WEBPACK_IMPORTED_MODULE_0___default().summernote) = (jquery__WEBPACK_IMPORTED_MODULE_0___default().summernote) || {
   lang: {}
 };
-jquery__WEBPACK_IMPORTED_MODULE_0___default().extend(true, (jquery__WEBPACK_IMPORTED_MODULE_0___default().summernote.lang), {
+jquery__WEBPACK_IMPORTED_MODULE_0___default().extend(true, (jquery__WEBPACK_IMPORTED_MODULE_0___default().summernote).lang, {
   'en-US': {
     font: {
       bold: 'Bold',
@@ -269,8 +266,6 @@ jquery__WEBPACK_IMPORTED_MODULE_0___default().extend(true, (jquery__WEBPACK_IMPO
     }
   }
 });
-})();
-
 /******/ 	return __webpack_exports__;
 /******/ })()
 ;

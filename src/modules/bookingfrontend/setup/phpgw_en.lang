@@ -595,6 +595,7 @@ Redirect is computed if url ends with	bookingfrontend	en	Redirect is computed if
 registration	bookingfrontend	en	Registration
 regulation	bookingfrontend	en	Regulation
 reject application	bookingfrontend	en	Reject application
+reject	bookingfrontend	en	Reject
 rejected	bookingfrontend	en	Rejected
 remote authentication	bookingfrontend	en	Remote authentication
 remove date	bookingfrontend	en	Remove date

@@ -734,6 +734,8 @@ register participants	booking	no	Deltagerregistrering
 registration has ended	booking	no	Registrering er avsluttet
 regulation	booking	no	Reglement
 reject application	booking	no	Avslå søknad
+reject	booking	no	Avslå
+reject_this_part	booking	no	Avslå denne delen
 rejected	booking	no	Avslått
 remark	booking	no	Merknad
 Reminder sent. Not responded to	booking	no	Purring sendt. Ikke besvart

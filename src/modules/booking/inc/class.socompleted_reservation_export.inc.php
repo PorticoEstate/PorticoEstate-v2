@@ -453,6 +453,10 @@ class booking_socompleted_reservation_export extends booking_socommon
 		{
 			$export_format = 'agresso';
 		}
+		elseif ($this->config_data['external_format'] == 'AGRESSO_55')
+		{
+			$export_format = 'agresso';
+		}
 		elseif ($this->config_data['external_format'] == 'FACTUM')
 		{
 			$export_format = 'factum';
@@ -492,6 +496,15 @@ class booking_socompleted_reservation_export extends booking_socommon
 						count(array_filter($external_reservations, array($this, 'not_free'))),
 						$this->calculate_total_cost($external_reservations),
 						$this->format_agresso($external_reservations, $account_codes, $number_generator)
+					);
+				}
+				elseif ($this->config_data['external_format'] == 'AGRESSO_55')
+				{
+					return $this->build_export_result(
+						$export_format,
+						count(array_filter($external_reservations, array($this, 'not_free'))),
+						$this->calculate_total_cost($external_reservations),
+						$this->format_agresso_55($external_reservations, $account_codes, $number_generator)
 					);
 				}
 				elseif ($this->config_data['external_format'] == 'FACTUM')
@@ -540,6 +553,10 @@ class booking_socompleted_reservation_export extends booking_socommon
 		{
 			$export_format = 'agresso';
 		}
+		elseif ($this->config_data['internal_format'] == 'AGRESSO_55')
+		{
+			$export_format = 'agresso';
+		}
 		elseif ($this->config_data['internal_format'] == 'FACTUM')
 		{
 			$export_format = 'factum';
@@ -578,6 +595,15 @@ class booking_socompleted_reservation_export extends booking_socommon
 						count(array_filter($internal_reservations, array($this, 'not_free'))),
 						$this->calculate_total_cost($internal_reservations),
 						$this->format_agresso($internal_reservations, $account_codes, $number_generator)
+					);
+				}
+				elseif ($this->config_data['internal_format'] == 'AGRESSO_55')
+				{
+					return $this->build_export_result(
+						$export_format,
+						count(array_filter($internal_reservations, array($this, 'not_free'))),
+						$this->calculate_total_cost($internal_reservations),
+						$this->format_agresso_55($internal_reservations, $account_codes, $number_generator)
 					);
 				}
 				elseif ($this->config_data['internal_format'] == 'FACTUM')
@@ -641,6 +667,19 @@ class booking_socompleted_reservation_export extends booking_socommon
 		}
 
 		return $cost;
+	}
+
+	/**
+	 * Format cost for Agresso LG04 version 5.5 (20 character field)
+	 * Multiply by 100 and left-pad with zeros
+	 *
+	 * @param float $cost The cost value to format
+	 * @return string Formatted cost string (20 chars)
+	 */
+	public function format_cost_55($cost)
+	{
+		$cost = $this->get_cost_value($cost);
+		return str_pad(round($cost, 2) * 100, 20, 0, STR_PAD_LEFT);
 	}
 
 	public function create_export_item_info(&$entity, $generated_order_id)
@@ -2868,6 +2907,742 @@ class booking_socompleted_reservation_export extends booking_socommon
 		);
 	}
 
+/**
+ * Format reservations for Agresso LG04 version 5.5 export
+ *
+ * Key differences from version 5.3 (format_agresso):
+ * - No accept_flag field (removed in 5.5)
+ * - Date fields: 8 chars instead of 17
+ * - Amount fields: 20 chars instead of 17
+ * - order_id: 15 chars instead of 9
+ * - period: 6 chars instead of 8
+ * - Many text fields expanded (att_*_id, dims, tekst fields, etc.)
+ * - New fields left blank: apar_id_ref, discount, ean, pay_temp_id, sup_article, unit_price
+ *
+ * @param array $reservations Array of reservations to export
+ * @param array $account_codes Account codes for dimensions
+ * @param object $sequential_number_generator Order ID generator
+ * @return array|null Export data with 'data', 'data_log', 'info', 'header_count' keys
+ */
+public function format_agresso_55(array &$reservations, array $account_codes, $sequential_number_generator)
+{
+	//$orders = array();
+	$export_info = array();
+	$output = array();
+
+	$log = array();
+
+	/* NOTE: Version 5.5 uses 8 character date fields (YYYYMMDD) left-padded with spaces
+		 */
+	$date = str_pad(date('Ymd'), 8, ' ', STR_PAD_LEFT);
+
+	$batch_id = strtoupper(sprintf('BO%s%s', $account_codes['unit_prefix'], date('ymd')));
+	$batch_id = str_pad(substr($batch_id, 0, 25), 25, ' ');
+
+	if (!empty($this->config_data['voucher_client']))
+	{
+		$client_id = str_pad(substr(strtoupper($this->config_data['voucher_client']), 0, 25), 25, ' ', STR_PAD_RIGHT);
+	}
+	else
+	{
+		$client_id = str_pad('BY', 25, ' ', STR_PAD_RIGHT);
+	}
+
+	$currency = str_pad(substr(strtoupper('NOK'), 0, 25), 25, ' ');
+	$order_type = str_pad(substr(strtoupper('FS'), 0, 2), 2, ' ');
+	$pay_method = str_pad(substr(strtoupper('IP'), 0, 2), 2, ' ');
+
+	/* NOTE: Version 5.5 uses 6 character period field (YYYYMM) left-padded with zeros
+		 */
+	$period = str_pad(substr('00' . date('Ym'), 0, 6), 6, '0', STR_PAD_LEFT);
+
+	if (!empty($this->config_data['voucher_responsible']))
+	{
+		$responsible = str_pad(substr(strtoupper($this->config_data['voucher_responsible']), 0, 25), 25, ' ');
+	}
+	else
+	{
+		$responsible = str_pad(substr(strtoupper('BOOKING'), 0, 25), 25, ' ');
+	}
+
+	$responsible2 = str_pad(substr(strtoupper($responsible), 0, 25), 25, ' ');
+	$status = str_pad(substr(strtoupper('N'), 0, 1), 1, ' ');
+	$trans_type = str_pad(substr(strtoupper('42'), 0, 2), 2, ' ');
+
+	if (!empty($this->config_data['voucher_type']))
+	{
+		$voucher_type = str_pad(substr(strtoupper($this->config_data['voucher_type']), 0, 25), 25, ' ');
+	}
+	else
+	{
+		$voucher_type = str_pad(substr(strtoupper('FK'), 0, 25), 25, ' ');
+	}
+
+	$stored_header = array('tekst4' => false);
+	$line_no = 0;
+	$header_count = 0;
+	$log_order_id = '';
+	$log_customer_name = '';
+	$log_customer_nr = '';
+	$log_buidling = '';
+	$customer_number = '';
+
+	$internal = false;
+
+	foreach ($reservations as &$reservation)
+	{
+
+		switch ($reservation['reservation_type'])
+		{
+			case 'allocation':
+				$test = $this->allocation_bo->read_single($reservation['reservation_id']);
+				break;
+			case 'booking':
+				$test = $this->booking_bo->read_single($reservation['reservation_id']);
+				break;
+			case 'event':
+				$test = $this->event_bo->read_single($reservation['reservation_id']);
+				break;
+			default:
+				break;
+		}
+
+		if (empty($test['id']))
+		{
+			continue; //Reservation has been deleted
+		}
+
+		if (empty($test['active']))
+		{
+			continue; //Reservation has been de-activated
+		}
+
+		if ($this->get_cost_value($reservation['cost']) <= 0)
+		{
+			continue; //Don't export costless rows
+		}
+
+		if (!empty($test['additional_invoice_information']))
+		{
+			$additional_invoice_information = $test['additional_invoice_information'];
+		}
+		else
+		{
+			$additional_invoice_information = '';
+		}
+
+
+		$type = $reservation['customer_type'];
+
+		$log_customer_name = '';
+		$organization_number =  '';
+		$customer_number =  '';
+		$payer_organization_number = '';
+
+		if (!empty($reservation['organization_id']))
+		{
+			$org = $this->organization_bo->read_single($reservation['organization_id']);
+			$log_customer_name = $org['name'];
+			$organization_number =  $org['organization_number'];
+			$customer_number =  $org['customer_number'];
+			$payer_organization_number = $org['customer_organization_number'];
+		}
+		else
+		{
+			$data = $this->event_so->get_org($reservation['customer_organization_number']);
+			$payer_organization_number = $data['customer_organization_number'];
+			if (!empty($data['id']))
+			{
+				$log_customer_name = $data['name'];
+			}
+			else
+			{
+				if ($reservation['reservation_type'] == 'event')
+				{
+					$data = $this->event_bo->read_single($reservation['reservation_id']);
+					$log_customer_name = $data['contact_name'];
+				}
+			}
+		}
+
+		if ($type == 'internal')
+		{
+			//Nøkkelfelt, kundens personnr/orgnr.
+			$check_customer_identifier = $this->get_customer_identifier_value_for($reservation);
+		}
+		else
+		{
+			//Nøkkelfelt, kundens personnr/orgnr. - men differensiert for undergrupper innenfor samme orgnr
+			$check_customer_identifier = $this->get_customer_identifier_value_for($reservation) . '::' . $customer_number;
+		}
+
+		$purchase_order = $this->sopurchase_order->get_purchase_order(0, $reservation['reservation_type'], $reservation['reservation_id']);
+		/**
+		 * For vipps kan det være flere krav, for etterfakturering vil det være ett
+		 */
+		$payments = $this->sopurchase_order->get_order_payments($purchase_order['order_id']);
+
+		if (isset($payments[0]))
+		{
+			$payment = $payments[0];
+
+			/**
+			 * Already paid for, or cancelled
+			 */
+			if (in_array($payment['status'], array('completed', 'voided', 'refunded')))
+			{
+				continue;
+			}
+
+			//FIXME: move method from soapplication
+			// status: new, pending, completed, voided, partially_refunded, refunded
+			$this->application_so->update_payment_status($payment['remote_id'], 'completed', 'RESERVE');
+
+			/**
+			 * sjekk status / opdater status
+			 */
+		}
+
+		if ($stored_header == array() || $stored_header['tekst4'] != $check_customer_identifier)
+		{
+			$order_id = $sequential_number_generator->increment()->get_current();
+			$export_info[] = $this->create_export_item_info($reservation, $order_id);
+			$header_count += 1;
+			//header level
+			$header = $this->get_agresso_row_template_55();
+			// Note: No accept_flag in version 5.5
+
+			// TODO: Introduce a unique id if several transfers in one day?
+			$header['batch_id'] = $stored_header['batch_id'] = $batch_id;
+
+			$header['client'] = $client_id;
+			$stored_header['client'] = $client_id;
+			$header['confirm_date'] = $date;
+			$header['currency'] = $currency;
+			$header['deliv_date'] = $header['confirm_date'];
+
+			if (!empty($this->config_data['att_1_id']))
+			{
+				$header['att_1_id'] = str_pad(strtoupper(substr($this->config_data['att_1_id'], 0, 4)), 4, ' ');
+			}
+			if (!empty($this->config_data['att_2_id']))
+			{
+				$header['att_2_id'] = str_pad(strtoupper(substr($this->config_data['att_2_id'], 0, 4)), 4, ' ');
+			}
+			if (!empty($this->config_data['att_3_id']))
+			{
+				$header['att_3_id'] = str_pad(strtoupper(substr($this->config_data['att_3_id'], 0, 4)), 4, ' ');
+			}
+			if (!empty($this->config_data['att_4_id']))
+			{
+				$header['att_4_id'] = str_pad(strtoupper(substr($this->config_data['att_4_id'], 0, 4)), 4, ' ');
+			}
+			if (!empty($this->config_data['att_5_id']))
+			{
+				$header['att_5_id'] = str_pad(strtoupper(substr($this->config_data['att_5_id'], 0, 4)), 4, ' ');
+			}
+			if (!empty($this->config_data['att_6_id']))
+			{
+				$header['att_6_id'] = str_pad(strtoupper(substr($this->config_data['att_6_id'], 0, 4)), 4, ' ');
+			}
+			if (!empty($this->config_data['att_7_id']))
+			{
+				$header['att_7_id'] = str_pad(strtoupper(substr($this->config_data['att_7_id'], 0, 4)), 4, ' ');
+			}
+
+			//Skal leverer oppdragsgiver, blir et nr. pr. fagavdeling. XXXX, et pr. fagavdeling
+			if (isset($this->config_data['dim_value_1']))
+			{
+				$header['dim_value_1'] = str_pad(strtoupper(substr($account_codes['unit_number'], 0, 25)), 25, ' ');
+			}
+
+			if (isset($this->config_data['dim_value_2']))
+			{
+				$header['dim_value_2'] = str_pad(substr($account_codes['dim_value_2'], 0, 25), 25, ' ');
+			}
+			if (isset($this->config_data['dim_value_3']))
+			{
+				$header['dim_value_3'] = str_pad(substr($account_codes['dim_value_3'], 0, 25), 25, ' ');
+			}
+			if (isset($this->config_data['dim_value_4']))
+			{
+				$header['dim_value_4'] = str_pad(substr($account_codes['dim_value_4'], 0, 25), 25, ' ');
+			}
+
+			/**
+			 * Vår ref.
+			 */
+			if (isset($this->config_data['dim_value_5']))
+			{
+				$header['dim_value_5'] = str_pad(substr($account_codes['dim_value_5'], 0, 25), 25, ' ');
+			}
+			if (isset($this->config_data['dim_value_6']))
+			{
+				$header['dim_value_6'] = str_pad(substr($account_codes['dim_value_6'], 0, 25), 25, ' ');
+			}
+			if (isset($this->config_data['dim_value_7']))
+			{
+				$header['dim_value_7'] = str_pad(substr($account_codes['dim_value_7'], 0, 25), 25, ' ');
+			}
+
+			//Nøkkelfelt, kundens personnr/orgnr. - men differensiert for undergrupper innenfor samme orgnr
+			$stored_header['tekst4'] = $check_customer_identifier;
+			$header['tekst3'] = str_pad(substr($this->get_customer_identifier_value_for($reservation), 0, 100), 100, ' ');
+
+			if ($type == 'internal')
+			{
+				$header['tekst4'] = str_pad(substr($this->config_data['organization_value'], 0, 100), 100, ' ');
+				//referansenr/customer_number
+				$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $customer_number), 0, 100), 100, ' ');
+			}
+			else
+			{
+				$header['tekst4'] = str_pad(substr($this->get_customer_identifier_value_for($reservation), 0, 100), 100, ' ');
+				$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $customer_number), 0, 100), 100, ' ');
+			}
+
+			/**
+			 * Skille mellom hoved-organisasjonen og betalende underliggende organisasjon
+			 */
+			if (!empty($this->config_data['differentiate_org_payer']) && !empty($organization_number))
+			{
+				$header['tekst3'] = str_pad(substr($organization_number, 0, 100), 100, ' ');
+				$header['tekst4'] = str_pad(substr($payer_organization_number, 0, 100), 100, ' ');
+			}
+
+			$header['line_no'] = '0000';
+			//Topptekst til faktura, knyttet mot fagavdeling
+			$header['long_info1'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $account_codes['invoice_instruction']), 0, 120), 120, ' ');
+			$header['long_info2'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $additional_invoice_information), 0, 120), 120, ' ');
+			//Ordrenr. UNIKT, løpenr. genereres i booking ut fra gitt serie, eks. 38000000
+			$header['order_id'] = str_pad($order_id, 15, 0, STR_PAD_LEFT);
+			$stored_header['order_id'] = str_pad($order_id, 15, 0, STR_PAD_LEFT);
+
+			$header['order_type'] = $order_type;
+			$header['pay_method'] = $pay_method;
+			$header['period'] = $period;
+			$stored_header['period'] = $period;
+			$header['responsible'] = $responsible;
+			$header['responsible2'] = $responsible2;
+			$header['status'] = $status;
+			$stored_header['status'] = $status;
+			$header['trans_type'] = $trans_type;
+			$stored_header['trans_type'] = $trans_type;
+			$header['voucher_type'] = $voucher_type;
+
+			$output[] = implode('', str_replace(array("\n", "\r"), '', $header));
+
+			$stored_header['voucher_type'] = $voucher_type;
+
+
+			//item level
+			$item = $this->get_agresso_row_template_55();
+			$line_no = 1;
+			// Note: No accept_flag in version 5.5
+
+			$item['amount'] = $this->format_cost_55($reservation['cost']);
+			$item['amount_set'] = '1';
+
+			$item['art_descr'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $reservation['article_description']), 0, 255), 255, ' ');
+			$item['article'] = str_pad(substr(strtoupper($account_codes['article']), 0, 25), 25, ' ');
+
+			$item['batch_id'] = $header['batch_id'];
+			$item['client'] = $header['client'];
+
+			//Ansvarssted for inntektsføring for varelinjen avleveres i feltet (ANSVAR - f.eks 724300). ansvarsted (6 siffer) knyttet mot bygg /sesong
+			if (isset($this->config_data['dim_1']))
+			{
+				$item['dim_1'] = str_pad(strtoupper(substr($account_codes['responsible_code'], 0, 25)), 25, ' ');
+			}
+
+			//Tjeneste, eks. 38010 drift av idrettsbygg.  Kan ligge på artikkel i Agresso. Blank eller tjenestenr. (eks.38010) vi ikke legger det i artikkel
+			if (isset($this->config_data['dim_2']))
+			{
+				$item['dim_2'] = str_pad(strtoupper(substr($account_codes['service'], 0, 25)), 25, ' ');
+			}
+
+			//Objektnr. vil være knyttet til hvert hus (FDVU)
+			if (isset($this->config_data['dim_3']))
+			{
+				$item['dim_3'] = str_pad(strtoupper(substr($account_codes['object_number'], 0, 25)), 25, ' ');
+			}
+
+			if (isset($this->config_data['dim_4']))
+			{
+				$item['dim_4'] = str_pad(substr($account_codes['dim_4'], 0, 25), 25, ' ');
+			}
+
+			//Kan være aktuelt å levere prosjektnr knyttet mot en booking, valgfritt
+			if (isset($this->config_data['dim_5']))
+			{
+				$item['dim_5'] = str_pad(strtoupper(substr($account_codes['project_number'], 0, 25)), 25, ' ');
+			}
+			if (isset($this->config_data['dim_6']))
+			{
+				$item['dim_6'] = str_pad(substr($account_codes['dim_6'], 0, 25), 25, ' ');
+			}
+			if (isset($this->config_data['dim_7']))
+			{
+				$item['dim_7'] = str_pad(substr($account_codes['dim_7'], 0, 25), 25, ' ');
+			}
+
+			$item['line_no'] = str_pad($line_no, 4, 0, STR_PAD_LEFT);
+
+			$item['order_id'] = $header['order_id'];
+			$item['period'] = $header['period'];
+			$item['sequence_no'] = str_repeat('0', 8);
+
+			$item['status'] = $header['status'];
+			$item['trans_type'] = $header['trans_type'];
+
+			$item['value_1'] = str_pad(1 * 100, 20, 0, STR_PAD_LEFT); //Units. Multiplied by 100.
+			$item['voucher_type'] = $header['voucher_type'];
+
+			//text level
+			$text = $this->get_agresso_row_template_55();
+			// Note: No accept_flag in version 5.5
+			$text['order_id'] = $header['order_id'];
+			$text['batch_id'] = $header['batch_id'];
+			$text['client'] = $header['client'];
+			$text['line_no'] = $item['line_no'];
+			$text['short_info'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $reservation['description']), 0, 60), 60, ' ');
+			$text['trans_type'] = $header['trans_type'];
+			$text['voucher_type'] = $header['voucher_type'];
+
+			$text['sequence_no'] = str_pad(intval($item['sequence_no']) + 1, 8, '0', STR_PAD_LEFT);
+
+			$log_cost = 0;
+			$log_cost2 = 0;
+
+			if ($purchase_order && !empty($purchase_order['lines']))
+			{
+				$line_no -= 1;
+
+				$_item = $item;
+				$_text = $text;
+				foreach ($purchase_order['lines'] as $order_line)
+				{
+					if (empty($order_line['amount']))
+					{
+						continue;
+					}
+
+					$article_mapping_id = $order_line['article_mapping_id'];
+					if(!isset($this->article_data_array[$article_mapping_id]))
+					{
+						$article_data = booking_soarticle_mapping::get_instance()->read_single($article_mapping_id, false, true);
+						$this->article_data_array[$article_mapping_id] = $article_data;
+					}
+					else
+					{
+						$article_data = $this->article_data_array[$article_mapping_id];
+					}
+
+					if (!empty($article_data['override_dim_0']))
+					{
+						$_item['account'] = str_pad(strtoupper(substr($article_data['override_dim_0'], 0, 25)), 25, ' ');
+					}
+
+					if(!empty($article_data['override_dim_1']))
+					{
+						$_item['dim_1'] = str_pad(strtoupper(substr($article_data['override_dim_1'], 0, 25)), 25, ' ');
+					}
+					if(!empty($article_data['override_dim_2']))
+					{
+						$_item['dim_2'] = str_pad(strtoupper(substr($article_data['override_dim_2'], 0, 25)), 25, ' ');
+					}
+					if(!empty($article_data['override_dim_3']))
+					{
+						$_item['dim_3'] = str_pad(strtoupper(substr($article_data['override_dim_3'], 0, 25)), 25, ' ');
+					}
+					if(!empty($article_data['override_dim_4']))
+					{
+						$_item['dim_4'] = str_pad(substr($article_data['override_dim_4'], 0, 25), 25, ' ');
+					}
+					if(!empty($article_data['override_dim_5']))
+					{
+						$_item['dim_5'] = str_pad(strtoupper(substr($article_data['override_dim_5'], 0, 25)), 25, ' ');
+					}
+					if(!empty($article_data['override_dim_6']))
+					{
+						$_item['dim_6'] = str_pad(substr($article_data['override_dim_6'], 0, 25), 25, ' ');
+					}
+					if(!empty($article_data['override_dim_7']))
+					{
+						$_item['dim_7'] = str_pad(substr($article_data['override_dim_7'], 0, 25), 25, ' ');
+					}
+
+					$line_no += 1;
+
+					if ($order_line['parent_mapping_id'] == 0)
+					{
+						$article_name = $order_line['name']  . ' - ' . $reservation['description'];
+					}
+					else
+					{
+						$article_name = $order_line['name'];
+					}
+
+					if ($order_line['tax_percent'])
+					{
+						$unit_tax = (float)$order_line['unit_price'] * $order_line['tax_percent'] / 100;
+					}
+					else
+					{
+						$unit_tax = 0;
+					}
+
+					$pris_inkl_mva = (float)$order_line['unit_price'] + $unit_tax;
+
+					$_article_code = $order_line['article_code'];
+					$_article_alternative_code = $order_line['article_alternative_code'];
+
+					if ($type == 'internal' && $_article_alternative_code)
+					{
+						$_article_code = $_article_alternative_code;
+					}
+
+					$_item['art_descr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $order_line['name']), 0, 255), 255, ' ');
+					$_item['article']	 = str_pad(substr(strtoupper($_article_code), 0, 25), 25, ' ');
+					$_item['amount']	 = $this->format_cost_55(($order_line['amount']));
+					$_item['tax_code']	 = str_pad($order_line['tax_code'], 25, ' ', STR_PAD_LEFT);
+					$_item['value_1']	 = str_pad($order_line['quantity'] * 100, 20, 0, STR_PAD_LEFT); //Units. Multiplied by 100.
+					$_item['line_no']	 = str_pad($line_no, 4, 0, STR_PAD_LEFT);
+
+					$_text['line_no']	 = $_item['line_no'];
+					$_text['short_info'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $reservation['description']), 0, 60), 60, ' ');
+
+					$log_cost	 += $order_line['amount'];
+					$log_cost2	 += $order_line['tax'];
+
+					//Add to orders
+					$output[] = implode('', str_replace(array("\n", "\r"), '', $_item));
+					$output[] = implode('', str_replace(array("\n", "\r"), '', $_text));
+				}
+			}
+			else
+			{
+				$log_cost	 = $reservation['cost'];
+				//Add to orders
+				$output[] = implode('', str_replace(array("\n", "\r"), '', $item));
+				$output[] = implode('', str_replace(array("\n", "\r"), '', $text));
+			}
+
+
+			$log_order_id = $order_id;
+
+			if ($type == 'internal')
+			{
+				$log_customer_nr = $header['tekst4'] . ' ' . $header['ext_ord_ref'];
+			}
+			else
+			{
+				$log_customer_nr = $header['tekst4'];
+			}
+
+
+			$log_buidling = $reservation['building_name'];
+
+			$log_varelinjer_med_dato = $reservation['article_description'] . ' - ' . $reservation['description'];
+
+			$line_field = array();
+
+			$line_field[] = "\"{$reservation['reservation_id']}\"";
+			$line_field[] = "\"{$reservation['reservation_type']}\"";
+			$line_field[] = "\"{$log_order_id}\"";
+			$line_field[] = "\"{$log_customer_name}\"";
+			$line_field[] = "\"{$log_customer_nr}\"";
+			$line_field[] = "\"{$log_varelinjer_med_dato}\"";
+			$line_field[] = "\"{$log_buidling}\"";
+			$line_field[] = '"' . number_format($log_cost, 2, ",", '') . '"';
+			$line_field[] = '"' . number_format($log_cost2, 2, ",", '') . '"';
+
+			$log[] = implode(';',  $line_field);
+		}
+		else
+		{
+
+			//item level
+			$item = $this->get_agresso_row_template_55();
+			$line_no += 1;
+			// Note: No accept_flag in version 5.5
+
+			$item['amount'] = $this->format_cost_55($reservation['cost']);
+			$item['amount_set'] = '1';
+
+			$item['art_descr'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $reservation['article_description']), 0, 255), 255, ' ');
+			$item['article'] = str_pad(substr(strtoupper($account_codes['article']), 0, 25), 25, ' ');
+
+			$item['batch_id'] = $stored_header['batch_id'];
+			$item['client'] = $stored_header['client'];
+
+			//Ansvarssted for inntektsføring for varelinjen avleveres i feltet (ANSVAR - f.eks 724300). ansvarsted (6 siffer) knyttet mot bygg /sesong
+			if (isset($this->config_data['dim_1']))
+			{
+				$item['dim_1'] = str_pad(strtoupper(substr($account_codes['responsible_code'], 0, 25)), 25, ' ');
+			}
+
+			//Tjeneste, eks. 38010 drift av idrettsbygg.  Kan ligge på artikkel i Agresso. Blank eller tjenestenr. (eks.38010) vi ikke legger det i artikkel
+			if (isset($this->config_data['dim_2']))
+			{
+				$item['dim_2'] = str_pad(strtoupper(substr($account_codes['service'], 0, 25)), 25, ' ');
+			}
+
+			//Objektnr. vil være knyttet til hvert hus (FDVU)
+			if (isset($this->config_data['dim_3']))
+			{
+				$item['dim_3'] = str_pad(strtoupper(substr($account_codes['object_number'], 0, 25)), 25, ' ');
+			}
+
+			if (isset($this->config_data['dim_4']))
+			{
+				$item['dim_4'] = str_pad(substr($account_codes['dim_4'], 0, 25), 25, ' ');
+			}
+
+			//Kan være aktuelt å levere prosjektnr knyttet mot en booking, valgfritt
+			if (isset($this->config_data['dim_5']))
+			{
+				$item['dim_5'] = str_pad(strtoupper(substr($account_codes['project_number'], 0, 25)), 25, ' ');
+			}
+
+			$item['line_no'] = str_pad($line_no, 4, 0, STR_PAD_LEFT);
+
+			$item['order_id'] = $stored_header['order_id'];
+			$item['period'] = $stored_header['period'];
+			$item['sequence_no'] = str_repeat('0', 8);
+
+			$item['status'] = $stored_header['status'];
+			$item['trans_type'] = $stored_header['trans_type'];
+
+			$item['value_1'] = str_pad(1 * 100, 20, 0, STR_PAD_LEFT); //Units. Multiplied by 100.
+			$item['voucher_type'] = $stored_header['voucher_type'];
+
+			//text level
+			$text = $this->get_agresso_row_template_55();
+			// Note: No accept_flag in version 5.5
+			$text['order_id'] = $stored_header['order_id'];
+			$text['batch_id'] = $stored_header['batch_id'];
+			$text['client'] = $stored_header['client'];
+			$text['line_no'] = $item['line_no'];
+			$text['short_info'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $reservation['description']), 0, 60), 60, ' ');
+			$text['trans_type'] = $stored_header['trans_type'];
+			$text['voucher_type'] = $stored_header['voucher_type'];
+
+			$text['sequence_no'] = str_pad(intval($item['sequence_no']) + 1, 8, '0', STR_PAD_LEFT);
+
+
+			$log_cost = 0;
+			$log_cost2 = 0;
+
+			if ($purchase_order && !empty($purchase_order['lines']))
+			{
+				$line_no -= 1;
+
+				$_item = $item;
+				$_text = $text;
+				foreach ($purchase_order['lines'] as $order_line)
+				{
+					if (empty($order_line['amount']))
+					{
+						continue;
+					}
+					$line_no += 1;
+
+					if ($order_line['parent_mapping_id'] == 0)
+					{
+						$article_name = $order_line['name']  . ' - ' . $reservation['description'];
+					}
+					else
+					{
+						$article_name = $order_line['name'];
+					}
+
+					if ($order_line['tax_percent'])
+					{
+						$unit_tax = (float)$order_line['unit_price'] * $order_line['tax_percent'] / 100;
+					}
+					else
+					{
+						$unit_tax = 0;
+					}
+
+					$pris_inkl_mva = (float)$order_line['unit_price'] + $unit_tax;
+
+					$_article_code = $order_line['article_code'];
+					$_article_alternative_code = $order_line['article_alternative_code'];
+
+					if ($type == 'internal' && $_article_alternative_code)
+					{
+						$_article_code = $_article_alternative_code;
+					}
+
+					$_item['art_descr']	 = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $order_line['name']), 0, 255), 255, ' ');
+					$_item['article']	 = str_pad(substr(strtoupper($_article_code), 0, 25), 25, ' ');
+					$_item['amount']	 = $this->format_cost_55(($order_line['amount']));
+					$_item['tax_code']	 = str_pad($order_line['tax_code'], 25, ' ', STR_PAD_LEFT);
+					$_item['value_1']	 = str_pad($order_line['quantity'] * 100, 20, 0, STR_PAD_LEFT); //Units. Multiplied by 100.
+					$_item['line_no']	 = str_pad($line_no, 4, 0, STR_PAD_LEFT);
+
+					$_text['line_no']	 = $_item['line_no'];
+					$_text['short_info'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $reservation['description']), 0, 60), 60, ' ');
+
+					$log_cost			 += $order_line['amount'];
+					$log_cost2			 += $order_line['tax'];
+
+					//Add to orders
+					$output[] = implode('', str_replace(array("\n", "\r"), '', $_item));
+					$output[] = implode('', str_replace(array("\n", "\r"), '', $_text));
+				}
+			}
+			else
+			{
+				$log_cost	 = $reservation['cost'];
+				//Add to orders
+				$output[] = implode('', str_replace(array("\n", "\r"), '', $item));
+				$output[] = implode('', str_replace(array("\n", "\r"), '', $text));
+			}
+
+			$log_buidling = $reservation['building_name'];
+			$log_varelinjer_med_dato = $reservation['article_description'] . ' - ' . $reservation['description'];
+
+			$line_field = array();
+
+			$line_field[] = "\"{$reservation['reservation_id']}\"";
+			$line_field[] = "\"{$reservation['reservation_type']}\"";
+			$line_field[] = "\"{$log_order_id}\"";
+			$line_field[] = "\"{$log_customer_name}\"";
+			$line_field[] = "\"{$log_customer_nr}\"";
+			$line_field[] = "\"{$log_varelinjer_med_dato}\"";
+			$line_field[] = "\"{$log_buidling}\"";
+			$line_field[] = '"' . number_format($log_cost, 2, ",", '') . '"';
+			$line_field[] = '"' . number_format($log_cost2, 2, ",", '') . '"';
+
+			$log[] = implode(';',  $line_field);
+		}
+	}
+
+	if (count($export_info) == 0)
+	{
+		return null;
+	}
+
+	if ($this->config_data['external_format_linebreak'] == 'Windows')
+	{
+		$file_format_linebreak = "\r\n";
+	}
+	else
+	{
+		$file_format_linebreak = "\n";
+	}
+
+	return array(
+		'data' => implode($file_format_linebreak, $output),
+		'data_log' => implode(PHP_EOL, $log),
+		'info' => $export_info,
+		'header_count' => $header_count
+	);
+}
+
 	protected function get_agresso_row_template()
 	{
 		static $row_template = false;
@@ -2969,6 +3744,130 @@ class booking_socompleted_reservation_export extends booking_socommon
 			'voucher_ref' => str_repeat(' ', 9),
 			'voucher_type' => str_repeat(' ', 2),
 			'warehouse' => str_repeat(' ', 4),
+			'zip_code' => str_repeat(' ', 15)
+		);
+		return $row_template;
+	}
+
+	/**
+	 * Get Agresso LG04 version 5.5 row template
+	 * 
+	 * Returns an array template for Agresso format version 5.5 with updated field lengths
+	 * and new fields. Key differences from 5.3:
+	 * - Removed: accept_flag
+	 * - New fields: apar_id_ref, discount, ean, pay_temp_id, sup_article, unit_price (left blank)
+	 * - Date fields reduced from 17 to 8 chars
+	 * - Amount fields increased from 17 to 20 chars
+	 * - Many text fields expanded (see spec for details)
+	 * 
+	 * @return array Template array with field names as keys and space-padded strings as values
+	 */
+	protected function get_agresso_row_template_55()
+	{
+		static $row_template = false;
+		if ($row_template)
+		{
+			return $row_template;
+		}
+
+		$row_template = array(
+			'account' => str_repeat(' ', 25),
+			'accountable' => str_repeat(' ', 25),
+			'address' => str_repeat(' ', 160),
+			'allocation_key' => str_repeat(' ', 2),
+			'amount' => str_repeat(' ', 20),
+			'amount_set' => str_repeat(' ', 1),
+			'apar_id' => str_repeat(' ', 25),
+			'apar_id_ref' => str_repeat(' ', 25),
+			'apar_name' => str_repeat(' ', 255),
+			'art_descr' => str_repeat(' ', 255),
+			'article' => str_repeat(' ', 25),
+			'att_1_id' => str_repeat(' ', 4),
+			'att_2_id' => str_repeat(' ', 4),
+			'att_3_id' => str_repeat(' ', 4),
+			'att_4_id' => str_repeat(' ', 4),
+			'att_5_id' => str_repeat(' ', 4),
+			'att_6_id' => str_repeat(' ', 4),
+			'att_7_id' => str_repeat(' ', 4),
+			'bank_account' => str_repeat(' ', 35),
+			'batch_id' => str_repeat(' ', 25),
+			'client' => str_repeat(' ', 25),
+			'client_ref' => str_repeat(' ', 25),
+			'confirm_date' => str_repeat(' ', 8),
+			'control' => str_repeat(' ', 1),
+			'cur_amount' => str_repeat(' ', 20),
+			'currency' => str_repeat(' ', 25),
+			'del_met_descr' => str_repeat(' ', 255),
+			'del_term_descr' => str_repeat(' ', 255),
+			'deliv_addr' => str_repeat(' ', 255),
+			'deliv_attention' => str_repeat(' ', 50),
+			'deliv_countr' => str_repeat(' ', 25),
+			'deliv_date' => str_repeat(' ', 8),
+			'deliv_method' => str_repeat(' ', 25),
+			'deliv_terms' => str_repeat(' ', 25),
+			'dim_1' => str_repeat(' ', 25),
+			'dim_2' => str_repeat(' ', 25),
+			'dim_3' => str_repeat(' ', 25),
+			'dim_4' => str_repeat(' ', 25),
+			'dim_5' => str_repeat(' ', 25),
+			'dim_6' => str_repeat(' ', 25),
+			'dim_7' => str_repeat(' ', 25),
+			'dim_value_1' => str_repeat(' ', 25),
+			'dim_value_2' => str_repeat(' ', 25),
+			'dim_value_3' => str_repeat(' ', 25),
+			'dim_value_4' => str_repeat(' ', 25),
+			'dim_value_5' => str_repeat(' ', 25),
+			'dim_value_6' => str_repeat(' ', 25),
+			'dim_value_7' => str_repeat(' ', 25),
+			'discount' => str_repeat(' ', 20),
+			'disc_percent' => str_repeat(' ', 20),
+			'ean' => str_repeat(' ', 50),
+			'exch_rate' => str_repeat(' ', 20),
+			'ext_ord_ref' => str_repeat(' ', 100),
+			'intrule_id' => str_repeat(' ', 25),
+			'line_no' => str_repeat(' ', 4),
+			'location' => str_repeat(' ', 12),
+			'long_info1' => str_repeat(' ', 120),
+			'long_info2' => str_repeat(' ', 120),
+			'lot' => str_repeat(' ', 10),
+			'main_apar_id' => str_repeat(' ', 25),
+			'mark_attention' => str_repeat(' ', 50),
+			'mark_ctry_cd' => str_repeat(' ', 25),
+			'markings' => str_repeat(' ', 255),
+			'obs_date' => str_repeat(' ', 8),
+			'order_date' => str_repeat(' ', 8),
+			'order_id' => str_repeat(' ', 15),
+			'order_type' => str_repeat(' ', 2),
+			'pay_method' => str_repeat(' ', 2),
+			'pay_temp_id' => str_repeat(' ', 4),
+			'period' => str_repeat(' ', 6),
+			'place' => str_repeat(' ', 30),
+			'province' => str_repeat(' ', 40),
+			'rel_value' => str_repeat(' ', 25),
+			'responsible' => str_repeat(' ', 25),
+			'responsible2' => str_repeat(' ', 25),
+			'sequence_no' => str_repeat(' ', 8),
+			'sequence_ref' => str_repeat(' ', 8),
+			'serial_no' => str_repeat(' ', 20),
+			'short_info' => str_repeat(' ', 60),
+			'status' => str_repeat(' ', 1),
+			'sup_article' => str_repeat(' ', 50),
+			'tax_code' => str_repeat(' ', 25),
+			'tax_system' => str_repeat(' ', 25),
+			'template_id' => str_repeat(' ', 8),
+			'terms_id' => str_repeat(' ', 25),
+			'tekst1' => str_repeat(' ', 100),
+			'tekst2' => str_repeat(' ', 100),
+			'tekst3' => str_repeat(' ', 100),
+			'tekst4' => str_repeat(' ', 100),
+			'trans_type' => str_repeat(' ', 2),
+			'unit_code' => str_repeat(' ', 3),
+			'unit_descr' => str_repeat(' ', 255),
+			'unit_price' => str_repeat(' ', 20),
+			'value_1' => str_repeat(' ', 20),
+			'voucher_ref' => str_repeat(' ', 15),
+			'voucher_type' => str_repeat(' ', 25),
+			'warehouse' => str_repeat(' ', 25),
 			'zip_code' => str_repeat(' ', 15)
 		);
 		return $row_template;

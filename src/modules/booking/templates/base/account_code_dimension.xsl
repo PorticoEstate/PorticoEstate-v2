@@ -287,7 +287,13 @@
 							<xsl:if test="config_data/external_format='AGRESSO'">
 								<xsl:attribute name="selected">checked</xsl:attribute>
 							</xsl:if>
-							AGRESSO
+							AGRESSO 5.3
+						</option>
+						<option value="AGRESSO_55">
+							<xsl:if test="config_data/external_format='AGRESSO_55'">
+								<xsl:attribute name="selected">checked</xsl:attribute>
+							</xsl:if>
+							AGRESSO 5.5
 						</option>
 						<option value="CSV">
 							<xsl:if test="config_data/external_format='CSV'">
@@ -369,7 +375,13 @@
 							<xsl:if test="config_data/internal_format='AGRESSO'">
 								<xsl:attribute name="selected">checked</xsl:attribute>
 							</xsl:if>
-							AGRESSO
+							AGRESSO 5.3
+						</option>
+						<option value="AGRESSO_55">
+							<xsl:if test="config_data/internal_format='AGRESSO_55'">
+								<xsl:attribute name="selected">checked</xsl:attribute>
+							</xsl:if>
+							AGRESSO 5.5
 						</option>
 						<option value="CSV">
 							<xsl:if test="config_data/internal_format='CSV'">

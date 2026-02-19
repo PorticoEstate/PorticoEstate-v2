@@ -14,7 +14,7 @@ $(document).ready(function ()
 	var previous_query = '';
 	$('#query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_query))
+		if (($(this).val() || '').trim() != (previous_query || '').trim())
 		{
 			filterDataLocations('search', {'value': $(this).val()});
 			previous_query = $(this).val();
@@ -30,7 +30,7 @@ $(document).ready(function ()
 	var previous_contract_query = '';
 	$('#contracts_query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_contract_query))
+		if (($(this).val() || '').trim() != (previous_contract_query || '').trim())
 		{
 			filterDataContracts('search', {'value': $(this).val()});
 			previous_contract_query = $(this).val();
@@ -45,7 +45,7 @@ $(document).ready(function ()
 	var previous_status_date;
 	$("#status_date").on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_status_date))
+		if (($(this).val() || '').trim() != (previous_status_date || '').trim())
 		{
 			filterDataContracts('status_date', $(this).val());
 			previous_status_date = $(this).val();
@@ -60,7 +60,7 @@ $(document).ready(function ()
 	var previous_application_query = '';
 	$('#applications_query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_application_query))
+		if (($(this).val() || '').trim() != (previous_application_query || '').trim())
 		{
 			filterDataApplications('search', {'value': $(this).val()});
 			previous_application_query = $(this).val();

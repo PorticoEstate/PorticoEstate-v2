@@ -80,7 +80,7 @@ function addNoteType()
     var nTable = 0;
     var data = {};
 
-    if ($.trim($('#note_description').val()) == '')
+    if (($('#note_description').val() || '').trim() == '')
     {
         alert(lang_name);
         return;

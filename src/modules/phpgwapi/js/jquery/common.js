@@ -455,9 +455,9 @@ JqueryPortico.inlineTableHelper = function (container, ajax_url, columns, option
 				// This replaces the old fnServerParams functionality
 				try
 				{
-					if ($.isNumeric(container.substr(container.length - 1, 1)))
+					if (!isNaN(Number(container.substr(container.length - 1, 1))))
 					{
-						if (!$.isEmptyObject(eval('paramsTable' + container.substr(container.length - 1, 1))))
+						if (Object.keys(eval('paramsTable' + container.substr(container.length - 1, 1))).length !== 0)
 						{
 							$.each(eval('paramsTable' + container.substr(container.length - 1, 1)), function (k, v)
 							{

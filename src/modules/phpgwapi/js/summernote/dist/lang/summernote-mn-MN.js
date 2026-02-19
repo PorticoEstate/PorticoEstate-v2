@@ -1,13 +1,12 @@
 /*!
  * 
- * Super simple WYSIWYG editor v0.8.19
+ * Super simple WYSIWYG editor v0.9.1
  * https://summernote.org
  *
- *
- * Copyright 2013- Alan Hong and contributors
+ * Copyright 2013~ Hackerwins and contributors
  * Summernote may be freely distributed under the MIT license.
  *
- * Date: 2024-05-23T13:38Z
+ * Date: 2024-10-09T10:22Z
  *
  */
 (function webpackUniversalModuleDefinition(root, factory) {
@@ -23,6 +22,7 @@
 return /******/ (() => { // webpackBootstrap
 var __webpack_exports__ = {};
 // Starsoft Mongolia LLC Temuujin Ariunbold
+
 (function ($) {
   $.extend(true, $.summernote.lang, {
     'mn-MN': {

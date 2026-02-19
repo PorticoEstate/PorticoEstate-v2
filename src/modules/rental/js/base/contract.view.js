@@ -35,7 +35,7 @@ $(document).ready(function ()
 	var previous_document_query = '';
 	$('#document_query').on('keyup change', function ()
 	{
-		if ($.trim($(this).val()) != $.trim(previous_document_query))
+		if (($(this).val() || '').trim() != (previous_document_query || '').trim())
 		{
 			filterDataDocument('search', {'value': $(this).val()});
 			previous_document_query = $(this).val();

@@ -1433,7 +1433,7 @@
 				var previous_{{ item.id|default('')|e('js') }};
 				$("#filter_{{ item.id|default('')|e('js') }}").on('keyup change', function ()
 				{
-					if ( $.trim($(this).val()) != $.trim(previous_{{ item.id|default('')|e('js') }}) )
+					if ( $(this).val().trim() != (previous_{{ item.id|default('')|e('js') }} || '').trim() )
 					{
 						filterData('{{ item.id|default('')|e('js') }}', $(this).val());
 						previous_{{ item.id|default('')|e('js') }} = $(this).val();

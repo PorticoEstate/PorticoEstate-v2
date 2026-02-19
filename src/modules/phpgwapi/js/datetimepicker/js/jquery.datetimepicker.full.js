@@ -1142,7 +1142,7 @@ var datetimepickerFactory = function ($) {
 
 				if (_options.highlightedDates && Array.isArray(_options.highlightedDates) && _options.highlightedDates.length) {
 					$.each(_options.highlightedDates, function (index, value) {
-						var splitData = $.map(value.split(','), $.trim),
+						var splitData = value.split(',').map(function(s) { return s.trim(); }),
 							exDesc,
 							hDate = new HighlightedDate(dateHelper.parseDate(splitData[0], options.formatDate), splitData[1], splitData[2]), // date, desc, style
 							keyDate = dateHelper.formatDate(hDate.date, options.formatDate);
@@ -1176,7 +1176,7 @@ var datetimepickerFactory = function ($) {
 							style = value[3];
 						}
 						else {
-							var splitData = $.map(value.split(','), $.trim);
+							var splitData = value.split(',').map(function(s) { return s.trim(); });
 							dateTest = dateHelper.parseDate(splitData[0], options.formatDate);
 							dateEnd = dateHelper.parseDate(splitData[1], options.formatDate);
 							desc = splitData[2];
@@ -1289,8 +1289,8 @@ var datetimepickerFactory = function ($) {
 					input
 						.off('blur.xdsoft')
 						.on('blur.xdsoft', function () {
-							if (options.allowBlank && (!$(this.trim().val()).length ||
-									(typeof options.mask === "string" && $(this.trim().val()) === options.mask.replace(/[0-9]/g, '_')))) {
+							if (options.allowBlank && (!$(this).val().trim().length ||
+									(typeof options.mask === "string" && $(this).val().trim() === options.mask.replace(/[0-9]/g, '_')))) {
 								$(this).val(null);
 								datetimepicker.data('xdsoft_datetime').empty();
 							} else {

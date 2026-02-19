@@ -181,15 +181,13 @@ class overfoer_stroem extends property_boentity
 
 		$subject = "Måleroverføring: {$address}";
 
-		$toarray = array('Postmottak.Innkjop@bergen.kommune.no');
-		//			$toarray = array('hc483@bergen.kommune.no' );
+		$toarray = array('bedrift@ishavskraft.no');
 		$to		 = implode(';', $toarray);
 
 		$from_name	 = $this->userSettings['fullname'];
 		$from_email	 = "{$from_name}<{$this->userSettings['preferences']['common']['email']}>";
 
 		$ccarray = array(
-	//		'tom.wilhelmsen@fjordkraft.no',
 			'Muhammed.Ibrahim@bergen.kommune.no',
 			'Kenneth.Tertnaes@bergen.kommune.no',
 			$from_email
@@ -283,7 +281,7 @@ HTML;
 		if ($rc)
 		{
 
-			Cache::message_set("Epost er sendt til Postmottak.Innkjop@bergen.kommune.no	om overføring av måler", 'message');
+			Cache::message_set("Epost er sendt til bedrift@ishavskraft.no om overføring av måler", 'message');
 
 			$now = date($this->db::date_format());
 

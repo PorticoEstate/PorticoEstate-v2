@@ -3643,18 +3643,21 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 	);
 }
 
-protected function get_agresso_row_template()
-{
-	static $row_template = false;
-	if ($row_template)
+	protected function get_agresso_row_template()
 	{
-		return $row_template;
-	}
+		static $row_template = false;
+		if ($row_template)
+		{
+			return $row_template;
+		}
 
-	$row_template = array(
-		'accept_flag' => str_repeat(' ', 1),
-		'allocation_key' => str_repeat(' ', 2),
-		'amount' => str_repeat(' ', 17),
+		$row_template = array(
+			'accept_flag' => str_repeat(' ', 1),
+			'account' => str_repeat(' ', 8),
+			'accountable' => str_repeat(' ', 20),
+			'address' => str_repeat(' ', 160),
+			'allocation_key' => str_repeat(' ', 2),
+			'amount' => str_repeat(' ', 17),
 			'amount_set' => str_repeat(' ', 1),
 			'apar_id' => str_repeat(' ', 8),
 			'apar_name' => str_repeat(' ', 30),

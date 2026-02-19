@@ -166,6 +166,9 @@ $app->group('/booking/registry', function (RouteCollectorProxy $group) use ($con
 		// Get list for dropdowns/selects
 		$typeGroup->get('/list', [$controller, 'getList']);
 
+		// Download all filtered data as CSV
+		$typeGroup->get('/download', [$controller, 'download']);
+
 		// CRUD operations
 		$typeGroup->get('', [$controller, 'index']); // List items
 		$typeGroup->post('', [$controller, 'store']); // Create new item

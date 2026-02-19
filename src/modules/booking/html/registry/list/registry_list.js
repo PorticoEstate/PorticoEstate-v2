@@ -79,6 +79,13 @@
 				label: L.edit,
 				variant: 'secondary'
 			});
+			rowActions.push({
+				type: 'link',
+				url: CFG.editBaseUrl + '{id}',
+				label: L.edit + ' \u2197',
+				variant: 'secondary',
+				target: '_blank'
+			});
 		}
 		if (CFG.permissions.delete) {
 			rowActions.push({
@@ -102,6 +109,10 @@
 				columns: columns,
 				filters: filters.length ? filters : undefined,
 				rowActions: rowActions.length ? rowActions : undefined,
+				columnVisibility: true,
+				columnVisibilityLabel: L.columns,
+				downloadUrl: CFG.downloadUrl,
+				downloadLang: {label: L.download},
 				order: [[0, 'asc']],
 				pageLength: 25,
 				lang: {

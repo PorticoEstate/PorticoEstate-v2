@@ -1216,12 +1216,18 @@ class GenericRegistryController
 		$registry = $registryClass::forType($type);
 		$fieldMap = $registry->getInstanceFieldMap();
 
-		// Add lookup_url to select fields
+		// Add lookup_url to select fields and translate labels
 		$fields = $config['fields'] ?? [];
 		$definedFieldNames = array_map(fn($f) => $f['name'], $fields);
 
 		foreach ($fields as &$field)
 		{
+			// Translate field descriptions
+			if (!empty($field['descr']))
+			{
+				$field['descr'] = lang($field['descr']);
+			}
+
 			if ($field['type'] === 'select' && isset($field['values_def']['method_input']['type']))
 			{
 				$lookupType = $field['values_def']['method_input']['type'];
@@ -1486,6 +1492,140 @@ class GenericRegistryController
 	}
 
 	/**
+	 * Download all filtered data as CSV
+	 * GET /{module}/registry/{type}/download
+	 */
+	public function download(Request $request, Response $response, array $args): Response
+	{
+		$registryClass = $this->getRegistryClass($request);
+		$type = Sanitizer::clean_value($args['type'] ?? '', 'string');
+
+		if (!$type || !in_array($type, $registryClass::getAvailableTypes()))
+		{
+			throw new HttpNotFoundException($request, "Registry type '{$type}' not found");
+		}
+
+		$config = $registryClass::getRegistryConfig($type);
+
+		if (!$this->getAcl()->check($config['acl_location'], Acl::READ, $config['acl_app']))
+		{
+			$response->getBody()->write(json_encode(['error' => 'Permission denied']));
+			return $response->withHeader('Content-Type', 'application/json')->withStatus(403);
+		}
+
+		$params = $request->getQueryParams();
+		$query = Sanitizer::clean_value($params['query'] ?? '', 'string');
+		$sort = Sanitizer::clean_value($params['sort'] ?? 'id', 'string');
+		$dir = strtoupper(Sanitizer::clean_value($params['dir'] ?? 'ASC', 'string'));
+
+		if (!in_array($dir, ['ASC', 'DESC'])) {
+			$dir = 'ASC';
+		}
+
+		// Build search conditions (same logic as index)
+		$conditions = [];
+		if ($query)
+		{
+			$searchFields = [];
+			if (!empty($config['fields']))
+			{
+				foreach ($config['fields'] as $field)
+				{
+					if (in_array($field['type'], ['varchar', 'text', 'html']))
+					{
+						$searchFields[] = $field['name'];
+					}
+				}
+			}
+			if (empty($searchFields))
+			{
+				$searchFields = ['name'];
+			}
+			$conditions[] = ['_multi_search', 'LIKE', $query, 'fields' => $searchFields];
+		}
+
+		// Apply filter params
+		$allowedFilterFields = [];
+		if (!empty($config['fields']))
+		{
+			foreach ($config['fields'] as $field)
+			{
+				if (isset($field['filter']) && $field['filter'])
+				{
+					$allowedFilterFields[] = $field['name'];
+				}
+			}
+		}
+
+		foreach ($params as $key => $value)
+		{
+			if (in_array($key, $allowedFilterFields) && $value !== '')
+			{
+				$conditions[$key] = Sanitizer::clean_value($value, 'string');
+			}
+		}
+
+		// Fetch all rows (no pagination)
+		$results = $registryClass::findWhereByType($type, $conditions, [
+			'order_by' => $sort,
+			'direction' => $dir
+		]);
+
+		$data = [];
+		foreach ($results as $result)
+		{
+			$data[] = is_object($result) && method_exists($result, 'toArray') ? $result->toArray() : $result;
+		}
+
+		// Resolve user fields
+		$registry = $registryClass::forType($type);
+		$this->resolveUserFields($data, $registry->getInstanceFieldMap());
+
+		// Build CSV headers from fields
+		$fields = $config['fields'] ?? [];
+		$csvColumns = [['name' => 'id', 'descr' => 'ID']];
+		foreach ($fields as $field)
+		{
+			$csvColumns[] = ['name' => $field['name'], 'descr' => $field['descr'] ?? $field['name']];
+		}
+
+		$registryName = $config['name'] ?? $type;
+		$filename = 'registry_' . $type . '_' . date('Y-m-d') . '.csv';
+
+		// Generate CSV
+		$output = fopen('php://temp', 'r+');
+		// BOM for Excel UTF-8 compatibility
+		fwrite($output, "\xEF\xBB\xBF");
+		// Header row
+		fputcsv($output, array_map(fn($c) => $c['descr'], $csvColumns), ';');
+		// Data rows
+		foreach ($data as $row)
+		{
+			$csvRow = [];
+			foreach ($csvColumns as $col)
+			{
+				$val = $row[$col['name']] ?? '';
+				// Strip HTML tags for html-type fields
+				if (is_string($val))
+				{
+					$val = strip_tags($val);
+				}
+				$csvRow[] = $val;
+			}
+			fputcsv($output, $csvRow, ';');
+		}
+
+		rewind($output);
+		$csv = stream_get_contents($output);
+		fclose($output);
+
+		$response->getBody()->write($csv);
+		return $response
+			->withHeader('Content-Type', 'text/csv; charset=utf-8')
+			->withHeader('Content-Disposition', 'attachment; filename="' . $filename . '"');
+	}
+
+	/**
 	 * Resolve user-type fields (account_id → display name) in a dataset
 	 */
 	private function resolveUserFields(array &$data, array $fieldMap): void
@@ -1549,6 +1689,51 @@ class GenericRegistryController
 				if ($val && isset($nameMap[(int)$val]))
 				{
 					$row[$field] = $nameMap[(int)$val];
+				}
+			}
+		}
+	}
+
+	/**
+	 * Decode HTML entities in html/text fields.
+	 * Legacy data is stored with encoded entities (e.g. &amp;lt;p&amp;gt;)
+	 * which need decoding before serving via JSON API.
+	 */
+	private function decodeHtmlFields(array &$data, array $config): void
+	{
+		$htmlFields = [];
+		foreach (($config['fields'] ?? []) as $field)
+		{
+			if (in_array($field['type'], ['html', 'text']))
+			{
+				$htmlFields[] = $field['name'];
+			}
+		}
+
+		if (empty($htmlFields))
+		{
+			return;
+		}
+
+		foreach ($data as &$row)
+		{
+			foreach ($htmlFields as $fieldName)
+			{
+				if (!empty($row[$fieldName]) && is_string($row[$fieldName]))
+				{
+					$val = $row[$fieldName];
+					// Decode HTML entities (handles double-encoded legacy data)
+					$val = html_entity_decode($val, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+					// Handle remaining numeric character references
+					$val = preg_replace_callback('/&#(\d+);/', function ($m) {
+						return chr((int)$m[1]);
+					}, $val);
+					// Second pass for double-encoded values
+					if (strpos($val, '&amp;') !== false || strpos($val, '&lt;') !== false)
+					{
+						$val = html_entity_decode($val, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+					}
+					$row[$fieldName] = $val;
 				}
 			}
 		}
@@ -1667,7 +1852,8 @@ class GenericRegistryController
 					break;
 				case 'text':
 				case 'textarea':
-					// For text fields, allow some basic HTML if needed
+				case 'html':
+					// For text/html fields, allow HTML content
 					$sanitizeType = 'html';
 					break;
 				case 'varchar':

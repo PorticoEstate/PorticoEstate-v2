@@ -908,27 +908,24 @@ abstract class GenericRegistry extends BaseModel
 			foreach ($this->registryConfig['fields'] as $field)
 			{
 				$fieldName = $field['name'];
+				$value = null;
 
-				// Try to get the field value - first check if it exists as a property
 				if (property_exists($this, $fieldName))
 				{
 					$value = $this->$fieldName;
-					// Include the field even if it's null - the API consumer decides how to handle nulls
-					$data[$fieldName] = $value;
 				}
-				else
+				else if (isset($this->$fieldName))
 				{
-					// Check if the property exists but is dynamically set
-					if (isset($this->$fieldName))
-					{
-						$data[$fieldName] = $this->$fieldName;
-					}
-					else
-					{
-						// Field is defined in config but not set - include as null
-						$data[$fieldName] = null;
-					}
+					$value = $this->$fieldName;
 				}
+
+				// Decode HTML entities for html/text fields (legacy data stored encoded)
+				if ($value !== null && is_string($value) && in_array($field['type'], ['html', 'text']))
+				{
+					$value = $this->sanitizeString($value);
+				}
+
+				$data[$fieldName] = $value;
 			}
 		}
 
@@ -1009,6 +1006,30 @@ abstract class GenericRegistry extends BaseModel
 		}
 
 		return $this;
+	}
+
+	/**
+	 * Decode HTML entities from legacy encoded data.
+	 * Mirrors SerializableTrait::sanitizeString() used by models like Building.
+	 */
+	protected function sanitizeString(string $value): string
+	{
+		$decoded = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+		$decoded = preg_replace_callback(
+			'/&#(\d+);/',
+			function ($matches) {
+				return chr((int)$matches[1]);
+			},
+			$decoded
+		);
+
+		if (strpos($decoded, '&amp;') !== false)
+		{
+			$decoded = html_entity_decode($decoded, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+		}
+
+		return $decoded;
 	}
 
 	/**

@@ -381,6 +381,7 @@
 					var url = action.url ? resolveTemplate(action.url, row) : '#';
 					if (action.type === 'link') {
 						html += '<a href="' + escapeHtml(url) + '"'
+							+ (action.target ? ' target="' + escapeHtml(action.target) + '"' : '')
 							+ ' class="ds-button"'
 							+ ' data-variant="' + (action.variant || 'secondary') + '"'
 							+ ' data-size="sm">'

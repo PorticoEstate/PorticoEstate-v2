@@ -130,7 +130,7 @@
 
 			case 'html':
 				input = document.createElement('textarea');
-				input.className = 'app-input';
+				input.className = 'app-input summernote-target';
 				input.rows = 8;
 				input.id = 'field-' + field.name;
 				input.name = field.name;
@@ -225,6 +225,26 @@
 			.catch(function () { /* ignore */ });
 	}
 
+	// -- Summernote WYSIWYG --
+
+	function initSummernote() {
+		if (!window.jQuery || !jQuery.fn.summernote) return;
+		var targets = formFields.querySelectorAll('.summernote-target');
+		for (var i = 0; i < targets.length; i++) {
+			jQuery(targets[i]).summernote({
+				lang: 'nb-NO',
+				height: 200,
+				toolbar: [
+					['style', ['bold', 'italic', 'underline', 'strikethrough']],
+					['para', ['ul', 'ol', 'paragraph']],
+					['insert', ['link', 'hr']],
+					['misc', ['undo', 'redo']],
+					['view', ['codeview']]
+				]
+			});
+		}
+	}
+
 	// -- Form submission --
 
 	function collectFormData() {
@@ -248,6 +268,8 @@
 				data[field.name] = el.value !== '' ? parseInt(el.value, 10) : null;
 			} else if (field.type === 'select') {
 				data[field.name] = el.value !== '' ? el.value : null;
+			} else if (field.type === 'html' && window.jQuery && jQuery(el).hasClass('summernote-target')) {
+				data[field.name] = jQuery(el).summernote('code');
 			} else {
 				data[field.name] = el.value;
 			}
@@ -291,8 +313,13 @@
 				}
 				return r.json();
 			})
-			.then(function () {
-				window.location.href = CFG.listUrl;
+			.then(function (result) {
+				showAlert(alertSuccess, LANG.saved);
+				if (CFG.isNew && result.data && result.data.id) {
+					// Switch from add to edit mode with the new ID
+					var editUrl = CFG.listUrl.replace(/\/$/, '') + '/' + result.data.id;
+					window.location.href = editUrl;
+				}
 			})
 			.catch(function (err) {
 				showAlert(alertError, err.message);
@@ -309,6 +336,9 @@
 			return loadItem().then(function (item) {
 				return buildForm(s, item);
 			});
+		})
+		.then(function () {
+			initSummernote();
 		})
 		.catch(function (err) {
 			showAlert(alertError, 'Failed to load: ' + err.message);

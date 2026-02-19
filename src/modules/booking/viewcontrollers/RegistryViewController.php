@@ -5,6 +5,7 @@ namespace App\modules\booking\viewcontrollers;
 use App\modules\phpgwapi\helpers\LegacyViewHelper;
 use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\security\Acl;
+use App\modules\phpgwapi\services\Settings;
 use App\modules\booking\models\BookingGenericRegistry;
 use App\helpers\ResponseHelper;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -41,16 +42,18 @@ class RegistryViewController
 			}
 
 			$permissions = $this->getPermissions($config);
-			$menuPath = $this->getMenuPath($config);
+			$registryName = $config['name'] ?? ucfirst(str_replace('_', ' ', $type));
+			$menuSelection = $this->getMenuSelection($config);
+			$this->setAppHeader($registryName);
 
 			$componentHtml = $this->twig->render('@views/registry/list/registry_list.twig', [
 				'layout' => '@views/_bare.twig',
 				'registry_type' => $type,
-				'registry_name' => $config['name'] ?? ucfirst(str_replace('_', ' ', $type)),
+				'registry_name' => $registryName,
 				'permissions' => $permissions,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, $menuPath);
+			$html = $this->legacyView->render($componentHtml, 'booking', $menuSelection);
 
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
@@ -79,17 +82,20 @@ class RegistryViewController
 				return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
 			}
 
-			$menuPath = $this->getMenuPath($config);
+			$registryName = $config['name'] ?? ucfirst(str_replace('_', ' ', $type));
+			$menuSelection = $this->getMenuSelection($config);
+			$actionLabel = $isNew ? lang('add') : lang('Edit');
+			$this->setAppHeader($registryName, $actionLabel);
 
 			$componentHtml = $this->twig->render('@views/registry/edit/registry_edit.twig', [
 				'layout' => '@views/_bare.twig',
 				'registry_type' => $type,
-				'registry_name' => $config['name'] ?? ucfirst(str_replace('_', ' ', $type)),
+				'registry_name' => $registryName,
 				'item_id' => $id,
 				'is_new' => $isNew,
 			]);
 
-			$html = $this->legacyView->render($componentHtml, $menuPath);
+			$html = $this->legacyView->render($componentHtml, 'booking', $menuSelection);
 
 			$response->getBody()->write($html);
 			return $response->withHeader('Content-Type', 'text/html');
@@ -121,11 +127,22 @@ class RegistryViewController
 		];
 	}
 
-	private function getMenuPath(array $config): array
+	private function getMenuSelection(array $config): string
 	{
 		if (!empty($config['menu_selection'])) {
-			return explode('::', $config['menu_selection']);
+			return $config['menu_selection'];
 		}
-		return ['booking', 'settings'];
+		return 'booking::settings';
+	}
+
+	private function setAppHeader(string $registryName, string $action = ''): void
+	{
+		$flags = Settings::getInstance()->get('flags');
+		$header = lang('booking') . '::' . $registryName;
+		if ($action) {
+			$header .= '::' . $action;
+		}
+		$flags['app_header'] = $header;
+		Settings::getInstance()->set('flags', $flags);
 	}
 }

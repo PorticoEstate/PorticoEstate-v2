@@ -13,6 +13,7 @@
 		name: '{{ registry_name|e('js') }}',
 		schemaUrl: '/booking/registry/{{ registry_type|e('js') }}/schema',
 		dataUrl: '/booking/registry/{{ registry_type|e('js') }}',
+		downloadUrl: '/booking/registry/{{ registry_type|e('js') }}/download',
 		editBaseUrl: '/booking/view/registry/{{ registry_type|e('js') }}/',
 		addUrl: '/booking/view/registry/{{ registry_type|e('js') }}/add',
 		permissions: {
@@ -30,7 +31,9 @@
 			emptyTable: '{{ lang("No entries found")|e('js') }}',
 			yes: '{{ lang("common.yes")|e('js') }}',
 			no: '{{ lang("common.no")|e('js') }}',
-			all: '{{ lang("All")|e('js') }}'
+			all: '{{ lang("All")|e('js') }}',
+			download: '{{ lang("booking.download")|e('js') }}',
+			columns: '{{ lang("booking.columns")|e('js') }}'
 		}
 	};
 </script>

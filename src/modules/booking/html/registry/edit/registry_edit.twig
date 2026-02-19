@@ -3,6 +3,7 @@
 {% block title %}{{ is_new ? lang('add') : lang('Edit') }} — {{ registry_name }}{% endblock %}
 
 {% block styles %}
+{{ add_style(modules_url ~ '/phpgwapi/js/summernote/dist/summernote-lite.min.css') }}
 <style>{{ source('@views/registry/edit/registry_edit.css') }}</style>
 {% endblock %}
 
@@ -25,6 +26,8 @@
 {% endblock %}
 
 {% block scripts %}
+{{ add_script(modules_url ~ '/phpgwapi/js/summernote/dist/summernote-lite.min.js') }}
+{{ add_script(modules_url ~ '/phpgwapi/js/summernote/dist/lang/summernote-nb-NO.min.js') }}
 <script>
 	window.__registryEdit = {
 		type: '{{ registry_type|e('js') }}',

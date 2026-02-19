@@ -1029,3 +1029,9 @@ save_error	booking	nn	Feil ved lagring
 building_title	booking	nn	Bygning
 show_all_resources	booking	nn	Vis alle rom
 building_preview	booking	nn	Førehandsvisning
+edit_in_new_window	booking	nn	Rediger i nytt vindauge
+columns	booking	nn	Kolonnar
+download	booking	nn	Last ned
+webservice host	booking	nn	WebService-vert
+organization name	booking	nn	Organisasjonsnamn
+percent	booking	nn	Prosent

@@ -47,11 +47,20 @@ class MenuController
 	 */
 	private static function getReplacements(): array
 	{
-		return [
+		$replacements = [
 			'navigation.buildings.children.documents' => [
 				'url' => \phpgw::link('/booking/view/buildings/documents'),
 			],
 		];
+
+		// Override legacy uigeneric URLs with modern registry routes
+		foreach (RegistryMenuConfig::getEntries() as $type => $entry) {
+			$replacements[$entry['menu_path']] = [
+				'url' => \phpgw::link(RegistryMenuConfig::url($type)),
+			];
+		}
+
+		return $replacements;
 	}
 
 	/**

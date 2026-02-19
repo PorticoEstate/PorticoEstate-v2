@@ -7,6 +7,7 @@ use App\modules\phpgwapi\helpers\TwigHelper;
 use App\modules\phpgwapi\security\Acl;
 use App\modules\phpgwapi\services\Settings;
 use App\modules\booking\models\BookingGenericRegistry;
+use App\modules\booking\viewcontrollers\RegistryMenuConfig;
 use App\helpers\ResponseHelper;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -42,14 +43,14 @@ class RegistryViewController
 			}
 
 			$permissions = $this->getPermissions($config);
-			$registryName = $config['name'] ?? ucfirst(str_replace('_', ' ', $type));
-			$menuSelection = $this->getMenuSelection($config);
-			$this->setAppHeader($registryName);
+			$displayName = $this->getDisplayName($type, $config);
+			$menuSelection = $this->getMenuSelection($type, $config);
+			$this->setAppHeader($displayName);
 
 			$componentHtml = $this->twig->render('@views/registry/list/registry_list.twig', [
 				'layout' => '@views/_bare.twig',
 				'registry_type' => $type,
-				'registry_name' => $registryName,
+				'registry_name' => $displayName,
 				'permissions' => $permissions,
 			]);
 
@@ -82,15 +83,15 @@ class RegistryViewController
 				return ResponseHelper::sendErrorResponse(['error' => 'Permission denied'], 403);
 			}
 
-			$registryName = $config['name'] ?? ucfirst(str_replace('_', ' ', $type));
-			$menuSelection = $this->getMenuSelection($config);
+			$displayName = $this->getDisplayName($type, $config);
+			$menuSelection = $this->getMenuSelection($type, $config);
 			$actionLabel = $isNew ? lang('add') : lang('Edit');
-			$this->setAppHeader($registryName, $actionLabel);
+			$this->setAppHeader($displayName, $actionLabel);
 
 			$componentHtml = $this->twig->render('@views/registry/edit/registry_edit.twig', [
 				'layout' => '@views/_bare.twig',
 				'registry_type' => $type,
-				'registry_name' => $registryName,
+				'registry_name' => $displayName,
 				'item_id' => $id,
 				'is_new' => $isNew,
 			]);
@@ -127,18 +128,31 @@ class RegistryViewController
 		];
 	}
 
-	private function getMenuSelection(array $config): string
+	private function getMenuSelection(string $type, array $config): string
 	{
+		$entry = RegistryMenuConfig::get($type);
+		if ($entry) {
+			return $entry['menu_selection'];
+		}
 		if (!empty($config['menu_selection'])) {
 			return $config['menu_selection'];
 		}
 		return 'booking::settings';
 	}
 
-	private function setAppHeader(string $registryName, string $action = ''): void
+	private function getDisplayName(string $type, array $config): string
+	{
+		$entry = RegistryMenuConfig::get($type);
+		if ($entry) {
+			return lang($entry['text_key']);
+		}
+		return $config['name'] ?? ucfirst(str_replace('_', ' ', $type));
+	}
+
+	private function setAppHeader(string $displayName, string $action = ''): void
 	{
 		$flags = Settings::getInstance()->get('flags');
-		$header = lang('booking') . '::' . $registryName;
+		$header = lang('booking') . '::' . $displayName;
 		if ($action) {
 			$header .= '::' . $action;
 		}

@@ -4,6 +4,13 @@
   "dependencies": {
     "@digdir/designsystemet-css": "^1.11.0",
     "@digdir/designsystemet-web": "^0.0.1",
-    "@porticoestate/design-tokens": "https://github.com/PorticoEstate/digdir-design-tokens.git"
+    "@porticoestate/design-tokens": "https://github.com/PorticoEstate/digdir-design-tokens.git",
+    "blueimp-file-upload": "^10.32.0",
+    "jqtree": "^1.8.11",
+    "jquery": "^4.0.0",
+    "jquery-migrate": "^4.0.2",
+    "jquery-ui": "^1.14.2",
+    "jstree": "^3.3.17",
+    "responsive-tabs": "^1.6.3"
   }
 }

@@ -52,7 +52,7 @@ $app->get('/assets/design-tokens/{file:.*\\.css}', function (Request $request, R
 		->withHeader('Cache-Control', 'public, max-age=3600');
 });
 
-// Serve whitelisted node_modules JS files for ESM import maps
+// Serve whitelisted node_modules files (JS, CSS, images)
 $app->get('/assets/npm/{path:.*}', function (Request $request, Response $response, array $args)
 {
 	$allowedPrefixes = [
@@ -60,6 +60,14 @@ $app->get('/assets/npm/{path:.*}', function (Request $request, Response $respons
 		'@floating-ui/',
 		'@u-elements/',
 		'invokers-polyfill/',
+		'jquery/',
+		'jquery-migrate/',
+		'jquery-ui/',
+		'jstree/',
+		'blueimp-file-upload/',
+		'blueimp-tmpl/',
+		'jqtree/',
+		'responsive-tabs/',
 	];
 
 	$path = $args['path'] ?? '';
@@ -87,9 +95,21 @@ $app->get('/assets/npm/{path:.*}', function (Request $request, Response $respons
 		return $response->withStatus(404);
 	}
 
+	$contentTypes = [
+		'js'  => 'application/javascript',
+		'mjs' => 'application/javascript',
+		'css' => 'text/css',
+		'png' => 'image/png',
+		'gif' => 'image/gif',
+		'svg' => 'image/svg+xml',
+		'map' => 'application/json',
+	];
+	$ext = strtolower(pathinfo($realPath, PATHINFO_EXTENSION));
+	$contentType = $contentTypes[$ext] ?? 'application/octet-stream';
+
 	$response->getBody()->write(file_get_contents($realPath));
 	return $response
-		->withHeader('Content-Type', 'application/javascript')
+		->withHeader('Content-Type', $contentType)
 		->withHeader('Cache-Control', 'public, max-age=3600');
 });
 

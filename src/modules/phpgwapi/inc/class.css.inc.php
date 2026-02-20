@@ -42,6 +42,7 @@ class phpgwapi_css
 	 * because the css files are using relative paths
 	 */
 	var $external_files;
+	var $url_files = array();
 
 	/**
 	 * @var phpgwapi_css reference to singleton instance
@@ -116,6 +117,17 @@ class phpgwapi_css
 		$links = '';
 
 		$links .= "<!--CSS Imports from phpGW css class -->\n";
+
+		// Render URL-based files first (e.g. npm packages served via /assets/npm/)
+		$baseUrl = isset($this->serverSettings['webserver_url']) ? $this->serverSettings['webserver_url'] : '';
+		$token = isset($this->serverSettings['cache_refresh_token']) ? '?n=' . $this->serverSettings['cache_refresh_token'] : '';
+		if (!empty($this->url_files))
+		{
+			foreach ($this->url_files as $url)
+			{
+				$links .= "<link href=\"{$baseUrl}{$url}{$token}\" type=\"text/css\" rel=\"stylesheet\">\n";
+			}
+		}
 
 		if (!empty($this->files) && is_array($this->files))
 		{
@@ -216,6 +228,18 @@ HTML;
 		if (is_file(PHPGW_SERVER_ROOT . "/$file"))
 		{
 			$this->external_files[$file] = true;
+		}
+	}
+
+	/**
+	 * Add a CSS file by absolute URL path (e.g. /assets/npm/jquery-ui/dist/themes/base/jquery-ui.min.css).
+	 * These are rendered as-is without PHPGW_SERVER_ROOT prefix.
+	 */
+	function add_url_file($url)
+	{
+		if (!in_array($url, $this->url_files))
+		{
+			$this->url_files[] = $url;
 		}
 	}
 }

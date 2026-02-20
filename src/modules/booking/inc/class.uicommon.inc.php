@@ -1076,7 +1076,7 @@ abstract class booking_uicommon extends phpgwapi_uicommon_jquery
 			$theme = 'ui-lightness';
 		}
 		$theme = 'redmond';
-		phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/css/{$theme}/jquery-ui.min.css");
+		phpgwapi_css::getInstance()->add_url_file("/assets/npm/jquery-ui/dist/themes/{$theme}/jquery-ui.min.css");
 
 		switch ($type)
 		{

@@ -63,10 +63,6 @@ class phpgwapi_jquery
 		//		$migration_test = true;
 		$migration_test = false;
 
-		$_jquery_core = 'jquery-4.0.0';
-		$_jquery_migrate = 'jquery-migrate-4.0.2.min';
-
-		$_jquery_ui	 = 'jquery-ui-1.14.2';
 		$_type		 = '.min'; // save some download
 
 		if (Settings::getInstance()->get('flags')['currentapp'] == 'bookingfrontend')
@@ -79,169 +75,132 @@ class phpgwapi_jquery
 		}
 		$load = array();
 
-		phpgwapi_js::getInstance()->validate_file('jquery', "js/{$_jquery_core}{$_type}", 'phpgwapi', false, array('combine' => true));
+		$js = phpgwapi_js::getInstance();
+		$css = phpgwapi_css::getInstance();
+
+		$js->add_url_file('/assets/npm/jquery/dist/jquery.min.js');
+
+		// Helper: load jQuery UI from npm
+		$_load_ui = function ($end_of_page = false) use ($js, $css, $theme)
+		{
+			$js->add_url_file('/assets/npm/jquery-ui/dist/jquery-ui.min.js', $end_of_page);
+		};
+		$_load_ui_css = function () use ($css, $theme)
+		{
+			$css->add_url_file("/assets/npm/jquery-ui/dist/themes/{$theme}/jquery-ui.min.css");
+			$css->add_url_file("/assets/npm/jquery-ui/dist/themes/{$theme}/theme.css");
+		};
 
 		switch ($widget)
 		{
 			case 'ui':
-				$load = array(
-					"ui/{$_jquery_ui}{$_type}",
-				);
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/css/{$theme}/jquery-ui.min.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/css/{$theme}/theme.css");
+				$_load_ui();
+				$_load_ui_css();
 				break;
 			case 'datepicker':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					"ui/{$_jquery_ui}{$_type}",
-					"ui/i18n/datepicker-{$userSettings['preferences']['common']['lang']}",
-				);
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/css/{$theme}/jquery-ui.min.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/css/{$theme}/theme.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/css/jquery-ui-timepicker-addon.css");
+				$_load_ui();
+				$js->add_url_file("/assets/npm/jquery-ui/ui/i18n/datepicker-{$userSettings['preferences']['common']['lang']}.js");
+				$_load_ui_css();
+				$css->add_external_file("phpgwapi/js/jquery/css/jquery-ui-timepicker-addon.css");
 				break;
 
 			case 'datetimepicker':
 				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
 					'datetimepicker' => array(
 						"js/jquery.datetimepicker.full{$_type}",
-						//					"i18n/DateTimePicker-i18n"
 					)
 				);
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/datetimepicker/css/jquery.datetimepicker.min.css");
+				$css->add_external_file("phpgwapi/js/datetimepicker/css/jquery.datetimepicker.min.css");
 				break;
 
 			case 'validator':
 				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					'form-validator' => array("jquery.form-validator{$_type}") //, "lang/{$userSettings['preferences']['common']['lang']}")
+					'form-validator' => array("jquery.form-validator{$_type}")
 				);
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/form-validator/theme-default.css");
+				$css->add_external_file("phpgwapi/js/form-validator/theme-default.css");
 				break;
 
 			case 'menu':
 			case 'autocomplete':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					"ui/{$_jquery_ui}{$_type}",
-				);
-
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/css/{$theme}/jquery-ui.min.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/css/{$theme}/theme.css");
-
+				$_load_ui();
+				$_load_ui_css();
 				break;
 
 			case 'tabview':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					//	"tabs/jquery.responsiveTabs",
-					"tabs/jquery.responsiveTabs{$_type}",
-					//				'common'
-				);
-				phpgwapi_js::getInstance()->validate_file('jquery', "common", 'phpgwapi', false, array('combine' => true));
-
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/tabs/css/responsive-tabs.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/tabs/css/style.css");
-
+				$js->add_url_file('/assets/npm/responsive-tabs/js/jquery.responsiveTabs.min.js');
+				$js->validate_file('jquery', "common", 'phpgwapi', false, array('combine' => true));
+				$css->add_url_file('/assets/npm/responsive-tabs/css/responsive-tabs.css');
+				$css->add_external_file("phpgwapi/js/jquery/tabs/css/jquery-responsive-tabs.css");
 				break;
+
 			case 'mmenu':
 				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
 					"mmenu/src/js/jquery.mmenu.min.all"
 				);
-
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/mmenu/src/css/jquery.mmenu.all.css");
-
+				$css->add_external_file("phpgwapi/js/jquery/mmenu/src/css/jquery.mmenu.all.css");
 				break;
 
 			case 'treeview':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					"treeview/jstree{$_type}"
-				);
-
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/treeview/themes/default/style.min.css");
-
+				$js->add_url_file('/assets/npm/jstree/dist/jstree.min.js');
+				$css->add_url_file('/assets/npm/jstree/dist/themes/default/style.min.css');
 				break;
 
 			case 'jqtree':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					"jqTree/tree.jquery",
-				);
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/jqTree/jqtree.css");
+				$js->add_url_file('/assets/npm/jqtree/tree.jquery.js');
+				$css->add_url_file('/assets/npm/jqtree/jqtree.css');
 				break;
 
 			case 'numberformat':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					"number-format/jquery.number{$_type}"
-				);
-
+				$js->validate_file('jquery', 'jquery.number', 'phpgwapi');
 				break;
-			case 'layout':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					//				"ui/{$_jquery_ui}{$_type}",
-					//				'layout' => array("jquery.layout{$_type}", "plugins/jquery.layout.state")
-				);
-				phpgwapi_js::getInstance()->validate_file('jquery', "ui/{$_jquery_ui}{$_type}", 'phpgwapi', true, array('combine' => true));
-				phpgwapi_js::getInstance()->validate_file('layout', "jquery.layout{$_type}", 'phpgwapi', true, array('combine' => true));
-				phpgwapi_js::getInstance()->validate_file('layout', "plugins/jquery.layout.state", 'phpgwapi', true, array('combine' => true));
 
+			case 'layout':
+				$_load_ui(true);
+				$js->validate_file('layout', "jquery.layout{$_type}", 'phpgwapi', true, array('combine' => true));
+				$js->validate_file('layout', "plugins/jquery.layout.state", 'phpgwapi', true, array('combine' => true));
 				break;
 
 			case 'contextMenu':
 				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
 					'contextMenu' => array("jquery.contextMenu{$_type}")
 				);
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/contextMenu/jquery.contextMenu.min.css");
+				$css->add_external_file("phpgwapi/js/contextMenu/jquery.contextMenu.min.css");
 				break;
 
 			case 'chart':
 				$load = array(
 					'chart' => array("chart.umd{$_type}")
 				);
-
 				break;
 
 			case 'print':
 				$load = array(
 					"print/jQuery.print.min"
 				);
-
 				break;
 
 			case 'file-upload':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					"ui/{$_jquery_ui}{$_type}",
-					"file-upload/js/tmpl{$_type}",
-					"file-upload/js/jquery.fileupload",
-					"file-upload/js/jquery.fileupload-process",
-					"file-upload/js/jquery.fileupload-validate",
-					"file-upload/js/jquery.fileupload-ui",
-					"file-upload/js/jquery.fileupload-jquery-ui",
-				);
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-ui.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-custom.css");
+				$_load_ui();
+				$js->add_url_file('/assets/npm/blueimp-tmpl/js/tmpl.min.js');
+				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload.js');
+				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-process.js');
+				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-validate.js');
+				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-ui.js');
+				// jquery.fileupload-jquery-ui.js not in npm package, keep as static
+				$load = array("file-upload/js/jquery.fileupload-jquery-ui");
+				$css->add_url_file('/assets/npm/blueimp-file-upload/css/jquery.fileupload.css');
+				$css->add_url_file('/assets/npm/blueimp-file-upload/css/jquery.fileupload-ui.css');
+				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-custom.css");
 				break;
 
 			case 'file-upload-minimum':
-				$load = array(
-					//				"js/{$_jquery_core}{$_type}",
-					"ui/{$_jquery_ui}{$_type}",
-					"file-upload/js/jquery.fileupload",
-					"file-upload/js/jquery.fileupload-process",
-					"file-upload/js/jquery.fileupload-validate",
-				);
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-ui.css");
-				phpgwapi_css::getInstance()->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-custom.css");
-
+				$_load_ui();
+				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload.js');
+				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-process.js');
+				$js->add_url_file('/assets/npm/blueimp-file-upload/js/jquery.fileupload-validate.js');
+				$css->add_url_file('/assets/npm/blueimp-file-upload/css/jquery.fileupload.css');
+				$css->add_url_file('/assets/npm/blueimp-file-upload/css/jquery.fileupload-ui.css');
+				$css->add_external_file("phpgwapi/js/jquery/file-upload/css/jquery.fileupload-custom.css");
 				break;
 
 			case 'bootstrap-multiselect':
@@ -361,8 +320,7 @@ class phpgwapi_jquery
 		}
 		if ($migration_test)
 		{
-			//_debug_array($_jquery_migrate);
-			phpgwapi_js::getInstance()->validate_file('jquery', "js/$_jquery_migrate");
+			phpgwapi_js::getInstance()->add_url_file('/assets/npm/jquery-migrate/dist/jquery-migrate.min.js');
 		}
 
 		return "phpgroupware.{$widget}" . ++self::$counter;

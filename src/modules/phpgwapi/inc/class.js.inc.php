@@ -83,6 +83,8 @@ class phpgwapi_js
 	 * because the js files are using relative paths
 	 */
 	protected $external_end_files;
+	protected $url_files = array();
+	protected $url_end_files = array();
 	protected $webserver_url;
 	protected $serverSettings;
 	protected $cache_refresh_token = '';
@@ -173,11 +175,13 @@ class phpgwapi_js
 		{
 			$files			= $this->end_files;
 			$external_files = $this->external_end_files;
+			$url_files		= $this->url_end_files;
 		}
 		else
 		{
 			$files			= $this->files;
 			$external_files = $this->external_files;
+			$url_files		= $this->url_files;
 		}
 
 
@@ -210,6 +214,16 @@ class phpgwapi_js
 
 		$links	= "<!--JS Imports from phpGW javascript class -->\n";
 		$_links = '';
+
+		// Render URL-based files first (e.g. npm packages served via /assets/npm/)
+		$baseUrl = isset($this->serverSettings['webserver_url']) ? $this->serverSettings['webserver_url'] : '';
+		if (!empty($url_files))
+		{
+			foreach ($url_files as $url)
+			{
+				$links .= "<script src=\"{$baseUrl}{$url}{$this->cache_refresh_token}\"></script>\n";
+			}
+		}
 
 		//            $links = "<!--JS Imports from phpGW javascript class -->\n";
 		//			$_links = '';
@@ -562,6 +576,28 @@ HTML;
 			else
 			{
 				$this->external_files[$_file] = $config;
+			}
+		}
+	}
+
+	/**
+	 * Add a JS file by absolute URL path (e.g. /assets/npm/jquery/dist/jquery.min.js).
+	 * These are rendered as-is without PHPGW_SERVER_ROOT prefix.
+	 */
+	function add_url_file($url, $end_of_page = false)
+	{
+		if ($end_of_page)
+		{
+			if (!in_array($url, $this->url_end_files))
+			{
+				$this->url_end_files[] = $url;
+			}
+		}
+		else
+		{
+			if (!in_array($url, $this->url_files))
+			{
+				$this->url_files[] = $url;
 			}
 		}
 	}

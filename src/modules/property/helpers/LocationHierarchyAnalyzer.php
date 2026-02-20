@@ -927,7 +927,9 @@ class LocationHierarchyAnalyzer
 		{
 			if (empty($row['bygningsnr']))
 			{
-				$key = "{$row['loc1']}_{$row['street_id']}_{$row['street_number']}";
+				$street_number = trim(preg_replace('/\s+/', ' ', (string)$row['street_number']));
+				$street_number = preg_replace('/\s*[A-Za-z]$/', '', $street_number);
+				$key = "{$row['loc1']}_{$row['street_id']}_{$street_number}";
 				if (!isset($seen[$key]))
 				{
 					$seen[$key] = "synthetic_{$synthetic}";

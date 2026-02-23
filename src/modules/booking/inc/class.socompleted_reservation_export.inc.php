@@ -2226,6 +2226,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 			$voucher_type = str_pad(substr(strtoupper('FK'), 0, 2), 2, ' ');
 		}
 
+		$souser = CreateObject('booking.souser');
 		$stored_header = array('tekst4' => false);
 		$line_no = 0;
 		$header_count = 0;
@@ -2234,6 +2235,7 @@ class booking_socompleted_reservation_export extends booking_socommon
 		$log_customer_nr = '';
 		$log_buidling = '';
 		$customer_number = '';
+		$contact_name = '';
 
 		$internal = false;
 
@@ -2287,6 +2289,38 @@ class booking_socompleted_reservation_export extends booking_socommon
 			$customer_number =  '';
 			$payer_organization_number = '';
 
+			/**
+			 * Get contact person
+			 */
+			switch ($reservation['reservation_type'])
+			{
+				case 'allocation':
+					if (!empty($reservation['organization_id']))
+					{
+						$org = $this->organization_bo->read_single($reservation['organization_id']);
+						if (!empty($org['contacts'][0]['name']))
+						{
+							$contact_name = $org['contacts'][0]['name'];
+						}
+					}
+					break;
+				case 'booking':
+					if (!empty($test['group_id']))
+					{
+						$group = CreateObject('booking.sogroup')->read_single($test['group_id']);
+						if (!empty($group['contacts'][0]['name']))
+						{
+							$contact_name = $group['contacts'][0]['name'];
+						}
+					}
+					break;
+				case 'event':
+					$contact_name = $test['contact_name'];
+					break;
+				default:
+					break;
+			}
+
 			if (!empty($reservation['organization_id']))
 			{
 				$org = $this->organization_bo->read_single($reservation['organization_id']);
@@ -2319,6 +2353,35 @@ class booking_socompleted_reservation_export extends booking_socommon
 				}
 			}
 
+
+			//fallback to person;
+			if (empty($street) && $test['customer_identifier_type'] == "ssn" && !empty($test['customer_ssn']))
+			{
+				//get person
+				$person_id = $souser->get_user_id($test['customer_ssn']);
+				$person = $souser->read_single($person_id);
+				$contact_name = $person['name'];
+				$street = $person['street'];
+				$zip_code = $person['zip_code'];
+				$city = $person['city'];
+			}
+			elseif (empty($street) && $test['customer_identifier_type'] == "organization_number" && !empty($test['customer_organization_number']))
+			{
+				//get person
+				$org = $this->organization_bo->read_single($reservation['organization_id']);
+				if (!empty($org['contacts'][0]['name']))
+				{
+					$contact_name = $org['contacts'][0]['name'];
+				}
+				if (!empty($org['id']))
+				{
+					$street = $org['street'];
+					$zip_code = $org['zip_code'];
+					$city = $org['city'];
+				}
+			}
+
+
 			if ($type == 'internal')
 			{
 				//Nøkkelfelt, kundens personnr/orgnr.
@@ -2328,6 +2391,15 @@ class booking_socompleted_reservation_export extends booking_socommon
 			{
 				//Nøkkelfelt, kundens personnr/orgnr. - men differensiert for undergrupper innenfor samme orgnr
 				$check_customer_identifier = $this->get_customer_identifier_value_for($reservation) . '::' . $customer_number;
+			}
+
+			if (strlen($this->get_customer_identifier_value_for($reservation)) > 9)
+			{
+				$name = $contact_name;
+			}
+			else
+			{
+				$name = $reservation['organization_name'];
 			}
 
 			$purchase_order = $this->sopurchase_order->get_purchase_order(0, $reservation['reservation_type'], $reservation['reservation_id']);
@@ -2446,15 +2518,13 @@ class booking_socompleted_reservation_export extends booking_socommon
 				if ($type == 'internal')
 				{
 					$header['tekst4'] = str_pad(substr($this->config_data['organization_value'], 0, 12), 12, ' ');
-					//referansenr/customer_number
-					$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $customer_number), 0, 15), 15, ' ');
-					//					$header['ext_ord_ref'] = str_pad(substr($this->get_customer_identifier_value_for($reservation), 0, 15), 15, ' ');
 				}
 				else
 				{
 					$header['tekst4'] = str_pad(substr($this->get_customer_identifier_value_for($reservation), 0, 12), 12, ' ');
-					$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $customer_number), 0, 15), 15, ' ');
 				}
+				//referansenr/customer_number
+				$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $contact_name), 0, 15), 15, ' ');
 
 				/**
 				 * Skille mellom hoved-organisasjonen og betalende underliggende organisasjon
@@ -2978,6 +3048,7 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 		$voucher_type = str_pad(substr(strtoupper('FK'), 0, 25), 25, ' ');
 	}
 
+	$souser = CreateObject('booking.souser');
 	$stored_header = array('tekst4' => false);
 	$line_no = 0;
 	$header_count = 0;
@@ -2986,6 +3057,7 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 	$log_customer_nr = '';
 	$log_buidling = '';
 	$customer_number = '';
+	$contact_name = '';
 
 	$internal = false;
 
@@ -3039,6 +3111,39 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 		$customer_number =  '';
 		$payer_organization_number = '';
 
+		/**
+		 * Get contact person
+		 */
+		switch ($reservation['reservation_type'])
+		{
+			case 'allocation':
+				if (!empty($reservation['organization_id']))
+				{
+					$org = $this->organization_bo->read_single($reservation['organization_id']);
+					if (!empty($org['contacts'][0]['name']))
+					{
+						$contact_name = $org['contacts'][0]['name'];
+					}
+				}
+				break;
+			case 'booking':
+				if (!empty($test['group_id']))
+				{
+					$group = CreateObject('booking.sogroup')->read_single($test['group_id']);
+					if (!empty($group['contacts'][0]['name']))
+					{
+						$contact_name = $group['contacts'][0]['name'];
+					}
+				}
+				break;
+			case 'event':
+				$contact_name = $test['contact_name'];
+				break;
+			default:
+				break;
+		}
+
+
 		if (!empty($reservation['organization_id']))
 		{
 			$org = $this->organization_bo->read_single($reservation['organization_id']);
@@ -3065,6 +3170,34 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 			}
 		}
 
+		//fallback to person;
+		if (empty($street) && $test['customer_identifier_type'] == "ssn" && !empty($test['customer_ssn']))
+		{
+			//get person
+			$person_id = $souser->get_user_id($test['customer_ssn']);
+			$person = $souser->read_single($person_id);
+			$contact_name = $person['name'];
+			$street = $person['street'];
+			$zip_code = $person['zip_code'];
+			$city = $person['city'];
+		}
+		elseif (empty($street) && $test['customer_identifier_type'] == "organization_number" && !empty($test['customer_organization_number']))
+		{
+			//get person
+			$org = $this->organization_bo->read_single($reservation['organization_id']);
+			if (!empty($org['contacts'][0]['name']))
+			{
+				$contact_name = $org['contacts'][0]['name'];
+			}
+			if (!empty($org['id']))
+			{
+				$street = $org['street'];
+				$zip_code = $org['zip_code'];
+				$city = $org['city'];
+			}
+		}
+
+
 		if ($type == 'internal')
 		{
 			//Nøkkelfelt, kundens personnr/orgnr.
@@ -3074,6 +3207,15 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 		{
 			//Nøkkelfelt, kundens personnr/orgnr. - men differensiert for undergrupper innenfor samme orgnr
 			$check_customer_identifier = $this->get_customer_identifier_value_for($reservation) . '::' . $customer_number;
+		}
+
+		if (strlen($this->get_customer_identifier_value_for($reservation)) > 9)
+		{
+			$name = $contact_name;
+		}
+		else
+		{
+			$name = $reservation['organization_name'];
 		}
 
 		$purchase_order = $this->sopurchase_order->get_purchase_order(0, $reservation['reservation_type'], $reservation['reservation_id']);
@@ -3192,14 +3334,13 @@ public function format_agresso_55(array &$reservations, array $account_codes, $s
 			if ($type == 'internal')
 			{
 				$header['tekst4'] = str_pad(substr($this->config_data['organization_value'], 0, 100), 100, ' ');
-				//referansenr/customer_number
-				$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $customer_number), 0, 100), 100, ' ');
 			}
 			else
 			{
 				$header['tekst4'] = str_pad(substr($this->get_customer_identifier_value_for($reservation), 0, 100), 100, ' ');
-				$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $customer_number), 0, 100), 100, ' ');
 			}
+			//referansenr/customer_number
+			$header['ext_ord_ref'] = str_pad(substr(iconv("utf-8", "ISO-8859-1//TRANSLIT", $contact_name), 0, 100), 100, ' ');
 
 			/**
 			 * Skille mellom hoved-organisasjonen og betalende underliggende organisasjon

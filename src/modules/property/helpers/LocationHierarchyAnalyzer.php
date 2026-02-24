@@ -300,6 +300,8 @@ class LocationHierarchyAnalyzer
 				$this->debug("Processing loc1=$loc1, loc2=$loc2 with " . count($streetkeys) . " streetkeys");
 				$this->debug("existingLoc3List: " . json_encode($existingLoc3List));
 
+				// First pass: assign loc3 based on dominant placement to minimize moves
+				$tempLoc3Assignments = []; // streetkey => assigned_loc3
 				foreach ($streetkeys as $streetkey)
 				{
 					$loc3 = null;
@@ -369,7 +371,26 @@ class LocationHierarchyAnalyzer
 						$assignedLoc3InLoc2[] = $loc3;
 					}
 
-					$requiredLoc3[$loc1][$loc2][$streetkey] = $loc3;
+					$tempLoc3Assignments[$streetkey] = $loc3;
+				}
+
+				// Second pass: renumber loc3 values to be sequential starting from 01
+				// This ensures we use 01-06 for 6 addresses, not 01,02,04,06,08,10
+				$uniqueLoc3Values = array_unique(array_values($tempLoc3Assignments));
+				sort($uniqueLoc3Values, SORT_STRING);
+				$loc3Renumbering = []; // old_loc3 => new_sequential_loc3
+				$nextSequentialLoc3 = 1;
+				foreach ($uniqueLoc3Values as $oldLoc3)
+				{
+					$loc3Renumbering[$oldLoc3] = str_pad($nextSequentialLoc3, 2, '0', STR_PAD_LEFT);
+					$nextSequentialLoc3++;
+				}
+
+				// Apply renumbering to final assignments
+				foreach ($tempLoc3Assignments as $streetkey => $oldLoc3)
+				{
+					$requiredLoc3[$loc1][$loc2][$streetkey] = $loc3Renumbering[$oldLoc3];
+					$this->debug("  final: streetkey=$streetkey: loc3={$oldLoc3} renumbered to {$loc3Renumbering[$oldLoc3]}");
 				}
 			}
 		}

@@ -8099,3 +8099,18 @@ function booking_upgrade0_2_117($oProc)
 		return $currentver;
 	}
 }
+
+function booking_upgrade0_2_118($oProc)
+{
+	$oProc->m_odb->transaction_begin();
+
+	// Fix: bb_application.from_ should be nullable - it gets populated from bb_application_date
+	// and is not available at initial insert time for partial applications
+	$oProc->m_odb->query("ALTER TABLE bb_application ALTER COLUMN from_ DROP NOT NULL");
+
+	if ($oProc->m_odb->transaction_commit())
+	{
+		$currentver = '0.2.119';
+		return $currentver;
+	}
+}

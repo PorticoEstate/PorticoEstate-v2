@@ -22,6 +22,7 @@ use App\modules\phpgwapi\services\setup\Html;
 use App\helpers\Template;
 use App\modules\phpgwapi\services\setup\SetupTranslation;
 use App\modules\phpgwapi\services\Sanitizer;
+use App\modules\phpgwapi\services\Twig;
 
 class Applications
 {
@@ -34,6 +35,7 @@ class Applications
 	private $html;
 	private $setup;
 	private $setup_tpl;
+	private $twig;
 
 	public function __construct()
 	{
@@ -49,11 +51,12 @@ class Applications
 		$this->process = new Process();
 		$this->html = new Html();
 		$this->setup = new Setup();
+		$this->twig = Twig::getInstance();
 
 		$flags = array(
 			'noheader' 		=> True,
 			'nonavbar'		=> True,
-			'currentapp'	=> 'home',
+			'currentapp'	=> 'setup',
 			'noapi'			=> True,
 			'nocachecontrol' => True
 		);
@@ -66,7 +69,7 @@ class Applications
 			Header('Location: ../setup');
 			exit;
 		}
-
+/*
 		$tpl_root = $this->html->setup_tpl_dir('setup');
 		$this->setup_tpl = new Template($tpl_root);
 		$this->setup_tpl->set_file(array(
@@ -94,6 +97,7 @@ class Applications
 		$this->setup_tpl->set_var('lang_cookies_must_be_enabled', $this->setup->lang('<b>NOTE:</b> You must have cookies enabled to use setup and header admin!'));
 
 		$this->html->set_tpl($this->setup_tpl);
+		*/
 	}
 
 	/**
@@ -137,7 +141,6 @@ class Applications
 
 	public function index()
 	{
-
 		if (\Sanitizer::get_var('cancel', 'bool', 'POST'))
 		{
 			Header('Location: ../setup');
@@ -158,23 +161,42 @@ class Applications
 		$setup_data['stage']['db'] = $this->detection->check_db();
 
 		$setup_info = $this->detection->get_versions();
-		//var_dump($setup_info);exit;
 		$setup_info = $this->detection->get_db_versions($setup_info);
-		//var_dump($setup_info);exit;
 		$setup_info = $this->detection->compare_versions($setup_info);
-		//var_dump($setup_info);exit;
 		$setup_info = $this->detection->check_depends($setup_info);
-		//var_dump($setup_info);exit;
 		ksort($setup_info);
 
 		$db_config = $this->db->get_config();
 		$header = '';
 
+		// Common template variables
+		$templateVars = [
+			'check' => 'stock_form-checkbox.png',
+			'install_all' => $this->setup->lang('Install All'),
+			'upgrade_all' => $this->setup->lang('Upgrade All'),
+			'remove_all' => $this->setup->lang('Remove All'),
+			'debug' => $DEBUG,
+			'app_info' => $this->setup->lang('Application Name'),
+			'app_status' => $this->setup->lang('Application Status'),
+			'app_currentver' => $this->setup->lang('Current Version'),
+			'app_version' => $this->setup->lang('Available Version'),
+			'app_install' => $this->setup->lang('Install'),
+			'app_remove' => $this->setup->lang('Remove'),
+			'app_upgrade' => $this->setup->lang('Upgrade'),
+			'app_resolve' => $this->setup->lang('Resolve'),
+			'submit' => $this->setup->lang('Save'),
+			'cancel' => $this->setup->lang('Cancel')
+		];
+
 		if (\Sanitizer::get_var('submit', 'string', 'POST'))
 		{
 			$header .= $this->html->get_header($this->setup->lang('Application Management'), False, 'config', $this->db->get_domain() . '(' . $db_config['db_type'] . ')');
-			$this->setup_tpl->set_var('description', $this->setup->lang('App install/remove/upgrade') . ':');
-			$header .= $this->setup_tpl->fp('out', 'header');
+			
+			// Use renderBlock for the header part
+			$headerVars = [
+				'description' => $this->setup->lang('App install/remove/upgrade') . ':'
+			];
+			$header .= $this->twig->renderBlock('applications.html.twig', 'header', $headerVars);
 
 			$appname = \Sanitizer::get_var('appname', 'string', 'POST');
 			$remove  = \Sanitizer::get_var('remove', 'string', 'POST');
@@ -186,7 +208,6 @@ class Applications
 				$this->process->init_process();
 			}
 
-			//$this->process->add_credential('property');
 			if (!empty($remove) && is_array($remove))
 			{
 				$this->process->oProc->m_odb->transaction_begin();
@@ -231,6 +252,7 @@ class Applications
 				$this->process->oProc->m_odb->transaction_commit();
 			}
 
+			// Process installs
 			if (!empty($install) && is_array($install))
 			{
 				$this->process->oProc->m_odb->transaction_begin();
@@ -261,7 +283,7 @@ class Applications
 							$this->setup->register_app($appname);
 							$header .=  '<li>' . $this->setup->lang('%1 registered', $this->setup->lang($appname)) . ".</li>\n";
 
-							// Default values has be processed - even for apps without tables - after register for locations::add to work
+							// Default values have to be processed - even for apps without tables - after register for locations::add to work
 							$terror = $this->process->default_records($terror, $DEBUG);
 							$header .=  '<li>' . $this->setup->lang('%1 default values processed', $this->setup->lang($appname)) . ".</li>\n";
 						}
@@ -287,6 +309,7 @@ class Applications
 				$this->process->oProc->m_odb->transaction_commit();
 			}
 
+			// Process upgrades
 			if (!empty($upgrade) && is_array($upgrade))
 			{
 				foreach ($upgrade as $appname => $key)
@@ -299,26 +322,22 @@ class Applications
 					if (isset($setup_info[$appname]['tables']))
 					{
 						$header .=  '<li>' . $this->setup->lang('%1 tables upgraded', $this->setup->lang($appname)) . ".</li>";
-						// The process_upgrade() function also handles registration
 					}
 					else
 					{
 						$header .=  '<li>' . $this->setup->lang('%1 upgraded', $this->setup->lang($appname)) . ".</li>";
 					}
 
-					// Sigurd sep 2010: very slow - run 'Manage Languages' from setup instead. 
-					//	$terror = $this->process->upgrade_langs($terror,$DEBUG);
-					//	echo '<li>' . $this->setup->lang('%1 translations upgraded', $this->setup->lang($appname)) . ".</li>\n</ul>\n";
 					$header .=  "<li>To upgrade languages - run <b>'Manage Languages'</b> from setup</li>\n</ul>\n";
 				}
 			}
 
 			$header .=  "<h3><a href=\"applications?debug={$DEBUG}\">" . $this->setup->lang('Done') . "</h3>\n";
-			$footer = $this->setup_tpl->fp('out', 'footer');
+			
+			// Render the footer using Twig
+			$footer = $this->twig->renderBlock('applications.html.twig', 'footer', ['footer_text' => '']);
 
 			return $header . $footer;
-
-			exit;
 		}
 		else
 		{
@@ -327,12 +346,18 @@ class Applications
 
 		$detail = \Sanitizer::get_var('detail', 'string', 'GET');
 		$resolve = \Sanitizer::get_var('resolve', 'string', 'GET');
+		
+		// Handle application detail view
 		if ($detail)
 		{
 			ksort($setup_info[$detail]);
 			$name = $this->setup->lang($setup_info[$detail]['name']);
-			$this->setup_tpl->set_var('description', "<h2>{$name}</h2>\n<ul>\n");
-			$header .= $this->setup_tpl->fp('out', 'header');
+			
+			// Use renderBlock for the header part with detail-specific description
+			$headerVars = [
+				'description' => "<h2>{$name}</h2>\n<ul>\n"
+			];
+			$header .= $this->twig->renderBlock('applications.html.twig', 'header', $headerVars);
 
 			$i = 1;
 			$details = '';
@@ -340,7 +365,7 @@ class Applications
 			{
 				switch ($key)
 				{
-						// ignore these ones
+					// ignore these ones
 					case 'application':
 					case 'app_group':
 					case 'app_order':
@@ -348,7 +373,7 @@ class Applications
 					case 'name':
 					case 'title':
 					case '':
-						continue 2; //switch is a looping structure in php - see php.net/continue - skwashd jan08
+						continue 2;
 
 					case 'tables':
 						$tblcnt = count((array)$setup_info[$detail][$key]);
@@ -420,25 +445,33 @@ class Applications
 						}
 				}
 
-				$i = $i % 2;
-				$this->setup_tpl->set_var('name', $key);
-				$this->setup_tpl->set_var('details', $val);
-				$details .= $this->setup_tpl->fp('out', 'detail');
-				++$i;
+				// Use renderBlock for each detail row
+				$detailVars = [
+					'name' => $key,
+					'details' => $val
+				];
+				$details .= $this->twig->renderBlock('applications.html.twig', 'detail', $detailVars);
 			}
-			$this->setup_tpl->set_var('footer_text', "</ul>\n<a href=\"applications?debug={$DEBUG}\">" . $this->setup->lang('Go back') . '</a>');
-			$footer = 	$this->setup_tpl->fp('out', 'footer');
+			
+			// Render the footer with "Go back" link
+			$footerVars = [
+				'footer_text' => "</ul>\n<a href=\"applications?debug={$DEBUG}\">" . $this->setup->lang('Go back') . '</a>'
+			];
+			$footer = $this->twig->renderBlock('applications.html.twig', 'footer', $footerVars);
 
 			return $header . $details . $footer;
-
-			exit;
 		}
+		// Handle problem resolution view
 		else if ($resolve)
 		{
 			$version  = \Sanitizer::get_var('version', 'string', 'GET');
 			$notables = \Sanitizer::get_var('notables', 'string', 'GET');
-			$this->setup_tpl->set_var('description', $this->setup->lang('Problem resolution') . ':');
-			$header .= $this->setup_tpl->fp('out', 'header');
+			
+			// Use renderBlock for the header part with resolve-specific description
+			$headerVars = [
+				'description' => $this->setup->lang('Problem resolution') . ':'
+			];
+			$header .= $this->twig->renderBlock('applications.html.twig', 'header', $headerVars);
 
 			if (\Sanitizer::get_var('post', 'string', 'GET'))
 			{
@@ -519,99 +552,102 @@ class Applications
 			}
 
 			$header .=  '<br /><a href="applications?debug=' . $DEBUG . '">' . $this->setup->lang('Go back') . '</a>';
-			$footer = $this->setup_tpl->fp('out', 'footer');
+			
+			// Render the footer
+			$footer = $this->twig->renderBlock('applications.html.twig', 'footer', []);
 
 			return $header . $footer;
-
 		}
 		else if (\Sanitizer::get_var('globals', 'string', 'GET'))
 		{
-			$this->setup_tpl->set_var('description', '<a href="applications?debug=' . $DEBUG . '">' . $this->setup->lang('Go back') . '</a>');
-			$header .= $this->setup_tpl->fp('out', 'header');
+			// Use renderBlock for the header part with a "Go back" link
+			$headerVars = [
+				'description' => '<a href="applications?debug=' . $DEBUG . '">' . $this->setup->lang('Go back') . '</a>'
+			];
+			$header .= $this->twig->renderBlock('applications.html.twig', 'header', $headerVars);
 
+			// Use renderBlock for detail entries
+			$detailVars1 = [
+				'name' => $this->setup->lang('application'),
+				'details' => $name
+			];
+			$detail = $this->twig->renderBlock('applications.html.twig', 'detail', $detailVars1);
 
-			$name = (isset($setup_info[$detail]['title']) ? $setup_info[$detail]['title'] : $this->setup->lang($setup_info[$detail]['name']));
-			$this->setup_tpl->set_var('name', $this->setup->lang('application'));
-			$this->setup_tpl->set_var('details', $name);
-			$this->setup_tpl->set_var('bg_color', 'th');
-			$detail = $this->setup_tpl->fp('out', 'detail');
-
-			$this->setup_tpl->set_var('bg_color', 'row_on');
-			$this->setup_tpl->set_var('details', $this->setup->lang('register_globals_' . $_GET['globals']));
-			$detail .= $this->setup_tpl->fp('out', 'detail');
-			$footer = $this->setup_tpl->pparse('out', 'footer');
-			//response
+			$detailVars2 = [
+				'details' => $this->setup->lang('register_globals_' . $_GET['globals'])
+			];
+			$detail .= $this->twig->renderBlock('applications.html.twig', 'detail', $detailVars2);
+			
+			$footer = $this->twig->renderBlock('applications.html.twig', 'footer', []);
+			
 			return $header . $detail . $footer;
-
-			exit;
 		}
 		else
 		{
-
-
-			$this->setup_tpl->set_var('description', $this->setup->lang('Select the desired action(s) from the available choices'));
-			$header .= $this->setup_tpl->fp('out', 'header');
-
-			$this->setup_tpl->set_var('appdata', $this->setup->lang('Application Data'));
-			$this->setup_tpl->set_var('actions', $this->setup->lang('Actions'));
-			$this->setup_tpl->set_var('action_url', '../applications');
-			$this->setup_tpl->set_var('app_info', $this->setup->lang('Application Name'));
-			$this->setup_tpl->set_var('app_status', $this->setup->lang('Application Status'));
-			$this->setup_tpl->set_var('app_currentver', $this->setup->lang('Current Version'));
-			$this->setup_tpl->set_var('app_version', $this->setup->lang('Available Version'));
-			$this->setup_tpl->set_var('app_install', $this->setup->lang('Install'));
-			$this->setup_tpl->set_var('app_remove', $this->setup->lang('Remove'));
-			$this->setup_tpl->set_var('app_upgrade', $this->setup->lang('Upgrade'));
-			$this->setup_tpl->set_var('app_resolve', $this->setup->lang('Resolve'));
-			$this->setup_tpl->set_var('check', 'stock_form-checkbox.png');
-			$this->setup_tpl->set_var('install_all', $this->setup->lang('Install All'));
-			$this->setup_tpl->set_var('upgrade_all', $this->setup->lang('Upgrade All'));
-			$this->setup_tpl->set_var('remove_all', $this->setup->lang('Remove All'));
-			$this->setup_tpl->set_var('lang_debug', $this->setup->lang('enable debug messages'));
-			$this->setup_tpl->set_var('debug', '<input type="checkbox" name="debug" value="True"' . ($DEBUG ? ' checked' : '') . '>');
-
-			$header .= $this->setup_tpl->fp('out', 'app_header');
+			// Main application list view
+			
+			// Use renderBlock for the header part
+			$headerVars = [
+				'description' => $this->setup->lang('Select the desired action(s) from the available choices')
+			];
+			$header .= $this->twig->renderBlock('applications.html.twig', 'header', $headerVars);
+			
+			// Use renderBlock for the app_header part
+			$header .= $this->twig->renderBlock('applications.html.twig', 'app_header', $templateVars);
+			
 			$apps = '';
-
 			$i = 0;
+			
+			// Generate the app rows
 			foreach ($setup_info as $key => $value)
 			{
 				if (isset($value['name']) && $value['name'] != 'phpgwapi' && $value['name'] != 'notifywindow')
 				{
 					++$i;
 					$row = $i % 2 ? 'off' : 'on';
-					//		\_debug_array($value['name']);
 					$value['title'] = !isset($value['title']) || !strlen($value['title']) ? str_replace('*', '', $this->setup->lang($value['name'])) : $value['title'];
-					$this->setup_tpl->set_var('apptitle', $value['title']);
-					$this->setup_tpl->set_var('currentver', isset($value['currentver']) ? $value['currentver'] : '');
-					$this->setup_tpl->set_var('version', $value['version']);
-					$this->setup_tpl->set_var('bg_class',  "row_{$row}");
-					$this->setup_tpl->set_var('row_remove', '');
+					
+					// Prepare app row data for Twig template
+					$appVars = [
+						'bg_class' => "row_{$row}",
+						'appname' => $value['name'],
+						'currentver' => isset($value['currentver']) ? $value['currentver'] : '',
+						'version' => $value['version'],
+						'row_remove' => '',
+						'row_install' => '',
+						'row_upgrade' => '',
+						'install' => '&nbsp;',
+						'upgrade' => '&nbsp;',
+						'remove' => '&nbsp;',
+						'resolution' => '&nbsp;'
+					];
 
 					switch ($value['status'])
 					{
 						case 'C':
-							$this->setup_tpl->set_var('row_remove', "row_remove_{$row}");
-							$this->setup_tpl->set_var('remove', '<input type="checkbox" name="remove[' . $value['name'] . ']" />');
-							$this->setup_tpl->set_var('upgrade', '&nbsp;');
+							$appVars['row_remove'] = "row_remove_{$row}";
+							$appVars['remove'] = '<input type="checkbox" name="remove[' . $value['name'] . ']" />';
+							$appVars['upgrade'] = '&nbsp;';
+							
 							if (!$this->detection->check_app_tables($value['name']))
 							{
 								// App installed and enabled, but some tables are missing
-								$this->setup_tpl->set_var('instimg', 'stock_database.png');
-								$this->setup_tpl->set_var('bg_class', "row_err_table_{$row}");
-								$this->setup_tpl->set_var('instalt', $this->setup->lang('Not Completed'));
-								$this->setup_tpl->set_var('resolution', '<a href="applications?resolve=' . $value['name'] . '&amp;badinstall=True">' . $this->setup->lang('Potential Problem') . '</a>');
-								$status = $this->setup->lang('Requires reinstall or manual repair') . ' - ' . $value['status'];
-							}
+								$appVars['instimg'] = 'stock_database.png';
+								$appVars['bg_class'] = "row_err_table_{$row}";
+								$appVars['instalt'] = $this->setup->lang('Not Completed');
+								$appVars['resolution'] = '<a href="applications?resolve=' . $value['name'] . '&amp;badinstall=True">' . $this->setup->lang('Potential Problem') . '</a>';
+								$appVars['appinfo'] = $this->setup->lang('Requires reinstall or manual repair') . ' - ' . $value['status'];
+								}
 							else
 							{
-								$this->setup_tpl->set_var('instimg', 'stock_yes.png');
-								$this->setup_tpl->set_var('instalt', $this->setup->lang('%1 status - %2', $value['title'], $this->setup->lang('Completed')));
-								$this->setup_tpl->set_var('install', '&nbsp;');
+								$appVars['instimg'] = 'stock_yes.png';
+								$appVars['instalt'] = $this->setup->lang('%1 status - %2', $value['title'], $this->setup->lang('Completed'));
+								$appVars['install'] = '&nbsp;';
+								
 								if ($value['enabled'])
 								{
-									$this->setup_tpl->set_var('resolution', '');
-									$status = "[{$value['status']}] " . $this->setup->lang('OK');
+									$appVars['resolution'] = '';
+									$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('OK');
 								}
 								else
 								{
@@ -623,109 +659,105 @@ class Applications
 									{
 										$notables = '&amp;notables=True';
 									}
-									$this->setup_tpl->set_var('bg_class', "row_err_gen_{$row}");
-									$this->setup_tpl->set_var(
-										'resolution',
-										'<a href="applications?resolve=' . $value['name'] .  $notables . '">' . $this->setup->lang('Possible Reasons') . '</a>'
-									);
-									$status = "[{$value['status']}] " . $this->setup->lang('Disabled');
+									$appVars['bg_class'] = "row_err_gen_{$row}";
+									$appVars['resolution'] = '<a href="applications?resolve=' . $value['name'] . $notables . '">' . $this->setup->lang('Possible Reasons') . '</a>';
+									$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Disabled');
 								}
 							}
 							break;
 						case 'U':
-							$this->setup_tpl->set_var('instimg', 'package-generic.png');
-							$this->setup_tpl->set_var('instalt', $this->setup->lang('Not Completed'));
+							$appVars['instimg'] = 'package-generic.png';
+							$appVars['instalt'] = $this->setup->lang('Not Completed');
+							
 							if (!isset($value['currentver']) || !$value['currentver'])
 							{
-								$this->setup_tpl->set_var('bg_class', "row_install_{$row}");
-								$status = "[{$value['status']}] " . $this->setup->lang('Please install');
+								$appVars['bg_class'] = "row_install_{$row}";
+								$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Please install');
+								
 								if (isset($value['tables']) && is_array($value['tables']) && $value['tables'] && $this->detection->check_app_tables($value['name'], True))
 								{
 									// Some tables missing
-									$this->setup_tpl->set_var('bg_class', "row_err_gen_{$row}");
-									$this->setup_tpl->set_var('instimg', 'stock_database.png');
-									$this->setup_tpl->set_var('row_remove', 'row_remove_' . ($i ? 'off' : 'on'));
-									$this->setup_tpl->set_var('remove', '<input type="checkbox" name="remove[' . $value['name'] . ']" />');
-									$this->setup_tpl->set_var('resolution', '<a href="applications?resolve=' . $value['name'] . '&amp;badinstall=True">' . $this->setup->lang('Potential Problem') . '</a>');
-									$status = "[{$value['status']}] " . $this->setup->lang('Requires reinstall or manual repair');
+									$appVars['bg_class'] = "row_err_gen_{$row}";
+									$appVars['instimg'] = 'stock_database.png';
+									$appVars['row_remove'] = 'row_remove_' . ($i % 2 ? 'off' : 'on');
+									$appVars['remove'] = '<input type="checkbox" name="remove[' . $value['name'] . ']" />';
+									$appVars['resolution'] = '<a href="applications?resolve=' . $value['name'] . '&amp;badinstall=True">' . $this->setup->lang('Potential Problem') . '</a>';
+									$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Requires reinstall or manual repair');
 								}
 								else
 								{
-									$this->setup_tpl->set_var('remove', '&nbsp;');
-									$this->setup_tpl->set_var('resolution', '');
-									$status = "[{$value['status']}] " . $this->setup->lang('Available to install');
+									$appVars['remove'] = '&nbsp;';
+									$appVars['resolution'] = '';
+									$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Available to install');
 								}
-								$this->setup_tpl->set_var('install', '<input type="checkbox" name="install[' . $value['name'] . ']" />');
-								$this->setup_tpl->set_var('upgrade', '&nbsp;');
+								$appVars['install'] = '<input type="checkbox" name="install[' . $value['name'] . ']" />';
+								$appVars['upgrade'] = '&nbsp;';
 							}
 							else
 							{
-								$this->setup_tpl->set_var('bg_class', "row_upgrade_{$row}");
-								$this->setup_tpl->set_var('install', '&nbsp;');
-								// TODO display some info about breakage if you mess with this app
-								$this->setup_tpl->set_var('upgrade', '<input type="checkbox" name="upgrade[' . $value['name'] . ']">');
-								$this->setup_tpl->set_var('row_remove', 'row_remove_' . ($i ? 'off' : 'on'));
-								$this->setup_tpl->set_var('remove', '<input type="checkbox" name="remove[' . $value['name'] . ']">');
-								$this->setup_tpl->set_var('resolution', '');
-								$status = "[{$value['status']}] " . $this->setup->lang('Requires upgrade');
+								$appVars['bg_class'] = "row_upgrade_{$row}";
+								$appVars['install'] = '&nbsp;';
+								$appVars['upgrade'] = '<input type="checkbox" name="upgrade[' . $value['name'] . ']">';
+								$appVars['row_remove'] = 'row_remove_' . ($i % 2 ? 'off' : 'on');
+								$appVars['remove'] = '<input type="checkbox" name="remove[' . $value['name'] . ']">';
+								$appVars['resolution'] = '';
+								$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Requires upgrade');
 							}
 							break;
 						case 'V':
-							$this->setup_tpl->set_var('instimg', 'package-generic.png');
-							$this->setup_tpl->set_var('instalt', $this->setup->lang('Not Completed'));
-							$this->setup_tpl->set_var('install', '&nbsp;');
-							$this->setup_tpl->set_var('row_remove', 'row_remove_' . ($i ? 'off' : 'on'));
-							$this->setup_tpl->set_var('remove', '<input type="checkbox" name="remove[' . $value['name'] . ']">');
-							$this->setup_tpl->set_var('upgrade', '<input type="checkbox" name="upgrade[' . $value['name'] . ']">');
-							$this->setup_tpl->set_var('resolution', '<a href="applications?resolve=' . $value['name'] . '&amp;version=True">' . $this->setup->lang('Possible Solutions') . '</a>');
-							$status = "[{$value['status']}] " . $this->setup->lang('Version Mismatch');
+							$appVars['instimg'] = 'package-generic.png';
+							$appVars['instalt'] = $this->setup->lang('Not Completed');
+							$appVars['install'] = '&nbsp;';
+							$appVars['row_remove'] = 'row_remove_' . ($i % 2 ? 'off' : 'on');
+							$appVars['remove'] = '<input type="checkbox" name="remove[' . $value['name'] . ']">';
+							$appVars['upgrade'] = '<input type="checkbox" name="upgrade[' . $value['name'] . ']">';
+							$appVars['resolution'] = '<a href="applications?resolve=' . $value['name'] . '&amp;version=True">' . $this->setup->lang('Possible Solutions') . '</a>';
+							$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Version Mismatch');
 							break;
 						case 'D':
-							$this->setup_tpl->set_var('bg_class', "row_err_gen_{$row}");
+							$appVars['bg_class'] = "row_err_gen_{$row}";
 							$depstring = $this->parsedep($value['depends']);
-							$this->setup_tpl->set_var('instimg', 'stock_no.png');
-							$this->setup_tpl->set_var('instalt', $this->setup->lang('Dependency Failure'));
-							$this->setup_tpl->set_var('install', '&nbsp;');
-							$this->setup_tpl->set_var('remove', '&nbsp;');
-							$this->setup_tpl->set_var('upgrade', '&nbsp;');
-							$this->setup_tpl->set_var('resolution', '<a href="applications?resolve=' . $value['name'] . '">' . $this->setup->lang('Possible Solutions') . '</a>');
-							$status = "[{$value['status']}] " . $this->setup->lang('Dependency Failure') . $depstring;
+							$appVars['instimg'] = 'stock_no.png';
+							$appVars['instalt'] = $this->setup->lang('Dependency Failure');
+							$appVars['install'] = '&nbsp;';
+							$appVars['remove'] = '&nbsp;';
+							$appVars['upgrade'] = '&nbsp;';
+							$appVars['resolution'] = '<a href="applications?resolve=' . $value['name'] . '">' . $this->setup->lang('Possible Solutions') . '</a>';
+							$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Dependency Failure') . $depstring;
 							break;
 						case 'P':
-							$this->setup_tpl->set_var('bg_class', "row_err_gen_{$row}");
+							$appVars['bg_class'] = "row_err_gen_{$row}";
 							$depstring = $this->parsedep($value['depends']);
-							$this->setup_tpl->set_var('instimg', 'stock_no.png');
-							$this->setup_tpl->set_var('instalt', $this->setup->lang('Post-install Dependency Failure'));
-							$this->setup_tpl->set_var('install', '&nbsp;');
-							$this->setup_tpl->set_var('remove', '&nbsp;');
-							$this->setup_tpl->set_var('upgrade', '&nbsp;');
-							$this->setup_tpl->set_var('resolution', '<a href="applications?resolve=' . $value['name'] . '&post=True">' . $this->setup->lang('Possible Solutions') . '</a>');
-							$status = "[{$value['status']}] " . $this->setup->lang('Post-install Dependency Failure') . $depstring;
+							$appVars['instimg'] = 'stock_no.png';
+							$appVars['instalt'] = $this->setup->lang('Post-install Dependency Failure');
+							$appVars['install'] = '&nbsp;';
+							$appVars['remove'] = '&nbsp;';
+							$appVars['upgrade'] = '&nbsp;';
+							$appVars['resolution'] = '<a href="applications?resolve=' . $value['name'] . '&post=True">' . $this->setup->lang('Possible Solutions') . '</a>';
+							$appVars['appinfo'] = "[{$value['status']}] " . $this->setup->lang('Post-install Dependency Failure') . $depstring;
 							break;
 						default:
-							$this->setup_tpl->set_var('instimg', 'package-generic.png');
-							$this->setup_tpl->set_var('instalt', $this->setup->lang('Not Completed'));
-							$this->setup_tpl->set_var('install', '&nbsp;');
-							$this->setup_tpl->set_var('remove', '&nbsp;');
-							$this->setup_tpl->set_var('upgrade', '&nbsp;');
-							$this->setup_tpl->set_var('resolution', '');
-							$status = '';
+							$appVars['instimg'] = 'package-generic.png';
+							$appVars['instalt'] = $this->setup->lang('Not Completed');
+							$appVars['install'] = '&nbsp;';
+							$appVars['remove'] = '&nbsp;';
+							$appVars['upgrade'] = '&nbsp;';
+							$appVars['resolution'] = '';
+							$appVars['appinfo'] = '';
 							break;
 					}
-					$this->setup_tpl->set_var('appinfo', $status);
-					$this->setup_tpl->set_var('appname', $value['name']);
-
-					$apps .= $this->setup_tpl->fp('out', 'apps');
+					
+					// Render the app row with Twig
+					$apps .= $this->twig->renderBlock('applications.html.twig', 'apps', $appVars);
 				}
 			}
 		}
-
-		$this->setup_tpl->set_var('submit', $this->setup->lang('Save'));
-		$this->setup_tpl->set_var('cancel', $this->setup->lang('Cancel'));
-		$footer = $this->setup_tpl->fp('out', 'app_footer');
-		$footer .= $this->setup_tpl->fp('out', 'footer');
+		
+		// Render the footer parts
+		$app_footer = $this->twig->renderBlock('applications.html.twig', 'app_footer', $templateVars);
+		$footer = $this->twig->renderBlock('applications.html.twig', 'footer', []);
 		$footer .= $this->html->get_footer();
 
-		return $header . $apps . $footer;
+		return $header . $apps . $app_footer . $footer;
 	}
 }

@@ -18,11 +18,10 @@ use App\helpers\Template;
 use App\modules\phpgwapi\services\Config;
 use App\modules\phpgwapi\controllers\Accounts\Accounts;
 use App\modules\phpgwapi\services\Log;
+use App\modules\phpgwapi\services\Twig;
 
 class admin_uiloglevels
 {
-	private $template;
-	private $select_template;
 	public $public_functions = array(
 		'edit_log_levels' => True
 	);
@@ -31,11 +30,14 @@ class admin_uiloglevels
 	private $serverSettings;
 	private $apps;
 	private $acl;
+	private $module_list = '';
+	private $module_add_row = '';
+	private $user_list = '';
+	private $user_add_row = '';
 
 
 	public function __construct()
 	{
-
 		$this->acl = Acl::getInstance();
 		if ($this->acl->check('error_log_access', 1, 'admin'))
 		{
@@ -47,17 +49,6 @@ class admin_uiloglevels
 
 		$this->flags['menu_selection'] = 'admin::admin::log_levels';
 		Settings::getInstance()->set('flags', $this->flags);
-
-		$this->template   = new Template();
-		$this->template->set_file(array(
-			'loglevels' => 'loglevels.tpl',
-			'log_level_select' => 'log_level_select.tpl'
-		));
-
-		// foo removes the module template.  I don't understand Templates enough to
-		// know why I needed it.  Trial and error.
-		$this->template->set_block('loglevels', 'module', 'foo');
-		$this->template->set_block('loglevels', 'module_add', 'foo');
 	}
 
 	public function edit_log_levels()
@@ -107,14 +98,21 @@ class admin_uiloglevels
 		$this->add_modules_list();
 		$this->add_users_list();
 
-		$var['lang_set_levels'] = "Set Logging Levels";
-		$var['lang_global_level'] = "Global logging level";
-		$var['lang_module_level'] = "Module Logging Levels";
-		$var['lang_user_level'] = "User Logging Levels";
-		$var['global_option'] = $this->create_select_box('global', '', $this->serverSettings['log_levels']['global_level']);
-		$this->template->set_var($var);
+		$templateData = [
+			'lang_set_levels' => lang("Set Logging Levels"),
+			'lang_global_level' => lang("Global logging level"),
+			'lang_module_level' => lang("Module Logging Levels"),
+			'lang_user_level' => lang("User Logging Levels"),
+			'global_option' => $this->create_select_box('global', '', $this->serverSettings['log_levels']['global_level']),
+			'module_list' => $this->module_list,
+			'module_add_row' => $this->module_add_row,
+			'user_list' => $this->user_list,
+			'user_add_row' => $this->user_add_row,
+			'tr_class' => 'pure-table-odd'
+		];
 
-		$this->template->pfp('out', 'loglevels');
+		// Render the template with Twig
+		echo Twig::getInstance()->renderBlock('loglevels.html.twig', 'loglevels', $templateData, 'admin');
 	}
 
 
@@ -138,16 +136,18 @@ class admin_uiloglevels
 		{
 			if (isset($this->serverSettings['log_levels']['module'][$app]))
 			{
-				$var = array(
+				$rowData = array(
 					'tr_class' 		=> $tr_class,
 					'type'   		=> 'module',
 					'module_name'   => $title,
 					'module_option' => $this->create_select_box('module', $app, $this->serverSettings['log_levels']['module'][$app]),
 					'remove_url' 	=> phpgw::link('/index.php', array('menuaction' => 'admin.uiloglevels.edit_log_levels', 'level_type' => 'module', 'level_key' => $app)),
 					'lang_remove'   => lang('remove')
-				);
-				$this->template->set_var($var);
-				$this->template->fp('module_list', 'module', True);
+					);
+				
+				// Render module row with Twig
+				$this->module_list .= Twig::getInstance()->renderBlock('loglevels.html.twig', 'module', $rowData, 'admin');
+				
 				if ($tr_class == 'pure-table-odd')
 				{
 					$tr_class = '';
@@ -166,12 +166,12 @@ class admin_uiloglevels
 
 		if ($add_options)
 		{
-			$var = array(
+			$rowData = array(
 				'tr_class' 		=> $tr_class,
 				'type'   		=> 'module',
 				'module_add_link' => phpgw::link('/index.php', array('menuaction' => 'admin.uiloglevels.edit_log_levels')),
 				'lang_add' => lang('add'),
-				'module_add_options'   => $add_options,
+				'module_add_options' => $add_options,
 				'lang_fatal'    => lang('fatal'),
 				'lang_error'    => lang('error'),
 				'lang_warn' 	=> lang('warn'),
@@ -180,8 +180,9 @@ class admin_uiloglevels
 				'lang_debug'    => lang('debug'),
 				'lang_add'   	=> lang('add')
 			);
-			$this->template->set_var($var);
-			$this->template->fp('module_add_row', 'module_add', True);
+			
+			// Render module add row with Twig
+			$this->module_add_row = Twig::getInstance()->renderBlock('loglevels.html.twig', 'module_add', $rowData, 'admin');
 		}
 	}
 
@@ -196,7 +197,7 @@ class admin_uiloglevels
 			$name = (string) $account;
 			if (isset($this->serverSettings['log_levels']['user'][$account_lid]))
 			{
-				$var = array(
+				$rowData = array(
 					'tr_class' 		=> $tr_class,
 					'module_name'   => (string) $account,
 					'module_option' => $this->create_select_box('user', $account_lid, $this->serverSettings['log_levels']['user'][$account_lid]),
@@ -204,8 +205,8 @@ class admin_uiloglevels
 					'lang_remove'   => lang('remove')
 				);
 
-				$this->template->set_var($var);
-				$this->template->fp('user_list', 'module', true);
+				// Render user row with Twig
+				$this->user_list .= Twig::getInstance()->renderBlock('loglevels.html.twig', 'module', $rowData, 'admin');
 
 				if ($tr_class == 'pure-table-odd')
 				{
@@ -224,12 +225,12 @@ class admin_uiloglevels
 
 		if ($add_options)
 		{
-			$var = array(
+			$rowData = array(
 				'type'   		=> 'user',
 				'tr_class' 		=> $tr_class,
 				'module_add_link' => phpgw::link('/index.php', array('menuaction' => 'admin.uiloglevels.edit_log_levels')),
 				'lang_add' => lang('add'),
-				'module_add_options'   => $add_options,
+				'module_add_options' => $add_options,
 				'lang_fatal'    => lang('fatal'),
 				'lang_error'    => lang('error'),
 				'lang_warn' 	=> lang('warn'),
@@ -237,8 +238,9 @@ class admin_uiloglevels
 				'lang_debug'    => lang('debug'),
 				'lang_add'   	=> lang('add')
 			);
-			$this->template->set_var($var);
-			$this->template->fp('user_add_row', 'module_add', True);
+			
+			// Render user add row with Twig
+			$this->user_add_row = Twig::getInstance()->renderBlock('loglevels.html.twig', 'module_add', $rowData, 'admin');
 		}
 	}
 
@@ -246,41 +248,24 @@ class admin_uiloglevels
 	{
 		$select_name = "{$level_type}_{$level_key}_select";
 
-		$var = array(
+		$selectData = array(
 			'level_type'	=> $level_type,
 			'level_key'		=> $level_key,
 			'select_link'	=> phpgw::link('/index.php', array('menuaction' => 'admin.uiloglevels.edit_log_levels')),
 			'select_name'	=> $select_name,
-			'lang_fatal'	=> lang('fatal'),
-			'lang_error'	=> lang('error'),
-			'lang_warn'		=> lang('warn'),
-			'lang_info'		=> lang('info'),
-			'lang_notice'	=> lang('notice'),
-			'lang_debug'	=> lang('debug'),
-			'lang_deprecated'	=> 'deprecated',
-			'lang_all'		=> lang('all'),
-			'F_selected'	=> '',
-			'E_selected'	=> '',
-			'N_selected'	=> '',
-			'W_selected'	=> '',
-			'I_selected'	=> '',
-			'D_selected'	=> '',
-			'S_selected'	=> '',
-			'DP_selected'	=> '',
-			'A_selected'	=> ''
+			'F_selected'	=> ($current_level === 'F'),
+			'E_selected'	=> ($current_level === 'E'),
+			'N_selected'	=> ($current_level === 'N'),
+			'W_selected'	=> ($current_level === 'W'),
+			'I_selected'	=> (!$current_level || $current_level === 'I'),
+			'D_selected'	=> ($current_level === 'D'),
+			'S_selected'	=> ($current_level === 'S'),
+			'DP_selected'	=> ($current_level === 'DP'),
+			'A_selected'	=> ($current_level === 'A')
 		);
 
-		if ($current_level)
-		{
-			$var[$current_level . '_selected'] = 'selected';
-		}
-		else
-		{
-			$var['I_selected'] = 'selected';
-		}
-
-		$this->template->set_var($var);
-		return $this->template->fp('select', 'log_level_select');
+		// Render the select box with Twig
+		return Twig::getInstance()->renderBlock('log_level_select.html.twig', 'log_level_select', $selectData, 'admin');
 	}
 
 	private function update_level($level_type, $level_key, $new_level)

@@ -12,9 +12,9 @@
 			this.element = element;
 			this.trigger = element.querySelector('[data-toggle="dropdown"], [data-bs-toggle="dropdown"]');
 			this.menu = element.querySelector('.app-dropdown-menu, .app-dropdown__menu');
-			
+
 			if (!this.trigger || !this.menu) return;
-			
+
 			this.isOpen = false;
 			this.init();
 		}
@@ -37,11 +37,11 @@
 			// Prevent menu from closing when clicking inside
 			this.menu.addEventListener('click', (e) => {
 				// Allow links and buttons to work, but stop propagation for forms
-				const isInteractive = e.target.tagName === 'A' || 
+				const isInteractive = e.target.tagName === 'A' ||
 									 e.target.tagName === 'BUTTON' ||
-									 e.target.closest('a') || 
+									 e.target.closest('a') ||
 									 e.target.closest('button');
-				
+
 				if (!isInteractive) {
 					e.stopPropagation();
 				}
@@ -103,7 +103,7 @@
 		toggleBtn.addEventListener('click', () => {
 			sidebar.classList.toggle('app-sidebar--collapsed');
 			sidebar.classList.toggle('show');
-			
+
 			if (main) {
 				main.classList.toggle('app-main--expanded');
 			}
@@ -139,12 +139,12 @@
 	// Template selector functionality
 	function initTemplateSelector() {
 		const selector = document.getElementById('template_selector');
-		
+
 		if (!selector) return;
 
 		selector.addEventListener('change', function() {
 			const selectedTemplate = this.value;
-			
+
 			// Save to preferences via API
 			fetch('/?menuaction=preferences.uisettings.save_preference', {
 				method: 'POST',

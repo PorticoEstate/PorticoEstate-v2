@@ -112,7 +112,6 @@ $app->get('/assets/npm/{path:.*}', function (Request $request, Response $respons
 		->withHeader('Content-Type', $contentType)
 		->withHeader('Cache-Control', 'public, max-age=3600');
 });
-
 $app->get('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->post('/', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));
 $app->get('/index.php', StartPoint::class . ':run')->add(new SessionsMiddleware($app->getContainer()));

@@ -31,7 +31,6 @@ $twigDir = PHPGW_TEMPLATE_DIR . '/twig';
 $serverSettings['no_jscombine'] = false;
 Settings::getInstance()->set('server', $serverSettings);
 
-
 phpgw::import_class('phpgwapi.jquery');
 phpgwapi_jquery::load_widget('core');
 phpgwapi_jquery::load_widget('jqtree');
@@ -129,7 +128,6 @@ if (isset($userSettings['preferences']['common']['theme']))
 {
 	$stylesheets[] = "/{$app}/templates/digdir/css/{$userSettings['preferences']['common']['theme']}.css";
 }
-
 
 $cssUris = [];
 

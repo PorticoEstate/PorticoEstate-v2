@@ -1497,6 +1497,3 @@ dialog.app-modal {
 /* Margin utilities */
 .ms-n3 { margin-left: -0.75rem !important; }
 .ms-4 { margin-left: var(--ds-spacing-4, 1rem) !important; }
-
-
-

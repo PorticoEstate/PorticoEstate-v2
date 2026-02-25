@@ -1,0 +1,186 @@
+{# Config template #}
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+	<table width="95%" class="pure-table pure-table-bordered pure-table-striped pure-form">
+		<tr class="th">\n        <td colspan="2">&nbsp;<b>{{ lang('{{ title }}') }}</b></td>\n    </tr>\n\n    {# {{ title }} section #}
+		{% endblock %}
+		{% block body %}
+		<tr class="row_on">
+			<td colspan="2">&nbsp;</td>
+		</tr>
+		<tr class="row_off">
+			<td colspan="2">&nbsp;<b>{{ lang('frontend_settings') }}</b></td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('tab_sorting') }}:</td>
+			<td>
+				<table>
+					{{ hook_tab_sorting|raw }}
+				</table>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('activate_autocreate_user') }}:</td>
+			<td>
+				<select name="newsettings[autocreate_user]" class="pure-u-1">
+					<option value="" {{ selected_autocreate_user_|raw }}> {{ lang('NO') }}: </option>
+					<option value="1" {{ selected_autocreate_user_1|raw }}> {{ lang('YES') }}: </option>
+				</select>
+			</td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('frontend_default_group') }}:</td>
+			<td>
+				<select name="newsettings[frontend_default_group]" class="pure-u-1">
+					{{ hook_frontend_default_group|raw }}
+				</select>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('ticket_default_group') }}:</td>
+			<td>
+				<select name="newsettings[tts_default_group]" class="pure-u-1">
+					{{ hook_tts_default_group|raw }}
+				</select>
+			</td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('ticket_frontend_category') }}:</td>
+			<td>
+				<!--to be able to blank the setting - need an empty value-->
+				<input type = 'hidden' name="newsettings[tts_frontend_cat][]" value="">
+				<table>
+					{{ hook_tts_frontend_cat|raw }}
+				</table>
+			</td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('ticket_default_category') }}:</td>
+			<td>
+				<select name="newsettings[tts_default_cat]" class="pure-u-1">
+					{{ hook_tts_default_cat|raw }}
+				</select>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('document_category_for_building_picture') }}:</td>
+			<td>
+				<select name="newsettings[picture_building_cat]" class="pure-u-1">
+					{{ hook_picture_building_cat|raw }}
+				</select>
+			</td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('document_frontend_category') }}:</td>
+			<td>
+				<!--to be able to blank the setting - need an empty value-->
+				<input type = 'hidden' name="newsettings[document_frontend_cat][]" value="">
+				<table>
+					{{ hook_document_frontend_cat|raw }}
+				</table>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('entity_frontend') }}:</td>
+			<td>
+				<!--to be able to blank the setting - need an empty value-->
+				<input type = 'hidden' name="newsettings[entity_frontend][]" value="">
+				<table>
+					{{ hook_entity_frontend|raw }}
+				</table>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('document_valid_types') }}(comma separated list of valid filetypes):</td>
+			<td><input name="newsettings[document_valid_types]" value="{{ value_document_valid_types|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('delegate_limit') }}:</td>
+			<td><input name="newsettings[delegate_limit]" value="{{ value_delegate_limit|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr class="row_off">
+			<td>{{ lang('use_fellesdata') }}:</td>
+			<td>
+				<select name="newsettings[use_fellesdata]" class="pure-u-1">
+					<option value="" {{ selected_use_fellesdata_|raw }}> {{ lang('NO') }}: </option>
+					<option value="1" {{ selected_use_fellesdata_1|raw }}> {{ lang('YES') }}: </option>
+				</select>
+			</td>
+		</tr>	
+		<tr class="row_on">
+			<td colspan="2">&nbsp;<b>{{ lang('external_db') }}</b></td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('Debug') }}:</td>
+			<td>
+				<select name="newsettings[external_db_debug]" class="pure-u-1">
+					<option value="" {{ selected_external_db_debug_|raw }}> {{ lang('NO') }}: </option>
+					<option value="1" {{ selected_external_db_debug_1|raw }}> {{ lang('YES') }}: </option>
+				</select>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('login_external_db_host') }}:</td>
+			<td><input name="newsettings[external_db_host]" value="{{ value_external_db_host|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('login_external_db_port') }}:</td>
+			<td><input name="newsettings[external_db_port]" value="{{ value_external_db_port|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('type') }}:</td>
+			<td>
+				<select name="newsettings[external_db_type]" class="pure-u-1">
+					<option value="" {{ selected_external_db_type_|raw }}> {{ lang('None') }}: </option>
+					<option value="mssql" {{ selected_external_db_type_mssql|raw }}>mssql</option>
+					<option value="mysql" {{ selected_external_db_type_mysql|raw }}>mysql</option>
+					<option value="oracle" {{ selected_external_db_type_oracle|raw }}>oracle</option>
+					<option value="postgres" {{ selected_external_db_type_postgres|raw }}>postgres</option>
+				</select>
+			</td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('login_external_db_name') }}:</td>
+			<td><input name="newsettings[external_db_name]" value="{{ value_external_db_name|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('login_external_db_user') }}:</td>
+			<td><input name="newsettings[external_db_user]" value="{{ value_external_db_user|raw }}" class="pure-u-1"/></td>
+		</tr>
+
+
+		<tr class="row_on">
+			<td>{{ lang('login_external_db_password') }}:</td>
+			<td><input type ="password" name="newsettings[external_db_password]" value="{{ value_external_db_password|raw }}" autocomplete="off"
+					   readonly="readonly" onfocus="this.removeAttribute('readonly');" class="pure-u-1"/></td>
+		</tr>
+		<tr class="row_on">
+			<td colspan="2">&nbsp;<b>{{ lang('email_settings') }}</b></td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('email_contract_messages') }}:</td>
+			<td><input name="newsettings[email_contract_messages]" value="{{ value_email_contract_messages|raw }}" class="pure-u-1"/></td>
+		</tr>
+		<tr class="row_on">
+			<td colspan="2">&nbsp;<b>{{ lang('logo_settings') }}</b></td>
+		</tr>
+		<tr class="row_on">
+			<td>{{ lang('logo_url') }}:</td>
+			<td><input name="newsettings[logo_path]" value="{{ value_logo_path|raw }}" class="pure-u-1"/></td>
+		</tr>
+		{% endblock %}
+		{% block footer %}
+		<tr class="th">
+			<td colspan="2">
+				&nbsp;
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" align="center">
+				<input type="submit" name="submit" value="{{ lang('submit') }}" class="pure-button"/>
+				<input type="submit" name="cancel" value="{{ lang('cancel') }}" class="pure-button"/>
+			</td>
+		</tr>
+	</table>
+</form>
+{% endblock %}

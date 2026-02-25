@@ -1,0 +1,19 @@
+{# Bulk template #}
+<form action="{{ form_action|raw }}" method="POST">
+<table style="{border: 1px solid #000000; border-collapse: collapse; spacing:0px; width: 100%;}">
+	<tr>
+		<td>{{ lang('apps') }}</td>
+		<td>{{ bulk_app }}</td>
+		<td>{{ lang('domains') }}</td>
+		<td>{{ bulk_dom }}</td>
+	</tr>
+	<tr>
+		<td colspan="4" style="{text-align: center;}">
+			<input type="submit" name="submit" value="{{ lang('upgrade') }}" />
+			<input type="button" value="{{ lang('cancel') }}" onClick="window.close();" />
+		</td>
+	</tr>
+	<tr class="banner">
+		<td colspan="4">&nbsp;</td>
+	</tr>
+</table>

@@ -558,7 +558,7 @@ document.addEventListener('DOMContentLoaded', function() {
             commandPaletteElement.dispatchEvent(new Event('hidden.bs.modal'));
         }
     };
-    
+
     let searchInput = document.getElementById('commandSearch');
     let resultsContainer = document.getElementById('commandResults');
     let selectedIndex = -1;

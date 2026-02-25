@@ -62,7 +62,7 @@ class Twig
             'cache' => $debugMode ? false : $cacheDir,
             'debug' => $debugMode,
             'auto_reload' => $debugMode,
-            'strict_variables' => $debugMode,
+            'strict_variables' => false,
         ]);
 
         if (!empty($this->serverSettings['debug_mode'])) {
@@ -138,6 +138,7 @@ class Twig
         $this->twig->addFunction(new TwigFunction('add_inline_script', [$assets, 'addInlineScript']));
         $this->twig->addFunction(new TwigFunction('render_styles', [$assets, 'renderStyles'], ['is_safe' => ['html']]));
         $this->twig->addFunction(new TwigFunction('render_scripts', [$assets, 'renderScripts'], ['is_safe' => ['html']]));
+
     }
 
     /**

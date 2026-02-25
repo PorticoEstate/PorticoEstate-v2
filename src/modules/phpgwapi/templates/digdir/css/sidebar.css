@@ -152,6 +152,7 @@
 }
 .sb-sidenav .sb-sidenav-menu {
   flex-grow: 1;
+  padding: 0 1rem;
 }
 .sb-sidenav .sb-sidenav-menu .nav {
   flex-direction: column;
@@ -247,4 +248,3 @@
 .sb-sidenav-light .sb-sidenav-footer {
   background-color: #e9ecef;
 }
-

@@ -1,0 +1,114 @@
+{# Config template #}
+{% block header %}
+<form method="POST" action="{{ action_url }}">
+<table class="pure-table pure-table-bordered">
+   <tr bgcolor="{{ th_bg }}">
+    <td colspan="2"><font color="{{ th_text }}">&nbsp;<b>{{ title }}</b></font></td>
+   </tr>
+{% endblock %}
+{% block body %}
+   <tr class="row_on">
+    <td colspan="2">&nbsp;</td>
+   </tr>
+
+   <tr  class="row_off"">
+    <td colspan="2">&nbsp;<b>{{ lang('Mail_settings') }}</b></td>
+   </tr>
+
+   <tr class="row_on">
+    <td>{{ lang('Enter_your_POP') }}/{{ lang('IMAP_mail_server_hostname_or_IP_address') }}:</td>
+    <td><input name="newsettings[mail_server]" value="{{ value_mail_server|raw }}"></td>
+   </tr>
+
+   <tr  class="row_off"">
+    <td>{{ lang('Select_your_mail_server_type') }}:</td>
+    <td>
+     <select name="newsettings[mail_server_type]">
+      <option value="imap" {{ selected_mail_server_type_imap|raw }}> {{ lang('IMAP') }}: </option>
+      <option value="pop3" {{ selected_mail_server_type_pop3|raw }}>POP-3</option>
+      <option value="imaps" {{ selected_mail_server_type_imaps|raw }}> {{ lang('IMAPS') }}: </option>
+      <option value="pop3s" {{ selected_mail_server_type_pop3s|raw }}>POP-3S</option>
+     </select>
+    </td>
+   </tr>
+
+   <tr class="row_on">
+    <td>{{ lang('IMAP_server_type') }}:</td>
+    <td>
+     <select name="newsettings[imap_server_type]">
+      <option value="Cyrus" {{ selected_imap_server_type_Cyrus|raw }}> {{ lang('Cyrus or Courier') }}: </option>
+      <option value="UWash" {{ selected_imap_server_type_UWash|raw }}> {{ lang('UWash') }}: </option>
+      <option value="UW-Maildir" {selected_imap_server_type_UW-Maildir}>UW-Maildir</option>
+     </select>
+    </td>
+   </tr>
+
+   <tr  class="row_off"">
+    <td>{lang_Enter_your_default_mail_domain_(_From:_user@domain_)}:</td>
+    <td><input name="newsettings[mail_suffix]" value="{{ value_mail_suffix|raw }}"></td>
+   </tr>
+
+   <tr class="row_on">
+    <td>{{ lang('Mail_server_login_type') }}:</td>
+    <td>
+     <select name="newsettings[mail_login_type]">
+      <option value="standard" {{ selected_mail_login_type_standard|raw }}>standard</option>
+      <option value="vmailmgr" {{ selected_mail_login_type_vmailmgr|raw }}>vmailmgr</option>
+      <option value="ispman" {{ selected_mail_login_type_ispman|raw }}>ispman (experimental)</option>
+     </select>
+    </td>
+   </tr>
+
+   <tr  class="row_off"">
+    <td>{{ lang('Enter_your_SMTP_server_hostname_or_IP_address') }}:</td>
+    <td><input name="newsettings[smtp_server]" value="{{ value_smtp_server|raw }}"></td>
+   </tr>
+
+   <tr class="row_on">
+    <td>{{ lang('Enter_your_SMTP_server_port') }}:</td>
+    <td><input name="newsettings[smtp_port]" value="{{ value_smtp_port|raw }}"></td>
+   </tr>
+	<tr class="row_off">
+		<td>{{ lang('Use_SMTP_auth') }}:</td>
+		<td>
+     <select name="newsettings[smtpAuth]">
+				<option value="">{{ lang('no') }}</option>
+      <option value="yes" {{ selected_smtpAuth_yes|raw }}>{{ lang('yes') }}</option>
+			</select>
+		</td>
+	</tr>
+	<tr class="row_on">
+		<td>{{ lang('Enter_your_SMTP_server_user') }}:</td>
+    <td><input name="newsettings[smtpUser]" value="{{ value_smtpUser|raw }}"></td>
+	</tr>
+	<tr class="row_off">
+		<td>{{ lang('Enter_your_SMTP_server_password') }}:</td>
+    <td><input type= "password" name="newsettings[smtpPassword]" value="{{ value_smtpPassword|raw }}" autocomplete="off"></td>
+	</tr>
+	<tr class="row_on">
+	    <td>{{ lang('SMTPSecure') }}:</td>
+		<td>
+			<select name="newsettings[smtpSecure]">
+				<option value="">{{ lang('No') }}</option>
+				<option value="ssl"{{ selected_smtpSecure_ssl|raw }}>ssl</option>
+				<option value="tls"{{ selected_smtpSecure_tls|raw }}>tls</option>
+			</select>
+		</td>
+	</tr>
+
+{% endblock %}
+{% block footer %}
+  <tr bgcolor="{{ th_bg }}">
+    <td colspan="2">
+&nbsp;
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center">
+      <input type="submit" name="submit" value="{{ lang('submit') }}">
+      <input type="submit" name="cancel" value="{{ lang('cancel') }}">
+    </td>
+  </tr>
+</table>
+</form>
+{% endblock %}

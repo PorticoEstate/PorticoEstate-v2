@@ -8100,6 +8100,7 @@ function booking_upgrade0_2_117($oProc)
 	}
 }
 
+$test[] = '0.2.118';
 function booking_upgrade0_2_118($oProc)
 {
 	$oProc->m_odb->transaction_begin();

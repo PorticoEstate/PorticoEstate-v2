@@ -1,0 +1,123 @@
+{% extends '@views/emails/_email_layout.twig' %}
+
+{% block footer %}{% endblock %}
+
+{% block content %}
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="font-family: 'Inter', Arial, Helvetica, sans-serif; color: #2b2b2b; max-width: 600px;">
+
+{# Status banner #}
+<tr>
+<td style="background-color: #118849; padding: 16px 24px; border-radius: 6px 6px 0 0;">
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #ffffff;">{{ lang('booking.accepted')|default(status_text)|capitalize }}</h2>
+    <p style="margin: 6px 0 0; font-size: 14px; color: #ecf6f1;">Din søknad i {{ systemname }} om leie/lån av {{ resourcename }} på {{ building_name }}</p>
+</td>
+</tr>
+
+{# Application details #}
+<tr>
+<td style="background-color: #ffffff; padding: 24px; border-left: 1px solid #bcbcbc; border-right: 1px solid #bcbcbc;">
+
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 20px;">
+    {% if application_name %}
+    <tr>
+        <td style="padding: 4px 0; font-size: 13px; color: #797979; width: 120px; vertical-align: top;">{{ lang('booking.event_name')|default('Arrangement') }}</td>
+        <td style="padding: 4px 0; font-size: 14px; font-weight: 500;">{{ application_name }}</td>
+    </tr>
+    {% endif %}
+    {% if organizer %}
+    <tr>
+        <td style="padding: 4px 0; font-size: 13px; color: #797979; width: 120px; vertical-align: top;">{{ lang('booking.organizer')|default('Arrangør') }}</td>
+        <td style="padding: 4px 0; font-size: 14px; font-weight: 500;">{{ organizer }}</td>
+    </tr>
+    {% endif %}
+    <tr>
+        <td style="padding: 4px 0; font-size: 13px; color: #797979; width: 120px; vertical-align: top;">{{ lang('booking.resource')|default('Ressurs') }}</td>
+        <td style="padding: 4px 0; font-size: 14px; font-weight: 500;">{{ resourcename }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 4px 0; font-size: 13px; color: #797979; width: 120px; vertical-align: top;">{{ lang('booking.building')|default('Lokasjon') }}</td>
+        <td style="padding: 4px 0; font-size: 14px; font-weight: 500;">{{ building_name }}</td>
+    </tr>
+    </table>
+
+    {# Not approved dates #}
+    {% if not_approved_dates is not empty %}
+    <div style="background-color: #fdf1f2; border-left: 3px solid #dc3545; padding: 12px 16px; margin-bottom: 16px; border-radius: 0 4px 4px 0;">
+        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #721c24;">{{ lang('booking.times_not_approved')|default('Tider du ikke fikk') }}</p>
+        <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 13px; color: #721c24;">
+        {% for date in not_approved_dates %}
+        <tr><td style="padding: 2px 0;">{{ date }}</td></tr>
+        {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    {# Approved dates #}
+    {% if approved_dates is not empty %}
+    <div style="background-color: #ecf6f1; border-left: 3px solid #118849; padding: 12px 16px; margin-bottom: 16px; border-radius: 0 4px 4px 0;">
+        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #06331b;">{{ lang('booking.approved_time')|default('Godkjent tid') }}</p>
+        <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 13px; color: #06331b;">
+        {% for date in approved_dates %}
+        <tr><td style="padding: 2px 0;">{{ date }}</td></tr>
+        {% endfor %}
+        </table>
+    </div>
+    {% endif %}
+
+    {# Cost #}
+    {% if cost > 0 %}
+    <div style="background-color: #eef4fa; border-left: 3px solid #0062BA; padding: 12px 16px; margin-bottom: 16px; border-radius: 0 4px 4px 0;">
+        <p style="margin: 0; font-size: 14px; font-weight: 600; color: #002c54;">{{ lang('booking.total_cost')|default('Totalkostnad') }}: {{ cost|format_nok }}</p>
+    </div>
+    {% endif %}
+
+    {# Additional requirements #}
+    {% if agreement_requirements %}
+    <div style="background-color: #fdf2e0; border-left: 3px solid #F39C12; padding: 12px 16px; margin-bottom: 16px; border-radius: 0 4px 4px 0;">
+        <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #3d2705;">{{ lang('additional requirements') }}</p>
+        <p style="margin: 0; font-size: 13px; color: #3d2705;">{{ agreement_requirements|safe_html }}</p>
+    </div>
+    {% endif %}
+
+    {# Case officer comment #}
+    {% if comment %}
+    <div style="background-color: #f5f5f5; padding: 12px 16px; margin-bottom: 16px; border-radius: 4px;">
+        <p style="margin: 0 0 4px; font-size: 13px; font-weight: 600; color: #4E4E4E;">{{ lang('booking.comment_from_caseofficer')|default('Kommentar fra saksbehandler') }}</p>
+        <p style="margin: 0; font-size: 13px; color: #2b2b2b;">{{ comment }}</p>
+    </div>
+    {% endif %}
+
+    {# Accepted message from config #}
+    <p style="font-size: 14px; line-height: 1.5; color: #2b2b2b;">{{ mail_accepted|safe_html }}</p>
+
+    {# CTA link #}
+    <table cellpadding="0" cellspacing="0" role="presentation" style="margin: 20px 0 8px;">
+    <tr>
+    <td style="background-color: #793C8A; border-radius: 4px;">
+        <a href="{{ link }}" style="display: inline-block; padding: 10px 24px; font-size: 14px; font-weight: 600; color: #ffffff; text-decoration: none;">{{ lang('booking.view_application')|default('Se søknad') }} #{{ application_id }}</a>
+    </td>
+    </tr>
+    </table>
+
+    {# E-lock instructions #}
+    {% if e_lock_instructions is defined and e_lock_instructions is not empty %}
+    <div style="background-color: #eef4fa; border: 1px solid #0062BA; padding: 12px 16px; margin-top: 16px; border-radius: 4px;">
+        <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #002c54;">{{ lang('booking.e_lock_instructions')|default('Instruksjoner for e-lås') }}</p>
+        {% for instruction in e_lock_instructions %}
+        <div style="font-size: 13px; color: #002c54;">{{ instruction|safe_html }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</td>
+</tr>
+
+{# Footer #}
+<tr>
+<td style="background-color: #f5f5f5; padding: 16px 24px; border-radius: 0 0 6px 6px; border: 1px solid #bcbcbc; border-top: none;">
+    <p style="margin: 0; font-size: 12px; color: #797979; line-height: 1.5;">{{ signature|safe_html }}</p>
+</td>
+</tr>
+
+</table>
+{% endblock %}

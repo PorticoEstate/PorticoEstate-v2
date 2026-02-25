@@ -1,6 +1,7 @@
 <?php
 
 use App\Database\Db;
+use App\modules\phpgwapi\helpers\EmailTwigHelper;
 
 phpgw::import_class('booking.async_task');
 phpgw::import_class('booking.sobooking');
@@ -119,31 +120,17 @@ class booking_async_task_send_reminder extends booking_async_task
 		$config = CreateObject('phpgwapi.config', 'booking');
 		$config->read();
 
-		$body = "Informasjon om kommende arrangement:\n";
-		$body .= "Hvor: %WHERE%\n";
-		$body .= "Når:  %WHEN%\n";
-		if (strlen($who) > 0)
-		{
-			$body .= "Hvem: %WHO%\n";
-		}
-		if ($config->config_data['metatag_author'] != '')
-		{
-			$body .= "\n" . $config->config_data['metatag_author'];
-		}
-		else
-		{
-			$body .= "\nAktivby ";
-		}
+		$report_url = $external_site_address . '/bookingfrontend/?menuaction=bookingfrontend.ui' . $type . '.report_numbers&id=' . $id . '&secret=' . $secret;
+		$when = pretty_timestamp($from) . ' - ' . pretty_timestamp($to);
+		$author = !empty($config->config_data['metatag_author']) ? $config->config_data['metatag_author'] : '';
 
-		$body .= " fører statistikk på bruk av lokaler og ber derfor om at dere \n";
-		$body .= "\netter arrangementet melder inn korrekt deltakertall til oss.\n";
-		$body .= "Du kan gjøre dette ved å klikke på linken nedenfor.\n\n%URL%";
-
-		$body = str_replace('%URL%', $external_site_address . '/bookingfrontend/?menuaction=bookingfrontend.ui' . $type . '.report_numbers&id=' . $id . '&secret=' . $secret, $body);
-		$body = str_replace('%WHO%', $who, $body);
-		$body = str_replace('%WHERE%', $where, $body);
-		$body = str_replace('%WHEN%', pretty_timestamp($from) . ' - ' . pretty_timestamp($to), $body);
-
-		return $body;
+		$twig = new EmailTwigHelper('booking');
+		return $twig->render('@views/emails/reminder.twig', [
+			'where' => $where,
+			'when' => $when,
+			'who' => $who,
+			'author' => $author,
+			'report_url' => $report_url,
+		]);
 	}
 }

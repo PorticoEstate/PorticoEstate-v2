@@ -1,0 +1,33 @@
+{# Per-application detail card for group emails (pending/created) #}
+{# Parameters: app (application data with name, id, resource_names, building_name, formatted_dates) #}
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="border-left: 3px solid #28358B; background-color: #f7f7fa; margin-bottom: 12px; border-radius: 0 4px 4px 0;">
+<tr><td style="padding: 12px 16px;">
+
+    <p style="margin: 0 0 8px; font-size: 14px; font-weight: 600; color: #28358B;">{{ app.name|default('Søknadsdel') }} <span style="font-weight: 400; color: #797979; font-size: 12px;">(#{{ app.id }})</span></p>
+
+    <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 13px; color: #2b2b2b;">
+    {% if app.resource_names %}
+    <tr>
+        <td style="padding: 2px 12px 2px 0; color: #797979; vertical-align: top;">{{ lang('booking.resource')|default('Ressurs') }}</td>
+        <td style="padding: 2px 0; font-weight: 500;">{{ app.resource_names }}</td>
+    </tr>
+    {% endif %}
+    {% if app.building_name %}
+    <tr>
+        <td style="padding: 2px 12px 2px 0; color: #797979; vertical-align: top;">{{ lang('booking.building')|default('Lokasjon') }}</td>
+        <td style="padding: 2px 0; font-weight: 500;">{{ app.building_name }}</td>
+    </tr>
+    {% endif %}
+    </table>
+
+    {% if app.formatted_dates is not empty %}
+    <p style="margin: 8px 0 4px; font-size: 12px; font-weight: 600; color: #4E4E4E;">{{ lang('booking.requested_times')|default('Ønskede tider') }}</p>
+    <table cellpadding="0" cellspacing="0" role="presentation" style="font-size: 12px; color: #2b2b2b;">
+    {% for date in app.formatted_dates %}
+    <tr><td style="padding: 1px 0;">{{ date }}</td></tr>
+    {% endfor %}
+    </table>
+    {% endif %}
+
+</td></tr>
+</table>

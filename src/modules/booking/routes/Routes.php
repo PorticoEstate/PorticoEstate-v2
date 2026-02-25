@@ -21,6 +21,7 @@ use App\modules\booking\viewcontrollers\DocumentViewController;
 use App\modules\booking\viewcontrollers\ConfigViewController;
 use App\modules\booking\viewcontrollers\RegistryViewController;
 use App\modules\phpgwapi\controllers\ConfigController;
+use App\modules\booking\controllers\EmailCompareController;
 
 $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 {
@@ -60,6 +61,9 @@ $app->group('/booking', function (RouteCollectorProxy $group) use ($container)
 		$group->patch('/{id}', ResourceDocumentController::class . ':update');
 		$group->delete('/{id}', ResourceDocumentController::class . ':destroy');
 	});
+
+	// TEMPORARY: Email template comparison endpoint — delete after verification
+	$group->get('/email-compare/{id}', EmailCompareController::class . ':compare');
 
 	// TODO: TEMPORARY VIEW GROUP, UNTIL SOMETHING BETTER COMES ALONG
 	$group->group('/view', function (RouteCollectorProxy $viewGroup) use ($container)

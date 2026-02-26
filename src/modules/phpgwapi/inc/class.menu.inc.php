@@ -69,23 +69,27 @@ use App\modules\phpgwapi\services\Translation;
 		public function get($mtype = null)
 		{
 		$userSettings = Settings::getInstance()->get('user');
+		$serverSettings = Settings::getInstance()->get('server');
+		$templateSet = $serverSettings['template_set'] ?? 'digdir';
 
 			$disable_menu_cache = !empty($_ENV['DISABLE_MENU_CACHE']);
-			static $menu = null;
+			static $menus_by_template = [];
 
 			$account_id = $userSettings['account_id'];
+			$menu = $menus_by_template[$templateSet] ?? null;
 
 			if(!$menu && !$disable_menu_cache)
 			{
-	//			$menu = Cache::user_get('phpgwapi', 'menu', $account_id, true, true);
+	//			$menu = Cache::user_get('phpgwapi', "menu_{$templateSet}", $account_id, true, true);
 			}
 
 			if(!$menu)
 			{
 				$menu = self::load();
+				$menus_by_template[$templateSet] = $menu;
 				if(!$disable_menu_cache)
 				{
-					Cache::user_set('phpgwapi', 'menu', $menu, $account_id, true, true);
+					Cache::user_set('phpgwapi', "menu_{$templateSet}", $menu, $account_id, true, true);
 				}
 			}
 
@@ -400,7 +404,10 @@ HTML;
 
 			
 			$disable_menu_cache = !empty($_ENV['DISABLE_MENU_CACHE']);
-			if($disable_menu_cache || !$menu = Cache::session_get( "menu_{$app}", $flags['menu_selection']))
+			$serverSettings = Settings::getInstance()->get('server');
+			$templateSet = $serverSettings['template_set'] ?? 'digdir';
+			$local_menu_cache_key = "menu_{$app}_{$templateSet}";
+			if($disable_menu_cache || !$menu = Cache::session_get($local_menu_cache_key, $flags['menu_selection']))
 			{
 				$menu_gross = execMethod("{$app}.menu.get_menu", 'horisontal');
 				$selection = explode('::', $flags['menu_selection']);
@@ -408,7 +415,7 @@ HTML;
 				$menu = self::_get_sub_menu($menu_gross['navigation'], $selection, $level);
 				if(!$disable_menu_cache)
 				{
-					Cache::session_set("menu_{$app}", isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'menu_missing_selection', $menu);
+					Cache::session_set($local_menu_cache_key, isset($flags['menu_selection']) && $flags['menu_selection'] ? $flags['menu_selection'] : 'menu_missing_selection', $menu);
 				}
 				unset($menu_gross);
 			}
@@ -513,12 +520,15 @@ HTML;
 
 
 			$disable_menu_cache = !empty($_ENV['DISABLE_MENU_CACHE']);
-			if($disable_menu_cache || !$menu_gross = Cache::session_get('phpgwapi', "menu_{$app}"))
+			$serverSettings = Settings::getInstance()->get('server');
+			$templateSet = $serverSettings['template_set'] ?? 'digdir';
+			$menu_cache_key = "menu_{$app}_{$templateSet}";
+			if($disable_menu_cache || !$menu_gross = Cache::session_get('phpgwapi', $menu_cache_key))
 			{
 				$menu_gross = execMethod("{$app}.menu.get_menu");
 				if(!$disable_menu_cache)
 				{
-					Cache::session_set('phpgwapi', "menu_{$app}", $menu_gross);
+					Cache::session_set('phpgwapi', $menu_cache_key, $menu_gross);
 				}
 			}
 

@@ -247,7 +247,7 @@ class property_soworkorder
 			$uicols['classname'][]	 = '';
 			$uicols['sortable'][]	 = '';
 
-			$cols					 .= ",fm_workorder_status.descr as status";
+			$cols					 .= ",fm_workorder.status as status";
 			$cols_return[]			 = 'status';
 			$uicols['input_type'][]	 = 'text';
 			$uicols['name'][]		 = 'status';
@@ -932,6 +932,16 @@ class property_soworkorder
 			$_taxcode[$this->db->f('id')] = $this->db->f('percent_');
 		}
 
+		$status_list = array();
+		$this->db->query('SELECT id, descr, closed FROM fm_workorder_status', __LINE__, __FILE__);
+		while ($this->db->next_record())
+		{
+			$status_list[$this->db->f('id')] = array(
+				'closed' => $this->db->f('closed'),
+				'descr'	 => $this->db->f('descr')
+			);
+		}
+
 		foreach ($workorder_list as &$workorder)
 		{
 			$this->db->query("{$sql} WHERE fm_workorder.id = '{$workorder['workorder_id']}'");
@@ -983,7 +993,7 @@ class property_soworkorder
 				{
 					$workorder['actual_cost'] += $entry['actual_cost'];
 
-					if ($entry['active'])
+					//if ($entry['active'])
 					{
 						$workorder['combined_cost']	 += $entry['sum_orders'];
 						$workorder['budget']		 += $entry['budget'];
@@ -992,8 +1002,16 @@ class property_soworkorder
 				}
 			}
 
-			$_diff_start		 = abs($workorder['budget']) > 0 ? $workorder['budget'] : $workorder['combined_cost'];
-			$workorder['diff']	 = $_diff_start - $workorder['obligation'] - $workorder['actual_cost'];
+			$budget  			= abs($workorder['budget']) > 0 ? $workorder['budget'] : $workorder['combined_cost'];
+			$workorder['obligation'] = $budget - $workorder['actual_cost'];
+			$workorder['obligation'] = $workorder['obligation'] < 0 ? 0 : $workorder['obligation'];
+			if (!empty($status_list[$workorder['status']]) && $status_list[$workorder['status']]['closed'])
+			{
+				$workorder['obligation'] = 0;
+			}
+			$workorder['status'] = !empty($status_list[$workorder['status']]) ? $status_list[$workorder['status']]['descr'] : $workorder['status'];
+			$workorder['diff']	 = $budget - $workorder['obligation'] - $workorder['actual_cost'];
+			$workorder['diff']	 = $workorder['diff'] < 0 ? 0 : $workorder['diff'];
 		}
 
 		return $workorder_list;

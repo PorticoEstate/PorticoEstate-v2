@@ -28,6 +28,7 @@ const wsLog = (message: string, data: any = null, ...optionalParams: any[]) => w
 
 const SILENT_SOCKET_TYPES: Record<WebSocketMessage['type'], boolean> = {
 	refresh_bookinguser: false,
+	cache_invalidation: false,
 	'ping': true,
 	'pong': true,
 	'server_ping': true,

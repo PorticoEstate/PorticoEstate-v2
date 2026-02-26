@@ -211,6 +211,15 @@ class booking_uiseason extends booking_uicommon
 				try
 				{
 					$receipt = $this->bo->add($season);
+
+					// Invalidate Next.js caches (server-side + client-side via WebSocket)
+					if (class_exists('\App\modules\bookingfrontend\services\CacheService'))
+					{
+						$cache = new \App\modules\bookingfrontend\services\CacheService();
+						$buildingId = isset($season['building_id']) ? (int)$season['building_id'] : null;
+						$cache->invalidateSeason($buildingId);
+					}
+
 					self::redirect(array('menuaction' => 'booking.uiseason.show', 'id' => $receipt['id']));
 				}
 				catch (booking_unauthorized_exception $e)
@@ -336,6 +345,15 @@ class booking_uiseason extends booking_uicommon
 				try
 				{
 					$receipt = $this->bo->update($season);
+
+					// Invalidate Next.js caches (server-side + client-side via WebSocket)
+					if (class_exists('\App\modules\bookingfrontend\services\CacheService'))
+					{
+						$cache = new \App\modules\bookingfrontend\services\CacheService();
+						$buildingId = isset($season['building_id']) ? (int)$season['building_id'] : null;
+						$cache->invalidateSeason($buildingId);
+					}
+
 					self::redirect(array('menuaction' => 'booking.uiseason.show', 'id' => $season['id']));
 				}
 				catch (booking_unauthorized_exception $e)
@@ -518,6 +536,14 @@ class booking_uiseason extends booking_uicommon
 			}
 			
 			if ($all_success && !$errors) {
+				// Invalidate Next.js caches (server-side + client-side via WebSocket)
+				if (class_exists('\App\modules\bookingfrontend\services\CacheService'))
+				{
+					$cache = new \App\modules\bookingfrontend\services\CacheService();
+					$buildingId = isset($season['building_id']) ? (int)$season['building_id'] : null;
+					$cache->invalidateSeason($buildingId);
+				}
+
 				self::redirect(array('menuaction' => 'booking.uiseason.boundaries', 'id' => $season_id));
 			}
 		}

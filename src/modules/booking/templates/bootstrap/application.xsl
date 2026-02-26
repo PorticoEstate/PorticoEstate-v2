@@ -548,16 +548,29 @@
 																		</strong>
 																	</p>
 																</div>
-																<a class="btn btn-sm btn-primary">
-																	<xsl:attribute name="href">
-																		<xsl:value-of select="../edit_link"/>
-																		<xsl:text>&amp;selected_app_id=</xsl:text>
-																		<xsl:value-of select="id"/>
-																		<xsl:text>&amp;hide_invoicing=1</xsl:text>
-																	</xsl:attribute>
-																	<i class="fas fa-edit me-1"></i>
-																	<xsl:value-of select="php:function('lang', 'Edit')" />
-																</a>
+																<xsl:choose>
+																	<xsl:when test="../is_case_officer = '1' or ../is_case_officer = 1">
+																		<a class="btn btn-sm btn-primary">
+																			<xsl:attribute name="href">
+																				<xsl:value-of select="../edit_link"/>
+																				<xsl:text>&amp;selected_app_id=</xsl:text>
+																				<xsl:value-of select="id"/>
+																				<xsl:text>&amp;hide_invoicing=1</xsl:text>
+																			</xsl:attribute>
+																			<i class="fas fa-edit me-1"></i>
+																			<xsl:value-of select="php:function('lang', 'Edit')" />
+																		</a>
+																	</xsl:when>
+																	<xsl:otherwise>
+																		<button class="btn btn-sm btn-secondary" disabled="disabled">
+																			<xsl:attribute name="title">
+																				<xsl:value-of select="php:function('lang', 'Only the case officer can edit this application')" />
+																			</xsl:attribute>
+																			<i class="fas fa-edit me-1"></i>
+																			<xsl:value-of select="php:function('lang', 'Edit')" />
+																		</button>
+																	</xsl:otherwise>
+																</xsl:choose>
 															</div>
 															<p class="card-text mb-1">
 																<small><strong><xsl:value-of select="php:function('lang', 'Status')" />:</strong></small>
@@ -1242,6 +1255,13 @@
 																			</option>
 																		</xsl:if>
 																	</select>
+<!--																	<xsl:if test="not(contains($assocdata, from_)) and ../case_officer/is_current_user">-->
+<!--																		<button type="button" class="btn btn-sm btn-danger ms-2">-->
+<!--																			<xsl:attribute name="onclick">rejectApplicationPart(<xsl:value-of select="application_id"/>);</xsl:attribute>-->
+<!--																			<xsl:attribute name="title"><xsl:value-of select="php:function('lang', 'Reject this part')" /></xsl:attribute>-->
+<!--																			<i class="fas fa-times me-1"></i><xsl:value-of select="php:function('lang', 'Reject')" />-->
+<!--																		</button>-->
+<!--																	</xsl:if>-->
 																</div>
 															</xsl:if>
 														</xsl:for-each>
@@ -1485,6 +1505,36 @@
 				documentsURL += '&owner[]=resource::' + initialSelection[i];
 			}
 		]]>
+
+		// Function to reject a specific application part
+		function rejectApplicationPart(appId) {
+			if (confirm('Er du sikker på at du vil avslå denne søknaden?')) {
+				var form = document.createElement('form');
+				form.method = 'POST';
+				form.action = 'index.php?menuaction=booking.uiapplication.show&amp;id=' + appId;
+
+				var statusInput = document.createElement('input');
+				statusInput.type = 'hidden';
+				statusInput.name = 'status';
+				statusInput.value = 'REJECTED';
+				form.appendChild(statusInput);
+
+				var reasonInput = document.createElement('input');
+				reasonInput.type = 'hidden';
+				reasonInput.name = 'rejection_reason';
+				reasonInput.value = 'Avslått av saksbehandler: Ingen tildeling opprettet.';
+				form.appendChild(reasonInput);
+
+				var emailCheckbox = document.createElement('input');
+				emailCheckbox.type = 'hidden';
+				emailCheckbox.name = 'send_rejection_email';
+				emailCheckbox.value = '0';
+				form.appendChild(emailCheckbox);
+
+				document.body.appendChild(form);
+				form.submit();
+			}
+		}
 
 		var colDefsResources = [{key: 'name', label: lang['Resources'], formatter: genericLink}, {key: 'rescategory_name', label: lang['Resource Type']}];
 

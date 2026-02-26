@@ -302,13 +302,22 @@ const ResourceSearch: FC<ResourceSearchProps> = ({ initialSearchData, initialTow
         }
     }, [resourcesWithBuildings]);
 
-    // Get highlighted buildings from config for the landing view
+    // Get highlighted buildings for the landing view
+    // Configured highlighted buildings come first, then fill remaining
+    // slots with featured buildings (date-seeded pseudo-random from API)
     const highlightedBuildings = useMemo(() => {
-        const highlightedIds = serverSettings?.bookingfrontend_config?.highlighted_buildings;
-        if (!highlightedIds?.length || !searchData?.buildings) return [];
+        if (!searchData?.buildings) return [];
 
-        // Preserve the order from the config
-        return highlightedIds
+        const configIds = serverSettings?.bookingfrontend_config?.highlighted_buildings ?? [];
+        const featuredIds = searchData.featured_buildings ?? [];
+
+        const configSet = new Set(configIds);
+        const combined = [
+            ...configIds,
+            ...featuredIds.filter(id => !configSet.has(id)),
+        ];
+
+        return combined
             .map(id => searchData.buildings.find(b => b.id === id))
             .filter((b): b is ISearchDataBuilding => !!b)
             .slice(0, 6);

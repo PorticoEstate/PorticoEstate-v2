@@ -594,6 +594,7 @@ Redirect is computed if url ends with	bookingfrontend	nn	Omdirigering blir kalku
 registration	bookingfrontend	nn	Registrering
 regulation	bookingfrontend	nn	Reglement
 reject application	bookingfrontend	nn	Avslå søknad
+reject	bookingfrontend	nn	Avslå
 rejected	bookingfrontend	nn	Avvist
 remote authentication	bookingfrontend	nn	Ekstern autentisering
 remove date	bookingfrontend	nn	Fjern dato

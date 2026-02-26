@@ -1,5 +1,5 @@
 import BuildingCalendar from "@/components/building-calendar";
-import {fetchBuilding, fetchBuildingDocuments} from "@/service/api/building";
+import {fetchSSRBuilding, fetchSSRBuildingDocuments} from "@/service/api/building-ssr";
 import {notFound} from "next/navigation";
 import BuildingHeader from "@/components/building-page/building-header";
 import DescriptionAccordion from "@/components/building-page/description-accordion";
@@ -8,6 +8,7 @@ import BuildingContact from "@/components/building-page/building-contact";
 import BuildingPhotos from "@/components/building-page/building-photos/building-photos";
 import DocumentsSection from "@/components/shared/documents-section/documents-section";
 import {fetchTowns} from "@/service/api/api-utils";
+import ShortDectionAccordion from "@/components/building-page/short-description-section";
 
 interface BuildingShowParams {
     id: string;
@@ -28,7 +29,7 @@ const BuildingShow = async (props: BuildingShowProps) => {
     }
 
     // Fetch the building
-    const building = await fetchBuilding(buildingId);
+    const building = await fetchSSRBuilding(buildingId);
 
     // If building does not exist, throw the notFound error
     if (!building) {
@@ -40,13 +41,13 @@ const BuildingShow = async (props: BuildingShowProps) => {
     const town = towns.find(t => t.id === building.town_id);
 
     // Fetch building documents (excluding only pictures)
-    const documents = await fetchBuildingDocuments(buildingId, ['drawing', 'price_list', 'other', 'regulation', 'HMS_document']);
+    const documents = await fetchSSRBuildingDocuments(buildingId, ['drawing', 'price_list', 'other', 'regulation', 'HMS_document']);
 
     return (
         <main>
             <BuildingHeader building={building} town={town} />
             {/*<hr className={`my-2 mx-standard`}/>*/}
-
+			<ShortDectionAccordion short_description={building.short_description} />
 			<BuildingPhotos object={building} type={'building'} />
 			<section className={'my-2'}>
 				{/* Photos moved above accordions */}

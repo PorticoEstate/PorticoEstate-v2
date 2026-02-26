@@ -283,7 +283,8 @@ phpgw::import_class('booking.uicommon');
 					$file_name_part = 'VISMA_';
 					break;
 				case 'AGRESSO':
-					$file_name_part = 'AktivbyLG04_';
+				case 'AGRESSO_55':
+				$file_name_part = 'AktivbyLG04_';
 					break;
 				case 'CSV':
 					$file_name_part = 'CSV_';

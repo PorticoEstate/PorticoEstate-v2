@@ -63,10 +63,15 @@ const CalendarResourceFilter: FC<CalendarResourceFilterProps> = ({
 
 	// Use filtered resources if provided, otherwise fall back to all building resources
 	const resources = useMemo(() => {
-		if(isOrgMode) {
-			return filteredResources;
-		}
-		return allResources;
+		const resourceList = isOrgMode ? filteredResources : allResources;
+
+		// Sort by sort field (ascending), with null values at the end
+		return resourceList?.sort((a, b) => {
+			if (a.sort === null && b.sort === null) return 0;
+			if (a.sort === null) return 1;
+			if (b.sort === null) return -1;
+			return a.sort - b.sort;
+		});
 
 	}, [filteredResources, allResources, isOrgMode])
 

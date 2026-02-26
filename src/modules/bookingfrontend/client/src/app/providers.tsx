@@ -16,6 +16,8 @@ import ServiceWorkerProvider from "@/service/websocket/service-worker-provider";
 import ShoppingCartProvider from "@/components/layout/header/shopping-cart/shopping-cart-provider";
 import {ScrollLockProvider} from "@/contexts/ScrollLockContext";
 
+
+
 const Providers: FC<PropsWithChildren & { lang: string }> = async ({children, lang}) => {
 	// NOTE: Avoid useState when initializing the query client if you don't
 	//       have a suspense boundary between this and the code that may

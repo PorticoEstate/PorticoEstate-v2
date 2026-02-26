@@ -6,7 +6,6 @@
 
 import {ReactNode} from "react";
 import {notFound} from "next/navigation";
-import {fetchBuilding} from "@/service/api/building";
 import {fetchOrganization} from "@/service/api/api-utils";
 
 interface OrganizationIdLayoutProps {

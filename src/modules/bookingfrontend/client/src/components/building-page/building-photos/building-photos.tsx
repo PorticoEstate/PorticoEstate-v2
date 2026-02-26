@@ -1,5 +1,5 @@
 import {IBuilding} from "@/service/types/Building";
-import {fetchBuildingDocuments, fetchOrganizationDocuments, fetchResourceDocuments} from "@/service/api/building";
+import {fetchSSRBuildingDocuments, fetchSSROrganizationDocuments, fetchSSRResourceDocuments} from "@/service/api/building-ssr";
 import PhotosGrid from "@/components/building-page/building-photos/photos-grid";
 import { IResource } from "@/service/types/resource.types";
 import {IOrganization} from "@/service/types/api/organization.types";
@@ -14,9 +14,9 @@ interface BuildingPhotosWrapperProps {
 
 const BuildingPhotos = async (props: BuildingPhotosWrapperProps) => {
     const photos = props.photos ||
-        props.type === "building" && await fetchBuildingDocuments(props.object.id, 'images') ||
-        props.type === "organization" && await fetchOrganizationDocuments(props.object.id, 'images') ||
-        props.type === 'resource' && await fetchResourceDocuments(props.object.id, 'images');
+        props.type === "building" && await fetchSSRBuildingDocuments(props.object.id, 'images') ||
+        props.type === "organization" && await fetchSSROrganizationDocuments(props.object.id, 'images') ||
+        props.type === 'resource' && await fetchSSRResourceDocuments(props.object.id, 'images');
 
     if(!photos || photos.length === 0) return null;
 

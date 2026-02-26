@@ -1220,7 +1220,7 @@ class booking_uiapplication extends booking_uicommon
 				'from_'			=> $from_,
 				'to_'			=> $to_
 			);
-			$receipt = $bo_block->add($block);
+				$receipt = $bo_block->add($block);
 			if ($receipt['id'])
 			{
 				$status = 'saved';
@@ -2986,7 +2986,7 @@ class booking_uiapplication extends booking_uicommon
 			 * TEMPORARY!!
 			 * Bypassing acl on create
 			 */
-			$receipt = CreateObject('booking.soorganization')->add($organization);
+				$receipt = CreateObject('booking.soorganization')->add($organization);
 			//				$receipt = $this->organization_bo->add($organization);
 			$organization['id'] = $receipt['id'];
 		}
@@ -3857,6 +3857,15 @@ class booking_uiapplication extends booking_uicommon
 		$application['related_applications_info'] = array();
 		if ($this->combine_applications && $application_count > 1)
 		{
+			// Check if current user is the case officer (same for all combined applications)
+			$current_account_id = $this->current_account_id();
+			$is_case_officer = false;
+			if (!empty($application['case_officer_id']) && !empty($current_account_id))
+			{
+				$is_case_officer = ($application['case_officer_id'] == $current_account_id);
+			}
+			$application['is_case_officer'] = $is_case_officer;
+
 			foreach ($combined_applications as $app_id => $app)
 			{
 				$date_ranges = array();
@@ -4038,6 +4047,90 @@ class booking_uiapplication extends booking_uicommon
 					$related_info = $this->bo->so->get_related_applications($application['id']);
 				}
 
+				// PRE-APPROVAL CHECK: If approving a combined application and the primary has no associations,
+				// promote an approved child to be the new primary BEFORE the approval workflow starts
+				if ($new_status == 'ACCEPTED' && $this->combine_applications && !empty($related_info['application_ids']))
+				{
+					// First, identify the true primary (self-referencing parent_id)
+					$true_primary_id = null;
+					$true_primary_has_associations = false;
+
+					foreach ($related_info['application_ids'] as $related_app_id)
+					{
+						$app = $this->bo->read_single($related_app_id);
+						if ($app && isset($app['parent_id']) && $app['parent_id'] == $app['id']) {
+							// This is the true primary
+							$true_primary_id = $app['id'];
+							$test = $this->assoc_bo->so->read(array('filters' => array('application_id' => $true_primary_id), 'results' => 'all'));
+							$true_primary_has_associations = !empty($test['results']);
+							break;
+						}
+					}
+
+					// If primary has no associations, find first child that does and promote it
+					if ($true_primary_id && !$true_primary_has_associations)
+					{
+						$first_approved_child_id = null;
+
+						foreach ($related_info['application_ids'] as $related_app_id)
+						{
+							if ($related_app_id != $true_primary_id)
+							{
+								$test = $this->assoc_bo->so->read(array('filters' => array('application_id' => $related_app_id), 'results' => 'all'));
+								if (!empty($test['results']))
+								{
+									// This child has associations, promote it to primary
+									$first_approved_child_id = $related_app_id;
+									break;
+								}
+							}
+						}
+
+						// Swap parent_id relationships if we found an approved child
+						if ($first_approved_child_id)
+						{
+							// Make the approved child the new primary (self-reference)
+							$new_primary = $this->bo->read_single($first_approved_child_id);
+							if ($new_primary)
+							{
+								$new_primary['parent_id'] = $first_approved_child_id;
+								$this->bo->update($new_primary);
+
+								// Update all other applications to point to the new primary
+								foreach ($related_info['application_ids'] as $related_app_id)
+								{
+									if ($related_app_id != $first_approved_child_id)
+									{
+										$child = $this->bo->read_single($related_app_id);
+										if ($child)
+										{
+											$child['parent_id'] = $first_approved_child_id;
+											$this->bo->update($child);
+										}
+									}
+								}
+
+								// Add comment to explain the reorganization
+								$this->add_comment($new_primary, 'Søknad ble automatisk omorganisert: ny hovedsøknad etter at tidligere hovedsøknad #' . $true_primary_id . ' ikke hadde tildelinger.');
+
+								// If we're viewing the old primary, reload to get the updated application
+								if ($application['id'] == $true_primary_id)
+								{
+									$application = $this->bo->read_single($application['id']);
+								// Restore status from POST (reload from DB loses it)
+								$application['status'] = $new_status;
+								}
+								else if ($application['id'] == $first_approved_child_id)
+								{
+									$application = $this->bo->read_single($application['id']);
+								// Restore status from POST (reload from DB loses it)
+								$application['status'] = $new_status;
+								}
+							}
+						}
+					}
+				}
+
 				if ($application['status'] == 'REJECTED')
 				{
 					$rejection_reason = Sanitizer::get_var('rejection_reason', 'html', 'POST');
@@ -4106,26 +4199,65 @@ class booking_uiapplication extends booking_uicommon
 					{
 						foreach ($related_info['application_ids'] as $related_app_id)
 						{
+							// Check if this application has any associations (allocations/events/bookings)
+							$test = $this->assoc_bo->so->read(array('filters' => array('application_id' => $related_app_id), 'results' => 'all'));
+							$has_associations = !empty($test['results']);
+
 							if ($related_app_id != $application['id'])
 							{
 								$related_app = $this->bo->read_single($related_app_id);
 								if ($related_app)
 								{
-									$related_app['status'] = 'ACCEPTED';
-									if ($acceptance_message)
+									// Only approve if the application has created associations
+									if ($has_associations)
 									{
-										$related_app['comment'] = $acceptance_message;
-										$this->add_comment($related_app, $acceptance_message);
+									$related_app['status'] = 'ACCEPTED';
+										if ($acceptance_message)
+										{
+											$related_app['comment'] = $acceptance_message;
+											$this->add_comment($related_app, $acceptance_message);
+										}
+									}
+									else
+									{
+										// Reject applications with no allocations/events
+									$related_app['status'] = 'REJECTED';
+										$rejection_comment = 'Automatisk avslått: Ingen tildelinger ble opprettet for denne søknaden.';
+										$related_app['comment'] = $rejection_comment;
+										$this->add_comment($related_app, $rejection_comment);
 									}
 									$this->bo->update($related_app);
 								}
 							}
+								else
+								{
+									// Handle the current application (the one being approved from)
+									if (!$has_associations)
+									{
+										$application['status'] = 'REJECTED';
+										$rejection_comment = 'Automatisk avslått: Ingen tildelinger ble opprettet for denne søknaden.';
+										$application['comment'] = $rejection_comment;
+										$this->add_comment($application, $rejection_comment);
+									}
+									else
+									{
+										// Explicitly set status to ACCEPTED for current app with associations
+										$application['status'] = 'ACCEPTED';
+										if ($acceptance_message)
+										{
+											$application['comment'] = $acceptance_message;
+											$this->add_comment($application, $acceptance_message);
+										}
+									}
+								}
 
-							// Set active for all associations of each application
-							$test = $this->assoc_bo->so->read(array('filters' => array('application_id' => $related_app_id), 'results' => 'all'));
-							foreach ($test['results'] as $app)
+							// Set active for all associations of each application (only if they exist)
+							if ($has_associations)
 							{
-								$this->bo->so->set_active($app['id'], $app['type']);
+								foreach ($test['results'] as $app)
+								{
+									$this->bo->so->set_active($app['id'], $app['type']);
+								}
 							}
 						}
 					}
@@ -4161,12 +4293,23 @@ class booking_uiapplication extends booking_uicommon
 
 				$update = true;
 				// For rejected or accepted status, only notify if checkbox is checked
-				if ($application['status'] == 'REJECTED') {
-					$notify = Sanitizer::get_var('send_rejection_email', 'bool', 'POST') ? true : false;
-				} else if ($application['status'] == 'ACCEPTED') {
-					$notify = Sanitizer::get_var('send_acceptance_email', 'bool', 'POST') ? true : false;
+				// For combined applications with mixed results, send email if either checkbox is checked
+				$send_acceptance_checked = Sanitizer::get_var('send_acceptance_email', 'bool', 'POST');
+				$send_rejection_checked = Sanitizer::get_var('send_rejection_email', 'bool', 'POST');
+
+				if ($this->combine_applications && !empty($related_info['application_ids']) && count($related_info['application_ids']) > 1) {
+					// Combined application: send email if either checkbox is checked
+					// (email will show mixed results - some accepted, some rejected)
+					$notify = $send_acceptance_checked || $send_rejection_checked;
 				} else {
-					$notify = true;
+					// Single application: match checkbox to status
+					if ($application['status'] == 'REJECTED') {
+						$notify = $send_rejection_checked;
+					} else if ($application['status'] == 'ACCEPTED') {
+						$notify = $send_acceptance_checked;
+					} else {
+						$notify = true;
+					}
 				}
 				$return_after_action = true;
 			}
@@ -5118,14 +5261,25 @@ JS;
 	private function sendGroupNotification($application_ids, $primary_application)
 	{
 		try {
+			// The case officer's comment is a runtime property (not a DB column).
+			// Prefer the explicit acceptance/rejection message from POST over whatever
+			// ended up on the primary application, because auto-rejection can overwrite
+			// the user's comment before we get here.
+			$comment = Sanitizer::get_var('acceptance_message', 'html', 'POST')
+				?: Sanitizer::get_var('rejection_reason', 'html', 'POST')
+				?: Sanitizer::get_var('comment', 'html', 'POST')
+				?: ($primary_application['comment'] ?? null);
+
 			// Load all related applications
 			$applications = [];
 			foreach ($application_ids as $app_id) {
 				$app = $this->bo->read_single($app_id);
 				if ($app) {
-					// Set the same status for all applications
-					$app['status'] = $primary_application['status'];
-					$app['comment'] = $primary_application['comment'] ?? '';
+				// Keep the actual status from database (don't override)
+				// Each application may have different status (ACCEPTED, REJECTED, etc.)
+					if ($comment) {
+						$app['comment'] = $comment;
+					}
 					$applications[] = $app;
 				}
 			}

@@ -273,6 +273,7 @@ phpgw::import_class('booking.uicommon');
 			$type = $file_type_arr[1];
 
 			$config_data = CreateObject('phpgwapi.config', 'booking')->read();
+			$voucher_client = $config_data['voucher_client'] ?? 'BY';
 
 			switch ($config_data["{$type}_format"])
 			{
@@ -283,8 +284,10 @@ phpgw::import_class('booking.uicommon');
 					$file_name_part = 'VISMA_';
 					break;
 				case 'AGRESSO':
+					$file_name_part = 'AktivbyLG04_';
+					break;
 				case 'AGRESSO_55':
-				$file_name_part = 'AktivbyLG04_';
+					$file_name_part = $voucher_client . '_AktivbyLG04_';
 					break;
 				case 'CSV':
 					$file_name_part = 'CSV_';
